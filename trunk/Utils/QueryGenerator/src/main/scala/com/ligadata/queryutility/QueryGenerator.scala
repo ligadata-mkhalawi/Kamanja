@@ -402,7 +402,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
          } //id of message
        }
 
-       if (adapterId.length != 0 && vertexId.length != 0) {
+       if (adapterId.length != 0 && messageid.length != 0) {
          var linkKey = "" //adapterId + "," + vertexId
          var fromlink = ""
          var tolink = ""
