@@ -1,6 +1,7 @@
 import abc
 from common.ModelInstance import ModelInstance
 import json
+import logging
 
 class AddTuple(ModelInstance): 
 	""" Model AddTuple will sum msg["a"] and msg["b"] """
@@ -14,14 +15,14 @@ class AddTuple(ModelInstance):
 		outMsg = json.dumps({'a' : msg["a"], 'b' : msg["b"], 'result' : sumofTup})
 		return outMsg
 
-	def __init__(self, host, port, modelOptions):
-		super(AddTuple, self).__init__(host, port, modelOptions)
+	def __init__(self, host, port, modelOptions, logger):
+		super(AddTuple, self).__init__(host, port, modelOptions, logger)
 
 	def getInputOutputFields(self):
 		"""The fields and their types are returned  """
 		"""This is looking for dict item "TypeInfo" ... really it """
 		"""should be some other key... like InputFields and OutputFields"""
-		print "Entered AddTuple.getInputOutputFields"
+		self.logger.debug("Entered AddTuple.getInputOutputFields")
 		modelOptions = super(AddTuple, self).ModelOptions()
 		inputFields = dict()
 		outputFields = dict()

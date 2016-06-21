@@ -36,6 +36,8 @@ logger = logging.getLogger('pythonserver')
 fileLogPath = args['fileLogPath']
 if fileLogPath != "":
 	fileHandler = logging.handlers.RotatingFileHandler(fileLogPath, mode='a', maxBytes=500000, backupCount=3)
+	formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+	fileHandler.setFormatter(formatter)
 	logger.addHandler(fileHandler)
 
 # log basic startup info
@@ -99,7 +101,7 @@ for moduleName in 'addModel', 'removeModel', 'serverStatus', 'executeModel', 'st
 	className = moduleName # also 
 	HandlerClass = importPackageByName(pkgCmdName, className)
 	logger.info("load HandlerClass({},{},{})".format(pkgCmdName,hostDisplayStr,str(port)))
-	handler = HandlerClass(pkgCmdName, hostDisplayStr, port)
+	handler = HandlerClass(pkgCmdName, hostDisplayStr, port, logger)
 	cmdDict[moduleName] = handler
 #self, modelDict, host, port, cmdOptions, modelOptions
 startMarkerValue = "_S_T_A_R_T_"	

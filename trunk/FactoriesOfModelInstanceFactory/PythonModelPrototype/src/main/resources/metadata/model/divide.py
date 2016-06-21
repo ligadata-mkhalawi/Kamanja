@@ -1,6 +1,7 @@
 import abc
 from common.ModelInstance import ModelInstance
 import json
+import logging
 
 class DivideTuple(ModelInstance): 
 	""" Model DivideTuple will divide msg["a"] by msg["b"] """
@@ -15,13 +16,14 @@ class DivideTuple(ModelInstance):
 		outMsg = json.dumps({'a' : msg["a"], 'b' : msg["b"], 'result' : qutotientofTup})	
 		return outMsg
 
-	def __init__(self, host, port, modelOptions):
-		super(DivideTuple, self).__init__(host, port, modelOptions)
+	def __init__(self, host, port, modelOptions, logger):
+		super(DivideTuple, self).__init__(host, port, modelOptions, logger)
 
 	def getInputOutputFields(self):
 		"""The fields and their types are returned  """
 		"""This is looking for dict item "TypeInfo" ... really it """
 		"""should be some other key... like InputFields and OutputFields"""
+		self.logger.debug("Entered DivideTuple.getInputOutputFields")
 		modelOptions = super(DivideTuple, self).ModelOptions()
 		inputFields = dict()
 		outputFields = dict()

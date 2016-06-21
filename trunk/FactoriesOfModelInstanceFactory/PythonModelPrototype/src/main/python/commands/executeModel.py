@@ -1,6 +1,9 @@
 import sys
 import json
 from common.CommandBase import CommandBase
+import logging
+import logging.config
+import logging.handlers
 
 
 # ExecuteModelCmd is formatted like this:
@@ -22,9 +25,8 @@ class executeModel(CommandBase):
 	Execute the model mentioned in the cmdOptions feeding it the
 	message also found there (key = "InputDictionary")
 	"""
-	def __init__(self, pkgCmdName, host, port):
-		
-		super(executeModel, self).__init__(pkgCmdName, host, port)
+	def __init__(self, pkgCmdName, host, port, logger):
+		super(executeModel, self).__init__(pkgCmdName, host, port, logger)
 
 	def handler(self, modelDict, host, port, cmdOptions, modelOptions):
 		"""
@@ -34,8 +36,8 @@ class executeModel(CommandBase):
 		modelNames = ["{}".format(v) for v in modelNameView]
 		modelValueView = modelDict.viewvalues()
 		modelInsts =  ["{}".format(str(v)) for v in modelValueView]
-		print "{} models in modelDict = {}".format(len(modelNameView),modelNames)
-		print "{} instances in modelDict = {}".format(len(modelValueView),modelInsts)
+		self.logger.debug("{} models in modelDict = {}".format(len(modelNameView),modelNames))
+		self.logger.debug("{} instances in modelDict = {}".format(len(modelValueView),modelInsts))
 
 		if "ModelName" in cmdOptions:
 			modelName = str(cmdOptions["ModelName"])
@@ -52,7 +54,7 @@ class executeModel(CommandBase):
 			try:
 				model = modelDict.get(modelName)
 				msg = cmdOptions["InputDictionary"]
-				print "model instance selected = {}".format(str(model))
+				self.logger.debug("model instance selected = {}".format(str(model)))
 				results = model.execute(msg)
 			except:
 				results = super(executeModel, self).exceptionMsg("The model '{}' is having a bad day...".format(modelName))

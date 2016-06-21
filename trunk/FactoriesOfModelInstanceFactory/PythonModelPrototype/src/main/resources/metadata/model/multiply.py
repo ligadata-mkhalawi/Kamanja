@@ -1,6 +1,7 @@
 import abc
 from common.ModelInstance import ModelInstance
 import json
+import logging
 
 class MultiplyTuple(ModelInstance): 
 	""" Model MultiplyTuple will multiply msg["a"] and msg["b"] """
@@ -14,13 +15,14 @@ class MultiplyTuple(ModelInstance):
 		outMsg = json.dumps({'a' : msg["a"], 'b' : msg["b"], 'result' : prodofTups})
 		return outMsg
 
-	def __init__(self, host, port, modelOptions):
-		super(MultiplyTuple, self).__init__(host, port, modelOptions)
+	def __init__(self, host, port, modelOptions, logger):
+		super(MultiplyTuple, self).__init__(host, port, modelOptions, logger)
 
 	def getInputOutputFields(self):
 		"""The fields and their types are returned  """
 		"""This is looking for dict item "TypeInfo" ... really it """
 		"""should be some other key... like InputFields and OutputFields"""
+		self.logger.debug("Entered MultiplyTuple.getInputOutputFields")
 		modelOptions = super(MultiplyTuple, self).ModelOptions()
 		inputFields = dict()
 		outputFields = dict()

@@ -2,6 +2,9 @@ import os
 import os.path
 import json
 from common.CommandBase import CommandBase
+import logging
+import logging.config
+import logging.handlers
 
 class removeModel(CommandBase): 
 	"""
@@ -9,8 +12,8 @@ class removeModel(CommandBase):
 		s"$cmd\n$modelName\n$modelInfo\n$modelSrc"
 	"""
 	
-	def __init__(self, pkgCmdName, host, port):
-		super(removeModel, self).__init__(pkgCmdName, host, port)
+	def __init__(self, pkgCmdName, host, port, logger):
+		super(removeModel, self).__init__(pkgCmdName, host, port, logger)
 
 
 	def handler(self, modelDict, host, port, cmdOptions, modelOptions):
@@ -25,6 +28,10 @@ class removeModel(CommandBase):
 			modelKey = modelName
 			modelName = "{} was not found in the model dictionary...not".format(modelKey)
 
-		return 'model {} removed'.format(modelName)
+		removeResult = 'model {} removed'.format(modelName)
+		result = json.dumps({'Cmd' : 'removeModel', 'Server' : host, 'Port' : str(port), 'Result' : removeResult })
+		self.logger.info(result)
+
+		return result
 
 

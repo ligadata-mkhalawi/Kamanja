@@ -3,6 +3,9 @@ import abc
 from common.ModelBase import ModelBase
 import json
 import sys
+import logging
+import logging.config
+import logging.handlers
 
 
 class ModelInstance(ModelBase): 
@@ -12,14 +15,13 @@ class ModelInstance(ModelBase):
     popped off the front of supplied addModel inputs 
     """
 
-    def __init__(self, host, port, modelOptions):
+    def __init__(self, host, port, modelOptions, logger):
         self.host = host
         self.port = port
-        #self.jsonModelInfo = modelOptions #string rep 
-        #self.modelOptions = json.loads(modelOptions) #json => dictionary
         self.modelOptions = modelOptions
+        self.logger = logger
         if "PartitionHash" in modelOptions:
-            self.partitionHash = modelOptions["partitionHash"]
+            self.partitionHash = modelOptions["PartitionHash"]
         else:
             self.partitionHash = 0
 
@@ -29,15 +31,18 @@ class ModelInstance(ModelBase):
 
     @abc.abstractmethod
     def getInputOutputFields(self):
-        """answer two lists - one for input and output 
-            (inputList, outputList) 
-            each list consists of [(fldName, fld type, descr)]
-            this is the add model result ... from the AddModel command
+        """answer two dicts - one for input and output 
+            (inputdict, outputdict) 
+            each dict consists of fldName/fld type pairs
+            this is a portion of the AddModel command result,
+            effectively advertising which fields are needed by the 
+            model to process and what can be expected when output
+            sent.
         """
 
     def isModelInstanceReusable(self):
         """Can the instance created for this model be reused on subsequent transactions?"""
-        return super().isModelInstanceReusable()
+        return super(ModelInstance,self).isModelInstanceReusable()
 
     def ModelOptions(self):
         #make the options dictionary available to the concrete implementors of ModelBase
@@ -55,7 +60,7 @@ class ModelInstance(ModelBase):
         answer the exception as json dict
         """
         prettycmd = json.dumps({'Server' : self.host, 'Port' : str(self.port), 'Result' : infoTag, 'Exception' : str(sys.exc_info()[0]), 'FailedClass' : str(sys.exc_info()[1])}, sort_keys=True, indent=4, separators=(',', ': '))
-        print(prettycmd)
+        self.logger.debug(prettycmd)
         xeptMsg = json.dumps({'Server' : self.host, 'Port' : str(self.port), 'Result' : infoTag, 'Exception' : str(sys.exc_info()[0]), 'FailedClass' : str(sys.exc_info()[1])})
         return xeptMsg
 
