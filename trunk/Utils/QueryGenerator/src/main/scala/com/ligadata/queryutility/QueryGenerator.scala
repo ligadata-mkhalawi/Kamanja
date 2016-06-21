@@ -270,7 +270,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
 //         for (item <- outputName)
 //           item.substring(item.lastIndexOf('.') + 1)
 //         //println("output message : " + item)
-//       }
+       }
      }
 
      if (msgDefs.isEmpty) {
@@ -516,6 +516,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
      conn.close()
    }
 }
+
 
 object KamanjaConfiguration {
   var configFile: String = _
