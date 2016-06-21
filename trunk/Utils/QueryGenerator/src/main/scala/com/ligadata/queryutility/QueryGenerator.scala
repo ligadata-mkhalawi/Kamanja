@@ -335,7 +335,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
                    }
                  } else {
                    logger.info("The edge exist between this two nodes %s , %s".format(adapterId, vertexId))
-                   println("The edge exist betwwen this two nodes %s, %s".format(adapterId, vertexId))
+                   println("The edge exist between this two nodes %s, %s".format(adapterId, vertexId))
                  }
                }
 
@@ -377,7 +377,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
                  }
                } else {
                  logger.info("The edge exist between this two nodes %s , %s".format(vertexId, adapterId))
-                 println("The edge exist betwwen this two nodes %s, %s".format(vertexId, adapterId))
+                 println("The edge exist between this two nodes %s, %s".format(vertexId, adapterId))
                }
              }
            }
@@ -392,7 +392,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
          } //id of adpater
          if (vertex._2.equals(adapterMessage._2.messageName)) {
            messageid = vertex._1
-           messageid = vertexId.substring(vertexId.indexOf("#"), vertexId.indexOf("{"))
+           messageid = vertexId.substring(messageid.indexOf("#"), messageid.indexOf("{"))
          } //id of message
        }
 
@@ -449,7 +449,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
                  }
                } else {
                  logger.info("The edge exist between this two nodes %s , %s".format(messageId, vertexId))
-                 println("The edge exist betwwen this two nodes %s, %s".format(messageId, vertexId))
+                 println("The edge exist between this two nodes %s, %s".format(messageId, vertexId))
                }
              }
 
@@ -481,7 +481,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
                }
              } else {
                logger.info("The edge exist between this two nodes %s , %s".format(vertexId, messageId))
-               println("The edge exist betwwen this two nodes %s, %s".format(vertexId, messageId))
+               println("The edge exist between this two nodes %s, %s".format(vertexId, messageId))
              }
            }
          }
