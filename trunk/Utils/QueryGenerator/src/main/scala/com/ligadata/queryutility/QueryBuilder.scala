@@ -5,9 +5,12 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.Statement
 import java.sql.ResultSet
-import scala.collection.mutable.HashMap
 
+import scala.collection.mutable.HashMap
+import org.json4s._
+import org.json4s.native.JsonMethods._
 import com.ligadata.kamanja.metadata.{AdapterInfo, ContainerDef, MessageDef, ModelDef}
+import org.json4s
 
 import scala.collection.immutable.HashMap.HashMap1;
 /**
@@ -77,9 +80,11 @@ class QueryBuilder extends LogTrait {
   def getAllExistDataQuery(elementType: String, extendClass: Option[String] = None): String ={
     var query: String = ""
     if(elementType.equals("vertex")){
-      query = "select @rid as id, FullName from V"
+      //query = "select @rid as id, FullName from V"
+      query = "select @this.toJSON() as jsonrec from (select @rid as @rid, @class as @class, FullName from V)"
     } else if(elementType.equals("edge")){
-      query = "select @rid as id, FullName, in, out from E"
+      //query = "select @rid as id, FullName, in, out from E"
+      query = "select @this.toJSON() as jsonrec from (select @rid as @rid, @class as @class, FullName, in ,out from E)"
     } else if(elementType.equals("class")){
       query = "select distinct(@class) from %s".format(extendClass.get)
     }
@@ -90,9 +95,13 @@ class QueryBuilder extends LogTrait {
     val data = HashMap[String, String]()
     val stmt: Statement = conn.createStatement()
     val result: ResultSet = stmt.executeQuery(query)
+    var json: json4s.JValue = null
     while (result.next()){
       //data +=  (result.getString(1) -> result.getString(2))
-      data +=  (result.getString("id") -> result.getString("FullName"))
+      json = parse(result.getString("jsonrec"))
+      val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
+      //data +=  (result.getString("id") -> result.getString("FullName"))
+      data += (adapCfgValues.get("@rid").get.toString -> adapCfgValues.get("FullName").get.toString)
     }
     return data
   }
@@ -102,11 +111,16 @@ class QueryBuilder extends LogTrait {
     val stmt: Statement = conn.createStatement()
     val result: ResultSet = stmt.executeQuery(query)
     var Key = ""
+    var json: json4s.JValue = null
     while (result.next()){
-      val linkFrom = result.getString("in").substring(result.getString("in").indexOf("#"),result.getString("in").indexOf("{"))
-      val linkTo = result.getString("out").substring(result.getString("out").indexOf("#"),result.getString("out").indexOf("{"))
+      json = parse(result.getString("jsonrec"))
+      val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
+      //val linkFrom = result.getString("in").substring(result.getString("in").indexOf("#"),result.getString("in").indexOf("{"))
+      val linkFrom = adapCfgValues.get("in").get.toString
+      //val linkTo = result.getString("out").substring(result.getString("out").indexOf("#"),result.getString("out").indexOf("{"))
+      val linkTo = adapCfgValues.get("out").get.toString
       Key = linkFrom + "," + linkTo
-      data +=  (Key -> result.getString("FullName"))
+      data +=  (Key -> adapCfgValues.get("FullName").get.toString )
     }
     return data
   }

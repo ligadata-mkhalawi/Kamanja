@@ -143,13 +143,13 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
      var extendsClass = "KamanjaVertex"
      for (className <- classesName) {
       // if (!data.contains(className)) {
-         if (className.equals("KamanjaVertex")) extendsClass = "V"
+         if (className.equalsIgnoreCase("KamanjaVertex")) extendsClass = "V"
          val createClassQuery = queryObj.createQuery(elementType = "class", className = className, setQuery = "", extendsClass = Option(extendsClass))
          val existFlag = queryObj.createclassInDB(conn, createClassQuery)
        if(existFlag == false){
          logger.info(createClassQuery)
          println(createClassQuery)
-         if (className.equals("KamanjaVertex")) {
+         if (className.equalsIgnoreCase("KamanjaVertex")) {
            val propertyList = queryObj.getAllProperty("KamanjaVertex")
            for (prop <- propertyList) {
              queryObj.executeQuery(conn, prop)
@@ -169,13 +169,13 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
      extendsClass = "KamanjaEdge"
      for (className <- classesName) {
        //if (!data.contains(className)) {
-         if (className.equals("KamanjaEdge")) extendsClass = "E"
+         if (className.equalsIgnoreCase("KamanjaEdge")) extendsClass = "E"
          val createClassQuery = queryObj.createQuery(elementType = "class", className = className, setQuery = "", extendsClass = Option(extendsClass))
          val existFlag = queryObj.createclassInDB(conn, createClassQuery)
          if(existFlag == false){
          logger.info(createClassQuery)
          println(createClassQuery)
-         if (className.equals("KamanjaEdge")) {
+         if (className.equalsIgnoreCase("KamanjaEdge")) {
            val propertyList = queryObj.getAllProperty("KamanjaEdge")
            for (prop <- propertyList) {
              queryObj.executeQuery(conn, prop)
@@ -313,15 +313,15 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
            val inputName = model.inputMsgSets
            for (msg <- inputName)
              for (msg1 <- msg) {
-               if (adapterMessage._2.messageName.equals(msg1.message)) {
+               if (adapterMessage._2.messageName.equalsIgnoreCase(msg1.message)) {
                  for (vertex <- verticesDataNew) {
-                   if (vertex._2.equals(adapterMessage._2.adapterName)) {
+                   if (vertex._2.equalsIgnoreCase(adapterMessage._2.adapterName)) {
                      adapterId = vertex._1
-                     adapterId = adapterId.substring(adapterId.indexOf("#"), adapterId.indexOf("{"))
+                     //adapterId = adapterId.substring(adapterId.indexOf("#"), adapterId.indexOf("{"))
                    } //id of adpater
-                   if (vertex._2.equals(model.FullName)) {
+                   if (vertex._2.equalsIgnoreCase(model.FullName)) {
                      vertexId = vertex._1
-                     vertexId = vertexId.substring(vertexId.indexOf("#"), vertexId.indexOf("{"))
+                    // vertexId = vertexId.substring(vertexId.indexOf("#"), vertexId.indexOf("{"))
                    } //id of vertex
                  }
                }
@@ -330,7 +330,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
                  if (!edgeData.contains(linkKey)) {
                    if (!msgDefs.isEmpty) {
                      for (message <- msgDefs.get) {
-                       if (message.FullName.equals(msg1.message)) {
+                       if (message.FullName.equalsIgnoreCase(msg1.message)) {
                          val setQuery = queryObj.createSetCommand(message = Option(message))
                          val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkTo = Option(vertexId), linkFrom = Option(adapterId))
                          queryObj.executeQuery(conn, query)
@@ -355,13 +355,13 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
              //println("output message : " + item)
              //             var adapterId = ""
              //             var vertexId = ""
-             if (adapterMessage._2.messageName.equals(item)) {
+             if (adapterMessage._2.messageName.equalsIgnoreCase(item)) {
                for (vertex <- verticesDataNew) {
-                 if (vertex._2.equals(adapterMessage._2.adapterName)) {
+                 if (vertex._2.equalsIgnoreCase(adapterMessage._2.adapterName)) {
                    adapterId = vertex._1
-                   adapterId = adapterId.substring(adapterId.indexOf("#"), adapterId.indexOf("{"))
+                  // adapterId = adapterId.substring(adapterId.indexOf("#"), adapterId.indexOf("{"))
                  } //id of adpater
-                 //                 if (vertex._2.equals(model.FullName)) {
+                 //                 if (vertex._2.equalsIgnoreCase(model.FullName)) {
                  //                   vertexId = vertex._1
                  //                   vertexId = vertexId.substring(vertexId.indexOf("#"),vertexId.indexOf("{"))
                  //                 } //id of vertex
@@ -372,7 +372,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
                if (!edgeData.contains(linkKey)) {
                  if (!msgDefs.isEmpty) {
                    for (message <- msgDefs.get) {
-                     if (message.FullName.equals(item)) {
+                     if (message.FullName.equalsIgnoreCase(item)) {
                        val setQuery = queryObj.createSetCommand(message = Option(message))
                        val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkFrom = Option(vertexId), linkTo = Option(adapterId))
                        queryObj.executeQuery(conn, query)
@@ -392,13 +392,13 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
        ////// high level ////////
        var messageid = ""
        for (vertex <- verticesDataNew) {
-         if (vertex._2.equals(adapterMessage._2.adapterName)) {
+         if (vertex._2.equalsIgnoreCase(adapterMessage._2.adapterName)) {
            adapterId = vertex._1
-           adapterId = adapterId.substring(adapterId.indexOf("#"), adapterId.indexOf("{"))
+          // adapterId = adapterId.substring(adapterId.indexOf("#"), adapterId.indexOf("{"))
          } //id of adpater
-         if (vertex._2.equals(adapterMessage._2.messageName)) {
+         if (vertex._2.equalsIgnoreCase(adapterMessage._2.messageName)) {
            messageid = vertex._1
-           messageid = messageid.substring(messageid.indexOf("#"), messageid.indexOf("{"))
+         //  messageid = messageid.substring(messageid.indexOf("#"), messageid.indexOf("{"))
          } //id of message
        }
 
@@ -450,13 +450,13 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
          for (msg <- inputName)
            for (msg1 <- msg) {
                for (vertex <- verticesDataNew) {
-                 if (vertex._2.equals(msg1.message)) {
+                 if (vertex._2.equalsIgnoreCase(msg1.message)) {
                    messageId = vertex._1
-                   messageId = messageId.substring(messageId.indexOf("#"), messageId.indexOf("{"))
+                //   messageId = messageId.substring(messageId.indexOf("#"), messageId.indexOf("{"))
                  } //id of adpater
-                 if (vertex._2.equals(model.FullName)) {
+                 if (vertex._2.equalsIgnoreCase(model.FullName)) {
                    vertexId = vertex._1
-                   vertexId = vertexId.substring(vertexId.indexOf("#"),vertexId.indexOf("{"))
+                //   vertexId = vertexId.substring(vertexId.indexOf("#"),vertexId.indexOf("{"))
                  } //id of vertex
                }
              if (messageId.length != 0 && vertexId.length != 0) {
@@ -464,7 +464,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
                if (!edgeData.contains(linkKey)) {
                  if (!msgDefs.isEmpty) {
                    for (message <- msgDefs.get) {
-                     if (message.FullName.equals(msg1.message)) {
+                     if (message.FullName.equalsIgnoreCase(msg1.message)) {
                        val setQuery = "set Name = \"%s\"".format("ConsumedBy")
                        val query: String = queryObj.createQuery(elementType = "edge", className = "ConsumedBy", setQuery = setQuery, linkTo = Option(vertexId), linkFrom = Option(messageId))
                        queryObj.executeQuery(conn, query)
@@ -486,9 +486,9 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
          val outputName = model.outputMsgs
          for (item <- outputName) {
              for (vertex <- verticesDataNew) {
-               if (vertex._2.equals(item)) {
+               if (vertex._2.equalsIgnoreCase(item)) {
                  messageId = vertex._1
-                 messageId = messageId.substring(messageId.indexOf("#"), messageId.indexOf("{"))
+               //  messageId = messageId.substring(messageId.indexOf("#"), messageId.indexOf("{"))
                } //id of adpater
              }
            if (messageId.length != 0 && vertexId.length != 0) {
@@ -496,7 +496,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
              if (!edgeData.contains(linkKey)) {
                if (!msgDefs.isEmpty) {
                  for (message <- msgDefs.get) {
-                   if (message.FullName.equals(item)) {
+                   if (message.FullName.equalsIgnoreCase(item)) {
                      val setQuery = "set Name = \"%s\"".format("Produces")
                      val query: String = queryObj.createQuery(elementType = "edge", className = "Produces", setQuery = setQuery, linkTo = Option(messageId), linkFrom = Option(vertexId))
                      queryObj.executeQuery(conn, query)
