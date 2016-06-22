@@ -86,6 +86,10 @@ class GetAllObjectKeysService(requestContext: RequestContext, userid:Option[Stri
       case "type" => {
 	      apiResult = MetadataAPIImpl.GetAllTypesFromCache(true,userid)
       }
+      case "adaptermessagebinding" => {
+        val allBindings = AdapterMessageBindingUtils.ListAllAdapterMessageBindings
+        return new ApiResult (ErrorCodeConstants.Success, "ListAllAdapterMessageBindings", constructAdaperMsgBindingsResults(allBindings), "").toString
+      }
       case _ => {
          apiResult = Array[String]("The " + objectType + " is not supported yet ")
          return new ApiResult(ErrorCodeConstants.Failure, APIName, null,  "Invalid URL:" + apiResult.mkString).toString
@@ -100,6 +104,14 @@ class GetAllObjectKeysService(requestContext: RequestContext, userid:Option[Stri
     val objectList = GetAllObjectKeys(objectType)
     logger.debug(APIName + "(results):" + objectList)
     requestContext.complete(objectList)
+  }
+
+  private def constructAdaperMsgBindingsResults(bindings: scala.collection.immutable.Map[String,AdapterMessageBinding]): String = {
+    if (bindings == null || bindings.size == 0) {return ""}
+    val result = bindings.values.map(binding => {
+      binding.FullBindingName
+    }).toArray.mkString(":")
+    return result
   }
 }
 

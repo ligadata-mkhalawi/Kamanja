@@ -198,7 +198,6 @@ object TypeUtils {
             MetadataAPIImpl.DeleteObject(ts.asInstanceOf[BaseElemDef])
             ts.tranId = MetadataAPIImpl.GetNewTranId
             MetadataAPIImpl.UpdateTranId(Array(ts))
-
           }
           var apiResult=new ApiResult(ErrorCodeConstants.Success, "RemoveType", null, ErrorCodeConstants.Remove_Type_Successful + ":" + dispkey)
           apiResult.toString()

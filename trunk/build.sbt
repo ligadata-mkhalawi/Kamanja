@@ -6,11 +6,11 @@ sbtPlugin := true
 //version := "0.0.0.1"
 
 //lazy val kamanjaVersion = settingKey[String]("kamanjaVersion")
-// kamanjaVersion := "1.4.0"
+// kamanjaVersion := "1.5.0"
 
 //scalaVersion := "2.11.7"
 
-//kamanjaVersion in ThisBuild := "1.4.0"
+//kamanjaVersion in ThisBuild := "1.5.0"
 
 crossScalaVersions := Seq("2.11.7", "2.10.4")
 
@@ -49,7 +49,7 @@ lazy val ExtDependencyLibs2 = project.in(file("ExtDependencyLibs2")).configs(Tes
 lazy val KamanjaInternalDeps = project.in(file("KamanjaInternalDeps")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", InputOutputAdapterBase, Exceptions, DataDelimiters, Metadata, KamanjaBase, MetadataBootstrap,
   Serialize, ZooKeeperListener, ZooKeeperLeaderLatch, KamanjaUtils, TransactionService, StorageManager, PmmlCompiler, ZooKeeperClient, OutputMsgDef, SecurityAdapterBase, HeartBeat,
   JpmmlFactoryOfModelInstanceFactory, JarFactoryOfModelInstanceFactory, KamanjaVersion, InstallDriverBase, BaseFunctions, KafkaSimpleInputOutputAdapters, FileSimpleInputOutputAdapters, SimpleEnvContextImpl,
-  GenericMsgCompiler, MethodExtractor, MetadataAPIServiceClient, JsonDataGen, Controller, AuditAdapters, CustomUdfLib, UtilityService,
+  GenericMsgCompiler, MethodExtractor, JsonDataGen, Controller, AuditAdapters, CustomUdfLib, UtilityService,
   UtilsForModels, MessageCompiler, jtm, Dag, NodeInfoExtract, SmartFileAdapter, Cache, CacheImp, CsvSerDeser, JsonSerDeser, KBinarySerDeser)
 
 ////////////////////////
@@ -216,9 +216,13 @@ lazy val MigrateManager = project.in(file("Utils/Migrate/MigrateManager")).confi
 
 lazy val MigrateFrom_V_1_2 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_2")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(MigrateBase)
 
-lazy val MigrateTo_V_1_4 = project.in(file("Utils/Migrate/DestinationVersion/MigrateTo_V_1_4")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(MigrateBase, KamanjaManager)
-
 lazy val MigrateFrom_V_1_3 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_3")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(MigrateBase)
+
+lazy val MigrateFrom_V_1_4 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_4")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(MigrateBase,MetadataAPI)
+
+lazy val MigrateFrom_V_1_4_1 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_4_1")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(MigrateBase,MetadataAPI)
+
+lazy val MigrateTo_V_1_5_0 = project.in(file("Utils/Migrate/DestinationVersion/MigrateTo_V_1_5_0")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(MigrateBase, KamanjaManager)
 
 lazy val InstallDriverBase = project.in(file("Utils/ClusterInstaller/InstallDriverBase")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided")
 
@@ -233,6 +237,9 @@ lazy val PmmlTestTool = project.in(file("Utils/PmmlTestTool")).configs(TestConfi
 lazy val GenerateAdapterBindings = project.in(file("Utils/Migrate/GenerateAdapterBindings")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided")
 
 lazy val HttpEndpoint = project.in(file("Utils/HttpEndpoint")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*)
+
+lazy val DemoKafkaProducer = project.in(file("Utils/DemoKafkaProducer")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(KamanjaVersion)
+
 
 /*
 val commonSettings = Seq(

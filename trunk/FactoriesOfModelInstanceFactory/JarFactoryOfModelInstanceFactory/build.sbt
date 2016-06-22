@@ -1,6 +1,6 @@
 name := "JarFactoryOfModelInstanceFactory"
 
-version := "1.4.0"
+version := "1.5.0"
 
 //resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 //

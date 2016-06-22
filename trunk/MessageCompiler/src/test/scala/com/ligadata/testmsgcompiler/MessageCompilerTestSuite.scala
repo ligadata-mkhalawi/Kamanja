@@ -40,7 +40,7 @@ class MessageCompilerTestSuite extends FunSuite {
     var hl7Fixed: HL7Fixed = new HL7Fixed(HL7Fixed);
     hl7Fixed.set(0, "120024000")
     hl7Fixed.setTimePartitionData();
-    assert(hl7Fixed.getTimePartitionData === 126230400000L)
+    assert(hl7Fixed.getTimePartitionData === 94694400000L)
   }
 
   test("Test Fixed Message - InpatientClaimFixedTest") {

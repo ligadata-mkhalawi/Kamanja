@@ -421,6 +421,10 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       })
 
     } catch {
+      case e: java.lang.InterruptedException => {
+        // Not doing anythign for now
+        LOG.warn(qc.Name + " KAFKA PRODUCER: Got java.lang.InterruptedException. isShutdown:" + isShutdown)
+      }
       case fae: FatalAdapterException => throw fae
       case e: Exception               => throw FatalAdapterException("Unknown exception", e)
       case e: Throwable               => throw FatalAdapterException("Unknown exception", e)

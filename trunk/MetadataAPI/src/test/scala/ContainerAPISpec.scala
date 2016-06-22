@@ -53,6 +53,7 @@ class ContainerAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
 	var fileList: List[String] = null
 	var newVersion: String = null
 	val userid: Option[String] = Some("test")
+	val tenantid: Option[String] = Some("testtenant")
 
 	private val loggerName = this.getClass.getName
 	private val logger = LogManager.getLogger(loggerName)
@@ -299,15 +300,14 @@ class ContainerAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
 				And("GetContainerDef API to fetch the container that may not even exist, check for Status Code of -1")
 				objName = f1.stripSuffix(".json").toLowerCase
 				version = "0000000000001000000"
-				res = MetadataAPIImpl.GetContainerDef("system", objName, "JSON", version, None)
+				res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", version, None)
 				res should include regex ("\"Status Code\" : -1")
 
 				And("AddContainer first time from " + file.getPath)
 				contStr = Source.fromFile(file).mkString
-				println("HERE IS MY METADATA CONFIGURATION!!!!!!!!!!!")
 				MetadataAPIImpl.dumpMetadataAPIConfig
 
-				res = MetadataAPIImpl.AddContainer(contStr, "JSON", None)
+				res = MetadataAPIImpl.AddContainer(contStr, "JSON", userid, tenantid)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("GetAllContainerDefs API to fetch the containers that were just added")
@@ -315,7 +315,7 @@ class ContainerAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
 			        logger.info("Containers => " + res)
 
 				And("GetContainerDef API to fetch the container that was just added")
-				res = MetadataAPIImpl.GetContainerDef("system", objName, "JSON", version, None)
+				res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", version, None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("AddContainer second time from " + file.getPath + ",should result in error")
@@ -324,65 +324,65 @@ class ContainerAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
 				res should include regex ("\"Status Code\" : -1")
 
 				And("RemoveContainer API for the container that was just added")
-				res = MetadataAPIImpl.RemoveContainer(objName, 1000000, None)
+				res = MetadataAPIImpl.RemoveContainer("com.ligadata.kamanja.samples.containers", objName, version.toLong, None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("GetContainerDef API to fetch the container that was just removed, should fail, check for Status Code of -1")
-				res = MetadataAPIImpl.GetContainerDef("system", objName, "JSON", version, None)
+				res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", version, None)
 				res should include regex ("\"Status Code\" : -1")
 
 				And("AddContainer again to add Container from " + file.getPath)
 				contStr = Source.fromFile(file).mkString
-				res = MetadataAPIImpl.AddContainer(contStr, "JSON", None)
+				res = MetadataAPIImpl.AddContainer(contStr, "JSON", None, tenantid)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("GetContainerDef API to fetch  the container that was just added")
-				res = MetadataAPIImpl.GetContainerDef("system", objName, "JSON", version, None)
+				res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", version, None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("Get the container object from the cache")
-				o = MdMgr.GetMdMgr.Container("system", objName, version.toLong, true)
+				o = MdMgr.GetMdMgr.Container("com.ligadata.kamanja.samples.containers", objName, version.toLong, true)
 				assert(o != None)
 
 				And("Deactivate container that was just added")
 				MetadataAPIImpl.DeactivateObject(o.get.asInstanceOf[BaseElemDef])
 
 				And("Get the active container object from the cache after deactivating")
-				o = MdMgr.GetMdMgr.Container("system", objName, version.toLong, true)
+				o = MdMgr.GetMdMgr.Container("com.ligadata.kamanja.samples.containers", objName, version.toLong, true)
 				assert(o == None)
 
 				And("Make sure the container object from the cache nolonger active ")
-				o = MdMgr.GetMdMgr.Container("system", objName, version.toLong, false)
+				o = MdMgr.GetMdMgr.Container("com.ligadata.kamanja.samples.containers", objName, version.toLong, false)
 				assert(o != None)
 
 				And("Activate container that was just deactivated")
 				MetadataAPIImpl.ActivateObject(o.get.asInstanceOf[BaseElemDef])
 
 				And("Make sure the container object from the cache is active")
-				o = MdMgr.GetMdMgr.Container("system", objName, version.toLong, true)
+				o = MdMgr.GetMdMgr.Container("com.ligadata.kamanja.samples.containers", objName, version.toLong, true)
 				assert(o != None)
 
 				And("Update the container without changing version number, should fail ")
-				res = MetadataAPIImpl.UpdateContainer(contStr, "JSON")
+				res = MetadataAPIImpl.UpdateContainer(contStr, "JSON", userid, tenantid)
 				res should include regex ("\"Status Code\" : -1")
 
 				And("Clone the input json and update the version number to simulate a container for an update operation")
 				contStr = contStr.replaceFirst("01.00", "01.01")
 				assert(contStr.indexOf("\"00.01.01\"") >= 0)
-				res = MetadataAPIImpl.UpdateContainer(contStr, "JSON")
+				res = MetadataAPIImpl.UpdateContainer(contStr, "JSON", userid, tenantid)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("GetContainerDef API to fetch the container that was just updated")
 				newVersion = "0000000000001000001"
-				res = MetadataAPIImpl.GetContainerDef("system", objName, "JSON", newVersion, None)
+				res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", newVersion, None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("Get the active container object from the cache after updating")
-				o = MdMgr.GetMdMgr.Container("system", objName, newVersion.toLong, true)
+				o = MdMgr.GetMdMgr.Container("com.ligadata.kamanja.samples.containers", objName, newVersion.toLong, true)
 				assert(o != None)
 
 				And("Make sure old(pre update version) container object nolonger active after the update")
-				o = MdMgr.GetMdMgr.Container("system", objName, version.toLong, true)
+				o = MdMgr.GetMdMgr.Container("com.ligadata.kamanja.samples.containers", objName, version.toLong, true)
 				assert(o == None)
 			})
 		}

@@ -77,6 +77,8 @@ class CompilerProxy {
 
       var config = MdMgr.GetMdMgr.GetModelConfig(modelConfigName.toLowerCase)
       var modCfgJson = JsonSerializer.SerializeModelConfigToJson(modelConfigName, config)
+      
+      logger.info("modCfgJson => " + modCfgJson)
 
       val ((modelNamespace, modelName, modelVersion, pname, mdlFactory, loaderInfo, modConfigName), repackagedCode, tempPackage) = parseSourceForMetadata(sourceCode, modelConfigName, sourceLang, msgDefClassFilePath, classPath, elements, userid)
       var inputMsgSets =
@@ -790,6 +792,13 @@ class CompilerProxy {
 
       val modelType: String = if (sourceLang.equalsIgnoreCase("scala")) "Scala" else "Java"
       val ownerId: String = if (userid == None) "kamanja" else userid.get
+
+      // filter the 3 fat jars from dependent jars before creating ModelDef
+      val jarsToBeExcludedRegEx = "ExtDependencyLibs.*jar|KamanjaInternalDeps.*jar".r
+      var depJars1 = deps.filter(x => ! jarsToBeExcludedRegEx.pattern.matcher(x).matches)
+      logger.debug("deps => " + deps.toList)
+      logger.debug("deps => " + depJars1.toList)
+      
       val modDef: ModelDef = MdMgr.GetMdMgr.MakeModelDef(modelNamespace
         , modelName
         , pName
@@ -802,10 +811,11 @@ class CompilerProxy {
         , MiningModelType.modelType(modelType)
         , MdMgr.ConvertVersionToLong(MdMgr.FormatVersion(modelVersion))
         , jarFileName
-        , deps.toArray[String]
+        , depJars1.toArray[String]
         , recompile
         , false
-        , modCfgJson)
+        , modCfgJson
+	, MessageAndContainerUtils.getContainersFromModelConfig(None,modelConfigName))
 
       // Need to set some values by hand here.
       modDef.jarName = jarFileName
@@ -889,13 +899,15 @@ class CompilerProxy {
     elements.foreach(elem => {
       var eName: Array[String] = elem.PhysicalName.split('.').map(_.trim)
       if ((eName.length - 1) > 0) {
-        typeNamespace = new Array[String](eName.length - 1)
+        //eName has the format com.x.y.V0001.ClassName so to get namespace must exclude last two tokens
+        typeNamespace = new Array[String](eName.length - 2)
         for (i <- 0 until typeNamespace.length) {
           typeNamespace(i) = eName(i)
         }
         var typeClassName: String = eName(eName.length - 1)
         // Replace the "import com...ClassName" import statement
-        repackagedCode = repackagedCode.replaceAll(("\\s*import\\s*" + typeNamespace.mkString(".") + "[.*]" + typeClassName + "\\;*"), "")
+        repackagedCode = repackagedCode.replaceAll(("\\s*import\\s*" + typeNamespace.mkString(".") + "\\." + typeClassName + "\\;*"), "")
+        repackagedCode = repackagedCode.replaceAll(("\\s*import\\s*" + typeNamespace.mkString(".") + "\\.[Vv].*\\." + typeClassName + "\\;*"), "")
       }
     })
 
@@ -906,11 +918,14 @@ class CompilerProxy {
     }
 
     //Replace the "import com....*;" statement - JAVA STYLE IMPORT ALL
-    repackagedCode = repackagedCode.replaceAll(("\\s*import\\s*" + typeNamespace.mkString(".") + "[.*]" + "\\*\\;*"), "")
+    repackagedCode = repackagedCode.replaceAll(("\\s*import\\s*" + typeNamespace.mkString(".") + "\\." + "\\*\\;*"), "")
+    repackagedCode = repackagedCode.replaceAll(("\\s*import\\s*" + typeNamespace.mkString(".") + "\\.[Vv].*\\." + "\\*\\;*"), "")
     // Replace the "import com...._;" type of statement  - SCALA STYLE IMPORT ALL
-    repackagedCode = repackagedCode.replaceAll(("\\s*import\\s*" + typeNamespace.mkString(".") + "[.*]" + "_\\;*"), "")
+    repackagedCode = repackagedCode.replaceAll(("\\s*import\\s*" + typeNamespace.mkString(".") + "\\." + "_\\;*"), "")
+    repackagedCode = repackagedCode.replaceAll(("\\s*import\\s*" + typeNamespace.mkString(".") + "\\.[Vv].*\\." + "_\\;*"), "")
     // Replace the "import com....{xxx};" type of statement  - SCALA STYLE IMPORT SPECIFIC CLASSES IN BATCH
-    repackagedCode = repackagedCode.replaceAll("\\s*import\\s*" + typeNamespace.mkString(".") + "\\.\\{.*?\\}", "")
+    repackagedCode = repackagedCode.replaceAll("\\s*import\\s*" + typeNamespace.mkString(".") + "\\.\\{.*?\\}\\;*", "")
+    repackagedCode = repackagedCode.replaceAll("\\s*import\\s*" + typeNamespace.mkString(".") + "\\.[Vv].*\\.\\{.*?\\}\\;*", "")
 
     // Add all the needed imports - have to recalculate the beginning of the imports in the original source code, since a bunch of imports were
     // removed.

@@ -35,7 +35,7 @@ object StartMetadataAPI {
 
   var response=""
   //get default config
-  val defaultConfig = scala.util.Properties.envOrElse("KAMANJA_HOME", scala.util.Properties.envOrElse("HOME", "~" )) + "/config/MetadataAPIConfig.properties"
+  val defaultConfig = scala.util.Properties.envOrElse("KAMANJA_HOME", scala.util.Properties.envOrElse("HOME", "~")) + "/config/MetadataAPIConfig.properties"
   val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
   var action = ""
@@ -58,11 +58,14 @@ object StartMetadataAPI {
   var depName: String = ""
   var parmName: String = ""
   val MODELNAME = "MODELNAME"
-  val MODELVERSION= "MODELVERSION"
-  val MESSAGENAME="MESSAGENAME"
-  val CONTAINERNAME="CONTAINERNAME"
-  val TYPENAME="TYPENAME"
-  val FUNCTIONNAME="FUNCTIONNAME"
+  val MODELVERSION = "MODELVERSION"
+  val MESSAGENAME = "MESSAGENAME"
+  val CONTAINERNAME = "CONTAINERNAME"
+  val TYPENAME = "TYPENAME"
+  val FUNCTIONNAME = "FUNCTIONNAME"
+
+  val SCHEMAID = "SCHEMAID"
+  val ELEMENTID = "ELEMENTID"
 
   /** AdapterMessageBinding tags */
   val FROMFILE="FROMFILE"
@@ -71,9 +74,9 @@ object StartMetadataAPI {
   val ADAPTERMESSAGEBINDING = "ADAPTERMESSAGEBINDING"
 
   /** List AdapterMessageBinding filters */
-  val ADAPTERFILTER="ADAPTERFILTER"
-  val MESSAGEFILTER="MESSAGEFILTER"
-  val SERIALIZERFILTER="SERIALIZERFILTER"
+  val ADAPTERFILTER = "ADAPTERFILTER"
+  val MESSAGEFILTER = "MESSAGEFILTER"
+  val SERIALIZERFILTER = "SERIALIZERFILTER"
 
   var expectModelName = false
   var expectModelVer = false
@@ -90,9 +93,11 @@ object StartMetadataAPI {
   var expectMessageFilter = false
   var expectSerializerFilter = false
   var expectOutputMsg = false
-  var varmap: scala.collection.mutable.Map[String,String] = scala.collection.mutable.Map[String,String]()
+  var varmap: scala.collection.mutable.Map[String, String] = scala.collection.mutable.Map[String, String]()
   var expectTid: Boolean = false
   var expectMDep: Boolean = false
+  var expectSchemaId = false
+  var expectElementId = false
 
   val extraCmdArgs = mutable.Map[String, String]()
 
@@ -105,116 +110,133 @@ object StartMetadataAPI {
     /** FIXME: the user id should be discovered in the parse of the args array */
     val userId: Option[String] = Some("kamanja")
     try {
-      val jsonBuffer : StringBuilder = new StringBuilder
+      val jsonBuffer: StringBuilder = new StringBuilder
 
       args.foreach(arg => {
 
-          if (arg.endsWith(".json")
-              || arg.endsWith(".jtm")
-              || arg.endsWith(".xml")
-              || arg.endsWith(".pmml")
-              || arg.endsWith(".scala")
-              || arg.endsWith(".java")
-              || arg.endsWith(".jar")) {
-            extraCmdArgs(INPUTLOC) = arg
-            if (expectBindingFromFile) { /** the json test above can prevent the ordinary catch of the name below */
-              extraCmdArgs(FROMFILE) = extraCmdArgs.getOrElse(INPUTLOC,null)
-              expectBindingFromFile = false
-            }
+        if (arg.endsWith(".json")
+          || arg.endsWith(".jtm")
+          || arg.endsWith(".xml")
+          || arg.endsWith(".pmml")
+          || arg.endsWith(".scala")
+          || arg.endsWith(".java")
+          || arg.endsWith(".jar")) {
+          extraCmdArgs(INPUTLOC) = arg
+          if (expectBindingFromFile) {
+            /** the json test above can prevent the ordinary catch of the name below */
+            extraCmdArgs(FROMFILE) = extraCmdArgs.getOrElse(INPUTLOC, null)
+            expectBindingFromFile = false
+          }
 
-          } else if (arg.endsWith(".properties")) {
-              config = arg
-          } else {
-              if (arg != "debug") {
-                  /** ignore the debug tag */
-                  if (arg.equalsIgnoreCase(TENANTID)) {
-                      expectTid = true
-                      extraCmdArgs(TENANTID) = ""
-                  } else if (arg.equalsIgnoreCase(WITHDEP)) {
-                      expectDep = true
-                      extraCmdArgs(WITHDEP) = ""
-                  } else if (arg.equalsIgnoreCase(MODELNAME)) {
-                      expectModelName = true
-                  } else if (arg.equalsIgnoreCase(MODELVERSION)) {
-                      expectModelVer = true
-                  } else if (arg.equalsIgnoreCase(MESSAGENAME)) {
-                      expectMessageName = true
-                  } else if (arg.equalsIgnoreCase(OUTPUTMSG)) {
-                      expectOutputMsg = true
-                  } else if (arg.equalsIgnoreCase(KEY)) {
-                      expectRemoveBindingKey = true
-                  } else if (arg.equalsIgnoreCase(FROMFILE)) {
-                      expectBindingFromFile = true
-                  } else if (arg.equalsIgnoreCase(FROMSTRING)) {
-                      expectBindingFromString = true
-                  } else if (arg.equalsIgnoreCase(ADAPTERFILTER)) {
-                      expectAdapterFilter = true
-                  } else if (arg.equalsIgnoreCase(MESSAGEFILTER)) {
-                      expectMessageFilter = true
-                  } else if (arg.equalsIgnoreCase(SERIALIZERFILTER)) {
-                      expectSerializerFilter = true
-                  } else {
-                      var argVar = arg
-                      if (expectTid) {
-                          extraCmdArgs(TENANTID) = arg
-                          expectTid = false
-                          argVar = "" // Make sure we don't add to the routing command
-                      }
-                      if (expectDep) {
-                          extraCmdArgs(WITHDEP) = arg
-                          expectDep = false
-                          argVar = "" // Make sure we don't add to the routing command
-                      }
-                      if (expectModelName) {
-                          extraCmdArgs(MODELNAME) = arg
-                          expectModelName = false
-                          argVar = "" // Make sure we don't add to the routing command
-                      }
-                      if (expectModelVer) {
-                          extraCmdArgs(MODELVERSION) = arg
-                          expectModelVer = false
-                          argVar = "" // Make sure we don't add to the routing command
-                      }
-                      if (expectMessageName) {
-                          extraCmdArgs(MESSAGENAME) = arg
-                          expectMessageName = false
-                          argVar = "" // Make sure we don't add to the routing command
-                      }
-                      if (expectOutputMsg) {
-                          extraCmdArgs(OUTPUTMSG) = arg
-                          expectOutputMsg = false
-                          argVar = "" // Make sure we don't add to the routing command
-                      }
-                      if (expectRemoveBindingKey) {
-                          expectRemoveBindingKey = false
-                          extraCmdArgs(Action.REMOVEADAPTERMESSAGEBINDING.toString) = arg
-                          argVar = "" // Make sure we don't add to the routing command
-                      }
-                      if (expectBindingFromString) {
-                          extraCmdArgs(FROMSTRING) = arg
-                          expectBindingFromString = false
-                          argVar = "" // Make sure we don't add to the routing command
-                      }
-                      if (expectBindingFromFile) {
-                          extraCmdArgs(FROMFILE) = arg
-                          expectBindingFromFile = false
-                          argVar = "" // Make sure we don't add to the routing command
-                      }
-                      if (expectAdapterFilter) {
-                          extraCmdArgs(ADAPTERFILTER) = arg
-                          expectAdapterFilter = false
-                          argVar = "" // Make sure we don't add to the routing command
-                      }
-                      if (expectMessageFilter) {
-                          extraCmdArgs(MESSAGEFILTER) = arg
-                          expectMessageFilter = false
-                          argVar = "" // Make sure we don't add to the routing command
-                      }
-                      if (expectSerializerFilter) {
-                          extraCmdArgs(SERIALIZERFILTER) = arg
-                          expectSerializerFilter = false
-                          argVar = "" // Make sure we don't add to the routing command
-                      }
+        } else if (arg.endsWith(".properties")) {
+          config = arg
+        } else {
+          if (arg != "debug") {
+            /** ignore the debug tag */
+            if (arg.equalsIgnoreCase(TENANTID)) {
+              expectTid = true
+              extraCmdArgs(TENANTID) = ""
+            } else if (arg.equalsIgnoreCase(WITHDEP)) {
+              expectDep = true
+              extraCmdArgs(WITHDEP) = ""
+            } else if (arg.equalsIgnoreCase(MODELNAME)) {
+              expectModelName = true
+            } else if (arg.equalsIgnoreCase(MODELVERSION)) {
+              expectModelVer = true
+            } else if (arg.equalsIgnoreCase(MESSAGENAME)) {
+              expectMessageName = true
+            } else if (arg.equalsIgnoreCase(OUTPUTMSG)) {
+              expectOutputMsg = true
+            } else if (arg.equalsIgnoreCase(KEY)) {
+              expectRemoveBindingKey = true
+            } else if (arg.equalsIgnoreCase(FROMFILE)) {
+              expectBindingFromFile = true
+            } else if (arg.equalsIgnoreCase(FROMSTRING)) {
+              expectBindingFromString = true
+            } else if (arg.equalsIgnoreCase(ADAPTERFILTER)) {
+              expectAdapterFilter = true
+            } else if (arg.equalsIgnoreCase(MESSAGEFILTER)) {
+              expectMessageFilter = true
+            } else if (arg.equalsIgnoreCase(SERIALIZERFILTER)) {
+              expectSerializerFilter = true
+            } else if (arg.equalsIgnoreCase(SCHEMAID)) {
+              expectSchemaId = true
+              extraCmdArgs(SCHEMAID) = ""
+            } else if (arg.equalsIgnoreCase(ELEMENTID)) {
+              expectElementId = true
+              extraCmdArgs(ELEMENTID) = ""
+            } else {
+              var argVar = arg
+              if (expectTid) {
+                extraCmdArgs(TENANTID) = arg
+                expectTid = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectDep) {
+                extraCmdArgs(WITHDEP) = arg
+                expectDep = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectModelName) {
+                extraCmdArgs(MODELNAME) = arg
+                expectModelName = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectModelVer) {
+                extraCmdArgs(MODELVERSION) = arg
+                expectModelVer = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectMessageName) {
+                extraCmdArgs(MESSAGENAME) = arg
+                expectMessageName = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectOutputMsg) {
+                extraCmdArgs(OUTPUTMSG) = arg
+                expectOutputMsg = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectRemoveBindingKey) {
+                expectRemoveBindingKey = false
+                extraCmdArgs(Action.REMOVEADAPTERMESSAGEBINDING.toString) = arg
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectBindingFromString) {
+                extraCmdArgs(FROMSTRING) = arg
+                expectBindingFromString = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectBindingFromFile) {
+                extraCmdArgs(FROMFILE) = arg
+                expectBindingFromFile = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectAdapterFilter) {
+                extraCmdArgs(ADAPTERFILTER) = arg
+                expectAdapterFilter = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectMessageFilter) {
+                extraCmdArgs(MESSAGEFILTER) = arg
+                expectMessageFilter = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectSerializerFilter) {
+                extraCmdArgs(SERIALIZERFILTER) = arg
+                expectSerializerFilter = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectSchemaId) {
+                extraCmdArgs(SCHEMAID) = arg
+                expectSchemaId = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectElementId) {
+                extraCmdArgs(ELEMENTID) = arg
+                expectElementId = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
 
                       /**
                         * FIXME:
@@ -272,6 +294,7 @@ object StartMetadataAPI {
     }
     catch {
       case e: NoSuchElementException => {
+        println("action trim"+action.trim());
         logger.error("Route not found",e.getMessage)
         /** preserve the original response ... */
         response =   new ApiResult(-1, "StartMetadataAPI", null, e.getMessage).toString
@@ -317,7 +340,7 @@ object StartMetadataAPI {
       println(s"Usage:\n  kamanja <action> <optional input> \n e.g. kamanja add message ${'$'}HOME/msg.json" )
   }
 
-  def route(action: Action.Value, input: String, param: String = "", tenantid: String, originalArgs: Array[String], userId: Option[String] ,extraCmdArgs:immutable.Map[String, String]): String = {
+  def route(action: Action.Value, input: String, param: String = "", tenantid: String, originalArgs: Array[String], userId: Option[String], extraCmdArgs: immutable.Map[String, String]): String = {
     var response = ""
     var fileinquesiton = input
     var optMsgProduced:Option[String] = None
@@ -353,7 +376,7 @@ object StartMetadataAPI {
 
         //model management
         case Action.ADDMODELKPMML => response = ModelService.addModelKPmml(input, userId, optMsgProduced, tid)
-        case Action.ADDMODELJTM => response = ModelService.addModelJTM(input, userId, tid, if (param == null || param.trim.size == 0) None else Some(param.trim))
+        case Action.ADDMODELJTM   => response = ModelService.addModelJTM(input, userId, tid, if (param == null || param.trim.size == 0) None else Some(param.trim))
         case Action.ADDMODELPMML => {
           val modelName: Option[String] = extraCmdArgs.get(MODELNAME)
           val modelVer = extraCmdArgs.getOrElse(MODELVERSION, null)
@@ -368,7 +391,8 @@ object StartMetadataAPI {
                                             , optModelVer
                                             , msgName
                                             , optMsgVer
-                                            , tid)
+                                            , tid
+					    , optMsgProduced)
         }
 
         case Action.ADDMODELSCALA => {
@@ -554,32 +578,34 @@ object StartMetadataAPI {
                     response = AdapterMessageBindingService.removeFromFileAnAdapterMessageBinding(bindingFilePath, userId)
                 }
             }
-        }
+          }
+        
+        
 
         case Action.LISTADAPTERMESSAGEBINDINGS => {
             val adapterfilter: String = extraCmdArgs.getOrElse(ADAPTERFILTER, "")
             val messagefilter: String = extraCmdArgs.getOrElse(MESSAGEFILTER, "")
             val serializerfilter: String = extraCmdArgs.getOrElse(SERIALIZERFILTER, "")
 
-            val filterCnt : Int = (if (adapterfilter.nonEmpty) 1 else 0) +
-                                  (if (messagefilter.nonEmpty) 1 else 0) +
-                                  (if (serializerfilter.nonEmpty) 1 else 0)
-            response = if (filterCnt == 0) {
-                AdapterMessageBindingService.ListAllAdapterMessageBindings
+          val filterCnt: Int = (if (adapterfilter.nonEmpty) 1 else 0) +
+            (if (messagefilter.nonEmpty) 1 else 0) +
+            (if (serializerfilter.nonEmpty) 1 else 0)
+          response = if (filterCnt == 0) {
+            AdapterMessageBindingService.ListAllAdapterMessageBindings
+          } else {
+            if (filterCnt == 1) {
+              if (adapterfilter.nonEmpty) {
+                AdapterMessageBindingService.ListBindingsForAdapter(adapterfilter)
+              } else if (messagefilter.nonEmpty) {
+                AdapterMessageBindingService.ListBindingsForMessage(messagefilter)
+              } else {
+                AdapterMessageBindingService.ListBindingsUsingSerializer(serializerfilter)
+              }
             } else {
-                if (filterCnt == 1) {
-                    if (adapterfilter.nonEmpty) {
-                        AdapterMessageBindingService.ListBindingsForAdapter(adapterfilter)
-                    } else if (messagefilter.nonEmpty) {
-                        AdapterMessageBindingService.ListBindingsForMessage(messagefilter)
-                    } else {
-                        AdapterMessageBindingService.ListBindingsUsingSerializer(serializerfilter)
-                    }
-                } else {
-                    println("Currently only one filter is permitted for the ListAdapterMessageBindings cmd")
-                    throw new RuntimeException(s"Currently only one filter is permitted for the ListAdapterMessageBindings cmd")
-                }
+              println("Currently only one filter is permitted for the ListAdapterMessageBindings cmd")
+              throw new RuntimeException(s"Currently only one filter is permitted for the ListAdapterMessageBindings cmd")
             }
+          }
         }
 
         //concept
@@ -596,39 +622,50 @@ object StartMetadataAPI {
         case Action.DUMPALLCONCEPTSASJSON => response = ConceptService.dumpAllConceptsAsJson
 
         //jar
-        case Action.UPLOADJAR => response = JarService.uploadJar(input)
+        case Action.UPLOADJAR             => response = JarService.uploadJar(input)
 
         //dumps
-        case Action.DUMPMETADATA => response = DumpService.dumpMetadata
-        case Action.DUMPALLNODES => response = DumpService.dumpAllNodes
-        case Action.DUMPALLCLUSTERS => response = DumpService.dumpAllClusters
-        case Action.DUMPALLCLUSTERCFGS => response = DumpService.dumpAllClusterCfgs
-        case Action.DUMPALLADAPTERS => response = DumpService.dumpAllAdapters
+        case Action.DUMPMETADATA          => response = DumpService.dumpMetadata
+        case Action.DUMPALLNODES          => response = DumpService.dumpAllNodes
+        case Action.DUMPALLCLUSTERS       => response = DumpService.dumpAllClusters
+        case Action.DUMPALLCLUSTERCFGS    => response = DumpService.dumpAllClusterCfgs
+        case Action.DUMPALLADAPTERS       => response = DumpService.dumpAllAdapters
+        case Action.GETTYPEBYSCHEMAID => response = {
+          val schemaId: String = extraCmdArgs.getOrElse(SCHEMAID, "")
+          if (schemaId.isEmpty) throw new Exception("Please provide the SchemaId");
+            TypeService.getTypeBySchemaId(schemaId)
+        }
+        case Action.GETTYPEBYELEMENTID => response = {
+          val elementId: String = extraCmdArgs.getOrElse(ELEMENTID, "")
+          if (elementId.isEmpty) throw new Exception("Please provide the ElementId");
+            TypeService.getTypeByElementId(elementId)
+        }
+
         case _ => {
           println(s"Unexpected action! action=$action")
           throw new RuntimeException(s"Unexpected action! action=$action")
         }
       }
-    }
-    catch {
+    } catch {
       case e: java.util.NoSuchElementException => {
-        logger.error("Unable to access route: "+ fileinquesiton)
+        logger.error("Unable to access route: " + fileinquesiton)
         response = new ApiResult(-1, "StartMetadataAPI/route", null, s"Unable to execute command for action = $action").toString
       }
       case fio: java.io.FileNotFoundException => {
-        logger.error("Unable to access file: "+ fileinquesiton)
-        response=new ApiResult(-1, "StartMetadataAPI/route", null, s"Unable to execute command for action = $action").toString
+        logger.error("Unable to access file: " + fileinquesiton)
+        response = new ApiResult(-1, "StartMetadataAPI/route", null, s"Unable to execute command for action = $action").toString
       }
 
       case e: Exception => {
         logger.warn("", e)
         /** tentative answer of unidentified command type failure. */
-        response=new ApiResult(-1, "StartMetadataAPI/route", null,  s"Unexpected action! action = $action").toString
-        /** one more try ... going the alternate route.
-          *
-          * ''Do we still need this ?'' Let's keep it for now.
-          */
-       /*
+        response = new ApiResult(-1, "StartMetadataAPI/route", null, s"Unexpected action! action = $action").toString
+        /**
+         * one more try ... going the alternate route.
+         *
+         * ''Do we still need this ?'' Let's keep it for now.
+         */
+        /*
         val altResponse: String = AltRoute(originalArgs)
         if (altResponse != null) {
             //response = altResponse  ... typically a parse error that is only meaningful for AltRoute processing
@@ -646,149 +683,140 @@ object StartMetadataAPI {
     response
   }
 
-  /** AltRoute is invoked only if the 'Action.withName(action.trim)' method fails to discern the appropriate
-    * MetadataAPI method to invoke.  The command argument array is reconsidered with the AlternateCmdParser
-    * If it produces valid command arguments (a command name and Map[String,String] of arg name/values) **and**
-    * it is a command that we currently support with this mechanism (JPMML related commands are currently supported),
-    * the service module is invoked.
-    *
-    * @param origArgs an Array[String] containing all of the arguments (sans debug if present) originally submitted
-    * @return the response from successfully recognized commands (good or bad) or null if this mechanism couldn't
-    *         make a determination of which command to invoke.  In that case a null is returned and the original
-    *         complaint is returned to the caller.
-    *
-    */
-  def AltRoute(origArgs : Array[String]) : String = {
+  /** NOT USED
+   * AltRoute is invoked only if the 'Action.withName(action.trim)' method fails to discern the appropriate
+   * MetadataAPI method to invoke.  The command argument array is reconsidered with the AlternateCmdParser
+   * If it produces valid command arguments (a command name and Map[String,String] of arg name/values) **and**
+   * it is a command that we currently support with this mechanism (JPMML related commands are currently supported),
+   * the service module is invoked.
+   *
+   * @param origArgs an Array[String] containing all of the arguments (sans debug if present) originally submitted
+   * @return the response from successfully recognized commands (good or bad) or null if this mechanism couldn't
+   *         make a determination of which command to invoke.  In that case a null is returned and the original
+   *         complaint is returned to the caller.
+   *
+   */
+ /* def AltRoute(origArgs: Array[String]): String = {
 
+    /** trim off the config argument and if debugging the "debug" argument as well */
+    val argsSansConfig: Array[String] = if (origArgs != null && origArgs.size > 0 && origArgs(0).toLowerCase == "debug") {
+      origArgs.tail.tail
+    } else {
+      origArgs.tail
+    }
 
-       /** trim off the config argument and if debugging the "debug" argument as well */
-       val argsSansConfig : Array[String] = if (origArgs != null && origArgs.size > 0 && origArgs(0).toLowerCase == "debug") {
-           origArgs.tail.tail
-       } else {
-           origArgs.tail
-       }
+    /** Put the command back together */
+    val buffer: StringBuilder = new StringBuilder
+    argsSansConfig.addString(buffer, " ")
+    val originalCmd: String = buffer.toString
 
-       /** Put the command back together */
-       val buffer : StringBuilder = new StringBuilder
-       argsSansConfig.addString(buffer," ")
-       val originalCmd : String = buffer.toString
+    var response: String = ""
+    try {
+      /** Feed the command string to the alternate parser. If successful, the cmdName will be valid string. */
+      val (optCmdName, argMap): (Option[String], Map[String, String]) = AlternateCmdParser.parse(originalCmd)
+      val cmdName: String = optCmdName.orNull
+      response = if (cmdName != null) {
+        /** See if it is one of the **supported** alternate commands */
+        val cmd: String = cmdName.toLowerCase
 
-      var response: String = ""
-      try {
-           /** Feed the command string to the alternate parser. If successful, the cmdName will be valid string. */
-           val (optCmdName, argMap): (Option[String], Map[String, String]) = AlternateCmdParser.parse(originalCmd)
-           val cmdName: String = optCmdName.orNull
-           response = if (cmdName != null) {
-               /** See if it is one of the **supported** alternate commands */
-               val cmd: String = cmdName.toLowerCase
+        val resp: String = cmd match {
+          case "addmodel" => {
+            val modelTypeToBeAdded: String = if (argMap.contains("type")) argMap("type").toLowerCase else null
+            if (modelTypeToBeAdded != null && modelTypeToBeAdded == "pmml") {
 
-               val resp: String = cmd match {
-                   case "addmodel" => {
-                       val modelTypeToBeAdded: String = if (argMap.contains("type")) argMap("type").toLowerCase else null
-                       if (modelTypeToBeAdded != null && modelTypeToBeAdded == "pmml") {
+              val modelName: Option[String] = if (argMap.contains("name")) Some(argMap("name")) else None
+              val modelVer: String = if (argMap.contains("modelversion")) argMap("modelversion") else null
+              val msgName: Option[String] = if (argMap.contains("message")) Some(argMap("message")) else None
+              /** it is permissable to not supply the messageversion... the latest version is assumed in that case */
+              val msgVer: String = if (argMap.contains("messageversion")) argMap("messageversion") else MdMgr.LatestVersion
+              val pmmlSrc: Option[String] = if (argMap.contains("pmml")) Some(argMap("pmml")) else None
+              val pmmlPath: String = pmmlSrc.orNull
+              val tid: Option[String] = if (argMap.contains("tenantid")) Some(argMap("tenantid")) else None
 
-                           val modelName: Option[String] = if (argMap.contains("name")) Some(argMap("name")) else None
-                           val modelVer: String = if (argMap.contains("modelversion")) argMap("modelversion") else null
-                           val msgName: Option[String] = if (argMap.contains("message")) Some(argMap("message")) else None
-                           /** it is permissable to not supply the messageversion... the latest version is assumed in that case */
-                           val msgVer: String = if (argMap.contains("messageversion")) argMap("messageversion") else MdMgr.LatestVersion
-                           val pmmlSrc: Option[String] = if (argMap.contains("pmml")) Some(argMap("pmml")) else None
-                           val pmmlPath: String = pmmlSrc.orNull
-                           val tid: Option[String] =   if (argMap.contains("tenantid")) Some(argMap("tenantid")) else None
+              var validatedModelVersion: String = null
+              var validatedMsgVersion: String = null
+              try {
+                validatedModelVersion = if (modelVer != null) MdMgr.FormatVersion(modelVer) else null
+                validatedMsgVersion = if (msgVer != null) MdMgr.FormatVersion(msgVer) else null
+              } catch {
+                case e: Exception => throw (new RuntimeException(s"The version parameter is invalid... either not numeric or out of range...modelversion=$modelVer, messageversion=$msgVer", e))
+              }
+              val optModelVer: Option[String] = Option(validatedModelVersion)
+              val optMsgVer: Option[String] = Option(validatedMsgVersion)
 
-                           var validatedModelVersion: String = null
-                           var validatedMsgVersion: String = null
-                           try {
-                               validatedModelVersion = if (modelVer != null) MdMgr.FormatVersion(modelVer) else null
-                               validatedMsgVersion = if (msgVer != null) MdMgr.FormatVersion(msgVer) else null
-                           } catch {
-                               case e: Exception => throw (new RuntimeException(s"The version parameter is invalid... either not numeric or out of range...modelversion=$modelVer, messageversion=$msgVer", e))
-                           }
-                           val optModelVer: Option[String] = Option(validatedModelVersion)
-                           val optMsgVer: Option[String] = Option(validatedMsgVersion)
+              ModelService.addModelPmml(ModelType.PMML, pmmlPath, Some("kamanja"), modelName, optModelVer, msgName, optMsgVer, tid)
 
-                           ModelService.addModelPmml(ModelType.PMML
-                               , pmmlPath
-                               , Some("kamanja")
-                               , modelName
-                               , optModelVer
-                               , msgName
-                               , optMsgVer
-                               , tid)
+            } else {
+              null
+            }
+          }
+          case "updatemodel" => {
+            // updateModel type(jpmml) name(com.anotherCo.jpmml.DahliaRandomForest) newVersion(000000.000001.000002) oldVersion(000000.000001.000001) pmml(/anotherpath/prettierDahliaRandomForest.xml)  <<< NOT AVAILABLE (YET) update an explicit model version... doesn't have to be latest
+            // updateModel type(jpmml) name(com.anotherCo.jpmml.DahliaRandomForest) newVersion(000000.000001.000002) pmml(/anotherpath/prettierDahliaRandomForest.xml)  <<< default to the updating the latest model version there.
 
-                       } else {
-                           null
-                       }
-                   }
-                   case "updatemodel" => {
-                       // updateModel type(jpmml) name(com.anotherCo.jpmml.DahliaRandomForest) newVersion(000000.000001.000002) oldVersion(000000.000001.000001) pmml(/anotherpath/prettierDahliaRandomForest.xml)  <<< NOT AVAILABLE (YET) update an explicit model version... doesn't have to be latest
-                       // updateModel type(jpmml) name(com.anotherCo.jpmml.DahliaRandomForest) newVersion(000000.000001.000002) pmml(/anotherpath/prettierDahliaRandomForest.xml)  <<< default to the updating the latest model version there.
+            val modelTypeToBeUpdated: String = if (argMap.contains("type")) argMap("type").toLowerCase else null
+            if (modelTypeToBeUpdated != null && modelTypeToBeUpdated == "pmml") {
 
-                       val modelTypeToBeUpdated: String = if (argMap.contains("type")) argMap("type").toLowerCase else null
-                       if (modelTypeToBeUpdated != null && modelTypeToBeUpdated == "pmml") {
+              val optModelName: Option[String] = if (argMap.contains("name")) Some(argMap("name")) else None
+              val newVer: String = if (argMap.contains("newversion")) argMap("newversion") else null
+              /** it is permissable to not supply the old version... we just ask for update of the latest version in that case */
+              val oldVer: String = if (argMap.contains("oldversion")) argMap("oldversion") else MdMgr.LatestVersion
+              if (oldVer != MdMgr.LatestVersion) {
+                val warningMsg: String = "Specific version replacement is not currently supported.  Only the latest version of a model may be updated........"
+                logger.warn(warningMsg)
+                warningMsg
+              } else {
 
-                           val optModelName: Option[String] = if (argMap.contains("name")) Some(argMap("name")) else None
-                           val newVer: String = if (argMap.contains("newversion")) argMap("newversion") else null
-                           /** it is permissable to not supply the old version... we just ask for update of the latest version in that case */
-                           val oldVer: String = if (argMap.contains("oldversion")) argMap("oldversion") else MdMgr.LatestVersion
-                           if (oldVer != MdMgr.LatestVersion) {
-                               val warningMsg: String = "Specific version replacement is not currently supported.  Only the latest version of a model may be updated........"
-                               logger.warn(warningMsg)
-                               warningMsg
-                           } else {
+                val pmmlSrc: Option[String] = if (argMap.contains("pmml")) Some(argMap("pmml")) else None
+                val pmmlPath: String = pmmlSrc.orNull
 
-                               val pmmlSrc: Option[String] = if (argMap.contains("pmml")) Some(argMap("pmml")) else None
-                               val pmmlPath: String = pmmlSrc.orNull
+                /**
+                 * NOTE: Despite the presence of the oldVer, it is currently not supported.  The metadata
+                 * manager is not supporting specific version replacement with update.  Only the "latest"
+                 * version of the model can be changed.  That said, we leave this in place for now until
+                 * it has been determined if the verion will become an active part of the metadata
+                 * key that manages models (and messages, containers, and the rest)
+                 */
 
-                               /** NOTE: Despite the presence of the oldVer, it is currently not supported.  The metadata
-                                 * manager is not supporting specific version replacement with update.  Only the "latest"
-                                 * version of the model can be changed.  That said, we leave this in place for now until
-                                 * it has been determined if the verion will become an active part of the metadata
-                                 * key that manages models (and messages, containers, and the rest)
-                                 */
+                /** Use FormatVersion to normalize the string representation ... padding with appropriate 0's etc. */
+                var validatedOldVersion: String = null
+                var validatedNewVersion: String = null
+                try {
+                  validatedOldVersion = if (oldVer != null && oldVer != MdMgr.LatestVersion) MdMgr.FormatVersion(oldVer)
+                  else {
+                    if (oldVer == MdMgr.LatestVersion) {
+                      MdMgr.LatestVersion
+                    } else {
+                      null
+                    }
+                  }
+                  validatedNewVersion = if (newVer != null) MdMgr.FormatVersion(newVer) else null
+                } catch {
+                  case e: Exception => throw (new RuntimeException(s"One or more version parameters are invalid... oldVer=$oldVer, newVer=$newVer", e))
+                }
+                val optOldVer: Option[String] = Option(validatedOldVersion)
 
-                               /** Use FormatVersion to normalize the string representation ... padding with appropriate 0's etc. */
-                               var validatedOldVersion: String = null
-                               var validatedNewVersion: String = null
-                               try {
-                                   validatedOldVersion = if (oldVer != null && oldVer != MdMgr.LatestVersion) MdMgr.FormatVersion(oldVer)
-                                   else {
-                                       if (oldVer == MdMgr.LatestVersion) {
-                                           MdMgr.LatestVersion
-                                       } else {
-                                           null
-                                       }
-                                   }
-                                   validatedNewVersion = if (newVer != null) MdMgr.FormatVersion(newVer) else null
-                               } catch {
-                                   case e: Exception => throw (new RuntimeException(s"One or more version parameters are invalid... oldVer=$oldVer, newVer=$newVer", e))
-                               }
-                               val optOldVer: Option[String] = Option(validatedOldVersion)
+                /** modelnamespace.modelname expected for modelName value */
+                val modelName: String = optModelName.orNull
+                var tid: Option[String] = if (argMap.contains("tenantid")) Some(argMap("tenantid")) else None
+                ModelService.updateModelPmml(pmmlPath, Some("kamanja"), modelName, validatedNewVersion, tid)
+              }
+            } else {
+              null
+            }
+          }
 
-                               /** modelnamespace.modelname expected for modelName value */
-                               val modelName: String = optModelName.orNull
-                               var tid: Option[String] =   if (argMap.contains("tenantid")) Some(argMap("tenantid")) else None
-                               ModelService.updateModelPmml(pmmlPath
-                                   , Some("kamanja")
-                                   , modelName
-                                   , validatedNewVersion
-                                   , tid)
-                           }
-                       } else {
-                           null
-                       }
-                   }
+        }
+        resp
+      } else {
+        null
+      }
+    } catch {
+      case e: Exception =>
+        logger.debug(s"Exception seen ... e=${e.toString}", e)
+        response = ""
+    }
 
-               }
-               resp
-           } else {
-               null
-           }
-       } catch {
-           case e: Exception => logger.debug(s"Exception seen ... e=${e.toString}", e)
-           response=""
-       }
-
-       response
-   }
+    response
+  } */
 }

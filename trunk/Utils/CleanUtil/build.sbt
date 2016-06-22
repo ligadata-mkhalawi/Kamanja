@@ -3,7 +3,7 @@ import sbt._
 
 name := "CleanUtil"
 
-version := "1.4.0"
+version := "1.5.0"
 
 shellPrompt := { state => "sbt (%s)> ".format(Project.extract(state).currentProject.id) }
 
@@ -28,7 +28,7 @@ fork := true
 
 test in assembly := {}
 
-val kamanjaVersion = "1.4.0"
+val kamanjaVersion = "1.5.0"
 
 assemblyJarName in assembly := {
   s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"

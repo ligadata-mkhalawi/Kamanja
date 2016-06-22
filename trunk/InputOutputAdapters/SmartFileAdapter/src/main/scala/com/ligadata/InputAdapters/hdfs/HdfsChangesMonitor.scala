@@ -244,7 +244,7 @@ class HdfsFileHandler extends SmartFileHandler{
 /**
  * callback is the function to call when finding a modified file, currently has one parameter which is the file path
  */
-class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileHandler) => Unit) extends SmartFileMonitor{
+class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileHandler, Boolean) => Unit) extends SmartFileMonitor{
 
   private var isMonitoring = false
   
@@ -258,6 +258,7 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
   private var monitoringConf :  FileAdapterMonitoringConfig = null
   private var monitorsExecutorService: ExecutorService = null
   private var hdfsConfig : Configuration = null
+  private val filesStatusMap = Map[String, HdfsFileEntry]()
 
   def init(adapterSpecificCfgJson: String): Unit ={
     val(_type, c, m) =  SmartFileAdapterConfiguration.parseSmartFileAdapterSpecificConfig(adapterName, adapterSpecificCfgJson)
@@ -277,6 +278,11 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
     }
 
     hdfsConfig = HdfsUtility.createConfig(connectionConf)
+  }
+
+  def markFileAsProcessed(filePath : String) : Unit = {
+    logger.info("Smart File Consumer (SFTP Monitor) - removing file {} from map {} as it is processed", filePath, filesStatusMap)
+    filesStatusMap.remove(filePath)
   }
 
   def shutdown: Unit ={
@@ -314,7 +320,6 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
 
         override def run() = {
 
-          val filesStatusMap = Map[String, HdfsFileEntry]()
           var firstCheck = true
 
           while (isMonitoring) {
@@ -334,17 +339,16 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
 
                 modifiedDirs.remove(0)
                 val fs = FileSystem.get(hdfsConfig)
-                findDirModifiedDirectChilds(aFolder, fs, filesStatusMap, modifiedDirs, modifiedFiles, firstCheck)
+                findDirModifiedDirectChilds(aFolder, fs, modifiedDirs, modifiedFiles, firstCheck)
 
                 //logger.debug("Closing Hd File System object fs in monitorDirChanges()")
                 //fs.close()
 
                 if (modifiedFiles.nonEmpty)
                   modifiedFiles.foreach(tuple => {
-                    val handler = new MofifiedFileCallbackHandler(tuple._1, modifiedFileCallback)
-                    logger.debug("hdfs monitor is calling file callback for MonitorController for file {}", tuple._1.getFullPath)
+
                     try {
-                      modifiedFileCallback(tuple._1)
+                      modifiedFileCallback(tuple._1, tuple._2 == AlreadyExisting)
                     }
                     catch{
                       case e : Throwable =>
@@ -380,7 +384,7 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
 
   }
 
-  private def findDirModifiedDirectChilds(parentfolder : String, hdFileSystem : FileSystem, filesStatusMap : Map[String, HdfsFileEntry],
+  private def findDirModifiedDirectChilds(parentfolder : String, hdFileSystem : FileSystem,
                                           modifiedDirs : ArrayBuffer[String], modifiedFiles : Map[SmartFileHandler, FileChangeType], isFirstCheck : Boolean){
     logger.info("checking folder with full path: " + parentfolder)
 

@@ -42,6 +42,7 @@ import com.ligadata.Exceptions._
 
 case class Customer(name:String, address: String, homePhone: String)
 
+@Ignore
 class SqlServerAdapterSpec extends FunSpec with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
   var res : String = null;
   var statusCode: Int = -1;

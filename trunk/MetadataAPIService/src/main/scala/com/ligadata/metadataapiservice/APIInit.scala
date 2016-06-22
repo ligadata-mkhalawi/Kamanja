@@ -38,10 +38,10 @@ object APIInit {
   private[this] val lock = new Object()
 
   def Shutdown(exitCode: Int): Unit = lock.synchronized{
-    if( databaseOpen ){
+    /*if( databaseOpen ){ //MetadataAPIImpl.shutdown is now called in APIService.Shutdown which will call CloseDbStore
       MetadataAPIImpl.CloseDbStore
       databaseOpen = false;
-    }
+    }*/
     MetadataAPIServiceLeader.Shutdown
   }
 
@@ -75,7 +75,7 @@ object APIInit {
       InitLeaderLatch
     } catch {
       case e: Exception => {
-           logger.debug("", e)
+           logger.error("", e)
       }
     }
   }

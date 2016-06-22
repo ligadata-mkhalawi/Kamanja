@@ -235,5 +235,12 @@ object ErrorCodeConstants {
    //Monitor
    val GetHeartbeat_Success = "Heartbeats fetched successfully"
    val GetHeartbeat_Failed = "Get Heartbeats Failed"
+   
+   //GetTypeById
+   val Get_Type_By_SchemaId_Successful = "Successfully fetched message/container from Cache";
+   val Get_Type_By_ElementId_Successful = "Successfully fetched message/container/model from Cache";
+   val Get_Type_By_SchemaId_Failed = "Failed to fetch message/container from cache";
+   val Get_Type_By_ElementId_Failed = "Failed to fetch message/container/model from Cache";
+
 
 }

@@ -130,7 +130,7 @@ class InstallDriver extends InstallDriverBase {
   def usage: String = {
     """
 Usage:
-    java -Dlog4j.configurationFile=file:./log4j2.xml -jar <some path> ClusterInstallerDriver-1.4.0
+    java -Dlog4j.configurationFile=file:./log4j2.xml -jar <some path> ClusterInstallerDriver-1.5.0
             /** Mandatory parameters (always) */
             --{upgrade|install}
             --apiConfig <MetadataAPIConfig.properties file>
@@ -138,7 +138,7 @@ Usage:
             --tarballPath <tarball path>
             --toScala <"2.11" or "2.10">
             /** Mandatory parameters iff --upgrade chosen */
-            [--fromKamanja "1.1"]
+            [--fromKamanja "1.4"]
             [--fromScala "2.10"]
             /** Optional parameters */
             [--workingDir <workingdirectory>]
@@ -193,7 +193,7 @@ Usage:
         --tenantId <Tenant Id to be applied to all the meta data objects being migrated.
         --adapterMessageBindings <a json file that contains the adapter-message-binding definitions.
 
-    The ClusterInstallerDriver-1.4.0 is the cluster installer driver for Kamanja 1.3.  It is capable of installing a new version of 1.3
+    The ClusterInstallerDriver-1.5.0 is the cluster installer driver for Kamanja 1.3.  It is capable of installing a new version of 1.3
     or given the appropriate arguments, installing a new version of Kamanja 1.3 *and* upgrading a 1.1 or 1.2 installation to the 1.3 version.
 
     A log of the installation and optional upgrade is collected in a log file.  This log file is automatically generated and will be found in the
@@ -275,7 +275,7 @@ Usage:
     }
 
     // locate the clusterInstallerDriver app ... need its working directory to refer to others... this function
-    // returns this form:  file:/tmp/drdigital/KamanjaInstall-1.3.3_2.11/bin/clusterInstallerDriver-1.4.0
+    // returns this form:  file:/tmp/drdigital/KamanjaInstall-1.3.3_2.11/bin/clusterInstallerDriver-1.5.0
 
     /** Obtain location of the clusterInstallerDriver fat jar.  Its directory contains the scripts we use to
       * obtain component info for the env check and the lower level cluster install script that actually does the
@@ -383,7 +383,7 @@ Usage:
     val tenantId_opt: String = if (options.contains('tenantId)) options.apply('tenantId) else null
     val adapterMessageBindings_opt: String = if (options.contains('adapterMessageBindings)) options.apply('adapterMessageBindings) else null
 
-    val toKamanja: String = "1.4"
+    val toKamanja: String = "1.5.0"
 
     // Check whether logDir is valid or not
     if (!isFileExists(logDir, false, true)) {
@@ -438,7 +438,7 @@ Try again.
     val apiConfigPathOk: Boolean = apiConfigPath != null && apiConfigPath.nonEmpty
     val nodeConfigPathOk: Boolean = apiConfigPath != null && apiConfigPath.nonEmpty
     val tarballPathOk: Boolean = tarballPath != null && tarballPath.nonEmpty
-    val fromKamanjaOk: Boolean = install || (upgrade && fromKamanja != null && fromKamanja.nonEmpty && (fromKamanja == "1.1" || fromKamanja == "1.2") || fromKamanja == "1.3" )
+    val fromKamanjaOk: Boolean = install || (upgrade && fromKamanja != null && fromKamanja.nonEmpty && (fromKamanja == "1.1" || fromKamanja == "1.2") || fromKamanja == "1.3" || fromKamanja == "1.4" || fromKamanja == "1.4.1" )
     val fromScalaOk: Boolean = install || (upgrade && fromScala != null && fromScala.nonEmpty && (fromScala == "2.10" || fromScala == "2.11"))
     val toScalaOk: Boolean = (toScala != null && toScala.nonEmpty && (toScala == "2.10" || toScala == "2.11"))
     val workingDirOk: Boolean = workingDir != null && workingDir.nonEmpty
@@ -468,7 +468,7 @@ Try again.
       if (!apiConfigPathOk) printAndLogError("\tapiConfigPath", log)
       if (!nodeConfigPathOk) printAndLogError("\t--apiConfigPath <path to the metadata api properties file that contains the ROOT_DIR property location>", log)
       if (!tarballPathOk) printAndLogError("\t--tarballPath <location of the prepared 1.3 installation tarball to be installed>", log)
-      if (upgrade && !fromKamanjaOk) printAndLogError("\t--fromKamanja <the prior installation version being upgraded... either '1.1' or '1.2'>", log)
+      if (upgrade && !fromKamanjaOk) printAndLogError("\t--fromKamanja <the prior installation version being upgraded... either '1.1' or '1.2' or '1.3' or '1.4' or '1.4.1'>", log)
       if (upgrade && !fromScalaOk) printAndLogError("\t--fromScala <either scala version '2.10' or '2.11'", log)
       if (!logDirOk) printAndLogError("\t--logDir <the directory path where the Cluster logs (InstallDriver.yyyyMMdd_HHmmss.log) is to be written ", log)
       printAndLogDebug(usage, log)
@@ -495,7 +495,7 @@ Try again.
     }
 
     if (!isFileExists(componentVersionJarAbsolutePath, true)) {
-      printAndLogError("GetComponent_2.11-1.4.0.jar is not installed in path " + clusterInstallerDriversLocation, log)
+      printAndLogError("GetComponent_2.11-1.5.0.jar is not installed in path " + clusterInstallerDriversLocation, log)
       cnt += 1
     }
 
@@ -536,7 +536,15 @@ Try again.
         givenTemplate = true
         migrateTemplate_opt.trim
       } else {
-        s"$clusterInstallerDriversLocation/MigrateConfig_template.json"
+	if( fromKamanja == "1.4" ){
+          s"$clusterInstallerDriversLocation/MigrateConfig_template14.json"
+	}
+	else if( fromKamanja == "1.4.1" ){
+          s"$clusterInstallerDriversLocation/MigrateConfig_template141.json"
+	}
+	else{
+          s"$clusterInstallerDriversLocation/MigrateConfig_template.json"
+	}
       }
 
       if (!isFileExists(migrateTemplate, true)) {
@@ -549,9 +557,11 @@ Try again.
 
       // Validate all arguments
       var validMigrationPaths : scala.collection.mutable.Set[String] = scala.collection.mutable.Set[String]()
-      validMigrationPaths.add("1.1 => 1.4") 
-      validMigrationPaths.add("1.2 => 1.4") 
-      validMigrationPaths.add("1.3 => 1.4") 
+      validMigrationPaths.add("1.1 => 1.5.0") 
+      validMigrationPaths.add("1.2 => 1.5.0") 
+      validMigrationPaths.add("1.3 => 1.5.0") 
+      validMigrationPaths.add("1.4 => 1.5.0") 
+      validMigrationPaths.add("1.4.1 => 1.5.0") 
 
       if ( ! validMigrationPaths.contains(fromKamanja + " => " + toKamanja) ) {
         printAndLogError(s"The upgrade path ($fromKamanja => $toKamanja) is not valid with this release... ", log)
@@ -1567,14 +1577,14 @@ Try again.
 			  , tenantId: String
 			  , adapterMessageBindings: String): Boolean = {
 
-    val migrationToBeDone: String = if (fromKamanja == "1.1") "1.1=>1.4" else if (fromKamanja == "1.2") "1.2=>1.4" else if (fromKamanja == "1.3") "1.3=>1.4" else "hmmm"
+    val migrationToBeDone: String = if (fromKamanja == "1.1") "1.1=>1.5.0" else if (fromKamanja == "1.2") "1.2=>1.5.0" else if (fromKamanja == "1.3") "1.3=>1.5.0" else if (fromKamanja == "1.4") "1.4=>1.5.0" else if (fromKamanja == "1.4.1") "1.4.1=>1.5.0" else "hmmm"
 
     // We should use these insted of below ones
     // val kamanjaFromVersion: String = fromKamanja
     // val kamanjaFromVersionWithUnderscore: String = fromKamanja.replace('.', '_')
 
     val migratePreparationOk: Boolean = migrationToBeDone match {
-      case "1.1=>1.4" => {
+      case "1.1=>1.5.0" => {
         val kamanjaFromVersion: String = "1.1"
         val kamanjaFromVersionWithUnderscore: String = "1_1"
         val migrateConfigJSON: String = createMigrationConfig(log
@@ -1607,7 +1617,7 @@ Try again.
         */
         true
       }
-      case "1.2=>1.4" => {
+      case "1.2=>1.5.0" => {
         val kamanjaFromVersion: String = "1.2"
         val kamanjaFromVersionWithUnderscore: String = "1_2"
         val migrateConfigJSON: String = createMigrationConfig(log
@@ -1632,7 +1642,7 @@ Try again.
         printAndLogDebug("Pending migrate %s with config %s".format(migrationToBeDone, migrateConfigJSON))
         true
       }
-      case "1.3=>1.4" => {
+      case "1.3=>1.5.0" => {
         val kamanjaFromVersion: String = "1.3"
         val kamanjaFromVersionWithUnderscore: String = "1_3"
         val migrateConfigJSON: String = createMigrationConfig(log
@@ -1657,8 +1667,58 @@ Try again.
         printAndLogDebug("Pending migrate %s with config %s".format(migrationToBeDone, migrateConfigJSON))
         true
       }
+      case "1.4=>1.5.0" => {
+        val kamanjaFromVersion: String = "1.4"
+        val kamanjaFromVersionWithUnderscore: String = "1_4"
+        val migrateConfigJSON: String = createMigrationConfig(log
+          , migrateConfigFilePath
+          , nodeConfigPath
+          , apiConfigFile
+          , kamanjaFromVersion
+          , kamanjaFromVersionWithUnderscore
+          , newInstallDirName
+          , priorInstallDirName
+          , fromScala
+          , toScala
+          , unhandledMetadataDumpDir
+          , parentPath
+          , physicalRootDir
+          , rootDirPath
+          , tenantId
+          , adapterMessageBindings
+        )
+        migratePending = true
+        migrateConfig = migrateConfigJSON
+        printAndLogDebug("Pending migrate %s with config %s".format(migrationToBeDone, migrateConfigJSON))
+        true
+      }
+      case "1.4.1=>1.5.0" => {
+        val kamanjaFromVersion: String = "1.4.1"
+        val kamanjaFromVersionWithUnderscore: String = "1_4_1"
+        val migrateConfigJSON: String = createMigrationConfig(log
+          , migrateConfigFilePath
+          , nodeConfigPath
+          , apiConfigFile
+          , kamanjaFromVersion
+          , kamanjaFromVersionWithUnderscore
+          , newInstallDirName
+          , priorInstallDirName
+          , fromScala
+          , toScala
+          , unhandledMetadataDumpDir
+          , parentPath
+          , physicalRootDir
+          , rootDirPath
+          , tenantId
+          , adapterMessageBindings
+        )
+        migratePending = true
+        migrateConfig = migrateConfigJSON
+        printAndLogDebug("Pending migrate %s with config %s".format(migrationToBeDone, migrateConfigJSON))
+        true
+      }
       case _ => {
-        printAndLogError("The 'fromKamanja' parameter is incorrect... this needs to be fixed.  The value can only be '1.1' or '1.2' or '1.3' for the '1.4' upgrade", log)
+        printAndLogError("The 'fromKamanja' parameter is incorrect... this needs to be fixed.  The value can only be '1.1' or '1.2' or '1.3' or '1.4' or '1.4.1' for the '1.5.0' upgrade", log)
         false
       }
     }
