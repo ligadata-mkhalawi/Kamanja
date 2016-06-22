@@ -80,6 +80,10 @@ import org.json4s.jackson.Serialization
 // The implementation class
 object ConfigUtils {
   lazy val serializerType = "json4s"//"kryo"
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
+
   //lazy val serializer = SerializerManager.GetSerializer(serializerType)
   /**
    *
@@ -95,7 +99,7 @@ object ConfigUtils {
     "SECURITY_IMPL_JAR", "AUDIT_IMPL_CLASS", "AUDIT_IMPL_JAR", "DO_AUDIT", "AUDIT_PARMS", "ADAPTER_SPECIFIC_CONFIG", "METADATA_DATASTORE")
 
 
-  // This is used to exclude all non-engine related configs from Uplodad Config method 
+  // This is used to exclude all non-engine related configs from Uplodad Config method
   private val excludeList: Set[String] = Set[String]("ClusterId", "Nodes", "Config", "Adapters", "SystemCatalog", "ZooKeeperInfo", "EnvironmentContext", "Cache")
 
     /**
@@ -127,12 +131,12 @@ object ConfigUtils {
       // save in database
       val key = "NodeInfo." + nodeId
       val value = MetadataAPISerialization.serializeObjectToJson(ni).getBytes//serializer.SerializeObjectToByteArray(ni)
-      MetadataAPIImpl.SaveObject(key.toLowerCase, value, "config_objects", serializerType)
+      getMetadataAPI.SaveObject(key.toLowerCase, value, "config_objects", serializerType)
       var apiResult = new ApiResult(ErrorCodeConstants.Success, "AddNode", null, ErrorCodeConstants.Add_Node_Successful + ":" + nodeId)
       apiResult.toString()
     } catch {
       case e: Exception => {
-        
+
         logger.debug("", e)
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddNode", null, "Error :" + e.toString() + ErrorCodeConstants.Add_Node_Failed + ":" + nodeId)
         apiResult.toString()
@@ -176,7 +180,7 @@ object ConfigUtils {
     try {
       MdMgr.GetMdMgr.RemoveNode(nodeId)
       val key = "NodeInfo." + nodeId
-      MetadataAPIImpl.DeleteObject(key.toLowerCase, "config_objects")
+      getMetadataAPI.DeleteObject(key.toLowerCase, "config_objects")
       var apiResult = new ApiResult(ErrorCodeConstants.Success, "RemoveNode", null, ErrorCodeConstants.Remove_Node_Successful + ":" + nodeId)
       apiResult.toString()
     } catch {
@@ -196,7 +200,7 @@ object ConfigUtils {
       // save in database
       val key = "TenantInfo." + tenantId.trim.toLowerCase()
       val value = MetadataAPISerialization.serializeObjectToJson(ti).getBytes //serializer.SerializeObjectToByteArray(ti)
-      MetadataAPIImpl.SaveObject(key.toLowerCase, value, "config_objects", serializerType)
+      getMetadataAPI.SaveObject(key.toLowerCase, value, "config_objects", serializerType)
       var apiResult = new ApiResult(ErrorCodeConstants.Success, "AddTenant", null, ErrorCodeConstants.Add_Tenant_Successful + ":" + tenantId)
       apiResult.toString()
     } catch {
@@ -223,7 +227,7 @@ object ConfigUtils {
     try {
       MdMgr.GetMdMgr.RemoveTenantInfo(tenantId)
       val key = "TenantInfo." + tenantId.trim.toLowerCase()
-      MetadataAPIImpl.DeleteObject(key.toLowerCase, "config_objects")
+      getMetadataAPI.DeleteObject(key.toLowerCase, "config_objects")
       var apiResult = new ApiResult(ErrorCodeConstants.Success, "RemoveNode", null, ErrorCodeConstants.Remove_Tenant_Successful + ":" + tenantId)
       apiResult.toString()
     } catch {
@@ -256,12 +260,12 @@ object ConfigUtils {
       // save in database
       val key = "AdapterInfo." + name
       val value = MetadataAPISerialization.serializeObjectToJson(ai).getBytes//serializer.SerializeObjectToByteArray(ai)
-      MetadataAPIImpl.SaveObject(key.toLowerCase, value, "config_objects", serializerType)
+      getMetadataAPI.SaveObject(key.toLowerCase, value, "config_objects", serializerType)
       var apiResult = new ApiResult(ErrorCodeConstants.Success, "AddAdapter", null, ErrorCodeConstants.Add_Adapter_Successful + ":" + name)
       apiResult.toString()
     } catch {
       case e: Exception => {
-        
+
         logger.debug("", e)
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddAdapter", null, "Error :" + e.toString() + ErrorCodeConstants.Add_Adapter_Failed + ":" + name)
         apiResult.toString()
@@ -296,12 +300,12 @@ object ConfigUtils {
     try {
       MdMgr.GetMdMgr.RemoveAdapter(name)
       val key = "AdapterInfo." + name
-      MetadataAPIImpl.DeleteObject(key.toLowerCase, "config_objects")
+      getMetadataAPI.DeleteObject(key.toLowerCase, "config_objects")
       var apiResult = new ApiResult(ErrorCodeConstants.Success, "RemoveAdapter", null, ErrorCodeConstants.Remove_Adapter_Successful + ":" + name)
       apiResult.toString()
     } catch {
       case e: Exception => {
-        
+
         logger.debug("", e)
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "RemoveAdapter", null, "Error :" + e.toString() + ErrorCodeConstants.Remove_Adapter_Failed + ":" + name)
         apiResult.toString()
@@ -325,12 +329,12 @@ object ConfigUtils {
       // save in database
       val key = "ClusterInfo." + clusterId
       val value = MetadataAPISerialization.serializeObjectToJson(ci).getBytes//serializer.SerializeObjectToByteArray(ci)
-      MetadataAPIImpl.SaveObject(key.toLowerCase, value, "config_objects", serializerType)
+      getMetadataAPI.SaveObject(key.toLowerCase, value, "config_objects", serializerType)
       var apiResult = new ApiResult(ErrorCodeConstants.Success, "AddCluster", null, ErrorCodeConstants.Add_Cluster_Successful + ":" + clusterId)
       apiResult.toString()
     } catch {
       case e: Exception => {
-        
+
         logger.debug("", e)
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddCluster", null, "Error :" + e.toString() + ErrorCodeConstants.Add_Cluster_Failed + ":" + clusterId)
         apiResult.toString()
@@ -360,12 +364,12 @@ object ConfigUtils {
     try {
       MdMgr.GetMdMgr.RemoveCluster(clusterId)
       val key = "ClusterInfo." + clusterId
-      MetadataAPIImpl.DeleteObject(key.toLowerCase, "config_objects")
+      getMetadataAPI.DeleteObject(key.toLowerCase, "config_objects")
       var apiResult = new ApiResult(ErrorCodeConstants.Success, "RemoveCluster", null, ErrorCodeConstants.Remove_Cluster_Successful + ":" + clusterId)
       apiResult.toString()
     } catch {
       case e: Exception => {
-        
+
         logger.debug("", e)
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "RemoveCluster", null, "Error :" + e.toString() + ErrorCodeConstants.Remove_Cluster_Failed + ":" + clusterId)
         apiResult.toString()
@@ -391,12 +395,12 @@ object ConfigUtils {
       // save in database
       val key = "ClusterCfgInfo." + clusterCfgId
       val value = MetadataAPISerialization.serializeObjectToJson(ci).getBytes//serializer.SerializeObjectToByteArray(ci)
-      MetadataAPIImpl.SaveObject(key.toLowerCase, value, "config_objects", serializerType)
+      getMetadataAPI.SaveObject(key.toLowerCase, value, "config_objects", serializerType)
       var apiResult = new ApiResult(ErrorCodeConstants.Success, "AddClusterCfg", null, ErrorCodeConstants.Add_Cluster_Config_Successful + ":" + clusterCfgId)
       apiResult.toString()
     } catch {
       case e: Exception => {
-        
+
         logger.debug("", e)
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddClusterCfg", null, "Error :" + e.toString() + ErrorCodeConstants.Add_Cluster_Config_Failed + ":" + clusterCfgId)
         apiResult.toString()
@@ -430,12 +434,12 @@ object ConfigUtils {
     try {
       MdMgr.GetMdMgr.RemoveClusterCfg(clusterCfgId)
       val key = "ClusterCfgInfo." + clusterCfgId
-      MetadataAPIImpl.DeleteObject(key.toLowerCase, "config_objects")
+      getMetadataAPI.DeleteObject(key.toLowerCase, "config_objects")
       var apiResult = new ApiResult(ErrorCodeConstants.Success, "RemoveCLusterCfg", null, ErrorCodeConstants.Remove_Cluster_Config_Successful + ":" + clusterCfgId)
       apiResult.toString()
     } catch {
       case e: Exception => {
-        
+
         logger.debug("", e)
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "RemoveCLusterCfg", null, "Error :" + e.toString() + ErrorCodeConstants.Remove_Cluster_Config_Failed + ":" + clusterCfgId)
         apiResult.toString()
@@ -457,7 +461,7 @@ object ConfigUtils {
       var clusterNotifications: ArrayBuffer[BaseElemDef] = new ArrayBuffer[BaseElemDef]
       var clusterNotifyActions: ArrayBuffer[String] =  new ArrayBuffer[String]
       //BOOOYA
-    MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.REMOVECONFIG, cfgStr, AuditConstants.SUCCESS, "", cobjects)
+    getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.REMOVECONFIG, cfgStr, AuditConstants.SUCCESS, "", cobjects)
     try {
       // extract config objects
       val map = JsonSerializer.parseEngineConfig(cfgStr)
@@ -480,7 +484,7 @@ object ConfigUtils {
             clusterDef.elementType = "clusterDef"
             clusterDef.nameSpace = "cluster"
             clusterDef.name = ClusterId
-            clusterDef.tranId = MetadataAPIImpl.GetNewTranId
+            clusterDef.tranId = getMetadataAPI.GetNewTranId
             clusterNotifications.append(clusterDef)
             clusterNotifyActions.append("Remove")
           }
@@ -495,7 +499,7 @@ object ConfigUtils {
             clusterInfoDef.elementType = "clusterInfoDef"
             clusterInfoDef.name = ClusterId
             clusterInfoDef.nameSpace = "clusterInfo"
-            clusterInfoDef.tranId = MetadataAPIImpl.GetNewTranId
+            clusterInfoDef.tranId = getMetadataAPI.GetNewTranId
             clusterNotifications.append(clusterInfoDef)
             clusterNotifyActions.append("Remove")
           }
@@ -512,7 +516,7 @@ object ConfigUtils {
 
                 var nodeDef: ClusterConfigDef = new ClusterConfigDef
                 nodeDef.name = nodeId
-                nodeDef.tranId = MetadataAPIImpl.GetNewTranId
+                nodeDef.tranId = getMetadataAPI.GetNewTranId
                 nodeDef.nameSpace = "nodeIds"
                 nodeDef.clusterId = nodeId
                 nodeDef.elementType = "nodeDef"
@@ -535,7 +539,7 @@ object ConfigUtils {
                 if (tenantId.length > 0) {
                   val tenantDef: ClusterConfigDef = new ClusterConfigDef
                   tenantDef.name =  tenantId.trim.toLowerCase()
-                  tenantDef.tranId = MetadataAPIImpl.GetNewTranId
+                  tenantDef.tranId = getMetadataAPI.GetNewTranId
                   tenantDef.nameSpace = "Tenants"
                   tenantDef.clusterId = ClusterId
                   tenantDef.elementType = "TenantDef"
@@ -571,7 +575,7 @@ object ConfigUtils {
                   var adapterDef: ClusterConfigDef = new ClusterConfigDef
                   adapterDef.name = nm
                   adapterDef.nameSpace = ClusterId
-                  adapterDef.tranId = MetadataAPIImpl.GetNewTranId
+                  adapterDef.tranId = getMetadataAPI.GetNewTranId
                   adapterDef.clusterId = ClusterId
                   adapterDef.elementType = "adapterDef"
                   clusterNotifications.append(adapterDef)
@@ -583,14 +587,14 @@ object ConfigUtils {
         })
       }
       if (keyList.size > 0) {
-        MetadataAPIImpl.RemoveObjectList(keyList, "config_objects")
-        MetadataAPIImpl.NotifyEngine(clusterNotifications.toArray, clusterNotifyActions.toArray)
+        getMetadataAPI.RemoveObjectList(keyList, "config_objects")
+        getMetadataAPI.NotifyEngine(clusterNotifications.toArray, clusterNotifyActions.toArray)
       }
       var apiResult = new ApiResult(ErrorCodeConstants.Success, "RemoveConfig", null, ErrorCodeConstants.Remove_Config_Successful + ":" + cfgStr)
       apiResult.toString()
     } catch {
       case e: Exception => {
-        
+
         logger.debug("", e)
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "RemoveConfig", null, "Error :" + e.toString() + ErrorCodeConstants.Remove_Config_Failed + ":" + cfgStr)
         apiResult.toString()
@@ -613,11 +617,11 @@ object ConfigUtils {
     try{
       var keyList = new Array[String](0)
       var valueList = new Array[Array[Byte]](0)
-      val tranId = MetadataAPIImpl.GetNewTranId
+      val tranId = getMetadataAPI.GetNewTranId
       logger.debug("Parsing ModelConfig : " + cfgStr)
       cfgmap = parse(cfgStr).values.asInstanceOf[Map[String, Any]]
       logger.debug("Count of objects in cfgmap : " + cfgmap.keys.size)
-      
+
       var i = 0
       // var objectsAdded: scala.collection.mutable.MutableList[Map[String, List[String]]] = scala.collection.mutable.MutableList[Map[String, List[String]]]()
       var baseElems: Array[BaseElemDef] = new Array[BaseElemDef](cfgmap.keys.size)
@@ -640,13 +644,13 @@ object ConfigUtils {
 	keyList = keyList :+ modelKey.toLowerCase
 	valueList = valueList :+ value
 	// Save in memory
-	MetadataAPIImpl.AddConfigObjToCache(tranId, modelKey, mdl, MdMgr.GetMdMgr)
+	getMetadataAPI.AddConfigObjToCache(tranId, modelKey, mdl, MdMgr.GetMdMgr)
       })
       // Save in Database
-      MetadataAPIImpl.SaveObjectList(keyList, valueList, "model_config_objects", serializerType)
+      getMetadataAPI.SaveObjectList(keyList, valueList, "model_config_objects", serializerType)
       if (!isFromNotify) {
 	val operations = for (op <- baseElems) yield "Add"
-	MetadataAPIImpl.NotifyEngine(baseElems, operations)
+	getMetadataAPI.NotifyEngine(baseElems, operations)
       }
 
       // return reuslts
@@ -686,7 +690,7 @@ object ConfigUtils {
     if (s.size == 0) return s
 
     val s1 = "[" + s + "]"
-    
+
     implicit val jsonFormats: Formats = DefaultFormats
     val list = Serialization.read[List[_]](s1)
 
@@ -711,7 +715,7 @@ object ConfigUtils {
     var clusterNotifications: ArrayBuffer[BaseElemDef] = new ArrayBuffer[BaseElemDef]
     var clusterNotifyActions: ArrayBuffer[String] =  new ArrayBuffer[String]
 
-    MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTCONFIG, cfgStr, AuditConstants.SUCCESS, "", objectList)
+    getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTCONFIG, cfgStr, AuditConstants.SUCCESS, "", objectList)
 
     try {
       // extract config objects
@@ -743,7 +747,7 @@ object ConfigUtils {
               clusterDef.elementType = "clusterDef"
               clusterDef.nameSpace = "cluster"
               clusterDef.name = ci.clusterId
-              clusterDef.tranId = MetadataAPIImpl.GetNewTranId
+              clusterDef.tranId = getMetadataAPI.GetNewTranId
               clusterNotifications.append(clusterDef)
               if (addCluserReuslt.get.equalsIgnoreCase("add"))
                 clusterNotifyActions.append("Add")
@@ -796,7 +800,7 @@ object ConfigUtils {
               clusterInfoDef.elementType = "clusterInfoDef"
               clusterInfoDef.name = cic.clusterId
               clusterInfoDef.nameSpace = "clusterInfo"
-              clusterInfoDef.tranId = MetadataAPIImpl.GetNewTranId
+              clusterInfoDef.tranId = getMetadataAPI.GetNewTranId
               clusterNotifications.append(clusterInfoDef)
               println("cic Change for " + clusterInfoDef.name )
               if (addClusterResult.get.equalsIgnoreCase("add"))
@@ -847,7 +851,7 @@ object ConfigUtils {
                 if (addNodeResult != None) {
                   var nodeDef: ClusterConfigDef = new ClusterConfigDef
                   nodeDef.name = ni.nodeId
-                  nodeDef.tranId = MetadataAPIImpl.GetNewTranId
+                  nodeDef.tranId = getMetadataAPI.GetNewTranId
                   nodeDef.nameSpace = "nodeIds"
                   nodeDef.clusterId = ci.clusterId
                   nodeDef.elementType = "nodeDef"
@@ -881,7 +885,7 @@ object ConfigUtils {
                 if (addTenantResult != None) {
                   val tenantDef: ClusterConfigDef = new ClusterConfigDef
                   tenantDef.name = ti.tenantId.trim.toLowerCase()
-                  tenantDef.tranId = MetadataAPIImpl.GetNewTranId
+                  tenantDef.tranId = getMetadataAPI.GetNewTranId
                   tenantDef.nameSpace = "Tenants"
                   tenantDef.clusterId = ci.clusterId
                   tenantDef.elementType = "TenantDef"
@@ -952,7 +956,7 @@ object ConfigUtils {
                   var adapterDef: ClusterConfigDef = new ClusterConfigDef
                   adapterDef.name = nm
                   adapterDef.nameSpace = typStr
-                  adapterDef.tranId = MetadataAPIImpl.GetNewTranId
+                  adapterDef.tranId = getMetadataAPI.GetNewTranId
                   adapterDef.clusterId = ClusterId
                   adapterDef.elementType = "adapterDef"
                   clusterNotifications.append(adapterDef)
@@ -985,7 +989,7 @@ object ConfigUtils {
                 var upDef: ClusterConfigDef = new ClusterConfigDef
                 upDef.name = upProps.clusterId
                 upDef.nameSpace = "userProperties"
-                upDef.tranId = MetadataAPIImpl.GetNewTranId
+                upDef.tranId = getMetadataAPI.GetNewTranId
                 upDef.clusterId = ClusterId
                 upDef.elementType = "upDef"
                 clusterNotifications.append(upDef)
@@ -1009,8 +1013,8 @@ object ConfigUtils {
         }
 
 
-        MetadataAPIImpl.SaveObjectList(keyList, valueList, "config_objects", serializerType)
-        MetadataAPIImpl.NotifyEngine(clusterNotifications.toArray, clusterNotifyActions.toArray)
+        getMetadataAPI.SaveObjectList(keyList, valueList, "config_objects", serializerType)
+        getMetadataAPI.NotifyEngine(clusterNotifications.toArray, clusterNotifyActions.toArray)
         var apiResult = new ApiResult(ErrorCodeConstants.Success, "UploadConfig", cfgStr, ErrorCodeConstants.Upload_Config_Successful)
         apiResult.toString()
       }
@@ -1053,7 +1057,7 @@ object ConfigUtils {
   def GetAllNodes(formatType: String, userid: Option[String] = None): String = {
     try {
       val nodes = MdMgr.GetMdMgr.Nodes.values.toArray
-      MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETCONFIG, AuditConstants.CONFIG, AuditConstants.SUCCESS, "", "nodes")
+      getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETCONFIG, AuditConstants.CONFIG, AuditConstants.SUCCESS, "", "nodes")
       if (nodes.length == 0) {
         logger.debug("No Nodes found ")
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetAllNodes", null, ErrorCodeConstants.Get_All_Nodes_Failed_Not_Available)
@@ -1064,7 +1068,7 @@ object ConfigUtils {
       }
     } catch {
       case e: Exception => {
-        
+
         logger.debug("", e)
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetAllNodes", null, "Error :" + e.toString() + ErrorCodeConstants.Get_All_Nodes_Failed)
         apiResult.toString()
@@ -1084,7 +1088,7 @@ object ConfigUtils {
   def GetAllAdapters(formatType: String, userid: Option[String] = None): String = {
     try {
       val adapters = MdMgr.GetMdMgr.Adapters.values.toArray
-      MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETCONFIG, AuditConstants.CONFIG, AuditConstants.SUCCESS, "", "adapters")
+      getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETCONFIG, AuditConstants.CONFIG, AuditConstants.SUCCESS, "", "adapters")
       if (adapters.length == 0) {
         logger.debug("No Adapters found ")
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetAllAdapters", null, ErrorCodeConstants.Get_All_Adapters_Failed_Not_Available)
@@ -1095,7 +1099,7 @@ object ConfigUtils {
       }
     } catch {
       case e: Exception => {
-        
+
         logger.debug("", e)
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetAllAdapters", null, "Error :" + e.toString() + ErrorCodeConstants.Get_All_Adapters_Failed)
 
@@ -1107,7 +1111,7 @@ object ConfigUtils {
 
   def GetAllTenants(userid: Option[String] = None): Array[String] = {
     try{
-      MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETCONFIG, AuditConstants.CONFIG, AuditConstants.SUCCESS, "", "tenants")
+      getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETCONFIG, AuditConstants.CONFIG, AuditConstants.SUCCESS, "", "tenants")
       var tenants = MdMgr.GetMdMgr.GetAllTenantInfos
       var tenantIds: ArrayBuffer[String] = ArrayBuffer[String]()
       tenants.foreach(x=> tenantIds.append(x.tenantId))
@@ -1132,7 +1136,7 @@ object ConfigUtils {
   def GetAllClusters(formatType: String, userid: Option[String] = None): String = {
     try {
       val clusters = MdMgr.GetMdMgr.Clusters.values.toArray
-      MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETCONFIG, AuditConstants.CONFIG, AuditConstants.SUCCESS, "", "Clusters")
+      getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETCONFIG, AuditConstants.CONFIG, AuditConstants.SUCCESS, "", "Clusters")
       if (clusters.length == 0) {
         logger.debug("No Clusters found ")
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetAllClusters", null, ErrorCodeConstants.Get_All_Clusters_Failed_Not_Available)
@@ -1143,7 +1147,7 @@ object ConfigUtils {
       }
     } catch {
       case e: Exception => {
-        
+
         logger.debug("", e)
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetAllClusters", null, "Error :" + e.toString() + ErrorCodeConstants.Get_All_Clusters_Failed)
         apiResult.toString()
@@ -1162,7 +1166,7 @@ object ConfigUtils {
      */
   def GetAllClusterCfgs(formatType: String, userid: Option[String] = None): String = {
     try {
-      MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETCONFIG, AuditConstants.CONFIG, AuditConstants.SUCCESS, "", "ClusterCfg")
+      getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETCONFIG, AuditConstants.CONFIG, AuditConstants.SUCCESS, "", "ClusterCfg")
       val clusterCfgs = MdMgr.GetMdMgr.ClusterCfgs.values.toArray
       if (clusterCfgs.length == 0) {
         logger.debug("No ClusterCfgs found ")
@@ -1175,7 +1179,7 @@ object ConfigUtils {
       }
     } catch {
       case e: Exception => {
-        
+
         logger.debug("", e)
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetAllClusterCfgs", null, "Error :" + e.toString() + ErrorCodeConstants.Get_All_Cluster_Configs_Failed)
 
@@ -1195,7 +1199,7 @@ object ConfigUtils {
      */
   def GetAllCfgObjects(formatType: String, userid: Option[String] = None): String = {
     var cfgObjList = new Array[Object](0)
-    MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETCONFIG, AuditConstants.CONFIG, AuditConstants.SUCCESS, "", "all")
+    getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETCONFIG, AuditConstants.CONFIG, AuditConstants.SUCCESS, "", "all")
     var jsonStr: String = ""
     var jsonStr1: String = ""
     try {
@@ -1252,7 +1256,7 @@ object ConfigUtils {
       }
     } catch {
       case e: Exception => {
-        
+
         logger.debug("", e)
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetAllCfgObjects", null, "Error :" + e.toString() + ErrorCodeConstants.Get_All_Configs_Failed)
         apiResult.toString()
@@ -1264,10 +1268,10 @@ object ConfigUtils {
      * Dump the configuration file to the log
      */
   def  dumpMetadataAPIConfig {
-    val e = MetadataAPIImpl.GetMetadataAPIConfig.propertyNames()
+    val e = getMetadataAPI.GetMetadataAPIConfig.propertyNames()
     while (e.hasMoreElements()) {
       val key = e.nextElement().asInstanceOf[String]
-      val value = MetadataAPIImpl.GetMetadataAPIConfig.getProperty(key)
+      val value = getMetadataAPI.GetMetadataAPIConfig.getProperty(key)
       logger.debug("Key : " + key + ", Value : " + value)
     }
   }
@@ -1283,7 +1287,7 @@ object ConfigUtils {
     var finalKey = key
     var finalValue = value
 
-    // JAR_PATHs need to be trimmed 
+    // JAR_PATHs need to be trimmed
     if (key.equalsIgnoreCase("JarPaths") || key.equalsIgnoreCase("JAR_PATHS")) {
       val jp = value
       val j_paths = jp.split(",").map(s => s.trim).filter(s => s.size > 0)
@@ -1294,8 +1298,8 @@ object ConfigUtils {
     // Special case 1. for config.  if JAR_PATHS is never set, then it should default to JAR_TARGET_DIR..
     // so we set the JAR_PATH if it was never set.. no worries, if JAR_PATH comes later, it willsimply
     // overwrite the value.
-    if (key.equalsIgnoreCase("JAR_TARGET_DIR") && (MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS") == null)) {
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("JAR_PATHS", finalValue)
+    if (key.equalsIgnoreCase("JAR_TARGET_DIR") && (getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS") == null)) {
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("JAR_PATHS", finalValue)
       logger.debug("JAR_PATHS = " + finalValue)
       pList = pList - "JAR_PATHS"
     }
@@ -1303,8 +1307,8 @@ object ConfigUtils {
     // Special case 2.. MetadataLocation must set 2 properties in the config object.. 1. prop set by DATABASE_HOST,
     // 2. prop set by DATABASE_LOCATION.  MetadataLocation will overwrite those values, but not the other way around.
     if (key.equalsIgnoreCase("MetadataLocation")) {
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("DATABASE_LOCATION", finalValue)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("DATABASE_HOST", finalValue)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("DATABASE_LOCATION", finalValue)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("DATABASE_HOST", finalValue)
       logger.debug("DATABASE_LOCATION  = " + finalValue)
       pList = pList - "DATABASE_LOCATION"
       logger.debug("DATABASE_HOST  = " + finalValue)
@@ -1314,16 +1318,16 @@ object ConfigUtils {
 
     // SSL_PASSWORD will not be saved in the Config object, since that object is printed out for debugging purposes.
     if (key.equalsIgnoreCase("SSL_PASSWD")) {
-      MetadataAPIImpl.setSSLCertificatePasswd(value)
+      getMetadataAPI.setSSLCertificatePasswd(value)
       return
     }
 
     // Special case 2a.. DATABASE_HOST should not override METADATA_LOCATION
-    if (key.equalsIgnoreCase("DATABASE_HOST") && (MetadataAPIImpl.GetMetadataAPIConfig.getProperty(key.toUpperCase) != null)) {
+    if (key.equalsIgnoreCase("DATABASE_HOST") && (getMetadataAPI.GetMetadataAPIConfig.getProperty(key.toUpperCase) != null)) {
       return
     }
     // Special case 2b.. DATABASE_LOCATION should not override METADATA_LOCATION
-    if (key.equalsIgnoreCase("DATABASE_LOCATION") && (MetadataAPIImpl.GetMetadataAPIConfig.getProperty(key.toUpperCase) != null)) {
+    if (key.equalsIgnoreCase("DATABASE_LOCATION") && (getMetadataAPI.GetMetadataAPIConfig.getProperty(key.toUpperCase) != null)) {
       return
     }
 
@@ -1351,7 +1355,7 @@ object ConfigUtils {
     }
 
     // Store the Key/Value pair
-    MetadataAPIImpl.GetMetadataAPIConfig.setProperty(finalKey.toUpperCase, finalValue)
+    getMetadataAPI.GetMetadataAPIConfig.setProperty(finalKey.toUpperCase, finalValue)
     logger.debug(finalKey.toUpperCase + " = " + finalValue)
     pList = pList - finalKey.toUpperCase
   }
@@ -1393,14 +1397,14 @@ object ConfigUtils {
       logger.error("Not found valid JarPaths.")
       return false
     } else {
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("JAR_PATHS", jarPaths.mkString(","))
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("JAR_PATHS", jarPaths.mkString(","))
       logger.debug("JarPaths Based on node(%s) => %s".format(nodeId, jarPaths.mkString(",")))
       val jarDir = compact(render(jarPaths.head)).replace("\"", "").trim
 
       // If JAR_TARGET_DIR is unset.. set it ot the first value of the the JAR_PATH.. whatever it is... ????? I think we should error on start up.. this seems like wrong
       // user behaviour not to set a variable vital to MODEL compilation.
-      if (MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR") == null || (MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR") != null && MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR").length == 0))
-        MetadataAPIImpl.GetMetadataAPIConfig.setProperty("JAR_TARGET_DIR", jarDir)
+      if (getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR") == null || (getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR") != null && getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR").length == 0))
+        getMetadataAPI.GetMetadataAPIConfig.setProperty("JAR_TARGET_DIR", jarDir)
       logger.debug("Jar_target_dir Based on node(%s) => %s".format(nodeId, jarDir))
     }
 
@@ -1408,23 +1412,23 @@ object ConfigUtils {
     val zKInfo = parse(zooKeeperInfo).extract[JZKInfo]
 
     val zkConnectString = zKInfo.ZooKeeperConnectString.replace("\"", "").trim
-    MetadataAPIImpl.GetMetadataAPIConfig.setProperty("ZOOKEEPER_CONNECT_STRING", zkConnectString)
+    getMetadataAPI.GetMetadataAPIConfig.setProperty("ZOOKEEPER_CONNECT_STRING", zkConnectString)
     logger.debug("ZOOKEEPER_CONNECT_STRING(based on nodeId) => " + zkConnectString)
 
     val zkNodeBasePath = zKInfo.ZooKeeperNodeBasePath.replace("\"", "").trim
-    MetadataAPIImpl.GetMetadataAPIConfig.setProperty("ZNODE_PATH", zkNodeBasePath)
+    getMetadataAPI.GetMetadataAPIConfig.setProperty("ZNODE_PATH", zkNodeBasePath)
     logger.debug("ZNODE_PATH(based on nodeid) => " + zkNodeBasePath)
 
     val zkSessionTimeoutMs1 = if (zKInfo.ZooKeeperSessionTimeoutMs == None || zKInfo.ZooKeeperSessionTimeoutMs == null) 0 else zKInfo.ZooKeeperSessionTimeoutMs.get.toString.toInt
     // Taking minimum values in case if needed
     val zkSessionTimeoutMs = if (zkSessionTimeoutMs1 <= 0) 1000 else zkSessionTimeoutMs1
-    MetadataAPIImpl.GetMetadataAPIConfig.setProperty("ZK_SESSION_TIMEOUT_MS", zkSessionTimeoutMs.toString)
+    getMetadataAPI.GetMetadataAPIConfig.setProperty("ZK_SESSION_TIMEOUT_MS", zkSessionTimeoutMs.toString)
     logger.debug("ZK_SESSION_TIMEOUT_MS(based on nodeId) => " + zkSessionTimeoutMs)
 
     val zkConnectionTimeoutMs1 = if (zKInfo.ZooKeeperConnectionTimeoutMs == None || zKInfo.ZooKeeperConnectionTimeoutMs == null) 0 else zKInfo.ZooKeeperConnectionTimeoutMs.get.toString.toInt
     // Taking minimum values in case if needed
     val zkConnectionTimeoutMs = if (zkConnectionTimeoutMs1 <= 0) 30000 else zkConnectionTimeoutMs1
-    MetadataAPIImpl.GetMetadataAPIConfig.setProperty("ZK_CONNECTION_TIMEOUT_MS", zkConnectionTimeoutMs.toString)
+    getMetadataAPI.GetMetadataAPIConfig.setProperty("ZK_CONNECTION_TIMEOUT_MS", zkConnectionTimeoutMs.toString)
     logger.debug("ZK_CONNECTION_TIMEOUT_MS(based on nodeId) => " + zkConnectionTimeoutMs)
     true
   }
@@ -1466,14 +1470,14 @@ object ConfigUtils {
         val value = prop.getProperty(key)
         setPropertyFromConfigFile(key, value)
       }
-      val mdDataStore = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("METADATA_DATASTORE")
+      val mdDataStore = getMetadataAPI.GetMetadataAPIConfig.getProperty("METADATA_DATASTORE")
 
       if (mdDataStore == null) {
         // Prepare from
-        val dbType = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
-        val dbHost = if (MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE_HOST") != null) MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE_HOST") else MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE_LOCATION")
-        val dbSchema = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE_SCHEMA")
-        val dbAdapterSpecific = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("ADAPTER_SPECIFIC_CONFIG")
+        val dbType = getMetadataAPI.GetMetadataAPIConfig.getProperty("DATABASE")
+        val dbHost = if (getMetadataAPI.GetMetadataAPIConfig.getProperty("DATABASE_HOST") != null) getMetadataAPI.GetMetadataAPIConfig.getProperty("DATABASE_HOST") else getMetadataAPI.GetMetadataAPIConfig.getProperty("DATABASE_LOCATION")
+        val dbSchema = getMetadataAPI.GetMetadataAPIConfig.getProperty("DATABASE_SCHEMA")
+        val dbAdapterSpecific = getMetadataAPI.GetMetadataAPIConfig.getProperty("ADAPTER_SPECIFIC_CONFIG")
 
         val dbType1 = if (dbType == null) "" else dbType.trim
         val dbHost1 = if (dbHost == null) "" else dbHost.trim
@@ -1705,46 +1709,46 @@ object ConfigUtils {
         OUTPUTMESSAGE_FILES_DIR = OUTPUTMESSAGE_FILES_DIR1.get
       logger.debug("OUTPUTMESSAGE_FILES_DIR => " + OUTPUTMESSAGE_FILES_DIR)
 
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("ROOT_DIR", rootDir)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("GIT_ROOT", gitRootDir)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("DATABASE", database)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("DATABASE_HOST", databaseHost)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("DATABASE_SCHEMA", databaseSchema)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("DATABASE_LOCATION", databaseLocation)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("ADAPTER_SPECIFIC_CONFIG", databaseAdapterSpecificConfig)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("METADATA_DATASTORE", metadataDataStore)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("JAR_TARGET_DIR", jarTargetDir)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("ROOT_DIR", rootDir)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("GIT_ROOT", gitRootDir)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("DATABASE", database)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("DATABASE_HOST", databaseHost)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("DATABASE_SCHEMA", databaseSchema)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("DATABASE_LOCATION", databaseLocation)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("ADAPTER_SPECIFIC_CONFIG", databaseAdapterSpecificConfig)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("METADATA_DATASTORE", metadataDataStore)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("JAR_TARGET_DIR", jarTargetDir)
       val jp = if (jarPaths != null) jarPaths else jarTargetDir
       val j_paths = jp.split(",").map(s => s.trim).filter(s => s.size > 0)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("JAR_PATHS", j_paths.mkString(","))
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("SCALA_HOME", scalaHome)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("JAVA_HOME", javaHome)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("MANIFEST_PATH", manifestPath)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("CLASSPATH", classPath)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("NOTIFY_ENGINE", notifyEngine)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("ZNODE_PATH", znodePath)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("ZOOKEEPER_CONNECT_STRING", zooKeeperConnectString)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("MODEL_FILES_DIR", MODEL_FILES_DIR)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("TYPE_FILES_DIR", TYPE_FILES_DIR)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("FUNCTION_FILES_DIR", FUNCTION_FILES_DIR)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("CONCEPT_FILES_DIR", CONCEPT_FILES_DIR)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("MESSAGE_FILES_DIR", MESSAGE_FILES_DIR)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("CONTAINER_FILES_DIR", CONTAINER_FILES_DIR)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("COMPILER_WORK_DIR", COMPILER_WORK_DIR)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("MODEL_EXEC_LOG", MODEL_EXEC_FLAG)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("CONFIG_FILES_DIR", CONFIG_FILES_DIR)
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("OUTPUTMESSAGE_FILES_DIR", OUTPUTMESSAGE_FILES_DIR)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("JAR_PATHS", j_paths.mkString(","))
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("SCALA_HOME", scalaHome)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("JAVA_HOME", javaHome)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("MANIFEST_PATH", manifestPath)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("CLASSPATH", classPath)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("NOTIFY_ENGINE", notifyEngine)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("ZNODE_PATH", znodePath)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("ZOOKEEPER_CONNECT_STRING", zooKeeperConnectString)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("MODEL_FILES_DIR", MODEL_FILES_DIR)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("TYPE_FILES_DIR", TYPE_FILES_DIR)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("FUNCTION_FILES_DIR", FUNCTION_FILES_DIR)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("CONCEPT_FILES_DIR", CONCEPT_FILES_DIR)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("MESSAGE_FILES_DIR", MESSAGE_FILES_DIR)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("CONTAINER_FILES_DIR", CONTAINER_FILES_DIR)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("COMPILER_WORK_DIR", COMPILER_WORK_DIR)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("MODEL_EXEC_LOG", MODEL_EXEC_FLAG)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("CONFIG_FILES_DIR", CONFIG_FILES_DIR)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("OUTPUTMESSAGE_FILES_DIR", OUTPUTMESSAGE_FILES_DIR)
 
       MetadataAPIImpl.propertiesAlreadyLoaded = true;
 
     } catch {
       case e: MappingException => {
-        
+
         logger.debug("", e)
         throw Json4sParsingException(e.getMessage(), e)
       }
       case e: Exception => {
-        
+
         logger.debug("", e)
         throw LoadAPIConfigException("Failed to load configuration", e)
       }
@@ -1812,7 +1816,7 @@ object ConfigUtils {
       return true
     } catch {
       case e: Exception => {
-        
+
         logger.debug("", e)
         return false
       }
@@ -1824,7 +1828,7 @@ object ConfigUtils {
      */
   def LoadAllModelConfigsIntoCache: Unit = {
     val maxTranId = PersistenceUtils.GetTranId
-    MetadataAPIImpl.setCurrentTranLevel(maxTranId)
+    getMetadataAPI.setCurrentTranLevel(maxTranId)
     logger.debug("Max Transaction Id => " + maxTranId)
 
     var processed: Long = 0L
@@ -1884,7 +1888,7 @@ object ConfigUtils {
             * from the Storage. The MetadataAPI can delete it (it doesn't necessarily notify the engine... NOTIFY_ENGINE = NO... and get it
             * deleted on the back side during call back.  */
           val key = s"AdapterMessageBinding.$bindingKey"
-          MetadataAPIImpl.DeleteObject(key.toLowerCase, "adapter_message_bindings")
+          getMetadataAPI.DeleteObject(key.toLowerCase, "adapter_message_bindings")
           val apiResult = new ApiResult(ErrorCodeConstants.Success, "RemoveAdapterMessageBindingFromCache", null, ErrorCodeConstants.Remove_AdapterMessageBinding_Successful + ":" + bindingKey)
           apiResult.toString()
 

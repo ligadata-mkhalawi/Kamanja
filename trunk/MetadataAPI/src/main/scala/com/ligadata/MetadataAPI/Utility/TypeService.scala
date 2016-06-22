@@ -35,13 +35,16 @@ object TypeService {
   private val userid: Option[String] = Some("kamanja")
   val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
+  // 646 - 676 Change begins - replase MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Chagne ends
 
   def addType(input: String): String = {
     var response = ""
     var typeFileDir: String = ""
     //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
     if (input == "") {
-      typeFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("TYPE_FILES_DIR")
+      typeFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("TYPE_FILES_DIR")
       if (typeFileDir == null) {
         response = "TYPE_FILES_DIR property missing in the metadata API configuration"
       } else {
@@ -58,7 +61,7 @@ object TypeService {
               case option => {
                 val typeDefs = getUserInputFromMainMenu(types)
                 for (typeDef <- typeDefs) {
-                  response += MetadataAPIImpl.AddTypes(typeDef.toString, "JSON", userid)
+                  response += getMetadataAPI.AddTypes(typeDef.toString, "JSON", userid)
                 }
               }
             }
@@ -74,7 +77,7 @@ object TypeService {
       var message = new File(input.toString)
       if (message.exists()) {
         val typeDef = Source.fromFile(message).mkString
-        response = MetadataAPIImpl.AddTypes(typeDef.toString, "JSON", userid)
+        response = getMetadataAPI.AddTypes(typeDef.toString, "JSON", userid)
 
       } else {
         response = "File does not exist"
@@ -115,7 +118,7 @@ object TypeService {
       resultStr
     } else {
       val result: String = try {
-        val typeKeys = MetadataAPIImpl.GetAllKeys("TypeDef", None)
+        val typeKeys = getMetadataAPI.GetAllKeys("TypeDef", None)
         val (msg, ok): (String, Boolean) = if (typeKeys.length == 0) {
           val errorMsg = "Sorry, No types available, in the Metadata, to display!"
           (errorMsg, false)
@@ -167,7 +170,7 @@ object TypeService {
   }
 
   def getAllTypes: String = {
-    MetadataAPIImpl.GetAllTypes("JSON", userid)
+    getMetadataAPI.GetAllTypes("JSON", userid)
   }
 
   def removeType(param: String = ""): String = {
@@ -176,12 +179,12 @@ object TypeService {
       if (param.length > 0) {
         val (ns, name, ver) = com.ligadata.kamanja.metadata.Utils.parseNameToken(param)
         try {
-          return MetadataAPIImpl.RemoveType(ns, name, ver.toLong, userid).toString
+          return getMetadataAPI.RemoveType(ns, name, ver.toLong, userid).toString
         } catch {
           case e: Exception => logger.error("", e)
         }
       }
-      val typeKeys = MetadataAPIImpl.GetAllKeys("TypeDef", None)
+      val typeKeys = getMetadataAPI.GetAllKeys("TypeDef", None)
 
       if (typeKeys.length == 0) {
         val errorMsg = "Sorry, No types available, in the Metadata, to delete!"
@@ -204,7 +207,7 @@ object TypeService {
         }
         val typeKey = typeKeys(choice - 1)
         val (typeNameSpace, typeName, typeVersion) = com.ligadata.kamanja.metadata.Utils.parseNameToken(typeKey)
-        response = MetadataAPIImpl.RemoveType(typeNameSpace, typeName, typeVersion.toLong, userid).toString
+        response = getMetadataAPI.RemoveType(typeNameSpace, typeName, typeVersion.toLong, userid).toString
       }
 
     } catch {
@@ -228,7 +231,7 @@ object TypeService {
   def loadTypesFromAFile(input: String, userid: Option[String] = None): String = {
     val response: String = try {
       val jsonTypeStr: String = Source.fromFile(input).mkString
-      val apiResult = MetadataAPIImpl.AddTypes(jsonTypeStr, "JSON", userid)
+      val apiResult = getMetadataAPI.AddTypes(jsonTypeStr, "JSON", userid)
 
       val resultMsg: String = s"Result as Json String => \n$apiResult"
       println(resultMsg)
@@ -285,7 +288,7 @@ object TypeService {
         }
       }
 
-      response = MetadataAPIImpl.GetAllTypesByObjType("JSON", selectedType)
+      response = getMetadataAPI.GetAllTypesByObjType("JSON", selectedType)
     } catch {
       case e: Exception => {
         logger.info("", e)
@@ -342,7 +345,7 @@ object TypeService {
       val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetTypeBySchemaId", null, "Please provide proper schema id :" + schemaId)
       return apiResult.toString()
     }
-    val response: String = MetadataAPIImpl.GetTypeBySchemaId(schemaId.toInt, userid)
+    val response: String = getMetadataAPI.GetTypeBySchemaId(schemaId.toInt, userid)
     response
   }
 
@@ -351,7 +354,7 @@ object TypeService {
       val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetTypeByElementId", null, "Please provide proper element id :" + elementId)
       return apiResult.toString()
     }
-    val response: String = MetadataAPIImpl.GetTypeByElementId(elementId.toLong, userid)
+    val response: String = getMetadataAPI.GetTypeByElementId(elementId.toLong, userid)
     response
   }
 }

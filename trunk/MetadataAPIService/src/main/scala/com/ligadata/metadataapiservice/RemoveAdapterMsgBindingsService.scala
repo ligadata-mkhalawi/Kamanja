@@ -46,6 +46,9 @@ class RemoveAdapterMsgBindingsService(requestContext: RequestContext, userid:Opt
   val loggerName = this.getClass.getName
   val logger = LogManager.getLogger(loggerName)
   // logger.setLevel(Level.TRACE);
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   val APIName = "GetAdapterMessageBindigsService"
 
@@ -63,8 +66,8 @@ class RemoveAdapterMsgBindingsService(requestContext: RequestContext, userid:Opt
   def process(objectKey: String) = {
     log.debug("Removing AdapterBindingsObjects {}", objectKey)
 
-    if (!MetadataAPIImpl.checkAuth(userid,password,cert, MetadataAPIImpl.getPrivilegeName("delete","adaptermessagebinding"))) {
-      MetadataAPIImpl.logAuditRec(userid,Some(AuditConstants.READ),AuditConstants.GETCONFIG,AuditConstants.CONFIG,AuditConstants.FAIL,"","AdapterMessageBindings")
+    if (!getMetadataAPI.checkAuth(userid,password,cert, getMetadataAPI.getPrivilegeName("delete","adaptermessagebinding"))) {
+      getMetadataAPI.logAuditRec(userid,Some(AuditConstants.READ),AuditConstants.GETCONFIG,AuditConstants.CONFIG,AuditConstants.FAIL,"","AdapterMessageBindings")
       requestContext.complete(new ApiResult(ErrorCodeConstants.Failure,APIName, null, "Error: READ not allowed for this user").toString )
     } else {
       val apiResult = removeAdapterMessageBindingObjects(objectKey)
