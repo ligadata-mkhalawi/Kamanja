@@ -49,7 +49,9 @@ class UtilityForContainers(val loadConfigs: Properties, val typename: String) ex
 
     nodeInfo = mdMgr.Nodes.getOrElse(containersUtilityConfiguration.nodeId.toString, null)
     if (nodeInfo == null) {
-      logger.error("Node %d not found in metadata".format(containersUtilityConfiguration.nodeId))
+      // 660 Change begins - bug fix for proper cluster config upload message
+      logger.error("Node %d not found in metadata. Please ensure cluster configuration has been uploaded.".format(containersUtilityConfiguration.nodeId))
+      // 660 Change ends
       isOk = false
     }
   }

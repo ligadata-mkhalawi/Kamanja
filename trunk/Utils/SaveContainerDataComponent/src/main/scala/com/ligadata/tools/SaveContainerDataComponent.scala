@@ -209,7 +209,9 @@ class SaveContainerDataCompImpl extends LogTrait with ObjectResolver {
 
     val nodeInfo = mdMgr.Nodes.getOrElse(nodeId.toString, null)
     if (nodeInfo == null) {
-      val msgStr = "Node %d not found in metadata".format(nodeId)
+      // 660 Change begins - bug fix for proper cluster config upload message
+      val msgStr = "Node %d not found in metadata, Please ensure cluster configuration has been uploaded.".format(nodeId)
+      // 660 Change ends
       logger.error(msgStr)
       throw new Exception(msgStr)
     }

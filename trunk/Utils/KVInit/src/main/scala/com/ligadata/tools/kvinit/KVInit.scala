@@ -324,7 +324,9 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
 
     nodeInfo = mdMgr.Nodes.getOrElse(KvInitConfiguration.nodeId.toString, null)
     if (nodeInfo == null) {
-      logger.error("Node %d not found in metadata".format(KvInitConfiguration.nodeId))
+      // 660 Change begins - bug fix for proper cluster config upload message
+      logger.error("Node %d not found in metadata. Please ensure cluster configuration has been uploaded.".format(KvInitConfiguration.nodeId))
+      // 660 Change ends
       isOk = false
     }
   }
