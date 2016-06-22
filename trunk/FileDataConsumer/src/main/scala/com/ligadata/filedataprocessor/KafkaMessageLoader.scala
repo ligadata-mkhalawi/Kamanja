@@ -547,10 +547,10 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
         
         //Flag to handle logging the exception metadata
         if(exception_metadata){
-          logger.error(errStr2)
+          logger.warn(errStr2)
           throw KVMessageFormatingException(errStr2)
         }else{
-          logger.error(errStr1)
+          logger.warn(errStr1)
           throw KVMessageFormatingException(errStr1)
         }
         
