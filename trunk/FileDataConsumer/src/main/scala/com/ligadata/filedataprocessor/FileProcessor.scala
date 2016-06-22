@@ -7,6 +7,11 @@ import com.ligadata.ZooKeeper.CreateClient
 import com.ligadata.kamanja.metadata.MessageDef
 import org.apache.curator.framework.CuratorFramework
 import org.apache.logging.log4j.{Logger, LogManager}
+import org.json4s.DefaultFormats
+import org.json4s._
+import org.json4s.JsonDSL._
+import org.json4s.jackson.JsonMethods._
+import org.json4s.jackson.Serialization
 import org.json4s.jackson.JsonMethods._
 import com.ligadata.kamanja.metadata.MdMgr._
 import scala.collection.mutable.HashMap
@@ -63,6 +68,7 @@ object FileProcessor {
   private var props: scala.collection.mutable.Map[String, String] = null
   var zkc: CuratorFramework = null
   var znodePath: String = ""
+  var znodePath_Status: String = ""
   var localMetadataConfig: String = ""
   var zkcConnectString: String = ""
 
@@ -123,7 +129,11 @@ object FileProcessor {
   private val bufferingQLock = new Object
   private val zkRecoveryLock = new Object
   private var maxFormatValidationArea = 1048576
-  private var status_interval = 0 // default to a minute
+  private var status_interval = 0
+  // default to a minute
+  private var randomFailureThreshHold = 0
+
+  val testRand = scala.util.Random
 
   /**
     *
@@ -133,7 +143,9 @@ object FileProcessor {
       zkcConnectString = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("ZOOKEEPER_CONNECT_STRING")
       logger.info("SMART_FILE_CONSUMER (global) Using zookeeper " + zkcConnectString)
       znodePath = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("ZNODE_PATH") + "/smartFileConsumer"
+      znodePath_Status = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("ZNODE_PATH") + "/smartFileConsumer_status"
       createNode(zkcConnectString, znodePath) // CreateClient.CreateNodeIfNotExists(zkcConnectString, znodePath)
+      createNode(zkcConnectString, znodePath_Status)
       zkc = getZkc(zkcConnectString) // CreateClient.createSimple(zkcConnectString)
     } catch {
       case e: Exception => {
@@ -424,6 +436,7 @@ object FileProcessor {
     refreshRate = props.getOrElse(SmartFileAdapterConstants.REFRESH_RATE, "2000").toInt
     maxFormatValidationArea = props.getOrElse(SmartFileAdapterConstants.MAX_SIZE_FOR_FILE_CONTENT_VALIDATION, "1048576").toInt
     status_interval = props.getOrElse(SmartFileAdapterConstants.STATUS_QUEUES_FREQUENCY, "0").toInt
+    randomFailureThreshHold = props.getOrElse(SmartFileAdapterConstants.TEST_FAILURE_THRESHOLD, "0").toInt
   }
 
   def markFileProcessing(fileName: String, offset: Int, createDate: Long): Unit = {
@@ -649,7 +662,7 @@ object FileProcessor {
                 }
               } else {
                 bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures)
-                logger.warn("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue ", ioe)
+                logger.warn("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue for file " + fileTuple._1, ioe)
               }
             }
             case e: Throwable => {
@@ -687,6 +700,10 @@ object FileProcessor {
     // TODO:  Can this block the processoing????????
     if (d.exists && d.isDirectory) {
       //Additional Filter Conditions, Ignore files starting with a . (period)
+
+      var bigCheck = testRand.nextInt(100)
+      if (randomFailureThreshHold > bigCheck) throw new Exception("TEST EXCEPTION... Processing Existing Files" + " (" + bigCheck + "/" + randomFailureThreshHold + ")")
+
       val files = d.listFiles.filter(_.isFile)
         .filter(!_.getName.startsWith("."))
         .sortWith(_.lastModified < _.lastModified).toList
@@ -742,6 +759,10 @@ object FileProcessor {
           val buffSzToTestContextType = maxFormatValidationArea;
           // Default is 1 * 1024 * 1024
           val tmpbuffer = new Array[Byte](buffSzToTestContextType)
+
+          var bigCheck = testRand.nextInt(100)
+          if (FileProcessor.randomFailureThreshHold > bigCheck) throw new Exception("TEST EXCEPTION... Checking File Content Type" + " (" + bigCheck + "/" + FileProcessor.randomFailureThreshHold + ")")
+
           val readlen = is.read(tmpbuffer, 0, buffSzToTestContextType)
           val buffer =
             if (readlen < buffSzToTestContextType)
@@ -1073,6 +1094,10 @@ object FileProcessor {
     val fileStruct = fileName.split("/")
     logger.info("SMART FILE CONSUMER Moving File" + fileName + " to " + targetMoveDir)
     if (Paths.get(fileName).toFile().exists()) {
+
+      var bigCheck = testRand.nextInt(100)
+      if (FileProcessor.randomFailureThreshHold > bigCheck) throw new Exception("TEST EXCEPTION... Failing to Move File" + " (" + bigCheck + "/" + FileProcessor.randomFailureThreshHold + ")")
+
       Files.move(Paths.get(fileName), Paths.get(targetMoveDir + "/" + fileStruct(fileStruct.size - 1)), REPLACE_EXISTING)
       fileCacheRemove(fileName)
     } else {
@@ -1081,31 +1106,50 @@ object FileProcessor {
   }
 
   private def externalizeStats(): Unit = {
-    var outString = "Queue Stats - \n"
+    // var outString = "Queue Stats - \n"
+    // fileCacheLock.synchronized { outString = outString + "CachedFiles: [" + fileCache.map(kv => {kv._1}).mkString(",") + "] \n" }
+    // activeFilesLock.synchronized { outString = outString + "AcitveFiles: [" + activeFiles.map(kv => {kv._1 +":"+ kv._2.status}).mkString(",") + "] \n" }
+    // bufferingQLock.synchronized { outString = outString + "Buffering Files: [" + bufferingQ_map.map(kv => {kv._1}).mkString(",") + "] \n" }
+    // fileQLock.synchronized { outString = outString + "Enqueued Files: [" + fileQ.map(file => file.name).mkString(",") + "] \n" }
 
-    fileCacheLock.synchronized {
-      outString = outString + "CachedFiles: [" + fileCache.map(kv => {
-        kv._1
-      }).mkString(",") + "] \n"
+    val flCacheMap = fileCacheLock.synchronized {
+      fileCache.toMap
+    }
+    val flQMap = fileQLock.synchronized {
+      fileQ.map(file => (file.name -> file.createDate)).toMap
+    }
+    val actFlMap = activeFilesLock.synchronized {
+      activeFiles.toMap
+    }
+    val bufQMap = bufferingQLock.synchronized {
+      bufferingQ_map.toMap
     }
 
-    activeFilesLock.synchronized {
-      outString = outString + "AcitveFiles: [" + activeFiles.map(kv => {
-        kv._1
-      }).mkString(",") + "] \n"
-    }
+    val flOnlyInCacheMap = flCacheMap -- flQMap.map(fl => fl._1) -- bufQMap.map(fl => fl._1)
+    val flOnlyInBufQ = bufQMap -- flCacheMap.map(fl => fl._1)
+    val flOnlyInFlQ = flQMap -- flCacheMap.map(fl => fl._1)
+    val flCacheAndBufQ = flCacheMap -- (flCacheMap -- bufQMap.map(fl => fl._1)).map(fl => fl._1) -- flOnlyInBufQ.map(fl => fl._1)
+    val flCacheAndFlQ = flCacheMap -- (flCacheMap -- flQMap.map(fl => fl._1)).map(fl => fl._1) -- flOnlyInFlQ.map(fl => fl._1)
 
-    bufferingQLock.synchronized {
-      outString = outString + "Buffering Files: [" + bufferingQ_map.map(kv => {
-        kv._1
-      }).mkString(",") + "] \n"
-    }
+    implicit val formats = DefaultFormats
+    val statusJson = (("OnlyCachedFiles" -> (flOnlyInCacheMap)) ~
+      ("OnlyBufferingFiles" -> flOnlyInBufQ.map(file => {
+        ("fileName" -> file._1) ~
+          ("fileInfo" -> (file._2._1 + ":" + file._2._2 + ":" + file._2._3))
+      })) ~
+      ("OnlyEnqueuedFiles" -> (flOnlyInFlQ)) ~
+      ("CachedAndBufferingFiles" -> (flCacheAndBufQ)) ~
+      ("CachedAndEnqueuedFiles" -> (flCacheAndFlQ)) ~
+      ("ActiveFiles" -> actFlMap.map { file =>
+        ("fileName" -> file._1) ~
+          ("fileInfo" -> ("status" -> file._2.asInstanceOf[FileStatus].status) ~
+            ("offset" -> file._2.asInstanceOf[FileStatus].offset) ~
+            ("createDate" -> file._2.asInstanceOf[FileStatus].createDate))
+      }))
 
-    fileQLock.synchronized {
-      outString = outString + "Enqueued Files: [" + fileQ.map(file => file.name).mkString(",") + "] \n"
-    }
-
-    logger.warn(outString)
+    var status_data_string = pretty(render(statusJson))
+    setData(znodePath_Status, status_data_string.getBytes())
+    logger.warn(status_data_string)
   }
 
 }
@@ -1167,7 +1211,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
   private var throttleTime: Int = 0
   private var isRecoveryOps = true
   private var bufferLimit = 1
-  private var randomFailureThreshHold = 0
+
 
   def setContentParsableFlag(isParsable: Boolean): Unit = synchronized {
     isContentParsable = isParsable
@@ -1187,8 +1231,6 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
       maxlen = props.getOrElse(SmartFileAdapterConstants.WORKER_BUFFER_SIZE, "4").toInt * 1024 * 1024
       partitionSelectionNumber = props(SmartFileAdapterConstants.NUMBER_OF_FILE_CONSUMERS).toInt
       bufferLimit = props.getOrElse(SmartFileAdapterConstants.THREAD_BUFFER_LIMIT, "1").toInt
-      randomFailureThreshHold = props.getOrElse(SmartFileAdapterConstants.TEST_FAILURE_THRESHOLD, "0").toInt
-
 
       //Code commented
       readyToProcessKey = props.getOrElse(SmartFileAdapterConstants.READY_MESSAGE_MASK, ".gzip")
@@ -1611,7 +1653,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
     try {
 
       var bigCheck = r.nextInt(100)
-      if (randomFailureThreshHold > bigCheck) throw new Exception("TEST EXCEPTION... Doing a BIS" + " (" + bigCheck + "/" + randomFailureThreshHold + ")")
+      if (FileProcessor.randomFailureThreshHold > bigCheck) throw new Exception("TEST EXCEPTION... Doing a BIS" + " (" + bigCheck + "/" + FileProcessor.randomFailureThreshHold + ")")
 
       if (isCompressed(fileName)) {
         bis = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(fileName))))
@@ -1681,7 +1723,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
           var curReadLen = bis.read(buffer, readlen, maxlen - readlen - 1)
 
           var bigCheck = r.nextInt(100)
-          if (randomFailureThreshHold > bigCheck) throw new Exception("TEST EXCEPTION... Doing a READ" + " (" + bigCheck + "/" + randomFailureThreshHold + ")")
+          if (FileProcessor.randomFailureThreshHold > bigCheck) throw new Exception("TEST EXCEPTION... Doing a READ" + " (" + bigCheck + "/" + FileProcessor.randomFailureThreshHold + ")")
 
           if (curReadLen > 0)
             readlen += curReadLen
@@ -1863,6 +1905,10 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
   private def isCompressed(inputfile: String): Boolean = {
     var is: FileInputStream = null
     try {
+
+      var bigCheck = FileProcessor.testRand.nextInt(100)
+      if (FileProcessor.randomFailureThreshHold > bigCheck) throw new Exception("TEST EXCEPTION... checking for Compression" + " (" + bigCheck + "/" + FileProcessor.randomFailureThreshHold + ")")
+
       is = new FileInputStream(inputfile)
     } catch {
       case fnfe: FileNotFoundException => {
