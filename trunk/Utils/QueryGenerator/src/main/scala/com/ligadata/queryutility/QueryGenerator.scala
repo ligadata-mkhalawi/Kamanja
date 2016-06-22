@@ -292,7 +292,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
        var adapterId = ""
        var vertexId = ""
        //// DAG /////
-       if (!ModelDefs.isEmpty) {
+       if(!ModelDefs.isEmpty){
          for (model <- ModelDefs.get) {
            val inputName = model.inputMsgSets
            for (msg <- inputName)
@@ -307,29 +307,17 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
                    } //id of vertex
                  }
                }
-               if (adapterId.length != 0 && vertexId.length != 0) {
-                 val linkKey = adapterId + "," + vertexId
-                 if (!edgeData.contains(linkKey)) {
-                   if (!msgDefs.isEmpty) {
-                     var flag = false
-                     for (message <- msgDefs.get) {
-                       if (message.FullName.equalsIgnoreCase(adapterMessage._2.messageName) && flag == false) {
-                         flag = true
-                         edgeData += (linkKey -> message.FullName)
-                         val setQuery = queryObj.createSetCommand(message = Option(message))
-                         val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkTo = Option(vertexId), linkFrom = Option(adapterId))
-                         queryObj.executeQuery(conn, query)
-                         logger.info(query)
-                         println(query)
-                       }
-                     }
-                   }
-                 } else {
-                   logger.info("The edge exist between this two nodes %s , %s".format(adapterId, vertexId))
-                   println("The edge exist between this two nodes %s, %s".format(adapterId, vertexId))
-                 }
-               }
              }
+           if (adapterId.length != 0 && vertexId.length != 0) {
+             val linkKey = adapterId + "," + vertexId
+             if (!edgeData.contains(linkKey)) {
+               val setQuery = "set Name = \"%s\"".format(adapterMessage._2.messageName)
+               val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkTo = Option(vertexId), linkFrom = Option(adapterId))
+               queryObj.executeQuery(conn, query)
+               logger.info(query)
+               println(query)
+             }
+           }
 
            val outputName = model.outputMsgs
            for (item <- outputName) {
@@ -345,16 +333,16 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
                  } //id of vertex
                }
              }
+
              if (adapterId.length != 0 && vertexId.length != 0) {
                val linkKey = vertexId + "," + adapterId
                if (!edgeData.contains(linkKey)) {
                  if (!msgDefs.isEmpty) {
-                   var flag = false
+
                    for (message <- msgDefs.get) {
-                     if (message.FullName.equalsIgnoreCase(item) && flag == false) {
+                     if (message.FullName.equalsIgnoreCase(item)) {
                        edgeData += (linkKey -> message.FullName)
-                       flag = true
-                       val setQuery = queryObj.createSetCommand(message = Option(message))
+                       val setQuery = "set Name = \"%s\"".format(adapterMessage._2.messageName)
                        val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkFrom = Option(vertexId), linkTo = Option(adapterId))
                        queryObj.executeQuery(conn, query)
                        logger.info(query)
@@ -369,7 +357,85 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
              }
            }
          }
-       }
+
+//       if (!ModelDefs.isEmpty) {
+//         for (model <- ModelDefs.get) {
+//           val inputName = model.inputMsgSets
+//           for (msg <- inputName)
+//             for (msg1 <- msg) {
+//               if (adapterMessage._2.messageName.equalsIgnoreCase(msg1.message)) {
+//                 for (vertex <- verticesDataNew) {
+//                   if (vertex._2.equalsIgnoreCase(adapterMessage._2.adapterName)) {
+//                     adapterId = vertex._1
+//                   } //id of adpater
+//                   if (vertex._2.equalsIgnoreCase(model.FullName)) {
+//                     vertexId = vertex._1
+//                   } //id of vertex
+//                 }
+//               }
+//               if (adapterId.length != 0 && vertexId.length != 0) {
+//                 val linkKey = adapterId + "," + vertexId
+//                 if (!edgeData.contains(linkKey)) {
+//                   if (!msgDefs.isEmpty) {
+//                     var flag = false
+//                     for (message <- msgDefs.get) {
+//                       if (message.FullName.equalsIgnoreCase(adapterMessage._2.messageName) && flag == false) {
+//                         flag = true
+//                         edgeData += (linkKey -> message.FullName)
+//                         val setQuery = queryObj.createSetCommand(message = Option(message))
+//                         val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkTo = Option(vertexId), linkFrom = Option(adapterId))
+//                         queryObj.executeQuery(conn, query)
+//                         logger.info(query)
+//                         println(query)
+//                       }
+//                     }
+//                   }
+//                 } else {
+//                   logger.info("The edge exist between this two nodes %s , %s".format(adapterId, vertexId))
+//                   println("The edge exist between this two nodes %s, %s".format(adapterId, vertexId))
+//                 }
+//               }
+//             }
+//
+//           val outputName = model.outputMsgs
+//           for (item <- outputName) {
+//             //             var adapterId = ""
+//             //             var vertexId = ""
+//             if (adapterMessage._2.messageName.equalsIgnoreCase(item)) {
+//               for (vertex <- verticesDataNew) {
+//                 if (vertex._2.equalsIgnoreCase(adapterMessage._2.adapterName)) {
+//                   adapterId = vertex._1
+//                 } //id of adpater
+//                 if (vertex._2.equalsIgnoreCase(model.FullName)) {
+//                   vertexId = vertex._1
+//                 } //id of vertex
+//               }
+//             }
+//             if (adapterId.length != 0 && vertexId.length != 0) {
+//               val linkKey = vertexId + "," + adapterId
+//               if (!edgeData.contains(linkKey)) {
+//                 if (!msgDefs.isEmpty) {
+//                   var flag = false
+//                   for (message <- msgDefs.get) {
+//                     if (message.FullName.equalsIgnoreCase(item) && flag == false) {
+//                       edgeData += (linkKey -> message.FullName)
+//                       flag = true
+//                       val setQuery = queryObj.createSetCommand(message = Option(message))
+//                       val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkFrom = Option(vertexId), linkTo = Option(adapterId))
+//                       queryObj.executeQuery(conn, query)
+//                       logger.info(query)
+//                       println(query)
+//                     }
+//                   }
+//                 }
+//               } else {
+//                 logger.info("The edge exist between this two nodes %s , %s".format(vertexId, adapterId))
+//                 println("The edge exist between this two nodes %s, %s".format(vertexId, adapterId))
+//               }
+//             }
+//           }
+//         }
+//       }
        ////// high level ////////
        var messageid = ""
        for (vertex <- verticesDataNew) {
