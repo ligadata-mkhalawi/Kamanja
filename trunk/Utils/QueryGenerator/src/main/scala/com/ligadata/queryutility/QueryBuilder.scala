@@ -84,7 +84,7 @@ class QueryBuilder extends LogTrait {
       query = "select @this.toJSON() as jsonrec from (select @rid as @rid, @class as @class, FullName from V)"
     } else if(elementType.equals("edge")){
       //query = "select @rid as id, FullName, in, out from E"
-      query = "select @this.toJSON() as jsonrec from (select @rid as @rid, @class as @class, FullName, in ,out from E)"
+      query = "select @this.toJSON() as jsonrec from (select @rid as @rid, @class as @class, FullName, Name, in ,out from E)"
     } else if(elementType.equals("class")){
       query = "select distinct(@class) from %s".format(extendClass.get)
     }
@@ -120,7 +120,8 @@ class QueryBuilder extends LogTrait {
       //val linkTo = result.getString("out").substring(result.getString("out").indexOf("#"),result.getString("out").indexOf("{"))
       val linkTo = adapCfgValues.get("out").get.toString
       Key = linkFrom + "," + linkTo
-      data +=  (Key -> adapCfgValues.get("FullName").get.toString )
+      val getName =  adapCfgValues.get("Name").get.toString
+      data +=  (Key -> adapCfgValues.getOrElse("FullName", getName).toString )
     }
     return data
   }
