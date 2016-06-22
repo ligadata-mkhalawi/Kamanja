@@ -321,30 +321,33 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
                    } //id of adpater
                    if (vertex._2.equalsIgnoreCase(model.FullName)) {
                      vertexId = vertex._1
-                    // vertexId = vertexId.substring(vertexId.indexOf("#"), vertexId.indexOf("{"))
+                     // vertexId = vertexId.substring(vertexId.indexOf("#"), vertexId.indexOf("{"))
                    } //id of vertex
                  }
-               }
-               if (adapterId.length != 0 && vertexId.length != 0) {
-                 val linkKey = adapterId + "," + vertexId
-                 if (!edgeData.contains(linkKey)) {
-                   if (!msgDefs.isEmpty) {
-                     for (message <- msgDefs.get) {
-                       if (message.FullName.equalsIgnoreCase(adapterMessage._2.messageName)) {
-                         edgeData += (linkKey -> message.FullName)
-                         val setQuery = queryObj.createSetCommand(message = Option(message))
-                         val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkTo = Option(vertexId), linkFrom = Option(adapterId))
-                         queryObj.executeQuery(conn, query)
-                         logger.info(query)
-                         println(query)
+                 //   } here
+                 if (adapterId.length != 0 && vertexId.length != 0) {
+                   val linkKey = adapterId + "," + vertexId
+                   if (!edgeData.contains(linkKey)) {
+                     if (!msgDefs.isEmpty) {
+                       for (message <- msgDefs.get) {
+                         if (message.FullName.equalsIgnoreCase(adapterMessage._2.messageName)) {
+                           if (!edgeData.contains(linkKey)) {
+                             edgeData += (linkKey -> message.FullName)
+                             val setQuery = queryObj.createSetCommand(message = Option(message))
+                             val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkTo = Option(vertexId), linkFrom = Option(adapterId))
+                             queryObj.executeQuery(conn, query)
+                             logger.info(query)
+                             println(query)
+                           }
+                         }
                        }
                      }
+                   } else {
+                     logger.info("The edge exist between this two nodes %s , %s".format(adapterId, vertexId))
+                     println("The edge exist between this two nodes %s, %s".format(adapterId, vertexId))
                    }
-                 } else {
-                   logger.info("The edge exist between this two nodes %s , %s".format(adapterId, vertexId))
-                   println("The edge exist between this two nodes %s, %s".format(adapterId, vertexId))
                  }
-               }
+               } //here
 
                //             msg1.message.substring(msg1.message.lastIndexOf('.') + 1)
                //println(" input message : " + msg1.message)
@@ -360,32 +363,35 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
                for (vertex <- verticesDataNew) {
                  if (vertex._2.equalsIgnoreCase(adapterMessage._2.adapterName)) {
                    adapterId = vertex._1
-                  // adapterId = adapterId.substring(adapterId.indexOf("#"), adapterId.indexOf("{"))
+                   // adapterId = adapterId.substring(adapterId.indexOf("#"), adapterId.indexOf("{"))
                  } //id of adpater
                  //                 if (vertex._2.equalsIgnoreCase(model.FullName)) {
                  //                   vertexId = vertex._1
                  //                   vertexId = vertexId.substring(vertexId.indexOf("#"),vertexId.indexOf("{"))
                  //                 } //id of vertex
                }
-             }
-             if (adapterId.length != 0 && vertexId.length != 0) {
-               val linkKey = vertexId + "," + adapterId
-               if (!edgeData.contains(linkKey)) {
-                 if (!msgDefs.isEmpty) {
-                   for (message <- msgDefs.get) {
-                     if (message.FullName.equalsIgnoreCase(item)) {
-                       edgeData += (linkKey -> message.FullName)
-                       val setQuery = queryObj.createSetCommand(message = Option(message))
-                       val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkFrom = Option(vertexId), linkTo = Option(adapterId))
-                       queryObj.executeQuery(conn, query)
-                       logger.info(query)
-                       println(query)
+               // } here
+               if (adapterId.length != 0 && vertexId.length != 0) {
+                 val linkKey = vertexId + "," + adapterId
+                 if (!edgeData.contains(linkKey)) {
+                   if (!msgDefs.isEmpty) {
+                     for (message <- msgDefs.get) {
+                       if (message.FullName.equalsIgnoreCase(item)) {
+                         if (!edgeData.contains(linkKey)) {
+                           edgeData += (linkKey -> message.FullName)
+                           val setQuery = queryObj.createSetCommand(message = Option(message))
+                           val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkFrom = Option(vertexId), linkTo = Option(adapterId))
+                           queryObj.executeQuery(conn, query)
+                           logger.info(query)
+                           println(query)
+                         }
+                       }
                      }
                    }
+                 } else {
+                   logger.info("The edge exist between this two nodes %s , %s".format(vertexId, adapterId))
+                   println("The edge exist between this two nodes %s, %s".format(vertexId, adapterId))
                  }
-               } else {
-                 logger.info("The edge exist between this two nodes %s , %s".format(vertexId, adapterId))
-                 println("The edge exist between this two nodes %s, %s".format(vertexId, adapterId))
                }
              }
            }
@@ -431,12 +437,14 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
 
                if (!edgeData.contains(linkKey)) {
                  if (adapter._2.Name.equalsIgnoreCase(adapterMessage._2.adapterName)) {
-                   edgeData += (linkKey -> adapterType)
-                   val setQuery = "set Name = \"%s\"".format(adapterType)
-                   val query: String = queryObj.createQuery(elementType = "edge", className = adapterType, setQuery = setQuery, linkFrom = Option(fromlink), linkTo = Option(tolink))
-                   queryObj.executeQuery(conn, query)
-                   logger.info(query)
-                   println(query)
+                   if (!edgeData.contains(linkKey)) {
+                     edgeData += (linkKey -> adapterType)
+                     val setQuery = "set Name = \"%s\"".format(adapterType)
+                     val query: String = queryObj.createQuery(elementType = "edge", className = adapterType, setQuery = setQuery, linkFrom = Option(fromlink), linkTo = Option(tolink))
+                     queryObj.executeQuery(conn, query)
+                     logger.info(query)
+                     println(query)
+                   }
                  }
                } else {
                  logger.info("The edge exist between this two nodes %s , %s".format(fromlink, tolink))
@@ -471,12 +479,14 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
                  if (!msgDefs.isEmpty) {
                    for (message <- msgDefs.get) {
                      if (message.FullName.equalsIgnoreCase(msg1.message)) {
-                       edgeData += (linkKey -> msg1.message)
-                       val setQuery = "set Name = \"%s\"".format("ConsumedBy")
-                       val query: String = queryObj.createQuery(elementType = "edge", className = "ConsumedBy", setQuery = setQuery, linkTo = Option(vertexId), linkFrom = Option(messageId))
-                       queryObj.executeQuery(conn, query)
-                       logger.info(query)
-                       println(query)
+                       if (!edgeData.contains(linkKey)) {
+                         edgeData += (linkKey -> msg1.message)
+                         val setQuery = "set Name = \"%s\"".format("ConsumedBy")
+                         val query: String = queryObj.createQuery(elementType = "edge", className = "ConsumedBy", setQuery = setQuery, linkTo = Option(vertexId), linkFrom = Option(messageId))
+                         queryObj.executeQuery(conn, query)
+                         logger.info(query)
+                         println(query)
+                       }
                      }
                    }
                  }
@@ -504,18 +514,55 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
                if (!msgDefs.isEmpty) {
                  for (message <- msgDefs.get) {
                    if (message.FullName.equalsIgnoreCase(item)) {
-                     edgeData += (linkKey -> item)
-                     val setQuery = "set Name = \"%s\"".format("Produces")
-                     val query: String = queryObj.createQuery(elementType = "edge", className = "Produces", setQuery = setQuery, linkTo = Option(messageId), linkFrom = Option(vertexId))
-                     queryObj.executeQuery(conn, query)
-                     logger.info(query)
-                     println(query)
+                     if (!edgeData.contains(linkKey)) {
+                       edgeData += (linkKey -> item)
+                       val setQuery = "set Name = \"%s\"".format("Produces")
+                       val query: String = queryObj.createQuery(elementType = "edge", className = "Produces", setQuery = setQuery, linkTo = Option(messageId), linkFrom = Option(vertexId))
+                       queryObj.executeQuery(conn, query)
+                       logger.info(query)
+                       println(query)
+                     }
                    }
                  }
                }
              } else {
                logger.info("The edge exist between this two nodes %s , %s".format(vertexId, messageId))
                println("The edge exist between this two nodes %s, %s".format(vertexId, messageId))
+             }
+           }
+         }
+       }
+
+       if (!adapterDefs.isEmpty) {
+         var messageId = ""
+         var storage = ""
+         for(adapter <- adapterDefs){
+           if(adapter._2.TypeString.equalsIgnoreCase("storage")){
+             if(!msgDefs.isEmpty){
+               for (message <- msgDefs.get){
+                 for (vertex <- verticesDataNew) {
+                   if (vertex._2.equalsIgnoreCase(message.FullName)) {
+                      messageId = vertex._1
+                   } //id of message
+                   else if(vertex._2.equalsIgnoreCase(adapter._2.Name)){
+                      storage = vertex._1
+                   }
+                 }
+                 val fromlink = messageId
+                 val tolink = storage
+                 val linkKey = messageId + "," + storage
+                 if (!edgeData.contains(linkKey)) {
+                   edgeData += (linkKey -> adapter._2.Name)
+                   val setQuery = "set Name = \"%s\"".format("StoredBy")
+                   val query: String = queryObj.createQuery(elementType = "edge", className = "StoredBy", setQuery = setQuery, linkFrom = Option(fromlink), linkTo = Option(tolink))
+                   queryObj.executeQuery(conn, query)
+                   logger.info(query)
+                   println(query)
+                 } else {
+                   logger.info("The edge exist between this two nodes %s , %s".format(fromlink, tolink))
+                   println("The edge exist between this two nodes %s, %s".format(fromlink, tolink))
+                 }
+               }
              }
            }
          }
