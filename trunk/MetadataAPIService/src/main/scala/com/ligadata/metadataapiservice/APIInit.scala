@@ -79,7 +79,7 @@ object APIInit {
       InitLeaderLatch
     } catch {
       case e: Exception => {
-           logger.debug("", e)
+           logger.error("", e)
       }
     }
   }

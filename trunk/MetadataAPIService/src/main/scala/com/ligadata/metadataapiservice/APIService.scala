@@ -16,12 +16,17 @@
 
 package com.ligadata.metadataapiservice
 
+import java.io.File
+import java.nio.file.{Path, Files}
+
 import akka.actor.{ActorSystem, Props}
 import akka.actor.ActorDSL._
 import akka.event.Logging
 import akka.io.IO
 import akka.io.Tcp._
+import com.typesafe.config.ConfigFactory
 import spray.can.Http
+
 import org.json4s.jackson.JsonMethods._
 import com.ligadata.kamanja.metadata.ObjType._
 import com.ligadata.kamanja.metadata._
@@ -29,6 +34,7 @@ import com.ligadata.kamanja.metadataload.MetadataLoad
 import com.ligadata.MetadataAPI.MetadataAPIImpl
 import org.apache.logging.log4j._
 import com.ligadata.Utils._
+import spray.can.server.ServerSettings
 import scala.util.control.Breaks._
 import com.ligadata.Exceptions._
 import com.ligadata.KamanjaVersion.KamanjaVersion
@@ -62,6 +68,7 @@ class APIService extends LigadataSSLConfiguration with Runnable{
    *
    */
   def run() {
+    logger.warn("running service")
     StartService(inArgs)
   }
 
@@ -87,12 +94,17 @@ class APIService extends LigadataSSLConfiguration with Runnable{
   }
 
   private def Shutdown(exitCode: Int): Unit = {
+    if(system != null)
+      system.shutdown()
+
     APIInit.Shutdown(0)
+    MetadataAPIImpl.shutdown
     //System.exit(0)
   }
 
   private def StartService(args: Array[String]) : Unit = {
     try{
+
       var configFile = ""
       if (args.length == 0) {
         try {
@@ -162,28 +174,104 @@ class APIService extends LigadataSSLConfiguration with Runnable{
       })
       val service = system.actorOf(Props[MetadataAPIServiceActor], "metadata-api-service")
 
-      // start a new HTTP server on a specified port with our service actor as the handler
-      IO(Http).tell(Http.Bind(service, serviceHost, servicePort), callbackActor)
+      val sslEnabled = getIsSslEnabledFromConfig
+      logger.warn("Setting ssl enabled to: "+sslEnabled)
+      MetadataAPIImpl.setSslEnabled(sslEnabled)
 
-      logger.debug("MetadataAPIService started, listening on (%s,%s)".format(serviceHost,servicePort))
+      val isValid = {
+        if(MetadataAPIImpl.isSslEnabled){
+          val keyStoreResource = MetadataAPIImpl.getSSLCertificatePath
+          val kspass = MetadataAPIImpl.getSSLCertificatePasswd
 
-      sys.addShutdownHook({
-        logger.debug("ShutdownHook called")
+          if(keyStoreResource == null || keyStoreResource.trim.length==0){
+            logger.error("SSL is enabled. please provide a value for SSL_CERTIFICATE file path in Metadata Api config ")
+            false
+          }
+          else if(!new File(keyStoreResource.trim).exists){
+            logger.error("SSL_CERTIFICATE file ({}) does not exist ", keyStoreResource.trim)
+            false
+          }
+          else if(kspass == null) {
+            //TODO : is it allowed to be empty???
+            logger.error("SSL is enabled. please provide a value for SSL_PASSWD in Metadata Api config ")
+            false
+          }
+          else true
+        }
+        else true
+      }
+
+      if(!isValid){
+        logger.warn("Hence shutting down")
         Shutdown(0)
-      })
+        //System.exit(0)
+        return
+      }
+      else {
+        //Open db connection
+        // APIInit deals with shutdown activity and it needs to know
+        // that database connections were successfully made
+        APIInit.SetDbOpen
 
-      Thread.sleep(365*24*60*60*1000L)
+        logger.debug("API Properties => " + MetadataAPIImpl.GetMetadataAPIConfig)
+
+        // We will allow access to this web service from all the servers on the PORT # defined in the config file
+        val serviceHost = "0.0.0.0"
+        val servicePort = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("SERVICE_PORT").toInt
+
+        // create and start our service actor
+        val callbackActor = actor(new Act {
+          become {
+            case b@Bound(connection) => logger.debug(b.toString)
+            case cf@CommandFailed(command) => logger.error(cf.toString)
+            case all => logger.debug("ApiService Received a message from Akka.IO: " + all.toString)
+          }
+        })
+        val service = system.actorOf(Props[MetadataAPIServiceActor], "metadata-api-service")
+
+        logger.info("Starting MetadataAPIService")
+        // start a new HTTP server on a specified port with our service actor as the handler
+        IO(Http).tell(Http.Bind(service, serviceHost, servicePort), callbackActor)
+
+        logger.debug("MetadataAPIService started, listening on (%s,%s)".format(serviceHost, servicePort))
+
+        sys.addShutdownHook({
+          logger.warn("ShutdownHook called")
+          Shutdown(0)
+        })
+
+        Thread.sleep(365 * 24 * 60 * 60 * 1000L)
+      }
     } catch {
       case e: InterruptedException => {
-        logger.debug("Unexpected Interrupt")
+        logger.info("Unexpected Interrupt", e)
       }
       case e: Exception => {
-              logger.debug("", e)
+              logger.error("Exception: ", e)
+      }
+      case e: Throwable => {
+        logger.error("Throwable: ", e)
       }
     } finally {
+      logger.warn("Shutting down")
       Shutdown(0)
     }
   }
+
+  def getIsSslEnabledFromConfig(): Boolean ={
+    var sslEnabled = true // consider this default?
+    val config = ConfigFactory.load()
+    if(config != null){
+      val sprayServerConfig = config.getConfig("spray.can.server")
+      if(sprayServerConfig != null){
+        val sslEncryptionConfigVAl = sprayServerConfig.getString("ssl-encryption")
+        if(sslEncryptionConfigVAl != null)
+          sslEnabled = sslEncryptionConfigVAl.toLowerCase.equals("on")
+      }
+    }
+    sslEnabled
+  }
+
 }
 
 object APIService {
@@ -192,6 +280,11 @@ object APIService {
 
   def main(args: Array[String]): Unit = {
     val mgr = new APIService
+
+    /*logger.warn("shutting down for testing")
+    mgr.Shutdown(0)
+    return*/
+
     mgr.StartService(args)
   }
 
