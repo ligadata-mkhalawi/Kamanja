@@ -56,6 +56,9 @@ class SaveContainerDataCompImpl extends LogTrait with ObjectResolver {
   private val _baseObjs = scala.collection.mutable.Map[String, ContainerFactoryInterface]()
   private val _kamanjaLoader = new KamanjaLoaderInfo
   private var _transService: SimpleTransService = null
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   private def LoadJarIfNeeded(elem: BaseElem, loadedJars: TreeSet[String], loader: KamanjaClassLoader): Unit = {
     var retVal: Boolean = true
@@ -202,11 +205,13 @@ class SaveContainerDataCompImpl extends LogTrait with ObjectResolver {
     }
 
     // Metadata Init
-    MetadataAPIImpl.InitMdMgrFromBootStrap(cfgfile, false)
+    getMetadataAPI.InitMdMgrFromBootStrap(cfgfile, false)
 
     val nodeInfo = mdMgr.Nodes.getOrElse(nodeId.toString, null)
     if (nodeInfo == null) {
-      val msgStr = "Node %d not found in metadata".format(nodeId)
+      // 660 Change begins - bug fix for proper cluster config upload message
+      val msgStr = "Node %d not found in metadata, Please ensure cluster configuration has been uploaded.".format(nodeId)
+      // 660 Change ends
       logger.error(msgStr)
       throw new Exception(msgStr)
     }
@@ -517,7 +522,7 @@ class SaveContainerDataCompImpl extends LogTrait with ObjectResolver {
     if (_initialized) {
       _dataStore.Shutdown()
       NodeLevelTransService.Shutdown
-      MetadataAPIImpl.CloseDbStore
+      getMetadataAPI.CloseDbStore
     }
 
     _dataStore = null
@@ -569,4 +574,3 @@ class SaveContainerDataComponent {
     impl.Shutdown
   }
 }
-

@@ -48,6 +48,9 @@ trait MetadataAPIService extends HttpService {
   val loggerName = this.getClass.getName
   val logger = LogManager.getLogger(loggerName)
   // logger.setLevel(Level.TRACE);
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   val metadataAPIRoute = {
     optionalHeaderValueByName("userid") { userId =>
