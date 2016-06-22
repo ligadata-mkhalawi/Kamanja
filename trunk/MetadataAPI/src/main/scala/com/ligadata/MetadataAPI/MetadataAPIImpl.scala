@@ -114,6 +114,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
   private var cacheOfOwnChanges: scala.collection.mutable.Set[String] = scala.collection.mutable.Set[String]()
   private var currentTranLevel: Long = _
   private var passwd: String = null
+  private var sslEnabled: Boolean = true
   private var compileCfg: String = ""
   private var heartBeat: HeartBeatUtil = null
   var zkHeartBeatNodePath = ""
@@ -447,8 +448,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
    * getSSLCertificatePasswd
    */
   def getSSLCertificatePasswd: String = {
-    if (passwd != null) return passwd
-    ""
+    passwd
   }
 
     /**
@@ -458,6 +458,23 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
      */
   def setSSLCertificatePasswd(pw: String) = {
     passwd = pw
+  }
+
+
+  /**
+    * isSslEnabled
+    */
+  def isSslEnabled: Boolean = {
+    sslEnabled
+  }
+
+  /**
+    * setSSLCertificatePasswd
+    *
+    * @param enable
+    */
+  def setSslEnabled(enable: Boolean) = {
+    sslEnabled = enable
   }
 
   /**
