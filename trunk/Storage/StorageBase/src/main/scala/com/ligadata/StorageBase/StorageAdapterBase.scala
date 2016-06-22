@@ -270,7 +270,8 @@ trait DataStore extends DataStoreOperations with AdaptersSerializeDeserializers 
 
   override def getComponentStatusAndMetrics: MonitorComponentInfo = {
     val lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
-    MonitorComponentInfo(_TYPE_STORAGE, if (adapterInfo != null) adapterInfo.Name else "", if (adapterInfo != null) adapterInfo.Name else "", _startTime, lastSeen, "{}")
+    logger.debug("component stats => " + getComponentSimpleStats)
+    MonitorComponentInfo(_TYPE_STORAGE, if (adapterInfo != null) adapterInfo.Name else "", if (adapterInfo != null) adapterInfo.Name else "", _startTime, lastSeen, "{" + getComponentSimpleStats + "}")
   }
 
   override def getComponentSimpleStats: String = {

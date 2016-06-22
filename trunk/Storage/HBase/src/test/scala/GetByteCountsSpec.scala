@@ -265,7 +265,8 @@ class GetByteCountsSpec extends FunSpec with BeforeAndAfter with BeforeAndAfterA
       logger.info("Count of putObjs  => " + adapter._putObjs(tableName));
       logger.info("Count of getBytes => " + adapter._getBytes(tableName));
       logger.info("Count of putBytes => " + adapter._putBytes(tableName));
-      logger.info("Simple Stats      => " + adapter.getComponentSimpleStats);
+      logger.info("getComponentSimpleStats  => " + adapter.getComponentSimpleStats);
+      logger.info("getComponentStatusAndMetrics => " + adapter.getComponentStatusAndMetrics);
 
       And("Shutdown hbase session")
       noException should be thrownBy {
