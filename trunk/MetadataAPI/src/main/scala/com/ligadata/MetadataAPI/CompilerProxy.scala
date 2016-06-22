@@ -899,13 +899,15 @@ class CompilerProxy {
     elements.foreach(elem => {
       var eName: Array[String] = elem.PhysicalName.split('.').map(_.trim)
       if ((eName.length - 1) > 0) {
-        typeNamespace = new Array[String](eName.length - 1)
+        //eName has the format com.x.y.V0001.ClassName so to get namespace must exclude last two tokens
+        typeNamespace = new Array[String](eName.length - 2)
         for (i <- 0 until typeNamespace.length) {
           typeNamespace(i) = eName(i)
         }
         var typeClassName: String = eName(eName.length - 1)
         // Replace the "import com...ClassName" import statement
-        repackagedCode = repackagedCode.replaceAll(("\\s*import\\s*" + typeNamespace.mkString(".") + "[.*]" + typeClassName + "\\;*"), "")
+        repackagedCode = repackagedCode.replaceAll(("\\s*import\\s*" + typeNamespace.mkString(".") + "\\." + typeClassName + "\\;*"), "")
+        repackagedCode = repackagedCode.replaceAll(("\\s*import\\s*" + typeNamespace.mkString(".") + "\\.[Vv].*\\." + typeClassName + "\\;*"), "")
       }
     })
 
@@ -916,11 +918,14 @@ class CompilerProxy {
     }
 
     //Replace the "import com....*;" statement - JAVA STYLE IMPORT ALL
-    repackagedCode = repackagedCode.replaceAll(("\\s*import\\s*" + typeNamespace.mkString(".") + "[.*]" + "\\*\\;*"), "")
+    repackagedCode = repackagedCode.replaceAll(("\\s*import\\s*" + typeNamespace.mkString(".") + "\\." + "\\*\\;*"), "")
+    repackagedCode = repackagedCode.replaceAll(("\\s*import\\s*" + typeNamespace.mkString(".") + "\\.[Vv].*\\." + "\\*\\;*"), "")
     // Replace the "import com...._;" type of statement  - SCALA STYLE IMPORT ALL
-    repackagedCode = repackagedCode.replaceAll(("\\s*import\\s*" + typeNamespace.mkString(".") + "[.*]" + "_\\;*"), "")
+    repackagedCode = repackagedCode.replaceAll(("\\s*import\\s*" + typeNamespace.mkString(".") + "\\." + "_\\;*"), "")
+    repackagedCode = repackagedCode.replaceAll(("\\s*import\\s*" + typeNamespace.mkString(".") + "\\.[Vv].*\\." + "_\\;*"), "")
     // Replace the "import com....{xxx};" type of statement  - SCALA STYLE IMPORT SPECIFIC CLASSES IN BATCH
-    repackagedCode = repackagedCode.replaceAll("\\s*import\\s*" + typeNamespace.mkString(".") + "\\.\\{.*?\\}", "")
+    repackagedCode = repackagedCode.replaceAll("\\s*import\\s*" + typeNamespace.mkString(".") + "\\.\\{.*?\\}\\;*", "")
+    repackagedCode = repackagedCode.replaceAll("\\s*import\\s*" + typeNamespace.mkString(".") + "\\.[Vv].*\\.\\{.*?\\}\\;*", "")
 
     // Add all the needed imports - have to recalculate the beginning of the imports in the original source code, since a bunch of imports were
     // removed.
