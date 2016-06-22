@@ -123,6 +123,7 @@ object FileProcessor {
   private val bufferingQLock = new Object
   private val zkRecoveryLock = new Object
   private var maxFormatValidationArea = 1048576
+  private var status_interval = 0 // default to a minute
 
   /**
     *
@@ -422,6 +423,7 @@ object FileProcessor {
     maxTimeFileAllowedToLive = (1000 * props.getOrElse(SmartFileAdapterConstants.MAX_TIME_ALLOWED_TO_BUFFER, "3000").toInt)
     refreshRate = props.getOrElse(SmartFileAdapterConstants.REFRESH_RATE, "2000").toInt
     maxFormatValidationArea = props.getOrElse(SmartFileAdapterConstants.MAX_SIZE_FOR_FILE_CONTENT_VALIDATION, "1048576").toInt
+    status_interval = props.getOrElse(SmartFileAdapterConstants.STATUS_QUEUES_FREQUENCY, "0").toInt
   }
 
   def markFileProcessing(fileName: String, offset: Int, createDate: Long): Unit = {
@@ -887,8 +889,8 @@ object FileProcessor {
 
 
       logger.info("SMART_FILE_CONSUMER partition Initialization complete  Monitoring specified directory for new files")
-      // Begin the listening process, TAKE()
 
+      var nextInterval = System.currentTimeMillis() + (status_interval * 1000)
       breakable {
         while (true) {
           //processExistingFiles(d)
@@ -909,6 +911,12 @@ object FileProcessor {
           }
           //TODO C&S - Need to parameterize
           Thread.sleep(refreshRate)
+
+          if (status_interval > 0 && System.currentTimeMillis() > nextInterval) {
+            externalizeStats()
+            nextInterval = System.currentTimeMillis() + (status_interval * 1000)
+          }
+
         }
       }
     } catch {
@@ -1072,6 +1080,34 @@ object FileProcessor {
     }
   }
 
+  private def externalizeStats(): Unit = {
+    var outString = "Queue Stats - \n"
+
+    fileCacheLock.synchronized {
+      outString = outString + "CachedFiles: [" + fileCache.map(kv => {
+        kv._1
+      }).mkString(",") + "] \n"
+    }
+
+    activeFilesLock.synchronized {
+      outString = outString + "AcitveFiles: [" + activeFiles.map(kv => {
+        kv._1
+      }).mkString(",") + "] \n"
+    }
+
+    bufferingQLock.synchronized {
+      outString = outString + "Buffering Files: [" + bufferingQ_map.map(kv => {
+        kv._1
+      }).mkString(",") + "] \n"
+    }
+
+    fileQLock.synchronized {
+      outString = outString + "Enqueued Files: [" + fileQ.map(file => file.name).mkString(",") + "] \n"
+    }
+
+    logger.warn(outString)
+  }
+
 }
 
 
@@ -1131,6 +1167,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
   private var throttleTime: Int = 0
   private var isRecoveryOps = true
   private var bufferLimit = 1
+  private var randomFailureThreshHold = 0
 
   def setContentParsableFlag(isParsable: Boolean): Unit = synchronized {
     isContentParsable = isParsable
@@ -1150,6 +1187,8 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
       maxlen = props.getOrElse(SmartFileAdapterConstants.WORKER_BUFFER_SIZE, "4").toInt * 1024 * 1024
       partitionSelectionNumber = props(SmartFileAdapterConstants.NUMBER_OF_FILE_CONSUMERS).toInt
       bufferLimit = props.getOrElse(SmartFileAdapterConstants.THREAD_BUFFER_LIMIT, "1").toInt
+      randomFailureThreshHold = props.getOrElse(SmartFileAdapterConstants.TEST_FAILURE_THRESHOLD, "0").toInt
+
 
       //Code commented
       readyToProcessKey = props.getOrElse(SmartFileAdapterConstants.READY_MESSAGE_MASK, ".gzip")
@@ -1317,7 +1356,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
 
         // In this state, we need to ignore the rest of the incoming buffers, until a new file is encountered.
         if (!isContentParsable) {
-          logger.warn("SMART FILE CONSUMER (\" + partitionId + \"): Ignoring buffers due to earlier corruption in the file.")
+          logger.warn("SMART FILE CONSUMER (" + partitionId + "): Ignoring buffers due to earlier corruption in the file.")
 
           // Tell whomever waiting for the leftovers of this buffer that it ain't coming...
           var newLeftovers = BufferLeftoversArea(beeNumber, leftOvers, buffer.chunkNumber)
@@ -1403,7 +1442,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
                 tstContentParsable = isContentParsable
                 if (!tstContentParsable) {
                   //TODO can this be here..
-                  logger.warn("SMART FILE CONSUMER (\" + partitionId + \"): Ignoring buffers due to earlier corruption in the file detection.")
+                  logger.warn("SMART FILE CONSUMER (" + partitionId + "): Ignoring buffers due to earlier corruption in the file detection.")
                   var newLeftovers = BufferLeftoversArea(beeNumber, leftOvers, buffer.chunkNumber)
                   setLeftovers(newLeftovers, beeNumber)
                 } else {
@@ -1542,6 +1581,8 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
 
     setContentParsableFlag(true)
 
+    val r = scala.util.Random
+
     // Start the worker bees... should only be started the first time..
     if (workerBees == null) {
       workerBees = Executors.newFixedThreadPool(NUMBER_OF_BEES)
@@ -1568,6 +1609,10 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
     //var bis: InputStream = new ByteArrayInputStream(Files.readAllBytes(Paths.get(fileName)))
     var bis: BufferedReader = null
     try {
+
+      var bigCheck = r.nextInt(100)
+      if (randomFailureThreshHold > bigCheck) throw new Exception("TEST EXCEPTION... Doing a BIS" + " (" + bigCheck + "/" + randomFailureThreshHold + ")")
+
       if (isCompressed(fileName)) {
         bis = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(fileName))))
       } else {
@@ -1634,6 +1679,10 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
         try {
           readlen = 0
           var curReadLen = bis.read(buffer, readlen, maxlen - readlen - 1)
+
+          var bigCheck = r.nextInt(100)
+          if (randomFailureThreshHold > bigCheck) throw new Exception("TEST EXCEPTION... Doing a READ" + " (" + bigCheck + "/" + randomFailureThreshHold + ")")
+
           if (curReadLen > 0)
             readlen += curReadLen
           else // First time reading into buffer triggered end of file (< 0)
