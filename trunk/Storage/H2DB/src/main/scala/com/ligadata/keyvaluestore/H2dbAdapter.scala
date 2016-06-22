@@ -1,5 +1,3 @@
-
-
 /*
  * Copyright 2015 ligaDATA
  *
@@ -363,7 +361,9 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
     try {
       con = getConnection
       //      query = "SELECT count(*) FROM sys.schemas WHERE name = ?"
-      query = "SELECT count(*) FROM INFORMATION_SCHEMA.SCHEMATA WHERE CATALOG_NAME = ?"
+      //      query = "SELECT count(*) FROM INFORMATION_SCHEMA.SCHEMATA WHERE CATALOG_NAME = ?"
+      //      query = "select count(*) from INFORMATION_SCHEMA.CATALOGS where CATALOG_NAME= UPPER(?)"
+      query = "select count(*) from INFORMATION_SCHEMA.SCHEMATA where SCHEMA_NAME=UPPER(?)"
       pstmt = con.prepareStatement(query)
       pstmt.setString(1, schemaName)
       rs = pstmt.executeQuery();
@@ -431,6 +431,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
       }
     }
   }
+
   /**
     * loadJar - load the specified jar into the classLoader
     */
@@ -489,81 +490,19 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
       con = getConnection
       // put is sematically an upsert. An upsert is being implemented using a transact-sql update
       // statement in H2db
-
       sql = "merge into " + tableName + "(timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo) key(timePartition, bucketKey, transactionId, rowId) values (?,?,?,?,?,?,?)"
-      pstmt.setLong(1, key.timePartition)
+      pstmt = con.prepareStatement(sql)
+      pstmt.setLong(1,0)
       pstmt.setString(2, key.bucketKey.mkString(","))
       pstmt.setLong(3, key.transactionId)
       pstmt.setInt(4, key.rowId)
       pstmt.setInt(5, value.schemaId)
       pstmt.setString(6, value.serializerType)
-      pstmt.setBinaryStream(7, new java.io.ByteArrayInputStream(value.serializedInfo), value.serializedInfo.length)
-
-      //      sql = "if ( not exists(select 1 from " + tableName +
-      //        " where timePartition = ? and bucketKey = ?  and transactionId = ?  and rowId = ? ) ) " +
-      //        " begin " +
-      //        " insert into " + tableName + "(timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo)" +
-      //        " values(?,?,?,?,?,?,?)" +
-      //        " end " +
-      //        " else " +
-      //        " begin " +
-      //        " update " + tableName + " set schemaId = ?,serializerType = ?, serializedInfo = ? where timePartition = ? and bucketKey = ?  and transactionId = ?  and rowId = ?  " +
-      //        " end ";
-      //      logger.debug("sql => " + sql)
-      //      pstmt = con.prepareStatement(sql)
-      //      pstmt.setLong(1, key.timePartition)
-      //      pstmt.setString(2, key.bucketKey.mkString(","))
-      //      pstmt.setLong(3, key.transactionId)
-      //      pstmt.setInt(4, key.rowId)
-      //      pstmt.setLong(5, key.timePartition)
-      //      pstmt.setString(6, key.bucketKey.mkString(","))
-      //      pstmt.setLong(7, key.transactionId)
-      //      pstmt.setInt(8, key.rowId)
-      //      pstmt.setInt(9, value.schemaId)
-      //      pstmt.setString(10, value.serializerType)
-      //      pstmt.setBinaryStream(11, new java.io.ByteArrayInputStream(value.serializedInfo), value.serializedInfo.length)
-      //      pstmt.setInt(12, value.schemaId)
-      //      pstmt.setString(13, value.serializerType)
-      //      pstmt.setBinaryStream(14, new java.io.ByteArrayInputStream(value.serializedInfo), value.serializedInfo.length)
-      //      pstmt.setLong(15, key.timePartition)
-      //      pstmt.setString(16, key.bucketKey.mkString(","))
-      //      pstmt.setLong(17, key.transactionId)
-      //      pstmt.setInt(18, key.rowId)
+      var newBuffer: Array[Byte] = new Array[Byte](value.serializedInfo.length);
+      var c: Int = 0;
+      c = new java.io.ByteArrayInputStream(value.serializedInfo).read(newBuffer, 0, value.serializedInfo.length)
+      pstmt.setBytes(7, newBuffer)
       pstmt.executeUpdate();
-
-      //      var stmnt2 = ""
-      //      stmnt1 = "select 1 from " + tableName + " where timePartition = ? and bucketKey = ?  and transactionId = ?  and rowId = ? ) ) "
-      //      pstmt = con.prepareStatement(stmnt1)
-      //      pstmt.setLong(1, key.timePartition)
-      //      pstmt.setString(2, key.bucketKey.mkString(","))
-      //      pstmt.setLong(3, key.transactionId)
-      //      pstmt.setInt(4, key.rowId)
-      //      val res = pstmt.executeUpdate();
-      //
-      //      if (rs == null){
-      //        stmnt2 = " insert into " + tableName + "(timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo)" + " values(?,?,?,?,?,?,?)"
-      //        pstmt = con.prepareStatement(stmnt2)
-      //        pstmt.setLong(1, key.timePartition)
-      //        pstmt.setString(2, key.bucketKey.mkString(","))
-      //        pstmt.setLong(3, key.transactionId)
-      //        pstmt.setInt(4, key.rowId)
-      //        pstmt.setInt(5, value.schemaId)
-      //        pstmt.setString(6, value.serializerType)
-      //        pstmt.setBinaryStream(7, new java.io.ByteArrayInputStream(value.serializedInfo), value.serializedInfo.length)
-      //        pstmt.executeUpdate()
-      //      } else {
-      //        stmnt2 = " update " + tableName + " set schemaId = ?,serializerType = ?, serializedInfo = ? where timePartition = ? and bucketKey = ?  and transactionId = ?  and rowId = ? "
-      //        pstmt = con.prepareStatement(stmnt2)
-      //        pstmt.setInt(1, value.schemaId)
-      //        pstmt.setString(2, value.serializerType)
-      //        pstmt.setBinaryStream(3, new java.io.ByteArrayInputStream(value.serializedInfo), value.serializedInfo.length)
-      //        pstmt.setLong(4, key.timePartition)
-      //        pstmt.setString(5, key.bucketKey.mkString(","))
-      //        pstmt.setLong(6, key.transactionId)
-      //        pstmt.setInt(7, key.rowId)
-      //        pstmt.executeUpdate()
-      //      }
-
     } catch {
       case e: Exception => {
         if (con != null) {
@@ -609,32 +548,22 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
         var keyValuePairs = data_list(0)._2
         var key = keyValuePairs(0)._1
         var value = keyValuePairs(0)._2
-        put(containerName,  key, value)
+        put(containerName, key, value)
       } else {
         logger.debug("Get a new connection...")
         con = getConnection
         // we need to commit entire batch
         con.setAutoCommit(false)
-        data_list.foreach(li => {
+        data_list.foreach(f = li => {
           var containerName = li._1
           CheckTableExists(containerName)
           var tableName = toFullTableName(containerName)
           var keyValuePairs = li._2
           logger.info("Input row count for the table " + tableName + " => " + keyValuePairs.length)
           sql = "merge into " + tableName + "(timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo) key (timePartition, bucketKey, transactionId, rowId) values(?,?,?,?,?,?,?)"
-          //          sql = "if ( not exists(select 1 from " + tableName +
-          //            " where timePartition = ? and bucketKey = ?  and transactionId = ?  and rowId = ? ) ) " +
-          //            " begin " +
-          //            " insert into " + tableName + "(timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo)" +
-          //            " values(?,?,?,?,?,?,?)" +
-          //            " end " +
-          //            " else " +
-          //            " begin " +
-          //            " update " + tableName + " set schemaId = ?,serializerType = ?, serializedInfo = ? where timePartition = ? and bucketKey = ?  and transactionId = ?  and rowId = ?  " +
-          //            " end ";
           logger.debug("sql => " + sql)
           pstmt = con.prepareStatement(sql)
-          keyValuePairs.foreach(keyValuePair => {
+          keyValuePairs.foreach(f = keyValuePair => {
             var key = keyValuePair._1
             var value = keyValuePair._2
             pstmt.setLong(1, key.timePartition)
@@ -643,61 +572,21 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
             pstmt.setInt(4, key.rowId)
             pstmt.setInt(5, value.schemaId)
             pstmt.setString(6, value.serializerType)
-            pstmt.setBinaryStream(7, new java.io.ByteArrayInputStream(value.serializedInfo), value.serializedInfo.length)
-            //            pstmt.setLong(1, key.timePartition)
-            //            pstmt.setString(2, key.bucketKey.mkString(","))
-            //            pstmt.setLong(3, key.transactionId)
-            //            pstmt.setInt(4, key.rowId)
-            //            pstmt.setLong(5, key.timePartition)
-            //            pstmt.setString(6, key.bucketKey.mkString(","))
-            //            pstmt.setLong(7, key.transactionId)
-            //            pstmt.setInt(8, key.rowId)
-            //            pstmt.setInt(9, value.schemaId)
-            //            pstmt.setString(10, value.serializerType)
-            //            pstmt.setBinaryStream(11, new java.io.ByteArrayInputStream(value.serializedInfo), value.serializedInfo.length)
-            //            pstmt.setInt(12, value.schemaId)
-            //            pstmt.setString(13, value.serializerType)
-            //            pstmt.setBinaryStream(14, new java.io.ByteArrayInputStream(value.serializedInfo), value.serializedInfo.length)
-            //            pstmt.setLong(15, key.timePartition)
-            //            pstmt.setString(16, key.bucketKey.mkString(","))
-            //            pstmt.setLong(17, key.transactionId)
-            //            pstmt.setInt(18, key.rowId)
+            var newBuffer: Array[Byte] = new Array[Byte](value.serializedInfo.length);
+            var c: Int = 0;
+            c = new java.io.ByteArrayInputStream(value.serializedInfo).read(newBuffer, 0, value.serializedInfo.length)
+            pstmt.setBytes(7, newBuffer)
             pstmt.addBatch()
 
-            //              var stmnt2 = ""
-            //              stmnt1 = "select 1 from " + tableName + " where timePartition = ? and bucketKey = ?  and transactionId = ?  and rowId = ? "
-            //              pstmt.setLong(1, key.timePartition)
-            //              pstmt.setString(2, key.bucketKey.mkString(","))
-            //              pstmt.setLong(3, key.transactionId)
-            //              pstmt.setInt(4, key.rowId)
-            //              val res = pstmt.addBatch()
-            //              //val res = pstmt.executeUpdate()
-            //
-            //              if (res == null){
-            //                stmnt2 = " insert into " + tableName + "(timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo)" + " values(?,?,?,?,?,?,?)"
-            //                pstmt.setLong(1, key.timePartition)
-            //                pstmt.setString(2, key.bucketKey.mkString(","))
-            //                pstmt.setLong(3, key.transactionId)
-            //                pstmt.setInt(4, key.rowId)
-            //                pstmt.setInt(5, value.schemaId)
-            //                pstmt.setString(6, value.serializerType)
-            //                pstmt.setBinaryStream(7, new java.io.ByteArrayInputStream(value.serializedInfo), value.serializedInfo.length)
-            //                pstmt.executeUpdate()
-            //              } else {
-            //                stmnt2 = " update " + tableName + " set schemaId = ?,serializerType = ?, serializedInfo = ? where timePartition = ? and bucketKey = ?  and transactionId = ?  and rowId = ?  "
-            //                pstmt.setInt(1, value.schemaId)
-            //                pstmt.setString(2, value.serializerType)
-            //                pstmt.setBinaryStream(3, new java.io.ByteArrayInputStream(value.serializedInfo), value.serializedInfo.length)
-            //                pstmt.setLong(4, key.timePartition)
-            //                pstmt.setString(5, key.bucketKey.mkString(","))
-            //                pstmt.setLong(6, key.transactionId)
-            //                pstmt.setInt(7, key.rowId)
-            //                pstmt.addBatch()
-            //              }
           })
           logger.debug("Executing bulk upsert...")
-          var updateCount = pstmt.executeBatch();
-          updateCount.foreach(cnt => { totalRowsUpdated += cnt });
+          var updateCount: Array[Int] = null
+//          con.synchronized {
+            updateCount = pstmt.executeBatch();
+//          }
+          updateCount.foreach(cnt => {
+            totalRowsUpdated += cnt
+          });
           if (pstmt != null) {
             pstmt.clearBatch();
             pstmt.close
@@ -760,7 +649,9 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
       var deleteCount = pstmt.executeBatch();
       con.commit()
       var totalRowsDeleted = 0;
-      deleteCount.foreach(cnt => { totalRowsDeleted += cnt });
+      deleteCount.foreach(cnt => {
+        totalRowsDeleted += cnt
+      });
       logger.info("Deleted " + totalRowsDeleted + " rows from " + tableName)
       pstmt.clearBatch()
       pstmt.close
@@ -821,7 +712,9 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
       var deleteCount = pstmt.executeBatch();
       con.commit()
       var totalRowsDeleted = 0;
-      deleteCount.foreach(cnt => { totalRowsDeleted += cnt });
+      deleteCount.foreach(cnt => {
+        totalRowsDeleted += cnt
+      });
       logger.info("Deleted " + totalRowsDeleted + " rows from " + tableName)
       pstmt.clearBatch()
       pstmt.close
@@ -854,8 +747,9 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
       }
     }
   }
+
   // Added by Yousef Abu Elbeh at 2016-03-13 from here
-  override def del(containerName: String, time: TimeRange/*, keys: Array[Array[String]]*/): Unit = {
+  override def del(containerName: String, time: TimeRange /*, keys: Array[Array[String]]*/): Unit = {
     var con: Connection = null
     var pstmt: PreparedStatement = null
     var cstmt: CallableStatement = null
@@ -878,7 +772,9 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
       var deleteCount = pstmt.executeBatch();
       con.commit()
       var totalRowsDeleted = 0;
-      deleteCount.foreach(cnt => { totalRowsDeleted += cnt });
+      deleteCount.foreach(cnt => {
+        totalRowsDeleted += cnt
+      });
       logger.info("Deleted " + totalRowsDeleted + " rows from " + tableName)
       pstmt.clearBatch()
       pstmt.close
@@ -911,6 +807,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
       }
     }
   }
+
   // to here
   // get operations
   def getRowCount(containerName: String, whereClause: String): Int = {
@@ -976,7 +873,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
         // so hard coding serializerType to "kryo" for now
         var value = new Value(schemaId, st, ba)
         if (callbackFunction != null)
-          (callbackFunction)(key, value)
+          (callbackFunction) (key, value)
       }
     } catch {
       case e: Exception => {
@@ -1019,7 +916,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
         val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
         var key = new Key(timePartition, bucketKey, tId, rId)
         if (callbackFunction != null)
-          (callbackFunction)(key)
+          (callbackFunction) (key)
       }
     } catch {
       case e: Exception => {
@@ -1070,7 +967,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
           val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
           var key = new Key(timePartition, bucketKey, tId, rId)
           if (callbackFunction != null)
-            (callbackFunction)(key)
+            (callbackFunction) (key)
         }
       })
     } catch {
@@ -1110,7 +1007,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
           val ba = rs.getBytes(3)
           val value = new Value(schemaId, st, ba)
           if (callbackFunction != null)
-            (callbackFunction)(key, value)
+            (callbackFunction) (key, value)
         }
       })
     } catch {
@@ -1175,7 +1072,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
             var key = new Key(timePartition, bucketKey, tId, rId)
             var value = new Value(schemaId, st, ba)
             if (callbackFunction != null)
-              (callbackFunction)(key, value)
+              (callbackFunction) (key, value)
           }
         })
         if (pstmt != null) {
@@ -1221,7 +1118,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
             val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
             var key = new Key(timePartition, bucketKey, tId, rId)
             if (callbackFunction != null)
-              (callbackFunction)(key)
+              (callbackFunction) (key)
           }
         })
         if (pstmt != null) {
@@ -1269,7 +1166,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
           var key = new Key(timePartition, bucketKey, tId, rId)
           var value = new Value(schemaId, st, ba)
           if (callbackFunction != null)
-            (callbackFunction)(key, value)
+            (callbackFunction) (key, value)
         }
       })
     } catch {
@@ -1308,7 +1205,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
           val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
           var key = new Key(timePartition, bucketKey, tId, rId)
           if (callbackFunction != null)
-            (callbackFunction)(key)
+            (callbackFunction) (key)
         }
       })
     } catch {
@@ -1451,10 +1348,10 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
         stmt.executeUpdate(query);
         stmt.close
         var index_name = "ix_" + tableName
-        var query1= ""
-        var query2= ""
-        var query3= ""
-        var query4= ""
+        var query1 = ""
+        var query2 = ""
+        var query3 = ""
+        var query4 = ""
         if (clusteredIndex.equalsIgnoreCase("YES")) {
           logger.info("Creating clustered index...")
           query1 = "create clustered index " + index_name + " on " + fullTableName + "(timePartition,bucketKey,transactionId,rowId)"
@@ -1682,7 +1579,7 @@ class H2dbAdapterTx(val parent: DataStore) extends Transaction {
   //  val logger = LogManager.getLogger(loggerName)
 
   override def put(containerName: String, key: Key, value: Value): Unit = {
-    parent.put(containerName,  key, value)
+    parent.put(containerName, key, value)
   }
 
   override def put(data_list: Array[(String, Array[(Key, Value)])]): Unit = {
@@ -1697,10 +1594,12 @@ class H2dbAdapterTx(val parent: DataStore) extends Transaction {
   override def del(containerName: String, time: TimeRange, keys: Array[Array[String]]): Unit = {
     parent.del(containerName, time, keys)
   }
+
   //Added by Yousef Abu Elbeh at 2016-3-13 from here
   override def del(containerName: String, time: TimeRange): Unit = {
     parent.del(containerName, time)
   }
+
   // to here
   // get operations
   override def get(containerName: String, callbackFunction: (Key, Value) => Unit): Unit = {
@@ -1718,6 +1617,7 @@ class H2dbAdapterTx(val parent: DataStore) extends Transaction {
   override def get(containerName: String, time_ranges: Array[TimeRange], bucketKeys: Array[Array[String]], callbackFunction: (Key, Value) => Unit): Unit = {
     parent.get(containerName, time_ranges, bucketKeys, callbackFunction)
   }
+
   override def get(containerName: String, bucketKeys: Array[Array[String]], callbackFunction: (Key, Value) => Unit): Unit = {
     parent.get(containerName, bucketKeys, callbackFunction)
   }
@@ -1729,6 +1629,7 @@ class H2dbAdapterTx(val parent: DataStore) extends Transaction {
   def getKeys(containerName: String, keys: Array[Key], callbackFunction: (Key) => Unit): Unit = {
     parent.getKeys(containerName, keys, callbackFunction)
   }
+
   def getKeys(containerName: String, timeRanges: Array[TimeRange], callbackFunction: (Key) => Unit): Unit = {
     parent.getKeys(containerName, timeRanges, callbackFunction)
   }
@@ -1760,6 +1661,7 @@ class H2dbAdapterTx(val parent: DataStore) extends Transaction {
   override def getAllTables: Array[String] = {
     parent.getAllTables
   }
+
   override def dropTables(tbls: Array[String]): Unit = {
     parent.dropTables(tbls)
   }
