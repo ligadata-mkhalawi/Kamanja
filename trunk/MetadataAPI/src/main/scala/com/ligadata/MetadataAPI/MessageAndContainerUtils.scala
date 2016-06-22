@@ -1533,6 +1533,56 @@ object MessageAndContainerUtils {
   }
 
   /**
+   * IsContainer
+   *
+   * @param contName
+   * @return
+   */
+
+  def IsContainer(contName: String): Boolean = {
+    try {
+      var(nameSpace,name) = MdMgr.SplitFullName(contName)
+      val dispkey = nameSpace + "." + name
+      val o = MdMgr.GetMdMgr.Container(nameSpace.toLowerCase,name.toLowerCase,-1,false)
+      o match {
+        case None =>
+          logger.debug("container not in the cache => " + dispkey)
+          return false;
+        case Some(m) =>
+          logger.debug("container found => " + m.asInstanceOf[ContainerDef].FullName);
+          return true
+      }
+    } catch {
+      case e: Exception => {
+        logger.debug("", e)
+        throw UnexpectedMetadataAPIException(e.getMessage(), e)
+      }
+    }
+  }
+
+  def getContainersFromModelConfig(userid: Option[String], cfgName: String): Array[String] = {
+    var containerList = List[String]()
+    var msgsAndContainers = MetadataAPIImpl.getModelMessagesContainers(cfgName,userid)
+    if( msgsAndContainers.length > 0 ){
+      msgsAndContainers.foreach(msg => {
+	logger.debug("processing the message " + msg)
+	if( MessageAndContainerUtils.IsContainer(msg) ){
+	  logger.debug("The " + msg + " is a container")
+	  containerList = msg :: containerList
+	}
+	else{
+	  logger.debug("The " + msg + " is not a container")
+	}
+      })
+    }
+    else{
+      logger.debug("MetadataAPIImpl.getModelMessagesContainers: No types for the model config " + cfgName)
+    }
+    containerList.toArray
+  }
+
+
+  /**
    * DoesContainerAlreadyExist
    *
    * @param contDef

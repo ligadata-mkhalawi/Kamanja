@@ -2207,7 +2207,8 @@ class MdMgr {
                    , depJars: Array[String] = null
                    , recompile: Boolean = false
                    , supportsInstanceSerialization: Boolean = false
-                   , modelConfig: String = ""): ModelDef = {
+                   , modelConfig: String = ""
+                   , depContainers: Array[String] = null): ModelDef = {
 
     /** Determine model existence constraints and throw exception if they are not met */
     var modelExists: Boolean = false
@@ -2240,7 +2241,8 @@ class MdMgr {
       , outputMsgs
       , isReusable
       , supportsInstanceSerialization
-      , modelConfig)
+      , modelConfig
+      , depContainers)
 
     /** FIXME: All of the statements down to the return of the ModelDef instance really should be just arguments
       * to the constructor that utilizes values instead of the variables now in use... save this work for a refactor
@@ -2262,6 +2264,10 @@ class MdMgr {
     mdl.PhysicalName(physicalName)
     mdl.tenantId = tenantId
     SetBaseElem(mdl, nameSpace, name, ver, jarNm, dJars, ownerId, tenantId, uniqueId, mdElementId)
+
+    if( mdl.depContainers == null ){
+      mdl.depContainers = Array[String]()
+    }
 
     mdl
   }
@@ -2978,8 +2984,8 @@ class MdMgr {
     *
     */
   def AddModelDef(nameSpace: String, name: String, physicalName: String, modelRep: ModelRepresentation.ModelRepresentation, inputMsgSets: Array[Array[MessageAndAttributes]], outputMsgs: Array[String],
-                  isReusable: Boolean, objectDefStr: String, miningModelType: MiningModelType.MiningModelType, ownerId: String, tenantId: String, uniqueId: Long, mdElementId: Long, ver: Long = 1, jarNm: String = null, depJars: Array[String] = Array[String](), modelConfig: String = ""): Unit = {
-    AddModelDef(MakeModelDef(nameSpace, name, physicalName, ownerId, tenantId, uniqueId, mdElementId, modelRep,  inputMsgSets, outputMsgs, isReusable, objectDefStr, miningModelType, ver, jarNm, depJars, false, false, modelConfig), false)
+                  isReusable: Boolean, objectDefStr: String, miningModelType: MiningModelType.MiningModelType, ownerId: String, tenantId: String, uniqueId: Long, mdElementId: Long, ver: Long = 1, jarNm: String = null, depJars: Array[String] = Array[String](), modelConfig: String = "",depContainers: Array[String] = Array[String]()): Unit = {
+    AddModelDef(MakeModelDef(nameSpace, name, physicalName, ownerId, tenantId, uniqueId, mdElementId, modelRep,  inputMsgSets, outputMsgs, isReusable, objectDefStr, miningModelType, ver, jarNm, depJars, false, false, modelConfig,depContainers), false)
   }
 
   def AddModelDef(mdl: ModelDef, allowLatestVersion: Boolean): Unit = {

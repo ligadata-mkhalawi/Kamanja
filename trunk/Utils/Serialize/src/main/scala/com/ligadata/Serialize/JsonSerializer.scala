@@ -80,7 +80,8 @@ case class ModelInfo(NameSpace: String
                      , JarName: String
                      , DependencyJars: List[String]
                      , Recompile: Boolean
-                     , SupportsInstanceSerialization: Boolean)
+                     , SupportsInstanceSerialization: Boolean
+                     , DepContainers: Option[List[String]])
 
 case class ModelDefinition(Model: ModelInfo)
 
@@ -581,6 +582,11 @@ object JsonSerializer {
         * , Recompile : Boolean
         * , SupportsInstanceSerialization : Boolean)
         */
+
+      var depContainers = List[String]()
+      if( ModDefInst.Model.DepContainers != None ){
+	depContainers = ModDefInst.Model.DepContainers.get
+      }
       val modDef = MdMgr.GetMdMgr.MakeModelDef(ModDefInst.Model.NameSpace
         , ModDefInst.Model.Name
         , ModDefInst.Model.PhysicalName
@@ -595,7 +601,9 @@ object JsonSerializer {
         , ModDefInst.Model.JarName
         , ModDefInst.Model.DependencyJars.toArray
         , ModDefInst.Model.Recompile
-        , ModDefInst.Model.SupportsInstanceSerialization)
+        , ModDefInst.Model.SupportsInstanceSerialization
+	, ""
+        , depContainers.toArray)
 
       modDef.ObjectDefinition(ModDefInst.Model.ObjectDefinition)
       val objFmt: ObjFormatType.FormatType = ObjFormatType.fromString(ModDefInst.Model.ObjectFormat)
@@ -1081,7 +1089,8 @@ object JsonSerializer {
             ("DependencyJars" -> o.CheckAndGetDependencyJarNames.toList) ~
             ("Deleted" -> o.deleted) ~
             ("Active" -> o.active) ~
-            ("TransactionId" -> o.tranId))
+            ("TransactionId" -> o.tranId) ~
+            ("DepContainers" -> o.depContainers.toList))
         compact(render(json))
       }
 

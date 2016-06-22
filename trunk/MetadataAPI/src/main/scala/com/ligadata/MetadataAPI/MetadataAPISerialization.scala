@@ -31,7 +31,7 @@ object MetadataAPISerialization {
     try {
       mdObj match {
         case o: ModelDef => {
-          val json = "Model" ->
+          val json = "ModelNew" -> ("Model" ->
             ("Name" -> o.name) ~
               ("PhysicalName" -> o.PhysicalName) ~
               ("JarName" -> getEmptyIfNull(o.jarName)) ~
@@ -45,20 +45,17 @@ object MetadataAPISerialization {
               ("ObjectDefinition" -> o.ObjectDefinition) ~
               ("ObjectFormat" -> ObjFormatType.asString(o.ObjectFormat)) ~
               ("Description" -> o.Description) ~
-          // 646 - 673 Meta data api changes included - Changes begin
-          ("Comment" -> o.Comment) ~
-          ("Tag" -> o.Tag) ~
-          ("Params" -> Json(DefaultFormats).write(o.Params)) ~
-          ("CreatedTime" -> o.CreationTime) ~
-          ("UpdatedTime" -> o.ModTime) ~
-          // 646 - 673 Changes end
               ("ModelConfig" -> o.modelConfig) ~
               ("Author" -> o.Author) ~
               ("inputMsgSets" -> o.inputMsgSets.toList.map(m => m.toList.map(f => ("Origin" -> f.origin) ~ ("Message" -> f.message) ~ ("Attributes" -> f.attributes.toList)))) ~
               ("OutputMsgs" -> getEmptyArrayIfNull(o.outputMsgs).toList) ~
+	      ("DepContainers" -> o.depContainers.toList) ~
               ("NumericTypes" -> ("Version" -> o.Version) ~ ("TransId" -> o.TranId) ~ ("UniqId" -> o.UniqId) ~ ("CreationTime" -> o.CreationTime) ~ ("ModTime" -> o.ModTime) ~ ("MdElemStructVer" -> o.MdElemStructVer) ~ ("MdElementId" -> o.MdElementId)) ~
               ("BooleanTypes" -> ("IsActive" -> o.IsActive) ~ ("IsReusable" -> o.isReusable) ~ ("IsDeleted" -> o.IsDeleted) ~ ("SupportsInstanceSerialization" -> o.SupportsInstanceSerialization)
-                )
+              )) ~
+          // 646 - 673 Meta data api changes included - Changes begin
+              ("ModelExInfo" -> ("Comment" -> o.Comment) ~ ("Tag" -> o.Tag) ~ ("Params" -> o.Params))
+          // 646 - 673 Changes end
           outputJson = compact(render(json))
         }
         case o: MessageDef => {
@@ -674,6 +671,7 @@ object MetadataAPISerialization {
     try {
       key match {
         case "Model" => parseModelDef(json)
+        case "ModelNew" => parseModelNewDef(json)
         case "Message" => parseMessageDef(json)
         case "MessageNew" => parseMessageNewDef(json)
         case "Container" => parseContainerDef(json)
@@ -710,7 +708,7 @@ object MetadataAPISerialization {
     }
   }
 
-  private def parseModelDef(modDefJson: JValue): ModelDef = {
+private def parseModelDef(modDefJson: JValue): ModelDef = {
     try {
 
       logger.debug("Parsed the json : " + modDefJson)
@@ -754,16 +752,20 @@ object MetadataAPISerialization {
       modDef.creationTime = ModDefInst.Model.NumericTypes.CreationTime
       modDef.modTime = ModDefInst.Model.NumericTypes.ModTime
 
-      // 646 - 673 Changes begin - MetadataAPI Changes
-      modDef.description = ModDefInst.Model.Description
-      modDef.comment =  ModDefInst.Model.Comment
-      modDef.tag = ModDefInst.Model.Tag
-      modDef.params = parse(ModDefInst.Model.Params).values.asInstanceOf[scala.collection.immutable.Map[String, String]]
-      // 646 - 673 Changes end
-      modDef.author = ModDefInst.Model.Author
+       modDef.description = ModDefInst.Model.Description
+       modDef.author = ModDefInst.Model.Author
       modDef.mdElemStructVer = ModDefInst.Model.NumericTypes.MdElemStructVer
       modDef.active = ModDefInst.Model.BooleanTypes.IsActive
       modDef.deleted = ModDefInst.Model.BooleanTypes.IsDeleted
+
+      modDef.depContainers = Array[String]()
+      if( ModDefInst.Model.DepContainers != None ){
+	logger.debug("DepContainers => " + ModDefInst.Model.DepContainers.get)
+	modDef.depContainers = ModDefInst.Model.DepContainers.get.toArray
+      }
+      else{
+	logger.debug("DepContainers is => None")
+      }
 
       modDef
     } catch {
@@ -779,6 +781,83 @@ object MetadataAPISerialization {
   }
 
   // 646 - 673 The following module can be retired after moving to higher versions
+
+  private def parseModelNewDef(modDefJson: JValue): ModelDef = {
+    try {
+
+      logger.debug("Parsed the json : " + modDefJson)
+
+      val ModDefInst = modDefJson.extract[ModelNew]
+
+      val inputMsgSets = ModDefInst.ModelNew.Model.inputMsgSets.map(m => m.map(k => {
+        val msgAndAttrib = new MessageAndAttributes()
+        msgAndAttrib.message = k.Message
+        msgAndAttrib.origin = k.Origin
+        msgAndAttrib.attributes = k.Attributes.toArray
+        msgAndAttrib
+      }).toArray).toArray
+
+
+      val modDef = MdMgr.GetMdMgr.MakeModelDef(ModDefInst.ModelNew.Model.NameSpace
+        , ModDefInst.ModelNew.Model.Name
+        , ModDefInst.ModelNew.Model.PhysicalName
+        , ModDefInst.ModelNew.Model.OwnerId
+        , ModDefInst.ModelNew.Model.TenantId
+        , ModDefInst.ModelNew.Model.NumericTypes.UniqId
+        , ModDefInst.ModelNew.Model.NumericTypes.MdElementId
+        , ModelRepresentation.modelRep(ModDefInst.ModelNew.Model.ModelRep)
+        , inputMsgSets
+        , ModDefInst.ModelNew.Model.OutputMsgs.toArray
+        , ModDefInst.ModelNew.Model.BooleanTypes.IsReusable
+        , ModDefInst.ModelNew.Model.ObjectDefinition
+        , MiningModelType.modelType(ModDefInst.ModelNew.Model.ModelType)
+        , ModDefInst.ModelNew.Model.NumericTypes.Version
+        , ModDefInst.ModelNew.Model.JarName
+        , ModDefInst.ModelNew.Model.DependencyJars.toArray
+        , false
+        , ModDefInst.ModelNew.Model.BooleanTypes.SupportsInstanceSerialization,
+        ModDefInst.ModelNew.Model.ModelConfig)
+
+
+      val objFmt: ObjFormatType.FormatType = ObjFormatType.fromString(ModDefInst.ModelNew.Model.ObjectFormat)
+      modDef.ObjectFormat(objFmt)
+      modDef.tranId = ModDefInst.ModelNew.Model.NumericTypes.TransId
+      modDef.origDef = ModDefInst.ModelNew.Model.OrigDef
+      modDef.creationTime = ModDefInst.ModelNew.Model.NumericTypes.CreationTime
+      modDef.modTime = ModDefInst.ModelNew.Model.NumericTypes.ModTime
+
+      // 646 - 673 Changes begin - MetadataAPI Changes
+      modDef.description = ModDefInst.ModelNew.Model.Description
+      modDef.comment =  ModDefInst.ModelNew.ModelExInfo.Comment
+      modDef.tag = ModDefInst.ModelNew.ModelExInfo.Tag
+      modDef.params = ModDefInst.ModelNew.ModelExInfo.Params
+      // 646 - 673 Changes end
+      modDef.author = ModDefInst.ModelNew.Model.Author
+      modDef.mdElemStructVer = ModDefInst.ModelNew.Model.NumericTypes.MdElemStructVer
+      modDef.active = ModDefInst.ModelNew.Model.BooleanTypes.IsActive
+      modDef.deleted = ModDefInst.ModelNew.Model.BooleanTypes.IsDeleted
+
+      modDef.depContainers = Array[String]()
+      if( ModDefInst.ModelNew.Model.DepContainers != None ){
+	logger.debug("DepContainers => " + ModDefInst.ModelNew.Model.DepContainers.get)
+	modDef.depContainers = ModDefInst.ModelNew.Model.DepContainers.get.toArray
+      }
+      else{
+	logger.debug("DepContainers is => None")
+      }
+
+      modDef
+    } catch {
+      case e: MappingException => {
+        logger.debug("", e)
+        throw Json4sParsingException(e.getMessage(), e)
+      }
+      case e: Exception => {
+        logger.debug("", e)
+        throw ModelDefParsingException(e.getMessage(), e)
+      }
+    }
+  }
 
   private def parseMessageDef(msgDefJson: JValue): MessageDef = {
     try {
@@ -2284,7 +2363,13 @@ case class ContainerNew(ContainerNew : ContainerFull)
 
 case class ModelDefinition(Model: ModelInfo)
 
+case class ModelFullDefinition(Model: ModelInfo, ModelExInfo : ModelExtInfo)
+
+case class ModelNew (ModelNew : ModelFullDefinition)
+
 case class MsgAndAttrib(Origin: String, Message: String, Attributes: List[String])
+
+case class ModelExtInfo(Comment : String, Tag : String, Params : Map[String, String])
 
 case class ModelInfo(Name: String,
   PhysicalName: String,
@@ -2301,13 +2386,12 @@ case class ModelInfo(Name: String,
   ObjectDefinition: String,
   NumericTypes: NumericTypes,
   Description: String,
-  Comment: String,
-  Tag: String,
-  Params: String,
   Author: String,
   ModelConfig: String,
   inputMsgSets: List[List[MsgAndAttrib]],
-  TenantId: String)
+  TenantId: String,
+  DepContainers: Option[List[String]])
+
 
 case class NumericTypes(Version: Long, TransId: Long, UniqId: Long, CreationTime: Long, ModTime: Long, MdElemStructVer: Int, MdElementId: Long)
 

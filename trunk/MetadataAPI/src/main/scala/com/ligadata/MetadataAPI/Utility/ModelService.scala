@@ -284,7 +284,8 @@ object ModelService {
                     , optMsgConsumed: Option[String] = None
                     , optMsgVersion: Option[String] = Some("-1")
                     , tid: Option[String] = None,
-                     pStr : Option[String]): String = {
+                     pStr : Option[String]
+		    , optMsgProduced: Option[String] = None): String = {
 
         //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
         var chosen: String = ""
@@ -304,14 +305,14 @@ object ModelService {
             val model = new File(input.toString)
             val resp : String = if(model.exists()){
                 val modelDef= Source.fromFile(model).mkString
-                getMetadataAPI.AddModel(ModelType.PMML, modelDef, optUserid, finalTid,  optModelName, optVersion, optMsgConsumed,None,optMsgVersion, pStr)
+                MetadataAPIImpl.AddModel(ModelType.PMML, modelDef, optUserid, finalTid,  optModelName, optVersion, optMsgConsumed,optMsgVersion,pStr, optMsgProduced)
             }else{
                 val userId : String = optUserid.getOrElse("no user id supplied")
                 val modelName : String = optModelName.getOrElse("no model name supplied")
                 val version : String = optVersion.getOrElse("no version supplied")
                 val msgConsumed : String = optMsgConsumed.getOrElse("no message supplied")
 
-                val reply : String = s"PMML model definition ingestion has failed for model $modelName, version = $version, consumes msg = $msgConsumed user=$userId"
+                val reply : String = s"PMML model definition ingestion has failed for model $modelName, version = $version, consumes msg = $msgConsumed user=$userId: Invalid input file $input"
                 logger.error(reply)
                 null /// FIXME : we will return null for now and complain with first failure/
             }

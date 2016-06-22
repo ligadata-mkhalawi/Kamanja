@@ -6,11 +6,11 @@ sbtPlugin := true
 //version := "0.0.0.1"
 
 //lazy val kamanjaVersion = settingKey[String]("kamanjaVersion")
-// kamanjaVersion := "1.4.1"
+// kamanjaVersion := "1.5.0"
 
 //scalaVersion := "2.11.7"
 
-//kamanjaVersion in ThisBuild := "1.4.1"
+//kamanjaVersion in ThisBuild := "1.5.0"
 
 crossScalaVersions := Seq("2.11.7", "2.10.4")
 
@@ -216,9 +216,13 @@ lazy val MigrateManager = project.in(file("Utils/Migrate/MigrateManager")).confi
 
 lazy val MigrateFrom_V_1_2 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_2")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(MigrateBase)
 
-lazy val MigrateTo_V_1_4 = project.in(file("Utils/Migrate/DestinationVersion/MigrateTo_V_1_4")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(MigrateBase, KamanjaManager)
-
 lazy val MigrateFrom_V_1_3 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_3")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(MigrateBase)
+
+lazy val MigrateFrom_V_1_4 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_4")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(MigrateBase,MetadataAPI)
+
+lazy val MigrateFrom_V_1_4_1 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_4_1")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(MigrateBase,MetadataAPI)
+
+lazy val MigrateTo_V_1_5_0 = project.in(file("Utils/Migrate/DestinationVersion/MigrateTo_V_1_5_0")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(MigrateBase, KamanjaManager)
 
 lazy val InstallDriverBase = project.in(file("Utils/ClusterInstaller/InstallDriverBase")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided")
 

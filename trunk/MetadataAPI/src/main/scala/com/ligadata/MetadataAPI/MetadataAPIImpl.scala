@@ -1027,11 +1027,11 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     }
   }
 
-    /**
-     * UpdateObjectInDB
-      *
-      * @param obj <description please>
-     */
+  /**
+    * UpdateObjectInDB
+    *
+    * @param obj <description please>
+    */
   def UpdateObjectInDB(obj: BaseElemDef) {
     try {
       val key = (getObjectType(obj) + "." + obj.FullNameWithVer).toLowerCase

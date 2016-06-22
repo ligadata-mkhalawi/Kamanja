@@ -14,9 +14,6 @@ import com.ligadata.Utils.{ KamanjaLoaderInfo }
 import com.ligadata.kamanja.metadata.AdapterInfo
 
 import scala.collection.mutable.ArrayBuffer
-//import org.json4s._
-//import org.json4s.JsonDSL._
-//import org.json4s.jackson.JsonMethods._
 
 trait DataStoreOperations extends AdaptersSerializeDeserializers {
   // update operations, add & update semantics are different for relational databases
@@ -249,6 +246,12 @@ trait DataStore extends DataStoreOperations with AdaptersSerializeDeserializers 
   var _defaultSerDeserName: String = null
   var _defaultSerDeser: MsgBindingInfo = null
   var _serDeserOptions: Map[String, Any] = null
+  var _getOps:scala.collection.mutable.Map[String,Long] = new scala.collection.mutable.HashMap()
+  var _getObjs:scala.collection.mutable.Map[String,Long] = new scala.collection.mutable.HashMap()
+  var _getBytes:scala.collection.mutable.Map[String,Long] = new scala.collection.mutable.HashMap()
+  var _putObjs:scala.collection.mutable.Map[String,Long] = new scala.collection.mutable.HashMap()
+  var _putOps:scala.collection.mutable.Map[String,Long] = new scala.collection.mutable.HashMap()
+  var _putBytes:scala.collection.mutable.Map[String,Long] = new scala.collection.mutable.HashMap()
 
   final override def getDefaultSerializerDeserializer: MsgBindingInfo = _defaultSerDeser
 
@@ -271,7 +274,26 @@ trait DataStore extends DataStoreOperations with AdaptersSerializeDeserializers 
   }
 
   override def getComponentSimpleStats: String = {
-    "Storage/"+getAdapterName+"/evtCnt" + "->" + "("+0 + ":" + 0 +")"
+    var s:String = ""
+    _getOps.keys.foreach( k => { 
+      s = s + "Storage/"+getAdapterName+"/getOps" + "->" + "("+ k + ":" + _getOps(k) +")"
+    })
+    _putOps.keys.foreach( k => { 
+      s = s + ",Storage/"+getAdapterName+"/putOps" + "->" + "("+ k + ":" + _putOps(k) +")"
+    })
+    _getObjs.keys.foreach( k => { 
+      s = s + "Storage/"+getAdapterName+"/getObjs" + "->" + "("+ k + ":" + _getObjs(k) +")"
+    })
+    _putObjs.keys.foreach( k => { 
+      s = s + ",Storage/"+getAdapterName+"/putObjs" + "->" + "("+ k + ":" + _putObjs(k) +")"
+    })
+    _getBytes.keys.foreach( k => { 
+      s =s + ",Storage/"+getAdapterName+"/getBytes" + "->" + "("+ k + ":" + _getBytes(k) +")"
+    })
+    _putBytes.keys.foreach( k => { 
+      s= s + ",Storage/"+getAdapterName+"/putBytes" + "->" + "("+ k + ":" + _putBytes(k) +")"
+    })
+    s
   }
 
   def beginTx(): Transaction

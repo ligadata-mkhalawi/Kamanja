@@ -1637,5 +1637,12 @@ trait MetadataAPI {
     */
   def UpdateObject(key: String, value: Array[Byte], typeName: String, serializerTyp: String)
 
-}
+  /**
+    * UpdateObjectInDB
+    *
+    * @param obj <description please>
+    */
+  def UpdateObjectInDB(obj: BaseElemDef)
+
+  }
 // 646 - 674 Change ends
