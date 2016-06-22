@@ -93,6 +93,10 @@ object PersistenceUtils {
   lazy val serializerType = "json4s"//"kryo"
   //lazy val serializer = SerializerManager.GetSerializer(serializerType)
 
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
+
   lazy val versionStr = s"${KamanjaVersion.getMajorVersion}.${KamanjaVersion.getMinorVersion}.${KamanjaVersion.getMicroVersion}"
   lazy val excludeSystemJars = Set(s"ExtDependencyLibs_2.11-${versionStr}.jar", s"ExtDependencyLibs2_2.11-${versionStr}.jar", s"KamanjaInternalDeps_2.11-${versionStr}.jar",
                                       s"ExtDependencyLibs_2.10-${versionStr}.jar", s"ExtDependencyLibs2_2.10-${versionStr}.jar", s"KamanjaInternalDeps_2.10-${versionStr}.jar")
@@ -383,7 +387,7 @@ object PersistenceUtils {
 
     val fullName = (nameSpace.trim + "." + name.trim).toLowerCase
 
-    val json = 
+    val json =
       ("ElementId" -> elementId) ~
         ("Type" -> typ.toLowerCase) ~
         ("Name" -> fullName)
@@ -421,8 +425,8 @@ object PersistenceUtils {
     objList.foreach(obj => {
       max = scala.math.max(max, obj.TranId)
     })
-    if (MetadataAPIImpl.getCurrentTranLevel < max)
-      MetadataAPIImpl.setCurrentTranLevel(max)
+    if (getMetadataAPI.getCurrentTranLevel < max)
+      getMetadataAPI.setCurrentTranLevel(max)
     PutTranId(max)
   }
 
@@ -535,13 +539,13 @@ object PersistenceUtils {
       var keyList = new ArrayBuffer[String](0)
       var valueList = new ArrayBuffer[Array[Byte]](0)
 
-      val tmpJarPaths = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS")
+      val tmpJarPaths = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS")
       val jarPaths = if (tmpJarPaths != null) tmpJarPaths.split(",").toSet else scala.collection.immutable.Set[String]()
       if (obj.jarName != null && (forceUploadMainJar || checkedJars.contains(obj.jarName) == false)) {
         //BUGBUG
-        val jarsPathsInclTgtDir = jarPaths + MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR")
+        val jarsPathsInclTgtDir = jarPaths + getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR")
         var jarName = com.ligadata.Utils.Utils.GetValidJarFile(jarsPathsInclTgtDir, obj.jarName)
-        var value = MetadataAPIImpl.GetJarAsArrayOfBytes(jarName)
+        var value = getMetadataAPI.GetJarAsArrayOfBytes(jarName)
 
         var loadObject = false
 
@@ -588,7 +592,7 @@ object PersistenceUtils {
           if (j != null && j.endsWith(".jar") && checkedJars.contains(j) == false && excludeSystemJars.contains(j) == false) {
             var loadObject = false
             val jarName = com.ligadata.Utils.Utils.GetValidJarFile(jarPaths, j)
-            val value = MetadataAPIImpl.GetJarAsArrayOfBytes(jarName)
+            val value = getMetadataAPI.GetJarAsArrayOfBytes(jarName)
             var mObj: (String, Any) = null
             try {
               mObj = GetObject(j, "jar_store")
@@ -641,7 +645,7 @@ object PersistenceUtils {
       val f = new File(jarName)
       if (f.exists()) {
         var key = f.getName()
-        var value = MetadataAPIImpl.GetJarAsArrayOfBytes(jarName)
+        var value = getMetadataAPI.GetJarAsArrayOfBytes(jarName)
         logger.debug("Update the jarfile (size => " + value.length + ") of the object: " + jarName)
         SaveObject(key, value, "jar_store", "")
 
@@ -672,7 +676,7 @@ object PersistenceUtils {
       var key = jarName
       var value = byteArray
       logger.debug("Update the jarfile (size => " + value.length + ") of the object: " + jarName)
-      MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTJAR, jarName, AuditConstants.SUCCESS, "", jarName)
+      getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTJAR, jarName, AuditConstants.SUCCESS, "", jarName)
       SaveObject(key, value, "jar_store", "")
       var apiResult = new ApiResult(ErrorCodeConstants.Success, "UploadJarToDB", null, ErrorCodeConstants.Upload_Jar_Successful + ":" + jarName)
       apiResult.toString()
@@ -698,11 +702,11 @@ object PersistenceUtils {
         logger.debug("The object " + obj.FullName + "." + MdMgr.Pad0s2Version(obj.Version) + " has no jar associated with it. Nothing to download..")
         return
       }
-      var allJars = MetadataAPIImpl.GetDependantJars(obj)
+      var allJars = getMetadataAPI.GetDependantJars(obj)
       logger.debug("Found " + allJars.length + " dependent jars. Jars:" + allJars.mkString(","))
       logger.info("Found " + allJars.length + " dependent jars. It may take several minutes first time to download all of these jars:" + allJars.mkString(","))
       if (allJars.length > 0) {
-        val tmpJarPaths = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS")
+        val tmpJarPaths = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS")
         val jarPaths = if (tmpJarPaths != null) tmpJarPaths.split(",").toSet else scala.collection.immutable.Set[String]()
         jarPaths.foreach(jardir => {
           val dir = new File(jardir)
@@ -712,7 +716,7 @@ object PersistenceUtils {
           }
         })
 
-        val dirPath = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR")
+        val dirPath = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR")
         val dir = new File(dirPath)
         if (!dir.exists()) {
           // attempt to create the missing directory
@@ -724,13 +728,13 @@ object PersistenceUtils {
           try {
             if (PersistenceUtils.excludeSystemJars.contains(jar.trim) == false) {
               // download only if it doesn't already exists
-              val b = MetadataAPIImpl.IsDownloadNeeded(jar, obj)
+              val b = getMetadataAPI.IsDownloadNeeded(jar, obj)
               if (b == true) {
                 val key = jar
                 val mObj = GetObject(key, "jar_store")
                 val ba = mObj._2.asInstanceOf[Array[Byte]]
                 val jarName = dirPath + "/" + jar
-                MetadataAPIImpl.PutArrayOfBytesToJar(ba, jarName)
+                getMetadataAPI.PutArrayOfBytesToJar(ba, jarName)
               } else {
                 logger.debug("The jar " + curJar + " was already downloaded... ")
               }
@@ -897,8 +901,8 @@ object PersistenceUtils {
   def TruncateAuditStore: Unit = lock.synchronized {
     try {
       logger.debug("Truncating Audit datastore")
-      if (MetadataAPIImpl.GetAuditObj != null) {
-        MetadataAPIImpl.GetAuditObj.TruncateStore
+      if (getMetadataAPI.GetAuditObj != null) {
+        getMetadataAPI.GetAuditObj.TruncateStore
       }
     } catch {
       case e: Exception => {

@@ -30,14 +30,17 @@ import scala.io._
  */
 object JarService {
   private val userid: Option[String] = Some("kamanja")
+  // 646 - 676 Change begins - replase MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Chagne ends
   val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
 def uploadJar(input: String): String ={
   var response = ""
   var jarFileDir: String = ""
-  
+
   if (input == "") {
-    jarFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR")
+    jarFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR")
     if (jarFileDir == null) {
       response = "JAR_TARGET_DIR property missing in the metadata API configuration"
     } else {
@@ -64,7 +67,7 @@ def uploadJar(input: String): String ={
   } else {
     //input provided
     var jarFile = new File(input.toString)
-    response = MetadataAPIImpl.UploadJar(jarFile.getPath)
+    response = getMetadataAPI.UploadJar(jarFile.getPath)
   }
   response
 }
@@ -90,22 +93,22 @@ def uploadJar(input: String): String ={
       srNo += 1
       println("[" + srNo + "]" + file)
     }
-    
+
     print("\nEnter your choice(If more than 1 choice, please use commas to seperate them): \n")
     val userOptions: List[Int] = readLine().filter(_ != '\n').split(',').filter(ch => (ch != null && ch != "")).map(_.trim.toInt).toList
-    
+
     //check if user input valid. If not exit
     //for (userOption <- userOptions) {
     userOptions.foreach(userOption =>  {
       if ((1 to srNo).contains(userOption)) {
          var file = files(userOption - 1)
          println("Uploading "+file.getPath)
-         results = results + "\n" +MetadataAPIImpl.UploadJar(file.getPath)
-         
+         results = results + "\n" +getMetadataAPI.UploadJar(file.getPath)
+
       } else {
          println("Unknown option: " + userOption)
-      }   
+      }
     })
-    results 
+    results
   }
 }

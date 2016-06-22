@@ -1,0 +1,5 @@
+msisdn,actNo,planName,activationDate,thresholdAlertOptout
+4251114567,190345676,shared3G,20150720,false
+4251114568,190345677,shared3G,20150720,false
+4251114569,190345678,shared3G,20150718,false
+4251114570,190345679,individual1G,20150718,false

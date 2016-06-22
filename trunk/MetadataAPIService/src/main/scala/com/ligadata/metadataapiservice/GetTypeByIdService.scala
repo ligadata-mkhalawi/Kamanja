@@ -48,6 +48,9 @@ class GetTypeByIdService(requestContext: RequestContext, userid: Option[String],
   val loggerName = this.getClass.getName
   val logger = LogManager.getLogger(loggerName)
   // logger.setLevel(Level.TRACE);
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   val APIName = "GetTypeById"
 
@@ -61,14 +64,14 @@ class GetTypeByIdService(requestContext: RequestContext, userid: Option[String],
             val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetTypeBySchemaId", null, "Please provide proper schema id :" + objectKey)
             return apiResult.toString()
           }
-          apiResult = MetadataAPIImpl.GetTypeBySchemaId(objectKey.toInt, userid)
+          apiResult = getMetadataAPI.GetTypeBySchemaId(objectKey.toInt, userid)
         }
         case "typebyelementid" => {
           if (!scala.util.Try(objectKey.toLong).isSuccess) {
             val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetTypeByElementId", null, "Please provide proper element id :" + objectKey)
             return apiResult.toString()
           }
-          apiResult = MetadataAPIImpl.GetTypeByElementId(objectKey.toLong, userid)
+          apiResult = getMetadataAPI.GetTypeByElementId(objectKey.toLong, userid)
         }
       }
     } catch {
@@ -90,8 +93,8 @@ class GetTypeByIdService(requestContext: RequestContext, userid: Option[String],
   def process(objectType: String, objectKey: String) = {
     log.debug("Requesting GetTypeByIdObjects {}", objectType)
 
-    if (!MetadataAPIImpl.checkAuth(userid, password, cert, MetadataAPIImpl.getPrivilegeName("get", "config"))) {
-      MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETCONFIG, AuditConstants.CONFIG, AuditConstants.FAIL, "", objectType)
+    if (!getMetadataAPI.checkAuth(userid, password, cert, getMetadataAPI.getPrivilegeName("get", "config"))) {
+      getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETCONFIG, AuditConstants.CONFIG, AuditConstants.FAIL, "", objectType)
       requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error: READ not allowed for this user").toString)
     } else {
       if (objectKey == null || objectKey.trim() == "") requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error: Please provide the proper id").toString)
@@ -101,5 +104,3 @@ class GetTypeByIdService(requestContext: RequestContext, userid: Option[String],
     }
   }
 }
-
-

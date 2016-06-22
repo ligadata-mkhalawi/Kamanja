@@ -1,0 +1,24 @@
+[
+    {
+        "AdapterName": "testin_1", 
+        "MessageNames": [
+            "com.ligadata.kamanja.samples.messages.AutoMPGData"
+        ], 
+        "Options": {
+            "alwaysQuoteFields": "false", 
+            "fieldDelimiter": ","
+        }, 
+        "Serializer": "com.ligadata.kamanja.serializer.csvserdeser"
+    }, 
+    {
+        "AdapterName": "testout_1", 
+        "MessageNames": [
+            "com.ligadata.kamanja.samples.models.rattle_pmml_outputmsg"
+        ], 
+        "Options": {
+            "alwaysQuoteFields": "false", 
+            "fieldDelimiter": ","
+        }, 
+        "Serializer": "com.ligadata.kamanja.serializer.jsonserdeser"
+    }
+]

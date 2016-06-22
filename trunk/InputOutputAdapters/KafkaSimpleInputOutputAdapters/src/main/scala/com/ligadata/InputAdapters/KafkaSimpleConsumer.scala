@@ -173,7 +173,8 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
    * given topic, and the topic have been set when this KafkaConsumer_V2 Adapter was instantiated.  The partitionIds should be
    * obtained via a prior call to the adapter.  One of the hosts will be a chosen as a leader to service the requests by the
    * spawned threads.
-   * @param ignoreFirstMsg Boolean - if true, ignore the first message sending to engine
+    *
+    * @param ignoreFirstMsg Boolean - if true, ignore the first message sending to engine
    * @param partitionIds Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue, Long, PartitionUniqueRecordValue)] - an Array of partition ids
    */
   def StartProcessing(partitionIds: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = lock.synchronized {
@@ -375,45 +376,63 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
 
             val ignoreTillOffset = if (ignoreFirstMsg) partition._2.Offset else partition._2.Offset - 1
             // Successfuly read from the Kafka Adapter - Process messages
-            fetchResp.messageSet(qc.topic, partitionId).foreach(msgBuffer => {
-              val bufferPayload = msgBuffer.message.payload
-              val message: Array[Byte] = new Array[Byte](bufferPayload.limit)
-              readOffset = msgBuffer.nextOffset
-              breakable {
-                val readTmMs = System.currentTimeMillis
-                messagesProcessed = messagesProcessed + 1
-
-                // Engine in interested in message at OFFSET + 1, Because I cannot guarantee that offset for a partition
-                // is increasing by one, and I cannot simple set the offset to offset++ since that can cause our of
-                // range errors on the read, we simple ignore the message by with the offset specified by the engine.
-                if (msgBuffer.offset <= ignoreTillOffset) {
-                  LOG.debug("KAFKA-ADAPTER: skipping a message at  Broker: " + leadBroker + "_" + partitionId + " OFFSET " + msgBuffer.offset + " " + new String(message, "UTF-8") + " - previously processed! ")
+            breakable {
+              fetchResp.messageSet(qc.topic, partitionId).foreach(msgBuffer => {
+                if (isQuiesced) {
+                  LOG.debug("KAFKA-ADAPTER: isQuiesced:true. Breaking loop")
                   break
                 }
+                val bufferPayload = msgBuffer.message.payload
+                val message: Array[Byte] = new Array[Byte](bufferPayload.limit)
+                readOffset = msgBuffer.nextOffset
+                breakable {
+                  val readTmMs = System.currentTimeMillis
+                  messagesProcessed = messagesProcessed + 1
 
-                // OK, present this message to the Engine.
-                bufferPayload.get(message)
-                LOG.debug("KAFKA-ADAPTER: Broker: " + leadBroker + "_" + partitionId + " OFFSET " + msgBuffer.offset + " Message: " + new String(message, "UTF-8"))
+                  // Engine in interested in message at OFFSET + 1, Because I cannot guarantee that offset for a partition
+                  // is increasing by one, and I cannot simple set the offset to offset++ since that can cause our of
+                  // range errors on the read, we simple ignore the message by with the offset specified by the engine.
+                  if (msgBuffer.offset <= ignoreTillOffset) {
+                    LOG.debug("KAFKA-ADAPTER: skipping a message at  Broker: " + leadBroker + "_" + partitionId + " OFFSET " + msgBuffer.offset + " " + new String(message, "UTF-8") + " - previously processed! ")
+                    break
+                  }
 
-                // Create a new EngineMessage and call the engine.
-                if (execThread == null) {
-                  execThread = execCtxtObj.CreateExecContext(input, uniqueKey, nodeContext)
+                  // OK, present this message to the Engine.
+                  bufferPayload.get(message)
+                  LOG.debug("KAFKA-ADAPTER: Broker: " + leadBroker + "_" + partitionId + " OFFSET " + msgBuffer.offset + " Message: " + new String(message, "UTF-8"))
+
+                  // Create a new EngineMessage and call the engine.
+                  if (execThread == null) {
+                    execThread = execCtxtObj.CreateExecContext(input, uniqueKey, nodeContext)
+                  }
+
+                  incrementCountForPartition(partitionId)
+
+                  uniqueVal.Offset = msgBuffer.offset
+                  msgCount += 1
+                  //                val dontSendOutputToOutputAdap = uniqueVal.Offset <= uniqueRecordValue
+                  if (isQuiesced) {
+                    LOG.debug("KAFKA-ADAPTER: isQuiesced:true. Breaking loop")
+                    break
+                  }
+                  execThread.execute(message, uniqueKey, uniqueVal, readTmMs)
+                  if (isQuiesced) {
+                    LOG.debug("KAFKA-ADAPTER: isQuiesced:true. Breaking loop")
+                    break
+                  }
+
+                  // Kafka offsets are 0 based, so add 1
+                  localReadOffsets(partitionId) = (uniqueVal.Offset + 1)
+                  // val key = Category + "/" + qc.Name + "/evtCnt"
+                  // cntrAdapter.addCntr(key, 1) // for now adding each row
                 }
 
-                incrementCountForPartition(partitionId)
-
-                uniqueVal.Offset = msgBuffer.offset
-                msgCount += 1
-//                val dontSendOutputToOutputAdap = uniqueVal.Offset <= uniqueRecordValue
-                execThread.execute(message, uniqueKey, uniqueVal, readTmMs)
-
-                // Kafka offsets are 0 based, so add 1
-                localReadOffsets(partitionId) = (uniqueVal.Offset + 1)
-                // val key = Category + "/" + qc.Name + "/evtCnt"
-                // cntrAdapter.addCntr(key, 1) // for now adding each row
-              }
-
-            })
+                if (isQuiesced) {
+                  LOG.debug("KAFKA-ADAPTER: isQuiesced:true. Breaking loop")
+                  break
+                }
+              })
+            }
 
             try {
               // Sleep here, only if input parm for sleep is set and we haven't gotten any messages on the previous kafka call.
@@ -450,7 +469,8 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
 
   /**
    * getServerInfo - returns information about hosts and their coresponding partitions.
-   * @return Array[PartitionUniqueRecordKey] - return data
+    *
+    * @return Array[PartitionUniqueRecordKey] - return data
    */
   def GetAllPartitionUniqueRecordKey: Array[PartitionUniqueRecordKey] = lock.synchronized {
     // iterate through all the simple consumers - collect the metadata about this topic on each specified host
@@ -548,7 +568,8 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
   /**
    * Return an array of PartitionUniqueKey/PartitionUniqueRecordValues whre key is the partion and value is the offset
    * within the kafka queue where it begins.
-   * @return Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)]
+    *
+    * @return Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)]
    */
   override def getAllPartitionBeginValues: Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)] = lock.synchronized {
     return getKeyValues(kafka.api.OffsetRequest.EarliestTime)
@@ -557,7 +578,8 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
   /**
    * Return an array of PartitionUniqueKey/PartitionUniqueRecordValues whre key is the partion and value is the offset
    * within the kafka queue where it eds.
-   * @return Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)]
+    *
+    * @return Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)]
    */
   override def getAllPartitionEndValues: Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)] = lock.synchronized {
     return getKeyValues(kafka.api.OffsetRequest.LatestTime)

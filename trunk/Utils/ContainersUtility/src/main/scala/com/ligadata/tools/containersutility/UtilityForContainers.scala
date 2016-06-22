@@ -32,6 +32,10 @@ class UtilityForContainers(val loadConfigs: Properties, val typename: String) ex
 
   val containerUtilityLoder = new KamanjaLoaderInfo
 
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
+
   containersUtilityConfiguration.nodeId = loadConfigs.getProperty("nodeId".toLowerCase, "0").replace("\"", "").trim.toInt
   if (containersUtilityConfiguration.nodeId <= 0) {
     logger.error("Not found valid nodeId. It should be greater than 0")
@@ -41,7 +45,7 @@ class UtilityForContainers(val loadConfigs: Properties, val typename: String) ex
   var nodeInfo: NodeInfo = _
 
   if (isOk) {
-    MetadataAPIImpl.InitMdMgrFromBootStrap(containersUtilityConfiguration.configFile, false)
+    getMetadataAPI.InitMdMgrFromBootStrap(containersUtilityConfiguration.configFile, false)
 
     nodeInfo = mdMgr.Nodes.getOrElse(containersUtilityConfiguration.nodeId.toString, null)
     if (nodeInfo == null) {

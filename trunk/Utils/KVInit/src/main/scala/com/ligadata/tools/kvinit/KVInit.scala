@@ -66,6 +66,10 @@ trait LogTrait {
 
 object KVInit extends App with LogTrait {
 
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
+
   def usage: String = {
     """
 Usage: scala com.ligadata.kvinit.KVInit
@@ -302,7 +306,9 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
   var isOk: Boolean = true
   var zkcForSetData: CuratorFramework = null
   var totalCommittedMsgs: Int = 0
-
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+    // 646 - 676 Change ends
   val kvInitLoader = new KamanjaLoaderInfo
 
   KvInitConfiguration.nodeId = loadConfigs.getProperty("nodeId".toLowerCase, "0").replace("\"", "").trim.toInt
@@ -314,7 +320,7 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
   var nodeInfo: NodeInfo = _
 
   if (isOk) {
-    MetadataAPIImpl.InitMdMgrFromBootStrap(KvInitConfiguration.configFile, false)
+    getMetadataAPI.InitMdMgrFromBootStrap(KvInitConfiguration.configFile, false)
 
     nodeInfo = mdMgr.Nodes.getOrElse(KvInitConfiguration.nodeId.toString, null)
     if (nodeInfo == null) {
