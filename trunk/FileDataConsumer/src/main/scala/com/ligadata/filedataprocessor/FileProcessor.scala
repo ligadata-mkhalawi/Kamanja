@@ -1,5 +1,6 @@
 package com.ligadata.filedataprocessor
 
+import java.util.concurrent.{Executors, TimeUnit}
 import java.util.zip.{ZipException, GZIPInputStream}
 import com.ligadata.Exceptions.{MissingPropertyException, StackTrace}
 import com.ligadata.MetadataAPI.MetadataAPIImpl
@@ -81,7 +82,7 @@ object FileProcessor {
   var targetMoveDir: String = _
   var readyToProcessKey: String = _
 
-  var globalFileMonitorService: ExecutorService = Executors.newFixedThreadPool(3)
+  var globalFileMonitorService: ExecutorService = scala.actors.threadpool.Executors.newFixedThreadPool(3)
   val DEBUG_MAIN_CONSUMER_THREAD_ACTION = 1000
   val NOT_RECOVERY_SITUATION = -1
   val BROKEN_FILE = -100
@@ -90,6 +91,8 @@ object FileProcessor {
   val MAX_WAIT_TIME = 60000
   var errorWaitTime = 1000
   val MAX_ZK_RETRY_MS = 5000
+  val MAX_RETRY = 10
+  val RECOVERY_SLEEP_TIME = 1000
 
   var reset_watcher = false
 
@@ -133,7 +136,14 @@ object FileProcessor {
   // default to a minute
   private var randomFailureThreshHold = 0
 
+  val scheduledThreadPool = java.util.concurrent.Executors.newScheduledThreadPool(1)
+
   val testRand = scala.util.Random
+
+  private def testFailure(thisCause: String) = {
+    var bigCheck = FileProcessor.testRand.nextInt(100)
+    if (FileProcessor.randomFailureThreshHold > bigCheck) throw new Exception(thisCause + " (" + bigCheck + "/" + FileProcessor.randomFailureThreshHold + ")")
+  }
 
   /**
     *
@@ -577,6 +587,9 @@ object FileProcessor {
         }
       }
     })
+    if (status_interval > 0) {
+      scheduledThreadPool.scheduleWithFixedDelay(externalizeStats, 0, status_interval * 1000, TimeUnit.MILLISECONDS);
+    }
   }
 
   private def enQBufferedFile(file: String): Unit = {
@@ -701,8 +714,7 @@ object FileProcessor {
     if (d.exists && d.isDirectory) {
       //Additional Filter Conditions, Ignore files starting with a . (period)
 
-      var bigCheck = testRand.nextInt(100)
-      if (randomFailureThreshHold > bigCheck) throw new Exception("TEST EXCEPTION... Processing Existing Files" + " (" + bigCheck + "/" + randomFailureThreshHold + ")")
+      FileProcessor.testFailure("TEST EXCEPTION... Processing Existing Files")
 
       val files = d.listFiles.filter(_.isFile)
         .filter(!_.getName.startsWith("."))
@@ -760,8 +772,7 @@ object FileProcessor {
           // Default is 1 * 1024 * 1024
           val tmpbuffer = new Array[Byte](buffSzToTestContextType)
 
-          var bigCheck = testRand.nextInt(100)
-          if (FileProcessor.randomFailureThreshHold > bigCheck) throw new Exception("TEST EXCEPTION... Checking File Content Type" + " (" + bigCheck + "/" + FileProcessor.randomFailureThreshHold + ")")
+          testFailure("TEST EXCEPTION... Checking File Content Type")
 
           val readlen = is.read(tmpbuffer, 0, buffSzToTestContextType)
           val buffer =
@@ -838,76 +849,74 @@ object FileProcessor {
           var map = priorFailures.toArray
           //var map = parse(new String(priorFailures)).values.asInstanceOf[Map[String, Any]]
           if (map != null) map.foreach(fileToReprocess => {
-            logger.info("SMART FILE CONSUMER (global): Consumer  recovery of file " + URLDecoder.decode(fileToReprocess.asInstanceOf[String], "UTF-8"))
+            var fileToRecover = ""
+            try {
+              logger.info("SMART FILE CONSUMER (global): Consumer  recovery of file " + URLDecoder.decode(fileToReprocess.asInstanceOf[String], "UTF-8"))
 
-            var fileToRecover = URLDecoder.decode(fileToReprocess.asInstanceOf[String], "UTF-8")
+              fileToRecover = URLDecoder.decode(fileToReprocess.asInstanceOf[String], "UTF-8")
+              var isFailedFileReprocessed = false
+              while (!isFailedFileReprocessed)
+                try {
+                  if (Files.exists(Paths.get(fileToRecover)) &&
+                    !checkIfFileBeingProcessed(fileToRecover)) {
 
-            if (!checkIfFileBeingProcessed(fileToRecover)
-              //Additional check, see if it exists, possibility that it is moved but not updated in ZK
-              //Should we be more particular and check in Processed directory ??? TODO
-              && Files.exists(Paths.get(fileToRecover))) {
+                    val offset = getData(znodePath + "/" + fileToReprocess.asInstanceOf[String]) // zkc.getData.forPath(znodePath + "/" + fileToReprocess.asInstanceOf[String])
 
-              val offset = getData(znodePath + "/" + fileToReprocess.asInstanceOf[String]) // zkc.getData.forPath(znodePath + "/" + fileToReprocess.asInstanceOf[String])
+                    var recoveryInfo = new String(offset)
+                    logger.info("SMART FILE CONSUMER (global): " + fileToRecover + " from offset " + recoveryInfo)
 
-              var recoveryInfo = new String(offset)
-              logger.info("SMART FILE CONSUMER (global): " + fileToRecover + " from offset " + recoveryInfo)
+                    // There will always be 2 parts here.
+                    var partMap = scala.collection.mutable.Map[Int, Int]()
+                    var recoveryTokens = recoveryInfo.split(",")
+                    var parts = recoveryTokens(1).substring(1, recoveryTokens(1).size - 1)
+                    if (parts.size != 0) {
+                      var kvs = parts.split(";")
+                      kvs.foreach(kv => {
+                        var pair = kv.split(":")
+                        partMap(pair(0).toInt) = pair(1).toInt
+                      })
+                    }
+                    FileProcessor.enQFile(fileToRecover, recoveryTokens(0).toInt, FileProcessor.RECOVERY_DUMMY_START_TIME, partMap)
 
-              // There will always be 2 parts here.
-              var partMap = scala.collection.mutable.Map[Int, Int]()
-              var recoveryTokens = recoveryInfo.split(",")
-              var parts = recoveryTokens(1).substring(1, recoveryTokens(1).size - 1)
-              if (parts.size != 0) {
-                var kvs = parts.split(";")
-                kvs.foreach(kv => {
-                  var pair = kv.split(":")
-                  partMap(pair(0).toInt) = pair(1).toInt
-                })
-              }
+                  } else if (!Files.exists(Paths.get(fileToRecover))) {
+                    //Check if file is already moved, if yes remove from ZK
+                    val tokenName = fileToRecover.split("/")
+                    if (Files.exists(Paths.get(targetMoveDir + "/" + tokenName(tokenName.size - 1)))) {
+                      logger.warn("SMART FILE CONSUMER (global): Found file " + fileToRecover + " processed ")
+                      removeFromZK(fileToRecover)
+                    } else {
+                      logger.warn("SMART FILE CONSUMER (global): File possibly moved out manually " + fileToRecover)
+                      removeFromZK(fileToRecover)
+                    }
+                  } else {
+                    logger.warn("SMART FILE CONSUMER (global): " + fileToRecover + " already being processed ")
+                  }
+                  isFailedFileReprocessed = true
+                } catch {
+                  case e: Throwable => {
+                    logger.warn("SMART FILE CONSUMER (global) - recovering failed files, Error accesisng disk, retrying")
+                    try {
+                      Thread.sleep(500)
+                    } catch {
+                      case ie: InterruptedException => {
+                        throw ie
+                      }
+                    }
 
-
-              //Start Changes -- Instead of a single file, run with the ArrayBuffer of Paths
-              FileProcessor.enQFile(fileToRecover, recoveryTokens(0).toInt, FileProcessor.RECOVERY_DUMMY_START_TIME, partMap)
-
-              for (dir <- path) {
-                if (dir.toFile().exists() && dir.toFile().isDirectory()) {
-                  var files = dir.toFile().listFiles.filter(file => {
-                    file.isFile && (file.getName).equals(fileToRecover)
-                  })
-                  while (files.size != 0) {
-                    Thread.sleep(1000)
-                    files = dir.toFile().listFiles.filter(file => {
-                      file.isFile && (file.getName).equals(fileToRecover)
-                    })
                   }
                 }
+            }
+            catch {
+              case e: Exception => {
+                logger.error("SMART FILE CONSUMER (global): Failed to recover file:" + fileToRecover, e)
               }
-              //End Changes -- Instead of a single file, run with the ArrayBuffer of Paths
-
-            } else if (!Files.exists(Paths.get(fileToRecover))) {
-              //Check if file is already moved, if yes remove from ZK
-              val tokenName = fileToRecover.split("/")
-              if (Files.exists(Paths.get(targetMoveDir + "/" + tokenName(tokenName.size - 1)))) {
-                logger.info("SMART FILE CONSUMER (global): Found file " + fileToRecover + " processed ")
-                removeFromZK(fileToRecover)
-              } else {
-                logger.info("SMART FILE CONSUMER (global): File possibly moved out manually " + fileToRecover)
-                removeFromZK(fileToRecover)
+              case e: Throwable => {
+                logger.error("SMART FILE CONSUMER (global): Failed to recover file:" + fileToRecover, e)
               }
-
-            } else {
-              logger.info("SMART FILE CONSUMER (global): " + fileToRecover + " already being processed ")
             }
           })
         }
       }
-
-      logger.info("SMART FILE CONSUMER (global): Consumer Continuing Startup process, checking for existing files")
-
-      //TODO C&S- No need to process here just before entering the loop
-      //If need is to exit, do a shutdown on error
-      for (dir <- path)
-        processExistingFiles(dir.toFile())
-
 
       logger.info("SMART_FILE_CONSUMER partition Initialization complete  Monitoring specified directory for new files")
 
@@ -932,11 +941,6 @@ object FileProcessor {
           }
           //TODO C&S - Need to parameterize
           Thread.sleep(refreshRate)
-
-          if (status_interval > 0 && System.currentTimeMillis() > nextInterval) {
-            externalizeStats()
-            nextInterval = System.currentTimeMillis() + (status_interval * 1000)
-          }
 
         }
       }
@@ -1095,8 +1099,7 @@ object FileProcessor {
     logger.info("SMART FILE CONSUMER Moving File" + fileName + " to " + targetMoveDir)
     if (Paths.get(fileName).toFile().exists()) {
 
-      var bigCheck = testRand.nextInt(100)
-      if (FileProcessor.randomFailureThreshHold > bigCheck) throw new Exception("TEST EXCEPTION... Failing to Move File" + " (" + bigCheck + "/" + FileProcessor.randomFailureThreshHold + ")")
+      testFailure("TEST EXCEPTION... Failing to Move File")
 
       Files.move(Paths.get(fileName), Paths.get(targetMoveDir + "/" + fileStruct(fileStruct.size - 1)), REPLACE_EXISTING)
       fileCacheRemove(fileName)
@@ -1105,61 +1108,61 @@ object FileProcessor {
     }
   }
 
-  private def externalizeStats(): Unit = {
-    // var outString = "Queue Stats - \n"
-    // fileCacheLock.synchronized { outString = outString + "CachedFiles: [" + fileCache.map(kv => {kv._1}).mkString(",") + "] \n" }
-    // activeFilesLock.synchronized { outString = outString + "AcitveFiles: [" + activeFiles.map(kv => {kv._1 +":"+ kv._2.status}).mkString(",") + "] \n" }
-    // bufferingQLock.synchronized { outString = outString + "Buffering Files: [" + bufferingQ_map.map(kv => {kv._1}).mkString(",") + "] \n" }
-    // fileQLock.synchronized { outString = outString + "Enqueued Files: [" + fileQ.map(file => file.name).mkString(",") + "] \n" }
+  val externalizeStats = new Runnable {
+    def run(): Unit = {
+      try {
+        val flCacheMap = fileCacheLock.synchronized {
+          fileCache.toMap
+        }
+        val flQMap = fileQLock.synchronized {
+          fileQ.map(file => (file.name -> file.createDate)).toMap
+        }
+        val actFlMap = activeFilesLock.synchronized {
+          activeFiles.toMap
+        }
+        val bufQMap = bufferingQLock.synchronized {
+          bufferingQ_map.toMap
+        }
 
-    val flCacheMap = fileCacheLock.synchronized {
-      fileCache.toMap
-    }
-    val flQMap = fileQLock.synchronized {
-      fileQ.map(file => (file.name -> file.createDate)).toMap
-    }
-    val actFlMap = activeFilesLock.synchronized {
-      activeFiles.toMap
-    }
-    val bufQMap = bufferingQLock.synchronized {
-      bufferingQ_map.toMap
-    }
+        val flOnlyInCacheMap = flCacheMap -- flQMap.map(fl => fl._1) -- bufQMap.map(fl => fl._1)
+        val flOnlyInBufQ = bufQMap -- flCacheMap.map(fl => fl._1)
+        val flOnlyInFlQ = flQMap -- flCacheMap.map(fl => fl._1)
+        val flCacheAndBufQ = flCacheMap -- (flCacheMap -- bufQMap.map(fl => fl._1)).map(fl => fl._1) -- flOnlyInBufQ.map(fl => fl._1)
+        val flCacheAndFlQ = flCacheMap -- (flCacheMap -- flQMap.map(fl => fl._1)).map(fl => fl._1) -- flOnlyInFlQ.map(fl => fl._1)
 
-    val flOnlyInCacheMap = flCacheMap -- flQMap.map(fl => fl._1) -- bufQMap.map(fl => fl._1)
-    val flOnlyInBufQ = bufQMap -- flCacheMap.map(fl => fl._1)
-    val flOnlyInFlQ = flQMap -- flCacheMap.map(fl => fl._1)
-    val flCacheAndBufQ = flCacheMap -- (flCacheMap -- bufQMap.map(fl => fl._1)).map(fl => fl._1) -- flOnlyInBufQ.map(fl => fl._1)
-    val flCacheAndFlQ = flCacheMap -- (flCacheMap -- flQMap.map(fl => fl._1)).map(fl => fl._1) -- flOnlyInFlQ.map(fl => fl._1)
+        implicit val formats = DefaultFormats
+        val statusJson = (("OnlyCachedFiles" -> (flOnlyInCacheMap)) ~
+          ("OnlyBufferingFiles" -> flOnlyInBufQ.map(file => {
+            ("fileName" -> file._1) ~
+              ("fileInfo" -> (file._2._1 + ":" + file._2._2 + ":" + file._2._3))
+          })) ~
+          ("OnlyEnqueuedFiles" -> (flOnlyInFlQ)) ~
+          ("CachedAndBufferingFiles" -> (flCacheAndBufQ)) ~
+          ("CachedAndEnqueuedFiles" -> (flCacheAndFlQ)) ~
+          ("ActiveFiles" -> actFlMap.map { file =>
+            ("fileName" -> file._1) ~
+              ("fileInfo" -> ("status" -> file._2.asInstanceOf[FileStatus].status) ~
+                ("offset" -> file._2.asInstanceOf[FileStatus].offset) ~
+                ("createDate" -> file._2.asInstanceOf[FileStatus].createDate))
+          }))
 
-    implicit val formats = DefaultFormats
-    val statusJson = (("OnlyCachedFiles" -> (flOnlyInCacheMap)) ~
-      ("OnlyBufferingFiles" -> flOnlyInBufQ.map(file => {
-        ("fileName" -> file._1) ~
-          ("fileInfo" -> (file._2._1 + ":" + file._2._2 + ":" + file._2._3))
-      })) ~
-      ("OnlyEnqueuedFiles" -> (flOnlyInFlQ)) ~
-      ("CachedAndBufferingFiles" -> (flCacheAndBufQ)) ~
-      ("CachedAndEnqueuedFiles" -> (flCacheAndFlQ)) ~
-      ("ActiveFiles" -> actFlMap.map { file =>
-        ("fileName" -> file._1) ~
-          ("fileInfo" -> ("status" -> file._2.asInstanceOf[FileStatus].status) ~
-            ("offset" -> file._2.asInstanceOf[FileStatus].offset) ~
-            ("createDate" -> file._2.asInstanceOf[FileStatus].createDate))
-      }))
-
-    var status_data_string = pretty(render(statusJson))
-    setData(znodePath_Status, status_data_string.getBytes())
-    logger.warn(status_data_string)
+        var status_data_string = pretty(render(statusJson))
+        setData(znodePath_Status, status_data_string.getBytes())
+        logger.warn(status_data_string)
+      } catch {
+        case e: Throwable => {
+          logger.warn("Unable to produce STATS due to ", e)
+          try {
+            Thread.sleep(FileProcessor.RECOVERY_SLEEP_TIME)
+          } catch {
+            case e: InterruptedException => {
+              throw e
+            }
+          }
+        }
+      }
+    }
   }
-
-}
-
-
-/**
-  * Counter of buffers used by the FileProcessors... there is a limit on how much memory File Consumer can use up.
-  */
-object BufferCounters {
-  //val inMemoryBuffersCntr = new java.util.concurrent.atomic.AtomicLong()
 }
 
 /**
@@ -1174,7 +1177,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
   private var zkc: CuratorFramework = null
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
-  var fileConsumers: ExecutorService = Executors.newFixedThreadPool(3)
+  var fileConsumers: ExecutorService = scala.actors.threadpool.Executors.newFixedThreadPool(3)
 
   //val inMemoryBuffersCntr = new java.util.concurrent.atomic.AtomicLong()
 
@@ -1627,7 +1630,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
 
     // Start the worker bees... should only be started the first time..
     if (workerBees == null) {
-      workerBees = Executors.newFixedThreadPool(NUMBER_OF_BEES)
+      workerBees = scala.actors.threadpool.Executors.newFixedThreadPool(NUMBER_OF_BEES)
       for (i <- 1 to NUMBER_OF_BEES) {
         workerBees.execute(new Runnable() {
           override def run() = {
@@ -1651,9 +1654,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
     //var bis: InputStream = new ByteArrayInputStream(Files.readAllBytes(Paths.get(fileName)))
     var bis: BufferedReader = null
     try {
-
-      var bigCheck = r.nextInt(100)
-      if (FileProcessor.randomFailureThreshHold > bigCheck) throw new Exception("TEST EXCEPTION... Doing a BIS" + " (" + bigCheck + "/" + FileProcessor.randomFailureThreshHold + ")")
+      FileProcessor.testFailure("TEST EXCEPTION... Doing a BIS")
 
       if (isCompressed(fileName)) {
         bis = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(fileName))))
@@ -1722,8 +1723,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
           readlen = 0
           var curReadLen = bis.read(buffer, readlen, maxlen - readlen - 1)
 
-          var bigCheck = r.nextInt(100)
-          if (FileProcessor.randomFailureThreshHold > bigCheck) throw new Exception("TEST EXCEPTION... Doing a READ" + " (" + bigCheck + "/" + FileProcessor.randomFailureThreshHold + ")")
+          FileProcessor.testFailure("TEST EXCEPTION... Doing a READ")
 
           if (curReadLen > 0)
             readlen += curReadLen
@@ -1905,40 +1905,41 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
   private def isCompressed(inputfile: String): Boolean = {
     var is: FileInputStream = null
     try {
-
-      var bigCheck = FileProcessor.testRand.nextInt(100)
-      if (FileProcessor.randomFailureThreshHold > bigCheck) throw new Exception("TEST EXCEPTION... checking for Compression" + " (" + bigCheck + "/" + FileProcessor.randomFailureThreshHold + ")")
-
+      FileProcessor.testFailure("TEST EXCEPTION... checking for Compression")
       is = new FileInputStream(inputfile)
+
+      val maxlen = 2
+      val buffer = new Array[Byte](maxlen)
+      val readlen = is.read(buffer, 0, maxlen)
+
+      if (readlen < 2)
+        return false;
+
+      val b0: Int = buffer(0)
+      val b1: Int = buffer(1)
+
+      val head = (b0 & 0xff) | ((b1 << 8) & 0xff00)
+
+      return (head == GZIPInputStream.GZIP_MAGIC);
     } catch {
-      case fnfe: FileNotFoundException => {
-        throw fnfe
-      }
-      case e: Exception => {
-        logger.debug("isCompressed failed", e)
-        return false
-      }
       case e: Throwable => {
-        logger.debug("isCompressed failed", e)
-        return false
+        logger.error("Access to file failed during Compression check", e)
+        throw e;
+      }
+    } finally {
+      try {
+        if (is != null)
+          is.close
+        is = null
+      } catch {
+        case e1: Throwable => {
+          logger.warn("Error while closing the file", e1)
+          is = null
+        }
       }
     }
 
-    val maxlen = 2
-    val buffer = new Array[Byte](maxlen)
-    val readlen = is.read(buffer, 0, maxlen)
-
-    is.close() // Close before we really check and return the data
-
-    if (readlen < 2)
-      return false;
-
-    val b0: Int = buffer(0)
-    val b1: Int = buffer(1)
-
-    val head = (b0 & 0xff) | ((b1 << 8) & 0xff00)
-
-    return (head == GZIPInputStream.GZIP_MAGIC);
+    return false;
   }
 
   /**
