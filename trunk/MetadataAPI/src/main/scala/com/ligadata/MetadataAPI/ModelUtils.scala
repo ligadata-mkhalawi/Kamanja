@@ -84,6 +84,9 @@ object ModelUtils {
   lazy val serializerType = "kryo"
   lazy val serializer = SerializerManager.GetSerializer(serializerType)
   private[this] val lock = new Object
+    // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   /**
     * Deactivate the model that presumably is active and waiting for input in the working set of the cluster engines.
@@ -97,7 +100,7 @@ object ModelUtils {
     */
   def DeactivateModel(nameSpace: String, name: String, version: Long, userid: Option[String] = None): String = {
     val dispkey = nameSpace + "." + name + "." + MdMgr.Pad0s2Version(version)
-    MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.DEACTIVATEOBJECT, AuditConstants.MODEL, AuditConstants.SUCCESS, "", dispkey)
+    getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.DEACTIVATEOBJECT, AuditConstants.MODEL, AuditConstants.SUCCESS, "", dispkey)
     if (DeactivateLocalModel(nameSpace, name, version)) {
       (new ApiResult(ErrorCodeConstants.Success, "Deactivate Model", null, ErrorCodeConstants.Deactivate_Model_Successful + ":" + dispkey)).toString
     } else {
@@ -126,14 +129,14 @@ object ModelUtils {
           false
         case Some(m) =>
           logger.debug("model found => " + m.asInstanceOf[ModelDef].FullName + "." + MdMgr.Pad0s2Version(m.asInstanceOf[ModelDef].Version))
-          MetadataAPIImpl.DeactivateObject(m.asInstanceOf[ModelDef])
+          getMetadataAPI.DeactivateObject(m.asInstanceOf[ModelDef])
 
           // TODO: Need to deactivate the appropriate message?
           m.tranId = newTranId
           var objectsUpdated = new Array[BaseElemDef](0)
           objectsUpdated = objectsUpdated :+ m.asInstanceOf[ModelDef]
           val operations = for (op <- objectsUpdated) yield "Deactivate"
-          MetadataAPIImpl.NotifyEngine(objectsUpdated, operations)
+          getMetadataAPI.NotifyEngine(objectsUpdated, operations)
           true
       }
     } catch {
@@ -161,7 +164,7 @@ object ModelUtils {
     val newTranId = PersistenceUtils.GetNewTranId
 
     // Audit this call
-    MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.ACTIVATEOBJECT, AuditConstants.MODEL, AuditConstants.SUCCESS, "", nameSpace + "." + name + "." + version)
+    getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.ACTIVATEOBJECT, AuditConstants.MODEL, AuditConstants.SUCCESS, "", nameSpace + "." + name + "." + version)
 
     try {
       // We may need to deactivate an model if something else is active.  Find the active model
@@ -203,7 +206,7 @@ object ModelUtils {
           apiResult.toString()
         case Some(m) =>
           logger.debug("model found => " + m.asInstanceOf[ModelDef].FullName + "." + MdMgr.Pad0s2Version(m.asInstanceOf[ModelDef].Version))
-          MetadataAPIImpl.ActivateObject(m.asInstanceOf[ModelDef])
+          getMetadataAPI.ActivateObject(m.asInstanceOf[ModelDef])
 
           // Issue a Notification to all registered listeners that an Acivation took place.
           // TODO: Need to activate the appropriate message?
@@ -211,7 +214,7 @@ object ModelUtils {
           m.tranId = newTranId
           objectsUpdated = objectsUpdated :+ m.asInstanceOf[ModelDef]
           val operations = for (op <- objectsUpdated) yield "Activate"
-          MetadataAPIImpl.NotifyEngine(objectsUpdated, operations)
+          getMetadataAPI.NotifyEngine(objectsUpdated, operations)
 
           // No exceptions, we succeded
           val apiResult = new ApiResult(ErrorCodeConstants.Success, "ActivateModel", null, ErrorCodeConstants.Activate_Model_Successful + ":" + dispkey)
@@ -239,7 +242,7 @@ object ModelUtils {
     */
   def RemoveModel(nameSpace: String, name: String, version: Long, userid: Option[String]): String = {
     var key = nameSpace + "." + name + "." + version
-    if (userid != None) MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.DELETEOBJECT, "Model", AuditConstants.SUCCESS, "", key)
+    if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.DELETEOBJECT, "Model", AuditConstants.SUCCESS, "", key)
     val dispkey = nameSpace + "." + name + "." + MdMgr.Pad0s2Version(version)
     var newTranId = PersistenceUtils.GetNewTranId
     try {
@@ -252,12 +255,12 @@ object ModelUtils {
           apiResult.toString()
         case Some(m) =>
           logger.debug("model found => " + m.asInstanceOf[ModelDef].FullName + "." + MdMgr.Pad0s2Version(m.asInstanceOf[ModelDef].Version))
-          MetadataAPIImpl.DeleteObject(m)
+          getMetadataAPI.DeleteObject(m)
           var objectsUpdated = new Array[BaseElemDef](0)
           m.tranId = newTranId
           objectsUpdated = objectsUpdated :+ m
           var operations = for (op <- objectsUpdated) yield "Remove"
-          MetadataAPIImpl.NotifyEngine(objectsUpdated, operations)
+          getMetadataAPI.NotifyEngine(objectsUpdated, operations)
           val apiResult = new ApiResult(ErrorCodeConstants.Success, "RemoveModel", null, ErrorCodeConstants.Remove_Model_Successful + ":" + dispkey)
           apiResult.toString()
       }
@@ -326,7 +329,7 @@ object ModelUtils {
     val dispkey = model.FullName + "." + MdMgr.Pad0s2Version(model.Version)
     try {
       PersistenceUtils.SaveElementInformation(model.MdElementId, "Model", model.NameSpace, model.Name)
-      MetadataAPIImpl.SaveObject(model, MdMgr.GetMdMgr)
+      getMetadataAPI.SaveObject(model, MdMgr.GetMdMgr)
       var inputMsgCnt = 0
       if (model.inputMsgSets != null) {
         model.inputMsgSets.foreach(s => {
@@ -372,7 +375,7 @@ object ModelUtils {
     *               method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return
     */
-  private def AddModelFromSource(sourceCode: String, sourceLang: String, modelName: String, userid: Option[String], tenantId: String, optMsgProduced: Option[String]): String = {
+  private def AddModelFromSource(sourceCode: String, sourceLang: String, modelName: String, userid: Option[String], tenantId: String, optMsgProduced: Option[String], pStr: Option[String]): String = {
     try {
       var compProxy = new CompilerProxy
       compProxy.setSessionUserId(userid)
@@ -381,6 +384,11 @@ object ModelUtils {
       // save the outMessage
       AddOutMsgToModelDef(modDef, ModelType.fromString(sourceLang), optMsgProduced, userid)
 
+      // 646 - 673 Changes begin - MetadataAPI Changes
+      modDef.setParamValues(pStr)
+      modDef.setCreationTime()
+      modDef.setModTime()
+      // 646 - 673 Changes end
       // 1119 Changes begin - checks model existence before add to prevent
       if (DoesAnyModelExist(modDef) == true) {
         return (new ApiResult(ErrorCodeConstants.Failure, "AddModelFromSource", null, s"Java/Scala model exists, perform update on model")).toString
@@ -400,7 +408,7 @@ object ModelUtils {
       objectsAdded = objectsAdded :+ modDef
       val operations = for (op <- objectsAdded) yield "Add"
       logger.debug("Notify engine via zookeeper")
-      MetadataAPIImpl.NotifyEngine(objectsAdded, operations)
+      getMetadataAPI.NotifyEngine(objectsAdded, operations)
       apiResult
     } catch {
       case e: AlreadyExistsException => {
@@ -458,6 +466,7 @@ object ModelUtils {
                , optMsgConsumed: Option[String] = None
                , optMsgVersion: Option[String] = Some("-1")
                , optMsgProduced: Option[String] = None
+              , pStr : Option[String]
               ): String = {
 
     // No Add Model is allowed without Tenant Id
@@ -489,15 +498,15 @@ object ModelUtils {
 
     val modelResult: String = modelType match {
       case ModelType.KPMML => {
-        AddKPMMLModel(input, optUserid, tenantId.get, optMsgProduced)
+        AddKPMMLModel(input, optUserid, tenantId.get, optMsgProduced, pStr)
       }
       case ModelType.JTM => {
-        AddJTMModel(input, optUserid, tenantId.get, optModelName)
+        AddJTMModel(input, optUserid, tenantId.get, optModelName, pStr)
       }
       case ModelType.JAVA | ModelType.SCALA => {
         //ModelUtils.AddModel(modelType, input, optUserid, optTenantid, optModelName, optVersion, optMsgConsumed, optMsgVersion, optMsgProduced)
         val result: String = optModelName.fold(throw new RuntimeException("Model name should be provided for Java/Scala models"))(name => {
-          AddModelFromSource(input, modelType.toString, name, optUserid, tenantId.get, optMsgProduced)
+          AddModelFromSource(input, modelType.toString, name, optUserid, tenantId.get, optMsgProduced, pStr)
         })
         result
       }
@@ -514,7 +523,8 @@ object ModelUtils {
             , input
             , optUserid
             , tenantId.get
-            , optMsgProduced)
+            , optMsgProduced,
+          pStr)
           res
         } else {
           val inputRep: String = if (input != null && input.size > 200) input.substring(0, 199)
@@ -567,7 +577,8 @@ object ModelUtils {
                            , pmmlText: String
                            , userid: Option[String]
                            , tenantId: String
-                           , optMsgProduced: Option[String]
+    , optMsgProduced: Option[String]
+    , pStr : Option[String]
                           ): String = {
     try {
       val buffer: StringBuilder = new StringBuilder
@@ -596,13 +607,18 @@ object ModelUtils {
 
       // ModelDef may be null if the model evaluation failed
       val latestVersion: Option[ModelDef] = if (modDef == null) None else GetLatestModel(modDef)
-      val isValid: Boolean = if (latestVersion.isDefined) MetadataAPIImpl.IsValidVersion(latestVersion.get, modDef) else true
+      val isValid: Boolean = if (latestVersion.isDefined) getMetadataAPI.IsValidVersion(latestVersion.get, modDef) else true
 
       if (isValid && modDef != null) {
         val existingModel = MdMgr.GetMdMgr.Model(modDef.NameSpace, modDef.Name, -1, false) // Any version is fine. No need of active
-        modDef.uniqueId = MetadataAPIImpl.GetUniqueId
-        modDef.mdElementId = if (existingModel == None) MetadataAPIImpl.GetMdElementId else existingModel.get.MdElementId
-        MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, pmmlText, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
+// 646 - 673 Changes begin - MetadataAPI Changes
+          modDef.setParamValues(pStr)
+        modDef.setCreationTime()
+        modDef.setModTime()
+        // 646 - 673 Changes end
+        modDef.uniqueId = getMetadataAPI.GetUniqueId
+        modDef.mdElementId = if (existingModel == None) getMetadataAPI.GetMdElementId else existingModel.get.MdElementId
+        getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, pmmlText, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
 
         // save the outMessage
         AddOutMsgToModelDef(modDef, ModelType.PMML, optMsgProduced, userid)
@@ -615,7 +631,7 @@ object ModelUtils {
         objectsAdded = objectsAdded :+ modDef
         val operations = for (op <- objectsAdded) yield "Add"
         logger.debug("Notify engine via zookeeper")
-        MetadataAPIImpl.NotifyEngine(objectsAdded, operations)
+        getMetadataAPI.NotifyEngine(objectsAdded, operations)
         apiResult
       } else {
         val reasonForFailure: String = if (modDef != null) {
@@ -669,7 +685,8 @@ object ModelUtils {
     */
   private def AddKPMMLModel(pmmlText: String,
                             userid: Option[String], tenantId: String,
-                            optMsgProduced: Option[String]): String = {
+    optMsgProduced: Option[String],
+  pStr : Option[String]): String = {
     try {
       var compProxy = new CompilerProxy
       //compProxy.setLoggerLevel(Level.TRACE)
@@ -679,7 +696,7 @@ object ModelUtils {
       // ModelDef may be null if there were pmml compiler errors... act accordingly.  If modelDef present,
       // make sure the version of the model is greater than any of previous models with same FullName
       val latestVersion = if (modDef == null) None else GetLatestModel(modDef)
-      val isValid: Boolean = if (latestVersion != None) MetadataAPIImpl.IsValidVersion(latestVersion.get, modDef) else true
+      val isValid: Boolean = if (latestVersion != None) getMetadataAPI.IsValidVersion(latestVersion.get, modDef) else true
 
       // 1119 Changes begin - checks model existence before add to prevent
       if (DoesAnyModelExist(modDef) == true) {
@@ -689,8 +706,12 @@ object ModelUtils {
       // 1119 Changes end
 
       if (isValid && modDef != null) {
-        MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, pmmlText, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
-
+        getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, pmmlText, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
+        // 646 - 673 Changes begin - MetadataAPI Changes
+        modDef.setParamValues(pStr)
+        modDef.setCreationTime()
+        modDef.setModTime()
+        // 646 - 673 Changes end
         // save the outMessage
         AddOutMsgToModelDef(modDef, ModelType.KPMML, optMsgProduced, userid)
 
@@ -702,7 +723,7 @@ object ModelUtils {
         objectsAdded = objectsAdded :+ modDef
         val operations = for (op <- objectsAdded) yield "Add"
         logger.debug("Notify engine via zookeeper")
-        MetadataAPIImpl.NotifyEngine(objectsAdded, operations)
+        getMetadataAPI.NotifyEngine(objectsAdded, operations)
         apiResult
       } else {
         val reasonForFailure: String = if (modDef != null) ErrorCodeConstants.Add_Model_Failed_Higher_Version_Required else ErrorCodeConstants.Add_Model_Failed
@@ -734,12 +755,12 @@ object ModelUtils {
 
   private def GetTypesAndJarsDependencies(modelName: String, userid: Option[String]): List[String] = {
     val jarsList = ArrayBuffer[String]()
-    val depsList = MetadataAPIImpl.getModelDependencies(modelName, userid)
+    val depsList = getMetadataAPI.getModelDependencies(modelName, userid)
     if (depsList != null)
       jarsList ++= depsList;
 
     /*
-        val typesLst = MetadataAPIImpl.getModelMessagesContainers(modelName, userid)
+        val typesLst = getMetadataAPI.getModelMessagesContainers(modelName, userid)
 
           if (typesLst != null) {
             typesLst.foreach(typ => {
@@ -776,7 +797,7 @@ object ModelUtils {
     *               method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return json string result
     */
-  private def AddJTMModel(jsonText: String, userid: Option[String], tenantId: String, optModelName: Option[String]): String = {
+  private def AddJTMModel(jsonText: String, userid: Option[String], tenantId: String, optModelName: Option[String], pStr: Option[String]): String = {
     try {
       var compProxy = new CompilerProxy
 
@@ -791,19 +812,18 @@ object ModelUtils {
             cfgName = usr.toLowerCase() + "." + cfgName
           var cfg = MdMgr.GetMdMgr.GetModelConfig(cfgName)
           compileConfig = JsonSerializer.SerializeModelConfigToJson(cfgName, cfg)
-          // MetadataAPIImpl.getModelDependencies(cfgName, userid)
+          // getMetadataAPI.getModelDependencies(cfgName, userid)
           GetTypesAndJarsDependencies(cfgName, userid)
         } else {
           List[String]()
         }
-
       //compProxy.setLoggerLevel(Level.TRACE)
       var (classStr, modDef) = compProxy.compileJTM(jsonText, tenantId, extDepJars, usr, compileConfig)
 
       // ModelDef may be null if there were pmml compiler errors... act accordingly.  If modelDef present,
       // make sure the version of the model is greater than any of previous models with same FullName
       val latestVersion = if (modDef == null) None else GetLatestModel(modDef)
-      val isValid: Boolean = if (latestVersion != None) MetadataAPIImpl.IsValidVersion(latestVersion.get, modDef) else true
+      val isValid: Boolean = if (latestVersion != None) getMetadataAPI.IsValidVersion(latestVersion.get, modDef) else true
 
       // 1119 Changes begin - checks model existence before add to prevent
       if (DoesAnyModelExist(modDef) == true) {
@@ -813,7 +833,12 @@ object ModelUtils {
       // 1119 Changes end
 
       if (isValid && modDef != null) {
-        MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, jsonText, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
+        getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, jsonText, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
+        // 646 - 673 Changes begin - MetadataAPI Changes
+        modDef.setParamValues(pStr)
+        modDef.setCreationTime()
+        modDef.setModTime()
+        // 646 - 673 Changes end
         // save the jar file first
         PersistenceUtils.UploadJarsToDB(modDef)
         val apiResult = AddModel(modDef, userid)
@@ -822,7 +847,7 @@ object ModelUtils {
         objectsAdded = objectsAdded :+ modDef
         val operations = for (op <- objectsAdded) yield "Add"
         logger.debug("Notify engine via zookeeper")
-        MetadataAPIImpl.NotifyEngine(objectsAdded, operations)
+        getMetadataAPI.NotifyEngine(objectsAdded, operations)
         apiResult
       } else {
         val reasonForFailure: String = if (modDef != null) ErrorCodeConstants.Add_Model_Failed_Higher_Version_Required else ErrorCodeConstants.Add_Model_Failed
@@ -1071,8 +1096,8 @@ object ModelUtils {
       val isValid: Boolean = (modDef != null)
       if (isValid) {
         val existingModel = MdMgr.GetMdMgr.Model(modDef.NameSpace, modDef.Name, -1, false) // Any version is fine. No need of active
-        modDef.uniqueId = MetadataAPIImpl.GetUniqueId
-        modDef.mdElementId = if (existingModel == None) MetadataAPIImpl.GetMdElementId else existingModel.get.MdElementId
+        modDef.uniqueId = getMetadataAPI.GetUniqueId
+        modDef.mdElementId = if (existingModel == None) getMetadataAPI.GetMdElementId else existingModel.get.MdElementId
 
         val rmResult: String = RemoveModel(latestVersion.get.nameSpace, latestVersion.get.name, latestVersion.get.ver, None)
         PersistenceUtils.UploadJarsToDB(modDef)
@@ -1083,7 +1108,7 @@ object ModelUtils {
         operations = operations :+ "Remove"
         objectsUpdated = objectsUpdated :+ modDef
         operations = operations :+ "Add"
-        MetadataAPIImpl.NotifyEngine(objectsUpdated, operations)
+        getMetadataAPI.NotifyEngine(objectsUpdated, operations)
         s"\nRecompileModel results for ${mod.NameSpace}.${mod.Name}.${mod.Version}\n$rmResult$addResult"
       } else {
         val reasonForFailure: String = ErrorCodeConstants.Model_ReCompilation_Failed
@@ -1149,7 +1174,7 @@ object ModelUtils {
                   , optModelName: Option[String] = None
                   , optVersion: Option[String] = None
                   , optVersionBeingUpdated: Option[String] = None
-                  , optMsgProduced: Option[String] = None): String = {
+    , optMsgProduced: Option[String] = None, pStr : Option[String]): String = {
     /**
       * FIXME: The current strategy is that only the most recent version can be updated.
       * FIXME: This is not a satisfactory condition. It may be desirable to have 10 models all with
@@ -1166,20 +1191,20 @@ object ModelUtils {
 
     val modelResult: String = modelType match {
       case ModelType.KPMML => {
-        val result: String = UpdateKPMMLModel(modelType, input, optUserid, tenantId.get, optModelName, optVersion, optMsgProduced)
+        val result: String = UpdateKPMMLModel(modelType, input, optUserid, tenantId.get, optModelName, optVersion, optMsgProduced, pStr)
         result
       }
       case ModelType.JTM => {
-        val result: String = UpdateJTMModel(modelType, input, optUserid, tenantId.get, optModelName, optVersion)
+        val result: String = UpdateJTMModel(modelType, input, optUserid, tenantId.get, optModelName, optVersion, pStr)
         result
       }
       case ModelType.JAVA | ModelType.SCALA => {
-        val result: String = UpdateCustomModel(modelType, input, optUserid, tenantId.get, optModelName, optVersion)
+        val result: String = UpdateCustomModel(modelType, input, optUserid, tenantId.get, optModelName, optVersion, pStr)
         result
       }
       case ModelType.PMML => {
         //1.1.3
-        val result: String = UpdatePMMLModel(modelType, input, optUserid, tenantId.get, optModelName, optVersion, optVersionBeingUpdated, optMsgProduced)
+        val result: String = UpdatePMMLModel(modelType, input, optUserid, tenantId.get, optModelName, optVersion, optVersionBeingUpdated, optMsgProduced, pStr)
         result
       }
       case ModelType.BINARY =>
@@ -1214,7 +1239,7 @@ object ModelUtils {
                               , optModelName: Option[String] = None
                               , optModelVersion: Option[String] = None
                               , optVersionBeingUpdated: Option[String]
-                              , optMsgProduced: Option[String]): String = {
+                              , optMsgProduced: Option[String], pStr : Option[String]): String = {
 
     val modelName: String = optModelName.orNull
     val version: String = optModelVersion.getOrElse("-1")
@@ -1300,18 +1325,22 @@ object ModelUtils {
 
         // ModelDef may be null if the model evaluation failed
         // old .... val latestVersion: Option[ModelDef] = if (modDef == null) None else GetLatestModel(modDef) was compared
-        // with modeDef in MetadataAPIImpl.IsValidVersion
-        //val isValid: Boolean = if (latestVersion.isDefined) MetadataAPIImpl.IsValidVersion(latestVersion.get, modDef) else true
-        val isValid: Boolean = if (optVersionUpdated.isDefined) MetadataAPIImpl.IsValidVersion(versionUpdated, modDef) else true
+        // with modeDef in getMetadataAPI.IsValidVersion
+        //val isValid: Boolean = if (latestVersion.isDefined) getMetadataAPI.IsValidVersion(latestVersion.get, modDef) else true
+        val isValid: Boolean = if (optVersionUpdated.isDefined) getMetadataAPI.IsValidVersion(versionUpdated, modDef) else true
 
         if (isValid && modDef != null) {
           // save the outMessage
+          // 646 - 673 Changes begin - MetadataAPI Changes
+          modDef.setParamValues(pStr)
+          modDef.setModTime()
+          // 646 - 673 Changes end
           AddOutMsgToModelDef(modDef, ModelType.PMML, optMsgProduced, optUserid)
 
           val existingModel = MdMgr.GetMdMgr.Model(modDef.NameSpace, modDef.Name, -1, false) // Any version is fine. No need of active
-          modDef.uniqueId = MetadataAPIImpl.GetUniqueId
-          modDef.mdElementId = if (existingModel == None) MetadataAPIImpl.GetMdElementId else existingModel.get.MdElementId
-          MetadataAPIImpl.logAuditRec(optUserid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, input, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
+          modDef.uniqueId = getMetadataAPI.GetUniqueId
+          modDef.mdElementId = if (existingModel == None) getMetadataAPI.GetMdElementId else existingModel.get.MdElementId
+          getMetadataAPI.logAuditRec(optUserid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, input, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
 
           /*
            * FIXME: Considering the design goal of NON-STOP cluster model management, it seems that the window
@@ -1351,7 +1380,7 @@ object ModelUtils {
           objectsAdded = objectsAdded :+ modDef
           val operations = for (op <- objectsAdded) yield "Add"
           logger.debug("Notify engine via zookeeper")
-          MetadataAPIImpl.NotifyEngine(objectsAdded, operations)
+          getMetadataAPI.NotifyEngine(objectsAdded, operations)
           s"UpdateModel version $version of $modelNmSpace.$modelNm results:\n$rmModelResult\n$addResult"
         } else {
           val reasonForFailure: String = if (modDef != null) {
@@ -1423,7 +1452,7 @@ object ModelUtils {
                                 , userid: Option[String] = None
                                 , tenantId: String = ""
                                 , modelName: Option[String] = None
-                                , version: Option[String] = None): String = {
+                                , version: Option[String] = None, pStr : Option[String]): String = {
     val sourceLang: String = modelType.toString
 
     /** to get here it is either 'java' or 'scala' */
@@ -1450,10 +1479,15 @@ object ModelUtils {
 
       }
       // 1118 Changes end
-      val isValid: Boolean = if (latestVersion != None) MetadataAPIImpl.IsValidVersion(latestVersion.get, modDef) else true
+      val isValid: Boolean = if (latestVersion != None) getMetadataAPI.IsValidVersion(latestVersion.get, modDef) else true
       //if (latestVersion )
       if (isValid && modDef != null) {
-        MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.UPDATEOBJECT, input, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
+        getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.UPDATEOBJECT, input, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
+        // 646 - 673 Changes begin - MetadataAPI Changes
+        modDef.setParamValues(pStr)
+        modDef.setModTime()
+        // 646 - 673 Changes end
+
         val key = MdMgr.MkFullNameWithVersion(modDef.nameSpace, modDef.name, modDef.ver)
         if (latestVersion != None) {
           if (!tenantId.equalsIgnoreCase(latestVersion.get.tenantId)) {
@@ -1473,7 +1507,7 @@ object ModelUtils {
         }
         objectsUpdated = objectsUpdated :+ modDef
         operations = operations :+ "Add"
-        MetadataAPIImpl.NotifyEngine(objectsUpdated, operations)
+        getMetadataAPI.NotifyEngine(objectsUpdated, operations)
         apiResult
       } else {
         val reasonForFailure: String = if (modDef != null) ErrorCodeConstants.Add_Model_Failed_Higher_Version_Required else ErrorCodeConstants.Add_Model_Failed
@@ -1525,7 +1559,7 @@ object ModelUtils {
                                , tenantId: String = ""
                                , optModelName: Option[String] = None
                                , optVersion: Option[String] = None
-                               , optMsgProduced: Option[String]): String = {
+                               , optMsgProduced: Option[String], pStr : Option[String]): String = {
     try {
       var compProxy = new CompilerProxy
       //compProxy.setLoggerLevel(Level.TRACE)
@@ -1553,7 +1587,11 @@ object ModelUtils {
       // 1118 Changes end
 
       if (isValid && modDef != null) {
-        MetadataAPIImpl.logAuditRec(optUserid, Some(AuditConstants.WRITE), AuditConstants.UPDATEOBJECT, pmmlText, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
+        getMetadataAPI.logAuditRec(optUserid, Some(AuditConstants.WRITE), AuditConstants.UPDATEOBJECT, pmmlText, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
+        // 646 - 673 Changes begin - MetadataAPI Changes
+        modDef.setParamValues(pStr)
+        modDef.setModTime()
+        // 646 - 673 Changes end
         val key = MdMgr.MkFullNameWithVersion(modDef.nameSpace, modDef.name, modDef.ver)
 
         // when a version number changes, latestVersion  has different namespace making it unique
@@ -1578,7 +1616,7 @@ object ModelUtils {
 
         objectsUpdated = objectsUpdated :+ modDef
         operations = operations :+ "Add"
-        MetadataAPIImpl.NotifyEngine(objectsUpdated, operations)
+        getMetadataAPI.NotifyEngine(objectsUpdated, operations)
         result
 
       } else {
@@ -1621,7 +1659,7 @@ object ModelUtils {
                              , optUserid: Option[String] = None
                              , tenantId: String = ""
                              , optModelName: Option[String] = None
-                             , optVersion: Option[String] = None): String = {
+                             , optVersion: Option[String] = None, pStr : Option[String]): String = {
     try {
       var compProxy = new CompilerProxy
       var compileConfig = ""
@@ -1637,7 +1675,7 @@ object ModelUtils {
             cfgName = usr.toLowerCase() + "." + cfgName
           var cfg = MdMgr.GetMdMgr.GetModelConfig(cfgName)
           compileConfig = JsonSerializer.SerializeModelConfigToJson(cfgName, cfg)
-          // MetadataAPIImpl.getModelDependencies(cfgName, optUserid)
+          // getMetadataAPI.getModelDependencies(cfgName, optUserid)
           GetTypesAndJarsDependencies(cfgName, optUserid)
         } else {
           List[String]()
@@ -1666,7 +1704,11 @@ object ModelUtils {
       // 1118 Changes end
 
       if (isValid && modDef != null) {
-        MetadataAPIImpl.logAuditRec(optUserid, Some(AuditConstants.WRITE), AuditConstants.UPDATEOBJECT, jtmText, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
+        getMetadataAPI.logAuditRec(optUserid, Some(AuditConstants.WRITE), AuditConstants.UPDATEOBJECT, jtmText, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
+        // 646 - 673 Changes begin - MetadataAPI Changes
+        modDef.setParamValues(pStr)
+        modDef.setModTime()
+        // 646 - 673 Changes end
         val key = MdMgr.MkFullNameWithVersion(modDef.nameSpace, modDef.name, modDef.ver)
 
         // when a version number changes, latestVersion  has different namespace making it unique
@@ -1690,7 +1732,7 @@ object ModelUtils {
 
         objectsUpdated = objectsUpdated :+ modDef
         operations = operations :+ "Add"
-        MetadataAPIImpl.NotifyEngine(objectsUpdated, operations)
+        getMetadataAPI.NotifyEngine(objectsUpdated, operations)
         result
 
       } else {
@@ -1769,9 +1811,9 @@ object ModelUtils {
     *               method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return
     */
-  def GetAllModelsFromCache(active: Boolean, userid: Option[String] = None): Array[String] = {
+  def GetAllModelsFromCache(active: Boolean, userid: Option[String] = None, tid: Option[String] = None): Array[String] = {
     var modelList: Array[String] = new Array[String](0)
-    if (userid != None) MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETKEYS, AuditConstants.MODEL, AuditConstants.SUCCESS, "", AuditConstants.MODEL)
+    if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETKEYS, AuditConstants.MODEL, AuditConstants.SUCCESS, "", AuditConstants.MODEL)
     try {
       val modDefs = MdMgr.GetMdMgr.Models(active, true)
       modDefs match {
@@ -1782,11 +1824,18 @@ object ModelUtils {
         case Some(ms) =>
           val msa = ms.toArray
           val modCount = msa.length
-          modelList = new Array[String](modCount)
+          var newModelList : List[String] = List[String]() ;
           for (i <- 0 to modCount - 1) {
-            modelList(i) = msa(i).FullName + "." + MdMgr.Pad0s2Version(msa(i).Version)
+            if (tid.isEmpty || (tid.get == msa(i).tenantId)) {
+              newModelList = newModelList ::: List(msa(i).FullName + "." + MdMgr.Pad0s2Version(msa(i).Version))
+            }
           }
-          modelList
+          if (newModelList.isEmpty) {
+            modelList
+          }
+          else {
+            (newModelList map(_.toString)).toArray
+          }
       }
     } catch {
       case e: Exception => {
@@ -1854,9 +1903,9 @@ object ModelUtils {
     *                   method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return
     */
-  def GetModelDefFromCache(nameSpace: String, name: String, formatType: String, version: String, userid: Option[String] = None): String = {
+  def GetModelDefFromCache(nameSpace: String, name: String, formatType: String, version: String, userid: Option[String] = None, tid : Option[String] = None): String = {
     val dispkey = nameSpace + "." + name + "." + MdMgr.Pad0s2Version(version.toLong)
-    if (userid != None) MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.GETOBJECT, AuditConstants.MODEL, AuditConstants.SUCCESS, "", dispkey)
+    if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.GETOBJECT, AuditConstants.MODEL, AuditConstants.SUCCESS, "", dispkey)
     try {
       var key = nameSpace + "." + name + "." + version.toLong
       val o = MdMgr.GetMdMgr.Model(nameSpace.toLowerCase, name.toLowerCase, version.toLong, true)
@@ -1867,9 +1916,16 @@ object ModelUtils {
           val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetModelDefFromCache", null, ErrorCodeConstants.Get_Model_From_Cache_Failed_Not_Active + ":" + dispkey)
           apiResult.toString()
         case Some(m) =>
+          if (tid == None || tid.get == m.tenantId) {
           logger.debug("model found => " + m.asInstanceOf[ModelDef].FullName + "." + MdMgr.Pad0s2Version(m.asInstanceOf[ModelDef].Version))
           val apiResult = new ApiResult(ErrorCodeConstants.Success, "GetModelDefFromCache", JsonSerializer.SerializeObjectToJson(m), ErrorCodeConstants.Get_Model_From_Cache_Successful + ":" + dispkey)
-          apiResult.toString()
+            apiResult.toString()
+          }
+          else {
+            logger.debug("model with tenantid not found => " + dispkey + " tid ")
+            val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetModelDefFromCache", null, ErrorCodeConstants.Get_Model_From_Cache_Failed_Not_Active + ":" + dispkey + " model with tenant id  " + tid)
+            apiResult.toString()
+          }
       }
     } catch {
       case e: Exception => {
@@ -1893,7 +1949,7 @@ object ModelUtils {
     * @return
     */
   def GetModelDef(nameSpace: String, objectName: String, formatType: String, version: String, userid: Option[String]): String = {
-    MetadataAPIImpl.logAuditRec(userid
+    getMetadataAPI.logAuditRec(userid
       , Some(AuditConstants.READ)
       , AuditConstants.GETOBJECT
       , AuditConstants.MODEL
@@ -2048,7 +2104,7 @@ object ModelUtils {
   def GetModelDefFromDB(nameSpace: String, objectName: String, formatType: String, version: String, userid: Option[String] = None): String = {
     var key = "ModelDef" + "." + nameSpace + '.' + objectName + "." + version.toLong
     val dispkey = "ModelDef" + "." + nameSpace + '.' + objectName + "." + MdMgr.Pad0s2Version(version.toLong)
-    if (userid != None) MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.GETOBJECT, AuditConstants.MODEL, AuditConstants.SUCCESS, "", dispkey)
+    if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.GETOBJECT, AuditConstants.MODEL, AuditConstants.SUCCESS, "", dispkey)
     try {
       var obj = PersistenceUtils.GetObject(key.toLowerCase, "models")
       var apiResult = new ApiResult(ErrorCodeConstants.Success, "GetModelDefFromCache", new String(obj._2.asInstanceOf[Array[Byte]]), ErrorCodeConstants.Get_Model_From_DB_Successful + ":" + dispkey)
@@ -2068,7 +2124,7 @@ object ModelUtils {
     */
   private def LoadAllModelConfigsIntoCache: Unit = {
     val maxTranId = PersistenceUtils.GetTranId
-    MetadataAPIImpl.setCurrentTranLevel(maxTranId)
+    getMetadataAPI.setCurrentTranLevel(maxTranId)
     logger.debug("Max Transaction Id => " + maxTranId)
 
     var processed: Long = 0L
@@ -2101,9 +2157,9 @@ object ModelUtils {
       val model = MetadataAPISerialization.deserializeMetadata(new String(obj._2.asInstanceOf[Array[Byte]])) //serializer.DeserializeObjectFromByteArray(obj._2.asInstanceOf[Array[Byte]])
       logger.debug("Get the jar from database ")
       val modDef = model.asInstanceOf[ModelDef]
-      MetadataAPIImpl.DownloadJarFromDB(modDef)
+      getMetadataAPI.DownloadJarFromDB(modDef)
       logger.debug("Add the object " + key + " to the cache ")
-      MetadataAPIImpl.AddObjectToCache(modDef, MdMgr.GetMdMgr)
+      getMetadataAPI.AddObjectToCache(modDef, MdMgr.GetMdMgr)
     } catch {
       case e: Exception => {
 

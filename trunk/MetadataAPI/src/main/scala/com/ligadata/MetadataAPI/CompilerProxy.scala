@@ -47,8 +47,8 @@ import com.ligadata.kamanja.metadata._
 import com.ligadata.KamanjaBase._
 
 // CompilerProxy has utility functions to:
-// Call MessageDefinitionCompiler, 
-// Call PmmlCompiler, 
+// Call MessageDefinitionCompiler,
+// Call PmmlCompiler,
 // Generate jar files out of output of above compilers
 // Persist model definitions and corresponding jar files in Metadata Mgr
 // Persist message definitions, and corresponding jar files in Metadata Mgr
@@ -58,6 +58,9 @@ class CompilerProxy {
   lazy val logger = LogManager.getLogger(loggerName)
   private var userId: Option[String] = _
   lazy val compiler_work_dir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("COMPILER_WORK_DIR")
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   def setSessionUserId(id: Option[String]): Unit = {
     userId = id
@@ -70,7 +73,7 @@ class CompilerProxy {
     */
   def compileModelFromSource(sourceCode: String, modelConfigName: String, sourceLang: String, userid: Option[String], tenantId: String): ModelDef = {
     try {
-      // Figure out the metadata information needed for 
+      // Figure out the metadata information needed for
       val additinalDeps = addDepsFromClassPath
       val (classPath, elements, totalDeps, nonTypeDeps, inMsgSets, outMsgs) = getClassPathFromModelConfig(modelConfigName, additinalDeps)
       val msgDefClassFilePath = compiler_work_dir + "/" + removeUserid(modelConfigName) + "." + sourceLang
@@ -92,13 +95,13 @@ class CompilerProxy {
 
       // Get Model info and decide the mdElementId
       val existingModel = MdMgr.GetMdMgr.Model(modelNamespace, modelName, -1, false) // Any version is fine. No need of active
-      val uniqueId = MetadataAPIImpl.GetUniqueId
-      val mdElementId = if (existingModel == None) MetadataAPIImpl.GetMdElementId else existingModel.get.MdElementId
+      val uniqueId = getMetadataAPI.GetUniqueId
+      val mdElementId = if (existingModel == None) getMetadataAPI.GetMdElementId else existingModel.get.MdElementId
 
       return generateModelDef(repackagedCode, sourceLang, pname, classPath, tempPackage, modelName,
         modelVersion, msgDefClassFilePath, elements, sourceCode,
         totalDeps,
-        MetadataAPIImpl.getModelMessagesContainers(modelConfigName, userid),
+        getMetadataAPI.getModelMessagesContainers(modelConfigName, userid),
         nonTypeDeps, false, inputMsgSets, outMsgs, userid, tenantId, modelConfigName, uniqueId, mdElementId, modCfgJson)
     } catch {
       case e: Exception => {
@@ -129,8 +132,8 @@ class CompilerProxy {
 
       // Get Model info and decide the mdElementId
       val existingModel = MdMgr.GetMdMgr.Model(modelNamespace, modelName, -1, false) // Any version is fine. No need of active
-      val uniqueId = MetadataAPIImpl.GetUniqueId
-      val mdElementId = if (existingModel == None) MetadataAPIImpl.GetMdElementId else existingModel.get.MdElementId
+      val uniqueId = getMetadataAPI.GetUniqueId
+      val mdElementId = if (existingModel == None) getMetadataAPI.GetMdElementId else existingModel.get.MdElementId
 
       return generateModelDef(repackagedCode, sourceLang, pname, classPath, tempPackage, modelName,
         modelVersion, msgDefClassFilePath, elements, sourceCode, totalDeps, typeDeps, nonTypeDeps, true, inputMsgSets, outputMsgs, userid, tenantId, null, uniqueId, mdElementId, modCfgJson)
@@ -150,13 +153,13 @@ class CompilerProxy {
       /** if you set this to true, you will cause the generation of logger.info (...) stmts in generated model */
       var injectLoggingStmts: Boolean = false
 
-      val model_exec_log = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MODEL_EXEC_LOG")
+      val model_exec_log = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_EXEC_LOG")
       if (model_exec_log.equalsIgnoreCase("true")) {
         injectLoggingStmts = true
       }
 
       val compiler = new PmmlCompiler(MdMgr.GetMdMgr, "ligadata", logger, injectLoggingStmts,
-        MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(","))
+        getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(","))
       val (classStr, modDef) = compiler.compile(pmmlStr, compiler_work_dir, recompile)
 
       /**
@@ -169,18 +172,18 @@ class CompilerProxy {
 
         // Get Model info and decide the mdElementId
         val existingModel = MdMgr.GetMdMgr.Model(modDef.NameSpace, modDef.Name, -1, false) // Any version is fine. No need of active
-        modDef.uniqueId = MetadataAPIImpl.GetUniqueId
-        modDef.mdElementId = if (existingModel == None) MetadataAPIImpl.GetMdElementId else existingModel.get.MdElementId
+        modDef.uniqueId = getMetadataAPI.GetUniqueId
+        modDef.mdElementId = if (existingModel == None) getMetadataAPI.GetMdElementId else existingModel.get.MdElementId
         modDef.ownerId = ownerId
         modDef.tenantId = tenantId
 
-        var pmmlScalaFile = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR") + "/" + modDef.name + ".scala"
-        var classPath = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CLASSPATH").trim
+        var pmmlScalaFile = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR") + "/" + modDef.name + ".scala"
+        var classPath = getMetadataAPI.GetMetadataAPIConfig.getProperty("CLASSPATH").trim
 
         if (classPath.size == 0)
           classPath = "."
 
-        val jarPaths = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(",").toSet
+        val jarPaths = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(",").toSet
 
         if (modDef.DependencyJarNames != null) {
           val depJars = modDef.DependencyJarNames.map(j => Utils.GetValidJarFile(jarPaths, j)).mkString(":")
@@ -194,10 +197,10 @@ class CompilerProxy {
         var (jarFile, depJars) = compiler.createJar(classStr,
           classPath,
           pmmlScalaFile,
-          MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR"),
-          MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MANIFEST_PATH"),
-          MetadataAPIImpl.GetMetadataAPIConfig.getProperty("SCALA_HOME"),
-          MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAVA_HOME"),
+          getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR"),
+          getMetadataAPI.GetMetadataAPIConfig.getProperty("MANIFEST_PATH"),
+          getMetadataAPI.GetMetadataAPIConfig.getProperty("SCALA_HOME"),
+          getMetadataAPI.GetMetadataAPIConfig.getProperty("JAVA_HOME"),
           false,
           compiler_work_dir)
 
@@ -243,12 +246,12 @@ class CompilerProxy {
   def compileJTM(jsonStr: String, tenantId: String, extDepJars: List[String], ownerId: String, compileConfig:String, recompile: Boolean = false): (String, ModelDef) = {
     try {
 
-      val model_exec_log: String = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MODEL_EXEC_LOG")
+      val model_exec_log: String = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_EXEC_LOG")
       val injectLoggingStmts: Boolean = if (model_exec_log != null) model_exec_log.equalsIgnoreCase("true") else false
 
       /** What the PmmlCompiler does to generate the (scalaSrc,modelDef) pair
         * val compiler = new PmmlCompiler(MdMgr.GetMdMgr, "ligadata", logger, injectLoggingStmts,
-        * MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(","))
+        * getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(","))
         * val (classStr, modDef) = compiler.compile(pmmlStr, compiler_work_dir, recompile)
         */
 
@@ -278,13 +281,13 @@ class CompilerProxy {
         * issues, it may not be generated.
         */
       if (modelDef != null) {
-        val jtmScalaPath = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR") + "/" + modelDef.name + ".scala"
-        var classPath = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CLASSPATH").trim
+        val jtmScalaPath = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR") + "/" + modelDef.name + ".scala"
+        var classPath = getMetadataAPI.GetMetadataAPIConfig.getProperty("CLASSPATH").trim
 
         if (classPath.size == 0)
           classPath = "."
 
-        val jarPaths = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(",").toSet
+        val jarPaths = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(",").toSet
 
         if (modelDef.DependencyJarNames != null) {
           val depJars = modelDef.DependencyJarNames.map(j => Utils.GetValidJarFile(jarPaths, j)).mkString(":")
@@ -309,11 +312,11 @@ class CompilerProxy {
           MdMgr.ConvertLongVersionToString(modelDef.ver),
           jtmScalaSrc,
           classPath,
-          MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR"),
+          getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR"),
           "TestClient",
           mdlClassFilePath,
-          MetadataAPIImpl.GetMetadataAPIConfig.getProperty("SCALA_HOME"),
-          MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAVA_HOME"),
+          getMetadataAPI.GetMetadataAPIConfig.getProperty("SCALA_HOME"),
+          getMetadataAPI.GetMetadataAPIConfig.getProperty("JAVA_HOME"),
           false,
           "scala")
 
@@ -323,25 +326,25 @@ class CompilerProxy {
         }
 
         //        val compiler = new PmmlCompiler(MdMgr.GetMdMgr, "ligadata", logger, injectLoggingStmts,
-//          MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(","))
+//          getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(","))
 //        val skipJar: Boolean = false
 //
 //        val (jarFile, depJars) = compiler.createJar(jtmScalaSrc
 //          , classPath
 //          , jtmScalaPath
-//          , MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR")
-//          , MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MANIFEST_PATH")
-//          , MetadataAPIImpl.GetMetadataAPIConfig.getProperty("SCALA_HOME")
-//          , MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAVA_HOME")
+//          , getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR")
+//          , getMetadataAPI.GetMetadataAPIConfig.getProperty("MANIFEST_PATH")
+//          , getMetadataAPI.GetMetadataAPIConfig.getProperty("SCALA_HOME")
+//          , getMetadataAPI.GetMetadataAPIConfig.getProperty("JAVA_HOME")
 //          , skipJar
 //          , compiler_work_dir)
 
         modelDef.jarName = jarFile
         modelDef.objectDefinition = jsonStr
         modelDef.objectFormat = fJSON
-        modelDef.uniqueId = MetadataAPIImpl.GetUniqueId
+        modelDef.uniqueId = getMetadataAPI.GetUniqueId
         val existingModel = MdMgr.GetMdMgr.Model(modelDef.nameSpace, modelDef.name, -1, false) // Any version is fine. No need of active
-        modelDef.mdElementId = if (existingModel == None) MetadataAPIImpl.GetMdElementId else existingModel.get.MdElementId
+        modelDef.mdElementId = if (existingModel == None) getMetadataAPI.GetMdElementId else existingModel.get.MdElementId
         modelDef.ownerId = ownerId
         modelDef.tenantId = tenantId
         modelDef.modelConfig = compileConfig
@@ -372,7 +375,7 @@ class CompilerProxy {
       //val msg = new MessageDefImpl()
       val msg = new MessageCompiler()
       logger.debug("Call Message Compiler ....")
-      val schemaId = MetadataAPIImpl.GetSchemaId
+      val schemaId = getMetadataAPI.GetSchemaId
       var elementId: Long = 0
       val ((classStrVer, classStrVerJava), msgDef, (classStrNoVer, classStrNoVerJava), rawMsgStr) = msg.processMsgDef(msgDefStr, "JSON", mgr, schemaId, tenantId, recompile)
       logger.debug("Message Compilation done ...." + JsonSerializer.SerializeObjectToJson(msgDef))
@@ -380,10 +383,10 @@ class CompilerProxy {
       // Element ID will be replaced if this is an ADD, so pull the exisiting guy
       if (msgDef.MdElementCategory.equalsIgnoreCase("message")) {
         val existingObject = MdMgr.GetMdMgr.Message(msgDef.NameSpace, msgDef.Name, -1, false)
-        elementId = if (existingObject == None) MetadataAPIImpl.GetMdElementId else existingObject.get.MdElementId
+        elementId = if (existingObject == None) getMetadataAPI.GetMdElementId else existingObject.get.MdElementId
       } else {
         val existingObject = MdMgr.GetMdMgr.Container(msgDef.NameSpace, msgDef.Name, -1, false)
-        elementId = if (existingObject == None) MetadataAPIImpl.GetMdElementId else existingObject.get.MdElementId
+        elementId = if (existingObject == None) getMetadataAPI.GetMdElementId else existingObject.get.MdElementId
       }
 
 
@@ -409,10 +412,10 @@ class CompilerProxy {
       val msgDefClassFilePathLocal = compiler_work_dir + "/" + realClassName + "_local.scala"
       dumpStrTextToFile(r_classStrNoVer, msgDefClassFilePathLocal)
 
-      var classPath = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CLASSPATH").trim
+      var classPath = getMetadataAPI.GetMetadataAPIConfig.getProperty("CLASSPATH").trim
 
       if (msgDef.DependencyJarNames != null) {
-        val jarPaths = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(",").toSet
+        val jarPaths = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(",").toSet
         val depJars = msgDef.DependencyJarNames.map(j => Utils.GetValidJarFile(jarPaths, j)).mkString(":")
         if (classPath != null && classPath.size > 0) {
           classPath = classPath + ":" + depJars
@@ -429,11 +432,11 @@ class CompilerProxy {
         msgDef.ver.toString,
         classStrVer,
         classPath,
-        MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR"),
+        getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR"),
         "Test Client",
         msgDefClassFilePath,
-        MetadataAPIImpl.GetMetadataAPIConfig.getProperty("SCALA_HOME"),
-        MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAVA_HOME"),
+        getMetadataAPI.GetMetadataAPIConfig.getProperty("SCALA_HOME"),
+        getMetadataAPI.GetMetadataAPIConfig.getProperty("JAVA_HOME"),
         false, "scala",
         classStrVerJava,
         msgDefHelperClassFilePath)
@@ -454,11 +457,11 @@ class CompilerProxy {
         msgDef.ver.toString,
         classStrNoVer,
         classPath,
-        MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR"),
+        getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR"),
         "Test Client",
         msgDefClassFilePathLocal,
-        MetadataAPIImpl.GetMetadataAPIConfig.getProperty("SCALA_HOME"),
-        MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAVA_HOME"),
+        getMetadataAPI.GetMetadataAPIConfig.getProperty("SCALA_HOME"),
+        getMetadataAPI.GetMetadataAPIConfig.getProperty("JAVA_HOME"),
         true, "scala",
         classStrNoVerJava,
         msgDefHelperClassFilePathLocal)
@@ -483,7 +486,7 @@ class CompilerProxy {
       msgDef.objectDefinition = msgDefStr
       msgDef.objectFormat = fJSON
       msgDef.mdElementId = elementId
-      msgDef.uniqueId = MetadataAPIImpl.GetUniqueId
+      msgDef.uniqueId = getMetadataAPI.GetUniqueId
 
       (classStrVer, msgDef, classStrNoVer)
     } catch {
@@ -498,8 +501,8 @@ class CompilerProxy {
     }
   }
 
-  /* 
-   * Compile the supplied generated code and jar it, the originating pmml model, and the class output from the 
+  /*
+   * Compile the supplied generated code and jar it, the originating pmml model, and the class output from the
    * compile.  Add a registration module as well.  Note the classpath dependencies in the manifest.mf file
    * that is also included in the jar.
    */
@@ -684,7 +687,7 @@ class CompilerProxy {
     */
   // The last parameter of generateModelDef represents whether we are recompiling a model due to a change
   // on a dependent message(or container) or compiling for the first time.
-  // MdMgr.MakeModelDef requires this information and function behaves differently depending on whether 
+  // MdMgr.MakeModelDef requires this information and function behaves differently depending on whether
   // we are compiling first time or recompiling an existing model.
   private def generateModelDef(repackagedCode: String, sourceLang: String, pname: String, classPath: String, modelNamespace: String, modelName: String,
                                modelVersion: String, msgDefClassFilePath: String, elements: Set[BaseElemDef], originalSource: String,
@@ -702,11 +705,11 @@ class CompilerProxy {
         modelVersion,
         packagedSource,
         classPath,
-        MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR"),
+        getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR"),
         "TestClient",
         msgDefClassFilePath,
-        MetadataAPIImpl.GetMetadataAPIConfig.getProperty("SCALA_HOME"),
-        MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAVA_HOME"),
+        getMetadataAPI.GetMetadataAPIConfig.getProperty("SCALA_HOME"),
+        getMetadataAPI.GetMetadataAPIConfig.getProperty("JAVA_HOME"),
         false,
         sourceLang)
 
@@ -882,7 +885,7 @@ class CompilerProxy {
     var repackagedCode = replacePackageNameInSource(sourceCode, packageName, ".V0;\n")
 
     // We need to add the imports to the actual TypeDependency Jars...  All the Message,Container, etc Elements
-    // have been passed into this def.  
+    // have been passed into this def.
     var typeNamespace: Array[String] = null
     var typeImports: String = ""
 
@@ -911,7 +914,7 @@ class CompilerProxy {
       }
     })
 
-    //typeNamesace contains all the messages and containers 
+    //typeNamesace contains all the messages and containers
     if (typeNamespace == null) {
       logger.error("COMPILER_PROXY: Unable to find at least one message in the Metadata for this model")
       throw MsgCompilationFailedException(modelConfigName, null)
@@ -932,20 +935,20 @@ class CompilerProxy {
     var finalSourceCode = "package " + packageName + ".V0;\n" + typeImports + "\n" + repackagedCode.substring(repackagedCode.indexOf("import"))
     dumpStrTextToFile(finalSourceCode, msgDefClassFilePath)
 
-    // Need to determine the name of the class file in case of Java - to be able to compile we need to know the public class name. 
+    // Need to determine the name of the class file in case of Java - to be able to compile we need to know the public class name.
     val tempClassName = getClassName(sourceCode, sourceLang, modelConfigName)
 
-    // Create a temporary jarFile file so that we can figure out what the metadata info for this class is. 
+    // Create a temporary jarFile file so that we can figure out what the metadata info for this class is.
     var (status, jarFileName) = jarCode(packageName + ".V0",
       tempClassName,
       "V0",
       finalSourceCode,
       classPath,
-      MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR"),
+      getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR"),
       "TestClient",
       msgDefClassFilePath,
-      MetadataAPIImpl.GetMetadataAPIConfig.getProperty("SCALA_HOME"),
-      MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAVA_HOME"),
+      getMetadataAPI.GetMetadataAPIConfig.getProperty("SCALA_HOME"),
+      getMetadataAPI.GetMetadataAPIConfig.getProperty("JAVA_HOME"),
       false,
       sourceLang)
 
@@ -1299,9 +1302,9 @@ class CompilerProxy {
 
     // Resolve ModelNames and Models versions - note, the jar file generated is still in the workDirectory.
     val loaderInfo = new KamanjaLoaderInfo()
-    // val jarPaths0 = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("COMPILER_WORK_DIR").split(",").toSet
-    var jarPaths0 = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(",").toSet
-    jarPaths0 = jarPaths0 + MetadataAPIImpl.GetMetadataAPIConfig.getProperty("COMPILER_WORK_DIR")
+    // val jarPaths0 = getMetadataAPI.GetMetadataAPIConfig.getProperty("COMPILER_WORK_DIR").split(",").toSet
+    var jarPaths0 = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(",").toSet
+    jarPaths0 = jarPaths0 + getMetadataAPI.GetMetadataAPIConfig.getProperty("COMPILER_WORK_DIR")
 
     var allJars = collection.mutable.Set[String]()
 
@@ -1441,7 +1444,7 @@ class CompilerProxy {
     */
   private def getClassName(sourceCode: String, sourceLang: String, modelConfigName: String): String = {
 
-    // Need to determine the name of the class file in case of Java - to be able to compile we need to know the public class name. 
+    // Need to determine the name of the class file in case of Java - to be able to compile we need to know the public class name.
     var tempClassName: String = removeUserid(modelConfigName)
     if (sourceLang.equalsIgnoreCase("java")) {
       var publicClassExpr = "\\s*public\\s*class\\s*\\S*\\s*extends".r
@@ -1509,7 +1512,7 @@ class CompilerProxy {
   private def addDepsFromClassPath(): List[String] = {
     // Pull all the jar files in the classpath into a set...  THIS WILL CHANGE IN A FUTURE since we
     // dont want to allow developers using the classpath to pass in dependencies.
-    getJarsFromClassPath(MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CLASSPATH"))
+    getJarsFromClassPath(getMetadataAPI.GetMetadataAPIConfig.getProperty("CLASSPATH"))
   }
 
   /**
@@ -1521,9 +1524,9 @@ class CompilerProxy {
     var classPathDeps: Set[String] = Set[String]()
 
     // Get classpath and jarpath ready
-    var classPath = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CLASSPATH").trim
+    var classPath = getMetadataAPI.GetMetadataAPIConfig.getProperty("CLASSPATH").trim
     if (classPath.size == 0) classPath = "."
-    val jarPaths = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(",").toSet
+    val jarPaths = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(",").toSet
 
     var combinedDeps: scala.collection.immutable.Set[String] = scala.collection.immutable.Set[String]()
     var nonTypeDeps: scala.collection.immutable.Set[String] = scala.collection.immutable.Set[String]()
@@ -1624,10 +1627,10 @@ class CompilerProxy {
     */
   private def getClassPathFromModelConfig(modelName: String, cpDeps: List[String]): (String, Set[BaseElemDef], scala.collection.immutable.Set[String], scala.collection.immutable.Set[String], List[List[String]], List[String]) = {
     logger.debug("Model Config => " + modelName)
-    val inMsgSets = MetadataAPIImpl.getModelInputTypesSets(modelName, userId)
-    val outMsgs = MetadataAPIImpl.getModelOutputTypes(modelName, userId)
-    val inMC = MetadataAPIImpl.getModelMessagesContainers(modelName, userId)
-    val retVals = buildClassPath(MetadataAPIImpl.getModelDependencies(modelName, userId),
+    val inMsgSets = getMetadataAPI.getModelInputTypesSets(modelName, userId)
+    val outMsgs = getMetadataAPI.getModelOutputTypes(modelName, userId)
+    val inMC = getMetadataAPI.getModelMessagesContainers(modelName, userId)
+    val retVals = buildClassPath(getMetadataAPI.getModelDependencies(modelName, userId),
       inMC,
       cpDeps, inMsgSets, outMsgs)
     (retVals._1, retVals._2, retVals._3, retVals._4, inMsgSets, outMsgs)

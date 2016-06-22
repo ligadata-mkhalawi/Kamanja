@@ -69,6 +69,9 @@ object ExtractData extends ObjectResolver {
   private var _dataStore: DataStore = null
 
   private type OptionMap = Map[Symbol, Any]
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   private def PrintUsage(): Unit = {
     LOG.warn("Available options:")
@@ -407,7 +410,7 @@ object ExtractData extends ObjectResolver {
 
       val typName = loadConfigs.getProperty("TypeName".toLowerCase, "").replace("\"", "").trim.toLowerCase
 
-      MetadataAPIImpl.InitMdMgrFromBootStrap(cfgfile, false)
+      getMetadataAPI.InitMdMgrFromBootStrap(cfgfile, false)
 
       val nodeInfo = mdMgr.Nodes.getOrElse(nodeId.toString, null)
       if (nodeInfo == null) {

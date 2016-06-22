@@ -52,24 +52,27 @@ class APIService extends LigadataSSLConfiguration with Runnable{
   val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
   var databaseOpen = false
-  
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
+
   /**
-   * 
+   *
    */
   def this(args: Array[String]) = {
     this
-    inArgs = args  
+    inArgs = args
   }
 
   /**
-   * 
+   *
    */
   def run() {
     logger.warn("running service")
-    StartService(inArgs) 
+    StartService(inArgs)
   }
-  
-  
+
+
   private def PrintUsage(): Unit = {
     logger.warn("    --config <configfilename>")
     logger.warn("    --version")
@@ -149,8 +152,27 @@ class APIService extends LigadataSSLConfiguration with Runnable{
 
       APIInit.SetConfigFile(configFile.toString)
 
-      // Read properties file
-      MetadataAPIImpl.InitMdMgrFromBootStrap(configFile, true)
+      // Read properties file and Open db connection
+      getMetadataAPI.InitMdMgrFromBootStrap(configFile, true)
+      // APIInit deals with shutdown activity and it needs to know
+      // that database connections were successfully made
+      APIInit.SetDbOpen
+
+      logger.debug("API Properties => " + getMetadataAPI.GetMetadataAPIConfig)
+
+      // We will allow access to this web service from all the servers on the PORT # defined in the config file
+      val serviceHost = "0.0.0.0"
+      val servicePort = getMetadataAPI.GetMetadataAPIConfig.getProperty("SERVICE_PORT").toInt
+
+      // create and start our service actor
+      val callbackActor = actor(new Act {
+        become {
+          case b @ Bound(connection) => logger.debug(b.toString)
+          case cf @ CommandFailed(command) => logger.error(cf.toString)
+          case all => logger.debug("ApiService Received a message from Akka.IO: " + all.toString)
+        }
+      })
+      val service = system.actorOf(Props[MetadataAPIServiceActor], "metadata-api-service")
 
       val sslEnabled = getIsSslEnabledFromConfig
       logger.warn("Setting ssl enabled to: "+sslEnabled)
@@ -265,15 +287,15 @@ object APIService {
 
     mgr.StartService(args)
   }
-  
-  
+
+
   /**
    * extractNameFromJson - applies to a simple Kamanja object
    */
   def extractNameFromJson (jsonObj: String, objType: String): String = {
     var inParm: Map[String,Any] = null
     try {
-      inParm = parse(jsonObj).values.asInstanceOf[Map[String,Any]] 
+      inParm = parse(jsonObj).values.asInstanceOf[Map[String,Any]]
     } catch {
       case e: Exception => {
         logger.warn("Unknown:NameParsingError", e)
@@ -287,7 +309,7 @@ object APIService {
     return vals.getOrElse("NameSpace","system")+"."+vals.getOrElse("Name","")+"."+vals.getOrElse("Version","-1")
   }
 
-  
+
   /**
    * extractNameFromPMML - pull the Application name="xxx" version="xxx.xx.xx" from the PMML doc and construct
    *                       a name  string from it

@@ -36,12 +36,16 @@ object APIInit {
   var databaseOpen = false
   var configFile:String = _
   private[this] val lock = new Object()
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
+
 
   def Shutdown(exitCode: Int): Unit = lock.synchronized{
-    /*if( databaseOpen ){ //MetadataAPIImpl.shutdown is now called in APIService.Shutdown which will call CloseDbStore
-      MetadataAPIImpl.CloseDbStore
+    if( databaseOpen ){
+      getMetadataAPI.CloseDbStore
       databaseOpen = false;
-    }*/
+    }
     MetadataAPIServiceLeader.Shutdown
   }
 
@@ -55,11 +59,11 @@ object APIInit {
 
   def InitLeaderLatch: Unit = {
       // start Leader detection component
-      val nodeId     = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("NODE_ID")
-      val zkNode     = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("API_LEADER_SELECTION_ZK_NODE")  + "/metadataleader"
-      val zkConnStr  = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("ZOOKEEPER_CONNECT_STRING")
-      val sesTimeOut = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("ZK_SESSION_TIMEOUT_MS").toInt
-      val conTimeOut = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("ZK_CONNECTION_TIMEOUT_MS").toInt
+      val nodeId     = getMetadataAPI.GetMetadataAPIConfig.getProperty("NODE_ID")
+      val zkNode     = getMetadataAPI.GetMetadataAPIConfig.getProperty("API_LEADER_SELECTION_ZK_NODE")  + "/metadataleader"
+      val zkConnStr  = getMetadataAPI.GetMetadataAPIConfig.getProperty("ZOOKEEPER_CONNECT_STRING")
+      val sesTimeOut = getMetadataAPI.GetMetadataAPIConfig.getProperty("ZK_SESSION_TIMEOUT_MS").toInt
+      val conTimeOut = getMetadataAPI.GetMetadataAPIConfig.getProperty("ZK_CONNECTION_TIMEOUT_MS").toInt
 
       MetadataAPIServiceLeader.Init(nodeId,zkConnStr,zkNode,sesTimeOut,conTimeOut)
   }
@@ -67,7 +71,7 @@ object APIInit {
   def Init : Unit = {
     try{
       // Open db connection
-      //MetadataAPIImpl.InitMdMgrFromBootStrap(configFile)
+      //getMetadataAPI.InitMdMgrFromBootStrap(configFile)
       //databaseOpen = true
 
       // start Leader detection component

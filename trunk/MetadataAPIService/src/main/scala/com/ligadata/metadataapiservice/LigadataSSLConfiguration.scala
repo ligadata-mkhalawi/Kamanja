@@ -27,7 +27,7 @@ import spray.io._
 // Must be enabled in the applicatin.conf
 trait LigadataSSLConfiguration {
 
-  // if there is no SSLContext in scope implicitly the HttpServer uses the default SSLContext,
+    // if there is no SSLContext in scope implicitly the HttpServer uses the default SSLContext,
   // since we want non-default settings in this example we make a custom SSLContext available here
   implicit def sslContext: SSLContext = {
     if(MetadataAPIImpl.isSslEnabled) {
