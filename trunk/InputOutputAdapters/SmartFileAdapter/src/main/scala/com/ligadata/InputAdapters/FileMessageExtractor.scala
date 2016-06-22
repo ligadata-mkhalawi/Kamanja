@@ -158,22 +158,22 @@ class FileMessageExtractor(parentExecutor: ExecutorService,
           try {
 
             if (Thread.currentThread().isInterrupted) {
-              logger.info("SMART FILE CONSUMER (FileMessageExtractor) - interrupted while reading file {}", fileHandler.getFullPath)
+              logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - interrupted while reading file {}", fileHandler.getFullPath)
               processingInterrupted = true
               break
             }
             if(parentExecutor == null){
-              logger.info("SMART FILE CONSUMER (FileMessageExtractor) - (parentExecutor = null) while reading file {}", fileHandler.getFullPath)
+              logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - (parentExecutor = null) while reading file {}", fileHandler.getFullPath)
               processingInterrupted = true
               break
             }
             if(parentExecutor.isShutdown){
-              logger.info("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is shutdown while reading file {}", fileHandler.getFullPath)
+              logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is shutdown while reading file {}", fileHandler.getFullPath)
               processingInterrupted = true
               break
             }
             if(parentExecutor.isTerminated){
-              logger.info("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is terminated while reading file {}", fileHandler.getFullPath)
+              logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is terminated while reading file {}", fileHandler.getFullPath)
               processingInterrupted = true
               break
             }
@@ -312,44 +312,46 @@ class FileMessageExtractor(parentExecutor: ExecutorService,
     var indx = 0
     var prevIndx = indx
 
-    for(i <- 0 to len - 1){
+    breakable {
+      for (i <- 0 to len - 1) {
 
-      if (Thread.currentThread().isInterrupted) {
-        logger.info("SMART FILE CONSUMER (FileMessageExtractor) - interrupted while extracting messages from file {}", fileHandler.getFullPath)
-        processingInterrupted = true
-        break
-      }
-      if(parentExecutor == null){
-        logger.info("SMART FILE CONSUMER (FileMessageExtractor) - (parentExecutor = null) while extracting messages from file {}", fileHandler.getFullPath)
-        processingInterrupted = true
-        break
-      }
-      if(parentExecutor.isShutdown){
-        logger.info("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is shutdown while extracting messages from file {}", fileHandler.getFullPath)
-        processingInterrupted = true
-        break
-      }
-      if(parentExecutor.isTerminated){
-        logger.info("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is terminated while extracting messages from file {}", fileHandler.getFullPath)
-        processingInterrupted = true
-        break
-      }
+        if (Thread.currentThread().isInterrupted) {
+          logger.info("SMART FILE CONSUMER (FileMessageExtractor) - interrupted while extracting messages from file {}", fileHandler.getFullPath)
+          processingInterrupted = true
+          break
+        }
+        if (parentExecutor == null) {
+          logger.info("SMART FILE CONSUMER (FileMessageExtractor) - (parentExecutor = null) while extracting messages from file {}", fileHandler.getFullPath)
+          processingInterrupted = true
+          break
+        }
+        if (parentExecutor.isShutdown) {
+          logger.info("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is shutdown while extracting messages from file {}", fileHandler.getFullPath)
+          processingInterrupted = true
+          break
+        }
+        if (parentExecutor.isTerminated) {
+          logger.info("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is terminated while extracting messages from file {}", fileHandler.getFullPath)
+          processingInterrupted = true
+          break
+        }
 
-      if (chunk(i).asInstanceOf[Char] == message_separator) {
-        val newMsg: Array[Byte] = chunk.slice(prevIndx, indx)
-        if(newMsg.length > 0) {
-          currentMsgNum += 1
-          //if(globalOffset >= startOffset) {//send messages that are only after startOffset
-          val msgOffset = globalOffset + newMsg.length + message_separator_len //byte offset of next message in the file
-          val smartFileMessage = new SmartFileMessage(newMsg, msgOffset, fileHandler, msgOffset)
+        if (chunk(i).asInstanceOf[Char] == message_separator) {
+          val newMsg: Array[Byte] = chunk.slice(prevIndx, indx)
+          if (newMsg.length > 0) {
+            currentMsgNum += 1
+            //if(globalOffset >= startOffset) {//send messages that are only after startOffset
+            val msgOffset = globalOffset + newMsg.length + message_separator_len //byte offset of next message in the file
+            val smartFileMessage = new SmartFileMessage(newMsg, msgOffset, fileHandler, msgOffset)
             messageFoundCallback(smartFileMessage, consumerContext)
 
-          //}
-          prevIndx = indx + 1
-          globalOffset = globalOffset + newMsg.length + message_separator_len
+            //}
+            prevIndx = indx + 1
+            globalOffset = globalOffset + newMsg.length + message_separator_len
+          }
         }
+        indx = indx + 1
       }
-      indx = indx + 1
     }
 
 

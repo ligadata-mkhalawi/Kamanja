@@ -1367,6 +1367,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     LOG.debug("Smart File Adapter - Shutdown Complete")
     //participantExecutor = null
     startTime = 0
+
+    prevRegParticipantPartitions = List()
+    prevRegLeader = ""
+    filesParallelism = -1
   }
 
   /* no need for any synchronization here... it can only go one way.. worst case scenario, a reader thread gets to try to
