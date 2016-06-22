@@ -1560,9 +1560,51 @@ object MessageAndContainerUtils {
     }
   }
 
+  def getMessagesAndContainers(cfgmap: Map[String, Any]): List[String] = {
+    logger.debug("getMessagesAndContainers: cfgmap => " + cfgmap)
+    val typDeps1 = cfgmap.getOrElse(ModelCompilationConstants.TYPES_DEPENDENCIES, null)
+    val typDeps =
+      if (typDeps1 == null && cfgmap.size == 1 && cfgmap.head._2.isInstanceOf[scala.collection.immutable.Map[String, Any]]) {
+        // If we have one that may be top level map. Trying to take lower level
+        cfgmap.head._2.asInstanceOf[scala.collection.immutable.Map[String, Any]].getOrElse(ModelCompilationConstants.TYPES_DEPENDENCIES, null)
+      } else {
+        typDeps1
+      }
+    logger.debug("getMessagesAndContainers: typDeps => " + typDeps)
+
+    if( typDeps == null ){
+      logger.debug("Types in modelConfig object are not defined")
+      List[String]()
+    }
+    else{
+      typDeps.asInstanceOf[List[String]]
+    }
+  }
+
+  def getContainersFromModelConfig(cfgmap: Map[String,Any]): Array[String] = {
+    var containerList = List[String]()
+    var msgsAndContainers = getMessagesAndContainers(cfgmap)
+    if( msgsAndContainers.length > 0 ){
+      msgsAndContainers.foreach(msg => {
+	logger.debug("checking the message " + msg)
+	if( MessageAndContainerUtils.IsContainer(msg) ){
+	  logger.debug("The " + msg + " is a container")
+	  containerList = msg :: containerList
+	}
+	else{
+	  logger.debug("The " + msg + " is not a container")
+	}
+      })
+    }
+    else{
+      logger.debug("getMessagesAndContainers: No types for the model config " + cfgmap)
+    }
+    containerList.toArray
+  }
+
   def getContainersFromModelConfig(userid: Option[String], cfgName: String): Array[String] = {
     var containerList = List[String]()
-    var msgsAndContainers = MetadataAPIImpl.getModelMessagesContainers(cfgName,userid)
+    var msgsAndContainers = getModelMessagesContainers(cfgName,userid)
     if( msgsAndContainers.length > 0 ){
       msgsAndContainers.foreach(msg => {
 	logger.debug("processing the message " + msg)
