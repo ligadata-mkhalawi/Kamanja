@@ -29,6 +29,7 @@ import com.ligadata.kamanja.metadataload.MetadataLoad
 import com.ligadata.MetadataAPI.MetadataAPIImpl
 import com.ligadata.MetadataAPI.MetadataAPISerialization
 import com.ligadata.MetadataAPI.MessageAndContainerUtils
+import com.ligadata.MetadataAPI.PersistenceUtils
 import com.ligadata.MetadataAPI.AdapterMessageBindingUtils
 import com.ligadata.MetadataAPI.MetadataAPI
 import com.ligadata.Serialize.JsonSerializer
@@ -1489,7 +1490,62 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
     addedMessagesContainers
   }
 
-  private def update140ModelsInPlace(mdObjs: ArrayBuffer[(String,String,Map[String, Any])]): Unit = {
+  private def getObjectName(tag: String, jsonObjMap: Map[String, Any]): String = {
+    val cont = jsonObjMap.getOrElse(tag, null).asInstanceOf[Map[String,Any]]
+    var objectName = ""
+    if( cont != null ){
+      val namespace = cont.getOrElse("NameSpace", "").toString.trim()
+      val name = cont.getOrElse("Name", "").toString.trim()
+      objectName = (namespace + "." + name).toLowerCase
+    }
+    else{
+      logger.debug("Failed to grab " + tag + " from " + jsonObjMap)
+    }
+    objectName
+  }    
+
+  private def getObjectVersion(tag: String, jsonObjMap: Map[String, Any]): String = {
+    val cont = jsonObjMap.getOrElse(tag, null).asInstanceOf[Map[String,Any]]
+    var version = ""
+    if( cont != null ){
+      val nTypes = cont.getOrElse("NumericTypes", null).asInstanceOf[Map[String,Any]]
+      if( nTypes != null ){
+	version = nTypes.getOrElse("Version", "").toString.trim()
+      }
+      else{
+	logger.debug("Failed to grab " + tag + " from the map " + cont)
+      }
+    }
+    else{
+      logger.debug("Failed to grab " + tag + " from the map " + jsonObjMap)
+    }
+    version
+  }
+
+  def getContainersFromModelConfig(cfgmap: Map[String,Any],
+				   containerSet: scala.collection.mutable.Set[String]): Array[String] = {
+    var containerList = List[String]()
+    var msgsAndContainers = MessageAndContainerUtils.getMessagesAndContainers(cfgmap)
+    if( msgsAndContainers.length > 0 ){
+      msgsAndContainers.foreach(msg => {
+	logger.debug("checking the message/container " + msg)
+	if( containerSet.contains(msg) ){
+	  logger.debug("The " + msg + " is a container")
+	  containerList = msg :: containerList
+	}
+	else{
+	  logger.debug("The " + msg + " is not a container")
+	}
+      })
+    }
+    else{
+      logger.debug("getMessagesAndContainers: No types for the model config " + cfgmap)
+    }
+    containerList.toArray
+  }
+
+  private def update140ModelsInPlace(mdObjs: ArrayBuffer[(String,String,Map[String, Any])],
+				     containerSet: scala.collection.mutable.Set[String] ): Unit = {
     try {
       logger.info("Models to be Updated => " + mdObjs.length)
       mdObjs.foreach(mdObj => {
@@ -1497,29 +1553,24 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
 	val jsonObjMap = mdObj._3
 
 	val mObj = (objType,jsonObjMap)
-
-        val namespace = jsonObjMap.getOrElse("NameSpace", "").toString.trim()
-        val name = jsonObjMap.getOrElse("Name", "").toString.trim()
-        var dispkey = (namespace + "." + name).toLowerCase
-        var ver = jsonObjMap.getOrElse("Version", "0.0.1").toString
-	
-	logger.info("Updating model, dispKey => " + dispkey)
+	logger.debug("Model Json => " + jsonObjMap)
+	val modelName = getObjectName("Model",jsonObjMap)
+	val modelVer  = getObjectVersion("Model",jsonObjMap)
+	logger.info("Updating model, modelName => " + modelName + ",modelVer => " + modelVer)
 
         try {
 	  var mdStrBefore:String = mdObj._2
-	  logger.info("Model Json Before Update => " + mdStrBefore)
+	  logger.debug("Model Json Before Update => " + mdStrBefore)
           val md = MetadataAPISerialization.deserializeMetadata(mdStrBefore).asInstanceOf[ModelDef]
 	  // Add depContainers to the model first
 	  logger.debug("Parsing ModelConfig : " + md.modelConfig)
 	  var cfgmap = parse(md.modelConfig).values.asInstanceOf[Map[String, Any]]
 	  logger.debug("Count of objects in cfgmap : " + cfgmap.keys.size)
+
 	  var depContainers = List[String]()
-	  cfgmap.keys.foreach( key => {
-	    var cfgName = key
-	    var containers = MessageAndContainerUtils.getContainersFromModelConfig(None,cfgName)
-	    logger.debug("containers => " + containers)
-	    depContainers = depContainers ::: containers.toList
-	  })
+	  var containers = getContainersFromModelConfig(cfgmap,containerSet)
+	  logger.debug("containers => " + containers)
+	  depContainers = depContainers ::: containers.toList
 	  logger.debug("depContainers => " + depContainers)
 	  md.depContainers = depContainers.toArray
 
@@ -1535,13 +1586,13 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
 	  mdStrAfter = mdStrAfter.replaceAll("ExtDependencyLibs_2.11-1.4.1.jar","ExtDependencyLibs_2.11-1.5.0.jar")
 	  mdStrAfter = mdStrAfter.replaceAll("ExtDependencyLibs2_2.11-1.4.1.jar","ExtDependencyLibs2_2.11-1.5.0.jar")
 	  mdStrAfter = mdStrAfter.replaceAll("KamanjaInternalDeps_2.11-1.4.1.jar","KamanjaInternalDeps_2.11-1.5.0.jar")
-	  logger.info("Model Json Afer Update => " + mdStrAfter)
+	  logger.debug("Model Json Afer Update => " + mdStrAfter)
 	  // save updated mdStr
           val md1 = MetadataAPISerialization.deserializeMetadata(mdStrAfter).asInstanceOf[ModelDef]
 	  MetadataAPIImpl.UpdateObjectInDB(md1)
         } catch {
-          case e: Exception => AddMdObjToGlobalException(mObj, "Failed to add metadata of type " + objType, e); AddedFailedMetadataKey(objType, dispkey, ver)
-          case e: Throwable => AddMdObjToGlobalException(mObj, "Failed to add metadata of type " + objType, e); AddedFailedMetadataKey(objType, dispkey, ver)
+          case e: Exception => AddMdObjToGlobalException(mObj, "Failed to add metadata of type " + objType, e); AddedFailedMetadataKey(objType, modelName, modelVer)
+          case e: Throwable => AddMdObjToGlobalException(mObj, "Failed to add metadata of type " + objType, e); AddedFailedMetadataKey(objType, modelName, modelVer)
         }
       })
     } catch {
@@ -1558,6 +1609,7 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
     // First get all the message & containers And also the excluded types we automatically add when we add messages & containers
     val models = ArrayBuffer[(String, String,Map[String, Any])]()
     val addedMessagesContainers: java.util.List[String] = new java.util.ArrayList[String]()
+    var containerSet: scala.collection.mutable.Set[String] = scala.collection.mutable.Set[String]()
 
     logger.info("AllMetadataElemJson row count => " + allMetadataElemsJson.length);
     allMetadataElemsJson.foreach(mdf => {
@@ -1568,6 +1620,12 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
 	logger.debug("Found a model object to be updated")
         models += ((mdf.objType,mdf.objDataInJson,jsonObjMap))
       }
+      else if (mdf.objType.equalsIgnoreCase("ContainerDef")) {
+	logger.debug("Container json => " + jsonObjMap)
+	val contName = getObjectName("Container",jsonObjMap)
+	logger.debug("Found a container object " + contName)
+        containerSet.add(contName)
+      }
     })
 
     // Open OpenDbStore
@@ -1576,7 +1634,7 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
     logger.info("Uploading configuration:" + cfgStr)
     MetadataAPIImpl.UploadConfig(cfgStr, defaultUserId, "ClusterConfig")
     logger.info("Updating Models")
-    update140ModelsInPlace(models)
+    update140ModelsInPlace(models,containerSet)
     return addedMessagesContainers
   }
 
