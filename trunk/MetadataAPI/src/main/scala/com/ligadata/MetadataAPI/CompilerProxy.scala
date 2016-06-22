@@ -77,6 +77,8 @@ class CompilerProxy {
 
       var config = MdMgr.GetMdMgr.GetModelConfig(modelConfigName.toLowerCase)
       var modCfgJson = JsonSerializer.SerializeModelConfigToJson(modelConfigName, config)
+      
+      logger.info("modCfgJson => " + modCfgJson)
 
       val ((modelNamespace, modelName, modelVersion, pname, mdlFactory, loaderInfo, modConfigName), repackagedCode, tempPackage) = parseSourceForMetadata(sourceCode, modelConfigName, sourceLang, msgDefClassFilePath, classPath, elements, userid)
       var inputMsgSets =
@@ -790,6 +792,13 @@ class CompilerProxy {
 
       val modelType: String = if (sourceLang.equalsIgnoreCase("scala")) "Scala" else "Java"
       val ownerId: String = if (userid == None) "kamanja" else userid.get
+
+      // filter the 3 fat jars from dependent jars before creating ModelDef
+      val jarsToBeExcludedRegEx = "ExtDependencyLibs.*jar|KamanjaInternalDeps.*jar".r
+      var depJars1 = deps.filter(x => ! jarsToBeExcludedRegEx.pattern.matcher(x).matches)
+      logger.debug("deps => " + deps.toList)
+      logger.debug("deps => " + depJars1.toList)
+      
       val modDef: ModelDef = MdMgr.GetMdMgr.MakeModelDef(modelNamespace
         , modelName
         , pName
@@ -802,10 +811,11 @@ class CompilerProxy {
         , MiningModelType.modelType(modelType)
         , MdMgr.ConvertVersionToLong(MdMgr.FormatVersion(modelVersion))
         , jarFileName
-        , deps.toArray[String]
+        , depJars1.toArray[String]
         , recompile
         , false
-        , modCfgJson)
+        , modCfgJson
+	, MessageAndContainerUtils.getContainersFromModelConfig(None,modelConfigName))
 
       // Need to set some values by hand here.
       modDef.jarName = jarFileName

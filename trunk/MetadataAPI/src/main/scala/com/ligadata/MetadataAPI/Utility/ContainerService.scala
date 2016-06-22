@@ -140,7 +140,9 @@ object ContainerService {
       //input provided
       var container = new File(input.toString)
       val containerDef = Source.fromFile(container).mkString
-      response = MetadataAPIImpl.AddContainer(containerDef, "JSON", userid,  finalTid)
+      // 1118 Changes begin - Changed AddContiner to Update Container to follow the path correctly
+      response = MetadataAPIImpl.UpdateContainer(containerDef, "JSON", userid,  finalTid)
+      // 1118 Changes end
     }
     //Got the container.
     response

@@ -277,8 +277,15 @@ object MessageAndContainerUtils {
             val apiResult = new ApiResult(ErrorCodeConstants.Failure, "UpdateMessage", null, ErrorCodeConstants.Update_Message_Failed + ":" + msg.Name + " Error:Invalid Version")
             apiResult.toString()
           }
+          // 1119 Changes begin  - prevents addition of an existing message
+          if (DoesAnyMessageExist(msg) == true) {
+            val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddContainerOrMessage", null, ErrorCodeConstants.Add_Message_Failed + ":" + msg.Name + " Already Exists, perform update")
+            return apiResult.toString()
 
-          if (recompile) {
+          }
+          // 1119 Changes end
+
+         if (recompile) {
             // Incase of recompile, Message Compiler is automatically incrementing the previous version
             // by 1. Before Updating the metadata with the new version, remove the old version
             val latestVersion = GetLatestMessage(msg)
@@ -310,6 +317,12 @@ object MessageAndContainerUtils {
           if (!isValid) {
             val apiResult = new ApiResult(ErrorCodeConstants.Failure, "UpdateMessage", null, ErrorCodeConstants.Update_Message_Failed + ":" + cont.Name + " Error:Invalid Version")
             apiResult.toString()
+          }
+
+          // 1119 Changes begin, prevents addition of existing container with a different version
+          if (DoesAnyContainerExist(cont) == true) {
+            val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddMessageOrContainer", null, ErrorCodeConstants.Add_Container_Failed + ":" + cont.Name + " Container exists, perform update")
+            return apiResult.toString()
           }
 
           if (recompile) {
@@ -452,6 +465,12 @@ object MessageAndContainerUtils {
           if (latestVersion != None) {
             isValid = IsValidVersion(latestVersion.get, msg)
           }
+          // 1118 - Changes begin - Message must exist for update to happen
+          else {
+            return (new ApiResult(ErrorCodeConstants.Failure, "UpdateMessage", null, s"Message must exist to update")).toString
+
+          }
+          // 1118 - Changes end
           if (isValid) {
             // Check to make sure the TenantId is the same
             if (!tenantId.get.equalsIgnoreCase(latestVersion.get.tenantId)) {
@@ -491,6 +510,13 @@ object MessageAndContainerUtils {
           if (latestVersion != None) {
             isValid = IsValidVersion(latestVersion.get, msg)
           }
+          // 1118 - Changes begin - Message must exist for update to happen
+          else {
+            return (new ApiResult(ErrorCodeConstants.Failure, "UpdateMessage", null, s"Container must exist to update")).toString
+
+          }
+          // 1118 - Changes end
+
           if (isValid) {
             // Check to make sure the TenantId is the same
             if (!tenantId.get.equalsIgnoreCase(latestVersion.get.tenantId)) {
@@ -735,56 +761,8 @@ object MessageAndContainerUtils {
           if (typeDef != None) {
             types = types :+ typeDef.get
           }
-          // ArrayBufferOf<TypeName>
-          typeName = "arraybufferof" + msgDef.name
-          typeDef = TypeUtils.GetType(msgDef.nameSpace, typeName, msgDef.ver.toString, "JSON", None)
-          if (typeDef != None) {
-            types = types :+ typeDef.get
-          }
-          // SortedSetOf<TypeName>
-          typeName = "sortedsetof" + msgDef.name
-          typeDef = TypeUtils.GetType(msgDef.nameSpace, typeName, msgDef.ver.toString, "JSON", None)
-          if (typeDef != None) {
-            types = types :+ typeDef.get
-          }
-          // ImmutableMapOfIntArrayOf<TypeName>
-          typeName = "immutablemapofintarrayof" + msgDef.name
-          typeDef = TypeUtils.GetType(msgDef.nameSpace, typeName, msgDef.ver.toString, "JSON", None)
-          if (typeDef != None) {
-            types = types :+ typeDef.get
-          }
-          // ImmutableMapOfString<TypeName>
-          typeName = "immutablemapofstringarrayof" + msgDef.name
-          typeDef = TypeUtils.GetType(msgDef.nameSpace, typeName, msgDef.ver.toString, "JSON", None)
-          if (typeDef != None) {
-            types = types :+ typeDef.get
-          }
-          // ArrayOfArrayOf<TypeName>
-          typeName = "arrayofarrayof" + msgDef.name
-          typeDef = TypeUtils.GetType(msgDef.nameSpace, typeName, msgDef.ver.toString, "JSON", None)
-          if (typeDef != None) {
-            types = types :+ typeDef.get
-          }
-          // MapOfStringArrayOf<TypeName>
-          typeName = "mapofstringarrayof" + msgDef.name
-          typeDef = TypeUtils.GetType(msgDef.nameSpace, typeName, msgDef.ver.toString, "JSON", None)
-          if (typeDef != None) {
-            types = types :+ typeDef.get
-          }
-          // MapOfIntArrayOf<TypeName>
-          typeName = "mapofintarrayof" + msgDef.name
-          typeDef = TypeUtils.GetType(msgDef.nameSpace, typeName, msgDef.ver.toString, "JSON", None)
-          if (typeDef != None) {
-            types = types :+ typeDef.get
-          }
-          // SetOf<TypeName>
-          typeName = "setof" + msgDef.name
-          typeDef = TypeUtils.GetType(msgDef.nameSpace, typeName, msgDef.ver.toString, "JSON", None)
-          if (typeDef != None) {
-            types = types :+ typeDef.get
-          }
-          // TreeSetOf<TypeName>
-          typeName = "treesetof" + msgDef.name
+          // MapOf<TypeName>
+          typeName = "mapof" + msgDef.name
           typeDef = TypeUtils.GetType(msgDef.nameSpace, typeName, msgDef.ver.toString, "JSON", None)
           if (typeDef != None) {
             types = types :+ typeDef.get
@@ -1383,25 +1361,62 @@ object MessageAndContainerUtils {
     }
   }
 
+  // 1119 Changes begin
   /**
-   * Answer if the supplied MessageDef contains is a MappedMsgTypeDef.
-   *
-   * @param aType a MessageDef
-   * @return true if a MappedMsgTypeDef
-   */
-  def IsMappedMessage(msg: MessageDef): Boolean = {
-    msg.containerType.isInstanceOf[MappedMsgTypeDef]
+    * Check whether any message already exists in metadata manager. Ideally,
+    * we should never add the message into metadata manager more than once
+    * and there is no need to use this function in main code flow
+    * This is just a utility function being during these initial phases
+    *
+    * @param msgDef
+    * @return
+    */
+  def DoesAnyMessageExist(msgDef: MessageDef): Boolean = {
+    try {
+      var key = msgDef.nameSpace + "." + msgDef.name + "." + msgDef.ver
+      val o = MdMgr.GetMdMgr.Message(msgDef.nameSpace.toLowerCase,
+        msgDef.name.toLowerCase,
+        0,
+        false)
+      o match {
+        case None =>
+          logger.debug("message not in the cache => " + key)
+          return false;
+        case Some(m) =>
+          logger.debug("message found => " + m.asInstanceOf[MessageDef].FullName + "." + MdMgr.Pad0s2Version(m.asInstanceOf[MessageDef].ver))
+          return true
+      }
+    } catch {
+      case e: Exception => {
+
+        logger.debug("", e)
+        throw UnexpectedMetadataAPIException(e.getMessage(), e)
+      }
+    }
   }
+
+  // 1119 Changes end
+
+  /**
+      * Answer if the supplied MessageDef contains is a MappedMsgTypeDef.
+      *
+      * @param aType a MessageDef
+      * @return true if a MappedMsgTypeDef
+      */
+    def IsMappedMessage(msg : MessageDef) : Boolean = {
+        msg.containerType.isInstanceOf[MappedMsgTypeDef]
+    }
 
   /**
    * Check whether message already exists in metadata manager. Ideally,
-   * we should never add the message into metadata manager more than once
-   * and there is no need to use this function in main code flow
-   * This is just a utility function being during these initial phases
-   *
-   * @param objectName
-   * @return MessageDef
-   */
+    * we should never add the message into metadata manager more than once
+    * and there is no need to use this function in main code flow
+    * This is just a utility function being during these initial phases
+    *
+    * @param objectName
+    * @return MessageDef
+    */
+
   def IsMessageExists(objectName: String): MessageDef = {
     try {
       val nameNodes: Array[String] = if (objectName != null &&
@@ -1467,6 +1482,56 @@ object MessageAndContainerUtils {
   }
 
   /**
+   * IsContainer
+   *
+   * @param contName
+   * @return
+   */
+
+  def IsContainer(contName: String): Boolean = {
+    try {
+      var(nameSpace,name) = MdMgr.SplitFullName(contName)
+      val dispkey = nameSpace + "." + name
+      val o = MdMgr.GetMdMgr.Container(nameSpace.toLowerCase,name.toLowerCase,-1,false)
+      o match {
+        case None =>
+          logger.debug("container not in the cache => " + dispkey)
+          return false;
+        case Some(m) =>
+          logger.debug("container found => " + m.asInstanceOf[ContainerDef].FullName);
+          return true
+      }
+    } catch {
+      case e: Exception => {
+        logger.debug("", e)
+        throw UnexpectedMetadataAPIException(e.getMessage(), e)
+      }
+    }
+  }
+
+  def getContainersFromModelConfig(userid: Option[String], cfgName: String): Array[String] = {
+    var containerList = List[String]()
+    var msgsAndContainers = MetadataAPIImpl.getModelMessagesContainers(cfgName,userid)
+    if( msgsAndContainers.length > 0 ){
+      msgsAndContainers.foreach(msg => {
+	logger.debug("processing the message " + msg)
+	if( MessageAndContainerUtils.IsContainer(msg) ){
+	  logger.debug("The " + msg + " is a container")
+	  containerList = msg :: containerList
+	}
+	else{
+	  logger.debug("The " + msg + " is not a container")
+	}
+      })
+    }
+    else{
+      logger.debug("MetadataAPIImpl.getModelMessagesContainers: No types for the model config " + cfgName)
+    }
+    containerList.toArray
+  }
+
+
+  /**
    * DoesContainerAlreadyExist
    *
    * @param contDef
@@ -1507,6 +1572,39 @@ object MessageAndContainerUtils {
       }
     }
   }
+
+  // 1119 Changes begin - checks for any existence of container
+  /**
+    * DoesAnyContainerExist
+    *
+    * @param contDef
+    * @return
+    */
+  def DoesAnyContainerExist(contDef: ContainerDef): Boolean = {
+    try {
+      val dispkey = contDef.nameSpace + "." + contDef.name + "." + MdMgr.Pad0s2Version(contDef.ver)
+      val o = MdMgr.GetMdMgr.Container(contDef.nameSpace.toLowerCase,
+        contDef.name.toLowerCase,
+        0,
+        false)
+      o match {
+        case None =>
+          logger.debug("container not in the cache => " + dispkey)
+          return false;
+        case Some(m) =>
+          logger.debug("container found => " + m.asInstanceOf[ContainerDef].FullName + "." + MdMgr.Pad0s2Version(m.asInstanceOf[ContainerDef].ver))
+          return true
+      }
+    } catch {
+      case e: Exception => {
+
+        logger.debug("", e)
+        throw UnexpectedMetadataAPIException(e.getMessage(), e)
+      }
+    }
+  }
+
+  // 1119 Changes end
 
   def LoadMessageIntoCache(key: String) {
     try {

@@ -158,22 +158,22 @@ class FileMessageExtractor(parentExecutor: ExecutorService,
           try {
 
             if (Thread.currentThread().isInterrupted) {
-              logger.info("SMART FILE CONSUMER (FileMessageExtractor) - interrupted while reading file {}", fileHandler.getFullPath)
+              logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - interrupted while reading file {}", fileHandler.getFullPath)
               processingInterrupted = true
               //break
             }
             if(parentExecutor == null){
-              logger.info("SMART FILE CONSUMER (FileMessageExtractor) - (parentExecutor = null) while reading file {}", fileHandler.getFullPath)
+              logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - (parentExecutor = null) while reading file {}", fileHandler.getFullPath)
               processingInterrupted = true
               //break
             }
             if(parentExecutor.isShutdown){
-              logger.info("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is shutdown while reading file {}", fileHandler.getFullPath)
+              logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is shutdown while reading file {}", fileHandler.getFullPath)
               processingInterrupted = true
               //break
             }
             if(parentExecutor.isTerminated){
-              logger.info("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is terminated while reading file {}", fileHandler.getFullPath)
+              logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is terminated while reading file {}", fileHandler.getFullPath)
               processingInterrupted = true
               //break
             }

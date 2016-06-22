@@ -281,7 +281,8 @@ object ModelService {
                     , optVersion: Option[String] = None
                     , optMsgConsumed: Option[String] = None
                     , optMsgVersion: Option[String] = Some("-1")
-                    , tid: Option[String] = None): String = {
+                    , tid: Option[String] = None
+		    , optMsgProduced: Option[String] = None): String = {
 
         //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
         var chosen: String = ""
@@ -301,14 +302,14 @@ object ModelService {
             val model = new File(input.toString)
             val resp : String = if(model.exists()){
                 val modelDef= Source.fromFile(model).mkString
-                MetadataAPIImpl.AddModel(ModelType.PMML, modelDef, optUserid, finalTid,  optModelName, optVersion, optMsgConsumed,None,optMsgVersion)
+                MetadataAPIImpl.AddModel(ModelType.PMML, modelDef, optUserid, finalTid,  optModelName, optVersion, optMsgConsumed,optMsgVersion,optMsgProduced)
             }else{
                 val userId : String = optUserid.getOrElse("no user id supplied")
                 val modelName : String = optModelName.getOrElse("no model name supplied")
                 val version : String = optVersion.getOrElse("no version supplied")
                 val msgConsumed : String = optMsgConsumed.getOrElse("no message supplied")
 
-                val reply : String = s"PMML model definition ingestion has failed for model $modelName, version = $version, consumes msg = $msgConsumed user=$userId"
+                val reply : String = s"PMML model definition ingestion has failed for model $modelName, version = $version, consumes msg = $msgConsumed user=$userId: Invalid input file $input"
                 logger.error(reply)
                 null /// FIXME : we will return null for now and complain with first failure/
             }
@@ -462,7 +463,7 @@ object ModelService {
      * @param userid the optional userId. If security and auditing in place this parameter is required.
      * @return the result of the operation
      */
-     
+
     def updateModelKPmml(input: String
                       , userid: Option[String] = Some("kamanja")
                       , tid: Option[String] = None): String = {
@@ -915,7 +916,7 @@ object ModelService {
   }
 
     /**
-     * 
+     *
      * @param userid the optional userId. If security and auditing in place this parameter is required.
      * @return
      */
@@ -925,11 +926,9 @@ object ModelService {
         if (modelKeys.length == 0) {
           response="Sorry, No models available in the Metadata"
         }else{
-          var srNo = 0
-          for(modelKey <- modelKeys){
-            srNo += 1
-            response+="[" + srNo + "]" + modelKey+"\n"
-          }
+          // 1165 Change begins - replaced with API return json string
+          response= (new ApiResult(ErrorCodeConstants.Success, "ModelService", modelKeys.mkString(", ") , "Successfully retrieved all the models")).toString
+          // 1165 Change ends
         }
         response
     }
@@ -1147,7 +1146,7 @@ object ModelService {
         return tenants(userOption - 1)
     }
     /**
-     * 
+     *
      * @param models and array of directory file specs
      * @return a list of model defs
      */

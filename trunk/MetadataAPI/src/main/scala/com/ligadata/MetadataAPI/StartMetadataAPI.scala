@@ -391,7 +391,8 @@ object StartMetadataAPI {
                                             , optModelVer
                                             , msgName
                                             , optMsgVer
-                                            , tid)
+                                            , tid
+					    , optMsgProduced)
         }
 
         case Action.ADDMODELSCALA => {
@@ -485,7 +486,11 @@ object StartMetadataAPI {
         }
 
         //Type management
-        case Action.ADDTYPE => response = TypeService.addType(input)
+        // 1116 - Changes begin
+        case Action.ADDTYPE =>  {
+          response = new ApiResult(ErrorCodeConstants.Success, "StartMetadataAPI/route", null, s"The action = $action is no longer supported").toString
+        }
+        // 1116 - Changes end - The above line is commented since the TYPE actions is deprecated
         case Action.GETTYPE => response = {
           val typeName : String = extraCmdArgs.getOrElse(TYPENAME,"")
           if (typeName.isEmpty)
@@ -495,15 +500,14 @@ object StartMetadataAPI {
         }
 
         case Action.GETALLTYPES => response = TypeService.getAllTypes
-        case Action.REMOVETYPE => response = {
-          val typeName : String = extraCmdArgs.getOrElse(TYPENAME,"")
-          if (typeName.isEmpty)
-            TypeService.removeType()
-          else
-            TypeService.removeType(typeName)
-
+          // 1116 - Changes begin
+        case Action.REMOVETYPE => {
+          response = new ApiResult(ErrorCodeConstants.Success, "StartMetadataAPI/route", null, s"The action = $action is no longer supported").toString
         }
-        case Action.LOADTYPESFROMAFILE => response = TypeService.loadTypesFromAFile(input)
+        case Action.LOADTYPESFROMAFILE =>{
+          response = new ApiResult(ErrorCodeConstants.Success, "StartMetadataAPI/route", null, s"The action = $action is no longer supported").toString
+        }
+        // 1116 - Changes end - The above line is commented since the TYPE actions is deprecated
         case Action.DUMPALLTYPESBYOBJTYPEASJSON => response = TypeService.dumpAllTypesByObjTypeAsJson
 
         //function management
@@ -679,7 +683,7 @@ object StartMetadataAPI {
     response
   }
 
-  /**
+  /** NOT USED
    * AltRoute is invoked only if the 'Action.withName(action.trim)' method fails to discern the appropriate
    * MetadataAPI method to invoke.  The command argument array is reconsidered with the AlternateCmdParser
    * If it produces valid command arguments (a command name and Map[String,String] of arg name/values) **and**
@@ -692,7 +696,7 @@ object StartMetadataAPI {
    *         complaint is returned to the caller.
    *
    */
-  def AltRoute(origArgs: Array[String]): String = {
+ /* def AltRoute(origArgs: Array[String]): String = {
 
     /** trim off the config argument and if debugging the "debug" argument as well */
     val argsSansConfig: Array[String] = if (origArgs != null && origArgs.size > 0 && origArgs(0).toLowerCase == "debug") {
@@ -814,5 +818,5 @@ object StartMetadataAPI {
     }
 
     response
-  }
+  } */
 }
