@@ -18,7 +18,7 @@ import scala.actors.threadpool.{ExecutorService, Executors}
   * @param finishCallback call when finished reading
   */
 class FileMessageExtractor(parentExecutor: ExecutorService,
-                            adapterConfig : SmartFileAdapterConfiguration,
+                           adapterConfig : SmartFileAdapterConfiguration,
                            fileHandler: SmartFileHandler,
                            startOffset : Long,
                            consumerContext : SmartFileConsumerContext,
@@ -160,45 +160,47 @@ class FileMessageExtractor(parentExecutor: ExecutorService,
             if (Thread.currentThread().isInterrupted) {
               logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - interrupted while reading file {}", fileHandler.getFullPath)
               processingInterrupted = true
-              break
+              //break
             }
             if(parentExecutor == null){
               logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - (parentExecutor = null) while reading file {}", fileHandler.getFullPath)
               processingInterrupted = true
-              break
+              //break
             }
             if(parentExecutor.isShutdown){
               logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is shutdown while reading file {}", fileHandler.getFullPath)
               processingInterrupted = true
-              break
+              //break
             }
             if(parentExecutor.isTerminated){
               logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is terminated while reading file {}", fileHandler.getFullPath)
               processingInterrupted = true
-              break
+              //break
             }
 
-            var curReadLen = fileHandler.read(byteBuffer, readlen, maxlen - readlen - 1)
-            lastReadLen = curReadLen
+            if(!processingInterrupted) {
+              var curReadLen = fileHandler.read(byteBuffer, readlen, maxlen - readlen - 1)
+              lastReadLen = curReadLen
 
-            logger.debug("SMART FILE CONSUMER - reading {} bytes from file {}. got actually {} bytes ",
-              (maxlen - readlen - 1).toString, fileHandler.getFullPath, curReadLen.toString)
-
-            if (curReadLen > 0) {
-              readlen += curReadLen
-            }
-            else // First time reading into buffer triggered end of file (< 0)
-              readlen = curReadLen
-            val minBuf = maxlen / 3; // We are expecting at least 1/3 of the buffer need to fill before
-            while (readlen < minBuf && curReadLen > 0) {
-              // Re-reading some more data
-              curReadLen = fileHandler.read(byteBuffer, readlen, maxlen - readlen - 1)
-              logger.debug("SMART FILE CONSUMER - not enough read. reading more {} bytes from file {} . got actually {} bytes",
+              logger.debug("SMART FILE CONSUMER - reading {} bytes from file {}. got actually {} bytes ",
                 (maxlen - readlen - 1).toString, fileHandler.getFullPath, curReadLen.toString)
+
               if (curReadLen > 0) {
                 readlen += curReadLen
               }
-              lastReadLen = curReadLen
+              else // First time reading into buffer triggered end of file (< 0)
+                readlen = curReadLen
+              val minBuf = maxlen / 3; // We are expecting at least 1/3 of the buffer need to fill before
+              while (readlen < minBuf && curReadLen > 0) {
+                // Re-reading some more data
+                curReadLen = fileHandler.read(byteBuffer, readlen, maxlen - readlen - 1)
+                logger.debug("SMART FILE CONSUMER - not enough read. reading more {} bytes from file {} . got actually {} bytes",
+                  (maxlen - readlen - 1).toString, fileHandler.getFullPath, curReadLen.toString)
+                if (curReadLen > 0) {
+                  readlen += curReadLen
+                }
+                lastReadLen = curReadLen
+              }
             }
 
           } catch {
@@ -216,30 +218,32 @@ class FileMessageExtractor(parentExecutor: ExecutorService,
               return
             }
           }
-          logger.debug("SMART FILE CONSUMER (FileMessageExtractor) - readlen1={}", readlen.toString)
-          if (readlen > 0) {
-            len += readlen
 
-            //e.g we have 1024, but 1000 is consumeByte
-            val consumedBytes = extractMessages(byteBuffer, readlen)
-            if (consumedBytes < readlen) {
-              val remainigBytes = readlen - consumedBytes
-              val newByteBuffer = new Array[Byte](maxlen)
-              // copy reaming from byteBuffer to byteBuffer
-              /*System.arraycopy(byteBuffer, consumedBytes + 1, newByteBuffer, 0, remainigBytes)
+          if(!processingInterrupted) {
+            logger.debug("SMART FILE CONSUMER (FileMessageExtractor) - readlen1={}", readlen.toString)
+            if (readlen > 0) {
+              len += readlen
+
+              //e.g we have 1024, but 1000 is consumeByte
+              val consumedBytes = extractMessages(byteBuffer, readlen)
+              if (consumedBytes < readlen) {
+                val remainigBytes = readlen - consumedBytes
+                val newByteBuffer = new Array[Byte](maxlen)
+                // copy reaming from byteBuffer to byteBuffer
+                /*System.arraycopy(byteBuffer, consumedBytes + 1, newByteBuffer, 0, remainigBytes)
             byteBuffer = newByteBuffer*/
-              for (i <- 0 to readlen - consumedBytes) {
-                byteBuffer(i) = byteBuffer(consumedBytes + i)
-              }
+                for (i <- 0 to readlen - consumedBytes) {
+                  byteBuffer(i) = byteBuffer(consumedBytes + i)
+                }
 
-              readlen = readlen - consumedBytes
-            }
-            else {
-              readlen = 0
+                readlen = readlen - consumedBytes
+              }
+              else {
+                readlen = 0
+              }
             }
           }
-
-        } while (lastReadLen > 0)
+        } while (lastReadLen > 0 && !processingInterrupted)
       }
 
       logger.debug("SMART FILE CONSUMER (FileMessageExtractor) - readlen2={}", readlen.toString)
@@ -253,6 +257,7 @@ class FileMessageExtractor(parentExecutor: ExecutorService,
         messageFoundCallback(smartFileMessage, consumerContext)
 
       }
+
 
     }
     catch {
