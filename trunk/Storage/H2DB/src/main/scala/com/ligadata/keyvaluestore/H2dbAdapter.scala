@@ -144,7 +144,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
 
   var location: String = null;
   if (parsed_json.contains("Location")) {
-    connectionMode = parsed_json.get("Location").get.toString.trim
+    location = parsed_json.get("Location").get.toString.trim
   } else {
     throw CreateConnectionException("Unable to find connectionMode in adapterConfig ", new Exception("Invalid adapterConfig"))
   }
@@ -181,7 +181,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
   if (parsed_json.contains("user")) {
     user = parsed_json.get("user").get.toString.trim
   } else {
-    //    throw CreateConnectionException("Unable to find user in adapterConfig ", new Exception("Invalid adapterConfig"))
+    logger.info("The User is not supplied in adapterConfig, defaults to " + "test")
     user = "test"
   }
 
@@ -197,7 +197,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
   if (parsed_json.contains("password")) {
     password = parsed_json.get("password").get.toString.trim
   } else {
-    //    throw CreateConnectionException("Unable to find password in adapterConfig ", new Exception("Invalid adapterConfig"))
+    logger.info("The User is not supplied in adapterConfig, defaults to " + "test")
     password = "test"
   }
 
