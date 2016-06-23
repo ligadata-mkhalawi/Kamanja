@@ -258,7 +258,8 @@ object FileProcessor {
     var isSuccess = false
     while (!isSuccess) {
       try {
-        zkc.delete.forPath(zkPath)
+        if (doNodesExist(zkPath))
+          zkc.delete.forPath(zkPath)
         isSuccess = true
       } catch {
         case e: Throwable => {
@@ -278,11 +279,12 @@ object FileProcessor {
 
   private def getData(zkPath: String): Array[Byte] = {
     var isSuccess = false
-    var data: Array[Byte] = null
+    var data: Array[Byte] = Array[Byte]()
     zkRecoveryLock.synchronized {
       while (!isSuccess) {
         try {
-          data = zkc.getData.forPath(zkPath)
+          if (doNodesExist(zkPath))
+            data = zkc.getData.forPath(zkPath)
           isSuccess = true
         } catch {
           case e: Throwable => {
@@ -325,12 +327,13 @@ object FileProcessor {
   }
 
   private def getNodes(zkPath: String): java.util.List[String] = {
-    var data: java.util.List[String] = null
+    var data: java.util.List[String] = new java.util.ArrayList();
     var isSuccess = false
     zkRecoveryLock.synchronized {
       while (!isSuccess) {
         try {
-          data = zkc.getChildren.forPath(zkPath)
+          if (doNodesExist(zkPath))
+            data = zkc.getChildren.forPath(zkPath)
           isSuccess = true
         } catch {
           case e: Throwable => {
@@ -419,7 +422,13 @@ object FileProcessor {
 
   def fileCacheRemove(file: String): Unit = {
     fileCacheLock.synchronized {
-      fileCache.remove(file)
+      try {
+        fileCache.remove(file)
+      } catch {
+        case e: Throwable => {
+          logger.error("SMART FILE CONSUMER: failed to remove file " + file + " from cache files list")
+        }
+      }
     }
   }
 
@@ -460,7 +469,13 @@ object FileProcessor {
   def markFileProcessingEnd(fileName: String): Unit = {
     activeFilesLock.synchronized {
       logger.info("SMART FILE CONSUMER: stop tracking the processing of a file " + fileName)
-      activeFiles.remove(fileName)
+      try {
+        activeFiles.remove(fileName)
+      } catch {
+        case e: Throwable => {
+          logger.error("SMART FILE CONSUMER: failed to remove file " + fileName + " from active files list")
+        }
+      }
     }
   }
 
@@ -1082,6 +1097,7 @@ object FileProcessor {
       moveFile(fileName)
       markFileProcessingEnd(fileName)
       removeFromZK(fileName)
+      fileCacheRemove(fileName)
     } catch {
       case ioe: IOException => {
         logger.error("Exception moving the file ", ioe)
@@ -1666,6 +1682,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
       // We just drop the file, if it is still in the directory, then it will get picked up and reprocessed the next tick.
       case fio: java.io.FileNotFoundException => {
         logger.error("SMART_FILE_CONSUMER (" + partitionId + ") Exception accessing the file for processing the file - File is missing", fio)
+        FileProcessor.removeFromZK(fileName)
         FileProcessor.markFileProcessingEnd(fileName)
         FileProcessor.fileCacheRemove(fileName)
         if (bis != null) bis.close
