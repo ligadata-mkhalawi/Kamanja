@@ -52,6 +52,10 @@ assemblyMergeStrategy in assembly := {
   case x if x contains "StaticMarkerBinder.class" => MergeStrategy.first
   case x if x contains "package-info.class" => MergeStrategy.first
   case x if x contains "HTMLDOMImplementation.class" => MergeStrategy.first
+  ////  
+  case x if x contains "io/netty" => MergeStrategy.first
+  case x if x contains "org/apache/commons/logging" => MergeStrategy.first
+  case x if x contains "io.netty.versions.properties" => MergeStrategy.first
   //
   case x if x contains "com\\fasterxml\\jackson\\core" => MergeStrategy.first
   case x if x contains "commons-logging" => MergeStrategy.first
@@ -66,7 +70,7 @@ assemblyMergeStrategy in assembly := {
 excludeFilter in unmanagedJars := s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"
 
 excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
-  val excludes = Set("commons-beanutils-1.7.0.jar", "google-collections-1.0.jar", "commons-collections4-4.0.jar", "log4j-1.2.17.jar", "commons-beanutils-1.8.3.jar", "log4j-1.2.16.jar")
+  val excludes = Set("commons-beanutils-1.7.0.jar", "google-collections-1.0.jar", "commons-collections4-4.0.jar", "log4j-1.2.17.jar", "commons-beanutils-1.8.3.jar", "log4j-1.2.16.jar", "log4j-over-slf4j-1.7.7.jar")
   cp filter { jar => excludes(jar.data.getName) }
 }
 
@@ -135,15 +139,17 @@ libraryDependencies ++= Seq(
 )
 resolvers += "Big Bee Consultants" at "http://repo.bigbeeconsultants.co.uk/repo"
 
+////////////////////// H2DB / StorageH2DB
+// http://mvnrepository.com/artifact/com.h2database/h2
+libraryDependencies += "com.h2database" % "h2" % "1.4.192"
+libraryDependencies += "commons-dbcp" % "commons-dbcp" % "1.4"
 
 
-////////////////////// Cassandra / StorageCassandra
-libraryDependencies += "com.datastax.cassandra" % "cassandra-driver-parent" % "2.1.2"
-libraryDependencies += "com.datastax.cassandra" % "cassandra-driver-core" % "2.1.2"
-libraryDependencies += "org.apache.cassandra" % "cassandra-thrift" % "2.0.3"
-//libraryDependencies += "commons-dbcp" % "commons-dbcp" % "1.4"                                 //two
-libraryDependencies += "org.apache.thrift" % "libthrift" % "0.9.2"
-
+///////////////////// New Cassandra
+libraryDependencies += "com.datastax.cassandra" % "cassandra-driver-parent" % "3.0.1" pomOnly()
+libraryDependencies += "com.datastax.cassandra" % "cassandra-driver-core" % "3.0.1"
+libraryDependencies += "org.apache.cassandra" % "cassandra-thrift" % "3.5"
+libraryDependencies += "org.apache.thrift" % "libthrift" % "0.9.3" pomOnly()
 
 
 ////////////////////// HashMap
@@ -174,6 +180,8 @@ libraryDependencies += "org.anarres.lzo" % "lzo-core" % "1.0.0"
 libraryDependencies += "com.jcraft" % "jsch" % "0.1.53"
 
 //////////////////////  Cache & CacheImp
+libraryDependencies += "org.infinispan" % "infinispan-core" % "7.2.5.Final"
+libraryDependencies += "org.infinispan" % "infinispan-tree" % "7.2.5.Final"
 libraryDependencies += "net.sf.ehcache" % "ehcache-core" % "2.6.5"
 libraryDependencies += "net.sf.ehcache" % "ehcache-jgroupsreplication" % "1.7"
 libraryDependencies += "org.jgroups" % "jgroups" % "3.6.7.Final"

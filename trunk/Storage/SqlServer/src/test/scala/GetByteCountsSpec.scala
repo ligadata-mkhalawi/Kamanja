@@ -40,6 +40,7 @@ import com.ligadata.keyvaluestore.SqlServerAdapter
 
 import com.ligadata.Exceptions._
 
+@Ignore
 class GetByteCountsSpec extends FunSpec with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
   var res : String = null;
   var statusCode: Int = -1;
