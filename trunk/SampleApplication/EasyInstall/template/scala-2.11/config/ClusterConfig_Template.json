@@ -3,18 +3,26 @@
     {
       "ClusterId": "ligadata1",
       "SystemCatalog": {
-        "StoreType": "hashmap",
-        "SchemaName": "testdata",
-        "Location": "{InstallDirectory}/storage/syscatalog"
+        "StoreType": "h2db",
+        "connectionMode": "embedded",
+        "SchemaName": "kamanja",
+        "Location": "{InstallDirectory}/storage/syscatalog",
+        "portnumber": "9100",
+        "user": "test",
+        "password": "test"
       },
       "Tenants": [
         {
           "TenantId": "tenant1",
           "Description": "tenant1",
           "PrimaryDataStore": {
-            "StoreType": "hashmap",
+            "StoreType": "h2db",
+            "connectionMode": "embedded",
             "SchemaName": "testdata",
-            "Location": "{InstallDirectory}/storage/tenant1_default"
+            "Location": "{InstallDirectory}/storage/tenant1_default",
+            "portnumber": "9100",
+            "user": "test",
+            "password": "test"
           },
           "CacheConfig": {
             "MaxSizeInMB": 256
@@ -65,9 +73,13 @@
           "Name": "Storage_1",
           "TypeString": "Storage",
           "TenantId": "tenant1",
-          "StoreType": "hashmap",
+          "StoreType": "h2db",
+          "connectionMode": "embedded",
           "SchemaName": "testdata",
-          "Location": "{InstallDirectory}/storage/tenant1_storage_1"
+          "Location": "{InstallDirectory}/storage/tenant1_storage_1",
+          "portnumber": "9100",
+          "user": "test",
+          "password": "test"
         },
         {
           "Name": "HelloWorldInput",
