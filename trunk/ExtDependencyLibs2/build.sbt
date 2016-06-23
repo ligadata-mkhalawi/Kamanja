@@ -135,6 +135,10 @@ libraryDependencies ++= Seq(
 )
 resolvers += "Big Bee Consultants" at "http://repo.bigbeeconsultants.co.uk/repo"
 
+////////////////////// H2DB / StorageH2DB
+// http://mvnrepository.com/artifact/com.h2database/h2
+libraryDependencies += "com.h2database" % "h2" % "1.4.192"
+libraryDependencies += "commons-dbcp" % "commons-dbcp" % "1.4"
 
 
 ////////////////////// Cassandra / StorageCassandra
