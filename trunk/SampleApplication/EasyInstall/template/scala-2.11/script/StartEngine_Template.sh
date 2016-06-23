@@ -5,7 +5,7 @@ KAMANJA_HOME={InstallDirectory}
 ipport="8998"
 
 #-Djava.security.auth.login.config=/tmp/kerberos/jaas-client.conf
-if
+if [ "$KAMANJA_SEC_CONFIG" ]; then
   JAAS_CONFIG_OPT="-Djava.security.auth.login.config="$KAMANJA_SEC_CONFIG
 fi
 
