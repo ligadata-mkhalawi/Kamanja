@@ -365,10 +365,10 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
                    adapterId = vertex._1
                    // adapterId = adapterId.substring(adapterId.indexOf("#"), adapterId.indexOf("{"))
                  } //id of adpater
-                 //                 if (vertex._2.equalsIgnoreCase(model.FullName)) {
-                 //                   vertexId = vertex._1
-                 //                   vertexId = vertexId.substring(vertexId.indexOf("#"),vertexId.indexOf("{"))
-                 //                 } //id of vertex
+                 if (vertex._2.equalsIgnoreCase(model.FullName)) {
+                   vertexId = vertex._1
+                   vertexId = vertexId.substring(vertexId.indexOf("#"),vertexId.indexOf("{"))
+                 } //id of vertex
                }
                // } here
                if (adapterId.length != 0 && vertexId.length != 0) {

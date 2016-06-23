@@ -166,38 +166,54 @@ class QueryBuilder extends LogTrait {
     var setQuery: String = ""
 
     if(message != None){
-      val tenantID: String =
-        if(message.get.TenantId.isEmpty) ""
-        else message.get.TenantId
+      val tenantID: String = if(message.get.TenantId.isEmpty || message.get.TenantId == null) "" else message.get.TenantId
+      val name = if(message.get.Name.isEmpty || message.get.Name == null) "" else message.get.Name
+      val namespace = if(message.get.NameSpace.isEmpty || message.get.NameSpace == null) "" else message.get.NameSpace
+      val fullName = if(message.get.FullName.isEmpty || message.get.FullName == null) "" else message.get.FullName
+      val version = if(message.get.Version.toString.isEmpty || message.get.Version == null) "0" else message.get.Version
+      val creationTime = if(message.get.CreationTime.toString.isEmpty || message.get.CreationTime == null) "" else message.get.CreationTime
+      val description = if(message.get.Description.isEmpty || message.get.Description == null) "" else message.get.Description
+      val author = if(message.get.Author.isEmpty || message.get.Author == null) "" else message.get.Author
 
       setQuery = "set ID = " + message.get.UniqId + ", Name = \"%s\", Namespace = \"%s\", FullName = \"%s\", Version = \"%s\",  CreatedTime = \"%s\",".format(
-         message.get.Name, message.get.NameSpace, message.get.FullName, message.get.Version, message.get.CreationTime) +
-        " Tenant = \"%s\", Description = \"%s\", Author = \"%s\", Active = %b, Type = \'V\'".format(
-          tenantID, message.get.Description, message.get.Author, message.get.Active)
+        name, namespace, fullName, version, creationTime) +
+        " Tenant = \"%s\", Description = \"%s\", Author = \"%s\", Active = %b".format(
+          tenantID, description, author, message.get.Active)
     } else if(contianer != None){
-        val tenantID: String =
-          if(contianer.get.TenantId.isEmpty) ""
-          else contianer.get.TenantId
+      val tenantID: String = if(contianer.get.TenantId.isEmpty) "" else contianer.get.TenantId
+      val name = if(contianer.get.Name.isEmpty || contianer.get.Name == null) "" else contianer.get.Name
+      val namespace = if(contianer.get.NameSpace.isEmpty || contianer.get.NameSpace == null) "" else contianer.get.NameSpace
+      val fullName = if(contianer.get.FullName.isEmpty || contianer.get.FullName == null) "" else contianer.get.FullName
+      val version = if(contianer.get.Version.toString.isEmpty || contianer.get.Version == null) "0" else contianer.get.Version
+      val creationTime = if(contianer.get.CreationTime.toString.isEmpty || contianer.get.CreationTime == null) "" else contianer.get.CreationTime
+      val description = if(contianer.get.Description.isEmpty || contianer.get.Description == null) "" else contianer.get.Description
+      val author = if(contianer.get.Author.isEmpty || contianer.get.Author == null) "" else contianer.get.Author
 
       setQuery = "set ID = "+ contianer.get.UniqId + ", Name = \"%s\", Namespace = \"%s\", FullName = \"%s\", Version = \"%s\", CreatedTime = \"%s\", ".format(
-         contianer.get.Name, contianer.get.NameSpace, contianer.get.FullName, contianer.get.Version, contianer.get.CreationTime) +
-        " Tenant = \"%s\", Description = \"%s\", Author = \"%s\", Active = %b, Type = \'V\'".format(
-          tenantID, contianer.get.Description, contianer.get.Author, contianer.get.Active)
+         name, namespace, fullName, version, creationTime) +
+        " Tenant = \"%s\", Description = \"%s\", Author = \"%s\", Active = %b".format(
+          tenantID, description, author, contianer.get.Active)
     } else if (model != None){
-      val tenantID: String =
-        if(model.get.TenantId.isEmpty) ""
-        else model.get.TenantId
+      val tenantID: String = if(model.get.TenantId.isEmpty) "" else model.get.TenantId
+      val name = if(model.get.Name.isEmpty || model.get.Name == null) "" else model.get.Name
+      val namespace = if(model.get.NameSpace.isEmpty || model.get.NameSpace == null) "" else model.get.NameSpace
+      val fullName = if(model.get.FullName.isEmpty || model.get.FullName == null) "" else model.get.FullName
+      val version = if(model.get.Version.toString.isEmpty || model.get.Version == null) "0" else model.get.Version
+      val creationTime = if(model.get.CreationTime.toString.isEmpty || model.get.CreationTime == null) "" else model.get.CreationTime
+      val description = if(model.get.Description.isEmpty || model.get.Description == null) "" else model.get.Description
+      val author = if(model.get.Author.isEmpty || model.get.Author == null) "" else model.get.Author
+
 
       setQuery = "set ID = " + model.get.UniqId + ", Name = \"%s\", Namespace = \"%s\", FullName = \"%s\", Version = \"%s\", CreatedTime = \"%s\", ".format(
-         model.get.Name, model.get.NameSpace, model.get.FullName, model.get.Version, model.get.CreationTime) +
-        " Tenant = \"%s\", Description = \"%s\", Author = \"%s\", Active = %b, Type = \'V\'".format(
-          tenantID, model.get.Description, model.get.Author, model.get.Active)
+         name, namespace, fullName, version, creationTime) +
+        " Tenant = \"%s\", Description = \"%s\", Author = \"%s\", Active = %b".format(
+          tenantID, description, author, model.get.Active)
     } else if(adapter != None){
       val tenantID: String =
         if(adapter.get.TenantId.isEmpty) ""
         else adapter.get.TenantId
 
-      setQuery = "set Name = \"%s\", FullName = \"%s\", Tenant = \"%s\", Type = \'V\'".format(adapter.get.Name, adapter.get.Name, tenantID)
+      setQuery = "set Name = \"%s\", FullName = \"%s\", Tenant = \"%s\"".format(adapter.get.Name, adapter.get.Name, tenantID)
     }
     return setQuery
   }
