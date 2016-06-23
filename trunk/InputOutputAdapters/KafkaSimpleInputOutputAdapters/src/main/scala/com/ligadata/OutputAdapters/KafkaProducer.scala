@@ -106,20 +106,17 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   props.put("max.buffer.full.block.ms", qc.otherconfigs.getOrElse("max.buffer.full.block.ms", default_max_buffer_full_block_ms).toString.trim())
   props.put("network.request.timeout.ms", qc.otherconfigs.getOrElse("network.request.timeout.ms", default_network_request_timeout_ms).toString.trim())
 
-  println("===> KafkaProducer starting  with sec of " + qc.security_protocol + "...")
   // Verify the Secuirty Paramters...
   if (qc.security_protocol != null && (qc.security_protocol.trim.equalsIgnoreCase("sasl_plaintext") || qc.security_protocol.trim.equalsIgnoreCase("sasl_ssl") || qc.security_protocol.trim.equalsIgnoreCase("ssl"))) {
     if (qc.security_protocol.trim.equalsIgnoreCase("sasl_plaintext")) {
-
-      println("===> with " +  qc.security_protocol)
 
       // Add all the required SASL parameters.
       props.put("security.protocol", qc.security_protocol)
       if (qc.sasl_mechanism != null) props.put("sasl.mechanism", qc.sasl_mechanism)
 
       // THROW A WARNING, if PLAIN is chosen with unencrypted communication.
-      if (qc.sasl_mechanism.equalsIgnoreCase("plain")) {
-        LOG.warn("\n\nKafkaProducer is instantiated with security protocol of SASL_PLAIN and security mechanism of PLAIN. This Will result in unecrypted passwords to be sent across the wire\n")
+      if (qc.sasl_mechanism != null && qc.sasl_mechanism.equalsIgnoreCase("plaintext")) {
+        LOG.warn("\n\nKafkaProducer is instantiated with security protocol of SASL_PLAINTEXT and security mechanism of PLAINTEXT. This Will result in unecrypted passwords to be sent across the wire\n")
       }
 
       if (qc.sasl_kerberos_service_name != null)
