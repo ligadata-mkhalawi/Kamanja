@@ -432,6 +432,18 @@ object FileProcessor {
     }
   }
 
+  def bufferingQRemove(file: String): Unit = {
+    bufferingQLock.synchronized {
+      try {
+        bufferingQ_map.remove(file)
+      } catch {
+        case e: Throwable => {
+          logger.error("SMART FILE CONSUMER: failed to remove file " + file + " from bufferingQ files list")
+        }
+      }
+    }
+  }
+
   def getTimingFromFileCache(file: String): Long = {
     fileCacheLock.synchronized {
       fileCache(file).split("::")(0).toLong
@@ -650,30 +662,33 @@ object FileProcessor {
                 if (thisFileOrigLength > 0 && FileProcessor.isValidFile(fileTuple._1)) {
                   logger.info("SMART FILE CONSUMER (global):  File READY TO PROCESS " + d.toString)
                   enQFile(fileTuple._1, FileProcessor.NOT_RECOVERY_SITUATION, d.lastModified)
-                  bufferingQ_map.remove(fileTuple._1)
+                  bufferingQRemove(fileTuple._1)
                 } else {
                   // Here becayse either the file is sitll of len 0,or its deemed to be invalid.
                   if (thisFileOrigLength == 0) {
                     val diff = System.currentTimeMillis - thisFileStarttime //d.lastModified
                     if (diff > bufferTimeout) {
                       logger.warn("SMART FILE CONSUMER (global): Detected that " + d.toString + " has been on the buffering queue longer then " + bufferTimeout / 1000 + " seconds - Cleaning up")
-                      moveFile(fileTuple._1)
-                      bufferingQ_map.remove(fileTuple._1)
+                      moveFile(fileTuple._1) // This internally call fileCacheRemove
+                      bufferingQRemove(fileTuple._1)
                     }
                   } else {
                     //Invalid File - due to content type
                     logger.error("SMART FILE CONSUMER (global): Moving out " + fileTuple._1 + " with invalid file type ")
-                    moveFile(fileTuple._1)
-                    bufferingQ_map.remove(fileTuple._1)
+                    moveFile(fileTuple._1) // This internally call fileCacheRemove
+                    bufferingQRemove(fileTuple._1)
                   }
                 }
               } else {
-                bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures)
+                bufferingQLock.synchronized {
+                  bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures)
+                }
               }
             } else {
               // File System is not accessible.. issue a warning and go on to the next file.
               logger.warn("SMART FILE CONSUMER (global): File on the buffering Q is not found " + fileTuple._1 + ", Removing from the buffering queue")
-              bufferingQ_map.remove(fileTuple._1)
+              fileCacheRemove(fileTuple._1) // No moveFile. So, we must need this.
+              bufferingQRemove(fileTuple._1)
             }
           } catch {
             case ioe: IOException => {
@@ -682,14 +697,17 @@ object FileProcessor {
                 logger.warn("SMART FILE CONSUMER (global): Detected that a stuck file " + fileTuple._1 + " on the buffering queue", ioe)
                 try {
                   moveFile(fileTuple._1)
-                  bufferingQ_map.remove(fileTuple._1)
+                  bufferingQRemove(fileTuple._1)
                 } catch {
                   case e: Throwable => {
                     logger.error("SMART_FILE_CONSUMER: Failed to move file, retyring", e)
                   }
                 }
               } else {
-                bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures)
+                // Lock this before update
+                bufferingQLock.synchronized {
+                  bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures)
+                }
                 logger.warn("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue for file " + fileTuple._1, ioe)
               }
             }
@@ -699,14 +717,16 @@ object FileProcessor {
                 logger.error("SMART FILE CONSUMER (global): Detected that a stuck file " + fileTuple._1 + " on the buffering queue", e)
                 try {
                   moveFile(fileTuple._1)
-                  bufferingQ_map.remove(fileTuple._1)
+                  bufferingQRemove(fileTuple._1)
                 } catch {
                   case e: Throwable => {
                     logger.error("SMART_FILE_CONSUMER: Failed to move file, retyring", e)
                   }
                 }
               } else {
-                bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures)
+                bufferingQLock.synchronized {
+                  bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures)
+                }
                 logger.error("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue ", e)
               }
             }
