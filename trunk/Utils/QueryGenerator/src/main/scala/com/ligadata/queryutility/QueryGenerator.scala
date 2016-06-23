@@ -367,7 +367,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
                  } //id of adpater
                  if (vertex._2.equalsIgnoreCase(model.FullName)) {
                    vertexId = vertex._1
-                   vertexId = vertexId.substring(vertexId.indexOf("#"),vertexId.indexOf("{"))
+                   //vertexId = vertexId.substring(vertexId.indexOf("#"),vertexId.indexOf("{"))
                  } //id of vertex
                }
                // } here
