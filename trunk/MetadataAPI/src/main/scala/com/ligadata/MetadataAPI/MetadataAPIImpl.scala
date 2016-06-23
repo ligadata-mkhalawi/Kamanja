@@ -168,6 +168,11 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
       var apiResult = new ApiResultComplex(ErrorCodeConstants.Success, "GetHeartbeat", MonitorAPIImpl.getHeartbeatInfo(ids), ErrorCodeConstants.GetHeartbeat_Success)
       apiResult.toString
     } catch {
+      case jex: com.fasterxml.jackson.databind.JsonMappingException => {
+        logger.warn("Failure processing GET_HEALTH_CHECK - body is empty.", jex)
+        val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetHealthCheck", "No data available", ErrorCodeConstants.GetHeartbeat_Failed + " Error:body is empty")
+        return apiResult.toString
+      }
       case cce: java.lang.ClassCastException => {
         logger.warn("Failure processing GET_HEALTH_CHECK - cannot parse the list of desired nodes.", cce)
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetHealthCheck", "No data available", ErrorCodeConstants.GetHeartbeat_Failed + " Error:Parsing Error")
