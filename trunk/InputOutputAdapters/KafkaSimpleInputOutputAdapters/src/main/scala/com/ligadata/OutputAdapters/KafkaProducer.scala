@@ -192,15 +192,13 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   var reqCntr: Int = 0
   var msgInOrder = new AtomicLong
 
-  println("===> Creating new producer for " + qc.topic)
+
+  // Create the producer object...
+  LOG.info("Staring Kafka Producer with the following paramters: /n" + qc.toString)
 
   val producer = new org.apache.kafka.clients.producer.KafkaProducer[Array[Byte], Array[Byte]](props)
-
-  println("===> Created new producer for " + qc.topic)
-
   var topicPartitionsCount = producer.partitionsFor(qc.topic).size()
 
-  println("===> Gettng partition s for producer of " + qc.topic)
   var partitionsGetTm = System.currentTimeMillis
   val refreshPartitionTime = 60 * 1000 // 60 secs
 
