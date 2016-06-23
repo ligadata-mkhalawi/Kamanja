@@ -19,6 +19,78 @@
           "CacheConfig": {
             "MaxSizeInMB": 256
           }
+        },
+        {
+          "TenantId": "hello211",
+          "Description": "hello211",
+          "PrimaryDataStore": {
+            "StoreType": "hashmap",
+            "SchemaName": "testdata",
+            "Location": "{InstallDirectory}/storage/tenant1_default"
+          },
+          "CacheConfig": {
+            "MaxSizeInMB": 256
+          }
+        },
+        {
+          "TenantId": "copd211",
+          "Description": "copd211",
+          "PrimaryDataStore": {
+            "StoreType": "hashmap",
+            "SchemaName": "testdata",
+            "Location": "{InstallDirectory}/storage/tenant1_default"
+          },
+          "CacheConfig": {
+            "MaxSizeInMB": 256
+          }
+        },
+        {
+          "TenantId": "low211",
+          "Description": "low211",
+          "PrimaryDataStore": {
+            "StoreType": "hashmap",
+            "SchemaName": "testdata",
+            "Location": "{InstallDirectory}/storage/tenant1_default"
+          },
+          "CacheConfig": {
+            "MaxSizeInMB": 256
+          }
+        },
+        {
+          "TenantId": "hello210",
+          "Description": "hello210",
+          "PrimaryDataStore": {
+            "StoreType": "hashmap",
+            "SchemaName": "testdata",
+            "Location": "{InstallDirectory}/storage/tenant1_default"
+          },
+          "CacheConfig": {
+            "MaxSizeInMB": 256
+          }
+        },
+        {
+          "TenantId": "copd210",
+          "Description": "copd210",
+          "PrimaryDataStore": {
+            "StoreType": "hashmap",
+            "SchemaName": "testdata",
+            "Location": "{InstallDirectory}/storage/tenant1_default"
+          },
+          "CacheConfig": {
+            "MaxSizeInMB": 256
+          }
+        },
+        {
+          "TenantId": "low210",
+          "Description": "low210",
+          "PrimaryDataStore": {
+            "StoreType": "hashmap",
+            "SchemaName": "testdata",
+            "Location": "{InstallDirectory}/storage/tenant1_default"
+          },
+          "CacheConfig": {
+            "MaxSizeInMB": 256
+          }
         }
       ],
       "ZooKeeperInfo": {
@@ -65,6 +137,54 @@
           "Name": "Storage_1",
           "TypeString": "Storage",
           "TenantId": "tenant1",
+          "StoreType": "hashmap",
+          "SchemaName": "testdata",
+          "Location": "{InstallDirectory}/storage/tenant1_storage_1"
+        },
+        {
+          "Name": "Storage_2",
+          "TypeString": "Storage",
+          "TenantId": "hello211",
+          "StoreType": "hashmap",
+          "SchemaName": "testdata",
+          "Location": "{InstallDirectory}/storage/tenant1_storage_1"
+        },
+        {
+          "Name": "Storage_3",
+          "TypeString": "Storage",
+          "TenantId": "copd211",
+          "StoreType": "hashmap",
+          "SchemaName": "testdata",
+          "Location": "{InstallDirectory}/storage/tenant1_storage_1"
+        },
+        {
+          "Name": "Storage_4",
+          "TypeString": "Storage",
+          "TenantId": "low211",
+          "StoreType": "hashmap",
+          "SchemaName": "testdata",
+          "Location": "{InstallDirectory}/storage/tenant1_storage_1"
+        },
+        {
+          "Name": "Storage_5",
+          "TypeString": "Storage",
+          "TenantId": "hello210",
+          "StoreType": "hashmap",
+          "SchemaName": "testdata",
+          "Location": "{InstallDirectory}/storage/tenant1_storage_1"
+        },
+        {
+          "Name": "Storage_6",
+          "TypeString": "Storage",
+          "TenantId": "copd210",
+          "StoreType": "hashmap",
+          "SchemaName": "testdata",
+          "Location": "{InstallDirectory}/storage/tenant1_storage_1"
+        },
+        {
+          "Name": "Storage_7",
+          "TypeString": "Storage",
+          "TenantId": "low210",
           "StoreType": "hashmap",
           "SchemaName": "testdata",
           "Location": "{InstallDirectory}/storage/tenant1_storage_1"
