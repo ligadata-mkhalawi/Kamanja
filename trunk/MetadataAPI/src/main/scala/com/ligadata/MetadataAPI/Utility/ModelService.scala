@@ -36,7 +36,8 @@ import scala.io._
 object ModelService {
     private val userid: Option[String] = Some("kamanja")
     val loggerName = this.getClass.getName
-    lazy val logger = LogManager.getLogger(loggerName)
+  lazy val logger = LogManager.getLogger(loggerName)
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI ;
 
     /************************************************************************************************
       * Add Models
@@ -54,7 +55,8 @@ object ModelService {
                       , dep: String = ""
                       , userid: Option[String] = Some("kamanja")
 		                  , optMsgProduced: Option[String] = None
-                      , tid: Option[String] = None): String = {
+                      , tid: Option[String] = None,
+                      pStr : Option[String]): String = {
         var modelDefs= Array[String]()
         var modelConfig=""
         var modelDef=""
@@ -74,7 +76,7 @@ object ModelService {
 
         if (input == "") {
             //get the messages location from the config file. If error get the location from github
-            modelFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
+            modelFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
             if (modelFileDir == null) {
                 response = "MODEL_FILES_DIR property missing in the metadata API configuration"
             } else {
@@ -112,10 +114,10 @@ object ModelService {
             for (modelDef <- modelDefs){
                 println("Adding the next model in the queue.")
                 if (dep.length > 0) {
-                    response+= MetadataAPIImpl.AddModel(ModelType.SCALA, modelDef, userid, finalTid, Some(userid.get+"."+dep),None,None,None,optMsgProduced)
+                    response+= getMetadataAPI.AddModel(ModelType.SCALA, modelDef, userid, finalTid, Some(userid.get+"."+dep),None,None,None,optMsgProduced,pStr)
                 } else {
                     //before adding a model, add its config file.
-                    var configKeys = MetadataAPIImpl.getModelConfigNames
+                    var configKeys = getMetadataAPI.getModelConfigNames
                     if(configKeys.isEmpty){
                         response="No model configuration loaded in the metadata!"
                     }else{
@@ -140,7 +142,7 @@ object ModelService {
                                 errorMsg
                             }
                         }
-                        response+= MetadataAPIImpl.AddModel(ModelType.SCALA, modelDef, userid,finalTid, Some(modelConfig), None, None, None, optMsgProduced)
+                        response+= getMetadataAPI.AddModel(ModelType.SCALA, modelDef, userid,finalTid, Some(modelConfig), None, None, None, optMsgProduced, pStr)
                     }
                 }
             }
@@ -160,7 +162,7 @@ object ModelService {
     def addModelJava(input: String, dep: String = ""
                      , userid: Option[String] = Some("kamanja")
 		                 , optMsgProduced: Option[String] = None
-                     , tid: Option[String] = None): String = {
+                     , tid: Option[String] = None, pStr : Option[String]): String = {
         var modelDefs= Array[String]()
         var modelConfig=""
         var modelDef=""
@@ -179,7 +181,7 @@ object ModelService {
 
         if (input == "") {
             //get the messages location from the config file. If error get the location from github
-            modelFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
+            modelFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
             if (modelFileDir == null) {
                 response = "MODEL_FILES_DIR property missing in the metadata API configuration"
             } else {
@@ -218,9 +220,9 @@ object ModelService {
             for (modelDef <- modelDefs){
                 println("Adding the next model in the queue.")
                 if (dep.length > 0) {
-                    response+= MetadataAPIImpl.AddModel(ModelType.JAVA, modelDef, userid, finalTid, Some(userid.get+"."+dep), None,None,None,optMsgProduced)
+                    response+= getMetadataAPI.AddModel(ModelType.JAVA, modelDef, userid, finalTid, Some(userid.get+"."+dep), None,None,None,optMsgProduced,pStr)
                 } else {
-                    var configKeys = MetadataAPIImpl.getModelConfigNames
+                    var configKeys = getMetadataAPI.getModelConfigNames
                     println("--> got these many back "+configKeys.size)
                     if(configKeys.isEmpty){
                         response="No model configuration loaded in the metadata!"
@@ -246,7 +248,7 @@ object ModelService {
                                 errorMsg
                             }
                         }
-                        response+= MetadataAPIImpl.AddModel(ModelType.JAVA, modelDef, userid, finalTid,Some(modelConfig), None,None,None,optMsgProduced)
+                        response+= getMetadataAPI.AddModel(ModelType.JAVA, modelDef, userid, finalTid,Some(modelConfig), None,None,None,optMsgProduced,pStr)
                     }
                 }
             }
@@ -281,7 +283,9 @@ object ModelService {
                     , optVersion: Option[String] = None
                     , optMsgConsumed: Option[String] = None
                     , optMsgVersion: Option[String] = Some("-1")
-                    , tid: Option[String] = None): String = {
+                    , tid: Option[String] = None,
+                     pStr : Option[String]
+		    , optMsgProduced: Option[String] = None): String = {
 
         //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
         var chosen: String = ""
@@ -301,14 +305,14 @@ object ModelService {
             val model = new File(input.toString)
             val resp : String = if(model.exists()){
                 val modelDef= Source.fromFile(model).mkString
-                MetadataAPIImpl.AddModel(ModelType.PMML, modelDef, optUserid, finalTid,  optModelName, optVersion, optMsgConsumed,None,optMsgVersion)
+                MetadataAPIImpl.AddModel(ModelType.PMML, modelDef, optUserid, finalTid,  optModelName, optVersion, optMsgConsumed,optMsgVersion,pStr, optMsgProduced)
             }else{
                 val userId : String = optUserid.getOrElse("no user id supplied")
                 val modelName : String = optModelName.getOrElse("no model name supplied")
                 val version : String = optVersion.getOrElse("no version supplied")
                 val msgConsumed : String = optMsgConsumed.getOrElse("no message supplied")
 
-                val reply : String = s"PMML model definition ingestion has failed for model $modelName, version = $version, consumes msg = $msgConsumed user=$userId"
+                val reply : String = s"PMML model definition ingestion has failed for model $modelName, version = $version, consumes msg = $msgConsumed user=$userId: Invalid input file $input"
                 logger.error(reply)
                 null /// FIXME : we will return null for now and complain with first failure/
             }
@@ -328,7 +332,8 @@ object ModelService {
     def addModelKPmml(input: String
                      , userid: Option[String] = Some("kamanja")
 		                 , optMsgProduced: Option[String] = None
-                     , tid: Option[String] = None   ): String = {
+                     , tid: Option[String] = None ,
+                      pStr : Option[String]): String = {
         var modelDef=""
         var modelConfig=""
         var response: String = ""
@@ -346,7 +351,7 @@ object ModelService {
 
         if (input == "") {
             //get the messages location from the config file. If error get the location from github
-            modelFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
+            modelFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
             if (modelFileDir == null) {
                 response = "MODEL_FILES_DIR property missing in the metadata API configuration"
             } else {
@@ -364,7 +369,7 @@ object ModelService {
                             case option => {
                                 var  modelDefs=getUserInputFromMainMenu(models)
                                 for (modelDef <- modelDefs)
-                                    response += MetadataAPIImpl.AddModel(ModelType.KPMML, modelDef.toString, userid, finalTid, None,None,None,None,optMsgProduced)
+                                    response += getMetadataAPI.AddModel(ModelType.KPMML, modelDef.toString, userid, finalTid, None,None,None,None,optMsgProduced, pStr)
                             }
                         }
                     }
@@ -379,7 +384,7 @@ object ModelService {
             var model = new File(input.toString)
             if(model.exists()){
                 modelDef= Source.fromFile(model).mkString
-                response = MetadataAPIImpl.AddModel(ModelType.KPMML, modelDef.toString, userid, finalTid, None,None,None,None,optMsgProduced)
+                response = getMetadataAPI.AddModel(ModelType.KPMML, modelDef.toString, userid, finalTid, None,None,None,None,optMsgProduced, pStr)
             }else{
                 response="Model definition file does not exist"
             }
@@ -397,7 +402,8 @@ object ModelService {
     def addModelJTM(input: String
                       , userid: Option[String] = Some("kamanja")
                       , tid: Option[String] = None
-                      , optModelName: Option[String] = None): String = {
+                      , optModelName: Option[String] = None,
+                    pStr : Option[String]): String = {
         var modelDef=""
         var response: String = ""
         var modelFileDir: String = ""
@@ -414,7 +420,7 @@ object ModelService {
 
         if (input == "") {
             //get the messages location from the config file. If error get the location from github
-            modelFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
+            modelFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
             if (modelFileDir == null) {
                 response = "MODEL_FILES_DIR property missing in the metadata API configuration"
             } else {
@@ -432,7 +438,7 @@ object ModelService {
                             case option => {
                                 var  modelDefs=getUserInputFromMainMenu(models)
                                 for (modelDef <- modelDefs)
-                                    response += MetadataAPIImpl.AddModel(ModelType.JTM, modelDef.toString, userid, finalTid, optModelName, None, None, None,None)
+                                    response += getMetadataAPI.AddModel(ModelType.JTM, modelDef.toString, userid, finalTid, optModelName, None, None, None,None, pStr)
                             }
                         }
                     }
@@ -447,7 +453,7 @@ object ModelService {
             var model = new File(input.toString)
             if(model.exists()){
                 modelDef= Source.fromFile(model).mkString
-                response = MetadataAPIImpl.AddModel(ModelType.JTM, modelDef.toString, userid, finalTid, optModelName, None, None, None, None)
+                response = getMetadataAPI.AddModel(ModelType.JTM, modelDef.toString, userid, finalTid, optModelName, None, None, None, None, pStr)
             }else{
                 response="Model definition file does not exist"
             }
@@ -462,10 +468,10 @@ object ModelService {
      * @param userid the optional userId. If security and auditing in place this parameter is required.
      * @return the result of the operation
      */
-     
+
     def updateModelKPmml(input: String
                       , userid: Option[String] = Some("kamanja")
-                      , tid: Option[String] = None): String = {
+                      , tid: Option[String] = None, pStr : Option[String]): String = {
       var modelDef = ""
       var response: String = ""
       var modelFileDir: String = ""
@@ -481,7 +487,7 @@ object ModelService {
 
       if (input == "") {
         //get the messages location from the config file. If error get the location from github
-        modelFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
+        modelFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
         if (modelFileDir == null) {
           response = "MODEL_FILES_DIR property missing in the metadata API configuration"
         } else {
@@ -499,7 +505,7 @@ object ModelService {
                 case option => {
                   var modelDefs = getUserInputFromMainMenu(models)
                   for (modelDef <- modelDefs)
-                    response = MetadataAPIImpl.UpdateModel(ModelType.KPMML, modelDef.toString, userid, finalTid)
+                    response = getMetadataAPI.UpdateModel(ModelType.KPMML, modelDef.toString, userid, finalTid, None, None, None, None, pStr)
                 }
               }
 
@@ -516,7 +522,7 @@ object ModelService {
         var model = new File(input.toString)
         if (model.exists()) {
           modelDef = Source.fromFile(model).mkString
-          response = MetadataAPIImpl.UpdateModel(ModelType.KPMML, modelDef, userid, finalTid)
+          response = getMetadataAPI.UpdateModel(ModelType.KPMML, modelDef, userid, finalTid, None, None, None, None, pStr)
         } else {
           response = "File does not exist"
         }
@@ -537,7 +543,7 @@ object ModelService {
     def updateModelJTM(input: String
                          , userid: Option[String] = Some("kamanja")
                          , tid: Option[String] = None
-                         , optModelName: Option[String] = None): String = {
+                         , optModelName: Option[String] = None, pStr : Option[String]): String = {
         var modelDef = ""
         var response: String = ""
         var modelFileDir: String = ""
@@ -551,7 +557,7 @@ object ModelService {
         }
         if (input == "") {
             //get the messages location from the config file. If error get the location from github
-            modelFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
+            modelFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
             if (modelFileDir == null) {
                 response = "MODEL_FILES_DIR property missing in the metadata API configuration"
             } else {
@@ -569,7 +575,7 @@ object ModelService {
                             case option => {
                                 var modelDefs = getUserInputFromMainMenu(models)
                                 for (modelDef <- modelDefs)
-                                    response = MetadataAPIImpl.UpdateModel(ModelType.JTM, modelDef.toString, userid, finalTid, optModelName)
+                                    response = getMetadataAPI.UpdateModel(ModelType.JTM, modelDef.toString, userid, finalTid, optModelName,  None, None, None, pStr)
                             }
                         }
 
@@ -585,7 +591,7 @@ object ModelService {
             var model = new File(input.toString)
             if (model.exists()) {
                 modelDef = Source.fromFile(model).mkString
-                response = MetadataAPIImpl.UpdateModel(ModelType.JTM, modelDef, userid, finalTid, optModelName)
+                response = getMetadataAPI.UpdateModel(ModelType.JTM, modelDef, userid, finalTid, optModelName, None, None, None, pStr)
             } else {
                 response = "File does not exist"
             }
@@ -609,7 +615,7 @@ object ModelService {
                       ,userid : Option[String]
                       ,modelNamespaceName : String
                       ,newVersion : String
-                      ,tid: Option[String] = None ) : String = {
+                      ,tid: Option[String] = None, pStr : Option[String] ) : String = {
 
       var chosen: String = ""
       var finalTid: Option[String] = None
@@ -628,12 +634,12 @@ object ModelService {
           val jpmmlPath : File = new File(pmmlPath.toString)
               val pmmlText : String = Source.fromFile(jpmmlPath).mkString
 
-              MetadataAPIImpl.UpdateModel(ModelType.PMML
+              getMetadataAPI.UpdateModel(ModelType.PMML
                               , pmmlText
                               , userid
                               , finalTid
                               , Some(modelNamespaceName)
-                              , Some(newVersion), None, None)
+                              , Some(newVersion), None, None, pStr)
       } catch {
         case fnf : FileNotFoundException => {
             val msg : String = s"updateModelPmml... supplied file path not found ... path = $pmmlPath"
@@ -659,7 +665,7 @@ object ModelService {
      */
     def updateModeljava(input: String, dep: String = ""
                       , userid: Option[String] = Some("kamanja")
-                      ,tid: Option[String] = None): String = {
+                      ,tid: Option[String] = None, pStr : Option[String]): String = {
         var modelDef=""
         var modelConfig=""
         var response: String = ""
@@ -677,7 +683,7 @@ object ModelService {
         var modelDefs= Array[String]()
         if (input == "") {
           //get the messages location from the config file. If error get the location from github
-          modelFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
+          modelFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
           if (modelFileDir == null) {
             response = "MODEL_FILES_DIR property missing in the metadata API configuration"
           } else {
@@ -719,10 +725,10 @@ object ModelService {
           for (modelDef <- modelDefs){
             println("Adding the next model in the queue.")
             if (dep.length > 0) {
-              response+= MetadataAPIImpl.UpdateModel( ModelType.JAVA, modelDef, userid, finalTid, Some(userid.get+"."+dep))
+              response+= getMetadataAPI.UpdateModel( ModelType.JAVA, modelDef, userid, finalTid, Some(userid.get+"."+dep), None, None, None, pStr)
             } else {
               //before adding a model, add its config file.
-              var configKeys = MetadataAPIImpl.getModelConfigNames
+              var configKeys = getMetadataAPI.getModelConfigNames
               if(configKeys.isEmpty){
                 response="No model configuration loaded in the metadata!"
               }else{
@@ -748,7 +754,7 @@ object ModelService {
                     errorMsg
                   }
                 }
-                response+= MetadataAPIImpl.UpdateModel(ModelType.JAVA, modelDef, userid, finalTid, Some(modelConfig))
+                response+= getMetadataAPI.UpdateModel(ModelType.JAVA, modelDef, userid, finalTid, Some(modelConfig), None, None, None, pStr)
               }
             }
           }
@@ -768,7 +774,7 @@ object ModelService {
      */
     def updateModelscala(input: String, dep: String = ""
                        , userid: Option[String] = Some("kamanja")
-                       , tid: Option[String] = None): String = {
+                       , tid: Option[String] = None, pStr : Option[String]): String = {
         var modelDef=""
         var modelConfig=""
         var response: String = ""
@@ -784,7 +790,7 @@ object ModelService {
         var modelDefs= Array[String]()
         if (input == "") {
           //get the messages location from the config file. If error get the location from github
-          modelFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
+          modelFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
           if (modelFileDir == null) {
             response = "MODEL_FILES_DIR property missing in the metadata API configuration"
           } else {
@@ -825,10 +831,10 @@ object ModelService {
             for (modelDef <- modelDefs){
               println("Adding the next model in the queue.")
               if (dep.length > 0) {
-                response+= MetadataAPIImpl.UpdateModel(ModelType.SCALA, modelDef, userid, finalTid, Some(userid.get+"."+dep))
+                response+= getMetadataAPI.UpdateModel(ModelType.SCALA, modelDef, userid, finalTid, Some(userid.get+"."+dep), None, None, None, pStr)
               } else {
                 //before adding a model, add its config file.
-                var configKeys = MetadataAPIImpl.getModelConfigNames
+                var configKeys = getMetadataAPI.getModelConfigNames
                 if(configKeys.isEmpty){
                   response="No model configuration loaded in the metadata!"
                 }else{
@@ -853,7 +859,7 @@ object ModelService {
                       errorMsg
                     }
                   }
-                  response+= MetadataAPIImpl.UpdateModel(ModelType.SCALA, modelDef, userid, finalTid, Some(modelConfig))
+                  response+= getMetadataAPI.UpdateModel(ModelType.SCALA, modelDef, userid, finalTid, Some(modelConfig), None, None, None, pStr)
                 }
               }
             }
@@ -869,19 +875,20 @@ object ModelService {
      * @return the result of the operation - a JSON string representation of the ModelDef
      */
     def getModel(param: String = ""
-               , userid: Option[String] = Some("kamanja")
+               , userid: Option[String] = Some("kamanja"),
+                 tid : Option[String] = None
                ): String ={
         var response=""
         try {
           if (param.length > 0) {
             val(ns, name, ver) = com.ligadata.kamanja.metadata.Utils.parseNameToken(param)
             try {
-              return MetadataAPIImpl.GetModelDefFromCache(ns, name,"JSON" ,ver, userid)
+              return getMetadataAPI.GetModelDefFromCache(ns, name,"JSON" ,ver, userid, tid)
             } catch {
               case e: Exception => logger.error("", e)
             }
           }
-          val modelKeys = MetadataAPIImpl.GetAllModelsFromCache(true, None)
+          val modelKeys = getMetadataAPI.GetAllModelsFromCache(true, None, tid)
           if (modelKeys.length == 0) {
             val errorMsg="Sorry, No models available, in the Metadata, to display!"
             response=errorMsg
@@ -901,7 +908,7 @@ object ModelService {
             }
             val modelKey = modelKeys(choice - 1)
             val(ns, name, ver) = com.ligadata.kamanja.metadata.Utils.parseNameToken(modelKey)
-            val apiResult = MetadataAPIImpl.GetModelDefFromCache(ns, name,"JSON",ver, userid)
+            val apiResult = getMetadataAPI.GetModelDefFromCache(ns, name,"JSON",ver, userid, tid)
             response=apiResult
           }
 
@@ -915,21 +922,19 @@ object ModelService {
   }
 
     /**
-     * 
+     *
      * @param userid the optional userId. If security and auditing in place this parameter is required.
      * @return
      */
-    def getAllModels(userid: Option[String] = Some("kamanja")) : String ={
+    def getAllModels(userid: Option[String] = Some("kamanja"), tid: Option[String] = None) : String ={
         var response=""
-        val modelKeys = MetadataAPIImpl.GetAllModelsFromCache(true, userid)
+        val modelKeys = getMetadataAPI.GetAllModelsFromCache(true, userid, tid)
         if (modelKeys.length == 0) {
           response="Sorry, No models available in the Metadata"
         }else{
-          var srNo = 0
-          for(modelKey <- modelKeys){
-            srNo += 1
-            response+="[" + srNo + "]" + modelKey+"\n"
-          }
+          // 1165 Change begins - replaced with API return json string
+          response= (new ApiResult(ErrorCodeConstants.Success, "ModelService", modelKeys.mkString(", ") , "Successfully retrieved all the models")).toString
+          // 1165 Change ends
         }
         response
     }
@@ -949,7 +954,7 @@ object ModelService {
           if (modelId.length > 0) {
             val (ns, name, ver) = com.ligadata.kamanja.metadata.Utils.parseNameToken(modelId)
             val result : String = try {
-              MetadataAPIImpl.RemoveModel(s"$ns.$name", ver, userid)
+              getMetadataAPI.RemoveModel(s"$ns.$name", ver, userid)
             } catch {
               case e: Exception => {
                   val stackTrace = StackTrace.ThrowableTraceString(e)
@@ -960,7 +965,7 @@ object ModelService {
             result
           } else {
 
-              val modelKeys = MetadataAPIImpl.GetAllModelsFromCache(true, None)
+              val modelKeys = getMetadataAPI.GetAllModelsFromCache(true, None)
 
               if (modelKeys.length == 0) {
                 "Sorry, No models available, in the Metadata, to delete!"
@@ -979,7 +984,7 @@ object ModelService {
                   } else {
                       val modelKey = modelKeys(choice - 1)
                       val (ns, name, ver) = com.ligadata.kamanja.metadata.Utils.parseNameToken(modelKey)
-                      MetadataAPIImpl.RemoveModel(s"$ns.$name", ver, userid)
+                      getMetadataAPI.RemoveModel(s"$ns.$name", ver, userid)
                   }
               }
           }
@@ -1008,12 +1013,12 @@ object ModelService {
           if (modelId.length > 0) {
             val(ns, name, ver) = com.ligadata.kamanja.metadata.Utils.parseNameToken(modelId)
             try {
-              return MetadataAPIImpl.ActivateModel(ns, name, ver.toInt, userid)
+              return getMetadataAPI.ActivateModel(ns, name, ver.toInt, userid)
             } catch {
               case e: Exception => logger.error("", e)
             }
           }
-          val modelKeys = MetadataAPIImpl.GetAllModelsFromCache(false, None)
+          val modelKeys = getMetadataAPI.GetAllModelsFromCache(false, None)
           if (modelKeys.length == 0) {
             val errorMsg="Sorry, No models available, in the Metadata, to activate!"
             response=errorMsg
@@ -1035,7 +1040,7 @@ object ModelService {
             val modelKey = modelKeys(choice - 1)
             val modelKeyTokens = modelKey.split("\\.")
             val (modelNameSpace, modelName, modelVersion) = com.ligadata.kamanja.metadata.Utils.parseNameToken(modelKey)
-            val apiResult = MetadataAPIImpl.ActivateModel(modelNameSpace, modelName, modelVersion.toLong, userid).toString
+            val apiResult = getMetadataAPI.ActivateModel(modelNameSpace, modelName, modelVersion.toLong, userid).toString
             response=apiResult
           }
 
@@ -1064,13 +1069,13 @@ object ModelService {
           if (modelId.length > 0) {
             val(ns, name, ver) = com.ligadata.kamanja.metadata.Utils.parseNameToken(modelId)
             try {
-              return MetadataAPIImpl.DeactivateModel(ns, name, ver.toInt, userid)
+              return getMetadataAPI.DeactivateModel(ns, name, ver.toInt, userid)
             } catch {
               case e: Exception => logger.error("", e)
             }
           }
           progressReport = 1
-          val modelKeys = MetadataAPIImpl.GetAllModelsFromCache(true, None)
+          val modelKeys = getMetadataAPI.GetAllModelsFromCache(true, None)
 
           if (modelKeys.length == 0) {
             val errorMsg="Sorry, No models available, in the Metadata, to deactivate!"
@@ -1095,7 +1100,7 @@ object ModelService {
             val modelKey = modelKeys(choice - 1)
             val modelKeyTokens = modelKey.split("\\.")
             val (modelNameSpace, modelName, modelVersion) = com.ligadata.kamanja.metadata.Utils.parseNameToken(modelKey)
-            val apiResult = MetadataAPIImpl.DeactivateModel(modelNameSpace, modelName, modelVersion.toLong, userid).toString
+            val apiResult = getMetadataAPI.DeactivateModel(modelNameSpace, modelName, modelVersion.toLong, userid).toString
             response=apiResult
           }
         } catch {
@@ -1132,7 +1137,7 @@ object ModelService {
   }
 
     private def getTenantId: String = {
-        var tenatns = MetadataAPIImpl.GetAllTenants(userid)
+        var tenatns = getMetadataAPI.GetAllTenants(userid)
         return getUserInputFromMainMenu(tenatns)
     }
 
@@ -1147,7 +1152,7 @@ object ModelService {
         return tenants(userOption - 1)
     }
     /**
-     * 
+     *
      * @param models and array of directory file specs
      * @return a list of model defs
      */
@@ -1176,7 +1181,7 @@ object ModelService {
               }else{
                 println("File does not exist")
               }
-              //val response: String = MetadataAPIImpl.AddModel(modelDef, userid).toString
+              //val response: String = getMetadataAPI.AddModel(modelDef, userid).toString
               listOfModelDef = listOfModelDef:+modelDef
             }
 

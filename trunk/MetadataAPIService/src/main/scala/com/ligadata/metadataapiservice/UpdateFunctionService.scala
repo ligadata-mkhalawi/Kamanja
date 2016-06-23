@@ -34,31 +34,34 @@ object UpdateFunctionService {
 class UpdateFunctionService(requestContext: RequestContext, userid:Option[String], password:Option[String], cert:Option[String]) extends Actor {
 
   import UpdateFunctionService._
-  
+
   implicit val system = context.system
   import system.dispatcher
   val log = Logging(system, getClass)
   val APIName = "UpdateFunctionService"
-  
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
+
   def receive = {
     case Process(functionJson) =>
       process(functionJson)
       context.stop(self)
   }
-  
+
   def process(functionJson:String) = {
-    
+
     log.debug("Requesting UpdateFunction {}",functionJson)
 
-    var nameVal = APIService.extractNameFromJson(functionJson, AuditConstants.FUNCTION) 
+    var nameVal = APIService.extractNameFromJson(functionJson, AuditConstants.FUNCTION)
 
-    if (!MetadataAPIImpl.checkAuth(userid,password,cert, MetadataAPIImpl.getPrivilegeName("update","function"))) {
-      MetadataAPIImpl.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.UPDATEOBJECT,functionJson,AuditConstants.FAIL,"",nameVal) 
+    if (!getMetadataAPI.checkAuth(userid,password,cert, getMetadataAPI.getPrivilegeName("update","function"))) {
+      getMetadataAPI.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.UPDATEOBJECT,functionJson,AuditConstants.FAIL,"",nameVal)
       requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error:UPDATE not allowed for this user").toString )
     } else {
-      val apiResult = MetadataAPIImpl.UpdateFunctions(functionJson,"JSON",userid)
-      MetadataAPIImpl.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.UPDATEOBJECT,functionJson,AuditConstants.SUCCESS,"",nameVal)            
-      requestContext.complete(apiResult)    
+      val apiResult = getMetadataAPI.UpdateFunctions(functionJson,"JSON",userid)
+      getMetadataAPI.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.UPDATEOBJECT,functionJson,AuditConstants.SUCCESS,"",nameVal)
+      requestContext.complete(apiResult)
     }
   }
 }

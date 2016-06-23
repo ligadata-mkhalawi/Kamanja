@@ -33,8 +33,12 @@ object ContainerService {
   private val userid: Option[String] = Some("kamanja")
   val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
+  // 646 - 676 Change begins - replase MetadataAPIImpl
+  val metadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Chagne ends
 
-  def addContainer(input: String, tid: Option[String] = None): String ={
+
+  def addContainer(input: String, tid: Option[String] = None, pStr : Option[String]): String ={
     var response = ""
     var containerFileDir: String = ""
 
@@ -51,7 +55,7 @@ object ContainerService {
 
     //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
     if (input == "") {
-      containerFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CONTAINER_FILES_DIR")
+      containerFileDir = metadataAPI.GetMetadataAPIConfig.getProperty("CONTAINER_FILES_DIR")
       if (containerFileDir == null) {
         response = "CONTAINER_FILES_DIR property missing in the metadata API configuration"
       } else {
@@ -67,7 +71,7 @@ object ContainerService {
               case option => {
                 val containerDefs = getUserInputFromMainMenu(containers)
                 for (containerDef <- containerDefs) {
-                  response += MetadataAPIImpl.AddContainer(containerDef.toString, "JSON", userid, finalTid)
+                  response += metadataAPI.AddContainer(containerDef.toString, "JSON", userid, finalTid, pStr)
                 }
               }
             }
@@ -83,7 +87,7 @@ object ContainerService {
       var container = new File(input.toString)
       if( container.exists()){
         val containerDef = Source.fromFile(container).mkString
-        response = MetadataAPIImpl.AddContainer(containerDef, "JSON", userid, finalTid)
+        response = metadataAPI.AddContainer(containerDef, "JSON", userid, finalTid, pStr)
       }else{
         response = "Input container file does not exist"
       }
@@ -92,7 +96,7 @@ object ContainerService {
     response
   }
 
-  def updateContainer(input: String, tid: Option[String] = None): String ={
+  def updateContainer(input: String, tid: Option[String] = None, pStr : Option[String]): String ={
     var response = ""
     var containerFileDir: String = ""
 
@@ -109,7 +113,7 @@ object ContainerService {
 
     //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
     if (input == "") {
-      containerFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CONTAINER_FILES_DIR")
+      containerFileDir = metadataAPI.GetMetadataAPIConfig.getProperty("CONTAINER_FILES_DIR")
       if (containerFileDir == null) {
         response = "CONTAINER_FILES_DIR property missing in the metadata API configuration"
       } else {
@@ -125,7 +129,7 @@ object ContainerService {
               case option => {
                 val containerDefs = getUserInputFromMainMenu(containers)
                 for (containerDef <- containerDefs) {
-                  response += MetadataAPIImpl.UpdateContainer(containerDef.toString, "JSON", userid, finalTid)
+                  response += metadataAPI.UpdateContainer(containerDef.toString, "JSON", userid, finalTid, pStr)
                 }
               }
             }
@@ -140,23 +144,25 @@ object ContainerService {
       //input provided
       var container = new File(input.toString)
       val containerDef = Source.fromFile(container).mkString
-      response = MetadataAPIImpl.AddContainer(containerDef, "JSON", userid,  finalTid)
+      // 1118 Changes begin - Changed AddContiner to Update Container to follow the path correctly
+      response = metadataAPI.UpdateContainer(containerDef, "JSON", userid,  finalTid, pStr)
+      // 1118 Changes end
     }
     //Got the container.
     response
   }
 
-  def getContainer(param: String = ""): String ={
+  def getContainer(param: String = "", tid : Option[String] = None): String ={
     var response=""
     if (param.length > 0) {
       val(ns, name, ver) = com.ligadata.kamanja.metadata.Utils.parseNameToken(param)
       try {
-        return MetadataAPIImpl.GetContainerDefFromCache(ns, name,"JSON", ver, userid)
+        return metadataAPI.GetContainerDefFromCache(ns, name,"JSON", ver, userid, tid)
       } catch {
         case e: Exception => logger.error("", e)
       }
     }
-    val containerKeys = MetadataAPIImpl.GetAllContainersFromCache(true, None)
+    val containerKeys = metadataAPI.GetAllContainersFromCache(true, None, tid)
 
     if (containerKeys.length == 0) {
       response="Sorry, No containers available in the Metadata"
@@ -179,17 +185,19 @@ object ContainerService {
         val contName = contKeyTokens(1)
         val contVersion = contKeyTokens(2)*/
         val(ns, name, ver) = com.ligadata.kamanja.metadata.Utils.parseNameToken(containerKey)
-        response=MetadataAPIImpl.GetContainerDefFromCache(ns, name, "JSON", ver, userid)
+        response=metadataAPI.GetContainerDefFromCache(ns, name, "JSON", ver, userid, tid)
       }
     }
     response
   }
 
-  def getAllContainers: String ={
+  def getAllContainers (tid : Option[String] = None) : String ={
     var response = ""
     var containerKeysList = ""
     try {
-      val containerKeys: Array[String] = MetadataAPIImpl GetAllContainersFromCache(true, userid)
+      // 646 - 672 Changes begin - filter based on tenantId
+      val containerKeys: Array[String] = metadataAPI.GetAllContainersFromCache(true, userid, tid)
+      // 646 - 672 Changes end
 
       if (containerKeys.length == 0) {
         var emptyAlert = "Sorry, No containers are available in the Metadata"
@@ -212,17 +220,17 @@ object ContainerService {
   def removeContainer(parm: String = ""): String ={
     var response = ""
     try{
-      
+
        if (parm.length > 0) {
          val(ns, name, ver) = com.ligadata.kamanja.metadata.Utils.parseNameToken(parm)
          try {
-           return MetadataAPIImpl.RemoveContainer(ns, name, ver.toInt, userid)
+           return metadataAPI.RemoveContainer(ns, name, ver.toInt, userid)
          } catch {
            case e: Exception => logger.error("", e)
          }
       }
-       
-      val contKeys = MetadataAPIImpl.GetAllContainersFromCache(true, None)
+
+      val contKeys = metadataAPI.GetAllContainersFromCache(true, None)
 
       if (contKeys.length == 0) {
         response=("Sorry, No containers available in the Metadata")
@@ -239,7 +247,7 @@ object ContainerService {
         }else{
           val contKey = contKeys(choice - 1)
           val(contNameSpace, contName, contVersion) = com.ligadata.kamanja.metadata.Utils.parseNameToken(contKey)
-          return MetadataAPIImpl.RemoveContainer(contNameSpace, contName, contVersion.toLong, userid)
+          return metadataAPI.RemoveContainer(contNameSpace, contName, contVersion.toLong, userid)
         }
       }
     } catch {
@@ -268,7 +276,7 @@ object ContainerService {
   }
 
   private def getTenantId: String = {
-    var tenatns = MetadataAPIImpl.GetAllTenants(userid)
+    var tenatns = metadataAPI.GetAllTenants(userid)
     return getUserInputFromMainMenu(tenatns)
   }
 

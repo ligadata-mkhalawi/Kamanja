@@ -41,24 +41,24 @@ kamanja upload cluster config input(optional)
 kamanja upload compile config input(optional)
 kamanja dump all cfg objects
 kamanja remove engine config
-IX. Jar operations
+VII. Jar operations
 kamanja upload jar
-X. Cluster, metadata and adapter operations
+VIII. Cluster, metadata and adapter operations
 kamanja dump metadata
 kamanja dump all nodes
 kamanja dump all clusters
 kamanja dump all cluster cfgs
 kamanja dump all adapters
-XII. Kamanja engine operations
+IX. Kamanja engine operations
 kamanja start
 kamanja start -v (for verbose)
-XIII. Topic operations
+X. Topic operations
 kamanja watch status queue
 kamanja push data
 kamanja create queues
-XIV. Web service
+XI. Web service
 kamanja start webservice
-XV. Adapter Message Bindings
+XII. Adapter Message Bindings
 kamanja add adaptermessagebinding FROMFILE input
 kamanja add adaptermessagebinding FROMSTRING input
 kamanja remove adaptermessagebinding KEY '<adapter name>,<namespace.msgname>,<namespace.serializername>'
@@ -68,5 +68,5 @@ kamanja list adaptermessagebindings MESSAGEFILTER <namespace.msgname>
 kamanja list adaptermessagebindings SERIALIZERFILTER <namespace.serializername>
 kamanja get typebyschemaid SCHEMAID <schemaid>
 kamanja get typebyelementid ELEMENTID <elementid>
-XVI. General operations
+XIII. General operations
 kamanja --version

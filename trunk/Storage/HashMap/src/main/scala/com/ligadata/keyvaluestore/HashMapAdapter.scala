@@ -779,13 +779,23 @@ class HashMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig
     try {
       logger.info("Commit any outstanding transactions")
       dbStoreMap.foreach(db => {
-        logger.info("Committing transactions for db " + db._1)
-        db._2.commit();
+        if(!db._2.isClosed) {
+          logger.info("Committing transactions for db " + db._1)
+          db._2.commit();
+        }
+        else{
+          logger.info("db " + db._1+" is already closed")
+        }
       })
       logger.info("Close all map objects")
       tablesMap.foreach(map => {
-        logger.info("Closing the map " + map._1)
-        map._2.close();
+        if(map._2.getEngine.isClosed){
+          logger.info("map " + map._1+" is already closed")
+        }
+        else {
+          logger.info("Closing the map " + map._1)
+          map._2.close();
+        }
       })
     } catch {
       case e: NullPointerException => {
@@ -793,6 +803,9 @@ class HashMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig
       }
       case e: Exception => {
         throw CreateDDLException("Failed to shutdown map ", e)
+      }
+      case e: Throwable => {
+        CreateDDLException("Throwable : Failed to shutdown map ", new Exception(e))
       }
     }
   }

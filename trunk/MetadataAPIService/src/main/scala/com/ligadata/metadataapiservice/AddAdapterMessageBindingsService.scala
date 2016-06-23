@@ -49,6 +49,9 @@ class AddAdapterMessageBindingsService(requestContext: RequestContext, userid:Op
   val logger = LogManager.getLogger(loggerName)
   // logger.setLevel(Level.TRACE);
 
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
   val APIName = "AddAdapterMessageBindigsService"
 
   def addAdapterMessageBindingObjects(source: String): String = {
@@ -98,8 +101,8 @@ class AddAdapterMessageBindingsService(requestContext: RequestContext, userid:Op
   def process(source: String) = {
     log.debug("Adding AdapterBindingsObjects {}", "JSON")
 
-    if (!MetadataAPIImpl.checkAuth(userid,password,cert, MetadataAPIImpl.getPrivilegeName("add","adaptermessagebinding"))) {
-      MetadataAPIImpl.logAuditRec(userid,Some(AuditConstants.READ),AuditConstants.GETCONFIG,AuditConstants.CONFIG,AuditConstants.FAIL,"","AdapterMessageBindings")
+    if (!getMetadataAPI.checkAuth(userid,password,cert, getMetadataAPI.getPrivilegeName("add","adaptermessagebinding"))) {
+      getMetadataAPI.logAuditRec(userid,Some(AuditConstants.READ),AuditConstants.GETCONFIG,AuditConstants.CONFIG,AuditConstants.FAIL,"","AdapterMessageBindings")
       requestContext.complete(new ApiResult(ErrorCodeConstants.Failure,APIName, null, "Error: READ not allowed for this user").toString )
     } else {
       val apiResult = addAdapterMessageBindingObjects(source)

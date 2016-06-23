@@ -3,54 +3,65 @@ package com.ligadata.KamanjaManager
 
 import com.ligadata.HeartBeat.MonitoringContext
 import com.ligadata.KamanjaBase._
-import com.ligadata.InputOutputAdapterInfo.{ ExecContext, InputAdapter, OutputAdapter, ExecContextFactory, PartitionUniqueRecordKey, PartitionUniqueRecordValue }
+import com.ligadata.InputOutputAdapterInfo.{ExecContext, InputAdapter, OutputAdapter, ExecContextFactory, PartitionUniqueRecordKey, PartitionUniqueRecordValue}
 import com.ligadata.StorageBase.{ DataStore }
 import com.ligadata.ZooKeeper.CreateClient
 import com.ligadata.kamanja.metadata.MdMgr._
 import com.ligadata.kamanja.metadata.{ ContainerDef, MessageDef, AdapterMessageBinding, AdapterInfo }
 import org.json4s.jackson.JsonMethods._
 
-import scala.reflect.runtime.{ universe => ru }
+import scala.reflect.runtime.{universe => ru}
 import scala.util.control.Breaks._
 import scala.collection.mutable.ArrayBuffer
-import collection.mutable.{ MultiMap, Set }
-import java.io.{ PrintWriter, File, PrintStream, BufferedReader, InputStreamReader }
+import collection.mutable.{MultiMap, Set}
+import java.io.{PrintWriter, File, PrintStream, BufferedReader, InputStreamReader}
 import scala.util.Random
 import scala.Array.canBuildFrom
-import java.util.{ Properties, Observer, Observable }
+import java.util.{Properties, Observer, Observable}
 import java.sql.Connection
 import scala.collection.mutable.TreeSet
-import java.net.{ Socket, ServerSocket }
-import java.util.concurrent.{ Executors, ScheduledExecutorService, TimeUnit }
-import com.ligadata.Utils.{ Utils, KamanjaClassLoader, KamanjaLoaderInfo }
-import org.apache.logging.log4j.{ Logger, LogManager }
-import com.ligadata.Exceptions.{ FatalAdapterException }
-import scala.actors.threadpool.{ ExecutorService }
+import java.net.{Socket, ServerSocket}
+import java.util.concurrent.{Executors, ScheduledExecutorService, TimeUnit}
+import com.ligadata.Utils.{Utils, KamanjaClassLoader, KamanjaLoaderInfo}
+import org.apache.logging.log4j.{Logger, LogManager}
+import com.ligadata.Exceptions.{FatalAdapterException}
+import scala.actors.threadpool.{ExecutorService}
 import com.ligadata.KamanjaVersion.KamanjaVersion
 
 class KamanjaServer(port: Int) extends Runnable {
   private val LOG = LogManager.getLogger(getClass);
   private val serverSocket = new ServerSocket(port)
+  private var exec: ExecutorService = scala.actors.threadpool.Executors.newFixedThreadPool(5)
+
+  LOG.warn("KamanjaServer started for port:" + port)
 
   def run() {
     try {
-      while (true) {
+      while (KamanjaConfiguration.shutdown == false) {
         // This will block until a connection comes in.
         val socket = serverSocket.accept()
-        (new Thread(new ConnHandler(socket))).start()
+        exec.execute(new ConnHandler(socket))
       }
     } catch {
+
+      case e: java.net.SocketException => {
+        if (serverSocket != null && serverSocket.isClosed())
+          LOG.warn("Socket Error. May be closed", e)
+        else
+          LOG.error("Socket Error", e)
+      }
       case e: Exception => {
         LOG.error("Socket Error", e)
       }
     } finally {
-      if (serverSocket.isClosed() == false)
+      exec.shutdownNow()
+      if (serverSocket != null && serverSocket.isClosed() == false)
         serverSocket.close
     }
   }
 
   def shutdown() {
-    if (serverSocket.isClosed() == false)
+    if (serverSocket != null && serverSocket.isClosed() == false)
       serverSocket.close
   }
 }
@@ -60,14 +71,19 @@ private class ConnHandler(var socket: Socket) extends Runnable {
   private val out = new PrintStream(socket.getOutputStream)
   private val in = new BufferedReader(new InputStreamReader(socket.getInputStream))
 
+  socket.setKeepAlive(true)
+
+  LOG.warn("Created a connection to socket. HostAddress:%s, Port:%d, LocalPort:%d".format(socket.getLocalAddress.getHostAddress, socket.getPort, socket.getLocalPort))
+
   def run() {
     val vt = 0
     try {
       breakable {
-        while (true) {
+        while (KamanjaConfiguration.shutdown == false) {
           val strLine = in.readLine()
           if (strLine == null)
             break
+          LOG.warn("Current Command:%s. HostAddress:%s, Port:%d, LocalPort:%d".format(strLine, socket.getLocalAddress.getHostAddress, socket.getPort, socket.getLocalPort))
           KamanjaManager.instance.execCmd(strLine)
         }
       }
@@ -110,6 +126,8 @@ object KamanjaConfiguration {
   var waitProcessingTime = 0
   // Debugging info configs -- End
 
+  var commitOffsetsMsgCnt = 0
+
   var shutdown = false
   var participentsChangedCntr: Long = 0
   var baseLoader = new KamanjaLoaderInfo
@@ -137,6 +155,8 @@ object KamanjaConfiguration {
     waitProcessingTime = 0
     // Debugging info configs -- End
 
+    commitOffsetsMsgCnt = 0
+
     shutdown = false
     participentsChangedCntr = 0
   }
@@ -147,6 +167,7 @@ object ProcessedAdaptersInfo {
   private val lock = new Object
   private val instances = scala.collection.mutable.Map[Int, scala.collection.mutable.Map[String, String]]()
   private var prevAdapterCommittedValues = Map[String, String]()
+
   private def getAllValues: Map[String, String] = {
     var maps: List[scala.collection.mutable.Map[String, String]] = null
     lock.synchronized {
@@ -518,6 +539,17 @@ class KamanjaManager extends Observer {
         return false
       }
 
+      try {
+        val commitOffsetsMsgCnt = loadConfigs.getProperty("CommitOffsetsMsgCnt".toLowerCase, "0").replace("\"", "").trim.toInt
+        if (commitOffsetsMsgCnt > 0) {
+          KamanjaConfiguration.commitOffsetsMsgCnt = commitOffsetsMsgCnt
+        }
+      } catch {
+        case e: Exception => {
+          LOG.warn("", e)
+        }
+      }
+
       //      try {
       //        val adapterCommitTime = loadConfigs.getProperty("AdapterCommitTime".toLowerCase, "0").replace("\"", "").trim.toInt
       //        if (adapterCommitTime > 0) {
@@ -621,20 +653,17 @@ class KamanjaManager extends Observer {
         KamanjaLeader.Init(KamanjaConfiguration.nodeId.toString, zkConnectString, engineLeaderZkNodePath, engineDistributionZkNodePath, adaptersStatusPath, inputAdapters, outputAdapters, storageAdapters, KamanjaMetadata.envCtxt, zkSessionTimeoutMs, zkConnectionTimeoutMs, dataChangeZkNodePath)
       }
 
-      /*
       if (retval) {
         try {
-          serviceObj = new KamanjaServer(this, KamanjaConfiguration.nodePort)
+          serviceObj = new KamanjaServer(KamanjaConfiguration.nodePort)
           (new Thread(serviceObj)).start()
         } catch {
           case e: Exception => {
-            LOG.error("Failed to create server to accept connection on port:" + nodePort, e)
+            LOG.error("Failed to create server to accept connection on port:" + KamanjaConfiguration.nodePort, e)
             retval = false
           }
         }
       }
-*/
-
     } catch {
       case e: Exception => {
         LOG.error("Failed to initialize.", e)
@@ -650,8 +679,16 @@ class KamanjaManager extends Observer {
   def execCmd(ln: String): Boolean = {
     if (ln.length() > 0) {
       val trmln = ln.trim
-      if (trmln.length() > 0 && (trmln.compareToIgnoreCase("Quit") == 0 || trmln.compareToIgnoreCase("Exit") == 0))
-        return true
+      if (trmln.length() > 0) {
+        if (trmln.compareToIgnoreCase("Quit") == 0 || trmln.compareToIgnoreCase("Exit") == 0)
+          return true
+        if (trmln.compareToIgnoreCase("forceAdapterRebalance") == 0) {
+          KamanjaLeader.forceAdapterRebalance
+        }
+        else if (trmln.compareToIgnoreCase("forceAdapterRebalanceAndSetEndOffsets") == 0) {
+          KamanjaLeader.forceAdapterRebalanceAndSetEndOffsets
+        }
+      }
     }
     return false;
   }
@@ -1003,6 +1040,7 @@ class KamanjaManager extends Observer {
       LOG.debug("KamanjaManager " + KamanjaConfiguration.nodeId.toString + " externalized metrics for UID: " + thisEngineInfo.uniqueId)
   }
 
+
   private def processConfigChange(objType: String, action: String, objectName: String, adapter: Any): Boolean = {
     // For now we are only handling adapters.
     if (objType.equalsIgnoreCase("adapterdef")) {
@@ -1013,9 +1051,15 @@ class KamanjaManager extends Observer {
       // If this is an add - just call updateAdapter, he will figure out if its input or output
       if (action.equalsIgnoreCase("remove")) {
         // SetUpdatePartitionsFlag
-        inputAdapters.foreach(ad => { if (ad.inputConfig.Name.equalsIgnoreCase(objectName)) ad.Shutdown })
-        outputAdapters.foreach(ad => { if (ad.inputConfig.Name.equalsIgnoreCase(objectName)) ad.Shutdown })
-        storageAdapters.foreach(ad => { if (ad != null && ad.adapterInfo != null && ad.adapterInfo.Name.equalsIgnoreCase(objectName)) ad.Shutdown })
+        inputAdapters.foreach(ad => {
+          if (ad.inputConfig.Name.equalsIgnoreCase(objectName)) ad.Shutdown
+        })
+        outputAdapters.foreach(ad => {
+          if (ad.inputConfig.Name.equalsIgnoreCase(objectName)) ad.Shutdown
+        })
+        storageAdapters.foreach(ad => {
+          if (ad != null && ad.adapterInfo != null && ad.adapterInfo.Name.equalsIgnoreCase(objectName)) ad.Shutdown
+        })
       }
 
       // If this is an add - just call updateAdapter, he will figure out if its input or output
@@ -1027,9 +1071,15 @@ class KamanjaManager extends Observer {
       // Updating requires that we Stop the adapter first.
       if (action.equalsIgnoreCase("update")) {
         // SetUpdatePartitionsFlag
-        inputAdapters.foreach(ad => { if (ad.inputConfig.Name.equalsIgnoreCase(objectName)) cia = ad })
-        outputAdapters.foreach(ad => { if (ad.inputConfig.Name.equalsIgnoreCase(objectName)) coa = ad })
-        storageAdapters.foreach(ad => { if (ad != null && ad.adapterInfo != null && ad.adapterInfo.Name.equalsIgnoreCase(objectName)) csa = ad })
+        inputAdapters.foreach(ad => {
+          if (ad.inputConfig.Name.equalsIgnoreCase(objectName)) cia = ad
+        })
+        outputAdapters.foreach(ad => {
+          if (ad.inputConfig.Name.equalsIgnoreCase(objectName)) coa = ad
+        })
+        storageAdapters.foreach(ad => {
+          if (ad != null && ad.adapterInfo != null && ad.adapterInfo.Name.equalsIgnoreCase(objectName)) csa = ad
+        })
 
         if (cia != null) {
           cia.Shutdown
@@ -1078,11 +1128,13 @@ class KamanjaManager extends Observer {
     def handleSignal(signalName: String) {
       sun.misc.Signal.handle(new sun.misc.Signal(signalName), this)
     }
+
     def handle(signal: sun.misc.Signal) {
       setChanged()
       notifyObservers(signal)
     }
   }
+
 }
 
 class MainInfo {

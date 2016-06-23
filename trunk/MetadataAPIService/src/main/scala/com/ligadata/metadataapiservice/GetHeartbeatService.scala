@@ -36,42 +36,45 @@ object GetHeartbeatService {
  * @author danielkozin
  */
 class GetHeartbeatService(requestContext: RequestContext, userid:Option[String], password:Option[String], cert:Option[String]) extends Actor  {
-  import GetHeartbeatService._ 
+  import GetHeartbeatService._
   import system.dispatcher
-  
+
   implicit val system = context.system
   val log = Logging(system, getClass)
   val APIName = "GetHeartbeatService"
-  
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
+
   def receive = {
     case Process(ids, detailsLevel) =>
       process(ids, detailsLevel)
       context.stop(self)
   }
-  
+
   def process(ids:String, detailsLevel : DetailsLevel.DetailsLevel): Unit = {
     var apiResult : String = ""
 
     // NodeIds is a JSON array of nodeIds.
     if (ids == null || (ids != null && ids.length == 0))
-      requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Invalid BODY in a POST request.  Expecting either an array of nodeIds or an empty array for all").toString)  
-  
-    if (!MetadataAPIImpl.checkAuth(userid,password,cert, MetadataAPIImpl.getPrivilegeName("get","heartbeat"))) {
+      requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Invalid BODY in a POST request.  Expecting either an array of nodeIds or an empty array for all").toString)
+
+    if (!getMetadataAPI.checkAuth(userid,password,cert, getMetadataAPI.getPrivilegeName("get","heartbeat"))) {
       requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error:Checking Heartbeat is not allowed for this user").toString )
     } else {
 
       detailsLevel match {
         case DetailsLevel.ALL => {
-          apiResult = MetadataAPIImpl.getHealthCheck(ids, userid)
+          apiResult = getMetadataAPI.getHealthCheck(ids, userid)
         }
         case DetailsLevel.NODESONLY => {
-          apiResult = MetadataAPIImpl.getHealthCheckNodesOnly(ids, userid)
+          apiResult = getMetadataAPI.getHealthCheckNodesOnly(ids, userid)
         }
         case DetailsLevel.COMPONENTSNAMES => {
-          apiResult = MetadataAPIImpl.getHealthCheckComponentNames(ids, userid)
+          apiResult = getMetadataAPI.getHealthCheckComponentNames(ids, userid)
         }
         case DetailsLevel.SPECIFICCOMPONENTS => {
-          apiResult = MetadataAPIImpl.getHealthCheckComponentDetailsByNames(ids, userid)
+          apiResult = getMetadataAPI.getHealthCheckComponentDetailsByNames(ids, userid)
         }
         case _ => {
           apiResult = ("Value (" + detailsLevel + ") is not supported ")
@@ -80,8 +83,8 @@ class GetHeartbeatService(requestContext: RequestContext, userid:Option[String],
       }
       requestContext.complete(apiResult)
     }
-  }  
-  
+  }
+
 }
 
 object DetailsLevel extends Enumeration {

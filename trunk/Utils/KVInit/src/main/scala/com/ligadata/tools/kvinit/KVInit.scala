@@ -66,17 +66,21 @@ trait LogTrait {
 
 object KVInit extends App with LogTrait {
 
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
+
   def usage: String = {
-    """ 
-Usage: scala com.ligadata.kvinit.KVInit 
+    """
+Usage: scala com.ligadata.kvinit.KVInit
     --version
     --config <config file while has jarpaths, metadata store information & data store information>
-    --typename <full package qualified name of a Container or Message> 
-    --datafiles <input to load> 
+    --typename <full package qualified name of a Container or Message>
+    --datafiles <input to load>
     --keyfieldname  <name of one of the fields in the first line of the datafiles file>
 
 Nothing fancy here.  Mapdb kv store is created from arguments... style is hash map. Support
-for other styles of input (e.g., JSON, XML) are not supported.  
+for other styles of input (e.g., JSON, XML) are not supported.
 
 The name of the kvstore will be the classname(without it path).
 
@@ -302,7 +306,9 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
   var isOk: Boolean = true
   var zkcForSetData: CuratorFramework = null
   var totalCommittedMsgs: Int = 0
-
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+    // 646 - 676 Change ends
   val kvInitLoader = new KamanjaLoaderInfo
 
   KvInitConfiguration.nodeId = loadConfigs.getProperty("nodeId".toLowerCase, "0").replace("\"", "").trim.toInt
@@ -314,11 +320,13 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
   var nodeInfo: NodeInfo = _
 
   if (isOk) {
-    MetadataAPIImpl.InitMdMgrFromBootStrap(KvInitConfiguration.configFile, false)
+    getMetadataAPI.InitMdMgrFromBootStrap(KvInitConfiguration.configFile, false)
 
     nodeInfo = mdMgr.Nodes.getOrElse(KvInitConfiguration.nodeId.toString, null)
     if (nodeInfo == null) {
-      logger.error("Node %d not found in metadata".format(KvInitConfiguration.nodeId))
+      // 660 Change begins - bug fix for proper cluster config upload message
+      logger.error("Node %d not found in metadata. Please ensure cluster configuration has been uploaded.".format(KvInitConfiguration.nodeId))
+      // 660 Change ends
       isOk = false
     }
   }
@@ -1065,5 +1073,3 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
     SimpDateFmtTimeFromMs(System.currentTimeMillis)
   }
 }
-
-

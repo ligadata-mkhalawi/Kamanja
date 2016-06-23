@@ -1,0 +1,94 @@
+<?xml version="1.0"?>
+<PMML version="4.2" xmlns="http://www.dmg.org/PMML-4_2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.dmg.org/PMML-4_2 http://www.dmg.org/v4-2/pmml-4-2.xsd">
+ <Header copyright="Copyright (c) 2016 Udgata" description="RPart Decision Tree Model">
+  <Extension name="user" value="Udgata" extender="Rattle/PMML"/>
+  <Application name="Rattle/PMML" version="1.4"/>
+  <Timestamp>2016-06-06 15:58:26</Timestamp>
+ </Header>
+ <DataDictionary numberOfFields="8">
+  <DataField name="mpg" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="9" rightMargin="46.6"/>
+  </DataField>
+  <DataField name="cylinders" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="3" rightMargin="8"/>
+  </DataField>
+  <DataField name="displacement" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="68" rightMargin="455"/>
+  </DataField>
+  <DataField name="horsepower" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="46" rightMargin="230"/>
+  </DataField>
+  <DataField name="weight" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="1613" rightMargin="5140"/>
+  </DataField>
+  <DataField name="acceleration" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="8" rightMargin="24.8"/>
+  </DataField>
+  <DataField name="model_year" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="70" rightMargin="82"/>
+  </DataField>
+  <DataField name="origin" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="1" rightMargin="3"/>
+  </DataField>
+ </DataDictionary>
+ <TreeModel modelName="RPart_Model" functionName="regression" algorithmName="rpart" splitCharacteristic="binarySplit" missingValueStrategy="defaultChild" noTrueChildStrategy="returnLastPrediction">
+  <MiningSchema>
+   <MiningField name="mpg" usageType="predicted"/>
+   <MiningField name="cylinders" usageType="active"/>
+   <MiningField name="displacement" usageType="active"/>
+   <MiningField name="horsepower" usageType="active"/>
+   <MiningField name="weight" usageType="active"/>
+   <MiningField name="acceleration" usageType="active"/>
+   <MiningField name="model_year" usageType="active"/>
+   <MiningField name="origin" usageType="active"/>
+  </MiningSchema>
+  <Output>
+   <OutputField name="Predicted_mpg" optype="continuous" dataType="double" feature="predictedValue"/>
+  </Output>
+  <Node id="1" score="23.5145728643216" recordCount="398" defaultChild="3">
+   <True/>
+   <Node id="2" score="16.6853801169591" recordCount="171" defaultChild="4">
+    <SimplePredicate field="displacement" operator="greaterOrEqual" value="190.5"/>
+    <Node id="4" score="14.51875" recordCount="96">
+     <SimplePredicate field="horsepower" operator="greaterOrEqual" value="127"/>
+    </Node>
+    <Node id="5" score="19.4378378378378" recordCount="74">
+     <SimplePredicate field="horsepower" operator="lessThan" value="127"/>
+    </Node>
+   </Node>
+   <Node id="3" score="28.6590308370044" recordCount="227" defaultChild="6">
+    <SimplePredicate field="displacement" operator="lessThan" value="190.5"/>
+    <Node id="6" score="26.2801324503311" recordCount="151" defaultChild="13">
+     <SimplePredicate field="horsepower" operator="greaterOrEqual" value="70.5"/>
+     <Node id="12" score="24.1202127659574" recordCount="94" defaultChild="24">
+      <SimplePredicate field="model_year" operator="lessThan" value="78.5"/>
+      <Node id="24" score="22.2854545454545" recordCount="55">
+       <SimplePredicate field="weight" operator="greaterOrEqual" value="2305"/>
+      </Node>
+      <Node id="25" score="26.7076923076923" recordCount="39">
+       <SimplePredicate field="weight" operator="lessThan" value="2305"/>
+      </Node>
+     </Node>
+     <Node id="13" score="29.8421052631579" recordCount="57" defaultChild="26">
+      <SimplePredicate field="model_year" operator="greaterOrEqual" value="78.5"/>
+      <Node id="26" score="27.4606060606061" recordCount="33">
+       <SimplePredicate field="weight" operator="greaterOrEqual" value="2580"/>
+      </Node>
+      <Node id="27" score="33.1166666666667" recordCount="24">
+       <SimplePredicate field="weight" operator="lessThan" value="2580"/>
+      </Node>
+     </Node>
+    </Node>
+    <Node id="7" score="33.6661971830986" recordCount="71" defaultChild="14">
+     <SimplePredicate field="horsepower" operator="lessThan" value="70.5"/>
+     <Node id="14" score="29.75" recordCount="28">
+      <SimplePredicate field="model_year" operator="lessThan" value="77.5"/>
+     </Node>
+     <Node id="15" score="36.2162790697674" recordCount="43">
+      <SimplePredicate field="model_year" operator="greaterOrEqual" value="77.5"/>
+     </Node>
+    </Node>
+   </Node>
+  </Node>
+ </TreeModel>
+</PMML>

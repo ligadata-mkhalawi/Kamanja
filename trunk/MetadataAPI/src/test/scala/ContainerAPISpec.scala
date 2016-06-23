@@ -363,13 +363,13 @@ class ContainerAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
 				assert(o != None)
 
 				And("Update the container without changing version number, should fail ")
-				res = MetadataAPIImpl.UpdateContainer(contStr, "JSON")
+				res = MetadataAPIImpl.UpdateContainer(contStr, "JSON", userid, tenantid)
 				res should include regex ("\"Status Code\" : -1")
 
 				And("Clone the input json and update the version number to simulate a container for an update operation")
 				contStr = contStr.replaceFirst("01.00", "01.01")
 				assert(contStr.indexOf("\"00.01.01\"") >= 0)
-				res = MetadataAPIImpl.UpdateContainer(contStr, "JSON")
+				res = MetadataAPIImpl.UpdateContainer(contStr, "JSON", userid, tenantid)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("GetContainerDef API to fetch the container that was just updated")
