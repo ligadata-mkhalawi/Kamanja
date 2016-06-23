@@ -141,6 +141,14 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
     throw CreateConnectionException("Unable to find connectionMode in adapterConfig ", new Exception("Invalid adapterConfig"))
   }
 
+
+  var location: String = null;
+  if (parsed_json.contains("Location")) {
+    location = parsed_json.get("Location").get.toString.trim
+  } else {
+    throw CreateConnectionException("Unable to find connectionMode in adapterConfig ", new Exception("Invalid adapterConfig"))
+  }
+
   //  var hostname: String = null;
   //  if (parsed_json.contains("hostname")) {
   //    hostname = parsed_json.get("hostname").get.toString.trim
@@ -173,7 +181,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
   if (parsed_json.contains("user")) {
     user = parsed_json.get("user").get.toString.trim
   } else {
-    //    throw CreateConnectionException("Unable to find user in adapterConfig ", new Exception("Invalid adapterConfig"))
+    logger.info("The User is not supplied in adapterConfig, defaults to " + "test")
     user = "test"
   }
 
@@ -189,7 +197,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
   if (parsed_json.contains("password")) {
     password = parsed_json.get("password").get.toString.trim
   } else {
-    //    throw CreateConnectionException("Unable to find password in adapterConfig ", new Exception("Invalid adapterConfig"))
+    logger.info("The User is not supplied in adapterConfig, defaults to " + "test")
     password = "test"
   }
 
@@ -260,7 +268,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
 
   var jdbcUrl = "jdbc:h2:tcp://" + H2dbInstance + "/./" + namespace + ";user=" + user + ";password=" + password
   connectionMode match {
-    case "embedded" => jdbcUrl = "jdbc:h2:./" + namespace + ";user=" + user + ";password=" + password
+    case "embedded" => jdbcUrl = "jdbc:h2:file:"+ location + "/" + namespace + ";user=" + user + ";password=" + password
     case "ssl" => jdbcUrl = "jdbc:h2:ssl://" + H2dbInstance + "/./" + namespace + ";user=" + user + ";password=" + password
     case "tcp" => jdbcUrl = "jdbc:h2:tcp://" + H2dbInstance + "/./" + namespace + ";user=" + user + ";password=" + password
   }
