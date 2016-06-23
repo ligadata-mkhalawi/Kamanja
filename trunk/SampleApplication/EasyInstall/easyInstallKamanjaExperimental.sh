@@ -298,7 +298,7 @@ migration2_10libsCopiesFor2_11="true"
 
 # this should be changed?
 # cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_3/target/scala-2.10/migrateto_v_1_3_2.10-1.0.jar $systemlib
-cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_5_0/target/scala-2.10/migrateto_v_1_4_2.10-1.5.0.jar $systemlib
+cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_5_0/target/scala-2.10/migrateto_v_1_5_0_2.10-1.5.0.jar $systemlib
 
 
 
