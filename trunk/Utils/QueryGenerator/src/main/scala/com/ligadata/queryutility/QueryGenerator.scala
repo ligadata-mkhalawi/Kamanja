@@ -143,7 +143,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
      var extendsClass = "KamanjaVertex"
      for (className <- classesName) {
       // if (!data.contains(className)) {
-         if (className.equalsIgnoreCase("KamanjaVertex")) extendsClass = "V"
+         if (className.equalsIgnoreCase("KamanjaVertex")) extendsClass = "V" else extendsClass = "KamanjaVertex"
          val createClassQuery = queryObj.createQuery(elementType = "class", className = className, setQuery = "", extendsClass = Option(extendsClass))
          val existFlag = queryObj.createclassInDB(conn, createClassQuery)
        if(existFlag == false){
@@ -169,7 +169,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
      extendsClass = "KamanjaEdge"
      for (className <- classesName) {
        //if (!data.contains(className)) {
-         if (className.equalsIgnoreCase("KamanjaEdge")) extendsClass = "E"
+         if (className.equalsIgnoreCase("KamanjaEdge")) extendsClass = "E" else extendsClass = "KamanjaEdge"
          val createClassQuery = queryObj.createQuery(elementType = "class", className = className, setQuery = "", extendsClass = Option(extendsClass))
          val existFlag = queryObj.createclassInDB(conn, createClassQuery)
          if(existFlag == false){
