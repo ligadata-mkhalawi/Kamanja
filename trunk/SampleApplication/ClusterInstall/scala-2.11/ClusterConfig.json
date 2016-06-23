@@ -29,7 +29,110 @@
           "CacheConfig": {
             "MaxSizeInMB": 256
           }
+        },
+        {
+          "TenantId": "hello211",
+          "Description": "hello211",
+          "PrimaryDataStore": {
+            "StoreType": "hbase",
+            "SchemaName": "tenant1_default",
+            "Location": "localhost",
+            "authentication": "kerberos",
+            "regionserver_principal": "hbase/_HOST@INTRANET.LIGADATA.COM",
+            "master_principal": "hbase/_HOST@INTRANET.LIGADATA.COM",
+            "principal": "ligadata@INTRANET.LIGADATA.COM",
+            "keytab": "/home/ligadata/keytab/ligadata.keytab"
+          },
+          "CacheConfig": {
+            "MaxSizeInMB": 256
+          }
+        },
+        {
+          "TenantId": "hello210",
+          "Description": "hello210",
+          "PrimaryDataStore": {
+            "StoreType": "hbase",
+            "SchemaName": "tenant1_default",
+            "Location": "localhost",
+            "authentication": "kerberos",
+            "regionserver_principal": "hbase/_HOST@INTRANET.LIGADATA.COM",
+            "master_principal": "hbase/_HOST@INTRANET.LIGADATA.COM",
+            "principal": "ligadata@INTRANET.LIGADATA.COM",
+            "keytab": "/home/ligadata/keytab/ligadata.keytab"
+          },
+          "CacheConfig": {
+            "MaxSizeInMB": 256
+          }
+        },
+        {
+          "TenantId": "copd211",
+          "Description": "copd211",
+          "PrimaryDataStore": {
+            "StoreType": "hbase",
+            "SchemaName": "tenant1_default",
+            "Location": "localhost",
+            "authentication": "kerberos",
+            "regionserver_principal": "hbase/_HOST@INTRANET.LIGADATA.COM",
+            "master_principal": "hbase/_HOST@INTRANET.LIGADATA.COM",
+            "principal": "ligadata@INTRANET.LIGADATA.COM",
+            "keytab": "/home/ligadata/keytab/ligadata.keytab"
+          },
+          "CacheConfig": {
+            "MaxSizeInMB": 256
+          }
+        },
+        {
+          "TenantId": "copd210",
+          "Description": "copd210",
+          "PrimaryDataStore": {
+            "StoreType": "hbase",
+            "SchemaName": "tenant1_default",
+            "Location": "localhost",
+            "authentication": "kerberos",
+            "regionserver_principal": "hbase/_HOST@INTRANET.LIGADATA.COM",
+            "master_principal": "hbase/_HOST@INTRANET.LIGADATA.COM",
+            "principal": "ligadata@INTRANET.LIGADATA.COM",
+            "keytab": "/home/ligadata/keytab/ligadata.keytab"
+          },
+          "CacheConfig": {
+            "MaxSizeInMB": 256
+          }
+        },
+        {
+          "TenantId": "low211",
+          "Description": "low211",
+          "PrimaryDataStore": {
+            "StoreType": "hbase",
+            "SchemaName": "tenant1_default",
+            "Location": "localhost",
+            "authentication": "kerberos",
+            "regionserver_principal": "hbase/_HOST@INTRANET.LIGADATA.COM",
+            "master_principal": "hbase/_HOST@INTRANET.LIGADATA.COM",
+            "principal": "ligadata@INTRANET.LIGADATA.COM",
+            "keytab": "/home/ligadata/keytab/ligadata.keytab"
+          },
+          "CacheConfig": {
+            "MaxSizeInMB": 256
+          }
+        },
+        {
+          "TenantId": "low210",
+          "Description": "low210",
+          "PrimaryDataStore": {
+            "StoreType": "hbase",
+            "SchemaName": "tenant1_default",
+            "Location": "localhost",
+            "authentication": "kerberos",
+            "regionserver_principal": "hbase/_HOST@INTRANET.LIGADATA.COM",
+            "master_principal": "hbase/_HOST@INTRANET.LIGADATA.COM",
+            "principal": "ligadata@INTRANET.LIGADATA.COM",
+            "keytab": "/home/ligadata/keytab/ligadata.keytab"
+          },
+          "CacheConfig": {
+            "MaxSizeInMB": 256
+          }
         }
+
       ],
       "ZooKeeperInfo": {
         "ZooKeeperNodeBasePath": "/kamanja",
@@ -80,6 +183,55 @@
           "Location": "localhost"
         },
         {
+          "Name": "Storage_1",
+          "TypeString": "Storage",
+          "TenantId": "copd211",
+          "StoreType": "hbase",
+          "SchemaName": "tenant1_storage_1",
+          "Location": "localhost"
+        },
+        {
+          "Name": "Storage_1",
+          "TypeString": "Storage",
+          "TenantId": "hello211",
+          "StoreType": "hbase",
+          "SchemaName": "tenant1_storage_1",
+          "Location": "localhost"
+        },
+        {
+          "Name": "Storage_1",
+          "TypeString": "Storage",
+          "TenantId": "low211",
+          "StoreType": "hbase",
+          "SchemaName": "tenant1_storage_1",
+          "Location": "localhost"
+        },
+        {
+          "Name": "Storage_1",
+          "TypeString": "Storage",
+          "TenantId": "copd210",
+          "StoreType": "hbase",
+          "SchemaName": "tenant1_storage_1",
+          "Location": "localhost"
+        },
+        {
+          "Name": "Storage_1",
+          "TypeString": "Storage",
+          "TenantId": "hello210",
+          "StoreType": "hbase",
+          "SchemaName": "tenant1_storage_1",
+          "Location": "localhost"
+        },
+        {
+          "Name": "Storage_1",
+          "TypeString": "Storage",
+          "TenantId": "low210",
+          "StoreType": "hbase",
+          "SchemaName": "tenant1_storage_1",
+          "Location": "localhost"
+        },
+
+          {
           "Name": "HelloWorldInput",
           "TypeString": "Input",
           "TenantId": "tenant1",
