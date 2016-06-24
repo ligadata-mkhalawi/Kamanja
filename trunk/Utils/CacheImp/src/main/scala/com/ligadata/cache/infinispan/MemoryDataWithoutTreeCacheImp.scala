@@ -11,7 +11,7 @@ import org.infinispan.Cache;
 /**
   * Created by Saleh on 6/9/2016.
   */
-class MemoryDataWithoutTreeCacheImp extends DataCache {
+class MemoryDataCacheImp extends DataCache {
 
   var cacheManager: DefaultCacheManager = null
   var config: CacheCustomConfig = null

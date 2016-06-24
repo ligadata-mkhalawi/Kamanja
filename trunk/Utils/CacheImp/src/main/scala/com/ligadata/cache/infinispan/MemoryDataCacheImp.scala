@@ -13,7 +13,7 @@ import org.infinispan.tree.{Node, Fqn, TreeCacheFactory, TreeCache}
 /**
   * Created by Saleh on 6/9/2016.
   */
-class MemoryDataCacheImp extends DataCache {
+class MemoryDataTreeCacheImp extends DataCache {
 
   var cacheManager: DefaultCacheManager = null
   var config: CacheCustomConfig = null
