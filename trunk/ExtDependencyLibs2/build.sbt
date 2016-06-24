@@ -61,6 +61,11 @@ assemblyMergeStrategy in assembly := {
   case x if x contains "commons-logging" => MergeStrategy.first
   case "log4j.properties" => MergeStrategy.first
   case "unwanted.txt" => MergeStrategy.discard
+  case "DEPENDENCIES.txt" => MergeStrategy.discard
+  case "META-INF/DEPENDENCIES.txt" => MergeStrategy.discard
+  case "blueprint.xml" => MergeStrategy.discard
+  case "OSGI-INF/blueprint/blueprint.xml" => MergeStrategy.discard
+  case "features.xml" => MergeStrategy.discard
   case x =>
     val oldStrategy = (assemblyMergeStrategy in assembly).value
     oldStrategy(x)
