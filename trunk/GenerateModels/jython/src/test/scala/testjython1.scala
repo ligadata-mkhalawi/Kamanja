@@ -37,13 +37,12 @@ import com.ligadata.runtime.Log
 import java.net.{URL, URLClassLoader}
 import org.python.core.PySystemState
 import org.python.core.packagecache.PackageManager
-import scala.reflect.runtime._
 
 import com.ligadata.KamanjaBase.ContainerOrConcept
 /**
   *
   */
-class TestJython extends FunSuite with BeforeAndAfter {
+class TestJython1 extends FunSuite with BeforeAndAfter {
 
   val logger = new com.ligadata.runtime.Log(this.getClass.getName())
 
@@ -67,44 +66,14 @@ class TestJython extends FunSuite with BeforeAndAfter {
         |# limitations under the License.
         |#
         |import sys
-        |from com.ligadata.runtime import Log
-        |from com.ligadata.KamanjaBase import ContainerOrConcept
-        |from com.ligadata.kamanja.samples.messages import outmsg1
-        |from com.ligadata.kamanja.samples.messages import msg1
-        |
-        |class Model():
-        |   def __init__(self):
-        |       self.logger = Log("Model")
-        |       self.logger.Info('Model.__init__')
-        |
-        |   def execute(self, txnCtxt, execMsgsSet, matchedInputSetIndex, outputDefault):
-        |       self.logger.Info('Model.execute')
-        |       inMsg = execMsgsSet[0]
-        |       self.logger.Info('jython>>> 21')
-        |       if inMsg.id()!=111:
-        |           self.logger.Info('jython>>> 22')
-        |           v = inMsg.in1()
-        |           self.logger.Info('Early exit')
-        |           return None
-        |
-        |       self.logger.Info('jython>>> 23')
-        |       output = outmsg1.createInstance()
-        |       self.logger.Info('jython>>> 24')
-        |       output.set(0, inMsg.id())
-        |       self.logger.Info('jython>>> 25')
-        |       output.set(1, inMsg.name())
-        |       self.logger.Info('jython>>> 26')
-        |
-        |       return output
       """.stripMargin
 
-    val cp_application="/home/joerg/app2/Kamanja-1.4.1_2.10/lib/application/com.ligadata.kamanja.samples.messages_msg1_1000000_1465412866388.jar:/home/joerg/app2/Kamanja-1.4.1_2.10/lib/application/com.ligadata.kamanja.samples.messages_msg1.jar:/home/joerg/app2/Kamanja-1.4.1_2.10/lib/application/com.ligadata.kamanja.samples.messages_outmsg1_1000000_1465412910148.jar:/home/joerg/app2/Kamanja-1.4.1_2.10/lib/application/com.ligadata.kamanja.samples.messages_outmsg1.jar".split(':')
-
-  val cp = "".split(':')
+    val cp = "".split(':')
+    val cp1 = "".split(':')
 
     def urlses(cl: ClassLoader): Array[java.net.URL] = cl match {
       case null => Array()
-      case u: java.net.URLClassLoader => u.getURLs() // ++ urlses(cl.getParent)
+      case u: java.net.URLClassLoader => u.getURLs() ++ urlses(cl.getParent)
       case _ => urlses(cl.getParent)
     }
 
@@ -113,50 +82,37 @@ class TestJython extends FunSuite with BeforeAndAfter {
 
     try {
 
-      var cl1 = new PythonInterpreterClassLoader(cp_application.map(c => new File(c).toURI().toURL), this.getClass.getClassLoader)
+      var cl1 = new PythonInterpreterClassLoader(cp.map(c => new File(c).toURI().toURL), this.getClass.getClassLoader)
 
-//      val urls2 = urlses(cl1)
-//      logger.Info("CLASSPATH-JYTHON-1:=" + urls2.mkString(":"))
+      val urls2 = urlses(cl1)
+      logger.Info("CLASSPATH-JYTHON-1:=" + urls2.mkString(":") +  "\n\n")
 
       var props: Properties = new Properties();
       props.put("python.home", "/home/joerg/bin/jython/Lib")
       props.put("python.console.encoding", "UTF-8")
       props.put("python.security.respectJavaAccessibility", "false")
       props.put("python.import.site", "false")
-
       var preprops: Properties = System.getProperties()
 
-      val rootMirror = universe.runtimeMirror(cl1)
-      var classSymbol = rootMirror.classSymbol(classOf[org.python.util.PythonInterpreter])
-      val classMirror = rootMirror.reflectClass(classSymbol.asClass)
-      val moduleMirror = classMirror.symbol
-      val interpreterModule = moduleMirror.companionSymbol.getClass.newInstance().asInstanceOf[org.python.util.PythonInterpreter]
-      var method: Method = interpreterModule.getDeclaredMethod("initialize", interpreterModule.getClass)
-      method.invoke(interpreterModule, preprops, props, Array.empty[String])
+      PythonInterpreter.initialize(preprops, props, Array.empty[String])
 
-      val interpreter1 = classSymbol.getClass.newInstance()
+      val interpreter1 = cl1.loadClass("org.python.util.PythonInterpreter").newInstance()
+
       val interpreter = interpreter1.asInstanceOf[org.python.util.PythonInterpreter]
 
       {
         val cl2 = interpreter.getClass.getClassLoader
         val urls2 = urlses(cl2)
-        logger.Info("CLASSPATH-JYTHON-2:=" + urls2.mkString(":"))
+        logger.Info("CLASSPATH-JYTHON-2:=" + urls2.mkString(":") +  "\n\n")
       }
 
-      // val modelObject: PyObject =
+      //val modelObject: PyObject =
       interpreter.exec(code)
+
     } catch {
       case e: Exception =>  println(e.toString)
         throw e
     }
+
   }
 }
-/*
-    logger.Info("<<< 12")
-    //interpreter.exec("import Model")
-    logger.Info("<<< 13")
-    //val modelClass = interpreter.get("Model")
-    logger.Info("<<< 14")
-    //val modelObject: PyObject = modelClass.__call__()
-    logger.Info("<<< 15")
- */

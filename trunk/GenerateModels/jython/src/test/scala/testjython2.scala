@@ -37,13 +37,12 @@ import com.ligadata.runtime.Log
 import java.net.{URL, URLClassLoader}
 import org.python.core.PySystemState
 import org.python.core.packagecache.PackageManager
-import scala.reflect.runtime._
 
 import com.ligadata.KamanjaBase.ContainerOrConcept
 /**
   *
   */
-class TestJython extends FunSuite with BeforeAndAfter {
+class TestJython2 extends FunSuite with BeforeAndAfter {
 
   val logger = new com.ligadata.runtime.Log(this.getClass.getName())
 
@@ -69,8 +68,8 @@ class TestJython extends FunSuite with BeforeAndAfter {
         |import sys
         |from com.ligadata.runtime import Log
         |from com.ligadata.KamanjaBase import ContainerOrConcept
-        |from com.ligadata.kamanja.samples.messages import outmsg1
         |from com.ligadata.kamanja.samples.messages import msg1
+        |from com.ligadata.kamanja.samples.messages import outmsg1
         |
         |class Model():
         |   def __init__(self):
@@ -100,7 +99,7 @@ class TestJython extends FunSuite with BeforeAndAfter {
 
     val cp_application="/home/joerg/app2/Kamanja-1.4.1_2.10/lib/application/com.ligadata.kamanja.samples.messages_msg1_1000000_1465412866388.jar:/home/joerg/app2/Kamanja-1.4.1_2.10/lib/application/com.ligadata.kamanja.samples.messages_msg1.jar:/home/joerg/app2/Kamanja-1.4.1_2.10/lib/application/com.ligadata.kamanja.samples.messages_outmsg1_1000000_1465412910148.jar:/home/joerg/app2/Kamanja-1.4.1_2.10/lib/application/com.ligadata.kamanja.samples.messages_outmsg1.jar".split(':')
 
-  val cp = "".split(':')
+    val cp = "".split(':')
 
     def urlses(cl: ClassLoader): Array[java.net.URL] = cl match {
       case null => Array()
@@ -113,10 +112,10 @@ class TestJython extends FunSuite with BeforeAndAfter {
 
     try {
 
-      var cl1 = new PythonInterpreterClassLoader(cp_application.map(c => new File(c).toURI().toURL), this.getClass.getClassLoader)
-
-//      val urls2 = urlses(cl1)
-//      logger.Info("CLASSPATH-JYTHON-1:=" + urls2.mkString(":"))
+      var classLoader: URLClassLoader = this.getClass.getClassLoader.asInstanceOf[URLClassLoader]
+      var method: Method = classOf[URLClassLoader].getDeclaredMethod("addURL", classOf[URL]);
+      method.setAccessible(true);
+      var cl1 = cp_application.map(c => method.invoke(classLoader, new File(c).toURI().toURL))
 
       var props: Properties = new Properties();
       props.put("python.home", "/home/joerg/bin/jython/Lib")
@@ -126,16 +125,9 @@ class TestJython extends FunSuite with BeforeAndAfter {
 
       var preprops: Properties = System.getProperties()
 
-      val rootMirror = universe.runtimeMirror(cl1)
-      var classSymbol = rootMirror.classSymbol(classOf[org.python.util.PythonInterpreter])
-      val classMirror = rootMirror.reflectClass(classSymbol.asClass)
-      val moduleMirror = classMirror.symbol
-      val interpreterModule = moduleMirror.companionSymbol.getClass.newInstance().asInstanceOf[org.python.util.PythonInterpreter]
-      var method: Method = interpreterModule.getDeclaredMethod("initialize", interpreterModule.getClass)
-      method.invoke(interpreterModule, preprops, props, Array.empty[String])
+      PythonInterpreter.initialize(preprops, props, Array.empty[String])
 
-      val interpreter1 = classSymbol.getClass.newInstance()
-      val interpreter = interpreter1.asInstanceOf[org.python.util.PythonInterpreter]
+      val interpreter = new org.python.util.PythonInterpreter
 
       {
         val cl2 = interpreter.getClass.getClassLoader
