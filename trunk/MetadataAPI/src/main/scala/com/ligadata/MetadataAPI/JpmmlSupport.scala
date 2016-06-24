@@ -32,7 +32,6 @@ import javax.xml.transform.sax.SAXSource
 import java.util.{List => JList}
 
 import com.ligadata.kamanja.metadata._
-import com.ligadata.jpmml.JpmmlAdapter
 import org.jpmml.model.{JAXBUtil, ImportFilter}
 import org.jpmml.evaluator._
 import org.xml.sax.InputSource
