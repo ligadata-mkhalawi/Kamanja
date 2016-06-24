@@ -65,7 +65,9 @@ class MigrateTo_V_1_3 extends MigratableTo {
   private val defaultUserId: Option[String] = Some("kamanja")
   private var _parallelDegree = 0
   private var _mergeContainerAndMessages = true
-
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+    // 646 - 676 Change ends
   private val globalExceptions = ArrayBuffer[(String, Throwable)]()
 
   private def AddToGlobalException(failedMsg: String, e: Throwable): Unit = {
@@ -192,11 +194,11 @@ class MigrateTo_V_1_3 extends MigratableTo {
     MdMgr.GetMdMgr.truncate
     val mdLoader = new MetadataLoad(MdMgr.mdMgr, "", "", "", "")
     mdLoader.initialize
-    MetadataAPIImpl.readMetadataAPIConfigFromPropertiesFile(apiConfigFile)
+    getMetadataAPI.readMetadataAPIConfigFromPropertiesFile(apiConfigFile)
 
-    val tmpJarPaths = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS")
+    val tmpJarPaths = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS")
     val jarPaths = if (tmpJarPaths != null) tmpJarPaths.split(",").toSet else scala.collection.immutable.Set[String]()
-    val metaDataStoreInfo = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("METADATA_DATASTORE");
+    val metaDataStoreInfo = getMetadataAPI.GetMetadataAPIConfig.getProperty("METADATA_DATASTORE");
     val cfgStr = Source.fromFile(clusterConfigFile).mkString
     val (dataStoreInfo, statusStoreInfo) = GetDataStoreStatusStoreInfo(cfgStr)
 
@@ -624,11 +626,11 @@ class MigrateTo_V_1_3 extends MigratableTo {
                   try {
                     val mdlCfgStr = compact(render(mdlConfig))
                     logger.debug("Temporary Model Config:" + mdlCfgStr)
-                    val retRes = MetadataAPIImpl.UploadModelsConfig(mdlCfgStr, defaultUserId, "configuration", true)
+                    val retRes = getMetadataAPI.UploadModelsConfig(mdlCfgStr, defaultUserId, "configuration", true)
                     failed = isFailedStatus(retRes)
 
                     if (failed == false) {
-                      val retRes1 = MetadataAPIImpl.AddModel(MetadataAPI.ModelType.fromString(objFormat), defStr, defaultUserId, Some((defaultUserId.get + "." + cfgnm).toLowerCase), Some(ver))
+                      val retRes1 = getMetadataAPI.AddModel(MetadataAPI.ModelType.fromString(objFormat), defStr, defaultUserId, Some((defaultUserId.get + "." + cfgnm).toLowerCase), Some(ver))
                       failed = isFailedStatus(retRes1)
                     }
                   } catch {
@@ -666,7 +668,7 @@ class MigrateTo_V_1_3 extends MigratableTo {
                   var failed = false
 
                   try {
-                    val retRes = MetadataAPIImpl.AddModel(MetadataAPI.ModelType.fromString("kpmml"), mdlDefStr, defaultUserId, Some(dispkey), Some(ver))
+                    val retRes = getMetadataAPI.AddModel(MetadataAPI.ModelType.fromString("kpmml"), mdlDefStr, defaultUserId, Some(dispkey), Some(ver))
                     failed = isFailedStatus(retRes)
                   } catch {
                     case e: Exception => {
@@ -695,7 +697,7 @@ class MigrateTo_V_1_3 extends MigratableTo {
                 var failed = false
 
                 try {
-                  val retRes = MetadataAPIImpl.AddMessage(msgDefStr, "JSON", defaultUserId)
+                  val retRes = getMetadataAPI.AddMessage(msgDefStr, "JSON", defaultUserId)
                   failed = isFailedStatus(retRes)
                 } catch {
                   case e: Exception => {
@@ -725,7 +727,7 @@ class MigrateTo_V_1_3 extends MigratableTo {
                 var failed = false
 
                 try {
-                  val retRes = MetadataAPIImpl.AddContainer(contDefStr, "JSON", defaultUserId)
+                  val retRes = getMetadataAPI.AddContainer(contDefStr, "JSON", defaultUserId)
                   failed = isFailedStatus(retRes)
                 } catch {
                   case e: Exception => {
@@ -771,7 +773,7 @@ class MigrateTo_V_1_3 extends MigratableTo {
 
                   implicit val jsonFormats: Formats = DefaultFormats
                   val newMdlCfgStr = Serialization.write(changedCfg)
-                  val retRes = MetadataAPIImpl.UploadModelsConfig(newMdlCfgStr, Some[String](namespace), null) // Considering namespace as userid
+                  val retRes = getMetadataAPI.UploadModelsConfig(newMdlCfgStr, Some[String](namespace), null) // Considering namespace as userid
                   failed = isFailedStatus(retRes)
                 } catch {
                   case e: Exception => {
@@ -797,7 +799,7 @@ class MigrateTo_V_1_3 extends MigratableTo {
                 var failed = false
 
                 try {
-                  val retRes = MetadataAPIImpl.AddFunctions(fnCfg, "JSON", defaultUserId)
+                  val retRes = getMetadataAPI.AddFunctions(fnCfg, "JSON", defaultUserId)
                   failed = isFailedStatus(retRes)
                 } catch {
                   case e: Exception => {
@@ -1143,11 +1145,11 @@ class MigrateTo_V_1_3 extends MigratableTo {
     })
 
     // Open OpenDbStore
-    MetadataAPIImpl.OpenDbStore(_jarPaths, _metaDataStoreInfo)
+    getMetadataAPI.OpenDbStore(_jarPaths, _metaDataStoreInfo)
 
     val cfgStr = Source.fromFile(_clusterConfigFile).mkString
     logger.debug("Uploading configuration")
-    MetadataAPIImpl.UploadConfig(cfgStr, defaultUserId, "ClusterConfig")
+    getMetadataAPI.UploadConfig(cfgStr, defaultUserId, "ClusterConfig")
 
     // We need to add the metadata in the following order
     // Jars
@@ -1314,7 +1316,7 @@ class MigrateTo_V_1_3 extends MigratableTo {
     _dataStoreDb = null
     _statusStoreDb = null
     _flCurMigrationSummary = null
-    MetadataAPIImpl.shutdown
+    getMetadataAPI.shutdown
   }
 
   override def getStatusFromDataStore(key: String): String = {

@@ -41,14 +41,17 @@ object GetAuditLogService {
 class GetAuditLogService(requestContext: RequestContext, userid:Option[String], password:Option[String], cert:Option[String]) extends Actor {
 
   import GetAuditLogService._
-  
+
   implicit val system = context.system
   import system.dispatcher
   val log = Logging(system, getClass)
-  
+
   val loggerName = this.getClass.getName
   val logger = LogManager.getLogger(loggerName)
 //  logger.setLevel(Level.TRACE);
+// 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   val APIName = "GetAuditLog"
 
@@ -59,9 +62,7 @@ class GetAuditLogService(requestContext: RequestContext, userid:Option[String], 
   }
 
   def process(filterParameters: Array[String]) = {
-    val auditLog = MetadataAPIImpl.getAuditRec(filterParameters)
+    val auditLog = getMetadataAPI.getAuditRec(filterParameters)
     requestContext.complete(auditLog)
   }
 }
-
-

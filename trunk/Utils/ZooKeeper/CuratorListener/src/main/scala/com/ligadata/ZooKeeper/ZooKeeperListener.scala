@@ -173,7 +173,7 @@ object ZooKeeperListenerTest {
 
  /* private def UpdateMetadata(receivedJsonStr: String): Unit = {
     val zkMessage = JsonSerializer.parseZkTransaction(receivedJsonStr, "JSON")
-    MetadataAPIImpl.UpdateMdMgr(zkMessage)
+    getMetadataAPI.UpdateMdMgr(zkMessage)
   }*/
 
   /* def StartLocalListener = {
@@ -247,10 +247,10 @@ object ZooKeeperListenerTest {
       configFile = cfgfile.asInstanceOf[String]
     }
     try {
-     // MetadataAPIImpl.SetLoggerLevel(Level.TRACE)
+     // getMetadataAPI.SetLoggerLevel(Level.TRACE)
      // MdMgr.GetMdMgr.SetLoggerLevel(Level.TRACE)
       //JsonSerializer.SetLoggerLevel(Level.TRACE)
-      MetadataAPIImpl.InitMdMgrFromBootStrap(configFile)
+      getMetadataAPI.InitMdMgrFromBootStrap(configFile)
       databaseOpen = true
       StartLocalListener
     } catch {
@@ -259,7 +259,7 @@ object ZooKeeperListenerTest {
       }
     } finally {
       if (databaseOpen) {
-        MetadataAPIImpl.CloseDbStore
+        getMetadataAPI.CloseDbStore
       }
     }
   } */

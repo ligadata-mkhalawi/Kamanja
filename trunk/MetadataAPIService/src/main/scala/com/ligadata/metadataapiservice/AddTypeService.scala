@@ -36,35 +36,38 @@ object AddTypeService {
 class AddTypeService(requestContext: RequestContext, userid:Option[String], password:Option[String], cert:Option[String]) extends Actor {
 
   import AddTypeService._
-  
+
   implicit val system = context.system
   import system.dispatcher
   val log = Logging(system, getClass)
   val APIName = "AddTypeService"
-  
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
+
   def receive = {
     case Process(typeJson, formatType) =>
       process(typeJson, formatType)
       context.stop(self)
   }
-  
+
   def process(typeJson:String, formatType:String): Unit = {
-    
+
     log.debug("Requesting AddType {},{}",typeJson.substring(1,200) + " .....",formatType)
     var nameVal: String = null
     if (formatType.equalsIgnoreCase("json")) {
-      nameVal = APIService.extractNameFromJson(typeJson, AuditConstants.TYPE) 
+      nameVal = APIService.extractNameFromJson(typeJson, AuditConstants.TYPE)
     } else {
-      requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error:Unsupported format: "+formatType).toString ) 
+      requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error:Unsupported format: "+formatType).toString )
       return
     }
-    
-    if (!MetadataAPIImpl.checkAuth(userid,password,cert, MetadataAPIImpl.getPrivilegeName("insert","type"))) {
-      MetadataAPIImpl.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.INSERTOBJECT,typeJson,AuditConstants.FAIL,"",nameVal)
+
+    if (!getMetadataAPI.checkAuth(userid,password,cert, getMetadataAPI.getPrivilegeName("insert","type"))) {
+      getMetadataAPI.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.INSERTOBJECT,typeJson,AuditConstants.FAIL,"",nameVal)
       requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error:UPDATE not allowed for this user").toString )
     } else {
-      val apiResult = MetadataAPIImpl.AddTypes(typeJson,formatType,userid)     
-      requestContext.complete(apiResult)      
+      val apiResult = getMetadataAPI.AddTypes(typeJson,formatType,userid)
+      requestContext.complete(apiResult)
     }
   }
 }

@@ -4,10 +4,10 @@ package com.ligadata.KamanjaManager
 import com.ligadata.HeartBeat.MonitoringContext
 import com.ligadata.KamanjaBase._
 import com.ligadata.InputOutputAdapterInfo.{ExecContext, InputAdapter, OutputAdapter, ExecContextFactory, PartitionUniqueRecordKey, PartitionUniqueRecordValue}
-import com.ligadata.StorageBase.{DataStore}
+import com.ligadata.StorageBase.{ DataStore }
 import com.ligadata.ZooKeeper.CreateClient
 import com.ligadata.kamanja.metadata.MdMgr._
-import com.ligadata.kamanja.metadata.{ContainerDef, MessageDef, AdapterMessageBinding, AdapterInfo}
+import com.ligadata.kamanja.metadata.{ ContainerDef, MessageDef, AdapterMessageBinding, AdapterInfo }
 import org.json4s.jackson.JsonMethods._
 
 import scala.reflect.runtime.{universe => ru}
@@ -826,7 +826,6 @@ class KamanjaManager extends Observer {
           LOG.info(dispStr)
         } */
 
-
     val metricsCollector = new Runnable {
       def run(): Unit = {
         try {
@@ -844,16 +843,16 @@ class KamanjaManager extends Observer {
     scheduledThreadPool.scheduleWithFixedDelay(statusPrint_PD, 0, 1000, TimeUnit.MILLISECONDS);
 
     /**
-      * print("=> ")
-      * breakable {
-      * for (ln <- io.Source.stdin.getLines) {
-      * val rv = execCmd(ln)
-      * if (rv)
-      * break;
-      * print("=> ")
-      * }
-      * }
-      */
+     * print("=> ")
+     * breakable {
+     * for (ln <- io.Source.stdin.getLines) {
+     * val rv = execCmd(ln)
+     * if (rv)
+     * break;
+     * print("=> ")
+     * }
+     * }
+     */
 
     var timeOutEndTime: Long = 0
     var participentsChangedCntr: Long = 0
@@ -955,10 +954,9 @@ class KamanjaManager extends Observer {
     return Shutdown(0)
   }
 
-
   /**
-    *
-    */
+   *
+   */
   private def validateAndExternalizeMetrics: Unit = {
     val (zkConnectString, zkNodeBasePath, zkSessionTimeoutMs, zkConnectionTimeoutMs) = KamanjaMetadata.envCtxt.getZookeeperInfo
     val zkHeartBeatNodePath = zkNodeBasePath + "/monitor/engine/" + KamanjaConfiguration.nodeId.toString
@@ -994,6 +992,9 @@ class KamanjaManager extends Observer {
       thisEngineInfo.uniqueId = MonitoringContext.monitorCount.incrementAndGet
       CreateClient.CreateNodeIfNotExists(zkConnectString, zkHeartBeatNodePath) // Creating the path if missing
     }
+
+    thisEngineInfo.memory = memoryMetricsString(processmemoryUsage)
+
     thisEngineInfo.lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
     thisEngineInfo.uniqueId = MonitoringContext.monitorCount.incrementAndGet
 
@@ -1019,6 +1020,7 @@ class KamanjaManager extends Observer {
       ("Name" -> thisEngineInfo.name) ~
         ("Version" -> (KamanjaVersion.getMajorVersion.toString + "." + KamanjaVersion.getMinorVersion.toString + "." + KamanjaVersion.getMicroVersion + "." + KamanjaVersion.getBuildNumber)) ~
         ("UniqueId" -> thisEngineInfo.uniqueId) ~
+        ("Metrics" -> thisEngineInfo.memory) ~
         ("LastSeen" -> thisEngineInfo.lastSeen) ~
         ("StartTime" -> thisEngineInfo.startTime) ~
         ("Components" -> adapterMetricInfo.map(mci =>
@@ -1079,7 +1081,6 @@ class KamanjaManager extends Observer {
           if (ad != null && ad.adapterInfo != null && ad.adapterInfo.Name.equalsIgnoreCase(objectName)) csa = ad
         })
 
-
         if (cia != null) {
           cia.Shutdown
           KamanjaMdCfg.updateAdapter(adapter.asInstanceOf[AdapterInfo], false, inputAdapters, outputAdapters, storageAdapters)
@@ -1103,6 +1104,26 @@ class KamanjaManager extends Observer {
     return false
   }
 
+  private def processmemoryUsage(): Memory = {
+    var mem: Memory = new Memory
+    val mb = 1024 * 1024
+    val runtime = Runtime.getRuntime
+    mem.usedMemory = (runtime.totalMemory - runtime.freeMemory) / mb
+    mem.totalMemory = runtime.totalMemory / mb
+    mem.freeMemory = runtime.freeMemory / mb
+    mem.maxMemory = runtime.maxMemory / mb
+
+    LOG.info("** Used Memory:  " + (runtime.totalMemory - runtime.freeMemory) / mb + " MB")
+    LOG.info("** Free Memory:  " + runtime.freeMemory / mb + " MB")
+    LOG.info("** Total Memory: " + runtime.totalMemory / mb + " MB")
+    LOG.info("** Max Memory:   " + runtime.maxMemory / mb + " MB")
+    return mem
+  }
+
+  private def memoryMetricsString(mem: Memory): String = {
+    if (mem == null) return "{\"UsedMemory\":\"0 MB\",\"FreeMomory\":\"0 MB\",\"TotalMemory\":\"0 MB\",\"MaxMemory\":\"0 MB\"}\", "
+    return "{\"UsedMemory\":\"" + mem.usedMemory + " MB\",\"FreeMomory\":\"" + mem.freeMemory + " MB\",\"TotalMemory\":\"" + mem.totalMemory + " MB\",\"MaxMemory\":\"" + mem.maxMemory + " MB\"}\", "
+  }
   private class SignalHandler extends Observable with sun.misc.SignalHandler {
     def handleSignal(signalName: String) {
       sun.misc.Signal.handle(new sun.misc.Signal(signalName), this)
@@ -1121,6 +1142,14 @@ class MainInfo {
   var uniqueId: Long = 0
   var lastSeen: String = null
   var startTime: String = null
+  var memory: String = null
+}
+
+class Memory {
+  var usedMemory: Long = 0
+  var freeMemory: Long = 0
+  var maxMemory: Long = 0
+  var totalMemory: Long = 0
 }
 
 class ComponentInfo {

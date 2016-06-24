@@ -40,7 +40,7 @@ object GetConfigObjectsService {
 class GetConfigObjectsService(requestContext: RequestContext, userid:Option[String], password:Option[String], cert:Option[String]) extends Actor {
 
   import GetConfigObjectsService._
-  
+
   implicit val system = context.system
   import system.dispatcher
   val log = Logging(system, getClass)
@@ -48,6 +48,9 @@ class GetConfigObjectsService(requestContext: RequestContext, userid:Option[Stri
   val loggerName = this.getClass.getName
   val logger = LogManager.getLogger(loggerName)
  // logger.setLevel(Level.TRACE);
+ // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   val APIName = "GetConfigObjects"
 
@@ -56,19 +59,19 @@ class GetConfigObjectsService(requestContext: RequestContext, userid:Option[Stri
 
     objectType match {
       case "node" => {
-        apiResult = MetadataAPIImpl.GetAllNodes("JSON",userid)
+        apiResult = getMetadataAPI.GetAllNodes("JSON",userid)
       }
       case "cluster" => {
-        apiResult = MetadataAPIImpl.GetAllClusters("JSON",userid)
+        apiResult = getMetadataAPI.GetAllClusters("JSON",userid)
       }
       case "adapter" => {
-        apiResult = MetadataAPIImpl.GetAllAdapters("JSON",userid)
+        apiResult = getMetadataAPI.GetAllAdapters("JSON",userid)
       }
       case "clustercfg" => {
-        apiResult = MetadataAPIImpl.GetAllClusterCfgs("JSON",userid)
+        apiResult = getMetadataAPI.GetAllClusterCfgs("JSON",userid)
       }
       case "all" => {
-        apiResult = MetadataAPIImpl.GetAllCfgObjects("JSON",userid)
+        apiResult = getMetadataAPI.GetAllCfgObjects("JSON",userid)
       }
       case _ => {
         apiResult = "The " + objectType + " is not supported yet "
@@ -77,24 +80,22 @@ class GetConfigObjectsService(requestContext: RequestContext, userid:Option[Stri
     apiResult
   }
 
-  
+
   def receive = {
     case Process(objectType) =>
       process(objectType)
       context.stop(self)
   }
-  
+
   def process(objectType:String) = {
     log.debug("Requesting GetConfigObjects {}",objectType)
-    
-    if (!MetadataAPIImpl.checkAuth(userid,password,cert, MetadataAPIImpl.getPrivilegeName("get","config"))) {
-      MetadataAPIImpl.logAuditRec(userid,Some(AuditConstants.READ),AuditConstants.GETCONFIG,AuditConstants.CONFIG,AuditConstants.FAIL,"",objectType)
+
+    if (!getMetadataAPI.checkAuth(userid,password,cert, getMetadataAPI.getPrivilegeName("get","config"))) {
+      getMetadataAPI.logAuditRec(userid,Some(AuditConstants.READ),AuditConstants.GETCONFIG,AuditConstants.CONFIG,AuditConstants.FAIL,"",objectType)
       requestContext.complete(new ApiResult(ErrorCodeConstants.Failure,APIName, null, "Error: READ not allowed for this user").toString )
     } else {
       val apiResult = GetConfigObjects(objectType)
-      requestContext.complete(apiResult)      
+      requestContext.complete(apiResult)
     }
   }
 }
-
-

@@ -40,6 +40,9 @@ class UploadModelConfigService(requestContext: RequestContext, userid:Option[Str
   import system.dispatcher
   val log = Logging(system, getClass)
   val APIName = "UploadModelConfigService"
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   def receive = {
     case Process(cfgJson) =>
@@ -50,7 +53,7 @@ class UploadModelConfigService(requestContext: RequestContext, userid:Option[Str
 
   def process(cfgJson:String) = {
     log.debug("Requesting UploadModelConfig {}", cfgJson)
-    val apiResult = MetadataAPIImpl.UploadModelsConfig(cfgJson, userid, null)
+    val apiResult = getMetadataAPI.UploadModelsConfig(cfgJson, userid, null)
     requestContext.complete(apiResult)
   }
 
