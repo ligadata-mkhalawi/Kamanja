@@ -185,6 +185,12 @@ class PyServerConnection(host : String, port : Int, user : String, log4jConfigPa
             }
         }
 
+        if (answeredBytes.nonEmpty) {
+            logger.error("*****************************************************************************************************************************")
+            logger.error("... in processMsg, there are resisdual bytes remaining suggesting multiple commands were dispatched with no intervening receipt of response bytes... some component is sending multiple commands or commands are being sent to this connection from multiple threads... a violation of the supposed contract. ")
+            logger.error("*****************************************************************************************************************************")
+        }
+
         /** When there is a cmd followed by a response, the remove above always takes out all of the bytes.
           * However, if multiple commands are sent at once, then the additional responses are handled here
           * for those subsequent commands.  SINCE WE ARE NOT GOING TO BURST MESSAGES AT THIS JUNCTURE, THIS
