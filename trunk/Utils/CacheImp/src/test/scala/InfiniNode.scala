@@ -6,7 +6,7 @@ import com.ligadata.cache.infinispan.EventCacheListener
   */
 object InfiniNode {
   def main(args: Array[String]) {
-    val aclass = Class.forName("com.ligadata.cache.infinispan.MemoryDataCacheImp").newInstance
+    val aclass = Class.forName("com.ligadata.cache.infinispan.MemoryDataTreeCacheImp").newInstance
     val node = aclass.asInstanceOf[DataCache]
 
 //    node.init(

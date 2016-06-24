@@ -12,7 +12,7 @@ import com.ligadata.cache.infinispan.EventCacheListener
   */
 object InfiniNode2 {
   def main(args: Array[String]) {
-    val aclass = Class.forName("com.ligadata.cache.infinispan.MemoryDataCacheImp").newInstance
+    val aclass = Class.forName("com.ligadata.cache.infinispan.MemoryDataTreeCacheImp").newInstance
     val node = aclass.asInstanceOf[DataCache]
 
     node.init("""{"name":"CacheCluster","jgroups.tcpping.initial_hosts":"192.168.1.129[7800],192.168.1.129[7801],192.168.1.129[7802]","jgroups.port":"7801","numOfKeyOwners":"2","maxEntries":"300000","CacheConfig":{"timeToIdleSeconds":"300000","timeToLiveSeconds":"300000","peerconfig":"jgroups_tcp.xml"}}""",null)
