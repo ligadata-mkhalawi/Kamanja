@@ -56,6 +56,11 @@ assemblyMergeStrategy in assembly := {
   case x if x contains "commons-logging" => MergeStrategy.first
   case "log4j.properties" => MergeStrategy.first
   case "unwanted.txt" => MergeStrategy.discard
+  case "DEPENDENCIES.txt" => MergeStrategy.discard
+  case "META-INF/DEPENDENCIES.txt" => MergeStrategy.discard
+  case "blueprint.xml" => MergeStrategy.discard
+  case "OSGI-INF/blueprint/blueprint.xml" => MergeStrategy.discard
+  case "features.xml" => MergeStrategy.discard
   case x =>
     val oldStrategy = (assemblyMergeStrategy in assembly).value
     oldStrategy(x)
@@ -219,6 +224,12 @@ libraryDependencies ++= {
 //crossPaths := false
 //// This forbids including Scala related libraries into the dependency
 //autoScalaLibrary := false
+
+
+////////////////////// Cache
+libraryDependencies += "org.infinispan" % "infinispan-core" % "7.2.5.Final"
+libraryDependencies += "org.infinispan" % "infinispan-tree" % "7.2.5.Final"
+libraryDependencies += "net.jcip" % "jcip-annotations" % "1.0"
 
 
 /////////////////////// InstallerDriver
@@ -385,4 +396,3 @@ libraryDependencies ++= {
 
 ////////////////////// TreeMap
 //already available
-
