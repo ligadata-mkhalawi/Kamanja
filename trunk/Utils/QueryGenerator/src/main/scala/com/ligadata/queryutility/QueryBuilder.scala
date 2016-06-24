@@ -9,7 +9,7 @@ import java.sql.ResultSet
 import scala.collection.mutable.HashMap
 import org.json4s._
 import org.json4s.native.JsonMethods._
-import com.ligadata.kamanja.metadata.{AdapterInfo, ContainerDef, MessageDef, ModelDef}
+import com.ligadata.kamanja.metadata._
 import org.json4s
 
 import scala.collection.immutable.HashMap.HashMap1;
@@ -148,10 +148,13 @@ class QueryBuilder extends LogTrait {
     }
   }
   def executeQuery(conn: Connection, query: String): Unit ={
-    var stmt: Statement = conn.createStatement()
-    stmt.execute(query)
-    stmt.close()
-    // should add try catch exception and add it to log
+    try {
+      var stmt: Statement = conn.createStatement()
+      stmt.execute(query)
+      stmt.close()
+    } catch {
+      case e: Exception => logger.error(e)
+    }
   }
 
   def checkObjexsist(conn: Connection, query: String): Boolean ={
@@ -162,7 +165,8 @@ class QueryBuilder extends LogTrait {
     else
       return false // there is no data
   }
-  def createSetCommand(message: Option[MessageDef]= None, contianer: Option[ContainerDef]= None, model: Option[ModelDef]= None, adapter: Option[AdapterInfo] = None): String ={
+  def createSetCommand(message: Option[MessageDef]= None, contianer: Option[ContainerDef]= None, model: Option[ModelDef]= None, adapter: Option[AdapterInfo] = None
+                       , tenant: Option[TenantInfo] = None): String ={
     var setQuery: String = ""
 
     if(message != None){
@@ -209,13 +213,32 @@ class QueryBuilder extends LogTrait {
         " Tenant = \"%s\", Description = \"%s\", Author = \"%s\", Active = %b".format(
           tenantID, description, author, model.get.Active)
     } else if(adapter != None){
-      val tenantID: String =
-        if(adapter.get.TenantId.isEmpty) ""
-        else adapter.get.TenantId
+      val tenantID: String = if(adapter.get.TenantId.isEmpty) "" else adapter.get.TenantId
 
       setQuery = "set Name = \"%s\", FullName = \"%s\", Tenant = \"%s\"".format(adapter.get.Name, adapter.get.Name, tenantID)
+    } else if(tenant != None){
+      val tenantID: String = if(tenant.get.tenantId.isEmpty) "" else tenant.get.tenantId
+      val description: String = if(tenant.get.description == null) "" else tenant.get.description
+      val primaryStroage: String = if(tenant.get.primaryDataStore == null) "" else tenant.get.primaryDataStore
+
+      setQuery = "set Tenant = \"%s\", Name = \"%s\", FullName = \"%s\", Description = \"%s\"".format(
+        tenantID, tenantID + "_" + primaryStroage, tenantID + "_" + primaryStroage, description)
     }
     return setQuery
+  }
+
+  def PrintAllResult(hashObj: HashMap[String, String], elementType: String): Unit ={
+    if(hashObj.size != 0) {
+      println("These are all existing %s in metadata".format(elementType))
+      logger.debug("These are all existing %s in metadata".format(elementType))
+      for ((key, value) <- hashObj) {
+        logger.debug("key: " + key + " , value: " + value)
+        println("key: " + key + " , value: " + value)
+      }
+    } else {
+      logger.debug("There are no %s in metadata".format(elementType))
+      println("There are no %s in metadata".format(elementType))
+    }
   }
 
 }
