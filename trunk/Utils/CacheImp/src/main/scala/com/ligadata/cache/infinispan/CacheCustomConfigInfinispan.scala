@@ -5,13 +5,12 @@ package com.ligadata.cache.infinispan
   */
 
 import com.ligadata.cache.{CacheCustomConfig, Config}
-import net.sf.ehcache.config.Configuration
 import org.infinispan.configuration.cache.{CacheMode, ConfigurationBuilder}
-import org.infinispan.configuration.global.{GlobalConfiguration, GlobalConfigurationBuilder}
+import org.infinispan.configuration.global.{GlobalConfigurationBuilder}
 import org.infinispan.eviction.EvictionStrategy
 import org.infinispan.manager.DefaultCacheManager
 
-class CacheCustomConfig(val jsonconfig: Config, var cacheManager: DefaultCacheManager) {
+class CacheCustomConfigInfinispan(val jsonconfig: Config, var cacheManager: DefaultCacheManager) {
 
   private val some = jsonconfig.getvalue(Config.CACHECONFIG)
   private val values = some.get.asInstanceOf[Map[String, String]]
