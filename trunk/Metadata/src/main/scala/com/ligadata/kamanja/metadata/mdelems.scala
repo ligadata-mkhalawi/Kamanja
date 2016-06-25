@@ -19,14 +19,19 @@ package com.ligadata.kamanja.metadata
 import java.io.{DataInputStream, DataOutputStream}
 import java.util._
 
-import com.ligadata.Exceptions.{KamanjaException, Json4sSerializationException}
+import com.ligadata.Exceptions.{Json4sSerializationException, KamanjaException}
 import com.ligadata.kamanja.metadata.MiningModelType.MiningModelType
 import com.ligadata.kamanja.metadata.ModelRepresentation.ModelRepresentation
+import org.joda.time.DateTime
+import org.json4s._
+import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import org.json4s.{DefaultFormats, Formats}
 
 import scala.Enumeration
 import scala.collection.mutable.{Map, Set}
+import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.ArrayBuffer
 
 // define some enumerations
 object ObjFormatType extends Enumeration {
@@ -162,7 +167,12 @@ trait BaseElem {
     def CreationTime: Long // Time in milliseconds from 1970-01-01T00:00:00
     def ModTime: Long // Time in milliseconds from 1970-01-01T00:00:00
     def OrigDef: String
-    def Description: String
+  def Description: String
+  // 646 - 675 Change begins - Metadata element addition/changes
+  def Comment: String
+  def Tag : String
+  def Params : scala.collection.immutable.Map[String, String]
+  // 646 - 675 Change ends
     def Author: String
     def NameSpace: String
     def Name: String
@@ -196,7 +206,12 @@ class BaseElemDef extends BaseElem {
     override def CreationTime: Long = creationTime // Time in milliseconds from 1970-01-01T00:00:00
     override def ModTime: Long = modTime // Time in milliseconds from 1970-01-01T00:00:00
     override def OrigDef: String = origDef
-    override def Description: String = description
+  override def Description: String = description
+  // 646 - 675 Changes begin - Metadata additional element support
+  override def Comment : String = comment
+  override def Tag : String = tag
+  override def Params : scala.collection.immutable.Map[String, String] = params
+  // 646 - 675 Changes end
     override def Author: String = author
     override def NameSpace: String = nameSpace // Part of Logical Name
     override def Name: String = name // Part of Logical Name
@@ -237,7 +252,13 @@ class BaseElemDef extends BaseElem {
     var modTime: Long = _ // Time in milliseconds from 1970-01-01T00:00:00 (Mostly it is Local time. May be we need to get GMT)
 
     var origDef: String = _ // string associated with this definition
-    var description: String = _
+
+  var description: String = _
+  // 646 - 675 Changes begin - Metadata additional element support
+  var comment : String = _
+  var tag: String = _
+  var params = scala.collection.immutable.Map.empty[String, String]
+  // 646 - 675 Changes end
     var author: String = _
     var nameSpace: String = _ //
     var name: String = _ // simple name - may not be unique across all name spaces (coupled with mNameSpace, it will be unique)
@@ -253,6 +274,51 @@ class BaseElemDef extends BaseElem {
     var objectFormat: ObjFormatType.FormatType = fJSON
     var ownerId: String = _
     var tenantId: String = _
+
+  // 646 - 675,673 Changes begin - support for MetadataAPI changes
+    def setParamValues (paramStr : Option[String]) : Any = {
+
+      var newParams = scala.collection.mutable.Map.empty[String, String]
+      paramStr match {
+
+        case None => {
+          description = ""
+          comment = ""
+          tag = ""
+        }
+        case pStr: Option[String] => {
+          val param = pStr getOrElse ""
+          if (param != "") {
+            newParams = scala.collection.mutable.Map() ++ parse(param.toLowerCase).values.asInstanceOf[scala.collection.immutable.Map[String, String]]
+            if (newParams contains "description") {
+              description = newParams.getOrElse("description", "")
+              newParams = newParams - "description"
+            }
+            if (newParams contains "comment") {
+              comment = newParams.getOrElse("comment", "")
+              newParams = newParams - "comment"
+            }
+            if (newParams contains "tag") {
+              tag =  newParams.getOrElse("tag", "")
+              newParams = newParams - "tag"
+            }
+          }
+        }
+      }
+
+      params = newParams.toMap
+    }
+
+    def setCreationTime () : Any = {
+      creationTime = System.currentTimeMillis()
+
+    }
+
+  def setModTime () : Any = {
+    modTime = System.currentTimeMillis()
+  }
+
+  // 646 - 675, 673 Changes end
 }
 
 // All these metadata elements should have specialized serialization and deserialization
@@ -797,7 +863,8 @@ class ModelDef( val modelRepresentation: ModelRepresentation = ModelRepresentati
                 , var outputMsgs: Array[String] = Array[String]()
                 , var isReusable: Boolean = false
                 , var supportsInstanceSerialization: Boolean = false
-                , var modelConfig: String = "") extends BaseElemDef {
+                , var modelConfig: String = ""
+	        , var depContainers: Array[String] = Array[String]()) extends BaseElemDef {
     override def MdElementCategory: String = "Model"
     def typeString: String = PhysicalName
     def SupportsInstanceSerialization : Boolean = supportsInstanceSerialization

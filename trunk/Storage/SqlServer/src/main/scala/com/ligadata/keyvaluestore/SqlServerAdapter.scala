@@ -324,6 +324,88 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new java.util.Date(System.currentTimeMillis))
   }
 
+  private def getKeySize(k: Key): Int = {
+    var bucketKeySize = 0
+    k.bucketKey.foreach(bk => { bucketKeySize = bucketKeySize + bk.length })
+    8 + bucketKeySize + 8 + 4
+  }
+
+  private def getValueSize(v: Value): Int = {
+    v.serializedInfo.length
+  }
+
+  private def updateOpStats(operation: String, tableName: String, opCount: Int) : Unit = lock.synchronized{
+    operation match {
+      case "get" => {
+	if( _getOps.get(tableName) != None ){
+	  _getOps(tableName) = _getOps(tableName) + opCount
+	}
+	else{
+	  _getOps(tableName) = + opCount
+	}
+      }
+      case "put" => {
+	if( _putOps.get(tableName) != None ){
+	  _putOps(tableName) = _putOps(tableName) + opCount
+	}
+	else{
+	  _putOps(tableName) = opCount
+	}	  
+      }
+      case _ => {
+        throw CreateDMLException("Internal Error: Failed to Update Op-stats for " + tableName, new Exception("Invalid operation " + operation))
+      }
+    }
+  }
+
+  private def updateObjStats(operation: String, tableName: String, objCount: Int) : Unit = lock.synchronized{
+    operation match {
+      case "get" => {
+	if( _getObjs.get(tableName) != None ){
+	  _getObjs(tableName) = _getObjs(tableName) + objCount
+	}
+	else{
+	  _getObjs(tableName) = + objCount
+	}
+      }
+      case "put" => {
+	if( _putObjs.get(tableName) != None ){
+	  _putObjs(tableName) = _putObjs(tableName) + objCount
+	}
+	else{
+	  _putObjs(tableName) = objCount
+	}	  
+      }
+      case _ => {
+        throw CreateDMLException("Internal Error: Failed to Update Obj-stats for " + tableName, new Exception("Invalid operation " + operation))
+      }
+    }
+  }
+
+  private def updateByteStats(operation: String, tableName: String, byteCount: Int) : Unit = lock.synchronized{
+    operation match {
+      case "get" => {
+	if( _getBytes.get(tableName) != None ){
+	  _getBytes(tableName) = _getBytes(tableName) + byteCount
+	}
+	else{
+	  _getBytes(tableName) = byteCount
+	}
+      }
+      case "put" => {
+	if( _putBytes.get(tableName) != None ){
+	  _putBytes(tableName) = _putBytes(tableName) + byteCount
+	}
+	else{
+	  _putBytes(tableName) = byteCount
+	}
+      }
+      case _ => {
+        throw CreateDMLException("Internal Error: Failed to Update Byte Stats for " + tableName, new Exception("Invalid operation " + operation))
+      }
+    }
+  }
+
   private def getConnection: Connection = {
     try {
       var con = dataSource.getConnection
@@ -451,7 +533,7 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     containerName.toLowerCase.replace('.', '_').replace('-', '_')
   }
 
-  private def toFullTableName(containerName: String): String = {
+  def toFullTableName(containerName: String): String = {
     SchemaName + "." + toTableName(containerName)
   }
 
@@ -501,6 +583,9 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       pstmt.setLong(17, key.transactionId)
       pstmt.setInt(18, key.rowId)
       pstmt.executeUpdate();
+      updateOpStats("put",tableName,1)
+      updateObjStats("put",tableName,1)
+      updateByteStats("put",tableName,getKeySize(key)+getValueSize(value))
     } catch {
       case e: Exception => {
         if (con != null) {
@@ -552,6 +637,7 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
         con = getConnection
         // we need to commit entire batch
         con.setAutoCommit(false)
+	var byteCount = 0
         data_list.foreach(li => {
           var containerName = li._1
           CheckTableExists(containerName)
@@ -592,6 +678,7 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
             pstmt.setLong(17, key.transactionId)
             pstmt.setInt(18, key.rowId)
             pstmt.addBatch()
+	    byteCount = byteCount + getKeySize(key)+getValueSize(value)
           })
           logger.debug("Executing bulk upsert...")
           var updateCount = pstmt.executeBatch();
@@ -601,6 +688,9 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
             pstmt.close
             pstmt = null;
           }
+	  updateOpStats("put",tableName,1)
+	  updateObjStats("put",tableName,totalRowsUpdated)
+	  updateByteStats("put",tableName,byteCount)
           logger.info("Inserted/Updated " + totalRowsUpdated + " rows for " + tableName)
         })
         con.commit()
@@ -860,6 +950,9 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
 
       stmt = con.createStatement()
       rs = stmt.executeQuery(query);
+      var recCount = 0
+      var byteCount = 0
+      updateOpStats("get",tableName,1)
       while (rs.next()) {
         var timePartition = rs.getLong(1)
         var keyStr = rs.getString(2)
@@ -870,12 +963,14 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
         var ba = rs.getBytes(7)
         val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
         var key = new Key(timePartition, bucketKey, tId, rId)
-        // yet to understand how split serializerType and serializedInfo from ba
-        // so hard coding serializerType to "kryo" for now
         var value = new Value(schemaId, st, ba)
+	recCount = recCount + 1
+	byteCount = byteCount + getKeySize(key) + getValueSize(value)
         if (callbackFunction != null)
           (callbackFunction)(key, value)
       }
+      updateByteStats("get",tableName,byteCount)
+      updateObjStats("get",tableName,recCount)
     } catch {
       case e: Exception => {
         throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
@@ -909,6 +1004,9 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
 
       stmt = con.createStatement()
       rs = stmt.executeQuery(query);
+      var recCount = 0
+      var byteCount = 0
+      updateOpStats("get",tableName,1)
       while (rs.next()) {
         var timePartition = rs.getLong(1)
         var keyStr = rs.getString(2)
@@ -916,9 +1014,13 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
         var rId = rs.getInt(4)
         val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
         var key = new Key(timePartition, bucketKey, tId, rId)
+	recCount = recCount + 1
+	byteCount = byteCount + getKeySize(key)
         if (callbackFunction != null)
           (callbackFunction)(key)
       }
+      updateByteStats("get",tableName,byteCount)
+      updateObjStats("get",tableName,recCount)
     } catch {
       case e: Exception => {
         throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
@@ -954,12 +1056,15 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
 
       query = "select timePartition,bucketKey,transactionId,rowId from " + tableName + " where timePartition = ? and bucketKey = ? and transactionid = ? and rowId = ?"
       pstmt = con.prepareStatement(query)
+      var recCount = 0
+      var byteCount = 0
       keys.foreach(key => {
         pstmt.setLong(1, key.timePartition)
         pstmt.setString(2, key.bucketKey.mkString(","))
         pstmt.setLong(3, key.transactionId)
         pstmt.setInt(4, key.rowId)
         var rs = pstmt.executeQuery();
+	updateOpStats("get",tableName,1)
         while (rs.next()) {
           var timePartition = rs.getLong(1)
           var keyStr = rs.getString(2)
@@ -967,10 +1072,14 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
           var rId = rs.getInt(4)
           val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
           var key = new Key(timePartition, bucketKey, tId, rId)
+	  recCount = recCount + 1
+	  byteCount = byteCount + getKeySize(key)
           if (callbackFunction != null)
             (callbackFunction)(key)
         }
       })
+      updateByteStats("get",tableName,byteCount)
+      updateObjStats("get",tableName,recCount)
     } catch {
       case e: Exception => {
         throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
@@ -996,21 +1105,28 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
 
       query = "select schemaId,serializerType,serializedInfo from " + tableName + " where timePartition = ? and bucketKey = ? and transactionid = ? and rowId = ?"
       pstmt = con.prepareStatement(query)
+      var recCount = 0
+      var byteCount = 0
       keys.foreach(key => {
         pstmt.setLong(1, key.timePartition)
         pstmt.setString(2, key.bucketKey.mkString(","))
         pstmt.setLong(3, key.transactionId)
         pstmt.setInt(4, key.rowId)
         var rs = pstmt.executeQuery();
+	updateOpStats("get",tableName,1)
         while (rs.next()) {
           val schemaId = rs.getInt(1)
           val st = rs.getString(2)
           val ba = rs.getBytes(3)
           val value = new Value(schemaId, st, ba)
+	  recCount = recCount + 1
+	  byteCount = byteCount + getKeySize(key) + getValueSize(value)
           if (callbackFunction != null)
             (callbackFunction)(key, value)
         }
       })
+      updateByteStats("get",tableName,byteCount)
+      updateObjStats("get",tableName,recCount)
     } catch {
       case e: Exception => {
         throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
@@ -1054,13 +1170,16 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       CheckTableExists(containerName)
       //con = DriverManager.getConnection(jdbcUrl);
       con = getConnection
-
+      var recCount = 0
+      var byteCount = 0
       time_ranges.foreach(time_range => {
         query = "select timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo from " + tableName + " where timePartition >= " + time_range.beginTime + " and timePartition <= " + time_range.endTime + " and bucketKey = ? "
         pstmt = con.prepareStatement(query)
+
         bucketKeys.foreach(bucketKey => {
           pstmt.setString(1, bucketKey.mkString(","))
           var rs = pstmt.executeQuery();
+	  updateOpStats("get",tableName,1)
           while (rs.next()) {
             var timePartition = rs.getLong(1)
             var keyStr = rs.getString(2)
@@ -1072,6 +1191,8 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
             val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
             var key = new Key(timePartition, bucketKey, tId, rId)
             var value = new Value(schemaId, st, ba)
+	    recCount = recCount + 1
+	    byteCount = byteCount + getKeySize(key) + getValueSize(value)
             if (callbackFunction != null)
               (callbackFunction)(key, value)
           }
@@ -1081,6 +1202,8 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
           pstmt = null
         }
       })
+      updateByteStats("get",tableName,byteCount)
+      updateObjStats("get",tableName,recCount)
     } catch {
       case e: Exception => {
         throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
@@ -1103,7 +1226,8 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     try {
       CheckTableExists(containerName)
       con = getConnection
-
+      var recCount = 0
+      var byteCount = 0
       time_ranges.foreach(time_range => {
         query = "select timePartition,bucketKey,transactionId,rowId from " + tableName + " where timePartition >= " + time_range.beginTime + " and timePartition <= " + time_range.endTime + " and bucketKey = ? "
         logger.debug("query => " + query)
@@ -1111,6 +1235,7 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
         bucketKeys.foreach(bucketKey => {
           pstmt.setString(1, bucketKey.mkString(","))
           var rs = pstmt.executeQuery();
+	  updateOpStats("get",tableName,1)
           while (rs.next()) {
             var timePartition = rs.getLong(1)
             var keyStr = rs.getString(2)
@@ -1118,6 +1243,8 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
             var rId = rs.getInt(4)
             val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
             var key = new Key(timePartition, bucketKey, tId, rId)
+	    recCount = recCount + 1
+	    byteCount = byteCount + getKeySize(key)
             if (callbackFunction != null)
               (callbackFunction)(key)
           }
@@ -1127,6 +1254,8 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
           pstmt = null
         }
       })
+      updateByteStats("get",tableName,byteCount)
+      updateObjStats("get",tableName,recCount)
     } catch {
       case e: Exception => {
         throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
@@ -1149,12 +1278,14 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     try {
       CheckTableExists(containerName)
       con = getConnection
-
+      var recCount = 0
+      var byteCount = 0
       query = "select timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo from " + tableName + " where  bucketKey = ? "
       pstmt = con.prepareStatement(query)
       bucketKeys.foreach(bucketKey => {
         pstmt.setString(1, bucketKey.mkString(","))
         var rs = pstmt.executeQuery();
+	updateOpStats("get",tableName,1)
         while (rs.next()) {
           var timePartition = rs.getLong(1)
           var keyStr = rs.getString(2)
@@ -1166,10 +1297,14 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
           val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
           var key = new Key(timePartition, bucketKey, tId, rId)
           var value = new Value(schemaId, st, ba)
+	  recCount = recCount + 1
+	  byteCount = byteCount + getKeySize(key) + getValueSize(value)
           if (callbackFunction != null)
             (callbackFunction)(key, value)
         }
       })
+      updateByteStats("get",tableName,byteCount)
+      updateObjStats("get",tableName,recCount)
     } catch {
       case e: Exception => {
         throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
@@ -1192,12 +1327,14 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     try {
       CheckTableExists(containerName)
       con = getConnection
-
+      var recCount = 0
+      var byteCount = 0
       query = "select timePartition,bucketKey,transactionId,rowId from " + tableName + " where  bucketKey = ? "
       pstmt = con.prepareStatement(query)
       bucketKeys.foreach(bucketKey => {
         pstmt.setString(1, bucketKey.mkString(","))
         var rs = pstmt.executeQuery();
+	updateOpStats("get",tableName,1)
         while (rs.next()) {
           var timePartition = rs.getLong(1)
           var keyStr = rs.getString(2)
@@ -1205,10 +1342,14 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
           var rId = rs.getInt(4)
           val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
           var key = new Key(timePartition, bucketKey, tId, rId)
+	  recCount = recCount + 1
+	  byteCount = byteCount + getKeySize(key)
           if (callbackFunction != null)
             (callbackFunction)(key)
         }
       })
+      updateByteStats("get",tableName,byteCount)
+      updateObjStats("get",tableName,recCount)
     } catch {
       case e: Exception => {
         throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)

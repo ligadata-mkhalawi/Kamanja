@@ -12,6 +12,9 @@ object AdapterMessageBindingUtils {
     /** initialize a logger */
     val loggerName = this.getClass.getName
     lazy val logger = LogManager.getLogger(loggerName)
+  // 646 - 676 Change begins - replase MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Chagne ends
 
     lazy val serializerType = "json4s"
 
@@ -132,7 +135,7 @@ object AdapterMessageBindingUtils {
             val operations : Array[String] = bindingsRemoved.map(binding => "Remove")
             val bindingsThatWereRemoved : String = bindingsRemoved.map(b => b.FullName).mkString(", ")
             logger.debug(s"Notify cluster via zookeeper that this binding has been removed... $bindingsThatWereRemoved")
-            MetadataAPIImpl.NotifyEngine(bindingsRemoved, operations)
+            getMetadataAPI.NotifyEngine(bindingsRemoved, operations)
 
             val apiResult = new ApiResult(ErrorCodeConstants.Success, "Remove AdapterMessageBinding", null, ErrorCodeConstants.Remove_AdapterMessageBinding_Successful + " : " + displayKey)
             apiResult.toString()
@@ -208,7 +211,7 @@ object AdapterMessageBindingUtils {
                     val operations: Array[String] = bindingsRemoved.map(binding => "Remove")
                     val bindingsThatWereRemoved: String = bindingsRemoved.map(b => b.asInstanceOf[AdapterMessageBinding].FullBindingName).mkString(", ")
                     logger.debug(s"Notify cluster via zookeeper that this binding has been removed... $bindingsThatWereRemoved")
-                    MetadataAPIImpl.NotifyEngine(bindingsRemoved, operations)
+                    getMetadataAPI.NotifyEngine(bindingsRemoved, operations)
                     val apiResult = new ApiResult(ErrorCodeConstants.Success, "Remove AdapterMessageBinding Zookeeper Notification", bindingsThatWereRemoved, ErrorCodeConstants.Remove_AdapterMessageBinding_Successful)
                     apiResult.toString
                 } else {
@@ -523,7 +526,7 @@ object AdapterMessageBindingUtils {
                     val key: String = s"adaptermessagebinding.${binding.FullBindingName}"
                     val jsonstr = MetadataAPISerialization.serializeObjectToJson(binding)
                     val value = jsonstr.getBytes
-                    MetadataAPIImpl.SaveObject(key.toLowerCase, value, "adapter_message_bindings", serializerType)
+                    getMetadataAPI.SaveObject(key.toLowerCase, value, "adapter_message_bindings", serializerType)
 
                     logger.info(s"jsonStr for $key is\n$jsonstr ")
 
@@ -537,7 +540,7 @@ object AdapterMessageBindingUtils {
                 val operations : Array[String] = bindingsAdded.map(binding => "Add")
                 val bindingsThatWereAdded : String = bindingsAdded.map(b => b.FullName).mkString(", ")
                 logger.debug(s"Notify cluster via zookeeper that these bindings have been added... $bindingsThatWereAdded")
-                MetadataAPIImpl.NotifyEngine(bindingsAdded, operations)
+                getMetadataAPI.NotifyEngine(bindingsAdded, operations)
 
 
                 /** results second */

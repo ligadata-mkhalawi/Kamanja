@@ -306,7 +306,7 @@ class JpmmlSupport(mgr: MdMgr
       }
     }
 
-    var jsonStr: String = JsonSerializer.SerializeObjectToJson(modelDef)
+    var jsonStr: String = MetadataAPISerialization.serializeObjectToJson(modelDef)
     jsonStr
   }
 

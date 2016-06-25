@@ -82,12 +82,15 @@ object TypeUtils {
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
   //lazy val serializer = SerializerManager.GetSerializer("kryo")
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   def AddType(typeText: String, format: String): String = {
     try {
       logger.debug("Parsing type object given as Json String..")
       val typ = JsonSerializer.parseType(typeText, "JSON")
-      MetadataAPIImpl.SaveObject(typ, MdMgr.GetMdMgr)
+      getMetadataAPI.SaveObject(typ, MdMgr.GetMdMgr)
       var apiResult = new ApiResult(ErrorCodeConstants.Success, "AddType", typeText, ErrorCodeConstants.Add_Type_Successful)
       apiResult.toString()
     } catch {
@@ -121,9 +124,9 @@ object TypeUtils {
       var key = typeDef.FullNameWithVer
       var value = JsonSerializer.SerializeObjectToJson(typeDef);
       logger.debug("key => " + key + ",value =>" + value);
-      MetadataAPIImpl.SaveObject(typeDef, MdMgr.GetMdMgr)
+      getMetadataAPI.SaveObject(typeDef, MdMgr.GetMdMgr)
 
-      MetadataAPIImpl.UpdateTranId(Array(typeDef))
+      getMetadataAPI.UpdateTranId(Array(typeDef))
 
       var apiResult = new ApiResult(ErrorCodeConstants.Success, "AddType", null, ErrorCodeConstants.Add_Type_Successful + ":" + dispkey)
       apiResult.toString()
@@ -149,12 +152,12 @@ object TypeUtils {
           var typs = new ArrayBuffer[BaseElemDef]
 
           typeList.foreach(typ => {
-            MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, typesText, AuditConstants.SUCCESS, "", typ.FullNameWithVer)
-            MetadataAPIImpl.SaveObject(typ, MdMgr.GetMdMgr)
+            getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, typesText, AuditConstants.SUCCESS, "", typ.FullNameWithVer)
+            getMetadataAPI.SaveObject(typ, MdMgr.GetMdMgr)
             typs +=typ
             logger.debug("Type object name => " + typ.FullName + "." + MdMgr.Pad0s2Version(typ.Version))
           })
-          MetadataAPIImpl.UpdateTranId(typs.toArray)
+          getMetadataAPI.UpdateTranId(typs.toArray)
           /** Only report the ones actually saved... if there were others, they are in the log as "fail to add" due most likely to already being defined */
           val typesSavedAsJson: String = JsonSerializer.SerializeObjectListToJson(typeList)
           var apiResult = new ApiResult(ErrorCodeConstants.Success, "AddTypes", typesText, ErrorCodeConstants.Add_Type_Successful)
@@ -178,7 +181,7 @@ object TypeUtils {
   def RemoveType(typeNameSpace: String, typeName: String, version: Long, userid: Option[String]): String = {
     val key = typeNameSpace + "." + typeName + "." + version
     val dispkey = typeNameSpace + "." + typeName + "." + MdMgr.Pad0s2Version(version)
-    if (userid != None) MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.DELETEOBJECT, AuditConstants.TYPE, AuditConstants.SUCCESS, "", key)
+    if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.DELETEOBJECT, AuditConstants.TYPE, AuditConstants.SUCCESS, "", key)
     try {
       logger.debug("typeNameSpace: "+typeNameSpace+" typeName: "+typeName)
       val typ = MdMgr.GetMdMgr.Type(typeNameSpace, typeName, version, true)
@@ -195,9 +198,10 @@ object TypeUtils {
           logger.debug("Deleting type "+cache_type)
           //ArrayTypeDef & MapTypeDef cannot be serialized
           if(!(cache_type=="StructTypeDef" || cache_type=="MappedMsgTypeDef")){
-            MetadataAPIImpl.DeleteObject(ts.asInstanceOf[BaseElemDef])
-            ts.tranId = MetadataAPIImpl.GetNewTranId
-            MetadataAPIImpl.UpdateTranId(Array(ts))
+            getMetadataAPI.DeleteObject(ts.asInstanceOf[BaseElemDef])
+            ts.tranId = getMetadataAPI.GetNewTranId
+            getMetadataAPI.UpdateTranId(Array(ts))
+
           }
           var apiResult=new ApiResult(ErrorCodeConstants.Success, "RemoveType", null, ErrorCodeConstants.Remove_Type_Successful + ":" + dispkey)
           apiResult.toString()
@@ -222,7 +226,7 @@ object TypeUtils {
   def UpdateType(typeJson: String, format: String, userid: Option[String]): String = {
     implicit val jsonFormats: Formats = DefaultFormats
     val typeDef = JsonSerializer.parseType(typeJson, "JSON")
-    MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.UPDATEOBJECT, typeJson, AuditConstants.SUCCESS, "", typeDef.FullNameWithVer)
+    getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.UPDATEOBJECT, typeJson, AuditConstants.SUCCESS, "", typeDef.FullNameWithVer)
 
     val key = typeDef.nameSpace + "." + typeDef.name + "." + typeDef.Version
     val dispkey = typeDef.nameSpace + "." + typeDef.name + "." + MdMgr.Pad0s2Version(typeDef.Version)
@@ -274,7 +278,7 @@ object TypeUtils {
   // All available types(format JSON or XML) as a String
   def GetAllTypes(formatType: String, userid: Option[String]): String = {
     try {
-      if (userid != None) MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, AuditConstants.TYPE, AuditConstants.SUCCESS, "", "ALL")
+      if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, AuditConstants.TYPE, AuditConstants.SUCCESS, "", "ALL")
       val typeDefs = MdMgr.GetMdMgr.Types(true, true)
       typeDefs match {
         case None =>
@@ -299,7 +303,7 @@ object TypeUtils {
 
   def GetAllTypesFromCache(active: Boolean, userid: Option[String]): Array[String] = {
     var typeList: Array[String] = new Array[String](0)
-    MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETKEYS, AuditConstants.TYPE, AuditConstants.SUCCESS, "", AuditConstants.TYPE)
+    getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETKEYS, AuditConstants.TYPE, AuditConstants.SUCCESS, "", AuditConstants.TYPE)
     try {
       val contDefs = MdMgr.GetMdMgr.Types(active, true)
       contDefs match {
@@ -352,7 +356,7 @@ object TypeUtils {
   def GetTypeDef(nameSpace: String, objectName: String, formatType: String, version: String, userid: Option[String]): String = {
     var key = nameSpace + "." + objectName + "." + version.toLong
     val dispkey = nameSpace + "." + objectName + "." + MdMgr.Pad0s2Version(version.toLong)
-    MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, AuditConstants.TYPE, AuditConstants.SUCCESS, "", dispkey)
+    getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, AuditConstants.TYPE, AuditConstants.SUCCESS, "", dispkey)
     try {
       val typeDefs = MdMgr.GetMdMgr.Types(nameSpace, objectName, false, false)
       typeDefs match {
@@ -379,7 +383,7 @@ object TypeUtils {
   def GetType(nameSpace: String, objectName: String, version: String, formatType: String, userid: Option[String]): Option[BaseTypeDef] = {
     try {
       val dispkey = nameSpace + "." + objectName + "." + version
-      if (userid != None) MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, AuditConstants.TYPE, AuditConstants.SUCCESS, "", dispkey)
+      if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, AuditConstants.TYPE, AuditConstants.SUCCESS, "", dispkey)
       val typeDefs = MdMgr.GetMdMgr.Types(nameSpace, objectName, false, false)
       typeDefs match {
         case None => None
@@ -468,7 +472,7 @@ object TypeUtils {
       val typ = MetadataAPISerialization.deserializeMetadata(new String(obj._2.asInstanceOf[Array[Byte]])).asInstanceOf[AnyRef]
       if (typ != null) {
         logger.debug("Add the object " + key + " to the cache ")
-        MetadataAPIImpl.AddObjectToCache(typ, MdMgr.GetMdMgr)
+        getMetadataAPI.AddObjectToCache(typ, MdMgr.GetMdMgr)
       }
     } catch {
       case e: Exception => {

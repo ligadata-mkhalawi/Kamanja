@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ligadata.jpmml
+package com.ligadata.python
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.{Map => MutableMap}
@@ -52,7 +52,7 @@ trait LogTrait {
   * An implementation of the FactoryOfModelInstanceFactory trait that supports all of the JPMML models.
   */
 
-object JpmmlFactoryOfModelInstanceFactory extends FactoryOfModelInstanceFactory {
+object PythonFactoryOfModelInstanceFactory extends FactoryOfModelInstanceFactory {
     private[this] val loggerName = this.getClass.getName
     private[this] val LOG = LogManager.getLogger(loggerName)
 
@@ -123,7 +123,7 @@ object JpmmlFactoryOfModelInstanceFactory extends FactoryOfModelInstanceFactory 
 
         val isReasonable : Boolean = (modelDef != null && modelDef.FullNameWithVer != null && modelDef.FullNameWithVer.nonEmpty)
         val mdlInstanceFactory : ModelInstanceFactory = if (isReasonable) {
-            val factory: JpmmlAdapterFactory = new JpmmlAdapterFactory(modelDef, nodeContext)
+            val factory: PythonAdapterFactory = new PythonAdapterFactory(modelDef, nodeContext)
 
             if (factory == null) {
                 LOG.error(s"Failed to instantiate ModelInstanceFactory... name = $modelDef.FullNameWithVer")
@@ -160,18 +160,18 @@ object JpmmlFactoryOfModelInstanceFactory extends FactoryOfModelInstanceFactory 
 }
 
 /**
-  * JpmmlAdapter serves a "shim" between the engine and a PMML evaluator that will perform the actual message
+  * PythonAdapter serves a "shim" between the engine and a PMML evaluator that will perform the actual message
   * scoring. It exhibits the "adapter" pattern as discussed in "Design Patterns" by Gamma, Helm, Johnson, and Vlissitudes.
   *
   * Kamanja messages are presented to the adapter and transformed to a Map[FieldName, FieldValue] for consumption by
-  * the PMML evaluator associated with the JpmmlAdapter instance. The target fields (or predictions) and the output fields
+  * the PMML evaluator associated with the PythonAdapter instance. The target fields (or predictions) and the output fields
   * are returned in the MappedModelResults instance to the engine for further transformation and dispatch.
   *
   * @param factory This model's factory object
-  * @param modelEvaluator The PMML evaluator needed to evaluate the model for this model (modelName.modelVersion)
+  * @param pythonPath The kamanja python path.  The server and its modules are located here.
   */
 
-class JpmmlAdapter(factory : ModelInstanceFactory, modelEvaluator: ModelEvaluator[_]) extends ModelInstance(factory) {
+class PythonAdapter(factory : ModelInstanceFactory, pythonPath : String) extends ModelInstance(factory) {
 
     /**
       * The engine will call this method to have the model evaluate the input message and produce a ModelResultBase with results.
@@ -193,11 +193,7 @@ class JpmmlAdapter(factory : ModelInstanceFactory, modelEvaluator: ModelEvaluato
       * @return
       */
     private def evaluateModel(msg : ContainerInterface): ModelResultBase = {
-        val activeFields = modelEvaluator.getActiveFields
-        val preparedFields = prepareFields(activeFields, msg, modelEvaluator)
-        val evalResultRaw : MutableMap[FieldName, _] = modelEvaluator.evaluate(preparedFields.asJava).asScala
-        val evalResults = replaceNull(evalResultRaw)
-        val results = EvaluatorUtil.decode(evalResults.asJava).asScala
+        val results : Array[(String, Any)] = Array[(String, Any)]()
         new MappedModelResults().withResults(results.toArray)
     }
 
@@ -254,7 +250,7 @@ class JpmmlAdapter(factory : ModelInstanceFactory, modelEvaluator: ModelEvaluato
 
 
 /**
-  * The JpmmlAdapterFactory instantiates its PMML model instance when asked by caller.  Its main function is to
+  * The PythonAdapterFactory instantiates its PMML model instance when asked by caller.  Its main function is to
   * instantiate a new model whenever asked (createModelInstance) and assess whether the current message being processed
   * by the engine is consumable by this model (isValidMessage)
   *
@@ -264,7 +260,7 @@ class JpmmlAdapter(factory : ModelInstanceFactory, modelEvaluator: ModelEvaluato
   */
 
 // ModelInstanceFactory will be created from FactoryOfModelInstanceFactory when metadata got resolved (while engine is starting and when metadata adding while running the engine).
-class JpmmlAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) with LogTrait {
+class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) with LogTrait {
 
     // This calls when the instance got created. And only calls once per instance.
     // Common initialization for all Model Instances. This gets called once per node during the metadata load or corresponding model def change.
@@ -283,7 +279,7 @@ class JpmmlAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends 
         val name : String = if (getModelDef() != null) {
             getModelDef().FullName
         } else {
-            val msg : String =  "JpmmlAdapterFactory: model has no name and no version"
+            val msg : String =  "PythonAdapterFactory: model has no name and no version"
             logger.error(msg)
             msg
         }
@@ -326,16 +322,19 @@ class JpmmlAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends 
     }
 
     /**
-      * Answer a model instance, obtaining a pre-existing one in the cache if possible.
+      * Answer a python proxy model instance.
+      *
       * @return - a ModelInstance that can process the message found in the TransactionContext supplied at execution time
       */
     override def createModelInstance(): ModelInstance = {
 
         val useThisModel : ModelInstance = if (modelDef != null) {
-            /** Ingest the pmml here and build an evaluator */
+            /** 1) Add the model to the python server */
+            /** 2) Add the model to the python server */
             val modelEvaluator: ModelEvaluator[_] = createEvaluator(modelDef.objectDefinition)
             val isInstanceReusable : Boolean = true
-            val builtModel : ModelInstance = new JpmmlAdapter( this, modelEvaluator)
+            val pythonPath : String = nodeContext.getValue("PYTHONPATH").asInstanceOf[String]
+            val builtModel : ModelInstance = new PythonAdapter( this, pythonPath)
             builtModel
         } else {
             logger.error("ModelDef in ctor was null...instance could not be built")

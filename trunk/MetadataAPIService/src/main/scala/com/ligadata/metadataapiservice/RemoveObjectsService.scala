@@ -46,6 +46,9 @@ class RemoveObjectsService(requestContext: RequestContext, userid: Option[String
   val loggerName = this.getClass.getName
   val logger = LogManager.getLogger(loggerName)
   //logger.setLevel(Level.TRACE);
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   val APIName = "RemoveObjects"
 
@@ -77,29 +80,29 @@ class RemoveObjectsService(requestContext: RequestContext, userid: Option[String
     }
 
     val objectName = (nameSpace + "." + arg.Name + "." + version).toLowerCase
-    if (!MetadataAPIImpl.checkAuth(userid, password, cert, MetadataAPIImpl.getPrivilegeName("delete", arg.ObjectType))) {
-      MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.DELETEOBJECT, objType, AuditConstants.FAIL, "", objectName)
+    if (!getMetadataAPI.checkAuth(userid, password, cert, getMetadataAPI.getPrivilegeName("delete", arg.ObjectType))) {
+      getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.DELETEOBJECT, objType, AuditConstants.FAIL, "", objectName)
       return new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error:UPDATE not allowed for this user").toString
     }
 
     arg.ObjectType match {
       case "model" => {
-	      return MetadataAPIImpl.RemoveModel(s"$nameSpace.${arg.Name}",MdMgr.ConvertLongVersionToString(version.toLong), userid)
+	      return getMetadataAPI.RemoveModel(s"$nameSpace.${arg.Name}",MdMgr.ConvertLongVersionToString(version.toLong), userid)
       }
       case "message" => {
-	      return MetadataAPIImpl.RemoveMessage(nameSpace,arg.Name,version.toLong, userid)
+	      return getMetadataAPI.RemoveMessage(nameSpace,arg.Name,version.toLong, userid)
       }
       case "container" => {
-	      return MetadataAPIImpl.RemoveContainer(nameSpace,arg.Name,version.toLong, userid)
+	      return getMetadataAPI.RemoveContainer(nameSpace,arg.Name,version.toLong, userid)
       }
       case "function" => {
-	      return MetadataAPIImpl.RemoveFunction(nameSpace,arg.Name,version.toLong, userid)
+	      return getMetadataAPI.RemoveFunction(nameSpace,arg.Name,version.toLong, userid)
       }
       case "concept" => {
-	      return MetadataAPIImpl.RemoveConcept(nameSpace,arg.Name,version.toLong, userid)
+	      return getMetadataAPI.RemoveConcept(nameSpace,arg.Name,version.toLong, userid)
       }
       case "type" => {
-	      return MetadataAPIImpl.RemoveType(nameSpace,arg.Name,version.toLong, userid)
+	      return getMetadataAPI.RemoveType(nameSpace,arg.Name,version.toLong, userid)
       }
     }
     apiResult

@@ -5,11 +5,21 @@ import sbt._
 name := "KamanjaInternalDeps"
 
 //version := "1.0"
-val kamanjaVersion = "1.4.1"
+val kamanjaVersion = "1.5.0"
 
 assemblyJarName in assembly := {
   s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"
 }
+
+assemblyMergeStrategy in assembly := {
+  case x if x contains "com/ligadata/keyvaluestore/DriverShim.class" => MergeStrategy.first
+  case x if x contains "com/ligadata/keyvaluestore/JdbcClassLoader.class" => MergeStrategy.first
+  case x =>
+    val oldStrategy = (assemblyMergeStrategy in assembly).value
+    oldStrategy(x)
+
+}
+
 
 excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
   val excludes = Set("commons-beanutils-1.7.0.jar", "google-collections-1.0.jar", "commons-collections4-4.0.jar", "log4j-1.2.17.jar", "log4j-1.2.16.jar", "commons-collections-4-4.0.jar", "scalatest_2.11-2.2.0.jar"
