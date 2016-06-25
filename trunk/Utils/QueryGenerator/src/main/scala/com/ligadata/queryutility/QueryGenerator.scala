@@ -289,9 +289,12 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
        println("There are no tenantInfo in metadata")
      } else{
        for(tenant <- tenatInfo){
-         val json = parse(tenant.primaryDataStore)
-         val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
-         val primaryStroage: String = if(adapCfgValues.get("StoreType").get.toString == null) "" else adapCfgValues.get("StoreType").get.toString
+         var primaryStroage: String = ""
+         if(tenant.primaryDataStore != null) {
+           val json = parse(tenant.primaryDataStore)
+           val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
+           primaryStroage = if (adapCfgValues.get("StoreType").get.toString == null) "" else adapCfgValues.get("StoreType").get.toString
+         }
          val tenantName = tenant.tenantId + "_" + primaryStroage
          val setQuery = queryObj.createSetCommand(tenant = option(tenant))
          val query: String = queryObj.createQuery(elementType = "vertex", className = "Storage", setQuery = setQuery)
@@ -327,9 +330,12 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
            var storageId = ""
            val modelTenant = if(model.TenantId.isEmpty) "" else model.TenantId
            val storageTenant = if(tenant.tenantId.isEmpty) "" else tenant.tenantId
-           val json = parse(tenant.primaryDataStore)
-           val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
-           val primaryStroage: String = if(adapCfgValues.get("StoreType").get.toString == null) "" else adapCfgValues.get("StoreType").get.toString
+           var primaryStroage: String = ""
+           if(tenant.primaryDataStore != null) {
+             val json = parse(tenant.primaryDataStore)
+             val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
+             primaryStroage = if (adapCfgValues.get("StoreType").get.toString == null) "" else adapCfgValues.get("StoreType").get.toString
+           }
            val tenantName = tenant.tenantId + "_" + primaryStroage
         //   if(modelTenant.equalsIgnoreCase(storageTenant)) {
              for (vertex <- verticesDataNew) {
@@ -556,9 +562,12 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
          for (tenant <-tenatInfo){ // add link between message and storage (message ===StoredBy===> storage ===retrieves===> message)
          var vertexId = ""
            var storageId = ""
-           val json = parse(tenant.primaryDataStore)
-           val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
-           val primaryStroage: String = if(adapCfgValues.get("StoreType").get.toString == null) "" else adapCfgValues.get("StoreType").get.toString
+           var primaryStroage: String = ""
+           if(tenant.primaryDataStore != null) {
+             val json = parse(tenant.primaryDataStore)
+             val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
+             primaryStroage = if (adapCfgValues.get("StoreType").get.toString == null) "" else adapCfgValues.get("StoreType").get.toString
+           }
            val tenantName = tenant.tenantId + "_" + primaryStroage
            for (vertex <- verticesDataNew) {
              if (vertex._2.equalsIgnoreCase(inputMessage.FullName)) {
@@ -585,7 +594,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
              if (!edgeData.contains(linkKey)) {
                edgeData += (linkKey -> "Retrieves")
                val setQuery = "set Name = \"%s\"".format("Retrieves")
-               val query: String = queryObj.createQuery(elementType = "edge", className = "StoredBy", setQuery = setQuery, linkFrom = Option(storageId), linkTo = Option(vertexId))
+               val query: String = queryObj.createQuery(elementType = "edge", className = "Retrieves", setQuery = setQuery, linkFrom = Option(storageId), linkTo = Option(vertexId))
                queryObj.executeQuery(conn, query)
                logger.debug(query)
                println(query)
