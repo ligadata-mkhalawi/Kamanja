@@ -116,9 +116,9 @@ class QueryBuilder extends LogTrait {
       json = parse(result.getString("jsonrec"))
       val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
       //val linkFrom = result.getString("in").substring(result.getString("in").indexOf("#"),result.getString("in").indexOf("{"))
-      val linkFrom = adapCfgValues.get("in").get.toString
+      val linkFrom = adapCfgValues.get("out").get.toString
       //val linkTo = result.getString("out").substring(result.getString("out").indexOf("#"),result.getString("out").indexOf("{"))
-      val linkTo = adapCfgValues.get("out").get.toString
+      val linkTo = adapCfgValues.get("in").get.toString
       Key = linkFrom + "," + linkTo
       val getName =  adapCfgValues.get("Name").get.toString
       data +=  (Key -> adapCfgValues.getOrElse("FullName", getName).toString )
