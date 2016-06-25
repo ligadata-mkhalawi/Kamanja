@@ -20,7 +20,6 @@ package com.ligadata.KamanjaManager
 import com.ligadata.Exceptions.KamanjaException
 import com.ligadata.InputOutputAdapterInfo.{OutputAdapter, InputAdapter}
 import com.ligadata.StorageBase.DataStore
-import com.ligadata.jpmml.JpmmlAdapter
 import com.ligadata.kamanja.metadata.{BaseElem, MappedMsgTypeDef, BaseAttributeDef, StructTypeDef, EntityType, AttributeDef, MessageDef, ContainerDef, ModelDef}
 import com.ligadata.kamanja.metadata._
 import com.ligadata.kamanja.metadata.MdMgr._
