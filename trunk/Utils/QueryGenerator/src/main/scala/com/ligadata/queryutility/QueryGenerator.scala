@@ -337,7 +337,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
              primaryStroage = if (adapCfgValues.get("StoreType").get.toString == null) "" else adapCfgValues.get("StoreType").get.toString
            }
            val tenantName = tenant.tenantId + "_" + primaryStroage
-        //   if(modelTenant.equalsIgnoreCase(storageTenant)) {
+           if(modelTenant.equalsIgnoreCase(storageTenant)) {
              for (vertex <- verticesDataNew) {
                if (vertex._2.equalsIgnoreCase(model.FullName)) {
                  vertexId = vertex._1
@@ -376,7 +376,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
                  println("The edge exist between this two nodes %s, %s".format(fromlink, tolink))
                }
              }
-    //       }
+           }
          }
 
          for(adapterMessage <- adapterMessageMap){
