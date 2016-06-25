@@ -115,10 +115,7 @@ class QueryBuilder extends LogTrait {
     while (result.next()){
       json = parse(result.getString("jsonrec"))
       val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
-      //val linkFrom = result.getString("in").substring(result.getString("in").indexOf("#"),result.getString("in").indexOf("{"))
-      val linkFrom = adapCfgValues.get("out").get.toString
-      //val linkTo = result.getString("out").substring(result.getString("out").indexOf("#"),result.getString("out").indexOf("{"))
-      val linkTo = adapCfgValues.get("in").get.toString
+      val linkFrom = adapCfgValues.get("out").get.toString val linkTo = adapCfgValues.get("in").get.toString
       Key = linkFrom + "," + linkTo
       val getName =  adapCfgValues.get("Name").get.toString
       data +=  (Key -> adapCfgValues.getOrElse("FullName", getName).toString )
@@ -219,7 +216,9 @@ class QueryBuilder extends LogTrait {
     } else if(tenant != None){
       val tenantID: String = if(tenant.get.tenantId.isEmpty) "" else tenant.get.tenantId
       val description: String = if(tenant.get.description == null) "" else tenant.get.description
-      val primaryStroage: String = if(tenant.get.primaryDataStore == null) "" else tenant.get.primaryDataStore
+      val json = parse(tenant.get.primaryDataStore)
+      val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
+      val primaryStroage: String = if(adapCfgValues.get("StoreType").get.toString == null) "" else adapCfgValues.get("StoreType").get.toString
 
       setQuery = "set Tenant = \"%s\", Name = \"%s\", FullName = \"%s\", Description = \"%s\"".format(
         tenantID, tenantID + "_" + primaryStroage, tenantID + "_" + primaryStroage, description)

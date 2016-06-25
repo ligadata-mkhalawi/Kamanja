@@ -25,6 +25,7 @@ import com.ligadata.kamanja.metadata._
 import org.apache.logging.log4j._
 import java.sql.Connection
 
+import org.json4s.native.JsonMethods._
 import shapeless.option
 
 trait LogTrait {
@@ -288,7 +289,10 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
        println("There are no tenantInfo in metadata")
      } else{
        for(tenant <- tenatInfo){
-         val tenantName = tenant.tenantId + "_" + tenant.primaryDataStore
+         val json = parse(tenant.primaryDataStore)
+         val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
+         val primaryStroage: String = if(adapCfgValues.get("StoreType").get.toString == null) "" else adapCfgValues.get("StoreType").get.toString
+         val tenantName = tenant.tenantId + "_" + primaryStroage
          val setQuery = queryObj.createSetCommand(tenant = option(tenant))
          val query: String = queryObj.createQuery(elementType = "vertex", className = "Storage", setQuery = setQuery)
          if (!verticesData.exists(_._2 == tenantName)) {
@@ -323,7 +327,10 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
            var storageId = ""
            val modelTenant = if(model.TenantId.isEmpty) "" else model.TenantId
            val storageTenant = if(tenant.tenantId.isEmpty) "" else tenant.tenantId
-           val tenantName = tenant.tenantId + "_" + tenant.primaryDataStore
+           val json = parse(tenant.primaryDataStore)
+           val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
+           val primaryStroage: String = if(adapCfgValues.get("StoreType").get.toString == null) "" else adapCfgValues.get("StoreType").get.toString
+           val tenantName = tenant.tenantId + "_" + primaryStroage
         //   if(modelTenant.equalsIgnoreCase(storageTenant)) {
              for (vertex <- verticesDataNew) {
                if (vertex._2.equalsIgnoreCase(model.FullName)) {
@@ -549,7 +556,10 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
          for (tenant <-tenatInfo){ // add link between message and storage (message ===StoredBy===> storage ===retrieves===> message)
          var vertexId = ""
            var storageId = ""
-           val tenantName = tenant.tenantId + "_" + tenant.primaryDataStore
+           val json = parse(tenant.primaryDataStore)
+           val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
+           val primaryStroage: String = if(adapCfgValues.get("StoreType").get.toString == null) "" else adapCfgValues.get("StoreType").get.toString
+           val tenantName = tenant.tenantId + "_" + primaryStroage
            for (vertex <- verticesDataNew) {
              if (vertex._2.equalsIgnoreCase(inputMessage.FullName)) {
                vertexId = vertex._1
