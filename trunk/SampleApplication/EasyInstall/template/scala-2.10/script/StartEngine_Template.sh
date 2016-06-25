@@ -11,7 +11,7 @@ fi
 
 # -Djava.security.krb5.conf=/etc/krb5.conf
 if [ "$KAMANJA_KERBEROS_CONFIG" ]; then
-  KERBEROS_CONFIG_OPT="-Djava.security.auth.login.config="$KAMANJA_KERBEROS_CONFIG
+  KERBEROS_CONFIG_OPT="-Djava.security.krb5.conf="$KAMANJA_KERBEROS_CONFIG
 fi
 
 if [ "$1" != "debug" ]; then

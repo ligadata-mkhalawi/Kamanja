@@ -1,14 +1,13 @@
 KAMANJA_HOME={InstallDirectory}
 
-if [ "$KAMANJA_KERBEROS_CLIENT" ]; then
+if [ "$KAMANJA_SEC_CONFIG" ]; then
   KAFKA_KERBEROS_CLIENT_OPT="-Djava.security.auth.login.config="$KAMANJA_SEC_CONFIG
 fi
 
-if [ "$KERBEROS_CONFIG" ]; then
+if [ "$KAMANJA_KERBEROS_CONFIG" ]; then
   KERBEROS_CONFIG_OPT="-Djava.security.krb5.confg="$KAMANJA_KERBEROS_CONFIG
 fi
 
-#--secprops
 if [ "$KAMANJA_SECURITY_CLIENT" ]; then
   SECURITY_PROP_OPT="--secprops "$KAMANJA_SECURITY_CLIENT
 fi

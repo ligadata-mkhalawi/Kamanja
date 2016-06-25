@@ -542,10 +542,21 @@ object SimpleKafkaProducer {
     val props = new Properties()
 
     var secPropFile = options.getOrElse('secprops,"").toString
-    var propLines = scala.io.Source.fromFile(secPropFile).getLines().foreach(line => {
-      var kv = line.split("=")
-      props.put(kv(0), kv(1))
-    })
+    if (secPropFile.size > 0) {
+      try {
+        var propLines = scala.io.Source.fromFile(secPropFile).getLines().foreach(line => {
+          var kv = line.split("=")
+          if (kv.size == 2) {
+            props.put(kv(0), kv(1))
+          }
+        })
+      } catch {
+        case t: Throwable => {
+          println("Unable to Read the KAMANJA_SECURITY_CLIENT, which is set to " + secPropFile + " Reason: ")
+          println(t.printStackTrace())
+        }
+      }
+    }
 
     val validJsonMap = scala.collection.mutable.Map[String,List[String]]()
     // var partitionkeyidxsTemp: Array[Int] = null
