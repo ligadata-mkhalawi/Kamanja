@@ -55,6 +55,8 @@ object MetadataAPI {
       val SCALA = Value("scala")
       val KPMML = Value("kpmml")
       val PMML = Value("pmml")
+      val PYTHON = Value("python") 
+      val JYTHON = Value("jython") 
       val JTM = Value("jtm")
       val BINARY = Value("binary")
       val UNKNOWN = Value("unknown")
@@ -64,6 +66,8 @@ object MetadataAPI {
               case "java" => JAVA
               case "scala" => SCALA
               case "pmml" => PMML
+              case "python" => PYTHON
+              case "jython" => JYTHON
               case "kpmml" => KPMML
               case "jtm" => JTM
               case "binary" => BINARY
