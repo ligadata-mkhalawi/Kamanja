@@ -56,7 +56,7 @@ unmanagedJars in Compile <<= baseDirectory map { base => (base ** "*.jar").class
 
 name := "ExtractData"
 
-version := "1.4.1"
+version := "1.5.0"
 
 //resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 //

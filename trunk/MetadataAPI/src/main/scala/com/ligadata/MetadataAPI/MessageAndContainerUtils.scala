@@ -87,6 +87,9 @@ object MessageAndContainerUtils {
   lazy val serializerType = "kryo"
   lazy val serializer = SerializerManager.GetSerializer(serializerType)
   private[this] val lock = new Object
+    // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   /**
    * AddContainerDef
@@ -99,15 +102,15 @@ object MessageAndContainerUtils {
     var key = contDef.FullNameWithVer
     val dispkey = contDef.FullName + "." + MdMgr.Pad0s2Version(contDef.Version)
     try {
-      MetadataAPIImpl.AddObjectToCache(contDef, MdMgr.GetMdMgr)
-      MetadataAPIImpl.UploadJarsToDB(contDef)
+      getMetadataAPI.AddObjectToCache(contDef, MdMgr.GetMdMgr)
+      getMetadataAPI.UploadJarsToDB(contDef)
       var objectsAdded = AddMessageTypes(contDef, MdMgr.GetMdMgr, recompile)
       objectsAdded = contDef +: objectsAdded
       PersistenceUtils.SaveSchemaInformation(contDef.cType.SchemaId, contDef.NameSpace, contDef.Name, contDef.Version, contDef.PhysicalName, contDef.cType.AvroSchema, "Container")
       PersistenceUtils.SaveElementInformation(contDef.MdElementId, "Container", contDef.NameSpace, contDef.Name)
-      MetadataAPIImpl.SaveObjectList(objectsAdded, "containers")
+      getMetadataAPI.SaveObjectList(objectsAdded, "containers")
       val operations = for (op <- objectsAdded) yield "Add"
-      MetadataAPIImpl.NotifyEngine(objectsAdded, operations)
+      getMetadataAPI.NotifyEngine(objectsAdded, operations)
       val apiResult = new ApiResult(ErrorCodeConstants.Success, "AddContainerDef", null, ErrorCodeConstants.Add_Container_Successful + ":" + dispkey)
       apiResult.toString()
     } catch {
@@ -129,15 +132,15 @@ object MessageAndContainerUtils {
   def AddMessageDef(msgDef: MessageDef, recompile: Boolean = false): String = {
     val dispkey = msgDef.FullName + "." + MdMgr.Pad0s2Version(msgDef.Version)
     try {
-      MetadataAPIImpl.AddObjectToCache(msgDef, MdMgr.GetMdMgr)
-      MetadataAPIImpl.UploadJarsToDB(msgDef)
+      getMetadataAPI.AddObjectToCache(msgDef, MdMgr.GetMdMgr)
+      getMetadataAPI.UploadJarsToDB(msgDef)
       var objectsAdded = AddMessageTypes(msgDef, MdMgr.GetMdMgr, recompile)
       objectsAdded = msgDef +: objectsAdded
       PersistenceUtils.SaveSchemaInformation(msgDef.cType.SchemaId, msgDef.NameSpace, msgDef.Name, msgDef.Version, msgDef.PhysicalName, msgDef.cType.AvroSchema, "Message")
       PersistenceUtils.SaveElementInformation(msgDef.MdElementId, "Message", msgDef.NameSpace, msgDef.Name)
-      MetadataAPIImpl.SaveObjectList(objectsAdded, "messages")
+      getMetadataAPI.SaveObjectList(objectsAdded, "messages")
       val operations = for (op <- objectsAdded) yield "Add"
-      MetadataAPIImpl.NotifyEngine(objectsAdded, operations)
+      getMetadataAPI.NotifyEngine(objectsAdded, operations)
       val apiResult = new ApiResult(ErrorCodeConstants.Success, "AddMessageDef", null, ErrorCodeConstants.Add_Message_Successful + ":" + dispkey)
       apiResult.toString()
     } catch {
@@ -162,68 +165,68 @@ object MessageAndContainerUtils {
     try {
       val tenantId = "" // Use empty for types for now
       var types = new Array[BaseElemDef](0)
-      val msgType = MetadataAPIImpl.getObjectType(msgDef)
+      val msgType = getMetadataAPI.getObjectType(msgDef)
       val depJars = if (msgDef.DependencyJarNames != null)
         (msgDef.DependencyJarNames :+ msgDef.JarName)
       else Array(msgDef.JarName)
       msgType match {
         case "MessageDef" | "ContainerDef" => {
           // ArrayOf<TypeName>
-          var obj: BaseElemDef = mdMgr.MakeArray(msgDef.nameSpace, "arrayof" + msgDef.name, msgDef.nameSpace, msgDef.name, 1, msgDef.OwnerId, tenantId, MetadataAPIImpl.GetUniqueId, 0L /* FIXME:- Not yet handled this */ , msgDef.ver, recompile)
+          var obj: BaseElemDef = mdMgr.MakeArray(msgDef.nameSpace, "arrayof" + msgDef.name, msgDef.nameSpace, msgDef.name, 1, msgDef.OwnerId, tenantId, getMetadataAPI.GetUniqueId, 0L /* FIXME:- Not yet handled this */ , msgDef.ver, recompile)
           obj.dependencyJarNames = depJars
-          MetadataAPIImpl.AddObjectToCache(obj, mdMgr)
+          getMetadataAPI.AddObjectToCache(obj, mdMgr)
           types = types :+ obj
 
           // MapOf<TypeName>
-          obj = mdMgr.MakeMap(msgDef.nameSpace, "mapof" + msgDef.name, msgDef.nameSpace, msgDef.name, msgDef.ver, msgDef.OwnerId, tenantId, MetadataAPIImpl.GetUniqueId, 0L /* FIXME:- Not yet handled this */ , recompile)
+          obj = mdMgr.MakeMap(msgDef.nameSpace, "mapof" + msgDef.name, msgDef.nameSpace, msgDef.name, msgDef.ver, msgDef.OwnerId, tenantId, getMetadataAPI.GetUniqueId, 0L /* FIXME:- Not yet handled this */ , recompile)
           obj.dependencyJarNames = depJars
-          MetadataAPIImpl.AddObjectToCache(obj, mdMgr)
+          getMetadataAPI.AddObjectToCache(obj, mdMgr)
           types = types :+ obj
 
           // ArrayBufferOf<TypeName>
-          //          obj = mdMgr.MakeArrayBuffer(msgDef.nameSpace, "arraybufferof" + msgDef.name, msgDef.nameSpace, msgDef.name, 1, msgDef.OwnerId, tenantId, MetadataAPIImpl.GetUniqueId, 0L /* FIXME:- Not yet handled this */, msgDef.ver, recompile)
+          //          obj = mdMgr.MakeArrayBuffer(msgDef.nameSpace, "arraybufferof" + msgDef.name, msgDef.nameSpace, msgDef.name, 1, msgDef.OwnerId, tenantId, getMetadataAPI.GetUniqueId, 0L /* FIXME:- Not yet handled this */, msgDef.ver, recompile)
           //          obj.dependencyJarNames = depJars
-          //          MetadataAPIImpl.AddObjectToCache(obj, mdMgr)
+          //          getMetadataAPI.AddObjectToCache(obj, mdMgr)
           //          types = types :+ obj
           //          // SortedSetOf<TypeName>
-          //          obj = mdMgr.MakeSortedSet(msgDef.nameSpace, "sortedsetof" + msgDef.name, msgDef.nameSpace, msgDef.name, msgDef.ver, msgDef.OwnerId, tenantId, MetadataAPIImpl.GetUniqueId, 0L /* FIXME:- Not yet handled this */, recompile)
+          //          obj = mdMgr.MakeSortedSet(msgDef.nameSpace, "sortedsetof" + msgDef.name, msgDef.nameSpace, msgDef.name, msgDef.ver, msgDef.OwnerId, tenantId, getMetadataAPI.GetUniqueId, 0L /* FIXME:- Not yet handled this */, recompile)
           //          obj.dependencyJarNames = depJars
-          //          MetadataAPIImpl.AddObjectToCache(obj, mdMgr)
+          //          getMetadataAPI.AddObjectToCache(obj, mdMgr)
           //          types = types :+ obj
           //          // ImmutableMapOfIntArrayOf<TypeName>
-          //          obj = mdMgr.MakeImmutableMap(msgDef.nameSpace, "immutablemapofintarrayof" + msgDef.name, (sysNS, "Int"), (msgDef.nameSpace, "arrayof" + msgDef.name), msgDef.ver, msgDef.OwnerId, tenantId, MetadataAPIImpl.GetUniqueId, 0L /* FIXME:- Not yet handled this */, recompile)
+          //          obj = mdMgr.MakeImmutableMap(msgDef.nameSpace, "immutablemapofintarrayof" + msgDef.name, (sysNS, "Int"), (msgDef.nameSpace, "arrayof" + msgDef.name), msgDef.ver, msgDef.OwnerId, tenantId, getMetadataAPI.GetUniqueId, 0L /* FIXME:- Not yet handled this */, recompile)
           //          obj.dependencyJarNames = depJars
-          //          MetadataAPIImpl.AddObjectToCache(obj, mdMgr)
+          //          getMetadataAPI.AddObjectToCache(obj, mdMgr)
           //          types = types :+ obj
           //          // ImmutableMapOfString<TypeName>
-          //          obj = mdMgr.MakeImmutableMap(msgDef.nameSpace, "immutablemapofstringarrayof" + msgDef.name, (sysNS, "String"), (msgDef.nameSpace, "arrayof" + msgDef.name), msgDef.ver, msgDef.OwnerId, tenantId, MetadataAPIImpl.GetUniqueId, 0L /* FIXME:- Not yet handled this */, recompile)
+          //          obj = mdMgr.MakeImmutableMap(msgDef.nameSpace, "immutablemapofstringarrayof" + msgDef.name, (sysNS, "String"), (msgDef.nameSpace, "arrayof" + msgDef.name), msgDef.ver, msgDef.OwnerId, tenantId, getMetadataAPI.GetUniqueId, 0L /* FIXME:- Not yet handled this */, recompile)
           //          obj.dependencyJarNames = depJars
-          //          MetadataAPIImpl.AddObjectToCache(obj, mdMgr)
+          //          getMetadataAPI.AddObjectToCache(obj, mdMgr)
           //          types = types :+ obj
           //          // ArrayOfArrayOf<TypeName>
-          //          obj = mdMgr.MakeArray(msgDef.nameSpace, "arrayofarrayof" + msgDef.name, msgDef.nameSpace, "arrayof" + msgDef.name, 1, msgDef.OwnerId, tenantId, MetadataAPIImpl.GetUniqueId, 0L /* FIXME:- Not yet handled this */, msgDef.ver, recompile)
+          //          obj = mdMgr.MakeArray(msgDef.nameSpace, "arrayofarrayof" + msgDef.name, msgDef.nameSpace, "arrayof" + msgDef.name, 1, msgDef.OwnerId, tenantId, getMetadataAPI.GetUniqueId, 0L /* FIXME:- Not yet handled this */, msgDef.ver, recompile)
           //          obj.dependencyJarNames = depJars
-          //          MetadataAPIImpl.AddObjectToCache(obj, mdMgr)
+          //          getMetadataAPI.AddObjectToCache(obj, mdMgr)
           //          types = types :+ obj
           //          // MapOfStringArrayOf<TypeName>
-          //          obj = mdMgr.MakeMap(msgDef.nameSpace, "mapofstringarrayof" + msgDef.name, (sysNS, "String"), (msgDef.nameSpace, "arrayof" + msgDef.name), msgDef.ver, msgDef.OwnerId, tenantId, MetadataAPIImpl.GetUniqueId, 0L /* FIXME:- Not yet handled this */, recompile)
+          //          obj = mdMgr.MakeMap(msgDef.nameSpace, "mapofstringarrayof" + msgDef.name, (sysNS, "String"), (msgDef.nameSpace, "arrayof" + msgDef.name), msgDef.ver, msgDef.OwnerId, tenantId, getMetadataAPI.GetUniqueId, 0L /* FIXME:- Not yet handled this */, recompile)
           //          obj.dependencyJarNames = depJars
-          //          MetadataAPIImpl.AddObjectToCache(obj, mdMgr)
+          //          getMetadataAPI.AddObjectToCache(obj, mdMgr)
           //          types = types :+ obj
           //          // MapOfIntArrayOf<TypeName>
-          //          obj = mdMgr.MakeMap(msgDef.nameSpace, "mapofintarrayof" + msgDef.name, (sysNS, "Int"), (msgDef.nameSpace, "arrayof" + msgDef.name), msgDef.ver, msgDef.OwnerId, tenantId, MetadataAPIImpl.GetUniqueId, 0L /* FIXME:- Not yet handled this */, recompile)
+          //          obj = mdMgr.MakeMap(msgDef.nameSpace, "mapofintarrayof" + msgDef.name, (sysNS, "Int"), (msgDef.nameSpace, "arrayof" + msgDef.name), msgDef.ver, msgDef.OwnerId, tenantId, getMetadataAPI.GetUniqueId, 0L /* FIXME:- Not yet handled this */, recompile)
           //          obj.dependencyJarNames = depJars
-          //          MetadataAPIImpl.AddObjectToCache(obj, mdMgr)
+          //          getMetadataAPI.AddObjectToCache(obj, mdMgr)
           //          types = types :+ obj
           //          // SetOf<TypeName>
-          //          obj = mdMgr.MakeSet(msgDef.nameSpace, "setof" + msgDef.name, msgDef.nameSpace, msgDef.name, msgDef.ver, msgDef.OwnerId, tenantId, MetadataAPIImpl.GetUniqueId, 0L /* FIXME:- Not yet handled this */, recompile)
+          //          obj = mdMgr.MakeSet(msgDef.nameSpace, "setof" + msgDef.name, msgDef.nameSpace, msgDef.name, msgDef.ver, msgDef.OwnerId, tenantId, getMetadataAPI.GetUniqueId, 0L /* FIXME:- Not yet handled this */, recompile)
           //          obj.dependencyJarNames = depJars
-          //          MetadataAPIImpl.AddObjectToCache(obj, mdMgr)
+          //          getMetadataAPI.AddObjectToCache(obj, mdMgr)
           //          types = types :+ obj
           //          // TreeSetOf<TypeName>
-          //          obj = mdMgr.MakeTreeSet(msgDef.nameSpace, "treesetof" + msgDef.name, msgDef.nameSpace, msgDef.name, msgDef.ver, msgDef.OwnerId, tenantId, MetadataAPIImpl.GetUniqueId, 0L /* FIXME:- Not yet handled this */, recompile)
+          //          obj = mdMgr.MakeTreeSet(msgDef.nameSpace, "treesetof" + msgDef.name, msgDef.nameSpace, msgDef.name, msgDef.ver, msgDef.OwnerId, tenantId, getMetadataAPI.GetUniqueId, 0L /* FIXME:- Not yet handled this */, recompile)
           //          obj.dependencyJarNames = depJars
-          //          MetadataAPIImpl.AddObjectToCache(obj, mdMgr)
+          //          getMetadataAPI.AddObjectToCache(obj, mdMgr)
           //          types = types :+ obj
           types
         }
@@ -249,7 +252,7 @@ object MessageAndContainerUtils {
    * @param recompile     a
    * @return <description please>
    */
-  def AddContainerOrMessage(contOrMsgText: String, format: String, userid: Option[String], tenantId: Option[String] = None, recompile: Boolean = false): String = {
+  def AddContainerOrMessage(contOrMsgText: String, format: String, userid: Option[String], tenantId: Option[String] = None, pStr : Option[String],  recompile: Boolean = false): String = {
     var resultStr: String = ""
 
     if (tenantId == None) return (new ApiResult(ErrorCodeConstants.Failure, "AddContainer/AddMessage", null, s"Tenant ID is required to perform an ADD CONTAINER or an ADD MESSAGE operation")).toString
@@ -263,10 +266,13 @@ object MessageAndContainerUtils {
         cntOrMsgDef.tenantId = tenantId.get
       }
 
+        cntOrMsgDef.setParamValues(pStr)
+        cntOrMsgDef.setCreationTime()
+         cntOrMsgDef.setModTime()
       logger.debug("Message/Container Compiler returned an object of type " + cntOrMsgDef.getClass().getName())
       cntOrMsgDef match {
         case msg: MessageDef => {
-          MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, contOrMsgText, AuditConstants.SUCCESS, "", msg.FullNameWithVer)
+          getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, contOrMsgText, AuditConstants.SUCCESS, "", msg.FullNameWithVer)
           // Make sure we are allowed to add this version.
           val latestVersion = GetLatestMessage(msg)
           var isValid = true
@@ -300,14 +306,14 @@ object MessageAndContainerUtils {
             if (depModels.length > 0) {
               depModels.foreach(mod => {
                 logger.debug("DependentModel => " + mod.FullNameWithVer)
-                resultStr = resultStr + MetadataAPIImpl.RecompileModel(mod, userid, Some(msg))
+                resultStr = resultStr + getMetadataAPI.RecompileModel(mod, userid, Some(msg))
               })
             }
           }
           resultStr
         }
         case cont: ContainerDef => {
-          MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, contOrMsgText, AuditConstants.SUCCESS, "", cont.FullNameWithVer)
+          getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, contOrMsgText, AuditConstants.SUCCESS, "", cont.FullNameWithVer)
           // Make sure we are allowed to add this version.
           val latestVersion = GetLatestContainer(cont)
           var isValid = true
@@ -340,7 +346,7 @@ object MessageAndContainerUtils {
             if (depModels.length > 0) {
               depModels.foreach(mod => {
                 logger.debug("DependentModel => " + mod.FullNameWithVer)
-                resultStr = resultStr + MetadataAPIImpl.RecompileModel(mod, userid, None)
+                resultStr = resultStr + getMetadataAPI.RecompileModel(mod, userid, None)
               })
             }
           }
@@ -367,7 +373,7 @@ object MessageAndContainerUtils {
   }
 
   def AddContainer(containerText: String, format: String, userid: Option[String], tenantId: Option[String] = None): String = {
-    AddContainerOrMessage(containerText, format, userid, tenantId)
+    AddContainerOrMessage(containerText, format, userid, tenantId, None)
   }
 
   /**
@@ -408,7 +414,7 @@ object MessageAndContainerUtils {
         tenantId = latestMsgDef.get.TenantId
         messageText = latestMsgDef.get.objectDefinition
       }
-      resultStr = AddContainerOrMessage(messageText, "JSON", None, Some(tenantId), true)
+      resultStr = AddContainerOrMessage(messageText, "JSON", None, Some(tenantId), None, true)
       resultStr
 
     } catch {
@@ -436,7 +442,7 @@ object MessageAndContainerUtils {
    *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
    *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
    */
-  def UpdateMessage(messageText: String, format: String, userid: Option[String] = None, tenantId: Option[String]): String = {
+  def UpdateMessage(messageText: String, format: String, userid: Option[String] = None, tenantId: Option[String], pStr : Option[String]): String = {
     var resultStr: String = ""
     try {
 
@@ -450,10 +456,12 @@ object MessageAndContainerUtils {
         msgDef.tenantId = tenantId.get
       }
 
+      msgDef.setParamValues(pStr)
+      msgDef.setModTime()
       val key = msgDef.FullNameWithVer
       msgDef match {
         case msg: MessageDef => {
-          MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.UPDATEOBJECT, messageText, AuditConstants.SUCCESS, "", msg.FullNameWithVer)
+          getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.UPDATEOBJECT, messageText, AuditConstants.SUCCESS, "", msg.FullNameWithVer)
 
           /**
            * FIXME: It is incorrect to assume that the latest message is the one being replaced.
@@ -492,7 +500,7 @@ object MessageAndContainerUtils {
             if (depModels.length > 0) {
               depModels.foreach(mod => {
                 logger.debug("DependentModel => " + mod.FullNameWithVer)
-                resultStr = resultStr + MetadataAPIImpl.RecompileModel(mod, userid, Some(msg))
+                resultStr = resultStr + getMetadataAPI.RecompileModel(mod, userid, Some(msg))
               })
             }
             resultStr
@@ -504,7 +512,7 @@ object MessageAndContainerUtils {
           }
         }
         case msg: ContainerDef => {
-          MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.UPDATEOBJECT, messageText, AuditConstants.SUCCESS, "", msg.FullNameWithVer)
+          getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.UPDATEOBJECT, messageText, AuditConstants.SUCCESS, "", msg.FullNameWithVer)
           val latestVersion = GetLatestContainer(msg)
           var isValid = true
           if (latestVersion != None) {
@@ -533,11 +541,11 @@ object MessageAndContainerUtils {
                 resultStr = resultStr + RecompileMessage(msg)
               })
             }
-            val depModels = MetadataAPIImpl.GetDependentModels(msg.NameSpace, msg.Name, msg.Version.toLong)
+            val depModels = getMetadataAPI.GetDependentModels(msg.NameSpace, msg.Name, msg.Version.toLong)
             if (depModels.length > 0) {
               depModels.foreach(mod => {
                 logger.debug("DependentModel => " + mod.FullName + "." + MdMgr.Pad0s2Version(mod.Version))
-                resultStr = resultStr + MetadataAPIImpl.RecompileModel(mod, userid, None)
+                resultStr = resultStr + getMetadataAPI.RecompileModel(mod, userid, None)
               })
             }
             resultStr
@@ -619,8 +627,8 @@ object MessageAndContainerUtils {
   def RemoveContainer(nameSpace: String, name: String, version: Long, userid: Option[String], zkNotify: Boolean = true): String = {
     var key = nameSpace + "." + name + "." + version
     val dispkey = nameSpace + "." + name + "." + MdMgr.Pad0s2Version(version)
-    var newTranId = MetadataAPIImpl.GetNewTranId
-    if (userid != None) MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.DELETEOBJECT, "Container", AuditConstants.SUCCESS, "", key)
+    var newTranId = getMetadataAPI.GetNewTranId
+    if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.DELETEOBJECT, "Container", AuditConstants.SUCCESS, "", key)
     try {
       val o = MdMgr.GetMdMgr.Container(nameSpace.toLowerCase, name.toLowerCase, version, true)
       o match {
@@ -645,11 +653,11 @@ object MessageAndContainerUtils {
           })
           // ContainerDef itself
           contDef.tranId = newTranId
-          MetadataAPIImpl.DeleteObject(contDef)
+          getMetadataAPI.DeleteObject(contDef)
           var allObjectsArray = objectsToBeRemoved :+ contDef
 
           val operations = for (op <- allObjectsArray) yield "Remove"
-          MetadataAPIImpl.NotifyEngine(allObjectsArray, operations)
+          getMetadataAPI.NotifyEngine(allObjectsArray, operations)
 
           val apiResult = new ApiResult(ErrorCodeConstants.Success, "RemoveContainer", null, ErrorCodeConstants.Remove_Container_Successful + ":" + dispkey)
           apiResult.toString()
@@ -677,8 +685,8 @@ object MessageAndContainerUtils {
   def RemoveMessage(nameSpace: String, name: String, version: Long, userid: Option[String], zkNotify: Boolean = true): String = {
     var key = nameSpace + "." + name + "." + version
     val dispkey = nameSpace + "." + name + "." + MdMgr.Pad0s2Version(version)
-    var newTranId = MetadataAPIImpl.GetNewTranId
-    if (userid != None) MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.DELETEOBJECT, AuditConstants.MESSAGE, AuditConstants.SUCCESS, "", key)
+    var newTranId = getMetadataAPI.GetNewTranId
+    if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.DELETEOBJECT, AuditConstants.MESSAGE, AuditConstants.SUCCESS, "", key)
     try {
       val o = MdMgr.GetMdMgr.Message(nameSpace.toLowerCase, name.toLowerCase, version, true)
       o match {
@@ -708,11 +716,11 @@ object MessageAndContainerUtils {
           // MessageDef itself - add it to the list of other objects to be passed to the zookeeper
           // to notify other instnances
           msgDef.tranId = newTranId
-          MetadataAPIImpl.DeleteObject(msgDef)
+          getMetadataAPI.DeleteObject(msgDef)
           var allObjectsArray = objectsToBeRemoved :+ msgDef
 
           val operations = for (op <- allObjectsArray) yield "Remove"
-          MetadataAPIImpl.NotifyEngine(allObjectsArray, operations)
+          getMetadataAPI.NotifyEngine(allObjectsArray, operations)
 
           val apiResult = new ApiResult(ErrorCodeConstants.Success, "RemoveMessage", null, ErrorCodeConstants.Remove_Message_Successful + ":" + dispkey)
           apiResult.toString()
@@ -727,7 +735,7 @@ object MessageAndContainerUtils {
   }
 
   /**
-   * When a message or container is compiled, the MetadataAPIImpl will automatically catalog an array, array buffer,
+   * When a message or container is compiled, the getMetadataAPI will automatically catalog an array, array buffer,
    * sorted set, immutable map of int array, array of array, et al where the message or container is a member element.
    * The type names are of the form <collectiontype>of<message type>.  Currently these container names are created:
    *
@@ -752,7 +760,7 @@ object MessageAndContainerUtils {
     var types = new Array[BaseElemDef](0)
     logger.debug("The class name => " + msgDef.getClass().getName())
     try {
-      val msgType = MetadataAPIImpl.getObjectType(msgDef)
+      val msgType = getMetadataAPI.getObjectType(msgDef)
       msgType match {
         case "MessageDef" | "ContainerDef" => {
           // ArrayOf<TypeName>
@@ -761,56 +769,8 @@ object MessageAndContainerUtils {
           if (typeDef != None) {
             types = types :+ typeDef.get
           }
-          // ArrayBufferOf<TypeName>
-          typeName = "arraybufferof" + msgDef.name
-          typeDef = TypeUtils.GetType(msgDef.nameSpace, typeName, msgDef.ver.toString, "JSON", None)
-          if (typeDef != None) {
-            types = types :+ typeDef.get
-          }
-          // SortedSetOf<TypeName>
-          typeName = "sortedsetof" + msgDef.name
-          typeDef = TypeUtils.GetType(msgDef.nameSpace, typeName, msgDef.ver.toString, "JSON", None)
-          if (typeDef != None) {
-            types = types :+ typeDef.get
-          }
-          // ImmutableMapOfIntArrayOf<TypeName>
-          typeName = "immutablemapofintarrayof" + msgDef.name
-          typeDef = TypeUtils.GetType(msgDef.nameSpace, typeName, msgDef.ver.toString, "JSON", None)
-          if (typeDef != None) {
-            types = types :+ typeDef.get
-          }
-          // ImmutableMapOfString<TypeName>
-          typeName = "immutablemapofstringarrayof" + msgDef.name
-          typeDef = TypeUtils.GetType(msgDef.nameSpace, typeName, msgDef.ver.toString, "JSON", None)
-          if (typeDef != None) {
-            types = types :+ typeDef.get
-          }
-          // ArrayOfArrayOf<TypeName>
-          typeName = "arrayofarrayof" + msgDef.name
-          typeDef = TypeUtils.GetType(msgDef.nameSpace, typeName, msgDef.ver.toString, "JSON", None)
-          if (typeDef != None) {
-            types = types :+ typeDef.get
-          }
-          // MapOfStringArrayOf<TypeName>
-          typeName = "mapofstringarrayof" + msgDef.name
-          typeDef = TypeUtils.GetType(msgDef.nameSpace, typeName, msgDef.ver.toString, "JSON", None)
-          if (typeDef != None) {
-            types = types :+ typeDef.get
-          }
-          // MapOfIntArrayOf<TypeName>
-          typeName = "mapofintarrayof" + msgDef.name
-          typeDef = TypeUtils.GetType(msgDef.nameSpace, typeName, msgDef.ver.toString, "JSON", None)
-          if (typeDef != None) {
-            types = types :+ typeDef.get
-          }
-          // SetOf<TypeName>
-          typeName = "setof" + msgDef.name
-          typeDef = TypeUtils.GetType(msgDef.nameSpace, typeName, msgDef.ver.toString, "JSON", None)
-          if (typeDef != None) {
-            types = types :+ typeDef.get
-          }
-          // TreeSetOf<TypeName>
-          typeName = "treesetof" + msgDef.name
+          // MapOf<TypeName>
+          typeName = "mapof" + msgDef.name
           typeDef = TypeUtils.GetType(msgDef.nameSpace, typeName, msgDef.ver.toString, "JSON", None)
           if (typeDef != None) {
             types = types :+ typeDef.get
@@ -1013,12 +973,22 @@ object MessageAndContainerUtils {
               */
               mod.inputMsgSets.foreach(set => {
                 set.foreach(msgInfo => {
-                  if (msgInfo != null && msgInfo.message != null && msgInfo.message.trim.nonEmpty) {
-                    logger.debug("The model " + mod.FullName + "." + MdMgr.Pad0s2Version(mod.Version) + " is  dependent on the message " + msgInfo.message)
+                  if (msgInfo != null && msgInfo.message != null && msgInfo.message.trim.nonEmpty &&
+                    msgInfo.message.toLowerCase == msgObjName) {
+                    logger.warn("The model " + mod.FullName + "." + MdMgr.Pad0s2Version(mod.Version) + " is  dependent on the message " + msgInfo.message)
                     depModels = depModels :+ mod
                   }
                 })
               })
+
+             mod.outputMsgs.foreach( message => {
+               if (message != null && message.toLowerCase() == msgObjName) {
+                 logger.warn("The model " + mod.FullName + "." + MdMgr.Pad0s2Version(mod.Version) + " is  dependent on the message " + message)
+                 depModels = depModels :+ mod
+
+               }
+              })
+
             }
           })
       }
@@ -1106,9 +1076,10 @@ object MessageAndContainerUtils {
    *               method. If Security and/or Audit are configured, this value must be a value other than None.
    * @return
    */
-  def GetAllMessagesFromCache(active: Boolean, userid: Option[String] = None): Array[String] = {
+  // 646 - 672 Changes begin - filter by tenantId
+  def GetAllMessagesFromCache(active: Boolean, userid: Option[String] = None, tid : Option[String] = None): Array[String] = {
     var messageList: Array[String] = new Array[String](0)
-    if (userid != None) MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETKEYS, AuditConstants.MESSAGE, AuditConstants.SUCCESS, "", AuditConstants.MESSAGE)
+    if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETKEYS, AuditConstants.MESSAGE, AuditConstants.SUCCESS, "", AuditConstants.MESSAGE)
     try {
       val msgDefs = MdMgr.GetMdMgr.Messages(active, true)
       msgDefs match {
@@ -1119,11 +1090,19 @@ object MessageAndContainerUtils {
         case Some(ms) =>
           val msa = ms.toArray
           val msgCount = msa.length
-          messageList = new Array[String](msgCount)
-          for (i <- 0 to msgCount - 1) {
-            messageList(i) = msa(i).FullName + "." + MdMgr.Pad0s2Version(msa(i).Version)
+          var newMessageList : List[String] = List[String]() ;
+             for (i <- 0 to msgCount - 1) {
+            if (tid.isEmpty || (tid.get == msa(i).tenantId)) {
+                 newMessageList = newMessageList ::: List(msa(i).FullName + "." + MdMgr.Pad0s2Version(msa(i).Version))
+
+            }
           }
-          messageList
+          if (newMessageList.isEmpty) {
+            messageList
+          }
+          else {
+            (newMessageList map(_.toString)).toArray
+          }
       }
     } catch {
       case e: Exception => {
@@ -1133,7 +1112,7 @@ object MessageAndContainerUtils {
       }
     }
   }
-
+// 646 - 672 Changes end
   /**
    * GetAllContainersFromCache
    *
@@ -1142,9 +1121,11 @@ object MessageAndContainerUtils {
    *               method. If Security and/or Audit are configured, this value must be a value other than None.
    * @return
    */
-  def GetAllContainersFromCache(active: Boolean, userid: Option[String] = None): Array[String] = {
+  // 646 - 672 Changes begin - filter by tenantId
+  def GetAllContainersFromCache(active: Boolean, userid: Option[String] = None, tid: Option[String] = None): Array[String] = {
     var containerList: Array[String] = new Array[String](0)
-    if (userid != None) MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETKEYS, AuditConstants.CONTAINER, AuditConstants.SUCCESS, "", AuditConstants.CONTAINER)
+    var newContainerList : List[String] = List[String]() ;
+    if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETKEYS, AuditConstants.CONTAINER, AuditConstants.SUCCESS, "", AuditConstants.CONTAINER)
     try {
       val contDefs = MdMgr.GetMdMgr.Containers(active, true)
       contDefs match {
@@ -1155,11 +1136,20 @@ object MessageAndContainerUtils {
         case Some(ms) =>
           val msa = ms.toArray
           val contCount = msa.length
-          containerList = new Array[String](contCount)
+    //      containerList = new Array[String](contCount)
           for (i <- 0 to contCount - 1) {
-            containerList(i) = msa(i).FullName + "." + MdMgr.Pad0s2Version(msa(i).Version)
+            if (tid.isEmpty || tid.get == msa(i).tenantId) {
+
+              //containerList(i) = msa(i).FullName + "." + MdMgr.Pad0s2Version(msa(i).Version)
+              newContainerList = newContainerList ::: List(msa(i).FullName + "." + MdMgr.Pad0s2Version(msa(i).Version))
+            }
           }
-          containerList
+          if (newContainerList.isEmpty) {
+            containerList
+          }
+          else {
+            (newContainerList map(_.toString)).toArray
+          }
       }
     } catch {
       case e: Exception => {
@@ -1169,7 +1159,7 @@ object MessageAndContainerUtils {
       }
     }
   }
-
+// 646 - 672 Changes end
   /**
    * Get the specific message (format JSON or XML) as a String using messageName(with version) as the key
    *
@@ -1181,22 +1171,28 @@ object MessageAndContainerUtils {
    *                   method. If Security and/or Audit are configured, this value must be a value other than None.
    * @return
    */
-  def GetMessageDefFromCache(nameSpace: String, name: String, formatType: String, version: String, userid: Option[String] = None): String = {
+  def GetMessageDefFromCache(nameSpace: String, name: String, formatType: String, version: String, userid: Option[String] = None, tid : Option[String] = None): String = {
     val dispkey = nameSpace + "." + name + "." + MdMgr.Pad0s2Version(version.toLong)
     var key = nameSpace + "." + name + "." + version.toLong
-    if (userid != None) MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.GETOBJECT), AuditConstants.GETOBJECT, AuditConstants.MESSAGE, AuditConstants.SUCCESS, "", dispkey)
+    if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.GETOBJECT), AuditConstants.GETOBJECT, AuditConstants.MESSAGE, AuditConstants.SUCCESS, "", dispkey)
     try {
       val o = MdMgr.GetMdMgr.Message(nameSpace.toLowerCase, name.toLowerCase, version.toLong, true)
       o match {
         case None =>
-          None
           logger.debug("message not found => " + dispkey)
           val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetMessageDefFromCache", null, ErrorCodeConstants.Get_Message_From_Cache_Failed + ":" + dispkey)
           apiResult.toString()
         case Some(m) =>
-          logger.debug("message found => " + m.asInstanceOf[MessageDef].FullName + "." + MdMgr.Pad0s2Version(m.asInstanceOf[MessageDef].Version))
-          val apiResult = new ApiResult(ErrorCodeConstants.Success, "GetMessageDefFromCache", JsonSerializer.SerializeObjectToJson(m), ErrorCodeConstants.Get_Message_From_Cache_Successful)
+          if (tid == None || tid.get == m.tenantId) {
+            logger.debug("message found => " + m.asInstanceOf[MessageDef].FullName + "." + MdMgr.Pad0s2Version(m.asInstanceOf[MessageDef].Version))
+            val apiResult = new ApiResult(ErrorCodeConstants.Success, "GetMessageDefFromCache", JsonSerializer.SerializeObjectToJson(m), ErrorCodeConstants.Get_Message_From_Cache_Successful)
+            apiResult.toString()
+          }
+          else {
+              logger.debug("message not found => " + dispkey + " for tenantId " + tid)
+          val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetMessageDefFromCache", null, ErrorCodeConstants.Get_Message_From_Cache_Failed + ":" + dispkey + ", ")
           apiResult.toString()
+          }
       }
     } catch {
       case e: Exception => {
@@ -1219,10 +1215,10 @@ object MessageAndContainerUtils {
    *                   method. If Security and/or Audit are configured, this value must be a value other than None.
    * @return
    */
-  def GetContainerDefFromCache(nameSpace: String, name: String, formatType: String, version: String, userid: Option[String]): String = {
+  def GetContainerDefFromCache(nameSpace: String, name: String, formatType: String, version: String, userid: Option[String], tid: Option[String]): String = {
     var key = nameSpace + "." + name + "." + version.toLong
     val dispkey = nameSpace + "." + name + "." + MdMgr.Pad0s2Version(version.toLong)
-    if (userid != None) MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.GETOBJECT), AuditConstants.GETOBJECT, AuditConstants.CONTAINER, AuditConstants.SUCCESS, "", dispkey)
+    if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.GETOBJECT), AuditConstants.GETOBJECT, AuditConstants.CONTAINER, AuditConstants.SUCCESS, "", dispkey)
     try {
       val o = MdMgr.GetMdMgr.Container(nameSpace.toLowerCase, name.toLowerCase, version.toLong, true)
       o match {
@@ -1232,9 +1228,16 @@ object MessageAndContainerUtils {
           val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetContainerDefFromCache", null, ErrorCodeConstants.Get_Container_From_Cache_Failed + ":" + dispkey)
           apiResult.toString()
         case Some(m) =>
+          if (tid == None || tid.get == m.tenantId) {
           logger.debug("container found => " + m.asInstanceOf[ContainerDef].FullName + "." + MdMgr.Pad0s2Version(m.asInstanceOf[ContainerDef].Version))
-          val apiResult = new ApiResult(ErrorCodeConstants.Success, "GetContainerDefFromCache", JsonSerializer.SerializeObjectToJson(m), ErrorCodeConstants.Get_Container_From_Cache_Successful)
-          apiResult.toString()
+            val apiResult = new ApiResult(ErrorCodeConstants.Success, "GetContainerDefFromCache", JsonSerializer.SerializeObjectToJson(m), ErrorCodeConstants.Get_Container_From_Cache_Successful)
+            apiResult.toString()
+          }
+          else {
+            logger.debug("container not found => " + dispkey)
+            val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetContainerDefFromCache", null, ErrorCodeConstants.Get_Container_From_Cache_Failed + ":" + dispkey)
+            apiResult.toString()
+          }
       }
     } catch {
       case e: Exception => {
@@ -1518,7 +1521,7 @@ object MessageAndContainerUtils {
           ",\"Fixed\":\"false\"" +
           "}}"
         logger.info("The default output message string => " + msgJson)
-        val resultStr = AddContainerOrMessage(msgJson, "JSON", optUserId, Some(modDef.TenantId), false)
+        val resultStr = AddContainerOrMessage(msgJson, "JSON", optUserId, Some(modDef.TenantId), None, false)
         return msgFullName
       }
     } catch {
@@ -1528,6 +1531,98 @@ object MessageAndContainerUtils {
       }
     }
   }
+
+  /**
+   * IsContainer
+   *
+   * @param contName
+   * @return
+   */
+
+  def IsContainer(contName: String): Boolean = {
+    try {
+      var(nameSpace,name) = MdMgr.SplitFullName(contName)
+      val dispkey = nameSpace + "." + name
+      val o = MdMgr.GetMdMgr.Container(nameSpace.toLowerCase,name.toLowerCase,-1,false)
+      o match {
+        case None =>
+          logger.debug("container not in the cache => " + dispkey)
+          return false;
+        case Some(m) =>
+          logger.debug("container found => " + m.asInstanceOf[ContainerDef].FullName);
+          return true
+      }
+    } catch {
+      case e: Exception => {
+        logger.debug("", e)
+        throw UnexpectedMetadataAPIException(e.getMessage(), e)
+      }
+    }
+  }
+
+  def getMessagesAndContainers(cfgmap: Map[String, Any]): List[String] = {
+    logger.debug("getMessagesAndContainers: cfgmap => " + cfgmap)
+    val typDeps1 = cfgmap.getOrElse(ModelCompilationConstants.TYPES_DEPENDENCIES, null)
+    val typDeps =
+      if (typDeps1 == null && cfgmap.size == 1 && cfgmap.head._2.isInstanceOf[scala.collection.immutable.Map[String, Any]]) {
+        // If we have one that may be top level map. Trying to take lower level
+        cfgmap.head._2.asInstanceOf[scala.collection.immutable.Map[String, Any]].getOrElse(ModelCompilationConstants.TYPES_DEPENDENCIES, null)
+      } else {
+        typDeps1
+      }
+    logger.debug("getMessagesAndContainers: typDeps => " + typDeps)
+
+    if( typDeps == null ){
+      logger.debug("Types in modelConfig object are not defined")
+      List[String]()
+    }
+    else{
+      typDeps.asInstanceOf[List[String]]
+    }
+  }
+
+  def getContainersFromModelConfig(cfgmap: Map[String,Any]): Array[String] = {
+    var containerList = List[String]()
+    var msgsAndContainers = getMessagesAndContainers(cfgmap)
+    if( msgsAndContainers.length > 0 ){
+      msgsAndContainers.foreach(msg => {
+	logger.debug("checking the message " + msg)
+	if( MessageAndContainerUtils.IsContainer(msg) ){
+	  logger.debug("The " + msg + " is a container")
+	  containerList = msg :: containerList
+	}
+	else{
+	  logger.debug("The " + msg + " is not a container")
+	}
+      })
+    }
+    else{
+      logger.debug("getMessagesAndContainers: No types for the model config " + cfgmap)
+    }
+    containerList.toArray
+  }
+
+  def getContainersFromModelConfig(userid: Option[String], cfgName: String): Array[String] = {
+    var containerList = List[String]()
+    var msgsAndContainers = getModelMessagesContainers(cfgName,userid)
+    if( msgsAndContainers.length > 0 ){
+      msgsAndContainers.foreach(msg => {
+	logger.debug("processing the message " + msg)
+	if( MessageAndContainerUtils.IsContainer(msg) ){
+	  logger.debug("The " + msg + " is a container")
+	  containerList = msg :: containerList
+	}
+	else{
+	  logger.debug("The " + msg + " is not a container")
+	}
+      })
+    }
+    else{
+      logger.debug("MetadataAPIImpl.getModelMessagesContainers: No types for the model config " + cfgName)
+    }
+    containerList.toArray
+  }
+
 
   /**
    * DoesContainerAlreadyExist
@@ -1607,14 +1702,14 @@ object MessageAndContainerUtils {
   def LoadMessageIntoCache(key: String) {
     try {
       logger.debug("Fetch the object " + key + " from database ")
-      val obj = MetadataAPIImpl.GetObject(key.toLowerCase, "messages")
+      val obj = getMetadataAPI.GetObject(key.toLowerCase, "messages")
       logger.debug("Deserialize the object " + key)
       val msg: MessageDef = MetadataAPISerialization.deserializeMetadata(new String(obj._2.asInstanceOf[Array[Byte]])).asInstanceOf[MessageDef] //serializer.DeserializeObjectFromByteArray(obj._2.asInstanceOf[Array[Byte]]).asInstanceOf[MessageDef]
       logger.debug("Get the jar from database ")
       val msgDef = msg.asInstanceOf[MessageDef]
-      MetadataAPIImpl.DownloadJarFromDB(msgDef)
+      getMetadataAPI.DownloadJarFromDB(msgDef)
       logger.debug("Add the object " + key + " to the cache ")
-      MetadataAPIImpl.AddObjectToCache(msgDef, MdMgr.GetMdMgr)
+      getMetadataAPI.AddObjectToCache(msgDef, MdMgr.GetMdMgr)
     } catch {
       case e: Exception => {
         logger.error("Failed to load message into cache " + key, e)
@@ -1629,12 +1724,12 @@ object MessageAndContainerUtils {
    */
   def LoadContainerIntoCache(key: String) {
     try {
-      val obj = MetadataAPIImpl.GetObject(key.toLowerCase, "containers")
+      val obj = getMetadataAPI.GetObject(key.toLowerCase, "containers")
       val cont: ContainerDef = MetadataAPISerialization.deserializeMetadata(new String(obj._2.asInstanceOf[Array[Byte]])).asInstanceOf[ContainerDef] //serializer.DeserializeObjectFromByteArray(obj._2.asInstanceOf[Array[Byte]]).asInstanceOf[ContainerDef]
       logger.debug("Get the jar from database ")
       val contDef = cont.asInstanceOf[ContainerDef]
-      MetadataAPIImpl.DownloadJarFromDB(contDef)
-      MetadataAPIImpl.AddObjectToCache(contDef, MdMgr.GetMdMgr)
+      getMetadataAPI.DownloadJarFromDB(contDef)
+      getMetadataAPI.AddObjectToCache(contDef, MdMgr.GetMdMgr)
     } catch {
       case e: Exception => {
 
@@ -1652,12 +1747,12 @@ object MessageAndContainerUtils {
    *                   method. If Security and/or Audit are configured, this value must be a value other than None.
    * @return
    */
-  def GetMessageDef(objectName: String, formatType: String, userid: Option[String] = None): String = {
+  def GetMessageDef(objectName: String, formatType: String, userid: Option[String] = None, tid : Option[String] = None): String = {
     val nameNodes: Array[String] = if (objectName != null && objectName.contains('.')) objectName.split('.') else Array(MdMgr.sysNS, objectName)
     val nmspcNodes: Array[String] = nameNodes.splitAt(nameNodes.size - 1)._1
     val buffer: StringBuilder = new StringBuilder
     val nameSpace: String = nmspcNodes.addString(buffer, ".").toString
-    GetMessageDef(nameSpace, objectName, formatType, "-1", userid)
+    GetMessageDef(nameSpace, objectName, formatType, "-1", userid, tid)
   }
 
   /**
@@ -1671,13 +1766,13 @@ object MessageAndContainerUtils {
    * @return the result as a JSON String of object ApiResult where ApiResult.resultData contains
    *         the MessageDef either as a JSON or XML string depending on the parameter formatType
    */
-  def GetMessageDef(objectName: String, version: String, formatType: String, userid: Option[String]): String = {
+  def GetMessageDef(objectName: String, version: String, formatType: String, userid: Option[String], tid : Option[String]): String = {
 
     val nameNodes: Array[String] = if (objectName != null && objectName.contains('.')) objectName.split('.') else Array(MdMgr.sysNS, objectName)
     val nmspcNodes: Array[String] = nameNodes.splitAt(nameNodes.size - 1)._1
     val buffer: StringBuilder = new StringBuilder
     val nameSpace: String = nmspcNodes.addString(buffer, ".").toString
-    GetMessageDef(nameSpace, objectName, formatType, version, userid)
+    GetMessageDef(nameSpace, objectName, formatType, version, userid, tid)
   }
 
   /**
@@ -1692,9 +1787,9 @@ object MessageAndContainerUtils {
    * @return the result as a JSON String of object ApiResult where ApiResult.resultData contains
    *         the MessageDef either as a JSON or XML string depending on the parameter formatType
    */
-  def GetMessageDef(nameSpace: String, objectName: String, formatType: String, version: String, userid: Option[String]): String = {
-    MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, AuditConstants.MESSAGE, AuditConstants.SUCCESS, "", nameSpace + "." + objectName + "." + version)
-    GetMessageDefFromCache(nameSpace, objectName, formatType, version, userid)
+  def GetMessageDef(nameSpace: String, objectName: String, formatType: String, version: String, userid: Option[String], tid : Option[String]): String = {
+    getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, AuditConstants.MESSAGE, AuditConstants.SUCCESS, "", nameSpace + "." + objectName + "." + version)
+    GetMessageDefFromCache(nameSpace, objectName, formatType, version, userid, tid)
   }
 
   /**
@@ -1704,15 +1799,16 @@ object MessageAndContainerUtils {
    * @param formatType
    * @param userid     the identity to be used by the security adapter to ascertain if this user has access permissions for this
    *                   method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @param tid tenantID filter
    * @return the result as a JSON String of object ApiResult where ApiResult.resultData contains
    *         the ContainerDef either as a JSON or XML string depending on the parameter formatType
    */
-  def GetContainerDef(objectName: String, formatType: String, userid: Option[String] = None): String = {
+  def GetContainerDef(objectName: String, formatType: String, userid: Option[String] = None, tid : Option[String] = None): String = {
     val nameNodes: Array[String] = if (objectName != null && objectName.contains('.')) objectName.split('.') else Array(MdMgr.sysNS, objectName)
     val nmspcNodes: Array[String] = nameNodes.splitAt(nameNodes.size - 1)._1
     val buffer: StringBuilder = new StringBuilder
     val nameSpace: String = nmspcNodes.addString(buffer, ".").toString
-    GetContainerDefFromCache(nameSpace, objectName, formatType, "-1", userid)
+    GetContainerDefFromCache(nameSpace, objectName, formatType, "-1", userid, tid)
   }
 
   /**
@@ -1727,9 +1823,10 @@ object MessageAndContainerUtils {
    * @return the result as a JSON String of object ApiResult where ApiResult.resultData contains
    *         the ContainerDef either as a JSON or XML string depending on the parameter formatType
    */
-  def GetContainerDef(nameSpace: String, objectName: String, formatType: String, version: String, userid: Option[String]): String = {
-    MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, AuditConstants.CONTAINER, AuditConstants.SUCCESS, "", nameSpace + "." + objectName + "." + version)
-    GetContainerDefFromCache(nameSpace, objectName, formatType, version, None)
+  def GetContainerDef(nameSpace: String, objectName: String, formatType: String, version: String, userid: Option[String], tid : Option[String]): String = {
+    getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, AuditConstants.CONTAINER, AuditConstants.SUCCESS, "", nameSpace + "." + objectName + "." + version)
+
+    GetContainerDefFromCache(nameSpace, objectName, formatType, version, None, tid)
   }
 
   /**
@@ -1743,12 +1840,12 @@ object MessageAndContainerUtils {
    * @return the result as a JSON String of object ApiResult where ApiResult.resultData contains
    *         the ContainerDef either as a JSON or XML string depending on the parameter formatType
    */
-  def GetContainerDef(objectName: String, version: String, formatType: String, userid: Option[String]): String = {
+  def GetContainerDef(objectName: String, version: String, formatType: String, userid: Option[String], tid : Option[String]): String = {
     val nameNodes: Array[String] = if (objectName != null && objectName.contains('.')) objectName.split('.') else Array(MdMgr.sysNS, objectName)
     val nmspcNodes: Array[String] = nameNodes.splitAt(nameNodes.size - 1)._1
     val buffer: StringBuilder = new StringBuilder
     val nameSpace: String = nmspcNodes.addString(buffer, ".").toString
-    GetContainerDef(nameSpace, objectName, formatType, version, userid)
+    GetContainerDef(nameSpace, objectName, formatType, version, userid, tid)
   }
 
   /**
@@ -1829,7 +1926,7 @@ object MessageAndContainerUtils {
   }
 
   def GetTypeBySchemaId(schemaId: Int, userid: Option[String]): String = {
-    if (userid != None) MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.GETOBJECT), AuditConstants.GETOBJECT, AuditConstants.CONTAINER, AuditConstants.SUCCESS, "", schemaId.toString)
+    if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.GETOBJECT), AuditConstants.GETOBJECT, AuditConstants.CONTAINER, AuditConstants.SUCCESS, "", schemaId.toString)
     try {
       if (schemaId < 0) {
         val apiResult = new ApiResult(ErrorCodeConstants.Success, "GetTypeBySchemaId", "", "Please provide the proper schema id")
@@ -1858,7 +1955,7 @@ object MessageAndContainerUtils {
   }
 
   def GetTypeByElementId(elementId: Long, userid: Option[String]): String = {
-    if (userid != None) MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.GETOBJECT), AuditConstants.GETOBJECT, AuditConstants.CONTAINER, AuditConstants.SUCCESS, "", elementId.toString)
+    if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.GETOBJECT), AuditConstants.GETOBJECT, AuditConstants.CONTAINER, AuditConstants.SUCCESS, "", elementId.toString)
     try {
       if (elementId < 0) {
         val apiResult = new ApiResult(ErrorCodeConstants.Success, "GetTypeByElementId", "", "Please provide the proper element id")

@@ -21,19 +21,18 @@ import com.ligadata.kamanja.metadata.ModelRepresentation
 import com.ligadata.kamanja.metadata._
 import com.ligadata.kamanja.metadata.ObjType._
 import com.ligadata.kamanja.metadata.MdMgr._
-import scala.collection.mutable.{ArrayBuffer}
-import org.apache.logging.log4j._
 
+import scala.collection.mutable.ArrayBuffer
+import org.apache.logging.log4j._
 import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
-import org.json4s.jackson.Serialization
-
+import org.json4s.jackson.{Json, Serialization}
 import com.ligadata.Exceptions._
 import com.ligadata.AuditAdapterInfo.AuditRecord
-
 import java.util.Date
-import scala.collection.mutable.{HashMap}
+
+import scala.collection.mutable.HashMap
 
 case class TypeDef(MetadataType: String, NameSpace: String, Name: String, TypeTypeName: String, TypeNameSpace: String, TypeName: String, PhysicalName: String, var Version: String, JarName: String, DependencyJars: List[String], Implementation: String, OwnerId: String, TenantId: String, UniqueId: Long, MdElementId: Long, Fixed: Option[Boolean], NumberOfDimensions: Option[Int], KeyTypeNameSpace: Option[String], KeyTypeName: Option[String], ValueTypeNameSpace: Option[String], ValueTypeName: Option[String], TupleDefinitions: Option[List[TypeDef]])
 
@@ -81,7 +80,8 @@ case class ModelInfo(NameSpace: String
                      , JarName: String
                      , DependencyJars: List[String]
                      , Recompile: Boolean
-                     , SupportsInstanceSerialization: Boolean)
+                     , SupportsInstanceSerialization: Boolean
+                     , DepContainers: Option[List[String]])
 
 case class ModelDefinition(Model: ModelInfo)
 
@@ -582,6 +582,11 @@ object JsonSerializer {
         * , Recompile : Boolean
         * , SupportsInstanceSerialization : Boolean)
         */
+
+      var depContainers = List[String]()
+      if( ModDefInst.Model.DepContainers != None ){
+	depContainers = ModDefInst.Model.DepContainers.get
+      }
       val modDef = MdMgr.GetMdMgr.MakeModelDef(ModDefInst.Model.NameSpace
         , ModDefInst.Model.Name
         , ModDefInst.Model.PhysicalName
@@ -596,7 +601,9 @@ object JsonSerializer {
         , ModDefInst.Model.JarName
         , ModDefInst.Model.DependencyJars.toArray
         , ModDefInst.Model.Recompile
-        , ModDefInst.Model.SupportsInstanceSerialization)
+        , ModDefInst.Model.SupportsInstanceSerialization
+	, ""
+        , depContainers.toArray)
 
       modDef.ObjectDefinition(ModDefInst.Model.ObjectDefinition)
       val objFmt: ObjFormatType.FormatType = ObjFormatType.fromString(ModDefInst.Model.ObjectFormat)
@@ -956,6 +963,15 @@ object JsonSerializer {
             ("FullName" -> o.FullName) ~
             ("Version" -> MdMgr.Pad0s2Version(o.ver)) ~
             ("TenantId" -> o.tenantId) ~
+          // 646 - 673 Meta data api changes included - Changes begin
+          ("Description" -> o.description) ~
+          ("Comment" -> o.comment) ~
+          ("Author" -> o.author) ~
+          ("Tag" -> o.tag) ~
+          ("OtherParams" -> Json(DefaultFormats).write(o.params)) ~
+          ("CreatedTime" -> o.creationTime) ~
+          ("UpdatedTime" -> o.modTime) ~
+          // 646 - 673 Changes end
             ("ElementId" -> o.mdElementId) ~
             ("ReportingId"-> o.uniqueId) ~
             ("SchemaId" -> o.containerType.schemaId) ~
@@ -1009,6 +1025,15 @@ object JsonSerializer {
             ("Version" -> MdMgr.Pad0s2Version(o.ver)) ~
             ("TenantId" -> o.tenantId) ~
             ("ElementId" -> o.mdElementId) ~
+            // 646 - 673 Meta data api changes included - Changes begin
+            ("Description" -> o.description) ~
+          ("Comment" -> o.comment) ~
+          ("Author" -> o.author) ~
+            ("Tag" -> o.tag) ~
+            ("OtherParams" -> Json(DefaultFormats).write(o.params)) ~
+            ("CreatedTime" -> o.creationTime) ~
+            ("UpdatedTime" -> o.modTime) ~
+            // 646 - 673 Changes end
             ("SchemaId" -> o.containerType.schemaId) ~
             ("AvroSchema" -> o.containerType.avroSchema) ~
             ("JarName" -> o.jarName) ~
@@ -1043,6 +1068,15 @@ object JsonSerializer {
             ("Version" -> MdMgr.Pad0s2Version(o.ver)) ~
             ("TenantId" -> o.tenantId) ~
             ("ElementId" -> o.mdElementId) ~
+            // 646 - 673 Meta data api changes included - Changes begin
+            ("Description" -> o.description) ~
+          ("Comment" -> o.comment) ~
+          ("Author" -> o.author) ~
+            ("Tag" -> o.tag) ~
+            ("OtherParams" -> Json(DefaultFormats).write(o.params)) ~
+            ("CreatedTime" -> o.creationTime) ~
+            ("UpdatedTime" -> o.modTime) ~
+            // 646 - 673 Changes end
             ("IsReusable" -> o.isReusable.toString) ~
             ("inputMsgSets" -> o.inputMsgSets.toList.map(m => m.toList.map(f => ("Origin" -> f.origin) ~ ("Message" -> f.message) ~ ("Attributes" -> f.attributes.toList)))) ~
             ("OutputMsgs" -> outputMsgs) ~
@@ -1055,7 +1089,8 @@ object JsonSerializer {
             ("DependencyJars" -> o.CheckAndGetDependencyJarNames.toList) ~
             ("Deleted" -> o.deleted) ~
             ("Active" -> o.active) ~
-            ("TransactionId" -> o.tranId))
+            ("TransactionId" -> o.tranId) ~
+            ("DepContainers" -> o.depContainers.toList))
         compact(render(json))
       }
 
@@ -1066,6 +1101,7 @@ object JsonSerializer {
           ("CollectionType" -> ObjType.asString(o.collectionType)) ~
           ("TransactionId" -> o.tranId))
         var jsonStr = pretty(render(json))
+
         //jsonStr = jsonStr.replaceAll("}","").trim + ",\n  \"Type\": "
         jsonStr = replaceLast(jsonStr, "}", "").trim + ",\n  \"Type\": "
         var memberDefJson = SerializeObjectToJson(o.typeDef)
