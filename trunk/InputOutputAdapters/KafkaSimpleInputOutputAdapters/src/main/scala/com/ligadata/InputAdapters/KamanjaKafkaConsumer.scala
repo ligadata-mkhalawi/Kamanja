@@ -94,7 +94,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
       if (qc.sasl_mechanism != null) props.put("sasl.mechanism", qc.sasl_mechanism)
 
       // THROW A WARNING, if PLAIN is chosen with unencrypted communication.
-      if (qc.sasl_mechanism.equalsIgnoreCase("plain")) {
+      if (qc.sasl_mechanism != null && qc.sasl_mechanism.equalsIgnoreCase("plain")) {
         LOG.warn("\n\nKamanjaKafkaConsumer is instantiated with security protocol of SASL_PLAIN and security mechanism of PLAIN. This Will result in unecrypted passwords to be sent across the wire\n")
       }
 
