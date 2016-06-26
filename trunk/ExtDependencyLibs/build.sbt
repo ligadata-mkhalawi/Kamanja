@@ -398,4 +398,4 @@ libraryDependencies += "net.jcip" % "jcip-annotations" % "1.0"
 //already available
 
 // QueryGenerator
-libraryDependencies += "com.orientechnologies" % "orientdb-jdbc" % "2.1.19"
+// libraryDependencies += "com.orientechnologies" % "orientdb-jdbc" % "2.1.19"
