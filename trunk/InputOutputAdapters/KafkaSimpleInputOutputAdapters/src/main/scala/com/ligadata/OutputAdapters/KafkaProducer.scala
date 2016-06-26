@@ -23,7 +23,7 @@ import kafka.common.{ QueueFullException, FailedToSendMessageException }
 import org.apache.logging.log4j.{ Logger, LogManager }
 import com.ligadata.InputOutputAdapterInfo._
 import com.ligadata.AdaptersConfiguration.{ KafkaConstants, KafkaQueueAdapterConfiguration }
-import com.ligadata.Exceptions.{ FatalAdapterException }
+import com.ligadata.Exceptions.{KamanjaException, FatalAdapterException}
 import com.ligadata.HeartBeat.{Monitorable, MonitorComponentInfo}
 import org.json4s.jackson.Serialization
 import scala.collection.mutable.ArrayBuffer
@@ -41,7 +41,7 @@ object KafkaProducer extends OutputAdapterFactory {
   val HB_PERIOD = 5000
 
   // Statistics Keys
-  val ADAPTER_DESCRIPTION = "Kafka 0.8.2.2 Client"
+  val ADAPTER_DESCRIPTION = "Kafka 0.9.0.x+ Client"
   val SEND_MESSAGE_COUNT_KEY = "Messages Sent"
   val SEND_CALL_COUNT_KEY = "Send Call Count"
   val LAST_FAILURE_TIME = "Last_Failure"
@@ -106,6 +106,82 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   props.put("max.buffer.full.block.ms", qc.otherconfigs.getOrElse("max.buffer.full.block.ms", default_max_buffer_full_block_ms).toString.trim())
   props.put("network.request.timeout.ms", qc.otherconfigs.getOrElse("network.request.timeout.ms", default_network_request_timeout_ms).toString.trim())
 
+  // Verify the Secuirty Paramters...
+  if (qc.security_protocol != null && (qc.security_protocol.trim.equalsIgnoreCase("sasl_plaintext") || qc.security_protocol.trim.equalsIgnoreCase("sasl_ssl") || qc.security_protocol.trim.equalsIgnoreCase("ssl"))) {
+    if (qc.security_protocol.trim.equalsIgnoreCase("sasl_plaintext")) {
+
+      // Add all the required SASL parameters.
+      props.put("security.protocol", qc.security_protocol)
+      if (qc.sasl_mechanism != null) props.put("sasl.mechanism", qc.sasl_mechanism)
+
+      // THROW A WARNING, if PLAIN is chosen with unencrypted communication.
+      if (qc.sasl_mechanism != null && qc.sasl_mechanism.equalsIgnoreCase("plaintext")) {
+        LOG.warn("\n\nKafkaProducer is instantiated with security protocol of SASL_PLAINTEXT and security mechanism of PLAINTEXT. This Will result in unecrypted passwords to be sent across the wire\n")
+      }
+
+      if (qc.sasl_kerberos_service_name != null)
+        props.put("sasl.kerberos.service.name", qc.sasl_kerberos_service_name)
+      else
+        throw new KamanjaException("KamanjaKafkaCosnumer properties must specify SASL.KERBEROS.SERVICE.NAME if SASL is specified as Security Protocol", null)
+      if (qc.sasl_kerberos_kinit_cmd != null) props.put("sasl.kerberos.kinit.cmd", qc.sasl_kerberos_kinit_cmd)
+      if (qc.sasl_kerberos_min_time_before_relogic != null) props.put("sasl.kerberos.min.time.before.relogin", qc.sasl_kerberos_min_time_before_relogic)
+      if (qc.sasl_kerberos_ticket_renew_jiter != null) props.put("sasl.kerberos.ticket.renew.jitter", qc.sasl_kerberos_ticket_renew_jiter)
+      if (qc.sasl_kerberos_ticket_renew_window_factor != null) props.put("sasl.kerberos.ticket.renew.window.factor", qc.sasl_kerberos_ticket_renew_window_factor)
+    }
+
+    if (qc.security_protocol.trim.equalsIgnoreCase("sasl_ssl")) {
+      // Add all the required SASL parameters.
+      props.put("security.protocol", qc.security_protocol)
+      println("===> with " +  qc.security_protocol)
+      if (qc.sasl_mechanism != null) props.put("sasl.mechanism", qc.sasl_mechanism)
+      if (qc.sasl_kerberos_service_name != null)
+        props.put("sasl.kerberos.service.name", qc.sasl_kerberos_service_name)
+      else
+        throw new KamanjaException("KamanjaKafkaCosnumer properties must specify SASL.KERBEROS.SERVICE.NAME if SASL is specified as Security Protocol", null)
+      if (qc.sasl_kerberos_kinit_cmd != null) props.put("sasl.kerberos.kinit.cmd", qc.sasl_kerberos_kinit_cmd)
+      if (qc.sasl_kerberos_min_time_before_relogic != null) props.put("sasl.kerberos.min.time.before.relogin", qc.sasl_kerberos_min_time_before_relogic)
+      if (qc.sasl_kerberos_ticket_renew_jiter != null) props.put("sasl.kerberos.ticket.renew.jitter", qc.sasl_kerberos_ticket_renew_jiter)
+      if (qc.sasl_kerberos_ticket_renew_window_factor != null) props.put("sasl.kerberos.ticket.renew.window.factor", qc.sasl_kerberos_ticket_renew_window_factor)
+
+      // Add all the SSL stuff now
+      if (qc.ssl_key_password != null) props.put("ssl.key.password", qc.ssl_key_password)
+      if (qc.ssl_keystore_location != null) props.put("ssl.keystore.location", qc.ssl_keystore_location)
+      if (qc.ssl_keystore_password != null) props.put("ssl.keystore.password", qc.ssl_keystore_password)
+      if (qc.ssl_truststore_location != null) props.put("ssl.truststore.location",qc.ssl_truststore_location)
+      if (qc.ssl_truststore_password != null) props.put("ssl.truststore.password", qc.ssl_truststore_password)
+      if (qc.ssl_enabled_protocols != null) props.put("ssl.enabled.protocols", qc.ssl_enabled_protocols)
+      if (qc.ssl_keystore_type != null) props.put("ssl.keystore.type", qc.ssl_keystore_type)
+      if (qc.ssl_protocol != null) props.put("ssl.protocol", qc.ssl_protocol)
+      if (qc.ssl_provider != null) props.put("ssl.provider", qc.ssl_provider)
+      if (qc.ssl_truststore_type != null) props.put("ssl.truststore.type", qc.ssl_truststore_type)
+      if (qc.ssl_cipher_suites != null) props.put("ssl.cipher.suites", qc.ssl_cipher_suites)
+      if (qc.ssl_endpoint_identification_algorithm != null) props.put("ssl.endpoint.identification.algorithm", qc.ssl_endpoint_identification_algorithm)
+      if (qc.ssl_keymanager_algorithm != null) props.put("ssl.keymanager.algorithm", qc.ssl_keymanager_algorithm)
+      if (qc.ssl_trust_manager_algorithm != null) props.put("ssl.trustmanager.algorithm", qc.ssl_trust_manager_algorithm)
+    }
+
+    if (qc.security_protocol.trim.equalsIgnoreCase("ssl")) {
+      //All SSL parameters
+      println("===> with " +  qc.security_protocol)
+      props.put("security.protocol", qc.security_protocol)
+      if (qc.ssl_key_password != null) props.put("ssl.key.password", qc.ssl_key_password)
+      if (qc.ssl_keystore_location != null) props.put("ssl.keystore.location", qc.ssl_keystore_location)
+      if (qc.ssl_keystore_password != null) props.put("ssl.keystore.password", qc.ssl_keystore_password)
+      if (qc.ssl_truststore_location != null) props.put("ssl.truststore.location",qc.ssl_truststore_location)
+      if (qc.ssl_truststore_password != null) props.put("ssl.truststore.password", qc.ssl_truststore_password)
+      if (qc.ssl_enabled_protocols != null) props.put("ssl.enabled.protocols", qc.ssl_enabled_protocols)
+      if (qc.ssl_keystore_type != null) props.put("ssl.keystore.type", qc.ssl_keystore_type)
+      if (qc.ssl_protocol != null) props.put("ssl.protocol", qc.ssl_protocol)
+      if (qc.ssl_provider != null) props.put("ssl.provider", qc.ssl_provider)
+      if (qc.ssl_truststore_type != null) props.put("ssl.truststore.type", qc.ssl_truststore_type)
+      if (qc.ssl_cipher_suites != null) props.put("ssl.cipher.suites", qc.ssl_cipher_suites)
+      if (qc.ssl_endpoint_identification_algorithm != null) props.put("ssl.endpoint.identification.algorithm", qc.ssl_endpoint_identification_algorithm)
+      if (qc.ssl_keymanager_algorithm != null) props.put("ssl.keymanager.algorithm", qc.ssl_keymanager_algorithm)
+      if (qc.ssl_trust_manager_algorithm != null) props.put("ssl.trustmanager.algorithm", qc.ssl_trust_manager_algorithm)
+    }
+  }
+
+
   val max_outstanding_messages = qc.otherconfigs.getOrElse("max.outstanding.messages", default_outstanding_messages).toString.trim().toInt
 
   case class MsgDataRecievedCnt(cntrToOrder: Long, msg: ProducerRecord[Array[Byte], Array[Byte]])
@@ -116,9 +192,13 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   var reqCntr: Int = 0
   var msgInOrder = new AtomicLong
 
-  val producer = new org.apache.kafka.clients.producer.KafkaProducer[Array[Byte], Array[Byte]](props)
 
+  // Create the producer object...
+  LOG.info("Staring Kafka Producer with the following paramters: /n" + qc.toString)
+
+  val producer = new org.apache.kafka.clients.producer.KafkaProducer[Array[Byte], Array[Byte]](props)
   var topicPartitionsCount = producer.partitionsFor(qc.topic).size()
+
   var partitionsGetTm = System.currentTimeMillis
   val refreshPartitionTime = 60 * 1000 // 60 secs
 
@@ -353,6 +433,8 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
    * @param outputContainers
    */
   override def send(tnxCtxt: TransactionContext, outputContainers: Array[ContainerInterface]): Unit = {
+    println("===> producer send is called")
+
     if (outputContainers.size == 0) return
 
     // Sanity checks

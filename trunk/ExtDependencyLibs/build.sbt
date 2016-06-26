@@ -123,7 +123,7 @@ libraryDependencies += "com.google.protobuf" % "protobuf-java" % "2.6.0"
 
 /////////////////////// SimpleKafkaProducer
 resolvers += "Apache repo" at "https://repository.apache.org/content/repositories/releases"
-libraryDependencies ++= Seq("org.apache.kafka" %% "kafka" % "0.8.2.2"
+libraryDependencies ++= Seq("org.apache.kafka" %% "kafka" % "0.9.0.1"
   exclude("javax.jms", "jms")
   exclude("com.sun.jdmk", "jmxtools")
   exclude("com.sun.jmx", "jmxri")
