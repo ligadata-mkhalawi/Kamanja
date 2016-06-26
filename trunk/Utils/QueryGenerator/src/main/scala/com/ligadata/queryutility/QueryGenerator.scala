@@ -559,48 +559,52 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
 
      if(!msgDefs.isEmpty){
        for(inputMessage <- msgDefs.get){ // add link between message and storage, input adapter, output adapter
-         for (tenant <-tenatInfo){ // add link between message and storage (message ===StoredBy===> storage ===retrieves===> message)
-         var vertexId = ""
+         for (tenant <-tenatInfo) {
+           // add link between message and storage (message ===StoredBy===> storage ===retrieves===> message)
+           var vertexId = ""
            var storageId = ""
            var primaryStroage: String = ""
-           if(tenant.primaryDataStore != null) {
+           val storageTenant = if (tenant.tenantId.isEmpty) "" else tenant.tenantId
+           if (tenant.primaryDataStore != null) {
              val json = parse(tenant.primaryDataStore)
              val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
              primaryStroage = if (adapCfgValues.get("StoreType").get.toString == null) "" else adapCfgValues.get("StoreType").get.toString
            }
            val tenantName = tenant.tenantId + "_" + primaryStroage
-           for (vertex <- verticesDataNew) {
-             if (vertex._2.equalsIgnoreCase(inputMessage.FullName)) {
-               vertexId = vertex._1
-             } //id of message
-             if (vertex._2.equalsIgnoreCase(tenantName)) {
-               storageId = vertex._1
-             } //id of storage
-           }
-           if (storageId.length != 0 && vertexId.length != 0) {
-             var linkKey = vertexId + "," + storageId
-             if (!edgeData.contains(linkKey)) {
-               edgeData += (linkKey -> "StoredBy")
-               val setQuery = "set Name = \"%s\"".format("StoredBy")
-               val query: String = queryObj.createQuery(elementType = "edge", className = "StoredBy", setQuery = setQuery, linkFrom = Option(vertexId), linkTo = Option(storageId))
-               queryObj.executeQuery(conn, query)
-               logger.debug(query)
-               println(query)
-             } else{
-               logger.debug("The edge exist between this two nodes %s , %s".format(vertexId, storageId))
-               println("The edge exist between this two nodes %s, %s".format(vertexId, storageId))
+           if (inputMessage.TenantId.equalsIgnoreCase(storageTenant)) {
+             for (vertex <- verticesDataNew) {
+               if (vertex._2.equalsIgnoreCase(inputMessage.FullName)) {
+                 vertexId = vertex._1
+               } //id of message
+               if (vertex._2.equalsIgnoreCase(tenantName)) {
+                 storageId = vertex._1
+               } //id of storage
              }
-             linkKey = storageId + "," + vertexId
-             if (!edgeData.contains(linkKey)) {
-               edgeData += (linkKey -> "Retrieves")
-               val setQuery = "set Name = \"%s\"".format("Retrieves")
-               val query: String = queryObj.createQuery(elementType = "edge", className = "Retrieves", setQuery = setQuery, linkFrom = Option(storageId), linkTo = Option(vertexId))
-               queryObj.executeQuery(conn, query)
-               logger.debug(query)
-               println(query)
-             } else{
-               logger.debug("The edge exist between this two nodes %s , %s".format(vertexId, storageId))
-               println("The edge exist between this two nodes %s, %s".format(vertexId, storageId))
+             if (storageId.length != 0 && vertexId.length != 0) {
+               var linkKey = vertexId + "," + storageId
+               if (!edgeData.contains(linkKey)) {
+                 edgeData += (linkKey -> "StoredBy")
+                 val setQuery = "set Name = \"%s\"".format("StoredBy")
+                 val query: String = queryObj.createQuery(elementType = "edge", className = "StoredBy", setQuery = setQuery, linkFrom = Option(vertexId), linkTo = Option(storageId))
+                 queryObj.executeQuery(conn, query)
+                 logger.debug(query)
+                 println(query)
+               } else {
+                 logger.debug("The edge exist between this two nodes %s , %s".format(vertexId, storageId))
+                 println("The edge exist between this two nodes %s, %s".format(vertexId, storageId))
+               }
+               linkKey = storageId + "," + vertexId
+               if (!edgeData.contains(linkKey)) {
+                 edgeData += (linkKey -> "Retrieves")
+                 val setQuery = "set Name = \"%s\"".format("Retrieves")
+                 val query: String = queryObj.createQuery(elementType = "edge", className = "Retrieves", setQuery = setQuery, linkFrom = Option(storageId), linkTo = Option(vertexId))
+                 queryObj.executeQuery(conn, query)
+                 logger.debug(query)
+                 println(query)
+               } else {
+                 logger.debug("The edge exist between this two nodes %s , %s".format(vertexId, storageId))
+                 println("The edge exist between this two nodes %s, %s".format(vertexId, storageId))
+               }
              }
            }
          }
