@@ -132,7 +132,6 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
     if (qc.security_protocol.trim.equalsIgnoreCase("sasl_ssl")) {
       // Add all the required SASL parameters.
       props.put("security.protocol", qc.security_protocol)
-      println("===> with " +  qc.security_protocol)
       if (qc.sasl_mechanism != null) props.put("sasl.mechanism", qc.sasl_mechanism)
       if (qc.sasl_kerberos_service_name != null)
         props.put("sasl.kerberos.service.name", qc.sasl_kerberos_service_name)
@@ -162,7 +161,6 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
 
     if (qc.security_protocol.trim.equalsIgnoreCase("ssl")) {
       //All SSL parameters
-      println("===> with " +  qc.security_protocol)
       props.put("security.protocol", qc.security_protocol)
       if (qc.ssl_key_password != null) props.put("ssl.key.password", qc.ssl_key_password)
       if (qc.ssl_keystore_location != null) props.put("ssl.keystore.location", qc.ssl_keystore_location)
@@ -194,7 +192,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
 
 
   // Create the producer object...
-  LOG.info("Staring Kafka Producer with the following paramters: /n" + qc.toString)
+  LOG.info("Staring Kafka Producer with the following paramters: \n" + qc.toString)
 
   val producer = new org.apache.kafka.clients.producer.KafkaProducer[Array[Byte], Array[Byte]](props)
   var topicPartitionsCount = producer.partitionsFor(qc.topic).size()
@@ -433,8 +431,6 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
    * @param outputContainers
    */
   override def send(tnxCtxt: TransactionContext, outputContainers: Array[ContainerInterface]): Unit = {
-    println("===> producer send is called")
-
     if (outputContainers.size == 0) return
 
     // Sanity checks

@@ -59,81 +59,81 @@ class KafkaQueueAdapterConfiguration extends AdapterConfiguration {
     var outString: String = ""
 
     if (hosts != null) {
-      outString = outString + "  host: " + hosts.mkString(":") + "/n"
+      outString = outString + "  host: " + hosts.mkString(":") + "\n"
     }
     if (topic != null) {
-      outString = outString + "  topic: " + topic + "/n"
+      outString = outString + "  topic: " + topic + "\n"
     }
     if (instancePartitions != null) {
-      outString = outString + "  instancePartitions: " + instancePartitions.mkString(":") + "/n"
+      outString = outString + "  instancePartitions: " + instancePartitions.mkString(":") + "\n"
     }
     if (otherconfigs != null) {
-      outString = outString + "  otherconfigs: " + otherconfigs.mkString(":") + "/n"
+      outString = outString + "  otherconfigs: " + otherconfigs.mkString(":") + "\n"
     }
     if (security_protocol != null) {
-      outString = outString + "  security_protocol: " + security_protocol + "/n"
+      outString = outString + "  security_protocol: " + security_protocol + "\n"
     }
     if (sasl_kerberos_service_name != null) {
-      outString = outString + "  sasl_kerberos_service_name: " + sasl_kerberos_service_name + "/n"
+      outString = outString + "  sasl_kerberos_service_name: " + sasl_kerberos_service_name + "\n"
     }
     if (sasl_mechanism != null) {
-      outString = outString + "  sasl_mechanism: " + sasl_mechanism + "/n"
+      outString = outString + "  sasl_mechanism: " + sasl_mechanism + "\n"
     }
     if (sasl_kerberos_kinit_cmd != null) {
-      outString = outString + "  sasl_kerberos_kinit_cmd: " + sasl_kerberos_kinit_cmd + "/n"
+      outString = outString + "  sasl_kerberos_kinit_cmd: " + sasl_kerberos_kinit_cmd + "\n"
     }
     if (sasl_kerberos_min_time_before_relogic != null) {
-      outString = outString + "  sasl_kerberos_min_time_before_relogic: " + sasl_kerberos_min_time_before_relogic + "/n"
+      outString = outString + "  sasl_kerberos_min_time_before_relogic: " + sasl_kerberos_min_time_before_relogic + "\n"
     }
     if (sasl_kerberos_ticket_renew_jiter != null) {
-      outString = outString + "  sasl_kerberos_ticket_renew_jiter: " + sasl_kerberos_ticket_renew_jiter + "/n"
+      outString = outString + "  sasl_kerberos_ticket_renew_jiter: " + sasl_kerberos_ticket_renew_jiter + "\n"
     }
     if (sasl_kerberos_ticket_renew_window_factor != null) {
-      outString = outString + "  sasl_kerberos_ticket_renew_window_factor: " + sasl_kerberos_ticket_renew_window_factor + "/n"
+      outString = outString + "  sasl_kerberos_ticket_renew_window_factor: " + sasl_kerberos_ticket_renew_window_factor + "\n"
     }
 
 
     if (ssl_key_password != null) {
-      outString = outString + "  ssl_key_password:  ------ /n"
+      outString = outString + "  ssl_key_password:  ------ \n"
     }
     if (ssl_keystore_password != null) {
-      outString = outString + "  ssl_keystore_password:  ------ /n"
+      outString = outString + "  ssl_keystore_password:  ------ \n"
     }
     if (ssl_keystore_location != null) {
-      outString = outString + "  ssl_keystore_location: " + ssl_keystore_location + "/n"
+      outString = outString + "  ssl_keystore_location: " + ssl_keystore_location + "\n"
     }
     if (ssl_keystore_type != null) {
-      outString = outString + "  ssl_keystore_type: " + ssl_keystore_type + "/n"
+      outString = outString + "  ssl_keystore_type: " + ssl_keystore_type + "\n"
     }
     if (ssl_truststore_password != null) {
-      outString = outString + "  ssl_truststore_password:  ------ /n"
+      outString = outString + "  ssl_truststore_password:  ------ \n"
     }
     if (ssl_truststore_location != null) {
-      outString = outString + "  ssl_truststore_location: " + ssl_truststore_location + "/n"
+      outString = outString + "  ssl_truststore_location: " + ssl_truststore_location + "\n"
     }
     if (ssl_truststore_type != null) {
-      outString = outString + "  ssl_truststore_type: " + ssl_truststore_type + "/n"
+      outString = outString + "  ssl_truststore_type: " + ssl_truststore_type + "\n"
     }
     if (ssl_enabled_protocols != null) {
-      outString = outString + "  ssl_enabled_protocols: " + ssl_enabled_protocols + "/n"
+      outString = outString + "  ssl_enabled_protocols: " + ssl_enabled_protocols + "\n"
     }
     if (ssl_protocol != null) {
-      outString = outString + "  ssl_protocol: " + ssl_protocol + "/n"
+      outString = outString + "  ssl_protocol: " + ssl_protocol + "\n"
     }
     if (ssl_provider != null) {
-      outString = outString + "  ssl_provider: " + ssl_provider + "/n"
+      outString = outString + "  ssl_provider: " + ssl_provider + "\n"
     }
     if (ssl_cipher_suites != null) {
-      outString = outString + "  ssl_cipher_suites: " + ssl_cipher_suites + "/n"
+      outString = outString + "  ssl_cipher_suites: " + ssl_cipher_suites + "\n"
     }
     if (ssl_endpoint_identification_algorithm != null) {
-      outString = outString + "  ssl_endpoint_identification_algorithm: " + ssl_endpoint_identification_algorithm + "/n"
+      outString = outString + "  ssl_endpoint_identification_algorithm: " + ssl_endpoint_identification_algorithm + "\n"
     }
     if (ssl_keymanager_algorithm != null) {
-      outString = outString + "  ssl_keymanager_algorithm: " + ssl_keymanager_algorithm + "/n"
+      outString = outString + "  ssl_keymanager_algorithm: " + ssl_keymanager_algorithm + "\n"
     }
     if (ssl_trust_manager_algorithm != null) {
-      outString = outString + "  ssl_trust_manager_algorithm: " + ssl_trust_manager_algorithm + "/n"
+      outString = outString + "  ssl_trust_manager_algorithm: " + ssl_trust_manager_algorithm + "\n"
     }
 
     return outString

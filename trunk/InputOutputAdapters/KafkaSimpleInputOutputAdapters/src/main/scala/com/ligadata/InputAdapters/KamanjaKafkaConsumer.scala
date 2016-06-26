@@ -49,8 +49,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   val input = this
   private val qc = KafkaQueueAdapterConfiguration.GetAdapterConfig(inputConfig)
   private val LOG = LogManager.getLogger(getClass)
-  println("===> KafkaConsumer starting ")
-  LOG.debug("Creating a Kafka Adapter (client v0.9+) for topic:  " + qc.Name)
+  LOG.info("Staring Kafka Consumer (0.9+) with the following paramters:\n" + qc.toString)
   private var isShutdown = false
   private val lock = new Object()
   private var msgCount: Long = 0
