@@ -17,6 +17,7 @@
 
 package com.ligadata.tools
 
+import org.apache.kafka.clients.producer.{ProducerRecord, KafkaProducer}
 import org.json4s.jackson.JsonMethods._
 
 import scala.actors.threadpool.{ Executors, TimeUnit }
@@ -72,7 +73,8 @@ class  ExtractKey {
   }
 }
 
-class CustPartitioner(props: VerifiableProperties) extends Partitioner {
+//class CustPartitioner(props: VerifiableProperties) extends Partitioner {
+class CustPartitioner extends Partitioner {
   val loggerName = this.getClass.getName
   val logger = LogManager.getLogger(loggerName)
   def partition(key: Any, a_numPartitions: Int): Int = {
@@ -128,11 +130,13 @@ object SimpleKafkaProducer {
   val loggerName = this.getClass.getName
   val logger = LogManager.getLogger(loggerName)
 
-  def send(producer: Producer[AnyRef, AnyRef], topic: String, message: String, partIdx: String): Unit = send(producer, topic, message.getBytes("UTF8"), partIdx.getBytes("UTF8"))
-
-  def send(producer: Producer[AnyRef, AnyRef], topic: String, message: Array[Byte], partIdx: Array[Byte]): Unit = {
+ // def send(producer: Producer[AnyRef, AnyRef], topic: String, message: String, partIdx: String): Unit = send(producer, topic, message.getBytes("UTF8"), partIdx.getBytes("UTF8"))
+   def send(producer: KafkaProducer[Array[Byte],Array[Byte]], topic: String, message: String, partIdx: String): Unit = send(producer, topic, message.getBytes("UTF8"), partIdx.getBytes("UTF8"))
+ // def send(producer: Producer[AnyRef, AnyRef], topic: String, message: Array[Byte], partIdx: Array[Byte]): Unit = {
+ def send(producer:  KafkaProducer[Array[Byte],Array[Byte]], topic: String, message: Array[Byte], partIdx: Array[Byte]): Unit = {
     try {
-      producer.send(new KeyedMessage(topic, partIdx, message))
+      //producer.send(new KeyedMessage(topic, partIdx, message))
+      producer.send(new ProducerRecord[Array[Byte],Array[Byte]](topic, partIdx , message))
       //producer.send(new KeyedMessage(topic, message))
     } catch {
       case e: Exception =>
@@ -159,8 +163,8 @@ object SimpleKafkaProducer {
     * @param topicpartitions Int
     * @param isVerbose Boolean
     */
-  def ProcessFile(producer: Producer[AnyRef, AnyRef], topics: Array[String], threadId: Int, sFileName: String, msg: String, sleeptm: Int, partitionkeyidxs: Any, st: Stats, ignorelines: Int, format: String, isGzip: Boolean, topicpartitions: Int, isVerbose: Boolean): Unit = {
-
+  def ProcessFile(producer:  KafkaProducer[Array[Byte],Array[Byte]], topics: Array[String], threadId: Int, sFileName: String, msg: String, sleeptm: Int, partitionkeyidxs: Any, st: Stats, ignorelines: Int, format: String, isGzip: Boolean, topicpartitions: Int, isVerbose: Boolean): Unit = {
+ // def ProcessFile(producer: Producer[AnyRef, AnyRef], topics: Array[String], threadId: Int, sFileName: String, msg: String, sleeptm: Int, partitionkeyidxs: Any, st: Stats, ignorelines: Int, format: String, isGzip: Boolean, topicpartitions: Int, isVerbose: Boolean): Unit = {    KafkaProducer[String, String]
     var bis: InputStream = null
 
     // If from the Gzip, wrap around a GZIPInput Stream, else... use the ByteArrayInputStream
@@ -188,10 +192,13 @@ object SimpleKafkaProducer {
 
 
   /*
-* processCSVFile - dealing with CSV File
+* processCSVFile - dealing with CSV File   KafkaProducer[String, String]
  */
-  private def processCSVFile(producer: Producer[AnyRef, AnyRef], topics: Array[String], threadId: Int, sFileName: String, msg: String, sleeptm: Int, partitionkeyidxs: Array[Int], st: Stats, ignorelines: Int, topicpartitions: Int, bis: InputStream, isVerbose: Boolean): Unit = {
-    var len = 0
+//  private def processCSVFile(producer: Producer[AnyRef, AnyRef], topics: Array[String], threadId: Int, sFileName: String, msg: String, sleeptm: Int, partitionkeyidxs: Array[Int], st: Stats, ignorelines: Int, topicpartitions: Int, bis: InputStream, isVerbose: Boolean): Unit = {
+
+  private def processCSVFile(producer: KafkaProducer[Array[Byte],Array[Byte]], topics: Array[String], threadId: Int, sFileName: String, msg: String, sleeptm: Int, partitionkeyidxs: Array[Int], st: Stats, ignorelines: Int, topicpartitions: Int, bis: InputStream, isVerbose: Boolean): Unit = {
+
+      var len = 0
     var readlen = 0
     var totalLen: Int = 0
     var locallinecntr: Int = 0
@@ -281,9 +288,11 @@ object SimpleKafkaProducer {
   /**
     * processJsonFile - dealing with Json File full of individual json documents... parse individual Json documents from it and insert them individually
     *                   the JSON format will be enforced by the json parser. The outer most curly parents are used to determine where the document
-    *                   begin and end.
+    *                   begin and end.  KafkaProducer[String, String]
     */
-  private def processJsonFile(producer: Producer[AnyRef, AnyRef], topics: Array[String], threadId: Int, sFileName: String, msg: String, sleeptm: Int, partitionkeyidxs:scala.collection.mutable.Map[String,List[String]], st: Stats, topicpartitions: Int, bis: InputStream, isVerbose: Boolean): Unit ={
+  //private def processJsonFile(producer: Producer[AnyRef, AnyRef], topics: Array[String], threadId: Int, sFileName: String, msg: String, sleeptm: Int, partitionkeyidxs:scala.collection.mutable.Map[String,List[String]], st: Stats, topicpartitions: Int, bis: InputStream, isVerbose: Boolean): Unit =
+  private def processJsonFile(producer: KafkaProducer[Array[Byte],Array[Byte]], topics: Array[String], threadId: Int, sFileName: String, msg: String, sleeptm: Int, partitionkeyidxs:scala.collection.mutable.Map[String,List[String]], st: Stats, topicpartitions: Int, bis: InputStream, isVerbose: Boolean): Unit ={
+
     var readlen = 0
     val len = 0
     val maxlen = 1024 * 1024
@@ -316,7 +325,7 @@ object SimpleKafkaProducer {
             cp = curr
 
             val jsonDoc = buffer.slice(op,cp+1).map(byte => byte.toChar).mkString
-            processJsonDoc(jsonDoc, producer: Producer[AnyRef, AnyRef], topics, threadId, msg, sleeptm, partitionkeyidxs, st, topicpartitions,isVerbose)
+            processJsonDoc(jsonDoc, producer, topics, threadId, msg, sleeptm, partitionkeyidxs, st, topicpartitions,isVerbose)
           }
         }
         curr = curr + 1
@@ -341,7 +350,7 @@ object SimpleKafkaProducer {
   /*
   * processJsonDoc - add an individual json doc to whatever queue is specified here.
   */
-  private def processJsonDoc(doc: String, producer: Producer[AnyRef, AnyRef],
+  private def processJsonDoc(doc: String, producer: KafkaProducer[Array[Byte], Array[Byte]],
                              topics: Array[String], threadId: Int, msg: String, sleeptm: Int,
                              partitionkeyidxs: scala.collection.mutable.Map[String,List[String]], st: Stats, topicpartitions: Int,
                              isVerbose:Boolean): Unit = {
@@ -442,6 +451,8 @@ object SimpleKafkaProducer {
         nextOption(map ++ Map('verbose -> value), tail)
       case "--version" :: tail =>
         nextOption(map ++ Map('version -> "true"), tail)
+      case "--secprops" :: value :: tail =>
+        nextOption(map ++ Map('secprops -> value), tail)
       case option :: tail => {
         println("Unknown option " + option)
         sys.exit(1)
@@ -528,6 +539,24 @@ object SimpleKafkaProducer {
     }
 
     val format = options.getOrElse('format,"").toString
+    val props = new Properties()
+
+    var secPropFile = options.getOrElse('secprops,"").toString
+    if (secPropFile.size > 0) {
+      try {
+        var propLines = scala.io.Source.fromFile(secPropFile).getLines().foreach(line => {
+          var kv = line.split("=")
+          if (kv.size == 2) {
+            props.put(kv(0), kv(1))
+          }
+        })
+      } catch {
+        case t: Throwable => {
+          println("Unable to Read the KAMANJA_SECURITY_CLIENT, which is set to " + secPropFile + " Reason: ")
+          println(t.printStackTrace())
+        }
+      }
+    }
 
     val validJsonMap = scala.collection.mutable.Map[String,List[String]]()
     // var partitionkeyidxsTemp: Array[Int] = null
@@ -554,10 +583,10 @@ object SimpleKafkaProducer {
 
     val isVerbose = options.getOrElse('verbose, "false").toString
 
-    val props = new Properties()
     props.put("compression.codec", codec.toString)
     props.put("producer.type", if (synchronously) "sync" else "async")
-    props.put("metadata.broker.list", brokerlist)
+    //props.put("metadata.broker.list", brokerlist)
+    props.put("bootstrap.servers", brokerlist)
     props.put("batch.num.messages", batchSize.toString)
     props.put("batch.size", batchSize.toString)
     props.put("queue.time", queueTime.toString)
@@ -569,7 +598,9 @@ object SimpleKafkaProducer {
     props.put("socket.send.buffer", bufferMemory.toString)
     props.put("socket.receive.buffer", bufferMemory.toString)
     props.put("client.id", clientId)
-    props.put("partitioner.class", "com.ligadata.tools.CustPartitioner");
+    //props.put("partitioner.class", "com.ligadata.tools.CustPartitioner");
+    props.put("key.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
+    props.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
 
     val s = System.nanoTime
 
@@ -601,17 +632,19 @@ object SimpleKafkaProducer {
             val flNames = fls.toArray
             var isGzip: Boolean = false
             override def run() {
-              val producer = new Producer[AnyRef, AnyRef](new ProducerConfig(props))
+              //val producer = new Producer[AnyRef, AnyRef](new ProducerConfig(props))
+              var producer2: KafkaProducer[Array[Byte],Array[Byte]] = new KafkaProducer[Array[Byte],Array[Byte]](props);
               var tm: Long = 0
               val st: Stats = new Stats
               flNames.foreach(fl => {
                 if (gz.trim.compareToIgnoreCase("true") == 0) {
                   isGzip = true
                 }
-                tm = tm + elapsed(ProcessFile(producer, topics, threadNo, fl, msg, sleeptm, partitionkeyidxs, st, ignorelines, format, isGzip, topicpartitions, isVerbose.equalsIgnoreCase("true")))
+                //tm = tm + elapsed(ProcessFile(producer, topics, threadNo, fl, msg, sleeptm, partitionkeyidxs, st, ignorelines, format, isGzip, topicpartitions, isVerbose.equalsIgnoreCase("true")))
+                tm = tm + elapsed(ProcessFile(producer2, topics, threadNo, fl, msg, sleeptm, partitionkeyidxs, st, ignorelines, format, isGzip, topicpartitions, isVerbose.equalsIgnoreCase("true")))
                 println("%02d. File:%s ElapsedTime:%.02fms".format(threadNo, fl, tm / 1000000.0))
               })
-              producer.close
+              producer2.close
             }
           })
         }

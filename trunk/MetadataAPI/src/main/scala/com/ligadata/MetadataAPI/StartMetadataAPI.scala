@@ -16,16 +16,23 @@
 
 package com.ligadata.MetadataAPI
 
-import com.ligadata.Exceptions.KamanjaException
+import org.json4s._
+import org.json4s.JsonDSL._
+import org.json4s.jackson.JsonMethods._
+import scala.io.Source
+import com.ligadata.Exceptions._
 import org.apache.logging.log4j.{ Logger, LogManager }
 
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType
 import com.ligadata.MetadataAPI.Utility._
 import com.ligadata.kamanja.metadata.MdMgr
 
+
 import scala.collection.mutable
 import scala.collection.immutable
 import com.ligadata.KamanjaVersion.KamanjaVersion
+import scala.io.Source
+import java.nio.file.{ Files, FileSystems }
 
 /**
  * Created by dhaval Kolapkar on 7/24/15.
@@ -71,6 +78,7 @@ object StartMetadataAPI {
   val FROMFILE="FROMFILE"
   val FROMSTRING="FROMSTRING"
   val KEY="KEY"
+
   val ADAPTERMESSAGEBINDING = "ADAPTERMESSAGEBINDING"
 
   /** List AdapterMessageBinding filters */
@@ -99,6 +107,14 @@ object StartMetadataAPI {
   var expectSchemaId = false
   var expectElementId = false
 
+  // 646 - 675, 676 Change begins - replace MetadataAPIImpl, addition of new meta data
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  val PROPERTYFILE="PropertiesFile"
+  val PROPERTY="Properties"
+  var expectPropFile = false
+  var expectPropStr = false
+  // 646 - 675,676 Change ends
+
   val extraCmdArgs = mutable.Map[String, String]()
 
   def main(args: Array[String]) {
@@ -112,16 +128,19 @@ object StartMetadataAPI {
     try {
       val jsonBuffer: StringBuilder = new StringBuilder
 
+      extraCmdArgs(PROPERTYFILE) = ""
+      extraCmdArgs(PROPERTY) = ""
+
       args.foreach(arg => {
 
-        if (arg.endsWith(".json")
+        if ((arg.endsWith(".json")
           || arg.endsWith(".jtm")
           || arg.endsWith(".xml")
           || arg.endsWith(".pmml")
           || arg.endsWith(".scala")
           || arg.endsWith(".java")
-          || arg.endsWith(".jar")) {
-          extraCmdArgs(INPUTLOC) = arg
+          || arg.endsWith(".jar")) && (expectPropFile == false)) {
+         extraCmdArgs(INPUTLOC) = arg
           if (expectBindingFromFile) {
             /** the json test above can prevent the ordinary catch of the name below */
             extraCmdArgs(FROMFILE) = extraCmdArgs.getOrElse(INPUTLOC, null)
@@ -165,7 +184,14 @@ object StartMetadataAPI {
             } else if (arg.equalsIgnoreCase(ELEMENTID)) {
               expectElementId = true
               extraCmdArgs(ELEMENTID) = ""
-            } else {
+            } else if (arg.equalsIgnoreCase(PROPERTYFILE)) {
+              logger.warn ("getting pfile " + arg)
+              expectPropFile = true
+            }
+            else if (arg.equalsIgnoreCase(PROPERTY)) {
+              logger.warn ("getting property " + arg)
+              expectPropStr = true
+            }else {
               var argVar = arg
               if (expectTid) {
                 extraCmdArgs(TENANTID) = arg
@@ -236,6 +262,17 @@ object StartMetadataAPI {
                 extraCmdArgs(ELEMENTID) = arg
                 expectElementId = false
                 argVar = "" // Make sure we don't add to the routing command
+
+              }
+              if (expectPropFile) {
+                extraCmdArgs(PROPERTYFILE) = arg
+                expectPropFile = false
+                argVar = ""
+              }
+              if (expectPropStr) {
+                extraCmdArgs(PROPERTY) = arg
+                expectPropStr = false
+                argVar = ""
               }
 
                       /**
@@ -283,16 +320,43 @@ object StartMetadataAPI {
         config = defaultConfig
       }
 
-      MetadataAPIImpl.InitMdMgrFromBootStrap(config, false)
+     // logger.warn(extraCmdArgs(PROPERTYFILE)  + " name of propertty file")
+      //              var paramValues : scala.collection.mutable.Map [String, Any]
+      var paramJsonStr : String =  extraCmdArgs(PROPERTY)
+      val paramConfig = scala.util.Properties.envOrElse("KAMANJA_HOME", scala.util.Properties.envOrElse("HOME", "~")) + "/config/" + (extraCmdArgs getOrElse (PROPERTYFILE, None))
+
+
+      if (extraCmdArgs(PROPERTYFILE) != "") {
+        if (FileExists(extraCmdArgs(PROPERTYFILE))) {
+          paramJsonStr =  Source.fromFile(extraCmdArgs(PROPERTYFILE)).getLines.mkString
+          logger.warn(extraCmdArgs(PROPERTYFILE)  + " name of propertty file contents " + paramJsonStr)
+//          val mapOriginal  =   parse(paramJsonStr).values.asInstanceOf[scala.collection.mutable.Map[String, Any]]
+        }
+      }
+
+
+
+      getMetadataAPI.InitMdMgrFromBootStrap(config, false)
+      val tenantId = extraCmdArgs.getOrElse(TENANTID,"")
+      if (tenantId != "") {
+        if (isValidTenantId(extraCmdArgs.getOrElse(TENANTID,"")) ==  false) {
+          throw TenantIdNotFoundException("Tennat Id not found, please use valid tenantid or add tenantid in ClusterConfig", null)
+        }
+      }
       if (action == "")
         TestMetadataAPI.StartTest
       else {
         response = route(Action.withName(action.trim),  extraCmdArgs.getOrElse(INPUTLOC,""),
-          extraCmdArgs.getOrElse(WITHDEP,""), extraCmdArgs.getOrElse(TENANTID,""), args, userId ,extraCmdArgs.toMap)
+          extraCmdArgs.getOrElse(WITHDEP,""), extraCmdArgs.getOrElse(TENANTID,""), args, userId ,extraCmdArgs.toMap, paramJsonStr)
         println("Result: " + response)
       }
     }
     catch {
+      case e : TenantIdNotFoundException => {
+        logger.error("Unable to get tenantid info, please add it to ClusterConfig before using. ", e.getMessage)
+        response =   new ApiResult(-1, "StartMetadataAPI", null, e.getMessage).toString
+        println("Result: " + response)
+      }
       case e: NoSuchElementException => {
         println("action trim"+action.trim());
         logger.error("Route not found",e.getMessage)
@@ -332,19 +396,48 @@ object StartMetadataAPI {
         println("Result: " + response)
       }
     } finally {
-      MetadataAPIImpl.shutdown
+      getMetadataAPI.shutdown
     }
   }
 
+//  def extraParam (fileName : String) : Map[String, String] = {
+
+//  }
+
+  def FileExists (filename : String) : Boolean = {
+
+    val defaultFS = FileSystems.getDefault()
+
+    val path = defaultFS.getPath(filename)
+
+    if (Files.exists(path))
+      return true
+    else
+      return false
+
+  }
+
+  def isValidTenantId (tenantId : String) : Boolean = {
+
+    val tenatInfo = MdMgr.GetMdMgr.GetTenantInfo(tenantId.toLowerCase)
+    if (tenatInfo == null) {
+      logger.error("Not found tenantInfo for tenantId " + tenantId)
+      return false
+     }
+    return true
+  }
+
+  // main
   def usage : Unit = {
       println(s"Usage:\n  kamanja <action> <optional input> \n e.g. kamanja add message ${'$'}HOME/msg.json" )
   }
 
-  def route(action: Action.Value, input: String, param: String = "", tenantid: String, originalArgs: Array[String], userId: Option[String], extraCmdArgs: immutable.Map[String, String]): String = {
+  def route(action: Action.Value, input: String, param: String = "", tenantid: String, originalArgs: Array[String], userId: Option[String], extraCmdArgs: immutable.Map[String, String], paramJsonStr : String): String = {
     var response = ""
     var fileinquesiton = input
     var optMsgProduced:Option[String] = None
     var tid = if (tenantid.size > 0) Some(tenantid) else None
+    var paramStr = if (paramJsonStr != "") Some(paramJsonStr) else None
 
     val outputMsgName = extraCmdArgs.getOrElse(OUTPUTMSG, null)
 
@@ -355,8 +448,8 @@ object StartMetadataAPI {
     try {
       action match {
         //message management
-        case Action.ADDMESSAGE => response = MessageService.addMessage(input, tid)
-        case Action.UPDATEMESSAGE => response = MessageService.updateMessage(input, tid)
+        case Action.ADDMESSAGE => response = MessageService.addMessage(input, tid, paramStr)
+        case Action.UPDATEMESSAGE => response = MessageService.updateMessage(input, tid, paramStr)
         case Action.REMOVEMESSAGE => {
           val msgName : String = extraCmdArgs.getOrElse(MESSAGENAME,"")
           if (msgName.isEmpty)
@@ -365,18 +458,20 @@ object StartMetadataAPI {
             response = MessageService.removeMessage(msgName)
         }
 
-        case Action.GETALLMESSAGES => response = MessageService.getAllMessages
+          // 672 Change beigns, adds an extra argument for tenantID tid to enable filtering by tenantid
+        case Action.GETALLMESSAGES => response = MessageService.getAllMessages (tid)
         case Action.GETMESSAGE => {
           val msgName : String = extraCmdArgs.getOrElse(MESSAGENAME,"")
           if (msgName.isEmpty)
-            response = MessageService.getMessage()
+            response = MessageService.getMessage("", tid)
           else
-            response = MessageService.getMessage(msgName)
+            response = MessageService.getMessage(msgName, tid)
         }
+          // 672 Change ends
 
         //model management
-        case Action.ADDMODELKPMML => response = ModelService.addModelKPmml(input, userId, optMsgProduced, tid)
-        case Action.ADDMODELJTM   => response = ModelService.addModelJTM(input, userId, tid, if (param == null || param.trim.size == 0) None else Some(param.trim))
+        case Action.ADDMODELKPMML => response = ModelService.addModelKPmml(input, userId, optMsgProduced, tid, paramStr)
+        case Action.ADDMODELJTM   => response = ModelService.addModelJTM(input, userId, tid, if (param == null || param.trim.size == 0) None else Some(param.trim), paramStr)
         case Action.ADDMODELPMML => {
           val modelName: Option[String] = extraCmdArgs.get(MODELNAME)
           val modelVer = extraCmdArgs.getOrElse(MODELVERSION, null)
@@ -391,21 +486,23 @@ object StartMetadataAPI {
                                             , optModelVer
                                             , msgName
                                             , optMsgVer
-                                            , tid)
+                                            , tid
+                                            , paramStr
+					    , optMsgProduced)
         }
 
         case Action.ADDMODELSCALA => {
           if (param.length == 0)
-            response = ModelService.addModelScala(input, "", userId,optMsgProduced, tid)
+            response = ModelService.addModelScala(input, "", userId,optMsgProduced, tid, paramStr)
           else
-            response = ModelService.addModelScala(input, param, userId,optMsgProduced, tid)
+            response = ModelService.addModelScala(input, param, userId,optMsgProduced, tid, paramStr)
         }
 
         case Action.ADDMODELJAVA => {
           if (param.length == 0)
-            response = ModelService.addModelJava(input, "", userId,optMsgProduced, tid)
+            response = ModelService.addModelJava(input, "", userId,optMsgProduced, tid, paramStr)
           else
-            response = ModelService.addModelJava(input, param, userId,optMsgProduced, tid)
+            response = ModelService.addModelJava(input, param, userId,optMsgProduced, tid, paramStr)
         }
 
         case Action.REMOVEMODEL => {
@@ -430,52 +527,52 @@ object StartMetadataAPI {
           else
             ModelService.deactivateModel(param, userId)
         }
-        case Action.UPDATEMODELKPMML => response = ModelService.updateModelKPmml(input, userId, tid)
-        case Action.UPDATEMODELJTM => response = ModelService.updateModelJTM(input, userId, tid, if (param == null || param.trim.size == 0) None else Some(param.trim))
+        case Action.UPDATEMODELKPMML => response = ModelService.updateModelKPmml(input, userId, tid, paramStr)
+        case Action.UPDATEMODELJTM => response = ModelService.updateModelJTM(input, userId, tid, if (param == null || param.trim.size == 0) None else Some(param.trim), paramStr)
 
         case Action.UPDATEMODELPMML => {
           val modelName = extraCmdArgs.getOrElse(MODELNAME, "")
           val modelVer = extraCmdArgs.getOrElse(MODELVERSION, null)
           var validatedNewVersion: String = if (modelVer != null) MdMgr.FormatVersion(modelVer) else null
-          response = ModelService.updateModelPmml(input, userId, modelName, validatedNewVersion,tid)
+          response = ModelService.updateModelPmml(input, userId, modelName, validatedNewVersion,tid, paramStr)
         }
 
         case Action.UPDATEMODELSCALA => {
           if (param.length == 0)
-            response = ModelService.updateModelscala(input, "", userId, tid)
+            response = ModelService.updateModelscala(input, "", userId, tid, paramStr)
           else
-            response = ModelService.updateModelscala(input, param, userId, tid)
+            response = ModelService.updateModelscala(input, param, userId, tid, paramStr)
         }
 
         case Action.UPDATEMODELJAVA => {
           if (param.length == 0)
-            response = ModelService.updateModeljava(input, "", userId, tid)
+            response = ModelService.updateModeljava(input, "", userId, tid, paramStr)
           else
-            response = ModelService.updateModeljava(input, param, userId,tid)
+            response = ModelService.updateModeljava(input, param, userId,tid, paramStr)
         }
 
-        case Action.GETALLMODELS => response = ModelService.getAllModels(userId)
+        case Action.GETALLMODELS => response = ModelService.getAllModels(userId, tid)
         case Action.GETMODEL => response = {
             val modelName : String = extraCmdArgs.getOrElse(MODELNAME,"")
             if (modelName.isEmpty)
-            ModelService.getModel("", userId)
+            ModelService.getModel("", userId, tid)
           else
-            ModelService.getModel(modelName, userId)
+            ModelService.getModel(modelName, userId, tid)
         }
 
 
         //container management
-        case Action.ADDCONTAINER => response = ContainerService.addContainer(input, tid)
-        case Action.UPDATECONTAINER => response = ContainerService.updateContainer(input, tid)
+        case Action.ADDCONTAINER => response = ContainerService.addContainer(input, tid, paramStr)
+        case Action.UPDATECONTAINER => response = ContainerService.updateContainer(input, tid, paramStr)
         case Action.GETCONTAINER => response = {
           val containerName : String = extraCmdArgs.getOrElse(CONTAINERNAME,"")
           if (containerName.isEmpty)
-            ContainerService.getContainer()
+            ContainerService.getContainer("", tid)
           else
-            ContainerService.getContainer(containerName)
+            ContainerService.getContainer(containerName, tid)
         }
 
-        case Action.GETALLCONTAINERS => response = ContainerService.getAllContainers
+        case Action.GETALLCONTAINERS => response = ContainerService.getAllContainers (tid)
         case Action.REMOVECONTAINER => {
           val containerName : String = extraCmdArgs.getOrElse(CONTAINERNAME,"")
           if (containerName.isEmpty)
@@ -578,8 +675,8 @@ object StartMetadataAPI {
                 }
             }
           }
-        
-        
+
+
 
         case Action.LISTADAPTERMESSAGEBINDINGS => {
             val adapterfilter: String = extraCmdArgs.getOrElse(ADAPTERFILTER, "")
@@ -682,7 +779,7 @@ object StartMetadataAPI {
     response
   }
 
-  /**
+  /** NOT USED
    * AltRoute is invoked only if the 'Action.withName(action.trim)' method fails to discern the appropriate
    * MetadataAPI method to invoke.  The command argument array is reconsidered with the AlternateCmdParser
    * If it produces valid command arguments (a command name and Map[String,String] of arg name/values) **and**
@@ -695,7 +792,7 @@ object StartMetadataAPI {
    *         complaint is returned to the caller.
    *
    */
-  def AltRoute(origArgs: Array[String]): String = {
+ /* def AltRoute(origArgs: Array[String]): String = {
 
     /** trim off the config argument and if debugging the "debug" argument as well */
     val argsSansConfig: Array[String] = if (origArgs != null && origArgs.size > 0 && origArgs(0).toLowerCase == "debug") {
@@ -817,5 +914,5 @@ object StartMetadataAPI {
     }
 
     response
-  }
+  } */
 }

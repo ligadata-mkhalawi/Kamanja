@@ -12,7 +12,7 @@ assemblyOption in assembly ~= {
   _.copy(prependShellScript = Some(defaultShellScript))
 }
 
-val kamanjaVersion = "1.4.1"
+val kamanjaVersion = "1.5.0"
 
 assemblyJarName in assembly := {
   s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"
@@ -65,7 +65,7 @@ test in assembly := {}
 
 name := "MetadataAPI"
 
-version := "1.4.1"
+version := "1.5.0"
 
 //libraryDependencies += "org.joda" % "joda-convert" % "1.6"
 //

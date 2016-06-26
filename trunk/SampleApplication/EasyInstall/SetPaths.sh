@@ -55,6 +55,7 @@ scala_home_repl=$(echo $scala_home | sed 's/\//\\\//g')
 install_dir_repl=$(echo $install_dir | sed 's/\//\\\//g')
 
 # changing path in script files
+sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/StartH2dbServer_Template.sh > $install_dir/bin/StartH2dbServer.sh
 sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_home_repl/g;s/{JavaInstallDirectory}/$java_home_repl/g" $install_dir/template/script/StartEngine_Template.sh > $install_dir/bin/StartEngine.sh
 sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/ContainersUtility_Template.sh > $install_dir/bin/ContainersUtility.sh
 sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/JsonChecker_Template.sh > $install_dir/bin/JsonChecker.sh
@@ -62,6 +63,7 @@ sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/Quer
 sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/FileDataConsumer_Template.sh > $install_dir/bin/FileDataConsumer.sh
 sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/ExtractData_Template.sh > $install_dir/bin/ExtractData.sh
 sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/JdbcDataCollector_Template.sh > $install_dir/bin/JdbcDataCollector.sh
+sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/GenerateMessage_Template.sh > $install_dir/bin/GenerateMessage.sh
 
 #new one
 #HelloWorld

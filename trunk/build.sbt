@@ -6,11 +6,11 @@ sbtPlugin := true
 //version := "0.0.0.1"
 
 //lazy val kamanjaVersion = settingKey[String]("kamanjaVersion")
-// kamanjaVersion := "1.4.1"
+// kamanjaVersion := "1.5.0"
 
 //scalaVersion := "2.11.7"
 
-//kamanjaVersion in ThisBuild := "1.4.1"
+//kamanjaVersion in ThisBuild := "1.5.0"
 
 crossScalaVersions := Seq("2.11.7", "2.10.4")
 
@@ -76,7 +76,7 @@ lazy val KamanjaBase = project.in(file("KamanjaBase")).configs(TestConfigs.all: 
 
 lazy val DataDelimiters = project.in(file("DataDelimiters")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided")
 
-lazy val SmartFileAdapter = project.in(file("InputOutputAdapters/SmartFileAdapter")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", InputOutputAdapterBase, Exceptions, DataDelimiters)
+lazy val SmartFileAdapter = project.in(file("InputOutputAdapters/SmartFileAdapter")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", InputOutputAdapterBase, Exceptions, DataDelimiters, JsonSerDeser % "test")
 
 lazy val MessageCompiler = project.in(file("MessageCompiler")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(Metadata, MetadataBootstrap, Exceptions).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided")
 
@@ -130,6 +130,8 @@ lazy val JsonChecker = project.in(file("Utils/JsonChecker")).configs(TestConfigs
 
 lazy val QueryGenerator = project.in(file("Utils/QueryGenerator")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Exceptions, MetadataAPI, Metadata)
 
+lazy val GenerateMessage = project.in(file("Utils/GenerateMessage")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Exceptions)
+
 //lazy val InterfacesSamples = project.in(file("SampleApplication/InterfacesSamples")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(Metadata, KamanjaBase, MetadataBootstrap, MetadataAPI, StorageBase, Exceptions)
 
 lazy val SimpleKafkaProducer = project.in(file("Utils/SimpleKafkaProducer")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, Exceptions)
@@ -160,6 +162,8 @@ lazy val ExtractData = project.in(file("Utils/ExtractData")).configs(TestConfigs
 
 lazy val StorageCassandra = project.in(file("Storage/Cassandra")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageBase, Serialize, Exceptions, KamanjaUtils, KvBase)
 
+lazy val StorageH2DB = project.in(file("Storage/H2DB")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageBase, Serialize, Exceptions, KamanjaUtils, KvBase)
+
 lazy val StorageHashMap = project.in(file("Storage/HashMap")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageBase, Serialize, Exceptions, KamanjaUtils, KvBase)
 
 lazy val StorageHBase = project.in(file("Storage/HBase")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageBase, Serialize, Exceptions, KamanjaUtils, KvBase)
@@ -168,7 +172,7 @@ lazy val StorageTreeMap = project.in(file("Storage/TreeMap")).configs(TestConfig
 
 lazy val StorageSqlServer = project.in(file("Storage/SqlServer")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageBase, Serialize, Exceptions, KamanjaUtils)
 
-lazy val StorageManager = project.in(file("Storage/StorageManager")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageBase, Exceptions, KamanjaBase, KamanjaUtils, StorageSqlServer, StorageCassandra, StorageHashMap, StorageTreeMap, StorageHBase)
+lazy val StorageManager = project.in(file("Storage/StorageManager")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageBase, Exceptions, KamanjaBase, KamanjaUtils, StorageSqlServer, StorageCassandra, StorageHashMap, StorageTreeMap, StorageHBase,StorageH2DB)
 
 lazy val AuditAdapterBase = project.in(file("AuditAdapters/AuditAdapterBase")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Exceptions)
 
@@ -218,9 +222,13 @@ lazy val MigrateManager = project.in(file("Utils/Migrate/MigrateManager")).confi
 
 lazy val MigrateFrom_V_1_2 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_2")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(MigrateBase)
 
-lazy val MigrateTo_V_1_4 = project.in(file("Utils/Migrate/DestinationVersion/MigrateTo_V_1_4")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(MigrateBase, KamanjaManager)
-
 lazy val MigrateFrom_V_1_3 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_3")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(MigrateBase)
+
+lazy val MigrateFrom_V_1_4 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_4")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(MigrateBase,MetadataAPI)
+
+lazy val MigrateFrom_V_1_4_1 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_4_1")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(MigrateBase,MetadataAPI)
+
+lazy val MigrateTo_V_1_5_0 = project.in(file("Utils/Migrate/DestinationVersion/MigrateTo_V_1_5_0")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(MigrateBase, KamanjaManager)
 
 lazy val InstallDriverBase = project.in(file("Utils/ClusterInstaller/InstallDriverBase")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided")
 
@@ -233,6 +241,10 @@ lazy val GetComponent = project.in(file("Utils/ClusterInstaller/GetComponent")).
 lazy val PmmlTestTool = project.in(file("Utils/PmmlTestTool")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KamanjaVersion)
 
 lazy val GenerateAdapterBindings = project.in(file("Utils/Migrate/GenerateAdapterBindings")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided")
+
+lazy val HttpEndpoint = project.in(file("Utils/HttpEndpoint")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*)
+
+lazy val DemoKafkaProducer = project.in(file("Utils/DemoKafkaProducer")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(KamanjaVersion)
 
 
 /*
