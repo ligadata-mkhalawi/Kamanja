@@ -28,13 +28,15 @@ import java.sql.Connection
 import org.json4s.native.JsonMethods._
 import shapeless.option
 
+import scala.collection.mutable.ArrayBuffer
+
 trait LogTrait {
   val loggerName = this.getClass.getName()
   val logger = LogManager.getLogger(loggerName)
 }
 
 
-object QueryGenerator extends App with LogTrait{
+object QueryGenerator extends App with LogTrait {
 
   def usage: String = {
     """
@@ -60,905 +62,834 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
     }
   }
 
-   override def main(args: Array[String]) {
+  override def main(args: Array[String]) {
 
-     logger.debug("QueryGenerator.main begins")
+    logger.debug("QueryGenerator.main begins")
 
-     if (args.length == 0) {
-       logger.error("Please pass the Engine1Config.properties file after --metadataconfig option and database config file after --databaseconfig")
-       logger.warn(usage)
-       sys.exit(1)
-     }
-     val options = nextOption(Map(), args.toList)
+    if (args.length == 0) {
+      logger.error("Please pass the Engine1Config.properties file after --metadataconfig option and database config file after --databaseconfig")
+      logger.warn(usage)
+      sys.exit(1)
+    }
+    val options = nextOption(Map(), args.toList)
 
-     val metadataConfig = options.getOrElse('metadataconfig, null).toString.trim
-     if (metadataConfig == null || metadataConfig.toString().trim() == "") {
-       logger.error("Please pass the Engine1Config.properties file after --metadataconfig option")
-       logger.warn(usage)
-       sys.exit(1)
-     }
+    val metadataConfig = options.getOrElse('metadataconfig, null).toString.trim
+    if (metadataConfig == null || metadataConfig.toString().trim() == "") {
+      logger.error("Please pass the Engine1Config.properties file after --metadataconfig option")
+      logger.warn(usage)
+      sys.exit(1)
+    }
 
-     val databaseConfig = options.getOrElse('databaseconfig, null).toString.trim
-     if (databaseConfig == null || databaseConfig.toString().trim() == "") {
-       logger.error("Please pass the database config file file after --databaseconfig option")
-       logger.warn(usage)
-       sys.exit(1)
-     }
+    val databaseConfig = options.getOrElse('databaseconfig, null).toString.trim
+    if (databaseConfig == null || databaseConfig.toString().trim() == "") {
+      logger.error("Please pass the database config file file after --databaseconfig option")
+      logger.warn(usage)
+      sys.exit(1)
+    }
 
-     KamanjaConfiguration.configFile = metadataConfig.toString
+    KamanjaConfiguration.configFile = metadataConfig.toString
 
-     val (loadConfigs, failStr) = Utils.loadConfiguration(KamanjaConfiguration.configFile, true)
+    val (loadConfigs, failStr) = Utils.loadConfiguration(KamanjaConfiguration.configFile, true)
 
-     if (failStr != null && failStr.size > 0) {
-       logger.error(failStr)
-       sys.exit(1)
-     }
-     if (loadConfigs == null) {
-       logger.error("Failed to load configurations from configuration file")
-       sys.exit(1)
-     }
+    if (failStr != null && failStr.size > 0) {
+      logger.error(failStr)
+      sys.exit(1)
+    }
+    if (loadConfigs == null) {
+      logger.error("Failed to load configurations from configuration file")
+      sys.exit(1)
+    }
 
-     // KamanjaConfiguration.allConfigs = loadConfigs
+    // KamanjaConfiguration.allConfigs = loadConfigs
 
-     MetadataAPIImpl.InitMdMgrFromBootStrap(KamanjaConfiguration.configFile, false)
+    MetadataAPIImpl.InitMdMgrFromBootStrap(KamanjaConfiguration.configFile, false)
 
-     val mdMgr = GetMdMgr
+    val mdMgr = GetMdMgr
 
-     val msgDefs: Option[scala.collection.immutable.Set[MessageDef]] = mdMgr.Messages(true, true)
-     val containerDefs: Option[scala.collection.immutable.Set[ContainerDef]] = mdMgr.Containers(true, true)
-     val ModelDefs: Option[scala.collection.immutable.Set[ModelDef]] = mdMgr.Models(true, true)
-     val adapterDefs: Map[String, AdapterInfo] = mdMgr.Adapters
+    val msgDefs: Option[scala.collection.immutable.Set[MessageDef]] = mdMgr.Messages(true, true)
+    val containerDefs: Option[scala.collection.immutable.Set[ContainerDef]] = mdMgr.Containers(true, true)
+    val ModelDefs: Option[scala.collection.immutable.Set[ModelDef]] = mdMgr.Models(true, true)
+    val adapterDefs: Map[String, AdapterInfo] = mdMgr.Adapters
 
-     val fileObj: FileUtility = new FileUtility
-     if (fileObj.FileExist(databaseConfig) == false) {
-       logger.error("This file %s does not exists".format(databaseConfig))
-       logger.warn(usage)
-       sys.exit(1)
-     }
+    val fileObj: FileUtility = new FileUtility
+    if (fileObj.FileExist(databaseConfig) == false) {
+      logger.error("This file %s does not exists".format(databaseConfig))
+      logger.warn(usage)
+      sys.exit(1)
+    }
 
-     val databasefileContent = fileObj.ReadFile(databaseConfig)
+    val databasefileContent = fileObj.ReadFile(databaseConfig)
 
-     if (databasefileContent == null || databasefileContent.size == 0) {
-       // check if config file includes data
-       logger.error("This file %s does not include data. Check your file please.".format(databaseConfig))
-       logger.warn(usage)
-       sys.exit(1)
-     }
+    if (databasefileContent == null || databasefileContent.size == 0) {
+      // check if config file includes data
+      logger.error("This file %s does not include data. Check your file please.".format(databaseConfig))
+      logger.warn(usage)
+      sys.exit(1)
+    }
 
-     val parsedConfig = fileObj.ParseFile(databasefileContent) //Parse config file
-     val extractedInfo = fileObj.extractInfo(parsedConfig) //Extract information from parsed file
-     val configBeanObj = fileObj.createConfigBeanObj(extractedInfo) // create a config object that store the result from extracting config file
+    val parsedConfig = fileObj.ParseFile(databasefileContent) //Parse config file
+    val extractedInfo = fileObj.extractInfo(parsedConfig) //Extract information from parsed file
+    val configBeanObj = fileObj.createConfigBeanObj(extractedInfo) // create a config object that store the result from extracting config file
 
-     val queryObj: QueryBuilder = new QueryBuilder
+    val queryObj: QueryBuilder = new QueryBuilder
 
-     val conn: Connection = queryObj.getDBConnection(configBeanObj) //this used to fet a connection for orientDB
+    val conn: Connection = queryObj.getDBConnection(configBeanObj) //this used to fet a connection for orientDB
 
-     /* Step 1
-     *  1- check all existing classes in graphDB
-     *  2- add missing classes to GraphDB
-      */
+    /* Step 1
+    *  1- check all existing classes in graphDB
+    *  2- add missing classes to GraphDB
+     */
 
-     var dataQuery = queryObj.getAllExistDataQuery(elementType = "class", extendClass = option("V"))
-     var data = queryObj.getAllClasses(conn, dataQuery)
-     var classesName = Array("KamanjaVertex", "Model", "Input", "Output", "Storage", "Container", "Message", "Inputs", "Stores", "Outputs", "Engine")
-     var extendsClass = "KamanjaVertex"
-     for (className <- classesName) {
+    var dataQuery = queryObj.getAllExistDataQuery(elementType = "class", extendClass = option("V"))
+    var data = queryObj.getAllClasses(conn, dataQuery)
+    var classesName = Array("KamanjaVertex", "Model", "Input", "Output", "Storage", "Container", "Message", "Inputs", "Stores", "Outputs", "Engine")
+    var extendsClass = "KamanjaVertex"
+    for (className <- classesName) {
       // if (!data.contains(className)) {
-         if (className.equalsIgnoreCase("KamanjaVertex")) extendsClass = "V" else extendsClass = "KamanjaVertex"
-         val createClassQuery = queryObj.createQuery(elementType = "class", className = className, setQuery = "", extendsClass = Option(extendsClass))
-         val existFlag = queryObj.createclassInDB(conn, createClassQuery)
-       if(existFlag == false){
-         logger.debug(createClassQuery)
-         println(createClassQuery)
-         if (className.equalsIgnoreCase("KamanjaVertex")) {
-           val propertyList = queryObj.getAllProperty("KamanjaVertex")
-           for (prop <- propertyList) {
-             queryObj.executeQuery(conn, prop)
-             logger.debug(prop)
-             println(prop)
-           }
-         }
-       } else {
-         logger.debug("The %s class exsists".format(className))
-         println("The %s class exsists".format(className))
-       }
-     }
+      if (className.equalsIgnoreCase("KamanjaVertex")) extendsClass = "V" else extendsClass = "KamanjaVertex"
+      val createClassQuery = queryObj.createQuery(elementType = "class", className = className, setQuery = "", extendsClass = Option(extendsClass))
+      val existFlag = queryObj.createclassInDB(conn, createClassQuery)
+      if (existFlag == false) {
+        logger.debug(createClassQuery)
+        println(createClassQuery)
+        if (className.equalsIgnoreCase("KamanjaVertex")) {
+          val propertyList = queryObj.getAllProperty("KamanjaVertex")
+          for (prop <- propertyList) {
+            queryObj.executeQuery(conn, prop)
+            logger.debug(prop)
+            println(prop)
+          }
+        }
+      } else {
+        logger.debug("The %s class exsists".format(className))
+        println("The %s class exsists".format(className))
+      }
+    }
 
-     dataQuery = queryObj.getAllExistDataQuery(elementType = "class", extendClass = option("E"))
-     data = queryObj.getAllClasses(conn, dataQuery)
-     classesName = Array("KamanjaEdge", "MessageE", "Containers", "Messages", "Produces", "ConsumedBy", "StoredBy", "Retrieves", "SentTo")
-     extendsClass = "KamanjaEdge"
-     for (className <- classesName) {
-       //if (!data.contains(className)) {
-         if (className.equalsIgnoreCase("KamanjaEdge")) extendsClass = "E" else extendsClass = "KamanjaEdge"
-         val createClassQuery = queryObj.createQuery(elementType = "class", className = className, setQuery = "", extendsClass = Option(extendsClass))
-         val existFlag = queryObj.createclassInDB(conn, createClassQuery)
-         if(existFlag == false){
-         logger.debug(createClassQuery)
-         println(createClassQuery)
-         if (className.equalsIgnoreCase("KamanjaEdge")) {
-           val propertyList = queryObj.getAllProperty("KamanjaEdge")
-           for (prop <- propertyList) {
-             queryObj.executeQuery(conn, prop)
-             logger.debug(prop)
-             println(prop)
-           }
-         }
-       } else {
-         logger.debug("The %s class exsists".format(className))
-         println("The %s class exsists".format(className))
-       }
-     }
+    dataQuery = queryObj.getAllExistDataQuery(elementType = "class", extendClass = option("E"))
+    data = queryObj.getAllClasses(conn, dataQuery)
+    classesName = Array("KamanjaEdge", "MessageE", "Containers", "Messages", "Produces", "ConsumedBy", "StoredBy", "Retrieves", "SentTo")
+    extendsClass = "KamanjaEdge"
+    for (className <- classesName) {
+      //if (!data.contains(className)) {
+      if (className.equalsIgnoreCase("KamanjaEdge")) extendsClass = "E" else extendsClass = "KamanjaEdge"
+      val createClassQuery = queryObj.createQuery(elementType = "class", className = className, setQuery = "", extendsClass = Option(extendsClass))
+      val existFlag = queryObj.createclassInDB(conn, createClassQuery)
+      if (existFlag == false) {
+        logger.debug(createClassQuery)
+        println(createClassQuery)
+        if (className.equalsIgnoreCase("KamanjaEdge")) {
+          val propertyList = queryObj.getAllProperty("KamanjaEdge")
+          for (prop <- propertyList) {
+            queryObj.executeQuery(conn, prop)
+            logger.debug(prop)
+            println(prop)
+          }
+        }
+      } else {
+        logger.debug("The %s class exsists".format(className))
+        println("The %s class exsists".format(className))
+      }
+    }
 
-     /* Step 2
-      *  1- check all existing Vertices in graphDB
-      *  2- add missing Vertices to GraphDB
-     */
-     dataQuery = queryObj.getAllExistDataQuery(elementType = "vertex", extendClass = option("V"))
-     val verticesData = queryObj.getAllVertices(conn, dataQuery)
+    /* Step 2
+     *  1- check all existing Vertices in graphDB
+     *  2- add missing Vertices to GraphDB
+    */
+    dataQuery = queryObj.getAllExistDataQuery(elementType = "vertex", extendClass = option("V"))
+    val verticesByTypAndFullName = queryObj.getAllVertices(conn, dataQuery)
+    val currentVerticesSet = scala.collection.mutable.Set[String]();
+    val currentEdgesSet = scala.collection.mutable.Set[String]();
+    val adapterTypes = scala.collection.mutable.Map[String, String]();
 
-     if (adapterDefs.isEmpty) {
-       logger.debug("There are no adapter in metadata")
-       println("There are no adapter in metadata")
-     } else {
-       for (adapter <- adapterDefs) {
-         var adapterType: String = ""
-         val setQuery = queryObj.createSetCommand(adapter = Option(adapter._2))
-         if (adapter._2.typeString.equalsIgnoreCase("input"))
-           adapterType = "Input"
-         else if(adapter._2.typeString.equalsIgnoreCase("output"))
-           adapterType = "Output"
-         else
-           adapterType = "Storage"
+    if (adapterDefs.isEmpty) {
+      logger.debug("There are no adapter in metadata")
+      println("There are no adapter in metadata")
+    } else {
+      for (adapter <- adapterDefs) {
+        var adapterType: String = ""
+        if (adapter._2.typeString.equalsIgnoreCase("input"))
+          adapterType = "Input"
+        else if (adapter._2.typeString.equalsIgnoreCase("output"))
+          adapterType = "Output"
+        else
+          adapterType = "Storage"
 
-         val query: String = queryObj.createQuery(elementType = "vertex", className = adapterType, setQuery = setQuery)
-         // if(queryObj.checkObjexsist(conn,queryObj.checkQuery(elementType = "vertex", objName = adapter._2.Name, className = adapterType)) == false) {
-         if (!verticesData.exists(_._2 == adapter._2.Name)) {
-           queryObj.executeQuery(conn, query)
-           logger.debug(query)
-           println(query)
-         }
-         else {
-           logger.debug("This adapter %s exsist in database".format(adapter._2.Name))
-           println("This adapter %s exsist in database".format(adapter._2.Name))
-         }
-       }
-     }
+        adapterTypes(adapter._2.Name.toLowerCase) = adapterType;
 
-     if (containerDefs.isEmpty) {
-       logger.debug("There are no container in metadata")
-       println("There are no container in metadata")
-     } else {
-       for (container <- containerDefs.get) {
-         val setQuery = queryObj.createSetCommand(contianer = Option(container))
-         val query: String = queryObj.createQuery(elementType = "vertex", className = "Container", setQuery = setQuery)
-         //if(queryObj.checkObjexsist(conn,queryObj.checkQuery(elementType = "vertex", objName = container.Name, className = "container")) == false) {
-         if (!verticesData.exists(_._2 == container.FullName)) {
-           queryObj.executeQuery(conn, query)
-           logger.debug(query)
-           println(query)
-         } else {
-           logger.debug("This container %s exsist in".format(container.Name))
-           println("This container %s exsist in database".format(container.name))
-         }
-       }
-     }
+        val nm = (adapterType + "," + adapter._2.Name).toLowerCase
+        currentVerticesSet += nm
+        // if(queryObj.checkObjexsist(conn,queryObj.checkQuery(elementType = "vertex", objName = adapter._2.Name, className = adapterType)) == false) {
+        if (!verticesByTypAndFullName.contains(nm)) {
+          val setQuery = queryObj.createSetCommand(adapter = Option(adapter._2))
+          val query: String = queryObj.createQuery(elementType = "vertex", className = adapterType, setQuery = setQuery)
+          queryObj.executeQuery(conn, query)
+          logger.debug(query)
+          println(query)
+        }
+        else {
+          logger.debug("This adapter %s exsist in database".format(adapter._2.Name))
+          println("This adapter %s exsist in database".format(adapter._2.Name))
+        }
+      }
+    }
 
-     if (ModelDefs.isEmpty) {
-       logger.debug("There are no model in metadata")
-       println("There are no model in metadata")
-     } else {
-       for (model <- ModelDefs.get) {
-         val setQuery = queryObj.createSetCommand(model = Option(model))
-         val query: String = queryObj.createQuery(elementType = "vertex", className = "Model", setQuery = setQuery)
-         //if(queryObj.checkObjexsist(conn,queryObj.checkQuery(elementType = "vertex", objName = model.Name, className = "model")) == false) {
-         if (!verticesData.exists(_._2 == model.FullName)) {
-           queryObj.executeQuery(conn, query)
-           logger.debug(query)
-           println(query)
-         } else {
-           logger.debug("This model %s exsist in database".format(model.Name))
-           println("This model %s exsist in database".format(model.name))
-         }
-       }
-     }
+    if (containerDefs.isEmpty) {
+      logger.debug("There are no container in metadata")
+      println("There are no container in metadata")
+    } else {
+      for (container <- containerDefs.get) {
+        val nm = ("Container," + container.FullName).toLowerCase
+        currentVerticesSet += nm
+        //if(queryObj.checkObjexsist(conn,queryObj.checkQuery(elementType = "vertex", objName = container.Name, className = "container")) == false) {
+        if (!verticesByTypAndFullName.contains(nm)) {
+          val setQuery = queryObj.createSetCommand(baseElem = Option(container))
+          val query: String = queryObj.createQuery(elementType = "vertex", className = "Container", setQuery = setQuery)
+          queryObj.executeQuery(conn, query)
+          logger.debug(query)
+          println(query)
+        } else {
+          logger.debug("This container %s exsist in".format(container.FullName))
+          println("This container %s exsist in database".format(container.FullName))
+        }
+      }
+    }
 
-     if (msgDefs.isEmpty) {
-       logger.debug("There are no messages in metadata")
-       println("There are no messages in metadata")
-     } else {
-       for (message <- msgDefs.get) {
-         val setQuery = queryObj.createSetCommand(message = Option(message))
-         val query: String = queryObj.createQuery(elementType = "vertex", className = "Message", setQuery = setQuery)
-         //if(queryObj.checkObjexsist(conn,queryObj.checkQuery(elementType = "vertex", objName = message.Name, className = "Message")) == false) {
-         if (!verticesData.exists(_._2 == message.FullName)) {
-           queryObj.executeQuery(conn, query)
-           logger.debug(query)
-           println(query)
-         } else {
-           logger.debug("This message %s exsist in database".format(message.Name))
-           println("This message %s exsist in database".format(message.name))
-         }
-         // create an edge
-       }
-     }
+    if (ModelDefs.isEmpty) {
+      logger.debug("There are no model in metadata")
+      println("There are no model in metadata")
+    } else {
+      for (model <- ModelDefs.get) {
+        val nm = ("Model," + model.FullName).toLowerCase
+        currentVerticesSet += nm
+        //if(queryObj.checkObjexsist(conn,queryObj.checkQuery(elementType = "vertex", objName = model.Name, className = "model")) == false) {
+        if (!verticesByTypAndFullName.contains(nm)) {
+          val setQuery = queryObj.createSetCommand(baseElem = Option(model))
+          val query: String = queryObj.createQuery(elementType = "vertex", className = "Model", setQuery = setQuery)
+          queryObj.executeQuery(conn, query)
+          logger.debug(query)
+          println(query)
+        } else {
+          logger.debug("This model %s exsist in database".format(model.FullName))
+          println("This model %s exsist in database".format(model.FullName))
+        }
+      }
+    }
 
-     val tenatInfo = mdMgr.GetAllTenantInfos
-     if (tenatInfo.isEmpty){
-       logger.debug("There are no tenatInfo in metadata")
-       println("There are no tenantInfo in metadata")
-     } else{
-       for(tenant <- tenatInfo){
-         var primaryStroage: String = ""
-         if(tenant.primaryDataStore != null) {
-           val json = parse(tenant.primaryDataStore)
-           val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
-           primaryStroage = if (adapCfgValues.get("StoreType").get.toString == null) "" else adapCfgValues.get("StoreType").get.toString
-         }
-         val tenantName = tenant.tenantId + "_" + primaryStroage
-         val setQuery = queryObj.createSetCommand(tenant = option(tenant))
-         val query: String = queryObj.createQuery(elementType = "vertex", className = "Storage", setQuery = setQuery)
-         if (!verticesData.exists(_._2 == tenantName)) {
-           queryObj.executeQuery(conn, query)
-           logger.debug(query)
-           println(query)
-         } else{
-           logger.debug("This storage %s exsist in database".format(tenantName))
-           println("This storage %s exsist in database".format(tenantName))
-         }
-       }
-     }
+    if (msgDefs.isEmpty) {
+      logger.debug("There are no messages in metadata")
+      println("There are no messages in metadata")
+    } else {
+      for (message <- msgDefs.get) {
+        val nm = ("Message," + message.FullName).toLowerCase
+        currentVerticesSet += nm
+        //if(queryObj.checkObjexsist(conn,queryObj.checkQuery(elementType = "vertex", objName = message.Name, className = "Message")) == false) {
+        if (!verticesByTypAndFullName.contains(nm)) {
+          val setQuery = queryObj.createSetCommand(baseElem = Option(message))
+          val query: String = queryObj.createQuery(elementType = "vertex", className = "Message", setQuery = setQuery)
+          queryObj.executeQuery(conn, query)
+          logger.debug(query)
+          println(query)
+        } else {
+          logger.debug("This message %s exsist in database".format(message.FullName))
+          println("This message %s exsist in database".format(message.FullName))
+        }
+        // create an edge
+      }
+    }
 
-     /* Step 3
-      *  1- check all vertices
-      *  2- check all existing Edges in graphDB
-      *  3- add missing Edges to GraphDB
-     */
+    val tenantId2FullName = scala.collection.mutable.Map[String, String]()
 
-     dataQuery = queryObj.getAllExistDataQuery(elementType = "vertex", extendClass = option("V"))
-     val verticesDataNew = queryObj.getAllVertices(conn, dataQuery)
-     queryObj.PrintAllResult(verticesDataNew, "Vertices")
-     dataQuery = queryObj.getAllExistDataQuery(elementType = "edge", extendClass = option("e"))
-     val edgeData = queryObj.getAllEdges(conn, dataQuery)
-     queryObj.PrintAllResult(edgeData, "Edges")
-     val adapterMessageMap: Map[String, AdapterMessageBinding] = mdMgr.AllAdapterMessageBindings //this includes all adapter and message for it
+    val tenatInfo = mdMgr.GetAllTenantInfos
+    if (tenatInfo.isEmpty) {
+      logger.debug("There are no tenatInfo in metadata")
+      println("There are no tenantInfo in metadata")
+    } else {
+      for (tenant <- tenatInfo) {
+        var primaryStroage: String = ""
+        if (tenant.primaryDataStore != null) {
+          val json = parse(tenant.primaryDataStore)
+          val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
+          primaryStroage = if (adapCfgValues.get("StoreType").get.toString == null) "" else adapCfgValues.get("StoreType").get.toString
+        }
+        val tenantName = tenant.tenantId + "_" + primaryStroage + "_primaryStroage"
+        val nm = ("Storage," + tenantName).toLowerCase
+        currentVerticesSet += nm
+        tenantId2FullName += ((tenant.tenantId.toLowerCase -> tenantName))
+        if (!verticesByTypAndFullName.contains(nm)) {
+          val setQuery = queryObj.createSetCommand(tenant = option(tenant))
+          val query: String = queryObj.createQuery(elementType = "vertex", className = "Storage", setQuery = setQuery)
+          queryObj.executeQuery(conn, query)
+          logger.debug(query)
+          println(query)
+        } else {
+          logger.debug("This storage %s exsist in database".format(tenantName))
+          println("This storage %s exsist in database".format(tenantName))
+        }
+      }
+    }
 
-     if(!ModelDefs.isEmpty){
-       for(model <- ModelDefs.get){ // add link between storage and model ( storage ===messageE===> model  && model ===messageE===> storage) //// DAG scenario/////
-         for(tenant <- tenatInfo){
-           var vertexId = ""
-           var storageId = ""
-           val modelTenant = if(model.TenantId.isEmpty) "" else model.TenantId
-           val storageTenant = if(tenant.tenantId.isEmpty) "" else tenant.tenantId
-           var primaryStroage: String = ""
-           if(tenant.primaryDataStore != null) {
-             val json = parse(tenant.primaryDataStore)
-             val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
-             primaryStroage = if (adapCfgValues.get("StoreType").get.toString == null) "" else adapCfgValues.get("StoreType").get.toString
-           }
-           val tenantName = tenant.tenantId + "_" + primaryStroage
-           val inputMessage = model.inputMsgSets
-           for (msg1 <- inputMessage){
-             for (msg2<- msg1) {
-               if (modelTenant.equalsIgnoreCase(storageTenant)) {
-                 for (vertex <- verticesDataNew) {
-                   if (vertex._2.equalsIgnoreCase(model.FullName)) {
-                     vertexId = vertex._1
-                   } //id of model
-                   if (vertex._2.equalsIgnoreCase(tenantName)) {
-                     storageId = vertex._1
-                   } //id of storage
-                 }
-                 if (storageId.length != 0 && vertexId.length != 0) {
-                   var linkKey = storageId + "," + vertexId
-                   var fromlink = storageId
-                   var tolink = vertexId
-                   if (!edgeData.contains(linkKey)) {
-                     var setQuery = "set Name = \"%s\"".format("Message")
-                     val messageInfo = queryObj.getMessageInfo(msg2.message, msgDefs)
-                     if(messageInfo != null) {
-                       setQuery = queryObj.createSetCommand(message = Option(messageInfo))
-                     }
-                     edgeData += (linkKey -> "Message")
-                     val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkFrom = Option(fromlink), linkTo = Option(tolink))
-                     queryObj.executeQuery(conn, query)
-                     logger.debug(query)
-                     println(query)
-                   } else {
-                     logger.debug("The edge exist between this two nodes %s , %s".format(fromlink, tolink))
-                     println("The edge exist between this two nodes %s, %s".format(fromlink, tolink))
-                   }
-                   //               linkKey = vertexId + "," + storageId
-                   //               fromlink = vertexId
-                   //               tolink = storageId
-                   //               if (!edgeData.contains(linkKey)) {
-                   //                 edgeData += (linkKey -> "Message")
-                   //                 val setQuery = "set Name = \"%s\"".format("Message")
-                   //                 val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkFrom = Option(fromlink), linkTo = Option(tolink))
-                   //                 queryObj.executeQuery(conn, query)
-                   //                 logger.debug(query)
-                   //                 println(query)
-                   //               } else{
-                   //                 logger.debug("The edge exist between this two nodes %s , %s".format(fromlink, tolink))
-                   //                 println("The edge exist between this two nodes %s, %s".format(fromlink, tolink))
-                   //               }
-                 }
-               }
-             }
-           }
-         }
+    /* Step 3
+     *  1- check all vertices
+     *  2- check all existing Edges in graphDB
+     *  3- add missing Edges to GraphDB
+    */
 
-         for(adapterMessage <- adapterMessageMap){
-           var vertexId = ""
-           var adapterId = ""
-           val inputMessages = model.inputMsgSets
-           for(inputmsg <- inputMessages) { //add link between adapter and model (input ===messageE===> model ===messageE===> output) //// DAG scenario/////
-             for(msg <- inputmsg){
-               if(adapterMessage._2.messageName.equalsIgnoreCase(msg.message)){
-                 for (vertex <- verticesDataNew) {
-                   if (vertex._2.equalsIgnoreCase(model.FullName)) {
-                     vertexId = vertex._1
-                   } //id of model
-                   if (vertex._2.equalsIgnoreCase(adapterMessage._2.adapterName)) {
-                     adapterId = vertex._1
-                   } //id of adapter
-                 }
-                 if (adapterId.length != 0 && vertexId.length != 0) {
-                   val linkKey = adapterId + "," + vertexId
-                   if (!edgeData.contains(linkKey)) {
-//                     if (!msgDefs.isEmpty) {
-//                       for (message <- msgDefs.get) {
-//                         if (message.FullName.equalsIgnoreCase(adapterMessage._2.messageName)) {
-//                           if (!edgeData.contains(linkKey)) {
-//                             edgeData += (linkKey -> message.FullName)
-//                             val setQuery = queryObj.createSetCommand(message = Option(message))
-//                             val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkTo = Option(vertexId), linkFrom = Option(adapterId))
-//                             queryObj.executeQuery(conn, query)
-//                             logger.debug(query)
-//                             println(query)
-//                           }
-//                         }
-//                       }
-//                     }
-                     edgeData += (linkKey -> msg.message)
-                     var setQuery = "set Name = \"%s\"".format(msg.message)
-                     val message = queryObj.getMessageInfo(msg.message, msgDefs)
-                     if(message != null){
-                       setQuery = queryObj.createSetCommand(message = Option(message))
-                     }
-                     val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkFrom = Option(adapterId), linkTo = Option(vertexId))
-                     queryObj.executeQuery(conn, query)
-                     logger.debug(query)
-                     println(query)
-                   } else {
-                     logger.debug("The edge exist between this two nodes %s , %s".format(adapterId, vertexId))
-                     println("The edge exist between this two nodes %s, %s".format(adapterId, vertexId))
-                   }
-                 }
-               }
-             }
-           }
-           val outputName = model.outputMsgs
-           for (item <- outputName) { // add link between model and output adapter (model ===messageE===> output) //// DAG scenario/////
-             if (adapterMessage._2.messageName.equalsIgnoreCase(item)) {
-               for (vertex <- verticesDataNew) {
-                 if (vertex._2.equalsIgnoreCase(adapterMessage._2.adapterName)) {
-                   adapterId = vertex._1
-                 } //id of adpater
-                 if (vertex._2.equalsIgnoreCase(model.FullName)) {
-                   vertexId = vertex._1
-                 } //id of vertex
-               }
-               if (adapterId.length != 0 && vertexId.length != 0) {
-                 val linkKey = vertexId + "," + adapterId
-                 if (!edgeData.contains(linkKey)) {
-//                   if (!msgDefs.isEmpty) {
-//                     for (message <- msgDefs.get) {
-//                       if (message.FullName.equalsIgnoreCase(item)) {
-//                         if (!edgeData.contains(linkKey)) {
-//                           edgeData += (linkKey -> message.FullName)
-//                           val setQuery = queryObj.createSetCommand(message = Option(message))
-//                           val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkFrom = Option(vertexId), linkTo = Option(adapterId))
-//                           queryObj.executeQuery(conn, query)
-//                           logger.debug(query)
-//                           println(query)
-//                         }
-//                       }
-//                     }
-//                   }
-                   edgeData += (linkKey -> item)
-                   var setQuery = "set Name = \"%s\"".format(item)
-                   val message = queryObj.getMessageInfo(item, msgDefs)
-                   if(message != null){
-                     setQuery = queryObj.createSetCommand(message = Option(message))
-                   }
-                   val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkFrom = Option(vertexId), linkTo = Option(adapterId))
-                   queryObj.executeQuery(conn, query)
-                   logger.debug(query)
-                   println(query)
-                 } else {
-                   logger.debug("The edge exist between this two nodes %s , %s".format(vertexId, adapterId))
-                   println("The edge exist between this two nodes %s, %s".format(vertexId, adapterId))
-                 }
-               }
-             }
-           }
-         }
-      //   if(!msgDefs.isEmpty){  /// add link between message and model (input message ===consumedby===> model && model ===produces===> output message)
-      //     for (msg <- msgDefs.get){
-             var messageId = ""
-             var vertexId = ""
-             val inputName = model.inputMsgSets
-             for (msgin <- inputName)  /// add link between message and model (input message ===consumedby===> model)
-               for (msg1 <- msgin) {
-               //  if(msg1.message.equalsIgnoreCase(msg.FullName)) {
-                   for (vertex <- verticesDataNew) {
-                     if (vertex._2.equalsIgnoreCase(msg1.message)) {
-                       messageId = vertex._1
-                     } //id of adpater
-                     if (vertex._2.equalsIgnoreCase(model.FullName)) {
-                       vertexId = vertex._1
-                     } //id of vertex
-                   }
-                   if (messageId.length != 0 && vertexId.length != 0) {
-                     val linkKey = messageId + "," + vertexId
-                     if (!edgeData.contains(linkKey)) {
-                       //                     if (!msgDefs.isEmpty) {
-                       //                       for (message <- msgDefs.get) {
-                       //                         if (message.FullName.equalsIgnoreCase(msg1.message)) {
-                       //                           if (!edgeData.contains(linkKey)) {
-                       //                             edgeData += (linkKey -> msg1.message)
-                       //                             val setQuery = "set Name = \"%s\"".format("ConsumedBy")
-                       //                             val query: String = queryObj.createQuery(elementType = "edge", className = "ConsumedBy", setQuery = setQuery, linkTo = Option(vertexId), linkFrom = Option(messageId))
-                       //                             queryObj.executeQuery(conn, query)
-                       //                             logger.debug(query)
-                       //                             println(query)
-                       //                           }
-                       //                         }
-                       //                       }
-                       //                     }
-                       edgeData += (linkKey -> msg1.message)
-                       val setQuery = "set Name = \"%s\"".format("ConsumedBy")
-                       val query: String = queryObj.createQuery(elementType = "edge", className = "ConsumedBy", setQuery = setQuery, linkFrom = Option(messageId), linkTo = Option(vertexId))
-                       queryObj.executeQuery(conn, query)
-                       logger.debug(query)
-                       println(query)
-                     } else {
-                       logger.debug("The edge exist between this two nodes %s , %s".format(messageId, vertexId))
-                       println("The edge exist between this two nodes %s, %s".format(messageId, vertexId))
-                     }
-                   }
-             //    }
-               }
-             val outputName = model.outputMsgs
-             for (item <- outputName) {  /// add link between message and model (model ===produces===> output message)
-               for (vertex <- verticesDataNew) {
-                 if (vertex._2.equalsIgnoreCase(item)) {
-                   messageId = vertex._1
-                 } //id of adpater
-                 if (vertex._2.equalsIgnoreCase(model.FullName)) {
-                   vertexId = vertex._1
-                 } //id of vertex
-               }
-               if (messageId.length != 0 && vertexId.length != 0) {
-                 val linkKey = vertexId + "," + messageId
-                 if (!edgeData.contains(linkKey)) {
-//                   if (!msgDefs.isEmpty) {
-//                     for (message <- msgDefs.get) {
-//                       if (message.FullName.equalsIgnoreCase(item)) {
-//                         if (!edgeData.contains(linkKey)) {
-//                           edgeData += (linkKey -> item)
-//                           val setQuery = "set Name = \"%s\"".format("Produces")
-//                           val query: String = queryObj.createQuery(elementType = "edge", className = "Produces", setQuery = setQuery, linkTo = Option(messageId), linkFrom = Option(vertexId))
-//                           queryObj.executeQuery(conn, query)
-//                           logger.debug(query)
-//                           println(query)
-//                         }
-//                       }
-//                     }
-//                   }
-                   edgeData += (linkKey -> item)
-                   val setQuery = "set Name = \"%s\"".format("Produces")
-                   val query: String = queryObj.createQuery(elementType = "edge", className = "Produces", setQuery = setQuery, linkTo = Option(messageId), linkFrom = Option(vertexId))
-                   queryObj.executeQuery(conn, query)
-                   logger.debug(query)
-                   println(query)
-                 } else {
-                   logger.debug("The edge exist between this two nodes %s , %s".format(vertexId, messageId))
-                   println("The edge exist between this two nodes %s, %s".format(vertexId, messageId))
-                 }
-               }
-             }
-      //     }
-      //   }
-       }
-     }
+    dataQuery = queryObj.getAllExistDataQuery(elementType = "vertex", extendClass = option("V"))
+    val verticesNewByTypAndFullName = queryObj.getAllVertices(conn, dataQuery)
+    queryObj.PrintAllResult(verticesNewByTypAndFullName, "Vertices")
+    dataQuery = queryObj.getAllExistDataQuery(elementType = "edge", extendClass = option("e"))
+    val edgeData = queryObj.getAllEdges(conn, dataQuery)
+    queryObj.PrintAllResult(edgeData, "Edges")
+    val adapterMessageMap: Map[String, AdapterMessageBinding] = mdMgr.AllAdapterMessageBindings //this includes all adapter and message for it
+    val messageProducers = scala.collection.mutable.Map[String, ArrayBuffer[String]]()
+    val messageProperties = scala.collection.mutable.Map[String, String]()
 
-     if(!msgDefs.isEmpty){
-       for(inputMessage <- msgDefs.get){ // add link between message and storage, input adapter, output adapter
-         for (tenant <-tenatInfo) {
-           // add link between message and storage (message ===StoredBy===> storage ===retrieves===> message)
-           var vertexId = ""
-           var storageId = ""
-           var primaryStroage: String = ""
-           val storageTenant = if (tenant.tenantId.isEmpty) "" else tenant.tenantId
-           if (tenant.primaryDataStore != null) {
-             val json = parse(tenant.primaryDataStore)
-             val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
-             primaryStroage = if (adapCfgValues.get("StoreType").get.toString == null) "" else adapCfgValues.get("StoreType").get.toString
-           }
-           val tenantName = tenant.tenantId + "_" + primaryStroage
-           if (inputMessage.TenantId.equalsIgnoreCase(storageTenant) && inputMessage.cType.persist) {
-             for (vertex <- verticesDataNew) {
-               if (vertex._2.equalsIgnoreCase(inputMessage.FullName)) {
-                 vertexId = vertex._1
-               } //id of message
-               if (vertex._2.equalsIgnoreCase(tenantName)) {
-                 storageId = vertex._1
-               } //id of storage
-             }
-             if (storageId.length != 0 && vertexId.length != 0) {
-               var linkKey = vertexId + "," + storageId
-               if (!edgeData.contains(linkKey)) {
-                 edgeData += (linkKey -> "StoredBy")
-                 val setQuery = "set Name = \"%s\"".format("StoredBy")
-                 val query: String = queryObj.createQuery(elementType = "edge", className = "StoredBy", setQuery = setQuery, linkFrom = Option(vertexId), linkTo = Option(storageId))
-                 queryObj.executeQuery(conn, query)
-                 logger.debug(query)
-                 println(query)
-               } else {
-                 logger.debug("The edge exist between this two nodes %s , %s".format(vertexId, storageId))
-                 println("The edge exist between this two nodes %s, %s".format(vertexId, storageId))
-               }
-               linkKey = storageId + "," + vertexId
-               if (!edgeData.contains(linkKey)) {
-                 edgeData += (linkKey -> "Retrieves")
-                 val setQuery = "set Name = \"%s\"".format("Retrieves")
-                 val query: String = queryObj.createQuery(elementType = "edge", className = "Retrieves", setQuery = setQuery, linkFrom = Option(storageId), linkTo = Option(vertexId))
-                 queryObj.executeQuery(conn, query)
-                 logger.debug(query)
-                 println(query)
-               } else {
-                 logger.debug("The edge exist between this two nodes %s , %s".format(vertexId, storageId))
-                 println("The edge exist between this two nodes %s, %s".format(vertexId, storageId))
-               }
-             }
-           }
-         }
-       }
-     }
+    // First collect all messages produced from Message Producers. For now it is Models & Input Adatpers
+    if (!ModelDefs.isEmpty) {
+      for (model <- ModelDefs.get) {
+        val mdlnm = ("Model," + model.FullName).toLowerCase
+        val mdlVertexId = verticesNewByTypAndFullName.getOrElse(mdlnm, null)
+        for (outmsgnm <- model.outputMsgs) {
+          /// add link between message and model (model ===produces===> output message)
+          if (outmsgnm != null) {
+            val msgnm = ("Message," + outmsgnm).toLowerCase
+            val msgVertexId = verticesNewByTypAndFullName.getOrElse(msgnm, null)
+            if (msgVertexId != null && !msgVertexId.isEmpty) {
+              val ab = messageProducers.getOrElse(msgVertexId, ArrayBuffer[String]())
+              ab += mdlVertexId
+              messageProducers(msgVertexId) = ab
+            }
+          }
+        }
+      }
+    }
 
-     var linkKey = ""
-     var fromlink = ""
-     var tolink = ""
-     var messageId = ""
-     var adapterId = ""
-     for (adapterMessage <- adapterMessageMap) { // add link between message and input adapter, output adapter (input adapter ===produces===> message ===sendto===> output adapter)
-       if (!adapterDefs.isEmpty) {
-         for (adapter <- adapterDefs) {
-           if (adapterMessage._2.adapterName.equalsIgnoreCase(adapter._2.Name)) {
-             for (vertex <- verticesDataNew) {
-               if (vertex._2.equalsIgnoreCase(adapterMessage._2.messageName)) {
-                 messageId = vertex._1
-               } //id of message
-               if (vertex._2.equalsIgnoreCase(adapterMessage._2.adapterName)) {
-                 adapterId = vertex._1
-               } //id of storage
-             }
-             var adapterType: String = ""
-             if (adapter._2.typeString.equalsIgnoreCase("input")) {
-               adapterType = "Produces"
-               linkKey = adapterId + "," + messageId
-               fromlink = adapterId
-               tolink = messageId
-             } else if (adapter._2.typeString.equalsIgnoreCase("output")) {
-               adapterType = "SentTo"
-               linkKey = messageId + "," + adapterId
-               fromlink = messageId
-               tolink = adapterId
-             } else {
-               adapterType = "StoredBy"
-               linkKey = messageId + "," + adapterId
-               fromlink = messageId
-               tolink = adapterId
-             }
-             if (!edgeData.contains(linkKey)) {
-                 if (!edgeData.contains(linkKey)) {
-                   edgeData += (linkKey -> adapterType)
-                   val setQuery = "set Name = \"%s\"".format(adapterType)
-                   val query: String = queryObj.createQuery(elementType = "edge", className = adapterType, setQuery = setQuery, linkFrom = Option(fromlink), linkTo = Option(tolink))
-                   queryObj.executeQuery(conn, query)
-                   logger.debug(query)
-                   println(query)
-                 }
-             } else {
-               logger.debug("The edge exist between this two nodes %s , %s".format(fromlink, tolink))
-               println("The edge exist between this two nodes %s, %s".format(fromlink, tolink))
-             }
-           }
-         }
-       }
-     }
+    for (adapterMessage <- adapterMessageMap) {
+      // add link between message and input adapter, output adapter (input adapter ===produces===> message ===sendto===> output adapter)
+      if (!adapterDefs.isEmpty) {
+        val adapTyp = adapterTypes.getOrElse(adapterMessage._2.adapterName.toLowerCase, "")
 
-//     for(adapterMessage <- adapterMessageMap) {
-//       var adapterId = ""
-//       var vertexId = ""
-//       if (!ModelDefs.isEmpty) { //add link between adapter and model (input ===messageE===> model ===messageE===> output)
-//         for (model <- ModelDefs.get) {
-//           val inputName = model.inputMsgSets
-//           for (msg <- inputName)
-//             for (msg1 <- msg) { // add link between model and input adapter (input ====messageE===> model)
-//               if (adapterMessage._2.messageName.equalsIgnoreCase(msg1.message)) {
-//                 for (vertex <- verticesDataNew) {
-//                   if (vertex._2.equalsIgnoreCase(adapterMessage._2.adapterName)) {
-//                     adapterId = vertex._1
-//                   } //id of adpater
-//                   if (vertex._2.equalsIgnoreCase(model.FullName)) {
-//                     vertexId = vertex._1
-//                   } //id of vertex
-//                 }
-//                 //   } here
-//                 if (adapterId.length != 0 && vertexId.length != 0) {
-//                   val linkKey = adapterId + "," + vertexId
-//                   if (!edgeData.contains(linkKey)) {
-//                     if (!msgDefs.isEmpty) {
-//                       for (message <- msgDefs.get) {
-//                         if (message.FullName.equalsIgnoreCase(adapterMessage._2.messageName)) {
-//                           if (!edgeData.contains(linkKey)) {
-//                             edgeData += (linkKey -> message.FullName)
-//                             val setQuery = queryObj.createSetCommand(message = Option(message))
-//                             val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkTo = Option(vertexId), linkFrom = Option(adapterId))
-//                             queryObj.executeQuery(conn, query)
-//                             logger.debug(query)
-//                             println(query)
-//                           }
-//                         }
-//                       }
-//                     }
-//                   } else {
-//                     logger.debug("The edge exist between this two nodes %s , %s".format(adapterId, vertexId))
-//                     println("The edge exist between this two nodes %s, %s".format(adapterId, vertexId))
-//                   }
-//                 }
-//               } //here
-//             }
-//
-//           val outputName = model.outputMsgs
-//           for (item <- outputName) { // add link between model and output adapter (model ===messageE===> output)
-//             if (adapterMessage._2.messageName.equalsIgnoreCase(item)) {
-//               for (vertex <- verticesDataNew) {
-//                 if (vertex._2.equalsIgnoreCase(adapterMessage._2.adapterName)) {
-//                   adapterId = vertex._1
-//                 } //id of adpater
-//                 if (vertex._2.equalsIgnoreCase(model.FullName)) {
-//                   vertexId = vertex._1
-//                 } //id of vertex
-//               }
-//               // } here
-//               if (adapterId.length != 0 && vertexId.length != 0) {
-//                 val linkKey = vertexId + "," + adapterId
-//                 if (!edgeData.contains(linkKey)) {
-//                   if (!msgDefs.isEmpty) {
-//                     for (message <- msgDefs.get) {
-//                       if (message.FullName.equalsIgnoreCase(item)) {
-//                         if (!edgeData.contains(linkKey)) {
-//                           edgeData += (linkKey -> message.FullName)
-//                           val setQuery = queryObj.createSetCommand(message = Option(message))
-//                           val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkFrom = Option(vertexId), linkTo = Option(adapterId))
-//                           queryObj.executeQuery(conn, query)
-//                           logger.debug(query)
-//                           println(query)
-//                         }
-//                       }
-//                     }
-//                   }
-//                 } else {
-//                   logger.debug("The edge exist between this two nodes %s , %s".format(vertexId, adapterId))
-//                   println("The edge exist between this two nodes %s, %s".format(vertexId, adapterId))
-//                 }
-//               }
-//             }
-//           }
-//         }
-//       }
-//       ////// high level ////////
-//       var messageid = ""
-//       for (vertex <- verticesDataNew) {
-//         if (vertex._2.equalsIgnoreCase(adapterMessage._2.adapterName)) {
-//           adapterId = vertex._1
-//         } //id of adpater
-//         if (vertex._2.equalsIgnoreCase(adapterMessage._2.messageName)) {
-//           messageid = vertex._1
-//         } //id of message
-//       }
-//
-//       if (adapterId.length != 0 && messageid.length != 0) {
-//         var linkKey = "" //adapterId + "," + vertexId
-//         var fromlink = ""
-//         var tolink = ""
-//    //     if (!edgeData.contains(linkKey)) {
-//           if (!adapterDefs.isEmpty) {
-//             for (adapter <- adapterDefs) {
-//               var adapterType: String = ""
-//               if (adapter._2.typeString.equalsIgnoreCase("input")) {
-//                 adapterType = "Produces"
-//                 linkKey = adapterId + "," + messageid
-//                 fromlink = adapterId
-//                 tolink = messageid
-//               } else if (adapter._2.typeString.equalsIgnoreCase("output")) {
-//                 adapterType = "SentTo"
-//                 linkKey = messageid + "," + adapterId
-//                 fromlink = messageid
-//                 tolink = adapterId
-//               } else {
-//                 adapterType = "StoredBy"
-//                 linkKey = messageid + "," + adapterId
-//                 fromlink = messageid
-//                 tolink = adapterId
-//               }
-//
-//               if (!edgeData.contains(linkKey)) {
-//                 if (adapter._2.Name.equalsIgnoreCase(adapterMessage._2.adapterName)) {
-//                   if (!edgeData.contains(linkKey)) {
-//                     edgeData += (linkKey -> adapterType)
-//                     val setQuery = "set Name = \"%s\"".format(adapterType)
-//                     val query: String = queryObj.createQuery(elementType = "edge", className = adapterType, setQuery = setQuery, linkFrom = Option(fromlink), linkTo = Option(tolink))
-//                     queryObj.executeQuery(conn, query)
-//                     logger.debug(query)
-//                     println(query)
-//                   }
-//                 }
-//               } else {
-//                 logger.debug("The edge exist between this two nodes %s , %s".format(fromlink, tolink))
-//                 println("The edge exist between this two nodes %s, %s".format(fromlink, tolink))
-//               }
-//             }
-//           }
-// //        }
-//       }
-//     }
+        if (adapTyp.equalsIgnoreCase("input")) {
+          val adapnm = (adapTyp + "," + adapterMessage._2.adapterName).toLowerCase
+          val adapVertexId = verticesNewByTypAndFullName.getOrElse(adapnm, null)
 
-//     if(!ModelDefs.isEmpty) { ////// from message to model (input message ===consumedby===> model &&& model ===produced===> output message)
-//       for (model <- ModelDefs.get) {
-//         var messageId = ""
-//         var vertexId = ""
-//         val inputName = model.inputMsgSets
-//         for (msg <- inputName)
-//           for (msg1 <- msg) {
-//               for (vertex <- verticesDataNew) {
-//                 if (vertex._2.equalsIgnoreCase(msg1.message)) {
-//                   messageId = vertex._1
-//                 } //id of adpater
-//                 if (vertex._2.equalsIgnoreCase(model.FullName)) {
-//                   vertexId = vertex._1
-//                 } //id of vertex
-//               }
-//             if (messageId.length != 0 && vertexId.length != 0) {
-//               val linkKey = messageId + "," + vertexId
-//               if (!edgeData.contains(linkKey)) {
-//                 if (!msgDefs.isEmpty) {
-//                   for (message <- msgDefs.get) {
-//                     if (message.FullName.equalsIgnoreCase(msg1.message)) {
-//                       if (!edgeData.contains(linkKey)) {
-//                         edgeData += (linkKey -> msg1.message)
-//                         val setQuery = "set Name = \"%s\"".format("ConsumedBy")
-//                         val query: String = queryObj.createQuery(elementType = "edge", className = "ConsumedBy", setQuery = setQuery, linkTo = Option(vertexId), linkFrom = Option(messageId))
-//                         queryObj.executeQuery(conn, query)
-//                         logger.debug(query)
-//                         println(query)
-//                       }
-//                     }
-//                   }
-//                 }
-//               } else {
-//                 logger.debug("The edge exist between this two nodes %s , %s".format(messageId, vertexId))
-//                 println("The edge exist between this two nodes %s, %s".format(messageId, vertexId))
-//               }
-//             }
-//           }
-//
-//         val outputName = model.outputMsgs
-//         for (item <- outputName) {
-//             for (vertex <- verticesDataNew) {
-//               if (vertex._2.equalsIgnoreCase(item)) {
-//                 messageId = vertex._1
-//               } //id of adpater
-//             }
-//           if (messageId.length != 0 && vertexId.length != 0) {
-//             val linkKey = vertexId + "," + messageId
-//             if (!edgeData.contains(linkKey)) {
-//               if (!msgDefs.isEmpty) {
-//                 for (message <- msgDefs.get) {
-//                   if (message.FullName.equalsIgnoreCase(item)) {
-//                     if (!edgeData.contains(linkKey)) {
-//                       edgeData += (linkKey -> item)
-//                       val setQuery = "set Name = \"%s\"".format("Produces")
-//                       val query: String = queryObj.createQuery(elementType = "edge", className = "Produces", setQuery = setQuery, linkTo = Option(messageId), linkFrom = Option(vertexId))
-//                       queryObj.executeQuery(conn, query)
-//                       logger.debug(query)
-//                       println(query)
-//                     }
-//                   }
-//                 }
-//               }
-//             } else {
-//               logger.debug("The edge exist between this two nodes %s , %s".format(vertexId, messageId))
-//               println("The edge exist between this two nodes %s, %s".format(vertexId, messageId))
-//             }
-//           }
-//         }
-//       }
-//
-//       if (!adapterDefs.isEmpty) {
-//         var messageId = ""
-//         var storage = ""
-//         for(adapter <- adapterDefs){
-//           if(adapter._2.TypeString.equalsIgnoreCase("storage")){
-//             if(!msgDefs.isEmpty){
-//               for (message <- msgDefs.get){
-//                 for (vertex <- verticesDataNew) {
-//                   if (vertex._2.equalsIgnoreCase(message.FullName)) {
-//                      messageId = vertex._1
-//                   } //id of message
-//                   else if(vertex._2.equalsIgnoreCase(adapter._2.Name)){
-//                      storage = vertex._1
-//                   }
-//                 }
-//                 val fromlink = messageId
-//                 val tolink = storage
-//                 val linkKey = messageId + "," + storage
-//                 if (!edgeData.contains(linkKey)) {
-//                   edgeData += (linkKey -> adapter._2.Name)
-//                   val setQuery = "set Name = \"%s\"".format("StoredBy")
-//                   val query: String = queryObj.createQuery(elementType = "edge", className = "StoredBy", setQuery = setQuery, linkFrom = Option(fromlink), linkTo = Option(tolink))
-//                   queryObj.executeQuery(conn, query)
-//                   logger.debug(query)
-//                   println(query)
-//                 } else {
-//                   logger.debug("The edge exist between this two nodes %s , %s".format(fromlink, tolink))
-//                   println("The edge exist between this two nodes %s, %s".format(fromlink, tolink))
-//                 }
-//               }
-//             }
-//           }
-//         }
-//       }
-//     }
+          val msgnm = ("Message," + adapterMessage._2.messageName).toLowerCase
+          val msgVertexId = verticesNewByTypAndFullName.getOrElse(msgnm, null)
+          if (msgVertexId != null && !msgVertexId.isEmpty && adapVertexId != null && !adapVertexId.isEmpty) {
+            val ab = messageProducers.getOrElse(msgVertexId, ArrayBuffer[String]())
+            ab += adapVertexId
+            messageProducers(msgVertexId) = ab
+          }
+        }
+      }
+    }
 
-     conn.close()
-   }
+    if (!msgDefs.isEmpty) {
+      for (messageDefObj <- msgDefs.get) {
+        // add link between message and storage, input adapter, output adapter
+        // add link between message and storage (message ===StoredBy===> storage ===retrieves===> message)
+        val msgnm = ("Message," + messageDefObj.FullName).toLowerCase
+        val msgVertexId = verticesNewByTypAndFullName.getOrElse(msgnm, null)
+        if (msgVertexId != null && !msgVertexId.isEmpty && messageDefObj != null && messageDefObj.cType != null && messageDefObj.cType.persist) {
+          val msgTenant = if (messageDefObj.TenantId.isEmpty) "" else messageDefObj.TenantId
+          val tenantStoreName = tenantId2FullName.getOrElse(msgTenant.toLowerCase(), "")
+
+          val storenm = ("Storage," + tenantStoreName).toLowerCase
+          val storeVertexId = verticesNewByTypAndFullName.getOrElse(storenm, null)
+
+          if (storeVertexId != null &&
+            !storeVertexId.isEmpty) {
+            var linkKey = msgVertexId + "," + storeVertexId + ",StoredBy"
+            currentEdgesSet += linkKey.toLowerCase
+            if (!edgeData.contains(linkKey.toLowerCase)) {
+              val setQuery = "set Name = \"%s\"".format("StoredBy")
+              val query: String = queryObj.createQuery(elementType = "edge", className = "StoredBy", setQuery = setQuery, linkFrom = Option(msgVertexId), linkTo = Option(storeVertexId))
+              queryObj.executeQuery(conn, query)
+              logger.debug(query)
+              println(query)
+            } else {
+              logger.debug("The edge exist between this two nodes %s , %s".format(msgVertexId, storeVertexId))
+              println("The edge exist between this two nodes %s, %s".format(msgVertexId, storeVertexId))
+            }
+            linkKey = storeVertexId + "," + msgVertexId + ",Retrieves"
+            currentEdgesSet += linkKey.toLowerCase
+            if (!edgeData.contains(linkKey.toLowerCase)) {
+              val setQuery = "set Name = \"%s\"".format("Retrieves")
+              val query: String = queryObj.createQuery(elementType = "edge", className = "Retrieves", setQuery = setQuery, linkFrom = Option(storeVertexId), linkTo = Option(msgVertexId))
+              queryObj.executeQuery(conn, query)
+              logger.debug(query)
+              println(query)
+            } else {
+              logger.debug("The edge exist between this two nodes %s , %s".format(msgVertexId, storeVertexId))
+              println("The edge exist between this two nodes %s, %s".format(msgVertexId, storeVertexId))
+            }
+          }
+        }
+
+        if (msgVertexId != null && !msgVertexId.isEmpty) {
+          val setQuery = queryObj.createSetCommand(baseElem = Option(messageDefObj))
+          messageProperties(msgVertexId) = setQuery;
+        }
+      }
+    }
+
+    if (!ModelDefs.isEmpty) {
+      for (model <- ModelDefs.get) {
+        // add link between storage and model ( storage ===messageE===> model  && model ===messageE===> storage) //// DAG scenario/////
+        // val modelTenant = if (model.TenantId.isEmpty) "" else model.TenantId
+        // val tenantStoreName = tenantId2FullName.getOrElse(modelTenant.toLowerCase(), "")
+        val mdlnm = ("Model," + model.FullName).toLowerCase
+        val mdlVertexId = verticesNewByTypAndFullName.getOrElse(mdlnm, null)
+
+        // For DAG
+        if (model.inputMsgSets != null) {
+          for (msgin <- model.inputMsgSets) {
+            if (msgin != null) {
+              /// add link between message and model (input message ===consumedby===> model)
+              for (msg1 <- msgin) {
+                if (msg1 != null) {
+                  val msgnm = ("Message," + msg1.message).toLowerCase
+                  val msgVertexId = verticesNewByTypAndFullName.getOrElse(msgnm, null)
+
+                  // Get all Generators for this message
+                  val ab = messageProducers.getOrElse(msgVertexId, ArrayBuffer[String]())
+                  ab.foreach(inVertexId => {
+                    if (inVertexId != null && !inVertexId.isEmpty) {
+                      val linkKey = inVertexId + "," + mdlVertexId + "," + msg1.message
+                      currentEdgesSet += linkKey.toLowerCase
+                      if (!edgeData.contains(linkKey.toLowerCase)) {
+                        val setQuery = messageProperties.getOrElse(msgVertexId, "set Name = \"%s\"".format(msg1.message))
+                        val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkFrom = Option(inVertexId), linkTo = Option(mdlVertexId))
+                        queryObj.executeQuery(conn, query)
+                        logger.debug(query)
+                        println(query)
+                      } else {
+                        logger.debug("The edge exist between this two nodes %s , %s".format(inVertexId, mdlVertexId))
+                        println("The edge exist between this two nodes %s, %s".format(inVertexId, mdlVertexId))
+                      }
+                    }
+                  })
+                }
+              }
+            }
+          }
+        }
+
+        if (model.inputMsgSets != null) {
+          for (msgin <- model.inputMsgSets) {
+            if (msgin != null) {
+              /// add link between message and model (input message ===consumedby===> model)
+              for (msg1 <- msgin) {
+                if (msg1 != null) {
+                  val msgnm = ("Message," + msg1.message).toLowerCase
+                  val msgVertexId = verticesNewByTypAndFullName.getOrElse(msgnm, null)
+
+                  if (msgVertexId != null && !msgVertexId.isEmpty) {
+                    val linkKey = msgVertexId + "," + mdlVertexId + ",ConsumedBy"
+                    currentEdgesSet += linkKey.toLowerCase
+                    if (!edgeData.contains(linkKey.toLowerCase)) {
+                      val setQuery = "set Name = \"ConsumedBy\""
+                      val query: String = queryObj.createQuery(elementType = "edge", className = "ConsumedBy", setQuery = setQuery, linkFrom = Option(msgVertexId), linkTo = Option(mdlVertexId))
+                      queryObj.executeQuery(conn, query)
+                      logger.debug(query)
+                      println(query)
+                    } else {
+                      logger.debug("The edge exist between this two nodes %s , %s".format(msgVertexId, mdlVertexId))
+                      println("The edge exist between this two nodes %s, %s".format(msgVertexId, mdlVertexId))
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        val outputName = model.outputMsgs
+        for (outmsgnm <- outputName) {
+          /// add link between message and model (model ===produces===> output message)
+          if (outmsgnm != null) {
+            val msgnm = ("Message," + outmsgnm).toLowerCase
+            val msgVertexId = verticesNewByTypAndFullName.getOrElse(msgnm, null)
+            if (msgVertexId != null && !msgVertexId.isEmpty) {
+              val linkKey = mdlVertexId + "," + msgVertexId + ",Produces"
+              currentEdgesSet += linkKey.toLowerCase
+              if (!edgeData.contains(linkKey.toLowerCase)) {
+                val setQuery = "set Name = \"Produces\""
+                val query: String = queryObj.createQuery(elementType = "edge", className = "Produces", setQuery = setQuery, linkTo = Option(msgVertexId), linkFrom = Option(mdlVertexId))
+                queryObj.executeQuery(conn, query)
+                logger.debug(query)
+                println(query)
+              } else {
+                logger.debug("The edge exist between this two nodes %s , %s".format(mdlVertexId, msgVertexId))
+                println("The edge exist between this two nodes %s, %s".format(mdlVertexId, msgVertexId))
+              }
+            }
+          }
+        }
+      }
+    }
+
+    for (adapterMessage <- adapterMessageMap) {
+      // add link between message and input adapter, output adapter (input adapter ===produces===> message ===sendto===> output adapter)
+      if (!adapterDefs.isEmpty) {
+        val adapTyp = adapterTypes.getOrElse(adapterMessage._2.adapterName.toLowerCase, "")
+        val adapnm = (adapTyp + "," + adapterMessage._2.adapterName).toLowerCase
+        val adapVertexId = verticesNewByTypAndFullName.getOrElse(adapnm, null)
+
+        val msgnm = ("Message," + adapterMessage._2.messageName).toLowerCase
+        val msgVertexId = verticesNewByTypAndFullName.getOrElse(msgnm, null)
+
+        // println("AdapterName:%s, messageName:%s, adapTyp:%s, adapnm:%s, adapVertexId:%s, msgnm:%s, msgVertexId:%s".format(adapterMessage._2.adapterName, adapterMessage._2.messageName, adapTyp, adapnm, adapVertexId, msgnm, msgVertexId))
+
+        if (adapVertexId != null && msgVertexId != null && !adapVertexId.isEmpty && !msgVertexId.isEmpty) {
+          var linkKey = ""
+          var fromlink = ""
+          var tolink = ""
+
+          var adapterType: String = ""
+          if (adapTyp.equalsIgnoreCase("input")) {
+            adapterType = "Produces"
+            linkKey = adapVertexId + "," + msgVertexId + "," + adapterType
+            fromlink = adapVertexId
+            tolink = msgVertexId
+          } else if (adapTyp.equalsIgnoreCase("output")) {
+            adapterType = "SentTo"
+            linkKey = msgVertexId + "," + adapVertexId + "," + adapterType
+            fromlink = msgVertexId
+            tolink = adapVertexId
+          } else if (adapTyp.equalsIgnoreCase("Storage")) {
+            adapterType = "StoredBy"
+            linkKey = msgVertexId + "," + adapVertexId + "," + adapterType
+            fromlink = msgVertexId
+            tolink = adapVertexId
+          }
+
+          currentEdgesSet += linkKey.toLowerCase
+          if (!edgeData.contains(linkKey.toLowerCase)) {
+            val setQuery = "set Name = \"%s\"".format(adapterType)
+            val query: String = queryObj.createQuery(elementType = "edge", className = adapterType, setQuery = setQuery, linkFrom = Option(fromlink), linkTo = Option(tolink))
+            queryObj.executeQuery(conn, query)
+            logger.debug(query)
+            println(query)
+          } else {
+            logger.debug("The edge exist between this two nodes %s , %s".format(fromlink, tolink))
+            println("The edge exist between this two nodes %s, %s".format(fromlink, tolink))
+          }
+
+          // For DAG
+          if (!adapTyp.equalsIgnoreCase("input")) {
+            // Get all Generators for this message
+            val ab = messageProducers.getOrElse(msgVertexId, ArrayBuffer[String]())
+            ab.foreach(inVertexId => {
+              if (inVertexId != null && !inVertexId.isEmpty) {
+                val linkKey = inVertexId + "," + adapVertexId + "," + adapterMessage._2.messageName
+                currentEdgesSet += linkKey.toLowerCase
+                if (!edgeData.contains(linkKey.toLowerCase)) {
+                  val setQuery = messageProperties.getOrElse(msgVertexId, "set Name = \"%s\"".format(adapterMessage._2.messageName))
+                  val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkFrom = Option(inVertexId), linkTo = Option(adapVertexId))
+                  queryObj.executeQuery(conn, query)
+                  logger.debug(query)
+                  println(query)
+                } else {
+                  logger.debug("The edge exist between this two nodes %s , %s".format(inVertexId, adapVertexId))
+                  println("The edge exist between this two nodes %s, %s".format(inVertexId, adapVertexId))
+                }
+              }
+            })
+          }
+        }
+      }
+    }
+
+
+    // Invalid Edges (Which are removed from previous run)
+    val removedEdges = edgeData -- currentEdgesSet
+
+
+    // Invalid Vertices (Which are removed from previous run)
+    val removedVertices = verticesNewByTypAndFullName -- currentVerticesSet
+
+
+    //     for(adapterMessage <- adapterMessageMap) {
+    //       var adapterId = ""
+    //       var vertexId = ""
+    //       if (!ModelDefs.isEmpty) { //add link between adapter and model (input ===messageE===> model ===messageE===> output)
+    //         for (model <- ModelDefs.get) {
+    //           val inputName = model.inputMsgSets
+    //           for (msg <- inputName)
+    //             for (msg1 <- msg) { // add link between model and input adapter (input ====messageE===> model)
+    //               if (adapterMessage._2.messageName.equalsIgnoreCase(msg1.message)) {
+    //                 for (vertex <- verticesDataNew) {
+    //                   if (vertex._2.equalsIgnoreCase(adapterMessage._2.adapterName)) {
+    //                     adapterId = vertex._1
+    //                   } //id of adpater
+    //                   if (vertex._2.equalsIgnoreCase(model.FullName)) {
+    //                     vertexId = vertex._1
+    //                   } //id of vertex
+    //                 }
+    //                 //   } here
+    //                 if (adapterId.length != 0 && vertexId.length != 0) {
+    //                   val linkKey = adapterId + "," + vertexId
+    //                   if (!edgeData.contains(linkKey)) {
+    //                     if (!msgDefs.isEmpty) {
+    //                       for (message <- msgDefs.get) {
+    //                         if (message.FullName.equalsIgnoreCase(adapterMessage._2.messageName)) {
+    //                           if (!edgeData.contains(linkKey)) {
+    //                             edgeData += (linkKey -> message.FullName)
+    //                             val setQuery = queryObj.createSetCommand(message = Option(message))
+    //                             val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkTo = Option(vertexId), linkFrom = Option(adapterId))
+    //                             queryObj.executeQuery(conn, query)
+    //                             logger.debug(query)
+    //                             println(query)
+    //                           }
+    //                         }
+    //                       }
+    //                     }
+    //                   } else {
+    //                     logger.debug("The edge exist between this two nodes %s , %s".format(adapterId, vertexId))
+    //                     println("The edge exist between this two nodes %s, %s".format(adapterId, vertexId))
+    //                   }
+    //                 }
+    //               } //here
+    //             }
+    //
+    //           val outputName = model.outputMsgs
+    //           for (item <- outputName) { // add link between model and output adapter (model ===messageE===> output)
+    //             if (adapterMessage._2.messageName.equalsIgnoreCase(item)) {
+    //               for (vertex <- verticesDataNew) {
+    //                 if (vertex._2.equalsIgnoreCase(adapterMessage._2.adapterName)) {
+    //                   adapterId = vertex._1
+    //                 } //id of adpater
+    //                 if (vertex._2.equalsIgnoreCase(model.FullName)) {
+    //                   vertexId = vertex._1
+    //                 } //id of vertex
+    //               }
+    //               // } here
+    //               if (adapterId.length != 0 && vertexId.length != 0) {
+    //                 val linkKey = vertexId + "," + adapterId
+    //                 if (!edgeData.contains(linkKey)) {
+    //                   if (!msgDefs.isEmpty) {
+    //                     for (message <- msgDefs.get) {
+    //                       if (message.FullName.equalsIgnoreCase(item)) {
+    //                         if (!edgeData.contains(linkKey)) {
+    //                           edgeData += (linkKey -> message.FullName)
+    //                           val setQuery = queryObj.createSetCommand(message = Option(message))
+    //                           val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkFrom = Option(vertexId), linkTo = Option(adapterId))
+    //                           queryObj.executeQuery(conn, query)
+    //                           logger.debug(query)
+    //                           println(query)
+    //                         }
+    //                       }
+    //                     }
+    //                   }
+    //                 } else {
+    //                   logger.debug("The edge exist between this two nodes %s , %s".format(vertexId, adapterId))
+    //                   println("The edge exist between this two nodes %s, %s".format(vertexId, adapterId))
+    //                 }
+    //               }
+    //             }
+    //           }
+    //         }
+    //       }
+    //       ////// high level ////////
+    //       var messageid = ""
+    //       for (vertex <- verticesDataNew) {
+    //         if (vertex._2.equalsIgnoreCase(adapterMessage._2.adapterName)) {
+    //           adapterId = vertex._1
+    //         } //id of adpater
+    //         if (vertex._2.equalsIgnoreCase(adapterMessage._2.messageName)) {
+    //           messageid = vertex._1
+    //         } //id of message
+    //       }
+    //
+    //       if (adapterId.length != 0 && messageid.length != 0) {
+    //         var linkKey = "" //adapterId + "," + vertexId
+    //         var fromlink = ""
+    //         var tolink = ""
+    //    //     if (!edgeData.contains(linkKey)) {
+    //           if (!adapterDefs.isEmpty) {
+    //             for (adapter <- adapterDefs) {
+    //               var adapterType: String = ""
+    //               if (adapter._2.typeString.equalsIgnoreCase("input")) {
+    //                 adapterType = "Produces"
+    //                 linkKey = adapterId + "," + messageid
+    //                 fromlink = adapterId
+    //                 tolink = messageid
+    //               } else if (adapter._2.typeString.equalsIgnoreCase("output")) {
+    //                 adapterType = "SentTo"
+    //                 linkKey = messageid + "," + adapterId
+    //                 fromlink = messageid
+    //                 tolink = adapterId
+    //               } else {
+    //                 adapterType = "StoredBy"
+    //                 linkKey = messageid + "," + adapterId
+    //                 fromlink = messageid
+    //                 tolink = adapterId
+    //               }
+    //
+    //               if (!edgeData.contains(linkKey)) {
+    //                 if (adapter._2.Name.equalsIgnoreCase(adapterMessage._2.adapterName)) {
+    //                   if (!edgeData.contains(linkKey)) {
+    //                     edgeData += (linkKey -> adapterType)
+    //                     val setQuery = "set Name = \"%s\"".format(adapterType)
+    //                     val query: String = queryObj.createQuery(elementType = "edge", className = adapterType, setQuery = setQuery, linkFrom = Option(fromlink), linkTo = Option(tolink))
+    //                     queryObj.executeQuery(conn, query)
+    //                     logger.debug(query)
+    //                     println(query)
+    //                   }
+    //                 }
+    //               } else {
+    //                 logger.debug("The edge exist between this two nodes %s , %s".format(fromlink, tolink))
+    //                 println("The edge exist between this two nodes %s, %s".format(fromlink, tolink))
+    //               }
+    //             }
+    //           }
+    // //        }
+    //       }
+    //     }
+
+    //     if(!ModelDefs.isEmpty) { ////// from message to model (input message ===consumedby===> model &&& model ===produced===> output message)
+    //       for (model <- ModelDefs.get) {
+    //         var messageId = ""
+    //         var vertexId = ""
+    //         val inputName = model.inputMsgSets
+    //         for (msg <- inputName)
+    //           for (msg1 <- msg) {
+    //               for (vertex <- verticesDataNew) {
+    //                 if (vertex._2.equalsIgnoreCase(msg1.message)) {
+    //                   messageId = vertex._1
+    //                 } //id of adpater
+    //                 if (vertex._2.equalsIgnoreCase(model.FullName)) {
+    //                   vertexId = vertex._1
+    //                 } //id of vertex
+    //               }
+    //             if (messageId.length != 0 && vertexId.length != 0) {
+    //               val linkKey = messageId + "," + vertexId
+    //               if (!edgeData.contains(linkKey)) {
+    //                 if (!msgDefs.isEmpty) {
+    //                   for (message <- msgDefs.get) {
+    //                     if (message.FullName.equalsIgnoreCase(msg1.message)) {
+    //                       if (!edgeData.contains(linkKey)) {
+    //                         edgeData += (linkKey -> msg1.message)
+    //                         val setQuery = "set Name = \"%s\"".format("ConsumedBy")
+    //                         val query: String = queryObj.createQuery(elementType = "edge", className = "ConsumedBy", setQuery = setQuery, linkTo = Option(vertexId), linkFrom = Option(messageId))
+    //                         queryObj.executeQuery(conn, query)
+    //                         logger.debug(query)
+    //                         println(query)
+    //                       }
+    //                     }
+    //                   }
+    //                 }
+    //               } else {
+    //                 logger.debug("The edge exist between this two nodes %s , %s".format(messageId, vertexId))
+    //                 println("The edge exist between this two nodes %s, %s".format(messageId, vertexId))
+    //               }
+    //             }
+    //           }
+    //
+    //         val outputName = model.outputMsgs
+    //         for (item <- outputName) {
+    //             for (vertex <- verticesDataNew) {
+    //               if (vertex._2.equalsIgnoreCase(item)) {
+    //                 messageId = vertex._1
+    //               } //id of adpater
+    //             }
+    //           if (messageId.length != 0 && vertexId.length != 0) {
+    //             val linkKey = vertexId + "," + messageId
+    //             if (!edgeData.contains(linkKey)) {
+    //               if (!msgDefs.isEmpty) {
+    //                 for (message <- msgDefs.get) {
+    //                   if (message.FullName.equalsIgnoreCase(item)) {
+    //                     if (!edgeData.contains(linkKey)) {
+    //                       edgeData += (linkKey -> item)
+    //                       val setQuery = "set Name = \"%s\"".format("Produces")
+    //                       val query: String = queryObj.createQuery(elementType = "edge", className = "Produces", setQuery = setQuery, linkTo = Option(messageId), linkFrom = Option(vertexId))
+    //                       queryObj.executeQuery(conn, query)
+    //                       logger.debug(query)
+    //                       println(query)
+    //                     }
+    //                   }
+    //                 }
+    //               }
+    //             } else {
+    //               logger.debug("The edge exist between this two nodes %s , %s".format(vertexId, messageId))
+    //               println("The edge exist between this two nodes %s, %s".format(vertexId, messageId))
+    //             }
+    //           }
+    //         }
+    //       }
+    //
+    //       if (!adapterDefs.isEmpty) {
+    //         var messageId = ""
+    //         var storage = ""
+    //         for(adapter <- adapterDefs){
+    //           if(adapter._2.TypeString.equalsIgnoreCase("storage")){
+    //             if(!msgDefs.isEmpty){
+    //               for (message <- msgDefs.get){
+    //                 for (vertex <- verticesDataNew) {
+    //                   if (vertex._2.equalsIgnoreCase(message.FullName)) {
+    //                      messageId = vertex._1
+    //                   } //id of message
+    //                   else if(vertex._2.equalsIgnoreCase(adapter._2.Name)){
+    //                      storage = vertex._1
+    //                   }
+    //                 }
+    //                 val fromlink = messageId
+    //                 val tolink = storage
+    //                 val linkKey = messageId + "," + storage
+    //                 if (!edgeData.contains(linkKey)) {
+    //                   edgeData += (linkKey -> adapter._2.Name)
+    //                   val setQuery = "set Name = \"%s\"".format("StoredBy")
+    //                   val query: String = queryObj.createQuery(elementType = "edge", className = "StoredBy", setQuery = setQuery, linkFrom = Option(fromlink), linkTo = Option(tolink))
+    //                   queryObj.executeQuery(conn, query)
+    //                   logger.debug(query)
+    //                   println(query)
+    //                 } else {
+    //                   logger.debug("The edge exist between this two nodes %s , %s".format(fromlink, tolink))
+    //                   println("The edge exist between this two nodes %s, %s".format(fromlink, tolink))
+    //                 }
+    //               }
+    //             }
+    //           }
+    //         }
+    //       }
+    //     }
+
+    conn.close()
+  }
 }
 
 
 object KamanjaConfiguration {
   var configFile: String = _
-//  var allConfigs: Properties = _
-//  var nodeId: Int = _
-//  var clusterId: String = _
-//  var nodePort: Int = _
-//  // Debugging info configs -- Begin
-//  var waitProcessingSteps = collection.immutable.Set[Int]()
-//  var waitProcessingTime = 0
-//  // Debugging info configs -- End
-//
-//  var shutdown = false
-//  var participentsChangedCntr: Long = 0
-//  var baseLoader = new KamanjaLoaderInfo
-//
-//  def Reset: Unit = {
-//    configFile = null
-//    allConfigs = null
-//    nodeId = 0
-//    clusterId = null
-//    nodePort = 0
-//    // Debugging info configs -- Begin
-//    waitProcessingSteps = collection.immutable.Set[Int]()
-//    waitProcessingTime = 0
-//    // Debugging info configs -- End
-//
-//    shutdown = false
-//    participentsChangedCntr = 0
-//  }
+  //  var allConfigs: Properties = _
+  //  var nodeId: Int = _
+  //  var clusterId: String = _
+  //  var nodePort: Int = _
+  //  // Debugging info configs -- Begin
+  //  var waitProcessingSteps = collection.immutable.Set[Int]()
+  //  var waitProcessingTime = 0
+  //  // Debugging info configs -- End
+  //
+  //  var shutdown = false
+  //  var participentsChangedCntr: Long = 0
+  //  var baseLoader = new KamanjaLoaderInfo
+  //
+  //  def Reset: Unit = {
+  //    configFile = null
+  //    allConfigs = null
+  //    nodeId = 0
+  //    clusterId = null
+  //    nodePort = 0
+  //    // Debugging info configs -- Begin
+  //    waitProcessingSteps = collection.immutable.Set[Int]()
+  //    waitProcessingTime = 0
+  //    // Debugging info configs -- End
+  //
+  //    shutdown = false
+  //    participentsChangedCntr = 0
+  //  }
 }
 
 

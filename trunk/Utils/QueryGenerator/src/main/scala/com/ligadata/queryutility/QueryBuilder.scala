@@ -91,8 +91,9 @@ class QueryBuilder extends LogTrait {
     return query
   }
 
-  def getAllVertices(conn: Connection, query: String): HashMap[String, String] ={
-    val data = HashMap[String, String]()
+  def getAllVertices(conn: Connection, query: String): Map[String, String] ={
+//    val dataByRid = scala.collection.mutable.Map[String, String]()
+    val dataByTypAndFullName = scala.collection.mutable.Map[String, String]()
     val stmt: Statement = conn.createStatement()
     val result: ResultSet = stmt.executeQuery(query)
     var json: json4s.JValue = null
@@ -101,13 +102,18 @@ class QueryBuilder extends LogTrait {
       json = parse(result.getString("jsonrec"))
       val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
       //data +=  (result.getString("id") -> result.getString("FullName"))
-      data += (adapCfgValues.get("@rid").get.toString -> adapCfgValues.get("FullName").get.toString)
+      val rid = adapCfgValues.get("@rid").get.toString
+      val cls = adapCfgValues.get("@class").get.toString
+      val fullName = adapCfgValues.get("FullName").get.toString
+//      dataByRid += (rid -> fullName)
+      dataByTypAndFullName += ((cls + "," + fullName).toLowerCase -> rid)
     }
-    return data
+//    return (dataByRid.toMap, dataByTypAndFullName.toMap)
+    return dataByTypAndFullName.toMap
   }
 
-  def getAllEdges(conn: Connection, query: String): HashMap[String, String] ={
-    val data = HashMap[String, String]()
+  def getAllEdges(conn: Connection, query: String): Map[String, String] ={
+    val data = scala.collection.mutable.Map[String, String]()
     val stmt: Statement = conn.createStatement()
     val result: ResultSet = stmt.executeQuery(query)
     var Key = ""
@@ -117,11 +123,12 @@ class QueryBuilder extends LogTrait {
       val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
       val linkFrom = adapCfgValues.get("out").get.toString
       val linkTo = adapCfgValues.get("in").get.toString
-      Key = linkFrom + "," + linkTo
       val getName =  adapCfgValues.get("Name").get.toString
-      data +=  (Key -> adapCfgValues.getOrElse("FullName", getName).toString )
+      val fullName = adapCfgValues.getOrElse("FullName", getName).toString
+      Key = linkFrom + "," + linkTo + "," + fullName
+      data +=  (Key.toLowerCase -> fullName )
     }
-    return data
+    return data.toMap
   }
 
   def getAllClasses(conn: Connection, query: String): List[String] ={
@@ -163,56 +170,27 @@ class QueryBuilder extends LogTrait {
     else
       return false // there is no data
   }
-  def createSetCommand(message: Option[MessageDef]= None, contianer: Option[ContainerDef]= None, model: Option[ModelDef]= None, adapter: Option[AdapterInfo] = None
+
+  def createSetCommand(baseElem: Option[BaseElemDef]= None, adapter: Option[AdapterInfo] = None
                        , tenant: Option[TenantInfo] = None): String ={
     var setQuery: String = ""
 
-    if(message != None){
-      val tenantID: String = if(message.get.TenantId.isEmpty || message.get.TenantId == null) "" else message.get.TenantId
-      val name = if(message.get.Name == null) "" else message.get.Name
-      val namespace = if(message.get.NameSpace == null) "" else message.get.NameSpace
-      val fullName = if(message.get.FullName == null) "" else message.get.FullName
-      val version = if(message.get.Version.toString == null) "0" else message.get.Version
-      val creationTime = if(message.get.CreationTime == null) "" else message.get.CreationTime
-      val description = if(message.get.Description == null) "" else message.get.Description
-      val author = if(message.get.Author == null) "" else message.get.Author
+    if(baseElem != None){
+      val tenantID: String = if(baseElem.get.TenantId.isEmpty || baseElem.get.TenantId == null) "" else baseElem.get.TenantId
+      val name = if(baseElem.get.Name == null) "" else baseElem.get.Name
+      val namespace = if(baseElem.get.NameSpace == null) "" else baseElem.get.NameSpace
+      val fullName = if(baseElem.get.FullName == null) "" else baseElem.get.FullName
+      val version = if(baseElem.get.Version.toString == null) "0" else baseElem.get.Version
+      val creationTime = if(baseElem.get.CreationTime == null) "" else baseElem.get.CreationTime
+      val description = if(baseElem.get.Description == null) "" else baseElem.get.Description
+      val author = if(baseElem.get.Author == null) "" else baseElem.get.Author
 
-      setQuery = "set ID = " + message.get.UniqId + ", Name = \"%s\", Namespace = \"%s\", FullName = \"%s\", Version = \"%s\",  CreatedTime = \"%s\",".format(
+      setQuery = "set ID = " + baseElem.get.MdElementId + ", Name = \"%s\", Namespace = \"%s\", FullName = \"%s\", Version = \"%s\",  CreatedTime = \"%s\",".format(
         name, namespace, fullName, version, creationTime) +
         " Tenant = \"%s\", Description = \"%s\", Author = \"%s\", Active = %b".format(
-          tenantID, description, author, message.get.Active)
-    } else if(contianer != None){
-      val tenantID: String = if(contianer.get.TenantId.isEmpty) "" else contianer.get.TenantId
-      val name = if(contianer.get.Name == null) "" else contianer.get.Name
-      val namespace = if(contianer.get.NameSpace == null) "" else contianer.get.NameSpace
-      val fullName = if(contianer.get.FullName == null) "" else contianer.get.FullName
-      val version = if(contianer.get.Version.toString == null) "0" else contianer.get.Version
-      val creationTime = if(contianer.get.CreationTime == null) "" else contianer.get.CreationTime
-      val description = if(contianer.get.Description == null) "" else contianer.get.Description
-      val author = if(contianer.get.Author == null) "" else contianer.get.Author
-
-      setQuery = "set ID = "+ contianer.get.UniqId + ", Name = \"%s\", Namespace = \"%s\", FullName = \"%s\", Version = \"%s\", CreatedTime = \"%s\", ".format(
-         name, namespace, fullName, version, creationTime) +
-        " Tenant = \"%s\", Description = \"%s\", Author = \"%s\", Active = %b".format(
-          tenantID, description, author, contianer.get.Active)
-    } else if (model != None){
-      val tenantID: String = if(model.get.TenantId.isEmpty) "" else model.get.TenantId
-      val name = if(model.get.Name == null) "" else model.get.Name
-      val namespace = if(model.get.NameSpace == null) "" else model.get.NameSpace
-      val fullName = if(model.get.FullName == null) "" else model.get.FullName
-      val version = if(model.get.Version.toString == null) "0" else model.get.Version
-      val creationTime = if(model.get.CreationTime == null) "" else model.get.CreationTime
-      val description = if(model.get.Description == null) "" else model.get.Description
-      val author = if(model.get.Author == null) "" else model.get.Author
-
-
-      setQuery = "set ID = " + model.get.UniqId + ", Name = \"%s\", Namespace = \"%s\", FullName = \"%s\", Version = \"%s\", CreatedTime = \"%s\", ".format(
-         name, namespace, fullName, version, creationTime) +
-        " Tenant = \"%s\", Description = \"%s\", Author = \"%s\", Active = %b".format(
-          tenantID, description, author, model.get.Active)
+          tenantID, description, author, baseElem.get.Active)
     } else if(adapter != None){
       val tenantID: String = if(adapter.get.TenantId.isEmpty) "" else adapter.get.TenantId
-
       setQuery = "set Name = \"%s\", FullName = \"%s\", Tenant = \"%s\"".format(adapter.get.Name, adapter.get.Name, tenantID)
     } else if(tenant != None){
       val tenantID: String = if(tenant.get.tenantId.isEmpty) "" else tenant.get.tenantId
@@ -224,16 +202,16 @@ class QueryBuilder extends LogTrait {
         primaryStroage = if (adapCfgValues.get("StoreType").get.toString == null) "" else adapCfgValues.get("StoreType").get.toString
       }
       setQuery = "set Tenant = \"%s\", Name = \"%s\", FullName = \"%s\", Description = \"%s\"".format(
-        tenantID, tenantID + "_" + primaryStroage, tenantID + "_" + primaryStroage, description)
+        tenantID, tenantID + "_" + primaryStroage + "_primaryStroage", tenantID + "_" + primaryStroage + "_primaryStroage", description)
     }
     return setQuery
   }
 
-  def PrintAllResult(hashObj: HashMap[String, String], elementType: String): Unit ={
-    if(hashObj.size != 0) {
+  def PrintAllResult(map: Map[String, String], elementType: String): Unit ={
+    if(map != null && map.size != 0) {
       println("These are all existing %s in metadata".format(elementType))
       logger.debug("These are all existing %s in metadata".format(elementType))
-      for ((key, value) <- hashObj) {
+      for ((key, value) <- map) {
         logger.debug("key: " + key + " , value: " + value)
         println("key: " + key + " , value: " + value)
       }
@@ -243,12 +221,4 @@ class QueryBuilder extends LogTrait {
     }
   }
 
-  def getMessageInfo(fullName: String, msg: Option[scala.collection.immutable.Set[MessageDef]]): MessageDef ={
-    if(!msg.isEmpty){
-      for (message <- msg.get){
-        if (message.FullName.equalsIgnoreCase(fullName)) return message
-      }
-    }
-    return null
-  }
 }
