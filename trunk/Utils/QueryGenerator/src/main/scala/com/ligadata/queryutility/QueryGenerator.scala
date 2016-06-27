@@ -398,6 +398,11 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
           val storenm = ("Storage," + tenantStoreName).toLowerCase
           val storeVertexId = verticesNewByTypAndFullName.getOrElse(storenm, null)
 
+          if (msgVertexId != null && !msgVertexId.isEmpty) {
+            val setQuery = queryObj.createSetCommand(baseElem = Option(messageDefObj))
+            messageProperties(msgVertexId) = setQuery;
+          }
+
           if (storeVertexId != null &&
             !storeVertexId.isEmpty) {
             var linkKey = msgVertexId + "," + storeVertexId + ",StoredBy"
@@ -412,6 +417,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
               logger.debug("The edge exist between this two nodes %s , %s".format(msgVertexId, storeVertexId))
               println("The edge exist between this two nodes %s, %s".format(msgVertexId, storeVertexId))
             }
+/*
             linkKey = storeVertexId + "," + msgVertexId + ",Retrieves"
             currentEdgesSet += linkKey.toLowerCase
             if (!edgeData.contains(linkKey.toLowerCase)) {
@@ -424,12 +430,28 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
               logger.debug("The edge exist between this two nodes %s , %s".format(msgVertexId, storeVertexId))
               println("The edge exist between this two nodes %s, %s".format(msgVertexId, storeVertexId))
             }
-          }
-        }
+*/
 
-        if (msgVertexId != null && !msgVertexId.isEmpty) {
-          val setQuery = queryObj.createSetCommand(baseElem = Option(messageDefObj))
-          messageProperties(msgVertexId) = setQuery;
+            // DAG view
+            // Get all Generators for this message
+            val ab = messageProducers.getOrElse(msgVertexId, ArrayBuffer[String]())
+            ab.foreach(inVertexId => {
+              if (inVertexId != null && !inVertexId.isEmpty) {
+                val linkKey = inVertexId + "," + storeVertexId + "," + messageDefObj.FullName
+                currentEdgesSet += linkKey.toLowerCase
+                if (!edgeData.contains(linkKey.toLowerCase)) {
+                  val setQuery = messageProperties.getOrElse(msgVertexId, "set Name = \"%s\"".format(messageDefObj.FullName))
+                  val query: String = queryObj.createQuery(elementType = "edge", className = "MessageE", setQuery = setQuery, linkFrom = Option(inVertexId), linkTo = Option(storeVertexId))
+                  queryObj.executeQuery(conn, query)
+                  logger.debug(query)
+                  println(query)
+                } else {
+                  logger.debug("The edge exist between this two nodes %s , %s".format(inVertexId, storeVertexId))
+                  println("The edge exist between this two nodes %s, %s".format(inVertexId, storeVertexId))
+                }
+              }
+            })
+          }
         }
       }
     }
