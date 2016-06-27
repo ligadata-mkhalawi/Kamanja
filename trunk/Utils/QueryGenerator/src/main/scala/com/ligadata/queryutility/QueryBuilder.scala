@@ -243,4 +243,12 @@ class QueryBuilder extends LogTrait {
     }
   }
 
+  def getMessageInfo(fullName: String, msg: Option[scala.collection.immutable.Set[MessageDef]]): MessageDef ={
+    if(!msg.isEmpty){
+      for (message <- msg.get){
+        if (message.FullName.equalsIgnoreCase(fullName)) return message
+      }
+    }
+    return null
+  }
 }
