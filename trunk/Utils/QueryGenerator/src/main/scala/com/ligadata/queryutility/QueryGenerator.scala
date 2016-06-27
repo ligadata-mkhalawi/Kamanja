@@ -40,7 +40,7 @@ object QueryGenerator extends App with LogTrait {
 
   def usage: String = {
     """
-Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/config/Engine1Config.properties --databaseconfig $KAMANJA_HOME/config/file.json
+Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/config/Metadataapi.properties --databaseconfig $KAMANJA_HOME/config/file.json
     """
   }
 
@@ -54,6 +54,8 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
         nextOption(map ++ Map('metadataconfig -> value), tail)
       case "--databaseconfig" :: value :: tail =>
         nextOption(map ++ Map('databaseconfig -> value), tail)
+      case "--recreate" :: value :: tail =>
+        nextOption(map ++ Map('recreate -> value), tail)
       case option :: tail => {
         logger.error("Unknown option " + option)
         logger.warn(usage)
@@ -135,6 +137,8 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
 
     val conn: Connection = queryObj.getDBConnection(configBeanObj) //this used to fet a connection for orientDB
 
+    val recreateFlag = options.getOrElse('recreate, null).toString.trim
+
     /* Step 1
     *  1- check all existing classes in graphDB
     *  2- add missing classes to GraphDB
@@ -144,6 +148,18 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
     var data = queryObj.getAllClasses(conn, dataQuery)
     var classesName = Array("KamanjaVertex", "Model", "Input", "Output", "Storage", "Container", "Message", "Inputs", "Stores", "Outputs", "Engine")
     var extendsClass = "KamanjaVertex"
+    if(recreateFlag == true) {
+      for (classnm <- classesName) {
+        var commandsta = "delete vertex " + classnm
+        queryObj.executeQuery(conn, commandsta)
+        logger.debug(commandsta)
+        println(commandsta)
+        commandsta = "drop class " + classnm
+        queryObj.executeQuery(conn, commandsta)
+        logger.debug(commandsta)
+        println(commandsta)
+      }
+    }
     for (className <- classesName) {
       // if (!data.contains(className)) {
       if (className.equalsIgnoreCase("KamanjaVertex")) extendsClass = "V" else extendsClass = "KamanjaVertex"
@@ -169,6 +185,18 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
     dataQuery = queryObj.getAllExistDataQuery(elementType = "class", extendClass = option("E"))
     data = queryObj.getAllClasses(conn, dataQuery)
     classesName = Array("KamanjaEdge", "MessageE", "Containers", "Messages", "Produces", "ConsumedBy", "StoredBy", "Retrieves", "SentTo")
+    if(recreateFlag == true) {
+      for (classnm <- classesName) {
+        var commandsta = "delete edge " + classnm
+        queryObj.executeQuery(conn, commandsta)
+        logger.debug(commandsta)
+        println(commandsta)
+        commandsta = "drop class " + classnm
+        queryObj.executeQuery(conn, commandsta)
+        logger.debug(commandsta)
+        println(commandsta)
+      }
+    }
     extendsClass = "KamanjaEdge"
     for (className <- classesName) {
       //if (!data.contains(className)) {
@@ -627,16 +655,28 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
 
     // Invalid Edges (Which are removed from previous run)
     val removedEdges = edgeData -- currentEdgesSet
+    logger.debug("delete invalid edges...")
+    println("delete invalid edges...")
     removedEdges.foreach(kv => {
       val rid = kv._2
+      val queryCommand = "delete edge " + rid
+      queryObj.executeQuery(conn, queryCommand)
+      logger.debug(queryCommand)
+      println(queryCommand)
       // Generate & Execute Delete Edge #rid
     })
 
 
     // Invalid Vertices (Which are removed from previous run)
     val removedVertices = verticesNewByTypAndFullName -- currentVerticesSet
+    logger.debug("delete invalid vertices...")
+    println("delete invalid vertices...")
     removedVertices.foreach(kv => {
       val rid = kv._2
+      val queryCommand = "delete vertex " + rid
+      queryObj.executeQuery(conn, queryCommand)
+      logger.debug(queryCommand)
+      println(queryCommand)
       // Generate & Execute Delete Vertex #rid
     })
 
