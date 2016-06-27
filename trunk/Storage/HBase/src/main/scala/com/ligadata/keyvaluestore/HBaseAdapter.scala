@@ -115,6 +115,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
     parsed_json = json.values.asInstanceOf[Map[String, Any]]
   } catch {
     case e: Exception => {
+      externalizeExceptionEvent(e)
       var msg = "Failed to parse HBase JSON configuration string:%s.".format(adapterConfig)
       throw CreateConnectionException(msg, e)
     }
@@ -135,6 +136,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
         adapterSpecificConfig_json = json.values.asInstanceOf[Map[String, Any]]
       } catch {
         case e: Exception => {
+          externalizeExceptionEvent(e)
           msg = "Failed to parse HBase Adapter Specific JSON configuration string:%s.".format(adapterSpecificStr)
           throw CreateConnectionException(msg, e)
         }
@@ -163,6 +165,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       return
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         logger.info("Namespace " + nameSpace + " doesn't exist, create it", e)
       }
     }
@@ -170,6 +173,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       admin.createNamespace(NamespaceDescriptor.create(nameSpace).build)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateConnectionException("Unable to create hbase name space " + nameSpace, e)
       }
     }
@@ -224,6 +228,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
         ugi = UserGroupInformation.getLoginUser
       } catch {
         case e: Exception => {
+          externalizeExceptionEvent(e)
           throw CreateConnectionException("HBase issue from JSON configuration string:%s.".format(adapterConfig), e)
         }
       }
@@ -244,6 +249,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
     conn = ConnectionFactory.createConnection(config);
   } catch {
     case e: Exception => {
+      externalizeExceptionEvent(e)
       throw CreateConnectionException("Unable to connect to hbase at " + hostnames, e)
     }
   }
@@ -256,6 +262,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
         ugi.checkTGTAndReloginFromKeytab
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         logger.error("Failed to relogin into HBase.", e)
         // Not throwing exception from here
       }
@@ -268,6 +275,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       admin.createTable(tableDesc);
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDDLException("Failed to create table", e)
       }
     }
@@ -287,6 +295,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDDLException("Failed to create table " + tableName, e)
       }
     }
@@ -305,6 +314,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       tableHBase.put(p)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to save an object in table " + tableName, e)
       }
     } finally {
@@ -338,6 +348,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to get an object from the table " + tableName, e)
       }
     } finally {
@@ -384,6 +395,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       }	
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDDLException("Failed to create table " + tableName, e)
       }
     }
@@ -400,6 +412,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDDLException("Failed to drop table " + tableName, e)
       }
     }
@@ -424,6 +437,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw new Exception("Failed to create table  " + toTableName(containerName), e)
       }
     }
@@ -437,6 +451,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       val nsd = admin.getNamespaceDescriptor(namespace)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         logger.info("Namespace " + namespace + " doesn't exist, nothing to delete", e)
         return
       }
@@ -446,6 +461,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       admin.deleteNamespace(namespace)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDDLException("Unable to delete hbase name space " + namespace, e)
       }
     }
@@ -477,6 +493,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       createTable(containerName,fullTableName,isMetadata,apiType)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw e
       }
     }
@@ -679,6 +696,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       return conn.getTable(TableName.valueOf(tableName))
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw ConnectionFailedException("Failed to get table " + tableName, e)
       }
     }
@@ -815,6 +833,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       updateByteStats("put",tableName,getKeySize(key)+getValueSize(value))
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to save an object in table " + tableName, e)
       }
     } finally {
@@ -856,12 +875,14 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
           }
         } catch {
           case e: Exception => {
+            externalizeExceptionEvent(e)
             throw CreateDMLException("Failed to save an object in table " + tableName, e)
           }
         }
       })
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to save a list of objects in table(s) ", e)
       }
     } finally {
@@ -898,6 +919,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to delete object(s) from table " + tableName, e)
       }
     } finally {
@@ -1010,6 +1032,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to delete object(s) from table " + tableName, e)
       }
     } finally {
@@ -1062,6 +1085,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to delete object(s) from table " + tableName, e)
       }
     } finally {
@@ -1100,6 +1124,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       return cnt
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw e
       }
     } finally {
@@ -1118,6 +1143,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
         (callbackFunction)(key, value)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw e
       }
     }
@@ -1130,6 +1156,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
         (callbackFunction)(key, value)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw e
       }
     }
@@ -1142,6 +1169,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
         (callbackFunction)(key)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw e
       }
     }
@@ -1153,6 +1181,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
         (callbackFunction)(key)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw e
       }
     }
@@ -1184,6 +1213,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       updateObjStats("get",tableName,recCount)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     } finally {
@@ -1217,6 +1247,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       updateObjStats("get",tableName,recCount)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     } finally {
@@ -1259,6 +1290,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       updateObjStats("get",tableName,recCount)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     } finally {
@@ -1304,6 +1336,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       updateObjStats("get",tableName,recCount)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     } finally {
@@ -1348,6 +1381,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       updateOpStats("get",tableName,opCount)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     } finally {
@@ -1389,6 +1423,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       updateOpStats("get",tableName,opCount)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     } finally {
@@ -1442,6 +1477,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       updateOpStats("get",tableName,opCount)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     } finally {
@@ -1494,6 +1530,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       updateOpStats("get",tableName,opCount)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     } finally {
@@ -1539,6 +1576,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       updateObjStats("get",tableName,recCount)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     } finally {
@@ -1579,6 +1617,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       updateObjStats("get",tableName,recCount)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     } finally {
@@ -1632,6 +1671,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
         tableHBase.delete(new java.util.ArrayList(dels.toList)) // callling tableHBase.delete(dels.toList) results java.lang.UnsupportedOperationException
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to truncate the table " + tableName, e)
       }
     } finally {
@@ -1656,6 +1696,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       dropTable(fullTableName)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDDLException("Failed to drop the table " + fullTableName, e)
       }
     }
@@ -1750,6 +1791,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       updateObjStats("put",destTableName,recCount)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDDLException("Failed to rename the table " + srcTableName, e)
       }
     } finally {
@@ -1781,6 +1823,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       renameTable(oldTableName, newTableName, forceCopy)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDDLException("Failed to copy the container " + srcContainerName, e)
       }
     }
@@ -1795,6 +1838,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       renameTable(oldTableName, newTableName)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDDLException("Failed to backup the container " + containerName, e)
       }
     }
@@ -1809,6 +1853,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       renameTable(oldTableName, newTableName)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDDLException("Failed to restore the container " + containerName, e)
       }
     }
@@ -1825,6 +1870,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       })
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch the table list  ", e)
       }
     }
@@ -1838,6 +1884,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       })
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDDLException("Failed to drop table list  ", e)
       }
     }

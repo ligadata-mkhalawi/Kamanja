@@ -228,8 +228,14 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
         try {
           Thread.sleep(5000) // Sleeping for 5Sec
         } catch {
-          case e: Exception => { if (! isShutdown) LOG.warn("", e) }
-          case e: Throwable => { if (! isShutdown) LOG.warn("", e) }
+          case e: Exception => {
+            externalizeExceptionEvent(e)
+            if (! isShutdown) LOG.warn("", e)
+          }
+          case e: Throwable => {
+            externalizeExceptionEvent(e)
+            if (! isShutdown) LOG.warn("", e)
+          }
         }
         if (isShutdown == false) {
           var outstandingMsgs = outstandingMsgCount
@@ -335,6 +341,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
         msgMap.putAll(allKeys)
       } catch {
         case e: Exception => {
+          externalizeExceptionEvent(e)
           // Failed to insert into Map
           throw e
         }
@@ -350,8 +357,14 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       try {
         msgMap.remove(msgAndCntr.cntrToOrder) // This must present. Because we are adding the records into partitionsMap before we send messages. If it does not present we simply ignore it.
       } catch {
-        case e: Exception => { LOG.warn("", e) }
-        case e: Throwable => { LOG.warn("", e) }
+        case e: Exception => {
+          externalizeExceptionEvent(e)
+          LOG.warn("", e)
+        }
+        case e: Throwable => {
+          externalizeExceptionEvent(e)
+          LOG.warn("", e)
+        }
       }
     }
   }
@@ -376,6 +389,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
         msgMap.put(msgAndCntr.cntrToOrder, msgAndCntr)
       } catch {
         case e: Exception => {
+          externalizeExceptionEvent(e)
           // Failed to insert into Map
           throw e
         }
@@ -391,8 +405,14 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       try {
         msgMap.remove(msgAndCntr.cntrToOrder)
       } catch {
-        case e: Exception => { LOG.warn("", e) }
-        case e: Throwable => { LOG.warn("", e) }
+        case e: Exception => {
+          externalizeExceptionEvent(e)
+          LOG.warn("", e)
+        }
+        case e: Throwable => {
+          externalizeExceptionEvent(e)
+          LOG.warn("", e)
+        }
       }
     }
   }
@@ -403,8 +423,14 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       try {
         return (scala.math.abs(Arrays.hashCode(key)) % numPartitions)
       } catch {
-        case e: Exception => { throw e }
-        case e: Throwable => { throw e }
+        case e: Exception => {
+          externalizeExceptionEvent(e)
+          throw e
+        }
+        case e: Throwable => {
+          externalizeExceptionEvent(e)
+          throw e
+        }
       }
     }
     return randomPartitionCntr.nextInt(numPartitions)
@@ -483,8 +509,14 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
         try {
           Thread.sleep(osWaitTm)
         } catch {
-          case e: Exception => throw e
-          case e: Throwable => throw e
+          case e: Exception => {
+            externalizeExceptionEvent(e)
+            throw e
+          }
+          case e: Throwable => {
+            externalizeExceptionEvent(e)
+            throw e
+          }
         }
         outstandingMsgs = outstandingMsgCount
       }
@@ -503,9 +535,18 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
         // Not doing anythign for now
         LOG.warn(qc.Name + " KAFKA PRODUCER: Got java.lang.InterruptedException. isShutdown:" + isShutdown)
       }
-      case fae: FatalAdapterException => throw fae
-      case e: Exception               => throw FatalAdapterException("Unknown exception", e)
-      case e: Throwable               => throw FatalAdapterException("Unknown exception", e)
+      case fae: FatalAdapterException => {
+        externalizeExceptionEvent(fae)
+        throw fae
+      }
+      case e: Exception               => {
+        externalizeExceptionEvent(e)
+        throw FatalAdapterException("Unknown exception", e)
+      }
+      case e: Throwable               => {
+        externalizeExceptionEvent(e)
+        throw FatalAdapterException("Unknown exception", e)
+      }
     }
   }
 
@@ -520,12 +561,19 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
         sendStatus = doSend(keyMessages, removeFromFailedMap)
       } catch {
         case e: Exception => {
+          externalizeExceptionEvent(e)
           LOG.error(qc.Name + " KAFKA PRODUCER: Error sending to kafka, Retrying after %dms. Retry count:%d".format(waitTm, retryCount), e)
           try {
             Thread.sleep(waitTm)
           } catch {
-            case e: Exception => throw e
-            case e: Throwable => throw e
+            case e: Exception =>  {
+              externalizeExceptionEvent(e)
+              throw e
+            }
+            case e: Throwable => {
+              externalizeExceptionEvent(e)
+              throw e
+            }
           }
           if (waitTm < 60000) {
             waitTm = waitTm * 2
@@ -583,15 +631,23 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
 
       keyMessages.clear()
     } catch {
-      case ftsme: FailedToSendMessageException => { if (sentMsgsCntr > 0) keyMessages.remove(0, sentMsgsCntr); addBackFailedToSendRec(lastAccessRec); throw new FatalAdapterException("Kafka sending to Dead producer", ftsme) }
-      case qfe: QueueFullException             => { if (sentMsgsCntr > 0) keyMessages.remove(0, sentMsgsCntr); addBackFailedToSendRec(lastAccessRec); throw new FatalAdapterException("Kafka queue full", qfe) }
-      case e: Exception                        => {
+      case ftsme: FailedToSendMessageException => {
+        externalizeExceptionEvent(ftsme)
+        if (sentMsgsCntr > 0) keyMessages.remove(0, sentMsgsCntr); addBackFailedToSendRec(lastAccessRec); throw new FatalAdapterException("Kafka sending to Dead producer", ftsme)
+      }
+      case qfe: QueueFullException => {
+        externalizeExceptionEvent(qfe)
+        if (sentMsgsCntr > 0) keyMessages.remove(0, sentMsgsCntr); addBackFailedToSendRec(lastAccessRec); throw new FatalAdapterException("Kafka queue full", qfe)
+      }
+      case e: Exception  => {
+        externalizeExceptionEvent(e)
         if (sentMsgsCntr > 0) keyMessages.remove(0, sentMsgsCntr)
         addBackFailedToSendRec(lastAccessRec)
         LOG.warn(qc.Name + " unknown exception encountered ", e)
         throw new FatalAdapterException("Unknown exception", e)
       }
-      case e: Throwable                        => {
+      case e: Throwable => {
+        externalizeExceptionEvent(e)
         if (sentMsgsCntr > 0) keyMessages.remove(0, sentMsgsCntr)
         addBackFailedToSendRec(lastAccessRec)
         LOG.warn(qc.Name + " unknown exception encountered ", e)
@@ -672,6 +728,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
           isHeartBeating = false
         } catch {
           case e: Exception => {
+            externalizeExceptionEvent(e)
             isHeartBeating = false
             if (isShutdown == false)
               LOG.warn(qc.Name + " Heartbeat Interrupt detected", e)
