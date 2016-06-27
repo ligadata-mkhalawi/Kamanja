@@ -15,6 +15,7 @@ object Config {
   val INITIALHOSTS:String = "jgroups.tcpping.initial_hosts"
   val UDPADD:String = "jgroups.udp.add"
   val PORT:String = "jgroups.port"
+  val NUMBEROFKETOWNERS: String = "numOfKeyOwners"
 }
 
 

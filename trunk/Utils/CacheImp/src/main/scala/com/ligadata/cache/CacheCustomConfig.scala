@@ -26,6 +26,7 @@ object CacheCustomConfig{
   val CLASS:String="class"
   val SEPARATOR:String="separator"
   val PEERCONFIG:String="peerconfig"
+  val MAXENTRIES:String="maxEntries"
   val BOOTSTRAPASYNCHRONOUSLY:String="bootstrapAsynchronously"
   val PREFERIPV4STACK:String="java.net.preferIPv4Stack"
   val SKIPUPDATECHECK:String="net.sf.ehcache.skipUpdateCheck"

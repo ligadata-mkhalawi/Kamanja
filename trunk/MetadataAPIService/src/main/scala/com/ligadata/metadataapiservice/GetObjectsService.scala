@@ -46,6 +46,9 @@ class GetObjectsService(requestContext: RequestContext, userid: Option[String], 
   val loggerName = this.getClass.getName
   val logger = LogManager.getLogger(loggerName)
   // logger.setLevel(Level.TRACE);
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   val APIName = "GetObjects"
 
@@ -62,6 +65,7 @@ class GetObjectsService(requestContext: RequestContext, userid: Option[String], 
     var name = ""
     var formatType = "JSON"
     var apiResult: String = ""
+    var tenantId : Option[String] = None
 
     // Extract the object name from the args var
     if (arg.NameSpace != null) {
@@ -78,30 +82,30 @@ class GetObjectsService(requestContext: RequestContext, userid: Option[String], 
     }
 
     val objectName = (nameSpace + arg.Name + version).toLowerCase
-    if (!MetadataAPIImpl.checkAuth(userid, password, cert, MetadataAPIImpl.getPrivilegeName("get", arg.ObjectType))) {
-      MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, arg.ObjectType, AuditConstants.FAIL, "", nameSpace + "." + name + "." + version)
+    if (!getMetadataAPI.checkAuth(userid, password, cert, getMetadataAPI.getPrivilegeName("get", arg.ObjectType))) {
+      getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, arg.ObjectType, AuditConstants.FAIL, "", nameSpace + "." + name + "." + version)
       return new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error:READ not allowed for this user").toString
     }
     arg.ObjectType match {
       case "model" => {
-        apiResult = MetadataAPIImpl.GetModelDef(nameSpace, arg.Name, formatType, version, userid)
+        apiResult = getMetadataAPI.GetModelDef(nameSpace, arg.Name, formatType, version, userid)
       }
       case "message" => {
-        apiResult = MetadataAPIImpl.GetMessageDef(nameSpace, arg.Name, formatType, version, userid)
+        apiResult = getMetadataAPI.GetMessageDef(nameSpace, arg.Name, formatType, version, userid, tenantId)
       }
       case "container" => {
-        apiResult = MetadataAPIImpl.GetContainerDef(nameSpace, arg.Name, formatType, version, userid)
+        apiResult = getMetadataAPI.GetContainerDef(nameSpace, arg.Name, formatType, version, userid, tenantId)
       }
       case "function" => {
-        apiResult = MetadataAPIImpl.GetFunctionDef(nameSpace, arg.Name, formatType, version, userid)
+        apiResult = getMetadataAPI.GetFunctionDef(nameSpace, arg.Name, formatType, version, userid)
       }
       case "concept" => {
-        apiResult = MetadataAPIImpl.GetConceptDef(nameSpace, arg.Name, formatType, version, userid)
+        apiResult = getMetadataAPI.GetConceptDef(nameSpace, arg.Name, formatType, version, userid)
       }
       case "type" => {
-        apiResult = MetadataAPIImpl.GetTypeDef(nameSpace, arg.Name, formatType, version, userid)
+        apiResult = getMetadataAPI.GetTypeDef(nameSpace, arg.Name, formatType, version, userid)
       }
-      
+
     }
     apiResult
   }

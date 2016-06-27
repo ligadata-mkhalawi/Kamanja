@@ -38,17 +38,17 @@ object CleanStores {
 
 
   def cleanMetadata(dataStore: DataStore): Unit = {
-    logger.info("Dropping tables from metadata...")
-    dataStore.DropContainer(Array(ModelConfigObjectsTable, MetadataObjectsTable, TransactionIDTable, JarStoreTable, ConfigObjectsTable))
+  //  logger.info("Dropping tables from metadata...")
+  //  dataStore.DropContainer(Array(ModelConfigObjectsTable, MetadataObjectsTable, TransactionIDTable, JarStoreTable, ConfigObjectsTable))
   }
 
   def cleanDatastore(dataStore: DataStore, tables: Option[Array[String]]): Unit = {
-    logger.info("Dropping tables from data store...")
-    var tableArr = Array(CheckPointInformationTable, GlobalCountersTable, ModelResultsTable, AdapterUniqKVDataTable)
-    tables match {
-      case Some(tableArray) => tableArr = tableArr ++ tableArray
-      case None =>
-    }
-    dataStore.DropContainer(tableArr)
+  //  logger.info("Dropping tables from data store...")
+  //  var tableArr = Array(CheckPointInformationTable, GlobalCountersTable, ModelResultsTable, AdapterUniqKVDataTable)
+  //  tables match {
+  //    case Some(tableArray) => tableArr = tableArr ++ tableArray
+   //   case None =>
+  //  }
+  //  dataStore.DropContainer(tableArr)
   }
 }

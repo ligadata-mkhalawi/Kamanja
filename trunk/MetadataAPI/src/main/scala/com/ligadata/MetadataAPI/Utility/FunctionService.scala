@@ -34,13 +34,17 @@ object FunctionService {
   private val userid: Option[String] = Some("kamanja")
   val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
+  // 646 - 676 Change begins - replase MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Chagne ends
+
 
   def addFunction(input: String): String ={
     var response = ""
     var functionFileDir: String = ""
     //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
     if (input == "") {
-      functionFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("FUNCTION_FILES_DIR")
+      functionFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("FUNCTION_FILES_DIR")
       if (functionFileDir == null) {
         response = "FUNCTION_FILES_DIR property missing in the metadata API configuration"
       } else {
@@ -57,7 +61,7 @@ object FunctionService {
               case option => {
                 val functionDefs = getUserInputFromMainMenu(types)
                 for (functionDef <- functionDefs) {
-                  response += MetadataAPIImpl.AddFunctions(functionDef.toString, "JSON", userid)
+                  response += getMetadataAPI.AddFunctions(functionDef.toString, "JSON", userid)
                 }
               }
             }
@@ -73,7 +77,7 @@ object FunctionService {
       var function = new File(input.toString)
       if(function.exists()){
         val functionDef = Source.fromFile(function).mkString
-        response = MetadataAPIImpl.AddFunctions(functionDef.toString, "JSON", userid)
+        response = getMetadataAPI.AddFunctions(functionDef.toString, "JSON", userid)
       }else{
         response="File does not exist"
       }
@@ -86,12 +90,12 @@ object FunctionService {
       if (param.length > 0) {
         val(ns, name, ver) = com.ligadata.kamanja.metadata.Utils.parseNameToken(param)
         try {
-          return MetadataAPIImpl.GetFunctionDef(ns, name, ver.toString ,"JSON", userid)
+          return getMetadataAPI.GetFunctionDef(ns, name, ver.toString ,"JSON", userid)
         } catch {
           case e: Exception => logger.error("", e)
         }
       }
-      val functionKeys = MetadataAPIImpl.GetAllFunctionsFromCache(true, None)
+      val functionKeys = getMetadataAPI.GetAllFunctionsFromCache(true, None)
       if (functionKeys.length == 0) {
         val errorMsg="Sorry, No functions available, in the Metadata, to display!"
         response=errorMsg
@@ -115,7 +119,7 @@ object FunctionService {
         val functionNameSpace = functionKeyTokens(0)
         val functionName = functionKeyTokens(1)
         val functionVersion = functionKeyTokens(2)
-        response = MetadataAPIImpl.GetFunctionDef(functionNameSpace, functionName,"JSON", userid).toString
+        response = getMetadataAPI.GetFunctionDef(functionNameSpace, functionName,"JSON", userid).toString
       }
 
     } catch {
@@ -132,13 +136,13 @@ object FunctionService {
       if (param.length > 0) {
         val(ns, name, ver) = com.ligadata.kamanja.metadata.Utils.parseNameToken(param)
         try {
-          return MetadataAPIImpl.RemoveFunction(ns, name,ver.toInt, userid)
+          return getMetadataAPI.RemoveFunction(ns, name,ver.toInt, userid)
         } catch {
           case e: Exception => logger.error("", e)
         }
       }
 
-      val functionKeys =MetadataAPIImpl.GetAllFunctionsFromCache(true, None)
+      val functionKeys =getMetadataAPI.GetAllFunctionsFromCache(true, None)
       if (functionKeys.length == 0) {
         val errorMsg="Sorry, No functions available, in the Metadata, to delete!"
         //println(errorMsg)
@@ -163,7 +167,7 @@ object FunctionService {
 
         val(fcnNameSpace, fcnName, fcnVersion) = com.ligadata.kamanja.metadata.Utils.parseNameToken(fcnKey)
 
-        response=MetadataAPIImpl.RemoveFunction(fcnNameSpace, fcnName, fcnVersion.toLong, userid)
+        response=getMetadataAPI.RemoveFunction(fcnNameSpace, fcnName, fcnVersion.toLong, userid)
       }
     } catch {
       case e: Exception => {
@@ -179,7 +183,7 @@ object FunctionService {
     var functionFileDir: String = ""
     //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
     if (input == "") {
-      functionFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("FUNCTION_FILES_DIR")
+      functionFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("FUNCTION_FILES_DIR")
       if (functionFileDir == null) {
         response = "FUNCTION_FILES_DIR property missing in the metadata API configuration"
       } else {
@@ -196,7 +200,7 @@ object FunctionService {
               case option => {
                 val functionDefs = getUserInputFromMainMenu(types)
                 for (functionDef <- functionDefs) {
-                  response += MetadataAPIImpl.UpdateFunctions(functionDef.toString, "JSON", userid)
+                  response += getMetadataAPI.UpdateFunctions(functionDef.toString, "JSON", userid)
                 }
               }
             }
@@ -212,7 +216,7 @@ object FunctionService {
       var function = new File(input.toString)
       if(function.exists()){
         val functionDef = Source.fromFile(function).mkString
-        response = MetadataAPIImpl.UpdateFunctions(functionDef.toString, "JSON", userid)
+        response = getMetadataAPI.UpdateFunctions(functionDef.toString, "JSON", userid)
       }else{
         response="File does not exist"
       }
@@ -230,7 +234,7 @@ object FunctionService {
 
       val response : String = try {
             val functionStr = Source.fromFile(input).mkString
-            val apiResult = MetadataAPIImpl.AddFunctions(functionStr, "JSON", userid)
+            val apiResult = getMetadataAPI.AddFunctions(functionStr, "JSON", userid)
 
             val resultMsg : String = s"Result as Json String => \n$apiResult"
             println(resultMsg)
@@ -263,7 +267,7 @@ object FunctionService {
   def dumpAllFunctionsAsJson: String ={
     var response=""
     try{
-      response=MetadataAPIImpl.GetAllFunctionDefs("JSON", userid).toString()
+      response=getMetadataAPI.GetAllFunctionDefs("JSON", userid).toString()
     }
     catch {
       case e: Exception => {
@@ -307,7 +311,7 @@ object FunctionService {
           val model = models(userOption.toInt - 1)
           //process message
           val modelDef = Source.fromFile(model).mkString
-          //val response: String = MetadataAPIImpl.AddModel(modelDef, userid).toString
+          //val response: String = getMetadataAPI.AddModel(modelDef, userid).toString
           listOfModelDef = listOfModelDef:+modelDef
         }
       }
