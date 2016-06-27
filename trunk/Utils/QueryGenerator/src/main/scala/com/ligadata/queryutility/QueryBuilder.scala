@@ -126,7 +126,8 @@ class QueryBuilder extends LogTrait {
       val getName =  adapCfgValues.get("Name").get.toString
       val fullName = adapCfgValues.getOrElse("FullName", getName).toString
       Key = linkFrom + "," + linkTo + "," + fullName
-      data +=  (Key.toLowerCase -> fullName )
+      val rid = adapCfgValues.get("@rid").get.toString
+      data +=  (Key.toLowerCase -> rid)
     }
     return data.toMap
   }
