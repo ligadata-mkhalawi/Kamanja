@@ -137,7 +137,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
 
     val conn: Connection = queryObj.getDBConnection(configBeanObj) //this used to fet a connection for orientDB
 
-    val recreateFlag = options.getOrElse('recreate, null).toString.trim
+    val recreateFlag = options.getOrElse('recreate, "false").toString.trim.toBoolean
 
     /* Step 1
     *  1- check all existing classes in graphDB
@@ -148,7 +148,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
     var data = queryObj.getAllClasses(conn, dataQuery)
     var classesName = Array("KamanjaVertex", "Model", "Input", "Output", "Storage", "Container", "Message", "Inputs", "Stores", "Outputs", "Engine")
     var extendsClass = "KamanjaVertex"
-    if(recreateFlag == true) {
+    if(recreateFlag) {
       for (classnm <- classesName) {
         var commandsta = "delete vertex " + classnm
         queryObj.executeQuery(conn, commandsta)
@@ -185,7 +185,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
     dataQuery = queryObj.getAllExistDataQuery(elementType = "class", extendClass = option("E"))
     data = queryObj.getAllClasses(conn, dataQuery)
     classesName = Array("KamanjaEdge", "MessageE", "Containers", "Messages", "Produces", "ConsumedBy", "StoredBy", "Retrieves", "SentTo")
-    if(recreateFlag == true) {
+    if(recreateFlag) {
       for (classnm <- classesName) {
         var commandsta = "delete edge " + classnm
         queryObj.executeQuery(conn, commandsta)
