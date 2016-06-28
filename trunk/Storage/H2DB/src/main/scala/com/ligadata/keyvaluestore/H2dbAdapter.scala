@@ -146,7 +146,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
   if (parsed_json.contains("Location")) {
     location = parsed_json.get("Location").get.toString.trim
   } else {
-    throw CreateConnectionException("Unable to find connectionMode in adapterConfig ", new Exception("Invalid adapterConfig"))
+    throw CreateConnectionException("Unable to find Location in adapterConfig ", new Exception("Invalid adapterConfig"))
   }
 
   //  var hostname: String = null;
