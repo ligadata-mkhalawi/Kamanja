@@ -293,28 +293,28 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
       }
     }
 
-/*
-    if (containerDefs.isEmpty) {
-      logger.debug("There are no container in metadata")
-      println("There are no container in metadata")
-    } else {
-      for (container <- containerDefs.get) {
-        val nm = ("Container," + container.FullName).toLowerCase
-        currentVerticesSet += nm
-        //if(queryObj.checkObjexsist(conn,queryObj.checkQuery(elementType = "vertex", objName = container.Name, className = "container")) == false) {
-        if (!verticesByTypAndFullName.contains(nm)) {
-          val setQuery = queryObj.createSetCommand(baseElem = Option(container))
-          val query: String = queryObj.createQuery(elementType = "vertex", className = "Container", setQuery = setQuery)
-          queryObj.executeQuery(conn, query)
-          logger.debug(query)
-          println(query)
+    /*
+        if (containerDefs.isEmpty) {
+          logger.debug("There are no container in metadata")
+          println("There are no container in metadata")
         } else {
-          logger.debug("This container %s exsist in".format(container.FullName))
-          println("This container %s exsist in database".format(container.FullName))
+          for (container <- containerDefs.get) {
+            val nm = ("Container," + container.FullName).toLowerCase
+            currentVerticesSet += nm
+            //if(queryObj.checkObjexsist(conn,queryObj.checkQuery(elementType = "vertex", objName = container.Name, className = "container")) == false) {
+            if (!verticesByTypAndFullName.contains(nm)) {
+              val setQuery = queryObj.createSetCommand(baseElem = Option(container))
+              val query: String = queryObj.createQuery(elementType = "vertex", className = "Container", setQuery = setQuery)
+              queryObj.executeQuery(conn, query)
+              logger.debug(query)
+              println(query)
+            } else {
+              logger.debug("This container %s exsist in".format(container.FullName))
+              println("This container %s exsist in database".format(container.FullName))
+            }
+          }
         }
-      }
-    }
-*/
+    */
 
     if (ModelDefs.isEmpty) {
       logger.debug("There are no model in metadata")
@@ -512,6 +512,11 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
                 }
               }
             })
+          }
+        } else {
+          if (msgVertexId != null && !msgVertexId.isEmpty) {
+            val setQuery = queryObj.createSetCommand(baseElem = Option(messageDefObj))
+            messageProperties(msgVertexId) = setQuery;
           }
         }
       }
