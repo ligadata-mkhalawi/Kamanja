@@ -46,6 +46,12 @@ class HelloWorldJythonFactory(modelDef: ModelDef, nodeContext: NodeContext) exte
 
 class HelloWorldJythonModel(factory: ModelInstanceFactory) extends ModelInstance(factory) {
 
+  def urlses(cl: ClassLoader): Array[java.net.URL] = cl match {
+    case null => Array()
+    case u: java.net.URLClassLoader => u.getURLs() ++ urlses(cl.getParent)
+    case _ => urlses(cl.getParent)
+  }
+
   val logger = new Log("com.ligadata.samples.models.HelloWorldJythonModel")
 
   val code =
@@ -66,7 +72,7 @@ class HelloWorldJythonModel(factory: ModelInstanceFactory) extends ModelInstance
       |# limitations under the License.
       |#
       |from com.ligadata.runtime import Log
-      |from com.ligadata.kamanja.samples.messages import outmsg1
+      |from com.ligadata.kamanja.samples.messages.V1000000 import outmsg1
       |
       |class Model():
       |    def __init__(self):
@@ -79,6 +85,7 @@ class HelloWorldJythonModel(factory: ModelInstanceFactory) extends ModelInstance
       |        if inMsg.score()!=1:
       |            return None
       |
+      |        output=[]
       |        output[0] = outmsg1.createInstance()
       |        output[0].set(0, inMsg.id())
       |        output[0].set(1, inMsg.name())
@@ -93,7 +100,12 @@ class HelloWorldJythonModel(factory: ModelInstanceFactory) extends ModelInstance
 
   var preprops: Properties = System.getProperties()
 
-  PySystemState.initialize(preprops, props, Array.empty[String], this.getClass.getClassLoader)
+  PySystemState.initialize(preprops, props, Array.empty[String], getModelInstanceFactory().getClass.getClassLoader)
+
+  {
+    val urls2 = urlses(getModelInstanceFactory().getClass.getClassLoader)
+    logger.Info("CLASSPATH-JYTHON-1:=" + urls2.mkString(":"))
+  }
 
   val interpreter = new org.python.util.PythonInterpreter
 
