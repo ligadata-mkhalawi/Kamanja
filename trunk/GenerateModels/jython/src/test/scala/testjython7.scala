@@ -154,7 +154,7 @@ class TestJython7 extends FunSuite with BeforeAndAfter {
 
     } catch {
       case e: Exception =>  println(e.toString)
-        throw e
+      throw e
     }
   }
 }
