@@ -372,20 +372,20 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
           val json = parse(tenant.primaryDataStore)
           val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
           primaryStroage = if (adapCfgValues.get("StoreType").get.toString == null) "" else adapCfgValues.get("StoreType").get.toString
-        }
-        val tenantName = tenant.tenantId + "_" + primaryStroage + "_primaryStroage"
-        val nm = ("Storage," + tenantName).toLowerCase
-        currentVerticesSet += nm
-        tenantId2FullName += ((tenant.tenantId.toLowerCase -> tenantName))
-        if (!verticesByTypAndFullName.contains(nm)) {
-          val setQuery = queryObj.createSetCommand(tenant = option(tenant))
-          val query: String = queryObj.createQuery(elementType = "vertex", className = "Storage", setQuery = setQuery)
-          queryObj.executeQuery(conn, query)
-          logger.debug(query)
-          println(query)
-        } else {
-          logger.debug("This storage %s exsist in database".format(tenantName))
-          println("This storage %s exsist in database".format(tenantName))
+          val tenantName = tenant.tenantId + "_" + primaryStroage + "_primaryStroage"
+          val nm = ("Storage," + tenantName).toLowerCase
+          currentVerticesSet += nm
+          tenantId2FullName += ((tenant.tenantId.toLowerCase -> tenantName))
+          if (!verticesByTypAndFullName.contains(nm)) {
+            val setQuery = queryObj.createSetCommand(tenant = option(tenant))
+            val query: String = queryObj.createQuery(elementType = "vertex", className = "Storage", setQuery = setQuery)
+            queryObj.executeQuery(conn, query)
+            logger.debug(query)
+            println(query)
+          } else {
+            logger.debug("This storage %s exsist in database".format(tenantName))
+            println("This storage %s exsist in database".format(tenantName))
+          }
         }
       }
     }
