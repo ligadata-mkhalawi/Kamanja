@@ -144,12 +144,28 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
     *  2- add missing classes to GraphDB
      */
 
-    var dataQuery = queryObj.getAllExistDataQuery(elementType = "class", extendClass = option("V"))
-    var data = queryObj.getAllClasses(conn, dataQuery)
-    var classesName = Array("KamanjaVertex", "Model", "Input", "Output", "Storage", "Container", "Message", "Inputs", "Stores", "Outputs", "Engine")
-    var extendsClass = "KamanjaVertex"
-    if(recreateFlag) {
-      for (classnm <- classesName) {
+    val verticesClassesName = Array("KamanjaVertex", "Model", "Input", "Output", "Storage", "Container", "Message", "Inputs", "Stores", "Outputs", "Engine")
+    val edgesClassesName = Array("KamanjaEdge", "MessageE", "Containers", "Messages", "Produces", "ConsumedBy", "StoredBy", "Retrieves", "SentTo")
+
+    if (recreateFlag) {
+      var idx = edgesClassesName.size - 1
+      while (idx >= 0) {
+        val classnm = edgesClassesName(idx)
+        idx = idx - 1
+        var commandsta = "delete edge " + classnm
+        queryObj.executeQuery(conn, commandsta)
+        logger.debug(commandsta)
+        println(commandsta)
+        commandsta = "drop class " + classnm
+        queryObj.executeQuery(conn, commandsta)
+        logger.debug(commandsta)
+        println(commandsta)
+      }
+
+      idx = verticesClassesName.size - 1
+      while (idx >= 0) {
+        val classnm = verticesClassesName(idx)
+        idx = idx - 1
         var commandsta = "delete vertex " + classnm
         queryObj.executeQuery(conn, commandsta)
         logger.debug(commandsta)
@@ -160,7 +176,23 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
         println(commandsta)
       }
     }
-    for (className <- classesName) {
+
+    var dataQuery = queryObj.getAllExistDataQuery(elementType = "class", extendClass = option("V"))
+    var data = queryObj.getAllClasses(conn, dataQuery)
+    var extendsClass = "KamanjaVertex"
+    //    if(recreateFlag) {
+    //      for (classnm <- verticesClassesName) {
+    //        var commandsta = "delete vertex " + classnm
+    //        queryObj.executeQuery(conn, commandsta)
+    //        logger.debug(commandsta)
+    //        println(commandsta)
+    //        commandsta = "drop class " + classnm
+    //        queryObj.executeQuery(conn, commandsta)
+    //        logger.debug(commandsta)
+    //        println(commandsta)
+    //      }
+    //    }
+    for (className <- verticesClassesName) {
       // if (!data.contains(className)) {
       if (className.equalsIgnoreCase("KamanjaVertex")) extendsClass = "V" else extendsClass = "KamanjaVertex"
       val createClassQuery = queryObj.createQuery(elementType = "class", className = className, setQuery = "", extendsClass = Option(extendsClass))
@@ -184,21 +216,20 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
 
     dataQuery = queryObj.getAllExistDataQuery(elementType = "class", extendClass = option("E"))
     data = queryObj.getAllClasses(conn, dataQuery)
-    classesName = Array("KamanjaEdge", "MessageE", "Containers", "Messages", "Produces", "ConsumedBy", "StoredBy", "Retrieves", "SentTo")
-    if(recreateFlag) {
-      for (classnm <- classesName) {
-        var commandsta = "delete edge " + classnm
-        queryObj.executeQuery(conn, commandsta)
-        logger.debug(commandsta)
-        println(commandsta)
-        commandsta = "drop class " + classnm
-        queryObj.executeQuery(conn, commandsta)
-        logger.debug(commandsta)
-        println(commandsta)
-      }
-    }
+    //    if(recreateFlag) {
+    //      for (classnm <- edgesClassesName) {
+    //        var commandsta = "delete edge " + classnm
+    //        queryObj.executeQuery(conn, commandsta)
+    //        logger.debug(commandsta)
+    //        println(commandsta)
+    //        commandsta = "drop class " + classnm
+    //        queryObj.executeQuery(conn, commandsta)
+    //        logger.debug(commandsta)
+    //        println(commandsta)
+    //      }
+    //    }
     extendsClass = "KamanjaEdge"
-    for (className <- classesName) {
+    for (className <- edgesClassesName) {
       //if (!data.contains(className)) {
       if (className.equalsIgnoreCase("KamanjaEdge")) extendsClass = "E" else extendsClass = "KamanjaEdge"
       val createClassQuery = queryObj.createQuery(elementType = "class", className = className, setQuery = "", extendsClass = Option(extendsClass))
@@ -262,6 +293,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
       }
     }
 
+/*
     if (containerDefs.isEmpty) {
       logger.debug("There are no container in metadata")
       println("There are no container in metadata")
@@ -282,6 +314,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
         }
       }
     }
+*/
 
     if (ModelDefs.isEmpty) {
       logger.debug("There are no model in metadata")
@@ -445,20 +478,20 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
               logger.debug("The edge exist between this two nodes %s , %s".format(msgVertexId, storeVertexId))
               println("The edge exist between this two nodes %s, %s".format(msgVertexId, storeVertexId))
             }
-/*
-            linkKey = storeVertexId + "," + msgVertexId + ",Retrieves"
-            currentEdgesSet += linkKey.toLowerCase
-            if (!edgeData.contains(linkKey.toLowerCase)) {
-              val setQuery = "set Name = \"%s\"".format("Retrieves")
-              val query: String = queryObj.createQuery(elementType = "edge", className = "Retrieves", setQuery = setQuery, linkFrom = Option(storeVertexId), linkTo = Option(msgVertexId))
-              queryObj.executeQuery(conn, query)
-              logger.debug(query)
-              println(query)
-            } else {
-              logger.debug("The edge exist between this two nodes %s , %s".format(msgVertexId, storeVertexId))
-              println("The edge exist between this two nodes %s, %s".format(msgVertexId, storeVertexId))
-            }
-*/
+            /*
+                        linkKey = storeVertexId + "," + msgVertexId + ",Retrieves"
+                        currentEdgesSet += linkKey.toLowerCase
+                        if (!edgeData.contains(linkKey.toLowerCase)) {
+                          val setQuery = "set Name = \"%s\"".format("Retrieves")
+                          val query: String = queryObj.createQuery(elementType = "edge", className = "Retrieves", setQuery = setQuery, linkFrom = Option(storeVertexId), linkTo = Option(msgVertexId))
+                          queryObj.executeQuery(conn, query)
+                          logger.debug(query)
+                          println(query)
+                        } else {
+                          logger.debug("The edge exist between this two nodes %s , %s".format(msgVertexId, storeVertexId))
+                          println("The edge exist between this two nodes %s, %s".format(msgVertexId, storeVertexId))
+                        }
+            */
 
             // DAG view
             // Get all Generators for this message

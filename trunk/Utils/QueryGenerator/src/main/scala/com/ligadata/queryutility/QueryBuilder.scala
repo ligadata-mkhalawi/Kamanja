@@ -159,7 +159,7 @@ class QueryBuilder extends LogTrait {
       stmt.execute(query)
       stmt.close()
     } catch {
-      case e: Exception => logger.error(e)
+      case e: Exception => logger.error("Failed to execute query:" + query, e)
     }
   }
 
