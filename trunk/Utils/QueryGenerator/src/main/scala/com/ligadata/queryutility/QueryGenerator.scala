@@ -144,7 +144,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
     *  2- add missing classes to GraphDB
      */
 
-    val verticesClassesName = Array("KamanjaVertex", "Model", "Input", "Output", "Storage", "Container", "Message", "Inputs", "Stores", "Outputs", "Engine")
+    val verticesClassesName = Array("KamanjaVertex", "System", "Model", "Input", "Output", "Storage", "Container", "Message", "Inputs", "Stores", "Outputs", "Engine")
     val edgesClassesName = Array("KamanjaEdge", "MessageE", "Containers", "Messages", "Produces", "ConsumedBy", "StoredBy", "Retrieves", "SentTo")
 
     if (recreateFlag) {
@@ -260,6 +260,23 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
     val currentVerticesSet = scala.collection.mutable.Set[String]();
     val currentEdgesSet = scala.collection.mutable.Set[String]();
     val adapterTypes = scala.collection.mutable.Map[String, String]();
+
+    {
+      var systemVertex: String = ""
+      val nm = ("System,System").toLowerCase
+      currentVerticesSet += nm
+      if (!verticesByTypAndFullName.contains(nm)) {
+        val setQuery = "set Name = \"System\", FullName = \"System\", Tenant = \"System\""
+        val query: String = queryObj.createQuery(elementType = "vertex", className = "System", setQuery = setQuery)
+        queryObj.executeQuery(conn, query)
+        logger.debug(query)
+        println(query)
+      }
+      else {
+        logger.debug("This adapter %s exsist in database".format("System"))
+        println("This adapter %s exsist in database".format("System"))
+      }
+    }
 
     if (adapterDefs.isEmpty) {
       logger.debug("There are no adapter in metadata")
@@ -447,6 +464,39 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
     }
 
     if (!msgDefs.isEmpty) {
+      // Get all system messages (generated from System)
+      val sysnm = ("System,System").toLowerCase
+      val sysVertexId = verticesNewByTypAndFullName.getOrElse(sysnm, null)
+      if (sysVertexId != null && !sysVertexId.isEmpty) {
+        for (messageDefObj <- msgDefs.get) {
+          val msgTenant = if (messageDefObj.TenantId == null || messageDefObj.TenantId.isEmpty) "" else messageDefObj.TenantId
+          if (msgTenant.isEmpty || msgTenant.equalsIgnoreCase("System")) {
+            // This is making as System message
+            val msgnm = ("Message," + messageDefObj.FullName).toLowerCase
+            val msgVertexId = verticesNewByTypAndFullName.getOrElse(msgnm, null)
+            if (msgVertexId != null && !msgVertexId.isEmpty) {
+              val ab = messageProducers.getOrElse(msgVertexId, ArrayBuffer[String]())
+              ab += sysVertexId
+              messageProducers(msgVertexId) = ab
+
+              // Adding edges for Universal view
+              val linkKey = sysVertexId + "," + msgVertexId + ",Produces"
+              currentEdgesSet += linkKey.toLowerCase
+              if (!edgeData.contains(linkKey.toLowerCase)) {
+                val setQuery = "set Name = \"Produces\""
+                val query: String = queryObj.createQuery(elementType = "edge", className = "Produces", setQuery = setQuery, linkTo = Option(msgVertexId), linkFrom = Option(sysVertexId))
+                queryObj.executeQuery(conn, query)
+                logger.debug(query)
+                println(query)
+              } else {
+                logger.debug("The edge exist between this two nodes %s , %s".format(sysVertexId, msgVertexId))
+                println("The edge exist between this two nodes %s, %s".format(sysVertexId, msgVertexId))
+              }
+            }
+          }
+        }
+      }
+
       for (messageDefObj <- msgDefs.get) {
         // add link between message and storage, input adapter, output adapter
         // add link between message and storage (message ===StoredBy===> storage ===retrieves===> message)
