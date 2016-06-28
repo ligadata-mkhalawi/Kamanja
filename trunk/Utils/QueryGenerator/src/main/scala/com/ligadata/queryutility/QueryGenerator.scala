@@ -54,8 +54,8 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
         nextOption(map ++ Map('metadataconfig -> value), tail)
       case "--databaseconfig" :: value :: tail =>
         nextOption(map ++ Map('databaseconfig -> value), tail)
-      case "--recreate" :: value :: tail =>
-        nextOption(map ++ Map('recreate -> value), tail)
+      case "--recreate" :: tail =>
+        nextOption(map ++ Map('recreate -> "true"), tail)
       case option :: tail => {
         logger.error("Unknown option " + option)
         logger.warn(usage)
