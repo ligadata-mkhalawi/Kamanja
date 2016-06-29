@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Context>
+
+ <Resource
+  name="jdbc/KamanjaUI"
+  auth="Container"
+  type="javax.sql.DataSource"
+  username="admin"
+  password="admin"
+  driverClassName="com.orientechnologies.orient.jdbc.OrientJdbcDriver"
+  description="KamanjaUI OrientDB."
+  url="jdbc:orient:remote:52.21.246.16/KamanjaUI"
+  maxPoolSize="30"
+  minPoolSize="3"
+ />
+
+
+</Context> 
+
