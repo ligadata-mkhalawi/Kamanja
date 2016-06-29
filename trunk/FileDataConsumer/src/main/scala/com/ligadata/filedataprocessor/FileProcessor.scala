@@ -50,8 +50,6 @@ case class EnqueuedFile(name: String, offset: Int, createDate: Long,  partMap: s
 case class FileStatus(status: Int, offset: Long, createDate: Long)
 case class OffsetValue (lastGoodOffset: Int, partitionOffsets: Map[Int,Int])
 
-case class OffsetValue(lastGoodOffset: Int, partitionOffsets: Map[Int, Int])
-
 
 /**
  * This is the global area for the File Processor.  It basically handles File Access and Distribution !!!!!
@@ -920,19 +918,9 @@ object FileProcessor {
                       logger.warn("SMART FILE CONSUMER (global): File possibly moved out manually " + fileToRecover)
                       removeFromZK(fileToRecover)
                     }
-              }
-              //End Changes -- Instead of a single file, run with the ArrayBuffer of Paths
-
-            }else if(!Files.exists(Paths.get(fileToRecover))){
-              //Check if file is already moved, if yes remove from ZK
-              val tokenName = fileToRecover.split("/")
-              if(Files.exists(Paths.get(targetMoveDir+"/"+tokenName(tokenName.size - 1)))){
-                logger.info("SMART FILE CONSUMER (global): Found file " +fileToRecover+" processed ")
-                removeFromZK(fileToRecover)
                   } else {
-                logger.info("SMART FILE CONSUMER (global): File possibly moved out manually " +fileToRecover)
-                removeFromZK(fileToRecover)
-              }
+                    logger.warn("SMART FILE CONSUMER (global): " + fileToRecover + " already being processed ")
+                  }
                   isFailedFileReprocessed = true
                 } catch {
                   case e: Throwable => {
@@ -1286,9 +1274,6 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
       var mdConfig = props.getOrElse(SmartFileAdapterConstants.METADATA_CONFIG_FILE, null)
       var msgName = props.getOrElse(SmartFileAdapterConstants.MESSAGE_NAME, null)
       var kafkaBroker = props.getOrElse(SmartFileAdapterConstants.KAFKA_BROKER, null)
-      var mdConfig = props.getOrElse(SmartFileAdapterConstants.METADATA_CONFIG_FILE,null)
-      var msgName = props.getOrElse(SmartFileAdapterConstants.MESSAGE_NAME, null)
-      var kafkaBroker = props.getOrElse(SmartFileAdapterConstants.KAFKA_BROKER, null)
 
       //Default allowed content types -
       var cTypes = props.getOrElse(SmartFileAdapterConstants.VALID_CONTENT_TYPES, "text/plain;application/gzip")
@@ -1312,31 +1297,31 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
       if (dirToWatch == null) {
         logger.error("SMART_FILE_CONSUMER (" + partitionId + ") Directory to watch must be specified")
         shutdown
-        throw MissingPropertyException("Missing Paramter: " + SmartFileAdapterConstants.DIRECTORY_TO_WATCH)
+        throw MissingPropertyException("Missing Paramter: " + SmartFileAdapterConstants.DIRECTORY_TO_WATCH, null)
       }
 
       if (dirToMoveTo == null) {
         logger.error("SMART_FILE_CONSUMER (" + partitionId + ") Destination directory must be specified")
         shutdown
-        throw MissingPropertyException("Missing Paramter: " + SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO)
+        throw MissingPropertyException("Missing Paramter: " + SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO, null)
       }
 
       if (mdConfig == null) {
         logger.error("SMART_FILE_CONSUMER (" + partitionId + ") Directory to watch must be specified")
         shutdown
-        throw new MissingPropertyException("Missing Paramter: " + SmartFileAdapterConstants.METADATA_CONFIG_FILE)
+        throw new MissingPropertyException("Missing Paramter: " + SmartFileAdapterConstants.METADATA_CONFIG_FILE, null)
       }
 
       if (msgName == null) {
         logger.error("SMART_FILE_CONSUMER (" + partitionId + ") Message name must be specified")
         shutdown
-        throw new MissingPropertyException("Missing Paramter: " + SmartFileAdapterConstants.MESSAGE_NAME)
+        throw new MissingPropertyException("Missing Paramter: " + SmartFileAdapterConstants.MESSAGE_NAME, null)
       }
 
       if (kafkaBroker == null) {
         logger.error("SMART_FILE_CONSUMER (" + partitionId + ") Kafka Broker details must be specified")
         shutdown
-        throw new MissingPropertyException("Missing Paramter: " + SmartFileAdapterConstants.KAFKA_BROKER)
+        throw new MissingPropertyException("Missing Paramter: " + SmartFileAdapterConstants.KAFKA_BROKER, null)
       }
 
       FileProcessor.setProperties(props, path)
@@ -1478,7 +1463,6 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
             if (!buffer.isEof) {
               isTmpContentParsable = (buffer.payload.size < maxlen) // false only if the buffer is completely full
               // logger.warn("SMART FILE CONSUMER (" + partitionId + "): isTmpContentParsable:" + isTmpContentParsable + ", isContentParsable:" + isContentParsable + ", maxlen:" + maxlen + ", buffer.payload.size:" + buffer.payload.size)
-          if (!buffer.isEof){
               buffer.payload.foreach(x => {
                 if (isContentParsable) {
                   if (x.asInstanceOf[Char] == message_separator) {
@@ -1501,7 +1485,6 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
                   }
                 }
                 indx = indx + 1
-
               })
             }
           }
@@ -1583,7 +1566,6 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
                         enQMsg(msgArray, beeNumber)
                         isIncompleteLefovers = false
                       }
-            }
           } else {
                       // there are no messages and this is not the last buffer... the only scenario is if we read
                       // a tiny string from stream that does not contain message separator.
@@ -1773,15 +1755,6 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
         try {
           readlen = 0
           var curReadLen = bis.read(buffer, readlen, maxlen - readlen - 1)
-      var isLastChunk = false
-      try {
-        readlen = 0
-        var curReadLen = bis.read(buffer, readlen, maxlen - readlen - 1)
-        if (curReadLen > 0)
-          readlen += curReadLen
-        else // First time reading into buffer triggered end of file (< 0)
-          readlen = curReadLen
-        val minBuf = maxlen / 3; // We are expecting at least 1/3 of the buffer need to fill before
 
           FileProcessor.testFailure("TEST EXCEPTION... Doing a READ")
 
@@ -1808,7 +1781,6 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
         }
 
         if (!foundIssue) {
-      }
       if (readlen > 0) {
             // Still have data, create a new buffer with it
         totalLen += readlen
@@ -1969,11 +1941,6 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
     try {
       FileProcessor.testFailure("TEST EXCEPTION... checking for Compression")
       is = new FileInputStream(inputfile)
-      case e: Throwable => {
-        logger.debug("isCompressed failed", e)
-        return false
-      }
-    }
 
     val maxlen = 2
     val buffer = new Array[Byte](maxlen)
