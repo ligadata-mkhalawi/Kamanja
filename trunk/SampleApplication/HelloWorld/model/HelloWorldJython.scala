@@ -26,6 +26,10 @@ import java.util.Properties
 import com.ligadata.runtime.Log
 import org.python.core.PySystemState
 
+// Need code
+// Need model name
+// Need model version
+
 class HelloWorldJythonFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
 
   override def getModelName(): String = {
