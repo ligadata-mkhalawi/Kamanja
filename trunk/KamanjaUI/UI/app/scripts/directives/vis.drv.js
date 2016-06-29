@@ -47,16 +47,16 @@ angular
 
           'physics': {
             'barnesHut': {
-              'gravitationalConstant': -75000,
-              'centralGravity': 4,
-              'springLength': 100,
-              'springConstant': 0.05,
-              'damping': 1,
-              'avoidOverlap': 0.8
+              'gravitationalConstant': -10000,
+              'centralGravity': 0.5,
+              'springLength': 75,
+              'springConstant': 0.09,
+              'damping': 0.5,
+              'avoidOverlap': 1
             },
-            'minVelocity': 2.8,
+            'minVelocity': 0.5,
             'solver': 'barnesHut',
-            'timestep': 0.79
+            // 'timestep': 0.79
           },
           // 'physics': {
           //   'forceAtlas2Based': {
@@ -80,7 +80,7 @@ angular
             font: {
               size: 32
             },
-            borderWidth: 2,
+            borderWidth: 0,
             shadow: true
           },
           interaction: {
@@ -89,7 +89,9 @@ angular
             keyboard: true
           }
         };
+
         var network = new vis.Network(container, data, options);
+
         var Node = function (n) {
           var imagePath = serviceConfig.classImageColorPath;
           var types = serviceConfig.classImageColorMap;
@@ -97,11 +99,12 @@ angular
           this.number = n.number;
           this._label = n.name || '';
           this.shape = n.shape || 'image';
-          this.size = n.size || 12;
+          this.size = n.size || 16;
           this.type = types[n['class']];
           this.image = imagePath + this.type.image + '.inactive.' + this.type.extension;
           this.active = false;
         };
+
         var Edge = function (e) {
           this.id = e.id;
           this.label = e.label;
@@ -109,14 +112,16 @@ angular
           this.to = e.to;
           this.toNode = data.nodes.getItemById(this.to);
           this.arrows = 'from';
+
           var color = scope.viewName.toLowerCase() === 'dag' ? '#f93' : this.toNode.type.headerColor;
+
           this.color = color;
           this.font = {
-            size: 9,
+            size: 8,
             color: 'white',
             strokeWidth: 0,
             align: 'middle',
-            background: color
+            background: 'rgba(0,0,0,1)',
           };
           if (e.duplicates >= 2) {
             this.smooth = {
@@ -124,6 +129,7 @@ angular
             };
           }
         };
+
         (function fixNodeEdgePointerHover() {
           network.on('hoverNode', function () {
             angular.element('html,body').css('cursor', 'pointer');
@@ -227,12 +233,14 @@ angular
               return;
             }
             var position = network.getPositions(d.id)[d.id];
+
             if (scope.showStatus === 'true') {
+
               ctx.textAlign = 'left';
-              ctx.font = '11px arial';
+              ctx.font = '9px arial';
               ctx.fillStyle = '#ffffff';
               ctx.fillText(d._label, (position.x + 13), (position.y + 10));
-              ctx.font = 'bold 16px arial';
+              ctx.font = '9px arial';
               ctx.fillStyle = '#FFCC00';
               ctx.fillText(d.number, (position.x + 13), (position.y + 10));
             } else {
@@ -244,13 +252,14 @@ angular
               ctx.lineJoin = "round";
               ctx.lineWidth = 10;
               ctx.strokeStyle = "rgba(0,0,0,0.5)";
-              ctx.strokeRect((position.x + 12), (position.y - 3), rectWidth - cornerRadius, rectHeight - cornerRadius);
+              ctx.strokeRect((position.x + 14), (position.y - 3), rectWidth - cornerRadius, rectHeight - cornerRadius);
 
               ctx.textAlign = 'left';
-              ctx.font = '11px arial';
+              ctx.font = '9px arial';
               ctx.fillStyle = '#ffffff';
-              ctx.fillText(d._label, (position.x + 13), (position.y - 6 ));
+              ctx.fillText(d._label, (position.x + 13), (position.y - 3 ));
             }
+
           });
         });
         var resizeNetworkAndReposition = function () {
@@ -266,7 +275,12 @@ angular
             network.setOptions({width: width});
             container.style.width = width;
           }
-          network.moveTo({position: {x: 0, y: 0}, scale: 1.5});
+          network.moveTo(
+            {
+              position: {x: 0, y: 0},
+              scale: 1.5
+            }
+          );
         };
         $window.onresize = resizeNetworkAndReposition;
         scope.$watch('data', function () {
