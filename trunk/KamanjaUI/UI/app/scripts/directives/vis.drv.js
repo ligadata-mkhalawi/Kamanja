@@ -245,19 +245,19 @@ angular
               ctx.fillText(d.number, (position.x + 13), (position.y + 10));
             } else {
 
-              var rectWidth = d._label.length * 6 + 10;
-              var rectHeight = 10;
-              var cornerRadius = 6;
+              var rectWidth = d._label.length * 5 - 4;
+              var rectHeight = 7;
+              var cornerRadius = 5;
 
               ctx.lineJoin = "round";
               ctx.lineWidth = 10;
               ctx.strokeStyle = "rgba(0,0,0,0.5)";
-              ctx.strokeRect((position.x + 14), (position.y - 3), rectWidth - cornerRadius, rectHeight - cornerRadius);
+              ctx.strokeRect((position.x + 17), (position.y - 3), rectWidth - cornerRadius, rectHeight - cornerRadius);
 
               ctx.textAlign = 'left';
               ctx.font = '9px arial';
               ctx.fillStyle = '#ffffff';
-              ctx.fillText(d._label, (position.x + 13), (position.y - 3 ));
+              ctx.fillText(d._label, (position.x + 13), (position.y - 4 ));
             }
 
           });

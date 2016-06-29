@@ -19,7 +19,7 @@ angular.module('networkApp')
           _.forEach(data.SymbolClasses, function (item) {
             var type = serviceConfig.classImageColorMap[item.toLowerCase()];
             var footerObj = {
-              displayName: item === 'Input' || item === 'Output' || item === 'Storage' ? item + " " + "Adapters" : item,
+              displayName: item === 'Input' || item === 'Output' || item === 'Storage' ? item + " " + "Adapter" : item,
               imageName: type.image + '.inactive.' + type.extension,
               imageWidth: type.width,
               imageHeight: type.height
@@ -72,8 +72,8 @@ angular.module('networkApp')
             modelDetails.headerColor = type.headerColor;
             modelDetails.imageName = type.image + '.' + type.extension;
             modelDetails.headerName = nodeInfo.Name;
-            modelDetails.imageWidth = type.width;
-            modelDetails.imageHeight = type.height;
+            modelDetails.imageWidth = type.widthProperties;
+            modelDetails.imageHeight = type.heightProperties;
           }
           serviceData.getProperties({"ViewName": serviceData.getSelectedViewName(), "RID": data}, function (response) {
             //modelDetails.modelInfo = response;
@@ -107,8 +107,8 @@ angular.module('networkApp')
           modelDetails.headerColor = type.headerColor;
           modelDetails.imageName = type.image + '.edge.' + type.extension;
 
-          modelDetails.imageWidth = type.width;
-          modelDetails.imageHeight = type.height;
+          modelDetails.imageWidth = type.widthProperties;
+          modelDetails.imageHeight = type.heightProperties;
 
           serviceData.getProperties({"ViewName": serviceData.getSelectedViewName(), "RID": data}, function (response) {
             //modelDetails.modelInfo = response;

@@ -10,7 +10,9 @@ angular.module('networkApp')
           iconColor: '#96f',
           headerColor: '#93f',
           width: '45',
-          height: '45'
+          height: '45',
+          widthProperties: '25',
+          heightProperties: '25'
         },
         message: {
           image: 'message',
@@ -18,7 +20,9 @@ angular.module('networkApp')
           iconColor: '#fc9',
           headerColor: '#f93',
           width: '45',
-          height: '45'
+          height: '45',
+          widthProperties: '25',
+          heightProperties: '25'
         },
         input: {
           image: 'input',
@@ -26,7 +30,9 @@ angular.module('networkApp')
           iconColor: '#cc6',
           headerColor: '#c93',
           width: '45',
-          height: '45'
+          height: '45',
+          widthProperties: '25',
+          heightProperties: '25'
         },
         output: {
           image: 'output',
@@ -34,7 +40,9 @@ angular.module('networkApp')
           iconColor: '#3ff',
           headerColor: '#6cc',
           width: '45',
-          height: '45'
+          height: '45',
+          widthProperties: '25',
+          heightProperties: '25'
         },
         storage: {
           image: 'storage',
@@ -42,7 +50,9 @@ angular.module('networkApp')
           iconColor: '#cf9',
           headerColor: '#9c3',
           width: '45',
-          height: '45'
+          height: '45',
+          widthProperties: '25',
+          heightProperties: '25'
         },
         container: {
           image: 'container',
@@ -50,7 +60,9 @@ angular.module('networkApp')
           iconColor: '#909',
           headerColor: '#f6f',
           width: '45',
-          height: '45'
+          height: '45',
+          widthProperties: '25',
+          heightProperties: '25'
         },
         system: {
           image: 'system',
@@ -58,7 +70,9 @@ angular.module('networkApp')
           iconColor: '#cc3',
           headerColor: '#663',
           width: '45',
-          height: '45'
+          height: '45',
+          widthProperties: '25',
+          heightProperties: '25'
         },
         dag: {
           image: 'dag',
@@ -66,7 +80,9 @@ angular.module('networkApp')
           iconColor: '#fc9',
           headerColor: '#f93',
           width: '25',
-          height: '25'
+          height: '25',
+          widthProperties: '25',
+          heightProperties: '25'
         }
       }
     };
