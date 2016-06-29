@@ -47,14 +47,14 @@ angular
 
           'physics': {
             'barnesHut': {
-              'gravitationalConstant': -60000,
-              'centralGravity': 6,
+              'gravitationalConstant': -75000,
+              'centralGravity': 4,
               'springLength': 100,
-              'springConstant': 0.04,
+              'springConstant': 0.05,
               'damping': 1,
-              'avoidOverlap': 0.7
+              'avoidOverlap': 0.8
             },
-            'minVelocity': 2.5,
+            'minVelocity': 2.8,
             'solver': 'barnesHut',
             'timestep': 0.79
           },
