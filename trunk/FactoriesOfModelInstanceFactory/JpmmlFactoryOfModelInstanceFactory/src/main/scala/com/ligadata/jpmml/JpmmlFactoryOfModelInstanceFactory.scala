@@ -18,19 +18,24 @@ package com.ligadata.jpmml
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.{Map => MutableMap}
-import com.ligadata.kamanja.metadata.{BaseElem, MdMgr, ModelDef}
-import com.ligadata.KamanjaBase.{ContainerInterface, MappedModelResults, MessageContainerBase, ModelResultBase, _}
-import com.ligadata.Utils.{KamanjaClassLoader, KamanjaLoaderInfo, Utils}
+
+import com.ligadata.kamanja.metadata.{MdMgr, ModelDef, BaseElem}
+import com.ligadata.KamanjaBase._
+import com.ligadata.Utils.{ Utils, KamanjaClassLoader, KamanjaLoaderInfo }
+
 import org.apache.logging.log4j.LogManager
-import java.io.{ByteArrayInputStream, InputStream, PushbackInputStream}
+
+import java.io.{PushbackInputStream, ByteArrayInputStream, InputStream}
 import java.nio.charset.StandardCharsets
 import java.util.{List => JList}
 import javax.xml.bind.{ValidationEvent, ValidationEventHandler}
 import javax.xml.transform.sax.SAXSource
 
-import org.dmg.pmml.{FieldName, PMML}
+
+import org.dmg.pmml.{PMML, FieldName}
 import org.jpmml.evaluator._
-import org.jpmml.model.{ImportFilter, JAXBUtil}
+import org.jpmml.model.{JAXBUtil, ImportFilter}
+
 import org.xml.sax.InputSource
 import org.xml.sax.helpers.XMLReaderFactory
 
@@ -44,7 +49,7 @@ trait LogTrait {
 }
 
 /**
-  * An implementation of the FactoryOfModelInstanceFactory trait that supports all of the Python models.
+  * An implementation of the FactoryOfModelInstanceFactory trait that supports all of the JPMML models.
   */
 
 object JpmmlFactoryOfModelInstanceFactory extends FactoryOfModelInstanceFactory {
