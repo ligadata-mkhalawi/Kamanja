@@ -33,7 +33,7 @@ object LocationWatcher {
         if (!line.isEmpty() && !line.startsWith("#")) {
           val lProp = line.split("=")
           try {
-            logger.info("SMART FILE CONSUMER "+lProp(0) + " = "+lProp(1))
+            logger.warn("SMART FILE CONSUMER "+lProp(0) + " = "+lProp(1))
             properties(lProp(0)) = lProp(1)
           } catch {
             case iobe: IndexOutOfBoundsException => {
