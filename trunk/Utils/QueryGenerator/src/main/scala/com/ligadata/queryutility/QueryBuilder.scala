@@ -222,4 +222,15 @@ class QueryBuilder extends LogTrait {
     }
   }
 
+  def isCotnainer(name: String, cont: scala.collection.immutable.Set[ContainerDef]): Boolean ={
+    if (!cont.isEmpty){
+      for (container <- cont){
+        if(container.FullName.equalsIgnoreCase(name)){
+          return true
+        }
+      }
+    }
+    return false
+  }
+
 }

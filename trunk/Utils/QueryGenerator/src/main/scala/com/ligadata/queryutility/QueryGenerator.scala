@@ -25,6 +25,7 @@ import com.ligadata.kamanja.metadata._
 import org.apache.logging.log4j._
 import java.sql.Connection
 
+import org.json4s.DefaultFormats
 import org.json4s.native.JsonMethods._
 import shapeless.option
 
@@ -665,6 +666,39 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
             }
           }
         }
+
+        // add link between model and container (model ===ReadFrom===> container)
+        //        implicit val formats = DefaultFormats
+        //        val json = parse(model.modelConfig)
+        //        val modelName = "kamanja." + model.Name
+        //        val res: org.json4s.JsonAST.JValue = (json \ modelName \ "MessageAndContainers")
+        //        val listOfDepeb = res.values.asInstanceOf[List[String]]
+        //        for(item <- listOfDepeb){
+        //          if(queryObj.isCotnainer(item, containerDefs.get)){
+        //            val contianerTyp = "Container".toLowerCase()
+        //            val containernm = (contianerTyp + "," + item).toLowerCase
+        //            val contVertexId = verticesNewByTypAndFullName.getOrElse(containernm, null)
+        //            val mdlnm = ("Model," + model.FullName).toLowerCase
+        //            val mdlVertexId = verticesNewByTypAndFullName.getOrElse(mdlnm, null)
+        //            if (contVertexId != null && mdlVertexId != null && !contVertexId.isEmpty && !mdlVertexId.isEmpty){
+        //              val linkKey = mdlVertexId + "," + contVertexId + "," + "ReadFrom"
+        //              val fromlink = mdlVertexId
+        //              val tolink = contVertexId
+        //
+        //              currentEdgesSet += linkKey.toLowerCase
+        //              if (!edgeData.contains(linkKey.toLowerCase)) {
+        //                val setQuery = "set Name = \"%s\"".format("ReadFrom")
+        //                val query: String = queryObj.createQuery(elementType = "edge", className = "ReadFrom", setQuery = setQuery, linkFrom = Option(fromlink), linkTo = Option(tolink))
+        //                queryObj.executeQuery(conn, query)
+        //                logger.debug(query)
+        //                println(query)
+        //              } else {
+        //                logger.debug("The edge exist between this two nodes %s , %s".format(fromlink, tolink))
+        //                println("The edge exist between this two nodes %s, %s".format(fromlink, tolink))
+        //              }
+        //            }
+        //          }
+        //        }
       }
     }
 
