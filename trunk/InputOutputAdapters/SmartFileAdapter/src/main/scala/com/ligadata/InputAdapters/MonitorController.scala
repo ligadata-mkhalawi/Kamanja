@@ -114,6 +114,18 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
     }
   }
 
+  def bufferingQRemove(fileHandler: SmartFileHandler): Unit = {
+    bufferingQLock.synchronized {
+     try {
+      bufferingQ_map.remove(fileHandler)
+     } catch {
+       case e: Throwable => {
+         logger.error("SMART FILE CONSUMER: failed to remove file " + fileHandler.getFullPath + " from bufferingQ files list")
+       }
+     }
+    }
+  }
+
   // Stuff used by the File Priority Queue.
   def OldestFile(file: EnqueuedFileHandler): Long = {
     file.createDate * -1
@@ -163,7 +175,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
                 case Some(initialFileInfo) => initialFiles = initialFiles diff List(initialFileInfo)
               }*/
               logger.debug("SMART FILE CONSUMER (MonitorController): file {} is already in initial files", fileHandler.getFullPath)
-              bufferingQ_map.remove(fileHandler)
+              bufferingQRemove(fileHandler)
               //initialFiles = initialFiles diff fileHandler.getFullPath
 
               logger.debug("SMART FILE CONSUMER (MonitorController): now initialFiles = {}",initialFiles)
@@ -187,7 +199,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
                       enQFile(fileTuple._1, NOT_RECOVERY_SITUATION, fileHandler.lastModified)
                       newlyAdded.append(fileHandler)
                     }
-                    bufferingQ_map.remove(fileTuple._1)
+                    bufferingQRemove(fileTuple._1)
 
                   } else {
                     // Here becayse either the file is sitll of len 0,or its deemed to be invalid.
@@ -196,24 +208,27 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
                       if (diff > bufferTimeout) {
                         logger.warn("SMART FILE CONSUMER (MonitorController): Detected that " + fileHandler.getFullPath + " has been on the buffering queue longer then " + bufferTimeout / 1000 + " seconds - Cleaning up")
                         moveFile(fileTuple._1)
-                        bufferingQ_map.remove(fileTuple._1)
+                        bufferingQRemove(fileTuple._1)
                       }
                     } else {
                       //Invalid File - due to content type
                       logger.error("SMART FILE CONSUMER (MonitorController): Moving out " + fileHandler.getFullPath + " with invalid file type ")
                       moveFile(fileTuple._1)
-                      bufferingQ_map.remove(fileTuple._1)
+                      bufferingQRemove(fileTuple._1)
                     }
                   }
                 } else {
                   logger.debug("SMART FILE CONSUMER (MonitorController):  File {} size changed from {} to {}",
                     fileHandler.getFullPath, thisFileOrigLength.toString, fileTuple._2._1.toString)
-                  bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
+                  // Lock this before update
+                  bufferingQLock.synchronized {
+                    bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
+                  }
                 }
               } else {
                 // File System is not accessible.. issue a warning and go on to the next file.
                 logger.warn("SMART FILE CONSUMER (MonitorController): File on the buffering Q is not found " + fileHandler.getFullPath)
-                bufferingQ_map.remove(fileTuple._1)
+                bufferingQRemove(fileTuple._1)
               }
             }
           } catch {
@@ -223,14 +238,16 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
                 logger.warn("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + fileTuple._1.getFullPath + " on the buffering queue", ioe)
                 try {
                   moveFile(fileTuple._1)
-                  bufferingQ_map.remove(fileTuple._1)
+                  bufferingQRemove(fileTuple._1)
                 } catch {
                   case e: Throwable => {
                     logger.error("SMART_FILE_CONSUMER: Failed to move file, retyring", e)
                   }
                 }
               } else {
-                bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
+                bufferingQLock.synchronized {
+                  bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
+                }
                 logger.warn("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue ", ioe)
               }
             }
@@ -240,14 +257,16 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
                 logger.error("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + fileTuple._1 + " on the buffering queue", e)
                 try {
                   moveFile(fileTuple._1)
-                  bufferingQ_map.remove(fileTuple._1)
+                  bufferingQRemove(fileTuple._1)
                 } catch {
                   case e: Throwable => {
                     logger.error("SMART_FILE_CONSUMER (MonitorController): Failed to move file, retyring", e)
                   }
                 }
               } else {
-                bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
+                bufferingQLock.synchronized {
+                  bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
+                }
                 logger.error("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue ", e)
               }
             }

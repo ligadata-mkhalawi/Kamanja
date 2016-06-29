@@ -32,7 +32,7 @@ object CompressionUtil {
   def LZO_MAGIC   = 0x4f5a4c
   def GZIP_MAGIC = GZIPInputStream.GZIP_MAGIC
 
-
+  private var maxFormatValidationArea = 1048576
 
   /**
     * gets what type of compression used to compress the file
@@ -139,11 +139,21 @@ object CompressionUtil {
 
         //read some bytes to pass to getMagicMatch
         is = fileHandler.getDefaultInputStream()
-        val bufferSize = 10
-        val bytes = new Array[Byte](bufferSize)
-        is.read(bytes, 0, bufferSize)
 
-        magicMatcher = Magic.getMagicMatch(bytes, false)
+        // BUGBUG:: Take NMB from config.
+        // Get Max N MB to detect contentType
+        val buffSzToTestContextType = maxFormatValidationArea;
+        // Default is 1 * 1024 * 1024
+        val tmpbuffer = new Array[Byte](buffSzToTestContextType)
+
+        val readlen = is.read(tmpbuffer, 0, buffSzToTestContextType)
+        val buffer =
+          if (readlen < buffSzToTestContextType)
+            java.util.Arrays.copyOf(tmpbuffer, readlen);
+          else
+            tmpbuffer
+
+        magicMatcher = Magic.getMagicMatch(buffer, false)
         if(magicMatcher != null)
           contentType = magicMatcher.getMimeType
       }catch{
