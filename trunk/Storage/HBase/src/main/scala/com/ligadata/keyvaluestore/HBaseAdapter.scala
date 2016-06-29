@@ -33,25 +33,25 @@ import org.apache.hadoop.hbase.filter.CompareFilter.CompareOp
 // hadoop security model
 import org.apache.hadoop.security.UserGroupInformation
 
-import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
+//import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
+//import org.apache.hadoop.conf.Configuration;
+//import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.{ BufferedMutator, BufferedMutatorParams, Connection, ConnectionFactory }
 
 import org.apache.hadoop.hbase._
 
-import org.apache.logging.log4j._
-import java.nio.ByteBuffer
-import java.io.IOException
+//import org.apache.logging.log4j._
+//import java.nio.ByteBuffer
+//import java.io.IOException
 import org.json4s._
-import org.json4s.JsonDSL._
+//import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import com.ligadata.Exceptions._
 import com.ligadata.Utils.{ KamanjaLoaderInfo }
 import com.ligadata.KvBase.{ Key, TimeRange, Value }
 import com.ligadata.StorageBase.{ DataStore, Transaction, StorageAdapterFactory }
-import java.util.{ Date, Calendar, TimeZone }
-import java.text.SimpleDateFormat
+//import java.util.{ Date, Calendar, TimeZone }
+//import java.text.SimpleDateFormat
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -253,7 +253,8 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       throw CreateConnectionException("Unable to connect to hbase at " + hostnames, e)
     }
   }
-  val admin = new HBaseAdmin(config);
+
+  val admin = conn.getAdmin
   CreateNameSpace(namespace)
 
   private def relogin: Unit = {
@@ -285,7 +286,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
     var tableName = toFullTableName(isMetadataTableName) // prepend namespace
     try {
       relogin
-      if (!admin.tableExists(tableName)) {
+      if (!admin.tableExists(TableName.valueOf(tableName))) {
         val tableDesc = new HTableDescriptor(TableName.valueOf(tableName));
         val colDesc1 = new HColumnDescriptor("key".getBytes())
         val colDesc2 = new HColumnDescriptor(isMetadataTableStrBytes)
@@ -329,7 +330,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
     var tableHBase: Table = null
     try {
       relogin
-      if (admin.tableExists(tableName)) {
+      if (admin.tableExists(TableName.valueOf(tableName))) {
 	tableHBase = getTableFromConnection(tableName);
 	val g = new Get(containerName.getBytes())
 	val r = tableHBase.get(g);
@@ -361,7 +362,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
   private def createTable(containerName:String, tableName: String, isMetadata: Boolean, apiType: String): Unit = {
     try {
       relogin
-      if (!admin.tableExists(tableName)) {
+      if (!admin.tableExists(TableName.valueOf(tableName))) {
         if (autoCreateTables.equalsIgnoreCase("NO")) {
           apiType match {
             case "dml" => {
@@ -404,11 +405,12 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
   private def dropTable(tableName: String): Unit = {
     try {
       relogin
-      if (admin.tableExists(tableName)) {
-        if (admin.isTableEnabled(tableName)) {
-          admin.disableTable(tableName)
+      val tblNm = TableName.valueOf(tableName)
+      if (admin.tableExists(tblNm)) {
+        if (admin.isTableEnabled(tblNm)) {
+          admin.disableTable(tblNm)
         }
-        admin.deleteTable(tableName)
+        admin.deleteTable(tblNm)
       }
     } catch {
       case e: Exception => {
@@ -428,7 +430,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       lock.synchronized {
         val isMetadata = getIsMetadataFlag(containerName)
 	var fullTableName = toFullTableName(containerName)
-	if ( ! admin.tableExists(fullTableName)) {
+	if ( ! admin.tableExists(TableName.valueOf(fullTableName))) {
 	  createTable(containerName,fullTableName,isMetadata,apiType)
 	}
         containerList.add(containerName)
@@ -1724,11 +1726,11 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
 
     try {
       relogin
-      if (!admin.tableExists(srcTableName)) {
+      if (!admin.tableExists(TableName.valueOf(srcTableName))) {
         logger.warn("The table being renamed doesn't exist, nothing to be done")
         throw CreateDDLException("Failed to rename the table " + srcTableName + ":", new Exception("Source Table doesn't exist"))
       }
-      if (admin.tableExists(destTableName)) {
+      if (admin.tableExists(TableName.valueOf(destTableName))) {
         if (forceCopy) {
           dropTable(destTableName);
         } else {
@@ -1808,7 +1810,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
   override def isContainerExists(containerName: String): Boolean = {
     relogin
     var tableName = toFullTableName(containerName)
-    admin.tableExists(tableName)
+    admin.tableExists(TableName.valueOf(tableName))
   }
 
   override def copyContainer(srcContainerName: String, destContainerName: String, forceCopy: Boolean): Unit = lock.synchronized {
@@ -1903,7 +1905,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
   }
 
   override def isTableExists(tableName: String): Boolean = {
-    admin.tableExists(tableName)
+    admin.tableExists(TableName.valueOf(tableName))
   }
 
   override def isTableExists(tableNamespace: String, tableName: String): Boolean = {
