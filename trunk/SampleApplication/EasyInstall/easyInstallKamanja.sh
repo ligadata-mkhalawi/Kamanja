@@ -199,6 +199,7 @@ cp Utils/ClusterInstaller/InstallDriver/src/main/resources/GetComponentsVersions
 cp Utils/PmmlTestTool/target/pmmltesttool* $systemlib
 #cp Utils/Migrate/MigrateManager/target/MigrateManager* $bin
 cp Utils/JsonChecker/target/scala-2.10/jsonchecker* $systemlib
+cp Utils/QueryGenerator/target/scala-2.10/querygenerator* $systemlib
 cp Utils/GenerateMessage/target/scala-2.10/generatemessage* $systemlib
 
 # copy fat jars to KamanjaInstall
@@ -490,6 +491,7 @@ cp $srcPath/Utils/NodeInfoExtract/target/scala-2.11/nodeinfoextract* $systemlib
 #cp KamanjaInternalDeps/target/scala-2.11/KamanjaInternalDeps_2.11-1.5.0.jar $systemlib
 cp Utils/PmmlTestTool/target/pmmltesttool* $systemlib
 cp Utils/JsonChecker/target/scala-2.11/jsonchecker* $systemlib
+cp Utils/QueryGenerator/target/scala-2.11/querygenerator* $systemlib
 cp Utils/GenerateMessage/target/scala-2.11/generatemessage* $systemlib
 
 # copy jars used to reduce package size

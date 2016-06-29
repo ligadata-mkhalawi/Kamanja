@@ -22,6 +22,7 @@ assemblyMergeStrategy in assembly := {
   // case PathList(ps @ _*) if ps.last endsWith ".html" => MergeStrategy.first
   case PathList("META-INF", "maven", "jline", "jline", ps) if ps.startsWith("pom") => MergeStrategy.discard
   case PathList(ps@_*) if ps.last endsWith ".html" => MergeStrategy.first
+  case x if x endsWith ".class" => MergeStrategy.last
   case x if x endsWith "google/common/annotations/GwtCompatible.class" => MergeStrategy.first
   case x if x endsWith "google/common/annotations/GwtIncompatible.class" => MergeStrategy.first
   case x if x endsWith "/apache/commons/beanutils/BasicDynaBean.class" => MergeStrategy.first

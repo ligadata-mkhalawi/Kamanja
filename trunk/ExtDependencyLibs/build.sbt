@@ -396,3 +396,6 @@ libraryDependencies += "net.jcip" % "jcip-annotations" % "1.0"
 
 ////////////////////// TreeMap
 //already available
+
+// QueryGenerator
+// libraryDependencies += "com.orientechnologies" % "orientdb-jdbc" % "2.1.19"
