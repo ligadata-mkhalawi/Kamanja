@@ -29,16 +29,13 @@ import org.python.core.PySystemState
 class HelloWorldJythonFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
 
   override def getModelName(): String = {
-    "com.ligadata.kamanja.samples.models.HelloWorldJythonModel"
+    "com.ligadata.kamanja.samples.models.HelloWorldJythonModel" // ToDo: get from metadata
   }
 
   override def getVersion(): String = {
     "0.0.8" // ToDo: get from metadata
   }
 
-  override def isValidMessage(msg: MessageContainerBase): Boolean = {
-    true
-  }
   override def createModelInstance(): ModelInstance = {
     return new HelloWorldJythonModel(this)
   }
