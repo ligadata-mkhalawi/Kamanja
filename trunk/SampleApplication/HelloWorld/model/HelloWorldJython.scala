@@ -19,7 +19,7 @@ import org.python.core.Py
 import org.python.core.PyObject
 import org.python.core.PyString
 import org.python.util.PythonInterpreter
-import com.ligadata.kamanja.metadata.ModelDef
+import com.ligadata.kamanja.metadata.{MdMgr, ModelDef}
 import com.ligadata.KamanjaBase._
 import com.ligadata.kamanja.samples.messages._
 import java.util.Properties
@@ -42,6 +42,16 @@ class HelloWorldJythonFactory(modelDef: ModelDef, nodeContext: NodeContext) exte
 }
 
 class HelloWorldJythonModel(factory: ModelInstanceFactory) extends ModelInstance(factory) {
+
+  /** Split a fully qualified object name into namspace and class
+    *
+    * @param name is a fully qualified class name
+    * @return tuple with namespace and class name
+    */
+  def splitNamespaceClass(name: String): (String, String) = {
+    val elements = name.split('.')
+    (elements.dropRight(1).mkString("."), elements.last)
+  }
 
   def urlses(cl: ClassLoader): Array[java.net.URL] = cl match {
     case null => Array()
@@ -69,7 +79,6 @@ class HelloWorldJythonModel(factory: ModelInstanceFactory) extends ModelInstance
       |# limitations under the License.
       |#
       |from com.ligadata.runtime import Log
-      |from com.ligadata.kamanja.samples.messages.V1000000 import outmsg1
       |
       |class Model():
       |    def __init__(self):
@@ -101,12 +110,32 @@ class HelloWorldJythonModel(factory: ModelInstanceFactory) extends ModelInstance
 
   {
     val urls2 = urlses(getModelInstanceFactory().getClass.getClassLoader)
-    logger.Info("CLASSPATH-JYTHON-1:=" + urls2.mkString(":"))
+    logger.Debug("CLASSPATH-JYTHON-1:=" + urls2.mkString(":"))
   }
 
   val interpreter = new org.python.util.PythonInterpreter
 
+  val mgr : MdMgr = MdMgr.GetMdMgr
+
   val modelObject: PyObject = try {
+
+  // Go through all possible output messages and addt them as imports incl. version
+  val ouputmessages = getModelInstanceFactory().getModelDef().outputMsgs
+
+  // Load output messages into the interpreter
+  ouputmessages.foreach( m => {
+    val classname = m
+    val classMd = mgr.Message(classname, 0, true)
+    if(classMd.isEmpty) {
+      throw new Exception("Metadata: unable to find class %s".format(classname))
+    }
+    val name: String = classMd.get.physicalName
+    val (packagename, class1) = splitNamespaceClass(name)
+    val importCommand = "from %s import %s".format(packagename, class1)
+    logger.Debug(importCommand)
+    interpreter.exec(importCommand)
+  })
+
     // Load the code
     interpreter.exec(code)
 
