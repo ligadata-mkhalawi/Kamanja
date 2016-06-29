@@ -20,12 +20,13 @@ import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import scala.io.Source
-import com.ligadata.Exceptions.KamanjaException
+import com.ligadata.Exceptions._
 import org.apache.logging.log4j.{ Logger, LogManager }
 
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType
 import com.ligadata.MetadataAPI.Utility._
 import com.ligadata.kamanja.metadata.MdMgr
+
 
 import scala.collection.mutable
 import scala.collection.immutable
@@ -335,7 +336,13 @@ object StartMetadataAPI {
 
 
 
-    getMetadataAPI.InitMdMgrFromBootStrap(config, false)
+      getMetadataAPI.InitMdMgrFromBootStrap(config, false)
+      val tenantId = extraCmdArgs.getOrElse(TENANTID,"")
+      if (tenantId != "") {
+        if (isValidTenantId(extraCmdArgs.getOrElse(TENANTID,"")) ==  false) {
+          throw TenantIdNotFoundException("Tennat Id not found, please use valid tenantid or add tenantid in ClusterConfig", null)
+        }
+      }
       if (action == "")
         TestMetadataAPI.StartTest
       else {
@@ -345,6 +352,11 @@ object StartMetadataAPI {
       }
     }
     catch {
+      case e : TenantIdNotFoundException => {
+        logger.error("Unable to get tenantid info, please add it to ClusterConfig before using. ", e.getMessage)
+        response =   new ApiResult(-1, "StartMetadataAPI", null, e.getMessage).toString
+        println("Result: " + response)
+      }
       case e: NoSuchElementException => {
         println("action trim"+action.trim());
         logger.error("Route not found",e.getMessage)
@@ -403,6 +415,16 @@ object StartMetadataAPI {
     else
       return false
 
+  }
+
+  def isValidTenantId (tenantId : String) : Boolean = {
+
+    val tenatInfo = MdMgr.GetMdMgr.GetTenantInfo(tenantId.toLowerCase)
+    if (tenatInfo == null) {
+      logger.error("Not found tenantInfo for tenantId " + tenantId)
+      return false
+     }
+    return true
   }
 
   // main

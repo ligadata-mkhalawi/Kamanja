@@ -468,10 +468,10 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
       logger.info("SMART FILE CONSUMER ("+partIdx+") Moving File" + fileName + " to " + inConfiguration(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO))
       Files.move(Paths.get(fileName), Paths.get( inConfiguration(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO) + "/" + fileStruct(fileStruct.size - 1)),REPLACE_EXISTING)
       
-      //Use the full filename 
+      //Use the full filename
+      FileProcessor.removeFromZK(fileName)
       FileProcessor.markFileProcessingEnd(fileName)
       FileProcessor.fileCacheRemove(fileName)
-      FileProcessor.removeFromZK(fileName)
        
     } catch {
       case ioe: IOException => {

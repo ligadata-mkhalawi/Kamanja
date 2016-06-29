@@ -209,14 +209,22 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         val statusCheckerThread = new Runnable() {
           var lastStatus : scala.collection.mutable.Map[String, (Long, Int)] = null
           override def run(): Unit = {
-
-            while(keepCheckingStatus){
-              lastStatus = checkParticipantsStatus(lastStatus)
-              try {
-                Thread.sleep(statusUpdateInterval)
-              }
-              catch{case e : Throwable => }
-            }
+           while(keepCheckingStatus){
+             lastStatus = checkParticipantsStatus(lastStatus)
+             try {
+               Thread.sleep(statusUpdateInterval)
+             }
+             catch{
+               case ie: InterruptedException => {
+                 LOG.debug("Smart File Consumer - interrupted " + ie)
+                 throw ie
+               }
+               case e : Throwable => {
+                 externalizeExceptionEvent(e)
+                 LOG.debug("Smart File Consumer - unkown exception " + e)
+               }
+             }
+           }
           }
         }
         keepCheckingStatus = true
@@ -1109,14 +1117,15 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     }
     catch{
       case e : Exception => {
+        externalizeExceptionEvent(e)
         LOG.error(s"SMART FILE CONSUMER - Failed to move file ($originalFilePath) into directory ($targetMoveDir)")
         return false
       }
       case e : Throwable => {
+        externalizeExceptionEvent(e)
         LOG.error(s"SMART FILE CONSUMER - Failed to move file ($originalFilePath) into directory ($targetMoveDir)")
-        return  false
+        return false
       }
-
     }
   }
   //******************************************************************************************************
@@ -1132,10 +1141,12 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       key.Deserialize(k)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         LOG.error("Failed to deserialize Key:%s.".format(k), e)
         throw e
       }
       case e: Throwable => {
+        externalizeExceptionEvent(e)
         LOG.error("Failed to deserialize Key:%s.".format(k), e)
         throw e
       }
@@ -1151,10 +1162,12 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         vl.Deserialize(v)
       } catch {
         case e: Exception => {
+          externalizeExceptionEvent(e)
           LOG.error("Failed to deserialize Value:%s.".format(v), e)
           throw e
         }
         case e: Throwable => {
+          externalizeExceptionEvent(e)
           LOG.error("Failed to deserialize Value:%s.".format(v), e)
           throw e
         }
