@@ -139,7 +139,22 @@ class HelloWorldJythonModel(factory: ModelInstanceFactory) extends ModelInstance
     logger.Debug(importCommand)
     interpreter.exec(importCommand)
   })
-
+  
+/* From /home/joerg/Kamanja/trunk/MetadataAPI/src/main/scala/com/ligadata/MetadataAPI/CompilerProxy.scala
+// Remove all the existing reference to the dependent types code, they are not really valid
+    elements.foreach(elem => {
+      var eName: Array[String] = elem.PhysicalName.split('.').map(_.trim)
+      if ((eName.length - 1) > 0) {
+        typeNamespace = new Array[String](eName.length - 1)
+        for (i <- 0 until typeNamespace.length) {
+          typeNamespace(i) = eName(i)
+        }
+        var typeClassName: String = eName(eName.length - 1)
+        // Replace the "import com...ClassName" import statement
+        repackagedCode = repackagedCode.replaceAll(("\\s*import\\s*" + typeNamespace.mkString(".") + "[.*]" + typeClassName + "\\;*"), "")
+      }
+    })
+ */
     // Load the code
     interpreter.exec(code)
 
