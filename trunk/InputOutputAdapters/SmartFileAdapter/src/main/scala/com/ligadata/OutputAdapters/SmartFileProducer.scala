@@ -19,6 +19,7 @@ package com.ligadata.OutputAdapters
 import org.apache.logging.log4j.{ Logger, LogManager }
 import java.io._
 import java.text.SimpleDateFormat
+import java.util.TimeZone
 import java.util.zip.{ ZipException, GZIPOutputStream }
 import java.nio.file.{ Paths, Files }
 import java.net.URI
@@ -103,7 +104,9 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   if (fc.partitionFormat != null) {
     val partitionVariable = "\\$\\{([^\\}]+)\\}".r
     partitionDateFormats = partitionVariable.findAllMatchIn(fc.partitionFormat).map(x => try {
-      new SimpleDateFormat(x.group(1))
+      val fmt = new SimpleDateFormat(x.group(1))
+      fmt.setTimeZone(TimeZone.getTimeZone("UTC"))
+      fmt
     } catch {
       case e: Exception => { throw FatalAdapterException(x.group(1) + " is not a valid date format string.", e) }
     }).toList
@@ -249,7 +252,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   }
   
   override def getComponentSimpleStats: String = {
-    ""
+    Category + "/" + getAdapterName + "/evtCnt->" + metrics("MessagesProcessed").asInstanceOf[AtomicLong].get
   }
 
   private def getPartionFile(record: ContainerInterface) : PartitionFile = {
