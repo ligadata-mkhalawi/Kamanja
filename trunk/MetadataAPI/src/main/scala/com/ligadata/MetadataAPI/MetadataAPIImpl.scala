@@ -1504,7 +1504,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     /**
      * ModifyObject
       *
-      * @param objDeleteObject
+      * @param obj
      * @param operation
      */
   def ModifyObject(obj: BaseElemDef, operation: String) {
@@ -2022,10 +2022,10 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     /**
      * AddContainer
       *
-      * @param containerText
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+      * param containerText
+     * param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
      *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
+     * return
      */
  // def AddContainer(containerText: String, userid: Option[String], tenantId: Option[String] = None): String = {
  //   AddContainer(containerText, "JSON", userid, tenantId)
@@ -2077,10 +2077,10 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     /**
      * UpdateContainer
       *
-      * @param messageText
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+      * param messageText
+     * param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
      *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
+     * return
      */
  // def UpdateContainer(messageText: String, userid: Option[String]): String = {
  //   UpdateMessage(messageText, "JSON", userid)
@@ -2089,10 +2089,10 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     /**
      * UpdateMessage
       *
-      * @param messageText
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+      * param messageText
+     * param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
      *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
+     * return
      */
   //def UpdateMessage(messageText: String, userid: Option[String]): String = {
   //  UpdateMessage(messageText, "JSON", userid)
@@ -2290,6 +2290,9 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
       * @param optVersion the model version to be used to describe this PMML model
       * @param optMsgConsumed the namespace.name of the message to be consumed by a PMML model
       * @param optMsgVersion the version of the message to be consumed. By default Some(-1)
+      * @param optMsgProduced the output message to be created when a model result is produced
+      * @param pStr Json string containing global information
+      * @param modelOptions model specific options used by model instance initialization
       * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
       * indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
       * ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
@@ -2302,10 +2305,11 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
                            , optVersion: Option[String] = None
                            , optMsgConsumed: Option[String] = None
                            , optMsgVersion: Option[String] = Some("-1")
-    , optMsgProduced: Option[String] = None,
-    pStr : Option[String]
+                           , optMsgProduced: Option[String] = None
+                         , pStr : Option[String]
+                         , modelOptions : Option[String]
 		       ): String  = {
-    ModelUtils.AddModel(modelType, input, optUserid, optTenantid, optModelName, optVersion, optMsgConsumed, optMsgVersion, optMsgProduced, pStr)
+    ModelUtils.AddModel(modelType, input, optUserid, optTenantid, optModelName, optVersion, optMsgConsumed, optMsgVersion, optMsgProduced, pStr, modelOptions)
   }
 
   /**
@@ -2349,18 +2353,22 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
      * @param optVersion the model version to be used to describe this PMML model (for KPMML types this value is obtained from the source file)
      * @param optVersionBeingUpdated not used .. reserved for future release where explicit modelnamespace.modelname.modelversion
      *                               can be updated (not just the latest version)
+     * @param optMsgProduced the output message to be created when a model result is produced
+     * @param pStr Json string containing global information
+     * @param modelOptions model specific options used by model instance initialization
      * @return  result string indicating success or failure of operation
      */
-    override def UpdateModel(modelType: ModelType.ModelType
+    def UpdateModel(modelType: ModelType.ModelType
                             , input: String
                             , optUserid: Option[String] = None
                             , tenantid:  Option[String] = None
                             , optModelName: Option[String] = None
                             , optVersion: Option[String] = None
                             , optVersionBeingUpdated : Option[String] = None
-      , optMsgProduced: Option[String] = None,
-      pStr: Option[String]): String = {
-      ModelUtils.UpdateModel(modelType, input, optUserid, tenantid, optModelName, optVersion, optVersionBeingUpdated, optMsgProduced,pStr)
+                            , optMsgProduced: Option[String] = None
+                            , pStr: Option[String]
+                            , modelOptions : Option[String]): String = {
+      ModelUtils.UpdateModel(modelType, input, optUserid, tenantid, optModelName, optVersion, optVersionBeingUpdated, optMsgProduced, pStr, modelOptions)
     }
 
     /**

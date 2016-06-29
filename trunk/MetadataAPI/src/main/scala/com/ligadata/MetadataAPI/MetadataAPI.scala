@@ -524,6 +524,9 @@ trait MetadataAPI {
     * @param modelName the namespace.name of the PMML model to be added to the Kamanja metadata
     * @param version the model version to be used to describe this PMML model
     * @param msgConsumed the namespace.name of the message to be consumed by a PMML model
+    * @param optMsgProduced the namespace.name of the message to be produced by a PMML model
+    * @param modelOptions model specific properties
+    * @param pStr global properties
     * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
     * indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
     * ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
@@ -537,8 +540,9 @@ trait MetadataAPI {
                 , version: Option[String] = None
                 , msgConsumed: Option[String] = None
                 , msgVer : Option[String] = Some("-1")
-    , optMsgProduced: Option[String] = None,
-    pStr : Option[String]
+                , optMsgProduced: Option[String] = None
+                , pStr : Option[String]
+                , modelOptions : Option[String] = None
               ): String
 
   /** Update model given the supplied input.  Like the Add model, the ''modelType'' controls the processing and describes the
@@ -566,6 +570,9 @@ trait MetadataAPI {
     *                version in use and unique for models with the modelName
     * @param optVersionBeingUpdated not used .. reserved for future release where explicit modelnamespace.modelname.modelversion
     *                               can be updated (not just the latest version)
+    * @param optMsgProduced the namespace.name of the message to be produced by a PMML model
+    * @param modelOptions model specific properties
+    * @param pStr global properties
     * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
     * indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
     * ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
@@ -577,8 +584,9 @@ trait MetadataAPI {
                   , modelName: Option[String] = None
                   , version: Option[String] = None
                   , optVersionBeingUpdated : Option[String] = None
-    , optMsgProduced: Option[String] = None,
-  pStr : Option[String]): String
+                  , optMsgProduced: Option[String] = None
+                  , pStr : Option[String]
+                  , modelOptions : Option[String]): String
 
   /** Remove model with the supplied ''modelName'' and ''version''.  If the SecurityAdapter and/or AuditAdapter have
     * been configured, the ''userid'' must also be supplied.
@@ -736,10 +744,10 @@ trait MetadataAPI {
    /** Retrieve All available FunctionDefs from Metadata Store. Answer the count and a string representation
     *  of them.
     *
-    * @param formatType format of the return value, either JSON or XML
-    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    * param formatType format of the return value, either JSON or XML
+    * param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-    * @return the function count and the result as a JSON String of object ApiResult where ApiResult.resultData contains
+    * return the function count and the result as a JSON String of object ApiResult where ApiResult.resultData contains
     * the FunctionDef(s) either as a JSON or XML string depending on the parameter formatType as a Tuple2[Int,String]
     */
 
@@ -804,10 +812,10 @@ trait MetadataAPI {
 
   /** Retrieve All available Concepts from Metadata Store
     *
-    * @param formatType format of the return value, either JSON or XML
-    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    * param formatType format of the return value, either JSON or XML
+    * param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-    * @return the result as a JSON String of object ApiResult where ApiResult.resultData contains
+    * return the result as a JSON String of object ApiResult where ApiResult.resultData contains
     * the Concept(s) either as a JSON or XML string depending on the parameter formatType
     */
 
@@ -908,7 +916,7 @@ trait MetadataAPI {
    /**
     * getHealthCheck - will return all the health-check information for the nodeId specified.
     *
-    * @param - nodeId: String - if no parameter specified, return health-check for all nodes
+    * @param nodeId: String - if no parameter specified, return health-check for all nodes
     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
     *               method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return status string

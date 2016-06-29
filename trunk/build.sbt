@@ -120,9 +120,9 @@ lazy val MetadataAPI = project.in(file("MetadataAPI")).configs(TestConfigs.all: 
 
 lazy val MetadataBootstrap = project.in(file("MetadataBootstrap/Bootstrap")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, BaseTypes, Exceptions)
 
-lazy val MetadataAPIService = project.in(file("MetadataAPIService")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KamanjaBase, MetadataAPI, ZooKeeperLeaderLatch, Exceptions)
+//lazy val MetadataAPIService = project.in(file("MetadataAPIService")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KamanjaBase, MetadataAPI, ZooKeeperLeaderLatch, Exceptions)
 
-lazy val MetadataAPIServiceClient = project.in(file("MetadataAPIServiceClient")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Serialize, Exceptions, KamanjaBase)
+//lazy val MetadataAPIServiceClient = project.in(file("MetadataAPIServiceClient")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Serialize, Exceptions, KamanjaBase)
 
 lazy val ContainersUtility = project.in(file("Utils/ContainersUtility")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, MetadataBootstrap, MetadataAPI, StorageManager, Exceptions, TransactionService)
 

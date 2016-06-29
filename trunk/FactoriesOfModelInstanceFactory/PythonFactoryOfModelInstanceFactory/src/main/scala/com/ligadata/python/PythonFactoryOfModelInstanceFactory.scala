@@ -14,51 +14,41 @@
  * limitations under the License.
  */
 
-package com.ligadata.jpmml
+package com.ligadata.python
 
-import scala.collection.JavaConverters._
 import scala.collection.mutable.{Map => MutableMap}
-
-import com.ligadata.kamanja.metadata.{MdMgr, ModelDef, BaseElem}
+import com.ligadata.kamanja.metadata.{BaseElem, MdMgr, ModelDef}
 import com.ligadata.KamanjaBase._
-import com.ligadata.Utils.{ Utils, KamanjaClassLoader, KamanjaLoaderInfo }
-
+import com.ligadata.Utils.{KamanjaLoaderInfo, Utils}
 import org.apache.logging.log4j.LogManager
 
-import java.io.{PushbackInputStream, ByteArrayInputStream, InputStream}
+import java.io.{ByteArrayInputStream, InputStream, PushbackInputStream}
 import java.nio.charset.StandardCharsets
-import java.util.{List => JList}
-import javax.xml.bind.{ValidationEvent, ValidationEventHandler}
-import javax.xml.transform.sax.SAXSource
 
+import org.json4s.jackson.JsonMethods._
+import org.json4s.native.Json
+import org.json4s.DefaultFormats
 
-import org.dmg.pmml.{PMML, FieldName}
-import org.jpmml.evaluator._
-import org.jpmml.model.{JAXBUtil, ImportFilter}
-
-import org.xml.sax.InputSource
-import org.xml.sax.helpers.XMLReaderFactory
+import scala.collection.immutable.Map
 
 object GlobalLogger {
     val loggerName = this.getClass.getName
     val logger = LogManager.getLogger(loggerName)
 }
 
-trait LogTrait {
-    val logger = GlobalLogger.logger
-}
 
 /**
   * An implementation of the FactoryOfModelInstanceFactory trait that supports all of the JPMML models.
   */
 
-object JpmmlFactoryOfModelInstanceFactory extends FactoryOfModelInstanceFactory {
+object PythonFactoryOfModelInstanceFactory extends FactoryOfModelInstanceFactory {
     private[this] val loggerName = this.getClass.getName
     private[this] val LOG = LogManager.getLogger(loggerName)
 
     /**
       * As part of the creation of the model instance factory, see to it that there any jars that it needs (either its
       * own or those upon which it depends) are loaded.
+      *
       * @param metadataLoader the engine's custom loader to use if/when instances of the model and the dependent jars are to be loaded
       * @param jarPaths  a Set of Paths that contain the dependency jars required by this factory instance to be created
       * @param elem a BaseElem (actually the ModelDef in this case) with an implementation jar and possible dependent jars
@@ -77,6 +67,7 @@ object JpmmlFactoryOfModelInstanceFactory extends FactoryOfModelInstanceFactory 
     /**
       * Answer a set of jars that contain the implementation jar and its dependent jars for the supplied BaseElem.
       * The list is checked for valid jar paths before returning.
+      *
       * @param jarPaths where jars are located in the cluster node.
       * @param elem the model definition that has a jar implementation and a list of dependency jars
       * @return an Array[String] containing the valid jar paths for the supplied element.
@@ -103,6 +94,7 @@ object JpmmlFactoryOfModelInstanceFactory extends FactoryOfModelInstanceFactory 
     /**
       * Instantiate a model instance factory for the supplied ''modelDef''.  The model instance factory can instantiate
       * instances of the model described by the ModelDef.
+      *
       * @param modelDef the metadatata object for which a model factory instance will be created.
       * @param nodeContext the NodeContext that provides access to model state and kamanja engine services.
       * @param loaderInfo the engine's custom loader to use if/when instances of the model and the dependent jars are to be loaded
@@ -121,9 +113,10 @@ object JpmmlFactoryOfModelInstanceFactory extends FactoryOfModelInstanceFactory 
 
         LoadJarIfNeeded(loaderInfo, jarPaths, modelDef)
 
-        val isReasonable : Boolean = (modelDef != null && modelDef.FullNameWithVer != null && modelDef.FullNameWithVer.nonEmpty)
+        val isReasonable : Boolean = modelDef != null && modelDef.FullNameWithVer != null && modelDef.FullNameWithVer.nonEmpty
         val mdlInstanceFactory : ModelInstanceFactory = if (isReasonable) {
-            val factory: JpmmlAdapterFactory = new JpmmlAdapterFactory(modelDef, nodeContext)
+
+            val factory: PythonAdapterFactory = new PythonAdapterFactory(modelDef, nodeContext)
 
             if (factory == null) {
                 LOG.error(s"Failed to instantiate ModelInstanceFactory... name = $modelDef.FullNameWithVer")
@@ -160,21 +153,71 @@ object JpmmlFactoryOfModelInstanceFactory extends FactoryOfModelInstanceFactory 
 }
 
 /**
-  * JpmmlAdapter serves a "shim" between the engine and a PMML evaluator that will perform the actual message
+  * PythonAdapter serves a "shim" between the engine and the python server that will perform the actual message
   * scoring. It exhibits the "adapter" pattern as discussed in "Design Patterns" by Gamma, Helm, Johnson, and Vlissitudes.
   *
   * Kamanja messages are presented to the adapter and transformed to a Map[FieldName, FieldValue] for consumption by
-  * the PMML evaluator associated with the JpmmlAdapter instance. The target fields (or predictions) and the output fields
+  * the PMML evaluator associated with the PythonAdapter instance. The target fields (or predictions) and the output fields
   * are returned in the MappedModelResults instance to the engine for further transformation and dispatch.
   *
   * @param factory This model's factory object
-  * @param modelEvaluator The PMML evaluator needed to evaluate the model for this model (modelName.modelVersion)
+  * @param host the host of the python server
+  * @param port the port of the python server
+  * @param pyPath the location of the python server and its accoutrements
+  * @param pyServerConnection the connection object used to communicate with the python server that the actual model
+  *                           runs on.
   */
 
-class JpmmlAdapter(factory : ModelInstanceFactory, modelEvaluator: ModelEvaluator[_]) extends ModelInstance(factory) {
+class PythonAdapter(factory : ModelInstanceFactory
+                    , val host : String
+                    , val port : Int
+                    , val pyPath : String
+                    , val pyServerConnection : PyServerConnection
+                   ) extends ModelInstance(factory) with LogTrait {
+
+    /** the input and output fields that are desired by the model instance (this info filled in after an addModel request) */
+    private var _inputFields : Map[String,Any] = Map[String,Any]()
+    private var _outputFields : Map[String,Any] = Map[String,Any]()
+
+    /**
+     *	One time initialization of the model instance.
+     *
+     *	@param instanceMetadata model metadata ...
+     *
+     */
+    override def init(instanceMetadata: String): Unit = {
+        implicit val formats = org.json4s.DefaultFormats
+        val modelDef : ModelDef = factory.getModelDef()
+        val modelOptStr : String = modelDef.modelConfig
+        val trimmedOptionStr : String = modelOptStr.trim
+        val modelOptions = parse(trimmedOptionStr).extract[Map[String, Any]]
+
+        /**
+          *
+          * FIXME: WE MUST PRESERVE THE INGESTED <model.py> to get the moduleName value.
+          */
+        val moduleName : String = "SomeModuleName" // modelDef.getModuleName
+        val resultStr : String = pyServerConnection.addModel(moduleName : String, modelDef.Name, modelDef.objectDefinition, modelOptions)
+        val resultMap : Map[String,Any] = parse(resultStr).extract[Map[String, Any]]
+        val rc = resultMap.getOrElse("Code", -1)
+        if (rc == 0) {
+            _inputFields = resultMap.getOrElse("InputFields", Map[String,Any]()).asInstanceOf[Map[String,Any]]
+            _outputFields = resultMap.getOrElse("OutputFields", Map[String,Any]()).asInstanceOf[Map[String,Any]]
+            logger.debug(s"Module '$moduleName.${modelDef.Name} successfully added to python server at $host(${port.toString}")
+        } else {
+            logger.error(s"Module '$moduleName.${modelDef.Name} could not be added to python server at $host(${port.toString}")
+            logger.error("s\"error details: '$resultStr'")
+        }
+    }
+
+    /** This calls when the instance is shutting down. There is no guarantee */
+    override def shutdown(): Unit = {
+        /** FIXME: the model COULD BE REMOVED from the python server here*/
+    }
 
     /**
       * The engine will call this method to have the model evaluate the input message and produce a ModelResultBase with results.
+      *
       * @param txnCtxt the transaction context (contains message, transaction id, partition key, raw data, et al)
       * @param outputDefault when true, a model result will always be produced with default values.  If false (ordinary case), output is
       *                      emitted only when the model deems this message worthy of report.  If desired the model may return a 'null'
@@ -188,102 +231,118 @@ class JpmmlAdapter(factory : ModelInstanceFactory, modelEvaluator: ModelEvaluato
 
     /**
       * Prepare the active fields, call the model evaluator, and emit results.
+      *
       * @param msg the incoming message containing the values of interest to be assigned to the active fields in the
       *            model's data dictionary.
       * @return
       */
     private def evaluateModel(msg : ContainerInterface): ModelResultBase = {
-        val activeFields = modelEvaluator.getActiveFields
-        val preparedFields = prepareFields(activeFields, msg, modelEvaluator)
-        val evalResultRaw : MutableMap[FieldName, _] = modelEvaluator.evaluate(preparedFields.asJava).asScala
-        val evalResults = replaceNull(evalResultRaw)
-        val results = EvaluatorUtil.decode(evalResults.asJava).asScala
+
+        val modelDef : ModelDef = factory.getModelDef()
+
+        val resultStr : String = pyServerConnection.exeuteModel(modelDef.Name, prepareFields(msg))
+        val results : Array[(String, Any)] = Array[(String, Any)]()
         new MappedModelResults().withResults(results.toArray)
     }
 
 
-    /** Since the PMML decode util for the map results shows that at least one key can possibly be null,
-      * let's give a name to it for our results.  This is likely just careful coding, but no harm
-      * taking precaution.  This is the tag for the null field:
-      */
-    val DEFAULT_NAME : FieldName = FieldName.create("Anon_Result")
-
     /**
-      * If there is a missing key (an anonymous result), try to manufacture a key for the map so that
-      * all of the result fields returned are decoded and returned.
+      * Send only those fields that are specified in the inputField state retrieved from the addModel result.
       *
-      * @param evalResults a mutable map of the results from an evaluator's evaluate function
-      * @tparam V the result type
-      * @return a map with any null key replaced with a manufactured field name
-      */
-    private def replaceNull[V](evalResults: MutableMap[FieldName, V]): MutableMap[FieldName, V] = {
-        evalResults.get(null.asInstanceOf[FieldName]).fold(evalResults)(v => {
-            evalResults - null.asInstanceOf[FieldName] + (DEFAULT_NAME -> v)
-        })
-    }
-
-    /**
-      * Prepare the active fields in the data dictionary of the model with corresponding values from the incoming
-      * message.  Note that currently all field names in the model's data dictionary must exactly match the field names
-      * from the message.  There is no mapping capability metadata at this point.
-      *
-      * NOTE: It is possible to have missing inputs in the message.  The model, if written robustly, has accounted
-      * for missingValue and other strategies needed to produce results even with imperfect inputs.
-      * @see http://dmg.org/pmml/v4-2-1/MiningSchema.html for a discussion about this.
-      *
-      * @param activeFields a List of the FieldNames
       * @param msg the incoming message instance
-      * @param evaluator the PMML evaluator that the factory as arranged for this instance that can process the
-      *                  input values.
-      * @return
+      * @return a JSON map string suitable for submission to the server.
       */
-    private def prepareFields(activeFields: JList[FieldName]
-                              , msg: ContainerInterface
-                              , evaluator: ModelEvaluator[_]) : Map[FieldName, FieldValue] = {
-        activeFields.asScala.foldLeft(Map.empty[FieldName, FieldValue])((map, activeField) => {
-            val key = activeField.getValue.toLowerCase
+    private def prepareFields(msg: ContainerInterface) : Map[String,Any] = {
+        val inputDictionary : Map[String,Any] = _inputFields.foldLeft(Map.empty[String, Any])((map, fld) => {
+            val key = fld._1.toLowerCase
             Option(msg.get(key)).fold(map)(value => {
-                val fieldValue : FieldValue = EvaluatorUtil.prepare(evaluator, activeField, value)
-                map.updated(activeField, fieldValue)
-
+                map.updated(key, value)
             })
         })
+
+        val msgDict : String = Json(DefaultFormats).write(inputDictionary)
+        logger.debug(s"model ${factory.getModelDef().Name} msg = $msgDict")
+        inputDictionary
     }
 }
 
 
 
 /**
-  * The JpmmlAdapterFactory instantiates its PMML model instance when asked by caller.  Its main function is to
-  * instantiate a new model whenever asked (createModelInstance) and assess whether the current message being processed
-  * by the engine is consumable by this model (isValidMessage)
+  * The PythonAdapterFactory instantiates Python proxy model instance when asked by caller.  Its main function is to
+  * instantiate a new python proxy model whenever asked (createModelInstance) and assess whether the current message being processed
+  * by the engine is consumable by this model (isValidMessage).
+  *
+  * The ModelInstanceFactory derivatives are created from FactoryOfModelInstanceFactory at engine startup and whenever
+  * a new model is added or changed when the engine is running.
   *
   * @param modelDef the model definition that describes the model that this factory will prepare
   * @param nodeContext the NodeContext object can be used by the model instances to put/get model state needed to
   *                    execute the model.
   */
 
-// ModelInstanceFactory will be created from FactoryOfModelInstanceFactory when metadata got resolved (while engine is starting and when metadata adding while running the engine).
-class JpmmlAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) with LogTrait {
+class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) with LogTrait {
+
+    /** Instance variables */
+    private var _host : String = null
+    private var _port : Int = -1
+    private var _pyPath : String = null
+    private var _pyServerConnection : PyServerConnection = null
+    private var _isUsable : Boolean = false
 
     // This calls when the instance got created. And only calls once per instance.
     // Common initialization for all Model Instances. This gets called once per node during the metadata load or corresponding model def change.
     //	Intput:
     //		txnCtxt: Transaction context to do get operations on this transactionid. But this transaction will be rolledback once the initialization is done.
-    override def init(txnContext: TransactionContext): Unit = {}
+    override def init(txnContext: TransactionContext): Unit = {
+        val host : String = if (nodeContext.getValue("HOST") != null)
+            nodeContext.getValue("HOST").asInstanceOf[String]
+        else null
+        val port : Int = if (nodeContext.getValue("PORT") != null)
+            nodeContext.getValue("PORT").asInstanceOf[Int]
+        else -1
+        val pyPath : String = if (nodeContext.getValue("PYTHON_PATH") != null)
+            nodeContext.getValue("PYTHON_PATH").asInstanceOf[String]
+        else null
+        val low_level_proxy_server_connection_object : PyServerConnection =
+            if (nodeContext.getValue(Thread.currentThread().getId.toString) != null)
+                nodeContext.getValue(Thread.currentThread().getId.toString).asInstanceOf[PyServerConnection]
+            else null
+        val isReasonable : Boolean = modelDef != null && modelDef.FullNameWithVer != null && modelDef.FullNameWithVer.nonEmpty && host != null && port != -1 && pyPath != null && low_level_proxy_server_connection_object != null
 
-    // This calls when the factory is shutting down. There is no guarantee.
-    override def shutdown(): Unit = {} // Shutting down this factory.
+        if (isReasonable) {
+            _host = host
+            _port = port
+            _pyPath = pyPath
+            _pyServerConnection  = low_level_proxy_server_connection_object
+            _isUsable = true
+        } else {
+            logger.error(s"The PythonAdapterProxy for model ${modelDef.FullName} could not be initialized...")
+            val hostStr : String = if (host != null) host else "<no host given>"
+            val portStr : String = if (port != -1) port.toString else "<no port given>"
+            val pyPathStr : String = if (pyPath != null) pyPath else "<no PYTHON_PATH given>"
+            val connObjStr : String = if (low_level_proxy_server_connection_object != null) "valid PyServerConnection" else "<bad PyServerConnection>"
+
+            logger.error(s"The values are:\nhost = $hostStr\nport = $portStr\npyPath = $pyPathStr\nconnection object = $connObjStr")
+        }
+
+    }
+
+    /**
+      * Called when the system is being shutdown, do any needed cleanup ...
+      */
+    override def shutdown(): Unit = {}
 
     /**
       * Answer the model name.
+      *
       * @return the model namespace.name.version
       */
     override def getModelName(): String = {
         val name : String = if (getModelDef() != null) {
             getModelDef().FullName
         } else {
-            val msg : String =  "JpmmlAdapterFactory: model has no name and no version"
+            val msg : String =  "PythonAdapterFactory: model has no name and no version"
             logger.error(msg)
             msg
         }
@@ -292,6 +351,7 @@ class JpmmlAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends 
 
     /**
       * Answer the model version.
+      *
       * @return the model version
       */
     override def getVersion(): String = {
@@ -317,8 +377,8 @@ class JpmmlAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends 
         val msgVersion : String = msgVersionDots.filter(_ != '.').toString
         val msgNameKey : String = s"$msgFullName.$msgVersion".toLowerCase()
         val yum : Boolean = if (modelDef != null && modelDef.inputMsgSets != null) {
-            val filter = modelDef.inputMsgSets.filter(s => (s.size == 1 && s(0).message.toLowerCase == msgNameKey))
-            return filter.size > 0
+            val filter = modelDef.inputMsgSets.filter(s => s.length == 1 && s(0).message.toLowerCase == msgNameKey)
+            return filter.length > 0
         } else {
             false
         }
@@ -326,16 +386,19 @@ class JpmmlAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends 
     }
 
     /**
-      * Answer a model instance, obtaining a pre-existing one in the cache if possible.
+      * Answer a python proxy model instance.
+      *
       * @return - a ModelInstance that can process the message found in the TransactionContext supplied at execution time
       */
     override def createModelInstance(): ModelInstance = {
 
         val useThisModel : ModelInstance = if (modelDef != null) {
-            /** Ingest the pmml here and build an evaluator */
-            val modelEvaluator: ModelEvaluator[_] = createEvaluator(modelDef.objectDefinition)
+            /** 1) Add the model to the python server */
+            /** 2) Add the model to the python server */
+
             val isInstanceReusable : Boolean = true
-            val builtModel : ModelInstance = new JpmmlAdapter( this, modelEvaluator)
+            val pythonPath : String = nodeContext.getValue("PYTHONPATH").asInstanceOf[String]
+            val builtModel : ModelInstance = new PythonAdapter( this, _host, _port, _pyPath, _pyServerConnection)
             builtModel
         } else {
             logger.error("ModelDef in ctor was null...instance could not be built")
@@ -345,31 +408,8 @@ class JpmmlAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends 
     }
 
     /**
-      * Create the appropriate PMML evaluator based upon the pmml text supplied.
-      *
-      * @param pmmlText the PMML (xml) text for a PMML consumable model
-      * @return the appropriate PMML ModelEvaluator
-      */
-    private def createEvaluator(pmmlText : String) : ModelEvaluator[_] = {
-
-        val inputStream: InputStream = new ByteArrayInputStream(pmmlText.getBytes(StandardCharsets.UTF_8))
-        val is = new PushbackInputStream(inputStream)
-
-        val reader = XMLReaderFactory.createXMLReader()
-        reader.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
-        val filter = new ImportFilter(reader)
-        val source = new SAXSource(filter, new InputSource(is))
-        val unmarshaller = JAXBUtil.createUnmarshaller
-        unmarshaller.setEventHandler(SimpleValidationEventHandler)
-
-        val pmml: PMML = unmarshaller.unmarshal(source).asInstanceOf[PMML]
-        val modelEvaluatorFactory = ModelEvaluatorFactory.newInstance()
-        val modelEvaluator = modelEvaluatorFactory.newModelManager(pmml)
-        modelEvaluator
-    }
-
-    /**
       * Answer a ModelResultBase from which to give the model results.
+      *
       * @return - a ModelResultBase derivative appropriate for the model
       */
     override def createResultObject(): ModelResultBase = new MappedModelResults
@@ -381,19 +421,6 @@ class JpmmlAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends 
       */
     override def isModelInstanceReusable(): Boolean = true
 
-    /**
-      * Standard handler fed to the unmarshaller to handle error conditions.
-      */
-    private object SimpleValidationEventHandler extends ValidationEventHandler {
-        def handleEvent(event: ValidationEvent): Boolean = {
-            val severity: Int = event.getSeverity
-            severity match {
-                case ValidationEvent.ERROR => false
-                case ValidationEvent.FATAL_ERROR => false
-                case _ => true
-            }
-        }
-    }
 
 }
 

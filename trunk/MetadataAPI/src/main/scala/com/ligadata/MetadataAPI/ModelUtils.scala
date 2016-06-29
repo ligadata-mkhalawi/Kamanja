@@ -448,6 +448,9 @@ object ModelUtils {
     * @param optVersion     the model version to be used to describe this PMML model
     * @param optMsgConsumed the namespace.name of the message to be consumed by a PMML model
     * @param optMsgVersion  the version of the message to be consumed. By default Some(-1)
+    * @param optMsgProduced the output message to be created when a model result is produced
+    * @param pStr Json string containing global information
+    * @param modelOptions model specific options used by model instance initialization
     * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
     *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
     *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
@@ -461,7 +464,8 @@ object ModelUtils {
                , optMsgConsumed: Option[String] = None
                , optMsgVersion: Option[String] = Some("-1")
                , optMsgProduced: Option[String] = None
-              , pStr : Option[String]
+               , pStr : Option[String]
+               , modelOptions : Option[String]
               ): String = {
 
     // No Add Model is allowed without Tenant Id
@@ -535,7 +539,7 @@ object ModelUtils {
         val msgConsumed: String = optMsgConsumed.orNull
         val msgVer: String = optMsgVersion.getOrElse("-1")
         val result: String = if (modelName != null && version != null && msgConsumed != null) {
-          val res: String = AddPYTHONModel(modelName, version, msgConsumed, msgVer, input, optUserid, tenantId.get, optMsgProduced)
+          val res: String = AddPYTHONModel(modelName, version, msgConsumed, msgVer, input, optUserid, tenantId.get, optMsgProduced, pStr, modelOptions)
           res
         } else {
           val inputRep: String = if (input != null && input.size > 200) input.substring(0, 199)
@@ -553,7 +557,7 @@ object ModelUtils {
         val msgConsumed: String = optMsgConsumed.orNull
         val msgVer: String = optMsgVersion.getOrElse("-1")
         val result: String = if (modelName != null && version != null && msgConsumed != null) {
-          val res: String = AddJYTHONModel(modelName, version, msgConsumed, msgVer, input, optUserid, tenantId.get, optMsgProduced)
+          val res: String = AddJYTHONModel(modelName, version, msgConsumed, msgVer, input, optUserid, tenantId.get, optMsgProduced, pStr, modelOptions)
           res
         } else {
           val inputRep: String = if (input != null && input.size > 200) input.substring(0, 199)
@@ -693,12 +697,17 @@ object ModelUtils {
    *                    the message does not supply all input fields in the model, there should be a default
    *                    specified for those not filled in that mining variable.
    * @param msgVersion  the version of the message that this PMML model will consume
-   * @param pmmlText    the actual PYTHON that is submitted by the client.
+   * @param srcText     the actual PYTHON that is submitted by the client.
    * @param userid      the identity to be used by the security adapter to ascertain if this user has access permissions for this
    *                    method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @param tenantId      the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *                    method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @param optMsgProduced the output message to be created when a model result is produced
+   * @param pStr Json string containing global information
+   * @param someModelOptions model specific options used by model instance initialization
    * @return json string result
    */
-  private def AddPYTHONModel(modelName: String, version: String, msgConsumed: String, msgVersion: String, pmmlText: String, userid: Option[String], tenantId: String, optMsgProduced: Option[String]): String = {
+  private def AddPYTHONModel(modelName: String, version: String, msgConsumed: String, msgVersion: String, srcText: String, userid: Option[String], tenantId: String, optMsgProduced: Option[String], pStr : Option[String], someModelOptions: Option[String]): String = {
     try {
       val buffer: StringBuilder = new StringBuilder
       val modelNameNodes: Array[String] = modelName.split('.')
@@ -711,14 +720,12 @@ object ModelUtils {
       msgNameNodes.take(msgNameNodes.size - 1).addString(buffer, ".")
       val msgNamespace: String = buffer.toString
       val ownerId: String = if (userid == None) "kamanja" else userid.get
+      val modelOptions : String = someModelOptions.getOrElse("{}")
 
-      /**
-       * TODO - Need to call the Python Vaidator and validate the model definition
-       *
-       */
-      val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, modelNmSpace, modelNm, version, msgNamespace, msgName, msgVersion, pmmlText, ownerId, tenantId)
+      val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, modelNmSpace, modelNm, version, msgNamespace, msgName, msgVersion, srcText, ownerId, tenantId, optMsgProduced, pStr, modelOptions, getMetadataAPI.GetMetadataAPIConfig)
       val recompile: Boolean = false
-      var modDef: ModelDef = pythonMdlSupport.CreateModel(recompile, true) ///Python Model Support  - call the create Model from Python Compiler
+      val isPython: Boolean = true // when false JYTHON
+      var modDef: ModelDef = pythonMdlSupport.CreateModel(recompile, isPython)
 
       /*
        * For testing purpose call the Make Model and just create temp model def ...
@@ -732,10 +739,10 @@ object ModelUtils {
         val existingModel = MdMgr.GetMdMgr.Model(modDef.NameSpace, modDef.Name, -1, false) // Any version is fine. No need of active
         modDef.uniqueId = MetadataAPIImpl.GetUniqueId
         modDef.mdElementId = if (existingModel == None) MetadataAPIImpl.GetMdElementId else existingModel.get.MdElementId
-        MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, pmmlText, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
+        MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, srcText, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
 
         // save the outMessage
-        AddOutMsgToModelDef(modDef, ModelType.PMML, optMsgProduced, userid)
+        AddOutMsgToModelDef(modDef, ModelType.PYTHON, optMsgProduced, userid)
 
         // save the jar file first
         PersistenceUtils.UploadJarsToDB(modDef)
@@ -791,12 +798,15 @@ object ModelUtils {
    *                    the message does not supply all input fields in the model, there should be a default
    *                    specified for those not filled in that mining variable.
    * @param msgVersion  the version of the message that this PMML model will consume
-   * @param pmmlText    the actual PYTHON that is submitted by the client.
+   * @param srcText     the actual JYTHON that is submitted by the client.
    * @param userid      the identity to be used by the security adapter to ascertain if this user has access permissions for this
    *                    method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @param optMsgProduced the output message to be created when a model result is produced
+   * @param pStr Json string containing global information
+   * @param someModelOptions model specific options used by model instance initialization
    * @return json string result
    */
-  private def AddJYTHONModel(modelName: String, version: String, msgConsumed: String, msgVersion: String, pmmlText: String, userid: Option[String], tenantId: String, optMsgProduced: Option[String]): String = {
+  private def AddJYTHONModel(modelName: String, version: String, msgConsumed: String, msgVersion: String, srcText: String, userid: Option[String], tenantId: String, optMsgProduced: Option[String], pStr : Option[String], someModelOptions: Option[String]): String = {
     try {
       val buffer: StringBuilder = new StringBuilder
       val modelNameNodes: Array[String] = modelName.split('.')
@@ -809,12 +819,12 @@ object ModelUtils {
       msgNameNodes.take(msgNameNodes.size - 1).addString(buffer, ".")
       val msgNamespace: String = buffer.toString
       val ownerId: String = if (userid == None) "kamanja" else userid.get
+      val modelOptions : String = someModelOptions.getOrElse("{}")
 
-      //TODO - Need to call the Python Vaidator and validate the model definition
-
-      val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, modelNmSpace, modelNm, version, msgNamespace, msgName, msgVersion, pmmlText, ownerId, tenantId)
+      val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, modelNmSpace, modelNm, version, msgNamespace, msgName, msgVersion, srcText, ownerId, tenantId, optMsgProduced, pStr, modelOptions, getMetadataAPI.GetMetadataAPIConfig)
       val recompile: Boolean = false
-      var modDef: ModelDef = pythonMdlSupport.CreateModel(recompile, false) ///Python Model Support  - call the create Model from Python Model Support and idPython as false
+      val isPython: Boolean = true // when false JYTHON
+      var modDef: ModelDef = pythonMdlSupport.CreateModel(recompile, ! isPython)
 
       /*
        * For testing purpose call the Make Model and just create temp model def ...
@@ -828,10 +838,10 @@ object ModelUtils {
         val existingModel = MdMgr.GetMdMgr.Model(modDef.NameSpace, modDef.Name, -1, false) // Any version is fine. No need of active
         modDef.uniqueId = MetadataAPIImpl.GetUniqueId
         modDef.mdElementId = if (existingModel == None) MetadataAPIImpl.GetMdElementId else existingModel.get.MdElementId
-        MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, pmmlText, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
+        MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, srcText, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
 
         // save the outMessage
-        AddOutMsgToModelDef(modDef, ModelType.PMML, optMsgProduced, userid)
+        AddOutMsgToModelDef(modDef, ModelType.JYTHON, optMsgProduced, userid)
 
         // save the jar file first
         PersistenceUtils.UploadJarsToDB(modDef)
@@ -1363,7 +1373,9 @@ object ModelUtils {
                   , optModelName: Option[String] = None
                   , optVersion: Option[String] = None
                   , optVersionBeingUpdated: Option[String] = None
-    , optMsgProduced: Option[String] = None, pStr : Option[String]): String = {
+                  , optMsgProduced: Option[String] = None
+                  , pStr : Option[String]
+                  , modelOptions : Option[String]): String = {
     /**
      * FIXME: The current strategy is that only the most recent version can be updated.
      * FIXME: This is not a satisfactory condition. It may be desirable to have 10 models all with
@@ -1398,12 +1410,12 @@ object ModelUtils {
       }
       case ModelType.PYTHON => {
         //1.1.3
-        val result: String = UpdatePythonModel(modelType, input, optUserid, tenantId.get, optModelName, optVersion, optVersionBeingUpdated, optMsgProduced)
+        val result: String = UpdatePythonModel(modelType, input, optUserid, tenantId.get, optModelName, optVersion, optVersionBeingUpdated, optMsgProduced, pStr, modelOptions)
         result
       }
       case ModelType.JYTHON => {
         //1.1.3
-        val result: String = UpdateJythonModel(modelType, input, optUserid, tenantId.get, optModelName, optVersion, optVersionBeingUpdated, optMsgProduced)
+        val result: String = UpdateJythonModel(modelType, input, optUserid, tenantId.get, optModelName, optVersion, optVersionBeingUpdated, optMsgProduced, pStr, modelOptions)
         result
       }
       case ModelType.BINARY =>
@@ -1612,23 +1624,6 @@ object ModelUtils {
   }
 
   /**
-    * Update the java or scala model with new source.
-    *
-    * @param modelType the type of the model... JAVA | SCALA in this case
-    * @param input     the source of the model to ingest
-    * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *                  method. If Security and/or Audit are configured, this value must be a value other than None.
-    * @param modelName the name of the model to be ingested (PMML)
-    *                  or the model's config for java and scala
-    * @param version   the version number of the model to be updated (only relevant for PMML ingestion)
-    * @return result string indicating success or failure of operation
-    */
-  private def UpdateCustomModel(modelType: ModelType.ModelType
-                                , input: String
-                                , userid: Option[String] = None
-                                , tenantId: String = ""
-                                , modelName: Option[String] = None
-                                , version: Option[String] = None, pStr : Option[String]): String = {
    * Update a Python model with the supplied inputs.  The input is presumed to be a new version of a Python model that
    * is currently cataloged.  The user id should be supplied for any installation that is using the security or audit
    * plugins. The model namespace.name and its new version are supplied.  The message ingested by the current version
@@ -1641,9 +1636,12 @@ object ModelUtils {
    * @param optModelName           the name of the model to be ingested (only relevant for Python ingestion)
    * @param optModelVersion        the version number of the model to be updated (only relevant for Python ingestion)
    * @param optVersionBeingUpdated not used... reserved
+   * @param optMsgProduced not used... reserved
+   * @param pStr an optional JSON map with global parameters in it.
+   * @param someModelOptions model specific options
    * @return result string indicating success or failure of operation
    */
-  private def UpdatePythonModel(modelType: ModelType.ModelType, input: String, optUserid: Option[String] = None, tenantId: String = "", optModelName: Option[String] = None, optModelVersion: Option[String] = None, optVersionBeingUpdated: Option[String], optMsgProduced: Option[String]): String = {
+  private def UpdatePythonModel(modelType: ModelType.ModelType, input: String, optUserid: Option[String] = None, tenantId: String = "", optModelName: Option[String] = None, optModelVersion: Option[String] = None, optVersionBeingUpdated: Option[String], optMsgProduced: Option[String], pStr: Option[String], someModelOptions: Option[String]): String = {
 
     val modelName: String = optModelName.orNull
     val version: String = optModelVersion.getOrElse("-1")
@@ -1663,7 +1661,7 @@ object ModelUtils {
 
         // See if we get the same tenant Id
         if (!tenantId.equalsIgnoreCase(currentModel.tenantId)) {
-          return (new ApiResult(ErrorCodeConstants.Failure, "UpdateModel", null, s"Tenant ID is different from the one in the existing object.")).toString
+          return (new ApiResult(ErrorCodeConstants.Failure, "UpdatePythonModel", null, s"Tenant ID is different from the one in the existing object.")).toString
         }
 
         val currentMsg: String = if (currentModel != null) {
@@ -1694,13 +1692,10 @@ object ModelUtils {
         val (currMsgNmSp, currMsgNm, currMsgVer): (String, String, String) = MdMgr.SplitFullNameWithVersion(key)
 
         val ownerId: String = if (optUserid == None) "kamanja" else optUserid.get
+        val modelOptions : String = someModelOptions.getOrElse("{}")
 
-        /**
-         * *******************************************************************
-         * Fix Me - Get the Python Validator to validate the Python Model ...
-         * ******************************************************************
-         */
-        val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, modelNmSpace, modelNm, version, currMsgNmSp, currMsgNm, currMsgVer, input, ownerId, tenantId)
+        val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, modelNmSpace, modelNm, version, currMsgNmSp, currMsgNm, currMsgVer, input, ownerId, tenantId, optMsgProduced, pStr, modelOptions, getMetadataAPI.GetMetadataAPIConfig)
+        val isPython: Boolean = true // when false JYTHON
         val modDef: ModelDef = pythonMdlSupport.UpdateModel(true)
 
         // copy optMsgProduced to outputMsgs
@@ -1733,7 +1728,7 @@ object ModelUtils {
 
         if (isValid && modDef != null) {
           // save the outMessage
-          AddOutMsgToModelDef(modDef, ModelType.PMML, optMsgProduced, optUserid)
+          AddOutMsgToModelDef(modDef, ModelType.PYTHON, optMsgProduced, optUserid)
 
           val existingModel = MdMgr.GetMdMgr.Model(modDef.NameSpace, modDef.Name, -1, false) // Any version is fine. No need of active
           modDef.uniqueId = MetadataAPIImpl.GetUniqueId
@@ -1833,7 +1828,7 @@ object ModelUtils {
    * @param optVersionBeingUpdated not used... reserved
    * @return result string indicating success or failure of operation
    */
-  private def UpdateJythonModel(modelType: ModelType.ModelType, input: String, optUserid: Option[String] = None, tenantId: String = "", optModelName: Option[String] = None, optModelVersion: Option[String] = None, optVersionBeingUpdated: Option[String], optMsgProduced: Option[String]): String = {
+  private def UpdateJythonModel(modelType: ModelType.ModelType, input: String, optUserid: Option[String] = None, tenantId: String = "", optModelName: Option[String] = None, optModelVersion: Option[String] = None, optVersionBeingUpdated: Option[String], optMsgProduced: Option[String], pStr: Option[String], someModelOptions: Option[String]): String = {
 
     val modelName: String = optModelName.orNull
     val version: String = optModelVersion.getOrElse("-1")
@@ -1853,7 +1848,7 @@ object ModelUtils {
 
         // See if we get the same tenant Id
         if (!tenantId.equalsIgnoreCase(currentModel.tenantId)) {
-          return (new ApiResult(ErrorCodeConstants.Failure, "UpdateModel", null, s"Tenant ID is different from the one in the existing object.")).toString
+          return (new ApiResult(ErrorCodeConstants.Failure, "UpdateJythonModel", null, s"Tenant ID is different from the one in the existing object.")).toString
         }
 
         val currentMsg: String = if (currentModel != null) {
@@ -1884,15 +1879,17 @@ object ModelUtils {
         val (currMsgNmSp, currMsgNm, currMsgVer): (String, String, String) = MdMgr.SplitFullNameWithVersion(key)
 
         val ownerId: String = if (optUserid == None) "kamanja" else optUserid.get
+        val modelOptions : String = someModelOptions.getOrElse("{}")
 
         /**
-         * *******************************************************************
-         * Fix Me - Get the Jython Compiler Model validator and validate the model...
-         *
-         * ******************************************************************
-         */
-        val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, modelNmSpace, modelNm, version, currMsgNmSp, currMsgNm, currMsgVer, input, ownerId, tenantId)
-        val modDef: ModelDef = pythonMdlSupport.UpdateModel(false) //pass isPython as false for jythom models 
+          * *******************************************************************
+          * Fix Me - Get the Python Validator to validate the Python Model ...
+          * ******************************************************************
+          */
+        val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, modelNmSpace, modelNm, version, currMsgNmSp, currMsgNm, currMsgVer, input, ownerId, tenantId, optMsgProduced, pStr, modelOptions, getMetadataAPI.GetMetadataAPIConfig)
+
+        val isPython: Boolean = true // when false JYTHON
+        val modDef: ModelDef = pythonMdlSupport.UpdateModel(! isPython)
 
         // copy optMsgProduced to outputMsgs
         if (optMsgProduced != None) {
@@ -1924,7 +1921,7 @@ object ModelUtils {
 
         if (isValid && modDef != null) {
           // save the outMessage
-          AddOutMsgToModelDef(modDef, ModelType.PMML, optMsgProduced, optUserid)
+          AddOutMsgToModelDef(modDef, ModelType.JYTHON, optMsgProduced, optUserid)
 
           val existingModel = MdMgr.GetMdMgr.Model(modDef.NameSpace, modDef.Name, -1, false) // Any version is fine. No need of active
           modDef.uniqueId = MetadataAPIImpl.GetUniqueId
@@ -1997,9 +1994,10 @@ object ModelUtils {
    * @param modelName the name of the model to be ingested (PMML)
    *                  or the model's config for java and scala
    * @param version   the version number of the model to be updated (only relevant for PMML ingestion)
+   * @param pStr JSON property map given to model.
    * @return result string indicating success or failure of operation
    */
-  private def UpdateCustomModel(modelType: ModelType.ModelType, input: String, userid: Option[String] = None, tenantId: String = "", modelName: Option[String] = None, version: Option[String] = None): String = {
+  private def UpdateCustomModel(modelType: ModelType.ModelType, input: String, userid: Option[String] = None, tenantId: String = "", modelName: Option[String] = None, version: Option[String] = None, pStr : Option[String]): String = {
     val sourceLang: String = modelType.toString
 
     /** to get here it is either 'java' or 'scala' */

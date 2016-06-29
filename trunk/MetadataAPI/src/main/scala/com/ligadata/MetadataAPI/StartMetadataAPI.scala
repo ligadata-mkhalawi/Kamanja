@@ -84,6 +84,7 @@ object StartMetadataAPI {
   val ADAPTERFILTER = "ADAPTERFILTER"
   val MESSAGEFILTER = "MESSAGEFILTER"
   val SERIALIZERFILTER = "SERIALIZERFILTER"
+  val MODELOPTIONS = "MODELOPTIONS"
 
   var expectModelName = false
   var expectModelVer = false
@@ -93,6 +94,7 @@ object StartMetadataAPI {
   var foundMessageName = false
   var expectBindingFromFile = false
   var expectBindingFromString = false
+  var expectModelOpts = false
   var removeCmdFound = false
   var expectRemoveBindingKey = false
   var expectListBindingFilter = false
@@ -171,7 +173,9 @@ object StartMetadataAPI {
             } else if (arg.equalsIgnoreCase(FROMFILE)) {
               expectBindingFromFile = true
             } else if (arg.equalsIgnoreCase(FROMSTRING)) {
-              expectBindingFromString = true
+                expectBindingFromString = true
+            } else if (arg.equalsIgnoreCase(MODELOPTIONS)) {
+                expectModelOpts = true
             } else if (arg.equalsIgnoreCase(ADAPTERFILTER)) {
               expectAdapterFilter = true
             } else if (arg.equalsIgnoreCase(MESSAGEFILTER)) {
@@ -231,6 +235,11 @@ object StartMetadataAPI {
               if (expectBindingFromString) {
                 extraCmdArgs(FROMSTRING) = arg
                 expectBindingFromString = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectModelOpts) {
+                extraCmdArgs(MODELOPTIONS) = arg
+                expectModelOpts = false
                 argVar = "" // Make sure we don't add to the routing command
               }
               if (expectBindingFromFile) {
@@ -473,21 +482,23 @@ object StartMetadataAPI {
         case Action.ADDMODELPYTHON => {
           val modelName: Option[String] = extraCmdArgs.get(MODELNAME)
           val modelVer = extraCmdArgs.getOrElse(MODELVERSION, null)
-          val msgName: Option[String] = extraCmdArgs.get(MESSAGENAME)
+          val modelOptions : String = extraCmdArgs.getOrElse(MODELOPTIONS, "{}")
+          val optMsgName: Option[String] = extraCmdArgs.get(MESSAGENAME)
           val validatedModelVersion = if (modelVer != null) MdMgr.FormatVersion(modelVer) else null
           val optModelVer = Option(validatedModelVersion)
           val optMsgVer = Option(null)
-          response = ModelService.addModelPython(ModelType.PYTHON, input, userId, modelName, optModelVer, msgName, optMsgVer, tid)
+          response = ModelService.addModelPython(ModelType.PYTHON, input, userId, modelName, optModelVer, optMsgName, optMsgVer, tid, paramStr, Some(modelOptions))
         }
 
         case Action.ADDMODELJYTHON => {
-          val modelName: Option[String] = extraCmdArgs.get(MODELNAME)
-          val modelVer = extraCmdArgs.getOrElse(MODELVERSION, null)
-          val msgName: Option[String] = extraCmdArgs.get(MESSAGENAME)
-          val validatedModelVersion = if (modelVer != null) MdMgr.FormatVersion(modelVer) else null
-          val optModelVer = Option(validatedModelVersion)
-          val optMsgVer = Option(null)
-          response = ModelService.addModelJython(ModelType.JYTHON, input, userId, modelName, optModelVer, msgName, optMsgVer, tid)
+            val modelName: Option[String] = extraCmdArgs.get(MODELNAME)
+            val modelVer = extraCmdArgs.getOrElse(MODELVERSION, null)
+            val modelOptions : String = extraCmdArgs.getOrElse(MODELOPTIONS, "{}")
+            val optMsgName: Option[String] = extraCmdArgs.get(MESSAGENAME)
+            val validatedModelVersion = if (modelVer != null) MdMgr.FormatVersion(modelVer) else null
+            val optModelVer = Option(validatedModelVersion)
+            val optMsgVer = Option(null)
+            response = ModelService.addModelJython(ModelType.JYTHON, input, userId, modelName, optModelVer, optMsgName, optMsgVer, tid, paramStr, Some(modelOptions))
         }
 
         case Action.ADDMODELSCALA => {
@@ -537,16 +548,18 @@ object StartMetadataAPI {
         }
 
         case Action.UPDATEMODELPYTHON => {
-          val modelName = extraCmdArgs.getOrElse(MODELNAME, "")
-          val modelVer = extraCmdArgs.getOrElse(MODELVERSION, null)
-          var validatedNewVersion: String = if (modelVer != null) MdMgr.FormatVersion(modelVer) else null
-          response = ModelService.updateModelPython(input, userId, modelName, validatedNewVersion, tid)
+            val modelName = extraCmdArgs.getOrElse(MODELNAME, "")
+            val modelOptions : String = extraCmdArgs.getOrElse(MODELOPTIONS, "{}")
+            val modelVer = extraCmdArgs.getOrElse(MODELVERSION, null)
+            var validatedNewVersion: String = if (modelVer != null) MdMgr.FormatVersion(modelVer) else null
+            response = ModelService.updateModelPython(input, userId, modelName, validatedNewVersion, tid, paramStr, Some(modelOptions))
         }
         case Action.UPDATEMODELJYTHON => {
-          val modelName = extraCmdArgs.getOrElse(MODELNAME, "")
-          val modelVer = extraCmdArgs.getOrElse(MODELVERSION, null)
-          var validatedNewVersion: String = if (modelVer != null) MdMgr.FormatVersion(modelVer) else null
-          response = ModelService.updateModelJython(input, userId, modelName, validatedNewVersion, tid)
+            val modelName = extraCmdArgs.getOrElse(MODELNAME, "")
+            val modelVer = extraCmdArgs.getOrElse(MODELVERSION, null)
+            val modelOptions : String = extraCmdArgs.getOrElse(MODELOPTIONS, "{}")
+            var validatedNewVersion: String = if (modelVer != null) MdMgr.FormatVersion(modelVer) else null
+            response = ModelService.updateModelJython(input, userId, modelName, validatedNewVersion, tid, paramStr, Some(modelOptions))
         }
 
         case Action.UPDATEMODELSCALA => {
@@ -667,24 +680,25 @@ object StartMetadataAPI {
           response = AdapterMessageBindingService.updateAdapterMessageBinding(input, userId)
         }
         case Action.REMOVEADAPTERMESSAGEBINDING => {
-          val bindingKey: String = extraCmdArgs.getOrElse(Action.REMOVEADAPTERMESSAGEBINDING.toString, "")
-          if (bindingKey.nonEmpty) {
-            response = AdapterMessageBindingService.removeAdapterMessageBinding(bindingKey, userId)
-          } else {
+            val bindingKey: String = extraCmdArgs.getOrElse(Action.REMOVEADAPTERMESSAGEBINDING.toString, "")
+            if (bindingKey.nonEmpty) {
+                response = AdapterMessageBindingService.removeAdapterMessageBinding(bindingKey, userId)
+            } else {
 
-            val bindingString: String = extraCmdArgs.getOrElse(FROMSTRING, "")
-            val bindingFilePath: String = extraCmdArgs.getOrElse(FROMFILE, "")
-            fileinquesiton = bindingFilePath
-            val invalidArgs: Boolean = (bindingString.nonEmpty && bindingFilePath.nonEmpty) || (bindingString.isEmpty && bindingFilePath.isEmpty)
-            if (invalidArgs) {
-              println(s"Remove Adapter Message Binding - invalid arguments supplied.  Check the syntax.  One of three ways are permissible:\nkamanja <apiconfig> remove adaptermessagebinding FROMFILE <file path with json content for binding key(s)>\nkamanja <apiconfig> remove adaptermessagebinding FROMSTRING '[ <json array item or items of the form adapterName,namespace.messageName,namespace.serializerName> ]'\nkamanja <apiconfig> remove adaptermessagebinding KEY '<adapterName,namespace.messageName,namespace.serializerName>'")
-              throw new RuntimeException(s"Remove Adapter Message Binding - invalid arguments supplied.  Check the syntax.  One of three ways are permissible:\nkamanja <apiconfig> remove adaptermessagebinding FROMFILE <file path with json content for binding key(s)>\nkamanja <apiconfig> remove adaptermessagebinding FROMSTRING '[ <json array item or items of the form adapterName,namespace.messageName,namespace.serializerName> ]'\nkamanja <apiconfig> remove adaptermessagebinding KEY '<adapterName,namespace.messageName,namespace.serializerName>'")
-            } else if (bindingString.nonEmpty) {
-              response = AdapterMessageBindingService.removeFromInlineAdapterMessageBinding(bindingString, userId)
-            } else if (bindingFilePath.nonEmpty) {
-              response = AdapterMessageBindingService.removeFromFileAnAdapterMessageBinding(bindingFilePath, userId)
+                val bindingString: String = extraCmdArgs.getOrElse(FROMSTRING, "")
+                val bindingFilePath: String = extraCmdArgs.getOrElse(FROMFILE, "")
+                fileinquesiton = bindingFilePath
+                val invalidArgs: Boolean = (bindingString.nonEmpty && bindingFilePath.nonEmpty) || (bindingString.isEmpty && bindingFilePath.isEmpty)
+                if (invalidArgs) {
+                    println(s"Remove Adapter Message Binding - invalid arguments supplied.  Check the syntax.  One of three ways are permissible:\nkamanja <apiconfig> remove adaptermessagebinding FROMFILE <file path with json content for binding key(s)>\nkamanja <apiconfig> remove adaptermessagebinding FROMSTRING '[ <json array item or items of the form adapterName,namespace.messageName,namespace.serializerName> ]'\nkamanja <apiconfig> remove adaptermessagebinding KEY '<adapterName,namespace.messageName,namespace.serializerName>'")
+                    throw new RuntimeException(s"Remove Adapter Message Binding - invalid arguments supplied.  Check the syntax.  One of three ways are permissible:\nkamanja <apiconfig> remove adaptermessagebinding FROMFILE <file path with json content for binding key(s)>\nkamanja <apiconfig> remove adaptermessagebinding FROMSTRING '[ <json array item or items of the form adapterName,namespace.messageName,namespace.serializerName> ]'\nkamanja <apiconfig> remove adaptermessagebinding KEY '<adapterName,namespace.messageName,namespace.serializerName>'")
+                } else if (bindingString.nonEmpty) {
+                    response = AdapterMessageBindingService.removeFromInlineAdapterMessageBinding(bindingString, userId)
+                } else if (bindingFilePath.nonEmpty) {
+                    response = AdapterMessageBindingService.removeFromFileAnAdapterMessageBinding(bindingFilePath, userId)
+                }
             }
-          }
+        }
 
 
 
@@ -797,8 +811,8 @@ object StartMetadataAPI {
    * it is a command that we currently support with this mechanism (JPMML related commands are currently supported),
    * the service module is invoked.
    *
-   * @param origArgs an Array[String] containing all of the arguments (sans debug if present) originally submitted
-   * @return the response from successfully recognized commands (good or bad) or null if this mechanism couldn't
+   * param origArgs an Array[String] containing all of the arguments (sans debug if present) originally submitted
+   * return the response from successfully recognized commands (good or bad) or null if this mechanism couldn't
    *         make a determination of which command to invoke.  In that case a null is returned and the original
    *         complaint is returned to the caller.
    *

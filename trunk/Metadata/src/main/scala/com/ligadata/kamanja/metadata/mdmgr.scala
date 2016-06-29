@@ -2207,7 +2207,7 @@ class MdMgr {
                    , depJars: Array[String] = null
                    , recompile: Boolean = false
                    , supportsInstanceSerialization: Boolean = false
-                   , modelConfig: String = ""
+                   , modelConfig: String = "{}"
                    , depContainers: Array[String] = null): ModelDef = {
 
     /** Determine model existence constraints and throw exception if they are not met */

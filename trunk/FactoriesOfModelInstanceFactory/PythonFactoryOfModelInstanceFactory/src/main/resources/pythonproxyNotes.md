@@ -6,7 +6,7 @@
 _1)_ The NodeContext will contain several new pieces of information needed by the 
 model factories and the instances they create:
 
-	The host, port, and Kamanja python module path for the pythonserver to which to establish a connection has been established will be avaialble in the proxy server connection object state.
+	The host, port, and Kamanja python module path for the pythonserver to which to establish a connection has been established will be avaialble in the proxy server connection object state...
 
 	The server will have been started by the engine before the 
 	PythonFactoryOfModelInstanceFactory's getModelInstanceFactory
