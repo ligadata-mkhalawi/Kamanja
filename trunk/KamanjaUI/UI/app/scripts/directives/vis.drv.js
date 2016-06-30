@@ -54,7 +54,7 @@ angular
               'damping': 0.5,
               'avoidOverlap': 1
             },
-            'minVelocity': 0.5,
+            'minVelocity': 2.5,
             'solver': 'barnesHut',
             // 'timestep': 0.79
           },
@@ -121,7 +121,7 @@ angular
             color: 'white',
             strokeWidth: 0,
             align: 'middle',
-            background: 'rgba(0,0,0,1)',
+            background: 'rgba(0,0,0,0.8)',
           };
           if (e.duplicates >= 2) {
             this.smooth = {
@@ -252,12 +252,20 @@ angular
               ctx.lineJoin = "round";
               ctx.lineWidth = 10;
               ctx.strokeStyle = "rgba(0,0,0,0.5)";
-              ctx.strokeRect((position.x + 17), (position.y - 3), rectWidth - cornerRadius, rectHeight - cornerRadius);
-
+              var isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0;
+              if (isSafari) {
+                ctx.strokeRect((position.x + 21), (position.y - 4), rectWidth - cornerRadius, rectHeight - cornerRadius);
+              } else {
+                ctx.strokeRect((position.x + 17), (position.y - 3), rectWidth - cornerRadius, rectHeight - cornerRadius);
+              }
               ctx.textAlign = 'left';
               ctx.font = '9px arial';
               ctx.fillStyle = '#ffffff';
-              ctx.fillText(d._label, (position.x + 13), (position.y - 4 ));
+              if (isSafari) {
+                ctx.fillText(d._label, (position.x + 17), (position.y - 4 ));
+              } else {
+                ctx.fillText(d._label, (position.x + 13), (position.y - 4 ));
+              }
             }
 
           });
