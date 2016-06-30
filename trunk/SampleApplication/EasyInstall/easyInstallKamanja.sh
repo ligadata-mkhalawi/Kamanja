@@ -299,10 +299,8 @@ cp $srcPath/Utils/ClusterInstaller/ClusterInstallerDriver/src/main/resources/log
 # copy Kamanja UI stuff
 # *******************************
 
-cp $srcPath/KamanjaUI/Rest/KamanjaUIRest/target/kamanjauirest-1.5.0.war $kamanjaui
-cd $srcPath/KamanjaUI/UI/
-jar cf $kamanjaui/UI-1.5.0.war .
-
+cp $srcPath/KamanjaUI/Rest/KamanjaUIRest/target/kamanjauirest-0.1.0.war $kamanjaui/kamanjauirest.war
+cp $srcPath/KamanjaUI/UI/distro/kamanja.war $kamanjaui/
 
 # *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep
@@ -596,9 +594,8 @@ cp $srcPath/Utils/ClusterInstaller/ClusterInstallerDriver/src/main/resources/log
 # copy Kamanja UI stuff
 # *******************************
 
-cp $srcPath/KamanjaUI/Rest/KamanjaUIRest/target/kamanjauirest-1.5.0.war $kamanjaui
-cd $srcPath/KamanjaUI/UI/
-jar cf $kamanjaui/UI-1.5.0.war .
+cp $srcPath/KamanjaUI/Rest/KamanjaUIRest/target/kamanjauirest-0.1.0.war $kamanjaui/kamanjauirest.war
+cp $srcPath/KamanjaUI/UI/distro/kamanja.war $kamanjaui/
 
 # *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep
