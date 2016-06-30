@@ -1,6 +1,6 @@
 name := "KamanjaUIRest"
 
-version := "1.5.0"
+version := "0.1.0"
 
 // Enables publishing to maven repo
 // publishMavenStyle := true
