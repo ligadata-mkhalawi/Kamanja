@@ -1602,6 +1602,18 @@ object MessageAndContainerUtils {
     containerList.toArray
   }
 
+  def getContainersFromModelConfig(modCfgJson: String): Array[String] = {
+    logger.debug("Parsing ModelConfig : " + modCfgJson)
+    var cfgmap = parse(modCfgJson).values.asInstanceOf[Map[String, Any]]
+    logger.debug("Count of objects in cfgmap : " + cfgmap.keys.size)
+    var depContainers = List[String]()
+    var containers = getContainersFromModelConfig(cfgmap)
+    logger.debug("containers => " + containers)
+    depContainers = depContainers ::: containers.toList
+    logger.debug("depContainers => " + depContainers)
+    depContainers.toArray
+  }
+
   def getContainersFromModelConfig(userid: Option[String], cfgName: String): Array[String] = {
     var containerList = List[String]()
     var msgsAndContainers = getModelMessagesContainers(cfgName,userid)
