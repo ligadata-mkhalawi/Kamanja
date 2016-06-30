@@ -818,7 +818,7 @@ class CompilerProxy {
         , recompile
         , false
         , modCfgJson
-	, MessageAndContainerUtils.getContainersFromModelConfig(None,modelConfigName))
+	, MessageAndContainerUtils.getContainersFromModelConfig(modCfgJson))
 
       // Need to set some values by hand here.
       modDef.jarName = jarFileName
