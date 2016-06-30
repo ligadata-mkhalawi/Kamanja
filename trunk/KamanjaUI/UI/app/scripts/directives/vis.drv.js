@@ -249,21 +249,42 @@ angular
               var rectHeight = 7;
               var cornerRadius = 5;
 
+
+              // Opera 8.0+
+              var isOpera = (!!window.opr && !!opr.addons) || !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
+              // Firefox 1.0+
+              var isFirefox = typeof InstallTrigger !== 'undefined';
+              // At least Safari 3+: "[object HTMLElementConstructor]"
+              var isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0;
+              // Internet Explorer 6-11
+              var isIE = /*@cc_on!@*/false || !!document.documentMode;
+              // Edge 20+
+              var isEdge = !isIE && !!window.StyleMedia;
+              // Chrome 1+
+              var isChrome = !!window.chrome && !!window.chrome.webstore;
+              // Blink engine detection
+              var isBlink = (isChrome || isOpera) && !!window.CSS;
+
+
               ctx.lineJoin = "round";
               ctx.lineWidth = 10;
               ctx.strokeStyle = "rgba(0,0,0,0.5)";
-              var isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0;
               if (isSafari) {
                 ctx.strokeRect((position.x + 21), (position.y - 4), rectWidth - cornerRadius, rectHeight - cornerRadius);
+              } else if(isEdge) {
+                ctx.strokeRect((position.x + 19), (position.y - 4), rectWidth - cornerRadius, rectHeight - cornerRadius);
               } else {
                 ctx.strokeRect((position.x + 17), (position.y - 3), rectWidth - cornerRadius, rectHeight - cornerRadius);
               }
+
               ctx.textAlign = 'left';
               ctx.font = '9px arial';
               ctx.fillStyle = '#ffffff';
               if (isSafari) {
                 ctx.fillText(d._label, (position.x + 17), (position.y - 4 ));
-              } else {
+              } else if(isEdge) {
+                ctx.fillText(d._label, (position.x + 14), (position.y - 6 ));
+              }else {
                 ctx.fillText(d._label, (position.x + 13), (position.y - 4 ));
               }
             }
