@@ -123,12 +123,15 @@ libraryDependencies += "com.google.protobuf" % "protobuf-java" % "2.6.0"
 
 /////////////////////// SimpleKafkaProducer
 resolvers += "Apache repo" at "https://repository.apache.org/content/repositories/releases"
-libraryDependencies ++= Seq("org.apache.kafka" %% "kafka" % "0.9.0.1"
-  exclude("javax.jms", "jms")
-  exclude("com.sun.jdmk", "jmxtools")
-  exclude("com.sun.jmx", "jmxri")
-)
+//libraryDependencies ++= Seq("org.apache.kafka" %% "kafka" % "0.9.0.1"
+//  exclude("javax.jms", "jms")
+//  exclude("com.sun.jdmk", "jmxtools")
+//  exclude("com.sun.jmx", "jmxri")
+//)
 
+//libraryDependencies += "org.apache.kafka" %% "kafka" % "0.10.0.0"
+libraryDependencies += "org.apache.kafka" %% "kafka" % "0.9.0.1"
+//libraryDependencies += "org.apache.kafka" %% "kafka" % "0.10.0.0"
 
 /////////////////////// PmmlTestTool
 // 1.2.9 is currently used in other engine... use same here

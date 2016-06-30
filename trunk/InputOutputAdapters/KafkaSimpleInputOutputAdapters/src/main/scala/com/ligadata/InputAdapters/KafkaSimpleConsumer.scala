@@ -32,6 +32,9 @@ import com.ligadata.Exceptions.{KamanjaException, FatalAdapterException}
 import com.ligadata.KamanjaBase.{NodeContext, DataDelimiters}
 import com.ligadata.HeartBeat.{Monitorable, MonitorComponentInfo}
 
+
+import com.ligadata.AdaptersConfiguration.{ KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaQueueAdapterConfiguration }
+import com.ligadata.InputOutputAdapterInfo._
 case class ExceptionInfo (Last_Failure: String, Last_Recovery: String)
 
 object KafkaSimpleConsumer extends InputAdapterFactory {
@@ -57,7 +60,9 @@ object KafkaSimpleConsumer extends InputAdapterFactory {
   def CreateInputAdapter(inputConfig: AdapterConfiguration, execCtxtObj: ExecContextFactory, nodeContext: NodeContext): InputAdapter = new KafkaSimpleConsumer(inputConfig, execCtxtObj, nodeContext)
 }
 
+
 class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecContextFactory, val nodeContext: NodeContext) extends InputAdapter {
+
   val input = this
   private val lock = new Object()
   private val LOG = LogManager.getLogger(getClass)
@@ -335,6 +340,7 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
                   return
                 }
                 case e: Exception => {
+                  LOG.warn("KAFKA ADAPTER: Exception during kafka fetch ",e)
                   externalizeExceptionEvent(e)
                   if(!isErrorRecorded) {
                     partitionExceptions(partitionId.toString) = new ExceptionInfo(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis)),"n/a")
@@ -344,7 +350,7 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
                   LOG.warn("KAFKA ADAPTER: Error fetching topic " + qc.topic + ", partition " + partitionId + ", recreating kafka leader for this partition")
                   consumer.close
                   leadBroker = null
-                  while (leadBroker == null) {
+                  while (leadBroker == null && !isQuiesced) {
                     try {
                       Thread.sleep(getTimeoutTimer)
                       leadBroker = getKafkaConfigId(findLeader(qc.hosts, partitionId))

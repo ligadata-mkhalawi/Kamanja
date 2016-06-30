@@ -8,8 +8,8 @@ import com.ligadata.Exceptions.KamanjaException
 import com.ligadata.HeartBeat.MonitorComponentInfo
 import com.ligadata.InputOutputAdapterInfo._
 import com.ligadata.KamanjaBase.{NodeContext, DataDelimiters}
-import kafka.api.{FetchResponse, FetchRequestBuilder}
-import kafka.consumer.SimpleConsumer
+//import kafka.api.{FetchResponse, FetchRequestBuilder}
+//import kafka.consumer.SimpleConsumer
 import org.apache.kafka.clients.consumer.{ConsumerRecord, ConsumerRecords, KafkaConsumer}
 import org.apache.kafka.common.{TopicPartition, PartitionInfo}
 import org.apache.logging.log4j.LogManager
@@ -301,6 +301,9 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
               else {
                 localReadOffsets(thisPid) = 0
                 ignoreUntilOffsets(thisPid) =  if (ignoreFirstMsg) initialOffsets(thisPid) else initialOffsets(thisPid) - 1
+                // kafka 0.9 api requires collections.. will optimize in a future release
+                var tempCollection: java.util.ArrayList[org.apache.kafka.common.TopicPartition] = new java.util.ArrayList[org.apache.kafka.common.TopicPartition]()
+                tempCollection.add(topicPartitions(thisPid))
                 kafkaConsumer.seekToBeginning(topicPartitions(thisPid))
               }
             })
@@ -569,6 +572,8 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
       // Figure out what the end values are
       partitionNames.foreach(part => {
         val tp = new TopicPartition(qc.topic, part)
+        var tempCollection: java.util.ArrayList[org.apache.kafka.common.TopicPartition] = new java.util.ArrayList[org.apache.kafka.common.TopicPartition]()
+        tempCollection.add(tp)
         kafkaConsumer.seekToEnd(tp)
         var end = kafkaConsumer.position(tp)
         val rKey = new KafkaPartitionUniqueRecordKey

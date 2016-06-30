@@ -16,9 +16,9 @@
 
 package com.ligadata.utils.clean
 
-import kafka.admin.AdminUtils
+//import kafka.admin.AdminUtils
 //import kafka.utils.ZKStringSerializer
-import kafka.utils._
+//import kafka.utils._
 import org.I0Itec.zkclient.ZkClient
 import scala.concurrent.duration._
 
