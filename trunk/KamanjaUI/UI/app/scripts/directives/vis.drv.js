@@ -15,13 +15,6 @@ angular
         groundClick: '<'
       },
       template: '<div><div id="visJsDiv"></div>' ,
-    // +
-    //     '<div class="checkbox" style="position: absolute; bottom:97px;right:100px; color: white">' +
-    //     '<label>' +
-    //     '<input type="checkbox" ng-model="disablePhysicsStatus" ng-change="disablePhysicsChange()" > disable physics' +
-    //     '</label>' +
-    //     '</div>' +
-    //     '</div>',
       replace: true,
       link: function (scope) {
         var isNodeActive, updateNodesImagesToBeInactive, updateNodeToBeActive;
@@ -195,14 +188,15 @@ angular
         });
         (function imageManipulationFunctions() {
           isNodeActive = function (id) {
-            var node = data.nodes.getItemById(id);
-            return node.image.match(/\.active\./);
+            return data.nodes.getItemById(id).active;
           };
           updateNodesImagesToBeInactive = function () {
             data.nodes.forEach(function (n) {
               data.nodes.update({
                 id: n.id,
-                image: serviceConfig.classImageColorPath + n.type.image + '.inactive.' + n.type.extension
+                image: serviceConfig.classImageColorPath + n.type.image + '.inactive.' + n.type.extension,
+                active: false,
+                size: 16
               });
             });
           };
@@ -210,7 +204,9 @@ angular
             var node = data.nodes.getItemById(id);
             data.nodes.update({
               id: id,
-              image: serviceConfig.classImageColorPath + node.type.image + '.active.' + node.type.extension
+              image: serviceConfig.classImageColorPath + node.type.image + '.active.' + node.type.extension,
+              active: true,
+              size: 17
             });
           };
         }());
@@ -331,13 +327,6 @@ angular
           }()));
           resizeNetworkAndReposition();
         });
-        scope.disablePhysicsChange = function () {
-          if (scope.disablePhysicsStatus) {
-            network.setOptions({physics: false});
-          } else {
-            network.setOptions({physics: options});
-          }
-        };
       }
     };
   }]);
