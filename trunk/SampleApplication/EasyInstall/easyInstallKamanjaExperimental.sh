@@ -95,6 +95,7 @@ mkdir -p $installPath/Kamanja-$ver210/template/config
 mkdir -p $installPath/Kamanja-$ver210/template/script
 #mkdir -p $installPath/Kamanja-$ver210/input/
 mkdir -p $installPath/Kamanja-$ver210/ClusterInstall
+mkdir -p $installPath/Kamanja-$ver210/KamanjaUI
 #new one
 #mkdir -p $installPath/Kamanja-$ver210/input/SampleApplications
 mkdir -p $installPath/Kamanja-$ver210/input/SampleApplications/bin
@@ -130,6 +131,7 @@ mkdir -p $installPath/Kamanja-$ver211/template/config
 mkdir -p $installPath/Kamanja-$ver211/template/script
 #mkdir -p $installPath/Kamanja-$ver211/input
 mkdir -p $installPath/Kamanja-$ver211/ClusterInstall
+mkdir -p $installPath/Kamanja-$ver211/KamanjaUI
 #new one
 #mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications
 mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications/bin
@@ -171,7 +173,7 @@ mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications/template
 #mkdir -p $installPath/KamanjaInstall-$ver211/template/config
 #mkdir -p $installPath/KamanjaInstall-$ver211/template/script
 
-
+kamanjaui=$installPath/Kamanja-$ver210/KamanjaUI
 kamanjainstallbin=$installPath/Kamanja-$ver210/ClusterInstall
 #kamanjainstallbin=$installPath/KamanjaInstall-$ver210/bin
 #kamanjainstallsystemlib=$installPath/KamanjaInstall-$ver210/lib/system
@@ -332,6 +334,15 @@ cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.10/*.properties $kamanj
 cp $srcPath/Utils/ClusterInstaller/ClusterInstallerDriver/src/main/resources/log4j2.xml $kamanjainstallconfig
 
 # *******************************
+# copy Kamanja UI stuff
+# *******************************
+
+cp $srcPath/KamanjaUI/Rest/KamanjaUIRest/target/kamanjauirest-1.5.0.war $kamanjaui
+cd $srcPath/KamanjaUI/UI/
+jar cf $kamanjaui/UI-1.5.0.war .
+
+
+# *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep
 # *******************************
 
@@ -462,7 +473,7 @@ bin=$installPath/Kamanja-$ver211/bin
 systemlib=$installPath/Kamanja-$ver211/lib/system
 applib=$installPath/Kamanja-$ver211/lib/application
 
-
+kamanjaui=$installPath/Kamanja-$ver211/KamanjaUI
 kamanjainstallbin=$installPath/Kamanja-$ver211/ClusterInstall
 #kamanjainstallbin=$installPath/KamanjaInstall-$ver211/bin
 #kamanjainstallsystemlib=$installPath/KamanjaInstall-$ver211/lib/system
@@ -624,6 +635,14 @@ cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.11/*log4*.xml $kamanjai
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.11/*.json $kamanjainstallconfig
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.11/*.properties $kamanjainstallconfig
 cp $srcPath/Utils/ClusterInstaller/ClusterInstallerDriver/src/main/resources/log4j2.xml $kamanjainstallconfig
+
+# *******************************
+# copy Kamanja UI stuff
+# *******************************
+
+cp $srcPath/KamanjaUI/Rest/KamanjaUIRest/target/kamanjauirest-1.5.0.war $kamanjaui
+cd $srcPath/KamanjaUI/UI/
+jar cf $kamanjaui/UI-1.5.0.war .
 
 # *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep
