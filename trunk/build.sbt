@@ -246,6 +246,7 @@ lazy val HttpEndpoint = project.in(file("Utils/HttpEndpoint")).configs(TestConfi
 
 lazy val DemoKafkaProducer = project.in(file("Utils/DemoKafkaProducer")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(KamanjaVersion)
 
+lazy val KamanjaUIREST = project.in(file("KamanjaUI/Rest/KamanjaUIRest")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*)
 
 /*
 val commonSettings = Seq(
