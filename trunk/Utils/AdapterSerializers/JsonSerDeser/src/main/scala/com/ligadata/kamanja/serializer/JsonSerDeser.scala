@@ -103,7 +103,7 @@ class JSONSerDes extends SerializeDeserialize {
   var _objResolver: ObjectResolver = null
   var _config = Map[String, String]()
   var _isReady: Boolean = false
-  var _emitSchemaId = true
+  var _emitSystemColumns = false
   var _schemaIdKeyPrefix = "@@"
 
   def SchemaIDKeyName = _schemaIdKeyPrefix + "SchemaId"
@@ -150,7 +150,7 @@ class JSONSerDes extends SerializeDeserialize {
     val containerJsonHead = indentStr + "{ "
     val containerJsonTail = indentStr + " }"
     sb.append(containerJsonHead)
-    if (_emitSchemaId) {
+    if (_emitSystemColumns) {
       // sb.append(strLF)
       nameValueAsJson(sb, indentLevel + 1, SchemaIDKeyName, schemaId.toString, false)
       sb.append(", ")
@@ -374,6 +374,14 @@ class JSONSerDes extends SerializeDeserialize {
   def configure(objResolver: ObjectResolver, config: java.util.Map[String, String]): Unit = {
     _objResolver = objResolver
     _config = if (config != null) config.asScala.toMap else Map[String, String]()
+    try {
+      _emitSystemColumns = _config.getOrElse("emitSystemColumns", "false").toBoolean
+    } catch {
+      case e: Throwable => {
+        Error("Failed to get emitSystemColumns flag", e)
+        _emitSystemColumns = false
+      }
+    }
     _isReady = _objResolver != null && _config != null
   }
 
