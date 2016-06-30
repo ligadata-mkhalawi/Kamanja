@@ -106,9 +106,9 @@ sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_h
 if [ "$#" -ne 1 ] || ! [ -d "$KafkaRootDir" ]; then
 	echo "WARN: Not given/found Kafka install directory. Not going to create CreateQueues.sh, WatchOutputQueue.sh, WatchStatusQueue.sh, WatchFailedEventQueue.sh and WatchInputQueue.sh"
 else
-	if [ ! -f "$KafkaRootDir/bin/kafka-topics.sh" ]; then
+	if [ -e "$KafkaRootDir/bin/kafka-topics.sh" ]; then
 		kafkatopics="$KafkaRootDir/bin/kafka-topics.sh"
-	elif [ ! -f "$KafkaRootDir/bin/kafka-topics" ]; then
+	elif [ -e "$KafkaRootDir/bin/kafka-topics" ]; then
 		kafkatopics="$KafkaRootDir/bin/kafka-topics"
 	fi
 	
