@@ -21,7 +21,7 @@ import com.ligadata.KamanjaBase.FactoryOfModelInstanceFactory
 import com.ligadata.kamanja.metadata.MiningModelType._
 
 import com.ligadata.Serialize._
-import org.dmg.pmml.{DataField, FieldName, PMML}
+import org.dmg.pmml._
 
 import scala.collection.JavaConverters._
 
@@ -134,12 +134,49 @@ class JpmmlSupport(mgr: MdMgr
 
           /** target|predicted usage types */
 
-          /** NOTE: activeFields are not used at this point... for jpmml models, only the message will be
-            * available as an input variable
+          /** NOTE: The following arrays depict the field names extracted from the model by the evaluator.
+            * The activeFields DataField names are used at runtime to prepare the data for the model execution.
+            * All the arrays are printed here reveal how to get the name and dataType from the activeFields,
+            * targetFields, and outputFields.  These will be needed by the tool that will generate a message
+            * definitions for the input and output.  We may still want to leave the fields logging
+            * here... perhaps reducing the priority to debug or trace.
             */
-          val activeFields: scala.Array[DataField] = {
-            activeFieldNames.asScala.map(nm => modelEvaluator.getDataField(nm))
-          }.toArray
+            val activeFields: scala.Array[DataField] = {
+                activeFieldNames.asScala.map(nm => modelEvaluator.getDataField(nm))
+            }.toArray
+            val targetFields: scala.Array[Target] = {
+                targetFieldNames.asScala.filter(nm => modelEvaluator.getTarget(nm) != null).map(nm => modelEvaluator.getTarget(nm))
+            }.toArray
+            val outputFields: scala.Array[OutputField] = {
+                outputFieldNames.asScala.filter(nm => modelEvaluator.getOutputField(nm) != null).map(nm => modelEvaluator.getOutputField(nm))
+            }.toArray
+
+            val activeFieldContent : scala.Array[(String,String)] = activeFields.map(fld => {
+                (fld.getName.getValue, fld.getDataType.value)
+            })
+            val targetFieldContent : scala.Array[(String,String)] = if (targetFields != null && targetFields.size > 0) {
+                targetFields.map(fld => {
+                    val field : FieldName = fld.getField
+                    val name : String = field.getValue
+                    val datafield : DataField =  modelEvaluator.getDataField(field)
+                    (datafield.getName.getValue, datafield.getDataType.value)
+
+                })
+            } else {
+                scala.Array[(String,String)](("no","targetFields"))
+            }
+            val outputFieldContent : scala.Array[(String,String)] = if (outputFields != null && outputFields.size > 0) {
+                outputFields.map(fld => {
+                    (fld.getName.getValue, fld.getDataType.value)
+                })
+            } else {
+                scala.Array[(String,String)](("no","outputFields"))
+            }
+
+            logger.info(s"\nActive Fields for $modelNamespace.$modelName: \n${activeFieldContent.toMap.toString}\n")
+            logger.info(s"\nTarget Fields for $modelNamespace.$modelName: \n${targetFieldContent.toMap.toString}\n")
+            logger.info(s"\nOutput Fields for $modelNamespace.$modelName: \n${outputFieldContent.toMap.toString}\n")
+
           val modelD: ModelDef = if (inputMsg != null) {
 
             /*
@@ -180,14 +217,14 @@ class JpmmlSupport(mgr: MdMgr
                                     val outVars: List[(String, String, String)] = (targVars ++ outputFieldVars).distinct
             */
             val inpMsgs = if (inputMsg != null) {
-              val t = new MessageAndAttributes
-              t.origin = "" //FIXME:- Fill this if looking for specific input
-              t.message = inputMsg.FullName
-              t.attributes = Array[String]()
-              Array(t)
+                val t = new MessageAndAttributes
+                t.origin = "" //FIXME:- Fill this if looking for specific input
+                t.message = inputMsg.FullName
+                t.attributes = scala.Array[String]()
+                scala.Array(t)
             }
             else {
-              Array[MessageAndAttributes]()
+                scala.Array[MessageAndAttributes]()
             }
 
 
@@ -201,8 +238,8 @@ class JpmmlSupport(mgr: MdMgr
               , phyName
               , ownerId, tenantId, 0, 0
               , ModelRepresentation.PMML
-              , Array(inpMsgs)
-              , Array[String]()
+              , scala.Array(inpMsgs)
+              , scala.Array[String]()
               , isReusable
               , pmmlText
               , DetermineMiningModelType(modelEvaluator)
