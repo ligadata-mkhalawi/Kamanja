@@ -301,6 +301,14 @@ cp $srcPath/Utils/ClusterInstaller/ClusterInstallerDriver/src/main/resources/log
 
 cp $srcPath/KamanjaUI/Rest/KamanjaUIRest/target/kamanjauirest-0.1.0.war $kamanjaui/kamanjauirest.war
 cp $srcPath/KamanjaUI/UI/distro/kamanja.war $kamanjaui/
+cp $srcPath/KamanjaUI/Scripts/PopulateKamanjaViews.sh $kamanjaui/
+chmod 0700 $kamanjaui/*.sh
+
+
+# *******************************
+# copy OrientDB JDBC jar into system
+# *******************************
+wget -O $systemlib/orientdb-jdbc-2.1.19-all.jar --no-cookies --no-check-certificate "http://orientdb.com/download.php?file=orientdb-jdbc-2.1.19-all.jar"
 
 # *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep
@@ -596,6 +604,13 @@ cp $srcPath/Utils/ClusterInstaller/ClusterInstallerDriver/src/main/resources/log
 
 cp $srcPath/KamanjaUI/Rest/KamanjaUIRest/target/kamanjauirest-0.1.0.war $kamanjaui/kamanjauirest.war
 cp $srcPath/KamanjaUI/UI/distro/kamanja.war $kamanjaui/
+cp $srcPath/KamanjaUI/Scripts/PopulateKamanjaViews.sh $kamanjaui/
+chmod 0700 $kamanjaui/*.sh
+
+# *******************************
+# copy OrientDB JDBC jar into system
+# *******************************
+wget -O $systemlib/orientdb-jdbc-2.1.19-all.jar --no-cookies --no-check-certificate "http://orientdb.com/download.php?file=orientdb-jdbc-2.1.19-all.jar"
 
 # *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep
