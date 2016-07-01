@@ -562,7 +562,7 @@ class MigrateTo_V_1_3 extends MigratableTo {
         "json4s-jackson_2.10-3.2.9.jar" -> "json4s-jackson_2.11-3.2.9.jar", "pmmlruntime_2.10-1.0.jar" -> "pmmlruntime_2.11-1.0.jar", "pmmludfs_2.10-1.0.jar" -> "pmmludfs_2.11-1.0.jar",
         "datadelimiters_2.10-1.0.jar" -> "datadelimiters_2.11-1.0.jar", "metadata_2.10-1.0.jar" -> "metadata_2.11-1.0.jar", "exceptions_2.10-1.0.jar" -> "exceptions_2.11-1.0.jar",
         "json4s-ast_2.10-3.2.9.jar" -> "json4s-ast_2.11-3.2.9.jar", "json4s-native_2.10-3.2.9.jar" -> "json4s-native_2.11-3.2.9.jar", "bootstrap_2.10-1.0.jar" -> "bootstrap_2.11-1.0.jar",
-        "messagedef_2.10-1.0.jar" -> "messagedef_2.11-1.0.jar", "guava-16.0.1.jar" -> "guava-14.0.1.jar", "guava-18.0.jar" -> "guava-14.0.1.jar", "guava-19.0.jar" -> "guava-14.0.1.jar")
+        "messagedef_2.10-1.0.jar" -> "messagedef_2.11-1.0.jar", "guava-16.0.1.jar" -> "guava-16.0.1.jar", "guava-18.0.jar" -> "guava-16.0.1.jar", "guava-19.0.jar" -> "guava-16.0.1.jar")
 
       val newDeps = depJars.map(d => {
         if (d.startsWith("scala-reflect-2.10")) {
@@ -578,7 +578,7 @@ class MigrateTo_V_1_3 extends MigratableTo {
 
       newDeps
     } else {
-      val depJarsMap = Map("guava-16.0.1.jar" -> "guava-14.0.1.jar", "guava-18.0.jar" -> "guava-14.0.1.jar", "guava-19.0.jar" -> "guava-14.0.1.jar")
+      val depJarsMap = Map("guava-16.0.1.jar" -> "guava-16.0.1.jar", "guava-18.0.jar" -> "guava-16.0.1.jar", "guava-19.0.jar" -> "guava-16.0.1.jar")
       val newDeps = depJars.map(d => {
         depJarsMap.getOrElse(d, d)
       })
