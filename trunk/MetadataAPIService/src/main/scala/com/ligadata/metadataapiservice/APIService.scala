@@ -158,22 +158,6 @@ class APIService extends LigadataSSLConfiguration with Runnable{
       // that database connections were successfully made
       APIInit.SetDbOpen
 
-      logger.debug("API Properties => " + getMetadataAPI.GetMetadataAPIConfig)
-
-      // We will allow access to this web service from all the servers on the PORT # defined in the config file
-      val serviceHost = "0.0.0.0"
-      val servicePort = getMetadataAPI.GetMetadataAPIConfig.getProperty("SERVICE_PORT").toInt
-
-      // create and start our service actor
-      val callbackActor = actor(new Act {
-        become {
-          case b @ Bound(connection) => logger.debug(b.toString)
-          case cf @ CommandFailed(command) => logger.error(cf.toString)
-          case all => logger.debug("ApiService Received a message from Akka.IO: " + all.toString)
-        }
-      })
-      val service = system.actorOf(Props[MetadataAPIServiceActor], "metadata-api-service")
-
       val sslEnabled = getIsSslEnabledFromConfig
       logger.warn("Setting ssl enabled to: "+sslEnabled)
       MetadataAPIImpl.setSslEnabled(sslEnabled)
