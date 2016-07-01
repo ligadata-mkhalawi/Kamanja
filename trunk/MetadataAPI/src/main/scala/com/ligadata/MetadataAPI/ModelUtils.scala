@@ -710,10 +710,14 @@ object ModelUtils {
   private def AddPYTHONModel(modelName: String, version: String, msgConsumed: String, msgVersion: String, srcText: String, userid: Option[String], tenantId: String, optMsgProduced: Option[String], pStr : Option[String], someModelOptions: Option[String]): String = {
     try {
       val buffer: StringBuilder = new StringBuilder
+
       val modelNameNodes: Array[String] = modelName.split('.')
-      val modelNm: String = modelNameNodes.last
-      modelNameNodes.take(modelNameNodes.size - 1).addString(buffer, ".")
-      val modelNmSpace: String = buffer.toString
+      val moduleName : String = modelNameNodes.head /** separate the module name prefix from rest of model name */
+      val modelNameNodesSansModule : Array[String] = modelNameNodes.tail
+      val modelNm: String = modelNameNodesSansModule.last
+      modelNameNodesSansModule.take(modelNameNodesSansModule.size - 1).addString(buffer, ".")
+      val modelNmSpace: String = buffer.toString /** this could be empty*/
+
       buffer.clear
       val msgNameNodes: Array[String] = msgConsumed.split('.')
       val msgName: String = msgNameNodes.last
@@ -722,7 +726,7 @@ object ModelUtils {
       val ownerId: String = if (userid == None) "kamanja" else userid.get
       val modelOptions : String = someModelOptions.getOrElse("{}")
 
-      val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, modelNmSpace, modelNm, version, msgNamespace, msgName, msgVersion, srcText, ownerId, tenantId, optMsgProduced, pStr, modelOptions, getMetadataAPI.GetMetadataAPIConfig)
+      val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, moduleName, modelNmSpace, modelNm, version, msgNamespace, msgName, msgVersion, srcText, ownerId, tenantId, optMsgProduced, pStr, modelOptions, getMetadataAPI.GetMetadataAPIConfig)
       val recompile: Boolean = false
       val isPython: Boolean = true // when false JYTHON
       var modDef: ModelDef = pythonMdlSupport.CreateModel(recompile, isPython)
@@ -809,10 +813,14 @@ object ModelUtils {
   private def AddJYTHONModel(modelName: String, version: String, msgConsumed: String, msgVersion: String, srcText: String, userid: Option[String], tenantId: String, optMsgProduced: Option[String], pStr : Option[String], someModelOptions: Option[String]): String = {
     try {
       val buffer: StringBuilder = new StringBuilder
+
       val modelNameNodes: Array[String] = modelName.split('.')
-      val modelNm: String = modelNameNodes.last
-      modelNameNodes.take(modelNameNodes.size - 1).addString(buffer, ".")
-      val modelNmSpace: String = buffer.toString
+      val moduleName : String = modelNameNodes.head /** separate the module name prefix from rest of model name */
+      val modelNameNodesSansModule : Array[String] = modelNameNodes.tail
+      val modelNm: String = modelNameNodesSansModule.last
+      modelNameNodesSansModule.take(modelNameNodesSansModule.size - 1).addString(buffer, ".")
+      val modelNmSpace: String = buffer.toString /** this could be empty*/
+
       buffer.clear
       val msgNameNodes: Array[String] = msgConsumed.split('.')
       val msgName: String = msgNameNodes.last
@@ -821,7 +829,7 @@ object ModelUtils {
       val ownerId: String = if (userid == None) "kamanja" else userid.get
       val modelOptions : String = someModelOptions.getOrElse("{}")
 
-      val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, modelNmSpace, modelNm, version, msgNamespace, msgName, msgVersion, srcText, ownerId, tenantId, optMsgProduced, pStr, modelOptions, getMetadataAPI.GetMetadataAPIConfig)
+      val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, moduleName, modelNmSpace, modelNm, version, msgNamespace, msgName, msgVersion, srcText, ownerId, tenantId, optMsgProduced, pStr, modelOptions, getMetadataAPI.GetMetadataAPIConfig)
       val recompile: Boolean = false
       val isPython: Boolean = true // when false JYTHON
       var modDef: ModelDef = pythonMdlSupport.CreateModel(recompile, ! isPython)
@@ -1649,9 +1657,11 @@ object ModelUtils {
       try {
         val buffer: StringBuilder = new StringBuilder
         val modelNameNodes: Array[String] = modelName.split('.')
-        val modelNm: String = modelNameNodes.last
-        modelNameNodes.take(modelNameNodes.size - 1).addString(buffer, ".")
-        val modelNmSpace: String = buffer.toString
+        val moduleName : String = modelNameNodes.head /** separate the module name prefix from rest of model name */
+        val modelNameNodesSansModule : Array[String] = modelNameNodes.tail
+        val modelNm: String = modelNameNodesSansModule.last
+        modelNameNodesSansModule.take(modelNameNodesSansModule.size - 1).addString(buffer, ".")
+        val modelNmSpace: String = buffer.toString /** this could be empty*/
 
         val currentVer: Long = -1
         val onlyActive: Boolean = false
@@ -1694,7 +1704,7 @@ object ModelUtils {
         val ownerId: String = if (optUserid == None) "kamanja" else optUserid.get
         val modelOptions : String = someModelOptions.getOrElse("{}")
 
-        val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, modelNmSpace, modelNm, version, currMsgNmSp, currMsgNm, currMsgVer, input, ownerId, tenantId, optMsgProduced, pStr, modelOptions, getMetadataAPI.GetMetadataAPIConfig)
+        val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, moduleName, modelNmSpace, modelNm, version, currMsgNmSp, currMsgNm, currMsgVer, input, ownerId, tenantId, optMsgProduced, pStr, modelOptions, getMetadataAPI.GetMetadataAPIConfig)
         val isPython: Boolean = true // when false JYTHON
         val modDef: ModelDef = pythonMdlSupport.UpdateModel(true)
 
@@ -1836,9 +1846,11 @@ object ModelUtils {
       try {
         val buffer: StringBuilder = new StringBuilder
         val modelNameNodes: Array[String] = modelName.split('.')
-        val modelNm: String = modelNameNodes.last
-        modelNameNodes.take(modelNameNodes.size - 1).addString(buffer, ".")
-        val modelNmSpace: String = buffer.toString
+        val moduleName : String = modelNameNodes.head /** separate the module name prefix from rest of model name */
+        val modelNameNodesSansModule : Array[String] = modelNameNodes.tail
+        val modelNm: String = modelNameNodesSansModule.last
+        modelNameNodesSansModule.take(modelNameNodesSansModule.size - 1).addString(buffer, ".")
+        val modelNmSpace: String = buffer.toString /** this could be empty*/
 
         val currentVer: Long = -1
         val onlyActive: Boolean = false
@@ -1886,7 +1898,7 @@ object ModelUtils {
           * Fix Me - Get the Python Validator to validate the Python Model ...
           * ******************************************************************
           */
-        val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, modelNmSpace, modelNm, version, currMsgNmSp, currMsgNm, currMsgVer, input, ownerId, tenantId, optMsgProduced, pStr, modelOptions, getMetadataAPI.GetMetadataAPIConfig)
+        val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, moduleName, modelNmSpace, modelNm, version, currMsgNmSp, currMsgNm, currMsgVer, input, ownerId, tenantId, optMsgProduced, pStr, modelOptions, getMetadataAPI.GetMetadataAPIConfig)
 
         val isPython: Boolean = true // when false JYTHON
         val modDef: ModelDef = pythonMdlSupport.UpdateModel(! isPython)

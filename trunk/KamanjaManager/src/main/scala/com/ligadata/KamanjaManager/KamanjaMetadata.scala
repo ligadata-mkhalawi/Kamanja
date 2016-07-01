@@ -18,26 +18,31 @@
 package com.ligadata.KamanjaManager
 
 import com.ligadata.Exceptions.KamanjaException
-import com.ligadata.InputOutputAdapterInfo.{OutputAdapter, InputAdapter}
+import com.ligadata.InputOutputAdapterInfo.{InputAdapter, OutputAdapter}
 import com.ligadata.StorageBase.DataStore
-import com.ligadata.kamanja.metadata.{BaseElem, MappedMsgTypeDef, BaseAttributeDef, StructTypeDef, EntityType, AttributeDef, MessageDef, ContainerDef, ModelDef}
+import com.ligadata.kamanja.metadata.{AttributeDef, BaseAttributeDef, BaseElem, ContainerDef, EntityType, MappedMsgTypeDef, MessageDef, ModelDef, StructTypeDef}
 import com.ligadata.kamanja.metadata._
 import com.ligadata.kamanja.metadata.MdMgr._
-
 import com.ligadata.kamanja.metadataload.MetadataLoad
-import com.ligadata.utils.dag.{EdgeId, Dag}
+import com.ligadata.utils.dag.{Dag, EdgeId}
+
 import scala.collection.mutable.TreeSet
 import scala.util.control.Breaks._
 import com.ligadata.KamanjaBase._
+
 import scala.collection.mutable.HashMap
 import org.apache.logging.log4j._
+
 import scala.collection.mutable.ArrayBuffer
 import com.ligadata.Serialize._
 import com.ligadata.ZooKeeper._
 import com.ligadata.MetadataAPI.MetadataAPIImpl
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import com.ligadata.Utils.{Utils, KamanjaClassLoader, KamanjaLoaderInfo}
+import java.util.concurrent.locks.ReentrantReadWriteLock
+
+import com.ligadata.Utils.{KamanjaClassLoader, KamanjaLoaderInfo, Utils}
+
 import scala.actors.threadpool.{ExecutorService, Executors}
+import scala.collection.mutable
 
 
 class MdlInfo(val mdl: ModelInstanceFactory, val jarPath: String, val dependencyJarNames: Array[String], val nodeId: Long, val inputs: Array[Array[EdgeId]], val outputs: Array[Long]) {
@@ -470,6 +475,26 @@ class KamanjaMetadata(var envCtxt: EnvContext) {
       KamanjaMetadata.LoadJarIfNeeded(mdl)
     })
 
+    /** Set up the python key values in the node context.  Connections are generated and added at first usage attempt */
+    val hasPythonModels : Boolean = modelDefs.find(m => m.modelRepresentation == ModelRepresentation.PYTHON).getOrElse(null) != null
+    //if (hasPythonModels) { Always build the map... even if there are no python models...
+        /** Create an empty map of python server connections for the node context. This map is keyed by the thread id of
+          * the execution thread running at the moment that is trying to instantiate a python model (proxy side).  The current
+          * thread id is used to lookup the connection object in the map.  Should it not be found, a connection is
+          * crafted using the next available port, also available in the NodeContext instance that is supplied to the facfac and
+          * model factory it creates.
+          *
+          * In other words we lazily add these servers at the very last moment when the factory discovers no connection is
+          * available for it.*/
+
+        KamanjaMetadata.gNodeContext.putValue("PYTHON_CONNECTIONS", new mutable.HashMap[Long,Any]())
+        /** Add an iterator to get a port from when the time comes to build a connection */
+        val p : Int = 8100 /** ports starting here for 20... Fixme: this should be a configuration value */
+        val it = Iterator[Int](p, p+1, p+2, p+3, p+4, p+5, p+6, p+7, p+8, p+9, p+10, p+11, p+12, p+13, p+14, p+15, p+16, p+17, p+18, p+19, p+20)
+        KamanjaMetadata.gNodeContext.putValue("PYTHON_CONNECTION_PORTS", it)
+        /** could do hosts in same fashion with Iterator[String] ... assuming localhost for now */
+
+    //}
     modelDefs.foreach(mdl => {
       PrepareModelFactory(mdl, false, null) // Already Loaded required dependency jars before calling this
     })

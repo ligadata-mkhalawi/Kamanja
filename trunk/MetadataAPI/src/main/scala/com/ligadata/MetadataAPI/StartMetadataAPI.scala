@@ -345,7 +345,7 @@ object StartMetadataAPI {
 
 
 
-    getMetadataAPI.InitMdMgrFromBootStrap(config, false)
+      getMetadataAPI.InitMdMgrFromBootStrap(config, false)
       if (action == "")
         TestMetadataAPI.StartTest
       else {
@@ -355,7 +355,7 @@ object StartMetadataAPI {
       }
     } catch {
       case e: NoSuchElementException => {
-        println("action trim" + action.trim());
+        println("action trim" + action.trim())
         logger.error("Route not found", e.getMessage)
         /** preserve the original response ... */
         response = new ApiResult(-1, "StartMetadataAPI", null, e.getMessage).toString
@@ -480,25 +480,31 @@ object StartMetadataAPI {
         }
 
         case Action.ADDMODELPYTHON => {
-          val modelName: Option[String] = extraCmdArgs.get(MODELNAME)
+          val modelName : String = extraCmdArgs.getOrElse(MODELNAME,"there was no modelName supplied")
+          /** assumption here is that the file name endswith(".py")... we want the stem of the file name for moduleName */
+          val moduleName : String = input.split('.').dropRight(1).last
+          val pkgQualifiedName : Option[String] = Some(s"$moduleName.$modelName")
           val modelVer = extraCmdArgs.getOrElse(MODELVERSION, null)
           val modelOptions : String = extraCmdArgs.getOrElse(MODELOPTIONS, "{}")
           val optMsgName: Option[String] = extraCmdArgs.get(MESSAGENAME)
           val validatedModelVersion = if (modelVer != null) MdMgr.FormatVersion(modelVer) else null
           val optModelVer = Option(validatedModelVersion)
           val optMsgVer = Option(null)
-          response = ModelService.addModelPython(ModelType.PYTHON, input, userId, modelName, optModelVer, optMsgName, optMsgVer, tid, paramStr, Some(modelOptions))
+          response = ModelService.addModelPython(ModelType.PYTHON, input, userId, pkgQualifiedName, optModelVer, optMsgName, optMsgVer, tid, paramStr, Some(modelOptions))
         }
 
         case Action.ADDMODELJYTHON => {
-            val modelName: Option[String] = extraCmdArgs.get(MODELNAME)
+            val modelName : String = extraCmdArgs.getOrElse(MODELNAME,"there was no modelName supplied")
+            /** assumption here is that the file name endswith(".py")... we want the stem of the file name for moduleName */
+            val moduleName : String = input.split('.').dropRight(1).last
+            val pkgQualifiedName : Option[String] = Some(s"$moduleName.$modelName")
             val modelVer = extraCmdArgs.getOrElse(MODELVERSION, null)
             val modelOptions : String = extraCmdArgs.getOrElse(MODELOPTIONS, "{}")
             val optMsgName: Option[String] = extraCmdArgs.get(MESSAGENAME)
             val validatedModelVersion = if (modelVer != null) MdMgr.FormatVersion(modelVer) else null
             val optModelVer = Option(validatedModelVersion)
             val optMsgVer = Option(null)
-            response = ModelService.addModelJython(ModelType.JYTHON, input, userId, modelName, optModelVer, optMsgName, optMsgVer, tid, paramStr, Some(modelOptions))
+            response = ModelService.addModelJython(ModelType.JYTHON, input, userId, pkgQualifiedName, optModelVer, optMsgName, optMsgVer, tid, paramStr, Some(modelOptions))
         }
 
         case Action.ADDMODELSCALA => {
@@ -548,18 +554,24 @@ object StartMetadataAPI {
         }
 
         case Action.UPDATEMODELPYTHON => {
-            val modelName = extraCmdArgs.getOrElse(MODELNAME, "")
+            val modelName : String = extraCmdArgs.getOrElse(MODELNAME,"there was no modelName supplied")
+            /** assumption here is that the file name endswith(".py")... we want the stem of the file name for moduleName */
+            val moduleName : String = input.split('.').dropRight(1).last
+            val pkgQualifiedName : String = s"$moduleName.$modelName"
             val modelOptions : String = extraCmdArgs.getOrElse(MODELOPTIONS, "{}")
             val modelVer = extraCmdArgs.getOrElse(MODELVERSION, null)
             var validatedNewVersion: String = if (modelVer != null) MdMgr.FormatVersion(modelVer) else null
-            response = ModelService.updateModelPython(input, userId, modelName, validatedNewVersion, tid, paramStr, Some(modelOptions))
+            response = ModelService.updateModelPython(input, userId, pkgQualifiedName, validatedNewVersion, tid, paramStr, Some(modelOptions))
         }
         case Action.UPDATEMODELJYTHON => {
-            val modelName = extraCmdArgs.getOrElse(MODELNAME, "")
+            val modelName : String = extraCmdArgs.getOrElse(MODELNAME,"there was no modelName supplied")
+            /** assumption here is that the file name endswith(".py")... we want the stem of the file name for moduleName */
+            val moduleName : String = input.split('.').dropRight(1).last
+            val pkgQualifiedName : String = s"$moduleName.$modelName"
             val modelVer = extraCmdArgs.getOrElse(MODELVERSION, null)
             val modelOptions : String = extraCmdArgs.getOrElse(MODELOPTIONS, "{}")
             var validatedNewVersion: String = if (modelVer != null) MdMgr.FormatVersion(modelVer) else null
-            response = ModelService.updateModelJython(input, userId, modelName, validatedNewVersion, tid, paramStr, Some(modelOptions))
+            response = ModelService.updateModelJython(input, userId, pkgQualifiedName, validatedNewVersion, tid, paramStr, Some(modelOptions))
         }
 
         case Action.UPDATEMODELSCALA => {

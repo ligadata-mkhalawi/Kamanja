@@ -20,6 +20,7 @@ import com.ligadata.kamanja.metadata._
  * containing the python model text.
  *
  * @param mgr            the active metadata manager instance
+ * @param moduleName     the python module name stem from the file name (as in moduleName.py)
  * @param modelNamespace the namespace for the model
  * @param modelName      the name of the model
  * @param version        the version of the model in the form "MMMMMM.NNNNNN.mmmmmmm"
@@ -38,6 +39,7 @@ import com.ligadata.kamanja.metadata._
  */
 
 class PythonMdlSupport ( val mgr: MdMgr
+                       , val moduleName: String
                        , val modelNamespace: String
                        , val modelName: String
                        , val version: String
@@ -62,15 +64,24 @@ class PythonMdlSupport ( val mgr: MdMgr
     val randomFileNameStemSuffix : String = Random.alphanumeric.take(8).mkString
 
     /**
-   * Answer a ModelDef based upon the arguments supplied to the class constructor.
-   *
-   * @param recompile certain callers are creating a model to recompile the model when the message it consumes changes.
-   *                  pass this flag as true in those cases to avoid com.ligadata.Exceptions.AlreadyExistsException
-   * @return a ModelDef
-   */
+    * Answer a ModelDef based upon the arguments supplied to the class constructor.
+    *
+    * @param recompile certain callers are creating a model to recompile the model when the message it consumes changes.
+    *                  pass this flag as true in those cases to avoid com.ligadata.Exceptions.AlreadyExistsException
+    * @return a ModelDef
+    *
+    * ToDo: The python models have a moduleName - the name of the python file stem (sans .py suffix) and a model name -
+    * the name of the class inside that module.  Kamanja, however, supports namespaces that map into the multi level
+    * class hiearchy for java/scala based models.  This multilevel module reference is also supported in Python, but
+    * it is not currently accounted for in the Kamanja use.  To fix we need to create the models directory tree according
+    * to the namespace supplied and adjust the sys.path as necessary.
+    *
+    */
   def CreateModel(recompile: Boolean = false, isPython: Boolean): ModelDef = {
     val reasonable: Boolean = mgr != null &&
-                              modelNamespace != null && modelNamespace.nonEmpty &&
+                              moduleName != null && moduleName.nonEmpty &&
+                              modelNamespace != null && // empty ok for python ... moduleName really is namespace for python modules.
+                                                        // modelNamespace.nonEmpty &&
                               modelName != null && modelName.nonEmpty &&
                               version != null && version.nonEmpty &&
                               msgNamespace != null && msgNamespace.nonEmpty &&
@@ -175,7 +186,7 @@ class PythonMdlSupport ( val mgr: MdMgr
 
             val withDots: Boolean = true
             val msgVersionFormatted: String = MdMgr.ConvertLongVersionToString(inputMsg.Version, !withDots)
-            val mdl: ModelDef = mgr.MakeModelDef(modelNamespace, modelName, phyName, ownerId, tenantId, 0, 0, ModelRepresentation.PYTHON, Array(inpMsgs), Array[String](), isReusable, pythonMdlText, null, MdMgr.ConvertVersionToLong(version), jarName, jarDeps, recompile, supportsInstanceSerialization, modelOptions)
+            val mdl: ModelDef = mgr.MakeModelDef(modelNamespace, modelName, phyName, ownerId, tenantId, 0, 0, ModelRepresentation.PYTHON, Array(inpMsgs), Array[String](), isReusable, pythonMdlText, null, MdMgr.ConvertVersionToLong(version), jarName, jarDeps, recompile, supportsInstanceSerialization, modelOptions, moduleName)
 
             /** dump the model def to the log for time being */
             logger.debug(modelDefToString(mdl))
@@ -199,9 +210,7 @@ class PythonMdlSupport ( val mgr: MdMgr
     val onlyActive: Boolean = true
     val latestVersion: Boolean = true
     val facFacDefs: scala.collection.immutable.Set[FactoryOfModelInstanceFactoryDef] = mgr.ActiveFactoryOfMdlInstFactories
-    val optJythonMdlFacFac: Option[FactoryOfModelInstanceFactoryDef] = facFacDefs.filter(facfac => {
-      facfac.ModelRepSupported == ModelRepresentation.JYTHON
-    }).headOption
+    val optJythonMdlFacFac: Option[FactoryOfModelInstanceFactoryDef] = facFacDefs.find(ff => ff.ModelRepSupported == ModelRepresentation.JYTHON)
     val jythonMdlFacFac: FactoryOfModelInstanceFactoryDef = optJythonMdlFacFac.orNull
 
     val modelDefinition: ModelDef = if (jythonMdlFacFac == null) {
@@ -239,7 +248,7 @@ class PythonMdlSupport ( val mgr: MdMgr
 
         val withDots: Boolean = true
         val msgVersionFormatted: String = MdMgr.ConvertLongVersionToString(inputMsg.Version, !withDots)
-        val model: ModelDef = mgr.MakeModelDef(modelNamespace, modelName, phyName, ownerId, tenantId, 0, 0, ModelRepresentation.JYTHON, Array(inpMsgs), Array[String](), isReusable, pythonMdlText, null, MdMgr.ConvertVersionToLong(version), jarName, jarDeps, recompile, supportsInstanceSerialization, modelOptions)
+        val model: ModelDef = mgr.MakeModelDef(modelNamespace, modelName, phyName, ownerId, tenantId, 0, 0, ModelRepresentation.JYTHON, Array(inpMsgs), Array[String](), isReusable, pythonMdlText, null, MdMgr.ConvertVersionToLong(version), jarName, jarDeps, recompile, supportsInstanceSerialization, modelOptions, moduleName)
 
         /** dump the model def to the log for time being */
         logger.debug(modelDefToString(model))

@@ -801,7 +801,8 @@ class CompilerProxy {
       var depJars1 = deps.filter(x => ! jarsToBeExcludedRegEx.pattern.matcher(x).matches)
       logger.debug("deps => " + deps.toList)
       logger.debug("deps => " + depJars1.toList)
-      
+
+      val moduleName: String = "" /** This is a python/jython value ... of no importanance conjuring java/scala model defs*/
       val modDef: ModelDef = MdMgr.GetMdMgr.MakeModelDef(modelNamespace
         , modelName
         , pName
@@ -818,6 +819,7 @@ class CompilerProxy {
         , recompile
         , false
         , modCfgJson
+        , moduleName
 	, MessageAndContainerUtils.getContainersFromModelConfig(None,modelConfigName))
 
       // Need to set some values by hand here.

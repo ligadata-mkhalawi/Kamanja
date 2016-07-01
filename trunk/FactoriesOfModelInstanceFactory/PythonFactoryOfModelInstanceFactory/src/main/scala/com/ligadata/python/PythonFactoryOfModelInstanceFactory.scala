@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 ligaDATA
+ * Copyright 2016 ligaDATA
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -192,12 +192,9 @@ class PythonAdapter(factory : ModelInstanceFactory
         val trimmedOptionStr : String = modelOptStr.trim
         val modelOptions = parse(trimmedOptionStr).extract[Map[String, Any]]
 
-        /**
-          *
-          * FIXME: WE MUST PRESERVE THE INGESTED <model.py> to get the moduleName value.
-          */
-        val moduleName : String = "SomeModuleName" // modelDef.getModuleName
-        val resultStr : String = pyServerConnection.addModel(moduleName : String, modelDef.Name, modelDef.objectDefinition, modelOptions)
+
+        val moduleName : String = modelDef.moduleName
+        val resultStr : String = pyServerConnection.addModel(moduleName, modelDef.Name, modelDef.objectDefinition, modelOptions)
         val resultMap : Map[String,Any] = parse(resultStr).extract[Map[String, Any]]
         val rc = resultMap.getOrElse("Code", -1)
         if (rc == 0) {
@@ -287,13 +284,15 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends
     private var _host : String = null
     private var _port : Int = -1
     private var _pyPath : String = null
-    private var _pyServerConnection : PyServerConnection = null
     private var _isUsable : Boolean = false
+    private var _partitionKey : String = ""
 
-    // This calls when the instance got created. And only calls once per instance.
-    // Common initialization for all Model Instances. This gets called once per node during the metadata load or corresponding model def change.
-    //	Intput:
-    //		txnCtxt: Transaction context to do get operations on this transactionid. But this transaction will be rolledback once the initialization is done.
+   /**
+    * Common initialization for all Model Instances. This gets called once per node during the metadata load or corresponding model def change.
+    *
+    * @param txnContext Transaction context to do get operations on this transactionid. But this transaction will be rolledback
+    *                   once the initialization is done.
+    */
     override def init(txnContext: TransactionContext): Unit = {
         val host : String = if (nodeContext.getValue("HOST") != null)
             nodeContext.getValue("HOST").asInstanceOf[String]
@@ -304,17 +303,45 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends
         val pyPath : String = if (nodeContext.getValue("PYTHON_PATH") != null)
             nodeContext.getValue("PYTHON_PATH").asInstanceOf[String]
         else null
+        _partitionKey = txnContext.getPartitionKey()
         val low_level_proxy_server_connection_object : PyServerConnection =
-            if (nodeContext.getValue(Thread.currentThread().getId.toString) != null)
-                nodeContext.getValue(Thread.currentThread().getId.toString).asInstanceOf[PyServerConnection]
-            else null
+            if (nodeContext.getValue(_partitionKey) != null)
+                nodeContext.getValue(_partitionKey).asInstanceOf[PyServerConnection]
+            else {
+                /**
+                  * The factory doesn't have a connection for this partition key ... make one now
+                  * FixMe: user, the log config location and the log dir should be added to the nodeContext dict as well and initialized
+                  * FixMe: from config files
+                  */
+                val pyConn : PyServerConnection = new PyServerConnection(_host,_port,"kamanja", s"${_pyPath}/bin/pythonlog4j.cfg",s"${_pyPath}/logs", _pyPath)
+                if (pyConn != null) {
+                    /** setup server and connection to it */
+                    val (startServerResult, connResult) : (String,String) = pyConn.initialize
+
+                    /** how did it go? */
+                    implicit val formats = org.json4s.DefaultFormats
+                    val startResultsMap : Map[String, Any] = parse(startServerResult).extract[Map[String, Any]]
+                    val startRc : Int = startResultsMap.getOrElse("code", -1).asInstanceOf[Int]
+
+                    val connResultsMap : Map[String, Any] = parse(connResult).extract[Map[String, Any]]
+                    val connRc : Int = connResultsMap.getOrElse("code", -1).asInstanceOf[Int]
+
+                    if (startRc == 0 && connRc == 0) {
+                        nodeContext.putValue(_partitionKey, pyConn)
+                    } else {
+                        logger.error(s"Problems starting py server on behalf of models running on ${_partitionKey}... in factory init for ${modelDef.FullName}")
+                        logger.error(s"startServer result = $startServerResult")
+                        logger.error(s"connection result = $connResult")
+                    }
+                }
+                pyConn
+            }
         val isReasonable : Boolean = modelDef != null && modelDef.FullNameWithVer != null && modelDef.FullNameWithVer.nonEmpty && host != null && port != -1 && pyPath != null && low_level_proxy_server_connection_object != null
 
         if (isReasonable) {
             _host = host
             _port = port
             _pyPath = pyPath
-            _pyServerConnection  = low_level_proxy_server_connection_object
             _isUsable = true
         } else {
             logger.error(s"The PythonAdapterProxy for model ${modelDef.FullName} could not be initialized...")
@@ -398,7 +425,8 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends
 
             val isInstanceReusable : Boolean = true
             val pythonPath : String = nodeContext.getValue("PYTHONPATH").asInstanceOf[String]
-            val builtModel : ModelInstance = new PythonAdapter( this, _host, _port, _pyPath, _pyServerConnection)
+            val pyServerConnection : PyServerConnection = nodeContext.getValue(_partitionKey).asInstanceOf[PyServerConnection]
+            val builtModel : ModelInstance = new PythonAdapter( this, _host, _port, _pyPath, pyServerConnection)
             builtModel
         } else {
             logger.error("ModelDef in ctor was null...instance could not be built")
