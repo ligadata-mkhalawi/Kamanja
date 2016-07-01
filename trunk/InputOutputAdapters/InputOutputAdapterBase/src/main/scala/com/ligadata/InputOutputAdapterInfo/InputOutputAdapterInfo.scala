@@ -93,12 +93,16 @@ trait InputAdapter extends AdaptersSerializeDeserializers with Monitorable {
   def getAllPartitionEndValues: Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)]
 
   def externalizeExceptionEvent (cause: Throwable): Unit = {
-    val exceptionEvent = nodeContext.getEnvCtxt.getContainerInstance("com.ligadata.KamanjaBase.KamanjaExceptionEvent").asInstanceOf[com.ligadata.KamanjaBase.KamanjaExceptionEvent]
-    exceptionEvent.timeoferrorepochms = System.currentTimeMillis()
-    exceptionEvent.componentname = inputConfig.Name
-    exceptionEvent.errortype = "exception"
-    exceptionEvent.errorstring = StackTrace.ThrowableTraceString(cause)
-    nodeContext.getEnvCtxt.postMessages(Array[ContainerInterface](exceptionEvent))
+    try {
+      val exceptionEvent = nodeContext.getEnvCtxt.getContainerInstance("com.ligadata.KamanjaBase.KamanjaExceptionEvent").asInstanceOf[com.ligadata.KamanjaBase.KamanjaExceptionEvent]
+      exceptionEvent.timeoferrorepochms = System.currentTimeMillis()
+      exceptionEvent.componentname = inputConfig.Name
+      exceptionEvent.errortype = "exception"
+      exceptionEvent.errorstring = StackTrace.ThrowableTraceString(cause)
+      nodeContext.getEnvCtxt.postMessages(Array[ContainerInterface](exceptionEvent))
+    } catch {
+      case t:Throwable => {return}
+    }
   }
 }
 
@@ -123,12 +127,18 @@ trait OutputAdapter extends AdaptersSerializeDeserializers with Monitorable {
   def Category = "Output"
 
   def externalizeExceptionEvent (cause: Throwable): Unit = {
-    val exceptionEvent = nodeContext.getEnvCtxt.getContainerInstance("com.ligadata.KamanjaBase.KamanjaExceptionEvent").asInstanceOf[com.ligadata.KamanjaBase.KamanjaExceptionEvent]
-    exceptionEvent.timeoferrorepochms = System.currentTimeMillis()
-    exceptionEvent.componentname = inputConfig.Name
-    exceptionEvent.errortype = "exception"
-    exceptionEvent.errorstring = StackTrace.ThrowableTraceString(cause)
-    nodeContext.getEnvCtxt.postMessages(Array[ContainerInterface](exceptionEvent))
+    try {
+      val exceptionEvent = nodeContext.getEnvCtxt.getContainerInstance("com.ligadata.KamanjaBase.KamanjaExceptionEvent").asInstanceOf[com.ligadata.KamanjaBase.KamanjaExceptionEvent]
+      exceptionEvent.timeoferrorepochms = System.currentTimeMillis()
+      exceptionEvent.componentname = inputConfig.Name
+      exceptionEvent.errortype = "exception"
+      exceptionEvent.errorstring = StackTrace.ThrowableTraceString(cause)
+      nodeContext.getEnvCtxt.postMessages(Array[ContainerInterface](exceptionEvent))
+    } catch {
+      case t: Throwable => {
+        return
+      }
+    }
   }
 }
 
