@@ -300,14 +300,14 @@ class ContainerAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
 				And("GetContainerDef API to fetch the container that may not even exist, check for Status Code of -1")
 				objName = f1.stripSuffix(".json").toLowerCase
 				version = "0000000000001000000"
-				res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", version, None)
+				res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", version, None,None)
 				res should include regex ("\"Status Code\" : -1")
 
 				And("AddContainer first time from " + file.getPath)
 				contStr = Source.fromFile(file).mkString
 				MetadataAPIImpl.dumpMetadataAPIConfig
 
-				res = MetadataAPIImpl.AddContainer(contStr, "JSON", userid, tenantid)
+				res = MetadataAPIImpl.AddContainer(contStr, "JSON", userid, tenantid,None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("GetAllContainerDefs API to fetch the containers that were just added")
@@ -315,12 +315,12 @@ class ContainerAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
 			        logger.info("Containers => " + res)
 
 				And("GetContainerDef API to fetch the container that was just added")
-				res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", version, None)
+				res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", version, None,None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("AddContainer second time from " + file.getPath + ",should result in error")
 				contStr = Source.fromFile(file).mkString
-				res = MetadataAPIImpl.AddContainer(contStr, "JSON", None)
+				res = MetadataAPIImpl.AddContainer(contStr, "JSON", None,None,None)
 				res should include regex ("\"Status Code\" : -1")
 
 				And("RemoveContainer API for the container that was just added")
@@ -328,16 +328,16 @@ class ContainerAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
 				res should include regex ("\"Status Code\" : 0")
 
 				And("GetContainerDef API to fetch the container that was just removed, should fail, check for Status Code of -1")
-				res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", version, None)
+				res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", version, None,None)
 				res should include regex ("\"Status Code\" : -1")
 
 				And("AddContainer again to add Container from " + file.getPath)
 				contStr = Source.fromFile(file).mkString
-				res = MetadataAPIImpl.AddContainer(contStr, "JSON", None, tenantid)
+				res = MetadataAPIImpl.AddContainer(contStr, "JSON", None, tenantid,None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("GetContainerDef API to fetch  the container that was just added")
-				res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", version, None)
+				res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", version, None,None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("Get the container object from the cache")
@@ -363,18 +363,18 @@ class ContainerAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
 				assert(o != None)
 
 				And("Update the container without changing version number, should fail ")
-				res = MetadataAPIImpl.UpdateContainer(contStr, "JSON", userid, tenantid)
+				res = MetadataAPIImpl.UpdateContainer(contStr, "JSON", userid, tenantid,None)
 				res should include regex ("\"Status Code\" : -1")
 
 				And("Clone the input json and update the version number to simulate a container for an update operation")
 				contStr = contStr.replaceFirst("01.00", "01.01")
 				assert(contStr.indexOf("\"00.01.01\"") >= 0)
-				res = MetadataAPIImpl.UpdateContainer(contStr, "JSON", userid, tenantid)
+				res = MetadataAPIImpl.UpdateContainer(contStr, "JSON", userid, tenantid,None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("GetContainerDef API to fetch the container that was just updated")
 				newVersion = "0000000000001000001"
-				res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", newVersion, None)
+				res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", newVersion, None,None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("Get the active container object from the cache after updating")

@@ -300,18 +300,18 @@ class AddContainerSpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
 	And("GetContainerDef API to fetch the container that may not even exist, check for Status Code of -1")
 	objName = f1.stripSuffix(".json").toLowerCase
 	version = "0000000000001000000"
-	res = MetadataAPIImpl.GetContainerDef(ns, objName, "JSON", version, None)
+	res = MetadataAPIImpl.GetContainerDef(ns, objName, "JSON", version, None,None)
 	logger.info("response => " + res)
 	res should include regex ("\"Status Code\" : -1")
 
 	And("AddContainer first time from " + file.getPath)
 	contStr = Source.fromFile(file).mkString
-	res = MetadataAPIImpl.AddContainer(contStr, "JSON", None,tenantId)
+	res = MetadataAPIImpl.AddContainer(contStr, "JSON", None,tenantId,None)
 	logger.info("response => " + res)
 	res should include regex ("\"Status Code\" : 0")
 
 	And("GetContainerDef API to fetch the container that was just added")
-	res = MetadataAPIImpl.GetContainerDef(ns, objName, "JSON", version, userId)
+	res = MetadataAPIImpl.GetContainerDef(ns, objName, "JSON", version, userId,None)
 	logger.info("response => " + res)
 	res should include regex ("\"Status Code\" : 0")
 
@@ -321,18 +321,18 @@ class AddContainerSpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
 	res should include regex ("\"Status Code\" : 0")
 
 	And("GetContainerDef API to fetch the container that was just removed, should fail, check for Status Code of -1")
-	res = MetadataAPIImpl.GetContainerDef(ns, objName, "JSON", version, userId)
+	res = MetadataAPIImpl.GetContainerDef(ns, objName, "JSON", version, userId,None)
 	logger.info("response => " + res)
 	res should include regex ("\"Status Code\" : -1")
 
 	And("AddContainer second time from " + file.getPath + ",should not result in error")
 	contStr = Source.fromFile(file).mkString
-	res = MetadataAPIImpl.AddContainer(contStr, "JSON", None,tenantId)
+	res = MetadataAPIImpl.AddContainer(contStr, "JSON", None,tenantId,None)
 	logger.info("response => " + res)
 	res should include regex ("\"Status Code\" : 0")
 
 	And("GetContainerDef API to fetch the container that was just added")
-	res = MetadataAPIImpl.GetContainerDef(ns, objName, "JSON", version, None)
+	res = MetadataAPIImpl.GetContainerDef(ns, objName, "JSON", version, None,None)
 	logger.info("response => " + res)
 	res should include regex ("\"Status Code\" : 0")
 

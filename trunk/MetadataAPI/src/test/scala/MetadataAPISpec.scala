@@ -301,21 +301,21 @@ class MetadataAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
 				And("GetContainerDef API to fetch the container that may not even exist, check for Status Code of -1")
 				objName = f1.stripSuffix(".json").toLowerCase
 				version = "0000000000001000000"
-				res = MetadataAPIImpl.GetContainerDef("system", objName, "JSON", version, None)
+				res = MetadataAPIImpl.GetContainerDef("system", objName, "JSON", version, None,None)
 				res should include regex ("\"Status Code\" : -1")
 
 				And("AddContainer first time from " + file.getPath)
 				contStr = Source.fromFile(file).mkString
-				res = MetadataAPIImpl.AddContainer(contStr, "JSON", None)
+				res = MetadataAPIImpl.AddContainer(contStr, "JSON",None,None,None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("GetContainerDef API to fetch the container that was just added")
-				res = MetadataAPIImpl.GetContainerDef("system", objName, "JSON", version, None)
+				res = MetadataAPIImpl.GetContainerDef("system", objName, "JSON", version, None,None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("AddContainer second time from " + file.getPath + ",should result in error")
 				contStr = Source.fromFile(file).mkString
-				res = MetadataAPIImpl.AddContainer(contStr, "JSON", None)
+				res = MetadataAPIImpl.AddContainer(contStr, "JSON",None,None,None)
 				res should include regex ("\"Status Code\" : -1")
 
 				And("RemoveContainer API for the container that was just added")
@@ -323,16 +323,16 @@ class MetadataAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
 				res should include regex ("\"Status Code\" : 0")
 
 				And("GetContainerDef API to fetch the container that was just removed, should fail, check for Status Code of -1")
-				res = MetadataAPIImpl.GetContainerDef("system", objName, "JSON", version, None)
+				res = MetadataAPIImpl.GetContainerDef("system", objName, "JSON", version, None,None)
 				res should include regex ("\"Status Code\" : -1")
 
 				And("AddContainer again to add Container from " + file.getPath)
 				contStr = Source.fromFile(file).mkString
-				res = MetadataAPIImpl.AddContainer(contStr, "JSON", None)
+				res = MetadataAPIImpl.AddContainer(contStr, "JSON",None,None,None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("GetContainerDef API to fetch  the container that was just added")
-				res = MetadataAPIImpl.GetContainerDef("system", objName, "JSON", version, None)
+				res = MetadataAPIImpl.GetContainerDef("system", objName, "JSON", version, None,None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("Get the container object from the cache")
@@ -358,18 +358,18 @@ class MetadataAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
 				assert(o != None)
 
 				And("Update the container without changing version number, should fail ")
-				res = MetadataAPIImpl.UpdateContainer(contStr, "JSON")
+				res = MetadataAPIImpl.UpdateContainer(contStr, "JSON",None,None,None)
 				res should include regex ("\"Status Code\" : -1")
 
 				And("Clone the input json and update the version number to simulate a container for an update operation")
 				contStr = contStr.replaceFirst("01.00", "01.01")
 				assert(contStr.indexOf("\"00.01.01\"") >= 0)
-				res = MetadataAPIImpl.UpdateContainer(contStr, "JSON")
+				res = MetadataAPIImpl.UpdateContainer(contStr, "JSON",None,None,None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("GetContainerDef API to fetch the container that was just updated")
 				newVersion = "0000000000001000001"
-				res = MetadataAPIImpl.GetContainerDef("system", objName, "JSON", newVersion, None)
+				res = MetadataAPIImpl.GetContainerDef("system", objName, "JSON", newVersion, None,None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("Get the active container object from the cache after updating")
@@ -419,13 +419,13 @@ class MetadataAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
 
 				And("AddMessage first time from " + file.getPath)
 				var msgStr = Source.fromFile(file).mkString
-				res = MetadataAPIImpl.AddMessage(msgStr, "JSON", None)
+				res = MetadataAPIImpl.AddMessage(msgStr, "JSON",None,None,None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("GetMessageDef API to fetch the message that was just added")
 				var objName = f1.stripSuffix(".json").toLowerCase
 				var version = "0000000000001000000"
-				res = MetadataAPIImpl.GetMessageDef("system", objName, "JSON", version, None)
+				res = MetadataAPIImpl.GetMessageDef("system", objName, "JSON", version, None,None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("RemoveMessage API for the message that was just added")
@@ -434,12 +434,12 @@ class MetadataAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
 
 				And("AddMessage again to add Message from " + file.getPath)
 				msgStr = Source.fromFile(file).mkString
-				res = MetadataAPIImpl.AddMessage(msgStr, "JSON", None)
+				res = MetadataAPIImpl.AddMessage(msgStr, "JSON",None,None,None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("GetMessageDef API to fetch  the message that was just added")
 				objName = f1.stripSuffix(".json").toLowerCase
-				res = MetadataAPIImpl.GetMessageDef("system", objName, "JSON", version, None)
+				res = MetadataAPIImpl.GetMessageDef("system", objName, "JSON", version, None,None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("Get the message object from the cache")
@@ -467,12 +467,12 @@ class MetadataAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
 				And("Clone the input json and update the version number to simulate a message for an update operation")
 				msgStr = msgStr.replaceFirst("01.00", "01.01")
 				assert(msgStr.indexOf("\"00.01.01\"") >= 0)
-				res = MetadataAPIImpl.UpdateMessage(msgStr, "JSON")
+				res = MetadataAPIImpl.UpdateMessage(msgStr, "JSON",None,None,None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("GetMessageDef API to fetch the message that was just updated")
 				newVersion = "0000000000001000001"
-				res = MetadataAPIImpl.GetMessageDef("system", objName, "JSON", newVersion, None)
+				res = MetadataAPIImpl.GetMessageDef("system", objName, "JSON", newVersion, None,None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("Get the active message object from the cache after updating")
@@ -523,7 +523,7 @@ class MetadataAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
 
 				And("Call AddModel MetadataAPI Function to add Model from " + file.getPath)
 				var modStr = Source.fromFile(file).mkString
-				res = MetadataAPIImpl.AddModel(ModelType.KPMML, modStr, None, tenantId, None)
+				res = MetadataAPIImpl.AddModel(ModelType.KPMML, modStr, None, tenantId, None,None,None,None,None,None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("GetModelDef API to fetch the model that was just added")
@@ -544,7 +544,7 @@ class MetadataAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
 
 				And("AddModel again to add Model from " + file.getPath)
 				//modStr = Source.fromFile(file).mkString
-				res = MetadataAPIImpl.AddModel(ModelType.KPMML, modStr, None, tenantId, None)
+				res = MetadataAPIImpl.AddModel(ModelType.KPMML, modStr, None, tenantId, None,None,None,None,None,None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("GetModelDef API to fetch  the model that was just added")
@@ -577,7 +577,7 @@ class MetadataAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
 				And("Clone the input json and update the version number to simulate a model for an update operation")
 				modStr = modStr.replaceFirst("01.00", "01.01")
 				assert(modStr.indexOf("\"00.01.01\"") >= 0)
-				res = MetadataAPIImpl.UpdateModel(ModelType.KPMML, modStr, None,tenantId)
+				res = MetadataAPIImpl.UpdateModel(ModelType.KPMML, modStr, None,tenantId,None,None,None,None,None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("GetModelDef API to fetch the model that was just updated")

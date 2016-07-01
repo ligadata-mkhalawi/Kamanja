@@ -318,7 +318,7 @@ class AddAutoMPGPmmlModelSpec extends FunSpec with LocalTestFixtures with Before
 
         And("AddMessage first time from " + file.getPath)
         var msgStr = Source.fromFile(file).mkString
-        res = MetadataAPIImpl.AddMessage(msgStr, "JSON", None, tenantId)
+        res = MetadataAPIImpl.AddMessage(msgStr, "JSON", None, tenantId,None)
         res should include regex ("\"Status Code\" : 0")
 
       })
@@ -495,7 +495,8 @@ class AddAutoMPGPmmlModelSpec extends FunSpec with LocalTestFixtures with Before
           None, // optVersion
           Some("com.ligadata.kamanja.samples.messages.AutoMPGData"), // optMsgConsumed
           None, // optMsgVersion
-          Some("com.ligadata.kamanja.samples.messages.OutAutoMPGData") // optMsgProduced
+          Some("com.ligadata.kamanja.samples.messages.OutAutoMPGData"), // optMsgProduced
+	  None // pStr
         )
         res should include regex ("\"Status Code\" : 0")
 
@@ -514,7 +515,7 @@ class AddAutoMPGPmmlModelSpec extends FunSpec with LocalTestFixtures with Before
 
         val msgName = objName + "_outputmsg"
         version = "000000000000000001"
-        res = MetadataAPIImpl.GetMessageDef(nameSpace, msgName, "JSON", version, None)
+        res = MetadataAPIImpl.GetMessageDef(nameSpace, msgName, "JSON", version, None, None)
         res should include regex ("\"Status Code\" : 0")
 
         val modDefs = MdMgr.GetMdMgr.Models(nameSpace, objName, true, true)
