@@ -84,7 +84,7 @@ object ModelUtils {
   lazy val serializerType = "kryo"
   lazy val serializer = SerializerManager.GetSerializer(serializerType)
   private[this] val lock = new Object
-    // 646 - 676 Change begins - replace MetadataAPIImpl
+  // 646 - 676 Change begins - replace MetadataAPIImpl
   val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
   // 646 - 676 Change ends
 
@@ -397,7 +397,6 @@ object ModelUtils {
       // 1119 Changes end
 
 
-
       logger.info("Begin uploading dependent Jars, please wait.")
       PersistenceUtils.UploadJarsToDB(modDef)
       logger.info("Finished uploading dependent Jars.")
@@ -466,7 +465,7 @@ object ModelUtils {
                , optMsgConsumed: Option[String] = None
                , optMsgVersion: Option[String] = Some("-1")
                , optMsgProduced: Option[String] = None
-              , pStr : Option[String]
+               , pStr: Option[String]
               ): String = {
 
     // No Add Model is allowed without Tenant Id
@@ -524,7 +523,7 @@ object ModelUtils {
             , optUserid
             , tenantId.get
             , optMsgProduced,
-          pStr)
+            pStr)
           res
         } else {
           val inputRep: String = if (input != null && input.size > 200) input.substring(0, 199)
@@ -577,8 +576,8 @@ object ModelUtils {
                            , pmmlText: String
                            , userid: Option[String]
                            , tenantId: String
-    , optMsgProduced: Option[String]
-    , pStr : Option[String]
+                           , optMsgProduced: Option[String]
+                           , pStr: Option[String]
                           ): String = {
     try {
       val buffer: StringBuilder = new StringBuilder
@@ -611,8 +610,8 @@ object ModelUtils {
 
       if (isValid && modDef != null) {
         val existingModel = MdMgr.GetMdMgr.Model(modDef.NameSpace, modDef.Name, -1, false) // Any version is fine. No need of active
-// 646 - 673 Changes begin - MetadataAPI Changes
-          modDef.setParamValues(pStr)
+        // 646 - 673 Changes begin - MetadataAPI Changes
+        modDef.setParamValues(pStr)
         modDef.setCreationTime()
         modDef.setModTime()
         // 646 - 673 Changes end
@@ -685,8 +684,8 @@ object ModelUtils {
     */
   private def AddKPMMLModel(pmmlText: String,
                             userid: Option[String], tenantId: String,
-    optMsgProduced: Option[String],
-  pStr : Option[String]): String = {
+                            optMsgProduced: Option[String],
+                            pStr: Option[String]): String = {
     try {
       var compProxy = new CompilerProxy
       //compProxy.setLoggerLevel(Level.TRACE)
@@ -997,7 +996,7 @@ object ModelUtils {
           } else {
             val modelDef = parse(mod.modelConfig).values.asInstanceOf[Map[String, Any]]
             val key = mod.ownerId + "." + mod.name
-            val saveModelParms = modelDef.getOrElse(key, Map[String,Any]()).asInstanceOf[Map[String,Any]]
+            val saveModelParms = modelDef.getOrElse(key, Map[String, Any]()).asInstanceOf[Map[String, Any]]
             val tmpInputMsgSets = saveModelParms.getOrElse(ModelCompilationConstants.INPUT_TYPES_SETS, null)
             var inputMsgSets = List[List[String]]()
             if (tmpInputMsgSets != null) {
@@ -1023,7 +1022,7 @@ object ModelUtils {
                 outputMsgs = tmpOnputMsgs.asInstanceOf[Array[String]].toList
             }
 
-            var oldSource = (parse(mod.objectDefinition).values.asInstanceOf[Map[String,String]]).getOrElse("source",null)
+            var oldSource = (parse(mod.objectDefinition).values.asInstanceOf[Map[String, String]]).getOrElse("source", null)
             if (oldSource == null) {
               return new ApiResult(ErrorCodeConstants.Failure, "RecompileModel", null, "Error :Missing original Source " + ErrorCodeConstants.Model_ReCompilation_Failed).toString
             }
@@ -1174,7 +1173,7 @@ object ModelUtils {
                   , optModelName: Option[String] = None
                   , optVersion: Option[String] = None
                   , optVersionBeingUpdated: Option[String] = None
-    , optMsgProduced: Option[String] = None, pStr : Option[String]): String = {
+                  , optMsgProduced: Option[String] = None, pStr: Option[String]): String = {
     /**
       * FIXME: The current strategy is that only the most recent version can be updated.
       * FIXME: This is not a satisfactory condition. It may be desirable to have 10 models all with
@@ -1239,7 +1238,7 @@ object ModelUtils {
                               , optModelName: Option[String] = None
                               , optModelVersion: Option[String] = None
                               , optVersionBeingUpdated: Option[String]
-                              , optMsgProduced: Option[String], pStr : Option[String]): String = {
+                              , optMsgProduced: Option[String], pStr: Option[String]): String = {
 
     val modelName: String = optModelName.orNull
     val version: String = optModelVersion.getOrElse("-1")
@@ -1280,12 +1279,12 @@ object ModelUtils {
           null
         }
 
-        /** look up the message referred to by the inputMsgSets first element... the message only has namespace and name*/
-        val nameparts : Array[String] = if (currentMsg.contains(".")) currentMsg.split('.') else Array[String]("system",currentMsg)
-        val msgnamespace : String = nameparts.dropRight(1).mkString(".")
-        val msgname : String = nameparts.last
-        val msgDef : MessageDef = mdMgr.ActiveMessage(msgnamespace,msgname)
-        val key : String = if (msgDef != null) msgDef.FullNameWithVer else s"$msgnamespace.$msgname.000000000001000000"
+        /** look up the message referred to by the inputMsgSets first element... the message only has namespace and name */
+        val nameparts: Array[String] = if (currentMsg.contains(".")) currentMsg.split('.') else Array[String]("system", currentMsg)
+        val msgnamespace: String = nameparts.dropRight(1).mkString(".")
+        val msgname: String = nameparts.last
+        val msgDef: MessageDef = mdMgr.ActiveMessage(msgnamespace, msgname)
+        val key: String = if (msgDef != null) msgDef.FullNameWithVer else s"$msgnamespace.$msgname.000000000001000000"
         val (currMsgNmSp, currMsgNm, currMsgVer): (String, String, String) = MdMgr.SplitFullNameWithVersion(key)
 
         val ownerId: String = if (optUserid == None) "kamanja" else optUserid.get
@@ -1452,7 +1451,7 @@ object ModelUtils {
                                 , userid: Option[String] = None
                                 , tenantId: String = ""
                                 , modelName: Option[String] = None
-                                , version: Option[String] = None, pStr : Option[String]): String = {
+                                , version: Option[String] = None, pStr: Option[String]): String = {
     val sourceLang: String = modelType.toString
 
     /** to get here it is either 'java' or 'scala' */
@@ -1474,7 +1473,7 @@ object ModelUtils {
 
       val latestVersion = if (modDef == null) None else GetLatestModel(modDef)
       // 1118 Changes begin - checks model existence before update
-      if (modDef == null || DoesModelAlreadyExist(modDef) == false) {
+      if (modDef == null /* || DoesModelAlreadyExist(modDef) == false */ ) {
         return (new ApiResult(ErrorCodeConstants.Failure, "UpdateCustomModel", null, s"$modelType model must exist to perform update")).toString
 
       }
@@ -1559,7 +1558,7 @@ object ModelUtils {
                                , tenantId: String = ""
                                , optModelName: Option[String] = None
                                , optVersion: Option[String] = None
-                               , optMsgProduced: Option[String], pStr : Option[String]): String = {
+                               , optMsgProduced: Option[String], pStr: Option[String]): String = {
     try {
       var compProxy = new CompilerProxy
       //compProxy.setLoggerLevel(Level.TRACE)
@@ -1567,7 +1566,7 @@ object ModelUtils {
       var (classStr, modDef) = compProxy.compilePmml(pmmlText, ownerId, tenantId)
       val optLatestVersion = if (modDef == null) None else GetLatestModel(modDef)
       val latestVersion: ModelDef = optLatestVersion.orNull
-
+//Ahmed
       /**
         * FIXME: The current strategy is that only the most recent version can be updated.
         * FIXME: This is not a satisfactory condition. It may be desirable to have 10 PMML models all with
@@ -1580,7 +1579,7 @@ object ModelUtils {
 
       val isValid: Boolean = (modDef != null && latestVersion != null && latestVersion.Version < modDef.Version)
       // 1118 Changes begin - checks model existence before update
-      if (modDef == null || DoesModelAlreadyExist(modDef) == false) {
+      if (modDef == null /*|| DoesModelAlreadyExist(modDef) == false */ ) {
         return (new ApiResult(ErrorCodeConstants.Failure, "UpdateKPMMLModel", null, s"KPMML model must exist to perform update")).toString
 
       }
@@ -1659,7 +1658,7 @@ object ModelUtils {
                              , optUserid: Option[String] = None
                              , tenantId: String = ""
                              , optModelName: Option[String] = None
-                             , optVersion: Option[String] = None, pStr : Option[String]): String = {
+                             , optVersion: Option[String] = None, pStr: Option[String]): String = {
     try {
       var compProxy = new CompilerProxy
       var compileConfig = ""
@@ -1698,7 +1697,7 @@ object ModelUtils {
       val isValid: Boolean = (modDef != null && latestVersion != null && latestVersion.Version < modDef.Version)
 
       // 1118 Changes begin - checks model existence before update
-      if (modDef == null || DoesModelAlreadyExist(modDef) == false) {
+      if (modDef == null /* ||  DoesModelAlreadyExist(modDef) == false */ ) {
         return (new ApiResult(ErrorCodeConstants.Failure, "UpdateJTMModel", null, s"JTM model must exist to perform update")).toString
       }
       // 1118 Changes end
@@ -1824,7 +1823,7 @@ object ModelUtils {
         case Some(ms) =>
           val msa = ms.toArray
           val modCount = msa.length
-          var newModelList : List[String] = List[String]() ;
+          var newModelList: List[String] = List[String]();
           for (i <- 0 to modCount - 1) {
             if (tid.isEmpty || (tid.get == msa(i).tenantId)) {
               newModelList = newModelList ::: List(msa(i).FullName + "." + MdMgr.Pad0s2Version(msa(i).Version))
@@ -1834,7 +1833,7 @@ object ModelUtils {
             modelList
           }
           else {
-            (newModelList map(_.toString)).toArray
+            (newModelList map (_.toString)).toArray
           }
       }
     } catch {
@@ -1903,7 +1902,7 @@ object ModelUtils {
     *                   method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return
     */
-  def GetModelDefFromCache(nameSpace: String, name: String, formatType: String, version: String, userid: Option[String] = None, tid : Option[String] = None): String = {
+  def GetModelDefFromCache(nameSpace: String, name: String, formatType: String, version: String, userid: Option[String] = None, tid: Option[String] = None): String = {
     val dispkey = nameSpace + "." + name + "." + MdMgr.Pad0s2Version(version.toLong)
     if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.GETOBJECT, AuditConstants.MODEL, AuditConstants.SUCCESS, "", dispkey)
     try {
@@ -1917,8 +1916,8 @@ object ModelUtils {
           apiResult.toString()
         case Some(m) =>
           if (tid == None || tid.get == m.tenantId) {
-          logger.debug("model found => " + m.asInstanceOf[ModelDef].FullName + "." + MdMgr.Pad0s2Version(m.asInstanceOf[ModelDef].Version))
-          val apiResult = new ApiResult(ErrorCodeConstants.Success, "GetModelDefFromCache", JsonSerializer.SerializeObjectToJson(m), ErrorCodeConstants.Get_Model_From_Cache_Successful + ":" + dispkey)
+            logger.debug("model found => " + m.asInstanceOf[ModelDef].FullName + "." + MdMgr.Pad0s2Version(m.asInstanceOf[ModelDef].Version))
+            val apiResult = new ApiResult(ErrorCodeConstants.Success, "GetModelDefFromCache", JsonSerializer.SerializeObjectToJson(m), ErrorCodeConstants.Get_Model_From_Cache_Successful + ":" + dispkey)
             apiResult.toString()
           }
           else {
@@ -2028,10 +2027,11 @@ object ModelUtils {
       }
     }
   }
+
   // 1119 Changes end
 
 
-/**
+  /**
     * Get the latest model for a given FullName
     *
     * @param modDef
