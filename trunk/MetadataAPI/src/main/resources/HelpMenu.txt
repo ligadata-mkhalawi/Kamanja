@@ -10,6 +10,7 @@ kamanja add model kpmml input(optional) TENANTID <tenantId>
 kamanja add model pmml input MODELNAME namespace.name MODELVERSION nn.nn.nn MESSAGENAME namespace.name TENANTID <tenantId>
 kamanja add model java input(optional)  TENANTID <tenantId>
 kamanja add model scala input(optional) TENANTID <tenantId>
+kamanja add model jtm input(optional) TENANTID <tenantId>
 kamanja get model input(optional)
 kamanja get all models
 kamanja remove model input(optional)
@@ -17,6 +18,7 @@ kamanja update model kpmml input(optional) TENANTID <tenantId>
 kamanja update model pmml input MODELNAME namespace.name MODELVERSION nn.nn.nn TENANTID <tenantId>
 kamanja update model scala input(optional) TENANTID <tenantId>
 kamanja update model java input(optional) TENANTID <tenantId>
+kamanja update model jtm input(optional) TENANTID <tenantId>
 kamanja deactivate model input(optional)
 kamanja activate model input(optional)
 III. Container operations
