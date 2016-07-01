@@ -83,7 +83,7 @@
           "Name": "HelloWorldInput",
           "TypeString": "Input",
           "TenantId": "tenant1",
-          "ClassName": "com.ligadata.InputAdapters.KafkaSimpleConsumer$",
+          "ClassName": "com.ligadata.InputAdapters.KamanjaKafkaConsumer$",
           "JarName": "KamanjaInternalDeps_2.10-1.5.0.jar",
           "DependencyJars": [
             "ExtDependencyLibs_2.10-1.5.0.jar",
@@ -98,7 +98,7 @@
           "Name": "MedicalInput",
           "TypeString": "Input",
           "TenantId": "tenant1",
-          "ClassName": "com.ligadata.InputAdapters.KafkaSimpleConsumer$",
+          "ClassName": "com.ligadata.InputAdapters.KamanjaKafkaConsumer$",
           "JarName": "KamanjaInternalDeps_2.10-1.5.0.jar",
           "DependencyJars": [
             "ExtDependencyLibs_2.10-1.5.0.jar",
@@ -113,7 +113,7 @@
           "Name": "FinanceInput",
           "TypeString": "Input",
           "TenantId": "tenant1",
-          "ClassName": "com.ligadata.InputAdapters.KafkaSimpleConsumer$",
+          "ClassName": "com.ligadata.InputAdapters.KamanjaKafkaConsumer$",
           "JarName": "KamanjaInternalDeps_2.10-1.5.0.jar",
           "DependencyJars": [
             "ExtDependencyLibs_2.10-1.5.0.jar",
@@ -128,7 +128,7 @@
           "Name": "TelecomInput",
           "TypeString": "Input",
           "TenantId": "tenant1",
-          "ClassName": "com.ligadata.InputAdapters.KafkaSimpleConsumer$",
+          "ClassName": "com.ligadata.InputAdapters.KamanjaKafkaConsumer$",
           "JarName": "KamanjaInternalDeps_2.10-1.5.0.jar",
           "DependencyJars": [
             "ExtDependencyLibs_2.10-1.5.0.jar",
@@ -143,7 +143,7 @@
           "Name": "TestIn_1",
           "TypeString": "Input",
           "TenantId": "tenant1",
-          "ClassName": "com.ligadata.InputAdapters.KafkaSimpleConsumer$",
+          "ClassName": "com.ligadata.InputAdapters.KamanjaKafkaConsumer$",
           "JarName": "KamanjaInternalDeps_2.10-1.5.0.jar",
           "DependencyJars": [
             "ExtDependencyLibs_2.10-1.5.0.jar",

@@ -1,14 +1,9 @@
-{"Message": {"NameSpace": "org.kamanja.arithmetic", "Name": "arithmeticMsg", "Version": "00.01.01", "Description": "simple arithmetic test message", "Fixed": "true", "Persist": "false", "Elements": [{"Field": {"Name": "a", "Type": "system.Int"} }, {"Field": {"Name": "b", "Type": "system.Int"} } ] } }
-
-{"Message": {"NameSpace": "org.kamanja.arithmetic", "Name": "arithmeticMsg", "Version": "00.01.01", "Description": "simple arithmetic test message", "Fixed": "true", "Persist": "false", "Elements": [{"Field": {"Name": "a", "Type": "system.Int"} }, {"Field": {"Name": "b", "Type": "system.Int"} } ] } }
-
-
 {
   "Message": {
     "NameSpace": "org.kamanja.arithmetic",
-    "Name": "arithmeticOutMsg",
+    "Name": "arithmeticMsg",
     "Version": "00.01.01",
-    "Description": "simple arithmetic output message",
+    "Description": "simple arithmetic test message",
     "Fixed": "true",
     "Persist": "false",
     "Elements": [
@@ -21,12 +16,6 @@
       {
         "Field": {
           "Name": "b",
-          "Type": "system.Int"
-        }
-      },
-      {
-        "Field": {
-          "Name": "answer",
           "Type": "system.Int"
         }
       }

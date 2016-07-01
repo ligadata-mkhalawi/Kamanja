@@ -742,7 +742,9 @@ Try again.
         }
 
         if (upgrade && (adapterMessageBindings_opt == null || adapterMessageBindings_opt.trim.size == 0)) {
-          printAndLogError("For upgrade, adapterMessageBindings empty/null does not import any bindings. Make sure you import them after installation.", log)
+	  if( fromKamanja != "1.4" && fromKamanja != "1.4.1" ){
+            printAndLogError("For upgrade, adapterMessageBindings empty/null does not import any bindings. Make sure you import them after installation.", log)
+	  }
         }
 
         val tenantId = if (tenantId_opt == null) {""} else{ tenantId_opt }

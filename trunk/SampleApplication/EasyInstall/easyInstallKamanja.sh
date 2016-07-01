@@ -62,6 +62,7 @@ mkdir -p $installPath/Kamanja-$ver210/template/config
 mkdir -p $installPath/Kamanja-$ver210/template/script
 #mkdir -p $installPath/Kamanja-$ver210/input/
 mkdir -p $installPath/Kamanja-$ver210/ClusterInstall
+mkdir -p $installPath/Kamanja-$ver210/KamanjaUI
 #new one
 #mkdir -p $installPath/Kamanja-$ver210/input/SampleApplications
 mkdir -p $installPath/Kamanja-$ver210/input/SampleApplications/bin
@@ -97,6 +98,7 @@ mkdir -p $installPath/Kamanja-$ver211/template/config
 mkdir -p $installPath/Kamanja-$ver211/template/script
 #mkdir -p $installPath/Kamanja-$ver211/input
 mkdir -p $installPath/Kamanja-$ver211/ClusterInstall
+mkdir -p $installPath/Kamanja-$ver211/KamanjaUI
 #new one
 #mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications
 mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications/bin
@@ -138,7 +140,7 @@ mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications/template
 #mkdir -p $installPath/KamanjaInstall-$ver211/template/config
 #mkdir -p $installPath/KamanjaInstall-$ver211/template/script
 
-
+kamanjaui=$installPath/Kamanja-$ver210/KamanjaUI
 kamanjainstallbin=$installPath/Kamanja-$ver210/ClusterInstall
 #kamanjainstallbin=$installPath/KamanjaInstall-$ver210/bin
 #kamanjainstallsystemlib=$installPath/KamanjaInstall-$ver210/lib/system
@@ -199,6 +201,7 @@ cp Utils/ClusterInstaller/InstallDriver/src/main/resources/GetComponentsVersions
 cp Utils/PmmlTestTool/target/pmmltesttool* $systemlib
 #cp Utils/Migrate/MigrateManager/target/MigrateManager* $bin
 cp Utils/JsonChecker/target/scala-2.10/jsonchecker* $systemlib
+cp Utils/QueryGenerator/target/scala-2.10/querygenerator* $systemlib
 cp Utils/GenerateMessage/target/scala-2.10/generatemessage* $systemlib
 
 # copy fat jars to KamanjaInstall
@@ -291,6 +294,21 @@ cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.10/*log4*.xml $kamanjai
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.10/*.json $kamanjainstallconfig
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.10/*.properties $kamanjainstallconfig
 cp $srcPath/Utils/ClusterInstaller/ClusterInstallerDriver/src/main/resources/log4j2.xml $kamanjainstallconfig
+
+# *******************************
+# copy Kamanja UI stuff
+# *******************************
+
+cp $srcPath/KamanjaUI/Rest/KamanjaUIRest/target/kamanjauirest-0.1.0.war $kamanjaui/kamanjauirest.war
+cp $srcPath/KamanjaUI/UI/distro/kamanja.war $kamanjaui/
+cp $srcPath/KamanjaUI/Scripts/PopulateKamanjaViews.sh $kamanjaui/
+chmod 0700 $kamanjaui/*.sh
+
+
+# *******************************
+# copy OrientDB JDBC jar into system
+# *******************************
+wget -O $systemlib/orientdb-jdbc-2.1.19-all.jar --no-cookies --no-check-certificate "http://orientdb.com/download.php?file=orientdb-jdbc-2.1.19-all.jar"
 
 # *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep
@@ -419,7 +437,7 @@ bin=$installPath/Kamanja-$ver211/bin
 systemlib=$installPath/Kamanja-$ver211/lib/system
 applib=$installPath/Kamanja-$ver211/lib/application
 
-
+kamanjaui=$installPath/Kamanja-$ver211/KamanjaUI
 kamanjainstallbin=$installPath/Kamanja-$ver211/ClusterInstall
 #kamanjainstallbin=$installPath/KamanjaInstall-$ver211/bin
 #kamanjainstallsystemlib=$installPath/KamanjaInstall-$ver211/lib/system
@@ -439,12 +457,6 @@ cd $srcPath
 #Build and copy 2.10 for both MigrateFrom_V_1_1 & MigrateFrom_V_1_2, if they are not copied from 2.10.4 build
 if [ "$migration2_10libsCopiesFor2_11" == "false" ]; then
 	sbt clean '++ 2.10.4 MigrateFrom_V_1_1/package' '++ 2.10.4 MigrateFrom_V_1_2/package' '++ 2.10.4 MigrateFrom_V_1_3/package' '++ 2.10.4 MigrateFrom_V_1_4/package' '++ 2.10.4 MigrateFrom_V_1_4_1/package' '++ 2.10.4 MigrateTo_V_1_5_0/package'
-	cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_1/target/scala-2.10/migratefrom_v_1_1_2.10-1.5.0.jar $systemlib
-	cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_2/target/scala-2.10/migratefrom_v_1_2_2.10-1.5.0.jar $systemlib
-	cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.10/migratefrom_v_1_3_2.10-1.5.0.jar $systemlib
-	cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4/target/scala-2.10/migratefrom_v_1_4_2.10-1.5.0.jar $systemlib
-	cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4_1/target/scala-2.10/migratefrom_v_1_4_1_2.10-1.5.0.jar $systemlib
-	cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_5_0/target/scala-2.10/migrateto_v_1_5_0_2.10-1.5.0.jar $systemlib
 	cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_1/target/scala-2.10/migratefrom_v_1_1_2.10-1.5.0.jar $systemlib
 	cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_2/target/scala-2.10/migratefrom_v_1_2_2.10-1.5.0.jar $systemlib
 	cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.10/migratefrom_v_1_3_2.10-1.5.0.jar $systemlib
@@ -496,6 +508,7 @@ cp $srcPath/Utils/NodeInfoExtract/target/scala-2.11/nodeinfoextract* $systemlib
 #cp KamanjaInternalDeps/target/scala-2.11/KamanjaInternalDeps_2.11-1.5.0.jar $systemlib
 cp Utils/PmmlTestTool/target/pmmltesttool* $systemlib
 cp Utils/JsonChecker/target/scala-2.11/jsonchecker* $systemlib
+cp Utils/QueryGenerator/target/scala-2.11/querygenerator* $systemlib
 cp Utils/GenerateMessage/target/scala-2.11/generatemessage* $systemlib
 
 # copy jars used to reduce package size
@@ -584,6 +597,20 @@ cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.11/*log4*.xml $kamanjai
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.11/*.json $kamanjainstallconfig
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.11/*.properties $kamanjainstallconfig
 cp $srcPath/Utils/ClusterInstaller/ClusterInstallerDriver/src/main/resources/log4j2.xml $kamanjainstallconfig
+
+# *******************************
+# copy Kamanja UI stuff
+# *******************************
+
+cp $srcPath/KamanjaUI/Rest/KamanjaUIRest/target/kamanjauirest-0.1.0.war $kamanjaui/kamanjauirest.war
+cp $srcPath/KamanjaUI/UI/distro/kamanja.war $kamanjaui/
+cp $srcPath/KamanjaUI/Scripts/PopulateKamanjaViews.sh $kamanjaui/
+chmod 0700 $kamanjaui/*.sh
+
+# *******************************
+# copy OrientDB JDBC jar into system
+# *******************************
+wget -O $systemlib/orientdb-jdbc-2.1.19-all.jar --no-cookies --no-check-certificate "http://orientdb.com/download.php?file=orientdb-jdbc-2.1.19-all.jar"
 
 # *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep

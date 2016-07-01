@@ -6,7 +6,7 @@
  */
 package com.ligadata.StorageBase
 
-import com.ligadata.Exceptions.{KamanjaException, NotImplementedFunctionException, InvalidArgumentException}
+import com.ligadata.Exceptions.{StackTrace, KamanjaException, NotImplementedFunctionException, InvalidArgumentException}
 import com.ligadata.HeartBeat.{MonitorComponentInfo, Monitorable}
 import com.ligadata.KamanjaBase._
 import com.ligadata.KvBase.{ Key, Value, TimeRange }
@@ -267,6 +267,17 @@ trait DataStore extends DataStoreOperations with AdaptersSerializeDeserializers 
   }
 
   def Category = "Storage"
+
+  def externalizeExceptionEvent (cause: Throwable): Unit = {
+    if (nodeCtxt != null && nodeCtxt.getEnvCtxt != null) {
+      val exceptionEvent = nodeCtxt.getEnvCtxt.getContainerInstance("com.ligadata.KamanjaBase.KamanjaExceptionEvent").asInstanceOf[com.ligadata.KamanjaBase.KamanjaExceptionEvent]
+      exceptionEvent.timeoferrorepochms = System.currentTimeMillis()
+      exceptionEvent.componentname = adapterInfo.Name
+      exceptionEvent.errortype = "exception"
+      exceptionEvent.errorstring = StackTrace.ThrowableTraceString(cause)
+      nodeCtxt.getEnvCtxt.postMessages(Array[ContainerInterface](exceptionEvent))
+    }
+  }
 
   override def getComponentStatusAndMetrics: MonitorComponentInfo = {
     val lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))

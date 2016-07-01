@@ -14,7 +14,7 @@ if [[ $# -gt 1 ]]; then
 	fi
 
 	FORMAT="CSV"
-	java -jar $KAMANJA_HOME/bin/SimpleKafkaProducer-0.1.0 --gz "$compressedInput" --topics "testin_1" --threads 1 --topicpartitions 8 --brokerlist "localhost:9092" --files "$dataFiles" --partitionkeyidxs "1" --format $FORMAT
+	java -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-1.4.0.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-1.4.0.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-1.4.0.jar:$KAMANJA_HOME/lib/system/simplekafkaproducer_2.11-1.4.0.jar com.ligadata.tools.SimpleKafkaProducer --gz "$compressedInput" --topics "testin_1" --threads 1 --topicpartitions 8 --brokerlist "localhost:9092" --files "$dataFiles" --partitionkeyidxs "1" --format $FORMAT
 else
 	echo
 	echo "Push data files through Kafka Input Adapter.  Supply a flag indicating if the data is compressed or not followed by "
