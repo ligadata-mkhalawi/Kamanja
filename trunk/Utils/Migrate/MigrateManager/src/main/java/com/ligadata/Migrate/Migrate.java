@@ -378,17 +378,18 @@ public class Migrate {
             String scalaFrom = configuration.migratingFrom.scalaVersion.trim();
             String scalaTo = configuration.migratingTo.scalaVersion.trim();
             if (configuration.migratingTo.tenantId == null || configuration.migratingTo.tenantId.trim().length() == 0) {
-                sendStatus("Not found adapterMessageBindings", "ERROR");
-                logger.error("Not found adapterMessageBindings");
+                sendStatus("Not found tenantId", "ERROR");
+                logger.error("Not found tenantId");
                 usage();
                 return retCode;
             }
 
             if (configuration.migratingTo.adapterMessageBindings == null || configuration.migratingTo.adapterMessageBindings.trim().length() == 0) {
-                sendStatus("Not found adapterMessageBindings", "ERROR");
-                logger.error("Not found adapterMessageBindings");
-                // usage();
-                // return retCode;
+		if( srcVer.equalsIgnoreCase("1.1") || 
+		    srcVer.equalsIgnoreCase("1.2") || srcVer.equalsIgnoreCase("1.3") ){
+		    sendStatus("Not found adapterMessageBindings", "ERROR");
+		    logger.error("Not found adapterMessageBindings");
+		}
             }
 
             String tenantId = configuration.migratingTo.tenantId.trim();
