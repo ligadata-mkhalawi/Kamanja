@@ -536,10 +536,14 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
       _adapterMessageBindings = Some(adapterMessageBindings)
     }
     else {
-      throw new Exception("adapterMessageBindings can't be null")
+      if( _sourceVersion == "1.1" || _sourceVersion == "1.2" || _sourceVersion == "1.3" ){
+	throw new Exception("adapterMessageBindings can't be null")
+      }
     }
 
-    isValidPath(adapterMessageBindings);
+    if( _sourceVersion == "1.1" || _sourceVersion == "1.2" || _sourceVersion == "1.3" ){
+      isValidPath(adapterMessageBindings);
+    }
 
     val tmpJarPaths = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS")
     val jarPaths = if (tmpJarPaths != null) tmpJarPaths.split(",").toSet else scala.collection.immutable.Set[String]()
