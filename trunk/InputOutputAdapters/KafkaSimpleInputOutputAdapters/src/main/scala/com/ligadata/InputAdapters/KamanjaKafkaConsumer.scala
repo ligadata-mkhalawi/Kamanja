@@ -178,7 +178,6 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   override def StartProcessing(partitionIds: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = lock.synchronized {
 
     LOG.info("Start processing called on KamanjaKafkaAdapter for topic " + qc.topic)
-
     // This is the number of executors we will run - Heuristic, but will go with it
    // var numberOfThreads = availableThreads
     var maxPartNumber = -1
@@ -516,6 +515,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
       var thisRes = iter.next()
       var newVal = new KafkaPartitionUniqueRecordKey
       newVal.TopicName = thisRes.topic
+      newVal.Name = qc.Name
       newVal.PartitionId = thisRes.partition
       partitionNames += newVal
       LOG.debug(" GetAllPartitions returned " +thisRes.partition + "  for topic " + thisRes.topic)
@@ -720,8 +720,8 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
 
     // Give the threads to gracefully stop their reading cycles, and then execute them with extreme prejudice.
     Thread.sleep(qc.noDataSleepTimeInMs + 1)
-    readExecutor.shutdownNow
-    while (readExecutor.isTerminated == false) {
+    if (readExecutor != null) readExecutor.shutdownNow
+    while (readExecutor != null && readExecutor.isTerminated == false) {
       Thread.sleep(100)
     }
 
