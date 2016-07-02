@@ -3,7 +3,7 @@
 
 **Script Setup**
 export ipport=8998
-export CLASSPATH=/tmp/drdigital/Kamanja-1.4.1_2.11/lib/system/ExtDependencyLibs_2.11-1.4.1.jar:/tmp/drdigital/Kamanja-1.4.1_2.11/lib/system/KamanjaInternalDeps_2.11-1.4.1.jar:/tmp/drdigital/Kamanja-1.4.1_2.11/lib/system/ExtDependencyLibs2_2.11-1.4.1.jar
+export CLASSPATH=/tmp/drdigital/Kamanja-1.5.0_2.11/lib/system/ExtDependencyLibs_2.11-1.5.0.jar:/tmp/drdigital/Kamanja-1.5.0_2.11/lib/system/KamanjaInternalDeps_2.11-1.5.0.jar:/tmp/drdigital/Kamanja-1.5.0_2.11/lib/system/ExtDependencyLibs2_2.11-1.5.0.jar
 export PY_METADATA=~/github1/dev/1.5.0.Test/kamanja/trunk/FactoriesOfModelInstanceFactory/PythonServer/src/main/resources/metadata
 export KAMANJAPYPATH=~/github1/dev/1.5.0.Test/kamanja/trunk/FactoriesOfModelInstanceFactory/PythonServer/src/main/python
 export DATA=~/github1/dev/1.5.0.Test/kamanja/trunk/FactoriesOfModelInstanceFactory/PythonServer/src/main/resources/data
