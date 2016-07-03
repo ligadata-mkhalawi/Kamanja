@@ -29,6 +29,13 @@ import com.ligadata.runtime.Substitution
 
 import scala.collection.mutable.ArrayBuffer
 
+import org.python.core.Py
+import org.python.core.PyObject
+import org.python.core.PyString
+import org.python.core.PySystemState
+import org.python.util.PythonInterpreter
+import java.util.Properties
+
 object jythonGlobalLogger {
   val loggerName = this.getClass.getName
   val logger = LogManager.getLogger(loggerName)
@@ -96,6 +103,26 @@ class Generator(params: GeneratorBuilder) extends LogTrait {
       throw new Exception("Input not found")
     }
 
+  try {
+
+    // Syntax check for python code
+    var props: Properties = new Properties()
+
+    props.put("python.console.encoding", "UTF-8")
+    props.put("python.security.respectJavaAccessibility", "false")
+    props.put("python.import.site", "false")
+
+    var preprops: Properties = System.getProperties()
+
+    PySystemState.initialize(preprops, props, Array.empty[String], this.getClass.getClassLoader)
+    val interpreter = new org.python.util.PythonInterpreter
+
+    interpreter.compile(inputPythonData)
+  } catch {
+    case e: Exception =>  logger.error(e.toString)
+      throw e
+  }
+
   val template = FileUtils.readFileToString( new File(getClass.getResource("JythonTemplate.scala.txt").getPath), null:String)
 
   // Generate code
@@ -145,19 +172,19 @@ class Generator(params: GeneratorBuilder) extends LogTrait {
     // Namespace
     //
     val name = modelDef.typeString
+    subtitutions.Add("model.name",  "%s.%s".format(modelDef.NameSpace, modelDef.Name))
+    subtitutions.Add("model.version", MdMgr.ConvertLongVersionToString(modelDef.ver, true))
+
     val (packagename, modelname) = splitNamespaceClass(name)
     subtitutions.Add("model.packagename", "package %s\n".format(packagename))
 
     // Replace all imports with proper versions
     val inputPythonDataAdjusted = inputPythonData
-    subtitutions.Add("model.python", inputPythonDataAdjusted)
+    subtitutions.Add("model.jythoncode", inputPythonDataAdjusted)
 
-    //subtitutions.Add("model.name", "%s.%s".format(root.header.namespace, ModelName))
-   // subtitutions.Add("model.version", root.header.version)
-    subtitutions.Add("factoryclass.name", "%sFactory".format(modelname))
-    subtitutions.Add("modelclass.name", modelname)
+    subtitutions.Add("model.factoryclassname", "%sFactory".format(modelname))
+    subtitutions.Add("model.classname", modelname)
 
-    //
     code = subtitutions.Replace(template)
 
     if(outputFile!=null && outputFile.nonEmpty) {

@@ -13,35 +13,39 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ligadata.samples.models
+
+{model.timestamp}
+
+package {model.packagename}
 
 import org.python.core.Py
 import org.python.core.PyObject
 import org.python.core.PyString
+import org.python.core.PySystemState
 import org.python.util.PythonInterpreter
+
 import com.ligadata.kamanja.metadata.{MdMgr, ModelDef}
 import com.ligadata.KamanjaBase._
 import com.ligadata.kamanja.samples.messages._
 import java.util.Properties
 import com.ligadata.runtime.Log
-import org.python.core.PySystemState
 
-class {ModelFactoryClassName}(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
+class {model.factoryclassname}(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
 
   override def getModelName(): String = {
-    "{ModelName}"
+    "{model.name}"
   }
 
   override def getVersion(): String = {
-    "{ModelVersion}"
+    "{model.version}"
   }
 
   override def createModelInstance(): ModelInstance = {
-    return new HelloWorldJythonModel(this)
+    return new {model.classname}(this)
   }
 }
 
-class {ModelCLassName}(factory: ModelInstanceFactory) extends ModelInstance(factory) {
+class {model.classname}(factory: ModelInstanceFactory) extends ModelInstance(factory) {
 
   /** Split a fully qualified object name into namspace and class
     *
@@ -59,12 +63,12 @@ class {ModelCLassName}(factory: ModelInstanceFactory) extends ModelInstance(fact
     case _ => urlses(cl.getParent)
   }
 
-  val logger = new Log("com.ligadata.samples.models.HelloWorldJythonModel")
+  val logger = new Log("{model.name}")
 
   val code =
     """
- {JYTHONCODE}
-    """.stripMargin
+ {model.jythoncode}
+    """
 
   var props: Properties = new Properties()
 

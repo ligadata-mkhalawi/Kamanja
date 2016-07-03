@@ -16,7 +16,10 @@
 package com.ligadata.jython.test
 
 import java.io.File
+import com.ligadata.runtime._
+import com.ligadata.jython.GeneratorBuilder
 import org.apache.commons.io.FileUtils
+import org.apache.logging.log4j.LogManager
 import org.scalatest.{BeforeAndAfter, FunSuite}
 
 
@@ -25,17 +28,37 @@ import org.scalatest.{BeforeAndAfter, FunSuite}
   */
 class SimpleJythonTest extends FunSuite with BeforeAndAfter {
 
+  val logger = LogManager.getLogger(this.getClass.getName())
+
   test("test01") {
     val fileInput = getClass.getResource("/JythonSimple/JythonSample.python").getPath
+    val fileOutput = getClass.getResource("/JythonSimple/").getPath + "/JythonSample.scala.actual"
+    val fileExpected = getClass.getResource("/JythonSimple/JythonSample.scala.expected").getPath
 
-    val actual = "" //getClass.getResource("/JythonSimple/JythonSample.scala.expected").getPath
+    // Metadata
+      // Load metadata
+      // Pickout the model
 
     // JythonBuilder
+    val generator = GeneratorBuilder.create().
+      setSuppressTimestamps().
+      setInputFile(fileInput).
+      setOutputFile(fileOutput).
+      setMetadataLocation(null). // Fill
+      setModelDef(null). // Fill
+      build()
 
-    // Generate scala
-    val expected = ""
+    generator.Execute()
 
-    assert(expected == actual)
+    val expected = FileUtils.readFileToString(new File(fileExpected))
+    val actual = FileUtils.readFileToString(new File(fileOutput))
+    logger.info("actual path={}", fileOutput)
+    logger.info("expected path={}", fileExpected)
+
+    assert(actual == expected)
+
+    DeleteFile(fileOutput)
+
   }
 
 }
