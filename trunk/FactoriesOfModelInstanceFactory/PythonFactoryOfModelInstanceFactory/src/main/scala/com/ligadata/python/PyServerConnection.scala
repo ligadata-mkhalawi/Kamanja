@@ -55,8 +55,8 @@ trait LogTrait {
   * dozen python servers running and a dozen PyServerConnection objects communicating with them on behalf of
   * the Kamanja node.
   *
-  * The python factory of factories responsible for instantiating model factories for each active python model
-  * in the metadata will be given one of the connections for the thread it will service.
+  * The python factory responsible for instantiating a given python model
+  * will be given one of the connections for the thread it will service.
   *
   * @param host the host upon which the python server will run (typically the same host as the kamanja node making
   *             the request.
@@ -72,7 +72,12 @@ trait LogTrait {
   * @param pyPath the Kamanja python path ... part of the Kamanja installation.  This path contains the the Kamanja
   *               python server elements including the modules, config files, working models, and server itself.
   */
-class PyServerConnection(host : String, port : Int, user : String, log4jConfigPath : String, fileLogPath : String, pyPath : String) extends LogTrait {
+class PyServerConnection(val host : String
+                         , val port : Int
+                         , val user : String
+                         , val log4jConfigPath : String
+                         , val fileLogPath : String
+                         , val pyPath : String) extends LogTrait {
 
     private var _sock : Socket = null
     private var _in : DataInputStream = null
@@ -335,7 +340,6 @@ class PyServerConnection(host : String, port : Int, user : String, log4jConfigPa
         if (result != 0) {
             logger.error(s"AddModel failed... unable to copy $srcTargetPath to $pyPath${slash}models/")
             logger.error(s"copy error message(s):\n\t$stderrStr")
-            //return new Array[Array[Byte]](0)
         }
     }
 
@@ -428,7 +432,7 @@ class PyServerConnection(host : String, port : Int, user : String, log4jConfigPa
       * In the case of the executeModel, the json returned is strictly the output map to be supplied for disposition
       * to the engine.
       */
-    def exeuteModel(modelName : String, msg : Map[String, Any]) : String = {
+    def executeModel(modelName : String, msg : Map[String, Any]) : String = {
 
         val msgFieldMap : String = Json(DefaultFormats).write(msg)
 
@@ -583,13 +587,13 @@ object PyServerHelpers extends LogTrait {
 }
 
 /**
-  * MapSubstitution used to stitch in home grown json strings possibly passed as argument to SockClient
-  * into one of the messages destined for the pythonserver.  See executeModel for example.
+  * MapSubstitution used to stitch in home grown json strings possibly incorporated
+  * into one of the messages destined for the pythonserver.  See executeModel for use.
   *
   * Embedded keys look like this regexp: val patStr = """(\{[A-Za-z0-9_.-]+\})"""
   *
-  * That is:
-  *     {This_is_.my.1.key}
+  * For example:
+  *     {This_is_.my-1.key}
   *
   * @param template the string to have its embedded keys substituted
   * @param subMap a map of substutitions to make.

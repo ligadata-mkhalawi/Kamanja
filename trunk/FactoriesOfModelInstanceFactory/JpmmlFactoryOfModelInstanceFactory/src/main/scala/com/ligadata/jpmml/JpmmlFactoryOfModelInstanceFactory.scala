@@ -405,10 +405,10 @@ class JpmmlAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends 
 
     /**
       * Answer a model instance, obtaining a pre-existing one in the cache if possible.
-      *
+      * @param txnContext the partition key among other things are found here.
       * @return - a ModelInstance that can process the message found in the TransactionContext supplied at execution time
       */
-    override def createModelInstance(): ModelInstance = {
+    override def createModelInstance(txnContext: TransactionContext): ModelInstance = {
 
         val useThisModel : ModelInstance = if (modelDef != null) {
             /** Ingest the pmml here and build an evaluator */

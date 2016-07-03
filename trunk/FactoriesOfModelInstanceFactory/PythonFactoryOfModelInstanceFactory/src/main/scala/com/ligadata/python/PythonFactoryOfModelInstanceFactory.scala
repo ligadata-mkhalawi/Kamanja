@@ -161,17 +161,11 @@ object PythonFactoryOfModelInstanceFactory extends FactoryOfModelInstanceFactory
   * are returned in the MappedModelResults instance to the engine for further transformation and dispatch.
   *
   * @param factory This model's factory object
-  * @param host the host of the python server
-  * @param port the port of the python server
-  * @param pyPath the location of the python server and its accoutrements
   * @param pyServerConnection the connection object used to communicate with the python server that the actual model
   *                           runs on.
   */
 
 class PythonAdapter(factory : ModelInstanceFactory
-                    , val host : String
-                    , val port : Int
-                    , val pyPath : String
                     , val pyServerConnection : PyServerConnection
                    ) extends ModelInstance(factory) with LogTrait {
 
@@ -196,13 +190,15 @@ class PythonAdapter(factory : ModelInstanceFactory
         val moduleName : String = modelDef.moduleName
         val resultStr : String = pyServerConnection.addModel(moduleName, modelDef.Name, modelDef.objectDefinition, modelOptions)
         val resultMap : Map[String,Any] = parse(resultStr).extract[Map[String, Any]]
+        val host : String = pyServerConnection.host
+        val port : String = pyServerConnection.port.toString
         val rc = resultMap.getOrElse("Code", -1)
         if (rc == 0) {
             _inputFields = resultMap.getOrElse("InputFields", Map[String,Any]()).asInstanceOf[Map[String,Any]]
             _outputFields = resultMap.getOrElse("OutputFields", Map[String,Any]()).asInstanceOf[Map[String,Any]]
-            logger.debug(s"Module '$moduleName.${modelDef.Name} successfully added to python server at $host(${port.toString}")
+            logger.debug(s"Module '$moduleName.${modelDef.Name} successfully added to python server at $host($port")
         } else {
-            logger.error(s"Module '$moduleName.${modelDef.Name} could not be added to python server at $host(${port.toString}")
+            logger.error(s"Module '$moduleName.${modelDef.Name} could not be added to python server at $host($port")
             logger.error("s\"error details: '$resultStr'")
         }
     }
@@ -237,7 +233,7 @@ class PythonAdapter(factory : ModelInstanceFactory
 
         val modelDef : ModelDef = factory.getModelDef()
 
-        val resultStr : String = pyServerConnection.exeuteModel(modelDef.Name, prepareFields(msg))
+        val resultStr : String = pyServerConnection.executeModel(modelDef.Name, prepareFields(msg))
         val results : Array[(String, Any)] = Array[(String, Any)]()
         new MappedModelResults().withResults(results.toArray)
     }
@@ -280,13 +276,6 @@ class PythonAdapter(factory : ModelInstanceFactory
 
 class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) with LogTrait {
 
-    /** Instance variables */
-    private var _host : String = null
-    private var _port : Int = -1
-    private var _pyPath : String = null
-    private var _isUsable : Boolean = false
-    private var _partitionKey : String = ""
-
    /**
     * Common initialization for all Model Instances. This gets called once per node during the metadata load or corresponding model def change.
     *
@@ -294,63 +283,64 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends
     *                   once the initialization is done.
     */
     override def init(txnContext: TransactionContext): Unit = {
-        val host : String = if (nodeContext.getValue("HOST") != null)
-            nodeContext.getValue("HOST").asInstanceOf[String]
-        else null
-        val port : Int = if (nodeContext.getValue("PORT") != null)
-            nodeContext.getValue("PORT").asInstanceOf[Int]
-        else -1
-        val pyPath : String = if (nodeContext.getValue("PYTHON_PATH") != null)
-            nodeContext.getValue("PYTHON_PATH").asInstanceOf[String]
-        else null
-        _partitionKey = txnContext.getPartitionKey()
-        val low_level_proxy_server_connection_object : PyServerConnection =
-            if (nodeContext.getValue(_partitionKey) != null)
-                nodeContext.getValue(_partitionKey).asInstanceOf[PyServerConnection]
-            else {
-                /**
-                  * The factory doesn't have a connection for this partition key ... make one now
-                  * FixMe: user, the log config location and the log dir should be added to the nodeContext dict as well and initialized
-                  * FixMe: from config files
-                  */
-                val pyConn : PyServerConnection = new PyServerConnection(_host,_port,"kamanja", s"${_pyPath}/bin/pythonlog4j.cfg",s"${_pyPath}/logs", _pyPath)
-                if (pyConn != null) {
-                    /** setup server and connection to it */
-                    val (startServerResult, connResult) : (String,String) = pyConn.initialize
+        val partitionKey : String = txnContext.getPartitionKey()
 
-                    /** how did it go? */
-                    implicit val formats = org.json4s.DefaultFormats
-                    val startResultsMap : Map[String, Any] = parse(startServerResult).extract[Map[String, Any]]
-                    val startRc : Int = startResultsMap.getOrElse("code", -1).asInstanceOf[Int]
+       if (nodeContext.getValue(partitionKey) != null) {
+           val pyCon: PyServerConnection = nodeContext.getValue(partitionKey).asInstanceOf[PyServerConnection]
+           val connObjStr: String = if (pyCon != null) "valid PyServerConnection" else "<bad PyServerConnection>"
+           logger.info(s"PythonAdapterFactory.init($partitionKey) ...values are:\nhost = ${pyCon.host}\nport = ${pyCon.port.toString}\npyPath = ${pyCon.pyPath}\nconnection object = $connObjStr")
+       } else {
+            /**
+              * The factory doesn't have a connection for this partition key ... make one now
+              * FixMe: user, the log config location and the log dir should be added to the nodeContext dict as well and initialized
+              * FixMe: from config files
+              */
+            val host : String = if (nodeContext.getValue("HOST") != null)
+                nodeContext.getValue("HOST").asInstanceOf[String]
+            else null
+            val pyPath : String = if (nodeContext.getValue("PYTHON_PATH") != null)
+                nodeContext.getValue("PYTHON_PATH").asInstanceOf[String]
+            else null
+            val it : Iterator[Int] = nodeContext.getValue("PYTHON_CONNECTION_PORTS").asInstanceOf[Iterator[Int]]
+            val port : Int = it.next()
 
-                    val connResultsMap : Map[String, Any] = parse(connResult).extract[Map[String, Any]]
-                    val connRc : Int = connResultsMap.getOrElse("code", -1).asInstanceOf[Int]
+            val pyConn : PyServerConnection = new PyServerConnection(host
+                                                                    ,port
+                                                                    ,"kamanja"
+                                                                    ,s"${pyPath}/bin/pythonlog4j.cfg"
+                                                                    ,s"${pyPath}/logs/pythonserver.log"
+                                                                    ,pyPath)
+            if (pyConn != null) {
+                /** setup server and connection to it */
+                val (startServerResult, connResult) : (String,String) = pyConn.initialize
 
-                    if (startRc == 0 && connRc == 0) {
-                        nodeContext.putValue(_partitionKey, pyConn)
-                    } else {
-                        logger.error(s"Problems starting py server on behalf of models running on ${_partitionKey}... in factory init for ${modelDef.FullName}")
-                        logger.error(s"startServer result = $startServerResult")
-                        logger.error(s"connection result = $connResult")
-                    }
+                /** how did it go? */
+                implicit val formats = org.json4s.DefaultFormats
+                val startResultsMap : Map[String, Any] = parse(startServerResult).extract[Map[String, Any]]
+                val startRc : Int = startResultsMap.getOrElse("code", -1).asInstanceOf[Int]
+
+                val connResultsMap : Map[String, Any] = parse(connResult).extract[Map[String, Any]]
+                val connRc : Int = connResultsMap.getOrElse("code", -1).asInstanceOf[Int]
+
+                if (startRc == 0 && connRc == 0) {
+                    nodeContext.putValue(partitionKey, pyConn)
+                } else {
+                    logger.error(s"Problems starting py server on behalf of models running on ${partitionKey}... in PythonAdapterFactory.init for ${modelDef.FullName}")
+                    logger.error(s"startServer result = $startServerResult")
+                    logger.error(s"connection result = $connResult")
                 }
-                pyConn
             }
-        val isReasonable : Boolean = modelDef != null && modelDef.FullNameWithVer != null && modelDef.FullNameWithVer.nonEmpty && host != null && port != -1 && pyPath != null && low_level_proxy_server_connection_object != null
+            val isReasonable : Boolean = pyConn != null
 
-        if (isReasonable) {
-            _host = host
-            _port = port
-            _pyPath = pyPath
-            _isUsable = true
-        } else {
-            logger.error(s"The PythonAdapterProxy for model ${modelDef.FullName} could not be initialized...")
-            val hostStr : String = if (host != null) host else "<no host given>"
-            val portStr : String = if (port != -1) port.toString else "<no port given>"
-            val pyPathStr : String = if (pyPath != null) pyPath else "<no PYTHON_PATH given>"
-            val connObjStr : String = if (low_level_proxy_server_connection_object != null) "valid PyServerConnection" else "<bad PyServerConnection>"
+            if (! isReasonable) {
+                logger.error(s"The PythonAdapterFactory for model ${modelDef.FullName} could not be initialized...")
+                val hostStr : String = if (host != null) host else "<no host given>"
+                val portStr : String = if (port != -1) port.toString else "<no port given>"
+                val pyPathStr : String = if (pyPath != null) pyPath else "<no PYTHON_PATH given>"
+                val connObjStr : String = if (pyConn != null) "valid PyServerConnection" else "<bad PyServerConnection>"
 
-            logger.error(s"The values are:\nhost = $hostStr\nport = $portStr\npyPath = $pyPathStr\nconnection object = $connObjStr")
+                logger.error(s"The values are:\nhost = $hostStr\nport = $portStr\npyPath = $pyPathStr\nconnection object = $connObjStr")
+            }
         }
 
     }
@@ -415,18 +405,16 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends
     /**
       * Answer a python proxy model instance.
       *
+      * @param txnContext the model instance will be created on behalf of the partition with the key in this object.
       * @return - a ModelInstance that can process the message found in the TransactionContext supplied at execution time
       */
-    override def createModelInstance(): ModelInstance = {
+    override def createModelInstance(txnContext: TransactionContext): ModelInstance = {
 
         val useThisModel : ModelInstance = if (modelDef != null) {
-            /** 1) Add the model to the python server */
-            /** 2) Add the model to the python server */
-
+            val partitionKey : String = txnContext.getPartitionKey()
             val isInstanceReusable : Boolean = true
-            val pythonPath : String = nodeContext.getValue("PYTHONPATH").asInstanceOf[String]
-            val pyServerConnection : PyServerConnection = nodeContext.getValue(_partitionKey).asInstanceOf[PyServerConnection]
-            val builtModel : ModelInstance = new PythonAdapter( this, _host, _port, _pyPath, pyServerConnection)
+            val pyServerConnection : PyServerConnection = nodeContext.getValue(partitionKey).asInstanceOf[PyServerConnection]
+            val builtModel : ModelInstance = new PythonAdapter( this, pyServerConnection)
             builtModel
         } else {
             logger.error("ModelDef in ctor was null...instance could not be built")
@@ -443,7 +431,7 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends
     override def createResultObject(): ModelResultBase = new MappedModelResults
 
     /**
-      *  Is the ModelInstance created by this ModelInstanceFactory is reusable? NOTE: All Pmml models are resusable.
+      *  Is the ModelInstance created by this ModelInstanceFactory is reusable? NOTE: All Python models are resusable.
       *
       *  @return true
       */

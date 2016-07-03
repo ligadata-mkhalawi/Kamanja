@@ -117,7 +117,7 @@ class LearningEngine {
           val curMd =
             if (execMdl._1.mdl.isModelInstanceReusable()) {
               if (execMdl._2 == null) { // First time initialize this
-                val tInst = execMdl._1.mdl.createModelInstance()
+                val tInst = execMdl._1.mdl.createModelInstance(txnCtxt)
                 tInst.init(txnCtxt.origin.key)
                 nodeIdModlsObj(execNode.nodeId) = (execMdl._1, tInst)
                 tInst
@@ -125,7 +125,7 @@ class LearningEngine {
                 execMdl._2
               }
             } else { // Not reusable instance. So, create it every time
-              val tInst = execMdl._1.mdl.createModelInstance()
+              val tInst = execMdl._1.mdl.createModelInstance(txnCtxt)
               tInst.init(txnCtxt.origin.key)
               tInst
             }
