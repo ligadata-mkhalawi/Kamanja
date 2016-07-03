@@ -75,15 +75,15 @@ class GeneratorBuilder {
  */
 class Generator(params: GeneratorBuilder) extends LogTrait {
 
-  /** Initialize from parameter block
-    *
-    */
-  val md = if(params.metadataMgr==null) {
-    com.ligadata.runtime.loadMetadata(params.metadataLocation) // Load metadata if not passed in
-  } else {
-    params.metadataMgr
-  }
-
+//  /** Initialize from parameter block
+//    *
+//    */
+//  val md = if(params.metadataMgr==null) {
+//    com.ligadata.runtime.loadMetadata(params.metadataLocation) // Load metadata if not passed in
+//  } else {
+//    params.metadataMgr
+//  }
+  val modelDef = params.modelDef
   val suppressTimestamps: Boolean = params.suppressTimestamps // Suppress timestamps
 
   val inputFile: String = params.inputFile // Input file to compile
@@ -100,28 +100,6 @@ class Generator(params: GeneratorBuilder) extends LogTrait {
 
   // Generate code
   var code = ""
-
-  private def ModelVersionLong: Long = {
-    //MdMgr.ConvertVersionToLong(MdMgr.FormatVersion(root.header.version))
-    0
-  }
-
-  private def PackageName(): String = {
-    //root.header.namespace.trim + ".V" + ModelVersionLong
-    ""
-  }
-
-  private def ModelName(): String = {
-    "Model"
-  }
-
-  private def ModelNamespace(): String = {
-    ""
-  }
-
-  private def FactoryName(): String = {
-    "ModelFactory"
-  }
 
   def Code() : String = {
     if(code==null)
@@ -153,7 +131,6 @@ class Generator(params: GeneratorBuilder) extends LogTrait {
   // Controls the code generation
   def Execute(): String = {
 
-
     // Process the imports
     //
     var subtitutions = new Substitution
@@ -167,14 +144,21 @@ class Generator(params: GeneratorBuilder) extends LogTrait {
 
     // Namespace
     //
-    subtitutions.Add("model.packagename", "package %s\n".format(PackageName))
+    val name = modelDef.typeString
+    val (packagename, modelname) = splitNamespaceClass(name)
+    subtitutions.Add("model.packagename", "package %s\n".format(packagename))
+
+    // Replace all imports with proper versions
+    val inputPythonDataAdjusted = inputPythonData
+    subtitutions.Add("model.python", inputPythonDataAdjusted)
 
     //subtitutions.Add("model.name", "%s.%s".format(root.header.namespace, ModelName))
    // subtitutions.Add("model.version", root.header.version)
-    subtitutions.Add("factoryclass.name", FactoryName)
-    subtitutions.Add("modelclass.name", ModelName)
+    subtitutions.Add("factoryclass.name", "%sFactory".format(modelname))
+    subtitutions.Add("modelclass.name", modelname)
 
     //
+    code = subtitutions.Replace(template)
 
     if(outputFile!=null && outputFile.nonEmpty) {
       logger.trace("Output to file {}", outputFile)

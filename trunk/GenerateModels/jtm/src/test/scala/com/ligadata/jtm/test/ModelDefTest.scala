@@ -18,6 +18,7 @@ package com.ligadata.jtm.test
 import java.io.File
 
 import com.ligadata.jtm
+import com.ligadata.runtime._
 import com.ligadata.jtm.CompilerBuilder
 import com.ligadata.jtm.nodes.Root
 import com.ligadata.kamanja.metadata.{MiningModelType, ModelRepresentation, ModelDef}

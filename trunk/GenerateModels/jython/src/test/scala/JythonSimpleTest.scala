@@ -13,29 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ligadata.jtm.test
+package com.ligadata.jython.test
 
+import java.io.File
+import org.apache.commons.io.FileUtils
 import org.scalatest.{BeforeAndAfter, FunSuite}
-import com.ligadata.jtm.Substitution
+
 
 /**
-  * Created by joerg on 1/21/16.
+  *
   */
-class SubstitutionTest extends FunSuite with BeforeAndAfter {
+class SimpleJythonTest extends FunSuite with BeforeAndAfter {
 
   test("test01") {
-    var s = new Substitution
-    s.Add("xx", "zz")
-    val result = s.Run("{xx}")
-    assert(result == "zz")
+    val fileInput = getClass.getResource("/JythonSimple/JythonSample.python").getPath
+
+    val actual = "" //getClass.getResource("/JythonSimple/JythonSample.scala.expected").getPath
+
+    // JythonBuilder
+
+    // Generate scala
+    val expected = ""
+
+    assert(expected == actual)
   }
 
-  test("test02") {
-    var s = new Substitution
-    s.Add("xx", "zzxx{yy}")
-    s.Add("yy", "zz")
-
-    val result = s.Run("yy{xx}zz")
-    assert(result == "yyzzxxzzzz")
-  }
 }
