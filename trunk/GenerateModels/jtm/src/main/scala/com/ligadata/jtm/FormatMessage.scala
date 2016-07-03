@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 package com.ligadata.jtm
+import com.ligadata.runtime.Substitution
 
 /**
   * Created by joerg on 1/20/16.

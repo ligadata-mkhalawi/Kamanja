@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ligadata.jtm
+package com.ligadata.runtime
 
 /**
   * Created by joerg on 1/20/16.

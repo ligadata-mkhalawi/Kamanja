@@ -60,7 +60,7 @@ object MsgCompiler extends App with LogTrait {
 
       if(cmdconf.all.get.get) {
 
-        val files = getRecursiveListOfFiles(new File(cmdconf.in.get.get))
+        val files = com.ligadata.runtime.getRecursiveListOfFiles(new File(cmdconf.in.get.get))
 
         // Load all json files for the metadata directory
         files.map ( jsonFile => {

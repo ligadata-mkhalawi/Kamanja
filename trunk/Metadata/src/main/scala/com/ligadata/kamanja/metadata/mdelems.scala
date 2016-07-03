@@ -36,7 +36,7 @@ import scala.collection.mutable.ArrayBuffer
 // define some enumerations
 object ObjFormatType extends Enumeration {
   type FormatType = Value
-  val fCSV, fJSON, fXML, fSERIALIZED, fJAVA, fSCALA, fPMML, fUNKNOWN = Value
+  val fCSV, fJSON, fXML, fSERIALIZED, fJAVA, fSCALA, fPMML, fJYTHON, fUNKNOWN = Value
 
     def asString(typ : FormatType) : String = {
         val str = typ.toString match {
@@ -47,6 +47,7 @@ object ObjFormatType extends Enumeration {
             case "fJAVA" => "JAVA"
             case "fSCALA" => "SCALA"
             case "fPMML" => "XML"
+            case "fJYTHON" => "JYTHON"
             case _ => "Unknown"
         }
         str
@@ -60,6 +61,7 @@ object ObjFormatType extends Enumeration {
             case "JAVA" => fJAVA
             case "SCALA" => fSCALA
             case "PMML" => fXML
+            case "JYTHON" => fJYTHON
             case _ => fUNKNOWN
         }
         typ

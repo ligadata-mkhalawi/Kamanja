@@ -1,0 +1,35 @@
+#
+# Copyright 2016 ligaDATA
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+from com.ligadata.runtime import Log
+from com.ligadata.kamanja.samples.messages.V1000000 import msg1
+from com.ligadata.kamanja.samples.messages.V1000000 import outmsg1
+
+class Model():
+    def __init__(self):
+        self.logger = Log('Model')
+        self.logger.Info('Model.__init__')
+
+    def execute(self, txnCtxt, execMsgsSet, matchedInputSetIndex, outputDefault):
+        self.logger.Info('Model.execute')
+        inMsg = execMsgsSet[0]
+        if inMsg.score()!=1:
+            return None
+
+        output=[]
+        output[0] = outmsg1.createInstance()
+        output[0].set(0, inMsg.id())
+        output[0].set(1, inMsg.name())
+        return output

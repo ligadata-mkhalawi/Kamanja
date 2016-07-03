@@ -1,4 +1,4 @@
-package com.ligadata.jtm.eval
+package com.ligadata.runtime
 
 import java.text.{SimpleDateFormat, DateFormat}
 import java.util.Date
@@ -10,9 +10,9 @@ object Stamp {
 
   private val df: DateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mmZ")
 
-  def Generate(): Array[String] = {
+  def Generate(c: Class[_]): Array[String] = {
     var result = Array.empty[String]
-    val path: String  = classOf[com.ligadata.jtm.Compiler].getProtectionDomain.getCodeSource.getLocation.getPath
+    val path: String  = c.getProtectionDomain.getCodeSource.getLocation.getPath
     val localhostname = java.net.InetAddress.getLocalHost.getHostName
     result :+= "// Path: " + path
     result :+= "// Timestmap: " + df.format(new Date())

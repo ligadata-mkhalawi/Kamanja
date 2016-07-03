@@ -17,8 +17,6 @@ package com.ligadata
 
 import java.io.File
 
-import com.ligadata.jtm.eval.Types
-import com.ligadata.jtm.nodes.Root
 import com.ligadata.kamanja.metadata._
 import com.ligadata.kamanja.metadataload.MetadataLoad
 import com.ligadata.msgcompiler._
@@ -28,7 +26,7 @@ import org.json4s.jackson.JsonMethods._
 /**
   *
   */
-package object jtm {
+package object runtime {
 
   /** Get a lit of all files in the subtree
     *

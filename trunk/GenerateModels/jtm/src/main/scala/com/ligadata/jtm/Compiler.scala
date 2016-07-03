@@ -15,7 +15,7 @@
  */
 package com.ligadata.jtm
 
-import com.ligadata.jtm.eval.{Types => EvalTypes, Stamp, Expressions, GrokHelper}
+import com.ligadata.jtm.eval.{Types => EvalTypes, Expressions, GrokHelper}
 import com.ligadata.kamanja.metadata._
 import com.ligadata.kamanja.metadataload.MetadataLoad
 import com.ligadata.msgcompiler._
@@ -26,6 +26,8 @@ import org.rogach.scallop._
 import org.apache.commons.io.FileUtils
 import java.io.{StringReader, File}
 import com.ligadata.runtime.Conversion
+import com.ligadata.runtime.Substitution
+import com.ligadata.runtime.Stamp
 import com.ligadata.jtm.nodes._
 
 import scala.collection.mutable.ArrayBuffer
@@ -123,7 +125,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
     *
     */
   val md = if(params.metadataMgr==null) {
-    loadMetadata(params.metadataLocation) // Load metadata if not passed in
+    com.ligadata.runtime.loadMetadata(params.metadataLocation) // Load metadata if not passed in
   } else {
     params.metadataMgr
   }
@@ -941,7 +943,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
 
     // Only output generation stamp for production environments
     if(!suppressTimestamps) {
-      result ++= Stamp.Generate()
+      result ++= Stamp.Generate(this.getClass)
     }
 
     // Namespace
