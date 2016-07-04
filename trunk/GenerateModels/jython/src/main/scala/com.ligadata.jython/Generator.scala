@@ -77,19 +77,100 @@ class GeneratorBuilder {
   }
 }
 
-/* Translates a jtm (json) file(s) into scala classes
+/* Helper functions
+ *
+ */
+object Generator extends LogTrait {
+  def PythonReplaceModuleVersions(md: MdMgr, modelDef: ModelDef, pythonCode: String) : String = {
+
+    var code = pythonCode
+
+    val inputMessages = if(modelDef.inputMsgSets!=null) {
+      modelDef.inputMsgSets.foldLeft(Array.empty[String])((a, e1) => {
+        e1.foldLeft(a)((a, e1) => {
+          a :+ e1.message
+        })
+      })
+    } else {
+      Array.empty[String]
+    }
+
+    val outputMessages = if(modelDef.outputMsgs!=null) {
+      modelDef.outputMsgs
+    } else {
+      Array.empty[String]
+    }
+
+    val message = outputMessages ++ inputMessages
+
+    // Subsitute version in the code
+    //import module - can't be patched, you would  need to use the fully qualified name include the version
+    //import module as alias - can be patched
+    //from module import submodule - can be patched
+    //from .. import module - deprecated and can't be pacthed
+    //
+    // Load output messages into the interpreter
+    message.foreach( m => {
+      val classname = m
+      val classMd = md.Message(classname, 0, true)
+      if(classMd.isEmpty) {
+        throw new Exception("Metadata: unable to find class %s".format(classname))
+      }
+      val name: String = classMd.get.physicalName
+      val packagenameUnversioned = classMd.get.NameSpace
+      val (packagename, class1) = splitNamespaceClass(name)
+
+      logger.info(s"Process import: $name")
+
+      code = code.replaceAll(s"import\\s+$packagenameUnversioned\\.$class1\\s+as", s"import $name as")
+      code = code.replaceAll(s"import\\s+$packagenameUnversioned\\.[Vv][\\d.]+.$class1\\s+as", s"import $name as")
+
+      code = code.replaceAll(s"import\\s+$packagenameUnversioned\\s+as", s"import $packagename as")
+      code = code.replaceAll(s"import\\s+$packagenameUnversioned\\.[Vv][\\d.]+\\s+as", s"import $packagename as")
+
+      code = code.replaceAll(s"from\\s++$packagenameUnversioned\\.[Vv][\\d.]+\\s+import", "from %s import".format(packagename))
+      code = code.replaceAll(s"from\\s++$packagenameUnversioned\\s+import", "from %s import".format(packagename))
+    })
+
+    code
+  }
+
+  /** Split a fully qualified object name into namspace and class
+    *
+    * @param name is a fully qualified class name
+    * @return tuple with namespace and class name
+    */
+  def splitNamespaceClass(name: String): (String, String) = {
+    val elements = name.split('.')
+    (elements.dropRight(1).mkString("."), elements.last)
+  }
+
+  /** Escape string as literal
+    *
+    * @param raw
+    * @return
+    */
+  def escape(raw: String): String = {
+    import scala.reflect.runtime.universe._
+    Literal(Constant(raw)).toString
+  }
+
+}
+
+/* Generates a jython (python) file into scala classes
  *
  */
 class Generator(params: GeneratorBuilder) extends LogTrait {
 
-//  /** Initialize from parameter block
-//    *
-//    */
-//  val md = if(params.metadataMgr==null) {
-//    com.ligadata.runtime.loadMetadata(params.metadataLocation) // Load metadata if not passed in
-//  } else {
-//    params.metadataMgr
-//  }
+  /** Initialize from parameter block
+    *
+    */
+  val md = if(params.metadataMgr==null) {
+    com.ligadata.runtime.loadMetadata(params.metadataLocation) // Load metadata if not passed in
+  } else {
+    params.metadataMgr
+  }
+
   val modelDef = params.modelDef
   val suppressTimestamps: Boolean = params.suppressTimestamps // Suppress timestamps
 
@@ -115,15 +196,16 @@ class Generator(params: GeneratorBuilder) extends LogTrait {
     var preprops: Properties = System.getProperties()
 
     PySystemState.initialize(preprops, props, Array.empty[String], this.getClass.getClassLoader)
-    val interpreter = new org.python.util.PythonInterpreter
+    val interpreter = new PythonInterpreter
 
     interpreter.compile(inputPythonData)
+
   } catch {
     case e: Exception =>  logger.error(e.toString)
       throw e
   }
 
-  val template = FileUtils.readFileToString( new File(getClass.getResource("JythonTemplate.scala.txt").getPath), null:String)
+  val template = FileUtils.readFileToString( new File(getClass.getResource("/JythonTemplate.scala.txt").getPath), null:String)
 
   // Generate code
   var code = ""
@@ -133,26 +215,6 @@ class Generator(params: GeneratorBuilder) extends LogTrait {
       throw new Exception("No code was successful created")
 
     code
-  }
-
-  /** Split a fully qualified object name into namspace and class
-    *
-    * @param name is a fully qualified class name
-    * @return tuple with namespace and class name
-    */
-  def splitNamespaceClass(name: String): (String, String) = {
-    val elements = name.split('.')
-    (elements.dropRight(1).mkString("."), elements.last)
-  }
-
-  /** Escape string as literal
-    *
-    * @param raw
-    * @return
-    */
-  def escape(raw: String): String = {
-    import scala.reflect.runtime.universe._
-    Literal(Constant(raw)).toString
   }
 
   // Controls the code generation
@@ -166,24 +228,28 @@ class Generator(params: GeneratorBuilder) extends LogTrait {
     if(!suppressTimestamps) {
       subtitutions.Add("model.timestamp", Stamp.Generate(this.getClass).mkString("\n"))
     } else {
-      subtitutions.Add("model.timestamp", "<supressed>")
+      subtitutions.Add("model.timestamp", "// <supressed>")
     }
 
-    // Namespace
+    // Gather information from the model
     //
     val name = modelDef.typeString
     subtitutions.Add("model.name",  "%s.%s".format(modelDef.NameSpace, modelDef.Name))
     subtitutions.Add("model.version", MdMgr.ConvertLongVersionToString(modelDef.ver, true))
 
-    val (packagename, modelname) = splitNamespaceClass(name)
+    val (packagename, modelname) = Generator.splitNamespaceClass(name)
     subtitutions.Add("model.packagename", "package %s\n".format(packagename))
 
-    // Replace all imports with proper versions
-    val inputPythonDataAdjusted = inputPythonData
+    // Replace all imports with proper versions before adding to substiution map
+    val inputPythonDataAdjusted = Generator.PythonReplaceModuleVersions(md, modelDef, inputPythonData)
+    // Check for doc strings, we do not handle it currently
+    if(inputPythonDataAdjusted.indexOf("\"\"\"") >= 0) {
+      throw new Exception("Docstring format is not allowd for jython models") // Create a specific exception
+    }
     subtitutions.Add("model.jythoncode", inputPythonDataAdjusted)
 
-    subtitutions.Add("model.factoryclassname", "%sFactory".format(modelname))
-    subtitutions.Add("model.classname", modelname)
+    subtitutions.Add("model.factoryclassname", modelname)
+    subtitutions.Add("model.classname", modelDef.Name)
 
     code = subtitutions.Replace(template)
 

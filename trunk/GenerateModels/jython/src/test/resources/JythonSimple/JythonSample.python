@@ -15,7 +15,12 @@
 #
 from com.ligadata.runtime import Log
 from com.ligadata.kamanja.samples.messages import msg1
-from com.ligadata.kamanja.samples.messages import outmsg1
+import com.ligadata.kamanja.samples.messages.outmsg1 as outmsg1
+import com.ligadata.kamanja.samples.messages as messages
+
+from com.ligadata.kamanja.samples.messages.V2000000 import msg1
+import com.ligadata.kamanja.samples.messages.V3000000.outmsg1 as outmsg1
+import com.ligadata.kamanja.samples.messages.V4000000 as messages
 
 class Model():
     def __init__(self):

@@ -26,7 +26,6 @@ import org.python.util.PythonInterpreter
 
 import com.ligadata.kamanja.metadata.{MdMgr, ModelDef}
 import com.ligadata.KamanjaBase._
-import com.ligadata.kamanja.samples.messages._
 import java.util.Properties
 import com.ligadata.runtime.Log
 
@@ -47,7 +46,7 @@ class {model.factoryclassname}(modelDef: ModelDef, nodeContext: NodeContext) ext
 
 class {model.classname}(factory: ModelInstanceFactory) extends ModelInstance(factory) {
 
-  /** Split a fully qualified object name into namspace and class
+  /** Split a fully qualified object name into namespace and class
     *
     * @param name is a fully qualified class name
     * @return tuple with namespace and class name
@@ -65,10 +64,7 @@ class {model.classname}(factory: ModelInstanceFactory) extends ModelInstance(fac
 
   val logger = new Log("{model.name}")
 
-  val code =
-    """
- {model.jythoncode}
-    """
+  val code = """{model.jythoncode}"""
 
   var props: Properties = new Properties()
 

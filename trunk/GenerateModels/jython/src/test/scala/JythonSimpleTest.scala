@@ -16,6 +16,7 @@
 package com.ligadata.jython.test
 
 import java.io.File
+import com.ligadata.kamanja.metadata.{MdMgr, MiningModelType, ModelRepresentation, ModelDef}
 import com.ligadata.runtime._
 import com.ligadata.jython.GeneratorBuilder
 import org.apache.commons.io.FileUtils
@@ -26,7 +27,7 @@ import org.scalatest.{BeforeAndAfter, FunSuite}
 /**
   *
   */
-class SimpleJythonTest extends FunSuite with BeforeAndAfter {
+class JythonSimpleTest extends FunSuite with BeforeAndAfter {
 
   val logger = LogManager.getLogger(this.getClass.getName())
 
@@ -34,18 +35,27 @@ class SimpleJythonTest extends FunSuite with BeforeAndAfter {
     val fileInput = getClass.getResource("/JythonSimple/JythonSample.python").getPath
     val fileOutput = getClass.getResource("/JythonSimple/").getPath + "/JythonSample.scala.actual"
     val fileExpected = getClass.getResource("/JythonSimple/JythonSample.scala.expected").getPath
+    val metadataLocation = getClass.getResource("/metadata").getPath
 
-    // Metadata
-      // Load metadata
-      // Pickout the model
+    // Create model metadata
+    //inMsgsAndAttrsSets.map(s => s._2).toArray
+    // out
+    var model = new ModelDef(ModelRepresentation.JAR, MiningModelType.JYTHON, null, Array("com.ligadata.kamanja.samples.messages.msg1", "com.ligadata.kamanja.samples.messages.outmsg1"), false, false)
+
+    // Append addtional attributes
+    model.nameSpace = "com.ligadata.samples.models"
+    model.name = "HelloWorldModel"
+    model.description = "HelloWorldModel"
+    model.ver = MdMgr.ConvertVersionToLong(MdMgr.FormatVersion("1.0.0"))
+    model.physicalName = model.nameSpace + ".V" + model.ver + "." + model.name + "Factory"
 
     // JythonBuilder
     val generator = GeneratorBuilder.create().
       setSuppressTimestamps().
       setInputFile(fileInput).
       setOutputFile(fileOutput).
-      setMetadataLocation(null). // Fill
-      setModelDef(null). // Fill
+      setMetadataLocation(metadataLocation).
+      setModelDef(model).
       build()
 
     generator.Execute()
