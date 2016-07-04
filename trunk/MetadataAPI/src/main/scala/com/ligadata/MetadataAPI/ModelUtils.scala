@@ -1473,7 +1473,7 @@ object ModelUtils {
 
       val latestVersion = if (modDef == null) None else GetLatestModel(modDef)
       // 1118 Changes begin - checks model existence before update
-      if (modDef == null /* || DoesModelAlreadyExist(modDef) == false */ ) {
+      if (modDef == null  || DoesModelAlreadyExist(modDef) == false  ) {
         return (new ApiResult(ErrorCodeConstants.Failure, "UpdateCustomModel", null, s"$modelType model must exist to perform update")).toString
 
       }
@@ -1579,7 +1579,7 @@ object ModelUtils {
 
       val isValid: Boolean = (modDef != null && latestVersion != null && latestVersion.Version < modDef.Version)
       // 1118 Changes begin - checks model existence before update
-      if (modDef == null /*|| DoesModelAlreadyExist(modDef) == false */ ) {
+      if (modDef == null || DoesModelAlreadyExist(modDef) == false  ) {
         return (new ApiResult(ErrorCodeConstants.Failure, "UpdateKPMMLModel", null, s"KPMML model must exist to perform update")).toString
 
       }
@@ -1697,7 +1697,7 @@ object ModelUtils {
       val isValid: Boolean = (modDef != null && latestVersion != null && latestVersion.Version < modDef.Version)
 
       // 1118 Changes begin - checks model existence before update
-      if (modDef == null /* ||  DoesModelAlreadyExist(modDef) == false */ ) {
+      if (modDef == null  ||  DoesModelAlreadyExist(modDef) == false  ) {
         return (new ApiResult(ErrorCodeConstants.Failure, "UpdateJTMModel", null, s"JTM model must exist to perform update")).toString
       }
       // 1118 Changes end
@@ -1973,7 +1973,7 @@ object ModelUtils {
       val dispkey = modDef.nameSpace + "." + modDef.name + "." + MdMgr.Pad0s2Version(modDef.ver)
       val o = MdMgr.GetMdMgr.Model(modDef.nameSpace.toLowerCase,
         modDef.name.toLowerCase,
-        modDef.ver,
+        -1,
         false)
       o match {
         case None =>
