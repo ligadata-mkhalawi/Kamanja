@@ -40,7 +40,6 @@ import com.ligadata.Serialize._
 
 import com.ligadata.kamanja.metadataload.MetadataLoad
 
-@Ignore
 class TestModelConfigToJsonSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
   var res: String = null;
   var statusCode: Int = -1;
@@ -264,7 +263,7 @@ class TestModelConfigToJsonSpec extends FunSpec with LocalTestFixtures with Befo
     }
 
     // CRUD operations on container objects
-    ignore("Container Tests") {
+    it("Container Tests") {
       And("Check whether CONTAINER_FILES_DIR defined as property")
       dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CONTAINER_FILES_DIR")
       assert(null != dirName)
@@ -300,20 +299,20 @@ class TestModelConfigToJsonSpec extends FunSpec with LocalTestFixtures with Befo
 
 	And("AddContainer first time from " + file.getPath)
 	contStr = Source.fromFile(file).mkString
-	res = MetadataAPIImpl.AddContainer(contStr, "JSON", None,None,None)
+	res = MetadataAPIImpl.AddContainer(contStr, "JSON", None,tenantId,None)
 	res should include regex ("\"Status Code\" : 0")
 
 	And("GetContainerDef API to fetch the container that was just added")
 	var objName = f1.stripSuffix(".json").toLowerCase
 	var version = "0000000000001000000"
-	res = MetadataAPIImpl.GetContainerDef("system", objName, "JSON", version, None,None)
+	res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", version, None,None)
 	res should include regex ("\"Status Code\" : 0")
 
       })
     }
 
     // CRUD operations on message objects
-    ignore("Message Tests") {
+    it("Message Tests") {
       And("Check whether MESSAGE_FILES_DIR defined as property")
       dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MESSAGE_FILES_DIR")
       assert(null != dirName)
@@ -329,8 +328,6 @@ class TestModelConfigToJsonSpec extends FunSpec with LocalTestFixtures with Befo
       val msgFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith(".json"))
       assert(0 != msgFiles.length)
 
-      //fileList = List("outpatientclaim.json","inpatientclaim.json","hl7.json","beneficiary.json")
-      //fileList = List("HelloWorld_Msg_Def.json","HelloWorld_Msg_Output_Def.json")
       fileList = List("HelloWorld_Msg_Def.json","HelloWorld_Msg_Def_2.json")
       fileList.foreach(f1 => {
 	And("Add the Message From " + f1)
@@ -350,7 +347,7 @@ class TestModelConfigToJsonSpec extends FunSpec with LocalTestFixtures with Befo
 
 	And("AddMessage first time from " + file.getPath)
 	var msgStr = Source.fromFile(file).mkString
-	res = MetadataAPIImpl.AddMessage(msgStr, "JSON", None,None,None)
+	res = MetadataAPIImpl.AddMessage(msgStr, "JSON", None,tenantId,None)
 	res should include regex ("\"Status Code\" : 0")
 
 	And("GetMessageDef API to fetch the message that was just added")
@@ -362,7 +359,7 @@ class TestModelConfigToJsonSpec extends FunSpec with LocalTestFixtures with Befo
     }
 
     // CRUD operations on Model objects
-    ignore("Add KPPML Models") {
+    it("Add KPPML Models") {
       And("Check whether MODEL_FILES_DIR defined as property")
       dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
       assert(null != dirName)
@@ -493,7 +490,7 @@ class TestModelConfigToJsonSpec extends FunSpec with LocalTestFixtures with Befo
 	var dependencies = MetadataAPIImpl.getModelDependencies(cfgName,userid)
 	assert(dependencies.length == 0) // empty in our helloworld example
 
-	var msgsAndContainers = MetadataAPIImpl.getModelMessagesContainers(cfgName,userid)
+	var msgsAndContainers = MetadataAPIImpl.getModelMessagesContainers(userid.get + "." + cfgName,userid)
 	assert(msgsAndContainers.length == 2) // just one input msg in our helloworld example
 	var msgStr = msgsAndContainers(0)
 	assert(msgStr.equalsIgnoreCase("system.helloworld_msg_def"))
