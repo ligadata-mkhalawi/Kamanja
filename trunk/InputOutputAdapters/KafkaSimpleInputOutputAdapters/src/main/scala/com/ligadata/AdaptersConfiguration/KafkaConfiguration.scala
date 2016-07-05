@@ -28,6 +28,9 @@ class KafkaQueueAdapterConfiguration extends AdapterConfiguration {
   var instancePartitions: Set[Int] = _ // Valid only for Input Queues. These are the partitions we handle for this Queue. For now we are treating Partitions as Ints. (Kafka handle it as ints)
   var otherconfigs = scala.collection.mutable.Map[String, String]() // Making the key is lowercase always
 
+  // Used for Kafka ACL (with SASL)
+  var group_id: String = _
+
   // Security Realted stuff
   var security_protocol: String = _ // SASL, SSL, or None (default)
 
@@ -221,6 +224,8 @@ object KafkaQueueAdapterConfiguration {
         qc.sasl_kerberos_ticket_renew_jiter = kv._2.trim
       } else if (kv._1.compareToIgnoreCase("sasl.kerberos.ticket.renew.window.factor") == 0) {
         qc.sasl_kerberos_ticket_renew_window_factor = kv._2.trim
+      } else if (kv._1.compareToIgnoreCase("kafka.group") == 0) {
+        qc.group_id = kv._2.trim
       }
       else {
         qc.otherconfigs(kv._1.toLowerCase()) = kv._2;

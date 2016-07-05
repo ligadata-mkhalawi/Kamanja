@@ -85,6 +85,11 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
   props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
 
+  if (qc.group_id != null)
+    props.put("group.id", qc.group_id)
+  else
+    props.put("group.id", "kamanja-kafka-group")
+
   // Verify the Secuirty Paramters...
   if (qc.security_protocol != null && (qc.security_protocol.trim.equalsIgnoreCase("sasl_plaintext") || qc.security_protocol.trim.equalsIgnoreCase("sasl_ssl") || qc.security_protocol.trim.equalsIgnoreCase("ssl"))) {
     if (qc.security_protocol.trim.equalsIgnoreCase("sasl_plaintext")) {
@@ -119,8 +124,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
       if (qc.sasl_kerberos_min_time_before_relogic != null) props.put("sasl.kerberos.min.time.before.relogin", qc.sasl_kerberos_min_time_before_relogic)
       if (qc.sasl_kerberos_ticket_renew_jiter != null) props.put("sasl.kerberos.ticket.renew.jitter", qc.sasl_kerberos_ticket_renew_jiter)
       if (qc.sasl_kerberos_ticket_renew_window_factor != null) props.put("sasl.kerberos.ticket.renew.window.factor", qc.sasl_kerberos_ticket_renew_window_factor)
-      props.put("group.id", "securing-kafka-group")
-      
+
       // Add all the SSL stuff now
       if (qc.ssl_key_password != null) props.put("ssl.key.password", qc.ssl_key_password)
       if (qc.ssl_keystore_location != null) props.put("ssl.keystore.location", qc.ssl_keystore_location)
