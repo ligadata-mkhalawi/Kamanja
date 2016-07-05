@@ -91,13 +91,12 @@ class APIService extends LigadataSSLConfiguration with Runnable{
     //System.exit(0)
   }
 
-   def startService(args: Array[String]) : Unit = {
-     logger.debug("Args received + "+args.length)
-    try{
+  def initMetadata(args: Array[String]): Unit = {
+    try {
       var configFile = ""
       if (args.length == 0) {
         try {
-          configFile = scala.util.Properties.envOrElse("KAMANJA_HOME", scala.util.Properties.envOrElse("HOME", "~" )) + "/config/MetadataAPIConfig.properties"
+          configFile = scala.util.Properties.envOrElse("KAMANJA_HOME", scala.util.Properties.envOrElse("HOME", "~")) + "/config/MetadataAPIConfig.properties"
         } catch {
           case nsee: java.util.NoSuchElementException => {
             logger.warn("Either a CONFIG FILE parameter must be passed to start this service or KAMANJA_HOME must be set")
@@ -133,7 +132,7 @@ class APIService extends LigadataSSLConfiguration with Runnable{
         shutdown(1)
         return
       }
-      
+
       if (loadConfigs == null) {
         shutdown(1)
         return
@@ -148,11 +147,30 @@ class APIService extends LigadataSSLConfiguration with Runnable{
       APIInit.SetDbOpen
 
       logger.debug("API Properties => " + MetadataAPIImpl.GetMetadataAPIConfig)
+    }catch {
+      case e: InterruptedException => {
+        logger.debug("Unexpected Interrupt")
+      }
+      case e: Exception => {
+        logger.debug("Unexpected Interrupt", e)
+      }
+    }
+  }
 
-      // We will allow access to this web service from all the servers on the PORT # defined in the config file 
+   def startService(args: Array[String]) : Unit = {
+     logger.debug("Args received + "+args.length)
+     initMetadata(args)
+     start()
+  }
+
+  def start(): Unit ={
+    try{
+
+      // We will allow access to this web service from all the servers on the PORT # defined in the config file
       val serviceHost = "0.0.0.0"
       val servicePort = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("SERVICE_PORT").toInt
-
+      //val servicePort="8081".toInt
+      logger.debug("service port is "+servicePort)
       // create and start our service actor
       val callbackActor = actor(new Act {
         become {
@@ -179,7 +197,7 @@ class APIService extends LigadataSSLConfiguration with Runnable{
         logger.debug("Unexpected Interrupt")
       }
       case e: Exception => {
-              logger.debug("", e)
+        logger.debug("", e)
       }
     } finally {
       shutdown(0)
