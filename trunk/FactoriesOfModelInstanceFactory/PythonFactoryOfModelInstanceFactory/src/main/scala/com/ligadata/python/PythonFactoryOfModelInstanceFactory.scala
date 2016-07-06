@@ -21,15 +21,16 @@ import com.ligadata.kamanja.metadata.{BaseElem, MdMgr, ModelDef}
 import com.ligadata.KamanjaBase._
 import com.ligadata.Utils.{KamanjaLoaderInfo, Utils}
 import org.apache.logging.log4j.LogManager
-
 import java.io.{ByteArrayInputStream, InputStream, PushbackInputStream}
 import java.nio.charset.StandardCharsets
 
+import com.ligadata.Exceptions.KamanjaException
 import org.json4s.jackson.JsonMethods._
 import org.json4s.native.Json
 import org.json4s.DefaultFormats
 
 import scala.collection.immutable.Map
+import scala.collection.mutable
 
 object GlobalLogger {
     val loggerName = this.getClass.getName
@@ -180,12 +181,24 @@ class PythonAdapter(factory : ModelInstanceFactory
      *
      */
     override def init(instanceMetadata: String): Unit = {
+        if (factory == null) {
+            logger.error("PythonAdapter initialization failed... adapter constructed with a null factory ")
+            throw new KamanjaException("PythonAdapter initialization failed... adapter constructed with a null factory",null)
+        }
+        if (factory.getModelDef() == null) {
+            logger.error("PythonAdapter initialization failed... factory's model def is null ")
+            throw new KamanjaException("PythonAdapter initialization failed... factory's model def is null",null)
+        }
+        if (pyServerConnection == null) {
+            logger.error("PythonAdapter initialization failed... adapter constructed with null python server connection")
+            throw new KamanjaException("PythonAdapter initialization failed... adapter constructed with null python server connection",null)
+        }
+
         implicit val formats = org.json4s.DefaultFormats
         val modelDef : ModelDef = factory.getModelDef()
         val modelOptStr : String = modelDef.modelConfig
         val trimmedOptionStr : String = modelOptStr.trim
         val modelOptions = parse(trimmedOptionStr).extract[Map[String, Any]]
-
 
         val moduleName : String = modelDef.moduleName
         val resultStr : String = pyServerConnection.addModel(moduleName, modelDef.Name, modelDef.objectDefinition, modelOptions)
@@ -276,6 +289,7 @@ class PythonAdapter(factory : ModelInstanceFactory
 
 class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) with LogTrait {
 
+    val CONNECTION_KEY : String = "PYTHON_CONNECTIONS"
    /**
     * Common initialization for all Model Instances. This gets called once per node during the metadata load or corresponding model def change.
     *
@@ -297,18 +311,31 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends
               */
             val host : String = if (nodeContext.getValue("HOST") != null)
                 nodeContext.getValue("HOST").asInstanceOf[String]
-            else null
+            else
+                null
             val pyPath : String = if (nodeContext.getValue("PYTHON_PATH") != null)
                 nodeContext.getValue("PYTHON_PATH").asInstanceOf[String]
-            else null
+            else
+                null
             val it : Iterator[Int] = nodeContext.getValue("PYTHON_CONNECTION_PORTS").asInstanceOf[Iterator[Int]]
             val port : Int = it.next()
+
+            val pyLogConfigPath : String = if (nodeContext.getValue("PYTHON_LOG_CONFIG_PATH") != null)
+                nodeContext.getValue("PYTHON_LOG_CONFIG_PATH").asInstanceOf[String]
+            else
+                s"${pyPath}/bin/pythonlog4j.cfg"
+            val pyLogPath : String = if (nodeContext.getValue("PYTHON_LOG_PATH") != null)
+                nodeContext.getValue("PYTHON_LOG_PATH").asInstanceOf[String]
+            else
+                s"$pyPath/logs/pythonserver.log"
+            val connMap : mutable.HashMap[String,Any] = nodeContext.getValue(CONNECTION_KEY).asInstanceOf[mutable.HashMap[String,Any]]
+            val pyPropMap : Map[String,Any] = nodeContext.getValue("pyPropertyMap").asInstanceOf[Map[String,Any]]
 
             val pyConn : PyServerConnection = new PyServerConnection(host
                                                                     ,port
                                                                     ,"kamanja"
-                                                                    ,s"${pyPath}/bin/pythonlog4j.cfg"
-                                                                    ,s"${pyPath}/logs/pythonserver.log"
+                                                                    ,pyLogConfigPath
+                                                                    ,pyLogPath
                                                                     ,pyPath)
             if (pyConn != null) {
                 /** setup server and connection to it */
@@ -323,7 +350,8 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends
                 val connRc : Int = connResultsMap.getOrElse("code", -1).asInstanceOf[Int]
 
                 if (startRc == 0 && connRc == 0) {
-                    nodeContext.putValue(partitionKey, pyConn)
+                    connMap(partitionKey) = pyConn
+                    nodeContext.putValue(partitionKey, connMap)
                 } else {
                     logger.error(s"Problems starting py server on behalf of models running on ${partitionKey}... in PythonAdapterFactory.init for ${modelDef.FullName}")
                     logger.error(s"startServer result = $startServerResult")
@@ -413,8 +441,9 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends
         val useThisModel : ModelInstance = if (modelDef != null) {
             val partitionKey : String = txnContext.getPartitionKey()
             val isInstanceReusable : Boolean = true
-            val pyServerConnection : PyServerConnection = nodeContext.getValue(partitionKey).asInstanceOf[PyServerConnection]
-            val builtModel : ModelInstance = new PythonAdapter( this, pyServerConnection)
+            val connMap : mutable.HashMap[String,Any] = nodeContext.getValue(CONNECTION_KEY).asInstanceOf[mutable.HashMap[String,Any]]
+            val pyServerConnection : PyServerConnection = connMap.getOrElse(partitionKey,null).asInstanceOf[PyServerConnection]
+            val builtModel : ModelInstance = new PythonAdapter(this, pyServerConnection)
             builtModel
         } else {
             logger.error("ModelDef in ctor was null...instance could not be built")
