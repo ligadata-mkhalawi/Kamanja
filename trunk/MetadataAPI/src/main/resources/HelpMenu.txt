@@ -27,10 +27,6 @@ kamanja update container input(optional) TENANTID <tenantId>
 kamanja get container input(optional)
 kamanja get all containers
 kamanja remove container input(optional)
-IV. Type operations
-kamanja get type input(optional)
-kamanja get all types
-kamanja dump all types
 V. Function operations
 kamanja add function input(optional)
 kamanja get function input(optional)
