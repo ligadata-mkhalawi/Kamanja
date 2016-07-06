@@ -48,10 +48,18 @@ object ScalaVersionDependentInit {
 */
 
   def initFactoryOfModelInstanceFactories(mgr: MdMgr): Unit = {
-    //    mgr.AddFactoryOfModelInstanceFactory("com.ligadata.FactoryOfModelInstanceFactory", "JarFactoryOfModelInstanceFactory", ModelRepresentation.JAR, "com.ligadata.FactoryOfModelInstanceFactory.JarFactoryOfModelInstanceFactory$", MetadataLoad.baseTypesVer, null, Array[String]())
-    //    mgr.AddFactoryOfModelInstanceFactory("com.ligadata.jpmml", "JpmmlFactoryOfModelInstanceFactory", ModelRepresentation.PMML, "com.ligadata.jpmml.JpmmlFactoryOfModelInstanceFactory$", MetadataLoad.baseTypesVer, null, Array[String]())
-    mgr.AddFactoryOfModelInstanceFactory("com.ligadata.FactoryOfModelInstanceFactory", "JarFactoryOfModelInstanceFactory", ModelRepresentation.JAR, "com.ligadata.FactoryOfModelInstanceFactory.JarFactoryOfModelInstanceFactory$", MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, MetadataLoad.baseTypesVer, null, Array[String]())
-    mgr.AddFactoryOfModelInstanceFactory("com.ligadata.jpmml", "JpmmlFactoryOfModelInstanceFactory", ModelRepresentation.PMML, "com.ligadata.jpmml.JpmmlFactoryOfModelInstanceFactory$", MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, MetadataLoad.baseTypesVer, null, Array[String]())
+
+    mgr.AddFactoryOfModelInstanceFactory("com.ligadata.FactoryOfModelInstanceFactory", "JarFactoryOfModelInstanceFactory", ModelRepresentation.JAR,
+      "com.ligadata.FactoryOfModelInstanceFactory.JarFactoryOfModelInstanceFactory$", MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId,
+      MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, MetadataLoad.baseTypesVer, null, Array[String]())
+
+    mgr.AddFactoryOfModelInstanceFactory("com.ligadata.jpmml", "JpmmlFactoryOfModelInstanceFactory", ModelRepresentation.PMML,
+      "com.ligadata.jpmml.JpmmlFactoryOfModelInstanceFactory$", MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId,
+      MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, MetadataLoad.baseTypesVer, null, Array[String]())
+
+    mgr.AddFactoryOfModelInstanceFactory("com.ligadata.jython", "Runtime", ModelRepresentation.JYTHON,
+      "com.ligadata.jython.Runtime$", MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId,
+      MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, MetadataLoad.baseTypesVer, null, Array[String]())
 
   }
 
