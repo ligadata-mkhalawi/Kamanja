@@ -39,7 +39,7 @@ class {model.factoryclassname}(modelDef: ModelDef, nodeContext: NodeContext) ext
     "{model.version}"
   }
 
-  override def createModelInstance(): ModelInstance = {
+  override def createModelInstance(txnCtxt: TransactionContext): ModelInstance = {
     return new {model.classname}(this)
   }
 }

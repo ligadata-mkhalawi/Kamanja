@@ -40,7 +40,7 @@ class HelloWorldModelFactory(modelDef: ModelDef, nodeContext: NodeContext) exten
     "000001.000000.000000"
   }
 
-  override def createModelInstance(): ModelInstance = {
+  override def createModelInstance(txnCtxt: TransactionContext): ModelInstance = {
     return new HelloWorldModel(this)
   }
 }
