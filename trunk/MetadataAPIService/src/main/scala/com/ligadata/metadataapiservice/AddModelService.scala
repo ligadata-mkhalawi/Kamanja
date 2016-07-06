@@ -60,7 +60,8 @@ class AddModelService(requestContext: RequestContext, userid: Option[String], pa
   }
 
   def process(pmmlStr:String) = {
-    logger.debug("Requesting AddModel: " + pmmlStr.substring(0,500))
+  	if(pmmlStr.size > 500)
+    	logger.debug("Requesting AddModel: " + pmmlStr.substring(0,500))
 
     var nameVal = APIService.extractNameFromPMML(pmmlStr)
 
