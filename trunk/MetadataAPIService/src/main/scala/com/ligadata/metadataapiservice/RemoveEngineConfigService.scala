@@ -58,9 +58,15 @@ class RemoveEngineConfigService(requestContext: RequestContext, userid:Option[St
 
     var inParm: Map[String,Any] = parse(cfgJson).values.asInstanceOf[Map[String,Any]]
     var args: List[Map[String,String]] = inParm.getOrElse("ArgList",null).asInstanceOf[List[Map[String,String]]]   //.asInstanceOf[List[Map[String,String]]
+      try {
     args.foreach(elem => {
       objectList :::= List(elem.getOrElse("NameSpace","system")+"."+elem.getOrElse("Name","")+"."+elem.getOrElse("Version","-1"))
     })
+      }
+      catch {
+        case e: Exception =>
+          requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, e.toString).toString )
+      }
 
     if (!getMetadataAPI.checkAuth(userid,password,cert,"write")) {
       getMetadataAPI.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.REMOVECONFIG,cfgJson,AuditConstants.FAIL,"",objectList.mkString(","))
