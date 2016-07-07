@@ -216,6 +216,18 @@ class MetadataLoad(val mgr: MdMgr, val typesPath: String, val fcnPath: String, v
       , "" //jarNm: String = null. Ex: kbinaryserdeser_2.11-1.0.jar
       , Array() //depJars: Array[String] = null)
     )
+    mgr.AddSerializer("com.ligadata.kamanja.serializer" // namespace
+      , "kvserdeser" //name: String
+      , 1 //version: Long = 1
+      , SerializeDeserializeType.KV //serializerType: SerializeDeserializeType.SerDeserType
+      , "com.ligadata.kamanja.serializer.KVSerDeser" //physicalName: String
+      , MetadataLoad.baseTypesOwnerId //ownerId: String
+      , MetadataLoad.baseTypesTenantId //tenantId: String
+      , 4 //uniqueId: Long
+      , 4 //mdElementId: Long
+      , "" //jarNm: String = null. Ex: kvserdeser_2.11-1.0.jar
+      , Array() //depJars: Array[String] = null)
+    )
   }
 
   private def initFactoryOfModelInstanceFactories: Unit = {

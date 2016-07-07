@@ -1186,7 +1186,7 @@ class UserPropertiesInfo {
   */
 object SerializeDeserializeType extends Enumeration {
     type SerDeserType = Value
-    val CSV, JSON, KBinary, Custom = Value
+    val CSV, JSON, KBinary, KV, Custom = Value
 }
 
 /**
