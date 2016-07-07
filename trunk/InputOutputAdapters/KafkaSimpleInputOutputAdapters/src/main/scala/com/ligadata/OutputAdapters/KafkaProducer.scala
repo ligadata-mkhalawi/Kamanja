@@ -106,6 +106,11 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   props.put("max.buffer.full.block.ms", qc.otherconfigs.getOrElse("max.buffer.full.block.ms", default_max_buffer_full_block_ms).toString.trim())
   props.put("network.request.timeout.ms", qc.otherconfigs.getOrElse("network.request.timeout.ms", default_network_request_timeout_ms).toString.trim())
 
+  if (qc.group_id != null)
+    props.put("group.id", qc.group_id)
+  else
+    props.put("group.id", "kamanja-kafka-group")
+
   // Verify the Secuirty Paramters...
   if (qc.security_protocol != null && (qc.security_protocol.trim.equalsIgnoreCase("sasl_plaintext") || qc.security_protocol.trim.equalsIgnoreCase("sasl_ssl") || qc.security_protocol.trim.equalsIgnoreCase("ssl"))) {
     if (qc.security_protocol.trim.equalsIgnoreCase("sasl_plaintext")) {

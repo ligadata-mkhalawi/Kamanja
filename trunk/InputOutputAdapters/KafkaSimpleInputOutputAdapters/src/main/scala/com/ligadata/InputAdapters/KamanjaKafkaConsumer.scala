@@ -85,6 +85,11 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
   props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
 
+  if (qc.group_id != null)
+    props.put("group.id", qc.group_id)
+  else
+    props.put("group.id", "kamanja-kafka-group")
+
   // Verify the Secuirty Paramters...
   if (qc.security_protocol != null && (qc.security_protocol.trim.equalsIgnoreCase("sasl_plaintext") || qc.security_protocol.trim.equalsIgnoreCase("sasl_ssl") || qc.security_protocol.trim.equalsIgnoreCase("ssl"))) {
     if (qc.security_protocol.trim.equalsIgnoreCase("sasl_plaintext")) {
