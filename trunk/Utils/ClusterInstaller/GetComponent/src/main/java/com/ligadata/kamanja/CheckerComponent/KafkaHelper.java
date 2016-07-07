@@ -6,6 +6,8 @@ import java.util.List;
 import kafka.javaapi.TopicMetadataRequest;
 import kafka.javaapi.consumer.SimpleConsumer;
 import org.apache.log4j.*;
+import org.codehaus.jettison.json.JSONObject;
+import org.apache.kafka.clients.*;
 
 public class KafkaHelper {
     // KafkaProducer pro = new KafkaProducer();
@@ -19,7 +21,7 @@ public class KafkaHelper {
 //		System.out.println(kafka.api.TopicMetadataRequest.CurrentVersion());
     }
 
-    public void GetTopics(String hostslist) {
+    public void GetTopics(String hostslist, java.util.HashMap<String, Object> kafkaMap) {
         String[] hlists = hostslist.split(",");
         boolean gotHosts = false;
         int i = 0;
@@ -29,35 +31,41 @@ public class KafkaHelper {
             try {
                 String[] brokerNameAndPort = broker.split(":");
                 String brokerName = brokerNameAndPort[0].trim();
-                String portStr = "9092";
-                if (brokerNameAndPort.length > 1)
-                    portStr = brokerNameAndPort[1].trim();
-                int port = Integer.parseInt(portStr);
+                String portStr = brokerNameAndPort[1].trim();
 
-                SimpleConsumer consumer = new SimpleConsumer(brokerName, port, 100000, 64 * 1024, "test");
-                List<String> topic2 = new ArrayList<String>();
-                TopicMetadataRequest req = new TopicMetadataRequest(topic2);
-                kafka.javaapi.TopicMetadataResponse resp = consumer.send(req);
-                List<kafka.javaapi.TopicMetadata> data3 = resp.topicsMetadata();
-                for (kafka.javaapi.TopicMetadata item : data3) {
-                    System.out.println("Topic: " + item.topic());
-                    for (kafka.javaapi.PartitionMetadata part : item.partitionsMetadata()) {
-                        String replicas = "";
-                        String isr = "";
-                        for (kafka.cluster.Broker replica : part.replicas()) {
-                            replicas += " " + replica.host();
-                        }
-                        for (kafka.cluster.Broker replica : part.isr()) {
-                            isr += " " + replica.host();
-                        }
-                        int partId = -1;
-                        if (part != null)
-                            partId = part.partitionId();
-                        String leaderHost = "";
-                        if (part != null && part.leader() != null && part.leader().host() != null)
-                            leaderHost = part.leader().host();
-                        System.out.println("    Partition: " + partId + ": Leader: " + leaderHost + " Replicas:[" + replicas + "] ISR:[" + isr + "]");
+                java.util.Properties props = new java.util.Properties();
+                System.out.println("Kafka Validator, checking on host " + broker);
+                org.json.simple.JSONObject kafkaInfo = (org.json.simple.JSONObject) kafkaMap.get(broker);
+                java.util.Iterator iter = kafkaInfo.keySet().iterator();
+                while (iter.hasNext()) {
+                    String key = (String) iter.next();
+                    if (key.equalsIgnoreCase("HostList")) {
+                        System.out.println("Add Property  bootstrap.servers=" + kafkaInfo.get(key));
+                        props.put("bootstrap.servers", kafkaInfo.get(key));
                     }
+                    else {
+                        if (!key.equalsIgnoreCase("TopicName")) {
+                            props.put(key, kafkaInfo.get(key));
+                            System.out.println("Add Property " + key + "=" + kafkaInfo.get(key) );
+                        }
+                    }
+                }
+                props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+                props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+
+                org.apache.kafka.clients.consumer.KafkaConsumer<String, String> consumer = new  org.apache.kafka.clients.consumer.KafkaConsumer<>(props);
+                java.util.Map<java.lang.String,java.util.List<org.apache.kafka.common.PartitionInfo>> parts = consumer.listTopics();
+
+                String statusStr = new String();
+                java.util.Iterator iter2 = parts.keySet().iterator();
+                while (iter2.hasNext()) {
+                    String thisTopic = (String) iter2.next();
+                    statusStr = statusStr + thisTopic + "\n";
+                    java.util.List<org.apache.kafka.common.PartitionInfo> thisParts = parts.get(thisTopic);
+                    java.util.Iterator iter3 = thisParts.iterator();
+                    while (iter3.hasNext()) {
+                        System.out.println(thisPart.toString());
+                      }
                 }
                 gotHosts = true;
             } catch (Exception e) {
@@ -70,7 +78,7 @@ public class KafkaHelper {
             i += 1;
         }
 
-        if (!gotHosts && error != null) {
+        if (error != null) {
             errorMessage = new StringUtility().getStackTrace(error);
             status = "Fail";
         } else {
@@ -78,9 +86,9 @@ public class KafkaHelper {
         }
     }
 
-    public void AskKafka(String hostslist) {
+    public void AskKafka(String hostslist, java.util.HashMap<String, Object> kafkaMap) {
         //pro.initialize(host);
-        GetTopics(hostslist);
+        GetTopics(hostslist, kafkaMap);
         //pro.CreateMessage();;
     }
 
