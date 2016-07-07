@@ -1883,7 +1883,6 @@ class ClusterConfigMap(cfgStr: String, var clusterIdOfInterest: String) {
   def KafkaConnections: scala.collection.mutable.ListBuffer[Map[String,Any]] = {
     val kafkaAdapters: List[Map[String, Any]] = adapters.filter(adapterMap => {
       val clsName = adapterMap.getOrElse("ClassName", "").asInstanceOf[String].trim
-      if (clsName.startsWith("com.ligadata.InputAdapters.KafkaSimpleConsumer"))
       val hasKafka: Boolean = (clsName.startsWith("com.ligadata.OutputAdapters.KafkaProducer") ||
                                clsName.startsWith("com.ligadata.InputAdapters.KafkaSimpleConsumer") ||
                                clsName.startsWith("com.ligadata.InputAdapters.KamanjaKafkaConsumer"))

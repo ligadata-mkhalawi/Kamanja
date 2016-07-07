@@ -64,6 +64,7 @@ public class KafkaHelper {
                     java.util.List<org.apache.kafka.common.PartitionInfo> thisParts = parts.get(thisTopic);
                     java.util.Iterator iter3 = thisParts.iterator();
                     while (iter3.hasNext()) {
+                        org.apache.kafka.common.PartitionInfo thisPart = (org.apache.kafka.common.PartitionInfo) iter3.next();
                         System.out.println(thisPart.toString());
                       }
                 }
