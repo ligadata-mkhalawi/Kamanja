@@ -10,12 +10,12 @@
     {
     "ArgName" : "coll",
     "ArgTypeNameSpace" : "system",
-    "ArgTypeName" : "hashmapofanyany"
+    "ArgTypeName" : "string"
     },
     {
     "ArgName" : "coll1",
     "ArgTypeNameSpace" : "system",
-    "ArgTypeName" : "hashmapofanyany"
+    "ArgTypeName" : "int"
     }
    ],
   "Version" : 100,
@@ -40,7 +40,7 @@
   {
     "ArgName" : "coll1",
     "ArgTypeNameSpace" : "system",
-    "ArgTypeName" : "string"
+    "ArgTypeName" : "int"
   }],
   "Version" : 100,
   "JarName" : "pmmludfs_2.10-1.0.jar",
