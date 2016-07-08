@@ -34,7 +34,8 @@ public class Checker {
     }
 
     public /* ArrayList<ComponentInfo> */ComponentInfo CheckComponent(String component,
-                                                                      String host/* String hostArray[] */) throws IOException, InterruptedException, KeeperException {
+                                                                      String host,
+                                                                      java.util.HashMap<String, Object> kafkaMap) throws IOException, InterruptedException, KeeperException {
 
         // ArrayList<ComponentInfo> list = new ArrayList<ComponentInfo>();
 
@@ -62,7 +63,7 @@ public class Checker {
                 KafkaHelper kafka = new KafkaHelper();
                 try {
                     // System.out.println(hostArray[i]);
-                    kafka.AskKafka(/* hostArray[i] */host);
+                    kafka.AskKafka(/* hostArray[i] */host, kafkaMap);
                     // kafka.CheckKafkaVersion(hostArray[i]);
                     bean.setStatus(kafka.getStatus());
                     bean.setErrorMessage(kafka.getErrorMessage());
@@ -128,6 +129,7 @@ public class Checker {
             if (args == null || args.trim().length() == 0) {
                 throw new Exception();
             }
+
             JsonUtility json = new JsonUtility();
             Checker checker = new Checker();
             JSONArray jsonArray = new JSONArray();
@@ -139,6 +141,7 @@ public class Checker {
                 json.JsonParse(jsonArray.get(i).toString());
                 String component = json.GetComponent();
                 String hostList = json.GetHostList();
+                //java.util.Map<String,Object> hostMap = json.GetKafkaHostMap();
                 LOG.debug("Getting information for component:" + component);
                 // String hostArray[] = checker.hostArray(hostList);
                 if (component.equalsIgnoreCase("hbase")) {
@@ -163,8 +166,14 @@ public class Checker {
                         LOG.error("Failed to get " + component + " information", e);
                         getFailedComponentInfo(new ComponentInfo(), component, e, null);
                     }
-                } else
-                    list = checker.CheckComponent(component, /* hostArray */hostList);
+                } else {
+                    if (component.equalsIgnoreCase("kafka")) {
+                        java.util.HashMap<String, Object> kafkaMap = json.kafkaMap;
+                        list = checker.CheckComponent(component, /* hostArray */hostList, kafkaMap);
+                    } else {
+                        list = checker.CheckComponent(component, /* hostArray */hostList, null);
+                    }
+                }
                 finalList.add(list);
             }
             return new ObjectMapper().writeValueAsString(finalList);
