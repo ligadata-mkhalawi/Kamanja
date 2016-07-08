@@ -655,7 +655,12 @@ object StartMetadataAPI {
         }
 
         case Action.UPDATEFUNCTION => response = FunctionService.updateFunction(input)
-        case Action.LOADFUNCTIONSFROMAFILE => response = FunctionService.loadFunctionsFromAFile(input)
+        // 1295 Changes begin
+        case Action.LOADFUNCTIONSFROMAFILE => {
+          response = new ApiResult(ErrorCodeConstants.Success, "StartMetadataAPI/route", null, s"The action = $action is no longer supported, please use add function").toString
+        }
+          //response = FunctionService.loadFunctionsFromAFile(input)
+          // 1295 Changes end
         case Action.DUMPALLFUNCTIONSASJSON => response = FunctionService.dumpAllFunctionsAsJson
 
         //config
