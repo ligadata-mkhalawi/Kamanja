@@ -23,20 +23,19 @@ import java.util.regex.{Matcher, Pattern}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.sys.process._
-import org.json4s.{DefaultFormats, Formats, JsonAST, MappingException}
+import scala.util.control.Breaks._
+import scala.collection.immutable.Map
+
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
-
-import scala.util.control.Breaks._
-import org.apache.logging.log4j.LogManager
 import org.json4s.native.Json
 import org.json4s.DefaultFormats
 
-import scala.collection.immutable.Map
+import org.apache.logging.log4j.LogManager
 
 
 object PyServerConnGlobalLogger {
-    val loggerName = this.getClass.getName()
+    val loggerName = this.getClass.getName
     val logger = LogManager.getLogger(loggerName)
 }
 
@@ -92,18 +91,19 @@ class PyServerConnection(val host : String
       */
     def initialize : (String,String) = {
 
+        /** start the server */
         val startServerResult : String = startServer
+        logger.debug(s"PyServerConnection.initialize ... start server result = $startServerResult")
         implicit val formats = org.json4s.DefaultFormats
         val startResultsMap : Map[String, Any] = parse(startServerResult).extract[Map[String, Any]]
         val startRc : Int = startResultsMap.getOrElse("code", -1).asInstanceOf[Int]
 
-        /** send the command to the server for execution */
+        /** create a connection to the server on the port that it is listening. */
         val inetbyname = InetAddress.getByName(host)
-        logger.debug("host known as '$inetbyname'")
+        logger.debug("PyServerConnection.initialize ... connecting to host known as '$inetbyname'")
         _sock = new Socket(inetbyname, port)
         _in = new DataInputStream(_sock.getInputStream)
         _out = new DataOutputStream(_sock.getOutputStream)
-
 
         val (rc, result) : (Int,String) = if (startRc == 0 && _sock != null && _in != null && _out != null) {
             (0, "connection created")
@@ -112,6 +112,7 @@ class PyServerConnection(val host : String
         }
 
         val connResult : String = s"{ ${'"'}code${'"'} : $rc,  ${'"'}result${'"'} : ${'"'}$result${'"'}}"
+        logger.debug(s"PyServerConnection.initialize ... conection result = $connResult")
         (startServerResult, connResult)
     }
 
@@ -149,7 +150,6 @@ class PyServerConnection(val host : String
 
         val pySrvCmd = Process(cmdSeq)
         pySrvCmd.run
-        val startResult : Int = 0  /** if there are no exceptions, it succeeds */
 
         /** the last of the pids scraped out is the pythonserver that was just started */
         val processInfo = ("ps aux" #| "grep python" #| s"grep ${port.toString}").!!.trim
@@ -294,7 +294,11 @@ class PyServerConnection(val host : String
       */
     def addModel(moduleName : String, modelName : String, moduleSrc : String, modelOptions : Map[String, Any] = Map[String, Any]()) : String = {
 
+        /** serialize the modelOptions */
         val modelOpts : String = Json(DefaultFormats).write(modelOptions)
+
+        /** copy the file into a tmp file from string for either local copy to models or possibly remote copy to other server */
+        cpSrcFile(moduleName, moduleSrc)
 
         val moduleFile : String = s"$moduleName.py"
         val json = (
@@ -325,7 +329,7 @@ class PyServerConnection(val host : String
         writeSrcFile(moduleSrc, srcTargetPath)
 
         /** copy the python model source file to $pyPath/models */
-        val useSSH : Boolean = host != "localhost"
+        val useSSH : Boolean = host != "localhost" && host != "127.0.0.1"
         val slash : String = if (pyPath != null && pyPath.endsWith("/")) "" else "/"
         val fromCpArgsStr : String = s"$srcTargetPath"
         val toCpArgsStr : String = s"$pyPath${slash}models/"
@@ -484,7 +488,7 @@ class PyServerConnection(val host : String
             logger.error(s"there were no commands formed for cmdName = $cmdName... abandoning processing")
             ""
         } else {
-            processMsg(_in, _out, "serverStatus", cmdBytes, _buffer)
+            processMsg(_in, _out, cmdName, cmdBytes, _buffer)
         }
         result
 

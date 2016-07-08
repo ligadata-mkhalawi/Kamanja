@@ -474,9 +474,11 @@ class KamanjaMetadata(var envCtxt: EnvContext) {
       *
       * Information is picked out of the Kamanja configuration information.
       */
+    val PYTHON_CONFIG : String = "python_config"
+    val ROOT_DIR : String = "root_dir"
     private def PreparePythonConfiguration(): Unit = {
         val properties: java.util.Properties = KamanjaConfiguration.allConfigs
-        val pythonPropertiesStr : String = properties.getProperty("PYTHON_CONFIG")
+        val pythonPropertiesStr : String = properties.getProperty(PYTHON_CONFIG)
         if (pythonPropertiesStr != null) {
             implicit val formats = org.json4s.DefaultFormats
             val pyPropertyMap : Map[String, Any] = parse(pythonPropertiesStr).extract[Map[String, Any]]
@@ -519,7 +521,7 @@ class KamanjaMetadata(var envCtxt: EnvContext) {
         } else { /** we can stand not having the python config defaults for everything but the python path... iff
           * (with this version at least) the pyPath is the 'python' subdirectory of the root dir.  If it is not there
           * an exception is thrown. The server code has to exist there for this 'last stab' to work. */
-            val installRoot : String = properties.getProperty("ROOT_DIR")
+            val installRoot : String = properties.getProperty(ROOT_DIR)
             if (installRoot != null) {
                 val pyPath : String = s"$installRoot/python"
                 val f : File = new File(pyPath)

@@ -198,7 +198,7 @@ class PythonAdapter(factory : ModelInstanceFactory
         val modelDef : ModelDef = factory.getModelDef()
         val modelOptStr : String = modelDef.modelConfig
         val trimmedOptionStr : String = modelOptStr.trim
-        val modelOptions = parse(trimmedOptionStr).extract[Map[String, Any]]
+        val modelOptions : Map[String, Any] = parse(trimmedOptionStr).extract[Map[String, Any]]
 
         val moduleName : String = modelDef.moduleName
         val resultStr : String = pyServerConnection.addModel(moduleName, modelDef.Name, modelDef.objectDefinition, modelOptions)
@@ -212,7 +212,7 @@ class PythonAdapter(factory : ModelInstanceFactory
             logger.debug(s"Module '$moduleName.${modelDef.Name} successfully added to python server at $host($port")
         } else {
             logger.error(s"Module '$moduleName.${modelDef.Name} could not be added to python server at $host($port")
-            logger.error("s\"error details: '$resultStr'")
+            logger.error(s"error details: '$resultStr'")
         }
     }
 
@@ -247,8 +247,10 @@ class PythonAdapter(factory : ModelInstanceFactory
         val modelDef : ModelDef = factory.getModelDef()
 
         val resultStr : String = pyServerConnection.executeModel(modelDef.Name, prepareFields(msg))
-        val results : Array[(String, Any)] = Array[(String, Any)]()
-        new MappedModelResults().withResults(results.toArray)
+        implicit val formats = org.json4s.DefaultFormats
+        val resultsMap : Map[String, Any] = parse(resultStr).extract[Map[String, Any]]
+        val results : Array[(String, Any)] = resultsMap.toArray
+        new MappedModelResults().withResults(results)
     }
 
 
@@ -337,7 +339,7 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends
                                                                     ,pyLogConfigPath
                                                                     ,pyLogPath
                                                                     ,pyPath)
-            if (pyConn != null) {
+            val (startValid, connValid) : (Boolean, Boolean) = if (pyConn != null) {
                 /** setup server and connection to it */
                 val (startServerResult, connResult) : (String,String) = pyConn.initialize
 
@@ -357,8 +359,11 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends
                     logger.error(s"startServer result = $startServerResult")
                     logger.error(s"connection result = $connResult")
                 }
+                (startRc == 0, connRc == 0)
+            } else {
+                (false, false)
             }
-            val isReasonable : Boolean = pyConn != null
+            val isReasonable : Boolean = pyConn != null && startValid && connValid
 
             if (! isReasonable) {
                 logger.error(s"The PythonAdapterFactory for model ${modelDef.FullName} could not be initialized...")

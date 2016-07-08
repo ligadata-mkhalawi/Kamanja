@@ -5,7 +5,7 @@
       "SystemCatalog": {
         "StoreType": "{StoreType}",
         "SchemaName": "{SchemaName}",
-        "Location": "{SchemaLocation}"
+        "Location": "{SchemaLocation}",
         "connectionMode": "embedded",
         "portnumber": "9100",
         "user": "test",
@@ -18,7 +18,7 @@
           "PrimaryDataStore": {
             "StoreType": "{StoreType}",
             "SchemaName": "{SchemaName}",
-            "Location": "{SchemaLocation}"
+            "Location": "{SchemaLocation}",
             "connectionMode": "embedded",
             "portnumber": "9100",
             "user": "test",
@@ -75,7 +75,7 @@
           "TenantId": "tenant1",
           "StoreType": "{StoreType}",
           "SchemaName": "{SchemaName}",
-          "Location": "{SchemaLocation}"
+          "Location": "{SchemaLocation}",
           "connectionMode": "embedded",
           "portnumber": "9100",
           "user": "test",
