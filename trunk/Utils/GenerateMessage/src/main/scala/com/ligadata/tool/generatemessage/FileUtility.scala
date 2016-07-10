@@ -68,6 +68,10 @@ class FileUtility  extends LogTrait{
   }
 
   def SplitFile (filePath: String, delimiter: String): Array[String] = {//This method used to split file based on delimiter
+    if(!filePath.contains(delimiter)){
+      logger.error("This delimiter %s does not exist in file".format(delimiter))
+      sys.exit(1)
+    }
     return filePath.split(delimiter)
   }
 

@@ -64,7 +64,6 @@ class FileUtilityTest extends FeatureSpec with GivenWhenThen {
       println(fileHeader)
 
       Given("Test SplitHeader function")
-
       When("The file in path")
       val headerFeilds = fileBean.SplitFile(fileHeader,",")
       Then("The size of array should not be 4")
