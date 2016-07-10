@@ -107,13 +107,24 @@ class PMMLUtility extends LogTrait{
         if(datafield != null && datafield.getOpType != null){
           optype = datafield.getOpType
         }
-        if(datafield.getDataType != null){
-          (datafield.getName.getValue, dataTypeBean.FindPMMLFieldType(datafield.getDataType.value))
-        } else if(optype != null){
-          if(optype.toString.trim.equalsIgnoreCase("continuous"))
-            (datafield.getName.getValue, "Double")
-          else (datafield.getName.getValue, "String")
-        } else (datafield.getName.getValue,"String")
+        if(datafield != null){
+          if(datafield.getDataType != null){
+            (datafield.getName.getValue, dataTypeBean.FindPMMLFieldType(datafield.getDataType.value))
+          } else if(optype != null){
+            if(optype.toString.trim.equalsIgnoreCase("continuous"))
+              (datafield.getName.getValue, "Double")
+            else (datafield.getName.getValue, "String")
+          } else (datafield.getName.getValue,"String")
+        } else {
+          (field.toString,"String")
+        }
+//        if(datafield.getDataType != null){
+//          (datafield.getName.getValue, dataTypeBean.FindPMMLFieldType(datafield.getDataType.value))
+//        } else if(optype != null){
+//          if(optype.toString.trim.equalsIgnoreCase("continuous"))
+//            (datafield.getName.getValue, "Double")
+//          else (datafield.getName.getValue, "String")
+//        } else (datafield.getName.getValue,"String")
       })
     } else {
       scala.Array[(String,String)]()
