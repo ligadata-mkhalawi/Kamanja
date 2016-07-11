@@ -495,7 +495,7 @@ class MigrateAdapterSpec extends FunSpec with LocalTestFixtures with BeforeAndAf
 
         And("AddMessage first time from " + file.getPath)
         var msgStr = Source.fromFile(file).mkString
-        res = MetadataAPIImpl.AddMessage(msgStr, "JSON", None, tenantId)
+        res = MetadataAPIImpl.AddMessage(msgStr, "JSON", None, tenantId,None)
         res should include regex ("\"Status Code\" : 0")
 
         And("GetMessageDef API to fetch the message that was just added")
@@ -509,7 +509,7 @@ class MigrateAdapterSpec extends FunSpec with LocalTestFixtures with BeforeAndAf
         val nameSpace: String = nmspcNodes.addString(buffer, ".").toString
         val objName: String = nameNodes(nameNodes.size - 1)
         //var version = "000001000000000000"
-        res = MetadataAPIImpl.GetMessageDef(nameSpace, objName, "JSON", "-1", None)
+        res = MetadataAPIImpl.GetMessageDef(nameSpace, objName, "JSON", "-1", None,None)
         res should include regex ("\"Status Code\" : 0")
       })
     }

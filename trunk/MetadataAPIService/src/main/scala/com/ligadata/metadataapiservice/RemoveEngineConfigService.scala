@@ -36,35 +36,49 @@ object RemoveEngineConfigService {
 class RemoveEngineConfigService(requestContext: RequestContext, userid:Option[String], password:Option[String], cert:Option[String]) extends Actor {
 
   import RemoveEngineConfigService._
-  
+
   implicit val system = context.system
   import system.dispatcher
   val log = Logging(system, getClass)
   val APIName = "RemoveEngineConfigService"
-  
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
+
   def receive = {
     case Process(cfgJson) =>
       process(cfgJson)
       context.stop(self)
   }
-  
-  def process(cfgJson:String) = { 
+
+  def process(cfgJson:String) = {
     log.debug("Requesting RemoveEngineConfig {}",cfgJson)
 
     var objectList: List[String] = List[String]()
 
-    var inParm: Map[String,Any] = parse(cfgJson).values.asInstanceOf[Map[String,Any]]   
-    var args: List[Map[String,String]] = inParm.getOrElse("ArgList",null).asInstanceOf[List[Map[String,String]]]   //.asInstanceOf[List[Map[String,String]]
-    args.foreach(elem => {
-      objectList :::= List(elem.getOrElse("NameSpace","system")+"."+elem.getOrElse("Name","")+"."+elem.getOrElse("Version","-1"))
-    })
-        
-    if (!MetadataAPIImpl.checkAuth(userid,password,cert,"write")) {
-      MetadataAPIImpl.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.REMOVECONFIG,cfgJson,AuditConstants.FAIL,"",objectList.mkString(",")) 
-      requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error:UPDATE not allowed for this user").toString )
-    } else {
-      val apiResult = MetadataAPIImpl.RemoveConfig(cfgJson,userid, objectList.mkString(","))
-      requestContext.complete(apiResult)     
+
+    try {
+
+//      var inParm: Map[String, Any] = parse(cfgJson).values.asInstanceOf[Map[String, Any]]
+      //var args: List[Map[String, String]] = inParm.getOrElse("ArgList", null).asInstanceOf[List[Map[String, String]]] //.asInstanceOf[List[Map[String,String]]
+//      args.foreach(elem => {
+//        objectList :::= List(elem.getOrElse("NameSpace", "system") + "." + elem.getOrElse("Name", "") + "." + elem.getOrElse("Version", "-1"))
+//      })
+
+
+      if (!getMetadataAPI.checkAuth(userid, password, cert, "write")) {
+        getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.REMOVECONFIG, cfgJson, AuditConstants.FAIL, "", objectList.mkString(","))
+        requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error:UPDATE not allowed for this user").toString)
+      } else {
+        //        val apiResult = getMetadataAPI.RemoveConfig(cfgJson, userid, objectList.mkString(","))
+        val apiResult = getMetadataAPI.RemoveConfig(cfgJson, userid, "adapter")
+        requestContext.complete(apiResult)
+      }
     }
+  catch {
+    case e: Exception =>
+      log.error("Unable to get tenantid info, please add it to ClusterConfig before using. ", e.getStackTraceString)
+      requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, e.toString).toString + " for ArgList" )
+  }
   }
 }

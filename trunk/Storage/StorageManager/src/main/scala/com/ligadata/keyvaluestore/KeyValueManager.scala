@@ -74,6 +74,7 @@ object KeyValueManager {
       case "treemap" => return TreeMapAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
       // Other relational stores such as sqlserver, mysql
       case "sqlserver" => return SqlServerAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+      case "h2db" => return H2dbAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
       // case "mysql" => return MySqlAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig)
 
       // Default, Load it from Class

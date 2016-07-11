@@ -1,64 +1,61 @@
 ******************** Help Menu ****************************
 I. Message operations
-kamanja add message input(optional) TENANTID <tenantId>
-kamanja update message input(optional) TENANTID <tenantId>
-kamanja get message input(optional)
-kamanja get all messages
+kamanja add message input(optional) TENANTID <tenantId>  Properties/PropertiesFile(optional) <Json String/Filename>
+kamanja update message input(optional) TENANTID <tenantId> Properties/PropertiesFile(optional) <Json String/Filename>
+kamanja get message input(optional) TENANTID(optional) <tenantId>
+kamanja get all messages TENANTID(optional) <tenantId>
 kamanja remove message input(optional)
 II. Model operations
-kamanja add model kpmml input(optional) TENANTID <tenantId>
-kamanja add model pmml input MODELNAME namespace.name MODELVERSION nn.nn.nn MESSAGENAME namespace.name TENANTID <tenantId>
-kamanja add model java input(optional)  TENANTID <tenantId>
-kamanja add model scala input(optional) TENANTID <tenantId>
-kamanja get model input(optional)
-kamanja get all models
+kamanja add model kpmml input(optional) TENANTID <tenantId>  Properties/PropertiesFile(optional) <Json String/Filename>
+kamanja add model pmml input MODELNAME namespace.name MODELVERSION nn.nn.nn MESSAGENAME namespace.name TENANTID <tenantId> Properties/PropertiesFile(optional) <Json String/Filename>
+kamanja add model java input(optional)  TENANTID <tenantId> Properties/PropertiesFile(optional) <Json String/Filename>
+kamanja add model scala input(optional) TENANTID <tenantId> Properties/PropertiesFile(optional) <Json String/Filename>
+kamanja add model jtm input(optional) TENANTID <tenantId> Properties/PropertiesFile(optional) <Json String/Filename>
+kamanja get model input(optional) TENANTID(optional) <tenantId>
+kamanja get all models TENANTID(optional) <tenantId>
 kamanja remove model input(optional)
-kamanja update model kpmml input(optional) TENANTID <tenantId>
-kamanja update model pmml input MODELNAME namespace.name MODELVERSION nn.nn.nn TENANTID <tenantId>
-kamanja update model scala input(optional) TENANTID <tenantId>
-kamanja update model java input(optional) TENANTID <tenantId>
+kamanja update model kpmml input(optional) TENANTID <tenantId> Properties/PropertiesFile(optional) <Json String/Filename>
+kamanja update model pmml input MODELNAME namespace.name MODELVERSION nn.nn.nn TENANTID <tenantId> Properties/PropertiesFile(optional) <Json String/Filename>
+kamanja update model scala input(optional) TENANTID <tenantId> Properties/PropertiesFile(optional) <Json String/Filename>
+kamanja update model java input(optional) TENANTID <tenantId> Properties/PropertiesFile(optional) <Json String/Filename>
+kamanja update model jtm input(optional) TENANTID <tenantId> Properties/PropertiesFile(optional) <Json String/Filename>
 kamanja deactivate model input(optional)
 kamanja activate model input(optional)
 III. Container operations
-kamanja add container input(optional) TENANTID <tenantId>
-kamanja update container input(optional) TENANTID <tenantId>
-kamanja get container input(optional)
-kamanja get all containers
+kamanja add container input(optional) TENANTID <tenantId> Properties/PropertiesFile(optional) <Json String/Filename>
+kamanja update container input(optional) TENANTID <tenantId> Properties/PropertiesFile(optional) <Json String/Filename>
+kamanja get container input(optional) TENANTID(optional) <tenantId>
+kamanja get all containers TENANTID(optional) <tenantId>
 kamanja remove container input(optional)
-IV. Type operations
-kamanja get type input(optional)
-kamanja get all types
-kamanja dump all types
-V. Function operations
+IV. Function operations
 kamanja add function input(optional)
 kamanja get function input(optional)
 kamanja remove function input(optional)
 kamanja update function input(optional)
-kamanja load functions from a file
 kamanja dump all functions
-VI. Congurations operations
+V. Congurations operations
 kamanja upload cluster config input(optional)
 kamanja upload compile config input(optional)
 kamanja dump all cfg objects
 kamanja remove engine config
-IX. Jar operations
+VI. Jar operations
 kamanja upload jar
-X. Cluster, metadata and adapter operations
+VII. Cluster, metadata and adapter operations
 kamanja dump metadata
 kamanja dump all nodes
 kamanja dump all clusters
 kamanja dump all cluster cfgs
 kamanja dump all adapters
-XII. Kamanja engine operations
+VIII. Kamanja engine operations
 kamanja start
 kamanja start -v (for verbose)
-XIII. Topic operations
+IX. Topic operations
 kamanja watch status queue
 kamanja push data
 kamanja create queues
-XIV. Web service
+X. Web service
 kamanja start webservice
-XV. Adapter Message Bindings
+XI. Adapter Message Bindings
 kamanja add adaptermessagebinding FROMFILE input
 kamanja add adaptermessagebinding FROMSTRING input
 kamanja remove adaptermessagebinding KEY '<adapter name>,<namespace.msgname>,<namespace.serializername>'
@@ -68,5 +65,5 @@ kamanja list adaptermessagebindings MESSAGEFILTER <namespace.msgname>
 kamanja list adaptermessagebindings SERIALIZERFILTER <namespace.serializername>
 kamanja get typebyschemaid SCHEMAID <schemaid>
 kamanja get typebyelementid ELEMENTID <elementid>
-XVI. General operations
+XII. General operations
 kamanja --version

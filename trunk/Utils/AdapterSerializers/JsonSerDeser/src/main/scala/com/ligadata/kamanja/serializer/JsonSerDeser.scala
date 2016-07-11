@@ -103,12 +103,15 @@ class JSONSerDes extends SerializeDeserialize {
   var _objResolver: ObjectResolver = null
   var _config = Map[String, String]()
   var _isReady: Boolean = false
-  var _emitSchemaId = true
+  var _emitSystemColumns = false
   var _schemaIdKeyPrefix = "@@"
 
   def SchemaIDKeyName = _schemaIdKeyPrefix + "SchemaId"
+
   def TransactionIDKeyName = _schemaIdKeyPrefix + "TransactionId"
+
   def TimePartitionIDKeyName = _schemaIdKeyPrefix + "TimePartitionValue"
+
   def RowNumberIDKeyName = _schemaIdKeyPrefix + "RowNumber"
 
   /**
@@ -147,7 +150,7 @@ class JSONSerDes extends SerializeDeserialize {
     val containerJsonHead = indentStr + "{ "
     val containerJsonTail = indentStr + " }"
     sb.append(containerJsonHead)
-    if (_emitSchemaId) {
+    if (_emitSystemColumns) {
       // sb.append(strLF)
       nameValueAsJson(sb, indentLevel + 1, SchemaIDKeyName, schemaId.toString, false)
       sb.append(", ")
@@ -169,13 +172,16 @@ class JSONSerDes extends SerializeDeserialize {
       val quoteValue = useQuotesOnValue(valueType)
       valueType.getTypeCategory match {
         case MAP => {
-          keyAsJson(sb, indentLevel + 1, valueType.getName); mapAsJson(sb, indentLevel + 1, valueType, rawValue.asInstanceOf[Map[_, _]])
+          keyAsJson(sb, indentLevel + 1, valueType.getName);
+          mapAsJson(sb, indentLevel + 1, valueType, rawValue.asInstanceOf[Map[_, _]])
         }
         case ARRAY => {
-          keyAsJson(sb, indentLevel + 1, valueType.getName); arrayAsJson(sb, indentLevel + 1, valueType, rawValue.asInstanceOf[Array[_]])
+          keyAsJson(sb, indentLevel + 1, valueType.getName);
+          arrayAsJson(sb, indentLevel + 1, valueType, rawValue.asInstanceOf[Array[_]])
         }
         case (MESSAGE | CONTAINER) => {
-          keyAsJson(sb, indentLevel + 1, valueType.getName); containerAsJson(sb, indentLevel + 1, rawValue.asInstanceOf[ContainerInterface])
+          keyAsJson(sb, indentLevel + 1, valueType.getName);
+          containerAsJson(sb, indentLevel + 1, rawValue.asInstanceOf[ContainerInterface])
         }
         case (BOOLEAN | BYTE | LONG | DOUBLE | FLOAT | INT | STRING | CHAR) => nameValueAsJson(sb, indentLevel + 1, valueType.getName, rawValue, quoteValue)
         case _ => throw new UnsupportedObjectException(s"container type ${valueType.getName} not currently serializable", null)
@@ -368,6 +374,14 @@ class JSONSerDes extends SerializeDeserialize {
   def configure(objResolver: ObjectResolver, config: java.util.Map[String, String]): Unit = {
     _objResolver = objResolver
     _config = if (config != null) config.asScala.toMap else Map[String, String]()
+    try {
+      _emitSystemColumns = _config.getOrElse("emitSystemColumns", "false").toBoolean
+    } catch {
+      case e: Throwable => {
+        Error("Failed to get emitSystemColumns flag", e)
+        _emitSystemColumns = false
+      }
+    }
     _isReady = _objResolver != null && _config != null
   }
 
@@ -382,7 +396,7 @@ class JSONSerDes extends SerializeDeserialize {
     val rawJsonContainerStr: String = new String(b)
     try {
       val containerInstanceMap: Map[String, Any] = jsonStringAsMap(rawJsonContainerStr)
-      val container = deserializeContainerFromJsonMap(containerInstanceMap)
+      val container = deserializeContainerFromJsonMap(containerInstanceMap, containerName, 0)
 
       val txnId = toLong(containerInstanceMap.getOrElse(TransactionIDKeyName, -1))
       val tmPartVal = toLong(containerInstanceMap.getOrElse(TimePartitionIDKeyName, -1))
@@ -404,18 +418,30 @@ class JSONSerDes extends SerializeDeserialize {
   }
 
   @throws(classOf[com.ligadata.Exceptions.ObjectNotFoundException])
-  private def deserializeContainerFromJsonMap(containerInstanceMap: Map[String, Any]): ContainerInterface = {
+  private def deserializeContainerFromJsonMap(containerInstanceMap: Map[String, Any], containerName: String, valSchemaId: Long): ContainerInterface = {
     /** Decode the map to produce an instance of ContainerInterface */
-
     val schemaIdJson = toLong(containerInstanceMap.getOrElse(SchemaIDKeyName, -1))
-
-    if (schemaIdJson == -1) {
+    if (!(schemaIdJson >= 0 || (containerName != null && containerName.trim.size > 0) || valSchemaId >= 0)) {
       throw new MissingPropertyException(s"the supplied map (from json) to deserialize does not have a known schemaid, id: $schemaIdJson", null)
     }
     /** get an empty ContainerInterface instance for this type name from the _objResolver */
-    val ci: ContainerInterface = _objResolver.getInstance(schemaIdJson)
-    if (ci == null) {
-      throw new ObjectNotFoundException(s"container interface with schema id: $schemaIdJson could not be resolved and built for deserialize", null)
+
+    var ci: ContainerInterface = null
+    if (schemaIdJson != -1) {
+      ci = _objResolver.getInstance(schemaIdJson)
+      if (ci == null) {
+        throw new ObjectNotFoundException(s"container interface with schema id: $schemaIdJson could not be resolved and built for deserialize", null)
+      }
+    } else if (valSchemaId > 0) {
+      ci = _objResolver.getInstance(valSchemaId)
+      if (ci == null) {
+        throw new ObjectNotFoundException(s"container interface with schema id: $valSchemaId could not be resolved and built for deserialize", null)
+      }
+    } else {
+      ci = _objResolver.getInstance(containerName.trim)
+      if (ci == null) {
+        throw new ObjectNotFoundException(s"container interface with schema id: $containerName could not be resolved and built for deserialize", null)
+      }
     }
 
     containerInstanceMap.foreach(pair => {
@@ -440,7 +466,10 @@ class JSONSerDes extends SerializeDeserialize {
             if (v != null && v.isInstanceOf[String] && v.asInstanceOf[String].size > 0) v.asInstanceOf[String].charAt(0) else ' '
           }
           case MAP => jsonAsMap(at, v.asInstanceOf[Map[String, Any]])
-          case (CONTAINER | MESSAGE) => deserializeContainerFromJsonMap(v.asInstanceOf[Map[String, Any]])
+          case (CONTAINER | MESSAGE) => {
+            val containerTypeName: String = null //BUGBUG:: Fix this to make the container object properly
+            deserializeContainerFromJsonMap(v.asInstanceOf[Map[String, Any]], containerTypeName, at.getValSchemaId)
+          }
           case ARRAY => jsonAsArray(at, v.asInstanceOf[List[Any]])
           case _ => throw new UnsupportedObjectException("Not yet handled valType:" + valType, null)
         }
@@ -539,7 +568,10 @@ class JSONSerDes extends SerializeDeserialize {
         retVal = collElements.map(itm => itm.asInstanceOf[Map[String, Any]]).toArray
       }
       case (CONTAINER | MESSAGE) => {
-        retVal = collElements.map(itm => deserializeContainerFromJsonMap(itm.asInstanceOf[Map[String, Any]])).toArray
+        retVal = collElements.map(itm => {
+          val containerTypeName: String = null //BUGBUG:: Fix this to make the container object properly
+          deserializeContainerFromJsonMap(itm.asInstanceOf[Map[String, Any]], containerTypeName, arrayTypeInfo.getValSchemaId)
+        }).toArray
       }
       case ARRAY => {
         retVal = collElements.map(itm => itm.asInstanceOf[List[Any]].toArray).toArray
@@ -573,7 +605,10 @@ class JSONSerDes extends SerializeDeserialize {
           if (value != null && value.isInstanceOf[String] && value.asInstanceOf[String].size > 0) value.asInstanceOf[String].charAt(0) else ' '
         }
         case MAP => value.asInstanceOf[Map[String, Any]]
-        case (CONTAINER | MESSAGE) => deserializeContainerFromJsonMap(value.asInstanceOf[Map[String, Any]])
+        case (CONTAINER | MESSAGE) => {
+          val containerTypeName: String = null //BUGBUG:: Fix this to make the container object properly
+          deserializeContainerFromJsonMap(value.asInstanceOf[Map[String, Any]], containerTypeName, mapTypeInfo.getValSchemaId)
+        }
         case ARRAY => value.asInstanceOf[List[Any]].toArray
         case _ => throw new ObjectNotFoundException(s"jsonAsMap: invalid value type: ${valType.getValue}, fldName: ${valType.name} could not be resolved", null)
       }

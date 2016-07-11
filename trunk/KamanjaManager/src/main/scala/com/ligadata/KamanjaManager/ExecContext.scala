@@ -40,6 +40,7 @@ import scala.actors.threadpool.{ ExecutorService }
 // There are no locks at this moment. Make sure we don't call this with multiple threads for same object
 class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUniqueRecordKey, val nodeContext: NodeContext) extends ExecContext {
   private val LOG = LogManager.getLogger(getClass);
+  private var eventsCntr: Long = 0
 //  private var adapterChangedCntr: Long = -1
 //
 //  // Mapping Adapter to Msgs
@@ -201,8 +202,11 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
         })
       }
       if (txnCtxt != null && nodeContext != null && nodeContext.getEnvCtxt() != null) {
-        if (txnCtxt.origin.key != null && txnCtxt.origin.value != null && txnCtxt.origin.key.trim.size > 0 && txnCtxt.origin.value.trim.size > 0)
-          nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(txnCtxt.origin.key, txnCtxt.origin.value)
+        if (txnCtxt.origin.key != null && txnCtxt.origin.value != null && txnCtxt.origin.key.trim.size > 0 && txnCtxt.origin.value.trim.size > 0) {
+          eventsCntr += 1
+          if (KamanjaConfiguration.commitOffsetsMsgCnt == 0 || (eventsCntr % KamanjaConfiguration.commitOffsetsMsgCnt) == 0)
+            nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(txnCtxt.origin.key, txnCtxt.origin.value)
+        }
       }
       else {
         if (logger.isDebugEnabled)

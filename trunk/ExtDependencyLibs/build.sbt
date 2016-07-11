@@ -3,7 +3,7 @@ import sbtassembly.AssemblyPlugin._
 name := "ExtDependencyLibs"
 
 version := "1.0"
-val kamanjaVersion = "1.4.1"
+val kamanjaVersion = "1.5.0"
 
 
 shellPrompt := { state => "sbt (%s)> ".format(Project.extract(state).currentProject.id) }
@@ -56,6 +56,11 @@ assemblyMergeStrategy in assembly := {
   case x if x contains "commons-logging" => MergeStrategy.first
   case "log4j.properties" => MergeStrategy.first
   case "unwanted.txt" => MergeStrategy.discard
+  case "DEPENDENCIES.txt" => MergeStrategy.discard
+  case "META-INF/DEPENDENCIES.txt" => MergeStrategy.discard
+  case "blueprint.xml" => MergeStrategy.discard
+  case "OSGI-INF/blueprint/blueprint.xml" => MergeStrategy.discard
+  case "features.xml" => MergeStrategy.discard
   case x =>
     val oldStrategy = (assemblyMergeStrategy in assembly).value
     oldStrategy(x)
@@ -87,11 +92,11 @@ libraryDependencies += "org.json4s" %% "json4s-native" % "3.2.9"
 libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.2.9"
 libraryDependencies += "org.apache.zookeeper" % "zookeeper" % "3.4.6"
 libraryDependencies += "org.apache.curator" % "apache-curator" % "2.0.0-incubating"
-libraryDependencies += "com.google.guava" % "guava" % "14.0.1"
+libraryDependencies += "com.google.guava" % "guava" % "16.0.1"
 //libraryDependencies += "org.jpmml" % "pmml-evaluator" % "1.2.4"                               // another version exists
 //libraryDependencies += "org.jpmml" % "pmml-model" % "1.2.5"
 //libraryDependencies += "org.jpmml" % "pmml-schema" % "1.2.5"
-dependencyOverrides += "com.google.guava" % "guava" % "14.0.1"
+dependencyOverrides += "com.google.guava" % "guava" % "16.0.1"
 libraryDependencies += "commons-codec" % "commons-codec" % "1.10"
 libraryDependencies += "commons-io" % "commons-io" % "2.4"
 libraryDependencies ++= Seq(
@@ -118,12 +123,15 @@ libraryDependencies += "com.google.protobuf" % "protobuf-java" % "2.6.0"
 
 /////////////////////// SimpleKafkaProducer
 resolvers += "Apache repo" at "https://repository.apache.org/content/repositories/releases"
-libraryDependencies ++= Seq("org.apache.kafka" %% "kafka" % "0.8.2.2"
-  exclude("javax.jms", "jms")
-  exclude("com.sun.jdmk", "jmxtools")
-  exclude("com.sun.jmx", "jmxri")
-)
+//libraryDependencies ++= Seq("org.apache.kafka" %% "kafka" % "0.9.0.1"
+//  exclude("javax.jms", "jms")
+//  exclude("com.sun.jdmk", "jmxtools")
+//  exclude("com.sun.jmx", "jmxri")
+//)
 
+//libraryDependencies += "org.apache.kafka" %% "kafka" % "0.10.0.0"
+libraryDependencies += "org.apache.kafka" %% "kafka" % "0.9.0.1"
+//libraryDependencies += "org.apache.kafka" %% "kafka" % "0.10.0.0"
 
 /////////////////////// PmmlTestTool
 // 1.2.9 is currently used in other engine... use same here
@@ -219,6 +227,12 @@ libraryDependencies ++= {
 //crossPaths := false
 //// This forbids including Scala related libraries into the dependency
 //autoScalaLibrary := false
+
+
+////////////////////// Cache
+libraryDependencies += "org.infinispan" % "infinispan-core" % "7.2.5.Final"
+libraryDependencies += "org.infinispan" % "infinispan-tree" % "7.2.5.Final"
+libraryDependencies += "net.jcip" % "jcip-annotations" % "1.0"
 
 
 /////////////////////// InstallerDriver
@@ -386,3 +400,5 @@ libraryDependencies ++= {
 ////////////////////// TreeMap
 //already available
 
+// QueryGenerator
+// libraryDependencies += "com.orientechnologies" % "orientdb-jdbc" % "2.1.19"

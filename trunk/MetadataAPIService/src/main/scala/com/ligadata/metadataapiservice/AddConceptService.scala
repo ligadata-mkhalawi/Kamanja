@@ -37,34 +37,37 @@ object AddConceptService {
 class AddConceptService(requestContext: RequestContext, userid:Option[String], password:Option[String], cert:Option[String]) extends Actor {
 
 	import AddConceptService._
-	
+
 	implicit val system = context.system
 	import system.dispatcher
 	val log = Logging(system, getClass)
   val APIName = "AddConceptService"
-	
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
+
 	def receive = {
 	  case Process(conceptJson, formatType) =>
 	    process(conceptJson, formatType)
 	    context.stop(self)
 	}
-	
+
 	def process(conceptJson:String, formatType:String): Unit = {
 	  log.debug("Requesting AddConcept {},{}",conceptJson,formatType)
-    
+
     var nameVal: String = null
     if (formatType.equalsIgnoreCase("json")) {
-      nameVal = APIService.extractNameFromJson(conceptJson,AuditConstants.CONCEPT) 
+      nameVal = APIService.extractNameFromJson(conceptJson,AuditConstants.CONCEPT)
     } else {
-      requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error:Unsupported format: "+formatType).toString ) 
+      requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error:Unsupported format: "+formatType).toString )
       return
     }
 
-	  if (!MetadataAPIImpl.checkAuth(userid, password, cert, MetadataAPIImpl.getPrivilegeName("insert","concept"))) {
-	    MetadataAPIImpl.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.INSERTOBJECT,conceptJson,AuditConstants.FAIL,"",nameVal)
+	  if (!getMetadataAPI.checkAuth(userid, password, cert, getMetadataAPI.getPrivilegeName("insert","concept"))) {
+	    getMetadataAPI.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.INSERTOBJECT,conceptJson,AuditConstants.FAIL,"",nameVal)
 	    requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error:UPDATE not allowed for this user").toString )
 	  } else {
-	    val apiResult = MetadataAPIImpl.AddConcepts(conceptJson,formatType,userid)
+	    val apiResult = getMetadataAPI.AddConcepts(conceptJson,formatType,userid)
 	    requestContext.complete(apiResult)
     }
 	}

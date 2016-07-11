@@ -3,7 +3,7 @@ import sbt._
 import Keys._
 
 shellPrompt := { state => "sbt (%s)> ".format(Project.extract(state).currentProject.id) }
-val kamanjaVersion = "1.4.1"
+val kamanjaVersion = "1.5.0"
 
 assemblyOption in assembly ~= {
   _.copy(prependShellScript = Some(defaultShellScript))
@@ -63,14 +63,14 @@ test in assembly := {}
 
 name := "GetComponent"
 
-version := "1.4.1"
+version := "1.5.0"
 
 resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 libraryDependencies += "org.apache.hbase" % "hbase-client" % "1.0.2"
 libraryDependencies += "org.apache.hbase" % "hbase-common" % "1.0.2"
 libraryDependencies += "org.apache.hadoop" % "hadoop-common" % "2.7.1"
 libraryDependencies += "org.apache.zookeeper" % "zookeeper" % "3.4.6"
-libraryDependencies += "org.apache.kafka" %% "kafka" % "0.8.2.2"
+libraryDependencies += "org.apache.kafka" %% "kafka" % "0.9.0.1"
 libraryDependencies += "com.googlecode.json-simple" % "json-simple" % "1.1"
 // libraryDependencies += "org.scala-lang" % "scala-library" % "2.11.7"
 libraryDependencies += "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.3"

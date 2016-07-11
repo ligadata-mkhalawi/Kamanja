@@ -28,15 +28,18 @@ import com.ligadata.KamanjaVersion.KamanjaVersion
 
 class NodeInfoExtract(val metadataAPIConfig: String, val nodeConfigPath: String, val clusterId: String, val installDir: String) {
 
-  MetadataAPIImpl.InitMdMgrFromBootStrap(metadataAPIConfig, false)
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
+  getMetadataAPI.InitMdMgrFromBootStrap(metadataAPIConfig, false)
   /**
    *  Optionally called when an EngineConfig file with cluster decl in it is supplied as an argument, this
    *  command updates the metadata referred to by the metadataapiconfig properties file.
    */
   def initializeEngineConfig: Unit = {
     if (nodeConfigPath != null) {
-      val result: String = MetadataAPIImpl.UploadConfig(Source.fromFile(nodeConfigPath).mkString, None, "NodeInfoExtract")
+      val result: String = getMetadataAPI.UploadConfig(Source.fromFile(nodeConfigPath).mkString, None, "NodeInfoExtract")
       //println(result)
     } else {
       throw new RuntimeException("initializeEngineConfig erroneously called... logic error ")
@@ -67,6 +70,10 @@ class NodeInfoExtract(val metadataAPIConfig: String, val nodeConfigPath: String,
 
 object NodeInfoExtract extends App {
 
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
+
   def usage: String = {
     """
 NodeInfoExtract --MetadataAPIConfig  <MetadataAPI config file path>
@@ -74,17 +81,17 @@ NodeInfoExtract --MetadataAPIConfig  <MetadataAPI config file path>
                 --ipFileName <file name path for the cluster node ips>
                 --ipPathPairFileName <file name path for the cluster node ip/path name pairs>
 				--installDir <the directory where the cluster is installed>
-		        --clusterId <cluster id name> 
-      
+		        --clusterId <cluster id name>
+
         Note: The metadata api config file is used to obtain the basic information regarding the metadata.
 		The node config path is principally for definining new clusters and is optional if the metadata mentioned
 		in the metadata api config file is proper (has a cluster defined in it).  The ipFileName and ipPathPairFileName
 		are file names to use for the collecting certain information for processing by the cluster installer or one
-		of the cluster start/stop scripts. 
-      
+		of the cluster start/stop scripts.
+
 		The clusterId is the one to be started/stopped or for install, the key to select nodes for
 		the cluster installation.  The system will permit multiple clusters to be defined in the same metadata cache.
-      
+
 """
   }
 
@@ -160,7 +167,7 @@ NodeInfoExtract --MetadataAPIConfig  <MetadataAPI config file path>
     writeFileIps(s"$workDir/$ipFileName", ips)
     writeFilePairs(s"$workDir/$ipPathPairFileName", ipPathPairs)
     writeNodeIdConfigs(workDir, ipIdCfgTargPathQuartetFileName, extractor, ipIdTargPaths)
-    MetadataAPIImpl.CloseDbStore
+    getMetadataAPI.CloseDbStore
   }
 
   private def writeFileIps(outputPath: String, ips: Array[String]) {
@@ -199,15 +206,15 @@ NodeInfoExtract --MetadataAPIConfig  <MetadataAPI config file path>
    */
   private def writeNodeIdConfigs(workDir: String, ipIdCfgTargPathQuartetFileName: String, extractor: NodeInfoExtract, ipIdTargs: Array[(String, String, String, String)]) {
     val metadataDataStore: String =
-      if (MetadataAPIImpl.GetMetadataAPIConfig.getProperty("METADATA_DATASTORE") != null) {
-        MetadataAPIImpl.GetMetadataAPIConfig.getProperty("METADATA_DATASTORE")
-      } else if (MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MetadataDataStore") != null) {
-        MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MetadataDataStore")
+      if (getMetadataAPI.GetMetadataAPIConfig.getProperty("METADATA_DATASTORE") != null) {
+        getMetadataAPI.GetMetadataAPIConfig.getProperty("METADATA_DATASTORE")
+      } else if (getMetadataAPI.GetMetadataAPIConfig.getProperty("MetadataDataStore") != null) {
+        getMetadataAPI.GetMetadataAPIConfig.getProperty("MetadataDataStore")
       } else {
-        val dbType = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
-        val dbHost = if (MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE_HOST") != null) MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE_HOST") else MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE_LOCATION")
-        val dbSchema = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE_SCHEMA")
-        val dbAdapterSpecific = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("ADAPTER_SPECIFIC_CONFIG")
+        val dbType = getMetadataAPI.GetMetadataAPIConfig.getProperty("DATABASE")
+        val dbHost = if (getMetadataAPI.GetMetadataAPIConfig.getProperty("DATABASE_HOST") != null) getMetadataAPI.GetMetadataAPIConfig.getProperty("DATABASE_HOST") else getMetadataAPI.GetMetadataAPIConfig.getProperty("DATABASE_LOCATION")
+        val dbSchema = getMetadataAPI.GetMetadataAPIConfig.getProperty("DATABASE_SCHEMA")
+        val dbAdapterSpecific = getMetadataAPI.GetMetadataAPIConfig.getProperty("ADAPTER_SPECIFIC_CONFIG")
 
         val dbType1 = if (dbType == null) "" else dbType.trim
         val dbHost1 = if (dbHost == null) "" else dbHost.trim
@@ -261,5 +268,3 @@ NodeInfoExtract --MetadataAPIConfig  <MetadataAPI config file path>
   }
 
 }
-
-

@@ -164,7 +164,7 @@ cp $HOME/.ivy2/cache/log4j/log4j/bundles/log4j-1.2.17.jar $KAMANJALIBPATH
 cp $HOME/.ivy2/cache/net.java.dev.jets3t/jets3t/jars/jets3t-0.9.0.jar $KAMANJALIBPATH
 cp $HOME/.ivy2/cache/net.java.dev.jna/jna/jars/jna-3.2.7.jar $KAMANJALIBPATH
 cp $HOME/.ivy2/cache/org.apache.avro/avro/jars/avro-1.7.4.jar $KAMANJALIBPATH
-cp $HOME/.ivy2/cache/org.apache.commons/commons-compress/jars/commons-compress-1.4.1.jar $KAMANJALIBPATH
+cp $HOME/.ivy2/cache/org.apache.commons/commons-compress/jars/commons-compress-1.5.0.jar $KAMANJALIBPATH
 cp $HOME/.ivy2/cache/org.apache.commons/commons-math3/jars/commons-math3-3.1.1.jar $KAMANJALIBPATH
 cp $HOME/.ivy2/cache/org.apache.hadoop/hadoop-annotations/jars/hadoop-annotations-2.4.1.jar $KAMANJALIBPATH
 cp $HOME/.ivy2/cache/org.apache.hadoop/hadoop-auth/jars/hadoop-auth-2.4.1.jar $KAMANJALIBPATH

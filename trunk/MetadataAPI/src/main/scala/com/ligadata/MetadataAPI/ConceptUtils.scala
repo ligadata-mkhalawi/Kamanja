@@ -82,6 +82,9 @@ object ConceptUtils {
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
   lazy val serializer = SerializerManager.GetSerializer("kryo")
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   def DumpAttributeDef(attrDef: AttributeDef) {
     logger.debug("NameSpace => " + attrDef.nameSpace)
@@ -94,7 +97,7 @@ object ConceptUtils {
     val dispkey = attributeDef.FullName + "." + MdMgr.Pad0s2Version(attributeDef.Version)
     try {
       MetadataAPIImpl.SaveObject(attributeDef, MdMgr.GetMdMgr)
-      MetadataAPIImpl.UpdateTranId(Array(attributeDef))
+      getMetadataAPI.UpdateTranId(Array(attributeDef))
       var apiResult = new ApiResult(ErrorCodeConstants.Success, "AddConcept", null, ErrorCodeConstants.Add_Concept_Successful + ":" + dispkey)
       apiResult.toString()
     } catch {
@@ -111,7 +114,7 @@ object ConceptUtils {
     var key = concept.nameSpace + ":" + concept.name
     val dispkey = key // Not looking version at this moment
     try {
-      MetadataAPIImpl.DeleteObject(concept)
+      getMetadataAPI.DeleteObject(concept)
       var apiResult = new ApiResult(ErrorCodeConstants.Success, "RemoveConcept", null, ErrorCodeConstants.Remove_Concept_Successful + ":" + dispkey)
       apiResult.toString()
     } catch {
@@ -125,7 +128,7 @@ object ConceptUtils {
 
   def RemoveConcept(key: String, userid: Option[String]): String = {
     try {
-      if (userid != None) MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.DELETEOBJECT, AuditConstants.FUNCTION, AuditConstants.SUCCESS, "", key)
+      if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.DELETEOBJECT, AuditConstants.FUNCTION, AuditConstants.SUCCESS, "", key)
       val c = MdMgr.GetMdMgr.Attributes(key, false, false)
       c match {
         case None =>
@@ -136,7 +139,7 @@ object ConceptUtils {
         case Some(cs) =>
           val conceptArray = cs.toArray
           conceptArray.foreach(concept => {
-            MetadataAPIImpl.DeleteObject(concept)
+            getMetadataAPI.DeleteObject(concept)
           })
           var apiResult = new ApiResult(ErrorCodeConstants.Success, "RemoveConcept", null, ErrorCodeConstants.Remove_Concept_Successful + ":" + key) //JsonSerializer.SerializeObjectListToJson(conceptArray))
           apiResult.toString()
@@ -152,7 +155,7 @@ object ConceptUtils {
 
   def RemoveConcept(nameSpace: String, name: String, version: Long, userid: Option[String]): String = {
     val dispkey = nameSpace + "." + name + "." + MdMgr.Pad0s2Version(version)
-    if (userid != None) MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.DELETEOBJECT, AuditConstants.CONCEPT, AuditConstants.SUCCESS, "", dispkey)
+    if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.DELETEOBJECT, AuditConstants.CONCEPT, AuditConstants.SUCCESS, "", dispkey)
     try {
       val c = MdMgr.GetMdMgr.Attribute(nameSpace, name, version, true)
       c match {
@@ -163,10 +166,10 @@ object ConceptUtils {
           apiResult.toString()
         case Some(cs) =>
           val concept = cs.asInstanceOf[AttributeDef]
-          MetadataAPIImpl.DeleteObject(concept)
+          getMetadataAPI.DeleteObject(concept)
 
-          concept.tranId = MetadataAPIImpl.GetNewTranId
-          MetadataAPIImpl.UpdateTranId(Array(concept))
+          concept.tranId = getMetadataAPI.GetNewTranId
+          getMetadataAPI.UpdateTranId(Array(concept))
 
           var apiResult = new ApiResult(ErrorCodeConstants.Success, "RemoveConcept", null, ErrorCodeConstants.Remove_Concept_Successful + ":" + dispkey) //JsonSerializer.SerializeObjectListToJson(concept))
           apiResult.toString()
@@ -189,7 +192,7 @@ object ConceptUtils {
         apiResult.toString()
       } else {
         var concept = JsonSerializer.parseDerivedConcept(conceptsText, format)
-	// MetadataAPIImpl.SaveObject(concept, MdMgr.GetMdMgr)
+	// getMetadataAPI.SaveObject(concept, MdMgr.GetMdMgr)
         var apiResult = new ApiResult(ErrorCodeConstants.Success, "AddDerivedConcept", null, ErrorCodeConstants.Add_Concept_Successful + ":" + conceptsText)
         apiResult.toString()
       }
@@ -213,11 +216,11 @@ object ConceptUtils {
         var concepts = new ArrayBuffer[BaseElemDef]
         conceptList.foreach(concept => {
           //logger.debug("Save concept object " + JsonSerializer.SerializeObjectToJson(concept))
-          MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, conceptsText, AuditConstants.SUCCESS, "", concept.FullNameWithVer)
-          MetadataAPIImpl.SaveObject(concept, MdMgr.GetMdMgr)
+          getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, conceptsText, AuditConstants.SUCCESS, "", concept.FullNameWithVer)
+          getMetadataAPI.SaveObject(concept, MdMgr.GetMdMgr)
           concepts +=concept
         })
-        MetadataAPIImpl.UpdateTranId(concepts.toArray)
+        getMetadataAPI.UpdateTranId(concepts.toArray)
 
         var apiResult = new ApiResult(ErrorCodeConstants.Success, "AddConcepts", null, ErrorCodeConstants.Add_Concept_Successful + ":" + conceptsText)
         apiResult.toString()
@@ -288,7 +291,7 @@ object ConceptUtils {
       } else {
         var conceptList = JsonSerializer.parseConceptList(conceptsText, "JSON")
         conceptList.foreach(concept => {
-          MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.UPDATEOBJECT, conceptsText, AuditConstants.SUCCESS, "", concept.FullNameWithVer)
+          getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.UPDATEOBJECT, conceptsText, AuditConstants.SUCCESS, "", concept.FullNameWithVer)
           UpdateConcept(concept)
         })
         var apiResult = new ApiResult(ErrorCodeConstants.Success, "UpdateConcepts", null, ErrorCodeConstants.Update_Concept_Successful + ":" + conceptsText)
@@ -307,7 +310,7 @@ object ConceptUtils {
   def RemoveConcepts(concepts: Array[String], userid: Option[String]): String = {
     val json = ("ConceptList" -> concepts.toList)
     val jsonStr = pretty(render(json))
-    //  MetadataAPIImpl.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.UPDATEOBJECT,AuditConstants.CONCEPT,AuditConstants.SUCCESS,"",concepts.mkString(",")) 
+    //  getMetadataAPI.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.UPDATEOBJECT,AuditConstants.CONCEPT,AuditConstants.SUCCESS,"",concepts.mkString(","))
     try {
       concepts.foreach(c => {
         RemoveConcept(c, None)
@@ -327,7 +330,7 @@ object ConceptUtils {
   def GetAllConcepts(formatType: String, userid: Option[String]): String =
   {
     try {
-      if (userid != None) MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, AuditConstants.CONCEPT, AuditConstants.SUCCESS, "", "ALL")
+      if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, AuditConstants.CONCEPT, AuditConstants.SUCCESS, "", "ALL")
       val concepts = MdMgr.GetMdMgr.Attributes(true, true)
       concepts match {
         case None =>
@@ -351,7 +354,7 @@ object ConceptUtils {
 
   def GetAllConceptsFromCache(active: Boolean, userid: Option[String]): Array[String] = {
     var conceptList: Array[String] = new Array[String](0)
-    MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETKEYS, AuditConstants.CONCEPT, AuditConstants.SUCCESS, "", AuditConstants.CONCEPT)
+    getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETKEYS, AuditConstants.CONCEPT, AuditConstants.SUCCESS, "", AuditConstants.CONCEPT)
     try {
       val contDefs = MdMgr.GetMdMgr.Attributes(active, true)
       contDefs match {
@@ -409,11 +412,11 @@ object ConceptUtils {
 
   // A single concept as a string using name and version as the key
   def GetConceptDef(nameSpace: String, objectName: String, formatType: String, version: String, userid: Option[String]): String = {
-    MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, AuditConstants.CONCEPT, AuditConstants.SUCCESS, "", nameSpace + "." + objectName + "." + version)
+    getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, AuditConstants.CONCEPT, AuditConstants.SUCCESS, "", nameSpace + "." + objectName + "." + version)
     GetConcept(nameSpace, objectName, version, formatType)
   }
 
-  // A list of concept(s) as a string using name 
+  // A list of concept(s) as a string using name
   def GetConcept(objectName: String, formatType: String): String = {
     try {
       val concepts = MdMgr.GetMdMgr.Attributes(MdMgr.sysNS, objectName, false, false)
@@ -531,10 +534,10 @@ object ConceptUtils {
     try {
       val obj = PersistenceUtils.GetObject(key.toLowerCase, "concepts")
       val cont:BaseElem = serializer.DeserializeObjectFromByteArray(obj._2.asInstanceOf[Array[Byte]]).asInstanceOf[BaseElem]
-      MetadataAPIImpl.AddObjectToCache(cont.asInstanceOf[AttributeDef], MdMgr.GetMdMgr)
+      getMetadataAPI.AddObjectToCache(cont.asInstanceOf[AttributeDef], MdMgr.GetMdMgr)
     } catch {
       case e: Exception => {
-        
+
         logger.debug("", e)
       }
     }

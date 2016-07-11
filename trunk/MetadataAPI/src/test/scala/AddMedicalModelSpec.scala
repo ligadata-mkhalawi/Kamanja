@@ -263,8 +263,7 @@ class AddMedicalModelSpec extends FunSpec with LocalTestFixtures with BeforeAndA
       assert(null != sc)
     }
 
-    // CRUD operations on container objects
-    it("Container Tests") {
+    it("Add Medical Model Containers") {
       And("Check whether CONTAINER_FILES_DIR defined as property")
       dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CONTAINER_FILES_DIR")
       assert(null != dirName)
@@ -299,20 +298,19 @@ class AddMedicalModelSpec extends FunSpec with LocalTestFixtures with BeforeAndA
 
 	And("AddContainer from " + file.getPath)
 	contStr = Source.fromFile(file).mkString
-	res = MetadataAPIImpl.AddContainer(contStr, "JSON", None, tenantId)
+	res = MetadataAPIImpl.AddContainer(contStr, "JSON", None, tenantId,None)
 	res should include regex ("\"Status Code\" : 0")
 
 	And("GetContainerDef API to fetch the container that was just added")
 	var objName = f1.stripSuffix(".json").toLowerCase
 	var version = "0000000000001000000"
-	res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", version, None)
+	res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", version, None,None)
 	res should include regex ("\"Status Code\" : 0")
 
       })
     }
 
-    // CRUD operations on message objects
-    it("Message Tests") {
+    it("Add Medical Model Messages") {
       And("Check whether MESSAGE_FILES_DIR defined as property")
       dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MESSAGE_FILES_DIR")
       assert(null != dirName)
@@ -328,9 +326,7 @@ class AddMedicalModelSpec extends FunSpec with LocalTestFixtures with BeforeAndA
       val msgFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith(".json"))
       assert(0 != msgFiles.length)
 
-      fileList = List("outpatientclaim.json","inpatientclaim.json","hl7.json","beneficiary.json")
-      //fileList = List("HelloWorld_Msg_Def.json","HelloWorld_Msg_Output_Def.json")
-      //fileList = List("HelloWorld_Msg_Def.json","HelloWorld_Msg_Def_2.json","HelloWorld_Msg_Def_3.json","HelloWorld_Out_Msg_Def_1.json")
+      fileList = List("outpatientclaim.json","inpatientclaim.json","hl7.json","beneficiary.json","COPDInputMessage.json","COPDOutputMessage.json")
       fileList.foreach(f1 => {
 	And("Add the Message From " + f1)
 	And("Make Sure " + f1 + " exist")
@@ -349,18 +345,18 @@ class AddMedicalModelSpec extends FunSpec with LocalTestFixtures with BeforeAndA
 
 	And("AddMessage first time from " + file.getPath)
 	var msgStr = Source.fromFile(file).mkString
-	res = MetadataAPIImpl.AddMessage(msgStr, "JSON", None,tenantId)
+	res = MetadataAPIImpl.AddMessage(msgStr, "JSON", None,tenantId,None)
 	res should include regex ("\"Status Code\" : 0")
 
 	And("GetMessageDef API to fetch the message that was just added")
 	var objName = f1.stripSuffix(".json").toLowerCase
 	var version = "0000000000001000000"
-	res = MetadataAPIImpl.GetMessageDef("com.ligadata.kamanja.samples.messages", objName, "JSON", version, None)
+	res = MetadataAPIImpl.GetMessageDef("com.ligadata.kamanja.samples.messages", objName, "JSON", version, None,None)
 	res should include regex ("\"Status Code\" : 0")
       })
     }
 
-    it("Add Model Config Object in preparation for adding scala source models") {
+    it("Add Medical Model Config Object in preparation for adding scala source models") {
       And("Check whether CONFIG_FILES_DIR defined as property")
       dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CONFIG_FILES_DIR")
       assert(null != dirName)
@@ -412,11 +408,11 @@ class AddMedicalModelSpec extends FunSpec with LocalTestFixtures with BeforeAndA
 	assert(dependencies.length == 0) 
 
 	var msgsAndContainers = MetadataAPIImpl.getModelMessagesContainers(userid.get + "." + cfgName,userid)
-	assert(msgsAndContainers.length == 9) 
+	assert(msgsAndContainers.length == 8) 
       })
     }
 
-    it("Add Java Models") {
+    it("Add Medical Java Models") {
       And("Check whether MODEL_FILES_DIR defined as property")
       dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
       assert(null != dirName)
@@ -462,6 +458,7 @@ class AddMedicalModelSpec extends FunSpec with LocalTestFixtures with BeforeAndA
 				       None,   // optMsgConsumed
 				       None,   // optMsgVersion
 				       //Some("system.helloworld_msg_output_def") // optMsgProduced
+				       None,
 				       None
 				     )
 	res should include regex ("\"Status Code\" : 0")
@@ -476,10 +473,12 @@ class AddMedicalModelSpec extends FunSpec with LocalTestFixtures with BeforeAndA
 	res = MetadataAPIImpl.GetModelDef(nameSpace, objName, "XML", version, userid)
 	res should include regex ("\"Status Code\" : 0")
 
-	And("Check whether default outmsg has been created")
-	val msgName = objName + "_outputmsg"
-	version = "000000000000000001"
-	res = MetadataAPIImpl.GetMessageDef(nameSpace, msgName, "JSON", version, userid)
+
+	And("Check whether outmsg has been created")
+	val msgNameSpace = "com.ligadata.kamanja.samples.messages"
+	val msgName = "COPDOutputMessage"
+	version = "0000000000001000000"
+	res = MetadataAPIImpl.GetMessageDef(msgNameSpace, msgName, "JSON", version, userid,tenantId)
 	res should include regex ("\"Status Code\" : 0")
 
 	val modDefs = MdMgr.GetMdMgr.Models(nameSpace, objName, true, true)
@@ -488,12 +487,6 @@ class AddMedicalModelSpec extends FunSpec with LocalTestFixtures with BeforeAndA
 	val models = modDefs.get.toArray
 	assert(models.length == 1)
 	
-	And("Validate contents of default outmsg")
-	var omsgs = models(0).outputMsgs
-	assert(omsgs.length == 1)
-	val msgFullName = nameSpace + "." + msgName
-	assert(omsgs(0) == msgFullName.toLowerCase)
-
 	// there should be two sets in this test
 	And("Validate contents of inputMsgSets")
 	var imsgs = models(0).inputMsgSets
@@ -518,12 +511,12 @@ class AddMedicalModelSpec extends FunSpec with LocalTestFixtures with BeforeAndA
 	var cfgName = "COPDRiskAssessment"
 
 	And("Validate contents of outputMsgSets")
-	omsgs = models(0).outputMsgs
+	var omsgs = models(0).outputMsgs
 	assert(omsgs.length == 1)
 
 	var omsg = omsgs(0)
 	assert(omsg != null)
-	assert(omsg.equalsIgnoreCase("com.ligadata.kamanja.samples.models.copdriskassessment_outputmsg"))
+	assert(omsg.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.COPDOutputMessage"))
 
 	And("Validate the ModelDef.modelConfig")
 	modStr = models(0).modelConfig
@@ -541,7 +534,7 @@ class AddMedicalModelSpec extends FunSpec with LocalTestFixtures with BeforeAndA
 	assert(dependencies.length == 0) 
 
 	var msgsAndContainers = MetadataAPIImpl.getModelMessagesContainers(userid.get + "." + cfgName,userid)
-	assert(msgsAndContainers.length == 9)
+	assert(msgsAndContainers.length == 8)
 
 	msgsAndContainers.foreach(message => {
 	  logger.info("message =>  " + message)

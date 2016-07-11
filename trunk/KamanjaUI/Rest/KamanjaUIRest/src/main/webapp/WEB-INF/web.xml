@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<web-app version="2.5" xmlns="http://java.sun.com/xml/ns/javaee"
+	xsi="http://www.w3.org/2001/XMLSchema-instance"
+	schemalocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd">
+    <filter>
+        <filter-name>CrossOrigin</filter-name>
+        <display-name>CrossOrigin</display-name>
+        <description></description>
+        <filter-class>com.ligadata.filter.CrossOrigin</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>CrossOrigin</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+    
+	<listener>
+		<listener-class>com.ligadata.listener.AppContextListener
+		</listener-class>
+	</listener>
+	<context-param>
+		<param-name>PropFile</param-name>
+		<param-value>config.properties</param-value>
+	</context-param>
+
+	<servlet>
+		<servlet-name>jersey-serlvet</servlet-name>
+		<servlet-class>
+			com.sun.jersey.spi.container.servlet.ServletContainer
+		</servlet-class>
+		<init-param>
+			<param-name>com.sun.jersey.config.property.packages</param-name>
+			<param-value>com.ligadata.KamanjaUI</param-value>
+		</init-param>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>jersey-serlvet</servlet-name>
+		<url-pattern>/*</url-pattern>
+	</servlet-mapping>
+
+	<resource-ref>
+		<description>DB Connection</description>
+		<res-ref-name>jdbc/KamanjaUI</res-ref-name>
+		<res-type>javax.sql.DataSource</res-type>
+		<res-auth>Container</res-auth>
+	</resource-ref>
+
+</web-app>

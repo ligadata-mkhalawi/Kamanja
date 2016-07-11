@@ -32,13 +32,16 @@ object ConfigService {
   private val userid: Option[String] = Some("kamanja")
   val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Chagne ends
 
  def uploadClusterConfig(input: String): String ={
    var response = ""
    var configFileDir: String = ""
    //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
    if (input == "") {
-     configFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CONFIG_FILES_DIR")
+     configFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONFIG_FILES_DIR")
      if (configFileDir == null) {
        response = "CONFIG_FILES_DIR property missing in the metadata API configuration"
      } else {
@@ -55,7 +58,7 @@ object ConfigService {
              case option => {
                val configDefs = getUserInputFromMainMenu(types)
                for (configDef <- configDefs) {
-                 response += MetadataAPIImpl.UploadConfig(configDef.toString, userid, "configuration")
+                 response += getMetadataAPI.UploadConfig(configDef.toString, userid, "configuration")
                }
              }
            }
@@ -70,7 +73,7 @@ object ConfigService {
      //input provided
      var message = new File(input.toString)
      val configDef = Source.fromFile(message).mkString
-     response = MetadataAPIImpl.UploadConfig(configDef.toString, userid, "configuration")
+     response = getMetadataAPI.UploadConfig(configDef.toString, userid, "configuration")
    }
    response
  }
@@ -80,7 +83,7 @@ object ConfigService {
     var configFileDir: String = ""
     //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
     if (input == "") {
-      configFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CONFIG_FILES_DIR")
+      configFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONFIG_FILES_DIR")
       if (configFileDir == null) {
         response = "CONFIG_FILES_DIR property missing in the metadata API configuration"
       } else {
@@ -97,7 +100,7 @@ object ConfigService {
               case option => {
                 val configDefs = getUserInputFromMainMenu(types)
                 for (configDef <- configDefs) {
-                  response += MetadataAPIImpl.UploadModelsConfig(configDef.toString, userid, "configuration")
+                  response += getMetadataAPI.UploadModelsConfig(configDef.toString, userid, "configuration")
                 }
               }
             }
@@ -112,14 +115,14 @@ object ConfigService {
       //input provided
       var message = new File(input.toString)
       val configDef = Source.fromFile(message).mkString
-      response = MetadataAPIImpl.UploadModelsConfig(configDef.toString, userid, "configuration")
+      response = getMetadataAPI.UploadModelsConfig(configDef.toString, userid, "configuration")
     }
     response
   }
   def dumpAllCfgObjects: String ={
     var response=""
     try{
-      response= MetadataAPIImpl.GetAllCfgObjects("JSON", userid)
+      response= getMetadataAPI.GetAllCfgObjects("JSON", userid)
     }
     catch {
       case e: Exception => {
@@ -135,7 +138,7 @@ object ConfigService {
     var configFileDir: String = ""
     //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
     if (input == "") {
-      configFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CONFIG_FILES_DIR")
+      configFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONFIG_FILES_DIR")
       if (configFileDir == null) {
         response = "CONFIG_FILES_DIR property missing in the metadata API configuration"
       } else {
@@ -152,7 +155,7 @@ object ConfigService {
               case option => {
                 val configDefs = getUserInputFromMainMenu(types)
                 for (configDef <- configDefs) {
-                  response += MetadataAPIImpl.RemoveConfig (configDef, userid, "adapter")
+                  response += getMetadataAPI.RemoveConfig (configDef, userid, "adapter")
                 }
               }
             }
@@ -167,7 +170,8 @@ object ConfigService {
       //input provided
       var message = new File(input.toString)
       val configDef = Source.fromFile(message).mkString
-      response = MetadataAPIImpl.UploadModelsConfig(configDef.toString, userid, "configuration")
+      response = getMetadataAPI.RemoveConfig (configDef.toString, userid, "adapter")
+      
     }
     response
   }

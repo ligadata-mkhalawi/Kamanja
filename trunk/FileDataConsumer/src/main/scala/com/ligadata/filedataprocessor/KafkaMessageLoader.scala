@@ -70,6 +70,117 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
   props.put(org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.ByteArraySerializer")
   props.put("request.required.acks",inConfiguration.getOrElse(SmartFileAdapterConstants.KAFKA_ACK, "0"))
 
+  // Add all the new security paramterst
+  val secProt = inConfiguration.getOrElse(SmartFileAdapterConstants.SEC_PROTOCOL, "").toString
+  if (secProt.length > 0 ||
+       !secProt.equalsIgnoreCase("plaintext")) {
+
+    props.put(SmartFileAdapterConstants.SEC_PROTOCOL, secProt)
+
+    // SSL_KEY_PASSWORD
+    val sslkeypassword = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_KEY_PASSWORD, "").toString
+    if (sslkeypassword.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_KEY_PASSWORD, sslkeypassword)
+
+    // SSL_KEYSTORE_PASSWORD
+    val sslkeystorepassword = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_KEYSTORE_PASSWORD, "").toString
+    if (sslkeystorepassword.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_KEYSTORE_PASSWORD, sslkeystorepassword)
+
+    // SSL_KEYSTORE_LOCATION
+    val sslkeystorelocation = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_KEYSTORE_LOCATION, "").toString
+    if (sslkeystorelocation.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_KEYSTORE_LOCATION, sslkeystorelocation)
+
+    // SSL_KEYSTORE_TYPE
+    val sslkeystoretype = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_KEYSTORE_TYPE, "").toString
+    if (sslkeystoretype.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_KEYSTORE_TYPE, sslkeystoretype)
+
+    //SSL_TRUSTSTORE_PASSWORD
+    val ssltruststorepassword = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_TRUSTSTORE_PASSWORD, "").toString
+    if (ssltruststorepassword.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_TRUSTSTORE_PASSWORD, ssltruststorepassword)
+
+    //SSL_TRUSTSTORE_LOCATION
+    val ssltruststorelocation = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_TRUSTSTORE_LOCATION, "").toString
+    if (ssltruststorelocation.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_TRUSTSTORE_LOCATION, ssltruststorelocation)
+
+    //SSL_TRUSTSTORE_TYPE
+    val ssltruststoretype  = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_TRUSTSTORE_TYPE, "").toString
+    if (ssltruststoretype.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_TRUSTSTORE_TYPE, ssltruststoretype)
+
+    //SSL_ENABLED_PROTOCOLS
+    val sslenabledprotocols = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_ENABLED_PROTOCOLS, "").toString
+    if (sslenabledprotocols.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_ENABLED_PROTOCOLS, sslenabledprotocols)
+
+    //SSL_PROTOCOL
+    val sslprotocol = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_PROTOCOL, "").toString
+    if (sslprotocol.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_PROTOCOL, sslprotocol)
+
+    // SSL_PROVIDER
+    val sslprovider = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_PROVIDER, "").toString
+    if (sslprovider.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_PROVIDER, sslprovider)
+
+    // SSL_CIPHER_SUITES
+    val sslciphersuites = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_CIPHER_SUITES, "").toString
+    if (sslciphersuites.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_CIPHER_SUITES, sslciphersuites)
+
+    //SSL_ENDPOINT_IDENTIFICATION_ALGORITHM
+    val sslendpointidentificationalgorithm = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM, "").toString
+    if (sslendpointidentificationalgorithm.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM, sslendpointidentificationalgorithm)
+
+    // SSL_KEYMANAGER_ALGORITHM
+    val sslkeymanageralgorithm = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_KEYMANAGER_ALGORITHM, "").toString
+    if (sslkeymanageralgorithm.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_KEYMANAGER_ALGORITHM, sslkeymanageralgorithm)
+
+    // SSL_TRUSTMANAGER_ALGORITHM
+    val ssltrustmanageralgorithm = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_TRUSTMANAGER_ALGORITHM, "").toString
+    if (ssltrustmanageralgorithm.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_TRUSTMANAGER_ALGORITHM, ssltrustmanageralgorithm)
+
+    //SASL_KERBEROS_SERVICE_NAME
+    val saslkerberosservicename = inConfiguration.getOrElse(SmartFileAdapterConstants.SASL_KERBEROS_SERVICE_NAME, "").toString
+    if (saslkerberosservicename.length > 0)
+      props.put(SmartFileAdapterConstants.SASL_KERBEROS_SERVICE_NAME, saslkerberosservicename)
+
+    //SASL_KERBEROS_KINIT_CMD
+    val saslkerberoskinitcmd = inConfiguration.getOrElse(SmartFileAdapterConstants.SASL_KERBEROS_KINIT_CMD, "").toString
+    if (saslkerberoskinitcmd.length > 0)
+      props.put(SmartFileAdapterConstants.SASL_KERBEROS_KINIT_CMD, saslkerberoskinitcmd)
+
+    // SASL_MIN_TIME_BEFORE_RELOGIN
+    val saslmintimebeforerelogic = inConfiguration.getOrElse(SmartFileAdapterConstants.SASL_MIN_TIME_BEFORE_RELOGIN, "").toString
+    if (saslmintimebeforerelogic.length > 0)
+      props.put(SmartFileAdapterConstants.SASL_MIN_TIME_BEFORE_RELOGIN, saslmintimebeforerelogic)
+
+    // SASL_MECHANISM
+    val saslmechanism = inConfiguration.getOrElse(SmartFileAdapterConstants.SASL_MECHANISM, "").toString
+    if (saslmechanism.length > 0)
+      props.put(SmartFileAdapterConstants.SASL_MECHANISM, saslmechanism)
+
+    // SASL_KERBEROS_TICKET_RENEW_JITER
+    val saslkerberosticketrenewjiter = inConfiguration.getOrElse(SmartFileAdapterConstants.SASL_KERBEROS_TICKET_RENEW_JITER, "").toString
+    if (saslkerberosticketrenewjiter.length > 0)
+      props.put(SmartFileAdapterConstants.SASL_KERBEROS_TICKET_RENEW_JITER, saslkerberosticketrenewjiter)
+
+    //SASL_KERBEROS_TICKET_RENEW_WINDOW_FACTOR
+    val saslkerberosticketrenewwindowfactor = inConfiguration.getOrElse(SmartFileAdapterConstants.SASL_KERBEROS_TICKET_RENEW_WINDOW_FACTOR, "").toString
+    if (saslkerberosticketrenewwindowfactor.length > 0)
+      props.put(SmartFileAdapterConstants.SASL_KERBEROS_TICKET_RENEW_WINDOW_FACTOR, saslkerberosticketrenewwindowfactor)
+  }
+
+
+
+
   // create the producer object
  // val producer = new KafkaProducer[Array[Byte], Array[Byte]](new ProducerConfig(props))
   val producer = new KafkaProducer[Array[Byte], Array[Byte]](props)
@@ -468,10 +579,10 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
       logger.info("SMART FILE CONSUMER ("+partIdx+") Moving File" + fileName + " to " + inConfiguration(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO))
       Files.move(Paths.get(fileName), Paths.get( inConfiguration(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO) + "/" + fileStruct(fileStruct.size - 1)),REPLACE_EXISTING)
       
-      //Use the full filename 
+      //Use the full filename
+      FileProcessor.removeFromZK(fileName)
       FileProcessor.markFileProcessingEnd(fileName)
       FileProcessor.fileCacheRemove(fileName)
-      FileProcessor.removeFromZK(fileName)
        
     } catch {
       case ioe: IOException => {
