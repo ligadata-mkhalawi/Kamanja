@@ -50,4 +50,27 @@ object SmartFileAdapterConstants {
 
   val DESERIALIZERNAME = "deserializerName"
   val DESERIALIZEROPTIONSJSON = "deserializerOptionsJson"
+
+  // Security constants
+  val SEC_PROTOCOL = "security.protocol"
+  val SSL_KEY_PASSWORD = "ssl.key.password"
+  val SSL_KEYSTORE_PASSWORD = "ssl.keystore.password"
+  val SSL_KEYSTORE_LOCATION = "ssl.keystore.location"
+  val SSL_KEYSTORE_TYPE = "ssl.keystore.type"
+  val SSL_TRUSTSTORE_PASSWORD = "ssl.truststore.password"
+  val SSL_TRUSTSTORE_LOCATION = "ssl.truststore.location"
+  val SSL_TRUSTSTORE_TYPE = "ssl.truststore.type"
+  val SSL_ENABLED_PROTOCOLS = "ssl.enabled.protocols"
+  val SSL_PROTOCOL = "ssl.protocol"
+  val SSL_PROVIDER = "ssl.provider"
+  val SSL_CIPHER_SUITES = "ssl.cipher.suites"
+  val SSL_ENDPOINT_IDENTIFICATION_ALGORITHM = "ssl.endpoint.identification.algorithm"
+  val SSL_KEYMANAGER_ALGORITHM = "ssl.keymanager.algorithm"
+  val SSL_TRUSTMANAGER_ALGORITHM = "ssl.trust.manager.algorithm"
+  val SASL_KERBEROS_SERVICE_NAME = "sasl.kerberos.service.name"
+  val SASL_KERBEROS_KINIT_CMD = "sasl.kerberos.kinit.cmd"
+  val SASL_MIN_TIME_BEFORE_RELOGIN = "sasl.min.time.before.relogin"
+  val SASL_MECHANISM = "sasl.mechanism"
+  val SASL_KERBEROS_TICKET_RENEW_JITER = "sasl.kerberos.ticket.renew.jiter"
+  val SASL_KERBEROS_TICKET_RENEW_WINDOW_FACTOR = "sasl.kerberos.ticket.renew.window.factor"
 }
