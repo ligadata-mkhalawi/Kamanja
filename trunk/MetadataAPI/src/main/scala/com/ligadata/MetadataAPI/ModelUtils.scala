@@ -520,8 +520,8 @@ object ModelUtils {
             , input
             , optUserid
             , tenantId.get
-            , optMsgProduced,
-          pStr)
+            , optMsgProduced
+            , pStr)
           res
         } else {
           val inputRep: String = if (input != null && input.size > 200) input.substring(0, 199)
@@ -539,7 +539,16 @@ object ModelUtils {
         val msgConsumed: String = optMsgConsumed.orNull
         val msgVer: String = optMsgVersion.getOrElse("-1")
         val result: String = if (modelName != null && version != null && msgConsumed != null) {
-          val res: String = AddPYTHONModel(modelName, version, msgConsumed, msgVer, input, optUserid, tenantId.get, optMsgProduced, pStr, modelOptions)
+          val res: String = AddPYTHONModel(modelName
+                                          , version
+                                          , msgConsumed
+                                          , msgVer
+                                          , input
+                                          , optUserid
+                                          , tenantId.get
+                                          , optMsgProduced
+                                          , pStr
+                                          , modelOptions)
           res
         } else {
           val inputRep: String = if (input != null && input.size > 200) input.substring(0, 199)
@@ -557,7 +566,16 @@ object ModelUtils {
         val msgConsumed: String = optMsgConsumed.orNull
         val msgVer: String = optMsgVersion.getOrElse("-1")
         val result: String = if (modelName != null && version != null && msgConsumed != null) {
-          val res: String = AddJYTHONModel(modelName, version, msgConsumed, msgVer, input, optUserid, tenantId.get, optMsgProduced, pStr, modelOptions)
+          val res: String = AddJYTHONModel(modelName
+                                          , version
+                                          , msgConsumed
+                                          , msgVer
+                                          , input
+                                          , optUserid
+                                          , tenantId.get
+                                          , optMsgProduced
+                                          , pStr
+                                          , modelOptions)
           res
         } else {
           val inputRep: String = if (input != null && input.size > 200) input.substring(0, 199)
@@ -707,7 +725,16 @@ object ModelUtils {
    * @param someModelOptions model specific options used by model instance initialization
    * @return json string result
    */
-  private def AddPYTHONModel(modelName: String, version: String, msgConsumed: String, msgVersion: String, srcText: String, userid: Option[String], tenantId: String, optMsgProduced: Option[String], pStr : Option[String], someModelOptions: Option[String]): String = {
+  private def AddPYTHONModel(modelName: String
+                             , version: String
+                             , msgConsumed: String
+                             , msgVersion: String
+                             , srcText: String
+                             , userid: Option[String]
+                             , tenantId: String
+                             , optMsgProduced: Option[String]
+                             , pStr : Option[String]
+                             , someModelOptions: Option[String]): String = {
     try {
       val buffer: StringBuilder = new StringBuilder
 
@@ -726,7 +753,21 @@ object ModelUtils {
       val ownerId: String = if (userid == None) "kamanja" else userid.get
       val modelOptions : String = someModelOptions.getOrElse("{}")
 
-      val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, moduleName, modelNmSpace, modelNm, version, msgNamespace, msgName, msgVersion, srcText, ownerId, tenantId, optMsgProduced, pStr, modelOptions, getMetadataAPI.GetMetadataAPIConfig)
+      val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr
+                                                                  , moduleName
+                                                                  , modelNmSpace
+                                                                  , modelNm
+                                                                  , version
+                                                                  , msgNamespace
+                                                                  , msgName
+                                                                  , msgVersion
+                                                                  , srcText
+                                                                  , ownerId
+                                                                  , tenantId
+                                                                  , optMsgProduced
+                                                                  , pStr
+                                                                  , modelOptions
+                                                                  , getMetadataAPI.GetMetadataAPIConfig)
       val recompile: Boolean = false
       val isPython: Boolean = true // when false JYTHON
       var modDef: ModelDef = pythonMdlSupport.CreateModel(recompile, isPython)
@@ -829,10 +870,25 @@ object ModelUtils {
       val ownerId: String = if (userid == None) "kamanja" else userid.get
       val modelOptions : String = someModelOptions.getOrElse("{}")
 
-      val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, moduleName, modelNmSpace, modelNm, version, msgNamespace, msgName, msgVersion, srcText, ownerId, tenantId, optMsgProduced, pStr, modelOptions, getMetadataAPI.GetMetadataAPIConfig)
+      val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr
+                                                                  , moduleName
+                                                                  , modelNmSpace
+                                                                  , modelNm
+                                                                  , version
+                                                                  , msgNamespace
+                                                                  , msgName
+                                                                  , msgVersion
+                                                                  , srcText
+                                                                  , ownerId
+                                                                  , tenantId
+                                                                  , optMsgProduced
+                                                                  , pStr
+                                                                  , modelOptions
+                                                                  , getMetadataAPI.GetMetadataAPIConfig)
       val recompile: Boolean = false
       val isPython: Boolean = true // when false JYTHON
-      var modDef: ModelDef = pythonMdlSupport.CreateModel(recompile, ! isPython)
+      val isJython: Boolean = ! isPython
+      var modDef: ModelDef = pythonMdlSupport.CreateModel(recompile, isJython)
 
       /*
        * For testing purpose call the Make Model and just create temp model def ...

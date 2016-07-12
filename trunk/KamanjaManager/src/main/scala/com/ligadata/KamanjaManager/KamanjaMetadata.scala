@@ -42,7 +42,9 @@ import com.ligadata.MetadataAPI.MetadataAPIImpl
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import com.ligadata.Utils.{KamanjaClassLoader, KamanjaLoaderInfo, Utils}
-import org.json4s.jackson.JsonMethods._
+import org.json4s._
+import org.json4s.native.JsonMethods._
+
 
 import scala.actors.threadpool.{ExecutorService, Executors}
 import scala.collection.immutable.Map
@@ -473,6 +475,9 @@ class KamanjaMetadata(var envCtxt: EnvContext) {
       * that are being managed by the engine on a given Kamanja cluster node... available in the node context properties.
       *
       * Information is picked out of the Kamanja configuration information.
+      *
+      * import org.json4s._
+      * import org.json4s.native.JsonMethods._
       */
     val PYTHON_CONFIG : String = "python_config"
     val ROOT_DIR : String = "root_dir"
@@ -481,10 +486,11 @@ class KamanjaMetadata(var envCtxt: EnvContext) {
         val pythonPropertiesStr : String = properties.getProperty(PYTHON_CONFIG)
         if (pythonPropertiesStr != null) {
             implicit val formats = org.json4s.DefaultFormats
-            val pyPropertyMap : Map[String, Any] = parse(pythonPropertiesStr).extract[Map[String, Any]]
+            //val pyPropertyMap : Map[String, Any] = parse(pythonPropertiesStr).extract[Map[String, Any]]
+            val pyPropertyMap : Map[String,Any] = parse(pythonPropertiesStr).values.asInstanceOf[Map[String,Any]]
             var pyPath : String = pyPropertyMap.getOrElse("PYTHON_PATH", "").asInstanceOf[String]
-            val pySrvStartPort : Int = pyPropertyMap.getOrElse("SERVER_BASE_PORT", "8100").asInstanceOf[Int]
-            val pySrvMaxSrvrs : Int = pyPropertyMap.getOrElse("SERVER_NODE_LIMIT", "20").asInstanceOf[Int]
+            val pySrvStartPort : Int = pyPropertyMap.getOrElse("SERVER_BASE_PORT", 8100).asInstanceOf[scala.math.BigInt].toInt
+            val pySrvMaxSrvrs : Int = pyPropertyMap.getOrElse("SERVER_NODE_LIMIT", 20).asInstanceOf[scala.math.BigInt].toInt
             val host : String = pyPropertyMap.getOrElse("SERVER_HOST", "localhost").asInstanceOf[String]
             var loggerConfigPath : String = pyPropertyMap.getOrElse("PYTHON_LOG_CONFIG_PATH", "").asInstanceOf[String]
             var logFilePath : String = pyPropertyMap.getOrElse("PYTHON_LOG_PATH", "").asInstanceOf[String]

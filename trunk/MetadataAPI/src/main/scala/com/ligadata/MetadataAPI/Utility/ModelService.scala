@@ -475,6 +475,7 @@ object ModelService {
       * @param optVersion the version to associate with this model (in form 999999.999999.999999)
       * @param optMsgConsumed the full namespace qualified message name this model will consume
       * @param optMsgVersion the version of the message ... by default it is Some(-1) to get the most recent message of this name.
+      * @param optMsgProduced the message produced if specified
       * @param tid tenant/owner id
       * @param pStr global JSON properties
       * @param modelOptions model specifics option map supplied as JSON String
@@ -487,6 +488,7 @@ object ModelService {
                        , optVersion: Option[String] = None
                        , optMsgConsumed: Option[String] = None
                        , optMsgVersion: Option[String] = Some("-1")
+                       , optMsgProduced : Option[String] = None
                        , tid: Option[String] = None
                        , pStr : Option[String]
                        , modelOptions : Option[String] = Some("{}")) : String = {
@@ -509,7 +511,18 @@ object ModelService {
             val model = new File(input.toString)
             val resp: String = if (model.exists()) {
                 val modelDef = Source.fromFile(model).mkString
-                getMetadataAPI.AddModel(ModelType.PYTHON, modelDef, optUserid, finalTid, optModelName, optVersion, optMsgConsumed, None, optMsgVersion, pStr, modelOptions)
+                getMetadataAPI.AddModel(ModelType.PYTHON
+                    , modelDef
+                    , optUserid
+                    , finalTid
+                    , optModelName
+                    , optVersion
+                    , optMsgConsumed
+                    , optMsgVersion
+                    , optMsgProduced
+                    , pStr
+                    , modelOptions)
+
             } else {
                 val userId: String = optUserid.getOrElse("no user id supplied")
                 val modelName: String = optModelName.getOrElse("no model name supplied")
@@ -541,6 +554,7 @@ object ModelService {
       * @param optMsgConsumed the full namespace qualified message name this model will consume
       * @param optMsgVersion the version of the message ... by default it is Some(-1) to get the most recent message of this name.
       * @param modelOptions model specifics option map supplied as JSON String
+      * @param optMsgProduced the message produced if specified
       * @param tid tenant/owner id
       * @param pStr a parameter string (JSON) that is given to the model.
       * @return result string from engine describing success or failure
@@ -552,6 +566,7 @@ object ModelService {
                        , optVersion: Option[String] = None
                        , optMsgConsumed: Option[String] = None
                        , optMsgVersion: Option[String] = Some("-1")
+                       , optMsgProduced : Option[String] = None
                        , tid: Option[String] = None
                        , pStr : Option[String]
                        , modelOptions : Option[String] = Some("{}")): String = {
@@ -574,7 +589,17 @@ object ModelService {
             val model = new File(input.toString)
             val resp: String = if (model.exists()) {
                 val modelDef = Source.fromFile(model).mkString
-                getMetadataAPI.AddModel(ModelType.JYTHON, modelDef, optUserid, finalTid, optModelName, optVersion, optMsgConsumed, None, optMsgVersion, pStr, modelOptions)
+                getMetadataAPI.AddModel(ModelType.JYTHON
+                    , modelDef
+                    , optUserid
+                    , finalTid
+                    , optModelName
+                    , optVersion
+                    , optMsgConsumed
+                    , optMsgVersion
+                    , optMsgProduced
+                    , pStr
+                    , modelOptions)
             } else {
                 val userId: String = optUserid.getOrElse("no user id supplied")
                 val modelName: String = optModelName.getOrElse("no model name supplied")

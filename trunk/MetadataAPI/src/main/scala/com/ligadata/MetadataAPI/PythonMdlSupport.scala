@@ -5,12 +5,13 @@ import java.util.Properties
 
 import scala.sys.process._
 import scala.util.Random
-
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
-
 import com.ligadata.Serialize._
 import com.ligadata.kamanja.metadata._
+import org.json4s.native.JsonMethods.{parse => _, _}
+
+import scala.collection.immutable.Map
 
 
 /**
@@ -58,6 +59,8 @@ class PythonMdlSupport ( val mgr: MdMgr
       * the python server are found (i.e., common, commands, models sub-directories)
       */
     val PYTHON_PATH : String = "PYTHON_PATH"
+    val PYTHON_CONFIG : String = "python_config"
+    val ROOT_DIR : String = "root_dir"
 
     /** generate a random string for portion of python compile file name */
     val random : Random = new Random(java.lang.System.currentTimeMillis())
@@ -69,12 +72,6 @@ class PythonMdlSupport ( val mgr: MdMgr
     * @param recompile certain callers are creating a model to recompile the model when the message it consumes changes.
     *                  pass this flag as true in those cases to avoid com.ligadata.Exceptions.AlreadyExistsException
     * @return a ModelDef
-    *
-    * ToDo: The python models have a moduleName - the name of the python file stem (sans .py suffix) and a model name -
-    * the name of the class inside that module.  Kamanja, however, supports namespaces that map into the multi level
-    * class hiearchy for java/scala based models.  This multilevel module reference is also supported in Python, but
-    * it is not currently accounted for in the Kamanja use.  To fix we need to create the models directory tree according
-    * to the namespace supplied and adjust the sys.path as necessary.
     *
     */
   def CreateModel(recompile: Boolean = false, isPython: Boolean): ModelDef = {
@@ -88,8 +85,12 @@ class PythonMdlSupport ( val mgr: MdMgr
                               msgName != null && msgName.nonEmpty &&
                               pythonMdlText != null && pythonMdlText.nonEmpty &&
                               modelOptions != null && modelOptions.nonEmpty &&
-                              metadataAPIConfig != null && metadataAPIConfig.size() > 0 && metadataAPIConfig.contains(PYTHON_PATH)
-    val modelDef: ModelDef = CreateModelDef(recompile, isPython)
+                              metadataAPIConfig != null && metadataAPIConfig.size() > 0
+    val modelDef: ModelDef = if (reasonable) {
+        CreateModelDef(recompile, isPython)
+    } else {
+        null
+    }
 
     return modelDef
 
@@ -98,22 +99,38 @@ class PythonMdlSupport ( val mgr: MdMgr
   /**
    * Create ModelDef
    */
-
   private def CreateModelDef(recompile: Boolean, isPython: Boolean): ModelDef = {
 
-    if (isPython)
-      CreatePythonModelDef(recompile)
-    else
-      CreateJythonModelDef(recompile)
+    /** if properties have been supplied, then give them to the to the model def makers */
+    val pythonPropertiesStr : String = metadataAPIConfig.getProperty(PYTHON_CONFIG)
+    implicit val formats = org.json4s.DefaultFormats
+    val pyPropertyMap : Map[String,Any] = parse(pythonPropertiesStr).values.asInstanceOf[Map[String,Any]]
+    val modelDef : ModelDef = if (isPython) {
+        val pypathExists : Boolean = pyPropertyMap != null && pyPropertyMap.contains(PYTHON_PATH)
+        val mdlD : ModelDef = if (pypathExists) {
+            CreatePythonModelDef(recompile, pyPropertyMap)
+        } else {
+            /** fail this ... absolutely must have python config and location of the python path */
+            val pyCfgIsThere : Boolean = pyPropertyMap != null
+            val pyPathIsNotThere: Boolean = pyCfgIsThere
+            logger.error(s"In the api configuration there is either no python config (key = ${PYTHON_CONFIG.toUpperCase}) or the python path is missing in it... gotta have it... cfg present? $pyCfgIsThere pypath present? $pyPathIsNotThere")
+            null
+        }
+        mdlD
+    } else {
+        /** FixMe: Will config info be needed for Jython? Only time will tell */
+        CreateJythonModelDef(recompile, pyPropertyMap)
+    }
+    modelDef
   }
 
-    /**
-      * Create Python ModelDef
-      *
-      * @param recompile when true, an update context...
-      * @return
-      */
-  private def CreatePythonModelDef(recompile: Boolean): ModelDef = {
+  /**
+   * Create Python ModelDef
+   *
+   * @param recompile when true, an update context...
+   * @return
+   */
+  private def CreatePythonModelDef(recompile: Boolean, pyPropertyMap : Map[String,Any]): ModelDef = {
     val onlyActive: Boolean = true
     val latestVersion: Boolean = true
     val facFacDefs: scala.collection.immutable.Set[FactoryOfModelInstanceFactoryDef] = mgr.ActiveFactoryOfMdlInstFactories
@@ -148,7 +165,7 @@ class PythonMdlSupport ( val mgr: MdMgr
       /**
         * reasonable python text should be compilable... let's do so now.  Reject if non 0 return code.
         */
-        val pyPath : String = metadataAPIConfig.contains(PYTHON_PATH).toString
+        val pyPath : String = pyPropertyMap(PYTHON_PATH).toString
         val modelDir : String = if (pyPath.endsWith("/")) s"${pyPath.dropRight(1)}/models" else s"$pyPath/models"
         val pyFileName : String = s"${modelName}_$randomFileNameStemSuffix.py"
         val pyFilePath : String = s"$modelDir/$pyFileName"
@@ -167,11 +184,22 @@ class PythonMdlSupport ( val mgr: MdMgr
         /** Can the JSON modelOptions string be tranformed into a map or list? */
         val optionsReasonable : Boolean = try {
             implicit val formats = org.json4s.DefaultFormats
-            val trimmedOptionStr : String = modelOptions.trim
-            val mOrL = if (trimmedOptionStr.startsWith("{")) parse(modelOptions).extract[Map[String, Any]] else parse(modelOptions).extract[List[Map[String, Any]]]
-            true
+            val trimmedOptionStr: String = modelOptions.trim
+            val mOrL = if (trimmedOptionStr.startsWith("{")) {
+                parse(trimmedOptionStr).values.asInstanceOf[Map[String, Any]]
+                true
+            } else if (trimmedOptionStr.startsWith("[")) {
+                parse(trimmedOptionStr).values.asInstanceOf[List[Map[String, Any]]]
+                true
+            } else {
+                logger.error("The supplied python options must be expressed as a JSON string... ")
+                false
+            }
+            mOrL
         }  catch {
-            case _ : Throwable => false
+            case _ : Throwable => {
+                false
+            }
         }
 
         val model : ModelDef = if (rc != 0 || ! optionsReasonable) {
@@ -205,7 +233,7 @@ class PythonMdlSupport ( val mgr: MdMgr
   /**
    * Create Jython ModelDef
    */
-  private def CreateJythonModelDef(recompile: Boolean): ModelDef = {
+  private def CreateJythonModelDef(recompile: Boolean, pyPropertyMap : Map[String,Any]): ModelDef = {
 
     val onlyActive: Boolean = true
     val latestVersion: Boolean = true

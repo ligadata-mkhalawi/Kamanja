@@ -28,6 +28,7 @@ import com.ligadata.Exceptions.KamanjaException
 import org.json4s.jackson.JsonMethods._
 import org.json4s.native.Json
 import org.json4s.DefaultFormats
+import org.json4s.native.JsonMethods.{parse => _, _}
 
 import scala.collection.immutable.Map
 import scala.collection.mutable
@@ -198,11 +199,11 @@ class PythonAdapter(factory : ModelInstanceFactory
         val modelDef : ModelDef = factory.getModelDef()
         val modelOptStr : String = modelDef.modelConfig
         val trimmedOptionStr : String = modelOptStr.trim
-        val modelOptions : Map[String, Any] = parse(trimmedOptionStr).extract[Map[String, Any]]
+        val modelOptions : Map[String,Any] = parse(trimmedOptionStr).values.asInstanceOf[Map[String,Any]]
 
         val moduleName : String = modelDef.moduleName
         val resultStr : String = pyServerConnection.addModel(moduleName, modelDef.Name, modelDef.objectDefinition, modelOptions)
-        val resultMap : Map[String,Any] = parse(resultStr).extract[Map[String, Any]]
+        val resultMap : Map[String,Any] = parse(resultStr).values.asInstanceOf[Map[String,Any]]
         val host : String = pyServerConnection.host
         val port : String = pyServerConnection.port.toString
         val rc = resultMap.getOrElse("Code", -1)
@@ -248,7 +249,7 @@ class PythonAdapter(factory : ModelInstanceFactory
 
         val resultStr : String = pyServerConnection.executeModel(modelDef.Name, prepareFields(msg))
         implicit val formats = org.json4s.DefaultFormats
-        val resultsMap : Map[String, Any] = parse(resultStr).extract[Map[String, Any]]
+        val resultsMap : Map[String,Any] = parse(resultStr).values.asInstanceOf[Map[String,Any]]
         val results : Array[(String, Any)] = resultsMap.toArray
         new MappedModelResults().withResults(results)
     }
@@ -345,10 +346,10 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends
 
                 /** how did it go? */
                 implicit val formats = org.json4s.DefaultFormats
-                val startResultsMap : Map[String, Any] = parse(startServerResult).extract[Map[String, Any]]
+                val startResultsMap : Map[String,Any] = parse(startServerResult).values.asInstanceOf[Map[String,Any]]
                 val startRc : Int = startResultsMap.getOrElse("code", -1).asInstanceOf[Int]
 
-                val connResultsMap : Map[String, Any] = parse(connResult).extract[Map[String, Any]]
+                val connResultsMap : Map[String,Any] = parse(connResult).values.asInstanceOf[Map[String,Any]]
                 val connRc : Int = connResultsMap.getOrElse("code", -1).asInstanceOf[Int]
 
                 if (startRc == 0 && connRc == 0) {

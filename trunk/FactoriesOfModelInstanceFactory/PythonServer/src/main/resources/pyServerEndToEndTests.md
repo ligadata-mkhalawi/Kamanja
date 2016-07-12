@@ -40,7 +40,7 @@ bin/StartEngine.sh debug
 **add messages**
 $KAMANJA_HOME/bin/kamanja $apiConfigProperties add message $PY_METADATA/message/arithmeticMsg.json TENANTID tenant1
 
-$KAMANJA_HOME/bin/kamanja $apiConfigProperties add message $PY_METADATA/message/arithmeticMsg.json TENANTID tenant1
+$KAMANJA_HOME/bin/kamanja $apiConfigProperties add message $PY_METADATA/message/arithmeticOutMsg.json TENANTID tenant1
 
 **add models**
 

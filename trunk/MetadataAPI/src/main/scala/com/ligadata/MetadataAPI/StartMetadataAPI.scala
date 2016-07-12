@@ -510,10 +510,10 @@ object StartMetadataAPI {
           val modelVer = extraCmdArgs.getOrElse(MODELVERSION, null)
           val modelOptions : String = extraCmdArgs.getOrElse(MODELOPTIONS, "{}")
           val optMsgName: Option[String] = extraCmdArgs.get(MESSAGENAME)
-          val validatedModelVersion = if (modelVer != null) MdMgr.FormatVersion(modelVer) else null
+          val validatedModelVersion = if (modelVer != null) MdMgr.FormatVersion(modelVer) else MdMgr.FormatVersion("0.1.0")
           val optModelVer = Option(validatedModelVersion)
           val optMsgVer = Option(null)
-          response = ModelService.addModelPython(ModelType.PYTHON, input, userId, pkgQualifiedName, optModelVer, optMsgName, optMsgVer, tid, paramStr, Some(modelOptions))
+          response = ModelService.addModelPython(ModelType.PYTHON, input, userId, pkgQualifiedName, optModelVer, optMsgName, optMsgVer, optMsgProduced, tid, paramStr, Some(modelOptions))
         }
 
         case Action.ADDMODELJYTHON => {
@@ -524,10 +524,10 @@ object StartMetadataAPI {
             val modelVer = extraCmdArgs.getOrElse(MODELVERSION, null)
             val modelOptions : String = extraCmdArgs.getOrElse(MODELOPTIONS, "{}")
             val optMsgName: Option[String] = extraCmdArgs.get(MESSAGENAME)
-            val validatedModelVersion = if (modelVer != null) MdMgr.FormatVersion(modelVer) else null
+            val validatedModelVersion = if (modelVer != null) MdMgr.FormatVersion(modelVer) else MdMgr.FormatVersion("0.1.0")
             val optModelVer = Option(validatedModelVersion)
             val optMsgVer = Option(null)
-            response = ModelService.addModelJython(ModelType.JYTHON, input, userId, pkgQualifiedName, optModelVer, optMsgName, optMsgVer, tid, paramStr, Some(modelOptions))
+            response = ModelService.addModelJython(ModelType.JYTHON, input, userId, pkgQualifiedName, optModelVer, optMsgName, optMsgVer, optMsgProduced, tid, paramStr, Some(modelOptions))
         }
 
         case Action.ADDMODELSCALA => {
