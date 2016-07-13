@@ -229,9 +229,15 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
   if (parsed_json.contains("clusteredIndex")) {
     clusteredIndex = parsed_json.get("clusteredIndex").get.toString.trim
   }
+
   var autoCreateTables = "YES"
   if (parsed_json.contains("autoCreateTables")) {
     autoCreateTables = parsed_json.get("autoCreateTables").get.toString.trim
+  }
+
+  var externalDDLOnly = "NO"
+  if (parsed_json.contains("externalDDLOnly")) {
+    externalDDLOnly = parsed_json.get("externalDDLOnly").get.toString.trim
   }
 
   logger.info("hostname => " + hostname)
@@ -241,6 +247,7 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
   logger.info("jdbcJar  => " + jdbcJar)
   logger.info("clusterdIndex  => " + clusteredIndex)
   logger.info("autoCreateTables  => " + autoCreateTables)
+  logger.info("externalDDLOnly  => " + externalDDLOnly)
 
   var sqlServerInstance: String = hostname
   if (instanceName != null) {
@@ -1532,15 +1539,6 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
         stmt = con.createStatement()
         stmt.executeUpdate(query);
         stmt.close
-        //index_name = "ix1_" + tableName
-        //query = "create index " + index_name + " on " + fullTableName + "(bucketKey,transactionId,rowId)"
-        //stmt = con.createStatement()
-        //stmt.executeUpdate(query);
-        //stmt.close
-        //index_name = "ix2_" + tableName
-        //query = "create index " + index_name + " on " + fullTableName + "(timePartition,bucketKey)"
-        //stmt = con.createStatement()
-        //stmt.executeUpdate(query);
       }
     } catch {
       case e: Exception => {
@@ -1615,15 +1613,25 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       // check whether source table exists
       var exists = isTableExists(srcTableName)
       if (!exists) {
-        throw CreateDDLException("Failed to rename the table " + srcTableName + ":", new Exception("Source Table doesn't exist"))
+	if( externalDDLOnly.equalsIgnoreCase("YES") ){
+          logger.info("The source table " + srcTableName + " already removed. Assuming table is backed up by external administrator. Nothing else to be done")
+	}
+	else{
+          throw CreateDDLException("Failed to rename the table " + srcTableName + ":", new Exception("Source Table doesn't exist"))
+	}
       }
       // check if the destination table already exists
       exists = isTableExists(destTableName)
       if (exists) {
         logger.info("The table " + destTableName + " exists.. ")
-        if (forceCopy) {
+	if( externalDDLOnly.equalsIgnoreCase("YES") ){
+          logger.info("The destination table " + destTableName + " already exist. It may have been pre-created externally. Nothing else to be done")
+	  return
+	}
+        if (forceCopy ) {
           dropTable(destTableName)
-        } else {
+        } 
+	else {
           throw CreateDDLException("Failed to rename the table " + srcTableName + ":", new Exception("Destination Table already exist"))
         }
       }
