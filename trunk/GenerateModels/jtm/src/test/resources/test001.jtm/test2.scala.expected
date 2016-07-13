@@ -29,7 +29,10 @@ class ModelFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelIn
 class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
   val conversion = new com.ligadata.runtime.Conversion
   val log = new com.ligadata.runtime.Log(this.getClass.getName)
+  val context = new com.ligadata.runtime.JtmContext
   import log._
+  // Model code start
+  // Model code end
   override def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
     if (isTraceEnabled)
     Trace(s"Model::execute transid=%d triggeredset=%d outputdefault=%s".format(txnCtxt.transId, triggerdSetIndex, outputDefault.toString))
@@ -37,8 +40,8 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
     {
       execMsgsSet.foreach(m => Debug( s"Input: %s -> %s".format(m.getFullTypeName, m.toString())))
     }
-    //
-    //
+    // Grok parts
+    // Model methods
     def exeGenerated_test1_1(msg1: com.ligadata.kamanja.test.V1000000.msg1): Array[MessageInterface] = {
       Debug("exeGenerated_test1_1")
       // in scala, type could be optional
@@ -84,7 +87,7 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
     val msg1 = msgs.getOrElse("com.ligadata.kamanja.test.msg1", null).asInstanceOf[com.ligadata.kamanja.test.V1000000.msg1]
     val msg2 = msgs.getOrElse("com.ligadata.kamanja.test.msg3", null).asInstanceOf[com.ligadata.kamanja.test.V1000000.msg3]
     // Main dependency -> execution check
-    //
+    // Create result object
     val results: Array[MessageInterface] =
     (if(msg1!=null) {
       exeGenerated_test1_1(msg1)
