@@ -13,25 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ligadata.jtm.nodes
+package com.ligadata.runtime
 
-import com.google.gson.annotations.SerializedName
+class JtmContext
+{
+  def AddError(error: String) = {
 
-/**
-  *
-  */
-class Imports {
+  }
 
-  /** List with package names
-    *
-    */
-  val packages: Array[String] = Array.empty[String]
+  def SetSection() = {
 
-  /** List of code lines to be added to the model class
-    * the function names should not conflict with any generated
-    * names
-    *
-    * Code always comes after packages in the generated scala file
-    */
-  val code: Array[String] = Array.empty[String]
+  }
+
+  def SetInput() = {
+
+  }
+
+  def Errors(): Long = {
+    0
+  }
 }

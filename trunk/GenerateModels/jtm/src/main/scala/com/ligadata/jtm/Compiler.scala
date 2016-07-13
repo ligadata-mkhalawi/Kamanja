@@ -1270,6 +1270,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
     subtitutions.Add("model.message", messages.mkString("\n"))
     subtitutions.Add("model.methods", methods.mkString("\n"))
     subtitutions.Add("model.code", exechandler.mkString("\n"))
+    subtitutions.Add("external.code", root.imports.code.mkString("\n"))
     val model = subtitutions.Run(Parts.model)
     result :+= model
 

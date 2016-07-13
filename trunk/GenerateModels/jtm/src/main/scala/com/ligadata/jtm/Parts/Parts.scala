@@ -56,7 +56,11 @@ object Parts {
     """|class {modelclass.name}(factory: ModelInstanceFactory) extends ModelInstance(factory) {
        |  val conversion = new com.ligadata.runtime.Conversion
        |  val log = new com.ligadata.runtime.Log(this.getClass.getName)
+       |  val context = new com.ligadata.runtime.JtmContext
        |  import log._
+       |  // Model code start
+       |  {external.code}
+       |  // Model code end
        |  override def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
        |    if (isTraceEnabled)
        |      Trace(s"Model::execute transid=%d triggeredset=%d outputdefault=%s".format(txnCtxt.transId, triggerdSetIndex, outputDefault.toString))
@@ -64,14 +68,14 @@ object Parts {
        |    {
        |      execMsgsSet.foreach(m => Debug( s"Input: %s -> %s".format(m.getFullTypeName, m.toString())))
        |    }
-       |    //
+       |    // Grok parts
        |    {model.grok}
-       |    //
+       |    // Model methods
        |    {model.methods}
        |    // Evaluate messages
        |    {model.message}
        |    // Main dependency -> execution check
-       |    //
+       |    // Create result object
        |    val results: Array[MessageInterface] =
        |    {model.code}
        |    if(isDebugEnabled)
