@@ -30,7 +30,7 @@ import scala.io._
 import scala.collection.mutable.ArrayBuffer
 
 import scala.collection.mutable._
-import scala.reflect.runtime.{ universe => ru }
+import scala.reflect.runtime.{universe => ru}
 
 import com.ligadata.kamanja.metadata.ObjType._
 import com.ligadata.kamanja.metadata._
@@ -39,12 +39,12 @@ import com.ligadata.kamanja.metadata.MdMgr._
 import com.ligadata.kamanja.metadataload.MetadataLoad
 
 // import com.ligadata.keyvaluestore._
-import com.ligadata.HeartBeat.{ MonitoringContext, HeartBeatUtil }
-import com.ligadata.StorageBase.{ DataStore, Transaction }
-import com.ligadata.KvBase.{ Key, TimeRange }
+import com.ligadata.HeartBeat.{MonitoringContext, HeartBeatUtil}
+import com.ligadata.StorageBase.{DataStore, Transaction}
+import com.ligadata.KvBase.{Key, TimeRange}
 
 import scala.util.parsing.json.JSON
-import scala.util.parsing.json.{ JSONObject, JSONArray }
+import scala.util.parsing.json.{JSONObject, JSONArray}
 import scala.collection.immutable.Map
 import scala.collection.immutable.HashMap
 import scala.collection.mutable.HashMap
@@ -84,20 +84,20 @@ object ModelUtils {
   lazy val serializerType = "kryo"
   lazy val serializer = SerializerManager.GetSerializer(serializerType)
   private[this] val lock = new Object
-    // 646 - 676 Change begins - replace MetadataAPIImpl
+  // 646 - 676 Change begins - replace MetadataAPIImpl
   val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
   // 646 - 676 Change ends
 
   /**
-   * Deactivate the model that presumably is active and waiting for input in the working set of the cluster engines.
-   *
-   * @param nameSpace namespace of the object
-   * @param name
-   * @param version   Version of the object
-   * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
-   *                  method. If Security and/or Audit are configured, this value must be a value other than None.
-   * @return
-   */
+    * Deactivate the model that presumably is active and waiting for input in the working set of the cluster engines.
+    *
+    * @param nameSpace namespace of the object
+    * @param name
+    * @param version   Version of the object
+    * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *                  method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
   def DeactivateModel(nameSpace: String, name: String, version: Long, userid: Option[String] = None): String = {
     val dispkey = nameSpace + "." + name + "." + MdMgr.Pad0s2Version(version)
     getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.DEACTIVATEOBJECT, AuditConstants.MODEL, AuditConstants.SUCCESS, "", dispkey)
@@ -109,13 +109,13 @@ object ModelUtils {
   }
 
   /**
-   * Deactivate a model FIXME: Explain what it means to do this locally.
-   *
-   * @param nameSpace namespace of the object
-   * @param name
-   * @param version   Version of the object
-   * @return
-   */
+    * Deactivate a model FIXME: Explain what it means to do this locally.
+    *
+    * @param nameSpace namespace of the object
+    * @param name
+    * @param version   Version of the object
+    * @return
+    */
   private def DeactivateLocalModel(nameSpace: String, name: String, version: Long): Boolean = {
     var key = nameSpace + "." + name + "." + version
     val dispkey = nameSpace + "." + name + "." + MdMgr.Pad0s2Version(version)
@@ -148,15 +148,15 @@ object ModelUtils {
   }
 
   /**
-   * Activate the model with the supplied keys. The engine is notified and the model factory is loaded.
-   *
-   * @param nameSpace namespace of the object
-   * @param name
-   * @param version   Version of the object
-   * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
-   *                  method. If Security and/or Audit are configured, this value must be a value other than None.
-   * @return
-   */
+    * Activate the model with the supplied keys. The engine is notified and the model factory is loaded.
+    *
+    * @param nameSpace namespace of the object
+    * @param name
+    * @param version   Version of the object
+    * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *                  method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
   def ActivateModel(nameSpace: String, name: String, version: Long, userid: Option[String] = None): String = {
     var key = nameSpace + "." + name + "." + version
     val dispkey = nameSpace + "." + name + "." + MdMgr.Pad0s2Version(version)
@@ -231,15 +231,15 @@ object ModelUtils {
   }
 
   /**
-   * Remove model with Model Name and Version Number
-   *
-   * @param nameSpace namespace of the object
-   * @param name
-   * @param version   Version of the object
-   * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
-   *                  method. If Security and/or Audit are configured, this value must be a value other than None.
-   * @return
-   */
+    * Remove model with Model Name and Version Number
+    *
+    * @param nameSpace namespace of the object
+    * @param name
+    * @param version   Version of the object
+    * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *                  method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
   def RemoveModel(nameSpace: String, name: String, version: Long, userid: Option[String]): String = {
     var key = nameSpace + "." + name + "." + version
     if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.DELETEOBJECT, "Model", AuditConstants.SUCCESS, "", key)
@@ -274,20 +274,20 @@ object ModelUtils {
   }
 
   /**
-   * Remove model with Model Name and Version Number
-   *
-   * @param modelName the Namespace.Name of the given model to be removed
-   * @param version   Version of the given model.  The version should comply with the Kamanja version format.  For example,
-   *                  a value of "000001.000001.000001" shows the digits available for version.  All must be base 10 digits
-   *                  with up to 6 digits for major version, minor version and micro version sections.
-   *                  elper functions are available in MdMgr object for converting to/from strings and 0 padding the
-   *                  version sections if desirable.
-   * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
-   *                  method. If Security and/or Audit are configured, this value must be a value other than None.
-   * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
-   *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
-   *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
-   */
+    * Remove model with Model Name and Version Number
+    *
+    * @param modelName the Namespace.Name of the given model to be removed
+    * @param version   Version of the given model.  The version should comply with the Kamanja version format.  For example,
+    *                  a value of "000001.000001.000001" shows the digits available for version.  All must be base 10 digits
+    *                  with up to 6 digits for major version, minor version and micro version sections.
+    *                  elper functions are available in MdMgr object for converting to/from strings and 0 padding the
+    *                  version sections if desirable.
+    * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *                  method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
+    *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
+    *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
+    */
   def RemoveModel(modelName: String, version: String, userid: Option[String] = None): String = {
 
     val reasonable: Boolean = modelName != null && modelName.length > 0
@@ -316,13 +316,13 @@ object ModelUtils {
   }
 
   /**
-   * The ModelDef returned by the compilers is added to the metadata.
-   *
-   * @param model
-   * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-   *               method. If Security and/or Audit are configured,supply something other than None
-   * @return
-   */
+    * The ModelDef returned by the compilers is added to the metadata.
+    *
+    * @param model
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured,supply something other than None
+    * @return
+    */
   def AddModel(model: ModelDef, userid: Option[String]): String = {
     var key = model.FullNameWithVer
     val dispkey = model.FullName + "." + MdMgr.Pad0s2Version(model.Version)
@@ -363,15 +363,15 @@ object ModelUtils {
   }
 
   /**
-   * AddModelFromSource - compiles and catalogs a custom Scala or Java model from source.
-   *
-   * @param sourceCode
-   * @param sourceLang
-   * @param modelName
-   * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-   *               method. If Security and/or Audit are configured, this value must be a value other than None.
-   * @return
-   */
+    * AddModelFromSource - compiles and catalogs a custom Scala or Java model from source.
+    *
+    * @param sourceCode
+    * @param sourceLang
+    * @param modelName
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
   private def AddModelFromSource(sourceCode: String, sourceLang: String, modelName: String, userid: Option[String], tenantId: String, optMsgProduced: Option[String], pStr: Option[String]): String = {
     try {
       var compProxy = new CompilerProxy
@@ -624,8 +624,8 @@ object ModelUtils {
                            , pmmlText: String
                            , userid: Option[String]
                            , tenantId: String
-    , optMsgProduced: Option[String]
-    , pStr : Option[String]
+                           , optMsgProduced: Option[String]
+                           , pStr: Option[String]
                           ): String = {
     try {
       val buffer: StringBuilder = new StringBuilder
@@ -639,7 +639,16 @@ object ModelUtils {
       msgNameNodes.take(msgNameNodes.size - 1).addString(buffer, ".")
       val msgNamespace: String = buffer.toString
       val ownerId: String = if (userid == None) "kamanja" else userid.get
-      val jpmmlSupport: JpmmlSupport = new JpmmlSupport(mdMgr, modelNmSpace, modelNm, version, msgNamespace, msgName, msgVersion, pmmlText, ownerId, tenantId)
+      val jpmmlSupport: JpmmlSupport = new JpmmlSupport(mdMgr
+        , modelNmSpace
+        , modelNm
+        , version
+        , msgNamespace
+        , msgName
+        , msgVersion
+        , pmmlText
+        , ownerId
+        , tenantId)
       val recompile: Boolean = false
       var modDef: ModelDef = jpmmlSupport.CreateModel(recompile)
 
@@ -649,8 +658,8 @@ object ModelUtils {
 
       if (isValid && modDef != null) {
         val existingModel = MdMgr.GetMdMgr.Model(modDef.NameSpace, modDef.Name, -1, false) // Any version is fine. No need of active
-// 646 - 673 Changes begin - MetadataAPI Changes
-          modDef.setParamValues(pStr)
+        // 646 - 673 Changes begin - MetadataAPI Changes
+        modDef.setParamValues(pStr)
         modDef.setCreationTime()
         modDef.setModTime()
         // 646 - 673 Changes end
@@ -948,17 +957,17 @@ object ModelUtils {
   }
 
   /**
-   * Add Kamanja PMML Model (format XML).  Kamanja Pmml models obtain their name and version from the header in the Pmml file.
-   *
-   * @param pmmlText
-   * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-   *               method. If Security and/or Audit are configured, this value must be a value other than None.
-   * @return json string result
-   */
+    * Add Kamanja PMML Model (format XML).  Kamanja Pmml models obtain their name and version from the header in the Pmml file.
+    *
+    * @param pmmlText
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return json string result
+    */
   private def AddKPMMLModel(pmmlText: String,
                             userid: Option[String], tenantId: String,
-    optMsgProduced: Option[String],
-  pStr : Option[String]): String = {
+                            optMsgProduced: Option[String],
+                            pStr: Option[String]): String = {
     try {
       var compProxy = new CompilerProxy
       //compProxy.setLoggerLevel(Level.TRACE)
@@ -1062,13 +1071,13 @@ object ModelUtils {
   }
 
   /**
-   * Add Kamanja JTM Model (format json).  Kamanja JTM models obtain their name and version from the header in the JTM s file.
-   *
-   * @param jsonText
-   * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-   *               method. If Security and/or Audit are configured, this value must be a value other than None.
-   * @return json string result
-   */
+    * Add Kamanja JTM Model (format json).  Kamanja JTM models obtain their name and version from the header in the JTM s file.
+    *
+    * @param jsonText
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return json string result
+    */
   private def AddJTMModel(jsonText: String, userid: Option[String], tenantId: String, optModelName: Option[String], pStr: Option[String]): String = {
     try {
       var compProxy = new CompilerProxy
@@ -1150,15 +1159,15 @@ object ModelUtils {
   }
 
   /**
-   * Recompile the supplied model. Optionally the message definition is supplied that was just built.
-   *
-   * @param mod       the model definition that possibly needs to be reconstructed.
-   * @param userid    the user id that has invoked this command
-   * @param optMsgDef the MessageDef constructed, assuming it was a message def. If a container def has been rebuilt,
-   *                  this field will have a value of None.  This is only meaningful at this point when the model to
-   *                  be rebuilt is a PMML model.
-   * @return the result string reflecting what happened with this operation.
-   */
+    * Recompile the supplied model. Optionally the message definition is supplied that was just built.
+    *
+    * @param mod       the model definition that possibly needs to be reconstructed.
+    * @param userid    the user id that has invoked this command
+    * @param optMsgDef the MessageDef constructed, assuming it was a message def. If a container def has been rebuilt,
+    *                  this field will have a value of None.  This is only meaningful at this point when the model to
+    *                  be rebuilt is a PMML model.
+    * @return the result string reflecting what happened with this operation.
+    */
   def RecompileModel(mod: ModelDef, userid: Option[String], optMsgDef: Option[MessageDef]): String = {
     try {
       /**
@@ -1338,7 +1347,16 @@ object ModelUtils {
           val modelName: String = mod.Name
           val modelVersion: String = MdMgr.ConvertLongVersionToString(mod.Version)
           val ownerId: String = if (userid == None) "kamanja" else userid.get
-          val jpmmlSupport: JpmmlSupport = new JpmmlSupport(mdMgr, modelNmSpace, modelName, modelVersion, msgNamespace, msgName, msgVersion, mod.objectDefinition, ownerId, mod.TenantId)
+          val jpmmlSupport: JpmmlSupport = new JpmmlSupport(mdMgr
+            , modelNmSpace
+            , modelName
+            , modelVersion
+            , msgNamespace
+            , msgName
+            , msgVersion
+            , mod.objectDefinition
+            , ownerId
+            , mod.TenantId)
           val recompile: Boolean = true
           val model: ModelDef = jpmmlSupport.CreateModel(recompile)
           // copy outputMsgs
@@ -1514,7 +1532,7 @@ object ModelUtils {
                               , optModelName: Option[String] = None
                               , optModelVersion: Option[String] = None
                               , optVersionBeingUpdated: Option[String]
-                              , optMsgProduced: Option[String], pStr : Option[String]): String = {
+                              , optMsgProduced: Option[String], pStr: Option[String]): String = {
 
     val modelName: String = optModelName.orNull
     val version: String = optModelVersion.getOrElse("-1")
@@ -1565,7 +1583,16 @@ object ModelUtils {
         val (currMsgNmSp, currMsgNm, currMsgVer): (String, String, String) = MdMgr.SplitFullNameWithVersion(key)
 
         val ownerId: String = if (optUserid == None) "kamanja" else optUserid.get
-        val jpmmlSupport: JpmmlSupport = new JpmmlSupport(mdMgr, modelNmSpace, modelNm, version, currMsgNmSp, currMsgNm, currMsgVer, input, ownerId, tenantId)
+        val jpmmlSupport: JpmmlSupport = new JpmmlSupport(mdMgr
+          , modelNmSpace
+          , modelNm
+          , version
+          , currMsgNmSp
+          , currMsgNm
+          , currMsgVer
+          , input
+          , ownerId
+          , tenantId)
 
         val modDef: ModelDef = jpmmlSupport.UpdateModel
         // copy optMsgProduced to outputMsgs
@@ -2172,7 +2199,7 @@ object ModelUtils {
                                , tenantId: String = ""
                                , optModelName: Option[String] = None
                                , optVersion: Option[String] = None
-                               , optMsgProduced: Option[String], pStr : Option[String]): String = {
+                               , optMsgProduced: Option[String], pStr: Option[String]): String = {
     try {
       var compProxy = new CompilerProxy
       //compProxy.setLoggerLevel(Level.TRACE)
@@ -2272,7 +2299,7 @@ object ModelUtils {
                              , optUserid: Option[String] = None
                              , tenantId: String = ""
                              , optModelName: Option[String] = None
-                             , optVersion: Option[String] = None, pStr : Option[String]): String = {
+                             , optVersion: Option[String] = None, pStr: Option[String]): String = {
     try {
       var compProxy = new CompilerProxy
       var compileConfig = ""
@@ -2586,7 +2613,7 @@ object ModelUtils {
       val dispkey = modDef.nameSpace + "." + modDef.name + "." + MdMgr.Pad0s2Version(modDef.ver)
       val o = MdMgr.GetMdMgr.Model(modDef.nameSpace.toLowerCase,
         modDef.name.toLowerCase,
-        modDef.ver,
+        -1, //modDef.ver,
         false)
       o match {
         case None =>
@@ -2740,7 +2767,7 @@ object ModelUtils {
 
     var processed: Long = 0L
     val storeInfo = PersistenceUtils.GetContainerNameAndDataStore("model_config_objects")
-    storeInfo._2.get(storeInfo._1, { (k: Key, v: Any, serType: String, typ: String, ver: Int) =>
+    storeInfo._2.get(storeInfo._1, (k: Key, v: Any, serType: String, typ: String, ver: Int) => {
       {
         processed += 1
         val conf = serializer.DeserializeObjectFromByteArray(v.asInstanceOf[Array[Byte]]).asInstanceOf[Map[String, List[String]]]

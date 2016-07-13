@@ -48,6 +48,7 @@ import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization
 import com.ligadata.KamanjaVersion.KamanjaVersion
 
+
 /**
   * This application installs and upgrades Kamanaja.  It does these essential things:
 
@@ -881,7 +882,7 @@ Try again.
 
     val (proposedClusterEnvironmentIsSuitable): Boolean = try {
       val hbaseConnections: String = clusterConfigMap.DataStoreConnections.trim //
-      val kafkaConnections: String = clusterConfigMap.KafkaConnections.trim
+      val kafkaConnections: scala.collection.mutable.ListBuffer[Map[String,Any]] = clusterConfigMap.KafkaConnections
       val zkConnections: String = clusterConfigMap.ZooKeeperConnectionString.trim
 
       var skipComponents =
@@ -903,9 +904,12 @@ Try again.
             addedComp += 1
           }
           if (!skipComponents.contains("kafka") && kafkaConnections.nonEmpty) {
+            implicit val formats = Serialization.formats(NoTypeHints)
             if (addedComp > 0)
               sb.append(",")
-            sb.append("""{ "component" : "kafka", "hostslist" : "%s" }""".stripMargin.format(kafkaConnections))
+            import org.json4s.native.Serialization._
+            var adapterConfigs = write(kafkaConnections) //.replace('[','{').replace(']','}')
+            sb.append("""{ "component" : "kafka", "hostslist" : %s }""".stripMargin.format(adapterConfigs))
             addedComp += 1
           }
           if ((!skipComponents.contains("hbase")) && (!skipComponents.contains("storage")) && hbaseConnections.nonEmpty) {
@@ -1876,20 +1880,33 @@ class ClusterConfigMap(cfgStr: String, var clusterIdOfInterest: String) {
     zooKeeperInfo.getOrElse("ZooKeeperConnectString", "").asInstanceOf[String]
   }
 
-  def KafkaConnections: String = {
+  def KafkaConnections: scala.collection.mutable.ListBuffer[Map[String,Any]] = {
     val kafkaAdapters: List[Map[String, Any]] = adapters.filter(adapterMap => {
       val clsName = adapterMap.getOrElse("ClassName", "").asInstanceOf[String].trim
-      val hasKafka: Boolean = (clsName.startsWith("com.ligadata.OutputAdapters.KafkaProducer") || clsName.startsWith("com.ligadata.InputAdapters.KafkaSimpleConsumer"))
+      val hasKafka: Boolean = (clsName.startsWith("com.ligadata.OutputAdapters.KafkaProducer") ||
+                               clsName.startsWith("com.ligadata.InputAdapters.KafkaSimpleConsumer") ||
+                               clsName.startsWith("com.ligadata.InputAdapters.KamanjaKafkaConsumer"))
       hasKafka
     })
-    val hostConnections: List[String] = kafkaAdapters.map(adapter => {
-      val adapterSpecificCfg: Map[String, Any] = adapter.getOrElse("AdapterSpecificCfg", Map[String, Any]()).asInstanceOf[Map[String, Any]]
-      val conn: String = adapterSpecificCfg.getOrElse("HostList", "").asInstanceOf[String]
-      conn
+
+    val hostConnections: scala.collection.mutable.ListBuffer[Map[String,Any]] =   scala.collection.mutable.ListBuffer[Map[String,Any]]()
+    kafkaAdapters.foreach( adapter => {
+      var thisSpecConfig = adapter.getOrElse("AdapterSpecificCfg", Map[String, Any]()).asInstanceOf[Map[String, Any]]
+      if (thisSpecConfig.size > 0) {
+        hostConnections.append(thisSpecConfig)
+      }
     })
 
-    if (hostConnections.isEmpty) return ""
-    hostConnections.toSet.mkString(",")
+    //val hostConnections: List[Map[String,Any]] = kafkaAdapters.map(adapter => {
+    //  val adapterSpecificCfg: Map[String, Any] = adapter.getOrElse("AdapterSpecificCfg", Map[String, Any]()).asInstanceOf[Map[String, Any]]
+
+      //val conn: String = adapterSpecificCfg.getOrElse("HostList", "").asInstanceOf[String]
+      //conn
+    //})
+
+    //if (hostConnections.isEmpty) return ""
+    //hostConnections.toSet.mkString(",")
+    return hostConnections
   }
 
   /**

@@ -38,10 +38,12 @@ import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import com.ligadata.Serialize._
 
-import com.ligadata.msgcompiler.MessageCompiler
+import com.ligadata.Exceptions._
+import com.ligadata.KvBase.{ Key, TimeRange }
+
 import com.ligadata.kamanja.metadataload.MetadataLoad
 
-class CompileMessageEvent extends FunSpec with LocalTestFixtures with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
+class GetDataSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
   var res: String = null;
   var statusCode: Int = -1;
   var apiResKey: String = "\"Status Code\" : 0"
@@ -53,11 +55,13 @@ class CompileMessageEvent extends FunSpec with LocalTestFixtures with BeforeAndA
   var iFile: File = null
   var fileList: List[String] = null
   var newVersion: String = null
-  val userid: Option[String] = Some("kamanja")
-  val tenantId: Option[String] = Some("kamanja")
+  val userid: Option[String] = Some("test")
+  val tenantid: Option[String] = Some("testtenant")
 
   private val loggerName = this.getClass.getName
   private val logger = LogManager.getLogger(loggerName)
+
+  private var processed = 0
 
   private def TruncateDbStore = {
     val db = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
@@ -105,7 +109,6 @@ class CompileMessageEvent extends FunSpec with LocalTestFixtures with BeforeAndA
       val mdLoader = new MetadataLoad(MdMgr.mdMgr, "", "", "", "")
       mdLoader.initialize
 
-      logger.info("Startup embedded zooKeeper ")
       val zkServer = EmbeddedZookeeper
       zkServer.instance.startup
 
@@ -122,16 +125,16 @@ class CompileMessageEvent extends FunSpec with LocalTestFixtures with BeforeAndA
       logger.info("jarPaths => " + jp)
 
 
-      logger.info("Truncating dbstore")
-      TruncateDbStore
+      //logger.info("Truncating dbstore")
+      //TruncateDbStore
 
-      And("PutTranId updates the tranId")
-      noException should be thrownBy {
-	MetadataAPIImpl.PutTranId(0)
-      }
+      //And("PutTranId updates the tranId")
+      //noException should be thrownBy {
+      //	MetadataAPIImpl.PutTranId(0)
+      //}
 
-      logger.info("Load All objects into cache")
-      MetadataAPIImpl.LoadAllObjectsIntoCache(false)
+      //logger.info("Load All objects into cache")
+      //MetadataAPIImpl.LoadAllObjectsIntoCache(false)
 
       // The above call is resetting JAR_PATHS based on nodeId( node-specific configuration)
       // This is causing unit-tests to fail
@@ -143,7 +146,7 @@ class CompileMessageEvent extends FunSpec with LocalTestFixtures with BeforeAndA
       logger.info("Initialize security adapter")
       MetadataAPIImpl.InitSecImpl
 
-      MetadataAPIImpl.TruncateAuditStore
+      //MetadataAPIImpl.TruncateAuditStore
       MetadataAPIImpl.isInitilized = true
       logger.info(MetadataAPIImpl.GetMetadataAPIConfig)
     }
@@ -155,23 +158,7 @@ class CompileMessageEvent extends FunSpec with LocalTestFixtures with BeforeAndA
     }
   }
 
-  /**
-   * extractNameFromPMML - pull the Application name="xxx" from the PMML doc and construct
-   * a name  string from it, cloned from APIService.scala
-   */
-  def extractNameFromPMML(pmmlObj: String): String = {
-    var firstOccurence: String = "unknownModel"
-    val pattern = """Application[ ]*name="([^ ]*)"""".r
-    val allMatches = pattern.findAllMatchIn(pmmlObj)
-    allMatches.foreach(m => {
-      if (firstOccurence.equalsIgnoreCase("unknownModel")) {
-	firstOccurence = (m.group(1))
-      }
-    })
-    return firstOccurence
-  }
-
-  describe("Unit Tests for all MetadataAPI operations") {
+  describe("Read all Metadata objects") {
 
     // validate property setup
     it("Validate properties for MetadataAPI") {
@@ -264,66 +251,89 @@ class CompileMessageEvent extends FunSpec with LocalTestFixtures with BeforeAndA
       assert(null != sc)
     }
 
-    // Compile System Messages
-    it("Message Tests") {
-      And("Check whether MESSAGE_FILES_DIR defined as property")
-      dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CONTAINER_FILES_DIR")
-      assert(null != dirName)
-
-      And("Check Directory Path")
-      iFile = new File(dirName)
-      assert(true == iFile.exists)
-
-      And("Check whether " + dirName + " is a directory ")
-      assert(true == iFile.isDirectory)
-
-      And("Make sure there are few JSON message files in " + dirName);
-      val msgFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith(".json"))
-      assert(0 != msgFiles.length)
-
-      fileList = List("KamanjaModelEvent.json")
-      fileList.foreach(f1 => {
-	And("Add the Message From " + f1)
-	And("Make Sure " + f1 + " exist")
-	var exists = false
-	var file: java.io.File = null
-	breakable {
-	  msgFiles.foreach(f2 => {
-	    if (f2.getName() == f1) {
-	      exists = true
-	      file = f2
-	      break
-	    }
-	  })
-	}
-	assert(true == exists)
-
-	var msgDfType: String = "JSON"
-	var messageCompiler = new MessageCompiler;
-	val tid: Option[String] = null
-	val jsonstr: String = Source.fromFile(file).mkString
-	noException should be thrownBy {
-	  val ((verScalaMsg, verJavaMsg), containerDef, (nonVerScalaMsg, nonVerJavaMsg), rawMsg) = messageCompiler.processMsgDef(jsonstr, msgDfType, MdMgr.GetMdMgr, 0, null)
-	
-	  logger.debug("ScalaSource with Version => " + verScalaMsg)
-	  logger.debug("JavaSource with Version => " + verJavaMsg)
-	}
-
-
-	/*
-        And("AddContainer from " + file.getPath)
-        var msgStr = Source.fromFile(file).mkString
-        res = MetadataAPIImpl.AddContainer(msgStr, "JSON", None, tenantId,None)
-        res should include regex ("\"Status Code\" : 0")
-
-        And("GetContainerDef API to fetch the message that was just added")
-        var objName = f1.stripSuffix(".json").toLowerCase
-        var version = "0000000000001000000"
-        res = MetadataAPIImpl.GetContainerDef("system", objName, "JSON", version, None,None)
-        res should include regex ("\"Status Code\" : 0")
-	*/
-
+    it("Read Config Objects") {
+      val storeInfo = PersistenceUtils.GetContainerNameAndDataStore("config_objects")
+      storeInfo._2.get(storeInfo._1, { (k: Key, v: Any, serType: String, typ: String, ver:Int) =>
+        {
+          val strKey = k.bucketKey.mkString(".")
+          val i = strKey.indexOf(".")
+          val objType = strKey.substring(0, i)
+          val typeName = strKey.substring(i + 1)
+          processed += 1
+          objType match {
+            case "nodeinfo" => {
+              val ni = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[NodeInfo]
+              MdMgr.GetMdMgr.AddNode(ni)
+            }
+            case "adapterinfo" => {
+              val ai = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[AdapterInfo]
+              MdMgr.GetMdMgr.AddAdapter(ai)
+            }
+            case "clusterinfo" => {
+              val ci = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[ClusterInfo]
+              MdMgr.GetMdMgr.AddCluster(ci)
+            }
+            case "clustercfginfo" => {
+              val ci = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[ClusterCfgInfo]
+              MdMgr.GetMdMgr.AddClusterCfg(ci)
+            }
+            case "userproperties" => {
+              val up = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[UserPropertiesInfo]
+              MdMgr.GetMdMgr.AddUserProperty(up)
+            }
+            case "tenantinfo" => {
+                val up = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[TenantInfo]
+                MdMgr.GetMdMgr.AddTenantInfo(up)
+            }
+            case "adaptermessagebinding" => {
+                val binding = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[AdapterMessageBinding]
+                MdMgr.GetMdMgr.AddAdapterMessageBinding(binding)
+            }
+            case _ => {
+              throw InternalErrorException("ReadConfigObjects: Unknown objectType " + objType, null)
+            }
+          }
+        }
       })
+      logger.info("Read " + processed + " records ")
+    }
+
+    it("Read Metadata Objects") {
+      val storeInfo = PersistenceUtils.GetContainerNameAndDataStore("metadata_objects")
+      storeInfo._2.get(storeInfo._1, { (k: Key, v: Any, serType: String, typ: String, ver:Int) =>
+        {
+          val strKey = k.bucketKey.mkString(".")
+          val i = strKey.indexOf(".")
+          val objType = strKey.substring(0, i)
+          val typeName = strKey.substring(i + 1)
+          processed += 1
+	  logger.info("objType => " + objType + ",typeName => " + typeName)
+          objType match {
+            case "messagedef" => {
+              val ni = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[MessageDef]
+            }
+            case "containerdef" => {
+              val ai = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[ContainerDef]
+            }
+            case "modeldef" => {
+              val ci = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[ModelDef]
+	    }
+            case "typedef" => {
+              val ci = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[TypeDef]
+            }
+            case "functiondef" => {
+              val ci = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[FunctionDef]
+            }
+            case "attributedef" => {
+              val ci = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[AttributeDef]
+            }
+            case _ => {
+              logger.info("ReadMetadataObjects: Ignoring objectType " + objType)
+            }
+          }
+        }
+      })
+      logger.info("Read " + processed + " records ")
     }
   }
 
@@ -333,6 +343,11 @@ class CompileMessageEvent extends FunSpec with LocalTestFixtures with BeforeAndA
     if (file.exists()) {
       TestUtils.deleteFile(file)
     }
+
+    //file = new java.io.File("lib_managed")
+    //if(file.exists()){
+    //TestUtils.deleteFile(file)
+    //}
 
     val db = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
     assert(null != db)
@@ -344,7 +359,7 @@ class CompileMessageEvent extends FunSpec with LocalTestFixtures with BeforeAndA
 	logger.info("cleanup...")
       }
     }
-    TruncateDbStore
+    //TruncateDbStore
     MetadataAPIImpl.shutdown
   }
 

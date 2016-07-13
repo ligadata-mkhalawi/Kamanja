@@ -38,10 +38,9 @@ import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import com.ligadata.Serialize._
 
-import com.ligadata.msgcompiler.MessageCompiler
 import com.ligadata.kamanja.metadataload.MetadataLoad
 
-class CompileMessageEvent extends FunSpec with LocalTestFixtures with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
+class AddFunctionSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
   var res: String = null;
   var statusCode: Int = -1;
   var apiResKey: String = "\"Status Code\" : 0"
@@ -53,8 +52,8 @@ class CompileMessageEvent extends FunSpec with LocalTestFixtures with BeforeAndA
   var iFile: File = null
   var fileList: List[String] = null
   var newVersion: String = null
-  val userid: Option[String] = Some("kamanja")
-  val tenantId: Option[String] = Some("kamanja")
+  val userid: Option[String] = Some("test")
+  val tenantId: Option[String] = Some("testTenantId")
 
   private val loggerName = this.getClass.getName
   private val logger = LogManager.getLogger(loggerName)
@@ -105,7 +104,6 @@ class CompileMessageEvent extends FunSpec with LocalTestFixtures with BeforeAndA
       val mdLoader = new MetadataLoad(MdMgr.mdMgr, "", "", "", "")
       mdLoader.initialize
 
-      logger.info("Startup embedded zooKeeper ")
       val zkServer = EmbeddedZookeeper
       zkServer.instance.startup
 
@@ -264,10 +262,12 @@ class CompileMessageEvent extends FunSpec with LocalTestFixtures with BeforeAndA
       assert(null != sc)
     }
 
-    // Compile System Messages
-    it("Message Tests") {
-      And("Check whether MESSAGE_FILES_DIR defined as property")
-      dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CONTAINER_FILES_DIR")
+    // CRUD operations on type objects
+
+    it("Function Tests") {
+
+      And("Check whether FUNCTION_FILES_DIR defined as property")
+      dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("FUNCTION_FILES_DIR")
       assert(null != dirName)
 
       And("Check Directory Path")
@@ -277,18 +277,18 @@ class CompileMessageEvent extends FunSpec with LocalTestFixtures with BeforeAndA
       And("Check whether " + dirName + " is a directory ")
       assert(true == iFile.isDirectory)
 
-      And("Make sure there are few JSON message files in " + dirName);
-      val msgFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith(".json"))
-      assert(0 != msgFiles.length)
+      And("Make sure there are few JSON function files in " + dirName);
+      val funcFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith("json"))
+      assert(0 != funcFiles.length)
 
-      fileList = List("KamanjaModelEvent.json")
+      fileList = List("udfFcns.json")
       fileList.foreach(f1 => {
-	And("Add the Message From " + f1)
+	And("Add the Function From " + f1)
 	And("Make Sure " + f1 + " exist")
 	var exists = false
 	var file: java.io.File = null
 	breakable {
-	  msgFiles.foreach(f2 => {
+	  funcFiles.foreach(f2 => {
 	    if (f2.getName() == f1) {
 	      exists = true
 	      file = f2
@@ -298,31 +298,62 @@ class CompileMessageEvent extends FunSpec with LocalTestFixtures with BeforeAndA
 	}
 	assert(true == exists)
 
-	var msgDfType: String = "JSON"
-	var messageCompiler = new MessageCompiler;
-	val tid: Option[String] = null
-	val jsonstr: String = Source.fromFile(file).mkString
-	noException should be thrownBy {
-	  val ((verScalaMsg, verJavaMsg), containerDef, (nonVerScalaMsg, nonVerJavaMsg), rawMsg) = messageCompiler.processMsgDef(jsonstr, msgDfType, MdMgr.GetMdMgr, 0, null)
-	
-	  logger.debug("ScalaSource with Version => " + verScalaMsg)
-	  logger.debug("JavaSource with Version => " + verJavaMsg)
-	}
+	And("Count the functions before adding sample functions")
+	var fcnKeys = MetadataAPIImpl.GetAllFunctionsFromCache(true, None)
+	var fcnKeyCnt = fcnKeys.length
+	assert(fcnKeyCnt > 0)
+	logger.info("fcnKeyCnt => " + fcnKeyCnt)
+
+	And("Call AddFunctions MetadataAPI Function to add Function from " + file.getPath)
+	var funcListJson = Source.fromFile(file).mkString
+	implicit val jsonFormats: Formats = DefaultFormats
+	var json = parse(funcListJson)
+	var funcList = json.extract[FunctionList]
+	var fncCnt = funcList.Functions.length
+
+	res = MetadataAPIImpl.AddFunctions(funcListJson, "JSON", None)
+	res should include regex ("\"Status Code\" : 0")
+
+	And("GetAllFunctionDef API to fetch all the functions that were just added")
+	var rs1 = MetadataAPIImpl.GetAllFunctionDefs("JSON", None)
+	assert(rs1._1 != 0)
+	assert(rs1._2 != null)
+
+	And("Verify function count after adding sample functions")
+	fcnKeys = MetadataAPIImpl.GetAllFunctionsFromCache(true, None)
+	var fcnKeyCnt1 = fcnKeys.length
+	assert(fcnKeyCnt1 > 0)
+	logger.info("fcnKeyCnt1 => " + fcnKeyCnt1)
+
+	And("SampleFunctions.json contains only 2 functions and newCount is greater by 2")
+	assert(fcnKeyCnt1 - fcnKeyCnt == fncCnt)
 
 
-	/*
-        And("AddContainer from " + file.getPath)
-        var msgStr = Source.fromFile(file).mkString
-        res = MetadataAPIImpl.AddContainer(msgStr, "JSON", None, tenantId,None)
-        res should include regex ("\"Status Code\" : 0")
+	And("RemoveFunction API for all the functions that were just added")
+	funcList.Functions.foreach(fcn => {
+	  res = MetadataAPIImpl.RemoveFunction(fcn.NameSpace, fcn.Name, fcn.Version.toLong, None)
+	})
 
-        And("GetContainerDef API to fetch the message that was just added")
-        var objName = f1.stripSuffix(".json").toLowerCase
-        var version = "0000000000001000000"
-        res = MetadataAPIImpl.GetContainerDef("system", objName, "JSON", version, None,None)
-        res should include regex ("\"Status Code\" : 0")
-	*/
+	And("Check whether all the functions are removed")
+	funcList.Functions.foreach(fcn => {
+	  res = MetadataAPIImpl.GetFunctionDef(fcn.NameSpace, fcn.Name, "JSON", fcn.Version, None)
+	  res should include regex ("\"Status Code\" : 0")
+	})
 
+	And("Verify function count after removing the sample functions")
+	fcnKeys = MetadataAPIImpl.GetAllFunctionsFromCache(true, None)
+	fcnKeyCnt1 = fcnKeys.length
+	assert(fcnKeyCnt1 > 0)
+	assert(fcnKeyCnt1 - fcnKeyCnt == 0)
+
+	And("AddFunctions MetadataAPI Function again to add Function from " + file.getPath)
+	res = MetadataAPIImpl.AddFunctions(funcListJson, "JSON", None)
+	res should include regex ("\"Status Code\" : 0")
+
+	funcList.Functions.foreach(fcn => {
+	  var o = MdMgr.GetMdMgr.Functions(fcn.NameSpace, fcn.Name, true, true)
+	  assert(o != None)
+	})
       })
     }
   }
@@ -333,6 +364,11 @@ class CompileMessageEvent extends FunSpec with LocalTestFixtures with BeforeAndA
     if (file.exists()) {
       TestUtils.deleteFile(file)
     }
+
+    //file = new java.io.File("lib_managed")
+    //if(file.exists()){
+    //TestUtils.deleteFile(file)
+    //}
 
     val db = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
     assert(null != db)

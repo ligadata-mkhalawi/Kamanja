@@ -269,15 +269,20 @@ trait DataStore extends DataStoreOperations with AdaptersSerializeDeserializers 
   def Category = "Storage"
 
   def externalizeExceptionEvent (cause: Throwable): Unit = {
-    if (nodeCtxt != null && nodeCtxt.getEnvCtxt != null) {
+    try {
       val exceptionEvent = nodeCtxt.getEnvCtxt.getContainerInstance("com.ligadata.KamanjaBase.KamanjaExceptionEvent").asInstanceOf[com.ligadata.KamanjaBase.KamanjaExceptionEvent]
       exceptionEvent.timeoferrorepochms = System.currentTimeMillis()
       exceptionEvent.componentname = adapterInfo.Name
       exceptionEvent.errortype = "exception"
       exceptionEvent.errorstring = StackTrace.ThrowableTraceString(cause)
       nodeCtxt.getEnvCtxt.postMessages(Array[ContainerInterface](exceptionEvent))
+    } catch {
+      case t: Throwable => {
+        return
+      }
     }
   }
+
 
   override def getComponentStatusAndMetrics: MonitorComponentInfo = {
     val lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))

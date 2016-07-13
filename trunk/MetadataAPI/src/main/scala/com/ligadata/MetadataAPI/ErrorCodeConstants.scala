@@ -82,7 +82,7 @@ object ErrorCodeConstants {
    val Update_Function_Failed = "Failed to Update Fucntion";
    val Get_All_Functions_Failed = "Failed to fetch all containers";
    val Get_All_Functions_Failed_Not_Available = "Failed to fetch all containers. No function Available.";
-   val Get_All_Functions_Successful = "Successfully fetched all containers";
+   val Get_All_Functions_Successful = "Successfully fetched all functions";
    val Get_Function_Failed = "Failed to get function";
    val Get_Function_Failed_Not_Available = "Failed to get function. No Function Available.";
    val Get_Function_Successful = "Successfully fetched function";
@@ -235,7 +235,7 @@ object ErrorCodeConstants {
    //Monitor
    val GetHeartbeat_Success = "Heartbeats fetched successfully"
    val GetHeartbeat_Failed = "Get Heartbeats Failed"
-   
+
    //GetTypeById
    val Get_Type_By_SchemaId_Successful = "Successfully fetched message/container from Cache";
    val Get_Type_By_ElementId_Successful = "Successfully fetched message/container/model from Cache";
