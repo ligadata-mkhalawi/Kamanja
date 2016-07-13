@@ -48,12 +48,18 @@ Header - specifies the "target" language, version and the namespace. Those three
     "name": "className"
   }
 ``
-Imports - specify  additional packages/libraries to be used
+Imports - specify  additional packages/libraries to be used, in addition you can also add code to be added to the model. Code provide in that way can conflict with internal names and variables.
 
 ```javascript
   "imports": {
     "packages": [ "com.ligadata.Utils._", "com.ligadata.runtime._" ]
   }
+  "code": [
+    "code line 1",
+    "code line 2",
+    "...",
+    "code line N"
+  ]
 ```
 
 Grok - specifies the grok instances that can be used later in the transformations. Current limit is 1.

@@ -17,19 +17,39 @@ package com.ligadata.runtime
 
 class JtmContext
 {
+  case class ErrorEntry(errorDescription: String, additionalInfo: String)
+
+  // Add error to the current scope
   def AddError(error: String) = {
 
   }
 
-  def SetSection() = {
+  // Set's the current section
+  def SetSection(section: String) = {
 
   }
 
-  def SetInput() = {
+  // Set's the current input
+  def SetScope(section: String) = {
 
   }
 
-  def Errors(): Long = {
+  // Returns the error in the list
+  def Errors(): Int = {
+    collection.size
+  }
+
+  def CurrentErrors(): Int = {
     0
   }
+
+  def Reset() = {
+    collection = Map.empty[String, Map[String, Array[ErrorEntry]]]
+  }
+
+  var current_section: String = ""
+  var current_input: String = ""
+  var message: Array[String] = Array.empty[String]
+  var collection: Map[String, Map[String, Array[ErrorEntry]]] = Map.empty[String, Map[String, Array[ErrorEntry]]]
+
 }
