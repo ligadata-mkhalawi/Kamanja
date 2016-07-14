@@ -118,6 +118,7 @@ Usage:  bash $KAMANJA_HOME/bin/GenerateMessage.sh --inputfile $KAMANJA_HOME/inpu
      val extractedInfo = fileBean.extractInfo(parsedConfig) //Extract information from parsed file
      val configBeanObj = fileBean.createConfigBeanObj(extractedInfo)// create a config object that store the result from extracting config file
      var feildsString = mutable.LinkedHashMap[String, String]()
+     var feildsTemp = mutable.LinkedHashMap[String, String]()
      if(configBeanObj.createMessageFrom.equalsIgnoreCase("header")){
        val fileSize = fileBean.Countlines(inputFile) // Find number of lines in file
        val headerString = fileBean.ReadHeaderFile(inputFile, 0) //read the header line for inputFile
@@ -134,15 +135,23 @@ Usage:  bash $KAMANJA_HOME/bin/GenerateMessage.sh --inputfile $KAMANJA_HOME/inpu
          val check = dataTypeObj.CheckKeys(headerFields, configBeanObj.timePartition)
        }
 
+       var invalidFlag: Boolean = false
        for(itemIndex <- 0 to headerFields.length-1) {
-         if (dataTypeObj.isAllDigits(headerFields(itemIndex))) {
+         if (dataTypeObj.isAllDigits(headerFields(itemIndex)) || headerFields(itemIndex).equalsIgnoreCase("true")
+           ||  headerFields(itemIndex).equalsIgnoreCase("false") || invalidFlag == false) {
            //Check if all character are digits
-           logger.error("This %s file does not include header".format(inputFile))
-           sys.exit(1)
+           invalidFlag = true
+           println("This %s file does not include header".format(inputFile))
+           logger.info("This %s file does not include header".format(inputFile))
          }
+         var fieldName: String = "field" + itemIndex
          var previousType = dataTypeObj.FindFinalType(fileSize, itemIndex, inputFile,configBeanObj.delimiter, configBeanObj.detectDatatypeFrom)
+         feildsTemp += (fieldName -> previousType)
          feildsString += (headerFields(itemIndex) -> previousType)
        }
+
+       if(invalidFlag == true) feildsString = feildsTemp //change the map to the temp if there is at least one invalid name in the header of file
+
      } else if(configBeanObj.createMessageFrom.equalsIgnoreCase("pmml")){
        val pmmlObj: PMMLUtility = new PMMLUtility
        val modelEvaluator = pmmlObj.XMLReader(inputFileContent)
