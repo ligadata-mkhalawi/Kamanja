@@ -326,7 +326,9 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
 
       val r1 = t._2.computes.foldLeft(r._1 + t._1 + "/", Map.empty[String, String])( (r, c) => {
         if(c._2.expression.length > 0 && c._2.expressions.length > 0) {
-          ("", r._2 ++ Map(r._1 + c._1 -> "Vals and val attribute are set, please choose one.") )
+          ("", r._2 ++ Map(r._1 + c._1 -> "vals and val attribute are set, please choose one.") )
+        } else if(c._2.expression.length == 0 && c._2.expressions.length == 0) {
+          ("", r._2 ++ Map(r._1 + c._1 -> "neither vals or val attribute is set, please choose one.") )
         } else {
           r
         }
@@ -335,7 +337,9 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
       val r2 = t._2.outputs.foldLeft(r._1 + t._1 + "/", Map.empty[String, String])( (r, o) => {
         o._2.computes.foldLeft( r._1 + o._1 + "/", r._2 )((r, c) => {
           if(c._2.expression.length > 0 && c._2.expressions.length > 0) {
-            ("", r._2 ++ Map(r._1 + c._1 -> "Vals and val attribute are set, please choose one.") )
+            ("", r._2 ++ Map(r._1 + c._1 -> "vals and val attribute are set, please choose one.") )
+          } else if(c._2.expression.length == 0 && c._2.expressions.length == 0) {
+            ("", r._2 ++ Map(r._1 + c._1 -> "Neither vals or val attribute is set, please choose one.") )
           } else {
             r
           }
@@ -818,12 +822,12 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
             val rList = ResolveNames(list, aliaseMessages)
             val open = rList.filter(f => !innerMapping.contains(f._2)).filter(f => {
               val (c, v) = splitNamespaceClass(f._2)
-              if(dictMessages.contains(c)) {
+              if (dictMessages.contains(c)) {
                 val expression = "%s.get(\"%s\")".format(dictMessages.get(c).get, v)
                 val variableName = "%s.%s".format(dictMessages.get(c).get, v)
                 innerMapping ++= Map(f._2 -> eval.Tracker(variableName, c, "Any", true, v, expression))
                 false
-              } else  {
+              } else {
                 true
               }
             })
