@@ -44,10 +44,12 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
     // Model methods
     def exeGenerated_test1_1(msg1: com.ligadata.kamanja.test.V1000000.msg1): Array[MessageInterface] = {
       Debug("exeGenerated_test1_1")
+      context.SetSection("test1")
       // in scala, type could be optional
       val out3: Int = msg1.in1 + 1000
       def process_o1(): Array[MessageInterface] = {
         Debug("exeGenerated_test1_1::process_o1")
+        context.SetScope("o1")
         if (!(!(msg1.in2 != -1 && msg1.in2 < 100))) {
           Debug("Filtered: test1@o1")
           return Array.empty[MessageInterface]
@@ -64,10 +66,12 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
     }
     def exeGenerated_test1_2(msg2: com.ligadata.kamanja.test.V1000000.msg3): Array[MessageInterface] = {
       Debug("exeGenerated_test1_2")
+      context.SetSection("test1")
       // in scala, type could be optional
       val out3: Int = msg2.in1 + 2000
       def process_o1(): Array[MessageInterface] = {
         Debug("exeGenerated_test1_2::process_o1")
+        context.SetScope("o1")
         if (!(!(msg2.in2 != -1 && msg2.in2 < 100))) {
           Debug("Filtered: test1@o1")
           return Array.empty[MessageInterface]

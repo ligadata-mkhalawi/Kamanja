@@ -43,10 +43,12 @@ class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(fac
     // Model methods
     def exeGenerated_transactionmsg_1(msg1: com.ligadata.kamanja.samples.messages.V1000000.TransactionMsgIn): Array[MessageInterface] = {
       Debug("exeGenerated_transactionmsg_1")
+      context.SetSection("transactionmsg")
       // Split the incoming data
       val arrayData: Array[String] = msg1.data.split(",")
       def process_o1(): Array[MessageInterface] = {
         Debug("exeGenerated_transactionmsg_1::process_o1")
+        context.SetScope("o1")
         // extract the type
         val typeName: String = arrayData(0)
         if (!("com.ligadata.kamanja.samples.messages.TransactionMsg" == typeName)) {

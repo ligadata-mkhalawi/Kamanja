@@ -21,35 +21,46 @@ class JtmContext
 
   // Add error to the current scope
   def AddError(error: String) = {
-
+    collection(current_section)(current_scope) :+ error
   }
 
   // Set's the current section
   def SetSection(section: String) = {
-
+    current_section = section
+    current_scope = ""
   }
 
   // Set's the current input
-  def SetScope(section: String) = {
-
+  def SetScope(scope: String) = {
+    current_scope = scope
   }
 
   // Returns the error in the list
   def Errors(): Int = {
-    collection.size
+    collection.foldLeft(0) ((r, section) => {
+      section._2.foldLeft(r) ((k, scope) => {
+        k + scope._2.length
+      })
+    })
   }
 
   def CurrentErrors(): Int = {
+    if(collection.contains(current_section)) {
+      val section = collection(current_section)
+      if(section.contains(current_scope)) {
+        section(current_scope).length
+      }
+    }
     0
   }
 
   def Reset() = {
-    collection = Map.empty[String, Map[String, Array[ErrorEntry]]]
+    collection = Map.empty[String, Map[String, Array[String]]]
   }
 
   var current_section: String = ""
-  var current_input: String = ""
+  var current_scope: String = ""
   var message: Array[String] = Array.empty[String]
-  var collection: Map[String, Map[String, Array[ErrorEntry]]] = Map.empty[String, Map[String, Array[ErrorEntry]]]
+  var collection: Map[String, Map[String, Array[String]]] = Map.empty[String, Map[String, Array[String]]]
 
 }

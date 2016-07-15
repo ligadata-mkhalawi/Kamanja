@@ -47,9 +47,11 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
     // Model methods
     def exeGenerated_test1_1(msg1: com.ligadata.kamanja.test.V1000000.arrin1): Array[MessageInterface] = {
       Debug("exeGenerated_test1_1")
+      context.SetSection("test1")
       val elements: Array[String] = msg1.mydata
       def process_o1(): Array[MessageInterface] = {
         Debug("exeGenerated_test1_1::process_o1")
+        context.SetScope("o1")
         if (!(!(msg1.ext_type_id != "j10"))) {
           Debug("Filtered: test1@o1")
           return Array.empty[MessageInterface]

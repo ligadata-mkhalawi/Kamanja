@@ -53,9 +53,11 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
     // Model methods
     def exeGenerated_test1_1(msg1: com.ligadata.kamanja.test.V1000000.msg5): Array[MessageInterface] = {
       Debug("exeGenerated_test1_1")
+      context.SetSection("test1")
       lazy val grok_instance_1_0_in1 = grok_instance_1_0.extractNamedGroups(in1)
       def process_o1(): Array[MessageInterface] = {
         Debug("exeGenerated_test1_1::process_o1")
+        context.SetScope("o1")
         val result = com.ligadata.kamanja.test.V1000000.msg2.createInstance
         result.out4 = if(grok_instance_1_0_in1.containsKey("user")) grok_instance_1_0_in1.get("user") else "")
         result.out3 = if(grok_instance_1_0_in1.containsKey("domain")) grok_instance_1_0_in1.get("domain") else "")

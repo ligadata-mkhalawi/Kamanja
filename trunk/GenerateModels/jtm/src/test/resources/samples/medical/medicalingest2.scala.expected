@@ -43,12 +43,14 @@ class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(fac
     // Model methods
     def exeGenerated_transactionmsg_1(msg1: com.ligadata.kamanja.samples.messages.V1000000.TransactionMsgIn): Array[MessageInterface] = {
       Debug("exeGenerated_transactionmsg_1")
+      context.SetSection("transactionmsg")
       // Split the incoming data
       val arraydata: Array[String] = msg1.data.split(",")
       // extract the type
       val typeName: String = arraydata(0)
       def process_o1(): Array[MessageInterface] = {
         Debug("exeGenerated_transactionmsg_1::process_o1")
+        context.SetScope("o1")
         if (!("com.ligadata.kamanja.samples.messages.Beneficiary" == typeName)) {
           Debug("Filtered: transactionmsg@o1")
           return Array.empty[MessageInterface]
@@ -90,6 +92,7 @@ class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(fac
       }
       def process_o2(): Array[MessageInterface] = {
         Debug("exeGenerated_transactionmsg_1::process_o2")
+        context.SetScope("o2")
         if (!("com.ligadata.kamanja.samples.messages.HL7" == typeName)) {
           Debug("Filtered: transactionmsg@o2")
           return Array.empty[MessageInterface]
@@ -185,6 +188,7 @@ class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(fac
       }
       def process_o3(): Array[MessageInterface] = {
         Debug("exeGenerated_transactionmsg_1::process_o3")
+        context.SetScope("o3")
         if (!("com.ligadata.kamanja.samples.messages.inpatientclaim" == typeName)) {
           Debug("Filtered: transactionmsg@o3")
           return Array.empty[MessageInterface]
@@ -217,6 +221,7 @@ class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(fac
       }
       def process_o4(): Array[MessageInterface] = {
         Debug("exeGenerated_transactionmsg_1::process_o4")
+        context.SetScope("o4")
         if (!("com.ligadata.kamanja.samples.messages.OutpatientClaim" == typeName)) {
           Debug("Filtered: transactionmsg@o4")
           return Array.empty[MessageInterface]

@@ -1073,6 +1073,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
         methods :+= transformation.Comment
         methods :+= "def exeGenerated_%s_%d(%s): Array[MessageInterface] = {".format(t, depId, names)
         methods :+= "Debug(\"exeGenerated_%s_%d\")".format(t, depId)
+        methods :+= "context.SetSection(%s)".format(escape(t))
 
         // Collect form metadata
         val inputs: Array[Element] = ColumnNames(md, deps).map( e => {
@@ -1164,6 +1165,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
           var collect = Array.empty[String]
           collect :+= "\ndef process_%s(): Array[MessageInterface] = {\n".format(o._1)
           collect :+= "Debug(\"exeGenerated_%s_%d::process_%s\")".format(t, depId, o._1)
+          collect :+= "context.SetScope(%s)".format(escape(o._1))
           collect ++= collectInner
 
           {
