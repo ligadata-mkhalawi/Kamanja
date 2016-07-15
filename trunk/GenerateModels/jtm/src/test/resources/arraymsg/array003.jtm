@@ -14,39 +14,37 @@
   "aliases": {
     "messages": {
       "m1": "com.ligadata.kamanja.test.arrin1",
-      "o1": "com.ligadata.kamanja.test.arrout1"
+      "o1": "com.ligadata.kamanja.test.arrout1",
+      "oo": "com.ligadata.kamanja.test.arrout1"
     }
   },
 
   "transformations": {
     "test1": {
       "dependsOn": [ ["m1"] ],
-      "mapbyposition":{
-        "elements":["date_code","time_code","market_id","date_loaded","originhostname","origintransactionid"]
-      },
       "computes": {
-        "elements" : { "type": "Array[String]", "val": "${m1.mydata}" },
-        "errors":{
-          "type":"scala.collection.mutable.ArrayBuffer[String]",
-          "val":"scala.collection.mutable.ArrayBuffer[String]()",
-          "comment":"list of all validation errors"
-        },
-        "date_code_check":{
-          "type":"Boolean",
-          "val":"if($date_code!=null){ $errors.append(\"date_code - null condition violated\"); true } else false",
-          "comment":"Constraints for field (date_code) : NOTNULL,TYPE,DATEFORMAT"
-        }
+        "elements" : { "type": "Array[String]", "val": "${m1.mydata}" }
       },
+
       "outputs": {
         "o1": {
-          "where": "!(${m1.ext_type_id} != \"j10\") && $errors.length==0 && $date_code_check",
+          "where": "!(${m1.ext_type_id} != \"j10\")",
           "computes": {
-            "t1": { "type": "String", "val": "\"s:\" + $elements(1).toString()" },
+            "t1": { "type": "String", "val": "if($elements(1)==null){context.AddError(\"$elements(1) - null condition violated\"); \"\" } else {\"s:\" + $elements(1).toString()}" },
             "t2": { "type": "String", "val": "\"arryout\"" }
           },
+
           "mapping": {
             "out_ext_type_id": "t2",
             "mydata": "Array($elements(0) t1, $elements(2), $elements(3))"
+          }
+        },
+
+        "oo": {
+          "where": "context.CurrentErrors(\"o1\")>0",
+          "computes": {
+            "out_ext_type_id": { "val": "t2_error" },
+            "mydata": { "val": "context.CurrentErrorList()"}
           }
         }
       }

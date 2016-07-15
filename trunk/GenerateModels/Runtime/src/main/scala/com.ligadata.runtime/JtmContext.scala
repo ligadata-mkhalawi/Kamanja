@@ -44,14 +44,32 @@ class JtmContext
     })
   }
 
-  def CurrentErrors(): Int = {
-    if(collection.contains(current_section)) {
-      val section = collection(current_section)
+  def ErrorList(): Array[String] = {
+    collection.foldLeft(Array.empty[String]) ((r, section) => {
+      section._2.foldLeft(r) ((k, scope) => {
+        k ++ scope._2
+      })
+    })
+  }
+
+  def CurrentErrors(section: String): Int = {
+    if(collection.contains(section)) {
+      val section = collection(section)
       if(section.contains(current_scope)) {
         section(current_scope).length
       }
     }
     0
+  }
+
+  def CurrentErrorList(section: String): Array[String] = {
+    if(collection.contains(section)) {
+      val section = collection(section)
+      section.foldLeft(Array.empty[String]) ((k, scope) => {
+        k ++ scope._2
+      })
+    }
+    Array.empty[String]
   }
 
   def Reset() = {
