@@ -31,59 +31,59 @@ class ArrayTest extends FunSuite with BeforeAndAfter {
 
   val logger = LogManager.getLogger(this.getClass.getName())
 
-//  // Simple jtm
-//  test("test1") {
-//
-//    val fileInput = getClass.getResource("/arraymsg/array001.jtm").getPath
-//    val fileOutput = getClass.getResource("/arraymsg/").getPath + "/array001.scala.actual"
-//    val fileExpected = getClass.getResource("/arraymsg/array001.scala.expected").getPath
-//    val metadataLocation = getClass.getResource("/metadata").getPath
-//
-//    val compiler = CompilerBuilder.create().
-//      setSuppressTimestamps().
-//      setInputFile(fileInput).
-//      setOutputFile(fileOutput).
-//      setMetadataLocation(metadataLocation).
-//      build()
-//
-//    compiler.Execute()
-//
-//    val expected = FileUtils.readFileToString(new File(fileExpected))
-//    val actual = FileUtils.readFileToString(new File(fileOutput))
-//    logger.info("actual path={}", fileOutput)
-//    logger.info("expected path={}", fileExpected)
-//
-//    assert(actual == expected)
-//
-//    DeleteFile(fileOutput);
-//  }
-//
-//  // Simple jtm
-//  test("test2") {
-//
-//    val fileInput = getClass.getResource("/arraymsg/array002.jtm").getPath
-//    val fileOutput = getClass.getResource("/arraymsg/").getPath + "/array002.scala.actual"
-//    val fileExpected = getClass.getResource("/arraymsg/array002.scala.expected").getPath
-//    val metadataLocation = getClass.getResource("/metadata").getPath
-//
-//    val compiler = CompilerBuilder.create().
-//      setSuppressTimestamps().
-//      setInputFile(fileInput).
-//      setOutputFile(fileOutput).
-//      setMetadataLocation(metadataLocation).
-//      build()
-//
-//    compiler.Execute()
-//
-//    val expected = FileUtils.readFileToString(new File(fileExpected))
-//    val actual = FileUtils.readFileToString(new File(fileOutput))
-//    logger.info("actual path={}", fileOutput)
-//    logger.info("expected path={}", fileExpected)
-//
-//    assert(actual == expected)
-//
-//    DeleteFile(fileOutput)
-//  }
+  // Simple jtm
+  test("test1") {
+
+    val fileInput = getClass.getResource("/arraymsg/array001.jtm").getPath
+    val fileOutput = getClass.getResource("/arraymsg/").getPath + "/array001.scala.actual"
+    val fileExpected = getClass.getResource("/arraymsg/array001.scala.expected").getPath
+    val metadataLocation = getClass.getResource("/metadata").getPath
+
+    val compiler = CompilerBuilder.create().
+      setSuppressTimestamps().
+      setInputFile(fileInput).
+      setOutputFile(fileOutput).
+      setMetadataLocation(metadataLocation).
+      build()
+
+    compiler.Execute()
+
+    val expected = FileUtils.readFileToString(new File(fileExpected))
+    val actual = FileUtils.readFileToString(new File(fileOutput))
+    logger.info("actual path={}", fileOutput)
+    logger.info("expected path={}", fileExpected)
+
+    assert(actual == expected)
+
+    DeleteFile(fileOutput);
+  }
+
+  // Simple jtm
+  test("test2") {
+
+    val fileInput = getClass.getResource("/arraymsg/array002.jtm").getPath
+    val fileOutput = getClass.getResource("/arraymsg/").getPath + "/array002.scala.actual"
+    val fileExpected = getClass.getResource("/arraymsg/array002.scala.expected").getPath
+    val metadataLocation = getClass.getResource("/metadata").getPath
+
+    val compiler = CompilerBuilder.create().
+      setSuppressTimestamps().
+      setInputFile(fileInput).
+      setOutputFile(fileOutput).
+      setMetadataLocation(metadataLocation).
+      build()
+
+    compiler.Execute()
+
+    val expected = FileUtils.readFileToString(new File(fileExpected))
+    val actual = FileUtils.readFileToString(new File(fileOutput))
+    logger.info("actual path={}", fileOutput)
+    logger.info("expected path={}", fileExpected)
+
+    assert(actual == expected)
+
+    DeleteFile(fileOutput)
+  }
 
   // Simple jtm
   test("test3") {

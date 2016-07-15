@@ -63,7 +63,7 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
       def process_oo(): Array[MessageInterface] = {
         Debug("exeGenerated_test1_1::process_oo")
         context.SetScope("oo")
-        if (!(context.CurrentErrors()>0)) {
+        if (!(context.CurrentErrors("o1")>0)) {
           Debug("Filtered: test1@oo")
           return Array.empty[MessageInterface]
         }

@@ -54,18 +54,18 @@ class JtmContext
 
   def CurrentErrors(section: String): Int = {
     if(collection.contains(section)) {
-      val section = collection(section)
-      if(section.contains(current_scope)) {
-        section(current_scope).length
-      }
+      val section1 = collection(section)
+      section1.foldLeft(0) ((k, scope) => {
+        k + scope._2.length
+      })
     }
     0
   }
 
   def CurrentErrorList(section: String): Array[String] = {
     if(collection.contains(section)) {
-      val section = collection(section)
-      section.foldLeft(Array.empty[String]) ((k, scope) => {
+      val section1 = collection(section)
+      section1.foldLeft(Array.empty[String]) ((k, scope) => {
         k ++ scope._2
       })
     }
