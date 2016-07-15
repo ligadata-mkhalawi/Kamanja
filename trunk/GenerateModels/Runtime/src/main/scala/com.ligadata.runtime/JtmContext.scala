@@ -52,6 +52,10 @@ class JtmContext
     })
   }
 
+  def CurrentErrors(): Int = {
+    CurrentErrors(current_section)
+  }
+
   def CurrentErrors(section: String): Int = {
     if(collection.contains(section)) {
       val section1 = collection(section)

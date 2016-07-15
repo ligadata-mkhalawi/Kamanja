@@ -49,30 +49,51 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
       def process_o1(): Array[MessageInterface] = {
         Debug("exeGenerated_test1_1::process_o1")
         context.SetScope("o1")
-        if (!(!(msg1.ext_type_id != "j10"))) {
-          Debug("Filtered: test1@o1")
-          return Array.empty[MessageInterface]
+        try {
+          if (!(!(msg1.ext_type_id != "j10"))) {
+            Debug("Filtered: test1@o1")
+            return Array.empty[MessageInterface]
+          }
+          val t1: String = if(elements(1)==null){context.AddError("elements(1) - null condition violated"); "" } else {"s:" + elements(1).toString()}
+          val t2: String = "arryout"
+          val result = com.ligadata.kamanja.test.V1000000.arrout1.createInstance
+          result.mydata = Array(elements(0) t1, elements(2), elements(3))
+          result.out_ext_type_id = t2
+          if(context.CurrentErrors()==0) {
+            Array(result)
+          } else {
+            return Array.empty[MessageInterface]
+          }
+        } catch {
+          case e: Exception => {
+            context.AddError(e.what)
+          }
         }
-        val t1: String = if(elements(1)==null){context.AddError("elements(1) - null condition violated"); "" } else {"s:" + elements(1).toString()}
-        val t2: String = "arryout"
-        val result = com.ligadata.kamanja.test.V1000000.arrout1.createInstance
-        result.mydata = Array(elements(0) t1, elements(2), elements(3))
-        result.out_ext_type_id = t2
-        Array(result)
+        return Array.empty[MessageInterface]
       }
       def process_oo(): Array[MessageInterface] = {
         Debug("exeGenerated_test1_1::process_oo")
         context.SetScope("oo")
-        if (!(context.CurrentErrors("o1")>0)) {
-          Debug("Filtered: test1@oo")
-          return Array.empty[MessageInterface]
+        try {
+          if (!(context.CurrentErrors("o1")>0)) {
+            Debug("Filtered: test1@oo")
+            return Array.empty[MessageInterface]
+          }
+          val out_ext_type_id = t2_error
+          val mydata = context.CurrentErrorList()
+          val result = com.ligadata.kamanja.test.V1000000.arrout1.createInstance
+          result.mydata = mydata
+          result.out_ext_type_id = out_ext_type_id
+          if(context.CurrentErrors()==0) {
+            Array(result)
+          } else {
+            return Array.empty[MessageInterface]
+          }
+        } catch {
+          case e: Exception => {
+            context.AddError(e.what)
+          }
         }
-        val out_ext_type_id = t2_error
-        val mydata = context.CurrentErrorList()
-        val result = com.ligadata.kamanja.test.V1000000.arrout1.createInstance
-        result.mydata = mydata
-        result.out_ext_type_id = out_ext_type_id
-        Array(result)
       }
       process_o1()++
       process_oo()

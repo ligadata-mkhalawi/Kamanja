@@ -21,6 +21,7 @@
 
   "transformations": {
     "test1": {
+      "onerror": "abort",
       "dependsOn": [ ["m1"] ],
       "computes": {
         "elements" : { "type": "Array[String]", "val": "${m1.mydata}" }
