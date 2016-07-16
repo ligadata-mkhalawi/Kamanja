@@ -65,6 +65,9 @@ class JtmContext
     }
     0
   }
+  def CurrentErrorList(): Array[String] = {
+    CurrentErrorList(current_section)
+  }
 
   def CurrentErrorList(section: String): Array[String] = {
     if(collection.contains(section)) {

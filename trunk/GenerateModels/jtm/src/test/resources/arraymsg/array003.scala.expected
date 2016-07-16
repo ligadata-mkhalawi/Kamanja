@@ -94,6 +94,7 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
             context.AddError(e.what)
           }
         }
+        return Array.empty[MessageInterface]
       }
       process_o1()++
       process_oo()

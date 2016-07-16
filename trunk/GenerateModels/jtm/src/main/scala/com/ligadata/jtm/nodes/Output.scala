@@ -48,6 +48,7 @@ class Output {
   /** Define action what should happen when we detect an error
     * abort
     * ignore
+    * exception
     */
   val onerror: String = "abort"
 

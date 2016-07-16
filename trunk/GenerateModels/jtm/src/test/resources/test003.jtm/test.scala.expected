@@ -54,17 +54,28 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
       def process_omsg2(): Array[MessageInterface] = {
         Debug("exeGenerated_test1_1::process_omsg2")
         context.SetScope("omsg2")
-        if (!(!(msg2.in2 != -1 && msg2.in2 < 100))) {
-          Debug("Filtered: test1@omsg2")
-          return Array.empty[MessageInterface]
+        try {
+          if (!(!(msg2.in2 != -1 && msg2.in2 < 100))) {
+            Debug("Filtered: test1@omsg2")
+            return Array.empty[MessageInterface]
+          }
+          val tmp8: String = somefunc2(msg2.in3)
+          val result = com.ligadata.kamanja.test.V1000000.msg2.createInstance
+          result.out4 = ipinfo.zipCode
+          result.out3 = somefunc(zipcode, zipcode1)
+          result.out2 = tmp8
+          result.out1 = msg2.in1
+          if(context.CurrentErrors()==0) {
+            Array(result)
+          } else {
+            return Array.empty[MessageInterface]
+          }
+        } catch {
+          case e: Exception => {
+            context.AddError(e.what)
+          }
         }
-        val tmp8: String = somefunc2(msg2.in3)
-        val result = com.ligadata.kamanja.test.V1000000.msg2.createInstance
-        result.out4 = ipinfo.zipCode
-        result.out3 = somefunc(zipcode, zipcode1)
-        result.out2 = tmp8
-        result.out1 = msg2.in1
-        Array(result)
+        return Array.empty[MessageInterface]
       }
       process_omsg2()
     }
@@ -80,17 +91,28 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
       def process_omsg2(): Array[MessageInterface] = {
         Debug("exeGenerated_test1_2::process_omsg2")
         context.SetScope("omsg2")
-        if (!(!(msg2.in2 != -1 && msg2.in2 < 100))) {
-          Debug("Filtered: test1@omsg2")
-          return Array.empty[MessageInterface]
+        try {
+          if (!(!(msg2.in2 != -1 && msg2.in2 < 100))) {
+            Debug("Filtered: test1@omsg2")
+            return Array.empty[MessageInterface]
+          }
+          val tmp8: String = somefunc2(msg2.in3)
+          val result = com.ligadata.kamanja.test.V1000000.msg2.createInstance
+          result.out4 = ipinfo.zipCode
+          result.out3 = somefunc(zipcode, zipcode1)
+          result.out2 = tmp8
+          result.out1 = msg2.in1
+          if(context.CurrentErrors()==0) {
+            Array(result)
+          } else {
+            return Array.empty[MessageInterface]
+          }
+        } catch {
+          case e: Exception => {
+            context.AddError(e.what)
+          }
         }
-        val tmp8: String = somefunc2(msg2.in3)
-        val result = com.ligadata.kamanja.test.V1000000.msg2.createInstance
-        result.out4 = ipinfo.zipCode
-        result.out3 = somefunc(zipcode, zipcode1)
-        result.out2 = tmp8
-        result.out1 = msg2.in1
-        Array(result)
+        return Array.empty[MessageInterface]
       }
       process_omsg2()
     }
@@ -100,12 +122,23 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
       def process_omsg3(): Array[MessageInterface] = {
         Debug("exeGenerated_test2_3::process_omsg3")
         context.SetScope("omsg3")
-        val result = com.ligadata.kamanja.test.V1000000.msg4.createInstance
-        result.out4 = msg2.in1
-        result.out3 = msg2.in1
-        result.out2 = conversion.ToString(msg2.in1)
-        result.out1 = msg2.in1
-        Array(result)
+        try {
+          val result = com.ligadata.kamanja.test.V1000000.msg4.createInstance
+          result.out4 = msg2.in1
+          result.out3 = msg2.in1
+          result.out2 = conversion.ToString(msg2.in1)
+          result.out1 = msg2.in1
+          if(context.CurrentErrors()==0) {
+            Array(result)
+          } else {
+            return Array.empty[MessageInterface]
+          }
+        } catch {
+          case e: Exception => {
+            context.AddError(e.what)
+          }
+        }
+        return Array.empty[MessageInterface]
       }
       process_omsg3()
     }

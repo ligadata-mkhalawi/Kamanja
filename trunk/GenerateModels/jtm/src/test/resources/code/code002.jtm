@@ -32,7 +32,7 @@
       },
       "outputs": {
         "o1": {
-          "onerror": "abort",
+          "onerror": "ignore",
           "where": "!(${m1.ext_type_id} != \"j10\")",
           "computes": {
             "t1": { "type": "String", "val": "\"s:\" + $elements(1).toString()" },

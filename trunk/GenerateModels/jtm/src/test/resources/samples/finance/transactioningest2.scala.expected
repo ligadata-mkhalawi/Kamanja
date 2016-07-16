@@ -49,23 +49,34 @@ class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(fac
       def process_o1(): Array[MessageInterface] = {
         Debug("exeGenerated_transactionmsg_1::process_o1")
         context.SetScope("o1")
-        // extract the type
-        val typeName: String = mapData.typename
-        if (!("com.ligadata.kamanja.samples.messages.TransactionMsg" == typeName)) {
-          Debug("Filtered: transactionmsg@o1")
-          return Array.empty[MessageInterface]
+        try {
+          // extract the type
+          val typeName: String = mapData.typename
+          if (!("com.ligadata.kamanja.samples.messages.TransactionMsg" == typeName)) {
+            Debug("Filtered: transactionmsg@o1")
+            return Array.empty[MessageInterface]
+          }
+          val result = com.ligadata.kamanja.samples.messages.V1000000.TransactionMsg.createInstance
+          result.branchid = conversion.ToInteger(mapData.get("branchid"))
+          result.custid = conversion.ToLong(mapData.get("custid"))
+          result.locationid = conversion.ToInteger(mapData.get("locationid"))
+          result.balance = conversion.ToDouble(mapData.get("balance"))
+          result.amount = conversion.ToDouble(mapData.get("amount"))
+          result.transtype = mapData.get("transtype")
+          result.accno = conversion.ToLong(mapData.get("accno"))
+          result.date = conversion.ToInteger(mapData.get("date"))
+          result.time = conversion.ToInteger(mapData.get("time"))
+          if(context.CurrentErrors()==0) {
+            Array(result)
+          } else {
+            return Array.empty[MessageInterface]
+          }
+        } catch {
+          case e: Exception => {
+            context.AddError(e.what)
+          }
         }
-        val result = com.ligadata.kamanja.samples.messages.V1000000.TransactionMsg.createInstance
-        result.branchid = conversion.ToInteger(mapData.get("branchid"))
-        result.custid = conversion.ToLong(mapData.get("custid"))
-        result.locationid = conversion.ToInteger(mapData.get("locationid"))
-        result.balance = conversion.ToDouble(mapData.get("balance"))
-        result.amount = conversion.ToDouble(mapData.get("amount"))
-        result.transtype = mapData.get("transtype")
-        result.accno = conversion.ToLong(mapData.get("accno"))
-        result.date = conversion.ToInteger(mapData.get("date"))
-        result.time = conversion.ToInteger(mapData.get("time"))
-        Array(result)
+        return Array.empty[MessageInterface]
       }
       process_o1()
     }

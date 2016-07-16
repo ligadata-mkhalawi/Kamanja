@@ -49,16 +49,27 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
       def process_o1(): Array[MessageInterface] = {
         Debug("exeGenerated_test1_1::process_o1")
         context.SetScope("o1")
-        if (!(!(msg1.ext_type_id != "j10"))) {
-          Debug("Filtered: test1@o1")
-          return Array.empty[MessageInterface]
+        try {
+          if (!(!(msg1.ext_type_id != "j10"))) {
+            Debug("Filtered: test1@o1")
+            return Array.empty[MessageInterface]
+          }
+          val t1: String = "s:" + elements(1).toString()
+          val t2: String = "arryout"
+          val result = com.ligadata.kamanja.test.V1000000.arrout1.createInstance
+          result.mydata = Array(elements(0) t1, elements(2), elements(3))
+          result.out_ext_type_id = t2
+          if(context.CurrentErrors()==0) {
+            Array(result)
+          } else {
+            return Array.empty[MessageInterface]
+          }
+        } catch {
+          case e: Exception => {
+            context.AddError(e.what)
+          }
         }
-        val t1: String = "s:" + elements(1).toString()
-        val t2: String = "arryout"
-        val result = com.ligadata.kamanja.test.V1000000.arrout1.createInstance
-        result.mydata = Array(elements(0) t1, elements(2), elements(3))
-        result.out_ext_type_id = t2
-        Array(result)
+        return Array.empty[MessageInterface]
       }
       process_o1()
     }

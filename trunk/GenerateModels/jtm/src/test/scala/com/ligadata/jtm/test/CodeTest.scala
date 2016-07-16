@@ -57,4 +57,81 @@ class CodeTest extends FunSuite with BeforeAndAfter {
     DeleteFile(fileOutput);
   }
 
+  test("test2") {
+
+    val fileInput = getClass.getResource("/code/code002.jtm").getPath
+    val fileOutput = getClass.getResource("/code/").getPath + "/code002.scala.actual"
+    val fileExpected = getClass.getResource("/code/code002.scala.expected").getPath
+    val metadataLocation = getClass.getResource("/metadata").getPath
+
+    val compiler = CompilerBuilder.create().
+      setSuppressTimestamps().
+      setInputFile(fileInput).
+      setOutputFile(fileOutput).
+      setMetadataLocation(metadataLocation).
+      build()
+
+    compiler.Execute()
+
+    val expected = FileUtils.readFileToString(new File(fileExpected))
+    val actual = FileUtils.readFileToString(new File(fileOutput))
+    logger.info("actual path={}", fileOutput)
+    logger.info("expected path={}", fileExpected)
+
+    assert(actual == expected)
+
+    DeleteFile(fileOutput);
+  }
+
+  test("test3") {
+
+    val fileInput = getClass.getResource("/code/code003.jtm").getPath
+    val fileOutput = getClass.getResource("/code/").getPath + "/code003.scala.actual"
+    val fileExpected = getClass.getResource("/code/code003.scala.expected").getPath
+    val metadataLocation = getClass.getResource("/metadata").getPath
+
+    val compiler = CompilerBuilder.create().
+      setSuppressTimestamps().
+      setInputFile(fileInput).
+      setOutputFile(fileOutput).
+      setMetadataLocation(metadataLocation).
+      build()
+
+    compiler.Execute()
+
+    val expected = FileUtils.readFileToString(new File(fileExpected))
+    val actual = FileUtils.readFileToString(new File(fileOutput))
+    logger.info("actual path={}", fileOutput)
+    logger.info("expected path={}", fileExpected)
+
+    assert(actual == expected)
+
+    DeleteFile(fileOutput);
+  }
+
+  test("test4") {
+
+    val fileInput = getClass.getResource("/code/code004.jtm").getPath
+    val fileOutput = getClass.getResource("/code/").getPath + "/code004.scala.actual"
+    val fileExpected = getClass.getResource("/code/code004.scala.expected").getPath
+    val metadataLocation = getClass.getResource("/metadata").getPath
+
+    val compiler = CompilerBuilder.create().
+      setSuppressTimestamps().
+      setInputFile(fileInput).
+      setOutputFile(fileOutput).
+      setMetadataLocation(metadataLocation).
+      build()
+
+    compiler.Execute()
+
+    val expected = FileUtils.readFileToString(new File(fileExpected))
+    val actual = FileUtils.readFileToString(new File(fileOutput))
+    logger.info("actual path={}", fileOutput)
+    logger.info("expected path={}", fileExpected)
+
+    assert(actual == expected)
+
+    DeleteFile(fileOutput);
+  }
 }

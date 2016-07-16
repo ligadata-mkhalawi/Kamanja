@@ -58,12 +58,23 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
       def process_o1(): Array[MessageInterface] = {
         Debug("exeGenerated_test1_1::process_o1")
         context.SetScope("o1")
-        val result = com.ligadata.kamanja.test.V1000000.msg2.createInstance
-        result.out4 = if(grok_instance_1_0_in1.containsKey("user")) grok_instance_1_0_in1.get("user") else "")
-        result.out3 = if(grok_instance_1_0_in1.containsKey("domain")) grok_instance_1_0_in1.get("domain") else "")
-        result.out2 = if(grok_instance_1_0_in1.containsKey("email")) grok_instance_1_0_in1.get("email") else "")
-        result.out1 = msg1.in3
-        Array(result)
+        try {
+          val result = com.ligadata.kamanja.test.V1000000.msg2.createInstance
+          result.out4 = if(grok_instance_1_0_in1.containsKey("user")) grok_instance_1_0_in1.get("user") else "")
+          result.out3 = if(grok_instance_1_0_in1.containsKey("domain")) grok_instance_1_0_in1.get("domain") else "")
+          result.out2 = if(grok_instance_1_0_in1.containsKey("email")) grok_instance_1_0_in1.get("email") else "")
+          result.out1 = msg1.in3
+          if(context.CurrentErrors()==0) {
+            Array(result)
+          } else {
+            return Array.empty[MessageInterface]
+          }
+        } catch {
+          case e: Exception => {
+            context.AddError(e.what)
+          }
+        }
+        return Array.empty[MessageInterface]
       }
       process_o1()
     }
