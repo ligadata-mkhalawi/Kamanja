@@ -45,7 +45,7 @@ object Parts {
 
   val factory =
     """|class {factoryclass.name}(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
-       |  override def createModelInstance(): ModelInstance = return new {modelclass.name}(this)
+       |  override def createModelInstance(txnCtxt: com.ligadata.KamanjaBase.TransactionContext): ModelInstance = return new {modelclass.name}(this)
        |  override def getModelName: String = "{model.name}"
        |  override def getVersion: String = "{model.version}"
        |

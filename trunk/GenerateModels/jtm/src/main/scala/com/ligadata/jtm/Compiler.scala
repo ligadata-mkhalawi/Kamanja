@@ -1273,14 +1273,14 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
             collect :+= {if(o._2.exception == "catch") {
                           """|} catch {
                              |  case e: Exception => {
-                             |   context.AddError(e.what)
+                             |   context.AddError(e.getMessage)
                              |  }
                              |}
                              |return Array.empty[MessageInterface]""".stripMargin
                         } else if(o._2.exception == "abort") {
                             """|} catch {
                              |  case e: Exception => {
-                             |    Debug(s\"Exception: %s:" + e.what)
+                             |    Debug(s\"Exception: %s:" + e.getMessage)
                              |    throw e
                              |  }
                              |}""".stripMargin.format(o._1)

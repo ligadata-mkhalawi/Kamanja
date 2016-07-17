@@ -21,7 +21,7 @@ import com.ligadata.runtime.Log
 import com.ligadata.Utils._
 import com.ligadata.runtime.Conversion
 class ModelFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
-  override def createModelInstance(txnContext: TransactionContext): ModelInstance = return new Model(this)
+  override def createModelInstance(txnCtxt: com.ligadata.KamanjaBase.TransactionContext): ModelInstance = return new Model(this)
   override def getModelName: String = "com.ligadata.jtm.test.filter.Model"
   override def getVersion: String = "0.0.1"
   override def createResultObject(): ModelResultBase = new MappedModelResults()
@@ -29,32 +29,49 @@ class ModelFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelIn
 class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
   val conversion = new com.ligadata.runtime.Conversion
   val log = new com.ligadata.runtime.Log(this.getClass.getName)
+  val context = new com.ligadata.runtime.JtmContext
   import log._
+  // Model code start
+  // Model code end
   override def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
-    Trace(s"Model::execute transid=%d triggeredset=%d outputdefault=%d".format(txnCtxt.transId, triggerdSetIndex, outputDefault))
+    if (isTraceEnabled)
+      Trace(s"Model::execute transid=%d triggeredset=%d outputdefault=%s".format(txnCtxt.transId, triggerdSetIndex, outputDefault.toString))
     if(isDebugEnabled)
     {
       execMsgsSet.foreach(m => Debug( s"Input: %s -> %s".format(m.getFullTypeName, m.toString())))
     }
-    //
-    //
+    // Grok parts
+    // Model methods
     def exeGenerated_test1_1(msg1: com.ligadata.kamanja.test.V1000000.msg1): Array[MessageInterface] = {
       Debug("exeGenerated_test1_1")
+      context.SetSection("test1")
       // in scala, type could be optional
       val out3: Int = msg1.in1 + 1000
       def process_o1(): Array[MessageInterface] = {
         Debug("exeGenerated_test1_1::process_o1")
-        if (!(!(msg1.in2 != -1 && msg1.in2 < 100))) {
-          Debug("Filtered: test1@o1")
-          return Array.empty[MessageInterface]
+        context.SetScope("o1")
+        try {
+          if (!(!(msg1.in2 != -1 && msg1.in2 < 100))) {
+            Debug("Filtered: test1@o1")
+            return Array.empty[MessageInterface]
+          }
+          val t1: String = "s:" + msg1.in2.toString()
+          val result = com.ligadata.kamanja.test.V1000000.msg2.createInstance
+          result.out4 = msg1.in3
+          result.out3 = msg1.in2
+          result.out2 = t1
+          result.out1 = msg1.in1
+          if(context.CurrentErrors()==0) {
+            Array(result)
+          } else {
+            return Array.empty[MessageInterface]
+          }
+        } catch {
+          case e: Exception => {
+            context.AddError(e.getMessage)
+          }
         }
-        val t1: String = "s:" + msg1.in2.toString()
-        val result = com.ligadata.kamanja.test.V1000000.msg2.createInstance
-        result.out4 = msg1.in3
-        result.out3 = msg1.in2
-        result.out2 = t1
-        result.out1 = msg1.in1
-        Array(result)
+        return Array.empty[MessageInterface]
       }
       process_o1()
     }
@@ -62,7 +79,7 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
     val msgs = execMsgsSet.map(m => m.getFullTypeName -> m).toMap
     val msg1 = msgs.getOrElse("com.ligadata.kamanja.test.msg1", null).asInstanceOf[com.ligadata.kamanja.test.V1000000.msg1]
     // Main dependency -> execution check
-    //
+    // Create result object
     val results: Array[MessageInterface] =
       (if(msg1!=null) {
         exeGenerated_test1_1(msg1)
