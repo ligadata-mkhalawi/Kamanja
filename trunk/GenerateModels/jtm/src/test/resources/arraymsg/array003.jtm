@@ -43,7 +43,7 @@
         },
 
         "oo": {
-          "where": "context.CurrentErrors(\"o1\")>0",
+          "where": "context.ScopeErrors(\"o1\")>0",
           "computes": {
             "out_ext_type_id": { "val": "t2_error" },
             "mydata": { "val": "context.CurrentErrorList()"}
