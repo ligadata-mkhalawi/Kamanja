@@ -19,6 +19,10 @@ import com.ligadata.KvBase.TimeRange
 import com.ligadata.kamanja.metadata.ModelDef
 import com.ligadata.runtime.Log
 import com.ligadata.runtime.Conversion
+// READ ME BEFORE YOU MAKE CHANGES TO THE INTERFACE
+//
+// If you adjust the interface here, you need to fix the code generation as well
+//
 class TransactionIngestFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
   override def createModelInstance(txnContext: TransactionContext): ModelInstance = return new TransactionIngest(this)
   override def getModelName: String = "com.ligadata.models.samples.medical2.TransactionIngest"
