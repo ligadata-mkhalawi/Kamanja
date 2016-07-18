@@ -1280,7 +1280,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
                         } else if(o._2.exception == "abort") {
                             """|} catch {
                              |  case e: Exception => {
-                             |    Debug(s\"Exception: %s:" + e.getMessage)
+                             |    Debug("Exception: %s:" + e.getMessage)
                              |    throw e
                              |  }
                              |}""".stripMargin.format(o._1)

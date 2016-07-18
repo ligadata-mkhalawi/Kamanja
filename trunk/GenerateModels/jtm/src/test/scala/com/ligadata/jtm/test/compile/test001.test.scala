@@ -20,10 +20,6 @@ import com.ligadata.kamanja.metadata.ModelDef
 import com.ligadata.runtime.Log
 import com.ligadata.Utils._
 import com.ligadata.runtime.Conversion
-// READ ME BEFORE YOU MAKE CHANGES TO THE INTERFACE
-//
-// If you adjust the interface here, you need to fix the code generation as well
-//
 class ModelFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
   override def createModelInstance(txnCtxt: com.ligadata.KamanjaBase.TransactionContext): ModelInstance = return new Model(this)
   override def getModelName: String = "com.ligadata.jtm.test.filter.Model"
@@ -65,11 +61,7 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
           result.out3 = msg1.in2
           result.out2 = t1
           result.out1 = msg1.in1
-          if(context.CurrentErrors()==0) {
-            Array(result)
-          } else {
-            return Array.empty[MessageInterface]
-          }
+          Array(result)
         } catch {
           case e: Exception => {
             context.AddError(e.getMessage)
