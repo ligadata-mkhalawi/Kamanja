@@ -29,7 +29,7 @@ class FileAdapterConnectionConfig {
   var passphrase: String = _
   var keyFile: String = _
 
-  var otherConfig  = List[(String,String)]()
+  var hadoopConfig  : List[(String,String)]=null
 }
 
 class FileAdapterMonitoringConfig {
@@ -108,27 +108,39 @@ object SmartFileAdapterConfiguration{
       throw new KamanjaException(err, null)
     }
 
-    val connConf = adapCfgValues.get("ConnectionConfig").get.asInstanceOf[Map[String, String]]
+    val connConf = adapCfgValues.get("ConnectionConfig").get.asInstanceOf[Map[String, Any]]
     //val connConfValues = connConf.values.asInstanceOf[Map[String, String]]
     connConf.foreach(kv => {
       if (kv._1.compareToIgnoreCase("HostLists") == 0) {
-        connectionConfig.hostsList = kv._2.split(",").map(str => str.trim).filter(str => str.size > 0)
+        val hostLists = kv._2.asInstanceOf[String]
+        connectionConfig.hostsList = hostLists.split(",").map(str => str.trim).filter(str => str.size > 0)
       } else if (kv._1.compareToIgnoreCase("UserId") == 0) {
-        connectionConfig.userId = kv._2.trim
+        val userID = kv._2.asInstanceOf[String]
+        connectionConfig.userId = userID.trim
       } else if (kv._1.compareToIgnoreCase("Password") == 0) {
-        connectionConfig.password = kv._2.trim
+        val password  = kv._2.asInstanceOf[String]
+        connectionConfig.password = password.trim
       } else if (kv._1.compareToIgnoreCase("Authentication") == 0) {
-        connectionConfig.authentication = kv._2.trim
+        val authentication = kv._2.asInstanceOf[String]
+        connectionConfig.authentication = authentication.trim
       } else if (kv._1.compareToIgnoreCase("Principal") == 0) {//kerberos
-        connectionConfig.principal = kv._2.trim
+        val principal = kv._2.asInstanceOf[String]
+        connectionConfig.principal = principal.trim
       } else if (kv._1.compareToIgnoreCase("Keytab") == 0) {//kerberos
-        connectionConfig.keytab = kv._2.trim
+        val keyTab = kv._2.asInstanceOf[String]
+        connectionConfig.keytab = keyTab.trim
       } else if (kv._1.compareToIgnoreCase("Passphrase") == 0) {//ssh
-        connectionConfig.passphrase = kv._2.trim
+        val passPhrase =kv._2.asInstanceOf[String]
+        connectionConfig.passphrase = passPhrase.trim
       } else if (kv._1.compareToIgnoreCase("KeyFile") == 0) {//ssh
-        connectionConfig.keyFile = kv._2.trim
-      }else{
-        connectionConfig.otherConfig ::=(kv._1, kv._2)
+        val keyFile = kv._2.asInstanceOf[String]
+        connectionConfig.keyFile = keyFile.trim
+      }else if (kv._1.compareToIgnoreCase("hadoopConfig")==0){
+        val hadoopConfig = kv._2.asInstanceOf[Map[String,String]]
+        connectionConfig.hadoopConfig= List[(String,String)]()
+        hadoopConfig.foreach(hconf =>{
+          connectionConfig.hadoopConfig ::=(hconf._1, hconf._2)
+        })
       }
     })
     if(connectionConfig.authentication == null || connectionConfig.authentication == "")
