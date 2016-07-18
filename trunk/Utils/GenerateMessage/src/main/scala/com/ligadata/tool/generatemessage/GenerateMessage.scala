@@ -52,6 +52,10 @@ Usage:  bash $KAMANJA_HOME/bin/GenerateMessage.sh --inputfile $KAMANJA_HOME/inpu
         nextOption(map ++ Map('inputfile -> value), tail)
       case "--config" :: value :: tail =>
         nextOption(map ++ Map('config -> value), tail)
+      case "--fieldnames" :: value :: tail =>
+        nextOption(map ++ Map('fieldnames -> value), tail)
+      case "--header" :: value :: tail =>
+        nextOption(map ++ Map('header -> value), tail)
       case option :: tail => {
         logger.error("Unknown option " + option)
         logger.warn(usage)
@@ -120,9 +124,54 @@ Usage:  bash $KAMANJA_HOME/bin/GenerateMessage.sh --inputfile $KAMANJA_HOME/inpu
      var feildsString = mutable.LinkedHashMap[String, String]()
      var feildsTemp = mutable.LinkedHashMap[String, String]()
      if(configBeanObj.createMessageFrom.equalsIgnoreCase("header")){
+       ////////////////////////////////////////here//////////////////////////////////////////
+       var headerFlagFile = false
+       val inputFileFields = options.getOrElse('fieldnames, null).toString.trim //Read fieldnames value from parsed parameters
+       if (inputFileFields != null || inputFileFields.toString().trim() != "") { //check if fieldnames passed or not
+         val inputFileFieldsExistsFlag = fileBean.FileExist(inputFileFields) // check if  fieldnames path exists
+         if (inputFileFieldsExistsFlag == false){
+           logger.error("This file %s does not exists".format(inputFileFields))
+           logger.warn(usage)
+           sys.exit(1)
+         }
+
+         val inputFileFieldsContent = fileBean.ReadFile(inputFileFields) // readfieldnames contents
+         if (inputFileFieldsContent == null  || inputFileFieldsContent.size == 0) { //check if fieldnames includes data
+           logger.error("This file %s does not include data. Check your file please.".format(inputFileFields))
+           logger.warn(usage)
+           sys.exit(1)
+         }
+
+          headerFlagFile = true // change the flag to true if there is geader file in command
+
+       }
+
+
+       var headerFlag = options.getOrElse('header, null).toString.trim //Read inputFile value from parsed parameters
+       if (headerFlag == null) { //check if inputFile passed or not
+         logger.info("you are not pass --header option and the default value is true.")
+         println("you are not pass --header option and the default value is true")
+         headerFlag = "true"
+       } else (headerFlag.equalsIgnoreCase("true") || headerFlag.equalsIgnoreCase("false")){
+         logger.error("the value for --header should be true or false")
+         sys.exit(1)
+       }
+
+       /////////////to here///////////////////////////////////
        val fileSize = fileBean.Countlines(inputFile) // Find number of lines in file
-       val headerString = fileBean.ReadHeaderFile(inputFile, 0) //read the header line for inputFile
-       val headerFields = fileBean.SplitFile(headerString, configBeanObj.delimiter) //split the header line based on delimiter
+       var headerString = ""
+       var headerFields = Array.empty[String]
+       if(headerFlagFile){
+         headerString = fileBean.ReadHeaderFile(inputFileFields, 0) //read the header line for inputFile
+       } else { if(headerFlag.equalsIgnoreCase("true")){
+         headerString = fileBean.ReadHeaderFile(inputFile, 0) //read the header line for inputFile
+       } else {
+         logger.error("at least one of these option should pass correctly --header --fieldnames")
+         sys.exit(1)
+       }
+       }
+        //headerString = fileBean.ReadHeaderFile(inputFile, 0) //read the header line for inputFile
+        headerFields = fileBean.SplitFile(headerString, configBeanObj.delimiter) //split the header line based on delimiter
        // check if partitionkey,primarykey,timepartioninfo value in file header
        if(configBeanObj.detectDatatypeFrom > fileSize) {
          logger.error("you pass %d in detectdatatypeFrom and the file size equal to %d records, please pass a number greater than 1 and less than the file size"
@@ -135,12 +184,12 @@ Usage:  bash $KAMANJA_HOME/bin/GenerateMessage.sh --inputfile $KAMANJA_HOME/inpu
          val check = dataTypeObj.CheckKeys(headerFields, configBeanObj.timePartition)
        }
 
-       var invalidFlag: Boolean = false
+      // var invalidFlag: Boolean = false
        for(itemIndex <- 0 to headerFields.length-1) {
-         if (dataTypeObj.isAllDigits(headerFields(itemIndex)) || headerFields(itemIndex).equalsIgnoreCase("true")
-           ||  headerFields(itemIndex).equalsIgnoreCase("false") || invalidFlag == false) {
+         if (dataTypeObj.isAllDigits(headerFields(itemIndex))/* || headerFields(itemIndex).equalsIgnoreCase("true")
+           ||  headerFields(itemIndex).equalsIgnoreCase("false") || invalidFlag == false */) {
            //Check if all character are digits
-           invalidFlag = true
+        //   invalidFlag = true
            println("This %s file does not include header".format(inputFile))
            logger.info("This %s file does not include header".format(inputFile))
          }
@@ -150,7 +199,7 @@ Usage:  bash $KAMANJA_HOME/bin/GenerateMessage.sh --inputfile $KAMANJA_HOME/inpu
          feildsString += (headerFields(itemIndex) -> previousType)
        }
 
-       if(invalidFlag == true) feildsString = feildsTemp //change the map to the temp if there is at least one invalid name in the header of file
+      // if(invalidFlag == true) feildsString = feildsTemp //change the map to the temp if there is at least one invalid name in the header of file
 
      } else if(configBeanObj.createMessageFrom.equalsIgnoreCase("pmml")){
        val pmmlObj: PMMLUtility = new PMMLUtility
