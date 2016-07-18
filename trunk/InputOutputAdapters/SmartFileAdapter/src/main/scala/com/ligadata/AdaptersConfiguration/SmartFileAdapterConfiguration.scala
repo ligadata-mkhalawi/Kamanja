@@ -7,6 +7,8 @@ import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.native.JsonMethods._
 
+import scala.collection.mutable.MutableList
+
 /**
   * Created by Yasser on 3/10/2016.
   */
@@ -26,6 +28,8 @@ class FileAdapterConnectionConfig {
   var keytab: String = _
   var passphrase: String = _
   var keyFile: String = _
+
+  var otherConfig  = List[(String,String)]()
 }
 
 class FileAdapterMonitoringConfig {
@@ -123,6 +127,8 @@ object SmartFileAdapterConfiguration{
         connectionConfig.passphrase = kv._2.trim
       } else if (kv._1.compareToIgnoreCase("KeyFile") == 0) {//ssh
         connectionConfig.keyFile = kv._2.trim
+      }else{
+        connectionConfig.otherConfig ::=(kv._1, kv._2)
       }
     })
     if(connectionConfig.authentication == null || connectionConfig.authentication == "")
