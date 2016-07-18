@@ -83,12 +83,12 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   private val adapterConfig = SmartFileAdapterConfiguration.getAdapterConfig(inputConfig)
 
   private var locationTargetMoveDirsMap = collection.immutable.Map[String, String]()
-  if(adapterConfig.monitoringConfig.targetMoveDir.length == 1)
+  if(adapterConfig.monitoringConfig.targetMoveDirs.length == 1)
     locationTargetMoveDirsMap = adapterConfig.monitoringConfig.locations.map(
-      loc => MonitorUtils.simpleDirPath(loc) -> MonitorUtils.simpleDirPath(adapterConfig.monitoringConfig.targetMoveDir(0))).toMap
+      loc => MonitorUtils.simpleDirPath(loc) -> MonitorUtils.simpleDirPath(adapterConfig.monitoringConfig.targetMoveDirs(0))).toMap
   else {
     adapterConfig.monitoringConfig.locations.foldLeft(0)((counter, loc) => {
-      locationTargetMoveDirsMap += MonitorUtils.simpleDirPath(loc) -> MonitorUtils.simpleDirPath(adapterConfig.monitoringConfig.targetMoveDir(counter))
+      locationTargetMoveDirsMap += MonitorUtils.simpleDirPath(loc) -> MonitorUtils.simpleDirPath(adapterConfig.monitoringConfig.targetMoveDirs(counter))
       counter + 1
     })
   }
@@ -211,7 +211,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       if(initialized == false || ! clusterStatus.leaderNodeId.equals(prevRegLeader)){
         LOG.debug("Smart File Consumer - Leader is running on node " + clusterStatus.nodeId)
 
-        monitorController = new MonitorController(adapterConfig, newFileDetectedCallback)
+        monitorController = new MonitorController(adapterConfig, this, newFileDetectedCallback)
         monitorController.checkConfigDirsAccessibility//throw an exception if a folder is not accissible
 
         allNodesStartInfo.clear()
@@ -1113,7 +1113,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   }
 
   //after a file is changed, move it into targetMoveDir
-  private def moveFile(originalFilePath : String): Boolean = {
+  def moveFile(originalFilePath : String): Boolean = {
 
     //get corresponding directory to move file to
     val smartFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, originalFilePath)

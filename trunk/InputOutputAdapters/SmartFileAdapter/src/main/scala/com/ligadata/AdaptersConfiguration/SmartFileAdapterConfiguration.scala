@@ -34,7 +34,7 @@ class FileAdapterMonitoringConfig {
 
   var fileBufferingTimeout = 300 // in seconds
   //folders to move consumed files to. either one directory for all input (locations) or same number as (locations)
-  var targetMoveDir : Array[String] = Array.empty[String]
+  var targetMoveDirs : Array[String] = Array.empty[String]
   var consumersCount : Int = _
   var workerBufferSize : Int = 4 //buffer size in MB to read messages from files
   var messageSeparator : Char = 10
@@ -156,7 +156,7 @@ object SmartFileAdapterConfiguration{
         monitoringConfig.locations = kv._2.split(",").map(str => str.trim).filter(str => str.size > 0)
       }
       else  if (kv._1.compareToIgnoreCase("TargetMoveDir") == 0) {
-        monitoringConfig.targetMoveDir = kv._2.split(",").map(str => str.trim).filter(str => str.size > 0)
+        monitoringConfig.targetMoveDirs = kv._2.split(",").map(str => str.trim).filter(str => str.size > 0)
       }
       else if (kv._1.compareToIgnoreCase("WorkerBufferSize") == 0) {
         monitoringConfig.workerBufferSize = kv._2.trim.toInt
@@ -177,12 +177,12 @@ object SmartFileAdapterConfiguration{
       throw new KamanjaException(err, null)
     }
 
-    if(monitoringConfig.targetMoveDir == null || monitoringConfig.targetMoveDir.length == 0) {
+    if(monitoringConfig.targetMoveDirs == null || monitoringConfig.targetMoveDirs.length == 0) {
       val err = "Not found targetMoveDir for Smart File Adapter Config:" + adapterName
       throw new KamanjaException(err, null)
     }
 
-    if(monitoringConfig.targetMoveDir.length > 1 && monitoringConfig.targetMoveDir.length < monitoringConfig.locations.length) {
+    if(monitoringConfig.targetMoveDirs.length > 1 && monitoringConfig.targetMoveDirs.length < monitoringConfig.locations.length) {
       val err = "targetMoveDir should either have one dir or same number as (location) for Smart File Adapter Config:" + adapterName
       throw new KamanjaException(err, null)
     }

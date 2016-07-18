@@ -14,7 +14,7 @@ import scala.collection.mutable.ArrayBuffer
   * @param adapterConfig
   * @param newFileDetectedCallback callback to notify leader whenever a file is detected
   */
-class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
+class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSmartFileConsumer : SmartFileConsumer,
                         newFileDetectedCallback :(String) => Unit) {
 
   val NOT_RECOVERY_SITUATION = -1
@@ -53,11 +53,15 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
         throw new KamanjaException("Smart File Consumer - Dir to watch (" + dir + ") is not accessible. It must be readable and writable", null)
     })
 
-    val handler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, adapterConfig.monitoringConfig.targetMoveDir)
-    if(!handler.exists())
-      throw new KamanjaException("Smart File Consumer - Target Dir (" + adapterConfig.monitoringConfig.targetMoveDir + ") does not exist", null)
-    else if(!handler.isAccessible)
-      throw new KamanjaException("Smart File Consumer - Target Dir (" + adapterConfig.monitoringConfig.targetMoveDir + ") is not accessible. It must be readable and writable", null)
+    adapterConfig.monitoringConfig.targetMoveDirs.foreach(targetMoveDir => {
+      val handler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, targetMoveDir)
+      if(!handler.exists())
+        throw new KamanjaException("Smart File Consumer - Target Dir (" + targetMoveDir + ") does not exist", null)
+      else if(!handler.isAccessible)
+        throw new KamanjaException("Smart File Consumer - Target Dir (" + targetMoveDir + ") is not accessible. It must be readable and writable", null)
+
+    })
+
   }
 
   def markFileAsProcessed(filePath : String) : Unit = {
@@ -195,13 +199,13 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
                       val diff = System.currentTimeMillis - thisFileStarttime //d.lastModified
                       if (diff > bufferTimeout) {
                         logger.warn("SMART FILE CONSUMER (MonitorController): Detected that " + fileHandler.getFullPath + " has been on the buffering queue longer then " + bufferTimeout / 1000 + " seconds - Cleaning up")
-                        moveFile(fileTuple._1)
+                        parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
                         bufferingQ_map.remove(fileTuple._1)
                       }
                     } else {
                       //Invalid File - due to content type
                       logger.error("SMART FILE CONSUMER (MonitorController): Moving out " + fileHandler.getFullPath + " with invalid file type ")
-                      moveFile(fileTuple._1)
+                      parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
                       bufferingQ_map.remove(fileTuple._1)
                     }
                   }
@@ -222,7 +226,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
               if ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors) {
                 logger.warn("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + fileTuple._1.getFullPath + " on the buffering queue", ioe)
                 try {
-                  moveFile(fileTuple._1)
+                  parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
                   bufferingQ_map.remove(fileTuple._1)
                 } catch {
                   case e: Throwable => {
@@ -239,7 +243,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
               if ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors) {
                 logger.error("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + fileTuple._1 + " on the buffering queue", e)
                 try {
-                  moveFile(fileTuple._1)
+                  parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
                   bufferingQ_map.remove(fileTuple._1)
                 } catch {
                   case e: Throwable => {
@@ -307,7 +311,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
     if(f == null) null else f.fileHandler.getFullPath
   }
 
-  private def moveFile(fileHandler: SmartFileHandler): Unit = {
+  /*private def moveFile(fileHandler: SmartFileHandler): Unit = {
     val targetMoveDir = adapterConfig.monitoringConfig.targetMoveDir
 
     val fileStruct = fileHandler.getFullPath.split("/")
@@ -318,5 +322,5 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
     } else {
       logger.warn("SMART FILE CONSUMER File has been deleted" + fileHandler.getFullPath);
     }
-  }
+  }*/
 }
