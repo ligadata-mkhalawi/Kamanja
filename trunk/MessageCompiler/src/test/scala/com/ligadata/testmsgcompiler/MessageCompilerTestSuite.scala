@@ -41,7 +41,7 @@ class MessageCompilerTestSuite extends FunSuite {
     hl7Fixed.set(0, "120024000")
     hl7Fixed.setTimePartitionData();
     assert(hl7Fixed.getOrElse("abc", "123") === "123")
-     assert(hl7Fixed.getOrElse(200, "4556") === "4556")
+    assert(hl7Fixed.getOrElse(200, "4556") === "4556")
     assert(hl7Fixed.getTimePartitionData === 126230400000L)
   }
 
@@ -72,6 +72,11 @@ class MessageCompilerTestSuite extends FunSuite {
     assert(inpatientClaimFixedTest.get(1) === 1000)
     assert(inpatientClaimFixedTest.get(2) === Array("icddgs"))
     assert(inpatientClaimFixedTest.get(4) === true)
+    assert(inpatientClaimFixedTest.getOrElse(10, "defaultVal") === "defaultVal")
+    assert(inpatientClaimFixedTest.getOrElse("abc", "text") === "text")
+    log.info("inpatientClaimFixedTest getOrElse index " + inpatientClaimFixedTest.getOrElse(10, "defaultVal"))
+    log.info("inpatientClaimFixedTest getOrElse  " + inpatientClaimFixedTest.getOrElse("abc", "text"))
+
     val idCodeDim = inpatientClaimFixedTest.get(7)
 
     if (idCodeDim.isInstanceOf[IdCodeDimFixedTest]) {
@@ -89,6 +94,7 @@ class MessageCompilerTestSuite extends FunSuite {
     idCodeDimMappedTest.set("codes", scala.collection.immutable.Map("test" -> 1))
     assert(idCodeDimMappedTest.getOrElse("id1", "hello") === "hello")
     assert(idCodeDimMappedTest.get("id") === 1)
+    log.info("inpatientClaim Mapped " + idCodeDimMappedTest.getOrElse("id1", "hello"))
   }
 
   private def createScalaFile(scalaClass: String, version: String, className: String, clstype: String): Unit = {
