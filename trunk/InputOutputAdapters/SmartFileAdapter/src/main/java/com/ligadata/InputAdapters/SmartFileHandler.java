@@ -9,6 +9,8 @@ import java.io.InputStream;
  */
 public interface SmartFileHandler {
     String getFullPath();
+    String getParentDir();
+
     //gets input stream based on the fs type (das/nas, hdfs, sft), usually used for file type detecting purposes
     InputStream getDefaultInputStream() throws KamanjaException;
     //prepares input stream based on the fs type and also file type itself (plain, gzip, bz2, lzo), so data can be read directly

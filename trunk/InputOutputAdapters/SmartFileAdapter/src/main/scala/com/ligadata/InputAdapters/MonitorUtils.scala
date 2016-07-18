@@ -65,6 +65,19 @@ object MonitorUtils {
     bytes.map(b => b.toChar)
   }
 
+  def simpleDirPath(path : String) : String = {
+    if(path.endsWith("/"))
+      path.substring(0, path.length - 1)
+    else
+      path
+  }
+
+  def getFileName(path : String) : String = {
+    val idx = path.lastIndexOf("/")
+    if(idx < 0 )
+      return path
+    path.substring(idx + 1)
+  }
 
   def shutdownAndAwaitTermination(pool : ExecutorService, id : String) : Unit = {
     pool.shutdown(); // Disable new tasks from being submitted

@@ -33,10 +33,15 @@ class FileAdapterMonitoringConfig {
   var locations : Array[String] = Array.empty[String] //folders to monitor
 
   var fileBufferingTimeout = 300 // in seconds
-  var targetMoveDir = ""
+  //folders to move consumed files to. either one directory for all input (locations) or same number as (locations)
+  var targetMoveDir : Array[String] = Array.empty[String]
   var consumersCount : Int = _
   var workerBufferSize : Int = 4 //buffer size in MB to read messages from files
   var messageSeparator : Char = 10
+
+  //array of keywords, each one has a meaning to the adapter, which will add corresponding data to msg before sending to engine
+  var msgTags : Array[String] = Array.empty[String]
+  var tagDelimiter : String = ","
 }
 
 object SmartFileAdapterConfiguration{
@@ -46,6 +51,9 @@ object SmartFileAdapterConfiguration{
 
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
+
+  val validMsgTags = Set("MsgType", "FileName", "FileFullPath")
+  def isValidMsgTag(tag : String) = tag != null && (validMsgTags contains tag)
 
   def getAdapterConfig(inputConfig: AdapterConfiguration): SmartFileAdapterConfiguration = {
 
@@ -148,13 +156,19 @@ object SmartFileAdapterConfiguration{
         monitoringConfig.locations = kv._2.split(",").map(str => str.trim).filter(str => str.size > 0)
       }
       else  if (kv._1.compareToIgnoreCase("TargetMoveDir") == 0) {
-        monitoringConfig.targetMoveDir = kv._2.trim
+        monitoringConfig.targetMoveDir = kv._2.split(",").map(str => str.trim).filter(str => str.size > 0)
       }
       else if (kv._1.compareToIgnoreCase("WorkerBufferSize") == 0) {
         monitoringConfig.workerBufferSize = kv._2.trim.toInt
       }
       else if (kv._1.compareToIgnoreCase("MessageSeparator") == 0) {
         monitoringConfig.messageSeparator = kv._2.trim.toInt.toChar
+      }
+      else if (kv._1.compareToIgnoreCase("TagDelimiter") == 0) {
+        monitoringConfig.tagDelimiter = kv._2
+      }
+      else  if (kv._1.compareToIgnoreCase("TsgTags") == 0) {
+        monitoringConfig.msgTags = kv._2.split(",").map(str => str.trim).filter(str => str.size > 0)
       }
     })
 
@@ -166,6 +180,15 @@ object SmartFileAdapterConfiguration{
     if(monitoringConfig.targetMoveDir == null || monitoringConfig.targetMoveDir.length == 0) {
       val err = "Not found targetMoveDir for Smart File Adapter Config:" + adapterName
       throw new KamanjaException(err, null)
+    }
+
+    if(monitoringConfig.targetMoveDir.length > 1 && monitoringConfig.targetMoveDir.length < monitoringConfig.locations.length) {
+      val err = "targetMoveDir should either have one dir or same number as (location) for Smart File Adapter Config:" + adapterName
+      throw new KamanjaException(err, null)
+    }
+
+    if(monitoringConfig.msgTags != null && monitoringConfig.msgTags.length > 0){
+      monitoringConfig.msgTags.foreach(tag => if(!isValidMsgTag(tag)) throw new Exception(s"Invalid msg tag ($tag) for file input adatper ($adapterName)"))
     }
 
     (_type, connectionConfig, monitoringConfig)

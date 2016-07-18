@@ -68,6 +68,12 @@ class SftpFileHandler extends SmartFileHandler{
     }
   }
 
+  def getParentDir : String = {
+    val filePath = getPathOnly(getFullPath)
+    val idx = filePath.lastIndexOf("/")
+    filePath.substring(0, idx)
+  }
+
   def getFullPath = remoteFullPath
 
   //gets the input stream according to file system type - SFTP here

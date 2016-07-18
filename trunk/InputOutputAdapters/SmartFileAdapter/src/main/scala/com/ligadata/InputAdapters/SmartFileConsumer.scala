@@ -81,6 +81,18 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   private var readExecutor: ExecutorService = _
 
   private val adapterConfig = SmartFileAdapterConfiguration.getAdapterConfig(inputConfig)
+
+  private var locationTargetMoveDirsMap = collection.immutable.Map[String, String]()
+  if(adapterConfig.monitoringConfig.targetMoveDir.length == 1)
+    locationTargetMoveDirsMap = adapterConfig.monitoringConfig.locations.map(
+      loc => MonitorUtils.simpleDirPath(loc) -> MonitorUtils.simpleDirPath(adapterConfig.monitoringConfig.targetMoveDir(0))).toMap
+  else {
+    adapterConfig.monitoringConfig.locations.foldLeft(0)((counter, loc) => {
+      locationTargetMoveDirsMap += MonitorUtils.simpleDirPath(loc) -> MonitorUtils.simpleDirPath(adapterConfig.monitoringConfig.targetMoveDir(counter))
+      counter + 1
+    })
+  }
+
   private var isShutdown = false
   private var isQuiesced = false
   private var startTime: Long = 0
@@ -1102,7 +1114,15 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
   //after a file is changed, move it into targetMoveDir
   private def moveFile(originalFilePath : String): Boolean = {
-    val targetMoveDir = adapterConfig.monitoringConfig.targetMoveDir
+
+    //get corresponding directory to move file to
+    val smartFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, originalFilePath)
+    val parentDir = MonitorUtils.simpleDirPath(smartFileHandler.getParentDir)
+    if(!locationTargetMoveDirsMap.contains(parentDir))
+      throw new Exception("No target move dir for directory " + parentDir)
+
+    val targetMoveDir = locationTargetMoveDirsMap(parentDir)
+
     val fileStruct = originalFilePath.split("/")
     try {
       val fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, originalFilePath)
@@ -1302,7 +1322,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
     val fileName = smartMessage.relatedFileHandler.getFullPath
     val offset = smartMessage.offsetInFile
-    val message = smartMessage.msg
+    val message =
+      if(adapterConfig.monitoringConfig.msgTags == null || adapterConfig.monitoringConfig.msgTags.length == 0)
+        smartMessage.msg
+      else getFinalMsg(smartMessage).getBytes()
 
 
     // Create a new EngineMessage and call the engine.
@@ -1321,6 +1344,34 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     msgCount += 1
     execThread.execute(message, uniqueKey, uniqueVal, readTmMs)
 
+  }
+
+  /**
+    * add tags if needed
+    */
+  def getFinalMsg(smartMessage : SmartFileMessage) : String = {
+    val msg = new String(smartMessage.msg)
+    if(adapterConfig.monitoringConfig.msgTags == null || adapterConfig.monitoringConfig.msgTags.length == 0)
+      return msg
+
+    val tagDelimiter = adapterConfig.monitoringConfig.tagDelimiter
+    val fileName = MonitorUtils.getFileName(smartMessage.relatedFileHandler.getFullPath)
+    val parentDirName = MonitorUtils.getFileName(smartMessage.relatedFileHandler.getParentDir)
+
+    val prefix = adapterConfig.monitoringConfig.msgTags.foldLeft("")((pre, tag) => {
+      val tagValue = tag match{
+          //assuming msg type is defined by parent folder name
+        case "MsgType" => parentDirName
+        case "FileName" => fileName
+        case "FileFullPath" => smartMessage.relatedFileHandler.getFullPath
+        case _ => ""
+      }
+      if(tagValue.length > 0)
+        pre + (if(pre.length == 0) "" else tagDelimiter) + tagValue
+      else pre
+    })
+
+    prefix + (if(prefix.length == 0) "" else tagDelimiter) + smartMessage.msg
   }
 
   override def StopProcessing: Unit = {

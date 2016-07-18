@@ -60,6 +60,11 @@ class HdfsFileHandler extends SmartFileHandler{
   }*/
 
   def getFullPath = fileFullPath
+  def getParentDir : String = {
+    val filePath = getFullPath
+    val idx = filePath.lastIndexOf("/")
+    filePath.substring(0, idx)
+  }
 
   //gets the input stream according to file system type - HDFS here
   def getDefaultInputStream() : InputStream = {
