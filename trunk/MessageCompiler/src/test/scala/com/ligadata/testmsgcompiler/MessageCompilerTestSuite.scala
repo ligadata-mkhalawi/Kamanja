@@ -40,7 +40,9 @@ class MessageCompilerTestSuite extends FunSuite {
     var hl7Fixed: HL7Fixed = new HL7Fixed(HL7Fixed);
     hl7Fixed.set(0, "120024000")
     hl7Fixed.setTimePartitionData();
-    assert(hl7Fixed.getTimePartitionData === 94694400000L)
+    assert(hl7Fixed.getOrElse("abc", "123") === "123")
+     assert(hl7Fixed.getOrElse(200, "4556") === "4556")
+    assert(hl7Fixed.getTimePartitionData === 126230400000L)
   }
 
   test("Test Fixed Message - InpatientClaimFixedTest") {
@@ -71,6 +73,7 @@ class MessageCompilerTestSuite extends FunSuite {
     assert(inpatientClaimFixedTest.get(2) === Array("icddgs"))
     assert(inpatientClaimFixedTest.get(4) === true)
     val idCodeDim = inpatientClaimFixedTest.get(7)
+
     if (idCodeDim.isInstanceOf[IdCodeDimFixedTest]) {
       assert(idCodeDim.asInstanceOf[ContainerInterface].get(0) === 1)
       assert(idCodeDim.asInstanceOf[IdCodeDimFixedTest].code === 2)
@@ -84,6 +87,7 @@ class MessageCompilerTestSuite extends FunSuite {
     idCodeDimMappedTest.set("code", 2)
     idCodeDimMappedTest.set("description", "Test")
     idCodeDimMappedTest.set("codes", scala.collection.immutable.Map("test" -> 1))
+    assert(idCodeDimMappedTest.getOrElse("id1", "hello") === "hello")
     assert(idCodeDimMappedTest.get("id") === 1)
   }
 
