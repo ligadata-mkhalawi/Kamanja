@@ -8,7 +8,7 @@ shellPrompt := { state =>  "sbt (%s)> ".format(Project.extract(state).currentPro
 
 assemblyOption in assembly ~= { _.copy(prependShellScript = Some(defaultShellScript)) }
 
-val kamanjaVersion = "1.4.2"
+val kamanjaVersion = "1.4.3"
 
 //assemblyJarName in assembly := { s"${name.value}-${version.value}" }
 assemblyJarName in assembly := {
@@ -61,7 +61,7 @@ unmanagedJars in Compile <<= baseDirectory map { base => (base ** "*.jar").class
 
 name := "ContainersUtility"
 
-version := "1.4.2"
+version := "1.4.3"
 
 //resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 //

@@ -6,11 +6,11 @@ sbtPlugin := true
 //version := "0.0.0.1"
 
 //lazy val kamanjaVersion = settingKey[String]("kamanjaVersion")
-// kamanjaVersion := "1.4.2"
+// kamanjaVersion := "1.4.3"
 
 //scalaVersion := "2.11.7"
 
-//kamanjaVersion in ThisBuild := "1.4.2"
+//kamanjaVersion in ThisBuild := "1.4.3"
 
 crossScalaVersions := Seq("2.11.7", "2.10.4")
 

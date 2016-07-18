@@ -3,7 +3,7 @@ import sbt._
 import Keys._
 
 shellPrompt := { state => "sbt (%s)> ".format(Project.extract(state).currentProject.id) }
-val kamanjaVersion = "1.4.2"
+val kamanjaVersion = "1.4.3"
 
 assemblyOption in assembly ~= {
   _.copy(prependShellScript = Some(defaultShellScript))
@@ -63,7 +63,7 @@ test in assembly := {}
 
 name := "GetComponent"
 
-version := "1.4.2"
+version := "1.4.3"
 
 resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 libraryDependencies += "org.apache.hbase" % "hbase-client" % "1.0.2"

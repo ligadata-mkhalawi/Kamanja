@@ -8,7 +8,7 @@ assemblyOption in assembly ~= {
   _.copy(prependShellScript = Some(defaultShellScript))
 }
 
-val kamanjaVersion = "1.4.2"
+val kamanjaVersion = "1.4.3"
 
 assemblyJarName in assembly := {
   s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"
@@ -62,7 +62,7 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
 
 name := "MetadataAPIService"
 
-version := "1.4.2"
+version := "1.4.3"
 
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
 

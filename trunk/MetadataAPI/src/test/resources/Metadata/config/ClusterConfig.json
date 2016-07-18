@@ -5,7 +5,7 @@
       "SystemCatalog": {
         "StoreType": "hashmap",
         "SchemaName": "testdata",
-        "Location": "/media/home2/installKamanja140/Kamanja-1.4.2_2.11/storage/syscatalog"
+        "Location": "/media/home2/installKamanja140/Kamanja-1.4.3_2.11/storage/syscatalog"
       },
       "Tenants": [
         {
@@ -14,7 +14,7 @@
           "PrimaryDataStore": {
             "StoreType": "hashmap",
             "SchemaName": "testdata",
-            "Location": "/media/home2/installKamanja140/Kamanja-1.4.2_2.11/storage/tenant1_default"
+            "Location": "/media/home2/installKamanja140/Kamanja-1.4.3_2.11/storage/tenant1_default"
           },
           "CacheConfig": {
             "MaxSizeInMB": 256
@@ -29,10 +29,10 @@
       },
       "EnvironmentContext": {
         "classname": "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$",
-        "jarname": "KamanjaInternalDeps_2.11-1.4.2.jar",
+        "jarname": "KamanjaInternalDeps_2.11-1.4.3.jar",
         "dependencyjars": [
-          "ExtDependencyLibs_2.11-1.4.2.jar",
-          "ExtDependencyLibs2_2.11-1.4.2.jar"
+          "ExtDependencyLibs_2.11-1.4.3.jar",
+          "ExtDependencyLibs2_2.11-1.4.3.jar"
         ]
       },
       "Cache": {
@@ -48,8 +48,8 @@
           "NodePort": 6541,
           "NodeIpAddr": "localhost",
           "JarPaths": [
-            "/media/home2/installKamanja140/Kamanja-1.4.2_2.11/lib/system",
-            "/media/home2/installKamanja140/Kamanja-1.4.2_2.11/lib/application"
+            "/media/home2/installKamanja140/Kamanja-1.4.3_2.11/lib/system",
+            "/media/home2/installKamanja140/Kamanja-1.4.3_2.11/lib/application"
           ],
           "Scala_home": "/home/vmandava/scala-2.11.7",
           "Java_home": "/home/vmandava/jdk1.8.0_05",
@@ -57,7 +57,7 @@
             "RestAPI",
             "ProcessingEngine"
           ],
-          "Classpath": ".:/media/home2/installKamanja140/Kamanja-1.4.2_2.11/lib/system/ExtDependencyLibs_2.11-1.4.2.jar:/media/home2/installKamanja140/Kamanja-1.4.2_2.11/lib/system/KamanjaInternalDeps_2.11-1.4.2.jar:/media/home2/installKamanja140/Kamanja-1.4.2_2.11/lib/system/ExtDependencyLibs2_2.11-1.4.2.jar"
+          "Classpath": ".:/media/home2/installKamanja140/Kamanja-1.4.3_2.11/lib/system/ExtDependencyLibs_2.11-1.4.3.jar:/media/home2/installKamanja140/Kamanja-1.4.3_2.11/lib/system/KamanjaInternalDeps_2.11-1.4.3.jar:/media/home2/installKamanja140/Kamanja-1.4.3_2.11/lib/system/ExtDependencyLibs2_2.11-1.4.3.jar"
         }
       ],
       "Adapters": [
@@ -67,17 +67,17 @@
           "TenantId": "tenant1",
           "StoreType": "hashmap",
           "SchemaName": "testdata",
-          "Location": "/media/home2/installKamanja140/Kamanja-1.4.2_2.11/storage/tenant1_storage_1"
+          "Location": "/media/home2/installKamanja140/Kamanja-1.4.3_2.11/storage/tenant1_storage_1"
         },
         {
           "Name": "HelloWorldInput",
           "TypeString": "Input",
           "TenantId": "tenant1",
           "ClassName": "com.ligadata.InputAdapters.KafkaSimpleConsumer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.4.2.jar",
+          "JarName": "KamanjaInternalDeps_2.11-1.4.3.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.4.2.jar",
-            "ExtDependencyLibs2_2.11-1.4.2.jar"
+            "ExtDependencyLibs_2.11-1.4.3.jar",
+            "ExtDependencyLibs2_2.11-1.4.3.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -89,10 +89,10 @@
           "TypeString": "Input",
           "TenantId": "tenant1",
           "ClassName": "com.ligadata.InputAdapters.KafkaSimpleConsumer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.4.2.jar",
+          "JarName": "KamanjaInternalDeps_2.11-1.4.3.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.4.2.jar",
-            "ExtDependencyLibs2_2.11-1.4.2.jar"
+            "ExtDependencyLibs_2.11-1.4.3.jar",
+            "ExtDependencyLibs2_2.11-1.4.3.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -104,10 +104,10 @@
           "TypeString": "Input",
           "TenantId": "tenant1",
           "ClassName": "com.ligadata.InputAdapters.KafkaSimpleConsumer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.4.2.jar",
+          "JarName": "KamanjaInternalDeps_2.11-1.4.3.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.4.2.jar",
-            "ExtDependencyLibs2_2.11-1.4.2.jar"
+            "ExtDependencyLibs_2.11-1.4.3.jar",
+            "ExtDependencyLibs2_2.11-1.4.3.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -119,10 +119,10 @@
           "TypeString": "Input",
           "TenantId": "tenant1",
           "ClassName": "com.ligadata.InputAdapters.KafkaSimpleConsumer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.4.2.jar",
+          "JarName": "KamanjaInternalDeps_2.11-1.4.3.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.4.2.jar",
-            "ExtDependencyLibs2_2.11-1.4.2.jar"
+            "ExtDependencyLibs_2.11-1.4.3.jar",
+            "ExtDependencyLibs2_2.11-1.4.3.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -137,10 +137,10 @@
 	  "FieldDelimiter" : "|",
 	  "ValueDelimiter" : ",",
           "ClassName": "com.ligadata.InputAdapters.KafkaSimpleConsumer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.4.2.jar",
+          "JarName": "KamanjaInternalDeps_2.11-1.4.3.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.4.2.jar",
-            "ExtDependencyLibs2_2.11-1.4.2.jar"
+            "ExtDependencyLibs_2.11-1.4.3.jar",
+            "ExtDependencyLibs2_2.11-1.4.3.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -152,10 +152,10 @@
           "TypeString": "Output",
           "TenantId": "tenant1",
           "ClassName": "com.ligadata.OutputAdapters.KafkaProducer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.4.2.jar",
+          "JarName": "KamanjaInternalDeps_2.11-1.4.3.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.4.2.jar",
-            "ExtDependencyLibs2_2.11-1.4.2.jar"
+            "ExtDependencyLibs_2.11-1.4.3.jar",
+            "ExtDependencyLibs2_2.11-1.4.3.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -167,10 +167,10 @@
           "TypeString": "Output",
           "TenantId": "tenant1",
           "ClassName": "com.ligadata.OutputAdapters.KafkaProducer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.4.2.jar",
+          "JarName": "KamanjaInternalDeps_2.11-1.4.3.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.4.2.jar",
-            "ExtDependencyLibs2_2.11-1.4.2.jar"
+            "ExtDependencyLibs_2.11-1.4.3.jar",
+            "ExtDependencyLibs2_2.11-1.4.3.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -182,10 +182,10 @@
           "TypeString": "Output",
           "TenantId": "tenant1",
           "ClassName": "com.ligadata.OutputAdapters.KafkaProducer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.4.2.jar",
+          "JarName": "KamanjaInternalDeps_2.11-1.4.3.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.4.2.jar",
-            "ExtDependencyLibs2_2.11-1.4.2.jar"
+            "ExtDependencyLibs_2.11-1.4.3.jar",
+            "ExtDependencyLibs2_2.11-1.4.3.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -197,10 +197,10 @@
           "TypeString": "Status",
           "TenantId": "System",
           "ClassName": "com.ligadata.OutputAdapters.KafkaProducer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.4.2.jar",
+          "JarName": "KamanjaInternalDeps_2.11-1.4.3.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.4.2.jar",
-            "ExtDependencyLibs2_2.11-1.4.2.jar"
+            "ExtDependencyLibs_2.11-1.4.3.jar",
+            "ExtDependencyLibs2_2.11-1.4.3.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",

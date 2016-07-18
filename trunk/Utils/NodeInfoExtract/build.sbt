@@ -55,7 +55,7 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
 
 name := "NodeInfoExtract"
 
-version := "1.4.2"
+version := "1.4.3"
 
 scalacOptions += "-deprecation"
 

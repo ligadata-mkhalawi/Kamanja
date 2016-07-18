@@ -10,7 +10,7 @@ assemblyOption in assembly ~= {
   _.copy(prependShellScript = Some(defaultShellScript))
 }
 
-val kamanjaVersion = "1.4.2"
+val kamanjaVersion = "1.4.3"
 
 assemblyJarName in assembly := {
   s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"
@@ -62,7 +62,7 @@ unmanagedJars in Compile <<= baseDirectory map { base => (base ** "*.jar").class
 
 name := "PmmlTestTool"
 
-version := "1.4.2"
+version := "1.4.3"
 
 // Enables publishing to maven repo
 // publishMavenStyle := true

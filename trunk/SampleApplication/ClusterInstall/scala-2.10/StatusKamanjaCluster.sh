@@ -66,8 +66,8 @@ installDir=`cat $metadataAPIConfig | grep '[Rr][Oo][Oo][Tt]_[Dd][Ii][Rr]' | sed 
 echo "...extract node information for the cluster to be started from the Metadata configuration information supplied"
 
 # info is assumed to be present in the supplied metadata store... see trunk/utils/NodeInfoExtract for details 
-echo "...Command = java -cp $installDir/lib/system/ExtDependencyLibs2_2.10-1.4.2.jar:$installDir/lib/system/ExtDependencyLibs_2.10-1.4.2.jar:$installDir/lib/system/KamanjaInternalDeps_2.10-1.4.2.jar:$installDir/lib/system/nodeinfoextract_2.10-1.4.2.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig \"$metadataAPIConfig\" --workDir \"$workDir\" --ipFileName \"$ipFile\" --ipPathPairFileName \"$ipPathPairFile\" --ipIdCfgTargPathQuartetFileName \"$ipIdCfgTargPathQuartetFileName\" --installDir \"$installDir\" --clusterId \"$clusterId\""
-java -cp $installDir/lib/system/ExtDependencyLibs2_2.10-1.4.2.jar:$installDir/lib/system/ExtDependencyLibs_2.10-1.4.2.jar:$installDir/lib/system/KamanjaInternalDeps_2.10-1.4.2.jar:$installDir/lib/system/nodeinfoextract_2.10-1.4.2.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig $metadataAPIConfig --workDir "$workDir" --ipFileName "$ipFile" --ipPathPairFileName "$ipPathPairFile" --ipIdCfgTargPathQuartetFileName "$ipIdCfgTargPathQuartetFileName" --installDir "$installDir" --clusterId "$clusterId"
+echo "...Command = java -cp $installDir/lib/system/ExtDependencyLibs2_2.10-1.4.3.jar:$installDir/lib/system/ExtDependencyLibs_2.10-1.4.3.jar:$installDir/lib/system/KamanjaInternalDeps_2.10-1.4.3.jar:$installDir/lib/system/nodeinfoextract_2.10-1.4.3.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig \"$metadataAPIConfig\" --workDir \"$workDir\" --ipFileName \"$ipFile\" --ipPathPairFileName \"$ipPathPairFile\" --ipIdCfgTargPathQuartetFileName \"$ipIdCfgTargPathQuartetFileName\" --installDir \"$installDir\" --clusterId \"$clusterId\""
+java -cp $installDir/lib/system/ExtDependencyLibs2_2.10-1.4.3.jar:$installDir/lib/system/ExtDependencyLibs_2.10-1.4.3.jar:$installDir/lib/system/KamanjaInternalDeps_2.10-1.4.3.jar:$installDir/lib/system/nodeinfoextract_2.10-1.4.3.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig $metadataAPIConfig --workDir "$workDir" --ipFileName "$ipFile" --ipPathPairFileName "$ipPathPairFile" --ipIdCfgTargPathQuartetFileName "$ipIdCfgTargPathQuartetFileName" --installDir "$installDir" --clusterId "$clusterId"
 if [ "$?" -ne 0 ]; then
     echo
     echo "Problem: Invalid arguments supplied to the NodeInfoExtract-1.0 application... unable to obtain node configuration... exiting."
@@ -118,7 +118,7 @@ while read LINE; do
              if [ ! -d "$installDir/run" ]; then
                 mkdir "$installDir/run"
              fi
-             ps u -p $pidvals | grep "kamanjamanager_2.10-1.4.2.jar" | grep -v "grep" | wc -l > "$installDir/run/$statusfile"
+             ps u -p $pidvals | grep "kamanjamanager_2.10-1.4.3.jar" | grep -v "grep" | wc -l > "$installDir/run/$statusfile"
              ps u -p $pidvals | grep "MetadataAPIService-1.0" | grep -v "grep" | wc -l >> "$installDir/run/$statusfile"
 
 EOF
