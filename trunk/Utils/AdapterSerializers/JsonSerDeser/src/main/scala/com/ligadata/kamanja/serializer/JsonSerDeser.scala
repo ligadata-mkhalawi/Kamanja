@@ -103,7 +103,8 @@ class JSONSerDes extends SerializeDeserialize {
   var _objResolver: ObjectResolver = null
   var _config = Map[String, String]()
   var _isReady: Boolean = false
-  var _emitSchemaId = true
+  var _emitSystemColumns = false
+  var _taggedAdapter = false
   var _schemaIdKeyPrefix = "@@"
 
   def SchemaIDKeyName = _schemaIdKeyPrefix + "SchemaId"
@@ -150,7 +151,7 @@ class JSONSerDes extends SerializeDeserialize {
     val containerJsonHead = indentStr + "{ "
     val containerJsonTail = indentStr + " }"
     sb.append(containerJsonHead)
-    if (_emitSchemaId) {
+    if (_emitSystemColumns) {
       // sb.append(strLF)
       nameValueAsJson(sb, indentLevel + 1, SchemaIDKeyName, schemaId.toString, false)
       sb.append(", ")
@@ -271,7 +272,6 @@ class JSONSerDes extends SerializeDeserialize {
         val v = pair._2
         if (idx > 0) sb.append(", ")
         idx += 1
-        sb.append(mapJsonHead)
         keyAsJson(sb, 0, k.toString)
         valType match {
           case (BOOLEAN | BYTE | LONG | DOUBLE | FLOAT | INT | STRING | CHAR) => valueAsJson(sb, 0, v, quoteValue);
@@ -280,7 +280,6 @@ class JSONSerDes extends SerializeDeserialize {
           case (CONTAINER | MESSAGE) => containerAsJson(sb, 0, v.asInstanceOf[ContainerInterface])
           case _ => throw new UnsupportedObjectException("Not yet handled valType:" + valType, null)
         }
-        sb.append(mapJsonTail)
       })
     }
     sb.append(mapJsonTail)
@@ -298,10 +297,8 @@ class JSONSerDes extends SerializeDeserialize {
       val v = pair._2
       if (idx > 0) sb.append(", ")
       idx += 1
-      sb.append(mapJsonHead)
       keyAsJson(sb, 0, k.toString)
       valueAsJson(sb, 0, v, v.isInstanceOf[String])
-      sb.append(mapJsonTail)
     })
     sb.append(mapJsonTail)
   }
@@ -374,7 +371,17 @@ class JSONSerDes extends SerializeDeserialize {
   def configure(objResolver: ObjectResolver, config: java.util.Map[String, String]): Unit = {
     _objResolver = objResolver
     _config = if (config != null) config.asScala.toMap else Map[String, String]()
-    _isReady = _objResolver != null && _config != null
+    try {
+      _emitSystemColumns = _config.getOrElse("emitSystemColumns", "false").toBoolean
+      _taggedAdapter = _config.getOrElse("taggedAdapter", "false").toBoolean
+      _isReady = _objResolver != null && _config != null
+    } catch {
+      case e: Throwable => {
+        Error("Failed to get emitSystemColumns flag", e)
+        _emitSystemColumns = false
+        _taggedAdapter = false
+      }
+    }
   }
 
   /**
@@ -387,8 +394,21 @@ class JSONSerDes extends SerializeDeserialize {
   def deserialize(b: Array[Byte], containerName: String): ContainerInterface = {
     val rawJsonContainerStr: String = new String(b)
     try {
-      val containerInstanceMap: Map[String, Any] = jsonStringAsMap(rawJsonContainerStr)
-      val container = deserializeContainerFromJsonMap(containerInstanceMap, containerName, 0)
+      var containerInstanceMap: Map[String, Any] = jsonStringAsMap(rawJsonContainerStr)
+      var deserContainerName = containerName
+      if (_taggedAdapter) {
+        if (containerInstanceMap.size != 1)
+          throw new Exception("Expecting only one message in tagged JSON data for deserializer")
+        val msgTypeAny = containerInstanceMap.head._1
+        if (msgTypeAny == null)
+          throw new Exception("MessageType not found in tagged JSON data for deserializer")
+        deserContainerName = msgTypeAny.toString.trim
+        if (! containerInstanceMap.head._2.isInstanceOf[Map[String, Any]])
+          throw new Exception("In tagged JSON data for deserializer not getting child structure after getting message:" + deserContainerName)
+        containerInstanceMap = containerInstanceMap.head._2.asInstanceOf[Map[String, Any]]
+      }
+
+      val container = deserializeContainerFromJsonMap(containerInstanceMap, deserContainerName, 0)
 
       val txnId = toLong(containerInstanceMap.getOrElse(TransactionIDKeyName, -1))
       val tmPartVal = toLong(containerInstanceMap.getOrElse(TimePartitionIDKeyName, -1))

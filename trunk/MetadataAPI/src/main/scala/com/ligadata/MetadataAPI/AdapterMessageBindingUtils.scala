@@ -329,146 +329,170 @@ object AdapterMessageBindingUtils {
         results
     }
 
-    /**
-      * Check out the AdapterMessageBinding values to be used are acceptable.  Checks are:
-      *
-      * 1) if the names start with "**" it means that the name was not supplied and this is itself an error message
-      *    substitution value
-      * 2) the message and serializerName names should be checked for namespace.name form
-      * 3) the adapter name should exist in MdMgr's adapters map
-      * 4) the message should exist in the MdMgr's message map
-      * 5) the serializer should exist in the MdMgr's serializers map
-      * 6) if the serializer is the csv serializer, verify that none of the attributes presented in the
-      * message are ContainerTypeDefs.  These are not handled by csv.  Fixed msgs with simple types only.
-      * 7) if the serializer is csv, prevent mapped message binding
-      * 8) prevent more than one binding on an input adapter.
-      * 9) don't allow more than one binding per message on output
-      *
-      * @param adapterName the name of the adapter
-      * @param messageName the namespace.name of the message to be bound
-      * @param serializerName the serializer that will be used to flatten/resurrect the message on binder's behalf
-      * @param options the serializer options that may be used to configure the serializer
-      * @return (boolean, string) If true returned, arguments are acceptable.  If false, the operation will be abandoned
-      *         and the returned string contains the issues found.
-      */
-    private def SemanticChecks(adapterName: String
-                               , messageName: String
-                               , serializerName: String
-                               , options: scala.collection.immutable.Map[String,Any]) : (Boolean, String) = {
-        val buffer : StringBuilder = new StringBuilder
+  /**
+    * Check out the AdapterMessageBinding values to be used are acceptable.  Checks are:
+    *
+    * 1) if the names start with "**" it means that the name was not supplied and this is itself an error message
+    * substitution value
+    * 2) the message and serializerName names should be checked for namespace.name form
+    * 3) the adapter name should exist in MdMgr's adapters map
+    * 4) the message should exist in the MdMgr's message map
+    * 5) the serializer should exist in the MdMgr's serializers map
+    * 6) if the serializer is the csv serializer, verify that none of the attributes presented in the
+    * message are ContainerTypeDefs.  These are not handled by csv.  Fixed msgs with simple types only.
+    * 7) if the serializer is csv, prevent mapped message binding
+    * 8) prevent more than one binding on an input adapter.
+    * 9) don't allow more than one binding per message on output
+    *
+    * @param adapterName    the name of the adapter
+    * @param messageName    the namespace.name of the message to be bound
+    * @param serializerName the serializer that will be used to flatten/resurrect the message on binder's behalf
+    * @param options        the serializer options that may be used to configure the serializer
+    * @return (boolean, string) If true returned, arguments are acceptable.  If false, the operation will be abandoned
+    *         and the returned string contains the issues found.
+    */
+  private def SemanticChecks(adapterName: String
+                             , messageName: String
+                             , serializerName: String
+                             , options: scala.collection.immutable.Map[String, Any]): (Boolean, String) = {
+    val buffer: StringBuilder = new StringBuilder
+    val isMsgEmpty = messageName.trim.isEmpty
 
-        /** 1) if the names start with "**" it means that the name was not supplied ... issue name error */
-        val adapterStartsWithAstsk : Boolean = (adapterName != null && adapterName.startsWith("**"))
-        val messageStartsWithAstsk : Boolean = (messageName != null && messageName.startsWith("**"))
-        val serializerStartsWithAstsk : Boolean = (serializerName != null && serializerName.startsWith("**"))
-        if (adapterStartsWithAstsk) {
-            buffer.append(s"The adapter name was not supplied ... $adapterName...; ")
-        }
-        if (messageStartsWithAstsk) {
-            buffer.append(s"The message name was not supplied ... $messageName...; ")
-        }
-        if (serializerStartsWithAstsk) {
-            buffer.append(s"The serlializer name was not supplied ... $serializerName...; ")
-        }
-
-        /** 2) the message and serializerName are checked for namespace.name form */
-        val messageNameHasDots : Boolean = (! messageStartsWithAstsk && messageName.size > 2 && messageName.contains('.'))
-        val serializerNameHasDots : Boolean = (! serializerStartsWithAstsk && serializerName.size > 2 && serializerName.contains('.'))
-        if (! (messageNameHasDots && serializerNameHasDots)) {
-            buffer.append(s"$messageName and/or $serializerName do not conform to namespace.name form...; ")
-        }
-        /** 3) the adapter name should exist in MdMgr's adapters map */
-        val adapter : AdapterInfo = mdMgr.GetAdapter(adapterName)
-        val adapterPresent : Boolean = adapter != null
-        if (! adapterPresent) {
-            buffer.append(s"The adapter $adapterName cannot be found in the metadata...; ")
-        }
-        val msgDef : MessageDef = if (messageNameHasDots) {
-            /** 4) the message should exist in the MdMgr's message map */
-            val msgNamespace : String = messageName.split('.').dropRight(1).mkString(".")
-            val msgName : String = messageName.split('.').last
-            val msgD : MessageDef = mdMgr.ActiveMessage(msgNamespace, msgName)
-            val msgPresent: Boolean = msgD != null
-            if (! msgPresent) {
-                buffer.append(s"The message $messageName cannot be found in the metadata...; ")
-            }
-
-            msgD
-        } else {
-            null
-        }
-        val serializer : SerializeDeserializeConfig = if (serializerNameHasDots) {
-            /** 5) he serializer should exist in the MdMgr's serializers map */
-            val slzer : SerializeDeserializeConfig = mdMgr.GetSerializer(serializerName)
-            val serializerPresent: Boolean = slzer != null
-            if (! serializerPresent) {
-                buffer.append(s"The serializer $serializerName cannot be found in the metadata...; ")
-            }
-            slzer
-        } else {
-            null
-        }
-        /* 6) 7) csv check ... if csv verify msg is fixed with simple (non-ContainerTypeDef types).  The nested
-         * types (ContainerTypeDef fields) are only supported by Json and KBinary at this time.
-         *
-         * FIXME: if the namespace of the standard csv serializer changes, the constant below MUST change with it.
-         */
-        val csvNamespaceName : String = "com.ligadata.kamanja.serializer.csvserdeser"
-        val serializerNamespaceName : String = if (serializer != null) s"${serializer.FullName.toLowerCase}" else "_no_name_"
-        val isCsvSerializer : Boolean = (serializerNamespaceName == csvNamespaceName)
-        val (msgFields, isMappedCSVAttempt) : (Array[BaseAttributeDef], Boolean) = if (msgDef != null && isCsvSerializer) {
-            if (msgDef.containerType.isInstanceOf[MappedMsgTypeDef]) {
-                (null, true)  /** 7) setup */
-            } else if (msgDef.containerType.isInstanceOf[StructTypeDef]) {  /** 6) setup */
-                val structMsg : StructTypeDef = msgDef.containerType.asInstanceOf[StructTypeDef]
-                (structMsg.memberDefs, false)
-            } else {
-                logger.error(s"A MessageDef ${msgDef.FullName} has a type is not a MappedMsgTypeDef or StructTypeDef.")
-                (null, false)
-            }
-        } else {
-            (null,false) // no need to check for json or kbinary serializers
-        }
-
-        val msgHasContainerFields : Boolean = (msgFields != null && (msgFields.filter(fld => (fld.typeDef.isInstanceOf[StructTypeDef] || fld.typeDef.isInstanceOf[MappedMsgTypeDef])).size > 0))
-        if (msgHasContainerFields) { /** 6) test */
-            buffer.append(s"The message $messageName has container type fields.  These are not handled by the $csvNamespaceName serializer...; ")
-        }
-        if (isMappedCSVAttempt) { /** 7) test */
-            buffer.append(s"MAPPED messages like $messageName are not handled by the $csvNamespaceName serializer at this time...; ")
-        }
-
-        /** 8) input adapter check.  Prevent more than one binding on an input adapter */
-        val isInputAdapter : Boolean = (adapter != null && adapter.TypeString.compareToIgnoreCase("input") == 0)
-        if (isInputAdapter) {
-            /** count the number of bindings for this input adapter... There should be NONE at this point */
-            val existingBindings : scala.collection.immutable.Map[String,AdapterMessageBinding] =  mdMgr.BindingsForAdapter(adapter.Name)
-            val hasBindingAlready : Boolean = existingBindings.nonEmpty
-            if (hasBindingAlready) {
-                buffer.append(s"Input Adapter ${adapter.Name} already has a binding... only one binding per input adapter allowed at this time...; ")
-                val bindingNames : String = existingBindings.values.map(binding => binding.FullBindingName).mkString(", ")
-                buffer.append(s"Remove binding(s) '$bindingNames' before attempting to add the current binding... name='$adapterName,$messageName,$serializerName'")
-            }
-
-        }
-
-        /** 9) only one binding on an output adapter message */
-
-        if (adapter != null) {
-            val existingAdapterBindings : Array[AdapterMessageBinding] = mdMgr.BindingsForAdapter(adapter.Name).values.toArray
-            val adapterBindingsWithThisMsg : Array[AdapterMessageBinding]  =
-                    existingAdapterBindings.filter(binding => binding.messageName.compareToIgnoreCase(msgDef.FullName) == 0)
-            if (adapterBindingsWithThisMsg.size > 0) {
-                // ... should never get more than one, but code carefully anyway...
-                // we blow out of here because that is what I was asked to do... there is no reason this can't simply be added to the error msg buffer and return.
-                throw new RuntimeException("Already found adapter bindings for this message on this adapter. String:" + adapterBindingsWithThisMsg.mkString(","))
-            }
-        }
-
-        val ok : Boolean = buffer.isEmpty
-        val errorMsgs : String = buffer.toString
-        (ok,errorMsgs)
+    /** 1) the adapter name should exist in MdMgr's adapters map */
+    val adapter: AdapterInfo = mdMgr.GetAdapter(adapterName)
+    val adapterPresent: Boolean = adapter != null
+    if (!adapterPresent) {
+      buffer.append(s"The adapter $adapterName cannot be found in the metadata...; ")
     }
+
+    var isTaggedAdapter = false
+    if (isMsgEmpty && adapter != null && adapter.TypeString.equalsIgnoreCase("Input")) {
+      try {
+        isTaggedAdapter = options.getOrElse("taggedAdapter", "false").toString.toBoolean
+      } catch {
+        case e: Throwable => {
+        }
+      }
+    }
+
+    /** 2) if the names start with "**" it means that the name was not supplied ... issue name error */
+    val adapterStartsWithAstsk: Boolean = (adapterName != null && adapterName.startsWith("**"))
+    val messageStartsWithAstsk: Boolean = (messageName != null && messageName.startsWith("**"))
+    val serializerStartsWithAstsk: Boolean = (serializerName != null && serializerName.startsWith("**"))
+    if (adapterStartsWithAstsk) {
+      buffer.append(s"The adapter name was not supplied ... $adapterName...; ")
+    }
+    if (messageStartsWithAstsk) {
+      buffer.append(s"The message name was not supplied ... $messageName...; ")
+    }
+    if (serializerStartsWithAstsk) {
+      buffer.append(s"The serlializer name was not supplied ... $serializerName...; ")
+    }
+
+    /** 3) the message and serializerName are checked for namespace.name form */
+    val messageNameHasDots: Boolean = (!messageStartsWithAstsk && messageName.size > 2 && messageName.contains('.'))
+    val serializerNameHasDots: Boolean = (!serializerStartsWithAstsk && serializerName.size > 2 && serializerName.contains('.'))
+    if ((isTaggedAdapter == false && messageNameHasDots == false) || (serializerNameHasDots == false)) {
+      buffer.append(s"$messageName and/or $serializerName do not conform to namespace.name form...; ")
+    }
+
+    val msgDef: MessageDef = if (messageNameHasDots) {
+      /** 4) the message should exist in the MdMgr's message map */
+      val msgNamespace: String = messageName.split('.').dropRight(1).mkString(".")
+      val msgName: String = messageName.split('.').last
+      val msgD: MessageDef = mdMgr.ActiveMessage(msgNamespace, msgName)
+      val msgPresent: Boolean = msgD != null
+      if (!msgPresent) {
+        buffer.append(s"The message $messageName cannot be found in the metadata...; ")
+      }
+      msgD
+    } else {
+      null
+    }
+
+    val serializer: SerializeDeserializeConfig = if (serializerNameHasDots) {
+      /** 5) he serializer should exist in the MdMgr's serializers map */
+      val slzer: SerializeDeserializeConfig = mdMgr.GetSerializer(serializerName)
+      val serializerPresent: Boolean = slzer != null
+      if (!serializerPresent) {
+        buffer.append(s"The serializer $serializerName cannot be found in the metadata...; ")
+      }
+      slzer
+    } else {
+      null
+    }
+    /* 6) 7) csv check ... if csv verify msg is fixed with simple (non-ContainerTypeDef types).  The nested
+     * types (ContainerTypeDef fields) are only supported by Json and KBinary at this time.
+     *
+     * FIXME: if the namespace of the standard csv serializer changes, the constant below MUST change with it.
+     */
+    val csvNamespaceName: String = "com.ligadata.kamanja.serializer.csvserdeser"
+    val serializerNamespaceName: String = if (serializer != null) s"${serializer.FullName.toLowerCase}" else "_no_name_"
+    val isCsvSerializer: Boolean = (serializerNamespaceName == csvNamespaceName)
+    val (msgFields, isMappedCSVAttempt): (Array[BaseAttributeDef], Boolean) = if (msgDef != null && isCsvSerializer) {
+      if (msgDef.containerType.isInstanceOf[MappedMsgTypeDef]) {
+        (null, true)
+
+        /** 7) setup */
+      } else if (msgDef.containerType.isInstanceOf[StructTypeDef]) {
+        /** 6) setup */
+        val structMsg: StructTypeDef = msgDef.containerType.asInstanceOf[StructTypeDef]
+        (structMsg.memberDefs, false)
+      } else {
+        logger.error(s"A MessageDef ${msgDef.FullName} has a type is not a MappedMsgTypeDef or StructTypeDef.")
+        (null, false)
+      }
+    } else {
+      (null, false) // no need to check for json or kbinary serializers
+    }
+
+    val msgHasContainerFields: Boolean = (msgFields != null && (msgFields.filter(fld => (fld.typeDef.isInstanceOf[StructTypeDef] || fld.typeDef.isInstanceOf[MappedMsgTypeDef])).size > 0))
+    if (msgHasContainerFields) {
+      /** 6) test */
+      buffer.append(s"The message $messageName has container type fields.  These are not handled by the $csvNamespaceName serializer...; ")
+    }
+    if (isMappedCSVAttempt) {
+      /** 7) test */
+      buffer.append(s"MAPPED messages like $messageName are not handled by the $csvNamespaceName serializer at this time...; ")
+    }
+
+    /** 8) input adapter check.  Prevent more than one binding on an input adapter */
+    val isInputAdapter: Boolean = (adapter != null && adapter.TypeString.compareToIgnoreCase("input") == 0)
+    if (isInputAdapter) {
+      /** count the number of bindings for this input adapter... There should be NONE at this point */
+      val existingBindings: scala.collection.immutable.Map[String, AdapterMessageBinding] = mdMgr.BindingsForAdapter(adapter.Name)
+      val hasBindingAlready: Boolean = existingBindings.nonEmpty
+      if (hasBindingAlready) {
+        buffer.append(s"Input Adapter ${adapter.Name} already has a binding... only one binding per input adapter allowed at this time...; ")
+        val bindingNames: String = existingBindings.values.map(binding => binding.FullBindingName).mkString(", ")
+        buffer.append(s"Remove binding(s) '$bindingNames' before attempting to add the current binding... name='$adapterName,$messageName,$serializerName'")
+      }
+    }
+
+    /** 9) only one binding on an output adapter message */
+    if (adapter != null) {
+      val existingAdapterBindings: Array[AdapterMessageBinding] = mdMgr.BindingsForAdapter(adapter.Name).values.toArray
+      if (existingAdapterBindings.size > 0 && isTaggedAdapter == false) {
+        if (msgDef != null) {
+          val adapterBindingsWithThisMsg: Array[AdapterMessageBinding] =
+            existingAdapterBindings.filter(binding => binding.messageName.compareToIgnoreCase(msgDef.FullName) == 0)
+          if (adapterBindingsWithThisMsg.size > 0) {
+            // ... should never get more than one, but code carefully anyway...
+            // we blow out of here because that is what I was asked to do... there is no reason this can't simply be added to the error msg buffer and return.
+            throw new RuntimeException("Already found adapter bindings for this message on this adapter. String:" + adapterBindingsWithThisMsg.mkString(","))
+          }
+        } else {
+          buffer.append("MessageDef is null.")
+        }
+      } else if (existingAdapterBindings.size > 0 && isTaggedAdapter) {
+        buffer.append("Same adapter should not have more than one tagged adapter binding.")
+      }
+    }
+
+    val ok: Boolean = buffer.isEmpty
+    val errorMsgs: String = buffer.toString
+    (ok, errorMsgs)
+  }
 
     /**
       * Examine the supplied results for this AddAdapterMessageBinding operation.  Embellish error messages as
