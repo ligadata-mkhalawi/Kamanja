@@ -229,6 +229,8 @@ cp KamanjaInternalDeps/target/scala-2.10/KamanjaInternalDeps_2.10-1.5.0.jar $sys
 #
 cp $srcPath/FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory/target/scala-2.10/jarfactoryofmodelinstancefactory*.jar $systemlib
 #cp $srcPath/FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory/target/scala-2.10/jarfactoryofmodelinstancefactory*.jar $systemlib
+cp $srcPath/FactoriesOfModelInstanceFactory/JpmmlFactoryOfModelInstanceFactory/target/scala-2.11/jpmmlfactoryofmodelinstancefactory*jar $systemlib
+cp $srcPath/FactoriesOfModelInstanceFactory/PythonFactoryOfModelInstanceFactory/target/scala-2.11/pythonfactoryofmodelinstancefactory*jar $systemlib
 
 # -------------------- end of generated cp commands --------------------
 
@@ -311,10 +313,35 @@ chmod 0700 $kamanjaui/*.sh
 wget -O $systemlib/orientdb-jdbc-2.1.19-all.jar --no-cookies --no-check-certificate "http://orientdb.com/download.php?file=orientdb-jdbc-2.1.19-all.jar"
 
 # *******************************
+# copy the python directory into $installPath/Kamanja-$ver210/
+# *******************************
+cp -rf $srcPath/FactoriesOfModelInstanceFactory/PythonServer/src/main/python $installPath/Kamanja-$ver210/
+
+# *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep
 # *******************************
 
 mkdir -p $installPath/Kamanja-$ver210/input/SampleApplications/template/script
+
+# python arithmetic "models"
+cd $srcPath/SampleApplication/python/data
+cp -rf * $installPath/Kamanja-$ver210/input/SampleApplications/data
+
+cd $srcPath/SampleApplication/python/message
+cp -rf * $installPath/Kamanja-$ver210/input/SampleApplications/metadata/message/
+
+cd $srcPath/SampleApplication/python/model
+cp -rf * $installPath/Kamanja-$ver210/input/SampleApplications/metadata/model/
+
+cd $srcPath/SampleApplication/python/template
+cp -rf conf* $installPath/Kamanja-$ver210/input/SampleApplications/template/
+
+cd $srcPath/SampleApplication/python/template/script/scala-2.10
+cp -rf * $installPath/Kamanja-$ver210/input/SampleApplications/template/script/
+
+cd $srcPath/SampleApplication/python/config
+cp -rf * $installPath/Kamanja-$ver210/config
+# python arithmetic "models"
 
 #HelloWorld
 cd $srcPath/SampleApplication/HelloWorld/data
@@ -527,6 +554,8 @@ echo "copy all Kamanja jars and the jars upon which they depend to the $systemli
 
 cp $srcPath/FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory/target/scala-2.11/jarfactoryofmodelinstancefactory*.jar $systemlib
 #cp $srcPath/FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory/target/scala-2.11/jarfactoryofmodelinstancefactory*.jar $systemlib
+cp $srcPath/FactoriesOfModelInstanceFactory/JpmmlFactoryOfModelInstanceFactory/target/scala-2.11/jpmmlfactoryofmodelinstancefactory*jar $systemlib
+cp $srcPath/FactoriesOfModelInstanceFactory/PythonFactoryOfModelInstanceFactory/target/scala-2.11/pythonfactoryofmodelinstancefactory*jar $systemlib
 # -------------------- end of generated cp commands --------------------
 
 
@@ -613,10 +642,35 @@ chmod 0700 $kamanjaui/*.sh
 wget -O $systemlib/orientdb-jdbc-2.1.19-all.jar --no-cookies --no-check-certificate "http://orientdb.com/download.php?file=orientdb-jdbc-2.1.19-all.jar"
 
 # *******************************
+# copy the python directory into $installPath/Kamanja-$ver211/
+# *******************************
+cp -rf $srcPath/FactoriesOfModelInstanceFactory/PythonServer/src/main/python $installPath/Kamanja-$ver211/
+
+# *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep
 # *******************************
 
 mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications/template/script
+
+# python arithmetic "models"
+cd $srcPath/SampleApplication/python/data
+cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/data
+
+cd $srcPath/SampleApplication/python/message
+cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/message/
+
+cd $srcPath/SampleApplication/python/model
+cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/model/
+
+cd $srcPath/SampleApplication/python/template
+cp -rf conf* $installPath/Kamanja-$ver211/input/SampleApplications/template/
+
+cd $srcPath/SampleApplication/python/template/script/scala-2.11
+cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/template/script/
+
+cd $srcPath/SampleApplication/python/config
+cp -rf * $installPath/Kamanja-$ver211/config
+# python arithmetic "models"
 
 #HelloWorld
 cd $srcPath/SampleApplication/HelloWorld/data
@@ -699,7 +753,7 @@ cd $srcPath/SampleApplication/InterfacesSamples/src/main/resources/sample-app/me
 cp * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/message
 
 cd $srcPath/SampleApplication/InterfacesSamples/src/main/resources/sample-app/metadata/model
-cp *.* $installPath/Kamanja-$ver211/input/SampleApplications/metadata/model
+cp * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/model
 
 cd $srcPath/SampleApplication/InterfacesSamples/src/main/resources/sample-app/metadata/type
 cp * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/type

@@ -44,13 +44,13 @@ $KAMANJA_HOME/bin/kamanja $apiConfigProperties add message $PY_METADATA/message/
 
 **add models**
 
-$KAMANJA_HOME/bin/kamanja add model python $PY_METADATA/model/add.py MODELNAME AddTuple MESSAGENAME org.kamanja.arithmetic.arithmeticMsg OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg MODELOPTIONS '{"a": "Int", "b": "Int"}' TENANTID tenant1
+$KAMANJA_HOME/bin/kamanja debug add model python $PY_METADATA/model/add.py MODELNAME AddTuple MESSAGENAME org.kamanja.arithmetic.arithmeticMsg OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}, "OutputTypeInfo": {"a": "Int", "b": "Int", "result": "Int"} }' TENANTID tenant1
 
-$KAMANJA_HOME/bin/kamanja add model python $PY_METADATA/model/add.py MODELNAME AddTuple MESSAGENAME org.kamanja.arithmetic.arithmeticOutMsg OUTMESSAGE <output message> MODELOPTIONS '{"a": "Int", "b": "Int"}'
+$KAMANJA_HOME/bin/kamanja add model python $PY_METADATA/model/add.py MODELNAME AddTuple MESSAGENAME org.kamanja.arithmetic.arithmeticOutMsg OUTMESSAGE <output message> MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}, "OutputTypeInfo": {"a": "Int", "b": "Int", "result": "Int"} }'
 
-$KAMANJA_HOME/bin/kamanja add model python $PY_METADATA/model/add.py MODELNAME AddTuple MESSAGENAME org.kamanja.arithmetic.arithmeticOutMsg OUTMESSAGE <output message> MODELOPTIONS '{"a": "Int", "b": "Int"}'
+$KAMANJA_HOME/bin/kamanja add model python $PY_METADATA/model/add.py MODELNAME AddTuple MESSAGENAME org.kamanja.arithmetic.arithmeticOutMsg OUTMESSAGE <output message> MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}, "OutputTypeInfo": {"a": "Int", "b": "Int", "result": "Int"} }'
 
-$KAMANJA_HOME/bin/kamanja add model python $PY_METADATA/model/add.py MODELNAME AddTuple MESSAGENAME org.kamanja.arithmetic.arithmeticOutMsg OUTMESSAGE <output message> MODELOPTIONS '{"a": "Int", "b": "Int"}'
+$KAMANJA_HOME/bin/kamanja add model python $PY_METADATA/model/add.py MODELNAME AddTuple MESSAGENAME org.kamanja.arithmetic.arithmeticOutMsg OUTMESSAGE <output message> MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}, "OutputTypeInfo": {"a": "Int", "b": "Int", "result": "Int"} }'
 
 
 **Add bindings for system messages**

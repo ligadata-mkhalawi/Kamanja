@@ -490,7 +490,7 @@ class KamanjaMetadata(var envCtxt: EnvContext) {
             val pyPropertyMap : Map[String,Any] = parse(pythonPropertiesStr).values.asInstanceOf[Map[String,Any]]
             var pyPath : String = pyPropertyMap.getOrElse("PYTHON_PATH", "").asInstanceOf[String]
             val pySrvStartPort : Int = pyPropertyMap.getOrElse("SERVER_BASE_PORT", 8100).asInstanceOf[scala.math.BigInt].toInt
-            val pySrvMaxSrvrs : Int = pyPropertyMap.getOrElse("SERVER_NODE_LIMIT", 20).asInstanceOf[scala.math.BigInt].toInt
+            val pySrvMaxSrvrs : Int = pyPropertyMap.getOrElse("SERVER_PORT_LIMIT", 40).asInstanceOf[scala.math.BigInt].toInt
             val host : String = pyPropertyMap.getOrElse("SERVER_HOST", "localhost").asInstanceOf[String]
             var loggerConfigPath : String = pyPropertyMap.getOrElse("PYTHON_LOG_CONFIG_PATH", "").asInstanceOf[String]
             var logFilePath : String = pyPropertyMap.getOrElse("PYTHON_LOG_PATH", "").asInstanceOf[String]
@@ -506,7 +506,7 @@ class KamanjaMetadata(var envCtxt: EnvContext) {
                     installLoc
                 } else {
                     logger.error("Kamanja's root directory is not available in the 'allConfigs'... bad news!")
-                    throw new KamanjaException("Kamanja's root directory is not available in the 'allConfigs'... bad news!",null)
+                    throw new KamanjaException("Kamanja's root directory is not available in the 'allConfigs'... bad news! Python default configuration can't be performed",null)
                 }
             } else {
                 pyPath
@@ -547,7 +547,7 @@ class KamanjaMetadata(var envCtxt: EnvContext) {
                     KamanjaMetadata.gNodeContext.putValue("PYTHON_CONNECTIONS", new mutable.HashMap[String,Any]())
                     /** With these default values (8100, 20) add an iterator to get a port from when the time comes to build a connection */
                     val p : Int = 8100 /** ports starting here for 20... */
-                    val it = Iterator[Int](p, p+1, p+2, p+3, p+4, p+5, p+6, p+7, p+8, p+9, p+10, p+11, p+12, p+13, p+14, p+15, p+16, p+17, p+18, p+19)
+                    val it = Iterator[Int](p, p+1, p+2, p+3, p+4, p+5, p+6, p+7, p+8, p+9, p+10, p+11, p+12, p+13, p+14, p+15, p+16, p+17, p+18, p+19, p+20, p+21, p+22, p+23, p+24, p+25, p+26, p+27, p+28, p+29, p+30, p+31, p+32, p+33, p+34, p+35, p+36, p+37, p+38, p+39)
                     KamanjaMetadata.gNodeContext.putValue("PYTHON_CONNECTION_PORTS", it)
                     KamanjaMetadata.gNodeContext.putValue("PYTHON_LOG_CONFIG_PATH",  s"$pyPath/bin/pythonlog4j.cfg")
                     KamanjaMetadata.gNodeContext.putValue("PYTHON_LOG_PATH", s"$pyPath/logs/pythonserver.log")

@@ -512,7 +512,7 @@ object StartMetadataAPI {
         case Action.ADDMODELPYTHON => {
           val modelName : String = extraCmdArgs.getOrElse(MODELNAME,"there was no modelName supplied")
           /** assumption here is that the file name endswith(".py")... we want the stem of the file name for moduleName */
-          val moduleName : String = input.split('.').dropRight(1).last
+          val moduleName : String = input.split('/').last.split('.').dropRight(1).last
           val pkgQualifiedName : Option[String] = Some(s"$moduleName.$modelName")
           val modelVer = extraCmdArgs.getOrElse(MODELVERSION, null)
           val modelOptions : String = extraCmdArgs.getOrElse(MODELOPTIONS, "{}")
