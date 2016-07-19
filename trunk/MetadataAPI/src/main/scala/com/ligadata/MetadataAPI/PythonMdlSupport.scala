@@ -59,8 +59,8 @@ class PythonMdlSupport ( val mgr: MdMgr
       * the python server are found (i.e., common, commands, models sub-directories)
       */
     val PYTHON_PATH : String = "PYTHON_PATH"
-    val PYTHON_CONFIG : String = "python_config"
-    val ROOT_DIR : String = "root_dir"
+    val PYTHON_CONFIG : String = "PYTHON_CONFIG"
+    val ROOT_DIR : String = "ROOT_DIR"
 
     /** generate a random string for portion of python compile file name */
     val random : Random = new Random(java.lang.System.currentTimeMillis())
@@ -166,16 +166,20 @@ class PythonMdlSupport ( val mgr: MdMgr
         * reasonable python text should be compilable... let's do so now.  Reject if non 0 return code.
         */
         val pyPath : String = pyPropertyMap(PYTHON_PATH).toString
-        val modelDir : String = if (pyPath.endsWith("/")) s"${pyPath.dropRight(1)}/models" else s"$pyPath/models"
-        val pyFileName : String = s"${modelName}_$randomFileNameStemSuffix.py"
+          //val modelDir : String = if (pyPath.endsWith("/")) s"${pyPath.dropRight(1)}/models" else s"$pyPath/models"
+          //val pyFileName : String = s"${modelName}_$randomFileNameStemSuffix.py"
+        val modelDir : String = if (pyPath.endsWith("/")) s"${pyPath.dropRight(1)}/tmp" else s"$pyPath/tmp"
+        val pyFileName : String = s"${moduleName}.py"
         val pyFilePath : String = s"$modelDir/$pyFileName"
         val pyFileCmd : String = s"-m py_compile $pyFilePath"
+        val exportcmd : String = s"export PYTHONPATH=$pyPath"
 
         writeSrcFile(pythonMdlText, pyFilePath)
-        val cmdSeq : Seq[String] = Seq[String]("python", pyFileCmd)
+        val cmdSeq : Seq[String] = Seq[String]("python", "-m", "compileall", modelDir)
         val (rc, stdoutResult, stderrResult) : (Int, String, String) = runCmdCollectOutput(cmdSeq)
-        val rmCompileFilesName : String = pyFilePath.dropRight(3) + "*" /** rm the .py and .pyc */
-        val rmFileCmd : String = s"rm -f $rmCompileFilesName"
+        //val rmCompileFiles : String = pyFilePath.dropRight(3) + "*" /** rm the .py and .pyc */
+        val rmCompileFiles : String = s"$modelDir/*"
+        val rmFileCmd : String = s"rm -f $rmCompileFiles"
         val killDirRc = Process(rmFileCmd).!  // clean up the placed py src file... regardless of compile outcome.
 
         logger.debug(s"result of python src file for $modelNamespace.$modelName ($pyFilePath) compilation = $rc\nstdout=$stdoutResult\nstderr=$stderrResult")
@@ -214,7 +218,28 @@ class PythonMdlSupport ( val mgr: MdMgr
 
             val withDots: Boolean = true
             val msgVersionFormatted: String = MdMgr.ConvertLongVersionToString(inputMsg.Version, !withDots)
-            val mdl: ModelDef = mgr.MakeModelDef(modelNamespace, modelName, phyName, ownerId, tenantId, 0, 0, ModelRepresentation.PYTHON, Array(inpMsgs), Array[String](), isReusable, pythonMdlText, null, MdMgr.ConvertVersionToLong(version), jarName, jarDeps, recompile, supportsInstanceSerialization, modelOptions, moduleName)
+            val outMsg : String = optMsgProduced.orNull
+            val outMsgs : Array[String] = if (outMsg != null) Array[String](outMsg) else Array[String]()
+            val mdl: ModelDef = mgr.MakeModelDef(modelNamespace
+                , modelName
+                , phyName
+                , ownerId
+                , tenantId
+                , 0
+                , 0
+                , ModelRepresentation.PYTHON
+                , Array(inpMsgs)
+                , outMsgs
+                , isReusable
+                , pythonMdlText
+                , MiningModelType.PYTHON
+                , MdMgr.ConvertVersionToLong(version)
+                , jarName
+                , jarDeps
+                , recompile
+                , supportsInstanceSerialization
+                , modelOptions
+                , moduleName)
 
             /** dump the model def to the log for time being */
             logger.debug(modelDefToString(mdl))
@@ -276,7 +301,28 @@ class PythonMdlSupport ( val mgr: MdMgr
 
         val withDots: Boolean = true
         val msgVersionFormatted: String = MdMgr.ConvertLongVersionToString(inputMsg.Version, !withDots)
-        val model: ModelDef = mgr.MakeModelDef(modelNamespace, modelName, phyName, ownerId, tenantId, 0, 0, ModelRepresentation.JYTHON, Array(inpMsgs), Array[String](), isReusable, pythonMdlText, null, MdMgr.ConvertVersionToLong(version), jarName, jarDeps, recompile, supportsInstanceSerialization, modelOptions, moduleName)
+        val outMsg : String = optMsgProduced.orNull
+        val outMsgs : Array[String] = if (outMsg != null) Array[String](outMsg) else Array[String]()
+        val model: ModelDef = mgr.MakeModelDef(modelNamespace
+            , modelName
+            , phyName
+            , ownerId
+            , tenantId
+            , 0
+            , 0
+            , ModelRepresentation.JYTHON
+            , Array(inpMsgs)
+            , outMsgs
+            , isReusable
+            , pythonMdlText
+            , MiningModelType.JYTHON
+            , MdMgr.ConvertVersionToLong(version)
+            , jarName
+            , jarDeps
+            , recompile
+            , supportsInstanceSerialization
+            , modelOptions
+            , moduleName)
 
         /** dump the model def to the log for time being */
         logger.debug(modelDefToString(model))

@@ -687,7 +687,7 @@ chmod 0700 $kamanjaui/*.sh
 wget -O $systemlib/orientdb-jdbc-2.1.19-all.jar --no-cookies --no-check-certificate "http://orientdb.com/download.php?file=orientdb-jdbc-2.1.19-all.jar"
 
 # *******************************
-# copy the python directory into $installPath/Kamanja-$ver210/
+# copy the python directory into $installPath/Kamanja-$ver211/
 # *******************************
 cp -rf $srcPath/FactoriesOfModelInstanceFactory/PythonServer/src/main/python $installPath/Kamanja-$ver211/
 

@@ -46,11 +46,11 @@ $KAMANJA_HOME/bin/kamanja $apiConfigProperties add message $PY_METADATA/message/
 
 $KAMANJA_HOME/bin/kamanja debug add model python $PY_METADATA/model/add.py MODELNAME AddTuple MESSAGENAME org.kamanja.arithmetic.arithmeticMsg OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}, "OutputTypeInfo": {"a": "Int", "b": "Int", "result": "Int"} }' TENANTID tenant1
 
-$KAMANJA_HOME/bin/kamanja add model python $PY_METADATA/model/add.py MODELNAME AddTuple MESSAGENAME org.kamanja.arithmetic.arithmeticOutMsg OUTMESSAGE <output message> MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}, "OutputTypeInfo": {"a": "Int", "b": "Int", "result": "Int"} }'
+$KAMANJA_HOME/bin/kamanja add model python $PY_METADATA/model/multiply.py MODELNAME MultiplyTuple MESSAGENAME org.kamanja.arithmetic.arithmeticOutMsg OUTMESSAGE <output message> MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}, "OutputTypeInfo": {"a": "Int", "b": "Int", "result": "Int"} }'
 
-$KAMANJA_HOME/bin/kamanja add model python $PY_METADATA/model/add.py MODELNAME AddTuple MESSAGENAME org.kamanja.arithmetic.arithmeticOutMsg OUTMESSAGE <output message> MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}, "OutputTypeInfo": {"a": "Int", "b": "Int", "result": "Int"} }'
+$KAMANJA_HOME/bin/kamanja add model python $PY_METADATA/model/subtract.py MODELNAME SubtractTuple MESSAGENAME org.kamanja.arithmetic.arithmeticOutMsg OUTMESSAGE <output message> MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}, "OutputTypeInfo": {"a": "Int", "b": "Int", "result": "Int"} }'
 
-$KAMANJA_HOME/bin/kamanja add model python $PY_METADATA/model/add.py MODELNAME AddTuple MESSAGENAME org.kamanja.arithmetic.arithmeticOutMsg OUTMESSAGE <output message> MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}, "OutputTypeInfo": {"a": "Int", "b": "Int", "result": "Int"} }'
+$KAMANJA_HOME/bin/kamanja add model python $PY_METADATA/model/divide.py MODELNAME DivideTuple MESSAGENAME org.kamanja.arithmetic.arithmeticOutMsg OUTMESSAGE <output message> MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}, "OutputTypeInfo": {"a": "Int", "b": "Int", "result": "Int"} }'
 
 
 **Add bindings for system messages**

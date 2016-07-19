@@ -1065,6 +1065,16 @@ object JsonSerializer {
             List[String]()
           }
 
+          /**
+            * FIXME: a hack to deal with unset variables found in the metadata.
+            * FixMe: this should be removed once the instance variables for BaseElemDef are more prudently set
+            */
+          val descr : String = if (o.description != null) o.description else ""
+          val comment : String = if (o.comment != null) o.comment else ""
+          val author : String = if (o.author != null) o.author else ""
+          val tag : String = if (o.tag != null) o.tag else ""
+          val jarname : String = if (o.jarName != null) o.jarName else ""
+
         val json = ("Model" ->
           ("NameSpace" -> o.nameSpace) ~
             ("Name" -> o.name) ~
@@ -1072,10 +1082,10 @@ object JsonSerializer {
             ("TenantId" -> o.tenantId) ~
             ("ElementId" -> o.mdElementId) ~
             // 646 - 673 Meta data api changes included - Changes begin
-            ("Description" -> o.description) ~
-          ("Comment" -> o.comment) ~
-          ("Author" -> o.author) ~
-            ("Tag" -> o.tag) ~
+            ("Description" -> descr) ~
+          ("Comment" -> comment) ~
+          ("Author" -> author) ~
+            ("Tag" -> tag) ~
             ("OtherParams" -> Json(DefaultFormats).write(o.params)) ~
             ("CreatedTime" -> o.creationTime) ~
             ("UpdatedTime" -> o.modTime) ~
@@ -1085,7 +1095,7 @@ object JsonSerializer {
             ("OutputMsgs" -> outputMsgs) ~
             ("ModelRep" -> o.modelRepresentation.toString) ~
             ("ModelType" -> o.miningModelType.toString) ~
-            ("JarName" -> o.jarName) ~
+            ("JarName" -> jarname) ~
             ("PhysicalName" -> o.typeString) ~
             ("ObjectDefinition" -> o.objectDefinition) ~
             ("ObjectFormat" -> ObjFormatType.asString(o.objectFormat)) ~
