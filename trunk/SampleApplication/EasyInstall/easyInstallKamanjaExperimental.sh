@@ -299,7 +299,7 @@ migration2_10libsCopiesFor2_11="true"
 
 # sample configs
 #echo "copy sample configs..."
-cp $srcPath/Utils/KVInit/src/main/resources/*cfg $systemlib
+# cp $srcPath/Utils/KVInit/src/main/resources/*cfg $systemlib
 
 # Generate keystore file
 #echo "generating keystore..."
@@ -609,7 +609,7 @@ cp $srcPath/Utils/ClusterInstaller/GetComponent/target/scala-2.11/*.jar $systeml
 
 # sample configs
 #echo "copy sample configs..."
-cp $srcPath/Utils/KVInit/src/main/resources/*cfg $systemlib
+# cp $srcPath/Utils/KVInit/src/main/resources/*cfg $systemlib
 
 # Generate keystore file
 #echo "generating keystore..."
