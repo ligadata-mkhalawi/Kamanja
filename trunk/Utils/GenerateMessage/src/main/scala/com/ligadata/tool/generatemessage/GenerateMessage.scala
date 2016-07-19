@@ -162,11 +162,13 @@ Usage:  bash $KAMANJA_HOME/bin/GenerateMessage.sh --inputfile $KAMANJA_HOME/inpu
        var headerFields = Array.empty[String]
        if(headerFlagFile){
          headerString = fileBean.ReadHeaderFile(inputFileFields, 0) //read the header line for inputFile
-         println("[Result] - The --fieldnames passed so the --header parameter ignored")
-         logger.info("The --fieldnames passed so the --header parameter ignored")
+         if(headerFlag.equalsIgnoreCase("true") || headerFlag.equalsIgnoreCase("false")){
+           println("[Result] - The --fieldnames passed so the --header parameter ignored")
+           logger.info("The --fieldnames passed so the --header parameter ignored")
+         }
        } else if(headerFlag.equalsIgnoreCase("true")){
          headerString = fileBean.ReadHeaderFile(inputFile, 0) //read the header line for inputFile
-         println("[Result] - The header readed from input file because --fieldnames not passed")
+         println("[Result] - The header read from input file because --fieldnames not passed")
          logger.info("The header read from input file because --fieldnames not passed")
        } else {
          logger.error("At least one of these option should pass correctly --header --fieldnames")
