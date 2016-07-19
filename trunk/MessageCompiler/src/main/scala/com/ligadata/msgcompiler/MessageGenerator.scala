@@ -115,7 +115,7 @@ class MessageGenerator {
       getSetFixed = getSetFixed.append(getOrElseByIndexFunc);
       getSetFixed = getSetFixed.append(getAttributeNamesFixed);
       getSetFixed = getSetFixed.append(getAllAttributeValuesFixed(message));
-     // getSetFixed = getSetFixed.append(getAttributeNameAndValueIterator);
+      // getSetFixed = getSetFixed.append(getAttributeNameAndValueIterator);
       getSetFixed = getSetFixed.append(setByKeyFunc(message));
       if (message.Elements != null && message.timePartition != null) {
         getSetFixed = getSetFixed.append(setFuncByOffset(message.Elements, message.Name, mdMgr, message.timePartition.Key));
@@ -695,12 +695,11 @@ class MessageGenerator {
       if (keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name "+keyName);
       val key = keyName.toLowerCase;
       try {
-        val value = get(key.toLowerCase())
-        if (value == null) return defaultVal.asInstanceOf[AnyRef]; else return value;
-      } catch {
+        return get(key.toLowerCase())
+       } catch {
         case e: Exception => {
           log.debug("", e)
-          throw e
+          return defaultVal.asInstanceOf[AnyRef];
         }
       }
       return null;
@@ -715,12 +714,11 @@ class MessageGenerator {
     """
     override def getOrElse(index: Int, defaultVal: Any): AnyRef = { // Return (value,  type)
       try {
-        val value = get(index)
-        if (value == null) return defaultVal.asInstanceOf[AnyRef]; else return value;
-      } catch {
+        return get(index);
+        } catch {
         case e: Exception => {
           log.debug("", e)
-          throw e
+          return defaultVal.asInstanceOf[AnyRef];
         }
       }
       return null;

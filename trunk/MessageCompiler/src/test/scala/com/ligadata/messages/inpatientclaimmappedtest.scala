@@ -191,9 +191,7 @@ class InpatientClaimMappedTest(factory: ContainerFactoryInterface, other: Inpati
     if (keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name " + keyName);
     val key = keyName.toLowerCase;
     try {
-      val value = valuesMap(key).getValue
-      if (value == null) return defaultVal.asInstanceOf[AnyRef];
-      return value.asInstanceOf[AnyRef];
+      return valuesMap.getOrElse(key, defaultVal.asInstanceOf[AnyRef])
     } catch {
       case e: Exception => {
         log.debug("", e)
