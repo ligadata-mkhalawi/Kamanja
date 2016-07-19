@@ -3,7 +3,7 @@ import sbtassembly.AssemblyPlugin._
 name := "ExtDependencyLibs2"
 
 version := "1.0"
-val kamanjaVersion = "1.5.0"
+val kamanjaVersion = "1.5.1"
 
 
 shellPrompt := { state => "sbt (%s)> ".format(Project.extract(state).currentProject.id) }
