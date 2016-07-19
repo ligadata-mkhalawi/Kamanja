@@ -146,10 +146,8 @@ import java.io.{ DataInputStream, DataOutputStream, ByteArrayOutputStream }
       if(keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name "+keyName);
       val key = keyName.toLowerCase;
       try {
-        val value = valuesMap(key).getValue
-        if (value == null) return defaultVal.asInstanceOf[AnyRef];
-        return value.asInstanceOf[AnyRef];   
-      } catch {
+        return valuesMap.getOrElse(key, defaultVal.asInstanceOf[AnyRef])
+       } catch {
         case e: Exception => {
           log.debug("", e)
           throw e

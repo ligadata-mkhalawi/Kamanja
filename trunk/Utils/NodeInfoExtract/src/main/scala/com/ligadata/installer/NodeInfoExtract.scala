@@ -69,11 +69,6 @@ class NodeInfoExtract(val metadataAPIConfig: String, val nodeConfigPath: String,
 }
 
 object NodeInfoExtract extends App {
-
-  // 646 - 676 Change begins - replace MetadataAPIImpl
-  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
-  // 646 - 676 Change ends
-
   def usage: String = {
     """
 NodeInfoExtract --MetadataAPIConfig  <MetadataAPI config file path>
@@ -167,6 +162,7 @@ NodeInfoExtract --MetadataAPIConfig  <MetadataAPI config file path>
     writeFileIps(s"$workDir/$ipFileName", ips)
     writeFilePairs(s"$workDir/$ipPathPairFileName", ipPathPairs)
     writeNodeIdConfigs(workDir, ipIdCfgTargPathQuartetFileName, extractor, ipIdTargPaths)
+    val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
     getMetadataAPI.CloseDbStore
   }
 
@@ -205,6 +201,7 @@ NodeInfoExtract --MetadataAPIConfig  <MetadataAPI config file path>
    *  @param ipIdTargs the (ip,id, targetPath) triple values for the cluster being processed
    */
   private def writeNodeIdConfigs(workDir: String, ipIdCfgTargPathQuartetFileName: String, extractor: NodeInfoExtract, ipIdTargs: Array[(String, String, String, String)]) {
+    val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
     val metadataDataStore: String =
       if (getMetadataAPI.GetMetadataAPIConfig.getProperty("METADATA_DATASTORE") != null) {
         getMetadataAPI.GetMetadataAPIConfig.getProperty("METADATA_DATASTORE")
