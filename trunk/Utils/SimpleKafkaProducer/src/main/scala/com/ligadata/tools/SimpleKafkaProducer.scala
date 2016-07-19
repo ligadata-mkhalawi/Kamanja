@@ -388,8 +388,8 @@ object SimpleKafkaProducer {
     val keyList = partitionkeyidxs.getOrElse(msgType,null)
     if (keyList != null ) {
       keyList.foreach(key => {
-        val value: String = msgBody.getOrElse(key,null).asInstanceOf[String]
-        if (value != null){
+        val value: String = msgBody.getOrElse(key,"").toString
+        if (value.length > 0){
           jsonPartitionKeyidxs = List[String](value) ::: jsonPartitionKeyidxs}
       })
     }
@@ -405,6 +405,7 @@ object SimpleKafkaProducer {
     send(producer, topics(topicIdx), sendmsg, key)
     st.totalRead += doc.size
     st.totalSent += sendmsg.size
+    st.totalLines += 1;
   }
 
   /*
