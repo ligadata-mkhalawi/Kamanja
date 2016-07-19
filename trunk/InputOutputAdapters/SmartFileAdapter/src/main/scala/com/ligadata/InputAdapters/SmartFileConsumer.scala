@@ -1322,10 +1322,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
     val fileName = smartMessage.relatedFileHandler.getFullPath
     val offset = smartMessage.offsetInFile
-    val message =
-      if(adapterConfig.monitoringConfig.msgTags == null || adapterConfig.monitoringConfig.msgTags.length == 0)
-        smartMessage.msg
-      else getFinalMsg(smartMessage).getBytes()
+    val message = getFinalMsg(smartMessage)
 
 
     // Create a new EngineMessage and call the engine.
@@ -1349,10 +1346,12 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   /**
     * add tags if needed
     */
-  def getFinalMsg(smartMessage : SmartFileMessage) : String = {
-    val msg = new String(smartMessage.msg)
+  def getFinalMsg(smartMessage : SmartFileMessage) : Array[Byte] = {
+
     if(adapterConfig.monitoringConfig.msgTags == null || adapterConfig.monitoringConfig.msgTags.length == 0)
-      return msg
+      return smartMessage.msg
+
+    val msgStr = new String(smartMessage.msg)
 
     val tagDelimiter = adapterConfig.monitoringConfig.tagDelimiter
     val fileName = MonitorUtils.getFileName(smartMessage.relatedFileHandler.getFullPath)
@@ -1371,7 +1370,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       else pre
     })
 
-    prefix + (if(prefix.length == 0) "" else tagDelimiter) + smartMessage.msg
+    val finalMsg = prefix + (if(prefix.length == 0) "" else tagDelimiter) + msgStr
+    finalMsg.getBytes
   }
 
   override def StopProcessing: Unit = {
