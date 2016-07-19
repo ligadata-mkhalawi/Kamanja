@@ -1600,10 +1600,35 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
   }
 
   override def isTableExists(tableNamespace: String, tableName: String): Boolean = {
-    isTableExists(tableNamespace + "." + tableName)
+    // check whether corresponding table exists
+    var con: Connection = null
+    var rs: ResultSet = null
+    logger.info("Checking the existence of the table " + tableName)
+    try {
+      con = getConnection
+      val dbm = con.getMetaData();
+      rs = dbm.getTables(null, tableNamespace, tableName, null);
+      if (rs.next()) {
+        return true
+      } else {
+        return false
+      }
+    } catch {
+      case e: Exception => {
+        externalizeExceptionEvent(e)
+        throw CreateDMLException("Unable to verify table existence of table " + tableName, e)
+      }
+    } finally {
+      if (rs != null) {
+        rs.close
+      }
+      if (con != null) {
+        con.close
+      }
+    }
   }
 
-  def renameTable(srcTableName: String, destTableName: String, forceCopy: Boolean = false): Unit = lock.synchronized {
+  def renameTable(srcTableName: String, destTableName: String, forceCopy: Boolean): Unit = lock.synchronized {
     var con: Connection = null
     var stmt: Statement = null
     var rs: ResultSet = null
@@ -1657,18 +1682,73 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     }
   }
 
+
+  def renameTable(schemaName: String, srcTableName: String, destTableName: String, forceCopy: Boolean): Unit = lock.synchronized {
+    var con: Connection = null
+    var stmt: Statement = null
+    var rs: ResultSet = null
+    logger.info("renaming " + srcTableName + " to " + destTableName);
+    var query = ""
+    try {
+      // check whether source table exists
+      var exists = isTableExists(schemaName,srcTableName)
+      if (!exists) {
+	if( externalDDLOnly.equalsIgnoreCase("YES") ){
+          logger.info("The source table " + srcTableName + " already removed. Assuming table is backed up by external administrator. Nothing else to be done")
+	}
+	else{
+          throw CreateDDLException("Failed to rename the table " + srcTableName + ":", new Exception("Source Table doesn't exist"))
+	}
+      }
+      // check if the destination table already exists
+      exists = isTableExists(schemaName,destTableName)
+      if (exists) {
+        logger.info("The table " + destTableName + " exists.. ")
+	if( externalDDLOnly.equalsIgnoreCase("YES") ){
+          logger.info("The destination table " + destTableName + " already exist. It may have been pre-created externally. Nothing else to be done")
+	  return
+	}
+        if (forceCopy ) {
+          dropTable(schemaName + "." + destTableName)
+        } 
+	else {
+          throw CreateDDLException("Failed to rename the table " + srcTableName + ":", new Exception("Destination Table already exist"))
+        }
+      }
+      con = getConnection
+      query = "sp_rename '" + schemaName + "." + srcTableName + "' , '" + destTableName + "'"
+      stmt = con.createStatement()
+      stmt.executeUpdate(query);
+    } catch {
+      case e: Exception => {
+        externalizeExceptionEvent(e)
+        throw CreateDDLException("Failed to rename the table " + srcTableName + ":" + "query => " + query, e)
+      }
+    } finally {
+      if (rs != null) {
+        rs.close
+      }
+      if (stmt != null) {
+        stmt.close
+      }
+      if (con != null) {
+        con.close
+      }
+    }
+  }
+
   def backupContainer(containerName: String): Unit = lock.synchronized {
     var tableName = toTableName(containerName)
     var oldTableName = tableName
     var newTableName = tableName + "_bak"
-    renameTable(oldTableName, newTableName)
+    renameTable(oldTableName, newTableName,false)
   }
 
   def restoreContainer(containerName: String): Unit = lock.synchronized {
     var tableName = toTableName(containerName)
     var oldTableName = tableName + "_bak"
     var newTableName = tableName
-    renameTable(oldTableName, newTableName)
+    renameTable(oldTableName, newTableName,false)
   }
 
   override def isContainerExists(containerName: String): Boolean = {
@@ -1744,7 +1824,8 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
   }
 
   override def copyTable(namespace: String, srcTableName: String, destTableName: String, forceCopy: Boolean): Unit = {
-    copyTable(namespace + '.' + srcTableName, namespace + '.' + destTableName, forceCopy)
+    renameTable(namespace,srcTableName, destTableName, forceCopy)
+    //copyTable(namespace + '.' + srcTableName, namespace + '.' + destTableName, forceCopy)
   }
 }
 
