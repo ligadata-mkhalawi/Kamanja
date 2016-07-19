@@ -126,8 +126,8 @@ Usage:  bash $KAMANJA_HOME/bin/GenerateMessage.sh --inputfile $KAMANJA_HOME/inpu
      if(configBeanObj.createMessageFrom.equalsIgnoreCase("header")){
        ////////////////////////////////////////here//////////////////////////////////////////
        var headerFlagFile = false
-       val inputFileFields = options.getOrElse('fieldnames, null).toString.trim //Read fieldnames value from parsed parameters
-       if (inputFileFields != null || inputFileFields.toString().trim() != "") { //check if fieldnames passed or not
+       val inputFileFields = options.getOrElse('fieldnames, "notpassed").toString.trim //Read fieldnames value from parsed parameters
+       if (!inputFileFields.equalsIgnoreCase("notpassed") || !inputFileFields.equalsIgnoreCase("")) { //check if fieldnames passed or not
          val inputFileFieldsExistsFlag = fileBean.FileExist(inputFileFields) // check if  fieldnames path exists
          if (inputFileFieldsExistsFlag == false){
            logger.error("This file %s does not exists".format(inputFileFields))
@@ -147,13 +147,13 @@ Usage:  bash $KAMANJA_HOME/bin/GenerateMessage.sh --inputfile $KAMANJA_HOME/inpu
        }
 
 
-       var headerFlag = options.getOrElse('header, null).toString.trim //Read inputFile value from parsed parameters
-       if (headerFlag == null) { //check if inputFile passed or not
-         logger.info("you are not pass --header option and the default value is true.")
-         println("you are not pass --header option and the default value is true")
+       var headerFlag = options.getOrElse('header, "notpassed").toString.trim //Read inputFile value from parsed parameters
+       if (headerFlag.equalsIgnoreCase("notpassed")) { //check if inputFile passed or not
+         logger.info("You are not pass --header option and the default value is true.")
+         println("You are not pass --header option and the default value is true")
          headerFlag = "true"
-       } else (headerFlag.equalsIgnoreCase("true") || headerFlag.equalsIgnoreCase("false")){
-         logger.error("the value for --header should be true or false")
+       } else if(!headerFlag.equalsIgnoreCase("true") && !headerFlag.equalsIgnoreCase("false")){
+         logger.error("The value for --header should be true or false")
          sys.exit(1)
        }
 
@@ -186,16 +186,16 @@ Usage:  bash $KAMANJA_HOME/bin/GenerateMessage.sh --inputfile $KAMANJA_HOME/inpu
 
       // var invalidFlag: Boolean = false
        for(itemIndex <- 0 to headerFields.length-1) {
-         if (dataTypeObj.isAllDigits(headerFields(itemIndex))/* || headerFields(itemIndex).equalsIgnoreCase("true")
-           ||  headerFields(itemIndex).equalsIgnoreCase("false") || invalidFlag == false */) {
-           //Check if all character are digits
-        //   invalidFlag = true
-           println("This %s file does not include header".format(inputFile))
-           logger.info("This %s file does not include header".format(inputFile))
-         }
-         var fieldName: String = "field" + itemIndex
+//         if (dataTypeObj.isAllDigits(headerFields(itemIndex)) || headerFields(itemIndex).equalsIgnoreCase("true")
+//           ||  headerFields(itemIndex).equalsIgnoreCase("false") || invalidFlag == false ) {
+//           Check if all character are digits
+//           invalidFlag = true
+//           println("This %s file does not include header".format(inputFile))
+//           logger.info("This %s file does not include header".format(inputFile))
+//         }
+//         var fieldName: String = "field" + itemIndex
          var previousType = dataTypeObj.FindFinalType(fileSize, itemIndex, inputFile,configBeanObj.delimiter, configBeanObj.detectDatatypeFrom)
-         feildsTemp += (fieldName -> previousType)
+//         feildsTemp += (fieldName -> previousType)
          feildsString += (headerFields(itemIndex) -> previousType)
        }
 
