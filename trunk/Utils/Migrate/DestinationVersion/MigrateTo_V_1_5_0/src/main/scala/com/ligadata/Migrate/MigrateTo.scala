@@ -640,6 +640,7 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
   override def isMetadataTableExists(tblInfo: TableName): Boolean = {
     if (_bInit == false)
       throw new Exception("Not yet Initialized")
+    logger.debug("Check whether table exists or not, namespace => " + tblInfo.namespace + ",name => " + tblInfo.name)
     _metaDataStoreDb.isTableExists(tblInfo.namespace, tblInfo.name)
   }
 
