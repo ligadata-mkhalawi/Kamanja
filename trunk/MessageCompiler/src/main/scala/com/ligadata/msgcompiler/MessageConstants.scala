@@ -120,7 +120,7 @@ import java.io.{ DataInputStream, DataOutputStream, ByteArrayOutputStream }
 
   private def getByNameFuncForMapped = {
     """
-    override def get(keyName: String): AnyRef = { // Return (value, type)
+    override def get(keyName: String): AnyRef = { // Return (value)
       if(keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name " +keyName);
       val key = keyName.toLowerCase;
       try {
@@ -141,12 +141,16 @@ import java.io.{ DataInputStream, DataOutputStream, ByteArrayOutputStream }
    */
   private def getOrElseFuncForMapped = {
     """
-    override def getOrElse(keyName: String, defaultVal: Any): AnyRef = { // Return (value, type)
+    override def getOrElse(keyName: String, defaultVal: Any): AnyRef = { // Return (value)
       var attributeValue: AttributeValue = new AttributeValue();
       if(keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name "+keyName);
       val key = keyName.toLowerCase;
       try {
-        return valuesMap.getOrElse(key, defaultVal.asInstanceOf[AnyRef])
+         if (valuesMap.contains(key)) return get(key)
+         else {
+          if (defaultVal == null) return null;
+         return defaultVal.asInstanceOf[AnyRef];
+        }
        } catch {
         case e: Exception => {
           log.debug("", e)
@@ -184,7 +188,7 @@ import java.io.{ DataInputStream, DataOutputStream, ByteArrayOutputStream }
    */
   private def getByIndexMapped = {
     """
-    override def get(index: Int): AnyRef = { // Return (value, type)
+    override def get(index: Int): AnyRef = { // Return (value)
       throw new Exception("Get By Index is not supported in mapped messages");
     }
 
@@ -298,6 +302,9 @@ import java.io.{ DataInputStream, DataOutputStream, ByteArrayOutputStream }
   private def ValueToString = {
     """
     private def ValueToString(v: Any): String = {
+      if (v == null) {
+        return "null"
+      }
       if (v.isInstanceOf[Set[_]]) {
         return v.asInstanceOf[Set[_]].mkString(",")
       }
