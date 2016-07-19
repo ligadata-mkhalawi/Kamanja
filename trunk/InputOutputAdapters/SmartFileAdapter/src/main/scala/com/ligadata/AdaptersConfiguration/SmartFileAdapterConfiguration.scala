@@ -155,7 +155,7 @@ object SmartFileAdapterConfiguration{
       else  if (kv._1.compareToIgnoreCase("Locations") == 0) {
         monitoringConfig.locations = kv._2.split(",").map(str => str.trim).filter(str => str.size > 0)
       }
-      else  if (kv._1.compareToIgnoreCase("TargetMoveDir") == 0) {
+      else  if (kv._1.compareToIgnoreCase("TargetMoveDirs") == 0) {
         monitoringConfig.targetMoveDirs = kv._2.split(",").map(str => str.trim).filter(str => str.size > 0)
       }
       else if (kv._1.compareToIgnoreCase("WorkerBufferSize") == 0) {
@@ -167,7 +167,7 @@ object SmartFileAdapterConfiguration{
       else if (kv._1.compareToIgnoreCase("TagDelimiter") == 0) {
         monitoringConfig.tagDelimiter = kv._2
       }
-      else  if (kv._1.compareToIgnoreCase("TsgTags") == 0) {
+      else  if (kv._1.compareToIgnoreCase("MsgTags") == 0) {
         monitoringConfig.msgTags = kv._2.split(",").map(str => str.trim).filter(str => str.size > 0)
       }
     })
@@ -178,7 +178,7 @@ object SmartFileAdapterConfiguration{
     }
 
     if(monitoringConfig.targetMoveDirs == null || monitoringConfig.targetMoveDirs.length == 0) {
-      val err = "Not found targetMoveDir for Smart File Adapter Config:" + adapterName
+      val err = "Not found targetMoveDirs for Smart File Adapter Config:" + adapterName
       throw new KamanjaException(err, null)
     }
 
