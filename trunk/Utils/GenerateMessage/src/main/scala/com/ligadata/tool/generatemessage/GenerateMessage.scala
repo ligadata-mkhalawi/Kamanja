@@ -127,7 +127,7 @@ Usage:  bash $KAMANJA_HOME/bin/GenerateMessage.sh --inputfile $KAMANJA_HOME/inpu
        ////////////////////////////////////////here//////////////////////////////////////////
        var headerFlagFile = false
        val inputFileFields = options.getOrElse('fieldnames, "notpassed").toString.trim //Read fieldnames value from parsed parameters
-       if (!inputFileFields.equalsIgnoreCase("notpassed") || !inputFileFields.equalsIgnoreCase("")) { //check if fieldnames passed or not
+       if (!inputFileFields.equalsIgnoreCase("notpassed") && !inputFileFields.equalsIgnoreCase("")) { //check if fieldnames passed or not
          val inputFileFieldsExistsFlag = fileBean.FileExist(inputFileFields) // check if  fieldnames path exists
          if (inputFileFieldsExistsFlag == false){
            logger.error("This file %s does not exists".format(inputFileFields))
