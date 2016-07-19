@@ -95,10 +95,10 @@ public class Migrate {
             executor = texecutor;
 
             if (srcVer.equalsIgnoreCase("1.1")
-                    && (dstVer.equalsIgnoreCase("1.3") || 
-			dstVer.equalsIgnoreCase("1.4") || 
-			dstVer.equalsIgnoreCase("1.4.1") || 
-			dstVer.equalsIgnoreCase("1.5.0")
+                    && (dstVer.equalsIgnoreCase("1.3") ||
+			dstVer.equalsIgnoreCase("1.4") ||
+			dstVer.equalsIgnoreCase("1.4.1") ||
+			dstVer.equalsIgnoreCase("1.5.1")
 			)) {
                 appendData = new byte[8]; // timepartition bytes at the end.
                 for (int i = 0; i < 8; i++)
@@ -385,7 +385,7 @@ public class Migrate {
             }
 
             if (configuration.migratingTo.adapterMessageBindings == null || configuration.migratingTo.adapterMessageBindings.trim().length() == 0) {
-		if( srcVer.equalsIgnoreCase("1.1") || 
+		if( srcVer.equalsIgnoreCase("1.1") ||
 		    srcVer.equalsIgnoreCase("1.2") || srcVer.equalsIgnoreCase("1.3") ){
 		    sendStatus("Not found adapterMessageBindings", "ERROR");
 		    logger.error("Not found adapterMessageBindings");
@@ -407,9 +407,9 @@ public class Migrate {
                 return retCode;
             }
 
-            if (dstVer.equalsIgnoreCase("1.5.0") == false) {
-                sendStatus("We support destination version only 1.5.0. We don't support " + dstVer, "ERROR");
-                logger.error("We support destination version only 1.5.0. We don't support " + dstVer);
+            if (dstVer.equalsIgnoreCase("1.5.1") == false) {
+                sendStatus("We support destination version only 1.5.1. We don't support " + dstVer, "ERROR");
+                logger.error("We support destination version only 1.5.1. We don't support " + dstVer);
                 usage();
                 return retCode;
             }
@@ -480,12 +480,12 @@ public class Migrate {
                     srcVer.equalsIgnoreCase("1.4") ||
                     srcVer.equalsIgnoreCase("1.4.1")
 					   ) &&
-                    dstVer.equalsIgnoreCase("1.5.0"));
+                    dstVer.equalsIgnoreCase("1.5.1"));
 
             boolean canUpgradeData = ((srcVer.equalsIgnoreCase("1.1") ||
                     srcVer.equalsIgnoreCase("1.2") ||
                     srcVer.equalsIgnoreCase("1.3")) &&
-                    dstVer.equalsIgnoreCase("1.5.0"));
+                    dstVer.equalsIgnoreCase("1.5.1"));
 
             if (canUpgradeData && canUpgradeMetadata == false) {
                 sendStatus("We don't support upgrading only data without metadata at this moment", "ERROR");
