@@ -37,6 +37,7 @@ import org.jpmml.model.{JAXBUtil, ImportFilter}
 import org.jpmml.evaluator._
 import org.xml.sax.InputSource
 import org.xml.sax.helpers.XMLReaderFactory
+import org.jpmml.sas._
 
 
 /**
@@ -92,7 +93,14 @@ class JpmmlSupport(mgr: MdMgr
       val unmarshaller = JAXBUtil.createUnmarshaller
       unmarshaller.setEventHandler(SimpleValidationEventHandler)
 
-      val pmml: PMML = unmarshaller.unmarshal(source).asInstanceOf[PMML]
+      var pmml: PMML = unmarshaller.unmarshal(source).asInstanceOf[PMML]
+
+      val header : Header =  pmml.getHeader() ;
+      if (header.getApplication().equals("SAS EM")) {
+        val visitor: Visitor = new org.jpmml.sas.visitors.ExpressionCorrector()
+        visitor.applyTo(pmml)
+      }
+
       val modelEvaluatorFactory = ModelEvaluatorFactory.newInstance()
       val modelEvaluator = modelEvaluatorFactory.newModelManager(pmml)
 
@@ -348,4 +356,3 @@ class JpmmlSupport(mgr: MdMgr
   }
 
 }
-
