@@ -163,7 +163,7 @@ libraryDependencies += "org.mapdb" % "mapdb" % "1.0.6"
 
 
 ////////////////////// SqlServer
-libraryDependencies += "org.apache.commons" % "commons-dbcp2" % "2.1" // one
+libraryDependencies += "org.apache.commons" % "commons-dbcp2" % "2.1.1" // one
 
 
 //////////////////////  SmartFileAdapter
