@@ -73,6 +73,7 @@ class HdfsFileHandler extends SmartFileHandler{
     val inputStream : FSDataInputStream =
       try {
         val inFile : Path = new Path(getFullPath)
+        logger.info("Hdfs File Handler - opening file " + getFullPath)
         hdFileSystem.open(inFile)
       }
       catch {
@@ -134,6 +135,8 @@ class HdfsFileHandler extends SmartFileHandler{
 
   @throws(classOf[KamanjaException])
   def moveTo(newFilePath : String) : Boolean = {
+    logger.info(s"Hdfs File Handler - moving file ($getFullPath) to ($newFilePath)")
+
      if(getFullPath.equals(newFilePath)){
       logger.warn(s"Trying to move file ($getFullPath) but source and destination are the same")
       return false
@@ -154,21 +157,21 @@ class HdfsFileHandler extends SmartFileHandler{
           hdFileSystem.rename(srcPath, destPath)
           logger.debug("Moved file success")
           fileFullPath = newFilePath
-            return true
+            true
         }
         else{
             logger.warn("Source file was not found")
-            return false
+            false
         }
      } 
      catch {
        case ex : Exception => {
          logger.error("", ex)
-         return false
+         false
        }
        case ex : Throwable => {
          logger.error("", ex)
-         return false
+         false
        }
 
      } finally {
@@ -178,21 +181,21 @@ class HdfsFileHandler extends SmartFileHandler{
   
   @throws(classOf[KamanjaException])
   def delete() : Boolean = {
-    logger.info(s"Deleting file ($getFullPath)")
+    logger.info(s"Hdfs File Handler - Deleting file ($getFullPath)")
      try {
        hdFileSystem = FileSystem.get(hdfsConfig)
        hdFileSystem.delete(new Path(getFullPath), true)
         logger.debug("Successfully deleted")
-        return true
+        true
      } 
      catch {
        case ex : Exception => {
         logger.error("Hdfs File Handler - Error while trying to delete file " + getFullPath, ex)
-        return false 
+        false
        }
        case ex : Throwable => {
          logger.error("Hdfs File Handler - Error while trying to delete file " + getFullPath, ex)
-         return false
+         false
        }
         
      } finally {
@@ -202,8 +205,10 @@ class HdfsFileHandler extends SmartFileHandler{
 
   @throws(classOf[KamanjaException])
   def close(): Unit = {
-    if(in != null)
+    if(in != null){
+      logger.info("Hdfs File Handler - Closing file " + getFullPath)
       in.close()
+    }
     if(hdFileSystem != null) {
       logger.debug("Closing Hd File System object hdFileSystem")
       hdFileSystem.close()
@@ -211,22 +216,30 @@ class HdfsFileHandler extends SmartFileHandler{
   }
 
   @throws(classOf[KamanjaException])
-  def length : Long = getHdFileSystem.getFileStatus(new Path(getFullPath)).getLen
+  def length : Long = getHdFileSystem("get length").getFileStatus(new Path(getFullPath)).getLen
 
   @throws(classOf[KamanjaException])
-  def lastModified : Long = getHdFileSystem.getFileStatus(new Path(getFullPath)).getModificationTime
+  def lastModified : Long = getHdFileSystem("get modification time").getFileStatus(new Path(getFullPath)).getModificationTime
 
   @throws(classOf[KamanjaException])
-  override def exists(): Boolean = getHdFileSystem.exists(new Path(getFullPath))
+  override def exists(): Boolean = getHdFileSystem("check existence").exists(new Path(getFullPath))
 
   @throws(classOf[KamanjaException])
-  override def isFile: Boolean = getHdFileSystem.isFile(new Path(getFullPath))
+  override def isFile: Boolean = getHdFileSystem("check if file").isFile(new Path(getFullPath))
 
   @throws(classOf[KamanjaException])
-  override def isDirectory: Boolean = getHdFileSystem.isDirectory(new Path(getFullPath))
+  override def isDirectory: Boolean = getHdFileSystem("check if dir").isDirectory(new Path(getFullPath))
 
-  private def getHdFileSystem() : FileSystem = {
+  /**
+    *
+    * @param op for logging purposes
+    * @return
+    */
+  private def getHdFileSystem(op : String) : FileSystem = {
     try {
+      if(op != null)
+        logger.info(s"Hdfs File Handler - accessing file ($getFullPath) to " + op)
+
       hdFileSystem = FileSystem.get(hdfsConfig)
       hdFileSystem
     }
@@ -398,8 +411,8 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
 
   private def findDirModifiedDirectChilds(parentfolder : String, hdFileSystem : FileSystem,
                                           modifiedDirs : ArrayBuffer[String], modifiedFiles : Map[SmartFileHandler, FileChangeType], isFirstCheck : Boolean){
-    logger.info("checking folder with full path: " + parentfolder)
 
+    logger.info("HDFS Changes Monitor - listing dir " + parentfolder)
     val directChildren = getFolderContents(parentfolder, hdFileSystem).sortWith(_.getModificationTime < _.getModificationTime)
     var changeType : FileChangeType = null //new, modified
 

@@ -46,6 +46,7 @@ class PosixFileHandler extends SmartFileHandler{
 
   //gets the input stream according to file system type - POSIX here
   def getDefaultInputStream() : InputStream = {
+    logger.info("Posix File Handler - opening file " + getFullPath)
     val inputStream : InputStream =
       try {
         new FileInputStream(fileFullPath)
@@ -97,12 +98,13 @@ class PosixFileHandler extends SmartFileHandler{
 
   @throws(classOf[KamanjaException])
   def moveTo(newFilePath : String) : Boolean = {
+
     if(getFullPath.equals(newFilePath)){
       logger.warn(s"Trying to move file ($getFullPath) but source and destination are the same")
       return false
     }
     try {
-      logger.debug(s"PosixFileHandler - Moving file ${fileObject.toString} to ${newFilePath}")
+      logger.debug(s"Posix File Handler - Moving file ${fileObject.toString} to ${newFilePath}")
       val destFileObj = new File(newFilePath)
 
       if (fileObject.exists()) {
@@ -130,7 +132,7 @@ class PosixFileHandler extends SmartFileHandler{
 
   @throws(classOf[KamanjaException])
   def delete() : Boolean = {
-    logger.debug(s"Deleting file ($getFullPath)")
+    logger.info(s"Posix File Handler - Deleting file ($getFullPath)")
     try {
       fileObject.delete
       logger.debug("Successfully deleted")
@@ -150,12 +152,8 @@ class PosixFileHandler extends SmartFileHandler{
   }
 
   @throws(classOf[KamanjaException])
-  def length : Long = fileObject.length
-
-  def lastModified : Long = fileObject.lastModified
-
-  @throws(classOf[KamanjaException])
   def close(): Unit = {
+    logger.info("Posix File Handler - Closing file " + getFullPath)
     try {
       if (in != null)
         in.close()
@@ -166,11 +164,31 @@ class PosixFileHandler extends SmartFileHandler{
     }
   }
 
-  override def exists(): Boolean = new File(fileFullPath).exists
+  @throws(classOf[KamanjaException])
+  def length : Long = {
+    logger.info("Posix File Handler - checking length for file " + getFullPath)
+    fileObject.length
+  }
 
-  override def isFile: Boolean = new File(fileFullPath).isFile
+  def lastModified : Long = {
+    logger.info("Posix File Handler - checking modification time for file " + getFullPath)
+    fileObject.lastModified
+  }
 
-  override def isDirectory: Boolean = new File(fileFullPath).isDirectory
+  override def exists(): Boolean = {
+    logger.info("Posix File Handler - checking existence for file " + getFullPath)
+    new File(fileFullPath).exists
+  }
+
+  override def isFile: Boolean = {
+    logger.info("Posix File Handler - checking (isFile) for file " + getFullPath)
+    new File(fileFullPath).isFile
+  }
+
+  override def isDirectory: Boolean = {
+    logger.info("Posix File Handler - checking (isDir) for file " + getFullPath)
+    new File(fileFullPath).isDirectory
+  }
 
   override def isAccessible : Boolean = {
     val file = new File(fileFullPath)
@@ -307,7 +325,9 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
   private def checkExistingFiles(parentDir: File, isFirstScan : Boolean): Unit = {
     // Process all the existing files in the directory that are not marked complete.
     if (parentDir.exists && parentDir.isDirectory) {
+      logger.info("Posix Changes Monitor - listing dir " + parentDir.toString)
       val files = parentDir.listFiles.filter(_.isFile).sortWith(_.lastModified < _.lastModified).toList
+
       files.foreach(file => {
         val tokenName = file.toString.split("/")
         if (!checkIfFileHandled(file.toString)) {
