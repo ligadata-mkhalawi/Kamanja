@@ -1374,8 +1374,10 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
 
         var idx = dependantJars.size - 1
         var yetToBuildDeps = false
-        while (idx >= 0 && ! yetToBuildDeps)
+        while (idx >= 0 && ! yetToBuildDeps) {
           yetToBuildDeps = yetToRun.contains(dependantJars(idx))
+          idx = idx - 1
+        }
 
         if (yetToBuildDeps) {
           objsToRunLater += o
