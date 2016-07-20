@@ -30,6 +30,8 @@ class FileAdapterConnectionConfig {
 
 class FileAdapterMonitoringConfig {
   var waitingTimeMS : Int = _
+  var dirCheckThreshold : Int = 0 //when > 0 listing watched folders should stop when count of files waiting to be processed is above the threshold
+
   var locations : Array[String] = Array.empty[String] //folders to monitor
 
   var fileBufferingTimeout = 300 // in seconds
@@ -169,6 +171,9 @@ object SmartFileAdapterConfiguration{
       }
       else  if (kv._1.compareToIgnoreCase("MsgTags") == 0) {
         monitoringConfig.msgTags = kv._2.split(",").map(str => str.trim).filter(str => str.size > 0)
+      }
+      else  if (kv._1.compareToIgnoreCase("DirCheckThreshold") == 0) {
+        monitoringConfig.dirCheckThreshold = kv._2.trim.toInt
       }
     })
 

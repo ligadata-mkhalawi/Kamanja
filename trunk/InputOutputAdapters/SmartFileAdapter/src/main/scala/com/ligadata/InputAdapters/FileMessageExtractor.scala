@@ -251,11 +251,15 @@ class FileMessageExtractor(parentExecutor: ExecutorService,
       //most likely this happens if last message is not followed by the separator
       if(readlen > 0 && !processingInterrupted){
         val lastMsg: Array[Byte] = byteBuffer.slice(0, readlen)
-        currentMsgNum += 1
-        val msgOffset = globalOffset + lastMsg.length + message_separator_len //byte offset of next message in the file
-        val smartFileMessage = new SmartFileMessage(lastMsg, msgOffset, fileHandler, msgOffset)
-        messageFoundCallback(smartFileMessage, consumerContext)
+        if(lastMsg.length == 1 && lastMsg(0).asInstanceOf[Char] == message_separator){
 
+        }
+        else {
+          currentMsgNum += 1
+          val msgOffset = globalOffset + lastMsg.length + message_separator_len //byte offset of next message in the file
+          val smartFileMessage = new SmartFileMessage(lastMsg, msgOffset, fileHandler, msgOffset)
+          messageFoundCallback(smartFileMessage, consumerContext)
+        }
       }
 
 

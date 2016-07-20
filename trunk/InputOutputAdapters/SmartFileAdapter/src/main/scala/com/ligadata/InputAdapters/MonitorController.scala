@@ -135,6 +135,13 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
     var specialWarnCounter: Int = 1
 
     while (keepMontoringBufferingFiles) {
+
+      //inform monitor to start/stop listing folders contents based on current number of waiting files compared to a threshold
+      if(adapterConfig.monitoringConfig.dirCheckThreshold > 0 &&
+        waitingFilesToProcessCount > adapterConfig.monitoringConfig.dirCheckThreshold)
+        smartFileMonitor.setMonitoringStatus(false)
+      else smartFileMonitor.setMonitoringStatus(true)
+
       // Scan all the files that we are buffering, if there is not difference in their file size.. move them onto
       // the FileQ, they are ready to process.
       bufferingQLock.synchronized {
@@ -302,6 +309,12 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
       logger.info("SMART FILE CONSUMER (MonitorController):  deq file " + ef.fileHandler.getFullPath + " with priority " + ef.createDate+" --- curretnly " + fileQ.size + " files left on a QUEUE")
       return ef
 
+    }
+  }
+
+  private def waitingFilesToProcessCount : Int = {
+    fileQLock.synchronized {
+      fileQ.length
     }
   }
 

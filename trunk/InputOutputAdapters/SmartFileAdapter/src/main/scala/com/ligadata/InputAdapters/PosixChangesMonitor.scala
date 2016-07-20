@@ -204,6 +204,7 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
   private var monitorsExecutorService: ExecutorService = null
 
   private var isMonitoring = false
+  private var checkFolders = true
 
   def init(adapterSpecificCfgJson: String): Unit ={
     logger.debug("PosixChangesMonitor (init)- adapterSpecificCfgJson==null is "+
@@ -219,6 +220,10 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
       logger.info("Smart File Consumer (Posix Monitor) - removing file {} from map {} as it is processed", filePath, fileCache)
       fileCache -= filePath
     }
+  }
+
+  def setMonitoringStatus(status : Boolean): Unit ={
+    checkFolders = status
   }
 
   def monitor: Unit ={
@@ -239,40 +244,40 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
             breakable {
               var isFirstScan = true
               while (isMonitoring) {
-                try {
-                  logger.info(s"Watching directory $targetFolder")
+
+                if(checkFolders) {
+                  try {
+                    logger.info(s"Watching directory $targetFolder")
+
+                    val dirsToCheck = new ArrayBuffer[String]()
+                    dirsToCheck += targetFolder
+
+                    while (dirsToCheck.nonEmpty) {
+                      val dirToCheck = dirsToCheck.head
+                      dirsToCheck.remove(0)
+
+                      val dir = new File(dirToCheck)
+                      checkExistingFiles(dir, isFirstScan)
+                      //dir.listFiles.filter(_.isDirectory).foreach(d => dirsToCheck += d.toString)
 
 
-                  val dirsToCheck = new ArrayBuffer[String]()
-                  dirsToCheck += targetFolder
+                      errorWaitTime = 1000
+                    }
 
+                    isFirstScan = false
 
-                  while(dirsToCheck.nonEmpty ) {
-                    val dirToCheck = dirsToCheck.head
-                    dirsToCheck.remove(0)
-
-                    val dir = new File(dirToCheck)
-                    checkExistingFiles(dir, isFirstScan)
-                    //dir.listFiles.filter(_.isDirectory).foreach(d => dirsToCheck += d.toString)
-
-
-                    errorWaitTime = 1000
+                  } catch {
+                    case e: Exception => {
+                      logger.warn("Unable to access Directory, Retrying after " + errorWaitTime + " seconds", e)
+                      errorWaitTime = scala.math.min((errorWaitTime * 2), MAX_WAIT_TIME)
+                    }
+                    case e: Throwable => {
+                      logger.warn("Unable to access Directory, Retrying after " + errorWaitTime + " seconds", e)
+                      errorWaitTime = scala.math.min((errorWaitTime * 2), MAX_WAIT_TIME)
+                    }
                   }
-
-                  isFirstScan = false
-
-                } catch {
-                  case e: Exception => {
-                    logger.warn("Unable to access Directory, Retrying after " + errorWaitTime + " seconds", e)
-                    errorWaitTime = scala.math.min((errorWaitTime * 2), MAX_WAIT_TIME)
-                  }
-                  case e: Throwable => {
-                    logger.warn("Unable to access Directory, Retrying after " + errorWaitTime + " seconds", e)
-                    errorWaitTime = scala.math.min((errorWaitTime * 2), MAX_WAIT_TIME)
-                  }
+                  Thread.sleep(monitoringConf.waitingTimeMS)
                 }
-                Thread.sleep(monitoringConf.waitingTimeMS)
-
               }
             }
           }  catch {

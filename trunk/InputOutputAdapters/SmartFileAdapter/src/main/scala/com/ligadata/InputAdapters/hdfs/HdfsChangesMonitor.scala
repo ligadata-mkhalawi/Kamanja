@@ -252,6 +252,7 @@ class HdfsFileHandler extends SmartFileHandler{
 class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileHandler, Boolean) => Unit) extends SmartFileMonitor{
 
   private var isMonitoring = false
+  private var checkFolders = true
   
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
@@ -288,6 +289,10 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
   def markFileAsProcessed(filePath : String) : Unit = {
     logger.info("Smart File Consumer (SFTP Monitor) - removing file {} from map {} as it is processed", filePath, filesStatusMap)
     filesStatusMap.remove(filePath)
+  }
+
+  def setMonitoringStatus(status : Boolean): Unit ={
+    checkFolders = status
   }
 
   def shutdown: Unit ={
@@ -329,56 +334,58 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
 
           while (isMonitoring) {
 
-            try {
-              logger.info(s"Checking configured HDFS directory (targetFolder)...")
+            if (checkFolders) {
+              try {
+                logger.info(s"Checking configured HDFS directory (targetFolder)...")
 
 
-              val modifiedDirs = new ArrayBuffer[String]()
-              modifiedDirs += targetFolder
-              while (modifiedDirs.nonEmpty) {
-                //each time checking only updated folders: first find direct children of target folder that were modified
-                // then for each folder of these search for modified files and folders, repeat for the modified folders
+                val modifiedDirs = new ArrayBuffer[String]()
+                modifiedDirs += targetFolder
+                while (modifiedDirs.nonEmpty) {
+                  //each time checking only updated folders: first find direct children of target folder that were modified
+                  // then for each folder of these search for modified files and folders, repeat for the modified folders
 
-                val aFolder = modifiedDirs.head
-                val modifiedFiles = Map[SmartFileHandler, FileChangeType]() // these are the modified files found in folder $aFolder
+                  val aFolder = modifiedDirs.head
+                  val modifiedFiles = Map[SmartFileHandler, FileChangeType]() // these are the modified files found in folder $aFolder
 
-                modifiedDirs.remove(0)
-                val fs = FileSystem.get(hdfsConfig)
-                findDirModifiedDirectChilds(aFolder, fs, modifiedDirs, modifiedFiles, firstCheck)
+                  modifiedDirs.remove(0)
+                  val fs = FileSystem.get(hdfsConfig)
+                  findDirModifiedDirectChilds(aFolder, fs, modifiedDirs, modifiedFiles, firstCheck)
 
-                //logger.debug("Closing Hd File System object fs in monitorDirChanges()")
-                //fs.close()
+                  //logger.debug("Closing Hd File System object fs in monitorDirChanges()")
+                  //fs.close()
 
-                if (modifiedFiles.nonEmpty)
-                  modifiedFiles.foreach(tuple => {
+                  if (modifiedFiles.nonEmpty)
+                    modifiedFiles.foreach(tuple => {
 
-                    try {
-                      modifiedFileCallback(tuple._1, tuple._2 == AlreadyExisting)
+                      try {
+                        modifiedFileCallback(tuple._1, tuple._2 == AlreadyExisting)
+                      }
+                      catch {
+                        case e: Throwable =>
+                          logger.error("Smart File Consumer (Hdfs) : Error while notifying Monitor about new file", e)
+                      }
+
                     }
-                    catch{
-                      case e : Throwable =>
-                        logger.error("Smart File Consumer (Hdfs) : Error while notifying Monitor about new file", e)
-                    }
+                    )
 
-                  }
-                  )
+                }
 
               }
+              catch {
+                case ex: Exception => {
+                  logger.error("Smart File Consumer (Hdfs Monitor) - Error while checking the folder", ex)
+                }
+                case ex: Throwable => {
+                  logger.error("Smart File Consumer (Hdfs Monitor) - Error while checking the folder", ex)
+                }
+              }
 
+              firstCheck = false
+
+              logger.info(s"Sleepng for ${monitoringConf.waitingTimeMS} milliseconds...............................")
+              Thread.sleep(monitoringConf.waitingTimeMS)
             }
-            catch {
-              case ex: Exception => {
-                logger.error("Smart File Consumer (Hdfs Monitor) - Error while checking the folder", ex)
-              }
-              case ex: Throwable => {
-                logger.error("Smart File Consumer (Hdfs Monitor) - Error while checking the folder", ex)
-              }
-            }
-
-            firstCheck = false
-
-            logger.info(s"Sleepng for ${monitoringConf.waitingTimeMS} milliseconds...............................")
-            Thread.sleep(monitoringConf.waitingTimeMS)
           }
         }
       }
