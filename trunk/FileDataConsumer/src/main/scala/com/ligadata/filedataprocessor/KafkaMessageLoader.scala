@@ -71,8 +71,8 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
   props.put("request.required.acks",inConfiguration.getOrElse(SmartFileAdapterConstants.KAFKA_ACK, "0"))
 
   // Add all the new security paramterst
-  val secProt = inConfiguration.getOrElse(SmartFileAdapterConstants.SEC_PROTOCOL, "").toString
-  if (secProt.length > 0 ||
+  val secProt = inConfiguration.getOrElse(SmartFileAdapterConstants.SEC_PROTOCOL, "plaintext").toString
+  if (secProt.length > 0 &&
        !secProt.equalsIgnoreCase("plaintext")) {
 
     props.put(SmartFileAdapterConstants.SEC_PROTOCOL, secProt)
