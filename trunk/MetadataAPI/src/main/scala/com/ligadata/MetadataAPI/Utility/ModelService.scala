@@ -16,17 +16,23 @@
 
 package com.ligadata.MetadataAPI.Utility
 
-import java.io.{FileNotFoundException, File}
+import java.io._
+import java.nio.charset.StandardCharsets
+import javax.xml.bind.{ValidationEvent, ValidationEventHandler}
+import javax.xml.transform.sax.SAXSource
 
 import scala.io.Source
-
 import org.apache.logging.log4j._
-
 import com.ligadata.Exceptions.StackTrace
-import com.ligadata.MetadataAPI.{MetadataAPIImpl,ApiResult,ErrorCodeConstants}
+import com.ligadata.MetadataAPI.{ApiResult, ErrorCodeConstants, MetadataAPIImpl}
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType.ModelType
 import com.ligadata.MetadataAPI.MetadataAPIImpl
+import org.dmg.pmml.PMML
+import org.jpmml.model.{ImportFilter, JAXBUtil}
+import org.xml.sax.InputSource
+import org.xml.sax.helpers.XMLReaderFactory
+
 import scala.io._
 
 /**
@@ -304,8 +310,32 @@ object ModelService {
         } else {
             val model = new File(input.toString)
             val resp : String = if(model.exists()){
-                val modelDef= Source.fromFile(model).mkString
-                MetadataAPIImpl.AddModel(ModelType.PMML, modelDef, optUserid, finalTid,  optModelName, optVersion, optMsgConsumed,optMsgVersion, optMsgProduced,pStr)
+              val modelDef= Source.fromFile(model).mkString
+
+              // 1320, 1313 Change begins
+              val inputStream: InputStream = new ByteArrayInputStream(modelDef.getBytes(StandardCharsets.UTF_8))
+                val is = new PushbackInputStream(inputStream)
+
+                val reader = XMLReaderFactory.createXMLReader()
+                reader.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
+                val filter = new ImportFilter(reader)
+                val source = new SAXSource(filter, new InputSource(is))
+                val unmarshaller = JAXBUtil.createUnmarshaller
+                unmarshaller.setEventHandler(SimpleValidationEventHandler)
+
+                var pmml: PMML = unmarshaller.unmarshal(source).asInstanceOf[PMML]
+
+
+                logger.debug("THE VALUE of pmml header is " + pmml.getHeader.getApplication.getName().toString())
+                var pmmlNewText : String = modelDef
+                if (pmml.getHeader().getApplication().getName().contains("SAS")) {
+                    pmmlNewText = pmmlNewText.replaceAll("<Constant>FMTWIDTH</Constant>" , "<FieldRef field=\"FMTWIDTH\"/>")
+                    logger.debug("pmml after converion " + pmmlNewText)
+
+                }
+
+                MetadataAPIImpl.AddModel(ModelType.PMML, pmmlNewText, optUserid, finalTid,  optModelName, optVersion, optMsgConsumed,optMsgVersion, optMsgProduced,pStr)
+              // 1320, 1313 Change ends
             }else{
                 val userId : String = optUserid.getOrElse("no user id supplied")
                 val modelName : String = optModelName.getOrElse("no model name supplied")
@@ -321,6 +351,29 @@ object ModelService {
         response
 
     }
+
+  // 1320, 1313 Change begins
+  /**
+    * SimpleValidationEventHandler used by the JAXB Util that decomposes the PMML string supplied to CreateModel.
+    */
+  private object SimpleValidationEventHandler extends ValidationEventHandler {
+    /**
+      * Answer false whenever the validation event severity is ERROR or FATAL_ERROR.
+      *
+      * @param event a ValidationEvent issued by the JAXB SAX utility that is parsing the PMML source text.
+      * @return flag to indicate whether to continue with the parse or not.
+      */
+    def handleEvent(event: ValidationEvent): Boolean = {
+      val severity: Int = event.getSeverity
+      severity match {
+        case ValidationEvent.ERROR => false
+        case ValidationEvent.FATAL_ERROR => false
+        case _ => true
+      }
+    }
+  }
+
+  // 1320, 1313 Change ends
 
     /**
      * Add a new Kamanja Pmml model to the metadata.
@@ -633,9 +686,32 @@ object ModelService {
       val response : String = try {
           val jpmmlPath : File = new File(pmmlPath.toString)
               val pmmlText : String = Source.fromFile(jpmmlPath).mkString
+        // 1320, 1313 Change begins
+        val inputStream: InputStream = new ByteArrayInputStream(pmmlText.getBytes(StandardCharsets.UTF_8))
+          val is = new PushbackInputStream(inputStream)
 
-              getMetadataAPI.UpdateModel(ModelType.PMML
-                              , pmmlText
+          val reader = XMLReaderFactory.createXMLReader()
+          reader.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
+          val filter = new ImportFilter(reader)
+          val source = new SAXSource(filter, new InputSource(is))
+          val unmarshaller = JAXBUtil.createUnmarshaller
+          unmarshaller.setEventHandler(SimpleValidationEventHandler)
+
+          val pmml: PMML = unmarshaller.unmarshal(source).asInstanceOf[PMML]
+
+          // 1320, 1313 Change begins
+
+                logger.debug("THE VALUE of pmml header is " + pmml.getHeader.getApplication.getName().toString())
+                var pmmlNewText : String = pmmlText
+                if (pmml.getHeader().getApplication().getName().contains("SAS")) {
+                    pmmlNewText = pmmlNewText.replaceAll("<Constant>FMTWIDTH</Constant>" , "<FieldRef field=\"FMTWIDTH\"/>")
+                    logger.debug("pmml after converion " + pmmlNewText)
+
+                }
+
+        getMetadataAPI.UpdateModel(ModelType.PMML
+                              , pmmlNewText
+          // 1320, 1313 Change ends
                               , userid
                               , finalTid
                               , Some(modelNamespaceName)
