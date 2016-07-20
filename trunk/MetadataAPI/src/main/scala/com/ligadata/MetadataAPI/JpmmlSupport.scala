@@ -169,8 +169,12 @@ class JpmmlSupport(mgr: MdMgr
                 scala.Array[(String,String)](("no","targetFields"))
             }
             val outputFieldContent : scala.Array[(String,String)] = if (outputFields != null && outputFields.size > 0) {
-                outputFields.map(fld => {
-                    (fld.getName.getValue, fld.getDataType.value)
+              outputFields.map(fld => {
+                // 1323, 1319 Change begins
+                  val fldName: String = if (fld != null && fld.getName != null) fld.getName.getValue else null
+                  val fldTyp: String = if (fld != null && fld.getDataType != null) fld.getDataType.value else null
+                  (fldName, fldTyp)
+                // 1323, 1319 Change ends
                 })
             } else {
                 scala.Array[(String,String)](("no","outputFields"))

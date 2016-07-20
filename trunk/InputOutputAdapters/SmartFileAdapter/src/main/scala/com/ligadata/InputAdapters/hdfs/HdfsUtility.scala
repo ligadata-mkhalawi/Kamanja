@@ -10,6 +10,14 @@ object HdfsUtility{
     hdfsConfig.set("fs.default.name", connectionConf.hostsList.mkString(","))
     hdfsConfig.set("fs.hdfs.impl", classOf[org.apache.hadoop.hdfs.DistributedFileSystem].getName)
     hdfsConfig.set("fs.file.impl", classOf[org.apache.hadoop.fs.LocalFileSystem].getName)
+
+    if (connectionConf.hadoopConfig != null && !connectionConf.hadoopConfig.isEmpty) {
+      connectionConf.hadoopConfig.foreach(conf => {
+        hdfsConfig.set(conf._1, conf._2)
+      })
+    }
+
+
     //hdfsConfig.set("hadoop.job.ugi", "hadoop");//user ???
     if(connectionConf.authentication.equalsIgnoreCase("kerberos")){
       hdfsConfig.set("hadoop.security.authentication", "Kerberos")

@@ -59,5 +59,5 @@ if [ "$KAMANJA_TRUSTSTORE" != "" ]; then
 fi
 
 echo "User selected: $INPUTFILE"
-java $JAAS_CLIENT_OPT $KERBEROS_CONFIG_OPT $KEYSTORE_CONFIG_OPT $KEYSTORE_PASS_CONFIG_OPT $TRUSTSTORE_CONFIG_OPT $TRUSTSTORE_PASS_CONFIG_OPT -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.10-1.5.0.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.10-1.5.0.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.10-1.5.0.jar:$KAMANJA_HOME/lib/system/simplekafkaproducer_2.10-1.5.0.jar com.ligadata.tools.SimpleKafkaProducer --gz true --topics "testin_1" --threads 1 --topicpartitions 8 --brokerlist "$kafkahostname" --files $INPUTFILE   --partitionkeyidxs "1" --format CSV $SECURITY_PROP_OPT
+java $JAAS_CLIENT_OPT $KERBEROS_CONFIG_OPT $KEYSTORE_CONFIG_OPT $KEYSTORE_PASS_CONFIG_OPT $TRUSTSTORE_CONFIG_OPT $TRUSTSTORE_PASS_CONFIG_OPT -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.10-1.5.1.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.10-1.5.1.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.10-1.5.1.jar:$KAMANJA_HOME/lib/system/simplekafkaproducer_2.10-1.5.1.jar com.ligadata.tools.SimpleKafkaProducer --gz true --topics "testin_1" --threads 1 --topicpartitions 8 --brokerlist "$kafkahostname" --files $INPUTFILE   --partitionkeyidxs "1" --format CSV $SECURITY_PROP_OPT
 
