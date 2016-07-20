@@ -1,8 +1,9 @@
+'use strict'
 /*globals angular,_,vis, console, document */
 angular
   .module('networkApp')
-  .directive('uiHomeVisDemo', ['serviceConfig', '$timeout', '$window', function (serviceConfig, $timeout, $window) {
-    'use strict';
+  .directive('uiHomeVisDemo', ['serviceConfig', 'serviceSocket', '$timeout', '$window',
+    function (serviceConfig, serviceSocket, $timeout, $window) {
     return {
       restrict: 'E',
       scope: {
@@ -85,10 +86,25 @@ angular
 
         var network = new vis.Network(container, data, options);
 
+        serviceSocket.connectStatus(function(socketData){
+          var socketObj = JSON.parse(socketData);
+          var messageObj = JSON.parse(socketObj.message);
+          if(data.nodes) {
+            _.each(messageObj.ModelCounter, function (model) {
+              var node = _.find(data.nodes._data, {ID: model.Id});
+              if (node) {
+                node.number = model.In;
+              }
+            });
+            resizeNetworkAndReposition();
+          }
+        });
+
         var Node = function (n) {
           var imagePath = serviceConfig.classImageColorPath;
           var types = serviceConfig.classImageColorMap;
           this.id = n.id;
+          this.ID = n.ID;
           this.number = n.number;
           this._label = n.name || '';
           this.shape = n.shape || 'image';
@@ -224,6 +240,7 @@ angular
           }
         });
         network.on('afterDrawing', function (ctx) {
+
           data.nodes.forEach(function (d) {
             if (d.hidden) {
               return;
@@ -235,10 +252,10 @@ angular
               ctx.textAlign = 'left';
               ctx.font = '9px arial';
               ctx.fillStyle = '#ffffff';
-              ctx.fillText(d._label, (position.x + 13), (position.y + 10));
+              ctx.fillText(d._label, (position.x + 13), (position.y - 4));
               ctx.font = '9px arial';
               ctx.fillStyle = '#FFCC00';
-              ctx.fillText(d.number || rndNumber, (position.x + 18), (position.y + 20));
+              ctx.fillText(d.number || 0, (position.x + 18), (position.y + 10));
             } else {
 
               var rectWidth = d._label.length * 5 - 4;
