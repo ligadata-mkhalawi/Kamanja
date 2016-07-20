@@ -134,12 +134,12 @@ libraryDependencies += "org.apache.kafka" %% "kafka" % "0.9.0.1"
 //libraryDependencies += "org.apache.kafka" %% "kafka" % "0.10.0.0"
 
 /////////////////////// PmmlTestTool
-// 1.2.14 is currently used in other engine... use same here
-libraryDependencies += "org.jpmml" % "pmml-evaluator" % "1.2.14"
-libraryDependencies += "org.jpmml" % "pmml-model" % "1.2.15"
-libraryDependencies += "org.jpmml" % "pmml-schema" % "1.2.14"
-libraryDependencies += "org.jpmml" % "pmml-sas" % "1.2.14"
-libraryDependencies += "org.jpmml" % "pmml-rattle" % "1.2.14"
+// 1.2.9 is currently used in other engine... use same here
+libraryDependencies += "org.jpmml" % "pmml-evaluator" % "1.2.9"
+libraryDependencies += "org.jpmml" % "pmml-model" % "1.2.9"
+libraryDependencies += "org.jpmml" % "pmml-schema" % "1.2.9"
+libraryDependencies += "org.jpmml" % "pmml-sas" % "1.2.9"
+libraryDependencies += "org.jpmml" % "pmml-rattle" % "1.2.9"
 libraryDependencies += "org.jpmml" % "pmml-knime" % "1.1.20"
 libraryDependencies += "org.jpmml" % "pmml-rapidminer" % "1.1.20"
 
@@ -174,11 +174,13 @@ libraryDependencies += "org.aicer.grok" % "grok" % "0.9.0"
 
 
 //////////////////////  PmmlTestTool
-libraryDependencies += "org.jpmml" % "pmml-evaluator" % "1.2.14"
-libraryDependencies += "org.jpmml" % "pmml-model" % "1.2.15"
-libraryDependencies += "org.jpmml" % "pmml-schema" % "1.2.14"
-libraryDependencies += "org.jpmml" % "pmml-sas" % "1.2.14"
-libraryDependencies += "org.jpmml" % "pmml-rattle" % "1.2.14"
+libraryDependencies += "org.jpmml" % "pmml-evaluator" % "1.2.9"
+libraryDependencies += "org.jpmml" % "pmml-model" % "1.2.9"
+libraryDependencies += "org.jpmml" % "pmml-schema" % "1.2.9"
+libraryDependencies += "org.jpmml" % "pmml-sas" % "1.2.9"
+libraryDependencies += "org.jpmml" % "pmml-rattle" % "1.2.9
+
+"
 libraryDependencies += "org.jpmml" % "pmml-knime" % "1.1.20"
 libraryDependencies += "org.jpmml" % "pmml-rapidminer" % "1.1.20"
 

@@ -95,14 +95,22 @@ class JpmmlSupport(mgr: MdMgr
 
       var pmml: PMML = unmarshaller.unmarshal(source).asInstanceOf[PMML]
 
-      val header : Header =  pmml.getHeader() ;
-      if (header.getApplication().equals("SAS EM")) {
+      // 1320, 1313 Change begins
+
+      logger.debug("THE VALUE of pmml header is " + pmml.getHeader.getApplication.getName().toString())
+
+      if (pmml.getHeader().getApplication().getName().contains("SAS")) {
+        logger.debug("pmml prior to sas converion " + pmml.toString())
         val visitor: Visitor = new org.jpmml.sas.visitors.ExpressionCorrector()
         visitor.applyTo(pmml)
+        logger.debug("pmml after to sas converion " + pmml.toString())
+
       }
+      // 1320, 1313 Change ends
 
       val modelEvaluatorFactory = ModelEvaluatorFactory.newInstance()
       val modelEvaluator = modelEvaluatorFactory.newModelManager(pmml)
+
 
       val modelDe: ModelDef = if (modelEvaluator != null) {
         /*
