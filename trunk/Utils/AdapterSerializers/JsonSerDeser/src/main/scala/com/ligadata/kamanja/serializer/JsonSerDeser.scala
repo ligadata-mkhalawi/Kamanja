@@ -473,7 +473,9 @@ class JSONSerDes extends SerializeDeserialize {
           case INT => toInt(v)
           case BYTE => toByte(v)
           case FLOAT => toFloat(v)
-          case (BOOLEAN | DOUBLE | STRING) => v
+          case BOOLEAN => toBoolean(v)
+          case DOUBLE => toDouble(v)
+          case STRING => v
           case CHAR => {
             if (v != null && v.isInstanceOf[String] && v.asInstanceOf[String].size > 0) v.asInstanceOf[String].charAt(0) else ' '
           }
@@ -540,6 +542,25 @@ class JSONSerDes extends SerializeDeserialize {
       throw new UnsupportedObjectException("Convert to float. Parameter is neither BigInt, Long, Int, Float or Double", null)
   }
 
+  private def toDouble(itm: Any): Double = {
+    if (itm.isInstanceOf[BigInt])
+      itm.asInstanceOf[BigInt].toDouble
+    else if (itm.isInstanceOf[Long])
+      itm.asInstanceOf[Long].toDouble
+    else if (itm.isInstanceOf[Int])
+      itm.asInstanceOf[Int].toDouble
+    else if (itm.isInstanceOf[Float])
+      itm.asInstanceOf[Float].toDouble
+    else if (itm.isInstanceOf[Double])
+      itm.asInstanceOf[Double]
+    else
+      throw new UnsupportedObjectException("Convert to double. Parameter is neither BigInt, Long, Int, Float or Double", null)
+  }
+
+  private def toBoolean(itm: Any): Boolean = {
+    itm.toString.trim.toBoolean
+  }
+
   /**
     * Coerce the list of mapped elements to an array of the mapped elements' values
     *
@@ -562,10 +583,10 @@ class JSONSerDes extends SerializeDeserialize {
         retVal = collElements.map(itm => toByte(itm)).toArray
       }
       case BOOLEAN => {
-        retVal = collElements.map(itm => itm.asInstanceOf[Boolean]).toArray
+        retVal = collElements.map(itm => toBoolean(itm)).toArray
       }
       case DOUBLE => {
-        retVal = collElements.map(itm => itm.asInstanceOf[Double]).toArray
+        retVal = collElements.map(itm => toDouble(itm)).toArray
       }
       case FLOAT => {
         retVal = collElements.map(itm => toFloat(itm)).toArray
@@ -612,7 +633,9 @@ class JSONSerDes extends SerializeDeserialize {
         case INT => toInt(value)
         case BYTE => toByte(value)
         case FLOAT => toFloat(value)
-        case (BOOLEAN | DOUBLE | STRING) => value
+        case BOOLEAN => toBoolean(value)
+        case DOUBLE => toDouble(value)
+        case STRING => value
         case CHAR => {
           if (value != null && value.isInstanceOf[String] && value.asInstanceOf[String].size > 0) value.asInstanceOf[String].charAt(0) else ' '
         }
