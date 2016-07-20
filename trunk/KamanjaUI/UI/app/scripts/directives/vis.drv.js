@@ -255,7 +255,7 @@ angular
               ctx.fillText(d._label, (position.x + 13), (position.y - 4));
               ctx.font = '9px arial';
               ctx.fillStyle = '#FFCC00';
-              ctx.fillText(d.number || 0, (position.x + 18), (position.y + 10));
+              ctx.fillText(d.number || '', (position.x + 18), (position.y + 10));
             } else {
 
               var rectWidth = d._label.length * 5 - 4;
