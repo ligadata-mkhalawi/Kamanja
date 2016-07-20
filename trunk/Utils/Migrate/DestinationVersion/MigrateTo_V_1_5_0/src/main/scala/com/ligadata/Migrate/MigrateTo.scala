@@ -1346,6 +1346,64 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
     scala.collection.mutable.Map(m.toSeq: _*)
   }
 
+  private def BuildHierarchyAndProcessObjectsParallel(mdObjs: ArrayBuffer[(String, Map[String, Any])], errorStr: String): Unit = {
+    val objsToRunNow = ArrayBuffer[(String, Map[String, Any])]()
+    val objsToRunLater = ArrayBuffer[(String, Map[String, Any])]()
+    val yetToRun = scala.collection.mutable.Map[String, Int]() // Jarname to Position. Not expecting same jar for more than one element.
+
+    // Take which does not have any more dependencies
+    for (i <- 0 until mdObjs.size) {
+      val o = mdObjs(i)
+      val jarName = o._2.getOrElse("JarName", "").toString.trim
+      if (jarName.isEmpty) {
+        objsToRunNow += o
+      } else {
+        yetToRun(jarName) = i
+        objsToRunLater += o
+      }
+    }
+
+    do {
+      // Take which does not have any more dependencies
+      val remList = objsToRunLater.toArray
+      objsToRunLater.clear
+
+      // Remaining list to run
+      remList.foreach(o => {
+        val dependantJars = o._2.getOrElse("DependantJars", List[String]()).asInstanceOf[List[String]].toArray.map(j => j.trim).filter(j => (j.isEmpty == false))
+
+        var idx = dependantJars.size - 1
+        var yetToBuildDeps = false
+        while (idx >= 0 && ! yetToBuildDeps)
+          yetToBuildDeps = yetToRun.contains(dependantJars(idx))
+
+        if (yetToBuildDeps) {
+          objsToRunLater += o
+        } else {
+          objsToRunNow += o
+        }
+      })
+
+      if (objsToRunLater.size > 0 && objsToRunNow.size == 0) {
+        // Nothing found to be run in this run, but we have some more to run
+        objsToRunNow ++= objsToRunLater
+        objsToRunLater.clear
+      }
+
+      // Process all objs to run now
+      ProcessMdObjectsParallel(objsToRunNow, errorStr)
+
+      // Remove all jars executed now
+      objsToRunNow.foreach(o => {
+        val jarName = o._2.getOrElse("JarName", "").toString.trim
+        yetToRun.remove(jarName)
+      })
+
+      // Clear objects ran now
+      objsToRunNow.clear
+    } while (objsToRunLater.size > 0)
+  }
+
   private def ProcessMdObjectsParallel(mdObjs: ArrayBuffer[(String, Map[String, Any])], errorStr: String): Unit = {
     if (mdObjs.length > 0) {
       var executor: ExecutorService = null
@@ -1793,10 +1851,10 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
         msgsAndContainers ++= containers
       if (messages.length > 0)
         msgsAndContainers ++= messages
-      ProcessMdObjectsParallel(msgsAndContainers, "Failed to add messages/container")
+      BuildHierarchyAndProcessObjectsParallel(msgsAndContainers, "Failed to add messages/container")
     } else {
-      ProcessMdObjectsParallel(containers, "Failed to add container")
-      ProcessMdObjectsParallel(messages, "Failed to add message")
+      BuildHierarchyAndProcessObjectsParallel(containers, "Failed to add container")
+      BuildHierarchyAndProcessObjectsParallel(messages, "Failed to add message")
     }
 
     if (_adapterMessageBindings != None)
