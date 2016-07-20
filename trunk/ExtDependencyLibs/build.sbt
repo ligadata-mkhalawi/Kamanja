@@ -178,9 +178,7 @@ libraryDependencies += "org.jpmml" % "pmml-evaluator" % "1.2.9"
 libraryDependencies += "org.jpmml" % "pmml-model" % "1.2.9"
 libraryDependencies += "org.jpmml" % "pmml-schema" % "1.2.9"
 libraryDependencies += "org.jpmml" % "pmml-sas" % "1.2.9"
-libraryDependencies += "org.jpmml" % "pmml-rattle" % "1.2.9
-
-"
+libraryDependencies += "org.jpmml" % "pmml-rattle" % "1.2.9"
 libraryDependencies += "org.jpmml" % "pmml-knime" % "1.1.20"
 libraryDependencies += "org.jpmml" % "pmml-rapidminer" % "1.1.20"
 
