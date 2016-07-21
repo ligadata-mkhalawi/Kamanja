@@ -20,7 +20,11 @@ import com.ligadata.kamanja.metadata.ModelDef
 import com.ligadata.runtime.Log
 import com.ligadata.Utils._
 import com.ligadata.runtime.Conversion
+// Package code start
+// Package code end
 class ModelFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
+  // Factory code start
+  // Factory code end
   override def createModelInstance(txnCtxt: com.ligadata.KamanjaBase.TransactionContext): ModelInstance = return new Model(this)
   override def getModelName: String = "com.ligadata.jtm.test.code.Model"
   override def getVersion: String = "0.0.1"

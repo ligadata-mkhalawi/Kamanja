@@ -19,7 +19,11 @@ import com.ligadata.KvBase.TimeRange
 import com.ligadata.kamanja.metadata.ModelDef
 import com.ligadata.runtime.Log
 import com.ligadata.runtime.Conversion
+// Package code start
+// Package code end
 class TransactionIngestFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
+  // Factory code start
+  // Factory code end
   override def createModelInstance(txnCtxt: com.ligadata.KamanjaBase.TransactionContext): ModelInstance = return new TransactionIngest(this)
   override def getModelName: String = "com.ligadata.models.samples.medical2.TransactionIngest"
   override def getVersion: String = "0.0.1"

@@ -41,10 +41,18 @@ object Parts {
     """|import com.ligadata.KamanjaBase._
        |import com.ligadata.KvBase.TimeRange
        |import com.ligadata.kamanja.metadata.ModelDef
-       |import com.ligadata.runtime.Log""".stripMargin
+       |import com.ligadata.runtime.Log
+       |""".stripMargin
 
   val factory =
-    """|class {factoryclass.name}(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
+    """|// Package code start
+       |{external.packagecode}
+       |// Package code end
+       |
+       |class {factoryclass.name}(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
+       |  // Factory code start
+       |  {external.factorycode}
+       |  // Factory code end
        |  override def createModelInstance(txnCtxt: com.ligadata.KamanjaBase.TransactionContext): ModelInstance = return new {modelclass.name}(this)
        |  override def getModelName: String = "{model.name}"
        |  override def getVersion: String = "{model.version}"
@@ -59,7 +67,7 @@ object Parts {
        |  val context = new com.ligadata.runtime.JtmContext
        |  import log._
        |  // Model code start
-       |  {external.code}
+       |  {external.modelcode}
        |  // Model code end
        |  override def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
        |    if (isTraceEnabled)

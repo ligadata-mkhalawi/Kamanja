@@ -27,11 +27,28 @@ class Imports {
     */
   val packages: Array[String] = Array.empty[String]
 
+  /** List of code lines to be added to the package
+    * the function names should not conflict with any generated
+    * names
+    *
+    * Code always comes after packages in the generated scala file
+    */
+  val packagecode: Array[String] = Array.empty[String]
+
   /** List of code lines to be added to the model class
     * the function names should not conflict with any generated
     * names
     *
     * Code always comes after packages in the generated scala file
     */
-  val code: Array[String] = Array.empty[String]
+  val modelcode: Array[String] = Array.empty[String]
+
+  /** List of code lines to be added to the factory class
+    * the function names should not conflict with any generated
+    * names
+    *
+    * Code always comes after packages in the generated scala file
+    */
+  val factorycode: Array[String] = Array.empty[String]
+
 }

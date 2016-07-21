@@ -9,7 +9,7 @@
   "imports": {
     "packages": [ "com.ligadata.Utils._" ],
 
-    "code": [
+    "modelcode": [
       "def ValidateNumber(value: String) = {",
       "  true",
       "}"

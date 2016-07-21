@@ -977,7 +977,6 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
     subtitutions.Add("model.version", root.header.version)
     subtitutions.Add("factoryclass.name", FactoryName)
     subtitutions.Add("modelclass.name", ModelName)
-
     result :+= subtitutions.Run(Parts.imports)
 
     // Process additional imports like grok
@@ -1048,6 +1047,8 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
       "msg.isInstanceOf[%s]".format(verMsg)
     }).mkString("||") )
 
+    subtitutions.Add("external.packagecode", root.imports.packagecode.mkString("\n"))
+    subtitutions.Add("external.factorycode", root.imports.factorycode.mkString("\n"))
     val factory = subtitutions.Run(Parts.factory)
     result :+= factory
 
@@ -1332,7 +1333,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
     subtitutions.Add("model.message", messages.mkString("\n"))
     subtitutions.Add("model.methods", methods.mkString("\n"))
     subtitutions.Add("model.code", exechandler.mkString("\n"))
-    subtitutions.Add("external.code", root.imports.code.mkString("\n"))
+    subtitutions.Add("external.modelcode", root.imports.modelcode.mkString("\n"))
     val model = subtitutions.Run(Parts.model)
     result :+= model
 

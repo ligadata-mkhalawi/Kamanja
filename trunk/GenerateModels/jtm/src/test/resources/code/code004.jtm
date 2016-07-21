@@ -8,13 +8,21 @@
 
   "imports": {
     "packages": [ "com.ligadata.Utils._" ],
-
-    "code": [
-      "def ValidateNumber(value: String) = {",
+    "packagecode": [
+      "def ValidateNumberPackage(value: String) = {",
+      "  true",
+      "}"
+    ],
+    "factorycode": [
+      "def ValidateNumberFactory(value: String) = {",
+      "  true",
+      "}"
+    ],
+    "modelcode": [
+      "def ValidateNumberModel(value: String) = {",
       "  true",
       "}"
     ]
-
   },
 
   "aliases": {

@@ -20,7 +20,17 @@ import com.ligadata.kamanja.metadata.ModelDef
 import com.ligadata.runtime.Log
 import com.ligadata.Utils._
 import com.ligadata.runtime.Conversion
+// Package code start
+def ValidateNumberPackage(value: String) = {
+  true
+}
+// Package code end
 class ModelFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
+  // Factory code start
+  def ValidateNumberFactory(value: String) = {
+    true
+  }
+  // Factory code end
   override def createModelInstance(txnCtxt: com.ligadata.KamanjaBase.TransactionContext): ModelInstance = return new Model(this)
   override def getModelName: String = "com.ligadata.jtm.test.code.Model"
   override def getVersion: String = "0.0.1"
@@ -32,7 +42,7 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
   val context = new com.ligadata.runtime.JtmContext
   import log._
   // Model code start
-  def ValidateNumber(value: String) = {
+  def ValidateNumberModel(value: String) = {
     true
   }
   // Model code end
