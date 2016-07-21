@@ -95,6 +95,15 @@ class JpmmlSupport(mgr: MdMgr
 
       var pmml: PMML = unmarshaller.unmarshal(source).asInstanceOf[PMML]
 
+      // 1320, 1313 Changes begin
+
+      if (pmml.getHeader().getApplication().getName().contains("SAS")) {
+        val visitor : Visitor  = new org.jpmml.sas.visitors.ExpressionCorrector()
+        visitor.applyTo(pmml);
+
+      }
+      // 1320, 1313 Changes end
+      
       val modelEvaluatorFactory = ModelEvaluatorFactory.newInstance()
       val modelEvaluator = modelEvaluatorFactory.newModelManager(pmml)
 
