@@ -1229,21 +1229,49 @@ class TenantInfo(val tenantId: String, val description: String, val primaryDataS
     val map_in: scala.collection.immutable.Map[String, Any] =  (parse(primaryDataStore)).values.asInstanceOf[scala.collection.immutable.Map[String, Any]]
     val map_new: scala.collection.immutable.Map[String, Any] = (parse(in.primaryDataStore)).values.asInstanceOf[scala.collection.immutable.Map[String, Any]]
 
-    val in_sType =  map_in.get("StoreType").get.asInstanceOf[String]
-    val new_sType =  map_in.getOrElse("StoreType",null)
-    val in_schemaName =  map_in.get("SchemaName").get.asInstanceOf[String]
-    val new_schemaName =  map_in.getOrElse("SchemaName",null)
-    val in_Location =  map_in.get("Location").get.asInstanceOf[String]
-    val new_Location =  map_in.getOrElse("Location",null)
+    val cache_map_in: scala.collection.immutable.Map[String, Any] =  (parse(cacheConfig)).values.asInstanceOf[scala.collection.immutable.Map[String, Any]]
+    val cache_map_new: scala.collection.immutable.Map[String, Any] = (parse(in.cacheConfig)).values.asInstanceOf[scala.collection.immutable.Map[String, Any]]
 
-    // Throw an exception if trying to compare to an illegal TenantInfo
-    if (new_sType == null || new_schemaName == null || new_Location == null) throw new KamanjaException("Invalid PrimaryDataStore in the TenantId: " + in.tenantId + " detected",null)
+    // Check if description changed
+    if (description != null && in.description != null) {
+      if (!description.trim.equalsIgnoreCase(in.description.trim)) return false
+    } else {
+      // cover the case if both are null...
+      if (description != null || in.description != null) return false
+    }
 
-    // All attributes must be case sensitive
-    if (!in_sType.equals(new_sType.asInstanceOf[String]) ||
-      !in_schemaName.equals(new_schemaName.asInstanceOf[String]) ||
-      !in_Location.equals(new_Location.asInstanceOf[String]))
-      return false
+    // Check primary data source
+    // if the nubmer of keys dont match up, they are different
+    if (map_in.size != map_new.size) return false
+    var inKeys = map_in.keysIterator
+    while (inKeys.hasNext) {
+      var currentKey = inKeys.next.toString
+      var newValue = map_new.getOrElse(currentKey, "").toString
+
+      // if the new Map does not contain this key... they are not equal
+      if (newValue.size == 0) return false
+
+      // if the value is in there but its different.. they are not equal.  Case Sensitive here
+      if (!map_in.getOrElse(currentKey,"").toString.equals(newValue)) return false
+
+    }
+
+    // check for cacheConfig
+    // if the nubmer of keys dont match up, they are different
+    if (cache_map_in.size != cache_map_new.size) return false
+    inKeys = map_in.keysIterator
+    while (inKeys.hasNext) {
+      var currentKey = inKeys.next.toString
+      var newValue = cache_map_new.getOrElse(currentKey, "").toString
+
+      // if the new Map does not contain this key... they are not equal
+      if (newValue.size == 0) return false
+
+      // if the value is in there but its different.. they are not equal.  Case Sensitive here
+      if (!cache_map_in.getOrElse(currentKey,"").toString.equals(newValue)) return false
+
+    }
+
 
     return true
   }
