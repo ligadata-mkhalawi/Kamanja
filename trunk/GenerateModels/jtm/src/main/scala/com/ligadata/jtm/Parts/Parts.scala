@@ -41,7 +41,7 @@ object Parts {
     """|import com.ligadata.KamanjaBase._
        |import com.ligadata.KvBase.TimeRange
        |import com.ligadata.kamanja.metadata.ModelDef
-       |import com.ligadata.runtime.Log
+       |import com.ligadata.runtime._
        |""".stripMargin
 
   val factory =

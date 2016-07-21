@@ -156,7 +156,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
       root.imports.packages
     }
 
-    val imports1 = imports :+ "com.ligadata.runtime.Conversion"
+    val imports1 = imports
 
     imports1.distinct
   }
@@ -1074,8 +1074,15 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
          |}) ++
          |""".stripMargin('|').format(check, calls)
     })
-    exechandler :+=  handler.mkString("\n")
-    exechandler :+=  "Array.empty[MessageInterface]"
+
+    exechandler :+= """
+      |try {
+      |%s
+      |} catch {
+      |  case e: AbortExecuteException => {
+      |    Array.empty[MessageInterface]
+      |  }
+      |}""".stripMargin.format(handler.mkString("\n") + "Array.empty[MessageInterface]")
 
     // Actual function to be called
     //
@@ -1255,17 +1262,17 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
                           """if(context.CurrentErrors()==0) {
                           |    Array(result)
                           |  } else {
-                          |    throw new Exception(context.CurrentErrorList().toString)
+                          |    throw new AbortOutputException(context.CurrentErrorList().toString)
                           |  }
                           """.stripMargin
                         } else if(o._2.onerror == "ignore") {
                           "Array(result)"
                         } else if(o._2.onerror == "abort") {
-                          """|if(context.CurrentErrors()==0) {
-                          |  Array(result)
-                          |} else {
-                          |  return Array.empty[MessageInterface]
-                          |}
+                          """if(context.CurrentErrors()==0) {
+                          |    Array(result)
+                          |  } else {
+                          |    Array.empty[MessageInterface]
+                          |  }
                           """.stripMargin
                         } else {
                           ""
@@ -1273,13 +1280,21 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
 
             collect :+= {if(o._2.exception == "catch") {
                           """|} catch {
+                             |  case e: AbortOutputException => {
+                             |   context.AddError(e.getMessage)
+                             |   return Array.empty[MessageInterface]
+                             |  }
                              |  case e: Exception => {
                              |   context.AddError(e.getMessage)
+                             |   return Array.empty[MessageInterface]
                              |  }
-                             |}
-                             |return Array.empty[MessageInterface]""".stripMargin
+                             |}""".stripMargin
                         } else if(o._2.exception == "abort") {
-                            """|} catch {
+                          """|} catch {
+                             |  case e: AbortOutputException => {
+                             |   context.AddError(e.getMessage)
+                             |   return Array.empty[MessageInterface]
+                             |  }
                              |  case e: Exception => {
                              |    Debug("Exception: %s:" + e.getMessage)
                              |    throw e
@@ -1319,10 +1334,20 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
 
         methods ++= inner
 
-        // Output the function calls
-        methods :+= transformation.outputs.map( o => {
-          "process_%s()".format(o._1)
-        }).mkString("++\n")
+        methods :+= """
+          |try {
+          |%s
+          |} catch {
+          |  case e: AbortTransformationException => {
+          |   return Array.empty[MessageInterface]
+          |  }
+          |}
+        """.stripMargin.format(
+          // Output the function calls
+          transformation.outputs.map( o => {
+            "process_%s()".format(o._1)
+          }).mkString("++\n")
+        )
 
         methods :+= "}"
 

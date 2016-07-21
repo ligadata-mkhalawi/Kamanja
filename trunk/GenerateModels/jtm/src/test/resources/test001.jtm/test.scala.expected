@@ -17,9 +17,8 @@ package com.ligadata.jtm.test.filter.V1
 import com.ligadata.KamanjaBase._
 import com.ligadata.KvBase.TimeRange
 import com.ligadata.kamanja.metadata.ModelDef
-import com.ligadata.runtime.Log
+import com.ligadata.runtime._
 import com.ligadata.Utils._
-import com.ligadata.runtime.Conversion
 // Package code start
 // Package code end
 class ModelFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
@@ -67,13 +66,23 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
           result.out1 = msg1.in1
           Array(result)
         } catch {
+          case e: AbortOutputException => {
+            context.AddError(e.getMessage)
+            return Array.empty[MessageInterface]
+          }
           case e: Exception => {
             context.AddError(e.getMessage)
+            return Array.empty[MessageInterface]
           }
         }
-        return Array.empty[MessageInterface]
       }
-      process_o1()
+      try {
+        process_o1()
+      } catch {
+        case e: AbortTransformationException => {
+          return Array.empty[MessageInterface]
+        }
+      }
     }
     // Evaluate messages
     val msgs = execMsgsSet.map(m => m.getFullTypeName -> m).toMap
@@ -81,12 +90,18 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
     // Main dependency -> execution check
     // Create result object
     val results: Array[MessageInterface] =
-    (if(msg1!=null) {
-      exeGenerated_test1_1(msg1)
-    } else {
+    try {
+      (if(msg1!=null) {
+        exeGenerated_test1_1(msg1)
+      } else {
+        Array.empty[MessageInterface]
+      }) ++
       Array.empty[MessageInterface]
-    }) ++
-    Array.empty[MessageInterface]
+    } catch {
+      case e: AbortExecuteException => {
+        Array.empty[MessageInterface]
+      }
+    }
     if(isDebugEnabled)
     {
       results.foreach(m => Debug( s"Output: %s -> %s".format(m.getFullTypeName, m.toString())))

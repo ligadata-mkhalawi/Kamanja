@@ -17,7 +17,7 @@ package com.ligadata.jtm.test.array003.V1
 import com.ligadata.KamanjaBase._
 import com.ligadata.KvBase.TimeRange
 import com.ligadata.kamanja.metadata.ModelDef
-import com.ligadata.runtime.Log
+import com.ligadata.runtime._
 import com.ligadata.runtime.Conversion
 import com.ligadata.Utils._
 // Package code start
@@ -66,14 +66,18 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
           if(context.CurrentErrors()==0) {
             Array(result)
           } else {
-            return Array.empty[MessageInterface]
+            Array.empty[MessageInterface]
           }
         } catch {
-          case e: Exception => {
+          case e: AbortOutputException => {
             context.AddError(e.getMessage)
+            return Array.empty[MessageInterface]
+          }
+          case e: Exception => {
+            Debug("Exception: o1:" + e.getMessage)
+            throw e
           }
         }
-        return Array.empty[MessageInterface]
       }
       def process_oo(): Array[MessageInterface] = {
         Debug("exeGenerated_test1_1::process_oo")
@@ -91,17 +95,27 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
           if(context.CurrentErrors()==0) {
             Array(result)
           } else {
-            return Array.empty[MessageInterface]
+            Array.empty[MessageInterface]
           }
         } catch {
-          case e: Exception => {
+          case e: AbortOutputException => {
             context.AddError(e.getMessage)
+            return Array.empty[MessageInterface]
+          }
+          case e: Exception => {
+            Debug("Exception: oo:" + e.getMessage)
+            throw e
           }
         }
-        return Array.empty[MessageInterface]
       }
-      process_o1()++
-      process_oo()
+      try {
+        process_o1()++
+        process_oo()
+      } catch {
+        case e: AbortTransformationException => {
+          return Array.empty[MessageInterface]
+        }
+      }
     }
     // Evaluate messages
     val msgs = execMsgsSet.map(m => m.getFullTypeName -> m).toMap
@@ -109,12 +123,18 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
     // Main dependency -> execution check
     // Create result object
     val results: Array[MessageInterface] =
-    (if(msg1!=null) {
-      exeGenerated_test1_1(msg1)
-    } else {
+    try {
+      (if(msg1!=null) {
+        exeGenerated_test1_1(msg1)
+      } else {
+        Array.empty[MessageInterface]
+      }) ++
       Array.empty[MessageInterface]
-    }) ++
-    Array.empty[MessageInterface]
+    } catch {
+      case e: AbortExecuteException => {
+        Array.empty[MessageInterface]
+      }
+    }
     if(isDebugEnabled)
     {
       results.foreach(m => Debug( s"Output: %s -> %s".format(m.getFullTypeName, m.toString())))

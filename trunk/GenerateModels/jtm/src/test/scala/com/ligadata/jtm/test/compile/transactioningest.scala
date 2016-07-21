@@ -17,54 +17,109 @@ package com.ligadata.models.samples.finance.V1
 import com.ligadata.KamanjaBase._
 import com.ligadata.KvBase.TimeRange
 import com.ligadata.kamanja.metadata.ModelDef
+import com.ligadata.runtime._
 import com.ligadata.runtime.Conversion
+// Package code start
+// Package code end
 // READ ME BEFORE YOU MAKE CHANGES TO THE INTERFACE
 //
 // If you adjust the interface here, you need to fix the code generation as well
 //
 class TransactionIngestFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
-  override def createModelInstance(txnContext: TransactionContext): ModelInstance = return new TransactionIngest(this)
-  override def getModelName: String = "com.ligadata.models.samples.finance"
+  // Factory code start
+  // Factory code end
+  override def createModelInstance(txnCtxt: com.ligadata.KamanjaBase.TransactionContext): ModelInstance = return new TransactionIngest(this)
+  override def getModelName: String = "com.ligadata.models.samples.finance.TransactionIngest"
   override def getVersion: String = "0.0.1"
   override def createResultObject(): ModelResultBase = new MappedModelResults()
 }
 class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(factory) {
   val conversion = new com.ligadata.runtime.Conversion
+  val log = new com.ligadata.runtime.Log(this.getClass.getName)
+  val context = new com.ligadata.runtime.JtmContext
+  import log._
+  // Model code start
+  // Model code end
   override def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
-    //
-    //
+    if (isTraceEnabled)
+      Trace(s"Model::execute transid=%d triggeredset=%d outputdefault=%s".format(txnCtxt.transId, triggerdSetIndex, outputDefault.toString))
+    if(isDebugEnabled)
+    {
+      execMsgsSet.foreach(m => Debug( s"Input: %s -> %s".format(m.getFullTypeName, m.toString())))
+    }
+    // Grok parts
+    // Model methods
     def exeGenerated_transactionmsg_1(msg1: com.ligadata.kamanja.samples.messages.V1000000.TransactionMsgIn): Array[MessageInterface] = {
+      Debug("exeGenerated_transactionmsg_1")
+      context.SetSection("transactionmsg")
       // Split the incoming data
       val arrayData: Array[String] = msg1.data.split(",")
       def process_o1(): Array[MessageInterface] = {
-        // extract the type
-        val typeName: String = arrayData(0)
-        if (!("com.ligadata.kamanja.samples.messages.TransactionMsg" == typeName)) return Array.empty[MessageInterface]
-        val result = com.ligadata.kamanja.samples.messages.V1000000.TransactionMsg.createInstance
-        result.branchid = conversion.ToInteger(arrayData(2))
-        result.custid = conversion.ToLong(arrayData(1))
-        result.locationid = conversion.ToInteger(arrayData(8))
-        result.balance = conversion.ToDouble(arrayData(5))
-        result.amount = conversion.ToDouble(arrayData(4))
-        result.transtype = arrayData(9)
-        result.accno = conversion.ToLong(arrayData(3))
-        result.date = conversion.ToInteger(arrayData(6))
-        result.time = conversion.ToInteger(arrayData(7))
-        Array(result)
+        Debug("exeGenerated_transactionmsg_1::process_o1")
+        context.SetScope("o1")
+        try {
+          // extract the type
+          val typeName: String = arrayData(0)
+          if (!("com.ligadata.kamanja.samples.messages.TransactionMsg" == typeName)) {
+            Debug("Filtered: transactionmsg@o1")
+            return Array.empty[MessageInterface]
+          }
+          val result = com.ligadata.kamanja.samples.messages.V1000000.TransactionMsg.createInstance
+          result.branchid = conversion.ToInteger(arrayData(2))
+          result.custid = conversion.ToLong(arrayData(1))
+          result.locationid = conversion.ToInteger(arrayData(8))
+          result.balance = conversion.ToDouble(arrayData(5))
+          result.amount = conversion.ToDouble(arrayData(4))
+          result.transtype = arrayData(9)
+          result.accno = conversion.ToLong(arrayData(3))
+          result.date = conversion.ToInteger(arrayData(6))
+          result.time = conversion.ToInteger(arrayData(7))
+          if(context.CurrentErrors()==0) {
+            Array(result)
+          } else {
+            Array.empty[MessageInterface]
+          }
+        } catch {
+          case e: AbortOutputException => {
+            context.AddError(e.getMessage)
+            return Array.empty[MessageInterface]
+          }
+          case e: Exception => {
+            Debug("Exception: o1:" + e.getMessage)
+            throw e
+          }
+        }
       }
-      process_o1()
+      try {
+        process_o1()
+      } catch {
+        case e: AbortTransformationException => {
+          return Array.empty[MessageInterface]
+        }
+      }
     }
     // Evaluate messages
     val msgs = execMsgsSet.map(m => m.getFullTypeName -> m).toMap
     val msg1 = msgs.getOrElse("com.ligadata.kamanja.samples.messages.TransactionMsgIn", null).asInstanceOf[com.ligadata.kamanja.samples.messages.V1000000.TransactionMsgIn]
     // Main dependency -> execution check
-    //
+    // Create result object
     val results: Array[MessageInterface] =
-      if(msg1!=null) {
-        exeGenerated_transactionmsg_1(msg1)
-      } else {
-        Array.empty[MessageInterface]
+      try {
+        (if(msg1!=null) {
+          exeGenerated_transactionmsg_1(msg1)
+        } else {
+          Array.empty[MessageInterface]
+        }) ++
+          Array.empty[MessageInterface]
+      } catch {
+        case e: AbortExecuteException => {
+          Array.empty[MessageInterface]
+        }
       }
+    if(isDebugEnabled)
+    {
+      results.foreach(m => Debug( s"Output: %s -> %s".format(m.getFullTypeName, m.toString())))
+    }
     results.asInstanceOf[Array[ContainerOrConcept]]
   }
 }

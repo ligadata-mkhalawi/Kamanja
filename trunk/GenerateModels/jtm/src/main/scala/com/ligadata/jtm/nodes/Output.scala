@@ -56,5 +56,5 @@ class Output {
     * catch
     * abort
     */
-  val exception: String = "catch"
+  val exception: String = "abort"
 }

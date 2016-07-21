@@ -17,14 +17,17 @@ package com.ligadata.jtm.test.filter2.V1
 import com.ligadata.KamanjaBase._
 import com.ligadata.KvBase.TimeRange
 import com.ligadata.kamanja.metadata.ModelDef
-import com.ligadata.runtime.Log
+import com.ligadata.runtime._
 import com.ligadata.Utils._
-import com.ligadata.runtime.Conversion
+// Package code start
+// Package code end
 // READ ME BEFORE YOU MAKE CHANGES TO THE INTERFACE
 //
 // If you adjust the interface here, you need to fix the code generation as well
 //
 class ModelFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
+  // Factory code start
+  // Factory code end
   override def createModelInstance(txnCtxt: com.ligadata.KamanjaBase.TransactionContext): ModelInstance = return new Model(this)
   override def getModelName: String = "com.ligadata.jtm.test.filter2.Model"
   override def getVersion: String = "0.0.1"
@@ -68,16 +71,26 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
           if(context.CurrentErrors()==0) {
             Array(result)
           } else {
-            return Array.empty[MessageInterface]
+            Array.empty[MessageInterface]
           }
         } catch {
-          case e: Exception => {
+          case e: AbortOutputException => {
             context.AddError(e.getMessage)
+            return Array.empty[MessageInterface]
+          }
+          case e: Exception => {
+            Debug("Exception: o1:" + e.getMessage)
+            throw e
           }
         }
-        return Array.empty[MessageInterface]
       }
-      process_o1()
+      try {
+        process_o1()
+      } catch {
+        case e: AbortTransformationException => {
+          return Array.empty[MessageInterface]
+        }
+      }
     }
     def exeGenerated_test1_2(msg2: com.ligadata.kamanja.test.V1000000.msg3): Array[MessageInterface] = {
       Debug("exeGenerated_test1_2")
@@ -101,16 +114,26 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
           if(context.CurrentErrors()==0) {
             Array(result)
           } else {
-            return Array.empty[MessageInterface]
+            Array.empty[MessageInterface]
           }
         } catch {
-          case e: Exception => {
+          case e: AbortOutputException => {
             context.AddError(e.getMessage)
+            return Array.empty[MessageInterface]
+          }
+          case e: Exception => {
+            Debug("Exception: o1:" + e.getMessage)
+            throw e
           }
         }
-        return Array.empty[MessageInterface]
       }
-      process_o1()
+      try {
+        process_o1()
+      } catch {
+        case e: AbortTransformationException => {
+          return Array.empty[MessageInterface]
+        }
+      }
     }
     // Evaluate messages
     val msgs = execMsgsSet.map(m => m.getFullTypeName -> m).toMap
@@ -119,17 +142,23 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
     // Main dependency -> execution check
     // Create result object
     val results: Array[MessageInterface] =
-      (if(msg1!=null) {
-        exeGenerated_test1_1(msg1)
-      } else {
-        Array.empty[MessageInterface]
-      }) ++
-        (if(msg2!=null) {
-          exeGenerated_test1_2(msg2)
+      try {
+        (if(msg1!=null) {
+          exeGenerated_test1_1(msg1)
         } else {
           Array.empty[MessageInterface]
         }) ++
-        Array.empty[MessageInterface]
+          (if(msg2!=null) {
+            exeGenerated_test1_2(msg2)
+          } else {
+            Array.empty[MessageInterface]
+          }) ++
+          Array.empty[MessageInterface]
+      } catch {
+        case e: AbortExecuteException => {
+          Array.empty[MessageInterface]
+        }
+      }
     if(isDebugEnabled)
     {
       results.foreach(m => Debug( s"Output: %s -> %s".format(m.getFullTypeName, m.toString())))
