@@ -7,8 +7,8 @@
  */
 
 angular.module('networkApp')
-  .controller('MainCtrl', ['$rootScope', 'serviceData', 'servicePrepare',
-    function ($rootScope, serviceData, servicePrepare) {
+  .controller('MainCtrl', ['$rootScope', '$scope', 'serviceData', 'servicePrepare', 'serviceSocket',
+    function ($rootScope, $scope, serviceData, servicePrepare, serviceSocket) {
       'use strict';
       var main = this;
       main.networkData = null;
@@ -19,6 +19,8 @@ angular.module('networkApp')
       function updateNetworkData() {
         main.selectedViewName = serviceData.getSelectedViewName();
         main.networkData = servicePrepare.viewToVis(serviceData.getSelectedViewData());
+
+
       }
 
       $rootScope.$on('viewChanged', function (event, data) {

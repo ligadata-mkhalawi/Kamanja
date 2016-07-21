@@ -219,16 +219,16 @@ class InpatientClaimFixedTest(factory: ContainerFactoryInterface, other: Inpatie
     return get(keyTypes(key).getIndex)
   }
 
-  override def getOrElse(keyName: String, defaultVal: Any): AnyRef = { // Return (value, type)
+  override def getOrElse(keyName: String, defaultVal: Any): AnyRef = { // Return (value)
     if (keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name " + keyName);
     val key = keyName.toLowerCase;
     try {
-      val value = get(key.toLowerCase())
-      if (value == null) return defaultVal.asInstanceOf[AnyRef]; else return value;
+      return get(key.toLowerCase())
     } catch {
       case e: Exception => {
         log.debug("", e)
-        throw e
+        if (defaultVal == null) return null;
+        return defaultVal.asInstanceOf[AnyRef];
       }
     }
     return null;
@@ -258,14 +258,14 @@ class InpatientClaimFixedTest(factory: ContainerFactoryInterface, other: Inpatie
 
   }
 
-  override def getOrElse(index: Int, defaultVal: Any): AnyRef = { // Return (value,  type)
+  override def getOrElse(index: Int, defaultVal: Any): AnyRef = { // Return (value)
     try {
-      val value = get(index)
-      if (value == null) return defaultVal.asInstanceOf[AnyRef]; else return value;
+      return get(index);
     } catch {
       case e: Exception => {
         log.debug("", e)
-        throw e
+        if (defaultVal == null) return null;
+        return defaultVal.asInstanceOf[AnyRef];
       }
     }
     return null;
