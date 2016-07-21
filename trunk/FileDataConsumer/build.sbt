@@ -11,7 +11,7 @@ assemblyOption in assembly ~= {
   _.copy(prependShellScript = Some(defaultShellScript))
 }
 
-val kamanjaVersion = "1.5.0"
+val kamanjaVersion = "1.5.1"
 
 assemblyJarName in assembly := {
   s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"
@@ -66,7 +66,7 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
 
 name := "FileDataConsumer"
 
-version := "1.5.0"
+version := "1.5.1"
 //libraryDependencies ++= {
 //  val sprayVersion = "1.3.3"
 //  val akkaVersion = "2.3.9"

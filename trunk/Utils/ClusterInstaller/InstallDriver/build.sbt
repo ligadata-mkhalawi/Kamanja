@@ -5,7 +5,7 @@ import Keys._
 shellPrompt := { state => "sbt (%s)> ".format(Project.extract(state).currentProject.id) }
 
 mainClass in assembly := Some("com.ligadata.clusterInstaller.InstallDriver")
-val kamanjaVersion = "1.5.0"
+val kamanjaVersion = "1.5.1"
 
 assemblyOption in assembly ~= {
   _.copy(prependShellScript = Some(defaultShellScript))
@@ -66,7 +66,7 @@ name := "InstallDriver"
 
 //scalaVersion := "2.11.7"
 
-version := "1.5.0"
+version := "1.5.1"
 
 resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
