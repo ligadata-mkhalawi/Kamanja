@@ -140,8 +140,6 @@ libraryDependencies += "org.jpmml" % "pmml-model" % "1.2.9"
 libraryDependencies += "org.jpmml" % "pmml-schema" % "1.2.9"
 libraryDependencies += "org.jpmml" % "pmml-sas" % "1.2.9"
 libraryDependencies += "org.jpmml" % "pmml-rattle" % "1.2.9"
-libraryDependencies += "org.jpmml" % "pmml-knime" % "1.1.20"
-libraryDependencies += "org.jpmml" % "pmml-rapidminer" % "1.1.20"
 
 libraryDependencies += "com.beust" % "jcommander" % "1.48"
 libraryDependencies += "com.codahale.metrics" % "metrics-core" % "3.0.2"
@@ -179,8 +177,6 @@ libraryDependencies += "org.jpmml" % "pmml-model" % "1.2.9"
 libraryDependencies += "org.jpmml" % "pmml-schema" % "1.2.9"
 libraryDependencies += "org.jpmml" % "pmml-sas" % "1.2.9"
 libraryDependencies += "org.jpmml" % "pmml-rattle" % "1.2.9"
-libraryDependencies += "org.jpmml" % "pmml-knime" % "1.1.20"
-libraryDependencies += "org.jpmml" % "pmml-rapidminer" % "1.1.20"
 
 
 ////////////////////// MetadataAPIService
