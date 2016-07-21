@@ -398,7 +398,8 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
 
     monitorsExecutorService = Executors.newFixedThreadPool(monitoringConf.locations.length)
 
-    monitoringConf.locations.foreach(folderToWatch => {
+    monitoringConf.locations.foreach(location => {
+      val folderToWatch = location.srcDir
       val dirMonitorthread = new Runnable() {
         private var targetRemoteFolder: String = _
         def init(dir: String) = targetRemoteFolder = dir

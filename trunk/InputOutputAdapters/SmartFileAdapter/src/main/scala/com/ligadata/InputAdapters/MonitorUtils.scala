@@ -3,7 +3,7 @@ package com.ligadata.InputAdapters
 import java.io.{InputStream, IOException, File, FileInputStream}
 import java.nio.file.{Paths, Files}
 
-import com.ligadata.AdaptersConfiguration.{SmartFileAdapterConfiguration, FileAdapterMonitoringConfig, FileAdapterConnectionConfig}
+import com.ligadata.AdaptersConfiguration.{ SmartFileAdapterConfiguration, FileAdapterMonitoringConfig, FileAdapterConnectionConfig}
 import com.ligadata.InputAdapters.hdfs._
 import com.ligadata.InputAdapters.sftp._
 import com.ligadata.Exceptions.KamanjaException
@@ -14,6 +14,8 @@ import org.apache.tika.detect.DefaultDetector
 import scala.actors.threadpool.ExecutorService
 import scala.actors.threadpool.TimeUnit
 import FileType._
+import org.apache.commons.lang.StringUtils
+
 /**
   * Created by Yasser on 3/15/2016.
   */
@@ -101,7 +103,67 @@ object MonitorUtils {
       }
     }
   }
+
+  /*def compareFiles(fileHandler1: SmartFileHandler, fileHandler2: SmartFileHandler, orderingInfo : FileOrderingInfo) : Int = {
+    if(orderingInfo == null || orderingInfo.orderBy == null)
+      throw new Exception("Invalid ordering config")
+
+    orderingInfo.orderBy.toLowerCase() match{
+      case "date" => fileHandler1.lastModified().compareTo(fileHandler2.lastModified())
+      case "name" => getFileName(fileHandler1.getFullPath).compareTo(getFileName(fileHandler2.getFullPath))
+      case "components" =>
+        val fileComparisonValue1 = getFileAltNameFromComponents(fileHandler1.getFullPath, orderingInfo)
+        val fileComparisonValue2 = getFileAltNameFromComponents(fileHandler2.getFullPath, orderingInfo)
+        fileComparisonValue1.compareTo(fileComparisonValue2)
+
+      case _ => throw new Exception(s"Unrecognized ordering type (${orderingInfo.orderBy})")
+    }
+
+  }
+
+  /**
+    * based on file name and ordering config, returns a value representing new file name
+    * @param filePath
+    * @param orderingInfo
+    * @return
+    */
+  def getFileAltNameFromComponents(filePath: String, orderingInfo : FileOrderingInfo) : String = {
+
+    val fileName = getFileName(filePath)
+    val pattern = orderingInfo.fileComponents.regex.r
+
+    //println("orderingInfo.fileComponents.regex="+orderingInfo.fileComponents.regex)
+    val matchList = pattern.findAllIn(fileName).matchData.toList
+    //println("matchList.length="+matchList.length)
+    if(matchList.isEmpty)
+      throw new Exception(s"File name (${filePath}) does not follow configured pattern ($pattern)")
+
+    val firstMatch = matchList.head
+    if(firstMatch.groupCount < orderingInfo.fileComponents.components.length)
+      throw new Exception(s"File name (${filePath}) does not contain all configured components. " +
+      s"components count=${orderingInfo.fileComponents.components.length} while found groups = ${firstMatch.groupCount}")
+
+    val componentsMap = collection.mutable.Map[String, String]()
+    for(i <- 0 to firstMatch.groupCount - 1)//group(0) contains whole exp
+      componentsMap.put(orderingInfo.fileComponents.components(i), firstMatch.group(i + 1))
+
+    //println("componentsMap="+componentsMap)
+   /* var finalFieldVal = orderingInfo.fileComponents.orderFieldValueFromComponents
+    componentsMap.foreach(tuple => {
+      finalFieldVal = finalFieldVal.replaceAllLiterally(tuple._1, tuple._2)
+    })*/
+
+    //get value of field that will be used for file comparison based on the components
+    val finalFieldVal =
+      componentsMap.foldLeft(orderingInfo.fileComponents.orderFieldValueFromComponents)((value, mapTuple) => {
+        value.replaceAllLiterally(mapTuple._1, mapTuple._2)
+      })
+
+
+    finalFieldVal
+  }*/
 }
+
 
 object SmartFileHandlerFactory{
   def createSmartFileHandler(adapterConfig : SmartFileAdapterConfiguration, fileFullPath : String): SmartFileHandler ={

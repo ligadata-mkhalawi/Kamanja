@@ -45,20 +45,19 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
   }
 
   def checkConfigDirsAccessibility(): Unit ={
-    adapterConfig.monitoringConfig.locations.foreach(dir => {
-      val handler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, dir)
-      if(!handler.exists())
-        throw new KamanjaException("Smart File Consumer - Dir to watch (" + dir + ") does not exist", null)
-      else if(!handler.isAccessible)
-        throw new KamanjaException("Smart File Consumer - Dir to watch (" + dir + ") is not accessible. It must be readable and writable", null)
-    })
+    adapterConfig.monitoringConfig.locations.foreach(location => {
 
-    adapterConfig.monitoringConfig.targetMoveDirs.foreach(targetMoveDir => {
-      val handler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, targetMoveDir)
-      if(!handler.exists())
-        throw new KamanjaException("Smart File Consumer - Target Dir (" + targetMoveDir + ") does not exist", null)
-      else if(!handler.isAccessible)
-        throw new KamanjaException("Smart File Consumer - Target Dir (" + targetMoveDir + ") is not accessible. It must be readable and writable", null)
+      val srcHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, location.srcDir)
+      if(!srcHandler.exists())
+        throw new KamanjaException("Smart File Consumer - Dir to watch (" + location.srcDir + ") does not exist", null)
+      else if(!srcHandler.isAccessible)
+        throw new KamanjaException("Smart File Consumer - Dir to watch (" + location.srcDir + ") is not accessible. It must be readable and writable", null)
+
+      val targetHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, location.targetDir)
+      if(!targetHandler.exists())
+        throw new KamanjaException("Smart File Consumer - Target Dir (" + location.targetDir + ") does not exist", null)
+      else if(!targetHandler.isAccessible)
+        throw new KamanjaException("Smart File Consumer - Target Dir (" + location.targetDir + ") is not accessible. It must be readable and writable", null)
 
     })
 

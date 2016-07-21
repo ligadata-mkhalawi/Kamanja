@@ -336,7 +336,8 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
     isMonitoring = true
     monitorsExecutorService = Executors.newFixedThreadPool(monitoringConf.locations.length)
 
-    monitoringConf.locations.foreach(folderToWatch => {
+    monitoringConf.locations.foreach(location => {
+      val folderToWatch = location.srcDir
       val dirMonitorthread = new Runnable() {
         private var targetFolder: String = _
         def init(dir: String) = targetFolder = dir

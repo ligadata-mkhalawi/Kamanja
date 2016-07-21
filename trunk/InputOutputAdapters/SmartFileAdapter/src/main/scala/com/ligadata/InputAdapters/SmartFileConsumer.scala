@@ -82,16 +82,17 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
   private val adapterConfig = SmartFileAdapterConfiguration.getAdapterConfig(inputConfig)
 
-  private var locationTargetMoveDirsMap = collection.immutable.Map[String, String]()
-  if(adapterConfig.monitoringConfig.targetMoveDirs.length == 1)
+  private var locationTargetMoveDirsMap =
+    adapterConfig.monitoringConfig.locations.map(loc => loc.srcDir -> loc.targetDir).toMap
+  /*if(adapterConfig.monitoringConfig.targetMoveDirs.length == 1)
     locationTargetMoveDirsMap = adapterConfig.monitoringConfig.locations.map(
-      loc => MonitorUtils.simpleDirPath(loc) -> MonitorUtils.simpleDirPath(adapterConfig.monitoringConfig.targetMoveDirs(0))).toMap
+      loc => MonitorUtils.simpleDirPath(loc.srcDir) -> MonitorUtils.simpleDirPath(adapterConfig.monitoringConfig.targetMoveDirs(0))).toMap
   else {
     adapterConfig.monitoringConfig.locations.foldLeft(0)((counter, loc) => {
-      locationTargetMoveDirsMap += MonitorUtils.simpleDirPath(loc) -> MonitorUtils.simpleDirPath(adapterConfig.monitoringConfig.targetMoveDirs(counter))
+      locationTargetMoveDirsMap += MonitorUtils.simpleDirPath(loc.srcDir) -> MonitorUtils.simpleDirPath(adapterConfig.monitoringConfig.targetMoveDirs(counter))
       counter + 1
     })
-  }
+  }*/
 
   private var isShutdown = false
   private var isQuiesced = false

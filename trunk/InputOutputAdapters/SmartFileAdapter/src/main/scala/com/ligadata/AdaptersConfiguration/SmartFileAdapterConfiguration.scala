@@ -7,7 +7,7 @@ import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.native.JsonMethods._
 
-import scala.collection.mutable.MutableList
+import scala.collection.mutable.{ArrayBuffer, MutableList}
 
 /**
   * Created by Yasser on 3/10/2016.
@@ -36,18 +36,47 @@ class FileAdapterMonitoringConfig {
   var waitingTimeMS : Int = _
   var dirCheckThreshold : Int = 0 //when > 0 listing watched folders should stop when count of files waiting to be processed is above the threshold
 
-  var locations : Array[String] = Array.empty[String] //folders to monitor
+  var locations : Array[LocationInfo] = Array.empty[LocationInfo] //folders to monitor, with other info
 
   var fileBufferingTimeout = 300 // in seconds
   //folders to move consumed files to. either one directory for all input (locations) or same number as (locations)
-  var targetMoveDirs : Array[String] = Array.empty[String]
+  //var targetMoveDirs : Array[String] = Array.empty[String]
   var consumersCount : Int = _
   var workerBufferSize : Int = 4 //buffer size in MB to read messages from files
-  var messageSeparator : Char = 10
 
+
+  var msgTags : Array[String] = Array.empty[String] //TODO : remove later
+  var tagDelimiter : String = ","//TODO : remove later
+
+  var messageSeparator : Char = 10
+  var orderBy : Array[String] = Array.empty[String]
+}
+
+class Padding {
+  //var componentName : String = ""
+  var padPos: String = "left" //left, right
+  var padSize : Int = 0
+  var padStr : String = ""
+}
+
+class FileComponents {
+  var components : Array[String] = Array.empty[String]
+  var regex: String = ""
+  var paddings : Map[String, Padding] = Map[String, Padding]()
+}
+
+class LocationInfo{
+
+  var srcDir = ""
+  var targetDir = ""
+
+  var fileComponents : FileComponents = null
   //array of keywords, each one has a meaning to the adapter, which will add corresponding data to msg before sending to engine
   var msgTags : Array[String] = Array.empty[String]
   var tagDelimiter : String = ","
+
+  var messageSeparator : Char = 10
+  var orderBy : Array[String] = Array.empty[String]
 }
 
 object SmartFileAdapterConfiguration{
@@ -160,59 +189,132 @@ object SmartFileAdapterConfiguration{
       val err = "Not found MonitoringConfig for Smart File Adapter Config:" + adapterName
       throw new KamanjaException(err, null)
     }
-    val monConf = (adapCfgValues.get("MonitoringConfig").get.asInstanceOf[Map[String, String]])
+
+    val monConf = (adapCfgValues.get("MonitoringConfig").get.asInstanceOf[Map[String, Any]])
     //val monConfValues = monConf.values.asInstanceOf[Map[String, String]]
     monConf.foreach(kv => {
       if (kv._1.compareToIgnoreCase("MaxTimeWait") == 0) {
-        monitoringConfig.waitingTimeMS = kv._2.trim.toInt
+        monitoringConfig.waitingTimeMS = kv._2.asInstanceOf[String].trim.toInt
         if (monitoringConfig.waitingTimeMS < 0)
           monitoringConfig.waitingTimeMS = defaultWaitingTimeMS
       } else if (kv._1.compareToIgnoreCase("ConsumersCount") == 0) {
-        monitoringConfig.consumersCount = kv._2.trim.toInt
+        monitoringConfig.consumersCount = kv._2.asInstanceOf[String].trim.toInt
         if (monitoringConfig.consumersCount < 0)
           monitoringConfig.consumersCount = defaultConsumerCount
       }
-      else  if (kv._1.compareToIgnoreCase("Locations") == 0) {
-        monitoringConfig.locations = kv._2.split(",").map(str => str.trim).filter(str => str.size > 0)
-      }
-      else  if (kv._1.compareToIgnoreCase("TargetMoveDirs") == 0) {
-        monitoringConfig.targetMoveDirs = kv._2.split(",").map(str => str.trim).filter(str => str.size > 0)
-      }
+      /*else  if (kv._1.compareToIgnoreCase("TargetMoveDirs") == 0) {
+        monitoringConfig.targetMoveDirs = kv._2.asInstanceOf[String].split(",").map(str => str.trim).filter(str => str.size > 0)
+      }*/
       else if (kv._1.compareToIgnoreCase("WorkerBufferSize") == 0) {
-        monitoringConfig.workerBufferSize = kv._2.trim.toInt
+        monitoringConfig.workerBufferSize = kv._2.asInstanceOf[String].trim.toInt
       }
       else if (kv._1.compareToIgnoreCase("MessageSeparator") == 0) {
-        monitoringConfig.messageSeparator = kv._2.trim.toInt.toChar
+        monitoringConfig.messageSeparator = kv._2.asInstanceOf[String].trim.toInt.toChar
       }
-      else if (kv._1.compareToIgnoreCase("TagDelimiter") == 0) {
-        monitoringConfig.tagDelimiter = kv._2
+      else if(kv._1.compareToIgnoreCase("OrderBy")== 0) {
+        monitoringConfig.orderBy = kv._2.asInstanceOf[List[String]].toArray
+      }
+      /*else if (kv._1.compareToIgnoreCase("TagDelimiter") == 0) {
+        monitoringConfig.tagDelimiter = kv._2.asInstanceOf[String]
       }
       else  if (kv._1.compareToIgnoreCase("MsgTags") == 0) {
-        monitoringConfig.msgTags = kv._2.split(",").map(str => str.trim).filter(str => str.size > 0)
-      }
+        monitoringConfig.msgTags = kv._2.asInstanceOf[String].split(",").map(str => str.trim).filter(str => str.nonEmpty)
+      }*/
       else  if (kv._1.compareToIgnoreCase("DirCheckThreshold") == 0) {
-        monitoringConfig.dirCheckThreshold = kv._2.trim.toInt
+        monitoringConfig.dirCheckThreshold = kv._2.asInstanceOf[String].trim.toInt
       }
+      else  if (kv._1.compareToIgnoreCase("Locations") == 0) {
+        val locationsInfoBuffer = ArrayBuffer[LocationInfo]()
+
+        val locations = kv._2.asInstanceOf[List[Map[String, Any]]]
+        locations.foreach(loc => {
+          val locationInfo = new LocationInfo
+          loc.foreach(kv =>{
+            if (kv._1.compareToIgnoreCase("srcDir") == 0) {
+              locationInfo.srcDir = kv._2.asInstanceOf[String].trim
+            }
+            else if (kv._1.compareToIgnoreCase("targetDir") == 0) {
+              locationInfo.targetDir = kv._2.asInstanceOf[String].trim
+            }
+            else if(kv._1.compareToIgnoreCase("MsgTags")== 0) {
+              locationInfo.msgTags = kv._2.asInstanceOf[List[String]].toArray
+            }
+            else if (kv._1.compareToIgnoreCase("TagDelimiter") == 0) {
+              locationInfo.tagDelimiter = kv._2.asInstanceOf[String].trim
+            }
+            else if (kv._1.compareToIgnoreCase("MessageSeparator") == 0) {
+              locationInfo.messageSeparator = kv._2.asInstanceOf[String].trim.toInt.toChar
+            }
+            else if(kv._1.compareToIgnoreCase("OrderBy")== 0) {
+              locationInfo.orderBy = kv._2.asInstanceOf[List[String]].toArray
+            }
+            else if (kv._1.compareToIgnoreCase("FileComponents")==0){
+              val componentsMap = kv._2.asInstanceOf[Map[String,Any]]
+              val fileComponents = new FileComponents
+              componentsMap.foreach(componentTuple => {
+                if(componentTuple._1.equalsIgnoreCase("Components"))
+                  fileComponents.components = componentTuple._2.asInstanceOf[String].split(",").map(str => str.trim).filter(str => str.nonEmpty)
+                else if(componentTuple._1.equalsIgnoreCase("Regex"))
+                  fileComponents.regex = componentTuple._2.asInstanceOf[String]
+                else if (componentTuple._1.compareToIgnoreCase("Paddings")==0){
+                  val paddingsMap = componentTuple._2.asInstanceOf[Map[String, Any]]
+
+                  paddingsMap.foreach(paddingTuple => {
+                    val paddingInfo = new Padding
+                    val paddingJsonInfoList = paddingTuple._2.asInstanceOf[List[Any]]
+                    if(paddingJsonInfoList != null && paddingJsonInfoList.length == 3){
+                      paddingInfo.padPos = paddingJsonInfoList(0).asInstanceOf[String]
+                      paddingInfo.padSize = //accept number whether as num or string
+                        try{
+                          paddingJsonInfoList(1).asInstanceOf[scala.math.BigInt].toInt
+                        }
+                        catch{
+                          case ex : Exception => paddingJsonInfoList(1).asInstanceOf[String].toInt
+                        }
+
+                      paddingInfo.padStr = paddingJsonInfoList(2).asInstanceOf[String]
+                    }
+                    fileComponents.paddings += paddingTuple._1 -> paddingInfo
+
+                  })
+
+                }
+              })
+              locationInfo.fileComponents = fileComponents
+            }
+
+          })
+          locationsInfoBuffer.append(locationInfo)
+        })
+
+        monitoringConfig.locations = locationsInfoBuffer.toArray
+      }
+
     })
 
-    if(monitoringConfig.locations == null || monitoringConfig.locations.length == 0) {
+    //validations
+
+    /*if(monitoringConfig.locations == null || monitoringConfig.locations.length == 0) {
       val err = "Not found Locations for Smart File Adapter Config:" + adapterName
       throw new KamanjaException(err, null)
-    }
+    }*/
 
-    if(monitoringConfig.targetMoveDirs == null || monitoringConfig.targetMoveDirs.length == 0) {
+   /* if(monitoringConfig.targetMoveDirs == null || monitoringConfig.targetMoveDirs.length == 0) {
       val err = "Not found targetMoveDirs for Smart File Adapter Config:" + adapterName
       throw new KamanjaException(err, null)
-    }
+    }*/
 
-    if(monitoringConfig.targetMoveDirs.length > 1 && monitoringConfig.targetMoveDirs.length < monitoringConfig.locations.length) {
+    /*if(monitoringConfig.targetMoveDirs.length > 1 && monitoringConfig.targetMoveDirs.length < monitoringConfig.locations.length) {
       val err = "targetMoveDir should either have one dir or same number as (location) for Smart File Adapter Config:" + adapterName
       throw new KamanjaException(err, null)
-    }
+    }*/
 
-    if(monitoringConfig.msgTags != null && monitoringConfig.msgTags.length > 0){
+    /*if(monitoringConfig.msgTags != null && monitoringConfig.msgTags.length > 0){
       monitoringConfig.msgTags.foreach(tag => if(!isValidMsgTag(tag)) throw new Exception(s"Invalid msg tag ($tag) for file input adatper ($adapterName)"))
-    }
+    }*/
+
+
+    //TODO : validation for FilesOrdering
 
     (_type, connectionConfig, monitoringConfig)
   }
