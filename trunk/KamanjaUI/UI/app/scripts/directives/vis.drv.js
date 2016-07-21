@@ -231,14 +231,14 @@ angular
             var position = network.getPositions(d.id)[d.id];
 
             if (scope.showStatus === 'true') {
-
+              var rndNumber = parseInt(Math.random() * 100);
               ctx.textAlign = 'left';
               ctx.font = '9px arial';
               ctx.fillStyle = '#ffffff';
               ctx.fillText(d._label, (position.x + 13), (position.y + 10));
               ctx.font = '9px arial';
               ctx.fillStyle = '#FFCC00';
-              ctx.fillText(d.number, (position.x + 13), (position.y + 10));
+              ctx.fillText(d.number || rndNumber, (position.x + 18), (position.y + 20));
             } else {
 
               var rectWidth = d._label.length * 5 - 4;
