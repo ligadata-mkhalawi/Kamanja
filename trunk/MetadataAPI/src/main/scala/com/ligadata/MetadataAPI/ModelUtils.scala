@@ -1874,7 +1874,7 @@ object ModelUtils {
           } else {
             ErrorCodeConstants.Update_Model_Failed
           }
-          val modDefName: String = if (modDef != null) modDef.FullName else "(pmml compile failed)"
+          val modDefName: String = if (modDef != null) modDef.FullName else "(python model compile failed)"
           val modDefVer: String = if (modDef != null) MdMgr.Pad0s2Version(modDef.Version) else MdMgr.UnknownVersion
           var apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"$reasonForFailure : $modDefName.$modDefVer)")
           apiResult.toString()
@@ -1882,24 +1882,24 @@ object ModelUtils {
       } catch {
         case e: ModelCompilationFailedException => {
           logger.debug("", e)
-          val apiResult = new ApiResult(ErrorCodeConstants.Failure, s"UpdateModel(type = PMML)", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Update_Model_Failed}")
+          val apiResult = new ApiResult(ErrorCodeConstants.Failure, s"UpdateModel(type = PYTHON)", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Update_Model_Failed}")
           apiResult.toString()
         }
         case e: AlreadyExistsException => {
 
           logger.debug("", e)
-          val apiResult = new ApiResult(ErrorCodeConstants.Failure, s"UpdateModel(type = PMML)", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Update_Model_Failed}")
+          val apiResult = new ApiResult(ErrorCodeConstants.Failure, s"UpdateModel(type = PYTHON)", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Update_Model_Failed}")
           apiResult.toString()
         }
         case e: Exception => {
 
           logger.debug("", e)
-          val apiResult = new ApiResult(ErrorCodeConstants.Failure, s"UpdateModel(type = PMML)", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Update_Model_Failed}")
+          val apiResult = new ApiResult(ErrorCodeConstants.Failure, s"UpdateModel(type = PYTHON)", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Update_Model_Failed}")
           apiResult.toString()
         }
       }
     } else {
-      val apiResult = new ApiResult(ErrorCodeConstants.Failure, s"UpdateModel(type = PMML)", null, s"The model name and new version was not supplied for this PMML model : name=$modelName version=$version\nOptionally one should consider supplying the exact version of the model being updated, especially important when you are maintaining multiple versions with the same model name and tweaking versions of same for your 'a/b/c...' score comparisons.")
+      val apiResult = new ApiResult(ErrorCodeConstants.Failure, s"UpdateModel(type = PYTHON)", null, s"The model name and new version was not supplied for this PYTHON model : name=$modelName version=$version\nOptionally one should consider supplying the exact version of the model being updated, especially important when you are maintaining multiple versions with the same model name and tweaking versions of same for your 'a/b/c...' score comparisons.")
       apiResult.toString()
 
     }

@@ -34,13 +34,14 @@ object UpdateModelService {
   case class Process(pmmlStr: String)
 }
 
-class UpdateModelService(requestContext: RequestContext, userid: Option[String], password: Option[String], cert: Option[String], modelCompileInfo: Option[String], tenantId: Option[String]) extends Actor {
+class UpdateModelService(requestContext: RequestContext, userid: Option[String], password: Option[String], cert: Option[String], modelCompileInfo: Option[String], tenantId: Option[String], modelType: ModelType.ModelType = ModelType.KPMML) extends Actor {
 
   import UpdateModelService._
 
   implicit val system = context.system
   import system.dispatcher
   val log = Logging(system, getClass)
+
   val APIName = "UpdateModelService"
   // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
   val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
@@ -55,15 +56,15 @@ class UpdateModelService(requestContext: RequestContext, userid: Option[String],
       context.stop(self)
   }
 
-  def process(pmmlStr:String) = {
+  def process(pmmlStr: String) = {
 
-    log.debug("Requesting UpdateModel {}",pmmlStr)
+    log.debug("Requesting UpdateModel {}", pmmlStr)
 
     var nameVal = APIService.extractNameFromPMML(pmmlStr)
 
-    if (!getMetadataAPI.checkAuth(userid,password,cert, getMetadataAPI.getPrivilegeName("update","model"))) {
-       getMetadataAPI.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.UPDATEOBJECT,pmmlStr,AuditConstants.FAIL,"",nameVal)
-      requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error:UPDATE not allowed for this user").toString )
+    if (!getMetadataAPI.checkAuth(userid, password, cert, getMetadataAPI.getPrivilegeName("update", "model"))) {
+      getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.UPDATEOBJECT, pmmlStr, AuditConstants.FAIL, "", nameVal)
+      requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error:UPDATE not allowed for this user").toString)
     } else {
 
       // Ok, if this is a KPMML model, we dont need any additional info for compilation, its all enclosed in the model.  for normal PMML,
@@ -73,53 +74,29 @@ class UpdateModelService(requestContext: RequestContext, userid: Option[String],
         val apiResult = getMetadataAPI.UpdateModel(ModelType.KPMML, pmmlStr, userid, tenantId, None, None, None, None, None, Some("{}"))
         requestContext.complete(apiResult)
       } else {
-        val cInfo = modelCompileInfo.getOrElse("")
 
-        // Error if nothing specified in the modelCompileInfo
-        if (cInfo.equalsIgnoreCase(""))
-          requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error: modelconfig is not specified, PMML model is required to have Model Compilation Information.").toString)
+        if (modelType != ModelType.KPMML) {
+          val cInfo = modelCompileInfo.getOrElse("")
 
-        val compileConfigTokens = cInfo.split(",")
-        if (compileConfigTokens.size < 2 ||
-          compileConfigTokens.size > 4)
-          requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error: Invalid compile config paramters specified for PMML, Needs  ModelName, ModelVersion, Optional[UpdateModelVersion].").toString)
+          // Error if nothing specified in the modelCompileInfo
+          if (cInfo.equalsIgnoreCase(""))
+            requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error: modelconfig is not specified, PMML model is required to have Model Compilation Information.").toString)
 
-        if (compileConfigTokens.size == 2) {
-          if (!compileConfigTokens(0).equalsIgnoreCase("python") && !compileConfigTokens(0).equalsIgnoreCase("jython")) {
-            val apiResult = MetadataAPIImpl.UpdateModel(ModelType.PMML, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), None, None, None, Some("{}"))
+          val compileConfigTokens = cInfo.split(",")
+
+          if (compileConfigTokens.size < 2 ||
+            compileConfigTokens.size > 3)
+            requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error: Invalid compile config paramters specified for PMML, Needs  ModelName, ModelVersion, Optional[UpdateModelVersion].").toString)
+
+          // if an optional parm is passed, pass it, else only pass in 2 parms
+          if (compileConfigTokens.size == 2) {
+            val apiResult = MetadataAPIImpl.UpdateModel(modelType, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), None, None, None, Some("{}"))
             requestContext.complete(apiResult)
-          }
-        } else if (compileConfigTokens.size == 3) {
-
-          if (compileConfigTokens(0).equalsIgnoreCase("python")) {
-            val apiResult = MetadataAPIImpl.UpdateModel(ModelType.PYTHON, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), None, None, None, Some("{}"))
-            requestContext.complete(apiResult)
-
-          } else if (compileConfigTokens(0).equalsIgnoreCase("jython")) {
-            val apiResult = MetadataAPIImpl.UpdateModel(ModelType.JYTHON, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), None, None, None, Some("{}"))
-            requestContext.complete(apiResult)
-
-          } else if (compileConfigTokens(0).equalsIgnoreCase("pmml")) {
-            val apiResult = MetadataAPIImpl.UpdateModel(ModelType.PMML, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), None, None, None, Some("{}"))
-            requestContext.complete(apiResult)
-
           } else {
-            val apiResult = MetadataAPIImpl.UpdateModel(ModelType.PMML, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), None, None, Some("{}"))
+            val apiResult = MetadataAPIImpl.UpdateModel(modelType, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), None, None, Some("{}"))
             requestContext.complete(apiResult)
           }
-        } else if (compileConfigTokens.size == 4) {
-
-          if (compileConfigTokens(0).equalsIgnoreCase("python")) {
-            val apiResult = MetadataAPIImpl.UpdateModel(ModelType.PYTHON, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), None, None, Some("{}"))
-            requestContext.complete(apiResult)
-
-          } else if (compileConfigTokens(0).equalsIgnoreCase("jython")) {
-            val apiResult = MetadataAPIImpl.UpdateModel(ModelType.JYTHON, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), None, None, Some("{}"))
-            requestContext.complete(apiResult)
-
-          }
-        }
-
+        } 
       }
     }
   }
