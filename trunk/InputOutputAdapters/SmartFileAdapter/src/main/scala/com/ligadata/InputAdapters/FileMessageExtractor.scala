@@ -42,7 +42,7 @@ class FileMessageExtractor(parentExecutor: ExecutorService,
   private var finished = false
   private var processingInterrupted = false
 
-
+  private var fileProcessingStartTm : Long = 0L
 
   def extractMessages() : Unit = {
 
@@ -96,7 +96,9 @@ class FileMessageExtractor(parentExecutor: ExecutorService,
 
     val fileName = fileHandler.getFullPath
 
-    logger.info("Smart File Consumer - Starting reading messages from file " + fileName)
+    fileProcessingStartTm = System.nanoTime
+    logger.warn("Smart File Consumer - Starting reading messages from file {} , on Node {} , PartitionId {}",
+      fileName, consumerContext.nodeId, consumerContext.partitionId.toString)
 
     try {
       fileHandler.openForRead()
@@ -293,12 +295,17 @@ class FileMessageExtractor(parentExecutor: ExecutorService,
     }
     finally{
       if(finishCallback != null) {
+
+        val elapsedTm = System.nanoTime - fileProcessingStartTm
+
         if(processingInterrupted) {
           logger.debug("SMART FILE CONSUMER (FileMessageExtractor) - sending interrupting flag for file {}", fileName)
+          logger.warn("SMART FILE CONSUMER - finished reading file %s . Operation took %fms".format(fileName, elapsedTm/1000000.0))
+
           finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_ProcessingInterrupted)
         }
         else {
-          logger.debug("SMART FILE CONSUMER (FileMessageExtractor) - sending finish flag for file {}", fileName)
+          logger.warn("SMART FILE CONSUMER - finished reading file %s . Operation took %fms".format(fileName, elapsedTm/1000000.0))
           finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_FINISHED)
         }
       }
