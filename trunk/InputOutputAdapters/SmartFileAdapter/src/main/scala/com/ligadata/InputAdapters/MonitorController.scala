@@ -27,7 +27,8 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
     def compare(other: EnqueuedFileHandler) = {
       val locationInfo1 = parentSmartFileConsumer.getSrcDirLocationInfo(MonitorUtils.simpleDirPath(f.fileHandler.getParentDir))
       val locationInfo2 = parentSmartFileConsumer.getSrcDirLocationInfo(MonitorUtils.simpleDirPath(other.fileHandler.getParentDir))
-      MonitorUtils.compareFiles(f.fileHandler, locationInfo1, other.fileHandler, locationInfo2)
+      //not sure why but had to invert sign
+      (MonitorUtils.compareFiles(f.fileHandler, locationInfo1, other.fileHandler, locationInfo2)) * -1
     }
   }
   private var fileQ: scala.collection.mutable.PriorityQueue[EnqueuedFileHandler] =

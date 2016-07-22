@@ -1384,13 +1384,19 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     val parentDirName = MonitorUtils.getFileName(smartMessage.relatedFileHandler.getParentDir)
 
     val prefix = parentDirLocationConfig.msgTags.foldLeft("")((pre, tag) => {
-      val tagValue = tag match{
-          //assuming msg type is defined by parent folder name
-        case "MsgType" => parentDirName
-        case "FileName" => fileName
-        case "FileFullPath" => smartMessage.relatedFileHandler.getFullPath
-        case _ => ""
-      }
+      val tagValue =
+        if(tag.startsWith("$")) {//predefined tags
+          tag match {
+            //assuming msg type is defined by parent folder name
+            case "$Dir_Name" => parentDirName
+            case "$File_Name" => fileName
+            case "$File_Full_Path" => smartMessage.relatedFileHandler.getFullPath
+            case _ => ""
+          }
+        }
+        else{//if not predefined just add it as is
+          tag
+        }
       if(tagValue.length > 0)
         pre + (if(pre.length == 0) "" else tagDelimiter) + tagValue
       else pre

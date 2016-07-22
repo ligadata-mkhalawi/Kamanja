@@ -135,19 +135,41 @@ object MonitorUtils {
     val fileComponentsMap1 = getFileComponents(fileHandler1, locationInfo)
     val fileComponentsMap2 = getFileComponents(fileHandler2, locationInfo)
 
-    //var compareResult = 0
+
     breakable{
+      //loop order components, until values for one of them are not equal
       for(orderComponent <- locationInfo.orderBy){
-        val fileCompVal1 = if(fileComponentsMap1.contains(orderComponent))
-           fileComponentsMap1(orderComponent) else ""
-        val fileCompVal2 = if(fileComponentsMap2.contains(orderComponent))
-          fileComponentsMap2(orderComponent) else ""
 
-        //println(s"fileCompVal1 $fileCompVal1 , fileCompVal2 $fileCompVal2")
+        //predefined components
+        if(orderComponent.startsWith("$")){
+          orderComponent match{
+            case "$File_Name" =>
+              val tempCompreRes = getFileName(fileHandler1.getFullPath).compareTo(getFileName(fileHandler2.getFullPath))
+              if (tempCompreRes != 0)  return tempCompreRes
+            case "$File_Full_Path" =>
+              val tempCompreRes =  fileHandler1.getFullPath.compareTo(fileHandler2.getFullPath)
+              if (tempCompreRes != 0)  return tempCompreRes
+            case "$FILE_MOD_TIME" =>
+              val tempCompreRes = fileHandler1.lastModified().compareTo(fileHandler2.lastModified())
+              if (tempCompreRes != 0)  return tempCompreRes
+              //TODO : check for other predefined components
+            case "_" => throw new Exception("Unsopported predefined file order component - " + orderComponent)
+          }
+        }
+        else {
+          val fileCompVal1 = if (fileComponentsMap1.contains(orderComponent))
+            fileComponentsMap1(orderComponent)
+          else "" //TODO : check if this can happen
+          val fileCompVal2 = if (fileComponentsMap2.contains(orderComponent))
+            fileComponentsMap2(orderComponent)
+          else ""
 
-        val tempCompreRes = fileCompVal1.compareTo(fileCompVal2)
-        if(tempCompreRes != 0)
-          return tempCompreRes
+          //println(s"fileCompVal1 $fileCompVal1 , fileCompVal2 $fileCompVal2")
+
+          val tempCompreRes = fileCompVal1.compareTo(fileCompVal2)
+          if (tempCompreRes != 0)
+            return tempCompreRes
+        }
       }
     }
 
@@ -161,8 +183,6 @@ object MonitorUtils {
     * @return
     */
   def getFileComponents(fileHandler: SmartFileHandler, locationInfo : LocationInfo) : Map[String, String] = {
-
-    //TODO BUGBUG : consider predefined components - that start with $
 
     val filePath = fileHandler.getFullPath
     val fileName = getFileName(filePath)
@@ -208,7 +228,7 @@ object MonitorUtils {
       componentsMap.foldLeft(orderFieldValueTemplate)((value, mapTuple) => {
         value.replaceAllLiterally(mapTuple._1, mapTuple._2)
       })
-    println(s"finalFieldVal for file $fileName : " + finalFieldVal)
+    logger.debug(s"finalFieldVal for file $fileName : " + finalFieldVal)
 
     componentsMap
   }
