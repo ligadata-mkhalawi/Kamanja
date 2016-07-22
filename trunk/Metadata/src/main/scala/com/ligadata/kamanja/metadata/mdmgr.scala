@@ -3134,9 +3134,11 @@ class MdMgr {
   def AddTenantInfo(tenant : TenantInfo) : Option[String] = {
     // Update the tenantId in this cache, but also see if there was a meaniful change
     // in the existing element - it will not need to be sent to other nodes.
+
     if (tenantIdMap.contains(tenant.tenantId.trim.toLowerCase)) {
       var isSame = tenant.equals(tenantIdMap.get(tenant.tenantId.trim.toLowerCase).get.asInstanceOf[TenantInfo])
       tenantIdMap(tenant.tenantId.trim.toLowerCase) = tenant
+      // return a None if we already have this object but it didnt change.
       if (!isSame) return Some("Update") else return None
     } else {
       tenantIdMap(tenant.tenantId.trim.toLowerCase) = tenant

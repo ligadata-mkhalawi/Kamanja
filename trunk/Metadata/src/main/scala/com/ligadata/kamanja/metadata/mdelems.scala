@@ -1259,7 +1259,7 @@ class TenantInfo(val tenantId: String, val description: String, val primaryDataS
     // check for cacheConfig
     // if the nubmer of keys dont match up, they are different
     if (cache_map_in.size != cache_map_new.size) return false
-    inKeys = map_in.keysIterator
+    inKeys = cache_map_in.keysIterator
     while (inKeys.hasNext) {
       var currentKey = inKeys.next.toString
       var newValue = cache_map_new.getOrElse(currentKey, "").toString
