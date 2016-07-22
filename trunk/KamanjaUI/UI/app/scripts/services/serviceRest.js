@@ -12,17 +12,17 @@ angular.module('networkApp')
     };
 
     service.getViews = function(){
-      return "http://{serverIP}:{portNo}/kamanjauirest/kamanjarest/GetViews".format({serverIP: serverIP, portNo: portNo});
+      return "http://{serverIP}:{portNo}/kamanjauirest2/kamanjarest/GetViews".format({serverIP: serverIP, portNo: portNo});
     };
 
     service.getView = function(){
-      return "http://{serverIP}:{portNo}/kamanjauirest/kamanjarest/GetView".format({serverIP: serverIP, portNo: portNo});
+      return "http://{serverIP}:{portNo}/kamanjauirest2/kamanjarest/GetView".format({serverIP: serverIP, portNo: portNo});
     };
     service.depthTraverse = function(){
-      return "http://{serverIP}:{portNo}/kamanjauirest/kamanjarest/DepthTraverse".format({serverIP: serverIP, portNo: portNo});
+      return "http://{serverIP}:{portNo}/kamanjauirest2/kamanjarest/DepthTraverse".format({serverIP: serverIP, portNo: portNo});
     };
     service.getProperties = function(){
-      return "http://{serverIP}:{portNo}/kamanjauirest/kamanjarest/Properties".format({serverIP: serverIP, portNo: portNo});
+      return "http://{serverIP}:{portNo}/kamanjauirest2/kamanjarest/Properties".format({serverIP: serverIP, portNo: portNo});
     };
 
     return service;

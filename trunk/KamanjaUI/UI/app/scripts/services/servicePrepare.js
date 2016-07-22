@@ -24,12 +24,12 @@ angular.module('networkApp')
             });
           }
         });
-        
+
         var nodes = _.filter(viewData.result, function (d) {
           return d.Type === "V";
         });
         _.each(nodes, function (n) {
-          n.ID = null;
+          n.ID = n.ID;
           n.id = n['@rid'];
           n.name = n.Name;
           n['class'] = n['@class'].toLowerCase();

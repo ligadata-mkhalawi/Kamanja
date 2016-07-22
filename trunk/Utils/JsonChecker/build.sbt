@@ -9,7 +9,7 @@ shellPrompt := { state =>  "sbt (%s)> ".format(Project.extract(state).currentPro
 assemblyOption in assembly ~= { _.copy(prependShellScript = Some(defaultShellScript)) }
 
 //assemblyJarName in assembly := { s"${name.value}-${version.value}" }
-val kamanjaVersion = "1.5.0"
+val kamanjaVersion = "1.5.1"
 
 //assemblyJarName in assembly := { s"${name.value}-${version.value}" }
 assemblyJarName in assembly := {
@@ -60,7 +60,7 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
 
 name := "JsonChecker"
 
-version := "1.5.0"
+version := "1.5.1"
 
 //resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 //
