@@ -16,7 +16,7 @@ import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.actors.threadpool.{ Executors, ExecutorService }
 import java.io.{InputStream}
 import org.apache.logging.log4j.{ Logger, LogManager }
-import com.ligadata.InputAdapters.{CompressionUtil, SmartFileHandler, SmartFileMonitor}
+import com.ligadata.InputAdapters.{MonitorUtils, CompressionUtil, SmartFileHandler, SmartFileMonitor}
 import scala.actors.threadpool.{Executors, ExecutorService}
 
 class HdfsFileEntry {
@@ -61,9 +61,22 @@ class HdfsFileHandler extends SmartFileHandler{
 
   def getFullPath = fileFullPath
   def getParentDir : String = {
-    val filePath = getFullPath
-    val idx = filePath.lastIndexOf("/")
-    filePath.substring(0, idx)
+
+    val simpleFilePath = getFilePathNoProtocol(getFullPath)
+
+    val idx = simpleFilePath.lastIndexOf("/")
+    simpleFilePath.substring(0, idx)
+  }
+
+  def getFilePathNoProtocol(path : String) : String = {
+    if(path.toLowerCase().startsWith("hdfs://")){
+      val part1 = path.substring(7)
+      val idx = part1.indexOf("/")
+      part1.substring(idx)
+    }
+    else{
+      path
+    }
   }
 
   //gets the input stream according to file system type - HDFS here
@@ -369,8 +382,11 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
                   //logger.debug("Closing Hd File System object fs in monitorDirChanges()")
                   //fs.close()
 
-                  if (modifiedFiles.nonEmpty)
-                    modifiedFiles.foreach(tuple => {
+                  val orderedModifiedFiles = modifiedFiles.map(tuple => (tuple._1, tuple._2)).toList.
+                    sortWith((tuple1, tuple2) => MonitorUtils.compareFiles(tuple1._1,tuple2._1,location) < 0)
+
+                  if (orderedModifiedFiles.nonEmpty)
+                    orderedModifiedFiles.foreach(tuple => {
 
                       try {
                         modifiedFileCallback(tuple._1, tuple._2 == AlreadyExisting)

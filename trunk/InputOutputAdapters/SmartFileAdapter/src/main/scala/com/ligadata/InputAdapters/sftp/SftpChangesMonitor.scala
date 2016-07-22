@@ -430,13 +430,12 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
                     findDirModifiedDirectChilds(aFolder, manager, modifiedDirs, modifiedFiles, firstCheck)
                     logger.debug("modifiedFiles map is {}", modifiedFiles)
 
-                    if (modifiedFiles.nonEmpty)
-                      modifiedFiles.foreach(tuple => {
+                    val orderedModifiedFiles = modifiedFiles.map(tuple => (tuple._1, tuple._2)).toList.
+                      sortWith((tuple1, tuple2) => MonitorUtils.compareFiles(tuple1._1,tuple2._1,location) < 0)
 
-                        /*val handler = new MofifiedFileCallbackHandler(tuple._1, tuple._2, modifiedFileCallback)
-                   // run the callback in a different thread
-                  //new Thread(handler).start()
-                  globalFileMonitorCallbackService.execute(handler)*/
+                    if (orderedModifiedFiles.nonEmpty)
+                      orderedModifiedFiles.foreach(tuple => {
+
                         logger.debug("calling sftp monitor is calling file callback for MonitorController for file {}, initial = {}",
                           tuple._1.getFullPath, (tuple._2 == AlreadyExisting).toString)
                         try {
