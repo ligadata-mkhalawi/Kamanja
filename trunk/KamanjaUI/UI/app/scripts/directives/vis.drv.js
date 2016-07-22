@@ -1,7 +1,8 @@
 /*globals angular,_,vis, console, document */
 angular
   .module('networkApp')
-  .directive('uiHomeVisDemo', ['serviceConfig', '$timeout', '$window', function (serviceConfig, $timeout, $window) {
+  .directive('uiHomeVisDemo', ['serviceConfig', 'serviceSocket', '$timeout', '$window',
+      function (serviceConfig, serviceSocket, $timeout, $window) {
     'use strict';
     return {
       restrict: 'E',
@@ -89,6 +90,7 @@ angular
           var imagePath = serviceConfig.classImageColorPath;
           var types = serviceConfig.classImageColorMap;
           this.id = n.id;
+          this.ID = n.ID;
           this.number = n.number;
           this._label = n.name || '';
           this.shape = n.shape || 'image';
@@ -122,6 +124,19 @@ angular
             };
           }
         };
+
+        serviceSocket.connectStatus(function(response){
+          if(data.nodes){
+            var socketObj = JSON.parse(response);
+            var messageObj = JSON.parse(socketObj.message);
+            _.each(messageObj.ModelCounter, function(model){
+              var node = _.find(data.nodes._data, {ID: model.Id});
+              if(node){
+                node.number = model.In;
+              }
+            });
+          }
+        });
 
         (function fixNodeEdgePointerHover() {
           network.on('hoverNode', function () {
@@ -235,10 +250,10 @@ angular
               ctx.textAlign = 'left';
               ctx.font = '9px arial';
               ctx.fillStyle = '#ffffff';
-              ctx.fillText(d._label, (position.x + 13), (position.y + 10));
+              ctx.fillText(d._label, (position.x + 13), (position.y + 0));
               ctx.font = '9px arial';
               ctx.fillStyle = '#FFCC00';
-              ctx.fillText(d.number, (position.x + 13), (position.y + 10));
+              ctx.fillText(d.number || '', (position.x + 19), (position.y + 10));
             } else {
 
               var rectWidth = d._label.length * 5 - 4;
