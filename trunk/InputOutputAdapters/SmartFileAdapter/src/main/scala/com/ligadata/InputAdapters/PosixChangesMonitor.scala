@@ -4,6 +4,7 @@ package com.ligadata.InputAdapters
 import java.io._
 import java.nio.file.Path
 import java.nio.file._
+import java.util
 import java.util.zip.GZIPInputStream
 import com.ligadata.Exceptions.{KamanjaException}
 
@@ -253,7 +254,9 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
     monitorsExecutorService = Executors.newFixedThreadPool(monitoringConf.locations.length)
 
     monitoringConf.locations.foreach(location => {
+
       val folderToWatch = location.srcDir
+
       val dirMonitorthread = new Runnable() {
         private var targetFolder: String = _
         def init(dir: String) = targetFolder = dir
@@ -276,7 +279,7 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
                       dirsToCheck.remove(0)
 
                       val dir = new File(dirToCheck)
-                      checkExistingFiles(dir, isFirstScan)
+                      checkExistingFiles(dir, isFirstScan, location)
                       //dir.listFiles.filter(_.isDirectory).foreach(d => dirsToCheck += d.toString)
 
 
@@ -323,27 +326,31 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
   }
 
 
-  private def checkExistingFiles(parentDir: File, isFirstScan : Boolean): Unit = {
+  private def checkExistingFiles(parentDir: File, isFirstScan : Boolean, locationInfo: LocationInfo): Unit = {
     // Process all the existing files in the directory that are not marked complete.
     if (parentDir.exists && parentDir.isDirectory) {
       logger.info("Posix Changes Monitor - listing dir " + parentDir.toString)
       val files = parentDir.listFiles.filter(_.isFile).sortWith(_.lastModified < _.lastModified).toList
 
+      val newFiles = ArrayBuffer[String]()
       files.foreach(file => {
         val tokenName = file.toString.split("/")
         if (!checkIfFileHandled(file.toString)) {
-          //logger.info("SMART FILE CONSUMER (global)  Processing " + file.toString)
-          //FileProcessor.enQBufferedFile(file.toString)
-          val fileHandler = new PosixFileHandler(file.toString)
-          //call the callback for new files
-          logger.info(s"Posix Changes Monitor - A new file found ${fileHandler.getFullPath}. initial = $isFirstScan")
-          try {
-            modifiedFileCallback(fileHandler, isFirstScan)
-          }
-          catch{
-            case e : Throwable =>
-              logger.error("Smart File Consumer (Sftp) : Error while notifying Monitor about new file", e)
-          }
+          newFiles.append(file.toString)
+        }
+      })
+
+      val newFileHandlers = newFiles.map(file => new PosixFileHandler(file.toString)).
+        sortWith(MonitorUtils.compareFiles(_,_,locationInfo) < 0).toArray
+      newFileHandlers.foreach(fileHandler =>{
+        //call the callback for new files
+        logger.info(s"Posix Changes Monitor - A new file found ${fileHandler.getFullPath}. initial = $isFirstScan")
+        try {
+          modifiedFileCallback(fileHandler, isFirstScan)
+        }
+        catch{
+          case e : Throwable =>
+            logger.error("Smart File Consumer (Sftp) : Error while notifying Monitor about new file", e)
         }
       })
 

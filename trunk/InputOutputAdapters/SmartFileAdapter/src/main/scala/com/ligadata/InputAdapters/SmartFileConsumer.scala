@@ -99,6 +99,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   private var startTime: Long = 0
   private var msgCount = 0
 
+  private val locationsMap : collection.mutable.Map[String,LocationInfo] = collection.mutable.Map[String,LocationInfo]()
+
   private val partitionKVs = scala.collection.mutable.Map[Int, (SmartFilePartitionUniqueRecordKey, SmartFilePartitionUniqueRecordValue, SmartFilePartitionUniqueRecordValue)]()
 
   private var partitonCounts: collection.mutable.Map[String,Long] = collection.mutable.Map[String,Long]()
@@ -1263,6 +1265,12 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         return
       }
 
+    //mapping each src folder for its config
+    adapterConfig.monitoringConfig.locations.foreach(location => {
+      val srcDir = MonitorUtils.simpleDirPath(location.srcDir)
+      locationsMap.put(srcDir, location)
+    })
+
     partitionIds.foreach(part => {
       val partitionId = part._key.asInstanceOf[SmartFilePartitionUniqueRecordKey].PartitionId
       // Initialize the monitoring status
@@ -1344,21 +1352,38 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
   }
 
+
+  def getFileLocationConfig(fileHandler: SmartFileHandler): LocationInfo ={
+    val parentDir = fileHandler.getParentDir
+    val parentDirLocationConfig = adapterConfig.monitoringConfig.locations.find(loc =>
+      MonitorUtils.simpleDirPath(loc.srcDir).equals(MonitorUtils.simpleDirPath(parentDir)))
+
+    parentDirLocationConfig match{
+      case Some(loc) => loc
+      case None => null
+    }
+
+  }
   /**
     * add tags if needed
     */
   def getFinalMsg(smartMessage : SmartFileMessage) : Array[Byte] = {
 
-    if(adapterConfig.monitoringConfig.msgTags == null || adapterConfig.monitoringConfig.msgTags.length == 0)
+    val parentDir = smartMessage.relatedFileHandler.getParentDir
+    val parentDirLocationConfig = getFileLocationConfig(smartMessage.relatedFileHandler)
+    if(parentDirLocationConfig == null)
+      throw new Exception(s"Dir ${parentDir} has no entry in adapter config location section")
+
+    if(parentDirLocationConfig.msgTags == null || parentDirLocationConfig.msgTags.length == 0)
       return smartMessage.msg
 
     val msgStr = new String(smartMessage.msg)
 
-    val tagDelimiter = adapterConfig.monitoringConfig.tagDelimiter
+    val tagDelimiter = parentDirLocationConfig.tagDelimiter
     val fileName = MonitorUtils.getFileName(smartMessage.relatedFileHandler.getFullPath)
     val parentDirName = MonitorUtils.getFileName(smartMessage.relatedFileHandler.getParentDir)
 
-    val prefix = adapterConfig.monitoringConfig.msgTags.foldLeft("")((pre, tag) => {
+    val prefix = parentDirLocationConfig.msgTags.foldLeft("")((pre, tag) => {
       val tagValue = tag match{
           //assuming msg type is defined by parent folder name
         case "MsgType" => parentDirName
@@ -1527,5 +1552,11 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   private def incrementCountForPartition(pid: Int): Unit = {
     val cVal: Long = partitonCounts.getOrElse(pid.toString, 0)
     partitonCounts(pid.toString) = cVal + 1
+  }
+
+  def getSrcDirLocationInfo(srcDir : String) : LocationInfo = {
+    if(locationsMap.contains(srcDir))
+      locationsMap(srcDir)
+    else null
   }
 }

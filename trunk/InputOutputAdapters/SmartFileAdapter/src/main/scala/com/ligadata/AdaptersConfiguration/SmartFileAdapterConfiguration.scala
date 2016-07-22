@@ -45,8 +45,8 @@ class FileAdapterMonitoringConfig {
   var workerBufferSize : Int = 4 //buffer size in MB to read messages from files
 
 
-  var msgTags : Array[String] = Array.empty[String] //TODO : remove later
-  var tagDelimiter : String = ","//TODO : remove later
+  //var msgTags : Array[String] = Array.empty[String] //TODO : remove later
+  //var tagDelimiter : String = ","//TODO : remove later
 
   var messageSeparator : Char = 10
   var orderBy : Array[String] = Array.empty[String]
@@ -292,7 +292,8 @@ object SmartFileAdapterConfiguration{
 
     })
 
-    //validations
+    //TODO : fix validations
+    //TODO : for each location, if properties MessageSeparator, OrderBy have no values get them from parent
 
     /*if(monitoringConfig.locations == null || monitoringConfig.locations.length == 0) {
       val err = "Not found Locations for Smart File Adapter Config:" + adapterName

@@ -23,8 +23,17 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
   private val bufferingQLock = new Object
   private var smartFileMonitor : SmartFileMonitor = null
 
+  implicit def orderedEnqueuedFileHandler(f: EnqueuedFileHandler): Ordered[EnqueuedFileHandler] = new Ordered[EnqueuedFileHandler] {
+    def compare(other: EnqueuedFileHandler) = {
+      val locationInfo1 = parentSmartFileConsumer.getSrcDirLocationInfo(MonitorUtils.simpleDirPath(f.fileHandler.getParentDir))
+      val locationInfo2 = parentSmartFileConsumer.getSrcDirLocationInfo(MonitorUtils.simpleDirPath(other.fileHandler.getParentDir))
+      MonitorUtils.compareFiles(f.fileHandler, locationInfo1, other.fileHandler, locationInfo2)
+    }
+  }
   private var fileQ: scala.collection.mutable.PriorityQueue[EnqueuedFileHandler] =
-      new scala.collection.mutable.PriorityQueue[EnqueuedFileHandler]()(Ordering.by(OldestFile))
+      //new scala.collection.mutable.PriorityQueue[EnqueuedFileHandler]()(Ordering.by(fileComparisonField))
+     new scala.collection.mutable.PriorityQueue[EnqueuedFileHandler]()//use above implicit compare function
+
   private val fileQLock = new Object
 
   private var refreshRate: Int = 2000 //Refresh rate for monitorBufferingFiles
@@ -121,6 +130,11 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
   def OldestFile(file: EnqueuedFileHandler): Long = {
     file.createDate * -1
   }
+
+  /*def fileComparisonField(file: EnqueuedFileHandler) : String = {
+    adapterConfig.monitoringConfig
+    ""
+  }*/
 
   /**
     *  Look at the files on the DEFERRED QUEUE... if we see that it stops growing, then move the file onto the READY

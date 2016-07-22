@@ -22,7 +22,7 @@ class TestConfigs extends FunSpec with BeforeAndAfter with ShouldMatchers with B
       |	  "WorkerBufferSize": "4",
       |	  "ConsumersCount": "2",
       |
-      |	  "OrderBy": ["date" , "region", "Serial"],
+      |	  "OrderBy": ["date" , "region", "serial"],
       |	  "MessageSeparator": "10",
       |
       |	  "Locations":[
@@ -40,7 +40,7 @@ class TestConfigs extends FunSpec with BeforeAndAfter with ShouldMatchers with B
       |		   "TagDelimiter":"^",
       |
       |		   "MessageSeparator": "10",
-      |		   "OrderBy": ["date" , "region", "Serial"]
+      |		   "OrderBy": ["date" , "region", "serial"]
       |		  }
       |	   ]
       |  }
