@@ -95,8 +95,8 @@ class PyServerConnection(val host : String
         val startServerResult : String = startServer
         logger.debug(s"PyServerConnection.initialize ... start server result = $startServerResult")
         implicit val formats = org.json4s.DefaultFormats
-        val startResultsMap : Map[String, Any] = parse(startServerResult).extract[Map[String, Any]]
-        val startRc : Int = startResultsMap.getOrElse("code", -1).asInstanceOf[Int]
+        val startResultsMap : Map[String,Any] = parse(startServerResult).values.asInstanceOf[Map[String,Any]]
+        val startRc : Int = startResultsMap.getOrElse("code", -1).asInstanceOf[scala.math.BigInt].toInt
 
         /** create a connection to the server on the port that it is listening. */
         val inetbyname = InetAddress.getByName(host)

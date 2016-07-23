@@ -762,9 +762,11 @@ object ModelUtils {
       val ownerId: String = if (userid == None) "kamanja" else userid.get
       val modelOptions : String = someModelOptions.getOrElse("{}")
 
+      logger.info(s"The module name $moduleName will be used as the namespace for model $modelNm..."
+      )
       val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr
                                                                   , moduleName
-                                                                  , modelNmSpace
+                                                                  , moduleName // modelNmSpace
                                                                   , modelNm
                                                                   , version
                                                                   , msgNamespace

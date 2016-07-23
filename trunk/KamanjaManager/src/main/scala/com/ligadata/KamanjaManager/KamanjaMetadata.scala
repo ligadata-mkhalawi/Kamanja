@@ -521,6 +521,8 @@ class KamanjaMetadata(var envCtxt: EnvContext) {
             KamanjaMetadata.gNodeContext.putValue("PYTHON_CONNECTIONS", new mutable.HashMap[String,Any]())
             KamanjaMetadata.gNodeContext.putValue("PYTHON_LOG_CONFIG_PATH",  loggerConfigPath)
             KamanjaMetadata.gNodeContext.putValue("PYTHON_LOG_PATH", logFilePath)
+            KamanjaMetadata.gNodeContext.putValue("SERVER_BASE_PORT", pySrvStartPort)
+            KamanjaMetadata.gNodeContext.putValue("SERVER_PORT_LIMIT", pySrvMaxSrvrs)
 
             /** for diagnostics at run time, put the whole propertyMap */
             KamanjaMetadata.gNodeContext.putValue("pyPropertyMap", pyPropertyMap)
@@ -564,29 +566,29 @@ class KamanjaMetadata(var envCtxt: EnvContext) {
 
 
     private def PrepareModelsFactories(tmpModelDefs: Option[scala.collection.immutable.Set[ModelDef]]): Unit = {
-    if (tmpModelDefs == None) // Not found any models
-      return
+        if (tmpModelDefs == None) // Not found any models
+          return
 
-    val modelDefs = tmpModelDefs.get
+        val modelDefs = tmpModelDefs.get
 
-    /** Set up the python key values in the node context.  Connections are generated at make python proxy instance time
-      * Conceivably, we could avoid setup if there were no models, only to have to set them up when the engine accepts
-      * a newly added model. Ergo, we set the configuration up as if we were to need them. */
-    val hasPythonModels : Boolean = modelDefs.find(m => m.modelRepresentation == ModelRepresentation.PYTHON).getOrElse(null) != null
-    logger.debug("This cluster node has python models")
+        /** Set up the python key values in the node context.  Connections are generated at make python proxy instance time
+          * Conceivably, we could avoid setup if there were no models, only to have to set them up when the engine accepts
+          * a newly added model. Ergo, we set the configuration up as if we were to need them. */
+        val hasPythonModels : Boolean = modelDefs.find(m => m.modelRepresentation == ModelRepresentation.PYTHON).getOrElse(null) != null
+        logger.debug("This cluster node has python models")
 
-    /** Add a number of properties to the node context that are needed by the python factories to set up the servers */
-    PreparePythonConfiguration
+        /** Add a number of properties to the node context that are needed by the python factories to set up the servers */
+        PreparePythonConfiguration
 
-    // Load all jars first
-    modelDefs.foreach(mdl => {
-      KamanjaMetadata.LoadJarIfNeeded(mdl)
-    })
+        // Load all jars first
+        modelDefs.foreach(mdl => {
+          KamanjaMetadata.LoadJarIfNeeded(mdl)
+        })
 
-    modelDefs.foreach(mdl => {
-      PrepareModelFactory(mdl, false, null) // Already Loaded required dependency jars before calling this
-    })
-  }
+        modelDefs.foreach(mdl => {
+          PrepareModelFactory(mdl, false, null) // Already Loaded required dependency jars before calling this
+        })
+    }
 }
 
 object KamanjaMetadata extends ObjectResolver {
