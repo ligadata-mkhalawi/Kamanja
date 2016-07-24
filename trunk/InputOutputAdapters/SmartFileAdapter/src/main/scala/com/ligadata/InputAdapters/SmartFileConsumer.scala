@@ -993,7 +993,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             smartFileContext = context
         }
         if(smartFileContext == null){
-          val smartFileContext = new SmartFileConsumerContext()
+          smartFileContext = new SmartFileConsumerContext()
           smartFileContext.adapterName = inputConfig.Name
           smartFileContext.partitionId = partitionId
           smartFileContext.ignoreFirstMsg = _ignoreFirstMsg
@@ -1305,7 +1305,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       pid._val.asInstanceOf[SmartFilePartitionUniqueRecordValue].Offset, ignoreFirstMsg)).mkString("~")
 
     val SendStartInfoToLeaderPath = sendStartInfoToLeaderParentPath + "/" + clusterStatus.nodeId  // Should be different for each Nodes
-    LOG.info("Smart File Consumer - Node {} is sending start info to leader. path is {}, value is {} ",
+    LOG.warn("Smart File Consumer - Node {} is sending start info to leader. path is {}, value is {} ",
       clusterStatus.nodeId, SendStartInfoToLeaderPath, myPartitionInfo)
     envContext.setListenerCacheKey(SendStartInfoToLeaderPath, myPartitionInfo) // => Goes to Leader
 
