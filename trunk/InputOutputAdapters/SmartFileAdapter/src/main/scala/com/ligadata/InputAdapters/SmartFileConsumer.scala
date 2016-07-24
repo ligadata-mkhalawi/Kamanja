@@ -34,6 +34,7 @@ class SmartFileConsumerContext{
   //var fileOffsetCacheKey : String = _
   var statusUpdateCacheKey : String = _
   var statusUpdateInterval : Int = _
+  var execThread: ExecContext = null
 }
 
 /**
@@ -1319,7 +1320,6 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     //val uniqueRecordValue = if (ignoreFirstMsg) partition._3.Offset else partition._3.Offset - 1
 
 
-    var execThread: ExecContext = null
     val uniqueKey = new SmartFilePartitionUniqueRecordKey
     val uniqueVal = new SmartFilePartitionUniqueRecordValue
 
@@ -1335,8 +1335,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
 
     // Create a new EngineMessage and call the engine.
-    if (execThread == null) {
-      execThread = execCtxtObj.CreateExecContext(input, uniqueKey, nodeContext)
+    if (smartFileConsumerContext.execThread == null) {
+      smartFileConsumerContext.execThread = execCtxtObj.CreateExecContext(input, uniqueKey, nodeContext)
     }
 
     incrementCountForPartition(partitionId)
@@ -1348,7 +1348,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     LOG.debug("Smart File Consumer - Node {} is sending a msg to engine. partition id= {}. msg={}. file={}. offset={}",
       smartFileConsumerContext.nodeId, smartFileConsumerContext.partitionId.toString, new String(message), fileName, offset.toString)
     msgCount += 1
-    execThread.execute(message, uniqueKey, uniqueVal, readTmMs)
+    smartFileConsumerContext.execThread.execute(message, uniqueKey, uniqueVal, readTmMs)
 
   }
 
