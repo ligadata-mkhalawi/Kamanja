@@ -100,6 +100,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   private var startTime: Long = 0
   private var msgCount = 0
 
+  private val smartFileContextMap : collection.mutable.Map[Int,SmartFileConsumerContext] = collection.mutable.Map[Int,SmartFileConsumerContext]()
   private val locationsMap : collection.mutable.Map[String,LocationInfo] = collection.mutable.Map[String,LocationInfo]()
 
   private val partitionKVs = scala.collection.mutable.Map[Int, (SmartFilePartitionUniqueRecordKey, SmartFilePartitionUniqueRecordValue, SmartFilePartitionUniqueRecordValue)]()
@@ -983,20 +984,33 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         LOG.info("Smart File Consumer - Node Id = {}, Thread Id = {}, File ({}) was assigned",
           processingNodeId, processingThreadId.toString, fileToProcessName)
 
+
+        val partitionId = processingThreadId.toInt
+        var smartFileContext : SmartFileConsumerContext = null
+        if(smartFileContextMap.contains(partitionId)){
+          val context = smartFileContextMap(partitionId)
+          if(context.nodeId.equals(processingNodeId)) //maybe this could take place if re-shuffling happened
+            smartFileContext = context
+        }
+        if(smartFileContext == null){
+          val smartFileContext = new SmartFileConsumerContext()
+          smartFileContext.adapterName = inputConfig.Name
+          smartFileContext.partitionId = partitionId
+          smartFileContext.ignoreFirstMsg = _ignoreFirstMsg
+          smartFileContext.nodeId = processingNodeId
+          smartFileContext.envContext = envContext
+          //context.fileOffsetCacheKey = getFileOffsetCacheKey(fileToProcessName)
+          smartFileContext.statusUpdateCacheKey = Status_Check_Cache_KeyParent + "/" + processingNodeId + "/" + processingThreadId
+          smartFileContext.statusUpdateInterval = statusUpdateInterval
+
+          smartFileContextMap.put(partitionId, smartFileContext)
+        }
+
         //start processing the file
-        val context = new SmartFileConsumerContext()
-        context.adapterName = inputConfig.Name
-        context.partitionId = processingThreadId.toInt
-        context.ignoreFirstMsg = _ignoreFirstMsg
-        context.nodeId = processingNodeId
-        context.envContext = envContext
-        //context.fileOffsetCacheKey = getFileOffsetCacheKey(fileToProcessName)
-        context.statusUpdateCacheKey = Status_Check_Cache_KeyParent + "/" + processingNodeId + "/" + processingThreadId
-        context.statusUpdateInterval = statusUpdateInterval
 
         val fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, fileToProcessName)
         //now read the file and call sendSmartFileMessageToEngin for each message, and when finished call fileMessagesExtractionFinished_Callback to update status
-        val fileMessageExtractor = new FileMessageExtractor(participantExecutor, adapterConfig, fileHandler, offset, context,
+        val fileMessageExtractor = new FileMessageExtractor(participantExecutor, adapterConfig, fileHandler, offset, smartFileContext,
           sendSmartFileMessageToEngin, fileMessagesExtractionFinished_Callback)
         fileMessageExtractor.extractMessages()
       }
@@ -1499,6 +1513,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     //participantExecutor = null
     startTime = 0
 
+    smartFileContextMap.clear()
     prevRegParticipantPartitions = List()
     prevRegLeader = ""
     filesParallelism = -1
