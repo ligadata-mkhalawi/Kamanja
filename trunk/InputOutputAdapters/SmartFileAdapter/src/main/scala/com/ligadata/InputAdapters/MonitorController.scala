@@ -55,7 +55,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
   }
 
   def checkConfigDirsAccessibility(): Unit ={
-    adapterConfig.monitoringConfig.locations.foreach(location => {
+    adapterConfig.monitoringConfig.detailedLocations.foreach(location => {
 
       val srcHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, location.srcDir)
       if(!srcHandler.exists())

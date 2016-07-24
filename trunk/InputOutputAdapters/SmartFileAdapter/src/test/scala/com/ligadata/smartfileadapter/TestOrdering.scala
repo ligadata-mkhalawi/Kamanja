@@ -14,27 +14,45 @@ class TestOrdering extends FunSpec with BeforeAndAfter with ShouldMatchers with 
   val file1 = "/data/input/20160715.INTEC_DIGICELY_EMM_JA.3"
   val file2 = "/data/input/20160715.INTEC_DIGICELY_EMM_JA.10"
 
+  val invalidFileName = "/data/input/INTEC_DIGICELY_EMM_JA.10"
 
+  describe("Test file name pattern matching"){
+    it("Should"){
+      val conf = getAdapterCfg
+      val loc1 = conf.monitoringConfig.detailedLocations(0)
+
+      val file1Match = MonitorUtils.isPatternMatch(MonitorUtils.getFileName(file1), loc1.fileComponents.regex)
+      val invalidMatch = MonitorUtils.isPatternMatch(MonitorUtils.getFileName(invalidFileName), loc1.fileComponents.regex)
+
+      file1Match shouldEqual true
+      invalidMatch shouldEqual false
+    }
+  }
 
   describe("Test order by file name components"){
-    it(""){
+    it("Should find file1 preceeding file2"){
 
-      //just read and parse adapter config
-      val inputConfig = new AdapterConfiguration()
-      inputConfig.Name = "TestInput_2"
-      inputConfig.className = "com.ligadata.InputAdapters.SamrtFileInputAdapter$"
-      inputConfig.jarName = "smartfileinputoutputadapters_2.10-1.0.jar"
-      //inputConfig.dependencyJars = new Set()
-      inputConfig.adapterSpecificCfg = adapterSpecificCfgJson
-      val conf = SmartFileAdapterConfiguration.getAdapterConfig(inputConfig)
-      val loc1 = conf.monitoringConfig.locations(0)
+      val conf = getAdapterCfg
+      val loc1 = conf.monitoringConfig.detailedLocations(0)
 
       val fileHandler1 = SmartFileHandlerFactory.createSmartFileHandler(conf, file1)
       val fileHandler2 = SmartFileHandlerFactory.createSmartFileHandler(conf, file2)
       val res = MonitorUtils.compareFiles(fileHandler1, fileHandler2, loc1)
-      println("compare result= " + res)
+      assert(res < 0)
 
     }
+  }
+
+  def getAdapterCfg : SmartFileAdapterConfiguration = {
+    //just read and parse adapter config
+    val inputConfig = new AdapterConfiguration()
+    inputConfig.Name = "TestInput_2"
+    inputConfig.className = "com.ligadata.InputAdapters.SamrtFileInputAdapter$"
+    inputConfig.jarName = "smartfileinputoutputadapters_2.10-1.0.jar"
+    //inputConfig.dependencyJars = new Set()
+    inputConfig.adapterSpecificCfg = adapterSpecificCfgJson
+    val conf = SmartFileAdapterConfiguration.getAdapterConfig(inputConfig)
+    conf
   }
 
   val adapterSpecificCfgJson =
@@ -52,12 +70,12 @@ class TestOrdering extends FunSpec with BeforeAndAfter with ShouldMatchers with 
       |	  "OrderBy": ["date" , "region", "serial"],
       |	  "MessageSeparator": "10",
       |
-      |	  "Locations":[
+      |	  "DetailedLocations":[
       |	     {
       |		   "srcDir": "/data/input",
       |		   "targetDir": "/data/processed",
       |		   "FileComponents": {
-      |			  "Components" : "date, source_type, phy_switch, proc_source, region, serial",
+      |			  "Components" : ["date", "source_type", "phy_switch", "proc_source", "region", "serial"],
       |			  "Regex": "^([0-9]{8})\\.([A-Za-z]+)_([A-Z]+)_([A-Z]+)_([A-Z]+)\\.([0-9]+)$",
       |			  "Paddings" : {
       |			    "serial": ["left", "5", "0"]

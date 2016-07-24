@@ -17,7 +17,8 @@ import scala.actors.threadpool.{ExecutorService, Executors}
   * @param messageFoundCallback to call for every read message
   * @param finishCallback call when finished reading
   */
-class FileMessageExtractor(parentExecutor: ExecutorService,
+class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
+                            parentExecutor: ExecutorService,
                            adapterConfig : SmartFileAdapterConfiguration,
                            fileHandler: SmartFileHandler,
                            startOffset : Long,
@@ -26,7 +27,11 @@ class FileMessageExtractor(parentExecutor: ExecutorService,
                            finishCallback : (SmartFileHandler, SmartFileConsumerContext, Int) => Unit ) {
 
   private val maxlen: Int = adapterConfig.monitoringConfig.workerBufferSize * 1024 * 1024 //in MB
-  private val message_separator : Char = adapterConfig.monitoringConfig.messageSeparator
+
+  val srcDirLocInfo = parentSmartFileConsumer.getSrcDirLocationInfo(fileHandler.getParentDir)
+  private val message_separator : Char =
+    if(srcDirLocInfo == null) adapterConfig.monitoringConfig.messageSeparator
+    else srcDirLocInfo.messageSeparator
   private val message_separator_len = 1// since separator is a char
 
   lazy val loggerName = this.getClass.getName

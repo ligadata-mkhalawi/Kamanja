@@ -105,6 +105,12 @@ object MonitorUtils {
     }
   }
 
+  def isPatternMatch(name : String, regex : String): Boolean ={
+    val pattern = regex.r
+    val matchList = pattern.findAllIn(name).matchData.toList
+    matchList.nonEmpty
+  }
+
   /**
     * compares two files not necessarily from same src folder
     * @param fileHandler1
@@ -178,7 +184,7 @@ object MonitorUtils {
 
   /**
     * based on file name and ordering config, returns a value representing new file name
-    * @param fileHandler
+    * @param fileHandler  assuming file name already checked against the pattern
     * @param locationInfo
     * @return
     */

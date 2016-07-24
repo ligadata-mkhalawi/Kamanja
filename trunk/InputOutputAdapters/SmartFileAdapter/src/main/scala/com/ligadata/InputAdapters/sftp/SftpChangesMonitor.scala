@@ -389,16 +389,16 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
   }
 
   def monitor(): Unit ={
-
+    val validModifiedFiles = ArrayBuffer[(SmartFileHandler, FileChangeType)]()
     val manager : StandardFileSystemManager  = new StandardFileSystemManager()
 
     isMonitoring = true
     //Initializes the file manager
     manager.init()
 
-    monitorsExecutorService = Executors.newFixedThreadPool(monitoringConf.locations.length)
+    monitorsExecutorService = Executors.newFixedThreadPool(monitoringConf.detailedLocations.length)
 
-    monitoringConf.locations.foreach(location => {
+    monitoringConf.detailedLocations.foreach(location => {
       val folderToWatch = location.srcDir
       val dirMonitorthread = new Runnable() {
         private var targetRemoteFolder: String = _
@@ -430,7 +430,21 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
                     findDirModifiedDirectChilds(aFolder, manager, modifiedDirs, modifiedFiles, firstCheck)
                     logger.debug("modifiedFiles map is {}", modifiedFiles)
 
-                    val orderedModifiedFiles = modifiedFiles.map(tuple => (tuple._1, tuple._2)).toList.
+                    //check for file names pattern
+                    validModifiedFiles.clear()
+                    if(location.fileComponents != null){
+                      modifiedFiles.foreach(tuple => {
+                        if(MonitorUtils.isPatternMatch(MonitorUtils.getFileName(tuple._1.getFullPath), location.fileComponents.regex))
+                          validModifiedFiles.append(tuple)
+                        else
+                          logger.warn("Smart File Consumer (SFTP) : File {}, does not follow configured name pattern ({}), so it will be ignored - Adapter {}",
+                            tuple._1.getFullPath, location.fileComponents.regex, adapterName)
+                      })
+                    }
+                    else
+                      validModifiedFiles.appendAll(modifiedFiles)
+
+                    val orderedModifiedFiles = validModifiedFiles.map(tuple => (tuple._1, tuple._2)).toList.
                       sortWith((tuple1, tuple2) => MonitorUtils.compareFiles(tuple1._1,tuple2._1,location) < 0)
 
                     if (orderedModifiedFiles.nonEmpty)

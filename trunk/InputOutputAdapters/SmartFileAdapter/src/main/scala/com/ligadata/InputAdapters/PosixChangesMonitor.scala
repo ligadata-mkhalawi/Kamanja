@@ -251,9 +251,9 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
     //TODO : consider running each folder monitoring in a separate thread
     isMonitoring = true
 
-    monitorsExecutorService = Executors.newFixedThreadPool(monitoringConf.locations.length)
+    monitorsExecutorService = Executors.newFixedThreadPool(monitoringConf.detailedLocations.length)
 
-    monitoringConf.locations.foreach(location => {
+    monitoringConf.detailedLocations.foreach(location => {
 
       val folderToWatch = location.srcDir
 
@@ -325,6 +325,7 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
     monitorsExecutorService.shutdown()
   }
 
+  val validModifiedFiles = ArrayBuffer[String]()
 
   private def checkExistingFiles(parentDir: File, isFirstScan : Boolean, locationInfo: LocationInfo): Unit = {
     // Process all the existing files in the directory that are not marked complete.
@@ -340,7 +341,21 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
         }
       })
 
-      val newFileHandlers = newFiles.map(file => new PosixFileHandler(file.toString)).
+      //check for file names pattern
+      validModifiedFiles.clear()
+      if(locationInfo.fileComponents != null){
+        newFiles.foreach(file => {
+          if(MonitorUtils.isPatternMatch(MonitorUtils.getFileName(file), locationInfo.fileComponents.regex))
+            validModifiedFiles.append(file)
+          else
+            logger.warn("Smart File Consumer (DAS/NAS) : File {}, does not follow configured name pattern ({}), so it will be ignored - Adapter {}",
+              file, locationInfo.fileComponents.regex, adapterName)
+        })
+      }
+      else
+        validModifiedFiles.appendAll(newFiles)
+
+      val newFileHandlers = validModifiedFiles.map(file => new PosixFileHandler(file.toString)).
         sortWith(MonitorUtils.compareFiles(_,_,locationInfo) < 0).toArray
       newFileHandlers.foreach(fileHandler =>{
         //call the callback for new files

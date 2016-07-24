@@ -36,7 +36,10 @@ class FileAdapterMonitoringConfig {
   var waitingTimeMS : Int = _
   var dirCheckThreshold : Int = 0 //when > 0 listing watched folders should stop when count of files waiting to be processed is above the threshold
 
-  var locations : Array[LocationInfo] = Array.empty[LocationInfo] //folders to monitor, with other info
+  //var locations : Array[String] = Array.empty[String] //folders to monitor, simple comma separated list
+  //var targetMoveDir : String = "" //generic target dir to move files to. used when src dir has no target
+
+  var detailedLocations : Array[LocationInfo] = Array.empty[LocationInfo] //folders to monitor, with other info
 
   var fileBufferingTimeout = 300 // in seconds
   //folders to move consumed files to. either one directory for all input (locations) or same number as (locations)
@@ -45,8 +48,8 @@ class FileAdapterMonitoringConfig {
   var workerBufferSize : Int = 4 //buffer size in MB to read messages from files
 
 
-  //var msgTags : Array[String] = Array.empty[String] //TODO : remove later
-  //var tagDelimiter : String = ","//TODO : remove later
+  var msgTags : Array[String] = Array.empty[String] //public
+  var tagDelimiter : String = "," //public
 
   var messageSeparator : Char = 10
   var orderBy : Array[String] = Array.empty[String]
@@ -73,9 +76,9 @@ class LocationInfo{
   var fileComponents : FileComponents = null
   //array of keywords, each one has a meaning to the adapter, which will add corresponding data to msg before sending to engine
   var msgTags : Array[String] = Array.empty[String]
-  var tagDelimiter : String = ","
+  var tagDelimiter : String = "" //if empty get public one
 
-  var messageSeparator : Char = 10
+  var messageSeparator : Char = 0 //0 this means separator is not set, so get it from public attributes
   var orderBy : Array[String] = Array.empty[String]
 }
 
@@ -83,6 +86,7 @@ object SmartFileAdapterConfiguration{
 
   val defaultWaitingTimeMS = 1000
   val defaultConsumerCount = 2
+  val defaultOrderBy = Array("$FILE_MOD_TIME") //last modification time
 
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
@@ -147,6 +151,10 @@ object SmartFileAdapterConfiguration{
       throw new KamanjaException(err, null)
     }
 
+    var simpleLocations : Array[String] = Array.empty[String] //folders to monitor, simple comma separated list
+    var publicTargetMoveDir : String = "" //generic target dir to move files to. used when src dir has no target
+    var publicFileComponents : FileComponents = null
+
     val connConf = adapCfgValues.get("ConnectionConfig").get.asInstanceOf[Map[String, Any]]
     //val connConfValues = connConf.values.asInstanceOf[Map[String, String]]
     connConf.foreach(kv => {
@@ -190,7 +198,7 @@ object SmartFileAdapterConfiguration{
       throw new KamanjaException(err, null)
     }
 
-    val monConf = (adapCfgValues.get("MonitoringConfig").get.asInstanceOf[Map[String, Any]])
+    val monConf = adapCfgValues.get("MonitoringConfig").get.asInstanceOf[Map[String, Any]]
     //val monConfValues = monConf.values.asInstanceOf[Map[String, String]]
     monConf.foreach(kv => {
       if (kv._1.compareToIgnoreCase("MaxTimeWait") == 0) {
@@ -214,16 +222,28 @@ object SmartFileAdapterConfiguration{
       else if(kv._1.compareToIgnoreCase("OrderBy")== 0) {
         monitoringConfig.orderBy = kv._2.asInstanceOf[List[String]].toArray
       }
-      /*else if (kv._1.compareToIgnoreCase("TagDelimiter") == 0) {
+      else if (kv._1.compareToIgnoreCase("TagDelimiter") == 0) {
         monitoringConfig.tagDelimiter = kv._2.asInstanceOf[String]
       }
       else  if (kv._1.compareToIgnoreCase("MsgTags") == 0) {
-        monitoringConfig.msgTags = kv._2.asInstanceOf[String].split(",").map(str => str.trim).filter(str => str.nonEmpty)
-      }*/
+        monitoringConfig.msgTags = kv._2.asInstanceOf[List[String]].toArray
+      }
       else  if (kv._1.compareToIgnoreCase("DirCheckThreshold") == 0) {
         monitoringConfig.dirCheckThreshold = kv._2.asInstanceOf[String].trim.toInt
       }
-      else  if (kv._1.compareToIgnoreCase("Locations") == 0) {
+      else  if (kv._1.compareToIgnoreCase("Locations") == 0) {//old fashioned-simple locations
+        simpleLocations = kv._2.asInstanceOf[String].split(",").map(str => str.trim).filter(str => str.size > 0)
+      }
+      else  if (kv._1.compareToIgnoreCase("TargetMoveDir") == 0) {//public targetMoveDir
+        publicTargetMoveDir = kv._2.asInstanceOf[String]
+        //println("publicTargetMoveDir============="+publicTargetMoveDir)
+      }
+      else if (kv._1.compareToIgnoreCase("FileComponents")==0){//public FileComponents
+        val componentsMap = kv._2.asInstanceOf[Map[String,Any]]
+        publicFileComponents = extractFileComponents(componentsMap)
+      }
+
+      else  if (kv._1.compareToIgnoreCase("DetailedLocations") == 0) {
         val locationsInfoBuffer = ArrayBuffer[LocationInfo]()
 
         val locations = kv._2.asInstanceOf[List[Map[String, Any]]]
@@ -250,50 +270,73 @@ object SmartFileAdapterConfiguration{
             }
             else if (kv._1.compareToIgnoreCase("FileComponents")==0){
               val componentsMap = kv._2.asInstanceOf[Map[String,Any]]
-              val fileComponents = new FileComponents
-              componentsMap.foreach(componentTuple => {
-                if(componentTuple._1.equalsIgnoreCase("Components"))
-                  fileComponents.components = componentTuple._2.asInstanceOf[String].split(",").map(str => str.trim).filter(str => str.nonEmpty)
-                else if(componentTuple._1.equalsIgnoreCase("Regex"))
-                  fileComponents.regex = componentTuple._2.asInstanceOf[String]
-                else if (componentTuple._1.compareToIgnoreCase("Paddings")==0){
-                  val paddingsMap = componentTuple._2.asInstanceOf[Map[String, Any]]
-
-                  paddingsMap.foreach(paddingTuple => {
-                    val paddingInfo = new Padding
-                    val paddingJsonInfoList = paddingTuple._2.asInstanceOf[List[Any]]
-                    if(paddingJsonInfoList != null && paddingJsonInfoList.length == 3){
-                      paddingInfo.padPos = paddingJsonInfoList(0).asInstanceOf[String]
-                      paddingInfo.padSize = //accept number whether as num or string
-                        try{
-                          paddingJsonInfoList(1).asInstanceOf[scala.math.BigInt].toInt
-                        }
-                        catch{
-                          case ex : Exception => paddingJsonInfoList(1).asInstanceOf[String].toInt
-                        }
-
-                      paddingInfo.padStr = paddingJsonInfoList(2).asInstanceOf[String]
-                    }
-                    fileComponents.paddings += paddingTuple._1 -> paddingInfo
-
-                  })
-
-                }
-              })
+              val fileComponents = extractFileComponents(componentsMap)
               locationInfo.fileComponents = fileComponents
             }
 
           })
+
           locationsInfoBuffer.append(locationInfo)
         })
 
-        monitoringConfig.locations = locationsInfoBuffer.toArray
+        monitoringConfig.detailedLocations = locationsInfoBuffer.toArray
       }
 
     })
 
+
+    //if no detailedLocations defined, use locations, define them as detailedLocations
+    if(monitoringConfig.detailedLocations.length == 0){
+      if(simpleLocations.length > 0){
+        if(publicTargetMoveDir == null || publicTargetMoveDir.length == 0){
+          val err = "Not found TargetMoveDir corresponding to locatoins for Smart File Adapter Config:" + adapterName
+          throw new KamanjaException(err, null)
+        }
+
+        simpleLocations.foreach(loc => {
+          val locationInfo = new LocationInfo
+          locationInfo.srcDir = loc
+          locationInfo.targetDir = publicTargetMoveDir
+          locationInfo.orderBy = //get public order by or default
+            if(monitoringConfig.orderBy == null || monitoringConfig.orderBy.length == 0) defaultOrderBy
+            else monitoringConfig.orderBy
+
+          locationInfo.messageSeparator = monitoringConfig.messageSeparator
+          locationInfo.fileComponents = publicFileComponents
+
+          monitoringConfig.detailedLocations = monitoringConfig.detailedLocations :+ locationInfo
+        })
+      }
+
+    }
+    else{
+      //for each location, if local attributes have no values get them from public corresponding attributes
+      monitoringConfig.detailedLocations.foreach(locationInfo => {
+        if(locationInfo.targetDir == null || locationInfo.targetDir.trim.length == 0)
+          locationInfo.targetDir = publicTargetMoveDir
+
+        if(locationInfo.orderBy.length == 0) {
+          locationInfo.orderBy = //get public order by or default
+            if (monitoringConfig.orderBy == null || monitoringConfig.orderBy.length == 0) defaultOrderBy
+            else monitoringConfig.orderBy
+        }
+
+        if(locationInfo.messageSeparator == 0){//this location has no separator, get the public value
+          locationInfo.messageSeparator = monitoringConfig.messageSeparator
+        }
+        if(locationInfo.fileComponents == null)
+          locationInfo.fileComponents = publicFileComponents
+
+        if(locationInfo.msgTags == null || locationInfo.msgTags.length == 0)
+          locationInfo.msgTags = monitoringConfig.msgTags
+
+        if(locationInfo.tagDelimiter == null || locationInfo.tagDelimiter.length == 0)
+          locationInfo.tagDelimiter = monitoringConfig.tagDelimiter
+      })
+    }
+
+
     //TODO : fix validations
-    //TODO : for each location, if properties MessageSeparator, OrderBy have no values get them from parent
 
     /*if(monitoringConfig.locations == null || monitoringConfig.locations.length == 0) {
       val err = "Not found Locations for Smart File Adapter Config:" + adapterName
@@ -318,6 +361,42 @@ object SmartFileAdapterConfiguration{
     //TODO : validation for FilesOrdering
 
     (_type, connectionConfig, monitoringConfig)
+  }
+
+
+  def extractFileComponents(componentsMap :  Map[String,Any]) : FileComponents = {
+    val fileComponents = new FileComponents
+    componentsMap.foreach(componentTuple => {
+      if(componentTuple._1.equalsIgnoreCase("Components"))
+        fileComponents.components = componentTuple._2.asInstanceOf[List[String]].toArray
+      else if(componentTuple._1.equalsIgnoreCase("Regex"))
+        fileComponents.regex = componentTuple._2.asInstanceOf[String]
+      else if (componentTuple._1.compareToIgnoreCase("Paddings")==0){
+        val paddingsMap = componentTuple._2.asInstanceOf[Map[String, Any]]
+
+        paddingsMap.foreach(paddingTuple => {
+          val paddingInfo = new Padding
+          val paddingJsonInfoList = paddingTuple._2.asInstanceOf[List[Any]]
+          if(paddingJsonInfoList != null && paddingJsonInfoList.length == 3){
+            paddingInfo.padPos = paddingJsonInfoList(0).asInstanceOf[String]
+            paddingInfo.padSize = //accept number whether as num or string
+              try{
+                paddingJsonInfoList(1).asInstanceOf[scala.math.BigInt].toInt
+              }
+              catch{
+                case ex : Exception => paddingJsonInfoList(1).asInstanceOf[String].toInt
+              }
+
+            paddingInfo.padStr = paddingJsonInfoList(2).asInstanceOf[String]
+          }
+          fileComponents.paddings += paddingTuple._1 -> paddingInfo
+
+        })
+
+      }
+    })
+
+    fileComponents
   }
 }
 

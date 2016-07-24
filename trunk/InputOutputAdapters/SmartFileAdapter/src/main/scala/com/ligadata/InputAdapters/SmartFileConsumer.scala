@@ -84,7 +84,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   private val adapterConfig = SmartFileAdapterConfiguration.getAdapterConfig(inputConfig)
 
   private var locationTargetMoveDirsMap =
-    adapterConfig.monitoringConfig.locations.map(loc => loc.srcDir -> loc.targetDir).toMap
+    adapterConfig.monitoringConfig.detailedLocations.map(loc => loc.srcDir -> loc.targetDir).toMap
   /*if(adapterConfig.monitoringConfig.targetMoveDirs.length == 1)
     locationTargetMoveDirsMap = adapterConfig.monitoringConfig.locations.map(
       loc => MonitorUtils.simpleDirPath(loc.srcDir) -> MonitorUtils.simpleDirPath(adapterConfig.monitoringConfig.targetMoveDirs(0))).toMap
@@ -1010,7 +1010,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
         val fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, fileToProcessName)
         //now read the file and call sendSmartFileMessageToEngin for each message, and when finished call fileMessagesExtractionFinished_Callback to update status
-        val fileMessageExtractor = new FileMessageExtractor(participantExecutor, adapterConfig, fileHandler, offset, smartFileContext,
+        val fileMessageExtractor = new FileMessageExtractor(this, participantExecutor, adapterConfig, fileHandler, offset, smartFileContext,
           sendSmartFileMessageToEngin, fileMessagesExtractionFinished_Callback)
         fileMessageExtractor.extractMessages()
       }
@@ -1281,7 +1281,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       }
 
     //mapping each src folder for its config
-    adapterConfig.monitoringConfig.locations.foreach(location => {
+    adapterConfig.monitoringConfig.detailedLocations.foreach(location => {
       val srcDir = MonitorUtils.simpleDirPath(location.srcDir)
       locationsMap.put(srcDir, location)
     })
@@ -1369,7 +1369,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
   def getFileLocationConfig(fileHandler: SmartFileHandler): LocationInfo ={
     val parentDir = fileHandler.getParentDir
-    val parentDirLocationConfig = adapterConfig.monitoringConfig.locations.find(loc =>
+    val parentDirLocationConfig = adapterConfig.monitoringConfig.detailedLocations.find(loc =>
       MonitorUtils.simpleDirPath(loc.srcDir).equals(MonitorUtils.simpleDirPath(parentDir)))
 
     parentDirLocationConfig match{
