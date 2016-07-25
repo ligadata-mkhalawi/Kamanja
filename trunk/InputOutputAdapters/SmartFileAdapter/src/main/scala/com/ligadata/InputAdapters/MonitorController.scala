@@ -63,12 +63,13 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
       else if(!srcHandler.isAccessible)
         throw new KamanjaException("Smart File Consumer - Dir to watch (" + location.srcDir + ") is not accessible. It must be readable and writable", null)
 
-      val targetHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, location.targetDir)
-      if(!targetHandler.exists())
-        throw new KamanjaException("Smart File Consumer - Target Dir (" + location.targetDir + ") does not exist", null)
-      else if(!targetHandler.isAccessible)
-        throw new KamanjaException("Smart File Consumer - Target Dir (" + location.targetDir + ") is not accessible. It must be readable and writable", null)
-
+      if(location.isMovingEnabled) {
+        val targetHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, location.targetDir)
+        if (!targetHandler.exists())
+          throw new KamanjaException("Smart File Consumer - Target Dir (" + location.targetDir + ") does not exist", null)
+        else if (!targetHandler.isAccessible)
+          throw new KamanjaException("Smart File Consumer - Target Dir (" + location.targetDir + ") is not accessible. It must be readable and writable", null)
+      }
     })
 
   }
@@ -171,9 +172,11 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
           var thisFileOrigLength: Long = fileTuple._2._1
           val initiallyExists = fileTuple._2._4
 
+          val fileHandler = fileTuple._1
+          val currentFileParentDir = fileHandler.getParentDir
+          val currentFileLocationInfo = parentSmartFileConsumer.getSrcDirLocationInfo(currentFileParentDir)
 
           try {
-            val fileHandler = fileTuple._1
 
             logger.debug("SMART FILE CONSUMER (MonitorController):  monitorBufferingFiles - file " + fileHandler.getFullPath)
 
@@ -220,13 +223,25 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
                       val diff = System.currentTimeMillis - thisFileStarttime //d.lastModified
                       if (diff > bufferTimeout) {
                         logger.warn("SMART FILE CONSUMER (MonitorController): Detected that " + fileHandler.getFullPath + " has been on the buffering queue longer then " + bufferTimeout / 1000 + " seconds - Cleaning up")
-                        parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
+
+                        if(currentFileLocationInfo.isMovingEnabled)
+                          parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
+                        else
+                          logger.info("File {} will not be moved since moving is disabled for folder {} - Adapter ",
+                            fileHandler.getFullPath, currentFileParentDir, adapterConfig.Name)
+
                         bufferingQ_map.remove(fileTuple._1)
                       }
                     } else {
                       //Invalid File - due to content type
-                      logger.error("SMART FILE CONSUMER (MonitorController): Moving out " + fileHandler.getFullPath + " with invalid file type ")
-                      parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
+                      if(currentFileLocationInfo.isMovingEnabled) {
+                        logger.error("SMART FILE CONSUMER (MonitorController): Moving out " + fileHandler.getFullPath + " with invalid file type ")
+                        parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
+                      }
+                      else{
+                        logger.info("SMART FILE CONSUMER (MonitorController): File {} has invalid file type but will not be moved since moving is disabled for folder {} - Adapter ",
+                          fileHandler.getFullPath, currentFileParentDir, adapterConfig.Name)
+                      }
                       bufferingQ_map.remove(fileTuple._1)
                     }
                   }
@@ -244,7 +259,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
           } catch {
             case ioe: IOException => {
               thisFileFailures += 1
-              if ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors) {
+              if (currentFileLocationInfo.isMovingEnabled && ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
                 logger.warn("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + fileTuple._1.getFullPath + " on the buffering queue", ioe)
                 try {
                   parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
@@ -261,7 +276,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
             }
             case e: Throwable => {
               thisFileFailures += 1
-              if ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors) {
+              if (currentFileLocationInfo.isMovingEnabled && ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
                 logger.error("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + fileTuple._1 + " on the buffering queue", e)
                 try {
                   parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)

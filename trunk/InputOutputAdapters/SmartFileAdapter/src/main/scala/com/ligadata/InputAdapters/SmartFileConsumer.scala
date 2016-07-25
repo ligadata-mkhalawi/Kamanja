@@ -929,9 +929,17 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
           assignFileProcessingIfPossible()
 
           if (status == File_Processing_Status_Finished || status == File_Processing_Status_Corrupted) {
-            val moved = moveFile(processingFilePath)
-            if (moved)
-              monitorController.markFileAsProcessed(processingFilePath)
+            val procFileParentDir = MonitorUtils.getFileParentDir(processingFilePath, adapterConfig)
+            val procFileLocationInfo = getSrcDirLocationInfo(procFileParentDir)
+            if(procFileLocationInfo.isMovingEnabled){
+              val moved = moveFile(processingFilePath)
+              if (moved)
+                monitorController.markFileAsProcessed(processingFilePath)
+            }
+            else {
+              logger.info("File {} will not be moved since moving is disabled for folder {} - Adapter ",
+                processingFilePath, procFileParentDir, adapterConfig.Name)
+            }
           }
           else if (status == File_Processing_Status_NotFound)
             monitorController.markFileAsProcessed(processingFilePath)
@@ -1132,10 +1140,14 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
   //after a file is changed, move it into targetMoveDir
   def moveFile(originalFilePath : String): Boolean = {
-
-    //get corresponding directory to move file to
     val smartFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, originalFilePath)
-    val parentDir = MonitorUtils.simpleDirPath(smartFileHandler.getParentDir)
+    moveFile(smartFileHandler)
+  }
+  def moveFile(fileHandler : SmartFileHandler): Boolean = {
+    val originalFilePath = fileHandler.getFullPath
+    //get corresponding directory to move file to
+
+    val parentDir = fileHandler.getParentDir
     if(!locationTargetMoveDirsMap.contains(parentDir))
       throw new Exception("No target move dir for directory " + parentDir)
 
@@ -1143,7 +1155,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
     val fileStruct = originalFilePath.split("/")
     try {
-      val fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, originalFilePath)
+
       LOG.info("SMART FILE CONSUMER Moving File" + originalFilePath + " to " + targetMoveDir)
       if (fileHandler.exists()) {
         return fileHandler.moveTo(targetMoveDir + "/" + fileStruct(fileStruct.size - 1))
@@ -1514,6 +1526,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     startTime = 0
 
     smartFileContextMap.clear()
+    locationsMap.clear()
     prevRegParticipantPartitions = List()
     prevRegLeader = ""
     filesParallelism = -1

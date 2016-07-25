@@ -43,7 +43,7 @@ class PosixFileHandler extends SmartFileHandler{
     fileFullPath = fullPath
   }
 
-  def getParentDir : String = fileObject.getParent.trim
+  def getParentDir : String = MonitorUtils.simpleDirPath(fileObject.getParent.trim)
 
   //gets the input stream according to file system type - POSIX here
   def getDefaultInputStream() : InputStream = {

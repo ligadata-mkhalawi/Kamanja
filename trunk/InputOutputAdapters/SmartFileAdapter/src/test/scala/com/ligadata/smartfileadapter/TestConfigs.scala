@@ -37,6 +37,7 @@ class TestConfigs extends FunSpec with BeforeAndAfter with ShouldMatchers with B
       |      {
       |        "srcDir": "/data/input",
       |        "targetDir": "/data/processed1",
+      |        "enableMoving":"off",
       |        "FileComponents": {
       |          "Components": ["date", "source_type", "phy_switch", "proc_source", "region", "serial"],
       |          "Regex": "^([0-9]{4})([0-9]{2})([0-9]{2})\\.([A-Za-z]+)_([A-Z]+)_([A-Z]+)_([A-Z]+)\\.([0-9]+)$",
@@ -106,6 +107,7 @@ class TestConfigs extends FunSpec with BeforeAndAfter with ShouldMatchers with B
       loc1.messageSeparator shouldEqual 10
       loc1.msgTags.mkString(",") shouldEqual "emm,$FileName"
       loc1.tagDelimiter shouldEqual "^"
+      loc1.isMovingEnabled shouldEqual false
 
       val loc2 = conf.monitoringConfig.detailedLocations(1)
       loc2.srcDir shouldEqual "/data/input2"
@@ -117,6 +119,7 @@ class TestConfigs extends FunSpec with BeforeAndAfter with ShouldMatchers with B
       loc2.messageSeparator shouldEqual 10
       loc2.msgTags.mkString(",") shouldEqual "$FileName"
       loc2.tagDelimiter shouldEqual "$$"
+      loc2.isMovingEnabled shouldEqual true
     }
   }
 

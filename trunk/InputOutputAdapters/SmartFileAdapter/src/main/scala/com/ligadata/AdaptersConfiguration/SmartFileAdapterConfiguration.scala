@@ -53,6 +53,9 @@ class FileAdapterMonitoringConfig {
 
   var messageSeparator : Char = 10
   var orderBy : Array[String] = Array.empty[String]
+
+  var enableMoving : String = "on" //on, off - public
+  def isMovingEnabled : Boolean = enableMoving == null || enableMoving.length ==0 || enableMoving.equalsIgnoreCase("on")
 }
 
 class Padding {
@@ -80,6 +83,9 @@ class LocationInfo{
 
   var messageSeparator : Char = 0 //0 this means separator is not set, so get it from public attributes
   var orderBy : Array[String] = Array.empty[String]
+
+  var enableMoving : String = "" //on, off, empty means get it from public attribute
+  def isMovingEnabled : Boolean = enableMoving == null || enableMoving.length ==0 || enableMoving.equalsIgnoreCase("on")
 }
 
 object SmartFileAdapterConfiguration{
@@ -238,6 +244,9 @@ object SmartFileAdapterConfiguration{
         publicTargetMoveDir = kv._2.asInstanceOf[String]
         //println("publicTargetMoveDir============="+publicTargetMoveDir)
       }
+      else if (kv._1.compareToIgnoreCase("EnableMoving") == 0) {
+        monitoringConfig.enableMoving = kv._2.asInstanceOf[String]
+      }
       else if (kv._1.compareToIgnoreCase("FileComponents")==0){//public FileComponents
         val componentsMap = kv._2.asInstanceOf[Map[String,Any]]
         publicFileComponents = extractFileComponents(componentsMap)
@@ -255,6 +264,9 @@ object SmartFileAdapterConfiguration{
             }
             else if (kv._1.compareToIgnoreCase("targetDir") == 0) {
               locationInfo.targetDir = kv._2.asInstanceOf[String].trim
+            }
+            else if (kv._1.compareToIgnoreCase("EnableMoving") == 0) {
+              locationInfo.enableMoving = kv._2.asInstanceOf[String]
             }
             else if(kv._1.compareToIgnoreCase("MsgTags")== 0) {
               locationInfo.msgTags = kv._2.asInstanceOf[List[String]].toArray
@@ -288,7 +300,7 @@ object SmartFileAdapterConfiguration{
     //if no detailedLocations defined, use locations, define them as detailedLocations
     if(monitoringConfig.detailedLocations.length == 0){
       if(simpleLocations.length > 0){
-        if(publicTargetMoveDir == null || publicTargetMoveDir.length == 0){
+        if((!monitoringConfig.isMovingEnabled) && (publicTargetMoveDir == null || publicTargetMoveDir.length == 0)){
           val err = "Not found TargetMoveDir corresponding to locatoins for Smart File Adapter Config:" + adapterName
           throw new KamanjaException(err, null)
         }
@@ -300,6 +312,10 @@ object SmartFileAdapterConfiguration{
           locationInfo.orderBy = //get public order by or default
             if(monitoringConfig.orderBy == null || monitoringConfig.orderBy.length == 0) defaultOrderBy
             else monitoringConfig.orderBy
+
+          locationInfo.enableMoving =
+            if(monitoringConfig.enableMoving == null || monitoringConfig.enableMoving.length == 0) "on"
+            else monitoringConfig.enableMoving
 
           locationInfo.messageSeparator = monitoringConfig.messageSeparator
           locationInfo.fileComponents = publicFileComponents
@@ -319,6 +335,12 @@ object SmartFileAdapterConfiguration{
           locationInfo.orderBy = //get public order by or default
             if (monitoringConfig.orderBy == null || monitoringConfig.orderBy.length == 0) defaultOrderBy
             else monitoringConfig.orderBy
+        }
+
+        if(locationInfo.enableMoving.length == 0) {
+          locationInfo.enableMoving = //get public order by or default
+            if (monitoringConfig.enableMoving == null || monitoringConfig.enableMoving.length == 0) "on"
+            else monitoringConfig.enableMoving
         }
 
         if(locationInfo.messageSeparator == 0){//this location has no separator, get the public value

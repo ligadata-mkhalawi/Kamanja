@@ -82,6 +82,20 @@ object MonitorUtils {
     path.substring(idx + 1)
   }
 
+  def getFileParentDir(fileFullPath : String, adapterConfig: SmartFileAdapterConfiguration) : String = {
+    val parentDir = simpleDirPath(fileFullPath.substring(0, fileFullPath.lastIndexOf("/")))
+
+    val finalParentDir =
+      adapterConfig._type.toLowerCase() match {
+        case "das/nas" => parentDir
+        case "hdfs" => HdfsUtility.getFilePathNoProtocol(parentDir)
+        case "sftp" => SftpUtility.getPathOnly(parentDir)
+        case _ => throw new KamanjaException("Unsupported Smart file adapter type", null)
+      }
+
+    finalParentDir
+  }
+
   def shutdownAndAwaitTermination(pool : ExecutorService, id : String) : Unit = {
     pool.shutdown(); // Disable new tasks from being submitted
     try {

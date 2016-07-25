@@ -71,7 +71,7 @@ class SftpFileHandler extends SmartFileHandler{
   def getParentDir : String = {
     val filePath = getPathOnly(getFullPath)
     val idx = filePath.lastIndexOf("/")
-    filePath.substring(0, idx)
+    MonitorUtils.simpleDirPath(filePath.substring(0, idx))
   }
 
   def getFullPath = remoteFullPath
