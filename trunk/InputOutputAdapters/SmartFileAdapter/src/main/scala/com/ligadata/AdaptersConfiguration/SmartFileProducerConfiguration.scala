@@ -30,7 +30,10 @@ class SmartFileProducerConfiguration extends AdapterConfiguration {
   var rolloverInterval: Int = 0 // in minutes. create new output file every rolloverInterval mins 
   var partitionFormat: String = null // folder structure for partitions
   var partitionBuckets: Int = 0 //  number of files to create within a partition
-
+  var flushBufferSize: Long = 0 // in bytes. writes the buffer after flushBufferSize bytes.
+  var flushBufferInterval: Long = 0 // in msecs. writes the buffer every flushBufferInterval msecs
+  var typeLevelConfig: collection.mutable.Map[String, Long] = collection.mutable.Map[String, Long]() // type level overrides for flushBufferSize
+  
   var kerberos: KerberosConfig = null
 }
 
@@ -76,6 +79,18 @@ object SmartFileProducerConfiguration {
         adapterConfig.partitionFormat = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("PartitionBuckets") == 0) {
         adapterConfig.partitionBuckets = kv._2.toString.toInt
+      } else if (kv._1.compareToIgnoreCase("flushBufferSize") == 0) {
+        adapterConfig.flushBufferSize = kv._2.toString.toLong
+      } else if (kv._1.compareToIgnoreCase("flushBufferInterval") == 0) {
+        adapterConfig.flushBufferInterval = kv._2.toString.toLong
+      } else if (kv._1.compareToIgnoreCase("typeLevelConfig") == 0) {
+        val configs = kv._2.asInstanceOf[List[Any]]
+        configs.foreach( x => {
+          val cfg = x.asInstanceOf[Map[String, String]]
+          val typeStr = cfg.getOrElse("type", null)
+          if(typeStr != null)
+            adapterConfig.typeLevelConfig(typeStr) = cfg.getOrElse("flushBufferSize", "0").toLong
+        })
       } else if (kv._1.compareToIgnoreCase("Kerberos") == 0) {
         adapterConfig.kerberos = new KerberosConfig()
         val kerbConf = kv._2.asInstanceOf[Map[String, String]]
