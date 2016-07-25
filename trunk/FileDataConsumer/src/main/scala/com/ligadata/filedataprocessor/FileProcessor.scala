@@ -90,6 +90,7 @@ object FileProcessor {
   val MAX_RETRY = 10
   val RECOVERY_SLEEP_TIME = 1000
   var WARNING_THRESHTHOLD = 5000
+  var FILE_Q_FULL_CONDITION = 300
 
   var reset_watcher = false
 
@@ -564,6 +565,12 @@ object FileProcessor {
     file.createDate * -1
   }
 
+  private def getFileQSize: Long ={
+    fileQLock.synchronized{
+      return fileQ.size
+    }
+  }
+
   private def enQFile(file: String, offset: Int, createDate: Long, partMap: scala.collection.mutable.Map[Int,Int] = scala.collection.mutable.Map[Int,Int]()): Unit = {
     fileQLock.synchronized {
       logger.info("SMART FILE CONSUMER (global):  enq file " + file + " with priority " + createDate+" --- curretnly " + fileQ.size + " files on a QUEUE")
@@ -771,14 +778,22 @@ object FileProcessor {
   }
 
   private def processExistingFiles(d: File): Unit = {
-    // Process all the existing files in the directory that are not marked complete.
-    //logger.info("SMART FILE CONSUMER (MI): processExistingFiles on "+d.getAbsolutePath)
+    var isfileProcessorBusy = if (FileProcessor.getFileQSize < FILE_Q_FULL_CONDITION) false else true
 
+    while (isfileProcessorBusy)  {
+      try {
+        Thread.sleep(refreshRate/3)
+      } catch {
+        case e: InterruptedException => {
+          logger.error("Reading of " + d.toString + " has been interrupted")
+          throw e
+        }
+      }
 
-    // TODO:  Can this block the processoing????????
+      isfileProcessorBusy = if (FileProcessor.getFileQSize < FILE_Q_FULL_CONDITION) false else true
+    }
+
     if (d.exists && d.isDirectory) {
-      //Additional Filter Conditions, Ignore files starting with a . (period)
-
       FileProcessor.testFailure("TEST EXCEPTION... Processing Existing Files")
 
       val files = d.listFiles.filter(_.isFile)
@@ -1011,7 +1026,7 @@ object FileProcessor {
                   errorWaitTime = scala.math.min((errorWaitTime * 2), FileProcessor.MAX_WAIT_TIME)
                 }
               }
-              Thread.sleep(refreshRate * 5)
+              Thread.sleep(refreshRate)
             }
           }
 
@@ -1335,7 +1350,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
       partitionSelectionNumber = props(SmartFileAdapterConstants.NUMBER_OF_FILE_CONSUMERS).toInt
       bufferLimit = props.getOrElse(SmartFileAdapterConstants.THREAD_BUFFER_LIMIT, "1").toInt
       FileProcessor.WARNING_THRESHTHOLD =  props.getOrElse(SmartFileAdapterConstants.DELAY_WARNING_THRESHOLD, "5000").toInt
-
+      FileProcessor.FILE_Q_FULL_CONDITION = props.getOrElse(SmartFileAdapterConstants.DELAY_WARNING_THRESHOLD, "300").toInt
       //Code commented
       readyToProcessKey = props.getOrElse(SmartFileAdapterConstants.READY_MESSAGE_MASK, ".gzip")
 

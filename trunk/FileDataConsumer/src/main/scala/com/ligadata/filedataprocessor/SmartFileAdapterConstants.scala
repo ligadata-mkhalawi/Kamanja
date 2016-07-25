@@ -35,6 +35,7 @@ object SmartFileAdapterConstants {
   val TEST_FAILURE_THRESHOLD = "failureTesingThreshold"
   val STATUS_QUEUES_FREQUENCY = "dumpStatusQueuesFrequency"
   val DELAY_WARNING_THRESHOLD = "delayWarningThreshold"
+  val FILE_Q_FULL_CONDITION = "fileQueueFullValue"
 
   val KAFKA_LOAD_STATUS = "Kafka_Load_Result,"
   val TOTAL_FILE_STATUS = "File_Total_Result,"
