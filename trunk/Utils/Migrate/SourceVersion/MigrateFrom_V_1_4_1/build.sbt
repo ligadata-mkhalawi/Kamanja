@@ -1,6 +1,6 @@
 name := "MigrateFrom_V_1_4_1"
 
-version := "1.5.0"
+version := "1.5.1"
 
 resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 

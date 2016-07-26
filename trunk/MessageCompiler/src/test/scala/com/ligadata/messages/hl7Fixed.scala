@@ -208,12 +208,11 @@ class HL7Fixed(factory: MessageFactoryInterface, other: HL7Fixed) extends Messag
 
   override def getOrElse(key: String, defaultVal: Any): AnyRef = { // Return (value, type)
     try {
-      val value = get(key.toLowerCase())
-      if (value == null) return defaultVal.asInstanceOf[AnyRef]; else return value;
+      return get(key.toLowerCase())
     } catch {
       case e: Exception => {
         log.debug("", e)
-        throw e
+        return defaultVal.asInstanceOf[AnyRef]
       }
     }
     return null;
@@ -243,12 +242,11 @@ class HL7Fixed(factory: MessageFactoryInterface, other: HL7Fixed) extends Messag
 
   override def getOrElse(index: Int, defaultVal: Any): AnyRef = { // Return (value,  type)
     try {
-      val value = get(index)
-      if (value == null) return defaultVal.asInstanceOf[AnyRef]; else return value;
+      return get(index);
     } catch {
       case e: Exception => {
         log.debug("", e)
-        throw e
+        return defaultVal.asInstanceOf[AnyRef];
       }
     }
     return null;

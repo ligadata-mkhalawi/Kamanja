@@ -58,5 +58,5 @@ while [ "$1" != "" ]; do
     esac
     shift
 done
-java -Dlog4j.configurationFile=file:$kamanjaHome/config/log4j2.xml -cp $kamanjaHome/lib/system/ExtDependencyLibs2_2.11-1.5.0.jar:$kamanjaHome/lib/system/ExtDependencyLibs_2.11-1.5.0.jar:$kamanjaHome/lib/system/KamanjaInternalDeps_2.11-1.5.0.jar:$kamanjaHome/lib/system/generateadapterbindings_2.11-1.5.0.jar com.ligadata.Migrate.GenerateAdapterBindings --config $clusterConfig --outfile $outputFile
+java -Dlog4j.configurationFile=file:$kamanjaHome/config/log4j2.xml -cp $kamanjaHome/lib/system/ExtDependencyLibs2_2.11-1.5.1.jar:$kamanjaHome/lib/system/ExtDependencyLibs_2.11-1.5.1.jar:$kamanjaHome/lib/system/KamanjaInternalDeps_2.11-1.5.1.jar:$kamanjaHome/lib/system/generateadapterbindings_2.11-1.5.1.jar com.ligadata.Migrate.GenerateAdapterBindings --config $clusterConfig --outfile $outputFile
 echo result = $?

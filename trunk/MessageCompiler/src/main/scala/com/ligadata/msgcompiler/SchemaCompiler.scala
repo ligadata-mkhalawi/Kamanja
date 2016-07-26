@@ -94,16 +94,16 @@ class SchemaCompiler {
               retFldStr = generateFieldType(fldStr, bslash, quote)
             } else if (fieldTypestr.size == 2) {
               val size = fieldTypestr(1).length()
-              log.info("fieldTypestr(1).substring(7) " + fieldTypestr(1));
+              log.info("fieldTypestr(1).substring " + fieldTypestr(1));
 
               if (primitiveTypes.contains(fieldTypestr(1)) || scalrMap.contains(fieldTypestr(1).toLowerCase())) {
                 retFldStr = parseFldStr(fieldTypestr) //handling array of primitive types (scalar types)
                 log.info("retFldStr "+retFldStr);
               
-              } else if (primitiveTypes.contains(fieldTypestr(1).substring(5)) || scalrMap.contains(fieldTypestr(1).substring(5).toLowerCase())) {
+              } else if (primitiveTypes.contains(fieldTypestr(1).substring( if (size > 5) 5 else size - 1 )) || scalrMap.contains(fieldTypestr(1).substring( if (size > 5) 5 else size - 1 ).toLowerCase())) {
                 retFldStr = parseFldStr(fieldTypestr) //handling array of primitive types (scalar types)
               
-              } else if (primitiveTypes.contains(fieldTypestr(1).substring(7)) || scalrMap.contains(fieldTypestr(1).substring(7).toLowerCase())) {
+              } else if (primitiveTypes.contains(fieldTypestr(1).substring( if (size > 7) 7 else size - 1 )) || scalrMap.contains(fieldTypestr(1).substring( if (size > 7) 7 else size - 1 ).toLowerCase())) {
                 retFldStr = parseFldStr(fieldTypestr) //handling array of primitive types (scalar types)
               
               } else {
@@ -217,9 +217,10 @@ class SchemaCompiler {
     var ftype: String = "";
     var flsValType: String = "";
     if (mapType.startsWith("map")) {
-      flsValType = mapType.substring(5);
+      val size = mapType.length
+      flsValType = mapType.substring( if (size > 5) 5 else size - 1 );
 
-      // val flsValType = fldtypeStr.substring(6)
+      // val flsValType = fldtypeStr.substring( if (size > 6) 6 else size - 1 )
       //log.info("flsValType  " + flsValType)
       if (primitiveTypes.contains(flsValType)) {
         ftype = primitiveTypes(primitiveTypes.indexOf(flsValType));

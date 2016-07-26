@@ -640,6 +640,7 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
   override def isMetadataTableExists(tblInfo: TableName): Boolean = {
     if (_bInit == false)
       throw new Exception("Not yet Initialized")
+    logger.debug("Check whether table exists or not, namespace => " + tblInfo.namespace + ",name => " + tblInfo.name)
     _metaDataStoreDb.isTableExists(tblInfo.namespace, tblInfo.name)
   }
 
@@ -959,7 +960,7 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
 
   private def DepJars(depJars1: List[String]): List[String] = {
 
-    // Removing jars which are not valid any more, All these jars are consolidated(or assembled) into three fat jars: "ExtDependencyLibs_2.11-1.5.0.jar","KamanjaInternalDeps_2.11-1.5.0.jar","ExtDependencyLibs2_2.11-1.5.0.jar".
+    // Removing jars which are not valid any more, All these jars are consolidated(or assembled) into three fat jars: "ExtDependencyLibs_2.11-1.5.1.jar","KamanjaInternalDeps_2.11-1.5.1.jar","ExtDependencyLibs2_2.11-1.5.1.jar".
     val jarsToBeExcluded = List("spray-httpx_2.10-1.3.3.jar","messagedef_2.11-1.0.jar","joni-2.1.2.jar","jets3t-0.9.0.jar","utilityservice_2.10-1.0.jar","scala-reflect-2.10.4.jar","servlet-api-2.5.jar","serialize_2.10-1.0.jar","jdom-1.1.jar","messagedef_2.10-1.0.jar","hamcrest-core-1.3.jar","commons-collections4-4.0.jar","curator-test-2.8.0.jar","commons-beanutils-core-1.8.0.jar","jsondatagen_2.10-0.1.0.jar","jline-0.9.94.jar","hadoop-common-2.7.1.jar","metrics-core-3.0.2.jar","snappy-java-1.0.4.1.jar","commons-lang3-3.1.jar","lz4-1.2.0.jar","commons-configuration-1.6.jar","datadelimiters_2.11-1.0.jar","jdbcdatacollector_2.10-1.0.jar","commons-httpclient-3.1.jar","customudflib_2.10-1.0.jar","exceptions_2.10-1.0.jar","curator-client-2.7.1.jar","chill_2.10-0.5.0.jar","curator-recipes-2.6.0.jar","jarfactoryofmodelinstancefactory_2.10-1.0.jar","commons-configuration-1.7.jar","simplekafkaproducer_2.10-0.1.0.jar","spray-can_2.10-1.3.3.jar","zookeeperleaderlatch_2.10-1.0.jar","compress-lzf-0.9.1.jar","metadata_2.11-1.0.jar","chill-java-0.5.0.jar","scala-compiler-2.10.0.jar","methodextractor_2.11-1.0.jar","javassist-3.18.1-GA.jar","commons-logging-1.1.1.jar","hbase-protocol-1.0.2.jar","json4s-jackson_2.10-3.2.9.jar","jackson-core-asl-1.9.13.jar","cassandra-thrift-2.0.3.jar","bootstrap_2.10-1.0.jar","cassandra_2.10-0.1.0.jar","commons-beanutils-1.7.0.jar","jersey-server-1.9.jar","securityadapterbase_2.10-1.0.jar","pmmlruntime_2.11-1.0.jar","kafkasimpleinputoutputadapters_2.10-1.0.jar","slf4j-log4j12-1.7.10.jar","xmlenc-0.52.jar","bootstrap_2.11-1.0.jar","pmmludfs_2.11-1.0.jar","kamanjabase_2.11-1.0.jar","pmmlruntime_2.10-1.0.jar","basefunctions_2.11-0.1.0.jar","commons-codec-1.10.jar","treemap_2.10-0.1.0.jar","kafka_2.10-0.8.2.2.jar","kryo-2.21.jar","zkclient-0.3.jar","avro-1.7.4.jar","jetty-embedded-6.1.26-sources.jar","objenesis-1.2.jar","parboiled-core-1.1.7.jar","java-xmlbuilder-0.4.jar","bee-client_2.10-0.28.0.jar","config-1.2.1.jar","reflectasm-1.07-shaded.jar","kamanjautils_2.10-1.0.jar","migratefrom_v_1_2_2.10-1.0.jar","commons-logging-1.2.jar","migratebase-1.0.jar","commons-digester-1.8.jar","migrateto_v_1_3_2.10-1.0.jar","gson-2.3.1.jar","paranamer-2.6.jar","guava-16.0.1.jar","sqlserver_2.10-0.1.0.jar","installdriver_2.10-1.0.jar","slf4j-api-1.7.10.jar","clusterinstallerdriver-1.0.jar","asm-tree-4.0.jar","jetty-6.1.26.jar","commons-dbcp2-2.1.jar","hbase_2.10-0.1.0.jar","simpleenvcontextimpl_2.10-1.0.jar","jsp-api-2.1.jar","netty-3.7.0.Final.jar","json4s-native_2.11-3.2.9.jar","spray-client_2.10-1.3.3.jar","commons-dbcp-1.4.jar","htrace-core-3.1.0-incubating.jar","jaxb-api-2.2.2.jar","commons-io-2.4.jar","commons-math3-3.6.jar","guava-18.0.jar","metadata_2.10-1.0.jar","httpcore-4.2.4.jar","jpmmlfactoryofmodelinstancefactory_2.10-1.0.jar","spray-routing_2.10-1.3.3.jar","curator-framework-2.6.0.jar","scalap-2.11.0.jar","zkclient-0.6.jar","logback-classic-1.0.13.jar","heartbeat_2.10-0.1.0.jar","basetypes_2.10-0.1.0.jar","asm-4.0.jar","commons-net-3.1.jar","jackson-databind-2.3.1.jar","scala-actors-2.10.4.jar","scala-compiler-2.10.4.jar","kamanjabase_2.10-1.0.jar","jsr305-1.3.9.jar","basefunctions_2.10-0.1.0.jar","nodeinfoextract_2.10-1.0.jar","hbase-common-1.0.2.jar","transactionservice_2.10-0.1.0.jar","commons-compress-1.4.1.jar","shapeless_2.10-1.2.4.jar","storagebase_2.10-1.0.jar","scala-reflect-2.11.7.jar","migratefrom_v_1_1_2.10-1.0.jar","kamanjautils_2.11-1.0.jar","parboiled-scala_2.10-1.1.7.jar","commons-codec-1.4.jar","pmml-evaluator-1.2.9.jar","jsr305-3.0.0.jar","log4j-1.2.16.jar","jaxb-impl-2.2.3-1.jar","asm-commons-4.0.jar","netty-all-4.0.23.Final.jar","json4s-ast_2.11-3.2.9.jar","spray-io_2.10-1.3.3.jar","curator-client-2.6.0.jar","joda-convert-1.7.jar","json4s-ast_2.10-3.2.9.jar","log4j-core-2.4.1.jar","log4j-1.2.17.jar","kvinit_2.10-1.0.jar","metadataapi_2.10-1.0.jar","commons-codec-1.9.jar","netty-3.9.0.Final.jar","cassandra-driver-core-2.1.2.jar","protobuf-java-2.6.0.jar","shiro-core-1.2.3.jar","spray-testkit_2.10-1.3.3.jar","customudflib_2.11-1.0.jar","exceptions_2.11-1.0.jar","guava-19.0.jar","logback-classic-1.0.12.jar","getcomponent_2.10-1.0.jar","antlr-2.7.7.jar","jersey-json-1.9.jar","scala-library-2.10.4.jar","zookeeper-3.4.6.jar","httpclient-4.2.5.jar","pmml-model-1.2.9.jar","slf4j-log4j12-1.6.1.jar","utilsformodels_2.10-1.0.jar","servlet-api-2.5.20110712-sources.jar","camel-core-2.9.2.jar","json4s-core_2.11-3.2.9.jar","jettison-1.1.jar","voldemort-0.96.jar","cleanutil_2.10-1.0.jar","pmmlcompiler_2.10-1.0.jar","jackson-jaxrs-1.8.3.jar","scalap-2.10.0.jar","jcodings-1.0.8.jar","commons-beanutils-1.8.3.jar","commons-collections-3.2.1.jar","akka-testkit_2.10-2.3.9.jar","apacheds-kerberos-codec-2.0.0-M15.jar","kvbase_2.11-0.1.0.jar","spray-http_2.10-1.3.3.jar","simpleapacheshiroadapter_2.10-1.0.jar","jopt-simple-3.2.jar","heartbeat_2.11-0.1.0.jar","hashmap_2.10-0.1.0.jar","joda-time-2.8.2.jar","basetypes_2.11-0.1.0.jar","json4s-jackson_2.11-3.2.9.jar","scala-compiler-2.11.0.jar","commons-math3-3.1.1.jar","installdriverbase-1.0.jar","log4j-api-2.4.1.jar","scalatest_2.10-2.2.6.jar","jsontools-core-1.7-sources.jar","junit-4.12.jar","xz-1.0.jar","java-stub-server-0.12-sources.jar","jackson-core-2.3.1.jar","redisclient_2.10-2.13.jar","jersey-core-1.9.jar","auditadapters_2.10-1.0.jar","logback-core-1.0.13.jar","hadoop-annotations-2.7.1.jar","api-util-1.0.0-M20.jar","auditadapterbase_2.10-1.0.jar","commons-math-2.2.jar","jsch-0.1.42.jar","metrics-core-2.2.0.jar","hadoop-auth-2.7.1.jar","snappy-java-1.1.1.7.jar","scalatest_2.10-2.2.0.jar","metadataapiserviceclient_2.10-0.1.jar","google-collections-1.0.jar","joda-convert-1.6.jar","httpcore-4.1.2.jar","filesimpleinputoutputadapters_2.10-1.0.jar","interfacessamples_2.10-1.0.jar","pmml-schema-1.2.9.jar","jetty-util-6.1.26.jar","kafka-clients-0.8.2.2.jar","storagemanager_2.10-0.1.0.jar","stax-api-1.0-2.jar","akka-actor_2.10-2.3.2.jar","akka-actor_2.10-2.3.9.jar","commons-pool2-2.3.jar","jackson-xc-1.8.3.jar","hbase-annotations-1.0.2.jar","jackson-mapper-asl-1.9.13.jar","scalatest_2.10-2.2.4.jar","activation-1.1.jar","inputoutputadapterbase_2.10-1.0.jar","filedataconsumer_2.10-0.1.0.jar","json4s-native_2.10-3.2.9.jar","joda-time-2.9.1.jar","hbase-client-1.0.2.jar","log4j-1.2-api-2.4.1.jar","scala-2.10.0.jar","scala-library-2.11.7.jar","pmmlcompiler_2.11-1.0.jar","guava-16.0.1.jar","junit-3.8.1.jar","commons-lang-2.6.jar","mimepull-1.9.5.jar","json-simple-1.1.jar","kamanjamanager_2.10-1.0.jar","datadelimiters_2.10-1.0.jar","commons-digester-1.8.1.jar","controller_2.10-1.0.jar","spray-util_2.10-1.3.3.jar","spray-json_2.10-1.3.2.jar","zookeeperclient_2.10-1.0.jar","kvbase_2.10-0.1.0.jar","outputmsgdef_2.10-1.0.jar","commons-cli-1.2.jar","logback-core-1.0.12.jar","metadataapiservice_2.10-1.0.jar","api-asn1-api-1.0.0-M20.jar","config-1.2.0.jar","json4s-core_2.10-3.2.9.jar","zookeeperlistener_2.10-1.0.jar","apacheds-i18n-2.0.0-M15.jar","httpclient-4.1.2.jar","libthrift-0.9.2.jar","methodextractor_2.10-1.0.jar","commons-pool-1.6.jar","je-4.0.92.jar","asm-3.1.jar","jna-3.2.7.jar","curator-recipes-2.7.1.jar","servlet-api-2.5.20110712.jar","pmml-agent-1.2.9.jar","jackson-annotations-2.3.0.jar","commons-pool-1.5.4.jar","curator-framework-2.7.1.jar","pmmludfs_2.10-1.0.jar","mapdb-1.0.6.jar","gson-2.2.4.jar","minlog-1.2.jar","findbugs-annotations-1.3.9-1.jar","jetty-sslengine-6.1.26.jar","guava-14.0.1.jar","ExtDependencyLibs_2.11-1.4.0.jar", "KamanjaInternalDeps_2.11-1.4.0.jar", "ExtDependencyLibs2_2.11-1.4.0.jar")
 
     val depJars = (depJars1 diff jarsToBeExcluded)
@@ -985,7 +986,7 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
         }
       })
 
-      newDeps = List("ExtDependencyLibs_2.11-1.5.0.jar", "KamanjaInternalDeps_2.11-1.5.0.jar", "ExtDependencyLibs2_2.11-1.5.0.jar") ::: newDeps
+      newDeps = List("ExtDependencyLibs_2.11-1.5.1.jar", "KamanjaInternalDeps_2.11-1.5.1.jar", "ExtDependencyLibs2_2.11-1.5.1.jar") ::: newDeps
 
       newDeps
     } else {
@@ -996,10 +997,10 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
       })
 
       if( _toScalaVersion.equalsIgnoreCase("2.11") ){
-	newDeps = List("ExtDependencyLibs_2.11-1.5.0.jar", "KamanjaInternalDeps_2.11-1.5.0.jar", "ExtDependencyLibs2_2.11-1.5.0.jar") ::: newDeps
+	newDeps = List("ExtDependencyLibs_2.11-1.5.1.jar", "KamanjaInternalDeps_2.11-1.5.1.jar", "ExtDependencyLibs2_2.11-1.5.1.jar") ::: newDeps
       }
       else{
-	newDeps = List("ExtDependencyLibs_2.10-1.5.0.jar", "KamanjaInternalDeps_2.10-1.5.0.jar", "ExtDependencyLibs2_2.10-1.5.0.jar") ::: newDeps
+	newDeps = List("ExtDependencyLibs_2.10-1.5.1.jar", "KamanjaInternalDeps_2.10-1.5.1.jar", "ExtDependencyLibs2_2.10-1.5.1.jar") ::: newDeps
       }
       newDeps
     }
@@ -1345,6 +1346,66 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
     scala.collection.mutable.Map(m.toSeq: _*)
   }
 
+  private def BuildHierarchyAndProcessObjectsParallel(mdObjs: ArrayBuffer[(String, Map[String, Any])], errorStr: String): Unit = {
+    val objsToRunNow = ArrayBuffer[(String, Map[String, Any])]()
+    val objsToRunLater = ArrayBuffer[(String, Map[String, Any])]()
+    val yetToRun = scala.collection.mutable.Map[String, Int]() // Jarname to Position. Not expecting same jar for more than one element.
+
+    // Take which does not have any more dependencies
+    for (i <- 0 until mdObjs.size) {
+      val o = mdObjs(i)
+      val jarName = o._2.getOrElse("JarName", "").toString.trim
+      if (jarName.isEmpty) {
+        objsToRunNow += o
+      } else {
+        yetToRun(jarName) = i
+        objsToRunLater += o
+      }
+    }
+
+    do {
+      // Take which does not have any more dependencies
+      val remList = objsToRunLater.toArray
+      objsToRunLater.clear
+
+      // Remaining list to run
+      remList.foreach(o => {
+        val dependantJars = o._2.getOrElse("DependantJars", List[String]()).asInstanceOf[List[String]].toArray.map(j => j.trim).filter(j => (j.isEmpty == false))
+
+        var idx = dependantJars.size - 1
+        var yetToBuildDeps = false
+        while (idx >= 0 && ! yetToBuildDeps) {
+          yetToBuildDeps = yetToRun.contains(dependantJars(idx))
+          idx = idx - 1
+        }
+
+        if (yetToBuildDeps) {
+          objsToRunLater += o
+        } else {
+          objsToRunNow += o
+        }
+      })
+
+      if (objsToRunLater.size > 0 && objsToRunNow.size == 0) {
+        // Nothing found to be run in this run, but we have some more to run
+        objsToRunNow ++= objsToRunLater
+        objsToRunLater.clear
+      }
+
+      // Process all objs to run now
+      ProcessMdObjectsParallel(objsToRunNow, errorStr)
+
+      // Remove all jars executed now
+      objsToRunNow.foreach(o => {
+        val jarName = o._2.getOrElse("JarName", "").toString.trim
+        yetToRun.remove(jarName)
+      })
+
+      // Clear objects ran now
+      objsToRunNow.clear
+    } while (objsToRunLater.size > 0)
+  }
+
   private def ProcessMdObjectsParallel(mdObjs: ArrayBuffer[(String, Map[String, Any])], errorStr: String): Unit = {
     if (mdObjs.length > 0) {
       var executor: ExecutorService = null
@@ -1588,12 +1649,12 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
 	  var depJars = (depJars1 diff jarsToBeExcluded)
 	  md.dependencyJarNames = depJars.toArray
 	  var mdStrAfter = MetadataAPISerialization.serializeObjectToJson(md)
-	  mdStrAfter = mdStrAfter.replaceAll("ExtDependencyLibs_2.11-1.4.0.jar","ExtDependencyLibs_2.11-1.5.0.jar")
-	  mdStrAfter = mdStrAfter.replaceAll("ExtDependencyLibs2_2.11-1.4.0.jar","ExtDependencyLibs2_2.11-1.5.0.jar")
-	  mdStrAfter = mdStrAfter.replaceAll("KamanjaInternalDeps_2.11-1.4.0.jar","KamanjaInternalDeps_2.11-1.5.0.jar")
-	  mdStrAfter = mdStrAfter.replaceAll("ExtDependencyLibs_2.11-1.4.1.jar","ExtDependencyLibs_2.11-1.5.0.jar")
-	  mdStrAfter = mdStrAfter.replaceAll("ExtDependencyLibs2_2.11-1.4.1.jar","ExtDependencyLibs2_2.11-1.5.0.jar")
-	  mdStrAfter = mdStrAfter.replaceAll("KamanjaInternalDeps_2.11-1.4.1.jar","KamanjaInternalDeps_2.11-1.5.0.jar")
+	  mdStrAfter = mdStrAfter.replaceAll("ExtDependencyLibs_2.11-1.4.0.jar","ExtDependencyLibs_2.11-1.5.1.jar")
+	  mdStrAfter = mdStrAfter.replaceAll("ExtDependencyLibs2_2.11-1.4.0.jar","ExtDependencyLibs2_2.11-1.5.1.jar")
+	  mdStrAfter = mdStrAfter.replaceAll("KamanjaInternalDeps_2.11-1.4.0.jar","KamanjaInternalDeps_2.11-1.5.1.jar")
+	  mdStrAfter = mdStrAfter.replaceAll("ExtDependencyLibs_2.11-1.4.1.jar","ExtDependencyLibs_2.11-1.5.1.jar")
+	  mdStrAfter = mdStrAfter.replaceAll("ExtDependencyLibs2_2.11-1.4.1.jar","ExtDependencyLibs2_2.11-1.5.1.jar")
+	  mdStrAfter = mdStrAfter.replaceAll("KamanjaInternalDeps_2.11-1.4.1.jar","KamanjaInternalDeps_2.11-1.5.1.jar")
 	  logger.debug("Model Json Afer Update => " + mdStrAfter)
 	  // save updated mdStr
           val md1 = MetadataAPISerialization.deserializeMetadata(mdStrAfter).asInstanceOf[ModelDef]
@@ -1653,7 +1714,7 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
     // If the source version is 1.4 (1.4.0), then we take a different route here
     // In this route, we just update model objects and config objects
     // In case of model objects we remove the dependency of the 1.4.0 fat jars
-    // In case of config objects, make adapters depend on 1.5.0 fat jars
+    // In case of config objects, make adapters depend on 1.5.1 fat jars
     // instead of 1.4.0 or 1.4.1 fat jars.
     if( _sourceVersion == "1.4" ||  _sourceVersion == "1.4.1" ){
       var msgs = update14ObjectsInPlace(allMetadataElemsJson)
@@ -1792,10 +1853,10 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
         msgsAndContainers ++= containers
       if (messages.length > 0)
         msgsAndContainers ++= messages
-      ProcessMdObjectsParallel(msgsAndContainers, "Failed to add messages/container")
+      BuildHierarchyAndProcessObjectsParallel(msgsAndContainers, "Failed to add messages/container")
     } else {
-      ProcessMdObjectsParallel(containers, "Failed to add container")
-      ProcessMdObjectsParallel(messages, "Failed to add message")
+      BuildHierarchyAndProcessObjectsParallel(containers, "Failed to add container")
+      BuildHierarchyAndProcessObjectsParallel(messages, "Failed to add message")
     }
 
     if (_adapterMessageBindings != None)
