@@ -1,7 +1,5 @@
 name := "KamanjaVersion"
 
-version := "1.0"
-
 // Enables publishing to maven repo
 // publishMavenStyle := true
 

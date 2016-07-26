@@ -5,7 +5,6 @@ import Keys._
 shellPrompt := { state => "sbt (%s)> ".format(Project.extract(state).currentProject.id) }
 
 mainClass in assembly := Some("com.ligadata.clusterInstaller.InstallDriver")
-val kamanjaVersion = "1.5.1"
 
 assemblyOption in assembly ~= {
   _.copy(prependShellScript = Some(defaultShellScript))
@@ -13,7 +12,7 @@ assemblyOption in assembly ~= {
 
 assemblyJarName in assembly := { s"${name.value}-${version.value}" }
 //assemblyJarName in assembly := {
-//  s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"
+//  s"${name.value}_${scalaBinaryVersion.value}-${version.value}.jar"
 //}
 
 // for some reason the merge strategy for non ligadata classes are not working and thus added those conflicting jars in exclusions
@@ -65,8 +64,6 @@ test in assembly := {}
 name := "InstallDriver"
 
 //scalaVersion := "2.11.7"
-
-version := "1.5.1"
 
 resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
