@@ -71,9 +71,9 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
   props.put("request.required.acks",inConfiguration.getOrElse(SmartFileAdapterConstants.KAFKA_ACK, "0"))
 
   // Add all the new security paramterst
-  val secProt = inConfiguration.getOrElse(SmartFileAdapterConstants.SEC_PROTOCOL, "").toString
-  if (secProt.length > 0 ||
-       !secProt.equalsIgnoreCase("plaintext")) {
+  val secProt = inConfiguration.getOrElse(SmartFileAdapterConstants.SEC_PROTOCOL, "plaintext").toString
+  if (secProt.length > 0 &&
+    !secProt.equalsIgnoreCase("plaintext")) {
 
     props.put(SmartFileAdapterConstants.SEC_PROTOCOL, secProt)
 
@@ -236,17 +236,6 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
     return objInst.createInstance
   }
 
-  private def clockBeginTime(reason: String): Long = {
-    val startTS: Long = System.currentTimeMillis()
-    if (logger.isTraceEnabled) logger.trace(reason + " start: " + startTS)
-    return startTS
-  }
-
-  private def clockEndTime(startTS: Long, reason: String): Unit = {
-    val endTS: Long = System.currentTimeMillis()
-    if (logger.isTraceEnabled) logger.trace(reason + " end: " + endTS)
-    if ((endTS - startTS) > FileProcessor.WARNING_THRESHTHOLD) logger.warn("DELAY WARNING: " + reason + " is taking greater then "+ FileProcessor.WARNING_THRESHTHOLD)
-  }
 
   override def getInstance(schemaId: Long): ContainerInterface = {
     //BUGBUG:: For now we are getting latest class. But we need to get the old one too.
@@ -494,16 +483,14 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
           if (//respFutures.contains(currentMessage) &&
               !successVector(currentMessage)) {
             // Send the request to Kafka
-            val startTS = clockBeginTime("Sending to kafka ")
-            val response = producer.send(msg, new Callback {
+            val response = FileProcessor.executeCallWithElapsed(producer.send(msg, new Callback {
               override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
                 if (exception != null) {
                   failedPush += 1
                   logger.warn("SMART FILE CONSUMER ("+partIdx+") has detected a problem with pushing a message into the " +msg.topic + " will retry " +exception.getMessage)
                 }
               }
-            })
-            clockEndTime(startTS, "Sending to kafka ")
+            }), " Sending data to kafka" )
             respFutures(currentMessage) = response
           }
           currentMessage += 1
@@ -591,9 +578,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
 
       //Take care of multiple directories
       logger.info("SMART FILE CONSUMER ("+partIdx+") Moving File" + fileName + " to " + inConfiguration(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO))
-      val startTS = clockBeginTime("Moving file " + fileName)
-      Files.move(Paths.get(fileName), Paths.get( inConfiguration(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO) + "/" + fileStruct(fileStruct.size - 1)),REPLACE_EXISTING)
-      clockEndTime(startTS,"Moving file " + fileName)
+      FileProcessor.executeCallWithElapsed(Files.move(Paths.get(fileName), Paths.get( inConfiguration(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO) + "/" + fileStruct(fileStruct.size - 1)),REPLACE_EXISTING),"Moving file " + fileName)
       
       //Use the full filename
       FileProcessor.removeFromZK(fileName)

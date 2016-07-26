@@ -89,7 +89,7 @@ object FileProcessor {
   val MAX_ZK_RETRY_MS = 5000
   val MAX_RETRY = 10
   val RECOVERY_SLEEP_TIME = 1000
-  var WARNING_THRESHTHOLD = 5000
+  var WARNING_THRESHTHOLD: Long = 5000 * 1000000
   var FILE_Q_FULL_CONDITION = 300
 
   var reset_watcher = false
@@ -144,16 +144,18 @@ object FileProcessor {
     if (FileProcessor.randomFailureThreshHold > bigCheck) throw new Exception(thisCause + " (" + bigCheck + "/" + FileProcessor.randomFailureThreshHold + ")")
   }
 
-  private def clockBeginTime(reason: String): Long = {
-    val startTS: Long = System.currentTimeMillis()
-    if (logger.isTraceEnabled) logger.trace(reason + " start: " + startTS)
-    return startTS
-  }
+  def executeCallWithElapsed[A](f: => A, reasonToTrace: String): (A) = {
+    val startTS: Long = System.nanoTime()
+    if (logger.isTraceEnabled) logger.trace(reasonToTrace + " start call: " + startTS)
 
-  private def clockEndTime(startTS: Long, reason: String): Unit = {
-    val endTS: Long = System.currentTimeMillis()
-    if (logger.isTraceEnabled) logger.trace(reason + " end: " + endTS)
-    if ((endTS - startTS) > WARNING_THRESHTHOLD) logger.warn("DELAY WARNING: " + reason + " is taking greater then "+ FileProcessor.WARNING_THRESHTHOLD)
+    val ret = f
+
+    val endTS: Long = System.nanoTime()
+
+    if (logger.isTraceEnabled) logger.trace(reasonToTrace + " end call: " + endTS)
+    if ((endTS - startTS) > WARNING_THRESHTHOLD) logger.warn("DELAY WARNING: " + reasonToTrace + " is taking greater then "+ FileProcessor.WARNING_THRESHTHOLD)
+    ret
+
   }
 
   /**
@@ -224,9 +226,7 @@ object FileProcessor {
     zkRecoveryLock.synchronized {
       try {
         if (zkc != null) {
-          val startTS = clockBeginTime("Closing zk connection")
-          zkc.close
-          clockEndTime(startTS, "Closing zk connection")
+          executeCallWithElapsed(zkc.close, "Close ZK Connection")
         }
       } catch {
         case e: Throwable => {
@@ -246,9 +246,7 @@ object FileProcessor {
       var isSuccess = false
       while (!isSuccess) {
         try {
-          val startTS = clockBeginTime("Creating a connection to zookeeper")
-          client = CreateClient.createSimple(zkcConnectString)
-          clockEndTime(startTS, "Creating a connection to zookeeper")
+          client = executeCallWithElapsed(CreateClient.createSimple(zkcConnectString), "Create ZK Client Connection")
           isSuccess = true
           //return client
         } catch {
@@ -273,9 +271,7 @@ object FileProcessor {
     while (!isSuccess) {
       try {
         if (doNodesExist(zkPath)) {
-          val startTS = clockBeginTime("Deleting a Node " + zkPath)
-          zkc.delete.forPath(zkPath)
-          clockEndTime(startTS, "Deleting a Node " + zkPath)
+          executeCallWithElapsed(zkc.delete.forPath(zkPath), "Delete Data for path " + zkPath)
         }
         isSuccess = true
       } catch {
@@ -301,9 +297,7 @@ object FileProcessor {
       while (!isSuccess) {
         try {
           if (doNodesExist(zkPath)) {
-            val startTS = clockBeginTime("getting a Node " + zkPath) //System.currentTimeMillis()
-            data = zkc.getData.forPath(zkPath)
-            clockEndTime(startTS, "getting a Node " + zkPath)
+            data = executeCallWithElapsed (zkc.getData.forPath(zkPath), "Get ZK Data for path " + zkPath)
           }
           isSuccess = true
         } catch {
@@ -328,9 +322,7 @@ object FileProcessor {
     var isSuccess = false
     while (!isSuccess) {
       try {
-        val startTS = clockBeginTime("setting data for " + zkPath)
-        zkc.setData().forPath(zkPath, data)
-        clockEndTime(startTS, "setting data for " + zkPath )
+        executeCallWithElapsed (zkc.setData().forPath(zkPath, data), "Set ZK Data for path" + zkPath)
         isSuccess = true
       } catch {
         case e: Throwable => {
@@ -355,9 +347,7 @@ object FileProcessor {
       while (!isSuccess) {
         try {
           if (doNodesExist(zkPath)) {
-            val startTS = clockBeginTime("Getting zk child nodes for " + zkPath)
-            data = zkc.getChildren.forPath(zkPath)
-            clockEndTime(startTS, "Getting zk child nodes for " + zkPath)
+            data = executeCallWithElapsed (zkc.getChildren.forPath(zkPath), "Get ZK Children nodes for " + zkPath)
           }
           isSuccess = true
         } catch {
@@ -385,9 +375,7 @@ object FileProcessor {
       while (!isSuccess) {
         try {
           isData = true // just incae
-          val startTS = clockBeginTime("Checking for existence of " + zkPath)
-          var retData = zkc.checkExists().forPath(zkPath)
-          clockEndTime(startTS, "Checking for existence of " + zkPath)
+          var retData = executeCallWithElapsed (zkc.checkExists().forPath(zkPath), "Check if ZK Node exists "+ zkPath)
           if (retData == null) isData = false
           isSuccess = true
         } catch {
@@ -412,9 +400,7 @@ object FileProcessor {
     var isSuccess = false
     while (!isSuccess) {
       try {
-        val startTS = clockBeginTime(" creating zk node " + zkcConnectString)
-        CreateClient.CreateNodeIfNotExists(zkcConnectString, zkPath)
-        clockEndTime(startTS, "creating zk node " + zkcConnectString )
+        executeCallWithElapsed(CreateClient.CreateNodeIfNotExists(zkcConnectString, zkPath), "Creating a ZK Node " + zkPath)
         isSuccess = true
       } catch {
         case e: Throwable => {
@@ -682,10 +668,7 @@ object FileProcessor {
 
 
           try {
-            val startTS = clockBeginTime("Accessing file " + fileTuple._1)
-            val d = new File(fileTuple._1)
-            clockEndTime(startTS, "Accessing file " + fileTuple._1)
-
+            val d = executeCallWithElapsed (new File(fileTuple._1), "Check file for buffering " + fileTuple._1)
             // If the filesystem is accessible
             if (d.exists) {
 
@@ -778,20 +761,6 @@ object FileProcessor {
   }
 
   private def processExistingFiles(d: File): Unit = {
-    var isfileProcessorBusy = if (FileProcessor.getFileQSize < FILE_Q_FULL_CONDITION) false else true
-
-    while (isfileProcessorBusy)  {
-      try {
-        Thread.sleep(refreshRate/3)
-      } catch {
-        case e: InterruptedException => {
-          logger.error("Reading of " + d.toString + " has been interrupted")
-          throw e
-        }
-      }
-
-      isfileProcessorBusy = if (FileProcessor.getFileQSize < FILE_Q_FULL_CONDITION) false else true
-    }
 
     if (d.exists && d.isDirectory) {
       FileProcessor.testFailure("TEST EXCEPTION... Processing Existing Files")
@@ -1008,11 +977,28 @@ object FileProcessor {
             var errorWaitTime = 1000
             val dirThreadNumber: Int = dirNumber.getAndIncrement()
             val directorToWatch = dirArray(dirThreadNumber)
-            println("\n " +dirThreadNumber + " =Starting to Watching directory "+ directorToWatch +"\n")
             while (isMontoringDirectories) {
               try {
-                println("\n " +dirThreadNumber + " = Watching directory "+ directorToWatch +"\n")
-                processExistingFiles(directorToWatch.toFile())
+                logger.debug("\n " +dirThreadNumber + " = Watching directory "+ directorToWatch +"\n")
+
+                // This is a throttle point.. will sleep in here until the number of file on an active queue drop below
+                // a treshhold..
+                var isfileProcessorBusy = if (FileProcessor.getFileQSize < FILE_Q_FULL_CONDITION) false else true
+                while (isfileProcessorBusy)  {
+                  try {
+                    logger.debug("Too many files on the active queue... throttling to let File Processor threads catch up.  Sleep for " + (refreshRate/3) + " ms")
+                    println("test")
+                    Thread.sleep(refreshRate/3)
+                  } catch {
+                    case e: InterruptedException => {
+                      logger.error("Reading of " + directorToWatch + " has been interrupted")
+                      throw e
+                    }
+                  }
+                  isfileProcessorBusy = if (FileProcessor.getFileQSize < FILE_Q_FULL_CONDITION) false else true
+                }
+
+                executeCallWithElapsed(processExistingFiles(directorToWatch.toFile()), "Quering directory " + directorToWatch.toFile())
                 errorWaitTime = 1000
               } catch {
                 case e: Exception => {
@@ -1028,19 +1014,6 @@ object FileProcessor {
               }
               Thread.sleep(refreshRate)
             }
-          }
-
-          // make sure the individual watcher threads go here to clock,  not the FileProcessor object methods
-          def clockBeginTime(reason: String): Long = {
-            val startTS: Long = System.currentTimeMillis()
-            if (logger.isTraceEnabled) logger.trace(reason + " start: " + startTS)
-            return startTS
-          }
-
-          def clockEndTime(startTS: Long, reason: String): Unit = {
-            val endTS: Long = System.currentTimeMillis()
-            if (logger.isTraceEnabled) logger.trace(reason + " end: " + endTS)
-            if ((endTS - startTS) > WARNING_THRESHTHOLD) logger.warn("DELAY WARNING: " + reason + " is taking greater then "+ FileProcessor.WARNING_THRESHTHOLD)
           }
         })
       }
@@ -1214,9 +1187,7 @@ object FileProcessor {
 
       testFailure("TEST EXCEPTION... Failing to Move File")
 
-      val startTS = clockBeginTime("Moving file " + fileName)
-      Files.move(Paths.get(fileName), Paths.get(targetMoveDir + "/" + fileStruct(fileStruct.size - 1)), REPLACE_EXISTING)
-      clockEndTime(startTS, "Moving file " + fileName)
+      executeCallWithElapsed(Files.move(Paths.get(fileName), Paths.get(targetMoveDir + "/" + fileStruct(fileStruct.size - 1)), REPLACE_EXISTING), "Moving File " + fileName)
       fileCacheRemove(fileName)
     } else {
       logger.warn("SMART FILE CONSUMER File has been deleted" + fileName);
@@ -1349,8 +1320,8 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
       maxlen = props.getOrElse(SmartFileAdapterConstants.WORKER_BUFFER_SIZE, "4").toInt * 1024 * 1024
       partitionSelectionNumber = props(SmartFileAdapterConstants.NUMBER_OF_FILE_CONSUMERS).toInt
       bufferLimit = props.getOrElse(SmartFileAdapterConstants.THREAD_BUFFER_LIMIT, "1").toInt
-      FileProcessor.WARNING_THRESHTHOLD =  props.getOrElse(SmartFileAdapterConstants.DELAY_WARNING_THRESHOLD, "5000").toInt
-      FileProcessor.FILE_Q_FULL_CONDITION = props.getOrElse(SmartFileAdapterConstants.DELAY_WARNING_THRESHOLD, "300").toInt
+      FileProcessor.WARNING_THRESHTHOLD =  props.getOrElse(SmartFileAdapterConstants.DELAY_WARNING_THRESHOLD, "5000").toInt * 1000000
+      FileProcessor.FILE_Q_FULL_CONDITION = props.getOrElse(SmartFileAdapterConstants.FILE_Q_FULL_CONDITION, "300").toInt
       //Code commented
       readyToProcessKey = props.getOrElse(SmartFileAdapterConstants.READY_MESSAGE_MASK, ".gzip")
 
