@@ -35,13 +35,14 @@ import org.apache.hadoop.fs.{ FileSystem, FSDataOutputStream, Path }
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.commons.compress.compressors.CompressorStreamFactory
+import scala.collection.mutable.ArrayBuffer
 
 object SmartFileProducer extends OutputAdapterFactory {
   val ADAPTER_DESCRIPTION = "Smart File Output Adapter"
   def CreateOutputAdapter(inputConfig: AdapterConfiguration, nodeContext: NodeContext): OutputAdapter = new SmartFileProducer(inputConfig, nodeContext)
 }
 
-case class PartitionFile(key: String, name: String, outStream: OutputStream, var records: Long, var size: Long)
+case class PartitionFile(key: String, name: String, outStream: OutputStream, var records: Long, var size: Long, var buffer: ArrayBuffer[Byte], var recordsInBuffer: Long, var flushBufferSize: Long)
 
 class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeContext) extends OutputAdapter {
   private[this] val LOG = LogManager.getLogger(getClass);
@@ -120,41 +121,41 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     nextRolloverTime = (dt - (dt % (fc.rolloverInterval * 60 * 1000))) + fc.rolloverInterval * 60 * 1000
   }
 
-  //  var fileRoller: Thread = null
-  //  if (fc.rolloverInterval > 0) {
-  //    LOG.info("Smart File Producer " + fc.Name + ": File rollover is configured. Will rollover files every " + fc.rolloverInterval + " seconds.")
-  //    fileRoller = new Thread {
-  //      override def run {
-  //        LOG.info("Smart File Producer " + fc.Name + ": Rolling over files.")
-  //        try { Thread.sleep(fc.rolloverInterval * 1000) } catch { case e: Exception => {} }
-  //
-  //        while (!shutDown) {
-  //          WriteLock(_reent_lock) 
-  //          try {
-  //            for ((name, pf) <- partitionStreams) {
-  //              if (pf != null) {
-  //                LOG.debug("Smart File Producer " + fc.Name + ": Rolling file at " + name)
-  //                try {
-  //                  pf.synchronized {
-  //                    pf.outStream.close
-  //                  }
-  //                } catch {
-  //                  case e: Exception => LOG.debug("Smart File Producer " + fc.Name + ": Error closing file: ", e)
-  //                }
-  //              }
-  //            }
-  //            partitionStreams.clear()
-  //          } finally {
-  //            WriteUnlock(_reent_lock)
-  //          }
-  //
-  //          try { Thread.sleep(fc.rolloverInterval * 1000) } catch { case e: Exception => {} }
-  //        }
-  //      }
-  //    }
-  //
-  //    fileRoller.start
-  //  }
+  var bufferFlusher: Thread = null
+  if (fc.flushBufferInterval > 0) {
+    LOG.info("Smart File Producer " + fc.Name + ": File buffer is configured. Will flush buffer every " + fc.flushBufferInterval + " milli seconds.")
+    bufferFlusher = new Thread {
+      override def run {
+        LOG.info("Smart File Producer " + fc.Name + ": writing all buffers.")
+        try { Thread.sleep(fc.flushBufferInterval) } catch { case e: Exception => {} }
+
+        while (!shutDown) {
+          WriteLock(_reent_lock)
+          try {
+            for ((name, pf) <- partitionStreams) {
+              if (pf != null) {
+                LOG.debug("Smart File Producer " + fc.Name + ": writing buffer for file at " + name)
+                try {
+                  pf.synchronized {
+                    flushPartitionFile(pf)
+                  }
+                } catch {
+                  case e: Exception => LOG.debug("Smart File Producer " + fc.Name + ": Error closing file: ", e)
+                }
+              }
+            }
+            partitionStreams.clear()
+          } finally {
+            WriteUnlock(_reent_lock)
+          }
+
+          try { Thread.sleep(fc.flushBufferInterval) } catch { case e: Exception => {} }
+        }
+      }
+    }
+
+    bufferFlusher.start
+  }
 
   private def rolloverFiles() = {
     LOG.info("Smart File Producer " + fc.Name + ": Rolling over files.")
@@ -166,6 +167,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           LOG.debug("Smart File Producer " + fc.Name + ": Rolling file at " + name)
           try {
             pf.synchronized {
+              flushPartitionFile(pf)
               pf.outStream.close
             }
           } catch {
@@ -258,6 +260,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   private def getPartionFile(record: ContainerInterface) : PartitionFile = {
     var key = record.getTypeName();
     val dateTime = record.getTimePartitionData()
+    val fileBufferSize = fc.typeLevelConfig.getOrElse(key, fc.flushBufferSize);
     
     val pk = record.getPartitionKey()
     var bucket:Int = 0
@@ -288,7 +291,11 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           if (compress)
             os = new CompressorStreamFactory().createCompressorOutputStream(fc.compressionString, os)
 
-          partitionStreams(key) = new PartitionFile(key, fileName, os, 0, 0)
+          var buffer: ArrayBuffer[Byte] = null;
+          if(fileBufferSize > 0)
+            buffer = new ArrayBuffer[Byte];
+          
+          partitionStreams(key) = new PartitionFile(key, fileName, os, 0, 0, buffer, 0, fileBufferSize)
           ReadLock(_reent_lock) // downgrade to original readlock
         }
       } finally {
@@ -302,6 +309,44 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       ReadUnlock(_reent_lock)
     }
   }
+
+  private def flushPartitionFile(file: PartitionFile) = {
+    var pf = file;
+    var isSuccess = false
+    numOfRetries = 0
+    while (!isSuccess) {
+      try {
+        pf.synchronized {
+          if (pf.flushBufferSize > 0) {
+            write(pf.outStream, pf.buffer.toArray)
+            pf.size += pf.buffer.size
+            pf.records += pf.recordsInBuffer
+            pf.buffer.clear()
+            pf.recordsInBuffer = 0
+          }
+        }
+        isSuccess = true
+      } catch {
+        case fio: IOException => {
+          LOG.warn("Smart File Producer " + fc.Name + ": Unable to flush buffer to file " + pf.name)
+          if (numOfRetries == MAX_RETRIES) {
+            LOG.warn("Smart File Producer " + fc.Name + ": Unable to flush buffer to file destination after " + MAX_RETRIES + " tries.  Trying to reopen file " + pf.name, fio)
+            pf = reopenPartitionFile(pf)
+          } else if (numOfRetries > MAX_RETRIES) {
+            LOG.error("Smart File Producer " + fc.Name + ": Unable to flush buffer to file destination after " + MAX_RETRIES + " tries.  Aborting.", fio)
+            throw FatalAdapterException("Unable to flush buffer to specified file after " + MAX_RETRIES + " retries", fio)
+          }
+          numOfRetries += 1
+          LOG.warn("Smart File Producer " + fc.Name + ": Retyring " + numOfRetries + "/" + MAX_RETRIES)
+          Thread.sleep(FAIL_WAIT)
+        }
+        case e: Exception => {
+          LOG.error("Smart File Producer " + fc.Name + ": Unable to flush buffer to file " + pf.name, e)
+          throw e
+        }
+      }
+    }
+  }
   
   private def reopenPartitionFile(pf: PartitionFile): PartitionFile = {
     WriteLock(_reent_lock)
@@ -311,7 +356,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       if (compress)
         os = new CompressorStreamFactory().createCompressorOutputStream(fc.compressionString, os)
 
-      partitionStreams(pf.key) = new PartitionFile(pf.key, pf.name, os, 0, 0)
+      partitionStreams(pf.key) = new PartitionFile(pf.key, pf.name, os, pf.records, pf.size, pf.buffer, pf.recordsInBuffer, pf.flushBufferSize)
 
       return partitionStreams(pf.key)
     } finally {
@@ -368,10 +413,23 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
         while (!isSuccess) {
           try {
             pf.synchronized {
-              val data = message++fc.messageSeparator.getBytes
-              write(pf.outStream, data)
-              pf.records += 1
-              pf.size += data.length
+              if(pf.flushBufferSize > 0) {
+                pf.buffer ++= message
+                pf.buffer ++= fc.messageSeparator.getBytes
+                pf.recordsInBuffer += 1
+                if(pf.buffer.size > pf.flushBufferSize) {
+                  write(pf.outStream, pf.buffer.toArray)
+                  pf.size += pf.buffer.size
+                  pf.records += pf.recordsInBuffer
+                  pf.buffer.clear()
+                  pf.recordsInBuffer = 0
+                }
+              } else {
+                val data = message++fc.messageSeparator.getBytes
+                write(pf.outStream, data)
+                pf.records += 1
+                pf.size += data.length
+              }
             }
             isSuccess = true
             LOG.debug("finished writing message")
@@ -410,10 +468,10 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     try {
       shutDown = true
 
-//      if (fileRoller != null) {
-//        fileRoller.interrupt
-//        fileRoller = null
-//      }
+      if (bufferFlusher != null) {
+        bufferFlusher.interrupt
+        bufferFlusher = null
+      }
 
       for ((name, pf) <- partitionStreams) {
         if (pf != null) {

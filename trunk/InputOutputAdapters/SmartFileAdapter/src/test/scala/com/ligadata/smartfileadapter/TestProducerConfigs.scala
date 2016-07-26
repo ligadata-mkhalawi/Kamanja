@@ -26,6 +26,12 @@ class TestProducerConfigs extends FunSpec with BeforeAndAfter with ShouldMatcher
   		  |  "RolloverInterval": "3600",
 	  	  |  "TimePartitionFormat": "year=${yyyy}/month=${MM}/day=${dd}",
 		    |  "PartitionBuckets": "10",
+		    |  "flushBufferSize": "10485760",
+		    |  "flushBufferInterval": "1000",
+		    |  "typeLevelConfig": [
+        |      {"type": "com.ligadata.test.msg1", "flushBufferSize": "1024"},
+        |      {"type": "com.ligadata.test.msg2", "flushBufferSize": "2048"}
+        |  ],
 		    |  "Kerberos": {
 	  	  |	     "Principal": "user@domain.com",
 	  	  |	     "Keytab": "/path/to/keytab/user.keytab"
@@ -42,8 +48,13 @@ class TestProducerConfigs extends FunSpec with BeforeAndAfter with ShouldMatcher
       conf.rolloverInterval shouldEqual 3600
       conf.partitionFormat shouldEqual "year=${yyyy}/month=${MM}/day=${dd}"
       conf.partitionBuckets shouldEqual 10
+      conf.flushBufferSize shouldEqual 10485760
+      conf.flushBufferInterval shouldEqual 1000
       conf.kerberos.principal shouldEqual "user@domain.com"
       conf.kerberos.keytab shouldEqual "/path/to/keytab/user.keytab"
+      conf.typeLevelConfig.size shouldEqual 2
+      conf.typeLevelConfig("com.ligadata.test.msg1") shouldEqual 1024
+      conf.typeLevelConfig("com.ligadata.test.msg2") shouldEqual 2048
     }
     
     it("should throw FatalAdapterException if uri is missing") {
