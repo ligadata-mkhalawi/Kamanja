@@ -26,6 +26,8 @@ import scala.sys.process._
 import scala.util.control.Breaks._
 import scala.collection.immutable.Map
 
+
+import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import org.json4s.native.Json
@@ -118,6 +120,7 @@ class PyServerConnection(val host : String
 
     /**
       * Using the constructor arguments start a python server. Mark this instance as usable.
+      *
       * @return JSON result string that is a dictionary with the "pid" and "result" as keys. For example,
       *         '''
       *         {
@@ -216,23 +219,23 @@ class PyServerConnection(val host : String
           * However, if multiple commands are sent at once, then the additional responses are handled here
           * for those subsequent commands.  SINCE WE ARE NOT GOING TO BURST MESSAGES AT THIS JUNCTURE, THIS
           * IS COMMENTED OUT.
-
-        val lenOfRemainingAnsweredBytes: Int = answeredBytes.length
-        while (lenOfRemainingAnsweredBytes > 0) {
-            val endMarkerIdx: Int = answeredBytes.indexOfSlice(CmdConstants.endMarkerArray)
-            if (endMarkerIdx >= 0) {
-                val endMarkerIncludedIdx: Int = endMarkerIdx + CmdConstants.endMarkerArray.length
-                val responseBytes: Array[Byte] = answeredBytes.slice(0, endMarkerIncludedIdx).toArray
-                val response: String = _decoder.unpack(responseBytes)
-                logger.info(response)
-                answeredBytes.remove(0, endMarkerIncludedIdx)
-            } else {
-                if (answeredBytes.nonEmpty) {
-                    logger.error("There were residual bytes remaining in the answer buffer suggesting that the connection went down")
-                    logger.error(s"Bytes were '${answeredBytes.toString}'")
-                }
-            }
-        }
+          **
+          *val lenOfRemainingAnsweredBytes: Int = answeredBytes.length
+          *while (lenOfRemainingAnsweredBytes > 0) {
+          *val endMarkerIdx: Int = answeredBytes.indexOfSlice(CmdConstants.endMarkerArray)
+          *if (endMarkerIdx >= 0) {
+          *val endMarkerIncludedIdx: Int = endMarkerIdx + CmdConstants.endMarkerArray.length
+          *val responseBytes: Array[Byte] = answeredBytes.slice(0, endMarkerIncludedIdx).toArray
+          *val response: String = _decoder.unpack(responseBytes)
+          *logger.info(response)
+          *answeredBytes.remove(0, endMarkerIncludedIdx)
+          *} else {
+          *if (answeredBytes.nonEmpty) {
+          *logger.error("There were residual bytes remaining in the answer buffer suggesting that the connection went down")
+          *logger.error(s"Bytes were '${answeredBytes.toString}'")
+          *}
+          *}
+          *}
           */
 
         result
@@ -240,6 +243,7 @@ class PyServerConnection(val host : String
 
     /**
       * Stop the server.  Mark this instance as unusable.
+      *
       * @return JSON result string that describes the result of the operation.  For example,
       *         '''
       *         {
@@ -251,19 +255,14 @@ class PyServerConnection(val host : String
       *         '''
       */
     def stopServer : String = {
-        val json = (
-            ("Cmd" -> "stopServer") ~
-            ("CmdVer" -> 1) // ~
-            //("CmdOptions" -> List[String]() ~
-            //("ModelOptions" -> List[String]())
-            )
-        val payloadStr : String = compact(render(json))
+        val payloadStr : String = s"{${'"'}Cmd${'"'}: ${'"'}stopServer${'"'}, ${'"'}CmdVer${'"'}: 1 }"
         val result : String = encodeAndProcess("stopServer", payloadStr)
         result
     }
 
     /**
       * Add the supplied model to the python server found at the other end of this PyServerConnection's socket.
+      *
       * @param moduleName the name of the module (i.e, the file name) to be installed on the server
       * @param modelName the name of the model in that module file to be sent executeModel commands
       * @param moduleSrc the python source for this module
@@ -296,24 +295,11 @@ class PyServerConnection(val host : String
 
         /** serialize the modelOptions */
         val modelOpts : String = Json(DefaultFormats).write(modelOptions)
-
         /** copy the file into a tmp file from string for either local copy to models or possibly remote copy to other server */
         cpSrcFile(moduleName, moduleSrc)
-
         val moduleFile : String = s"$moduleName.py"
-        val json = (
-            ("Cmd" -> "addModel") ~
-                ("CmdVer" -> 1) ~
-                ("CmdOptions" -> (
-                    ("ModelFile" -> moduleFile) ~
-                        ("ModelName" -> modelName)
-                    )) ~
-                ("ModelOptions" ->  "{OPTIONS_KEY}"
-                    )
-            )
-        val addMsg : String = compact(render(json))
+        val addMsg : String = s"{${'"'}Cmd${'"'}: ${'"'}addModel${'"'}, ${'"'}CmdVer${'"'}: 1, ${'"'}CmdOptions${'"'}: {${'"'}ModelFile${'"'}: ${'"'}$moduleFile${'"'}, ${'"'}ModelName${'"'}: ${'"'}$modelName${'"'} } }"
 
-        /** once the json4s is done with its rendering, make the substitution of the supplied options */
         val subMap : Map[String,String] = Map[String,String]("{OPTIONS_KEY}" -> modelOpts)
         val sub = new MapSubstitution(addMsg, subMap)
         val payloadStr : String = sub.makeSubstitutions
@@ -375,7 +361,7 @@ class PyServerConnection(val host : String
       *         '''
       */
     def removeModel(modelName : String) : String = {
-        val json = (
+        val json : org.json4s.JValue = (
             ("Cmd" -> "removeModel") ~
                 ("CmdVer" -> 1) ~
                 ("CmdOptions" -> (
@@ -384,7 +370,7 @@ class PyServerConnection(val host : String
                     ))
             //("ModelOptions" -> List[String]())
             )
-        val payloadStr : String = compact(render(json))
+        val payloadStr : String = s"{${'"'}Cmd${'"'}: ${'"'}removeModel${'"'}, ${'"'}CmdVer${'"'}: 1, ${'"'}CmdOptions${'"'}: {${'"'}ModelName${'"'}: ${'"'}$modelName${'"'} } }"
         val result : String = encodeAndProcess("removeModel", payloadStr)
         result
     }
@@ -403,14 +389,7 @@ class PyServerConnection(val host : String
       *         '''
       */
     def serverStatus : String = {
-        val json = (
-            ("Cmd" -> "serverStatus") ~
-                ("CmdVer" -> 1) //~
-            //("CmdOptions" -> List[String]() ~
-            //("ModelOptions" -> List[String]())
-            )
-        val payloadStr : String = compact(render(json))
-
+        val payloadStr : String = s"{${'"'}Cmd${'"'}: ${'"'}serverStatus${'"'}, ${'"'}CmdVer${'"'}: 1 }"
         val result : String = encodeAndProcess("serverStatus", payloadStr)
         result
     }
@@ -440,16 +419,7 @@ class PyServerConnection(val host : String
 
         val msgFieldMap : String = Json(DefaultFormats).write(msg)
 
-        val json = (
-            ("Cmd" -> "executeModel") ~
-                ("CmdVer" -> 1) ~
-                ("CmdOptions" -> (
-                    ("ModelName" -> modelName) ~
-                        ("InputDictionary" -> "{DATA.KEY}")
-                    )) //~
-            //("ModelOptions" -> List[String]())
-            )
-        val jsonCmdTemplate : String = compact(render(json))
+        val jsonCmdTemplate: String = s"{${'"'}Cmd${'"'}: ${'"'}executeModel${'"'}, ${'"'}CmdVer${'"'}: 1, ${'"'}CmdOptions${'"'} -> { ${'"'}ModelName${'"'}: ${'"'}$modelName${'"'}, ${'"'}InputDictionary${'"'} -> ${'"'}{DATA.KEY}${'"'}}}"
 
         val subMap : Map[String,String] = Map[String,String]("{DATA.KEY}" -> msgFieldMap)
         val sub = new MapSubstitution(jsonCmdTemplate, subMap)

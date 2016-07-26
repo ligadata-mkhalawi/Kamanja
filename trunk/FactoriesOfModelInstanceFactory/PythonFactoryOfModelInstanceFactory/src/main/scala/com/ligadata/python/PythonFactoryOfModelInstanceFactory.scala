@@ -200,9 +200,6 @@ class PythonAdapter(factory : ModelInstanceFactory
             throw new KamanjaException("PythonAdapter initialization failed... factory's model def is null",null)
         }
 
-        val connectionMap : Map[String,Any] = nodeContext.getValue(CONNECTION_KEY).asInstanceOf[Map[String,Any]]
-        val pySrvConn : PyServerConnection = connectionMap.getOrElse(_partitionKey, null).asInstanceOf[PyServerConnection]
-
         val pyServerConnection : PyServerConnection = getServerConnection
 
         if (pyServerConnection == null) {
@@ -219,8 +216,9 @@ class PythonAdapter(factory : ModelInstanceFactory
         val modelOptions : Map[String,Any] = parse(trimmedOptionStr).values.asInstanceOf[Map[String,Any]]
 
         /** add this model to the server's working set */
-        val moduleName : String = modelDef.moduleName
-        val resultStr : String = pyServerConnection.addModel(moduleName, modelDef.Name, modelDef.objectDefinition, modelOptions)
+        val (moduleName, modelName) : (String,String) = ModuleNModelNames
+
+        val resultStr : String = pyServerConnection.addModel(moduleName, modelName, modelDef.objectDefinition, modelOptions)
         val resultMap : Map[String,Any] = parse(resultStr).values.asInstanceOf[Map[String,Any]]
         val host : String = pyServerConnection.host
         val port : String = pyServerConnection.port.toString
@@ -242,7 +240,8 @@ class PythonAdapter(factory : ModelInstanceFactory
       * @return the current PyServerConnection
       */
     private def getServerConnection : PyServerConnection = {
-        val connectionMap : Map[String,Any] = nodeContext.getValue(CONNECTION_KEY).asInstanceOf[Map[String,Any]]
+        val connectionMap : scala.collection.mutable.HashMap[String,Any] =
+            nodeContext.getValue(CONNECTION_KEY).asInstanceOf[scala.collection.mutable.HashMap[String,Any]]
         val pySrvConn : PyServerConnection = connectionMap.getOrElse(_partitionKey, null).asInstanceOf[PyServerConnection]
 
         val pyServerConnection : PyServerConnection = if (pySrvConn == null) {
@@ -254,6 +253,14 @@ class PythonAdapter(factory : ModelInstanceFactory
         pyServerConnection
     }
 
+    private def ModuleNModelNames : (String,String) = {
+        val modelDef : ModelDef = factory.getModelDef()
+        val moduleModelNms : Array[String] = modelDef.PhysicalName.split('.')
+        val moduleName : String = moduleModelNms.head
+        val modelName : String = moduleModelNms.last
+        (moduleName,modelName)
+    }
+
     /** Replace a presumably broken python connection with a new one.
       *
       * @return the current PyServerConnection
@@ -261,7 +268,8 @@ class PythonAdapter(factory : ModelInstanceFactory
     private def replaceServerConnection : PyServerConnection = {
         val pyServerConnection : PyServerConnection = createConnection(_partitionKey)
 
-        val connMap : mutable.Map[String,Any] = nodeContext.getValue(CONNECTION_KEY).asInstanceOf[mutable.Map[String,Any]]
+        val connMap : scala.collection.mutable.HashMap[String,Any] =
+            nodeContext.getValue(CONNECTION_KEY).asInstanceOf[scala.collection.mutable.HashMap[String,Any]]
         connMap(_partitionKey) = pyServerConnection
         nodeContext.putValue(CONNECTION_KEY, connMap)
 
@@ -296,16 +304,15 @@ class PythonAdapter(factory : ModelInstanceFactory
       */
     private def evaluateModel(msg : ContainerInterface): ModelResultBase = {
 
-        val modelDef : ModelDef = factory.getModelDef()
-        val modelName : String = factory.getModelName()
+        val (moduleName, modelName) : (String,String) = ModuleNModelNames
         /** get the current connection for this model's server */
         val pyServerConnection : PyServerConnection = getServerConnection
         if (pyServerConnection == null) {
-            logger.error(s"Python evaluateModel (modelName = '$modelName') ... the python server connection could not be obtained... giving up")
-            throw new KamanjaException(s"Python initialization for model '$modelName' failed... the python server connection could not be established", null)
+            logger.error(s"Python evaluateModel (moduleName = $moduleName, modelName = '$modelName') ... the python server connection could not be obtained... giving up")
+            throw new KamanjaException(s"Python initialization for model '$moduleName.$modelName' failed... the python server connection could not be established", null)
         }
 
-        val mapOfResults : ModelResultBase = evaluateModel1(pyServerConnection, modelName, msg)
+        val mapOfResults : ModelResultBase = evaluateModel1(pyServerConnection, moduleName, modelName, msg)
         mapOfResults
     }
 
@@ -355,7 +362,7 @@ class PythonAdapter(factory : ModelInstanceFactory
       * @param msg the message from the engine that is to be evaluated
       * @return a message result (ModelResultBase derivative)
       */
-    private def evaluateModel1(pyServerConnection: PyServerConnection, modelName : String, msg : ContainerInterface) : ModelResultBase = {
+    private def evaluateModel1(pyServerConnection: PyServerConnection, modulelName : String, modelName : String, msg : ContainerInterface) : ModelResultBase = {
 
         var connObj : PyServerConnection = pyServerConnection
         var mapOfResultsReturned : MappedModelResults = null
@@ -432,12 +439,14 @@ class PythonAdapter(factory : ModelInstanceFactory
         val modelDef : ModelDef = factory.getModelDef()
         if (partitionKey == null) return null // first time engine case... there is no valid key yet ... wait until we got a partition key that is valid
 
-        val connMap : mutable.HashMap[String,Any] = nodeContext.getValue(CONNECTION_KEY).asInstanceOf[mutable.HashMap[String,Any]]
+        val connMap : scala.collection.mutable.HashMap[String,Any] =
+            nodeContext.getValue(CONNECTION_KEY).asInstanceOf[scala.collection.mutable.HashMap[String,Any]]
         val pyServCon: PyServerConnection = if (connMap != null && connMap.contains(partitionKey)) connMap(partitionKey).asInstanceOf[PyServerConnection] else null
-        if (pyServCon != null) {
+        val pySerververConnection : PyServerConnection = if (pyServCon != null) {
 
             val connObjStr: String = "valid PyServerConnection previously prepared"
             logger.info(s"PythonAdapterFactory.init($partitionKey) ...values are:\nhost = ${pyServCon.host}\nport = ${pyServCon.port.toString}\npyPath = ${pyServCon.pyPath}\nconnection object = $connObjStr")
+            pyServCon
         } else {
             /**
               * The factory doesn't have a connection for this partition key ... make one now
@@ -508,8 +517,9 @@ class PythonAdapter(factory : ModelInstanceFactory
 
                 logger.error(s"The values are:\nhost = $hostStr\nport = $portStr\npyPath = $pyPathStr\nconnection object = $connObjStr")
             }
+            pyConn
         }
-        pyServCon
+        pySerververConnection
     }
 }
 
@@ -528,7 +538,6 @@ class PythonAdapter(factory : ModelInstanceFactory
 
 class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) with LogTrait {
 
-    val CONNECTION_KEY : String = "PYTHON_CONNECTIONS"
    /**
     * Common initialization for all Model Instances. This gets called once per partition id used for each kamanja server node
     *
