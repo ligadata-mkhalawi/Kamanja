@@ -280,6 +280,7 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
   private var monitorsExecutorService: ExecutorService = null
   private var hdfsConfig : Configuration = null
   private val filesStatusMap = Map[String, HdfsFileEntry]()
+  private val processedFilesMap : scala.collection.mutable.LinkedHashMap[String, Long] = scala.collection.mutable.LinkedHashMap[String, Long]()
 
   def init(adapterSpecificCfgJson: String): Unit ={
     val(_type, c, m) =  SmartFileAdapterConfiguration.parseSmartFileAdapterSpecificConfig(adapterName, adapterSpecificCfgJson)
@@ -304,6 +305,8 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
   def markFileAsProcessed(filePath : String) : Unit = {
     logger.info("Smart File Consumer (SFTP Monitor) - removing file {} from map {} as it is processed", filePath, filesStatusMap)
     filesStatusMap.remove(filePath)
+
+    //MonitorUtils.addProcessedFileToMap(filePath, processedFilesMap) //TODO : uncomment later
   }
 
   def setMonitoringStatus(status : Boolean): Unit ={
@@ -313,6 +316,7 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
   def shutdown: Unit ={
 
     isMonitoring = false
+    processedFilesMap.clear()
     monitorsExecutorService.shutdown()
   }
 
@@ -440,38 +444,43 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
     directChildren.foreach(fileStatus => {
       var isChanged = false
       val uniquePath = fileStatus.getPath.toString
-      if(!filesStatusMap.contains(uniquePath)){
-        //path is new
-        isChanged = true
-        changeType = if(isFirstCheck) AlreadyExisting else New
-
-        val fileEntry = makeFileEntry(fileStatus, parentfolder)
-        filesStatusMap.put(uniquePath, fileEntry)
-        if(fileStatus.isDirectory)
-          modifiedDirs += uniquePath
-      }
-      else{
-        val storedEntry = filesStatusMap.get(uniquePath).get
-        if(fileStatus.getModificationTime >  storedEntry.lastModificationTime){//file has been modified
-          storedEntry.lastModificationTime = fileStatus.getModificationTime
+      if (processedFilesMap.contains(uniquePath))
+        logger.info("Smart File Consumer (Sftp) - File {} already processed, ignoring - Adapter {}", uniquePath, adapterName)
+      else {
+        if (!filesStatusMap.contains(uniquePath)) {
+          //path is new
           isChanged = true
+          changeType = if (isFirstCheck) AlreadyExisting else New
 
-          changeType = Modified
+          val fileEntry = makeFileEntry(fileStatus, parentfolder)
+          filesStatusMap.put(uniquePath, fileEntry)
+          if (fileStatus.isDirectory)
+            modifiedDirs += uniquePath
         }
-      }
-      
-      //TODO : this method to find changed folders is not working as expected. so for now check all dirs
-      if(fileStatus.isDirectory)
-        modifiedDirs += uniquePath
+        else {
+          val storedEntry = filesStatusMap.get(uniquePath).get
+          if (fileStatus.getModificationTime > storedEntry.lastModificationTime) {
+            //file has been modified
+            storedEntry.lastModificationTime = fileStatus.getModificationTime
+            isChanged = true
 
-      if(isChanged){
-        if(fileStatus.isDirectory){
-          
+            changeType = Modified
+          }
         }
-        else{
-          if(changeType == New || changeType == AlreadyExisting) {
-            val fileHandler = new HdfsFileHandler(uniquePath, connectionConf)
-            modifiedFiles.put(fileHandler, changeType)
+
+        //TODO : this method to find changed folders is not working as expected. so for now check all dirs
+        if (fileStatus.isDirectory)
+          modifiedDirs += uniquePath
+
+        if (isChanged) {
+          if (fileStatus.isDirectory) {
+
+          }
+          else {
+            if (changeType == New || changeType == AlreadyExisting) {
+              val fileHandler = new HdfsFileHandler(uniquePath, connectionConf)
+              modifiedFiles.put(fileHandler, changeType)
+            }
           }
         }
       }

@@ -225,6 +225,8 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
   private var isMonitoring = false
   private var checkFolders = true
 
+  private val processedFilesMap : scala.collection.mutable.LinkedHashMap[String, Long] = scala.collection.mutable.LinkedHashMap[String, Long]()
+
   def init(adapterSpecificCfgJson: String): Unit ={
     logger.debug("PosixChangesMonitor (init)- adapterSpecificCfgJson==null is "+
       (adapterSpecificCfgJson == null))
@@ -238,6 +240,8 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
     fileCacheLock.synchronized {
       logger.info("Smart File Consumer (Posix Monitor) - removing file {} from map {} as it is processed", filePath, fileCache)
       fileCache -= filePath
+
+      //MonitorUtils.addProcessedFileToMap(filePath, processedFilesMap) //TODO : uncomment later
     }
   }
 
@@ -320,6 +324,7 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
 
   def shutdown: Unit ={
     logger.debug("Shutting down PosixChangesMonitor")
+    processedFilesMap.clear()
     isMonitoring = false
 
     monitorsExecutorService.shutdown()
@@ -408,7 +413,12 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
     */
   def checkIfFileHandled(file: String): Boolean = {
     fileCacheLock.synchronized {
-      if (fileCache.contains(file)) {
+      if (processedFilesMap.contains(file)) {
+        //logger.warn("looking for file {}, in map {}", file, processedFilesMap)
+        logger.info("Smart File Consumer (das/nas) - File {} already processed, ignoring - Adapter {}", file, adapterName)
+        true
+      }
+      else if (fileCache.contains(file)) {
         return true
       }
       else {

@@ -227,7 +227,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
                         if(currentFileLocationInfo.isMovingEnabled)
                           parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
                         else
-                          logger.info("File {} will not be moved since moving is disabled for folder {} - Adapter ",
+                          logger.info("SMART FILE CONSUMER (MonitorController): File {} will not be moved since moving is disabled for folder {} - Adapter {}",
                             fileHandler.getFullPath, currentFileParentDir, adapterConfig.Name)
 
                         bufferingQ_map.remove(fileTuple._1)
@@ -239,7 +239,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
                         parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
                       }
                       else{
-                        logger.info("SMART FILE CONSUMER (MonitorController): File {} has invalid file type but will not be moved since moving is disabled for folder {} - Adapter ",
+                        logger.info("SMART FILE CONSUMER (MonitorController): File {} has invalid file type but will not be moved since moving is disabled for folder {} - Adapter {}",
                           fileHandler.getFullPath, currentFileParentDir, adapterConfig.Name)
                       }
                       bufferingQ_map.remove(fileTuple._1)

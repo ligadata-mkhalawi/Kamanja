@@ -252,6 +252,18 @@ object MonitorUtils {
 
     componentsMap
   }
+
+  def addProcessedFileToMap(filePath : String, processedFilesMap : scala.collection.mutable.LinkedHashMap[String, Long]) : Unit = {
+    //map is sorted the way items were appended
+    val time = java.util.Calendar.getInstance().getTime()
+    val timeAsLong = new java.text.SimpleDateFormat("yyyyMMddHHmmss").format(time).toLong
+
+    if(processedFilesMap.size >= 1000000) //Todo : make value as config ?
+      processedFilesMap.remove(processedFilesMap.head._1)//remove first item to make place
+
+    processedFilesMap.put(filePath, timeAsLong)
+
+  }
 }
 
 

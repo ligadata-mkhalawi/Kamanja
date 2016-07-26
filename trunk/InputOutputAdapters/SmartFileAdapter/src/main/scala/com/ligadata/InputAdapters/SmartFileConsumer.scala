@@ -937,8 +937,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                 monitorController.markFileAsProcessed(processingFilePath)
             }
             else {
-              logger.info("File {} will not be moved since moving is disabled for folder {} - Adapter ",
+              logger.info("File {} will not be moved since moving is disabled for folder {} - Adapter {}",
                 processingFilePath, procFileParentDir, adapterConfig.Name)
+
+              monitorController.markFileAsProcessed(processingFilePath)
             }
           }
           else if (status == File_Processing_Status_NotFound)
