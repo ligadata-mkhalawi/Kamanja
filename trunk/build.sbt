@@ -5,6 +5,8 @@ sbtPlugin := true
 
 version := "1.5.1"
 
+version in ThisBuild := "1.5.1"
+
 //scalaVersion := "2.11.7"
 
 crossScalaVersions := Seq("2.11.7", "2.10.4")

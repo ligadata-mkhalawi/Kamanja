@@ -338,7 +338,7 @@ cp $srcPath/Utils/ClusterInstaller/ClusterInstallerDriver/src/main/resources/log
 # copy Kamanja UI stuff
 # *******************************
 
-cp $srcPath/KamanjaUI/Rest/KamanjaUIRest/target/kamanjauirest-0.1.0.war $kamanjaui/kamanjauirest.war
+cp $srcPath/KamanjaUI/Rest/KamanjaUIRest/target/kamanjauirest-1.5.1.war $kamanjaui/kamanjauirest.war
 cp $srcPath/KamanjaUI/UI/distro/kamanja.war $kamanjaui/
 cp $srcPath/KamanjaUI/Scripts/* $kamanjaui/
 chmod 0700 $kamanjaui/*.sh
@@ -648,7 +648,7 @@ cp $srcPath/Utils/ClusterInstaller/ClusterInstallerDriver/src/main/resources/log
 # copy Kamanja UI stuff
 # *******************************
 
-cp $srcPath/KamanjaUI/Rest/KamanjaUIRest/target/kamanjauirest-0.1.0.war $kamanjaui/kamanjauirest.war
+cp $srcPath/KamanjaUI/Rest/KamanjaUIRest/target/kamanjauirest-1.5.1.war $kamanjaui/kamanjauirest.war
 cp $srcPath/KamanjaUI/UI/distro/kamanja.war $kamanjaui/
 cp $srcPath/KamanjaUI/Scripts/* $kamanjaui/
 chmod 0700 $kamanjaui/*.sh
