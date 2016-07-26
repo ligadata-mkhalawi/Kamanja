@@ -89,7 +89,7 @@ object FileProcessor {
   val MAX_ZK_RETRY_MS = 5000
   val MAX_RETRY = 10
   val RECOVERY_SLEEP_TIME = 1000
-  var WARNING_THRESHTHOLD: Long = 5000 * 1000000
+  var WARNING_THRESHTHOLD: Long = 5000 * 1000000L
   var FILE_Q_FULL_CONDITION = 300
 
   var reset_watcher = false
@@ -987,7 +987,6 @@ object FileProcessor {
                 while (isfileProcessorBusy)  {
                   try {
                     logger.debug("Too many files on the active queue... throttling to let File Processor threads catch up.  Sleep for " + (refreshRate/3) + " ms")
-                    println("test")
                     Thread.sleep(refreshRate/3)
                   } catch {
                     case e: InterruptedException => {
@@ -1320,7 +1319,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
       maxlen = props.getOrElse(SmartFileAdapterConstants.WORKER_BUFFER_SIZE, "4").toInt * 1024 * 1024
       partitionSelectionNumber = props(SmartFileAdapterConstants.NUMBER_OF_FILE_CONSUMERS).toInt
       bufferLimit = props.getOrElse(SmartFileAdapterConstants.THREAD_BUFFER_LIMIT, "1").toInt
-      FileProcessor.WARNING_THRESHTHOLD =  props.getOrElse(SmartFileAdapterConstants.DELAY_WARNING_THRESHOLD, "5000").toInt * 1000000
+      FileProcessor.WARNING_THRESHTHOLD =  props.getOrElse(SmartFileAdapterConstants.DELAY_WARNING_THRESHOLD, "5000").toLong * 1000000
       FileProcessor.FILE_Q_FULL_CONDITION = props.getOrElse(SmartFileAdapterConstants.FILE_Q_FULL_CONDITION, "300").toInt
       //Code commented
       readyToProcessKey = props.getOrElse(SmartFileAdapterConstants.READY_MESSAGE_MASK, ".gzip")
