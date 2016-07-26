@@ -2264,7 +2264,16 @@ class MdMgr {
       */
     if (mdl.modelRepresentation == ModelRepresentation.PMML)
       mdl.ObjectFormat(ObjFormatType.fPMML)
-    mdl.PhysicalName(physicalName)
+
+      /** python needs the case preserved on both the module name (taken from the supplied file) and the modelName... the
+        * actual classname within that file..  This is accomplished by passing the pair through the physical name which
+        * doesn't hammer the case of the strings like name and namespace.
+        */
+    if (mdl.modelRepresentation == ModelRepresentation.PYTHON) {
+        mdl.PhysicalName(s"$moduleName.$name")
+    } else {
+        mdl.PhysicalName(physicalName)
+    }
     mdl.tenantId = tenantId
     SetBaseElem(mdl, nameSpace, name, ver, jarNm, dJars, ownerId, tenantId, uniqueId, mdElementId)
 
@@ -3196,7 +3205,8 @@ class MdMgr {
 
   /**
       * Construct a SerializeDeserializeConfig instance and add it to the metadata.
-      * @param nameSpace the namespace for this SerializeDeserializeConfig
+    *
+    * @param nameSpace the namespace for this SerializeDeserializeConfig
       * @param name its serializer name
       * @param version its serializer version
       * @param serializerType the serializer type
@@ -3236,6 +3246,7 @@ class MdMgr {
 
     /**
       * Add a SerializeDeserializeConfig instance to the map designated to hold them.
+      *
       * @param config the prepared SerializeDeserializeConfig object
       * @return true if the object was added to the map (exception is thrown if one exists with this name)
       */
@@ -3252,6 +3263,7 @@ class MdMgr {
 
     /**
       * Construct a SerializeDeserializeConfig from the supplied arguments.
+      *
       * @param nameSpace the namespace for this SerializeDeserializeConfig
       * @param name its serializer name
       * @param version its serializer version
@@ -3340,6 +3352,7 @@ class MdMgr {
 
     /**
       * Make an AdapterMessageBinding instance
+      *
       * @param adapterName the adapter's name
       * @param namespaceMsgName the message that can be consumed by the specified serializer
       * @param namespaceSerializerName the serializer that can deserialize and serialize the message
@@ -3458,6 +3471,7 @@ class MdMgr {
 
   /**
     * GetUserProperty - return a String value of a User Property
+    *
     * @param key: String
     */
   def GetUserProperty(key: String): UserPropertiesInfo = {

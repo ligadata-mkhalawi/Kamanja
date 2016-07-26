@@ -22,7 +22,7 @@ import scala.collection.immutable.Map
  *
  * @param mgr            the active metadata manager instance
  * @param moduleName     the python module name stem from the file name (as in moduleName.py)
- * @param modelNamespace the namespace for the model
+ * @param modelNamespace the namespace for the model (the moduleName)
  * @param modelName      the name of the model
  * @param version        the version of the model in the form "MMMMMM.NNNNNN.mmmmmmm"
  * @param msgNamespace   the message namespace of the message that will be consumed by this model

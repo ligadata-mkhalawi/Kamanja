@@ -230,7 +230,7 @@ cp KamanjaManager/target/scala-2.10/kamanjamanager* $systemlib
 cp Utils/SimpleKafkaProducer/target/scala-2.10/simplekafkaproducer* $systemlib
 cp Utils/ExtractData/target/scala-2.10/extractdata* $systemlib
 cp Utils/JdbcDataCollector/target/scala-2.10/jdbcdatacollector* $systemlib
-cp MetadataAPIService/target/scala-2.10/metadataapiservice* $systemlib
+#cp MetadataAPIService/target/scala-2.10/metadataapiservice* $systemlib
 cp FileDataConsumer/target/scala-2.10/filedataconsumer* $systemlib
 cp Utils/CleanUtil/target/scala-2.10/cleanutil* $systemlib
 cp Utils/ClusterInstaller/ClusterInstallerDriver/target/ClusterInstallerDriver* $kamanjainstallbin
@@ -268,8 +268,8 @@ cp KamanjaInternalDeps/target/scala-2.10/KamanjaInternalDeps_2.10-1.5.0.jar $sys
 #
 cp $srcPath/FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory/target/scala-2.10/jarfactoryofmodelinstancefactory*.jar $systemlib
 #cp $srcPath/FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory/target/scala-2.10/jarfactoryofmodelinstancefactory*.jar $kamanjainstallsystemlib
-cp $srcPath/FactoriesOfModelInstanceFactory/JpmmlFactoryOfModelInstanceFactory/target/scala-2.11/jpmmlfactoryofmodelinstancefactory*jar $systemlib
-cp $srcPath/FactoriesOfModelInstanceFactory/PythonFactoryOfModelInstanceFactory/target/scala-2.11/pythonfactoryofmodelinstancefactory*jar $systemlib
+#cp $srcPath/FactoriesOfModelInstanceFactory/JpmmlFactoryOfModelInstanceFactory/target/scala-2.10/jpmmlfactoryofmodelinstancefactory*jar $systemlib
+#cp $srcPath/FactoriesOfModelInstanceFactory/PythonFactoryOfModelInstanceFactory/target/scala-2.10/pythonfactoryofmodelinstancefactory*jar $systemlib
 
 # -------------------- end of generated cp commands --------------------
 
@@ -570,7 +570,7 @@ cp KamanjaManager/target/scala-2.11/kamanjamanager* $systemlib
 cp Utils/SimpleKafkaProducer/target/scala-2.11/simplekafkaproducer* $systemlib
 cp Utils/ExtractData/target/scala-2.11/extractdata* $systemlib
 cp Utils/JdbcDataCollector/target/scala-2.11/jdbcdatacollector* $systemlib
-cp MetadataAPIService/target/scala-2.11/metadataapiservice* $systemlib
+#cp MetadataAPIService/target/scala-2.11/metadataapiservice* $systemlib
 cp FileDataConsumer/target/scala-2.11/filedataconsumer* $systemlib
 cp Utils/CleanUtil/target/scala-2.11/cleanutil* $systemlib
 #cp Utils/Migrate/MigrateManager/target/MigrateManager* $bin
@@ -605,8 +605,8 @@ echo "copy all Kamanja jars and the jars upon which they depend to the $systemli
 
 cp $srcPath/FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory/target/scala-2.11/jarfactoryofmodelinstancefactory*.jar $systemlib
 #cp $srcPath/FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory/target/scala-2.11/jarfactoryofmodelinstancefactory*.jar $kamanjainstallsystemlib
-cp $srcPath/FactoriesOfModelInstanceFactory/JpmmlFactoryOfModelInstanceFactory/target/scala-2.11/jpmmlfactoryofmodelinstancefactory*jar $systemlib
-cp $srcPath/FactoriesOfModelInstanceFactory/PythonFactoryOfModelInstanceFactory/target/scala-2.11/pythonfactoryofmodelinstancefactory*jar $systemlib
+#cp $srcPath/FactoriesOfModelInstanceFactory/JpmmlFactoryOfModelInstanceFactory/target/scala-2.11/jpmmlfactoryofmodelinstancefactory*jar $systemlib
+#cp $srcPath/FactoriesOfModelInstanceFactory/PythonFactoryOfModelInstanceFactory/target/scala-2.11/pythonfactoryofmodelinstancefactory*jar $systemlib
 # -------------------- end of generated cp commands --------------------
 
 

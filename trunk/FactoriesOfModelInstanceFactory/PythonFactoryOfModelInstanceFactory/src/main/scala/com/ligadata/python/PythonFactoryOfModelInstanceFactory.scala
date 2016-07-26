@@ -22,13 +22,16 @@ import com.ligadata.KamanjaBase._
 import com.ligadata.Utils.{KamanjaLoaderInfo, Utils}
 import org.apache.logging.log4j.LogManager
 import java.io.{ByteArrayInputStream, InputStream, PushbackInputStream}
+import java.net.{SocketException, SocketTimeoutException}
 import java.nio.charset.StandardCharsets
+import scala.util.control.Breaks._
+
 
 import com.ligadata.Exceptions.KamanjaException
-import org.json4s.jackson.JsonMethods._
+//import org.json4s.jackson.JsonMethods._
 import org.json4s.native.Json
 import org.json4s.DefaultFormats
-import org.json4s.native.JsonMethods.{parse => _, _}
+import org.json4s.native.JsonMethods._
 
 import scala.collection.immutable.Map
 import scala.collection.mutable
@@ -163,25 +166,31 @@ object PythonFactoryOfModelInstanceFactory extends FactoryOfModelInstanceFactory
   * are returned in the MappedModelResults instance to the engine for further transformation and dispatch.
   *
   * @param factory This model's factory object
-  * @param pyServerConnection the connection object used to communicate with the python server that the actual model
-  *                           runs on.
+  * @param nodeContext the nodeContext that contains the latest connection map values for the node's python servers..
   */
 
 class PythonAdapter(factory : ModelInstanceFactory
-                    , val pyServerConnection : PyServerConnection
+                   ,nodeContext : NodeContext
                    ) extends ModelInstance(factory) with LogTrait {
 
     /** the input and output fields that are desired by the model instance (this info filled in after an addModel request) */
     private var _inputFields : Map[String,Any] = Map[String,Any]()
     private var _outputFields : Map[String,Any] = Map[String,Any]()
+    val CONNECTION_KEY : String = "PYTHON_CONNECTIONS"
+    private var _partitionKey : String = ""
 
     /**
-     *	One time initialization of the model instance.
+     *	One time initialization of the model instance.  For python, the model text is installed on the python server
+     *	associated with this partitionKey.  The input and output fields required/produced by the model are retained from
+     *	the addModel result.  The input fields in particular are used to optimize what is sent to the python server in
+     *	the way of content.
      *
-     *	@param instanceMetadata model metadata ...
+     *	@param partitionKey the partition key that is assigned to this model.
      *
      */
-    override def init(instanceMetadata: String): Unit = {
+    override def init(partitionKey: String): Unit = {
+        _partitionKey = partitionKey /** preserve the partition key ... it will be used to get the latest server connection
+          * for this model's python server */
         if (factory == null) {
             logger.error("PythonAdapter initialization failed... adapter constructed with a null factory ")
             throw new KamanjaException("PythonAdapter initialization failed... adapter constructed with a null factory",null)
@@ -190,19 +199,26 @@ class PythonAdapter(factory : ModelInstanceFactory
             logger.error("PythonAdapter initialization failed... factory's model def is null ")
             throw new KamanjaException("PythonAdapter initialization failed... factory's model def is null",null)
         }
+
+        val pyServerConnection : PyServerConnection = getServerConnection
+
         if (pyServerConnection == null) {
-            logger.error("PythonAdapter initialization failed... adapter constructed with null python server connection")
-            throw new KamanjaException("PythonAdapter initialization failed... adapter constructed with null python server connection",null)
+            val modelName : String = factory.getModelName()
+            logger.error(s"Python initialization for model '$modelName' failed... the python server connection could not be established")
+            throw new KamanjaException(s"Python initialization for model '$modelName' failed... the python server connection could not be established", null)
         }
 
+        /** retrieve the model options */
         implicit val formats = org.json4s.DefaultFormats
         val modelDef : ModelDef = factory.getModelDef()
         val modelOptStr : String = modelDef.modelConfig
         val trimmedOptionStr : String = modelOptStr.trim
         val modelOptions : Map[String,Any] = parse(trimmedOptionStr).values.asInstanceOf[Map[String,Any]]
 
-        val moduleName : String = modelDef.moduleName
-        val resultStr : String = pyServerConnection.addModel(moduleName, modelDef.Name, modelDef.objectDefinition, modelOptions)
+        /** add this model to the server's working set */
+        val (moduleName, modelName) : (String,String) = ModuleNModelNames
+
+        val resultStr : String = pyServerConnection.addModel(moduleName, modelName, modelDef.objectDefinition, modelOptions)
         val resultMap : Map[String,Any] = parse(resultStr).values.asInstanceOf[Map[String,Any]]
         val host : String = pyServerConnection.host
         val port : String = pyServerConnection.port.toString
@@ -215,6 +231,49 @@ class PythonAdapter(factory : ModelInstanceFactory
             logger.error(s"Module '$moduleName.${modelDef.Name} could not be added to python server at $host($port")
             logger.error(s"error details: '$resultStr'")
         }
+    }
+
+    /** Shared function to fetch the current python connection ... The connection is always fetched from the node context
+      * value map.  This permits the various players to try to build a new connection should it turn to crap.  The
+      * nodeContext contains the necessary information to even change to a new port if necessary.
+      *
+      * @return the current PyServerConnection
+      */
+    private def getServerConnection : PyServerConnection = {
+        val connectionMap : scala.collection.mutable.HashMap[String,Any] =
+            nodeContext.getValue(CONNECTION_KEY).asInstanceOf[scala.collection.mutable.HashMap[String,Any]]
+        val pySrvConn : PyServerConnection = connectionMap.getOrElse(_partitionKey, null).asInstanceOf[PyServerConnection]
+
+        val pyServerConnection : PyServerConnection = if (pySrvConn == null) {
+            logger.debug("PythonAdapter found no python server connection ... building one now...")
+            createConnection(_partitionKey)
+        } else {
+            pySrvConn
+        }
+        pyServerConnection
+    }
+
+    private def ModuleNModelNames : (String,String) = {
+        val modelDef : ModelDef = factory.getModelDef()
+        val moduleModelNms : Array[String] = modelDef.PhysicalName.split('.')
+        val moduleName : String = moduleModelNms.head
+        val modelName : String = moduleModelNms.last
+        (moduleName,modelName)
+    }
+
+    /** Replace a presumably broken python connection with a new one.
+      *
+      * @return the current PyServerConnection
+      */
+    private def replaceServerConnection : PyServerConnection = {
+        val pyServerConnection : PyServerConnection = createConnection(_partitionKey)
+
+        val connMap : scala.collection.mutable.HashMap[String,Any] =
+            nodeContext.getValue(CONNECTION_KEY).asInstanceOf[scala.collection.mutable.HashMap[String,Any]]
+        connMap(_partitionKey) = pyServerConnection
+        nodeContext.putValue(CONNECTION_KEY, connMap)
+
+        pyServerConnection
     }
 
     /** This calls when the instance is shutting down. There is no guarantee */
@@ -238,22 +297,119 @@ class PythonAdapter(factory : ModelInstanceFactory
 
     /**
       * Prepare the active fields, call the model evaluator, and emit results.
-      *
+      **
       * @param msg the incoming message containing the values of interest to be assigned to the active fields in the
       *            model's data dictionary.
       * @return
       */
     private def evaluateModel(msg : ContainerInterface): ModelResultBase = {
 
-        val modelDef : ModelDef = factory.getModelDef()
+        val (moduleName, modelName) : (String,String) = ModuleNModelNames
+        /** get the current connection for this model's server */
+        val pyServerConnection : PyServerConnection = getServerConnection
+        if (pyServerConnection == null) {
+            logger.error(s"Python evaluateModel (moduleName = $moduleName, modelName = '$modelName') ... the python server connection could not be obtained... giving up")
+            throw new KamanjaException(s"Python initialization for model '$moduleName.$modelName' failed... the python server connection could not be established", null)
+        }
 
-        val resultStr : String = pyServerConnection.executeModel(modelDef.Name, prepareFields(msg))
-        implicit val formats = org.json4s.DefaultFormats
-        val resultsMap : Map[String,Any] = parse(resultStr).values.asInstanceOf[Map[String,Any]]
-        val results : Array[(String, Any)] = resultsMap.toArray
-        new MappedModelResults().withResults(results)
+        val mapOfResults : ModelResultBase = evaluateModel1(pyServerConnection, moduleName, modelName, msg)
+        mapOfResults
     }
 
+    /**
+      * Evaluate the supplied message with the supplied model name.  The connection is the current python connection
+      * object in use for this partitionKey.
+      *
+      * Modest attempt is made to deal with broken connections, busy systems that have caused timeout.
+      *
+      * It is anticipated there will be issues with kamanja <=> python server communications.  Things go down.
+      * Things fall apart.  Indeed the world is passing away and only those who do the will of God will remain.
+      *
+      * To make this slightly more robust, we are going to catch at least some of the Socket exceptions.  Socket.java
+      * can throw these:
+      *
+      *     IllegalArgumentException
+      *     IllegalBlockingModeException
+      *     InterruptedIOException
+      *     IOException
+      *     NullPointerException
+      *     PrivilegedActionException
+      *     PrivilegedException
+      *     SecurityException
+      *     SocketException
+      *     SocketTimeoutException
+      *     UnknownHostException
+      *     UnsupportedOperationException
+      *
+      * A real robust implementation would manage a number of these.  For example an InterruptedIOException might
+      * be retried.  An UnknownHostException could be an issue if the python server were being run on a different
+      * host than the kamanja node.
+      *
+      * For now we focus on the SocketException and SocketTimeoutException.  We will try to create a new connection for
+      * the first and sleep and retry on the second.  I am not convinced that this is the right behavior, but it will
+      * suffice for now.
+      *
+      * The initial implementation will get a new port.  It is likely that the port is hammered ... at least until
+      * the linux has had a chance to clean up the dead process of the failed python server.
+      *
+      * Fixme: It is possible to run out of ports.  We might want to have a contigency plan of getting an additional
+      * band of ports.  This is doable.  The current iterator and band information is found in the nodeContext map.
+      *
+      * There is going to be many iterations on this as we make "robustness" improvements.
+      *
+      * @param pyServerConnection a PyServerConnection
+      * @param modelName the model that is to evaluate the message
+      * @param msg the message from the engine that is to be evaluated
+      * @return a message result (ModelResultBase derivative)
+      */
+    private def evaluateModel1(pyServerConnection: PyServerConnection, modulelName : String, modelName : String, msg : ContainerInterface) : ModelResultBase = {
+
+        var connObj : PyServerConnection = pyServerConnection
+        var mapOfResultsReturned : MappedModelResults = null
+        var attempts : Int = 0
+        val attemptsLimit = 10
+        var mSecsToSleep : Long = 500
+
+        breakable {
+            while (true) {
+                try {
+                    attempts += 1
+                    if (attempts > attemptsLimit) {
+                        logger.error(s"model '$modelName' could not be evaluated...consult prior log entries for what has been tried.")
+                        logger.error(s"there are likely communication issues with the python server for the model '$modelName'.")
+                        break
+                    }
+                    val resultStr: String = pyServerConnection.executeModel(modulelName, modelName, prepareFields(msg))
+                    implicit val formats = org.json4s.DefaultFormats
+                    val resultsMap: Map[String, Any] = parse(resultStr).values.asInstanceOf[Map[String, Any]]
+                    val results: Array[(String, Any)] = resultsMap.toArray
+                    mapOfResultsReturned = new MappedModelResults().withResults(results)
+                    break
+                } catch {
+                    case se: SocketException => {
+                        logger.error(s"SocketException encountered processing $modelName... unable to produce result...exception = ${se.toString}")
+                        logger.error(s"obtaining a new connection ... will retry")
+                        connObj = replaceServerConnection
+                    }
+                    case ste: SocketTimeoutException => {
+                        /** Fixme: The behavior here is to retry, but wait a twice as long... this is no doubt incorrect... consider this a
+                          * place holder for actual behavior for actual problems....
+                          */
+                        logger.error(s"Exception encountered processing $modelName... unable to produce result...exception = ${ste.toString}")
+                        mSecsToSleep *= 2
+                        Thread.sleep(mSecsToSleep)
+                    }
+                    case e: Exception => {
+                        /** if it is not one of the supported retry exceptions... we blow out of here */
+                        logger.error(s"Exception encountered processing $modelName... unable to produce result...exception = ${e.toString}")
+                        break
+                    }
+                    //case t : Throwable => null  let the engine take this one..
+                }
+            }
+        }
+        mapOfResultsReturned
+    }
 
     /**
       * Send only those fields that are specified in the inputField state retrieved from the addModel result.
@@ -273,40 +429,28 @@ class PythonAdapter(factory : ModelInstanceFactory
         logger.debug(s"model ${factory.getModelDef().Name} msg = $msgDict")
         inputDictionary
     }
-}
 
+    /**
+      * It there is no python connection object available in the node context with this partition key, this function is called to establish a server and
+      * also build a connection to it.
+      *
+      * @param partitionKey supplied at initialization and also available in the txnContext supplied to execute. This is the
+      *                     key used to lookup the python server connection object for this model to forward commands to the server.
+      */
+    private def createConnection(partitionKey : String): PyServerConnection = {
 
+        val modelDef : ModelDef = factory.getModelDef()
+        if (partitionKey == null) return null // first time engine case... there is no valid key yet ... wait until we got a partition key that is valid
 
-/**
-  * The PythonAdapterFactory instantiates Python proxy model instance when asked by caller.  Its main function is to
-  * instantiate a new python proxy model whenever asked (createModelInstance) and assess whether the current message being processed
-  * by the engine is consumable by this model (isValidMessage).
-  *
-  * The ModelInstanceFactory derivatives are created from FactoryOfModelInstanceFactory at engine startup and whenever
-  * a new model is added or changed when the engine is running.
-  *
-  * @param modelDef the model definition that describes the model that this factory will prepare
-  * @param nodeContext the NodeContext object can be used by the model instances to put/get model state needed to
-  *                    execute the model.
-  */
+        val connMap : scala.collection.mutable.HashMap[String,Any] =
+            nodeContext.getValue(CONNECTION_KEY).asInstanceOf[scala.collection.mutable.HashMap[String,Any]]
+        val pyServCon: PyServerConnection = if (connMap != null && connMap.contains(partitionKey)) connMap(partitionKey).asInstanceOf[PyServerConnection] else null
+        val pySerververConnection : PyServerConnection = if (pyServCon != null) {
 
-class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) with LogTrait {
-
-    val CONNECTION_KEY : String = "PYTHON_CONNECTIONS"
-   /**
-    * Common initialization for all Model Instances. This gets called once per node during the metadata load or corresponding model def change.
-    *
-    * @param txnContext Transaction context to do get operations on this transactionid. But this transaction will be rolledback
-    *                   once the initialization is done.
-    */
-    override def init(txnContext: TransactionContext): Unit = {
-        val partitionKey : String = txnContext.getPartitionKey()
-
-       if (nodeContext.getValue(partitionKey) != null) {
-           val pyCon: PyServerConnection = nodeContext.getValue(partitionKey).asInstanceOf[PyServerConnection]
-           val connObjStr: String = if (pyCon != null) "valid PyServerConnection" else "<bad PyServerConnection>"
-           logger.info(s"PythonAdapterFactory.init($partitionKey) ...values are:\nhost = ${pyCon.host}\nport = ${pyCon.port.toString}\npyPath = ${pyCon.pyPath}\nconnection object = $connObjStr")
-       } else {
+            val connObjStr: String = "valid PyServerConnection previously prepared"
+            logger.info(s"PythonAdapterFactory.init($partitionKey) ...values are:\nhost = ${pyServCon.host}\nport = ${pyServCon.port.toString}\npyPath = ${pyServCon.pyPath}\nconnection object = $connObjStr")
+            pyServCon
+        } else {
             /**
               * The factory doesn't have a connection for this partition key ... make one now
               * FixMe: user, the log config location and the log dir should be added to the nodeContext dict as well and initialized
@@ -331,15 +475,15 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends
                 nodeContext.getValue("PYTHON_LOG_PATH").asInstanceOf[String]
             else
                 s"$pyPath/logs/pythonserver.log"
-            val connMap : mutable.HashMap[String,Any] = nodeContext.getValue(CONNECTION_KEY).asInstanceOf[mutable.HashMap[String,Any]]
+            /** peer inside the pyPropMap to see if things are correct when debuging needed */
             val pyPropMap : Map[String,Any] = nodeContext.getValue("pyPropertyMap").asInstanceOf[Map[String,Any]]
 
             val pyConn : PyServerConnection = new PyServerConnection(host
-                                                                    ,port
-                                                                    ,"kamanja"
-                                                                    ,pyLogConfigPath
-                                                                    ,pyLogPath
-                                                                    ,pyPath)
+                ,port
+                ,"kamanja"
+                ,pyLogConfigPath
+                ,pyLogPath
+                ,pyPath)
             val (startValid, connValid) : (Boolean, Boolean) = if (pyConn != null) {
                 /** setup server and connection to it */
                 val (startServerResult, connResult) : (String,String) = pyConn.initialize
@@ -347,16 +491,17 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends
                 /** how did it go? */
                 implicit val formats = org.json4s.DefaultFormats
                 val startResultsMap : Map[String,Any] = parse(startServerResult).values.asInstanceOf[Map[String,Any]]
-                val startRc : Int = startResultsMap.getOrElse("code", -1).asInstanceOf[Int]
+                val startRc : Int = startResultsMap.getOrElse("code", -1).asInstanceOf[scala.math.BigInt].toInt
 
                 val connResultsMap : Map[String,Any] = parse(connResult).values.asInstanceOf[Map[String,Any]]
-                val connRc : Int = connResultsMap.getOrElse("code", -1).asInstanceOf[Int]
+                val connRc : Int = connResultsMap.getOrElse("code", -1).asInstanceOf[scala.math.BigInt].toInt
 
                 if (startRc == 0 && connRc == 0) {
                     connMap(partitionKey) = pyConn
-                    nodeContext.putValue(partitionKey, connMap)
+                    nodeContext.putValue(CONNECTION_KEY, connMap)
+                    logger.debug(s"node context's python connection map (key '$CONNECTION_KEY') updated with new server connection (host = $host, port = ${port.toString})... \nstart server result = $startServerResult, \nconnection to server result = $connResult")
                 } else {
-                    logger.error(s"Problems starting py server on behalf of models running on ${partitionKey}... in PythonAdapterFactory.init for ${modelDef.FullName}")
+                    logger.error(s"Problems starting py server on behalf of models running on thread with partition key = ${partitionKey}... in PythonAdapterFactory.init for ${modelDef.FullName}")
                     logger.error(s"startServer result = $startServerResult")
                     logger.error(s"connection result = $connResult")
                 }
@@ -375,9 +520,34 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends
 
                 logger.error(s"The values are:\nhost = $hostStr\nport = $portStr\npyPath = $pyPathStr\nconnection object = $connObjStr")
             }
+            pyConn
         }
-
+        pySerververConnection
     }
+}
+
+/**
+  * The PythonAdapterFactory instantiates Python proxy model instance when asked by caller.  Its main function is to
+  * instantiate a new python proxy model whenever asked (createModelInstance) and assess whether the current message being processed
+  * by the engine is consumable by this model (isValidMessage).
+  *
+  * The ModelInstanceFactory derivatives are created from FactoryOfModelInstanceFactory at engine startup and whenever
+  * a new model is added or changed when the engine is running.
+  *
+  * @param modelDef the model definition that describes the model that this factory will prepare
+  * @param nodeContext the NodeContext object can be used by the model instances to put/get model state needed to
+  *                    execute the model.
+  */
+
+class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) with LogTrait {
+
+   /**
+    * Common initialization for all Model Instances. This gets called once per partition id used for each kamanja server node
+    *
+    * @param txnContext Transaction context to do get operations on this transactionid. But this transaction will be rolledback
+    *                   once the initialization is done.
+    */
+    override def init(txnContext: TransactionContext): Unit = {}
 
     /**
       * Called when the system is being shutdown, do any needed cleanup ...
@@ -394,6 +564,7 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends
             getModelDef().FullName
         } else {
             val msg : String =  "PythonAdapterFactory: model has no name and no version"
+            logger.error("ModelDef in ctor was null...instance could not be built")
             logger.error(msg)
             msg
         }
@@ -447,9 +618,7 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends
         val useThisModel : ModelInstance = if (modelDef != null) {
             val partitionKey : String = txnContext.getPartitionKey()
             val isInstanceReusable : Boolean = true
-            val connMap : mutable.HashMap[String,Any] = nodeContext.getValue(CONNECTION_KEY).asInstanceOf[mutable.HashMap[String,Any]]
-            val pyServerConnection : PyServerConnection = connMap.getOrElse(partitionKey,null).asInstanceOf[PyServerConnection]
-            val builtModel : ModelInstance = new PythonAdapter(this, pyServerConnection)
+            val builtModel : ModelInstance = new PythonAdapter(this, nodeContext)
             builtModel
         } else {
             logger.error("ModelDef in ctor was null...instance could not be built")

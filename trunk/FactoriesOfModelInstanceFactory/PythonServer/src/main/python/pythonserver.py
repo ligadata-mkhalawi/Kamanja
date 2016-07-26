@@ -387,7 +387,7 @@ while True:
     # establish a connection
 	logger.info('accepting connections...')
 	conn, addr = serversocket.accept()
-	logger.info('Connected by', addr)
+	logger.info('Connected by', str(addr))
 	while True:
 		closedConnection = False
 		exceptionOccurred = False
