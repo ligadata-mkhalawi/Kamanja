@@ -143,7 +143,10 @@ class PythonMdlSupport ( val mgr: MdMgr
     } else {
       val jarName: String = pythonMdlFacFac.jarName
       val jarDeps: scala.Array[String] = pythonMdlFacFac.dependencyJarNames
-      val phyName: String = pythonMdlFacFac.physicalName
+        /** for python, we want to preserve the case of the module and moduleName.  It is put into the phyName which the
+          * metadata manager will not fold (unlike namespace and name) to lowercase.
+          */
+      val phyName: String = s"$moduleName.$modelName"
 
       /** make sure new msg is there. */
       val msgver: Long = MdMgr.ConvertVersionToLong(msgVersion)

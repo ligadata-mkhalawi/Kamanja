@@ -20,10 +20,10 @@ class addModel(CommandBase):
 		else:
 			modelName = ""
 		#
-		if "ModelFile" in cmdOptions:
-			modelFileName = str(cmdOptions["ModelFile"])
+		if "Module" in cmdOptions:
+			modelFileName = str(cmdOptions["Module"]) + ".py"
 		else:
-			modelFileName = ""
+			modelFileName = "noModuleNameWasGiven.py"
 		#
 		self.logger.debug("Entered addModel... model to be added = {} ... file = {}".format(modelName,modelFileName))
 		
@@ -34,7 +34,7 @@ class addModel(CommandBase):
 		result = ""
 		inputfields = ""
 		outputfields = ""
-		reasonablePath = os.path.exists(modelSrcPath) and os.path.isfile(modelSrcPath) and modelName != "" and modelFileName != ""
+		reasonablePath = os.path.exists(modelSrcPath) and os.path.isfile(modelSrcPath) and modelName != "" and modelFileName != "noModuleNameWasGiven.py"
 		if reasonablePath:
 			#(parentDir, file) = os.path.split(modelSrcPath)
 			moduleName = str.split(modelFileName,'.')[0]  
@@ -51,6 +51,10 @@ class addModel(CommandBase):
 		else:
 			inputfields = []
 			outputfields = []
+			if "Module" in cmdOptions:
+				moduleName = str(cmdOptions["Module"])
+			else:
+				moduleName = "no module supplied"
 			modelAddMsg = "ModuleName.ModelName '{}.{}' is invalid...it does not reference a valid class".format(moduleName, modelName)
 			result = json.dumps({'Cmd' : 'addModel', 'Server' : host, 'Port' : str(port), 'Result' : modelAddMsg, 'InputFields' : inputfields, 'OutputFields' : outputfields })
 

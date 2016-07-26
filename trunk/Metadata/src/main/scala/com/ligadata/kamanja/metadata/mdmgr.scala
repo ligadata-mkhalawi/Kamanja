@@ -2265,15 +2265,7 @@ class MdMgr {
     if (mdl.modelRepresentation == ModelRepresentation.PMML)
       mdl.ObjectFormat(ObjFormatType.fPMML)
 
-      /** python needs the case preserved on both the module name (taken from the supplied file) and the modelName... the
-        * actual classname within that file..  This is accomplished by passing the pair through the physical name which
-        * doesn't hammer the case of the strings like name and namespace.
-        */
-    if (mdl.modelRepresentation == ModelRepresentation.PYTHON) {
-        mdl.PhysicalName(s"$moduleName.$name")
-    } else {
-        mdl.PhysicalName(physicalName)
-    }
+    mdl.PhysicalName(physicalName)
     mdl.tenantId = tenantId
     SetBaseElem(mdl, nameSpace, name, ver, jarNm, dJars, ownerId, tenantId, uniqueId, mdElementId)
 
