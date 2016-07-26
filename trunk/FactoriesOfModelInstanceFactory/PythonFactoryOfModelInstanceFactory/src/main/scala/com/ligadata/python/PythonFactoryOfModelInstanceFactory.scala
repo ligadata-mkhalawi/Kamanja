@@ -379,7 +379,7 @@ class PythonAdapter(factory : ModelInstanceFactory
                         logger.error(s"there are likely communication issues with the python server for the model '$modelName'.")
                         break
                     }
-                    val resultStr: String = pyServerConnection.executeModel(modelName, prepareFields(msg))
+                    val resultStr: String = pyServerConnection.executeModel(modulelName, modelName, prepareFields(msg))
                     implicit val formats = org.json4s.DefaultFormats
                     val resultsMap: Map[String, Any] = parse(resultStr).values.asInstanceOf[Map[String, Any]]
                     val results: Array[(String, Any)] = resultsMap.toArray
@@ -392,6 +392,9 @@ class PythonAdapter(factory : ModelInstanceFactory
                         connObj = replaceServerConnection
                     }
                     case ste: SocketTimeoutException => {
+                        /** Fixme: The behavior here is to retry, but wait a twice as long... this is no doubt incorrect... consider this a
+                          * place holder for actual behavior for actual problems....
+                          */
                         logger.error(s"Exception encountered processing $modelName... unable to produce result...exception = ${ste.toString}")
                         mSecsToSleep *= 2
                         Thread.sleep(mSecsToSleep)

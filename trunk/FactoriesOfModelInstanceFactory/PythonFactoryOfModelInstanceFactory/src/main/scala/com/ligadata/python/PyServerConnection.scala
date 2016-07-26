@@ -297,8 +297,7 @@ class PyServerConnection(val host : String
         val modelOpts : String = Json(DefaultFormats).write(modelOptions)
         /** copy the file into a tmp file from string for either local copy to models or possibly remote copy to other server */
         cpSrcFile(moduleName, moduleSrc)
-        val moduleFile : String = s"$moduleName.py"
-        val addMsg : String = s"{${'"'}Cmd${'"'}: ${'"'}addModel${'"'}, ${'"'}CmdVer${'"'}: 1, ${'"'}CmdOptions${'"'}: {${'"'}ModelFile${'"'}: ${'"'}$moduleFile${'"'}, ${'"'}ModelName${'"'}: ${'"'}$modelName${'"'} } }"
+        val addMsg : String = s"{${'"'}Cmd${'"'}: ${'"'}addModel${'"'}, ${'"'}CmdVer${'"'}: 1, ${'"'}CmdOptions${'"'}: {${'"'}Module${'"'}: ${'"'}$moduleName${'"'}, ${'"'}ModelName${'"'}: ${'"'}$modelName${'"'} }, ${'"'}ModelOptions${'"'}: ${'"'}{OPTIONS_KEY}${'"'} }"
 
         val subMap : Map[String,String] = Map[String,String]("{OPTIONS_KEY}" -> modelOpts)
         val sub = new MapSubstitution(addMsg, subMap)
@@ -360,7 +359,7 @@ class PyServerConnection(val host : String
       *         }
       *         '''
       */
-    def removeModel(modelName : String) : String = {
+    def removeModel(moduleName : String, modelName : String) : String = {
         val json : org.json4s.JValue = (
             ("Cmd" -> "removeModel") ~
                 ("CmdVer" -> 1) ~
@@ -370,7 +369,7 @@ class PyServerConnection(val host : String
                     ))
             //("ModelOptions" -> List[String]())
             )
-        val payloadStr : String = s"{${'"'}Cmd${'"'}: ${'"'}removeModel${'"'}, ${'"'}CmdVer${'"'}: 1, ${'"'}CmdOptions${'"'}: {${'"'}ModelName${'"'}: ${'"'}$modelName${'"'} } }"
+        val payloadStr : String = s"{${'"'}Cmd${'"'}: ${'"'}removeModel${'"'}, ${'"'}CmdVer${'"'}: 1, ${'"'}CmdOptions${'"'}: {${'"'}Module${'"'}: ${'"'}$moduleName${'"'},${'"'}ModelName${'"'}: ${'"'}$modelName${'"'} } }"
         val result : String = encodeAndProcess("removeModel", payloadStr)
         result
     }
@@ -415,11 +414,11 @@ class PyServerConnection(val host : String
       * In the case of the executeModel, the json returned is strictly the output map to be supplied for disposition
       * to the engine.
       */
-    def executeModel(modelName : String, msg : Map[String, Any]) : String = {
+    def executeModel(moduleName: String, modelName: String, msg : Map[String, Any]) : String = {
 
         val msgFieldMap : String = Json(DefaultFormats).write(msg)
 
-        val jsonCmdTemplate: String = s"{${'"'}Cmd${'"'}: ${'"'}executeModel${'"'}, ${'"'}CmdVer${'"'}: 1, ${'"'}CmdOptions${'"'} -> { ${'"'}ModelName${'"'}: ${'"'}$modelName${'"'}, ${'"'}InputDictionary${'"'} -> ${'"'}{DATA.KEY}${'"'}}}"
+        val jsonCmdTemplate: String = s"{${'"'}Cmd${'"'}: ${'"'}executeModel${'"'}, ${'"'}CmdVer${'"'}: 1, ${'"'}CmdOptions${'"'}: { ${'"'}Module${'"'}: ${'"'}$moduleName${'"'},${'"'}ModelName${'"'}: ${'"'}$modelName${'"'}, ${'"'}InputDictionary${'"'}: ${'"'}{DATA.KEY}${'"'}}}"
 
         val subMap : Map[String,String] = Map[String,String]("{DATA.KEY}" -> msgFieldMap)
         val sub = new MapSubstitution(jsonCmdTemplate, subMap)
