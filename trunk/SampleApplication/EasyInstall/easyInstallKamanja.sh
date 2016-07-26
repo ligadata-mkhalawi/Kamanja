@@ -309,7 +309,12 @@ chmod 0700 $kamanjaui/*.sh
 # *******************************
 # copy OrientDB JDBC jar into system
 # *******************************
-wget -O $systemlib/orientdb-jdbc-2.1.19-all.jar --no-cookies --no-check-certificate "http://orientdb.com/download.php?file=orientdb-jdbc-2.1.19-all.jar"
+# Download only once and copy
+orientdb_jdbc_all="$ivyPath/ivy2/cache/com.orientechnologies/orientdb-jdbc/jars/orientdb-jdbc-2.1.19-all.jar"
+if [ ! -f "$orientdb_jdbc_all" ]; then
+	wget -O $orientdb_jdbc_all --no-cookies --no-check-certificate "http://orientdb.com/download.php?file=orientdb-jdbc-2.1.19-all.jar"
+fi
+cp $orientdb_jdbc_all $systemlib
 
 # *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep
@@ -612,7 +617,12 @@ chmod 0700 $kamanjaui/*.sh
 # *******************************
 # copy OrientDB JDBC jar into system
 # *******************************
-wget -O $systemlib/orientdb-jdbc-2.1.19-all.jar --no-cookies --no-check-certificate "http://orientdb.com/download.php?file=orientdb-jdbc-2.1.19-all.jar"
+# Download only once and copy
+orientdb_jdbc_all="$ivyPath/ivy2/cache/com.orientechnologies/orientdb-jdbc/jars/orientdb-jdbc-2.1.19-all.jar"
+if [ ! -f "$orientdb_jdbc_all" ]; then
+	wget -O $orientdb_jdbc_all --no-cookies --no-check-certificate "http://orientdb.com/download.php?file=orientdb-jdbc-2.1.19-all.jar"
+fi
+cp $orientdb_jdbc_all $systemlib
 
 # *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep
