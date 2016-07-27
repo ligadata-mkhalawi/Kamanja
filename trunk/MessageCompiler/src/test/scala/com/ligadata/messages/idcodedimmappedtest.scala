@@ -188,14 +188,16 @@ class IdCodeDimMappedTest(factory: ContainerFactoryInterface, other: IdCodeDimMa
     }
   }
 
-  override def getOrElse(keyName: String, defaultVal: Any): AnyRef = { // Return (value, type)
+  override def getOrElse(keyName: String, defaultVal: Any): AnyRef = { // Return (value)
     var attributeValue: AttributeValue = new AttributeValue();
     if (keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name " + keyName);
     val key = keyName.toLowerCase;
     try {
-      val value = valuesMap(key).getValue
-      if (value == null) return defaultVal.asInstanceOf[AnyRef];
-      return value.asInstanceOf[AnyRef];
+      if (valuesMap.contains(key)) return get(key)
+      else {
+        if (defaultVal == null) return null;
+        return defaultVal.asInstanceOf[AnyRef];
+      }
     } catch {
       case e: Exception => {
         log.debug("", e)
@@ -279,6 +281,9 @@ class IdCodeDimMappedTest(factory: ContainerFactoryInterface, other: IdCodeDimMa
   }
 
   private def ValueToString(v: Any): String = {
+    if (v == null) {
+      return "null"
+    }
     if (v.isInstanceOf[Set[_]]) {
       return v.asInstanceOf[Set[_]].mkString(",")
     }
