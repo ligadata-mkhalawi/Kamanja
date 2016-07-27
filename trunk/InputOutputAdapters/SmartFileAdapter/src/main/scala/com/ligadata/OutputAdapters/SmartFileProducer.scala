@@ -295,7 +295,8 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     }
 
     if (dateTime > 0 && partitionFormatString != null && partitionDateFormats != null) {
-      val values = partitionDateFormats.map(fmt => fmt.format(dateTime))
+      val dtTm = new java.util.Date(dateTime)
+      val values = partitionDateFormats.map(fmt => fmt.format(dtTm))
       key = record.getTypeName() + "/" + partitionFormatString.format(values: _*)
     }
 
