@@ -35,7 +35,11 @@ class SmartFileProducerConfiguration extends AdapterConfiguration {
   var typeLevelConfig: collection.mutable.Map[String, Long] = collection.mutable.Map[String, Long]() // type level overrides for flushBufferSize
   
   var kerberos: KerberosConfig = null
+
+  var hadoopConfig  : List[(String,String)]=null
+
 }
+
 
 class KerberosConfig {
   var principal: String = null
@@ -96,6 +100,13 @@ object SmartFileProducerConfiguration {
         val kerbConf = kv._2.asInstanceOf[Map[String, String]]
         adapterConfig.kerberos.principal = kerbConf.getOrElse("Principal", null)
         adapterConfig.kerberos.keytab = kerbConf.getOrElse("Keytab", null)
+      }
+      else if (kv._1.compareToIgnoreCase("hadoopConfig")==0){
+        val hadoopConfig = kv._2.asInstanceOf[Map[String,String]]
+        adapterConfig.hadoopConfig= List[(String,String)]()
+        hadoopConfig.foreach(hconf =>{
+          adapterConfig.hadoopConfig ::=(hconf._1, hconf._2)
+        })
       }
     })
 
