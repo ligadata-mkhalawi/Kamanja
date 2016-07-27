@@ -13,23 +13,30 @@ angular
     'ngAnimate',
     'ngCookies',
     'ngResource',
-    'ngRoute',
+    'ui.router',
     'ngSanitize',
     'ngTouch'
   ])
-  .config(function ($routeProvider) {
-    $routeProvider
-      .when('/', {
+  .config(function ($stateProvider, $urlRouterProvider) {
+    $urlRouterProvider.otherwise(function ($injector, $location) {
+      var $state = $injector.get('$state');
+      if ($location.$$path === '' || $location.$$path === '/') {
+        $state.go('/');
+      } else {
+        $state.go('404');
+      }
+    });
+
+    $stateProvider
+      .state('/', {
         templateUrl: 'views/main.html',
-        controller: 'MainCtrl',
-        controllerAs: 'main'
+        controller: 'MainCtrl as main'
       })
-      .when('/about', {
+      .state('about', {
         templateUrl: 'views/about.html',
-        controller: 'AboutCtrl',
-        controllerAs: 'about'
+        controller: 'AboutCtrl as about'
       })
-      .otherwise({
-        redirectTo: '/'
+      .state('404', {
+        templateUrl: '404.html'
       });
   });
