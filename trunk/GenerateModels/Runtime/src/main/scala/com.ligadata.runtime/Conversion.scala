@@ -143,10 +143,29 @@ class Conversion {
     }
   }
 
+  def ToDate(v: Any, format : String): Date = {
+    val formatDate = if(format == null || format.length ==0) None else Some(new java.text.SimpleDateFormat(format))
+    v match {
+      case null => null
+      case y: String => if(formatDate.isDefined) formatDate.get.parse(y) else Conversion.formatDate.parse(y)
+      case y: Date => y
+    }
+  }
+
   def ToTimestamp(v: Any): Timestamp = {
     v match {
       case null => null
       case y: String => new Timestamp(Conversion.formatTs.parse(y).getTime)
+      case y: Timestamp => y
+    }
+  }
+
+  def ToTimestamp(v: Any, format : String): Timestamp = {
+    val formatTs = if(format == null || format.length ==0) None else Some(new java.text.SimpleDateFormat(format))
+    v match {
+      case null => null
+      case y: String => if(formatTs.isDefined) new Timestamp(formatTs.get.parse(y).getTime)
+                        else new Timestamp(Conversion.formatTs.parse(y).getTime)
       case y: Timestamp => y
     }
   }
