@@ -25,11 +25,13 @@ class removeModel(CommandBase):
 		if modelName in modelDict:
 			del modelDict[modelName]
 			removeResult = 'model {} removed'.format(modelName)
+			rc = 0
 		else:
 			modelKey = modelName
 			removeResult = "key '{}' was not found in the model dictionary...remove failed".format(modelKey)
+			rc = -1
 
-		result = json.dumps({'Cmd' : 'removeModel', 'Server' : host, 'Port' : str(port), 'Result' : removeResult })
+		result = json.dumps({'Cmd' : 'removeModel', 'Server' : host, 'Port' : str(port), 'Code' : str(rc), 'Result' : removeResult })
 		self.logger.info(result)
 
 		return result

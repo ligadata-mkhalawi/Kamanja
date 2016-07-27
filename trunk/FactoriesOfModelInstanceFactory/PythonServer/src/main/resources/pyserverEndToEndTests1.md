@@ -1,9 +1,9 @@
 export ipport=8998
-export CLASSPATH=/tmp/drdigital/Kamanja-1.5.0_2.11/lib/system/ExtDependencyLibs_2.11-1.5.0.jar:/tmp/drdigital/Kamanja-1.5.0_2.11/lib/system/KamanjaInternalDeps_2.11-1.5.0.jar:/tmp/drdigital/Kamanja-1.5.0_2.11/lib/system/ExtDependencyLibs2_2.11-1.5.0.jar
+export CLASSPATH=/tmp/drdigital/Kamanja-1.5.1_2.11/lib/system/ExtDependencyLibs_2.11-1.5.1.jar:/tmp/drdigital/Kamanja-1.5.1_2.11/lib/system/KamanjaInternalDeps_2.11-1.5.1.jar:/tmp/drdigital/Kamanja-1.5.1_2.11/lib/system/ExtDependencyLibs2_2.11-1.5.1.jar
 export PY_METADATA=~/github1/dev/1.5.0.Test/kamanja/trunk/FactoriesOfModelInstanceFactory/PythonServer/src/main/resources/metadata
 export KAMANJAPYPATH=~/github1/dev/1.5.0.Test/kamanja/trunk/FactoriesOfModelInstanceFactory/PythonServer/src/main/python
 export DATA=~/github1/dev/1.5.0.Test/kamanja/trunk/FactoriesOfModelInstanceFactory/PythonServer/src/main/resources/data
-export KAMANJA_HOME=/tmp/drdigital/Kamanja-1.5.0_2.11
+export KAMANJA_HOME=/tmp/drdigital/Kamanja-1.5.1_2.11
 export KAMANJA_SRCDIR=~/github1/dev/1.5.0.Test/kamanja/trunk
 export TestBin=$KAMANJA_SRCDIR/MetadataAPI/src/test/resources/bin
 export MetadataDir=$KAMANJA_SRCDIR/MetadataAPI/src/test/resources/Metadata
@@ -46,6 +46,8 @@ $KAMANJA_HOME/bin/kamanja $apiConfigProperties add adaptermessagebinding FROMSTR
 
 $TestBin/PushDataToKafka.sh "testin_1" 0 "$DATA/arithmeticData.txt"
   
+#**debug**
+
 $KAMANJA_HOME/bin/kamanja debug add model python $PY_METADATA/model/add.py MODELNAME AddTuple MESSAGENAME org.kamanja.arithmetic.arithmeticMsg OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}, "OutputTypeInfo": {"a": "Int", "b": "Int", "result": "Int"} }' TENANTID tenant1
 
 $KAMANJA_HOME/bin/kamanja debug add model python $PY_METADATA/model/multiply.py MODELNAME MultiplyTuple MESSAGENAME org.kamanja.arithmetic.arithmeticOutMsg OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}, "OutputTypeInfo": {"a": "Int", "b": "Int", "result": "Int"} }' TENANTID tenant1
@@ -53,9 +55,8 @@ $KAMANJA_HOME/bin/kamanja debug add model python $PY_METADATA/model/multiply.py 
 ERROR [pool-17-thread-1] - Failed to execute model:add.addtuple
 com.ligadata.Exceptions.NotImplementedFunctionException: execute method is not implemented for model:add.addtuple
 InputMessages (1) are:org.kamanja.arithmetic.arithmeticMsg and triggerdSetIndex:0
+        at com.ligadata.KamanjaBase.ModelInstance.execute(ModelBase.scala:619) ~[KamanjaInternalDeps_2.11-1.5.1.jar:0.1-SNAPSHOT]
 
-ERROR [pool-17-thread-1] - Failed to execute model:add.addtuple
 com.ligadata.Exceptions.NotImplementedFunctionException: execute method is not implemented for model:add.addtuple
 InputMessages (1) are:org.kamanja.arithmetic.arithmeticMsg and triggerdSetIndex:0
-        at com.ligadata.KamanjaBase.ModelInstance.execute(ModelBase.scala:619) ~[KamanjaInternalDeps_2.11-1.5.0.jar:0.1-SNAPSHOT]
-
+        at com.ligadata.KamanjaBase.ModelInstance.execute(ModelBase.scala:619) ~[KamanjaInternalDeps_2.11-1.5.1.jar:0.1-SNAPSHOT]

@@ -424,6 +424,8 @@ class PyServerConnection(val host : String
         val sub = new MapSubstitution(jsonCmdTemplate, subMap)
         val payloadStr : String = sub.makeSubstitutions
 
+        logger.warn(s"executeModel msg='$payloadStr'")
+
         val result : String = encodeAndProcess("executeModel", payloadStr)
         result
     }

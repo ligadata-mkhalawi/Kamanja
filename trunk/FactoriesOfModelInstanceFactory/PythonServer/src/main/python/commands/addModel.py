@@ -47,7 +47,7 @@ class addModel(CommandBase):
 			self.logger.debug("model {}.{} added!".format(moduleName, modelName))
 			(inputfields, outputfields) = handler.getInputOutputFields()
 			modelAddMsg = "model {}.{} added".format(moduleName,modelName)
-			result = json.dumps({'Cmd' : 'addModel', 'Server' : host, 'Port' : str(port), 'Result' : modelAddMsg, 'InputFields' : inputfields, 'OutputFields' : outputfields })
+			result = json.dumps({'Cmd' : 'addModel', 'Server' : host, 'Port' : str(port), 'Code' : 0, 'Result' : modelAddMsg, 'InputFields' : inputfields, 'OutputFields' : outputfields })
 		else:
 			inputfields = []
 			outputfields = []
@@ -56,7 +56,7 @@ class addModel(CommandBase):
 			else:
 				moduleName = "no module supplied"
 			modelAddMsg = "ModuleName.ModelName '{}.{}' is invalid...it does not reference a valid class".format(moduleName, modelName)
-			result = json.dumps({'Cmd' : 'addModel', 'Server' : host, 'Port' : str(port), 'Result' : modelAddMsg, 'InputFields' : inputfields, 'OutputFields' : outputfields })
+			result = json.dumps({'Cmd' : 'addModel', 'Server' : host, 'Port' : str(port), 'Code' : -1, 'Result' : modelAddMsg, 'InputFields' : inputfields, 'OutputFields' : outputfields })
 
 		self.logger.info("AddModel results = {}".format(result))
 
