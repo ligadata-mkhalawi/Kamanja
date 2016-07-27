@@ -97,7 +97,7 @@ object ConfigUtils {
     "JAR_PATHS", "JAR_TARGET_DIR", "ROOT_DIR", "GIT_ROOT", "SCALA_HOME", "JAVA_HOME", "MANIFEST_PATH", "CLASSPATH", "NOTIFY_ENGINE", "SERVICE_HOST",
     "ZNODE_PATH", "ZOOKEEPER_CONNECT_STRING", "COMPILER_WORK_DIR", "SERVICE_PORT", "MODEL_FILES_DIR", "TYPE_FILES_DIR", "FUNCTION_FILES_DIR",
     "CONCEPT_FILES_DIR", "MESSAGE_FILES_DIR", "CONTAINER_FILES_DIR", "CONFIG_FILES_DIR", "MODEL_EXEC_LOG", "NODE_ID", "SSL_CERTIFICATE", "SSL_PASSWD", "DO_AUTH", "SECURITY_IMPL_CLASS",
-    "SECURITY_IMPL_JAR", "AUDIT_IMPL_CLASS", "AUDIT_IMPL_JAR", "DO_AUDIT", "AUDIT_PARMS", "ADAPTER_SPECIFIC_CONFIG", "METADATA_DATASTORE","CLASSPATH_JARS")
+    "SECURITY_IMPL_JAR", "AUDIT_IMPL_CLASS", "AUDIT_IMPL_JAR", "DO_AUDIT", "AUDIT_PARMS", "ADAPTER_SPECIFIC_CONFIG", "METADATA_DATASTORE")
 
 
   // This is used to exclude all non-engine related configs from Uplodad Config method
@@ -1506,13 +1506,14 @@ object ConfigUtils {
       logger.debug("libSystemPath => " + libSystemPath)
       logger.debug("libApplicationPath => " + libApplicationPath)
 
+      val defaultJarPathStr = libSystemPath + "," + libApplicationPath
+      setPropertyFromConfigFile("JarPaths", defaultJarPathStr)
 
       var manifestPath = getMetadataAPI.GetMetadataAPIConfig.getProperty("MANIFEST_PATH")
       if( manifestPath == null ){
 	manifestPath = rootDir + "/config/manifest.mf"
         setPropertyFromConfigFile("MANIFEST_PATH", manifestPath)
       }
-
 
       var notifyEngine = getMetadataAPI.GetMetadataAPIConfig.getProperty("NOTIFY_ENGINE")
       if( notifyEngine == null ){
