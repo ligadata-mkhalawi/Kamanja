@@ -28,16 +28,17 @@ class MessageFieldTypesHandler {
     if (message.Elements != null) {
       message.Elements.foreach(field => {
         if (field != null) {
-          //log.info("field.Ttype =================" + field.Ttype);
+          println("field.Ttype 1=================" + field.Ttype);
 
           val typ = MdMgr.GetMdMgr.Type(field.Ttype, -1, true) // message.Version.toLong
 
+       
           if (typ.getOrElse("None").equals("None"))
             throw new Exception("Type not found in metadata for " + field.Name + " given type is " + field.Ttype)
 
           // to do - check null pointer if type is not avaialble.....
           field.FldMetaataType = typ.get
-
+        
           val types = getMetadataTypesForMsgFields(field, mdMgr, message.Name)
           field.FieldTypePhysicalName = types(0).asInstanceOf[String]
           field.FieldTypeImplementationName = types(1).asInstanceOf[String]
@@ -107,6 +108,10 @@ class MessageFieldTypesHandler {
   private def getMetadataTypesForMsgFields(field: Element, mdMgr: MdMgr, msgName: String): Array[Any] = {
 
     val fieldBaseType: BaseTypeDef = field.FldMetaataType
+    println("getMetadataTypesForMsgFields 1 ===" + fieldBaseType);
+
+    println("getMetadataTypesForMsgFields 2 ===" + fieldBaseType.PhysicalName);
+
     var types: Array[Any] = new Array[Any](3);
     val fieldType = fieldBaseType.tType.toString().toLowerCase()
 
@@ -119,7 +124,7 @@ class MessageFieldTypesHandler {
       case "tscalar" => {
         types(0) = fieldBaseType.PhysicalName
         types(1) = fieldBaseType.implementationName
-        log.info("fieldBaseType.implementationName====" + fieldBaseType.PhysicalName);
+        println("fieldBaseType.implementationName====" + fieldBaseType.PhysicalName);
         val valTypeId = -1 //getAttributeValTypeId(fieldBaseType.PhysicalName.toLowerCase());
         val keyTypeId = -1 //getAttributeValTypeId(fieldBaseType.PhysicalName.toLowerCase());
         types(2) = new ArrtibuteInfo(fieldBaseType.PhysicalName.toUpperCase(), valTypeId, keyTypeId, 0)
@@ -226,7 +231,7 @@ class MessageFieldTypesHandler {
             var msgDef: ContainerDef = null;
             msgDef = mdMgr.Message(typtytpe.FullName, -1, true).getOrElse(null) //field.FieldtypeVer is -1 for now, need to put proper version
             if (msgDef != null) {
-              throw new Exception("Array of Messages cannot be allowed for field "+ fieldName +" in Message/Container "+msgName)
+              throw new Exception("Array of Messages cannot be allowed for field " + fieldName + " in Message/Container " + msgName)
             }
 
             if (msgDef == null)
@@ -240,7 +245,7 @@ class MessageFieldTypesHandler {
             var ctrDef: ContainerDef = null;
             ctrDef = mdMgr.Message(typtytpe.FullName, -1, true).getOrElse(null) //field.FieldtypeVer is -1 for now, need to put proper version
             if (ctrDef != null) {
-              throw new Exception("Array of Messages cannot be allowed for field "+ fieldName +" in Message/Container "+msgName)
+              throw new Exception("Array of Messages cannot be allowed for field " + fieldName + " in Message/Container " + msgName)
             }
 
             if (ctrDef == null)
@@ -285,7 +290,7 @@ class MessageFieldTypesHandler {
             var msgDef: ContainerDef = null;
             msgDef = mdMgr.Message(typtytpe.FullName, -1, true).getOrElse(null) //field.FieldtypeVer is -1 for now, need to put proper version
             if (msgDef != null) {
-              throw new Exception("Message cannot be a Value Type of field "+fieldName + " Message/Container "+msgName)
+              throw new Exception("Message cannot be a Value Type of field " + fieldName + " Message/Container " + msgName)
             }
 
             if (msgDef == null)
@@ -299,7 +304,7 @@ class MessageFieldTypesHandler {
             var ctrDef: ContainerDef = null;
             ctrDef = mdMgr.Message(typtytpe.FullName, -1, true).getOrElse(null) //field.FieldtypeVer is -1 for now, need to put proper version
             if (ctrDef != null) {
-              throw new Exception("Message cannot be a Value Type of field "+fieldName + " Message/Container "+msgName)
+              throw new Exception("Message cannot be a Value Type of field " + fieldName + " Message/Container " + msgName)
             }
 
             if (ctrDef == null)

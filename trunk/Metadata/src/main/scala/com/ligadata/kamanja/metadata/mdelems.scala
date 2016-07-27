@@ -84,7 +84,7 @@ import ObjScalarType._
 
 object ObjType extends Enumeration {
   type Type = Value
-  val tNone, tAny, tInt, tLong, tFloat, tDouble, tString, tBoolean, tChar, tArray, tMap, tMsgMap, tStruct, tAttr = Value
+  val tNone, tAny, tInt, tLong, tFloat, tDouble, tString, tBoolean, tChar, tArray, tMap, tMsgMap, tStruct, tAttr, tDate, tTime, tDateTime = Value
 
   def asString(typ: Type): String = {
     val str = typ.toString match {
@@ -109,6 +109,9 @@ object ObjType extends Enumeration {
       case "tQueue" => "Queue"
       case "tStruct" => "Struct"
       case "tAttr" => "Attr"
+      case "tDate" => "date"
+      case "tTime" => "time"
+      case "tDateTime" => "datetime"
       case _ => "None"
     }
     str
@@ -129,6 +132,9 @@ object ObjType extends Enumeration {
       case "msgmap" => tMap
       case "struct" => tStruct
       case "attr" => tAttr
+      case "date" => tDate
+      case "time" => tTime
+      case "datetime" => tDateTime
       case _ => tNone
     }
     typ

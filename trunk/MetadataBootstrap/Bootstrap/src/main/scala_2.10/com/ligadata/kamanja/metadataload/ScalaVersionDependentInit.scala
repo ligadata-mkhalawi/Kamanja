@@ -69,9 +69,15 @@ object ScalaVersionDependentInit {
     mgr.AddScalar(MdMgr.sysNS, "Float", tFloat, "Float", MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, MetadataLoad.baseTypesVer, null, Array[String](), "com.ligadata.BaseTypes.FloatImpl")
     mgr.AddScalar(MdMgr.sysNS, "Char", tChar, "Char", MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, MetadataLoad.baseTypesVer, null, Array[String](), "com.ligadata.BaseTypes.CharImpl")
 
+    mgr.AddScalar(MdMgr.sysNS, "Date", tDate, "org.joda.time.LocalDate", MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, MetadataLoad.baseTypesVer, null, Array[String](), "org.joda.time.LocalDate")
+    mgr.AddScalar(MdMgr.sysNS, "DateTime", tDateTime, "org.joda.time.LocalDateTime", MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, MetadataLoad.baseTypesVer, null, Array[String](), "org.joda.time.LocalDateTime")
+    mgr.AddScalar(MdMgr.sysNS, "Time", tTime, "org.joda.time.LocalTime", MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, MetadataLoad.baseTypesVer, null, Array[String](), "org.joda.time.LocalTime")
+
+    /*
     mgr.AddScalar(MdMgr.sysNS, "date", tLong, "Long", MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, MetadataLoad.baseTypesVer, null, Array[String](), "com.ligadata.BaseTypes.LongImpl")
     mgr.AddScalar(MdMgr.sysNS, "dateTime", tLong, "Long", MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, MetadataLoad.baseTypesVer, null, Array[String](), "com.ligadata.BaseTypes.LongImpl")
     mgr.AddScalar(MdMgr.sysNS, "time", tLong, "Long", MetadataLoad.baseTypesOwnerId, MetadataLoad.baseTypesTenantId, MetadataLoad.baseTypesUniqId, MetadataLoad.baseTypesElementId, MetadataLoad.baseTypesVer, null, Array[String](), "com.ligadata.BaseTypes.LongImpl")
+		*/
   }
 
 }

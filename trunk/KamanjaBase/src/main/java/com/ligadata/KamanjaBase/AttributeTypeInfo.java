@@ -20,7 +20,7 @@ public class AttributeTypeInfo {
 	}
 
 	public enum TypeCategory {
-		INT(0), STRING(1), FLOAT(2), DOUBLE(3), LONG(4), BYTE(5), CHAR(6), BOOLEAN(7), CONTAINER(
+		INT(0), STRING(1), FLOAT(2), DOUBLE(3), LONG(4), BYTE(5), CHAR(6), BOOLEAN(7), DATE(8), TIME(9), DATETIME(10), CONTAINER(
 				1001), MESSAGE(1001), MAP(1002), ARRAY(1003), NONE(-1);
 		private int value;
 
@@ -43,6 +43,9 @@ public class AttributeTypeInfo {
 			case 5: return TypeCategory.BYTE;
 			case 6: return TypeCategory.CHAR;
 			case 7: return TypeCategory.BOOLEAN;
+			case 8: return TypeCategory.DATE;
+			case 9: return TypeCategory.TIME;
+			case 10: return TypeCategory.DATETIME;
 			case 1001: return TypeCategory.CONTAINER;
 			case 1002: return TypeCategory.MESSAGE;
 			case 1003: return TypeCategory.ARRAY;
@@ -59,6 +62,18 @@ public class AttributeTypeInfo {
 
 	public boolean IsMap() {
 		return (typeCategory == TypeCategory.MAP);
+	}
+	
+	public boolean isDate() {
+		return (typeCategory == TypeCategory.DATE);
+	}
+	
+	public boolean isTime() {
+		return (typeCategory == TypeCategory.TIME);
+	}
+
+	public boolean isDateTime() {
+		return (typeCategory == TypeCategory.DATETIME);
 	}
 
 	public String getName() {
