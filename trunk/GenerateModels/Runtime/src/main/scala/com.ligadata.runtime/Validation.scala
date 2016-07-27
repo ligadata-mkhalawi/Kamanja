@@ -176,7 +176,13 @@ object Validation {
         val v = conversion.ToTimestamp(value, valuesPattern)
         val min = if(startRange == null || startRange.length == 0) None else Some(conversion.ToTimestamp(startRange, valuesPattern))
         val max = if(endRange == null || endRange.length == 0) None else Some(conversion.ToTimestamp(endRange, valuesPattern))
-        isValidRange(v, min, max, fieldName, errHandler)
+        val cond1 = if (min.isDefined) v.compareTo(min.get) >= 0 else true
+        val cond2 = if (max.isDefined) v.compareTo(max.get) <= 0 else true
+        val valid = cond1 && cond2
+        if (!valid)
+          errHandler(fieldName, "isValidRange")
+
+        valid
 
         //TODO : support complex types?
       case _ => throw new Exception("Unsupported field type " + fieldType)
