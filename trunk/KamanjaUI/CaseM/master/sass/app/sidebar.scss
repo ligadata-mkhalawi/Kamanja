@@ -14,7 +14,7 @@ $sidebar-icon-color-active:       $nav-top-bg;
 $sidebar-bullet-color:            rgba(0,0,0,.25);
 $sidebar-bullet-color-active:     $sidebar-icon-color-active;
 
-$sidebar-heading-color:           #919DA8;
+$sidebar-heading-color:           #fff;
 $sidebar-label-color:             $sidebar-item-color;
 
 $submenu-header-hg:               40px;   // Submenu header when hover collapse sidebar
@@ -44,7 +44,7 @@ $scrollbar-wd:                    17px;
   .nav-heading {
     padding: 12px 15px;
     color: $sidebar-heading-color;
-    font-size: 13px;
+    font-size: 65px;
     letter-spacing: .035em;
     pointer-events: none;
     cursor: default;
@@ -58,6 +58,7 @@ $scrollbar-wd:                    17px;
     // Only the first item in sidebar
     > .nav-heading:first-child {
       padding-top: 20px;
+      text-align: center;
     }
 
     > li {

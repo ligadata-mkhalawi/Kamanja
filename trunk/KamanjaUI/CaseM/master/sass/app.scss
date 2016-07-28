@@ -8,24 +8,18 @@
  * License: https://wrapbootstrap.com/help/licenses
  * 
  */
-
 // Override bootstrap variables
 @import "app/variables";
-
 // Bootstrap
 @import "bootstrap/bootstrap/_mixins";
-
 // Global definition of media queries
 @import "app/media-queries";
 // Utilities 
 @import "app/utils-definitions";
-
 // Bootstrap reset
 @import "app/bootstrap-reset";
-
 // Typography
 @import "app/typo";
-
 // Layout
 @import "app/layout";
 @import "app/layout-extra";
@@ -33,16 +27,14 @@
 @import "app/top-navbar";
 @import "app/sidebar";
 @import "app/offsidebar";
-
-
 // Components
 @import "app/preloader";
 @import "app/breadcrumbs";
 @import "app/loading-bar";
 @import "app/animate";
-
-// Utilities 
+// Utilities
 @import "app/utils";
-
 // Print CSS
 @import "app/print";
+
+
