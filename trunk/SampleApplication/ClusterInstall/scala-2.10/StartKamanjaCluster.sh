@@ -75,6 +75,16 @@ if [ "$?" -ne 0 ]; then
     exit 1
 fi
 
+#-Djava.security.auth.login.config=/tmp/kerberos/jaas-client.conf
+if [ "$KAMANJA_SEC_CONFIG" ]; then
+  JAAS_CONFIG_OPT="-Djava.security.auth.login.config="$KAMANJA_SEC_CONFIG
+fi
+
+# -Djava.security.krb5.conf=/etc/krb5.conf
+if [ "$KAMANJA_KERBEROS_CONFIG" ]; then
+  KERBEROS_CONFIG_OPT="-Djava.security.krb5.conf="$KAMANJA_KERBEROS_CONFIG
+fi
+
 # Start the cluster nodes using the information extracted from the metadata and supplied config.  Remember the jvm's pid in the $installDir/run
 # directory setup for that purpose.  The name of the pid file will always be 'node$id.pid'.  The targetPath points to the given cluster's 
 # config directory where the Kamanja engine config file is located.
@@ -104,7 +114,7 @@ while read LINE; do
 		cd $targetPath
 		echo "nodeCfg=$nodeCfg"
         if [ "$processingengine_cnt" -gt 0 ]; then
-			java -Xmx4g -Xms4g -Dlog4j.configurationFile=file:$targetPath/engine_log4j2.xml -cp $installDir/lib/system/ExtDependencyLibs2_2.10-1.5.1.jar:$installDir/lib/system/ExtDependencyLibs_2.10-1.5.1.jar:$installDir/lib/system/KamanjaInternalDeps_2.10-1.5.1.jar:$installDir/lib/system/kamanjamanager_2.10-1.5.1.jar com.ligadata.KamanjaManager.KamanjaManager --config "$targetPath/$nodeCfg" < /dev/null > /dev/null 2>&1 &
+			java -Xmx4g -Xms4g $JAAS_CONFIG_OPT $KERBEROS_CONFIG_OPT -Dlog4j.configurationFile=file:$targetPath/engine_log4j2.xml -cp $installDir/lib/system/ExtDependencyLibs2_2.10-1.5.1.jar:$installDir/lib/system/ExtDependencyLibs_2.10-1.5.1.jar:$installDir/lib/system/KamanjaInternalDeps_2.10-1.5.1.jar:$installDir/lib/system/kamanjamanager_2.10-1.5.1.jar com.ligadata.KamanjaManager.KamanjaManager --config "$targetPath/$nodeCfg" < /dev/null > /dev/null 2>&1 &
         fi
 #        if [ "$restapi_cnt" -gt 0 ]; then
 # 			java -Dlog4j.configurationFile=file:$targetPath/restapi_log4j2.xml -cp $installDir/lib/system/ExtDependencyLibs2_2.10-1.5.1.jar:$installDir/lib/system/ExtDependencyLibs_2.10-1.5.1.jar:$installDir/lib/system/KamanjaInternalDeps_2.10-1.5.1.jar:$installDir/lib/system/metadataapiservice_2.10-1.5.1.jar com.ligadata.metadataapiservice.APIService --config "$targetPath/MetadataAPIConfig_${id}.properties" < /dev/null > /dev/null 2>&1 &
