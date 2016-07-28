@@ -1420,7 +1420,11 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     _objectResolver = objResolver
   }
 
-  //BUGBUG:: May be we need to lock before we do anything here
+  override def getObjectResolver: ObjectResolver = {
+    _objectResolver
+  }
+
+    //BUGBUG:: May be we need to lock before we do anything here
   override def Shutdown: Unit = {
 
     isShutdown = true

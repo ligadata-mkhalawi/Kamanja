@@ -277,6 +277,7 @@ trait EnvContext /* extends Monitorable */  {
   def getAdaptersAndEnvCtxtLoader: KamanjaLoaderInfo
 
   def setObjectResolver(objResolver: ObjectResolver): Unit
+  def getObjectResolver: ObjectResolver
 
   // Setting JarPaths
   def setJarPaths(jarPaths: collection.immutable.Set[String]): Unit
