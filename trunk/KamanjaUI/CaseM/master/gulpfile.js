@@ -20,7 +20,7 @@ var useSourceMaps = false;
 // Switch to sass mode.
 // Example:
 //    gulp --usesass
-var useSass = args.usesass;
+var useSass = true;
 
 // Angular template cache
 // Example:
@@ -34,7 +34,7 @@ var ignored_files = '!' + hidden_files;
 // MAIN PATHS
 var paths = {
     app: '../app/',
-    markup: 'jade/',
+    markup: 'html/',
     styles: 'less/',
     scripts: 'js/'
 }
@@ -70,7 +70,9 @@ var source = {
         paths.scripts + 'modules/**/*.js',
         // custom modules
         paths.scripts + 'custom/**/*.module.js',
-        paths.scripts + 'custom/**/*.js'
+        paths.scripts + 'custom/**/*.js',
+        paths.scripts + 'directives/**/*.js',
+        paths.scripts + 'services/**/*.js'
     ],
     templates: {
         index: [paths.markup + 'index.*'],
@@ -128,7 +130,7 @@ var tplCacheOptions = {
     //standalone: true,
     module: 'app.core',
     base: function(file) {
-        return file.path.split('jade')[1];
+        return file.path.split('html')[1];
     }
 };
 
@@ -192,14 +194,14 @@ gulp.task('vendor:base', function() {
     return gulp.src(vendor.base.source)
         .pipe($.expectFile(vendor.base.source))
         .pipe(jsFilter)
-            .pipe($.concat(vendor.base.js))
-            .pipe($.if(isProduction, $.uglify()))
-            .pipe(gulp.dest(build.scripts))
+        .pipe($.concat(vendor.base.js))
+        .pipe($.if(isProduction, $.uglify()))
+        .pipe(gulp.dest(build.scripts))
         .pipe(jsFilter.restore())
         .pipe(cssFilter)
-            .pipe($.concat(vendor.base.css))
-            .pipe($.if(isProduction, $.cssnano(cssnanoOpts)))
-            .pipe(gulp.dest(build.styles))
+        .pipe($.concat(vendor.base.css))
+        .pipe($.if(isProduction, $.cssnano(cssnanoOpts)))
+        .pipe(gulp.dest(build.styles))
         .pipe(cssFilter.restore())
         ;
 });
@@ -216,8 +218,8 @@ gulp.task('vendor:app', function() {
     });
 
     return gulp.src(vendor.app.source, {
-            base: 'bower_components'
-        })
+        base: 'bower_components'
+    })
         .pipe($.expectFile(vendor.app.source))
         .pipe(jsFilter)
         .pipe($.if(isProduction, $.uglify(vendorUglifyOpts)))
@@ -276,7 +278,7 @@ gulp.task('styles:themes', function() {
         }));
 });
 
-// JADE
+// HTML
 gulp.task('templates:index', ['templates:views'], function() {
     log('Building index..');
 
@@ -285,7 +287,6 @@ gulp.task('templates:index', ['templates:views'], function() {
     });
     return gulp.src(source.templates.index)
         .pipe($.if(useCache, $.inject(tplscript, injectOptions))) // inject the templates.js into index
-        .pipe($.jade())
         .on('error', handleError)
         .pipe($.htmlPrettify(prettifyOpts))
         .pipe(gulp.dest(build.templates.index))
@@ -294,14 +295,13 @@ gulp.task('templates:index', ['templates:views'], function() {
         }));
 });
 
-// JADE
+// HTML
 gulp.task('templates:views', function() {
     log('Building views.. ' + (useCache ? 'using cache' : ''));
 
     if (useCache) {
 
         return gulp.src(source.templates.views)
-            .pipe($.jade())
             .on('error', handleError)
             .pipe($.angularTemplatecache(tplCacheOptions))
             .pipe($.if(isProduction, $.uglify({
@@ -317,7 +317,6 @@ gulp.task('templates:views', function() {
             .pipe($.if(!isProduction, $.changed(build.templates.views, {
                 extension: '.html'
             })))
-            .pipe($.jade())
             .on('error', handleError)
             .pipe($.htmlPrettify(prettifyOpts))
             .pipe(gulp.dest(build.templates.views))
@@ -516,8 +515,8 @@ function startKarmaTests(singleRun, done) {
 
         if (karmaResult === 1) {
             done('\n********************************'+
-                 '\nkarma: tests failed with code ' + karmaResult +
-                 '\n********************************');
+                '\nkarma: tests failed with code ' + karmaResult +
+                '\n********************************');
         } else {
             done();
         }
