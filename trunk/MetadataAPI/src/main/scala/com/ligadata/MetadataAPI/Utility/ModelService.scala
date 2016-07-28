@@ -522,6 +522,8 @@ object ModelService {
                     , optMsgProduced
                     , pStr
                     , modelOptions)
+                    
+                    logger.warn("==========optMsgProduced" +optMsgProduced.getOrElse("null")
 
             } else {
                 val userId: String = optUserid.getOrElse("no user id supplied")
