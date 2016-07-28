@@ -7,7 +7,7 @@ import org.apache.commons.io.FileUtils
 import org.apache.avro.{Schema, SchemaBuilder}
 
 case class Configuration(host: String, port: Int, services: Map[String, Service])
-case class Service(var schema: List[Field], message: Message, output: Map[String, String]) {
+case class Service(var schema: List[Field], message: Message, output: Map[String, String], kafkaConfig: Map[String, String]) {
   var name: String = _
   var serializationType: Int = _
   var avroSchema: Schema = _
@@ -20,7 +20,9 @@ case class Service(var schema: List[Field], message: Message, output: Map[String
   schema = schema.sortWith(_.id < _.id)
   val partitionKeys = output.getOrElse("partitionKey", "").split(",")
   if(partitionKeys.length == 0)
-    throw new Exception("partitionKey should be specified for " + name)      
+    throw new Exception("partitionKey should be specified for " + name)  
+  
+  def this(schema: List[Field], message: Message, output: Map[String, String]) = this(schema, message, output, null)
 }
 case class Field(id: Int, name: String, datatype: String, required: Boolean, maxlength: Int, format: String) {
   var typeId: Int = _

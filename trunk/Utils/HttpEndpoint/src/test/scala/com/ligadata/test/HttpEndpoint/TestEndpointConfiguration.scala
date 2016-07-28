@@ -138,6 +138,15 @@ class TestEndpointConfiguration extends FunSpec with BeforeAndAfter with ShouldM
       svc.serializationType shouldEqual 1
     }
     
+    it("should read optional kafka config from a valid JSON") {
+      var svc = Configuration.values.services("TestEvent1")
+      svc.kafkaConfig.getOrElse("security.protocol", "") shouldEqual "SASL_PLAINTEXT"
+      svc.kafkaConfig.getOrElse("sasl.kerberos.service.name", "") shouldEqual "kafka"
+
+      svc = Configuration.values.services("TestEvent2")
+      svc.kafkaConfig shouldEqual null
+    }
+    
   }
 
 }
