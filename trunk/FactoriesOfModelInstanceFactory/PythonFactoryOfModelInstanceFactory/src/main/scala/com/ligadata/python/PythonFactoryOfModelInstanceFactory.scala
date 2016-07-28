@@ -16,7 +16,7 @@
 
 package com.ligadata.python
 
-import scala.collection.mutable.{Map => MutableMap}
+import scala.collection.mutable.{ArrayBuffer, Map => MutableMap}
 import com.ligadata.kamanja.metadata.{BaseElem, MdMgr, ModelDef}
 import com.ligadata.KamanjaBase._
 import com.ligadata.Utils.{KamanjaLoaderInfo, Utils}
@@ -24,10 +24,10 @@ import org.apache.logging.log4j.LogManager
 import java.io.{ByteArrayInputStream, InputStream, PushbackInputStream}
 import java.net.{SocketException, SocketTimeoutException}
 import java.nio.charset.StandardCharsets
+
 import scala.util.control.Breaks._
-
-
-import com.ligadata.Exceptions.KamanjaException
+import com.ligadata.Exceptions.{KamanjaException, NotImplementedFunctionException}
+import com.ligadata.kamanja.serializer.JSONSerDes
 //import org.json4s.jackson.JsonMethods._
 import org.json4s.native.Json
 import org.json4s.DefaultFormats
@@ -49,6 +49,7 @@ object GlobalLogger {
 object PythonFactoryOfModelInstanceFactory extends FactoryOfModelInstanceFactory {
     private[this] val loggerName = this.getClass.getName
     private[this] val LOG = LogManager.getLogger(loggerName)
+    private[this] var jser : JSONSerDes = null
 
     /**
       * As part of the creation of the model instance factory, see to it that there any jars that it needs (either its
@@ -118,10 +119,17 @@ object PythonFactoryOfModelInstanceFactory extends FactoryOfModelInstanceFactory
 
         LoadJarIfNeeded(loaderInfo, jarPaths, modelDef)
 
+        if (jser == null) {
+            jser = new JSONSerDes
+            val serOpts : java.util.Map[String,String] = null
+            val resolver : ObjectResolver = nodeContext.getEnvCtxt().getObjectResolver
+            jser.configure(resolver, serOpts)
+        }
+
         val isReasonable : Boolean = modelDef != null && modelDef.FullNameWithVer != null && modelDef.FullNameWithVer.nonEmpty
         val mdlInstanceFactory : ModelInstanceFactory = if (isReasonable) {
 
-            val factory: PythonAdapterFactory = new PythonAdapterFactory(modelDef, nodeContext)
+            val factory: PythonAdapterFactory = new PythonAdapterFactory(modelDef, nodeContext, jser)
 
             if (factory == null) {
                 LOG.error(s"Failed to instantiate ModelInstanceFactory... name = $modelDef.FullNameWithVer")
@@ -169,7 +177,7 @@ object PythonFactoryOfModelInstanceFactory extends FactoryOfModelInstanceFactory
   * @param nodeContext the nodeContext that contains the latest connection map values for the node's python servers..
   */
 
-class PythonAdapter(factory : ModelInstanceFactory
+class PythonAdapter(factory : PythonAdapterFactory
                    ,nodeContext : NodeContext
                    ) extends ModelInstance(factory) with LogTrait {
 
@@ -281,18 +289,40 @@ class PythonAdapter(factory : ModelInstanceFactory
         /** FIXME: the model COULD BE REMOVED from the python server here*/
     }
 
-    /**
-      * The engine will call this method to have the model evaluate the input message and produce a ModelResultBase with results.
+    /** Process the input messages and produce the modelDefs output messages.
       *
-      * @param txnCtxt the transaction context (contains message, transaction id, partition key, raw data, et al)
-      * @param outputDefault when true, a model result will always be produced with default values.  If false (ordinary case), output is
-      *                      emitted only when the model deems this message worthy of report.  If desired the model may return a 'null'
-      *                      for the execute's return value and the engine will not proceed with output processing
-      * @return a ModelResultBase derivative or null (if there is nothing to report and outputDefault is false).
+      * @param txnCtxt contains the message and other things
+      * @param execMsgsSet the messages to process
+      * @param triggerdSetIndex FIXME: There is no explanation of what this is
+      * @param outputDefault when true, always produce output, when false return null if the model returns nothing.
+      * @return a Array[ContainerOrConcept] ... one or more Containers, concepts, output messages
       */
-    override def execute(txnCtxt: TransactionContext, outputDefault: Boolean): ModelResultBase = {
-        val msg = txnCtxt.getMessage()
-        evaluateModel(msg)
+    override def execute(txnCtxt: TransactionContext
+                         , execMsgsSet: Array[ContainerOrConcept]
+                         , triggerdSetIndex: Int
+                         , outputDefault: Boolean): Array[ContainerOrConcept] = {
+        // ... only one input message/one output message supported for now.
+        // Holding current transaction information original message and set the new information. Because the model will pull the message from transaction context
+        val (origin, orgInputMsg) = txnCtxt.getInitialMessage
+        var returnValues : ArrayBuffer[ContainerOrConcept] = ArrayBuffer[ContainerOrConcept]()
+        try {
+            txnCtxt.setInitialMessage("", execMsgsSet(0).asInstanceOf[ContainerInterface], false)
+            val msg = txnCtxt.getMessage()
+            val jsonMdlResults : String = evaluateModel(msg)
+            if (jsonMdlResults != null) {
+                val outMsgName = factory.getModelDef().outputMsgs(0)
+                val deser : SerializeDeserialize = factory.serDeserializer
+                val outMsg : ContainerInterface = deser.deserialize(jsonMdlResults.getBytes, outMsgName)
+                returnValues += outMsg
+            } else {
+                null
+            }
+        } catch {
+            case e: Exception => throw e
+        } finally {
+            txnCtxt.setInitialMessage(origin, orgInputMsg, false)
+        }
+        returnValues.toArray
     }
 
     /**
@@ -302,7 +332,7 @@ class PythonAdapter(factory : ModelInstanceFactory
       *            model's data dictionary.
       * @return
       */
-    private def evaluateModel(msg : ContainerInterface): ModelResultBase = {
+    private def evaluateModel(msg : ContainerInterface): String = {
 
         val (moduleName, modelName) : (String,String) = ModuleNModelNames
         /** get the current connection for this model's server */
@@ -312,8 +342,8 @@ class PythonAdapter(factory : ModelInstanceFactory
             throw new KamanjaException(s"Python initialization for model '$moduleName.$modelName' failed... the python server connection could not be established", null)
         }
 
-        val mapOfResults : ModelResultBase = evaluateModel1(pyServerConnection, moduleName, modelName, msg)
-        mapOfResults
+        val jsonResults : String = evaluateModel1(pyServerConnection, moduleName, modelName, msg)
+        jsonResults
     }
 
     /**
@@ -360,12 +390,12 @@ class PythonAdapter(factory : ModelInstanceFactory
       * @param pyServerConnection a PyServerConnection
       * @param modelName the model that is to evaluate the message
       * @param msg the message from the engine that is to be evaluated
-      * @return a message result (ModelResultBase derivative)
+      * @return a message result (the json reply from the executed model on the python server)
       */
-    private def evaluateModel1(pyServerConnection: PyServerConnection, modulelName : String, modelName : String, msg : ContainerInterface) : ModelResultBase = {
+    private def evaluateModel1(pyServerConnection: PyServerConnection, modulelName : String, modelName : String, msg : ContainerInterface) : String = {
 
         var connObj : PyServerConnection = pyServerConnection
-        var mapOfResultsReturned : MappedModelResults = null
+        var msgReturned : String = ""
         var attempts : Int = 0
         val attemptsLimit = 10
         var mSecsToSleep : Long = 500
@@ -379,11 +409,7 @@ class PythonAdapter(factory : ModelInstanceFactory
                         logger.error(s"there are likely communication issues with the python server for the model '$modelName'.")
                         break
                     }
-                    val resultStr: String = pyServerConnection.executeModel(modulelName, modelName, prepareFields(msg))
-                    implicit val formats = org.json4s.DefaultFormats
-                    val resultsMap: Map[String, Any] = parse(resultStr).values.asInstanceOf[Map[String, Any]]
-                    val results: Array[(String, Any)] = resultsMap.toArray
-                    mapOfResultsReturned = new MappedModelResults().withResults(results)
+                    msgReturned = pyServerConnection.executeModel(modulelName, modelName, prepareFields(msg))
                     break
                 } catch {
                     case se: SocketException => {
@@ -408,7 +434,7 @@ class PythonAdapter(factory : ModelInstanceFactory
                 }
             }
         }
-        mapOfResultsReturned
+        msgReturned
     }
 
     /**
@@ -539,7 +565,7 @@ class PythonAdapter(factory : ModelInstanceFactory
   *                    execute the model.
   */
 
-class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) with LogTrait {
+class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext, val serDeserializer : SerializeDeserialize) extends ModelInstanceFactory(modelDef, nodeContext) with LogTrait {
 
    /**
     * Common initialization for all Model Instances. This gets called once per partition id used for each kamanja server node
