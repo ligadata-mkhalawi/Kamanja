@@ -15,6 +15,11 @@ import com.ligadata.kamanja.metadata.AdapterInfo
 
 import scala.collection.mutable.ArrayBuffer
 
+import org.json4s._
+import org.json4s.JsonDSL._
+import org.json4s.jackson.JsonMethods._
+import org.json4s.jackson.{Json, Serialization}
+
 trait DataStoreOperations extends AdaptersSerializeDeserializers {
   // update operations, add & update semantics are different for relational databases
 
@@ -287,12 +292,25 @@ trait DataStore extends DataStoreOperations with AdaptersSerializeDeserializers 
   override def getComponentStatusAndMetrics: MonitorComponentInfo = {
     val lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
     logger.debug("component stats => " + getComponentSimpleStats)
-    MonitorComponentInfo(_TYPE_STORAGE, if (adapterInfo != null) adapterInfo.Name else "", if (adapterInfo != null) adapterInfo.Name else "", _startTime, lastSeen, "{" + getComponentSimpleStats + "}")
+    MonitorComponentInfo(_TYPE_STORAGE, if (adapterInfo != null) adapterInfo.Name else "", if (adapterInfo != null) adapterInfo.Name else "", _startTime, lastSeen, getComponentSimpleStats)
   }
 
   override def getComponentSimpleStats: String = {
     var s:String = ""
-    _getOps.keys.foreach( k => { 
+    val json = ( "Storage Adapter " + getAdapterName ->  _getOps.keys.map { k => 
+      (
+        ("Table Name" -> k ) ~
+	("Read Operations performed" -> _getOps(k)) ~
+	("Write Operations performed" -> _putOps(k)) ~
+	("Objects Read " -> _getObjs(k)) ~
+	("Objects Written " -> _putObjs(k)) ~
+	("Bytes Read " -> _getBytes(k)) ~
+	("Bytes Written " -> _putBytes(k))
+      )
+    })
+    pretty(render(json))
+      /*
+    _getOps.keys.foreach( k => {
       s = s + "Storage/"+getAdapterName+"/getOps" + "->" + "("+ k + ":" + _getOps(k) +")"
     })
     _putOps.keys.foreach( k => { 
@@ -311,6 +329,7 @@ trait DataStore extends DataStoreOperations with AdaptersSerializeDeserializers 
       s= s + ",Storage/"+getAdapterName+"/putBytes" + "->" + "("+ k + ":" + _putBytes(k) +")"
     })
     s
+    */
   }
 
   def beginTx(): Transaction

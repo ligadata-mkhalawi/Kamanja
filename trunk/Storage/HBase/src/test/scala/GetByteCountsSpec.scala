@@ -34,6 +34,7 @@ import com.ligadata.kamanja.metadata.AdapterInfo
 
 import com.ligadata.Exceptions._
 
+@Ignore
 class GetByteCountsSpec extends FunSpec with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
   var adapter: DataStore = null
   var serializer: Serializer = null
@@ -53,7 +54,6 @@ class GetByteCountsSpec extends FunSpec with BeforeAndAfter with BeforeAndAfterA
 
   private val maxConnectionAttempts = 10;
   var cnt: Long = 0
-  private val containerName = "sys.customer1"
   private var readCount = 0
   private var byteCount = 0
   private var exists = false
@@ -158,20 +158,20 @@ class GetByteCountsSpec extends FunSpec with BeforeAndAfter with BeforeAndAfterA
 
     // validate property setup
     it("Validate api operations") {
-      val containerName = "sys.customer1"
+      val containerName1 = "sys.customer1"
       hbaseAdapter = adapter.asInstanceOf[HBaseAdapter]
-      val tableName = hbaseAdapter.toTableName(containerName)
+      val tableName1 = hbaseAdapter.toTableName(containerName1)
 
       And("Drop container")
       noException should be thrownBy {
         var containers = new Array[String](0)
-        containers = containers :+ containerName
+        containers = containers :+ containerName1
         adapter.DropContainer(containers)
       }
 
       noException should be thrownBy {
         var containers = new Array[String](0)
-        containers = containers :+ containerName
+        containers = containers :+ containerName1
         adapter.CreateContainer(containers)
       }
 
@@ -191,27 +191,27 @@ class GetByteCountsSpec extends FunSpec with BeforeAndAfter with BeforeAndAfterA
         var v = serializer.SerializeObjectToByteArray(obj)
         var value = new Value(1,"kryo",v)
         noException should be thrownBy {
-          adapter.put(containerName, key, value)
-	  putBytCount(tableName) = putBytCount.getOrElse(tableName,0) + getKeySize(key) + getValueSize(value)
-	  putOpCount(tableName) = putOpCount.getOrElse(tableName,0) + 1
-	  putObjCount(tableName) = putObjCount.getOrElse(tableName,0) + 1
+          adapter.put(containerName1, key, value)
+	  putBytCount(tableName1) = putBytCount.getOrElse(tableName1,0) + getKeySize(key) + getValueSize(value)
+	  putOpCount(tableName1) = putOpCount.getOrElse(tableName1,0) + 1
+	  putObjCount(tableName1) = putObjCount.getOrElse(tableName1,0) + 1
         }
       }
-      assert(adapter._putOps(tableName) == putOpCount(tableName))
-      assert(adapter._putBytes(tableName) == putBytCount(tableName))
+      assert(adapter._putOps(tableName1) == putOpCount(tableName1))
+      assert(adapter._putBytes(tableName1) == putBytCount(tableName1))
 
       And("Get all the rows that were just added")
       noException should be thrownBy {
 	readCount = 0
 	byteCount = 0
-        adapter.get(containerName, readCallBack _)
-	getOpCount(tableName) = getOpCount.getOrElse(tableName,0) + 1
-	getObjCount(tableName) = getObjCount.getOrElse(tableName,0) + readCount
-	getBytCount(tableName) = getBytCount.getOrElse(tableName,0) + byteCount
+        adapter.get(containerName1, readCallBack _)
+	getOpCount(tableName1) = getOpCount.getOrElse(tableName1,0) + 1
+	getObjCount(tableName1) = getObjCount.getOrElse(tableName1,0) + readCount
+	getBytCount(tableName1) = getBytCount.getOrElse(tableName1,0) + byteCount
       }
-      assert(adapter._getOps(tableName) == getOpCount(tableName))
-      assert(adapter._getObjs(tableName) == getObjCount(tableName))
-      assert(adapter._getBytes(tableName) == getBytCount(tableName))
+      assert(adapter._getOps(tableName1) == getOpCount(tableName1))
+      assert(adapter._getObjs(tableName1) == getObjCount(tableName1))
+      assert(adapter._getBytes(tableName1) == getBytCount(tableName1))
 
       And("Test Bulk Put api")
       var keyValueList = new Array[(Key, Value)](0)
@@ -232,39 +232,147 @@ class GetByteCountsSpec extends FunSpec with BeforeAndAfter with BeforeAndAfterA
         var v = serializer.SerializeObjectToByteArray(obj)
         var value = new Value(1,"kryo",v)
         keyValueList = keyValueList :+(key, value)
-	putBytCount(tableName) = putBytCount.getOrElse(tableName,0) + getKeySize(key) + getValueSize(value)
+	putBytCount(tableName1) = putBytCount.getOrElse(tableName1,0) + getKeySize(key) + getValueSize(value)
       }
       var dataList = new Array[(String, Array[(Key, Value)])](0)
-      dataList = dataList :+ (containerName, keyValueList)
-      putObjCount(tableName) = putObjCount.getOrElse(tableName,0) + keyValueList.length
+      dataList = dataList :+ (containerName1, keyValueList)
+      putObjCount(tableName1) = putObjCount.getOrElse(tableName1,0) + keyValueList.length
 
       noException should be thrownBy {
         adapter.put(dataList)
-	putOpCount(tableName) = putOpCount.getOrElse(tableName,0) + 1
+	putOpCount(tableName1) = putOpCount.getOrElse(tableName1,0) + 1
       }
-      assert(adapter._putOps(tableName) == putOpCount(tableName))
-      assert(adapter._putObjs(tableName) == putObjCount(tableName))
-      assert(adapter._putBytes(tableName) == putBytCount(tableName))
+      assert(adapter._putOps(tableName1) == putOpCount(tableName1))
+      assert(adapter._putObjs(tableName1) == putObjCount(tableName1))
+      assert(adapter._putBytes(tableName1) == putBytCount(tableName1))
 
       noException should be thrownBy {
 	readCount = 0
 	byteCount = 0
-        adapter.get(containerName, readCallBack _)
-	getOpCount(tableName) = getOpCount.getOrElse(tableName,0) + 1
-	getObjCount(tableName) = getObjCount.getOrElse(tableName,0) + readCount
-	getBytCount(tableName) = getBytCount.getOrElse(tableName,0) + byteCount
+        adapter.get(containerName1, readCallBack _)
+	getOpCount(tableName1) = getOpCount.getOrElse(tableName1,0) + 1
+	getObjCount(tableName1) = getObjCount.getOrElse(tableName1,0) + readCount
+	getBytCount(tableName1) = getBytCount.getOrElse(tableName1,0) + byteCount
       }
-      assert(adapter._getOps(tableName) == getOpCount(tableName))
-      assert(adapter._getObjs(tableName) == getObjCount(tableName))
-      assert(adapter._getBytes(tableName) == getBytCount(tableName))
+      assert(adapter._getOps(tableName1) == getOpCount(tableName1))
+      assert(adapter._getObjs(tableName1) == getObjCount(tableName1))
+      assert(adapter._getBytes(tableName1) == getBytCount(tableName1))
 
       And("Print component stats")
-      logger.info("Count of getOps   => " + adapter._getOps(tableName));
-      logger.info("Count of putOps   => " + adapter._putOps(tableName));
-      logger.info("Count of getObjs  => " + adapter._getObjs(tableName));
-      logger.info("Count of putObjs  => " + adapter._putObjs(tableName));
-      logger.info("Count of getBytes => " + adapter._getBytes(tableName));
-      logger.info("Count of putBytes => " + adapter._putBytes(tableName));
+      logger.info("Count of getOps   => " + adapter._getOps(tableName1));
+      logger.info("Count of putOps   => " + adapter._putOps(tableName1));
+      logger.info("Count of getObjs  => " + adapter._getObjs(tableName1));
+      logger.info("Count of putObjs  => " + adapter._putObjs(tableName1));
+      logger.info("Count of getBytes => " + adapter._getBytes(tableName1));
+      logger.info("Count of putBytes => " + adapter._putBytes(tableName1));
+
+      val containerName2 = "sys.customer2"
+      val tableName2 = hbaseAdapter.toTableName(containerName2)
+
+      And("Drop container")
+      noException should be thrownBy {
+        var containers = new Array[String](0)
+        containers = containers :+ containerName2
+        adapter.DropContainer(containers)
+      }
+
+      noException should be thrownBy {
+        var containers = new Array[String](0)
+        containers = containers :+ containerName2
+        adapter.CreateContainer(containers)
+      }
+
+      And("Test Put api")
+      keys = new Array[Key](0) // to be used by a delete operation later on
+      for (i <- 1 to 20) {
+        var currentTime = new Date()
+        //var currentTime = null
+        var keyArray = new Array[String](0)
+        var custName = "customer-" + i
+        keyArray = keyArray :+ custName
+        var key = new Key(currentTime.getTime(), keyArray, i, i)
+        keys = keys :+ key
+        var custAddress = "1000" + i + ",Main St, Redmond WA 98052"
+        var custNumber = "425666777" + i
+        var obj = new Customer(custName, custAddress, custNumber)
+        var v = serializer.SerializeObjectToByteArray(obj)
+        var value = new Value(1,"kryo",v)
+        noException should be thrownBy {
+          adapter.put(containerName2, key, value)
+	  putBytCount(tableName2) = putBytCount.getOrElse(tableName2,0) + getKeySize(key) + getValueSize(value)
+	  putOpCount(tableName2) = putOpCount.getOrElse(tableName2,0) + 1
+	  putObjCount(tableName2) = putObjCount.getOrElse(tableName2,0) + 1
+        }
+      }
+      assert(adapter._putOps(tableName2) == putOpCount(tableName2))
+      assert(adapter._putBytes(tableName2) == putBytCount(tableName2))
+
+      And("Get all the rows that were just added")
+      noException should be thrownBy {
+	readCount = 0
+	byteCount = 0
+        adapter.get(containerName2, readCallBack _)
+	getOpCount(tableName2) = getOpCount.getOrElse(tableName2,0) + 1
+	getObjCount(tableName2) = getObjCount.getOrElse(tableName2,0) + readCount
+	getBytCount(tableName2) = getBytCount.getOrElse(tableName2,0) + byteCount
+      }
+      assert(adapter._getOps(tableName2) == getOpCount(tableName2))
+      assert(adapter._getObjs(tableName2) == getObjCount(tableName2))
+      assert(adapter._getBytes(tableName2) == getBytCount(tableName2))
+
+      And("Test Bulk Put api")
+      keyValueList = new Array[(Key, Value)](0)
+      keyStringList = new Array[Array[String]](0)
+      for (i <- 1 to 20) {
+        var cal = Calendar.getInstance();
+        cal.add(Calendar.DATE, -i);
+        var currentTime = cal.getTime()
+        var keyArray = new Array[String](0)
+        var custName = "customer-" + i
+        keyArray = keyArray :+ custName
+        // keyStringList is only used to test a del operation later
+        keyStringList = keyStringList :+ keyArray
+        var key = new Key(currentTime.getTime(), keyArray, i, i)
+        var custAddress = "1000" + i + ",Main St, Redmond WA 98052"
+        var custNumber = "4256667777" + i
+        var obj = new Customer(custName, custAddress, custNumber)
+        var v = serializer.SerializeObjectToByteArray(obj)
+        var value = new Value(1,"kryo",v)
+        keyValueList = keyValueList :+(key, value)
+	putBytCount(tableName2) = putBytCount.getOrElse(tableName2,0) + getKeySize(key) + getValueSize(value)
+      }
+      dataList = new Array[(String, Array[(Key, Value)])](0)
+      dataList = dataList :+ (containerName2, keyValueList)
+      putObjCount(tableName2) = putObjCount.getOrElse(tableName2,0) + keyValueList.length
+
+      noException should be thrownBy {
+        adapter.put(dataList)
+	putOpCount(tableName2) = putOpCount.getOrElse(tableName2,0) + 1
+      }
+      assert(adapter._putOps(tableName2) == putOpCount(tableName2))
+      assert(adapter._putObjs(tableName2) == putObjCount(tableName2))
+      assert(adapter._putBytes(tableName2) == putBytCount(tableName2))
+
+      noException should be thrownBy {
+	readCount = 0
+	byteCount = 0
+        adapter.get(containerName2, readCallBack _)
+	getOpCount(tableName2) = getOpCount.getOrElse(tableName2,0) + 1
+	getObjCount(tableName2) = getObjCount.getOrElse(tableName2,0) + readCount
+	getBytCount(tableName2) = getBytCount.getOrElse(tableName2,0) + byteCount
+      }
+      assert(adapter._getOps(tableName2) == getOpCount(tableName2))
+      assert(adapter._getObjs(tableName2) == getObjCount(tableName2))
+      assert(adapter._getBytes(tableName2) == getBytCount(tableName2))
+
+      And("Print component stats")
+      logger.info("Count of getOps   => " + adapter._getOps(tableName2));
+      logger.info("Count of putOps   => " + adapter._putOps(tableName2));
+      logger.info("Count of getObjs  => " + adapter._getObjs(tableName2));
+      logger.info("Count of putObjs  => " + adapter._putObjs(tableName2));
+      logger.info("Count of getBytes => " + adapter._getBytes(tableName2));
+      logger.info("Count of putBytes => " + adapter._putBytes(tableName2));
+
       logger.info("getComponentSimpleStats  => " + adapter.getComponentSimpleStats);
       logger.info("getComponentStatusAndMetrics => " + adapter.getComponentStatusAndMetrics);
 
