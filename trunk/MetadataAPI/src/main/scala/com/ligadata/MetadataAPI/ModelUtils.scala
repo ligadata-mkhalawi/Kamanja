@@ -801,7 +801,8 @@ object ModelUtils {
         MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, srcText, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
 
         // save the outMessage
-        AddOutMsgToModelDef(modDef, ModelType.PYTHON, optMsgProduced, userid)
+        if(modDef.outputMsgs != null && modDef.outputMsgs.size == 0)
+          AddOutMsgToModelDef(modDef, ModelType.PYTHON, optMsgProduced, userid)
 
         // save the jar file first
         PersistenceUtils.UploadJarsToDB(modDef)

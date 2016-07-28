@@ -521,10 +521,8 @@ object ModelService {
                     , optMsgVersion
                     , optMsgProduced
                     , pStr
-                    , modelOptions)
-                    
-                    logger.warn("==========optMsgProduced" +optMsgProduced.getOrElse("null")
-
+                    , modelOptions)                   
+            
             } else {
                 val userId: String = optUserid.getOrElse("no user id supplied")
                 val modelName: String = optModelName.getOrElse("no model name supplied")
