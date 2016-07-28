@@ -458,8 +458,7 @@ object StartMetadataAPI {
     var paramStr = if (paramJsonStr != "") Some(paramJsonStr) else None
 
     val outputMsgName = extraCmdArgs.getOrElse(OUTPUTMSG, null)
-    logger.warn("outputMsgName  " +outputMsgName);
-
+   
     if (outputMsgName != null) {
       logger.debug("The value of argument optMsgProduced will be " + outputMsgName)
       optMsgProduced = Some(outputMsgName)

@@ -354,10 +354,8 @@ object ModelUtils {
     if (optMsgProduced != None) {
       modDef.outputMsgs = modDef.outputMsgs :+ optMsgProduced.get.toLowerCase
     } else {
-      logger.warn("out put msgs exists ===========");
       // no need to create a default output message if modelconfig defines an output message as well
       if (modDef.outputMsgs.length == 0) {
-        logger.warn("model def output msgs size is zero");
         val defaultMessage = MessageAndContainerUtils.createDefaultOutputMessage(modDef, userid)
         modDef.outputMsgs = modDef.outputMsgs :+ defaultMessage
       }
