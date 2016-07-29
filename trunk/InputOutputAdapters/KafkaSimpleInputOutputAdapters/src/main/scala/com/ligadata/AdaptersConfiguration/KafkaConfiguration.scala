@@ -151,6 +151,13 @@ object KafkaConstants {
   val KAFKA_NOT_SEND = 3
 }
 
+object KamanjaKafkaAdapterConstants {
+  // Statistics Keys
+  val PARTITION_COUNT_KEYS = "Partition Counts"
+  val PARTITION_DEPTH_KEYS = "Partition Depths"
+  val EXCEPTION_SUMMARY = "Exception Summary"
+}
+
 object KafkaQueueAdapterConfiguration {
   def GetAdapterConfig(inputConfig: AdapterConfiguration): KafkaQueueAdapterConfiguration = {
     if (inputConfig.adapterSpecificCfg == null || inputConfig.adapterSpecificCfg.size == 0) {

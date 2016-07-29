@@ -130,7 +130,7 @@ resolvers += "Apache repo" at "https://repository.apache.org/content/repositorie
 //)
 
 //libraryDependencies += "org.apache.kafka" %% "kafka" % "0.10.0.0"
-libraryDependencies += "org.apache.kafka" %% "kafka" % "0.9.0.1"
+//libraryDependencies += "org.apache.kafka" %% "kafka" % "0.9.0.1"
 //libraryDependencies += "org.apache.kafka" %% "kafka" % "0.10.0.0"
 
 /////////////////////// PmmlTestTool

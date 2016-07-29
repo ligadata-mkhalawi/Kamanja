@@ -1,4 +1,4 @@
-/*package com.ligadata.InputAdapters
+package com.ligadata.kafkaInputOutputAdapters_v10
 
 import java.util
 import java.util.Properties
@@ -19,6 +19,7 @@ import scala.actors.threadpool.{ExecutorService, Executors}
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks._
 
+case class ExceptionInfo (Last_Failure: String, Last_Recovery: String)
 /**
   *
   */
@@ -30,9 +31,6 @@ object KamanjaKafkaConsumer extends InputAdapterFactory {
 
   // Statistics Keys
   val ADAPTER_DESCRIPTION = "Kafka 0.10.0.0 Client"
-  val PARTITION_COUNT_KEYS = "Partition Counts"
-  val PARTITION_DEPTH_KEYS = "Partition Depths"
-  val EXCEPTION_SUMMARY = "Exception Summary"
 
   def CreateInputAdapter(inputConfig: AdapterConfiguration, execCtxtObj: ExecContextFactory, nodeContext: NodeContext): InputAdapter = new KamanjaKafkaConsumer(inputConfig, execCtxtObj, nodeContext)
 }
@@ -66,12 +64,13 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   private var partitionExceptions: collection.mutable.Map[String,ExceptionInfo] = collection.mutable.Map[String,ExceptionInfo]()
   private var startHeartBeat: String = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
   private var lastSeen: String = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
-  metrics(KafkaSimpleConsumer.PARTITION_COUNT_KEYS) = partitonCounts
-  metrics(KafkaSimpleConsumer.EXCEPTION_SUMMARY) = partitionExceptions
-  metrics(KafkaSimpleConsumer.PARTITION_DEPTH_KEYS) = partitonDepths
+  metrics(com.ligadata.AdaptersConfiguration.KamanjaKafkaAdapterConstants.PARTITION_COUNT_KEYS) = partitonCounts
+  metrics(com.ligadata.AdaptersConfiguration.KamanjaKafkaAdapterConstants.EXCEPTION_SUMMARY) = partitionExceptions
+  metrics(com.ligadata.AdaptersConfiguration.KamanjaKafkaAdapterConstants.PARTITION_DEPTH_KEYS) = partitonDepths
   var localReadOffsets: collection.mutable.Map[Int,Long] = collection.mutable.Map[Int,Long]()
 
   var props = new Properties()
+
   props.put("bootstrap.servers", qc.hosts.mkString(","))
 
   // We handle offsets ourselves...
@@ -184,7 +183,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
 
     LOG.info("Start processing called on KamanjaKafkaAdapter for topic " + qc.topic)
     // This is the number of executors we will run - Heuristic, but will go with it
-   // var numberOfThreads = availableThreads
+    // var numberOfThreads = availableThreads
     var maxPartNumber = -1
     //TODO: The engine should tell us how many thread to use.. for now default to the old behaiviour... 1 Threads per partition
     var numberOfThreads = partitionIds.size
@@ -204,7 +203,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     })
 
     val partitionGroups: scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue )]]
-                         = scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue )]]()
+    = scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue )]]()
 
     // Create a Map of all the partiotion Ids.  We use a MOD for all the partition numbers to allocate each partition into
     // a bucket.
@@ -308,7 +307,8 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
                 // kafka 0.9 api requires collections.. will optimize in a future release
                 var tempCollection: java.util.ArrayList[org.apache.kafka.common.TopicPartition] = new java.util.ArrayList[org.apache.kafka.common.TopicPartition]()
                 tempCollection.add(topicPartitions(thisPid))
-                kafkaConsumer.seekToBeginning(topicPartitions(thisPid))
+                // V9 or v10 makes a difference here
+                kafkaConsumer.seekToBeginning(tempCollection)
               }
             })
             isSeekSuccessful = true
@@ -562,9 +562,9 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
       var partitionNames: scala.collection.mutable.ListBuffer[Int] = scala.collection.mutable.ListBuffer()
       while(iter.hasNext && !isQuiese) {
         var thisRes = iter.next()
-       // var newVal = new KafkaPartitionUniqueRecordKey
-       // newVal.TopicName = thisRes.topic
-       // newVal.PartitionId = thisRes.partition
+        // var newVal = new KafkaPartitionUniqueRecordKey
+        // newVal.TopicName = thisRes.topic
+        // newVal.PartitionId = thisRes.partition
         partitionNames += thisRes.partition
         val tp = new TopicPartition(qc.topic, thisRes.partition)
         partitionsToMonitor.add(tp)
@@ -579,7 +579,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
         val tp = new TopicPartition(qc.topic, part)
         var tempCollection: java.util.ArrayList[org.apache.kafka.common.TopicPartition] = new java.util.ArrayList[org.apache.kafka.common.TopicPartition]()
         tempCollection.add(tp)
-        kafkaConsumer.seekToEnd(tp)
+        kafkaConsumer.seekToEnd(tempCollection)
         var end = kafkaConsumer.position(tp)
         val rKey = new KafkaPartitionUniqueRecordKey
         val rValue = new KafkaPartitionUniqueRecordValue
@@ -681,7 +681,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
       depths = getAllPartitionEndValues
     } catch {
       case e: KamanjaException => {
-         externalizeExceptionEvent(e)
+        externalizeExceptionEvent(e)
         return new MonitorComponentInfo(AdapterConfiguration.TYPE_INPUT, qc.Name, KamanjaKafkaConsumer.ADAPTER_DESCRIPTION, "0", "0", Serialization.write(metrics).toString)
       }
       case e: Throwable => {
@@ -734,7 +734,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     readExecutor = null
   }
 
-   // Return current sleep timer and double it for the next all.  Max out at MAX_SLEEP (30 secs)...
+  // Return current sleep timer and double it for the next all.  Max out at MAX_SLEEP (30 secs)...
   // resetSleepTimer will reset this to the original value
   private def getSleepTimer() : Int = {
     var thisSleep = sleepDuration
@@ -751,4 +751,4 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     var cVal: Long = partitonCounts.getOrElse(pid.toString, 0)
     partitonCounts(pid.toString) = cVal + 1
   }
-}*/
+}
