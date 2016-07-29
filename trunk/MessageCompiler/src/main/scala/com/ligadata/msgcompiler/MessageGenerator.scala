@@ -676,7 +676,7 @@ class MessageGenerator {
   private def caseSensitiveFunc(message: Message) : String = {
     var caseSentivie: String = ""
     """
-    def caseSensitiveKey(keyName: String): String{
+    def caseSensitiveKey(keyName: String): String = {
       if(isCaseSensitive)
         return keyName;
       else return keyName.toLowerCase;     
