@@ -1,4 +1,4 @@
-/*package com.ligadata.InputAdapters
+package com.ligadata.kafkaInputOutputAdapters_v9
 
 import java.util
 import java.util.Properties
@@ -19,6 +19,9 @@ import scala.actors.threadpool.{ExecutorService, Executors}
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks._
 
+
+case class ExceptionInfo (Last_Failure: String, Last_Recovery: String)
+
 /**
   *
   */
@@ -29,10 +32,7 @@ object KamanjaKafkaConsumer extends InputAdapterFactory {
   val POLLING_INTERVAL = 100
 
   // Statistics Keys
-  val ADAPTER_DESCRIPTION = "Kafka 0.10.0.0 Client"
-  val PARTITION_COUNT_KEYS = "Partition Counts"
-  val PARTITION_DEPTH_KEYS = "Partition Depths"
-  val EXCEPTION_SUMMARY = "Exception Summary"
+  val ADAPTER_DESCRIPTION = "Kafka 0.9.0.0 Client"
 
   def CreateInputAdapter(inputConfig: AdapterConfiguration, execCtxtObj: ExecContextFactory, nodeContext: NodeContext): InputAdapter = new KamanjaKafkaConsumer(inputConfig, execCtxtObj, nodeContext)
 }
@@ -66,9 +66,9 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   private var partitionExceptions: collection.mutable.Map[String,ExceptionInfo] = collection.mutable.Map[String,ExceptionInfo]()
   private var startHeartBeat: String = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
   private var lastSeen: String = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
-  metrics(KafkaSimpleConsumer.PARTITION_COUNT_KEYS) = partitonCounts
-  metrics(KafkaSimpleConsumer.EXCEPTION_SUMMARY) = partitionExceptions
-  metrics(KafkaSimpleConsumer.PARTITION_DEPTH_KEYS) = partitonDepths
+  metrics(com.ligadata.AdaptersConfiguration.KamanjaKafkaAdapterConstants.PARTITION_COUNT_KEYS) = partitonCounts
+  metrics(com.ligadata.AdaptersConfiguration.KamanjaKafkaAdapterConstants.EXCEPTION_SUMMARY) = partitionExceptions
+  metrics(com.ligadata.AdaptersConfiguration.KamanjaKafkaAdapterConstants.PARTITION_DEPTH_KEYS) = partitonDepths
   var localReadOffsets: collection.mutable.Map[Int,Long] = collection.mutable.Map[Int,Long]()
 
   var props = new Properties()
@@ -751,4 +751,4 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     var cVal: Long = partitonCounts.getOrElse(pid.toString, 0)
     partitonCounts(pid.toString) = cVal + 1
   }
-}*/
+}
