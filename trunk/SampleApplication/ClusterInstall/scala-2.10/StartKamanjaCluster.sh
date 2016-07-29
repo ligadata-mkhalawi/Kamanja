@@ -23,7 +23,7 @@ name1=$1
 currentKamanjaVersion=1.5.1
 
 if [[ "$#" -eq 4 || "$#" -eq 6 ]]; then
-    echo
+	echo
 else 
     echo "Problem: Incorrect number of arguments"
     echo 
@@ -32,10 +32,10 @@ else
 fi
 
 if [[ "$name1" != "--MetadataAPIConfig" && "$name1" != "--ClusterId" && "$name1" != "--NodeIds" ]]; then
-    echo "Problem: Bad arguments"
-    echo 
-    Usage
-    exit 1
+	echo "Problem: Bad arguments"
+	echo 
+	Usage
+	exit 1
 fi
 
 # Collect the named parameters 
@@ -81,6 +81,16 @@ if [ "$?" -ne 0 ]; then
     echo "Problem: Invalid arguments supplied to the NodeInfoExtract-1.0 application... unable to obtain node configuration... exiting."
     Usage
     exit 1
+fi
+
+#-Djava.security.auth.login.config=/tmp/kerberos/jaas-client.conf
+if [ "$KAMANJA_SEC_CONFIG" ]; then
+  JAAS_CONFIG_OPT="-Djava.security.auth.login.config="$KAMANJA_SEC_CONFIG
+fi
+
+# -Djava.security.krb5.conf=/etc/krb5.conf
+if [ "$KAMANJA_KERBEROS_CONFIG" ]; then
+  KERBEROS_CONFIG_OPT="-Djava.security.krb5.conf="$KAMANJA_KERBEROS_CONFIG
 fi
 
 if [[ $nodeIds != "" ]]; then
@@ -137,21 +147,21 @@ while read LINE; do
     nodeCfg=`echo $cfgFile | sed 's/.*\/\(.*\)/\1/g'`
     pidfile=node$id.pid
      #scp -o StrictHostKeyChecking=no "$cfgFile" "$machine:$targetPath/"
-    ssh -o StrictHostKeyChecking=no -T $machine  <<-EOF
-        ulimit -u 8192
-        cd $targetPath
-        echo "nodeCfg=$nodeCfg"
+	ssh -o StrictHostKeyChecking=no -T $machine  <<-EOF
+		ulimit -u 8192
+		cd $targetPath
+		echo "nodeCfg=$nodeCfg"
         if [ "$processingengine_cnt" -gt 0 ]; then
-			java -Xmx4g -Xms4g -Dlog4j.configurationFile=file:$targetPath/engine_log4j2.xml -cp $installDir/lib/system/ExtDependencyLibs2_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/KamanjaInternalDeps_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/kamanjamanager_${scalaVersion}-${currentKamanjaVersion}.jar com.ligadata.KamanjaManager.KamanjaManager --config "$targetPath/$nodeCfg" < /dev/null > /dev/null 2>&1 &
+			java -Xmx4g -Xms4g $JAAS_CONFIG_OPT $KERBEROS_CONFIG_OPT -Dlog4j.configurationFile=file:$targetPath/engine_log4j2.xml -cp $installDir/lib/system/ExtDependencyLibs2_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/KamanjaInternalDeps_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/kamanjamanager_${scalaVersion}-${currentKamanjaVersion}.jar com.ligadata.KamanjaManager.KamanjaManager --config "$targetPath/$nodeCfg" < /dev/null > /dev/null 2>&1 &
         fi
 #        if [ "$restapi_cnt" -gt 0 ]; then
 # 			java -Dlog4j.configurationFile=file:$targetPath/restapi_log4j2.xml -cp $installDir/lib/system/ExtDependencyLibs2_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/KamanjaInternalDeps_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/metadataapiservice_2.10-${currentKamanjaVersion}.jar com.ligadata.metadataapiservice.APIService --config "$targetPath/MetadataAPIConfig_${id}.properties" < /dev/null > /dev/null 2>&1 &
 #        fi
-        if [ ! -d "$installDir/run" ]; then
-            mkdir "$installDir/run"
-        fi
-            ps aux | egrep "KamanjaManager|MetadataAPIService" | grep -v "grep" | tr -s " " | cut -d " " -f2 | tr "\\n" "," | sed "s/,$//"   > "$installDir/run/$pidfile"
-#        sleep 5
+		if [ ! -d "$installDir/run" ]; then
+			mkdir "$installDir/run"
+		fi
+			ps aux | egrep "KamanjaManager|MetadataAPIService" | grep -v "grep" | tr -s " " | cut -d " " -f2 | tr "\\n" "," | sed "s/,$//"   > "$installDir/run/$pidfile"
+#		sleep 5
 EOF
 
 # ssh -o StrictHostKeyChecking=no -T $machine 'ps aux | grep "KamanjaManager-1.0" | grep -v "grep"' > $workDir/temppid.pid
