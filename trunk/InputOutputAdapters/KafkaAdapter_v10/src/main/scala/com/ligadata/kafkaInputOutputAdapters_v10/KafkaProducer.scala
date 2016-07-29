@@ -198,8 +198,12 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
 
   // Create the producer object...
   LOG.info("Staring Kafka Producer with the following paramters: \n" + qc.toString)
-
+  //workaround for Kafka bug with class loader
+  var tempContext = Thread.currentThread().getContextClassLoader
+  Thread.currentThread().setContextClassLoader(null);
   val producer = new org.apache.kafka.clients.producer.KafkaProducer[Array[Byte], Array[Byte]](props)
+  Thread.currentThread().setContextClassLoader(tempContext);
+
   var topicPartitionsCount = producer.partitionsFor(qc.topic).size()
 
   var partitionsGetTm = System.currentTimeMillis

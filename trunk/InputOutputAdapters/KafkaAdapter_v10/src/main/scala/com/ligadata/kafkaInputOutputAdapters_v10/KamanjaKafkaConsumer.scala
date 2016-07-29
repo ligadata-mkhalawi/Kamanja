@@ -167,7 +167,12 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   // factory for KafkaConsumers.. for now it doesn't do anything, but it may have to in the future.
   private def createConsumerWithInputProperties(): org.apache.kafka.clients.consumer.KafkaConsumer[String,String] = {
     // Create the new consumer Objects
-    new org.apache.kafka.clients.consumer.KafkaConsumer[String,String] (props)
+    // Create the new consumer Objects - with a workaround for v9 class loading issue
+    var tempContext = Thread.currentThread().getContextClassLoader
+    Thread.currentThread().setContextClassLoader(null);
+    var consumer = new org.apache.kafka.clients.consumer.KafkaConsumer[String,String] (props)
+    Thread.currentThread().setContextClassLoader(tempContext);
+    return consumer
   }
 
   /**
