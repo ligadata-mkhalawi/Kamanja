@@ -12,10 +12,8 @@ assemblyOption in assembly ~= {
   _.copy(prependShellScript = Some(defaultShellScript))
 }
 
-val kamanjaVersion = "1.5.1"
-
 assemblyJarName in assembly := {
-  s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"
+  s"${name.value}_${scalaBinaryVersion.value}-${version.value}.jar"
 }
 
 // for some reason the merge strategy for non ligadata classes are not working and thus added those conflicting jars in exclusions
@@ -64,8 +62,6 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
 test in assembly := {}
 
 name := "MetadataAPI"
-
-version := "1.5.1"
 
 //libraryDependencies += "org.joda" % "joda-convert" % "1.6"
 //
