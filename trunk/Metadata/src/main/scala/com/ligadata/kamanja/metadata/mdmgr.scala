@@ -621,6 +621,8 @@ class MdMgr {
 
   /** Get All Versions of Messages for Key */
   def Messages(key: String, onlyActive: Boolean, latestVersion: Boolean): Option[scala.collection.immutable.Set[MessageDef]] = {
+    logger.info("Messages call for "+key+ "/" + onlyActive +"/"+latestVersion)
+    msgDefs.foreach(x=>{logger.info(x._1 +"-->"+ x._2.foreach(y=>{logger.info("contains active="+y.active+".."+y.NameSpace+"//"+y.Name)}))})
     GetImmutableSet(msgDefs.get(key.trim.toLowerCase), onlyActive, latestVersion)
   }
 
@@ -635,6 +637,7 @@ class MdMgr {
 
   /** Answer the ACTIVE and CURRENT MessageDef with the supplied namespace and name  */
   def ActiveMessage(nameSpace: String, name: String): MessageDef = {
+    logger.info("ActiveMessage call for " + nameSpace + "  .  " + name)
     val optMsg: Option[MessageDef] = Message(MdMgr.MkFullName(nameSpace, name), -1, true)
     val msg: MessageDef = optMsg match {
       case Some(optMsg) => optMsg
@@ -645,6 +648,7 @@ class MdMgr {
 
   /** Answer the MessageDef with the supplied key. */
   def Message(key: String, ver: Long, onlyActive: Boolean): Option[MessageDef] = {
+    logger.info("Message call for " + key + "/" + ver + "/" + onlyActive)
     GetReqValue(Messages(key, onlyActive, false), ver)
   }
 
