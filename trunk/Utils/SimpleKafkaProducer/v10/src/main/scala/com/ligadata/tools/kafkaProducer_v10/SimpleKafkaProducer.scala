@@ -125,7 +125,7 @@ object SimpleKafkaProducer {
   val messageSendMaxRetries: Integer = 3
   val requestRequiredAcks: Integer = 1
 
-  val codec = if (compress) DefaultCompressionCodec.codec else NoCompressionCodec.codec
+  val codec = if (compress) "gzip" else "none"
 
   val loggerName = this.getClass.getName
   val logger = LogManager.getLogger(loggerName)
