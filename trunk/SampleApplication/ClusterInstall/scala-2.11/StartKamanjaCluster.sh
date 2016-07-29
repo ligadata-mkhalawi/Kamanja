@@ -18,8 +18,8 @@ Usage()
 
 
 scalaVersion="2.11"
-kamanjaVersion="1.5.1"
 name1=$1
+currentKamanjaVersion=1.5.1
 
 if [[ "$#" -eq 4 || "$#" -eq 6 ]]; then
     echo
@@ -73,8 +73,8 @@ installDir=`cat $metadataAPIConfig | grep '[Rr][Oo][Oo][Tt]_[Dd][Ii][Rr]' | sed 
 echo "...extract node information for the cluster to be started from the Metadata configuration information supplied"
 
 # info is assumed to be present in the supplied metadata store... see trunk/utils/NodeInfoExtract for details 
-echo "...Command = java -cp $installDir/lib/system/ExtDependencyLibs2_${scalaVersion}-${kamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs_${scalaVersion}-${kamanjaVersion}.jar:$installDir/lib/system/KamanjaInternalDeps_${scalaVersion}-${kamanjaVersion}.jar:$installDir/lib/system/nodeinfoextract_${scalaVersion}-${kamanjaVersion}.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig \"$metadataAPIConfig\" --workDir \"$workDir\" --ipFileName \"$ipFile\" --ipPathPairFileName \"$ipPathPairFile\" --ipIdCfgTargPathQuartetFileName \"$ipIdCfgTargPathQuartetFileName\" --installDir \"$installDir\" --clusterId \"$clusterId\""
-java -cp $installDir/lib/system/ExtDependencyLibs2_${scalaVersion}-${kamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs_${scalaVersion}-${kamanjaVersion}.jar:$installDir/lib/system/KamanjaInternalDeps_${scalaVersion}-${kamanjaVersion}.jar:$installDir/lib/system/nodeinfoextract_${scalaVersion}-${kamanjaVersion}.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig $metadataAPIConfig --workDir "$workDir" --ipFileName "$ipFile" --ipPathPairFileName "$ipPathPairFile" --ipIdCfgTargPathQuartetFileName "$ipIdCfgTargPathQuartetFileName" --installDir "$installDir" --clusterId "$clusterId"
+echo "...Command = java -cp $installDir/lib/system/ExtDependencyLibs2_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/KamanjaInternalDeps_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/nodeinfoextract_${scalaVersion}-${currentKamanjaVersion}.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig \"$metadataAPIConfig\" --workDir \"$workDir\" --ipFileName \"$ipFile\" --ipPathPairFileName \"$ipPathPairFile\" --ipIdCfgTargPathQuartetFileName \"$ipIdCfgTargPathQuartetFileName\" --installDir \"$installDir\" --clusterId \"$clusterId\""
+java -cp $installDir/lib/system/ExtDependencyLibs2_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/KamanjaInternalDeps_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/nodeinfoextract_${scalaVersion}-${currentKamanjaVersion}.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig $metadataAPIConfig --workDir "$workDir" --ipFileName "$ipFile" --ipPathPairFileName "$ipPathPairFile" --ipIdCfgTargPathQuartetFileName "$ipIdCfgTargPathQuartetFileName" --installDir "$installDir" --clusterId "$clusterId"
 if [ "$?" -ne 0 ]; then
     echo
     echo "Problem: Invalid arguments supplied to the NodeInfoExtract-1.0 application... unable to obtain node configuration... exiting."
@@ -141,10 +141,10 @@ while read LINE; do
         cd $targetPath
         echo "nodeCfg=$nodeCfg"
         if [ "$processingengine_cnt" -gt 0 ]; then
-			java -Xmx4g -Xms4g -Dlog4j.configurationFile=file:$targetPath/engine_log4j2.xml -cp $installDir/lib/system/ExtDependencyLibs2_${scalaVersion}-${kamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs_${scalaVersion}-${kamanjaVersion}.jar:$installDir/lib/system/KamanjaInternalDeps_${scalaVersion}-${kamanjaVersion}.jar:$installDir/lib/system/kamanjamanager_${scalaVersion}-${kamanjaVersion}.jar com.ligadata.KamanjaManager.KamanjaManager --config "$targetPath/$nodeCfg" < /dev/null > /dev/null 2>&1 &
+			java -Xmx4g -Xms4g -Dlog4j.configurationFile=file:$targetPath/engine_log4j2.xml -cp $installDir/lib/system/ExtDependencyLibs2_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/KamanjaInternalDeps_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/kamanjamanager_${scalaVersion}-${currentKamanjaVersion}.jar com.ligadata.KamanjaManager.KamanjaManager --config "$targetPath/$nodeCfg" < /dev/null > /dev/null 2>&1 &
         fi
 #        if [ "$restapi_cnt" -gt 0 ]; then
-# 			java -Dlog4j.configurationFile=file:$targetPath/restapi_log4j2.xml -cp $installDir/lib/system/ExtDependencyLibs2_${scalaVersion}-${kamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs_${scalaVersion}-${kamanjaVersion}.jar:$installDir/lib/system/KamanjaInternalDeps_${scalaVersion}-${kamanjaVersion}.jar:$installDir/lib/system/metadataapiservice_2.10-${kamanjaVersion}.jar com.ligadata.metadataapiservice.APIService --config "$targetPath/MetadataAPIConfig_${id}.properties" < /dev/null > /dev/null 2>&1 &
+# 			java -Dlog4j.configurationFile=file:$targetPath/restapi_log4j2.xml -cp $installDir/lib/system/ExtDependencyLibs2_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/KamanjaInternalDeps_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/metadataapiservice_2.10-${currentKamanjaVersion}.jar com.ligadata.metadataapiservice.APIService --config "$targetPath/MetadataAPIConfig_${id}.properties" < /dev/null > /dev/null 2>&1 &
 #        fi
         if [ ! -d "$installDir/run" ]; then
             mkdir "$installDir/run"
