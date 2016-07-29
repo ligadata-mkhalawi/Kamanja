@@ -1,0 +1,68 @@
+{
+  "Message": {
+    "NameSpace": "com.ligadata.kamanja.samples.messages",
+    "Name": "COPDOutputMessage",
+    "Version": "00.01.00",
+    "Description": "COPD Output Message",
+    "Fixed": "true",
+    "Fields": [
+      {
+        "Name": "Desynpuf_Id",
+        "Type": "String"
+      },
+      {
+        "Name": "RiskLevel",
+        "Type": "String"
+      },
+      {
+        "Name": "AgeoftheBenificiary",
+        "Type": "Int"
+      },
+      {
+        "Name": "AgeOver40",
+        "Type": "Boolean"
+      },
+      {
+        "Name": "HasCopdSymptoms",
+        "Type": "Boolean"
+      },
+      {
+        "Name": "HasAATDeficiency",
+        "Type": "Boolean"
+      },
+      {
+        "Name": "HasFamilyHistory",
+        "Type": "Boolean"
+      },
+      {
+        "Name": "HasSmokingHistory",
+        "Type": "Boolean"
+      },
+      {
+        "Name": "HasDyspnea",
+        "Type": "Boolean"
+      },
+      {
+        "Name": "HasChronicCough",
+        "Type": "Boolean"
+      },
+      {
+        "Name": "HasChronicSputum",
+        "Type": "Boolean"
+      },
+      {
+        "Name": "HasEnvironmentalExposure",
+        "Type": "Boolean"
+      },
+      {
+        "Name": "InpatientClaimCosts",
+        "Type": "Double"
+      },
+      {
+        "Name": "OutpatientClaimCosts",
+        "Type": "Double"
+      }
+    ]
+  }
+}
+

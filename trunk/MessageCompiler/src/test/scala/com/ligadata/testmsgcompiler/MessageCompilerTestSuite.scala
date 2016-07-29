@@ -40,6 +40,8 @@ class MessageCompilerTestSuite extends FunSuite {
     var hl7Fixed: HL7Fixed = new HL7Fixed(HL7Fixed);
     hl7Fixed.set(0, "120024000")
     hl7Fixed.setTimePartitionData();
+    assert(hl7Fixed.getOrElse("abc", "123") === "123")
+    assert(hl7Fixed.getOrElse(200, "4556") === "4556")
     assert(hl7Fixed.getTimePartitionData === 126230400000L)
   }
 
@@ -54,7 +56,7 @@ class MessageCompilerTestSuite extends FunSuite {
     idCodeDimFixedTest.set(3, scala.collection.immutable.Map("test" -> 1))
     idCodeDimFixedTestArray(0) = idCodeDimFixedTest
 
-    inpatientClaimFixedTest.set(0, "100")
+    //inpatientClaimFixedTest.set(0, "100")
     inpatientClaimFixedTest.set(1, 1000L)
     inpatientClaimFixedTest.set(2, Array("icddgs"))
     inpatientClaimFixedTest.set(3, Array(1))
@@ -63,14 +65,28 @@ class MessageCompilerTestSuite extends FunSuite {
     inpatientClaimFixedTest.set(6, scala.collection.immutable.Map("icd" -> idCodeDimFixedTest))
     inpatientClaimFixedTest.set(7, idCodeDimFixedTest)
     inpatientClaimFixedTest.set(8, idCodeDimFixedTestArray)
+    
+    //inpatientClaimFixedTest.set("abc", null)
+    
+    //inpatientClaimFixedTest.set("desynpuf_id", "100")
 
     log.info("inpatientClaimFixedTest  " + inpatientClaimFixedTest.get(5))
 
-    assert(inpatientClaimFixedTest.get(0) === "100")
+  //  assert(inpatientClaimFixedTest.get(0) === "100")
     assert(inpatientClaimFixedTest.get(1) === 1000)
     assert(inpatientClaimFixedTest.get(2) === Array("icddgs"))
     assert(inpatientClaimFixedTest.get(4) === true)
+    assert(inpatientClaimFixedTest.getOrElse(10, "defaultVal") === "defaultVal")
+   
+    assert(inpatientClaimFixedTest.getOrElse("abc", "text") === "text")
+    
+    assert(inpatientClaimFixedTest.getOrElse("desynpuf_id", null) === null)
+    
+    log.info("inpatientClaimFixedTest getOrElse index " + inpatientClaimFixedTest.getOrElse(10, "defaultVal"))
+    log.info("inpatientClaimFixedTest getOrElse  " + inpatientClaimFixedTest.getOrElse("abc", "text"))
+
     val idCodeDim = inpatientClaimFixedTest.get(7)
+
     if (idCodeDim.isInstanceOf[IdCodeDimFixedTest]) {
       assert(idCodeDim.asInstanceOf[ContainerInterface].get(0) === 1)
       assert(idCodeDim.asInstanceOf[IdCodeDimFixedTest].code === 2)
@@ -78,13 +94,19 @@ class MessageCompilerTestSuite extends FunSuite {
     }
   }
 
-  test("Test Mapped Message - InpatientClaimMappedTest") {
+  test("Test Mapped Message - idCodeDimMappedTest") {
     var idCodeDimMappedTest = new IdCodeDimMappedTest(IdCodeDimMappedTest);
     idCodeDimMappedTest.set("id", 1)
     idCodeDimMappedTest.set("code", 2)
     idCodeDimMappedTest.set("description", "Test")
     idCodeDimMappedTest.set("codes", scala.collection.immutable.Map("test" -> 1))
+    idCodeDimMappedTest.set("id1",0);
+    
+    assert(idCodeDimMappedTest.getOrElse("id1", null) === "0")
     assert(idCodeDimMappedTest.get("id") === 1)
+    log.info("idCodeDimMappedTest " + idCodeDimMappedTest.getOrElse("id1", "hello"))
+    
+    
   }
 
   private def createScalaFile(scalaClass: String, version: String, className: String, clstype: String): Unit = {

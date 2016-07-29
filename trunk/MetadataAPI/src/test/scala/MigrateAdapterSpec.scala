@@ -67,11 +67,11 @@ class MigrateAdapterSpec extends FunSpec with LocalTestFixtures with BeforeAndAf
   private val logger = LogManager.getLogger(loggerName)
 
   implicit val formats = Serialization.formats(
-        ShortTypeHints(
-            List(
-                classOf[adapterMessageBinding]
-            )
-        )
+    ShortTypeHints(
+      List(
+        classOf[adapterMessageBinding]
+      )
+    )
   )
 
   private def TruncateDbStore = {
@@ -79,12 +79,12 @@ class MigrateAdapterSpec extends FunSpec with LocalTestFixtures with BeforeAndAf
     assert(null != db)
     db match {
       case "sqlserver" | "mysql" | "hbase" | "cassandra" | "hashmap" | "treemap" => {
-	var ds = MetadataAPIImpl.GetMainDS
-	var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id")
-	ds.TruncateContainer(containerList)
+        var ds = MetadataAPIImpl.GetMainDS
+        var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id")
+        ds.TruncateContainer(containerList)
       }
       case _ => {
-	logger.info("TruncateDbStore is not supported for database " + db)
+        logger.info("TruncateDbStore is not supported for database " + db)
       }
     }
   }
@@ -94,12 +94,12 @@ class MigrateAdapterSpec extends FunSpec with LocalTestFixtures with BeforeAndAf
     assert(null != db)
     db match {
       case "sqlserver" | "mysql" | "hbase" | "cassandra" | "hashmap" | "treemap" => {
-	var ds = MetadataAPIImpl.GetMainDS
-	var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id")
-	ds.DropContainer(containerList)
+        var ds = MetadataAPIImpl.GetMainDS
+        var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id")
+        ds.DropContainer(containerList)
       }
       case _ => {
-	logger.info("DropDbStore is not supported for database " + db)
+        logger.info("DropDbStore is not supported for database " + db)
       }
     }
   }
@@ -141,7 +141,7 @@ class MigrateAdapterSpec extends FunSpec with LocalTestFixtures with BeforeAndAf
 
       And("PutTranId updates the tranId")
       noException should be thrownBy {
-	MetadataAPIImpl.PutTranId(0)
+        MetadataAPIImpl.PutTranId(0)
       }
 
       logger.info("Load All objects into cache")
@@ -163,92 +163,110 @@ class MigrateAdapterSpec extends FunSpec with LocalTestFixtures with BeforeAndAf
     }
     catch {
       case e: EmbeddedZookeeperException => {
-	throw new EmbeddedZookeeperException("EmbeddedZookeeperException detected")
+        throw new EmbeddedZookeeperException("EmbeddedZookeeperException detected")
       }
       case e: Exception => throw new Exception("Failed to execute set up properly", e)
     }
   }
 
-
   def createAdapterMessageBindings(adapters: List[Map[String, Any]]) : Array[adapterMessageBinding] = {
-    try{
+    try {
       var ambs = Array[adapterMessageBinding]()
-      adapters.foreach( a => {
-	var typeString: String = null
-	logger.info("a => " + a)
-	val adapter = a.asInstanceOf[Map[String,Any]]
-	var am = new adapterMessageBinding(new String(),Array[String]().toList,Map[String,String](),new String())
-	adapter.keys.foreach( k => {
-	  logger.info(k + " => " + adapter(k))
-	  k.toUpperCase match {
-	    case "NAME" => am.AdapterName = adapter(k).asInstanceOf[String]
-	    case "TYPESTRING" => typeString = adapter(k).asInstanceOf[String]
-	    case "ASSOCIATEDMESSAGE" => am.MessageNames = Array(adapter(k).asInstanceOf[String]).toList
-	    case "DATAFORMAT" => {
-	      adapter(k).asInstanceOf[String].toUpperCase match {
-		case "CSV" => am.Serializer = "com.ligadata.kamanja.serializer.CsvSerDeser"
-		case "JSON" => am.Serializer = "com.ligadata.kamanja.serializer.JsonSerDeser"
-		case _ => am.Serializer = "com.ligadata.kamanja.serializer.JsonSerDeser"
-	      }
-	    }
-	    case "FIELDDELIMITER" => am.Options = am.Options + ("fieldDelimiter" -> adapter(k).asInstanceOf[String])
-	    case "LINEDELIMITER" => am.Options = am.Options + ("lineDelimiter" -> adapter(k).asInstanceOf[String])
-	    case _ => logger.info("Ignore the key " + k)
-	  }
-	})
-	// add default options if none exist
-	if( am.Options.size == 0 ){
-	  am.Options = am.Options + ("produceHeader" -> "true")
-	  am.Options = am.Options + ("alwaysQuotedFields" -> "false")
-	}
-
-	
-
-	if( typeString != null ){
-	  if( ( typeString.equalsIgnoreCase("Input") || 
-	      typeString.equalsIgnoreCase("Status")) ){
-	    if( am.MessageNames != null && am.MessageNames.length > 0 ){
-	      // for status adapters, message always defults 
-	      // to com.ligadata.KamanjaBase.KamanjaStatusEvent
-	      if( typeString.equalsIgnoreCase("Status") ){
-		am.MessageNames = Array("com.ligadata.KamanjaBase.KamanjaStatusEvent").toList
-		am.Serializer = "com.ligadata.kamanja.serializer.CsvSerDeser"
-		if( ! am.Options.contains("fieldDelimiter") ){
-		  am.Options = am.Options + ("fieldDelimiter" -> ",")
-		}
-	      }
-	      ambs = ambs :+ am
-	    }
-	    else{
-	      logger.info("Associated Message is not defined, A adapter-message binding is not generated for the adapter " + am.AdapterName)
-	    }
-	  }
-	  else{
-	    logger.info("The adapterType is Output type, A adapter-message binding is not generated for the adapter " + am.AdapterName)	  }
-	}
-	else{
-	  logger.info("Unable to determine adapterType(Input/output/status), A adapter-message binding is not generated for the adapter " + am.AdapterName)
-	}
+      adapters.foreach(a => {
+        var typeString: String = null
+        logger.info("a => " + a)
+        val adapter = a.asInstanceOf[Map[String, Any]]
+        var am = new adapterMessageBinding(new String(), Array[String]().toList, Map[String, String](), new String())
+        adapter.keys.foreach(k => {
+          logger.info(k + " => " + adapter(k))
+          k.toUpperCase match {
+            case "NAME" => am.AdapterName = adapter(k).asInstanceOf[String]
+            case "TYPESTRING" => typeString = adapter(k).asInstanceOf[String]
+            case "ASSOCIATEDMESSAGE" => am.MessageNames = Array(adapter(k).asInstanceOf[String]).toList
+            case "DATAFORMAT" => {
+              adapter(k).asInstanceOf[String].toUpperCase match {
+                case "CSV" => am.Serializer = "com.ligadata.kamanja.serializer.CsvSerDeser"
+                case "JSON" => am.Serializer = "com.ligadata.kamanja.serializer.JsonSerDeser"
+                case _ => am.Serializer = "com.ligadata.kamanja.serializer.JsonSerDeser"
+              }
+            }
+            case "FIELDDELIMITER" => am.Options = am.Options + ("fieldDelimiter" -> adapter(k).asInstanceOf[String])
+            case "LINEDELIMITER" => am.Options = am.Options + ("lineDelimiter" -> adapter(k).asInstanceOf[String])
+            case "VALUEDELIMITER" => am.Options = am.Options + ("valueDelimiter" -> adapter(k).asInstanceOf[String])
+            case _ => logger.info("Ignore the key " + k)
+          }
+        })
+        // add default options if none exist
+        if (am.Options.size == 0) {
+          am.Options = am.Options + ("produceHeader" -> "true")
+          am.Options = am.Options + ("alwaysQuotedFields" -> "false")
+        }
+        if (typeString != null) {
+          if ((typeString.equalsIgnoreCase("Input") ||
+            typeString.equalsIgnoreCase("Status"))) {
+            if (typeString.equalsIgnoreCase("Status")) {
+              if (am.MessageNames == null || am.MessageNames.length == 0) {
+                // for status adapters, message always defults
+                // to com.ligadata.KamanjaBase.KamanjaStatusEvent
+                am.MessageNames = Array("com.ligadata.KamanjaBase.KamanjaStatusEvent").toList
+              }
+              am.Serializer = "com.ligadata.kamanja.serializer.CsvSerDeser"
+              if (!am.Options.contains("fieldDelimiter")) {
+                am.Options = am.Options + ("fieldDelimiter" -> ",")
+              }
+              ambs = ambs :+ am
+            }
+            else {
+              if (am.MessageNames != null && am.MessageNames.length > 0) {
+                am.Serializer = "com.ligadata.kamanja.serializer.CsvSerDeser"
+                if (!am.Options.contains("fieldDelimiter")) {
+                  am.Options = am.Options + ("fieldDelimiter" -> ",")
+                }
+                ambs = ambs :+ am
+              }
+              else {
+                logger.warn("Associated Message is not defined, A adapter-message binding is not generated for the adapter " + am.AdapterName)
+              }
+            }
+          }
+          else {
+            logger.warn("The adapterType is Output type, A adapter-message binding is not generated for the adapter " + am.AdapterName)
+          }
+        }
+        else {
+          logger.warn("Unable to determine adapterType(Input/output/status), A adapter-message binding is not generated for the adapter " + am.AdapterName)
+        }
       })
       ambs
     } catch {
       case e: Exception => throw new Exception("Failed to create adapterMessageBindings", e)
     }
   }
-    
 
   private def parseClusterConfig(cfgStr: String): Array[adapterMessageBinding] = {
-    logger.info("parsing json: " + cfgStr)
+    logger.info("parsing json config: " + cfgStr)
     val cfgmap = parse(cfgStr).values.asInstanceOf[Map[String, Any]]
     logger.info("cfgmap => " + cfgmap)
     var ambs = Array[adapterMessageBinding]()
+
+    var adapters: List[Map[String, Any]] = List[Map[String, Any]]()
     cfgmap.keys.foreach(key => {
       logger.info("key => " + key)
-      if ( key.equalsIgnoreCase("adapters") ){
-	var adapters = cfgmap("Adapters").asInstanceOf[List[Map[String, Any]]]
-	ambs = createAdapterMessageBindings(adapters)
+      if (key.equalsIgnoreCase("clusters")) {
+        var clusters = cfgmap(key).asInstanceOf[List[Map[String, Any]]]
+        logger.info("Looking for adapters defined within a cluster definition")
+        clusters.foreach(cluster => {
+          logger.info("cluster => " + cluster)
+          if (cluster.contains("Adapters")) {
+            adapters = cluster.get("Adapters").get.asInstanceOf[List[Map[String, Any]]]
+          }
+        })
+      }
+      if (key.equalsIgnoreCase("adapters")) {
+        adapters = adapters ++ cfgmap("Adapters").asInstanceOf[List[Map[String, Any]]]
       }
     })
+    ambs = createAdapterMessageBindings(adapters)
     ambs
   }
 
@@ -270,12 +288,12 @@ class MigrateAdapterSpec extends FunSpec with LocalTestFixtures with BeforeAndAf
       val db = cfg.getProperty("DATABASE")
       assert(null != db)
       if (db == "cassandra") {
-	And("The property MetadataLocation must have been defined for store type " + db)
-	val loc = cfg.getProperty("DATABASE_LOCATION")
-	assert(null != loc)
-	And("The property MetadataSchemaName must have been defined for store type " + db)
-	val schema = cfg.getProperty("DATABASE_SCHEMA")
-	assert(null != schema)
+        And("The property MetadataLocation must have been defined for store type " + db)
+        val loc = cfg.getProperty("DATABASE_LOCATION")
+        assert(null != loc)
+        And("The property MetadataSchemaName must have been defined for store type " + db)
+        val schema = cfg.getProperty("DATABASE_SCHEMA")
+        assert(null != schema)
       }
       And("The property NODE_ID must have been defined")
       assert(null != cfg.getProperty("NODE_ID"))
@@ -351,12 +369,25 @@ class MigrateAdapterSpec extends FunSpec with LocalTestFixtures with BeforeAndAf
       assert(null != sc)
     }
 
-    
-    def getCCParams(cc: Product) : scala.collection.mutable.Map[String,Any] = {          
+
+    def getCCParams(cc: Product): scala.collection.mutable.Map[String, Any] = {
       val values = cc.productIterator
-      val m = cc.getClass.getDeclaredFields.map( _.getName -> values.next ).toMap
-      scala.collection.mutable.Map(m.toSeq: _*) 
+      val m = cc.getClass.getDeclaredFields.map(_.getName -> values.next).toMap
+      scala.collection.mutable.Map(m.toSeq: _*)
     }
+
+    def WriteStringToFile(flName: String, str: String): Unit = {
+      val out = new PrintWriter(flName, "UTF-8")
+      try {
+        out.print(str)
+      } catch {
+        case e: Exception => throw e;
+        case e: Throwable => throw e;
+      } finally {
+        out.close
+      }
+    }
+
 
     it("Add Cluster Config") {
       And("Check whether CONFIG_FILES_DIR defined as property")
@@ -374,53 +405,53 @@ class MigrateAdapterSpec extends FunSpec with LocalTestFixtures with BeforeAndAf
       val cfgFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith(".json"))
       assert(0 != cfgFiles.length)
 
-      fileList = List("sample_adapters.json")
+      fileList = List("ClusterConfig.json")
       fileList.foreach(f1 => {
-	And("Add the Config From " + f1)
-	And("Make Sure " + f1 + " exist")
-	var exists = false
-	var file: java.io.File = null
-	breakable {
-	  cfgFiles.foreach(f2 => {
-	    if (f2.getName() == f1) {
-	      exists = true
-	      file = f2
-	      break
-	    }
-	  })
-	}
-	assert(true == exists)
 
-	And("AddConfig first time from " + file.getPath)
-	var cfgStr = Source.fromFile(file).mkString
-	res = MetadataAPIImpl.UploadConfig(cfgStr, None, "testConfig")
-	res should include regex ("\"Status Code\" : 0")
+        And("Add the Config From " + f1)
+        And("Make Sure " + f1 + " exist")
+        var exists = false
+        var file: java.io.File = null
+        breakable {
+          cfgFiles.foreach(f2 => {
+            if (f2.getName() == f1) {
+              exists = true
+              file = f2
+              break
+            }
+          })
+        }
+        assert(true == exists)
 
-	And("GetAllCfgObjects to fetch all config objects")
-	res = MetadataAPIImpl.GetAllCfgObjects("JSON", None)
-	res should include regex ("\"Status Code\" : 0")
+        And("AddConfig first time from " + file.getPath)
+        var cfgStr = Source.fromFile(file).mkString
+        res = MetadataAPIImpl.UploadConfig(cfgStr, None, "testConfig")
+        res should include regex ("\"Status Code\" : 0")
 
-	And("GetAllNodes to fetch the nodes")
-	res = MetadataAPIImpl.GetAllNodes("JSON", None)
-	res should include regex ("\"Status Code\" : 0")
-	logger.info(res)
+        And("GetAllCfgObjects to fetch all config objects")
+        res = MetadataAPIImpl.GetAllCfgObjects("JSON", None)
+        res should include regex ("\"Status Code\" : 0")
 
-	And("GetAllAdapters to fetch the adapters")
-	res = MetadataAPIImpl.GetAllAdapters("JSON", None)
-	res should include regex ("\"Status Code\" : 0")
+        And("GetAllNodes to fetch the nodes")
+        res = MetadataAPIImpl.GetAllNodes("JSON", None)
+        res should include regex ("\"Status Code\" : 0")
+        logger.info(res)
 
-	And("GetAllClusters to fetch the clusters")
-	res = MetadataAPIImpl.GetAllClusters("JSON", None)
-	res should include regex ("\"Status Code\" : 0")
+        And("GetAllAdapters to fetch the adapters")
+        res = MetadataAPIImpl.GetAllAdapters("JSON", None)
+        res should include regex ("\"Status Code\" : 0")
 
-	And("Check number of the nodes")
-	var nodes = MdMgr.GetMdMgr.Nodes
-	assert(nodes.size == 3)
+        And("GetAllClusters to fetch the clusters")
+        res = MetadataAPIImpl.GetAllClusters("JSON", None)
+        res should include regex ("\"Status Code\" : 0")
 
-	And("Check number of the adapters")
-	var adapters = MdMgr.GetMdMgr.Adapters
-	assert(adapters.size == 4)
+        And("Check number of the nodes")
+        var nodes = MdMgr.GetMdMgr.Nodes
+        assert(nodes.size == 1)
 
+        And("Check number of the adapters")
+        var adapters = MdMgr.GetMdMgr.Adapters
+        assert(adapters.size == 10)
       })
     }
 
@@ -442,44 +473,44 @@ class MigrateAdapterSpec extends FunSpec with LocalTestFixtures with BeforeAndAf
       assert(0 != msgFiles.length)
 
       fileList = List("com.botanical.csv.emailmsg.json",
-		      "com.botanical.json.audit.ordermsg.json",
-		      "com.botanical.json.audit.shippingmsg.json",
-		      "com.botanical.json.ordermsg.json",
-		      "com.botanical.json.shippingmsg.json")
+        "com.botanical.json.audit.ordermsg.json",
+        "com.botanical.json.audit.shippingmsg.json",
+        "com.botanical.json.ordermsg.json",
+        "com.botanical.json.shippingmsg.json")
       fileList.foreach(f1 => {
-	And("Add the Message From " + f1)
-	And("Make Sure " + f1 + " exist")
-	var exists = false
-	var file: java.io.File = null
-	breakable {
-	  msgFiles.foreach(f2 => {
-	    if (f2.getName() == f1) {
-	      exists = true
-	      file = f2
-	      break
-	    }
-	  })
-	}
-	assert(true == exists)
+        And("Add the Message From " + f1)
+        And("Make Sure " + f1 + " exist")
+        var exists = false
+        var file: java.io.File = null
+        breakable {
+          msgFiles.foreach(f2 => {
+            if (f2.getName() == f1) {
+              exists = true
+              file = f2
+              break
+            }
+          })
+        }
+        assert(true == exists)
 
-	And("AddMessage first time from " + file.getPath)
-	var msgStr = Source.fromFile(file).mkString
-	res = MetadataAPIImpl.AddMessage(msgStr, "JSON", None,tenantId)
-	res should include regex ("\"Status Code\" : 0")
+        And("AddMessage first time from " + file.getPath)
+        var msgStr = Source.fromFile(file).mkString
+        res = MetadataAPIImpl.AddMessage(msgStr, "JSON", None, tenantId,None)
+        res should include regex ("\"Status Code\" : 0")
 
-	And("GetMessageDef API to fetch the message that was just added")
+        And("GetMessageDef API to fetch the message that was just added")
 
-	var objectName = f1.stripSuffix(".json").toLowerCase
-	logger.info("objectName => " + objectName)
+        var objectName = f1.stripSuffix(".json").toLowerCase
+        logger.info("objectName => " + objectName)
 
-	val nameNodes: Array[String] = if (objectName != null && objectName.contains('.')) objectName.split('.') else Array(MdMgr.sysNS, objectName)
-	val nmspcNodes: Array[String] = nameNodes.splitAt(nameNodes.size - 1)._1
-	val buffer: StringBuilder = new StringBuilder
-	val nameSpace: String = nmspcNodes.addString(buffer, ".").toString
-	val objName: String = nameNodes(nameNodes.size - 1)
-	//var version = "000001000000000000"
-	res = MetadataAPIImpl.GetMessageDef(nameSpace,objName,"JSON","-1",None)
-	res should include regex ("\"Status Code\" : 0")
+        val nameNodes: Array[String] = if (objectName != null && objectName.contains('.')) objectName.split('.') else Array(MdMgr.sysNS, objectName)
+        val nmspcNodes: Array[String] = nameNodes.splitAt(nameNodes.size - 1)._1
+        val buffer: StringBuilder = new StringBuilder
+        val nameSpace: String = nmspcNodes.addString(buffer, ".").toString
+        val objName: String = nameNodes(nameNodes.size - 1)
+        //var version = "000001000000000000"
+        res = MetadataAPIImpl.GetMessageDef(nameSpace, objName, "JSON", "-1", None,None)
+        res should include regex ("\"Status Code\" : 0")
       })
     }
 
@@ -500,48 +531,53 @@ class MigrateAdapterSpec extends FunSpec with LocalTestFixtures with BeforeAndAf
       val cfgFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith(".json"))
       assert(0 != cfgFiles.length)
 
-      fileList = List("sample_adapters.json")
+      fileList = List("ClusterConfig.json")
 
       fileList.foreach(f1 => {
-	And("Add the Config From " + f1)
-	And("Make Sure " + f1 + " exist")
-	var exists = false
-	var file: java.io.File = null
-	breakable {
-	  cfgFiles.foreach(f2 => {
-	    if (f2.getName() == f1) {
-	      exists = true
-	      file = f2
-	      break
-	    }
-	  })
-	}
-	assert(true == exists)
-	And("AddConfig  from " + file.getPath)
-	var cfgStr = Source.fromFile(file).mkString
-	var ambs = parseClusterConfig(cfgStr)
-	logger.info("ambs => " + ambs)
-	implicit val formats = Serialization.formats(NoTypeHints)
-	val ambsAsJson = writePretty(ambs)
-	logger.info(ambsAsJson)
+        And("Add the Config From " + f1)
+        And("Make Sure " + f1 + " exist")
+        var exists = false
+        var file: java.io.File = null
+        breakable {
+          cfgFiles.foreach(f2 => {
+            if (f2.getName() == f1) {
+              exists = true
+              file = f2
+              break
+            }
+          })
+        }
+        assert(true == exists)
+        And("AddConfig  from " + file.getPath)
+        var cfgStr = Source.fromFile(file).mkString
+        var ambs = parseClusterConfig(cfgStr)
+        logger.info("ambs => " + ambs)
+        implicit val formats = Serialization.formats(NoTypeHints)
+        val ambsAsJson = writePretty(ambs)
+        logger.info(ambsAsJson)
+        WriteStringToFile("/tmp/adapterBindings.test_output.json", ambsAsJson)
 
-	// parse the json again
-	val ambs1 = parse(ambsAsJson).extract[Array[adapterMessageBinding]]
-	val ambsAsJson1 = writePretty(ambs1)
-	logger.info(ambsAsJson1)
-	
-	assert(ambsAsJson == ambsAsJson1)
+        // parse the json again
+        val ambs1 = parse(ambsAsJson).extract[Array[adapterMessageBinding]]
+        val ambsAsJson1 = writePretty(ambs1)
+        logger.info(ambsAsJson1)
 
-	val ambsMap:Array[scala.collection.mutable.Map[String,Any]] = ambs1.map(amb => { val ambMap = getCCParams(amb); ambMap })
-	ambsMap.toList.foreach(ambMap => { logger.info("ambMap => " + ambMap) })
+        assert(ambsAsJson == ambsAsJson1)
 
-	val cnt = ambsMap.size
+        val ambsMap: Array[scala.collection.mutable.Map[String, Any]] = ambs1.map(amb => {
+          val ambMap = getCCParams(amb); ambMap
+        })
+        ambsMap.toList.foreach(ambMap => {
+          logger.info("ambMap => " + ambMap)
+        })
 
-	res = AdapterMessageBindingUtils.AddAdapterMessageBinding(ambsMap.toList,userid)
-	res should include regex ("\"Status Code\" : 0")
+        val cnt = ambsMap.size
 
-	val bindings =  AdapterMessageBindingUtils.ListAllAdapterMessageBindings
-	assert(bindings.size == cnt)
+        res = AdapterMessageBindingUtils.AddAdapterMessageBinding(ambsMap.toList, userid)
+        res should include regex ("\"Status Code\" : 0")
+
+        val bindings = AdapterMessageBindingUtils.ListAllAdapterMessageBindings
+        assert(bindings.size == cnt)
 
       })
     }
@@ -564,10 +600,10 @@ class MigrateAdapterSpec extends FunSpec with LocalTestFixtures with BeforeAndAf
     assert(null != db)
     db match {
       case "hashmap" | "treemap" => {
-	DropDbStore
+        DropDbStore
       }
       case _ => {
-	logger.info("cleanup...")
+        logger.info("cleanup...")
       }
     }
     TruncateDbStore

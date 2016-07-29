@@ -16,6 +16,7 @@ Usage()
 }
 
 name1=$1
+currentKamanjaVersion=1.5.1
 
 if [ "$#" -eq 6 ]; then
 	echo
@@ -58,5 +59,5 @@ while [ "$1" != "" ]; do
     esac
     shift
 done
-java -Dlog4j.configurationFile=file:$kamanjaHome/config/log4j2.xml -cp $kamanjaHome/lib/system/ExtDependencyLibs2_2.10-1.4.0.jar:$kamanjaHome/lib/system/ExtDependencyLibs_2.10-1.4.0.jar:$kamanjaHome/lib/system/KamanjaInternalDeps_2.10-1.4.0.jar:$kamanjaHome/lib/system/generateadapterbindings_2.10-1.4.0.jar com.ligadata.Migrate.GenerateAdapterBindings --config $clusterConfig --outfile $outputFile
+java -Dlog4j.configurationFile=file:$kamanjaHome/config/log4j2.xml -cp $kamanjaHome/lib/system/ExtDependencyLibs2_2.10-${currentKamanjaVersion}.jar:$kamanjaHome/lib/system/ExtDependencyLibs_2.10-${currentKamanjaVersion}.jar:$kamanjaHome/lib/system/KamanjaInternalDeps_2.10-${currentKamanjaVersion}.jar:$kamanjaHome/lib/system/generateadapterbindings_2.10-${currentKamanjaVersion}.jar com.ligadata.Migrate.GenerateAdapterBindings --config $clusterConfig --outfile $outputFile
 echo result = $?

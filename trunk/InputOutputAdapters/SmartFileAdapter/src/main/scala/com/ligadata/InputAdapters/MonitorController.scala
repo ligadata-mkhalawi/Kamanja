@@ -19,7 +19,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
 
   val NOT_RECOVERY_SITUATION = -1
 
-  private val bufferingQ_map: scala.collection.mutable.Map[SmartFileHandler, (Long, Long, Int)] = scala.collection.mutable.Map[SmartFileHandler, (Long, Long, Int)]()
+  private val bufferingQ_map: scala.collection.mutable.Map[SmartFileHandler, (Long, Long, Int, Boolean)] = scala.collection.mutable.Map[SmartFileHandler, (Long, Long, Int, Boolean)]()
   private val bufferingQLock = new Object
   private var smartFileMonitor : SmartFileMonitor = null
 
@@ -38,22 +38,32 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
 
-  private var initialFiles :  List[(String, Int, String, Int)] = null
+  private var initialFiles :  List[String] = null
 
-  def init(files :  List[(String, Int, String, Int)]): Unit ={
+  def init(files :  List[String]): Unit ={
     initialFiles = files
   }
 
   def checkConfigDirsAccessibility(): Unit ={
     adapterConfig.monitoringConfig.locations.foreach(dir => {
       val handler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, dir)
-      if(!handler.isAccessible)
-        throw new KamanjaException("Smart File Consumer - Dir to watch " + dir + " is not accessible. It must be readable and writable", null)
+      if(!handler.exists())
+        throw new KamanjaException("Smart File Consumer - Dir to watch (" + dir + ") does not exist", null)
+      else if(!handler.isAccessible)
+        throw new KamanjaException("Smart File Consumer - Dir to watch (" + dir + ") is not accessible. It must be readable and writable", null)
     })
 
     val handler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, adapterConfig.monitoringConfig.targetMoveDir)
-    if(!handler.isAccessible)
-      throw new KamanjaException("Smart File Consumer - Target Dir " + adapterConfig.monitoringConfig.targetMoveDir + " is not accessible. It must be readable and writable", null)
+    if(!handler.exists())
+      throw new KamanjaException("Smart File Consumer - Target Dir (" + adapterConfig.monitoringConfig.targetMoveDir + ") does not exist", null)
+    else if(!handler.isAccessible)
+      throw new KamanjaException("Smart File Consumer - Target Dir (" + adapterConfig.monitoringConfig.targetMoveDir + ") is not accessible. It must be readable and writable", null)
+  }
+
+  def markFileAsProcessed(filePath : String) : Unit = {
+    if(smartFileMonitor != null){
+      smartFileMonitor.markFileAsProcessed(filePath)
+    }
   }
 
   def startMonitoring(): Unit ={
@@ -80,6 +90,8 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
 
     if(smartFileMonitor != null)
       smartFileMonitor.shutdown()
+    else
+      logger.debug("smartFileMonitor is null")
 
     keepMontoringBufferingFiles = false
     MonitorUtils.shutdownAndAwaitTermination(globalFileMonitorService, "MonitorController globalFileMonitorService")
@@ -90,15 +102,15 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
     * it basically does what method processExistingFiles used to do in file consumer tool
     * @param fileHandler
     */
-  def fileDetectedCallback (fileHandler : SmartFileHandler) : Unit = {
+  def fileDetectedCallback (fileHandler : SmartFileHandler, initiallyExists : Boolean) : Unit = {
     logger.debug("SMART FILE CONSUMER (MonitorController): got file {}", fileHandler.getFullPath)
     //if (MonitorUtils.isValidFile(fileHandler))
-    enQBufferedFile(fileHandler)
+    enQBufferedFile(fileHandler, initiallyExists)
   }
 
-  private def enQBufferedFile(fileHandler: SmartFileHandler): Unit = {
+  private def enQBufferedFile(fileHandler: SmartFileHandler, initiallyExists : Boolean): Unit = {
     bufferingQLock.synchronized {
-      bufferingQ_map(fileHandler) = (0L, System.currentTimeMillis(),0) // Initially, always set to 0.. this way we will ensure that it has time to be processed
+      bufferingQ_map(fileHandler) = (0L, System.currentTimeMillis(),0, initiallyExists)
     }
   }
 
@@ -117,6 +129,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
     logger.debug("SMART FILE CONSUMER (MonitorController):  monitorBufferingFiles")
 
     var specialWarnCounter: Int = 1
+
     while (keepMontoringBufferingFiles) {
       // Scan all the files that we are buffering, if there is not difference in their file size.. move them onto
       // the FileQ, they are ready to process.
@@ -131,6 +144,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
           var thisFileFailures: Int = fileTuple._2._3
           var thisFileStarttime: Long = fileTuple._2._2
           var thisFileOrigLength: Long = fileTuple._2._1
+          val initiallyExists = fileTuple._2._4
 
 
           try {
@@ -138,18 +152,19 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
 
             logger.debug("SMART FILE CONSUMER (MonitorController):  monitorBufferingFiles - file " + fileHandler.getFullPath)
 
-            val matchingFileInfo : List[(String, Int, String, Int)] =
+            /*val matchingFileInfo : List[(String, Int, String, Int)] =
               if (initialFiles ==null) null
-              else initialFiles.filter(tuple => tuple._3.equals(fileHandler.getFullPath))
+              else initialFiles.filter(tuple => tuple._3.equals(fileHandler.getFullPath))*/
 
-            if (matchingFileInfo != null && matchingFileInfo.size > 0) {
+            if (initiallyExists && initialFiles != null && initialFiles.contains(fileHandler.getFullPath)) {
               //this is an initial file, the leader will take care of it, ignore
               /*initialFiles.filter(tuple => tuple._3.equals(fileHandler.getFullPath)) match{
                 case None =>
                 case Some(initialFileInfo) => initialFiles = initialFiles diff List(initialFileInfo)
               }*/
               logger.debug("SMART FILE CONSUMER (MonitorController): file {} is already in initial files", fileHandler.getFullPath)
-              initialFiles = initialFiles diff matchingFileInfo
+              bufferingQ_map.remove(fileHandler)
+              //initialFiles = initialFiles diff fileHandler.getFullPath
 
               logger.debug("SMART FILE CONSUMER (MonitorController): now initialFiles = {}",initialFiles)
             }
@@ -165,10 +180,15 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
                   // If the length is > 0, we assume that the file completed transfer... (very problematic, but unless
                   // told otherwise by BofA, not sure what else we can do here.
                   if (thisFileOrigLength > 0 && MonitorUtils.isValidFile(fileHandler)) {
-                    logger.info("SMART FILE CONSUMER (MonitorController):  File READY TO PROCESS " + fileHandler.getFullPath)
-                    enQFile(fileTuple._1, NOT_RECOVERY_SITUATION, fileHandler.lastModified)
+                    if(isEnqueued(fileTuple._1)){
+                      logger.debug("SMART FILE CONSUMER (MonitorController):  File already enqueued " + fileHandler.getFullPath)
+                    }else{
+                      logger.info("SMART FILE CONSUMER (MonitorController):  File READY TO PROCESS " + fileHandler.getFullPath)
+                      enQFile(fileTuple._1, NOT_RECOVERY_SITUATION, fileHandler.lastModified)
+                      newlyAdded.append(fileHandler)
+                    }
                     bufferingQ_map.remove(fileTuple._1)
-                    newlyAdded.append(fileHandler)
+
                   } else {
                     // Here becayse either the file is sitll of len 0,or its deemed to be invalid.
                     if (thisFileOrigLength == 0) {
@@ -188,7 +208,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
                 } else {
                   logger.debug("SMART FILE CONSUMER (MonitorController):  File {} size changed from {} to {}",
                     fileHandler.getFullPath, thisFileOrigLength.toString, fileTuple._2._1.toString)
-                  bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures)
+                  bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
                 }
               } else {
                 // File System is not accessible.. issue a warning and go on to the next file.
@@ -210,7 +230,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
                   }
                 }
               } else {
-                bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures)
+                bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
                 logger.warn("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue ", ioe)
               }
             }
@@ -227,7 +247,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
                   }
                 }
               } else {
-                bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures)
+                bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
                 logger.error("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue ", e)
               }
             }
@@ -244,6 +264,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
         })
 
       }
+
       // Give all the files a 1 second to add a few bytes to the contents
       try {
         Thread.sleep(refreshRate)
@@ -257,7 +278,15 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
       logger.info("SMART FILE CONSUMER (MonitorController):  enq file " + fileHandler.getFullPath + " with priority " + createDate+" --- curretnly " + fileQ.size + " files on a QUEUE")
       fileQ += new EnqueuedFileHandler(fileHandler, offset, createDate, partMap)
     }
+  }
 
+  private def isEnqueued(fileHandler: SmartFileHandler) : Boolean = {
+    fileQLock.synchronized {
+      if (fileQ.isEmpty) {
+        return false
+      }
+      fileQ.exists(f => f.fileHandler.getFullPath.equals(fileHandler.getFullPath))
+    }
   }
 
   private def deQFile: EnqueuedFileHandler = {

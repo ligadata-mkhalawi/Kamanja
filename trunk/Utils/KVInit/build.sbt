@@ -10,10 +10,8 @@ assemblyOption in assembly ~= {
   _.copy(prependShellScript = Some(defaultShellScript))
 }
 
-val kamanjaVersion = "1.4.0"
-
 assemblyJarName in assembly := {
-  s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"
+  s"${name.value}_${scalaBinaryVersion.value}-${version.value}.jar"
 }
 
 assemblyMergeStrategy in assembly := {
@@ -62,7 +60,6 @@ unmanagedJars in Compile <<= baseDirectory map { base => (base ** "*.jar").class
 
 name := "KVInit"
 
-version := "1.4.0"
 //
 //resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 //

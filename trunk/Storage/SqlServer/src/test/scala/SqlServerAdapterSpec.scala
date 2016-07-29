@@ -449,17 +449,29 @@ class SqlServerAdapterSpec extends FunSpec with BeforeAndAfter with BeforeAndAft
 	adapter.CreateContainer(containers)
       }
 
-      And("Test copy container without force option")
+      And("Test copy container without force option, when externalDDLOnly is set to NO")
       ex3 = the [com.ligadata.Exceptions.StorageDDLException] thrownBy {
 	adapter.copyContainer(srcContainerName,destContainerName,false)
       }
       logger.info("Exception => " + ex3.cause)
 
-      And("Test copy container with force")
+      And("Test copy container with force when externalDDLOnly is set to NO")
       noException should be thrownBy {
 	adapter.copyContainer(srcContainerName,destContainerName,true)
       }
 
+      And("Test copy container with force option when externalDDLOnly is set to YES")
+      sqlServerAdapter.externalDDLOnly = "YES"
+      noException should be thrownBy {
+	adapter.copyContainer(srcContainerName,destContainerName,true)
+      }
+
+      And("Test copy container without force option when externalDDLOnly is set to YES")
+      noException should be thrownBy {
+	adapter.copyContainer(srcContainerName,destContainerName,false)
+      }
+
+      sqlServerAdapter.externalDDLOnly = "NO"
       And("Test the non-existence of the source table")
       var srcTableName = sqlServerAdapter.getTableName(srcContainerName)
       exists = adapter.isTableExists(srcTableName)

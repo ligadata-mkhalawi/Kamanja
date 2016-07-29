@@ -35,11 +35,11 @@ class MetadataAPIServiceActor extends Actor with MetadataAPIService {
   def receive = runRoute(metadataAPIRoute)
 }
 
-
 trait MetadataAPIService extends HttpService {
 
   APIInit.Init
   val KEY_TOKN = "keys"
+  val ADAPTER_MSG_BINDING = "adaptermessagebinding"
   val AUDIT_LOG_TOKN = "audit_log"
   val LEADER_TOKN = "leader"
   val APIName = "MetadataAPIService"
@@ -48,169 +48,185 @@ trait MetadataAPIService extends HttpService {
   val loggerName = this.getClass.getName
   val logger = LogManager.getLogger(loggerName)
   // logger.setLevel(Level.TRACE);
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
-  val metadataAPIRoute  = {
-    optionalHeaderValueByName("userid") { userId => {
-      optionalHeaderValueByName("password") { password => {
-        optionalHeaderValueByName("role") { role =>
-          optionalHeaderValueByName("tenantid") {tid =>
-            optionalHeaderValueByName("modelconfig") { modelcofniginfo =>
-            var user: Option[String] = None
+  val metadataAPIRoute = {
+    optionalHeaderValueByName("userid") { userId =>
+      {
+        optionalHeaderValueByName("password") { password =>
+          {
+            optionalHeaderValueByName("role") { role =>
+              optionalHeaderValueByName("tenantid") { tid =>
+                optionalHeaderValueByName("modelconfig") { modelcofniginfo =>
+                  var user: Option[String] = None
 
-            // Make sure that the Audit knows the difference between No User specified and an None (request originates within the engine)
-            if (userId == None) user = Some("kamanja")
-            logger.debug("userid => " + user.get + ",password => xxxxx" + ",role => " + role + ",modelname => " + modelcofniginfo)
-            get {
-              path("api" / Rest) { str => {
-                val toknRoute = str.split("/")
-                logger.debug("GET reqeust : api/" + str)
+                  // Make sure that the Audit knows the difference between No User specified and an None (request originates within the engine)
+                  if (userId == None) user = Some("kamanja")
+                  logger.debug("userid => " + user.get + ",password => xxxxx" + ",role => " + role + ",modelname => " + modelcofniginfo)
+                  get {
+                    path("api" / Rest) { str =>
+                      {
+                        val toknRoute = str.split("/")
+                        logger.debug("GET reqeust : api/" + str)
 
-                if (!isUrlSuffix(str)) {
-                  requestContext => requestContext.complete((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown GET route")).toString)
-                } else if (toknRoute.size == 1) {
-                  if (toknRoute(0).equalsIgnoreCase(AUDIT_LOG_TOKN)) {
-                    requestContext => processGetAuditLogRequest(null, requestContext, user, password, role)
-                  }
-                  else if (toknRoute(0).equalsIgnoreCase(LEADER_TOKN)) {
-                    requestContext => processGetLeaderRequest(null, requestContext, user, password, role)
-                  }
-                  else {
-                    requestContext => processGetObjectRequest(toknRoute(0), "", requestContext, user, password, role)
-                  }
-                }
-                else if (toknRoute(0).equalsIgnoreCase(KEY_TOKN)) {
-                  requestContext => processGetKeysRequest(toknRoute(1).toLowerCase, requestContext, user, password, role)
-                }
-                else if (toknRoute(0).equalsIgnoreCase(AUDIT_LOG_TOKN)) {
-                  // strip the first token and send the rest
-                  val filterParameters = toknRoute.slice(1, toknRoute.size)
-                  requestContext => processGetAuditLogRequest(filterParameters, requestContext, user, password, role)
-                }
-                else {
-                  requestContext => processGetObjectRequest(toknRoute(0).toLowerCase, toknRoute(1).toLowerCase, requestContext, user, password, role)
-                }
-              }
-              }
-            } ~
-              put {
-                path("api" / Rest) { str => {
-                  logger.debug("PUT reqeust : api/" + str)
-                  val toknRoute = str.split("/")
-                  if (toknRoute(0).equalsIgnoreCase("UploadJars")) {
-                    entity(as[Array[Byte]]) {
-                      reqBody => {
-                        parameters('name) { jarName => {
-                          logger.debug("Uploading jar " + jarName)
-                          requestContext =>
-                            val uploadJarService = actorRefFactory.actorOf(Props(new UploadJarService(requestContext, user, password, role)))
-                            uploadJarService ! UploadJarService.Process(jarName, reqBody)
-                        }
-                        }
+		                if (!isUrlSuffix(str)) {
+		                  requestContext => requestContext.complete((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown GET route")).toString)
+		                } else if (toknRoute.size == 1) {
+		                  if (toknRoute(0).equalsIgnoreCase(AUDIT_LOG_TOKN)) {
+		                    requestContext => processGetAuditLogRequest(null, requestContext, user, password, role)
+		                  }
+		                  else if (toknRoute(0).equalsIgnoreCase(LEADER_TOKN)) {
+		                    requestContext => processGetLeaderRequest(null, requestContext, user, password, role)
+		                  }
+		                  else {
+		                    requestContext => processGetObjectRequest(toknRoute(0), "", requestContext, user, password, role)
+		                  }
+		                }
+		                else if (toknRoute(0).equalsIgnoreCase(KEY_TOKN)) {
+		                  requestContext => processGetKeysRequest(toknRoute(1).toLowerCase, requestContext, user, password, role)
+		                }
+		                else if (toknRoute(0).equalsIgnoreCase(AUDIT_LOG_TOKN)) {
+		                  // strip the first token and send the rest
+		                  val filterParameters = toknRoute.slice(1, toknRoute.size)
+		                  requestContext => processGetAuditLogRequest(filterParameters, requestContext, user, password, role)
+		                }
+		                else if (toknRoute(0).equalsIgnoreCase(ADAPTER_MSG_BINDING)) {
+		                  requestContext => processGetAdapterMessageBindingObjectRequest(toknRoute(1).toLowerCase, toknRoute(2).toLowerCase, requestContext, user, password, role)
+		                }
+		                else {
+		                  requestContext => processGetObjectRequest(toknRoute(0).toLowerCase, toknRoute(1).toLowerCase, requestContext, user, password, role)
+		             	}
                       }
                     }
-                  } else if (toknRoute(0).equalsIgnoreCase("Activate") || toknRoute(0).equalsIgnoreCase("Deactivate")) {
-                    entity(as[String]) { reqBody => requestContext => processPutRequest(toknRoute(0), toknRoute(1).toLowerCase, toknRoute(2), requestContext, user, password, role, modelcofniginfo, tid) }
-                  } else {
-                    entity(as[String]) { reqBody => {
-                      if (toknRoute.size == 1) { requestContext => processPutRequest(toknRoute(0), reqBody, requestContext, user, password, role, modelcofniginfo, tid) }
-                      else if (toknRoute.size == 2 && toknRoute(0) == "model") {
-                        ModelType.withName(toknRoute(1).toString) match {
-                          case ModelType.KPMML => {
-                            val objectType = toknRoute(0) + toknRoute(1)
-                            entity(as[String]) { reqBody => { requestContext => processPutRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
+                  } ~
+                    put {
+                      path("api" / Rest) { str =>
+                        {
+                          logger.debug("PUT reqeust : api/" + str)
+                          val toknRoute = str.split("/")
+                          if (toknRoute(0).equalsIgnoreCase("UploadJars")) {
+                            entity(as[Array[Byte]]) {
+                              reqBody =>
+                                {
+                                  parameters('name) { jarName =>
+                                    {
+                                      logger.debug("Uploading jar " + jarName)
+                                      requestContext =>
+                                        val uploadJarService = actorRefFactory.actorOf(Props(new UploadJarService(requestContext, user, password, role)))
+                                        uploadJarService ! UploadJarService.Process(jarName, reqBody)
+                                    }
+                                  }
+                                }
+                            }
+                          } else if (toknRoute(0).equalsIgnoreCase("Activate") || toknRoute(0).equalsIgnoreCase("Deactivate")) {
+                            entity(as[String]) { reqBody => requestContext => processPutRequest(toknRoute(0), toknRoute(1).toLowerCase, toknRoute(2), requestContext, user, password, role, modelcofniginfo, tid) }
+                          } else {
+                            entity(as[String]) { reqBody =>
+                              {
+                                if (toknRoute.size == 1) { requestContext => processPutRequest(toknRoute(0), reqBody, requestContext, user, password, role, modelcofniginfo, tid) }
+                                else if (toknRoute.size == 2 && toknRoute(0) == "model") {
+                                  ModelType.withName(toknRoute(1).toString) match {
+                                    case ModelType.KPMML => {
+                                      val objectType = toknRoute(0) + toknRoute(1)
+                                      entity(as[String]) { reqBody => { requestContext => processPutRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
 
+                                    }
+                                    case ModelType.JAVA => {
+                                      val objectType = toknRoute(0) + toknRoute(1)
+                                      entity(as[String]) { reqBody => { requestContext => processPutRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
+                                    }
+
+                                    case ModelType.SCALA => {
+                                      val objectType = toknRoute(0) + toknRoute(1)
+                                      entity(as[String]) { reqBody => { requestContext => processPutRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
+                                    }
+                                    case ModelType.PMML =>
+                                      val objectType = toknRoute(0) + toknRoute(1)
+                                      entity(as[String]) { reqBody => { requestContext => processPutRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
+                                  }
+                                } else { requestContext => requestContext.complete((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown PUT route")).toString) }
+                              }
+                            }
                           }
-                          case ModelType.JAVA => {
-                            val objectType = toknRoute(0) + toknRoute(1)
-                            entity(as[String]) { reqBody => { requestContext => processPutRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
+                        }
+                      }
+                    } ~
+                    post {
+                      entity(as[String]) { reqBody =>
+                        path("api" / Rest) { str =>
+                          {
+                            val toknRoute = str.split("/")
+                            logger.debug("POST reqeust : api/" + str)
+                            if (toknRoute.size == 1) {
+                              if (toknRoute(0).equalsIgnoreCase(GET_HEALTH))
+                                requestContext => processHBRequest(DetailsLevel.ALL, reqBody, requestContext, user, password, role)
+                              else {
+                                if (toknRoute(0).equalsIgnoreCase("model"))
+                                  logger.warn("MetadataAPI Http Service: URL of type https://hostname:port/api/model is deprecated")
+                                entity(as[String]) { reqBody => { requestContext => processPostRequest(toknRoute(0), reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
+                              }
+                            } else if (toknRoute.size == 2 && toknRoute(0).equalsIgnoreCase(GET_HEALTH)) {
+                              val detailsLevel = DetailsLevel.withName(toknRoute(1))
+                              requestContext => processHBRequest(detailsLevel, reqBody, requestContext, user, password, role)
+                            } else if (toknRoute.size == 2 && toknRoute(0).equalsIgnoreCase("model")) {
+                              ModelType.withName(toknRoute(1).toString) match {
+                                case ModelType.KPMML => {
+                                  val objectType = toknRoute(0) + toknRoute(1)
+                                  entity(as[String]) { reqBody => { requestContext => processPostRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
+                                }
+
+                                case ModelType.JAVA => {
+                                  val objectType = toknRoute(0) + toknRoute(1)
+                                  entity(as[String]) { reqBody => { requestContext => processPostRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
+                                }
+
+                                case ModelType.SCALA => {
+                                  val objectType = toknRoute(0) + toknRoute(1)
+                                  entity(as[String]) { reqBody => { requestContext => processPostRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
+                                }
+                                case ModelType.PMML =>
+                                  val objectType = toknRoute(0) + toknRoute(1)
+                                  entity(as[String]) { reqBody => { requestContext => processPostRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
+                              }
+                            } else { requestContext => requestContext.complete((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown POST route")).toString) }
                           }
+                        }
+                      }
+                    } ~
+                    delete {
+                      entity(as[String]) { reqBody =>
+                        path("api" / Rest) { str =>
+                          {
 
-                          case ModelType.SCALA => {
-                            val objectType = toknRoute(0) + toknRoute(1)
-                            entity(as[String]) { reqBody => { requestContext => processPutRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
+                            val toknRoute = str.split("/")
+                            logger.debug("DELETE reqeust : api/" + str)
+                            if (toknRoute.size == 2) { requestContext => processDeleteRequest(toknRoute(0).toLowerCase, toknRoute(1).toLowerCase, requestContext, user, password, role) }
+                            else { requestContext => requestContext.complete((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown DELETE route")).toString) }
                           }
-                          case ModelType.PMML =>
-                            val objectType = toknRoute(0) + toknRoute(1)
-                            entity(as[String]) { reqBody => { requestContext => processPutRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
                         }
                       }
-                      else { requestContext => requestContext.complete((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown PUT route")).toString) }
                     }
-                    }
-                  }
-                }
-                }
-              } ~
-              post {
-                entity(as[String]) { reqBody =>
-                  path("api" / Rest) { str => {
-                    val toknRoute = str.split("/")
-                    logger.debug("POST reqeust : api/" + str)
-                    if (toknRoute.size == 1) {
-                      if (toknRoute(0).equalsIgnoreCase(GET_HEALTH))
-                        requestContext => processHBRequest(DetailsLevel.ALL, reqBody, requestContext, user, password, role)
-                      else {
-                        if (toknRoute(0).equalsIgnoreCase("model"))
-                          logger.warn("MetadataAPI Http Service: URL of type https://hostname:port/api/model is deprecated")
-                        entity(as[String]) { reqBody => { requestContext => processPostRequest(toknRoute(0), reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
-                      }
-                    }
-                    else if (toknRoute.size == 2 && toknRoute(0).equalsIgnoreCase(GET_HEALTH)) {
-                      val detailsLevel = DetailsLevel.withName(toknRoute(1))
-                      requestContext => processHBRequest(detailsLevel, reqBody, requestContext, user, password, role)
-                    }
-                    else if (toknRoute.size == 2 && toknRoute(0).equalsIgnoreCase("model")) {
-                      ModelType.withName(toknRoute(1).toString) match {
-                        case ModelType.KPMML => {
-                          val objectType = toknRoute(0) + toknRoute(1)
-                          entity(as[String]) { reqBody => { requestContext => processPostRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
-                        }
-
-                        case ModelType.JAVA => {
-                          val objectType = toknRoute(0) + toknRoute(1)
-                          entity(as[String]) { reqBody => { requestContext => processPostRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
-                        }
-
-                        case ModelType.SCALA => {
-                          val objectType = toknRoute(0) + toknRoute(1)
-                          entity(as[String]) { reqBody => { requestContext => processPostRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
-                        }
-                        case ModelType.PMML =>
-                          val objectType = toknRoute(0) + toknRoute(1)
-                          entity(as[String]) { reqBody => { requestContext => processPostRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo,tid) } }
-                      }
-                    }
-                    else { requestContext => requestContext.complete((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown POST route")).toString) }
-                  }
-                  }
-                }
-              } ~
-              delete {
-                entity(as[String]) { reqBody =>
-                  path("api" / Rest) { str => {
-
-                    val toknRoute = str.split("/")
-                    logger.debug("DELETE reqeust : api/" + str)
-                    if (toknRoute.size == 2) { requestContext => processDeleteRequest(toknRoute(0).toLowerCase, toknRoute(1).toLowerCase, requestContext, user, password, role) }
-                    else { requestContext => requestContext.complete((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown DELETE route")).toString) }
-                  }
-                  }
-                }
-              }
-          } //modelname
-        } // TennantId
-      }  // Role
-      }} //password 2x
-      }} //userid
+                } //modelname
+              } // TennantId
+            } // Role
+          }
+        } //password 2x
+      }
+    } //userid
   } // Routes
 
   /**
    * Modify Existing objects in the Metadata
    */
-  private def processPutRequest(objtype: String, body: String, rContext: RequestContext, userid: Option[String], password: Option[String], role: Option[String], modelcompileinfo: Option[String], tid: Option[String] ): Unit = {
+  private def processPutRequest(objtype: String, body: String, rContext: RequestContext, userid: Option[String], password: Option[String], role: Option[String], modelcompileinfo: Option[String], tid: Option[String]): Unit = {
     val action = "Update" + objtype
     val notes = "Invoked " + action + " API "
-    if (objtype.equalsIgnoreCase("Container")) {
+    if (objtype.equalsIgnoreCase("AdapterMessageBinding")) {
+      // Not Supported yet
+      rContext.complete((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Operatin not supported")).toString)
+    } else if (objtype.equalsIgnoreCase("Container")) {
       val updateContainerDefsService = actorRefFactory.actorOf(Props(new UpdateContainerService(rContext, userid, password, role, tid)))
       updateContainerDefsService ! UpdateContainerService.Process(body)
     } else if (objtype.equalsIgnoreCase("Model")) {
@@ -234,7 +250,7 @@ trait MetadataAPIService extends HttpService {
     } else if (objtype.equalsIgnoreCase("UploadConfig")) {
       val uploadConfigService = actorRefFactory.actorOf(Props(new UploadEngineConfigService(rContext, userid, password, role)))
       uploadConfigService ! UploadEngineConfigService.Process(body)
-    }else if (objtype.equalsIgnoreCase("UploadModelConfig")) {
+    } else if (objtype.equalsIgnoreCase("UploadModelConfig")) {
       logger.debug("In put request process of UploadModelConfig")
       val addModelDefsService = actorRefFactory.actorOf(Props(new UploadModelConfigService(rContext, userid, password, role)))
       addModelDefsService ! UploadModelConfigService.Process(body)
@@ -243,8 +259,7 @@ trait MetadataAPIService extends HttpService {
       val updateSourceModelService: ActorRef = actorRefFactory.actorOf(Props(new UpdateSourceModelService(rContext, userid, password, role, modelcompileinfo, tid)))
       updateSourceModelService ! UpdateSourceModelService.UpdateJava(body)
 
-    }
-    else if (objtype.equalsIgnoreCase("modelscala")) {
+    } else if (objtype.equalsIgnoreCase("modelscala")) {
       try {
         val updateSourceModelService: ActorRef = actorRefFactory.actorOf(Props(new UpdateSourceModelService(rContext, userid, password, role, modelcompileinfo, tid)))
         updateSourceModelService ! UpdateSourceModelService.UpdateScala(body)
@@ -254,16 +269,13 @@ trait MetadataAPIService extends HttpService {
         }
       }
 
-    }
-    else if (objtype.equalsIgnoreCase("modelkpmml")) {
+    } else if (objtype.equalsIgnoreCase("modelkpmml")) {
       val addModelService: ActorRef = actorRefFactory.actorOf(Props(new UpdateModelService(rContext, userid, password, role, None, tid)))
       addModelService ! UpdateModelService.Process(body)
-    }
-    else if (objtype.equalsIgnoreCase("modelpmml")) {
+    } else if (objtype.equalsIgnoreCase("modelpmml")) {
       val addModelService: ActorRef = actorRefFactory.actorOf(Props(new UpdateModelService(rContext, userid, password, role, modelcompileinfo, tid)))
       addModelService ! UpdateModelService.Process(body)
-    }
-    else {
+    } else {
       rContext.complete((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown PUT route")).toString)
     }
   }
@@ -272,7 +284,7 @@ trait MetadataAPIService extends HttpService {
    * Modify Existing objects in the Metadata
    * Modify Existing objects in the Metadata
    */
-  private def processPutRequest(action: String, objtype: String, objKey: String, rContext: RequestContext, userid: Option[String], password: Option[String], role: Option[String],modelname: Option[String], tid: Option[String]): Unit = {
+  private def processPutRequest(action: String, objtype: String, objKey: String, rContext: RequestContext, userid: Option[String], password: Option[String], role: Option[String], modelname: Option[String], tid: Option[String]): Unit = {
     var argParm: String = verifyInput(objKey, objtype, rContext)
     if (argParm == null) return
 
@@ -293,7 +305,11 @@ trait MetadataAPIService extends HttpService {
   private def processPostRequest(objtype: String, body: String, rContext: RequestContext, userid: Option[String], password: Option[String], role: Option[String], modelcompileinfo: Option[String], tenantId: Option[String]): Unit = {
     val action = "Add" + objtype
     val notes = "Invoked " + action + " API "
-    if (objtype.equalsIgnoreCase("Container")) {
+
+    if (objtype.equalsIgnoreCase("AdapterMessageBinding")) {
+      val addAdapterMsgBindingsService = actorRefFactory.actorOf(Props(new AddAdapterMessageBindingsService(rContext, userid, password, role)))
+      addAdapterMsgBindingsService ! AddAdapterMessageBindingsService.Process(body)
+    } else if (objtype.equalsIgnoreCase("Container")) {
       val addContainerDefsService = actorRefFactory.actorOf(Props(new AddContainerService(rContext, userid, password, role, tenantId)))
       addContainerDefsService ! AddContainerService.Process(body)
     } else if (objtype.equalsIgnoreCase("Model")) {
@@ -325,23 +341,19 @@ trait MetadataAPIService extends HttpService {
       val addSourceModelService: ActorRef = actorRefFactory.actorOf(Props(new AddSourceModelService(rContext, userid, password, role, modelcompileinfo, tenantId)))
       addSourceModelService ! AddSourceModelService.ProcessJava(body)
 
-    }
-    else if (objtype.equalsIgnoreCase("modelscala")) {
+    } else if (objtype.equalsIgnoreCase("modelscala")) {
 
       logger.debug("In post request process of model scala")
       // rContext.complete(new ApiResult(ErrorCodeConstants.Success, "AddModelFromScalaSource",body.toString, "Upload of java model successful").toString)
       val addSourceModelService: ActorRef = actorRefFactory.actorOf(Props(new AddSourceModelService(rContext, userid, password, role, modelcompileinfo, tenantId)))
       addSourceModelService ! AddSourceModelService.ProcessScala(body)
-    }
-    else if (objtype.equalsIgnoreCase("modelkpmml")) {
+    }else if (objtype.equalsIgnoreCase("modelkpmml")) {
       val addModelService: ActorRef = actorRefFactory.actorOf(Props(new AddModelService(rContext, userid, password, role, None, tenantId)))
       addModelService ! AddModelService.Process(body)
-    }
-    else if (objtype.equalsIgnoreCase("modelpmml")) {
+    } else if (objtype.equalsIgnoreCase("modelpmml")) {
       val addModelService: ActorRef = actorRefFactory.actorOf(Props(new AddModelService(rContext, userid, password, role, modelcompileinfo, tenantId)))
       addModelService ! AddModelService.Process(body)
-    }
-    else {
+    } else {
       rContext.complete((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown POST route")).toString)
     }
   }
@@ -368,7 +380,7 @@ trait MetadataAPIService extends HttpService {
 
   private def processGetKeysRequest(objtype: String, rContext: RequestContext, userid: Option[String], password: Option[String], role: Option[String]): Unit = {
     if (objtype.equalsIgnoreCase("Container") || objtype.equalsIgnoreCase("Model") || objtype.equalsIgnoreCase("Message") || objtype.equalsIgnoreCase("Function") ||
-      objtype.equalsIgnoreCase("Concept") || objtype.equalsIgnoreCase("Type") || objtype.equalsIgnoreCase("OutputMsg")) {
+      objtype.equalsIgnoreCase("Concept") || objtype.equalsIgnoreCase("Type") || objtype.equalsIgnoreCase("OutputMsg") || objtype.equalsIgnoreCase("adaptermessagebinding")) {
       val allObjectKeysService = actorRefFactory.actorOf(Props(new GetAllObjectKeysService(rContext, userid, password, role)))
       allObjectKeysService ! GetAllObjectKeysService.Process(objtype)
     } else {
@@ -377,13 +389,27 @@ trait MetadataAPIService extends HttpService {
   }
 
   /**
-   * 
    */
-  private def processHBRequest(detailsLevel : DetailsLevel, nodeIds: String, rContext: RequestContext, userid: Option[String], password: Option[String], role: Option[String]): Unit = {
-      val heartBeatSerivce = actorRefFactory.actorOf(Props(new GetHeartbeatService(rContext, userid, password, role)))
-      heartBeatSerivce ! GetHeartbeatService.Process(nodeIds, detailsLevel)
+  private def processHBRequest(detailsLevel: DetailsLevel, nodeIds: String, rContext: RequestContext, userid: Option[String], password: Option[String], role: Option[String]): Unit = {
+    val heartBeatSerivce = actorRefFactory.actorOf(Props(new GetHeartbeatService(rContext, userid, password, role)))
+    heartBeatSerivce ! GetHeartbeatService.Process(nodeIds, detailsLevel)
   }
-  
+
+
+  /**
+    *
+    */
+  private def processGetAdapterMessageBindingObjectRequest(objType: String, objKey: String, rContext: RequestContext, userid: Option[String], password: Option[String], role: Option[String]): Unit = {
+    val action = "Get" + objType
+    val notes = "Invoked " + action + " API "
+    var argParm: String = null
+
+    val allObjectsService = actorRefFactory.actorOf(Props(new GetAdapterMessageBindigsService(rContext, userid, password, role)))
+    allObjectsService ! GetAdapterMessageBindigsService.Process(objType, objKey)
+
+  }
+
+
   /**
    *
    */
@@ -391,7 +417,8 @@ trait MetadataAPIService extends HttpService {
     val action = "Get" + objtype
     val notes = "Invoked " + action + " API "
     var argParm: String = null
-    if (!objtype.equalsIgnoreCase("config")) {
+
+    if (!(objtype.equalsIgnoreCase("config") || objtype.equalsIgnoreCase("TypeBySchemaId") || objtype.equalsIgnoreCase("TypeByElementId"))) {
       argParm = verifyInput(objKey, objtype, rContext)
       if (argParm == null) return
     }
@@ -402,6 +429,10 @@ trait MetadataAPIService extends HttpService {
       objtype.equalsIgnoreCase("Function") || objtype.equalsIgnoreCase("Concept") || objtype.equalsIgnoreCase("Type") || objtype.equalsIgnoreCase("OutputMsg")) {
       val getObjectsService = actorRefFactory.actorOf(Props(new GetObjectsService(rContext, userid, password, role)))
       getObjectsService ! GetObjectsService.Process(argParm)
+    } else if (objtype.equalsIgnoreCase("TypeBySchemaId") || objtype.equalsIgnoreCase("TypeByElementId")) {
+      val typeByIdsService = actorRefFactory.actorOf(Props(new GetTypeByIdService(rContext, userid, password, role)))
+      typeByIdsService ! GetTypeByIdService.Process(objtype, objKey)
+
     } else {
       rContext.complete((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown GET route")).toString)
     }
@@ -413,10 +444,20 @@ trait MetadataAPIService extends HttpService {
   private def processDeleteRequest(objtype: String, objKey: String, rContext: RequestContext, userid: Option[String], password: Option[String], role: Option[String]): Unit = {
     val action = "Remove" + objtype
     val notes = "Invoked " + action + " API "
-    var argParm: String = verifyInput(objKey, objtype, rContext)
+    var argParm: String = null
+    if (!objtype.equalsIgnoreCase("Config") &&
+        !objtype.equalsIgnoreCase("AdapterMessageBinding"))
+      argParm = verifyInput(objKey, objtype, rContext)
+    else
+      argParm = objKey
+
     if (argParm == null) return
 
-    if (objtype.equalsIgnoreCase("Container") || objtype.equalsIgnoreCase("Model") || objtype.equalsIgnoreCase("Message") ||
+    if (objtype.equalsIgnoreCase("AdapterMessageBinding")) {
+      val removeObjectsService = actorRefFactory.actorOf(Props(new RemoveAdapterMsgBindingsService(rContext, userid, password, role)))
+      removeObjectsService ! RemoveAdapterMsgBindingsService.Process(argParm)
+    }
+    else if (objtype.equalsIgnoreCase("Container") || objtype.equalsIgnoreCase("Model") || objtype.equalsIgnoreCase("Message") ||
       objtype.equalsIgnoreCase("Function") || objtype.equalsIgnoreCase("Concept") || objtype.equalsIgnoreCase("Type") || objtype.equalsIgnoreCase("OutputMsg")) {
       val removeObjectsService = actorRefFactory.actorOf(Props(new RemoveObjectsService(rContext, userid, password, role)))
       removeObjectsService ! RemoveObjectsService.Process(argParm)
@@ -462,12 +503,12 @@ trait MetadataAPIService extends HttpService {
    * MakeJsonStrForArgList
    */
   private def createGetArg(objKey: String, objectType: String): String = {
-   /* val keyTokens = objKey.split("\\.")
+    /* val keyTokens = objKey.split("\\.")
     val nameSpace = keyTokens(0)
     val name = keyTokens(1)
     val version = keyTokens(2)
    */
-   val(ns, name, ver) = com.ligadata.kamanja.metadata.Utils.parseNameToken(objKey)
+    val (ns, name, ver) = com.ligadata.kamanja.metadata.Utils.parseNameToken(objKey)
     val lVersion = ver.toLong
     val mdArg = new MetadataApiArg(objectType, ns, name, ver, "JSON")
     val argList = new Array[MetadataApiArg](1)

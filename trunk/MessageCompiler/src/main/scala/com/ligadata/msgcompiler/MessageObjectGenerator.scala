@@ -187,7 +187,7 @@ class MessageObjectGenerator {
   override def getTimePartitionInfo: TimePartitionInfo = {
     var timePartitionInfo: TimePartitionInfo = new TimePartitionInfo();
     timePartitionInfo.setFieldName("""" + message.timePartition.Key.toLowerCase() + """");
-    timePartitionInfo.setFormat("""" + message.timePartition.Format.toLowerCase() + """");
+    timePartitionInfo.setFormat("""" + message.timePartition.Format + """");
     timePartitionInfo.setTimePartitionType(""" + timePartType + """);
     return timePartitionInfo
   }

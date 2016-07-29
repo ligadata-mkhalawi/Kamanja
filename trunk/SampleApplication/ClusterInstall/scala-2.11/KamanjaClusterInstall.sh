@@ -45,6 +45,7 @@ script_dir=$(dirname "$0")
 
 scalaversion="2.11"
 name1=$1
+currentKamanjaVersion=1.5.1
 
 Usage()
 {
@@ -404,8 +405,8 @@ if [ "$ipAddrs" == "" -a "$ipIdTargPaths" == ""  -a "$ipPathPairs" == ""  -a "$p
 		echo "clusterId = $clusterId"
 		echo "tenantId = $tenantId"
 		echo "adapterMessageBindings = $adapterMessageBindings"
-		echo "...Command = java -cp $installDir/lib/system/jarfactoryofmodelinstancefactory_2.11-1.0.jar:$installDir/lib/system/ExtDependencyLibs2_2.11-1.4.0.jar:$installDir/lib/system/ExtDependencyLibs_2.11-1.4.0.jar:$installDir/lib/system/KamanjaInternalDeps_2.11-1.4.0.jar:$installDir/lib/system/nodeinfoextract_2.11-1.4.0.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig \"$metadataAPIConfig\" --NodeConfigPath \"$nodeConfigPath\"  --workDir \"$workDir\" --ipFileName \"$ipTmpFile\" --ipPathPairFileName \"$ipPathPairTmpFile\" --ipIdCfgTargPathQuartetFileName \"$ipIdCfgTargPathQuartetTmpFileName\" --installDir \"$installDir\" --clusterId \"$clusterId\" --tenantId \"$tenantId\" --adapterMessageBidnings \"$adapterMessageBidnings\""
-		java -cp $installDir/lib/system/jarfactoryofmodelinstancefactory_2.11-1.4.0.jar:$installDir/lib/system/ExtDependencyLibs2_2.11-1.4.0.jar:$installDir/lib/system/ExtDependencyLibs_2.11-1.4.0.jar:$installDir/lib/system/KamanjaInternalDeps_2.11-1.4.0.jar:$installDir/lib/system/nodeinfoextract_2.11-1.4.0.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig "$metadataAPIConfig" --NodeConfigPath "$nodeConfigPath" --workDir "$workDir" --ipFileName "$ipTmpFile" --ipPathPairFileName "$ipPathPairTmpFile" --ipIdCfgTargPathQuartetFileName "$ipIdCfgTargPathQuartetTmpFileName"  --installDir "$installDir" --clusterId "$clusterId" --tenantId "$tenantId" --adapterMessageBidnings "$adapterMessageBindings"
+		echo "...Command = java -cp $installDir/lib/system/jarfactoryofmodelinstancefactory_2.11-1.0.jar:$installDir/lib/system/ExtDependencyLibs2_2.11-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs_2.11-${currentKamanjaVersion}.jar:$installDir/lib/system/KamanjaInternalDeps_2.11-${currentKamanjaVersion}.jar:$installDir/lib/system/nodeinfoextract_2.11-${currentKamanjaVersion}.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig \"$metadataAPIConfig\" --NodeConfigPath \"$nodeConfigPath\"  --workDir \"$workDir\" --ipFileName \"$ipTmpFile\" --ipPathPairFileName \"$ipPathPairTmpFile\" --ipIdCfgTargPathQuartetFileName \"$ipIdCfgTargPathQuartetTmpFileName\" --installDir \"$installDir\" --clusterId \"$clusterId\" --tenantId \"$tenantId\" --adapterMessageBidnings \"$adapterMessageBidnings\""
+		java -cp $installDir/lib/system/jarfactoryofmodelinstancefactory_2.11-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs2_2.11-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs_2.11-${currentKamanjaVersion}.jar:$installDir/lib/system/KamanjaInternalDeps_2.11-${currentKamanjaVersion}.jar:$installDir/lib/system/nodeinfoextract_2.11-${currentKamanjaVersion}.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig "$metadataAPIConfig" --NodeConfigPath "$nodeConfigPath" --workDir "$workDir" --ipFileName "$ipTmpFile" --ipPathPairFileName "$ipPathPairTmpFile" --ipIdCfgTargPathQuartetFileName "$ipIdCfgTargPathQuartetTmpFileName"  --installDir "$installDir" --clusterId "$clusterId" --tenantId "$tenantId" --adapterMessageBidnings "$adapterMessageBindings"
 		# Check 15: Bad NodeInfoExtract-1.0 arguments
 		if [ "$?" -ne 0 ]; then
 			echo
@@ -415,7 +416,7 @@ if [ "$ipAddrs" == "" -a "$ipIdTargPaths" == ""  -a "$ipPathPairs" == ""  -a "$p
 		fi
 	else # info is assumed to be present in the supplied metadata store... see trunk/utils/NodeInfoExtract for details
 		echo "...Command = $nodeInfoExtractDir/NodeInfoExtract-1.0 --MetadataAPIConfig \"$metadataAPIConfig\" --workDir \"$workDir\" --ipFileName \"$ipTmpFile\" --ipPathPairFileName \"$ipPathPairTmpFile\" --ipIdCfgTargPathQuartetFileName \"$ipIdCfgTargPathQuartetTmpFileName\" --installDir \"$installDir\" --clusterId \"$clusterId\""
-			java -cp $installDir/lib/system/jarfactoryofmodelinstancefactory_2.11-1.4.0.jar:$installDir/lib/system/ExtDependencyLibs2_2.11-1.4.0.jar:$installDir/lib/system/ExtDependencyLibs_2.11-1.4.0.jar:$installDir/lib/system/KamanjaInternalDeps_2.11-1.4.0.jar:$installDir/lib/system/nodeinfoextract_2.11-1.4.0.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig $metadataAPIConfig --workDir "$workDir" --ipFileName "$ipTmpFile" --ipPathPairFileName "$ipPathPairTmpFile" --ipIdCfgTargPathQuartetFileName "$ipIdCfgTargPathQuartetTmpFileName" --installDir "$installDir" --clusterId "$clusterId" --tenantId "$tenantId" --adapterMessageBidnings "$adapterMessageBindings"
+			java -cp $installDir/lib/system/jarfactoryofmodelinstancefactory_2.11-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs2_2.11-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs_2.11-${currentKamanjaVersion}.jar:$installDir/lib/system/KamanjaInternalDeps_2.11-${currentKamanjaVersion}.jar:$installDir/lib/system/nodeinfoextract_2.11-${currentKamanjaVersion}.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig $metadataAPIConfig --workDir "$workDir" --ipFileName "$ipTmpFile" --ipPathPairFileName "$ipPathPairTmpFile" --ipIdCfgTargPathQuartetFileName "$ipIdCfgTargPathQuartetTmpFileName" --installDir "$installDir" --clusterId "$clusterId" --tenantId "$tenantId" --adapterMessageBidnings "$adapterMessageBindings"
 		# Check 15: Bad NodeInfoExtract-1.0 arguments
 		if [ "$?" -ne 0 ]; then
 			echo

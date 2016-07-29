@@ -1,0 +1,19 @@
+.pageFooter {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 100px;
+  padding-bottom: 40px;
+  padding-top: 40px;
+  color: white;
+  z-index: 99999;
+  background: linear-gradient(to top, black, rgba(0, 0, 0, 0.1)); }
+  .pageFooter .itemsRow {
+    overflow: auto; }
+  .pageFooter .itemsCol {
+    min-width: 820px; }
+  .pageFooter .list-inline > li > img {
+    margin-left: 10px;
+    margin-right: 5px; }
+
+/*# sourceMappingURL=footer.css.map */

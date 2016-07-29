@@ -70,19 +70,21 @@ object MonitorUtils {
     pool.shutdown(); // Disable new tasks from being submitted
     try {
       // Wait a while for existing tasks to terminate
-      if (!pool.awaitTermination(1, TimeUnit.SECONDS)) {
+      if (!pool.awaitTermination(2, TimeUnit.SECONDS)) {
         pool.shutdownNow(); // Cancel currently executing tasks
         // Wait a while for tasks to respond to being cancelled
-        if (!pool.awaitTermination(1, TimeUnit.SECONDS))
+        if (!pool.awaitTermination(2, TimeUnit.SECONDS)) {
           logger.warn("Pool did not terminate " + id);
+          Thread.currentThread().interrupt()
+        }
       }
     } catch  {
       case ie : InterruptedException => {
-        logger.debug("InterruptedException for " + id)
+        logger.info("InterruptedException for " + id, ie)
         // (Re-)Cancel if current thread also interrupted
         pool.shutdownNow();
         // Preserve interrupt status
-        Thread.currentThread().interrupt();
+        Thread.currentThread().interrupt()
       }
     }
   }
@@ -106,7 +108,7 @@ object SmartFileHandlerFactory{
 }
 
 object SmartFileMonitorFactory{
-  def createSmartFileMonitor(adapterName : String, adapterType : String, modifiedFileCallback:(SmartFileHandler) => Unit) : SmartFileMonitor = {
+  def createSmartFileMonitor(adapterName : String, adapterType : String, modifiedFileCallback:(SmartFileHandler, Boolean) => Unit) : SmartFileMonitor = {
 
     val monitor : SmartFileMonitor =
       adapterType.toLowerCase() match {

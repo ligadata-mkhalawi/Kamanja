@@ -38,12 +38,15 @@ object DeactivateObjectsService {
 class DeactivateObjectsService(requestContext: RequestContext, userid:Option[String], password:Option[String], cert:Option[String]) extends Actor {
 
   import DeactivateObjectsService._
-  
+
   implicit val system = context.system
   import system.dispatcher
   val log = Logging(system, getClass)
-  
-  
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
+
+
   val loggerName = this.getClass.getName
   val logger = LogManager.getLogger(loggerName)
   //logger.setLevel(Level.TRACE);
@@ -60,10 +63,10 @@ class DeactivateObjectsService(requestContext: RequestContext, userid:Option[Str
 
     objectType match {
       case "model" => {
- 	      MetadataAPIImpl.DeactivateModel(nameSpace,name,version.toLong,userid).toString
+ 	      getMetadataAPI.DeactivateModel(nameSpace,name,version.toLong,userid).toString
       }
       case _ => {
-	      new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Deactivate/Activate on " + objectType + " is not supported yet").toString 
+	      new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Deactivate/Activate on " + objectType + " is not supported yet").toString
       }
     }
   }
@@ -72,9 +75,9 @@ class DeactivateObjectsService(requestContext: RequestContext, userid:Option[Str
    * process - perform the deactivation process on the list of objects in the parameter var.
    */
   def process(apiArgListJson: String): Unit = {
-    
+
     logger.debug(APIName + ":" + apiArgListJson)
-    
+
     var activatedType = "unkown"
     var nameSpace = "str"
     var version = "-1"
@@ -89,7 +92,7 @@ class DeactivateObjectsService(requestContext: RequestContext, userid:Option[Str
       var loop = new Breaks
       loop.breakable{
 	      arguments.foreach(arg => {
-          
+
           // Extract the object name from the ARGS
           if( arg.NameSpace != null ){
             nameSpace = arg.NameSpace
@@ -100,18 +103,18 @@ class DeactivateObjectsService(requestContext: RequestContext, userid:Option[Str
           if( arg.Name != null ){
             name = arg.Name
           }
-          
+
            // Do it here so that we know which OBJECT is being activated for the Audit purposes.
-          if ((!MetadataAPIImpl.checkAuth(userid,password,cert, MetadataAPIImpl.getPrivilegeName("deactivate","model"))) && !authDone) {
-            MetadataAPIImpl.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.DEACTIVATEOBJECT,arg.ObjectType,AuditConstants.FAIL,"unknown",nameSpace+"."+name+"."+version)
+          if ((!getMetadataAPI.checkAuth(userid,password,cert, getMetadataAPI.getPrivilegeName("deactivate","model"))) && !authDone) {
+            getMetadataAPI.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.DEACTIVATEOBJECT,arg.ObjectType,AuditConstants.FAIL,"unknown",nameSpace+"."+name+"."+version)
             requestContext.complete(new ApiResult(-1, APIName, null, "Error:UPDATE not allowed for this user").toString )
             return
           }
-          
+
           // Make sure that we do not perform another AUTH check, and add this object name to the list of objects processed in this call.
           authDone = true
           objectList :::= List(nameSpace+"."+name+"."+version)
-          
+
 	        if(arg.ObjectType == null ){
 	          resultStr = new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error: The value of object type can't be null").toString
 	          loop.break
@@ -128,7 +131,7 @@ class DeactivateObjectsService(requestContext: RequestContext, userid:Option[Str
       }
     }
     else{
-      resultStr = new ApiResult(ErrorCodeConstants.Failure, APIName, null, "No arguments passed to the API, nothing much to do").toString 
+      resultStr = new ApiResult(ErrorCodeConstants.Failure, APIName, null, "No arguments passed to the API, nothing much to do").toString
     }
     requestContext.complete(resultStr)
   }

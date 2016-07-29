@@ -19,14 +19,19 @@ package com.ligadata.kamanja.metadata
 import java.io.{DataInputStream, DataOutputStream}
 import java.util._
 
-import com.ligadata.Exceptions.{KamanjaException, Json4sSerializationException}
+import com.ligadata.Exceptions.{Json4sSerializationException, KamanjaException}
 import com.ligadata.kamanja.metadata.MiningModelType.MiningModelType
 import com.ligadata.kamanja.metadata.ModelRepresentation.ModelRepresentation
+import org.joda.time.DateTime
+import org.json4s._
+import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import org.json4s.{DefaultFormats, Formats}
 
 import scala.Enumeration
 import scala.collection.mutable.{Map, Set}
+import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.ArrayBuffer
 
 // define some enumerations
 object ObjFormatType extends Enumeration {
@@ -162,7 +167,12 @@ trait BaseElem {
     def CreationTime: Long // Time in milliseconds from 1970-01-01T00:00:00
     def ModTime: Long // Time in milliseconds from 1970-01-01T00:00:00
     def OrigDef: String
-    def Description: String
+  def Description: String
+  // 646 - 675 Change begins - Metadata element addition/changes
+  def Comment: String
+  def Tag : String
+  def Params : scala.collection.immutable.Map[String, String]
+  // 646 - 675 Change ends
     def Author: String
     def NameSpace: String
     def Name: String
@@ -196,7 +206,12 @@ class BaseElemDef extends BaseElem {
     override def CreationTime: Long = creationTime // Time in milliseconds from 1970-01-01T00:00:00
     override def ModTime: Long = modTime // Time in milliseconds from 1970-01-01T00:00:00
     override def OrigDef: String = origDef
-    override def Description: String = description
+  override def Description: String = description
+  // 646 - 675 Changes begin - Metadata additional element support
+  override def Comment : String = comment
+  override def Tag : String = tag
+  override def Params : scala.collection.immutable.Map[String, String] = params
+  // 646 - 675 Changes end
     override def Author: String = author
     override def NameSpace: String = nameSpace // Part of Logical Name
     override def Name: String = name // Part of Logical Name
@@ -237,7 +252,13 @@ class BaseElemDef extends BaseElem {
     var modTime: Long = _ // Time in milliseconds from 1970-01-01T00:00:00 (Mostly it is Local time. May be we need to get GMT)
 
     var origDef: String = _ // string associated with this definition
-    var description: String = _
+
+  var description: String = _
+  // 646 - 675 Changes begin - Metadata additional element support
+  var comment : String = _
+  var tag: String = _
+  var params = scala.collection.immutable.Map.empty[String, String]
+  // 646 - 675 Changes end
     var author: String = _
     var nameSpace: String = _ //
     var name: String = _ // simple name - may not be unique across all name spaces (coupled with mNameSpace, it will be unique)
@@ -253,6 +274,51 @@ class BaseElemDef extends BaseElem {
     var objectFormat: ObjFormatType.FormatType = fJSON
     var ownerId: String = _
     var tenantId: String = _
+
+  // 646 - 675,673 Changes begin - support for MetadataAPI changes
+    def setParamValues (paramStr : Option[String]) : Any = {
+
+      var newParams = scala.collection.mutable.Map.empty[String, String]
+      paramStr match {
+
+        case None => {
+          description = ""
+          comment = ""
+          tag = ""
+        }
+        case pStr: Option[String] => {
+          val param = pStr getOrElse ""
+          if (param != "") {
+            newParams = scala.collection.mutable.Map() ++ parse(param.toLowerCase).values.asInstanceOf[scala.collection.immutable.Map[String, String]]
+            if (newParams contains "description") {
+              description = newParams.getOrElse("description", "")
+              newParams = newParams - "description"
+            }
+            if (newParams contains "comment") {
+              comment = newParams.getOrElse("comment", "")
+              newParams = newParams - "comment"
+            }
+            if (newParams contains "tag") {
+              tag =  newParams.getOrElse("tag", "")
+              newParams = newParams - "tag"
+            }
+          }
+        }
+      }
+
+      params = newParams.toMap
+    }
+
+    def setCreationTime () : Any = {
+      creationTime = System.currentTimeMillis()
+
+    }
+
+  def setModTime () : Any = {
+    modTime = System.currentTimeMillis()
+  }
+
+  // 646 - 675, 673 Changes end
 }
 
 // All these metadata elements should have specialized serialization and deserialization
@@ -795,7 +861,8 @@ class ModelDef( val modelRepresentation: ModelRepresentation = ModelRepresentati
                 , var outputMsgs: Array[String] = Array[String]()
                 , var isReusable: Boolean = false
                 , var supportsInstanceSerialization: Boolean = false
-                , var modelConfig: String = "") extends BaseElemDef {
+                , var modelConfig: String = ""
+	        , var depContainers: Array[String] = Array[String]()) extends BaseElemDef {
     override def MdElementCategory: String = "Model"
     def typeString: String = PhysicalName
     def SupportsInstanceSerialization : Boolean = supportsInstanceSerialization
@@ -1119,7 +1186,7 @@ class UserPropertiesInfo {
   */
 object SerializeDeserializeType extends Enumeration {
     type SerDeserType = Value
-    val CSV, JSON, KBinary, Custom = Value
+    val CSV, JSON, KBinary, KV, Custom = Value
 }
 
 /**
@@ -1162,21 +1229,49 @@ class TenantInfo(val tenantId: String, val description: String, val primaryDataS
     val map_in: scala.collection.immutable.Map[String, Any] =  (parse(primaryDataStore)).values.asInstanceOf[scala.collection.immutable.Map[String, Any]]
     val map_new: scala.collection.immutable.Map[String, Any] = (parse(in.primaryDataStore)).values.asInstanceOf[scala.collection.immutable.Map[String, Any]]
 
-    val in_sType =  map_in.get("StoreType").get.asInstanceOf[String]
-    val new_sType =  map_in.getOrElse("StoreType",null)
-    val in_schemaName =  map_in.get("SchemaName").get.asInstanceOf[String]
-    val new_schemaName =  map_in.getOrElse("SchemaName",null)
-    val in_Location =  map_in.get("Location").get.asInstanceOf[String]
-    val new_Location =  map_in.getOrElse("Location",null)
+    val cache_map_in: scala.collection.immutable.Map[String, Any] =  (parse(cacheConfig)).values.asInstanceOf[scala.collection.immutable.Map[String, Any]]
+    val cache_map_new: scala.collection.immutable.Map[String, Any] = (parse(in.cacheConfig)).values.asInstanceOf[scala.collection.immutable.Map[String, Any]]
 
-    // Throw an exception if trying to compare to an illegal TenantInfo
-    if (new_sType == null || new_schemaName == null || new_Location == null) throw new KamanjaException("Invalid PrimaryDataStore in the TenantId: " + in.tenantId + " detected",null)
+    // Check if description changed
+    if (description != null && in.description != null) {
+      if (!description.trim.equalsIgnoreCase(in.description.trim)) return false
+    } else {
+      // cover the case if both are null...
+      if (description != null || in.description != null) return false
+    }
 
-    // All attributes must be case sensitive
-    if (!in_sType.equals(new_sType.asInstanceOf[String]) ||
-      !in_schemaName.equals(new_schemaName.asInstanceOf[String]) ||
-      !in_Location.equals(new_Location.asInstanceOf[String]))
-      return false
+    // Check primary data source
+    // if the nubmer of keys dont match up, they are different
+    if (map_in.size != map_new.size) return false
+    var inKeys = map_in.keysIterator
+    while (inKeys.hasNext) {
+      var currentKey = inKeys.next.toString
+      var newValue = map_new.getOrElse(currentKey, "").toString
+
+      // if the new Map does not contain this key... they are not equal
+      if (newValue.size == 0) return false
+
+      // if the value is in there but its different.. they are not equal.  Case Sensitive here
+      if (!map_in.getOrElse(currentKey,"").toString.equals(newValue)) return false
+
+    }
+
+    // check for cacheConfig
+    // if the nubmer of keys dont match up, they are different
+    if (cache_map_in.size != cache_map_new.size) return false
+    inKeys = cache_map_in.keysIterator
+    while (inKeys.hasNext) {
+      var currentKey = inKeys.next.toString
+      var newValue = cache_map_new.getOrElse(currentKey, "").toString
+
+      // if the new Map does not contain this key... they are not equal
+      if (newValue.size == 0) return false
+
+      // if the value is in there but its different.. they are not equal.  Case Sensitive here
+      if (!cache_map_in.getOrElse(currentKey,"").toString.equals(newValue)) return false
+
+    }
+
 
     return true
   }

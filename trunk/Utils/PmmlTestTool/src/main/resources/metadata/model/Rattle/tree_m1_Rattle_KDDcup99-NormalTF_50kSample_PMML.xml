@@ -1,0 +1,280 @@
+<?xml version="1.0"?>
+<PMML version="4.2" xmlns="http://www.dmg.org/PMML-4_2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.dmg.org/PMML-4_2 http://www.dmg.org/v4-2/pmml-4-2.xsd">
+ <Header copyright="Copyright (c) 2016 billbruns" description="RPart Decision Tree Model">
+  <Extension name="user" value="billbruns" extender="Rattle/PMML"/>
+  <Application name="Rattle/PMML" version="1.4"/>
+  <Timestamp>2016-03-09 15:08:37</Timestamp>
+ </Header>
+ <DataDictionary numberOfFields="39">
+  <DataField name="normal" optype="categorical" dataType="boolean"/>
+  <DataField name="duration" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="58329"/>
+  </DataField>
+  <DataField name="protocol_type" optype="categorical" dataType="string">
+   <Value value="icmp"/>
+   <Value value="tcp"/>
+   <Value value="udp"/>
+  </DataField>
+  <DataField name="service" optype="categorical" dataType="string">
+   <Value value="auth"/>
+   <Value value="bgp"/>
+   <Value value="courier"/>
+   <Value value="csnet_ns"/>
+   <Value value="ctf"/>
+   <Value value="daytime"/>
+   <Value value="discard"/>
+   <Value value="domain"/>
+   <Value value="domain_u"/>
+   <Value value="echo"/>
+   <Value value="eco_i"/>
+   <Value value="ecr_i"/>
+   <Value value="efs"/>
+   <Value value="exec"/>
+   <Value value="finger"/>
+   <Value value="ftp"/>
+   <Value value="ftp_data"/>
+   <Value value="gopher"/>
+   <Value value="hostnames"/>
+   <Value value="http"/>
+   <Value value="http_443"/>
+   <Value value="imap4"/>
+   <Value value="IRC"/>
+   <Value value="iso_tsap"/>
+   <Value value="klogin"/>
+   <Value value="kshell"/>
+   <Value value="ldap"/>
+   <Value value="link"/>
+   <Value value="login"/>
+   <Value value="mtp"/>
+   <Value value="name"/>
+   <Value value="netbios_dgm"/>
+   <Value value="netbios_ns"/>
+   <Value value="netbios_ssn"/>
+   <Value value="netstat"/>
+   <Value value="nnsp"/>
+   <Value value="nntp"/>
+   <Value value="ntp_u"/>
+   <Value value="other"/>
+   <Value value="pop_2"/>
+   <Value value="pop_3"/>
+   <Value value="printer"/>
+   <Value value="private"/>
+   <Value value="remote_job"/>
+   <Value value="rje"/>
+   <Value value="shell"/>
+   <Value value="smtp"/>
+   <Value value="sql_net"/>
+   <Value value="ssh"/>
+   <Value value="sunrpc"/>
+   <Value value="supdup"/>
+   <Value value="systat"/>
+   <Value value="telnet"/>
+   <Value value="tim_i"/>
+   <Value value="time"/>
+   <Value value="urh_i"/>
+   <Value value="urp_i"/>
+   <Value value="uucp"/>
+   <Value value="uucp_path"/>
+   <Value value="vmnet"/>
+   <Value value="whois"/>
+   <Value value="Z39_50"/>
+  </DataField>
+  <DataField name="flag" optype="categorical" dataType="string">
+   <Value value="OTH"/>
+   <Value value="REJ"/>
+   <Value value="RSTO"/>
+   <Value value="RSTR"/>
+   <Value value="S0"/>
+   <Value value="S1"/>
+   <Value value="S2"/>
+   <Value value="S3"/>
+   <Value value="SF"/>
+   <Value value="SH"/>
+  </DataField>
+  <DataField name="src_bytes" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="693375640"/>
+  </DataField>
+  <DataField name="dst_bytes" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="5153771"/>
+  </DataField>
+  <DataField name="land" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="1"/>
+  </DataField>
+  <DataField name="wrong_fragment" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="3"/>
+  </DataField>
+  <DataField name="hot" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="30"/>
+  </DataField>
+  <DataField name="num_failed_logins" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="4"/>
+  </DataField>
+  <DataField name="logged_in" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="1"/>
+  </DataField>
+  <DataField name="num_compromised" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="281"/>
+  </DataField>
+  <DataField name="root_shell" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="1"/>
+  </DataField>
+  <DataField name="su_attempted" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="1"/>
+  </DataField>
+  <DataField name="num_root" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="278"/>
+  </DataField>
+  <DataField name="num_file_creations" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="25"/>
+  </DataField>
+  <DataField name="num_shells" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="1"/>
+  </DataField>
+  <DataField name="num_access_files" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="2"/>
+  </DataField>
+  <DataField name="is_guest_login" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="1"/>
+  </DataField>
+  <DataField name="count" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="1" rightMargin="511"/>
+  </DataField>
+  <DataField name="srv_count" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="1" rightMargin="511"/>
+  </DataField>
+  <DataField name="serror_rate" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="1"/>
+  </DataField>
+  <DataField name="srv_serror_rate" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="1"/>
+  </DataField>
+  <DataField name="rerror_rate" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="1"/>
+  </DataField>
+  <DataField name="srv_rerror_rate" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="1"/>
+  </DataField>
+  <DataField name="same_srv_rate" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="1"/>
+  </DataField>
+  <DataField name="diff_srv_rate" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="1"/>
+  </DataField>
+  <DataField name="srv_diff_host_rate" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="1"/>
+  </DataField>
+  <DataField name="dst_host_count" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="1" rightMargin="255"/>
+  </DataField>
+  <DataField name="dst_host_srv_count" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="1" rightMargin="255"/>
+  </DataField>
+  <DataField name="dst_host_same_srv_rate" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="1"/>
+  </DataField>
+  <DataField name="dst_host_diff_srv_rate" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="1"/>
+  </DataField>
+  <DataField name="dst_host_same_src_port_rate" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="1"/>
+  </DataField>
+  <DataField name="dst_host_srv_diff_host_rate" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="1"/>
+  </DataField>
+  <DataField name="dst_host_serror_rate" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="1"/>
+  </DataField>
+  <DataField name="dst_host_srv_serror_rate" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="1"/>
+  </DataField>
+  <DataField name="dst_host_rerror_rate" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="1"/>
+  </DataField>
+  <DataField name="dst_host_srv_rerror_rate" optype="continuous" dataType="double">
+   <Interval closure="closedClosed" leftMargin="0" rightMargin="1"/>
+  </DataField>
+ </DataDictionary>
+ <TreeModel modelName="RPart_Model" functionName="regression" algorithmName="rpart" splitCharacteristic="binarySplit" missingValueStrategy="defaultChild" noTrueChildStrategy="returnLastPrediction">
+  <MiningSchema>
+   <MiningField name="normal" usageType="predicted"/>
+   <MiningField name="duration" usageType="active"/>
+   <MiningField name="protocol_type" usageType="active"/>
+   <MiningField name="service" usageType="active"/>
+   <MiningField name="flag" usageType="active"/>
+   <MiningField name="src_bytes" usageType="active"/>
+   <MiningField name="dst_bytes" usageType="active"/>
+   <MiningField name="land" usageType="active"/>
+   <MiningField name="wrong_fragment" usageType="active"/>
+   <MiningField name="hot" usageType="active"/>
+   <MiningField name="num_failed_logins" usageType="active"/>
+   <MiningField name="logged_in" usageType="active"/>
+   <MiningField name="num_compromised" usageType="active"/>
+   <MiningField name="root_shell" usageType="active"/>
+   <MiningField name="su_attempted" usageType="active"/>
+   <MiningField name="num_root" usageType="active"/>
+   <MiningField name="num_file_creations" usageType="active"/>
+   <MiningField name="num_shells" usageType="active"/>
+   <MiningField name="num_access_files" usageType="active"/>
+   <MiningField name="is_guest_login" usageType="active"/>
+   <MiningField name="count" usageType="active"/>
+   <MiningField name="srv_count" usageType="active"/>
+   <MiningField name="serror_rate" usageType="active"/>
+   <MiningField name="srv_serror_rate" usageType="active"/>
+   <MiningField name="rerror_rate" usageType="active"/>
+   <MiningField name="srv_rerror_rate" usageType="active"/>
+   <MiningField name="same_srv_rate" usageType="active"/>
+   <MiningField name="diff_srv_rate" usageType="active"/>
+   <MiningField name="srv_diff_host_rate" usageType="active"/>
+   <MiningField name="dst_host_count" usageType="active"/>
+   <MiningField name="dst_host_srv_count" usageType="active"/>
+   <MiningField name="dst_host_same_srv_rate" usageType="active"/>
+   <MiningField name="dst_host_diff_srv_rate" usageType="active"/>
+   <MiningField name="dst_host_same_src_port_rate" usageType="active"/>
+   <MiningField name="dst_host_srv_diff_host_rate" usageType="active"/>
+   <MiningField name="dst_host_serror_rate" usageType="active"/>
+   <MiningField name="dst_host_srv_serror_rate" usageType="active"/>
+   <MiningField name="dst_host_rerror_rate" usageType="active"/>
+   <MiningField name="dst_host_srv_rerror_rate" usageType="active"/>
+  </MiningSchema>
+  <Output>
+   <OutputField name="Predicted_normal" optype="continuous" dataType="double" feature="predictedValue"/>
+  </Output>
+  <Node id="1" score="0.196292381958925" recordCount="35009" defaultChild="2">
+   <True/>
+   <Node id="2" score="0.00304480208786429" recordCount="27588" defaultChild="4">
+    <SimplePredicate field="count" operator="greaterOrEqual" value="49.5"/>
+    <Node id="4" score="0.0000363570259952736" recordCount="27505">
+     <SimplePredicate field="dst_bytes" operator="lessThan" value="2"/>
+    </Node>
+    <Node id="5" score="1" recordCount="83">
+     <SimplePredicate field="dst_bytes" operator="greaterOrEqual" value="2"/>
+    </Node>
+   </Node>
+   <Node id="3" score="0.914701522705835" recordCount="7421" defaultChild="6">
+    <SimplePredicate field="count" operator="lessThan" value="49.5"/>
+    <Node id="6" score="0.0344827586206897" recordCount="203">
+     <SimpleSetPredicate field="flag" booleanOperator="isIn">
+      <Array n="5" type="string">&quot;OTH&quot; &quot;RSTR&quot; &quot;S0&quot; &quot;S3&quot; &quot;SH&quot;</Array>
+     </SimpleSetPredicate>
+    </Node>
+    <Node id="7" score="0.939456913272375" recordCount="7218" defaultChild="14">
+     <SimpleSetPredicate field="flag" booleanOperator="isIn">
+      <Array n="5" type="string">&quot;REJ&quot; &quot;RSTO&quot; &quot;S1&quot; &quot;S2&quot; &quot;SF&quot;</Array>
+     </SimpleSetPredicate>
+     <Node id="14" score="0.0122699386503067" recordCount="163">
+      <SimplePredicate field="src_bytes" operator="greaterOrEqual" value="47517"/>
+     </Node>
+     <Node id="15" score="0.960878809355067" recordCount="7055" defaultChild="30">
+      <SimplePredicate field="src_bytes" operator="lessThan" value="47517"/>
+      <Node id="30" score="0.0485436893203883" recordCount="103">
+       <SimplePredicate field="dst_host_srv_diff_host_rate" operator="greaterOrEqual" value="0.47"/>
+      </Node>
+      <Node id="31" score="0.97439585730725" recordCount="6952">
+       <SimplePredicate field="dst_host_srv_diff_host_rate" operator="lessThan" value="0.47"/>
+      </Node>
+     </Node>
+    </Node>
+   </Node>
+  </Node>
+ </TreeModel>
+</PMML>

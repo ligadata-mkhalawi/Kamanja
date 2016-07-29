@@ -137,6 +137,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     parsed_json = json.values.asInstanceOf[Map[String, Any]]
   } catch {
     case e: Exception => {
+      externalizeExceptionEvent(e)
       var msg = "Failed to parse Cassandra JSON configuration string:%s.".format(adapterConfig)
       throw CreateConnectionException(msg, e)
     }
@@ -157,6 +158,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
         adapterSpecificConfig_json = json.values.asInstanceOf[Map[String, Any]]
       } catch {
         case e: Exception => {
+          externalizeExceptionEvent(e)
           msg = "Failed to parse Cassandra Adapter Specific JSON configuration string:%s.".format(adapterSpecificStr)
           throw CreateConnectionException(msg, e)
         }
@@ -259,6 +261,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
         session.execute(createKeySpaceStmt);
       } catch {
         case e: Exception => {
+          externalizeExceptionEvent(e)
           msg = "Unable to create keyspace " + keyspace
           throw CreateConnectionException(msg, e)
         }
@@ -273,6 +276,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     logger.info("DataStore created successfully")
   } catch {
     case e: Exception => {
+      externalizeExceptionEvent(e)
       throw CreateConnectionException("Unable to connect to cassandra at " + hostnames, e)
     }
   }
@@ -287,6 +291,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw new Exception("Failed to create table  " + toTableName(containerName), e)
       }
     }
@@ -303,6 +308,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       session.execute(dropKeySpaceStmt);
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDDLException("Unable to drop keyspace " + keyspace, e)
       }
     }
@@ -332,6 +338,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDDLException("Failed to create table " + tableName, e)
       }
     }
@@ -407,6 +414,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
 		      setConsistencyLevel(consistencylevelWrite))
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to save an object in table " + tableName, e)
       }
     }
@@ -468,6 +476,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to save object(s) in table " + tableName, e)
       }
     }
@@ -496,6 +505,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       session.execute(batch);
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to delete object(s) from table " + tableName, e)
       }
     }
@@ -535,6 +545,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       del(containerName, rowKeys)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to delete object(s) from table " + tableName, e)
       }
     }
@@ -562,6 +573,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       del(containerName, rowKeys)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to delete object(s) from table " + tableName, e)
       }
     }
@@ -630,6 +642,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw e
       }
     }
@@ -652,6 +665,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         logger.error("", e)
       }
     }
@@ -687,6 +701,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       })
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     }
@@ -715,6 +730,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       })
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     }
@@ -785,6 +801,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       })
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     }
@@ -814,6 +831,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       })
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     }
@@ -839,6 +857,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       })
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     }
@@ -863,6 +882,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       })
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     }
@@ -891,6 +911,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       session.execute(query);
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Unable to truncate table " + fullTableName, e)
       }
     }
@@ -911,6 +932,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       dropTable(fullTableName)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDDLException("Unable to drop table " + tableName + ":" + e.getMessage(), e)
       }
     }
@@ -926,6 +948,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       session.execute(query);
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDDLException("Unable to drop table " + fullTableName, e)
       }
     }
@@ -954,6 +977,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Unable to verify whether table " + keyspaceSearched + "." + tableName + " exists", e)
       }
     }
@@ -1002,6 +1026,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       columnArray
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Unable to clone the table " + oldTableName + ":" + e.getMessage(), e)
       }
     }
@@ -1030,6 +1055,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       session.execute(createStmt);
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Unable to clone the table " + tn + ":" + e.getMessage(), e)
       }
     }
@@ -1042,6 +1068,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       createTable(newTableName,columns,ks)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Unable to clone the table " + oldTableName + ":" + e.getMessage(), e)
       }
     }
@@ -1061,6 +1088,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       selectStmt
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Unable to clone the table " + tableName + ":" + e.getMessage(), e)
       }
     }
@@ -1158,6 +1186,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       session.execute(batchStr.toString());
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Unable to copy the table " + oldTableName, e)
       }
     }
@@ -1201,6 +1230,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Unable to create the backup table " + newTableName, e)
       }
     }
@@ -1236,6 +1266,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       copyTableOptionally(oldTableName, newTableName, forceCopy)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDDLException("Failed to copy the container " + srcContainerName, e)
       }
     }
@@ -1255,6 +1286,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       tables
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch the table list  ", e)
       }
     }
@@ -1267,6 +1299,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       })
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDDLException("Failed to drop table list  ", e)
       }
     }

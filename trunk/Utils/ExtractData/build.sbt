@@ -56,8 +56,6 @@ unmanagedJars in Compile <<= baseDirectory map { base => (base ** "*.jar").class
 
 name := "ExtractData"
 
-version := "1.4.0"
-
 //resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 //
 //libraryDependencies += "org.apache.logging.log4j" % "log4j-1.2-api" % "2.4.1"

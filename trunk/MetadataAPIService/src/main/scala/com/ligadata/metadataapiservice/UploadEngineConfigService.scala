@@ -36,36 +36,39 @@ object UploadEngineConfigService {
 class UploadEngineConfigService(requestContext: RequestContext, userid:Option[String], password:Option[String], cert:Option[String]) extends Actor {
 
   import UploadEngineConfigService._
-  
+
   implicit val system = context.system
   import system.dispatcher
   val log = Logging(system, getClass)
   val APIName = "UploadEngineConfigService"
-  
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
+
   def receive = {
     case Process(cfgJson) =>
       process(cfgJson)
       context.stop(self)
   }
-  
+
   def process(cfgJson:String) = {
-    
+
     log.debug("Requesting UploadEngineConfig {}",cfgJson)
-    
+
     var objectList: List[String] = List[String]()
 
-    var inParm: Map[String,Any] = parse(cfgJson).values.asInstanceOf[Map[String,Any]]   
+    var inParm: Map[String,Any] = parse(cfgJson).values.asInstanceOf[Map[String,Any]]
     var args: List[Map[String,String]] = inParm.getOrElse("Clusters",null).asInstanceOf[List[Map[String,String]]]   //.asInstanceOf[List[Map[String,String]]
     args.foreach(elem => {
       objectList :::= List(elem.getOrElse("ClusterId",""))
     })
-   
-    if (!MetadataAPIImpl.checkAuth(userid,password,cert, MetadataAPIImpl.getPrivilegeName("update","configuration"))) {
-      MetadataAPIImpl.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.INSERTCONFIG,cfgJson,AuditConstants.FAIL,"",objectList.mkString(","))
+
+    if (!getMetadataAPI.checkAuth(userid,password,cert, getMetadataAPI.getPrivilegeName("update","configuration"))) {
+      getMetadataAPI.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.INSERTCONFIG,cfgJson,AuditConstants.FAIL,"",objectList.mkString(","))
       requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error:UPDATE not allowed for this user").toString )
     } else {
-      val apiResult = MetadataAPIImpl.UploadConfig(cfgJson, userid, objectList.mkString(","))          
-      requestContext.complete(apiResult)    
+      val apiResult = getMetadataAPI.UploadConfig(cfgJson, userid, objectList.mkString(","))
+      requestContext.complete(apiResult)
     }
   }
 }

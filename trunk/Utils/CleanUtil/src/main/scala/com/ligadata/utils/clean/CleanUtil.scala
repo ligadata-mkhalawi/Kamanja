@@ -98,7 +98,7 @@ object CleanUtil {
           if(CleanZookeeper.isKamanjaClusterRunning(config.zookeeperInfo))
             throw CleanUtilException("CLEAN-UTIL: The Kamanja cluster is running. Aborting cleaning operation.", null)
           config.topicList.foreach(topic => {
-            CleanKafka.deleteTopic(topic, config.zookeeperInfo.connStr)
+          //  CleanKafka.deleteTopic(topic, config.zookeeperInfo.connStr)
           })
           CleanZookeeper.deletePath(config.zookeeperInfo)
           CleanStores.cleanMetadata(config.metadataStore)
@@ -135,7 +135,7 @@ object CleanUtil {
 
           if (cleanKafka) {
             config.topicList.foreach(topic => {
-              CleanKafka.deleteTopic(topic, config.zookeeperInfo.connStr)
+            //  CleanKafka.deleteTopic(topic, config.zookeeperInfo.connStr)
             })
           }
 

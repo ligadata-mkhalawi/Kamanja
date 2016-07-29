@@ -39,7 +39,7 @@ import com.ligadata.Serialize._
 import com.ligadata.Exceptions._
 import com.ligadata.Exceptions.StackTrace
 
-case class ApiResultInfo(statusCode:Int, statusDescription: String, resultData: String)
+case class ApiResultInfo(statusCode: Int, statusDescription: String, resultData: String)
 case class ApiResultJsonProxy(ApiResults: ApiResultInfo)
 
 object TestApiService {
@@ -68,7 +68,7 @@ object TestApiService {
           case e: Exception =>
             val stackTrace = StackTrace.ThrowableTraceString(e)
             logger.debug(stackTrace)
-            failStr = "Failed to load configuration. Message:" + e.getMessage+"\nStackTrace:"+stackTrace
+            failStr = "Failed to load configuration. Message:" + e.getMessage + "\nStackTrace:" + stackTrace
             configs = null
         } finally {
           input.close();
@@ -367,7 +367,7 @@ object TestApiService {
     } catch {
       case e: Exception =>
         val errStr = "Failed to get response for the API call(" + url + "), status = " + response.status
-        logger.error("Error:"+errStr, e)
+        logger.error("Error:" + errStr, e)
         throw new Exception(errStr, e)
     }
   }
@@ -378,11 +378,11 @@ object TestApiService {
       logger.debug(url + "   " + parameterType + " " + parameterValue)
       var bodyType: MediaType = TEXT_PLAIN
       parameterType match {
-        case "STR" => bodyType = TEXT_PLAIN
-        case "XML" => bodyType = TEXT_XML
-        case "JSON" => bodyType = APPLICATION_JSON
+        case "STR"         => bodyType = TEXT_PLAIN
+        case "XML"         => bodyType = TEXT_XML
+        case "JSON"        => bodyType = APPLICATION_JSON
         case "BINARY_FILE" => bodyType = APPLICATION_OCTET_STREAM
-        case _ => throw InvalidArgumentException("Invalid Argument in MakeHttpRequest: " + parameterType, null)
+        case _             => throw InvalidArgumentException("Invalid Argument in MakeHttpRequest: " + parameterType, null)
       }
       var apiParameters: Option[String] = None
       if (parameterValue != null) {
@@ -391,7 +391,7 @@ object TestApiService {
 
       GetHttpResponse(reqType, url, apiParameters, bodyType)
     } catch {
-      case e: Exception =>{
+      case e: Exception => {
         logger.debug("", e)
         throw e
       }
@@ -1523,8 +1523,10 @@ object TestApiService {
       val removeEngineConfig = () => { RemoveEngineConfig }
       val addOutputMessage = () => { AddOutputMessage }
       val getAllOutputMsgs = () => { GetAllOutputMsgs }
-      val removeOutputMsg = () 	=> { RemoveOutputMsg }
-      val updateOutputMsg = () 	=> { UpdateOutputMsg }
+      val removeOutputMsg = () => { RemoveOutputMsg }
+      val updateOutputMsg = () => { UpdateOutputMsg }
+      val getTypeBySchemaId = () => { GetTypeBySchemaId }
+      val getTypeByElementId = () => { GetTypeByElementId }
 
       val topLevelMenu = List(("Add Model", addModel),
         ("Get Model", getModel),
@@ -1568,10 +1570,11 @@ object TestApiService {
         ("Dump All Config Objects", dumpAllCfgObjects),
         ("Remove Engine Config", removeEngineConfig),
         ("Add Output Message", addOutputMessage),
-		("Get All Output Messages", getAllOutputMsgs),
-		("Remove Output Message", removeOutputMsg),
-		("Update Output Message", updateOutputMsg))
-
+        ("Get All Output Messages", getAllOutputMsgs),
+        ("Remove Output Message", removeOutputMsg),
+        ("Update Output Message", updateOutputMsg),
+        ("Get Type By SchemaId", getTypeBySchemaId),
+        ("Get Type By Element Id", getTypeByElementId))
       var done = false
       while (done == false) {
         println("\n\nPick an API ")
@@ -1587,6 +1590,48 @@ object TestApiService {
           logger.error("Invalid Choice : " + choice)
         }
       }
+    } catch {
+      case e: Exception => {
+        logger.debug("", e)
+      }
+    }
+  }
+
+  // Get Message/Container by getSchemaId
+  def GetTypeBySchemaId {
+    try {
+      print("\nEnter your SchemaId: ")
+      val key: Int = readInt()
+
+      if (key < 1) {
+        println("Invalid SchemaId " + key)
+        return
+      }
+      val apiResult = MakeHttpRequest("get", host_url, "GetTypeBySchemaId" + "/" + key, "JSON", null)
+
+      println("Result as Json String => \n" + apiResult)
+
+    } catch {
+      case e: Exception => {
+        logger.debug("", e)
+      }
+    }
+  }
+
+  // Get Message/Container/Model by ElementId
+  def GetTypeByElementId {
+    try {
+      print("\nEnter your Element Id: ")
+      val key: Long = readLong()
+
+      if (key < 1) {
+        println("Invalid Elementy Id " + key)
+        return
+      }
+      val apiResult = MakeHttpRequest("get", host_url, "GetTypeByElementId" + "/" + key, "JSON", null)
+
+      println("Result as Json String => \n" + apiResult)
+
     } catch {
       case e: Exception => {
         logger.debug("", e)

@@ -1,0 +1,15 @@
+{
+  "Message": {
+    "NameSpace": "com.ligadata.kamanja.samples.messages",
+    "Name": "COPDInputMessage",
+    "Version": "00.01.00",
+    "Description": "COPD Input Message",
+    "Fixed": "true",
+    "Fields": [
+      {
+        "Name": "Msg",
+        "Type": "System.String"
+      }
+    ]
+  }
+}

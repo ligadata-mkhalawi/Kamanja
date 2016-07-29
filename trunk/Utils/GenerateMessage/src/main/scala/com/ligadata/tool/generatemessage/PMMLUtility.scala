@@ -18,7 +18,7 @@ import org.jpmml.model.{JAXBUtil, ImportFilter}
 import org.jpmml.evaluator._
 import org.xml.sax.InputSource
 import org.xml.sax.helpers.XMLReaderFactory
-//import scala.collection.JavaConversions._
+import org.jpmml.sas._
 
 class PMMLUtility extends LogTrait{
   def XMLReader(pmmlText: String): ModelEvaluator[_ <: Model]={
@@ -34,6 +34,13 @@ class PMMLUtility extends LogTrait{
     unmarshaller.setEventHandler(SimpleValidationEventHandler)
 
     val pmml: PMML = unmarshaller.unmarshal(source).asInstanceOf[PMML]
+    // 1320, 1313 Changes begin
+    if (pmml.getHeader().getApplication().getName().contains("SAS")) {
+      val visitor : Visitor  = new org.jpmml.sas.visitors.ExpressionCorrector()
+      visitor.applyTo(pmml);
+    }
+    // 1320, 1313 Changes end
+
     val modelEvaluatorFactory = ModelEvaluatorFactory.newInstance()
     val modelEvaluator = modelEvaluatorFactory.newModelManager(pmml)
 

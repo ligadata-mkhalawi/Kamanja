@@ -41,13 +41,17 @@ object GetLeaderService {
 class GetLeaderService(requestContext: RequestContext, userid:Option[String], password:Option[String], cert:Option[String]) extends Actor {
 
   import GetLeaderService._
-  
+
   implicit val system = context.system
   import system.dispatcher
   val log = Logging(system, getClass)
-  
+
   val loggerName = this.getClass.getName
   val logger = LogManager.getLogger(loggerName)
+
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   val APIName = "GetLeader"
 
@@ -58,10 +62,8 @@ class GetLeaderService(requestContext: RequestContext, userid:Option[String], pa
   }
 
   def process(nodeList: Array[String]) = {
-    val leaderHost = MetadataAPIImpl.getLeaderHost(MetadataAPIServiceLeader.LeaderNode)
+    val leaderHost = getMetadataAPI.getLeaderHost(MetadataAPIServiceLeader.LeaderNode)
     logger.debug("leader host => " + leaderHost)
     requestContext.complete(leaderHost)
   }
 }
-
-
