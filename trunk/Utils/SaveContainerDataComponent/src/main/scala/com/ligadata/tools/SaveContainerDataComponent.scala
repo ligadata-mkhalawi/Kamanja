@@ -295,6 +295,10 @@ class SaveContainerDataCompImpl extends LogTrait with ObjectResolver {
     _nodeId = nodeId
     _jarPaths = jarPaths
     _dataStore = dataStoreInst
+    if (_dataStore != null) {
+      _dataStore.setObjectResolver(this)
+      _dataStore.setDefaultSerializerDeserializer("com.ligadata.kamanja.serializer.kbinaryserdeser", scala.collection.immutable.Map[String, Any]())
+    }
     _initialized = true
   }
 
