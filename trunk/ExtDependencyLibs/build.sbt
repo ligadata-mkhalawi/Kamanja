@@ -136,7 +136,7 @@ libraryDependencies += "org.jpmml" % "pmml-model" % "1.2.9"
 libraryDependencies += "org.jpmml" % "pmml-schema" % "1.2.9"
 libraryDependencies += "org.jpmml" % "pmml-sas" % "1.2.9"
 libraryDependencies += "org.jpmml" % "pmml-rattle" % "1.2.9"
-//libraryDependencies += "org.jpmml" % "pmml-knime" % "1.2.9"
+
 libraryDependencies += "com.beust" % "jcommander" % "1.48"
 libraryDependencies += "com.codahale.metrics" % "metrics-core" % "3.0.2"
 //libraryDependencies += "org.glassfish.jaxb" % "jaxb-runtime" % "2.2.11"
@@ -173,7 +173,6 @@ libraryDependencies += "org.jpmml" % "pmml-model" % "1.2.9"
 libraryDependencies += "org.jpmml" % "pmml-schema" % "1.2.9"
 libraryDependencies += "org.jpmml" % "pmml-sas" % "1.2.9"
 libraryDependencies += "org.jpmml" % "pmml-rattle" % "1.2.9"
-//libraryDependencies += "org.jpmml" % "pmml-knime" % "1.2.9"
 
 
 ////////////////////// MetadataAPIService
