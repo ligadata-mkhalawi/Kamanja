@@ -1,7 +1,5 @@
 name := "Bootstrap"
 
-version := "1.0"
-
 scalacOptions += "-deprecation"
 //
 unmanagedSourceDirectories in Compile <+= (scalaVersion, sourceDirectory in Compile) {

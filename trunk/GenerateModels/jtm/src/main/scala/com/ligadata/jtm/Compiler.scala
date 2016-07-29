@@ -1219,11 +1219,12 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
               Array.empty[String]
             }
 
+            val setTimePartitionIfNeeded = "if (result.hasTimePartitionInfo) result.setTimePartitionData ;"
 
             // To Construct the final output
-            val outputResult = "val result = %s.createInstance\n%s\n%s\nArray(result)".format(
+            val outputResult = "val result = %s.createInstance\n%s\n%s\n%s\nArray(result)".format(
                                     outputType,
-                                    outputElements.mkString("\n"), outputElements1.mkString("\n"))
+                                    outputElements.mkString("\n"), outputElements1.mkString("\n"), setTimePartitionIfNeeded)
             collect ++= Array(outputResult)
             collect ++= Array("}\n")
           }

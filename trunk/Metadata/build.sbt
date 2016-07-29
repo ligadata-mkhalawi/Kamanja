@@ -1,7 +1,5 @@
 name := "Metadata"
 
-version := "1.0"
-
 //libraryDependencies += "org.joda" % "joda-convert" % "1.6"
 //
 //libraryDependencies += "joda-time" % "joda-time" % "2.8.2"

@@ -4,15 +4,11 @@ import Keys._
 
 shellPrompt := { state =>  "sbt (%s)> ".format(Project.extract(state).currentProject.id) }
 
-
-
 assemblyOption in assembly ~= { _.copy(prependShellScript = Some(defaultShellScript)) }
-
-val kamanjaVersion = "1.5.1"
 
 //assemblyJarName in assembly := { s"${name.value}-${version.value}" }
 assemblyJarName in assembly := {
-    s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"
+    s"${name.value}_${scalaBinaryVersion.value}-${version.value}.jar"
 }
 
 assemblyMergeStrategy in assembly := {
@@ -60,8 +56,6 @@ unmanagedBase <<= baseDirectory { base => base / "custom_lib" }
 unmanagedJars in Compile <<= baseDirectory map { base => (base ** "*.jar").classpath }
 
 name := "ContainersUtility"
-
-version := "1.5.1"
 
 //resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 //

@@ -102,6 +102,13 @@ class JsonUtilityTest extends FeatureSpec with GivenWhenThen {
       json = json merge jsonTimePartition
       println("=======================================================")
       println(pretty(render(json)))
+
+      configBeanObj.timePartition_= ("id")
+      val keyArray = Array("id","name","company","work")
+      if (configBeanObj.hasTimePartition == true) {
+        val x = dataTypeObj.CheckKeys(keyArray, configBeanObj.timePartition).toString
+        println(configBeanObj.timePartition)
+      }
     }
   }
 }
