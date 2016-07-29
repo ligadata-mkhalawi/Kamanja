@@ -63,6 +63,7 @@ class MessageGenerator {
         messageGenerator = messageGenerator.append(mappedMsgGen.getFromFuncFixed(message, mdMgr))
       }
       messageGenerator = messageGenerator.append(msgConstants.generateWithMethods(message))
+      messageGenerator = messageGenerator.append(caseSensitiveFunc(message))
       messageGenerator = messageGenerator.append(messageContructor(message))
       messageGenerator = messageGenerator.append(msgConstants.newline + msgConstants.closeBrace);
       messageVerGenerator = messageVerGenerator.append(messageGenerator.toString())
@@ -215,7 +216,7 @@ class MessageGenerator {
     override def getAttributeType(name: String): AttributeTypeInfo = {
       if (name == null || name.trim() == "") return null;
       attributeTypes.foreach(attributeType => {
-        if(attributeType.getName == name.toLowerCase())
+        if(attributeType.getName == caseSensitiveKey(name))
           return attributeType
       }) 
       return null;
@@ -670,6 +671,21 @@ class MessageGenerator {
 """
   }
 
+  /** caseSensitiveFunc function in generate message code **/
+  
+  private def caseSensitiveFunc(message: Message) : String = {
+    var caseSentivie: String = ""
+    """
+    def caseSensitiveKey(keyName: String): String{
+      if(isCaseSensitive)
+        return keyName;
+      else return keyName.toLowerCase;     
+    }
+      
+      
+   """
+    
+  }
   /*
    * some overridable methods from MessageInterface
    */
@@ -693,7 +709,7 @@ class MessageGenerator {
     """
     override def getOrElse(keyName: String, defaultVal: Any): AnyRef = { // Return (value)
       if (keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name "+keyName);
-      val key = keyName.toLowerCase;
+      val key = caseSensitiveKey(keyName);
       try {
         return get(key)
        } catch {
@@ -744,7 +760,7 @@ class MessageGenerator {
       message.PartitionKeys.foreach(key => {
         message.Elements.foreach(element => {
           if (element.Name.equalsIgnoreCase(key)) {
-            paritionKeysGen.append("%s partitionKeys += %s.toString(get(\"%s\").asInstanceOf[%s]);%s".format(msgConstants.pad2, element.FldMetaataType.implementationName, element.Name.toLowerCase(), element.FieldTypePhysicalName, msgConstants.newline)) //"+ com.ligadata.BaseTypes.StringImpl+".toString(get"+element.Name.capitalize+") ")
+            paritionKeysGen.append("%s partitionKeys += %s.toString(get(caseSensitiveKey(\"%s\")).asInstanceOf[%s]);%s".format(msgConstants.pad2, element.FldMetaataType.implementationName, element.Name, element.FieldTypePhysicalName, msgConstants.newline)) //"+ com.ligadata.BaseTypes.StringImpl+".toString(get"+element.Name.capitalize+") ")
           }
         })
       })
@@ -776,7 +792,7 @@ class MessageGenerator {
       message.PrimaryKeys.foreach(key => {
         message.Elements.foreach(element => {
           if (element.Name.equalsIgnoreCase(key)) {
-            primaryKeysGen.append("%s primaryKeys += %s.toString(get(\"%s\").asInstanceOf[%s]);%s".format(msgConstants.pad2, element.FldMetaataType.implementationName, element.Name.toLowerCase(), element.FieldTypePhysicalName, msgConstants.newline)) //"+ com.ligadata.BaseTypes.StringImpl+".toString(get"+element.Name.capitalize+") ")
+            primaryKeysGen.append("%s primaryKeys += %s.toString(get(caseSensitiveKey(\"%s\")).asInstanceOf[%s]);%s".format(msgConstants.pad2, element.FldMetaataType.implementationName, element.Name, element.FieldTypePhysicalName, msgConstants.newline)) //"+ com.ligadata.BaseTypes.StringImpl+".toString(get"+element.Name.capitalize+") ")
           }
         })
       })
@@ -881,13 +897,13 @@ class MessageGenerator {
     override def get(key: String): AnyRef = {
     try {
       // Try with reflection
-      return getByName(key.toLowerCase())
+      return getByName(caseSensitiveKey(key))
     } catch {
       case e: Exception => {
         val stackTrace = StackTrace.ThrowableTraceString(e)
         log.debug("StackTrace:" + stackTrace)
         // Call By Name
-        return getWithReflection(key.toLowerCase())
+        return getWithReflection(caseSensitiveKey(key))
         }
       }
     }      
@@ -901,7 +917,7 @@ class MessageGenerator {
     """
     private def getByName(keyName: String): AnyRef = {
      if(keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name "+keyName);
-      val key = keyName.toLowerCase;
+      val key = caseSensitiveKey(keyName);
    
       if (!keyTypes.contains(key)) throw new KeyNotFoundException(s"Key $key does not exists in message/container """ + message.Name + """", null);
       return get(keyTypes(key).getIndex)
@@ -916,7 +932,7 @@ class MessageGenerator {
     """
     private def getWithReflection(keyName: String): AnyRef = {
       if(keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name "+keyName);
-      val key = keyName.toLowerCase;
+      val key = caseSensitiveKey(keyName);
       val ru = scala.reflect.runtime.universe
       val m = ru.runtimeMirror(getClass.getClassLoader)
       val im = m.reflect(this)
@@ -949,7 +965,7 @@ class MessageGenerator {
     """
     override def set(keyName: String, value: Any) = {
       if(keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name "+keyName);
-      val key = keyName.toLowerCase;
+      val key = caseSensitiveKey(keyName);
       try {
    
   """ + setByKeyFuncStr(message) + """
