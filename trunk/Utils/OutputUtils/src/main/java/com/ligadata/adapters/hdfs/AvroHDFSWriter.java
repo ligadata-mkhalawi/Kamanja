@@ -15,10 +15,11 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 public class AvroHDFSWriter {
-	static Logger logger = Logger.getLogger(AvroHDFSWriter.class);
+	static Logger logger = LogManager.getLogger(AvroHDFSWriter.class);
 	
 	private Schema schema;
 	private String basePath;

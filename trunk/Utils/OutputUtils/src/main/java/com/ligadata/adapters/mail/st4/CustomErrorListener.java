@@ -1,6 +1,7 @@
 package com.ligadata.adapters.mail.st4;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.stringtemplate.v4.STErrorListener;
 import org.stringtemplate.v4.misc.STMessage;
 
@@ -8,7 +9,7 @@ import com.ligadata.adapters.mail.pojo.Constants;
 
 public class CustomErrorListener implements STErrorListener {
 	
-	static Logger logger = Logger.getLogger(CustomErrorListener.class);
+	static Logger logger = LogManager.getLogger(CustomErrorListener.class);
 
 	@Override
 	public void IOError(STMessage msg) {

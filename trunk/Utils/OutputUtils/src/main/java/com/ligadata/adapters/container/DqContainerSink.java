@@ -6,13 +6,14 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.HashMap;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import com.ligadata.adapters.AdapterConfiguration;
 import com.ligadata.adapters.jdbc.AbstractJDBCSink;
 
 public class DqContainerSink extends AbstractJDBCSink {
-	static Logger logger = Logger.getLogger(DqContainerSink.class);
+	static Logger logger = LogManager.getLogger(DqContainerSink.class);
 
 	protected class DqAggregation {
 		String ait;

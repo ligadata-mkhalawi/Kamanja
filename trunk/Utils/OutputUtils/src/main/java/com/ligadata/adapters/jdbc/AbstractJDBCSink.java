@@ -12,14 +12,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.dbcp2.BasicDataSource;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.json.simple.JSONObject;
 
 import com.ligadata.adapters.AdapterConfiguration;
 import com.ligadata.adapters.BufferedMessageProcessor;
 
 public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
-	static Logger logger = Logger.getLogger(AbstractJDBCSink.class);
+	static Logger logger = LogManager.getLogger(AbstractJDBCSink.class);
 
 	protected BasicDataSource dataSource;
 	protected SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");

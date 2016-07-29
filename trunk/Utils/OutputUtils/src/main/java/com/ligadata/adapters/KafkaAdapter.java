@@ -8,16 +8,16 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import sun.misc.Signal;
 
-@SuppressWarnings("restriction")
 public class KafkaAdapter implements Observer {
-	static Logger logger = Logger.getLogger(KafkaAdapter.class);
+	static Logger logger = LogManager.getLogger(KafkaAdapter.class);
 	
 	private AdapterConfiguration configuration;
-	private ArrayList<KafkaConsumer> consumers;
+	private ArrayList<MessageConsumer> consumers;
 	private ExecutorService executor;
 
 	public KafkaAdapter(AdapterConfiguration config) {
@@ -37,7 +37,7 @@ public class KafkaAdapter implements Observer {
 	}
 
 	public void shutdown() {
-		for(KafkaConsumer c: consumers)
+		for(MessageConsumer c: consumers)
 			c.shutdown();
 		
         if (executor != null) executor.shutdown();
@@ -55,10 +55,10 @@ public class KafkaAdapter implements Observer {
 	public void run() {
         int numThreads = Integer.parseInt(configuration.getProperty(AdapterConfiguration.COUNSUMER_THREADS, "2"));
         executor = Executors.newFixedThreadPool(numThreads);
-        consumers = new ArrayList<KafkaConsumer>();
+        consumers = new ArrayList<MessageConsumer>();
 		try {
 			for (int threadNumber = 0; threadNumber < numThreads; threadNumber++) {
-				KafkaConsumer c = new KafkaConsumer(configuration);
+				MessageConsumer c = new MessageConsumer(configuration);
 				executor.submit(c);
 				consumers.add(c);
 			}

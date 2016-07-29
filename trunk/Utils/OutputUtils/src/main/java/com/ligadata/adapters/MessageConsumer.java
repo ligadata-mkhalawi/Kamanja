@@ -1,30 +1,28 @@
 package com.ligadata.adapters;
 
+import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
-import org.apache.log4j.Logger;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.errors.WakeupException;
 
-import kafka.consumer.ConsumerConfig;
-import kafka.consumer.ConsumerIterator;
-import kafka.consumer.ConsumerTimeoutException;
-import kafka.consumer.KafkaStream;
-import kafka.javaapi.consumer.ConsumerConnector;
-import kafka.message.MessageAndMetadata;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
-public class KafkaConsumer implements Runnable {
-	static Logger logger = Logger.getLogger(KafkaConsumer.class);
+public class MessageConsumer implements Runnable {
+	static Logger logger = LogManager.getLogger(MessageConsumer.class);
 	private volatile boolean stop = false;
-	private Thread thisThread = null;
 
 	private final AdapterConfiguration configuration;
-	private ConsumerConnector consumer;
+	private KafkaConsumer<String, String> consumer;
 	private final BufferedMessageProcessor processor;
 	private HashMap<Integer, Long> partitionOffsets = new HashMap<Integer, Long>();
+	private Thread thisThread;
 
-	public KafkaConsumer(AdapterConfiguration config) throws Exception {
+	public MessageConsumer(AdapterConfiguration config) throws Exception {
 		this.configuration = config;
 		String classname = configuration.getProperty(AdapterConfiguration.MESSAGE_PROCESSOR);
 		if(classname == null || "".equals(classname) || "null".equalsIgnoreCase(classname)) {
@@ -41,22 +39,18 @@ public class KafkaConsumer implements Runnable {
 		if(processor != null)
 			processor.close();
 		if(consumer != null)
-			consumer.shutdown();
-		if(thisThread != null)
+			consumer.wakeup();
+		if(thisThread != null && thisThread.getState() == Thread.State.TIMED_WAITING)
 			thisThread.interrupt();
 	}
 
-	private ConsumerConfig createConsumerConfig() {
+	private void createKafkaConsumer() {
 		Properties props = new Properties();
-		props.put("zookeeper.connect", configuration.getProperty(AdapterConfiguration.ZOOKEEPER_CONNECT));
-		props.put("zookeeper.session.timeout.ms",
-				configuration.getProperty(AdapterConfiguration.ZOOKEEPER_SESSION_TIMEOUT, "400"));
-		props.put("zookeeper.sync.time.ms", configuration.getProperty(AdapterConfiguration.ZOOKEEPER_SYNC_TIME, "200"));
 		
+		props.put("bootstrap.servers", configuration.getProperty(AdapterConfiguration.BOOTSTRAP_SERVERS));
 		props.put("group.id", configuration.getProperty(AdapterConfiguration.KAFKA_GROUP_ID));
-		//props.put("auto.offset.reset", configuration.getProperty(AdapterConfiguration.KAFKA_AUTO_OFFSET_RESET, "largest"));
-		//props.put("offsets.storage", configuration.getProperty(AdapterConfiguration.KAFKA_OFFSETS_STORAGE, "zookeeper"));
-		props.put("consumer.timeout.ms", "1000");
+		props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+		props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");		
 		
 		// Add any additional properties specified for Kafka
 		for(String key: configuration.getProperties().stringPropertyNames()) {
@@ -66,41 +60,24 @@ public class KafkaConsumer implements Runnable {
 			}
 		}
 		
-		props.put("dual.commit.enabled", "false");
-		props.put("auto.commit.enable", "false");
+		props.put("enable.auto.commit", "false");
+		
+		consumer = new KafkaConsumer<String, String>(props);
 
-		return new ConsumerConfig(props);
-	}
-
-	private boolean hasNext(ConsumerIterator<byte[], byte[]> it) {
-		try {
-			return it.hasNext();
-		} catch (ConsumerTimeoutException e) {
-			return false;
-		}
-	}
-
-	private KafkaStream<byte[], byte[]> getKafkaStream() {
-		consumer = kafka.consumer.Consumer.createJavaConsumerConnector(createConsumerConfig());
 		String topic = configuration.getProperty(AdapterConfiguration.KAFKA_TOPIC);
-
 		logger.info("Connecting to kafka topic " + topic);
-		Map<String, Integer> topicCountMap = new HashMap<String, Integer>();
-		topicCountMap.put(topic, new Integer(1));
-
-		Map<String, List<KafkaStream<byte[], byte[]>>> consumerMap = consumer.createMessageStreams(topicCountMap);
-		return consumerMap.get(topic).get(0);
+		consumer.subscribe(Arrays.asList(topic));
 	}
 	
-	private KafkaStream<byte[], byte[]> getKafkaStreamWithRetry() {
+	private void createKafkaConsumerRetry() {
 		long retry = 0;
 		long retryInterval = 5000;
 		while (!stop) {
 			try {
-				KafkaStream<byte[], byte[]> stream = getKafkaStream();
+				createKafkaConsumer();
 				if(retry > 0)
 					logger.info("Successfully connected after " + retry + " retries.");
-				return stream;
+				return;
 			} catch (Exception e) {
 				retry++;
 				if(retry <= 12) {
@@ -111,7 +88,7 @@ public class KafkaConsumer implements Runnable {
 			}
 		}
 		
-		return null;
+		//return null;
 	}
 
 	private void processWithRetry() {
@@ -151,44 +128,43 @@ public class KafkaConsumer implements Runnable {
 			throw new RuntimeException(e);
 		}
 
-		KafkaStream<byte[], byte[]> kafkaStream = getKafkaStreamWithRetry();
+		createKafkaConsumerRetry();
 
 		long syncMessageCount = Long.parseLong(configuration.getProperty(AdapterConfiguration.SYNC_MESSAGE_COUNT, "10000"));
 		long syncInterval = Long.parseLong(configuration.getProperty(AdapterConfiguration.SYNC_INTERVAL_SECONDS, "120")) * 1000;
+		long pollInterval = Long.parseLong(configuration.getProperty(AdapterConfiguration.KAFKA_POLL_INTERVAL, "100"));
 
-		ConsumerIterator<byte[], byte[]> it = kafkaStream.iterator();
 		long messageCount = 0;
 		long nextSyncTime = System.currentTimeMillis() + syncInterval;
 		long start = System.currentTimeMillis();
 		while (!stop) {
 			try {
-				if (hasNext(it)) {
-					MessageAndMetadata<byte[], byte[]> t = it.next();
-					Long lastOffset = partitionOffsets.get(t.partition());
-					if (lastOffset == null || t.offset() > lastOffset) {
-						String message = new String(t.message());
-						logger.debug("Message from partition Id :" + t.partition() + " Message: " + message);
-						if (processor.addMessage(message))
+				ConsumerRecords<String, String> records = consumer.poll(pollInterval);
+				for (ConsumerRecord<String, String> record : records) {
+					Long lastOffset = partitionOffsets.get(record.partition());
+					if (lastOffset == null || record.offset() > lastOffset) {
+						logger.debug("Message from partition Id :" + record.partition() + " Message: " + record.value());
+						if (processor.addMessage(record.value()))
 							messageCount++;
 						else
 							errorMessageCount++;
 
-						partitionOffsets.put(t.partition(), t.offset());
+						partitionOffsets.put(record.partition(), record.offset());						
 					}
 				}
+			} catch (WakeupException e) {
 			} catch (Exception e) {
 				logger.error("Error reading from kafka: " + e.getMessage(), e);
-				KafkaStream<byte[], byte[]> stream = getKafkaStreamWithRetry();
-				it = stream.iterator();
+				createKafkaConsumerRetry();
 			}
-
+			
 			if (messageCount > 0 && (messageCount >= syncMessageCount || System.currentTimeMillis() >= nextSyncTime)) {
 				long endRead = System.currentTimeMillis();
 				logger.info("Saving " + messageCount + " messages. Read time " + (endRead - start) + " msecs.");
 				processWithRetry();
 				processor.clearAll();
 				long endWrite = System.currentTimeMillis();
-				consumer.commitOffsets();
+				consumer.commitSync();
 				totalMessageCount += messageCount;
 				logger.info("Saved " + messageCount + " messages. Write time " + (endWrite - endRead) + " msecs.");
 
@@ -198,7 +174,7 @@ public class KafkaConsumer implements Runnable {
 			}
 		}
 
-		consumer.shutdown();
+		consumer.close();
 
 		logger.info("Shutting down after processing " + totalMessageCount + " messages with " + errorMessageCount
 				+ " error messages.");

@@ -4,7 +4,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import com.ligadata.KamanjaBase.DataDelimiters;
 import com.ligadata.KamanjaBase.DelimitedData;
@@ -14,7 +15,7 @@ import com.ligadata.adapters.BufferedMessageProcessor;
 import com.ligadata.tools.SaveContainerDataComponent;
 
 public class BufferedContainerSink implements BufferedMessageProcessor {
-	static Logger logger = Logger.getLogger(BufferedContainerSink.class);
+	static Logger logger = LogManager.getLogger(BufferedContainerSink.class);
 
 	protected class PartitionData {
 		ArrayList<String> keys;

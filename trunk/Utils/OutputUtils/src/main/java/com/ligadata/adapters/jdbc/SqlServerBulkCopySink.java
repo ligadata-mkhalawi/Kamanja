@@ -10,7 +10,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
@@ -19,7 +20,7 @@ import com.microsoft.sqlserver.jdbc.SQLServerBulkCSVFileRecord;
 import com.microsoft.sqlserver.jdbc.SQLServerBulkCopy;
 
 public class SqlServerBulkCopySink extends AbstractJDBCSink {
-	static Logger logger = Logger.getLogger(SqlServerBulkCopySink.class);
+	static Logger logger = LogManager.getLogger(SqlServerBulkCopySink.class);
 
 	private String connectionStr;
 	private String dataTimeFormatStr;

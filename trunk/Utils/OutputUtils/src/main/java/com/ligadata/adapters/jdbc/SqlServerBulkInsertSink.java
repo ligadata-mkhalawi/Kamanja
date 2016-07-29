@@ -10,14 +10,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
 import com.ligadata.adapters.AdapterConfiguration;
 
 public class SqlServerBulkInsertSink extends AbstractJDBCSink {
-	static Logger logger = Logger.getLogger(SqlServerBulkInsertSink.class);
+	static Logger logger = LogManager.getLogger(SqlServerBulkInsertSink.class);
 
 	private List<ParameterMapping> fields;
 	private String fieldSeperator;

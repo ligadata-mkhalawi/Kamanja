@@ -12,7 +12,8 @@ import org.apache.avro.generic.GenericData.Record;
 import org.apache.avro.io.DatumReader;
 import org.apache.avro.io.Decoder;
 import org.apache.avro.io.DecoderFactory;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
@@ -20,7 +21,7 @@ import com.ligadata.adapters.AdapterConfiguration;
 import com.ligadata.adapters.BufferedMessageProcessor;
 
 public class BufferedPartitionedAvroSink implements BufferedMessageProcessor {
-	static Logger logger = Logger.getLogger(BufferedPartitionedAvroSink.class); 
+	static Logger logger = LogManager.getLogger(BufferedPartitionedAvroSink.class); 
 	
 	private String name;
 	private PartitionStrategy partitioner;

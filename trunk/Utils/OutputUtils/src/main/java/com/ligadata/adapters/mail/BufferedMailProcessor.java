@@ -2,7 +2,8 @@ package com.ligadata.adapters.mail;
 
 import java.util.ArrayList;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
@@ -12,7 +13,7 @@ import com.ligadata.adapters.mail.pojo.Constants;
 import com.ligadata.adapters.mail.pojo.SimpleMailBean;
 
 public class BufferedMailProcessor implements BufferedMessageProcessor {
-	static Logger logger = Logger.getLogger(BufferedMailProcessor.class);
+	static Logger logger = LogManager.getLogger(BufferedMailProcessor.class);
 	private ArrayList<JSONObject> buffer;
 	private AdapterConfiguration conf;
 

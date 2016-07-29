@@ -6,10 +6,11 @@ import java.io.IOException;
 import java.util.Enumeration;
 import java.util.Properties;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 public class AdapterConfiguration {
-	static Logger logger = Logger.getLogger(AdapterConfiguration.class); 
+	static Logger logger = LogManager.getLogger(AdapterConfiguration.class); 
 	
 	public static final String SCHEMA_FILE = "schema.file";
 	public static final String HDFS_URI = "hdfs.uri";
@@ -21,6 +22,7 @@ public class AdapterConfiguration {
 	public static final String SYNC_MESSAGE_COUNT = "sync.messages.count";
 	public static final String SYNC_INTERVAL_SECONDS = "sync.interval.seconds";
 	public static final String KAFKA_TOPIC = "kafka.topic";
+	public static final String BOOTSTRAP_SERVERS = "bootstrap.servers";
 	public static final String COUNSUMER_THREADS = "consumer.threads";
 	public static final String KAFKA_GROUP_ID = "kafka.group.id";
 	public static final String KAFKA_OFFSETS_STORAGE = "kafka.offsets.storage";
@@ -95,6 +97,8 @@ public class AdapterConfiguration {
 	public static final String TARGET_FIELD_NAMES = "target.field.names";
 	public static final String SOURCE_COLLECTION_FIELDS = "source.collection.fields";
 	public static final String TARGET_COLLECTION_FIELDS = "target.collection.fields";
+
+	public static final String KAFKA_POLL_INTERVAL = "poll.interval";
 
 	private Properties properties;
 

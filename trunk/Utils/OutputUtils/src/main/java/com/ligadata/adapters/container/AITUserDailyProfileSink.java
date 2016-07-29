@@ -3,7 +3,8 @@ package com.ligadata.adapters.container;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import com.ligadata.KamanjaBase.JsonData;
 import com.ligadata.KamanjaBase.MessageContainerBase;
@@ -16,7 +17,7 @@ import scala.collection.immutable.Map;
 import scala.collection.mutable.ArrayBuffer;
 
 public class AITUserDailyProfileSink implements BufferedMessageProcessor {
-	static Logger logger = Logger.getLogger(AITUserDailyProfileSink.class);
+	static Logger logger = LogManager.getLogger(AITUserDailyProfileSink.class);
 
 	private HashMap<String, HashMap<String, Object[]>> buffer = new HashMap<String, HashMap<String, Object[]>>();
 	private String containerName = null;

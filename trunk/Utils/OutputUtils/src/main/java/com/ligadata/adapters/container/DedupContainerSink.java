@@ -3,7 +3,8 @@ package com.ligadata.adapters.container;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import com.ligadata.KamanjaBase.DataDelimiters;
 import com.ligadata.KamanjaBase.DelimitedData;
@@ -13,7 +14,7 @@ import com.ligadata.adapters.BufferedMessageProcessor;
 import com.ligadata.tools.SaveContainerDataComponent;
 
 public class DedupContainerSink implements BufferedMessageProcessor { //extends AbstractJDBCSink {
-	static Logger logger = Logger.getLogger(DedupContainerSink.class);
+	static Logger logger = LogManager.getLogger(DedupContainerSink.class);
 
 	protected class DedupPartition {
 		String key1;

@@ -9,7 +9,8 @@ import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.DESKeySpec;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import sun.misc.BASE64Decoder;
 import sun.misc.BASE64Encoder;
@@ -21,7 +22,7 @@ public class SecretKeyFactoryImpl {
 	private static SecretKeyFactoryImpl skf = null;
 	private AdapterConfiguration conf;
 	
-	private static final Logger LOGGER = Logger.getLogger(SecretKeyFactoryImpl.class);
+	private static final Logger LOGGER = LogManager.getLogger(SecretKeyFactoryImpl.class);
 	
 
 	  private SecretKeyFactory    keyFactory;

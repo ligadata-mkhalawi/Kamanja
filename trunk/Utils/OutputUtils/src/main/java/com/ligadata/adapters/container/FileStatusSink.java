@@ -7,13 +7,14 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import com.ligadata.adapters.AdapterConfiguration;
 import com.ligadata.adapters.jdbc.AbstractJDBCSink;
 
 public class FileStatusSink extends AbstractJDBCSink {
-	static Logger logger = Logger.getLogger(FileStatusSink.class);
+	static Logger logger = LogManager.getLogger(FileStatusSink.class);
 	
 	private String sqlStr;
 	private ArrayList<String[]> buffer = new ArrayList<String[]>();
