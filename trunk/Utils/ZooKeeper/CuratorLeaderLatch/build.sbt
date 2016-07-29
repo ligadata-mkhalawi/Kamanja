@@ -53,7 +53,6 @@ unmanagedJars in Compile <<= baseDirectory map { base => (base ** "*.jar").class
 
 name := "ZooKeeperLeaderLatch"
 
-version := "1.0"
 //
 //libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.0"
 //

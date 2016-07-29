@@ -5,8 +5,6 @@ shellPrompt := { state =>  "sbt (%s)> ".format(Project.extract(state).currentPro
 
 name := "AuditAdapters"
 
-version := "1.0"
-
 //resolvers += "spring-milestones" at "http://repo.springsource.org/libs-milestone"
 //
 //libraryDependencies += "com.datastax.cassandra" % "cassandra-driver-parent" % "2.1.2"

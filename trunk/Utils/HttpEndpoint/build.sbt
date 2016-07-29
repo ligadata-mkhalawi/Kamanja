@@ -1,8 +1,6 @@
 
 name := "HttpEndpoint"
 
-version := "1.0"
-
 //scalaVersion := "2.11.7"
 
 //resolvers += Resolver.file("Local repo", file(System.getProperty("user.home") + "/.ivy2/local"))(Resolver.ivyStylePatterns)

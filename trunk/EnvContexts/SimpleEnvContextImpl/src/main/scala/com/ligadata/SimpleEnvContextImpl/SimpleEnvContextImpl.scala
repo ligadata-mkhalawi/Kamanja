@@ -111,7 +111,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
       |  "jgroups.port": "%d",
       |  "replicatePuts": "true",
       |  "replicateUpdates": "true",
-      |  "replicateUpdatesViaCopy": "false",
+      |  "replicateUpdatesViaCopy": "true",
       |  "replicateRemovals": "true",
       |  "replicateAsynchronously": "true",
       |  "CacheConfig": {
