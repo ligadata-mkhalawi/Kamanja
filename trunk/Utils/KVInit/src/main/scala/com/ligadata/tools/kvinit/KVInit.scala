@@ -616,8 +616,6 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
   }
 
   private def LoadDataIfNeeded(loadKey: LoadKeyWithBucketId, loadedKeys: java.util.TreeSet[LoadKeyWithBucketId], dataByBucketKeyPart: TreeMap[KeyWithBucketIdAndPrimaryKey, ContainerInterface], kvstore: DataStore): Unit = {
-    if (isOnlyAppend)
-      return
     if (loadedKeys.contains(loadKey))
       return
     val buildOne = (k: Key, v: Any, serType: String, typ: String, ver: Int) => {
@@ -893,7 +891,7 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
 
               val bucketId = KeyWithBucketIdAndPrimaryKeyCompHelper.BucketIdForBucketKey(keyData)
               val k = KeyWithBucketIdAndPrimaryKey(bucketId, Key(timeVal, keyData, transId, processedRows), hasPrimaryKey, if (hasPrimaryKey) container.getPrimaryKey else null)
-              if (hasPrimaryKey) {
+              if (!isOnlyAppend && hasPrimaryKey) {
                 // Get the record(s) for this partition key, time value & primary key
                 val loadKey = LoadKeyWithBucketId(bucketId, TimeRange(timeVal, timeVal), keyData)
                 LoadDataIfNeeded(loadKey, loadedKeys, dataByBucketKeyPart, kvstore)
