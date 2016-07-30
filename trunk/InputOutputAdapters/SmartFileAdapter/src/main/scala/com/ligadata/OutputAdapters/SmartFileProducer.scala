@@ -152,7 +152,6 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
                 }
               }
             }
-            partitionStreams.clear()
           } finally {
             WriteUnlock(_reent_lock)
           }
@@ -358,7 +357,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     while (!isSuccess) {
       try {
         pf.synchronized {
-          if (pf.flushBufferSize > 0) {
+          if (pf.flushBufferSize > 0 && pf.buffer.size > 0) {
             write(pf.outStream, pf.buffer.toArray)
             pf.size += pf.buffer.size
             pf.records += pf.recordsInBuffer
