@@ -3,8 +3,6 @@ import sbt._
 
 name := "CleanUtil"
 
-version := "1.5.1"
-
 shellPrompt := { state => "sbt (%s)> ".format(Project.extract(state).currentProject.id) }
 
 //libraryDependencies ++= Seq (
@@ -24,14 +22,10 @@ shellPrompt := { state => "sbt (%s)> ".format(Project.extract(state).currentProj
 
 fork := true
 
-
-
 test in assembly := {}
 
-val kamanjaVersion = "1.5.1"
-
 assemblyJarName in assembly := {
-  s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"
+  s"${name.value}_${scalaBinaryVersion.value}-${version.value}.jar"
 }
 
 assemblyMergeStrategy in assembly := {
