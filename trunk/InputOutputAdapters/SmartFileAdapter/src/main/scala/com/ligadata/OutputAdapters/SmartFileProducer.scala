@@ -249,10 +249,10 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
         var fs: FileSystem = FileSystem.get(uri, hdfsConf);
 
         if (fs.exists(path)) {
-          LOG.info("Loading existing file " + uri)
+          LOG.info("Smart File Producer " + fc.Name + "(" + this + ") : Loading existing file " + uri)
           os = fs.append(path)
         } else {
-          LOG.info("Creating new file " + uri);
+          LOG.info("Smart File Producer " + fc.Name + "(" + this + ") : Creating new file " + uri);
           os = fs.create(path);
         }
       } catch {
@@ -303,18 +303,22 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     val path = key
     key = key + bucket
 
+    var partKey: PartitionFile = null
     ReadLock(_reent_lock)
-    if (!partitionStreams.contains(key)) {
-      //upgrade to write lock
-      ReadUnlock(_reent_lock)
+    partKey = partitionStreams.getOrElse(key, null)
+    ReadUnlock(_reent_lock)
+    
+    if (partKey == null) {
       WriteLock(_reent_lock)
       try {
         // need to check again to make sure other threads did not update
-        if (!partitionStreams.contains(key)) {
+        partKey = partitionStreams.getOrElse(key, null)
+        if (partKey == null) {
           // need to check again
           val dt = if (nextRolloverTime > 0) nextRolloverTime - (fc.rolloverInterval * 60 * 1000) else System.currentTimeMillis
           val ts = new java.text.SimpleDateFormat("yyyyMMdd'T'HHmm").format(new java.util.Date(dt))
           val fileName = "%s/%s/%s%s-%d-%s.dat%s".format(fc.uri, path, fc.fileNamePrefix, nodeId, bucket, ts, extensions.getOrElse(fc.compressionString, ""))
+          LOG.info("Smart File Producer " + fc.Name + "(" + this + "): Opening file " + fileName)
           var os = openFile(fileName)
           if (compress)
             os = new CompressorStreamFactory().createCompressorOutputStream(fc.compressionString, os)
@@ -323,19 +327,15 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           if (fileBufferSize > 0)
             buffer = new ArrayBuffer[Byte];
 
-          partitionStreams(key) = new PartitionFile(key, fileName, os, 0, 0, buffer, 0, fileBufferSize)
-          ReadLock(_reent_lock) // downgrade to original readlock
+          partKey = new PartitionFile(key, fileName, os, 0, 0, buffer, 0, fileBufferSize)
+          partitionStreams(key) = partKey
         }
       } finally {
         WriteUnlock(_reent_lock) // release write lock
       }
     }
 
-    try {
-      return partitionStreams(key)
-    } finally {
-      ReadUnlock(_reent_lock)
-    }
+    return partKey
   }
 
   private def flushPartitionFile(file: PartitionFile) = {
