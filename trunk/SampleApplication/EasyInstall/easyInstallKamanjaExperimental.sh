@@ -178,10 +178,6 @@ mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications/template
 
 kamanjaui=$installPath/Kamanja-$ver210/KamanjaUI
 kamanjainstallbin=$installPath/Kamanja-$ver210/ClusterInstall
-#kamanjainstallbin=$installPath/KamanjaInstall-$ver210/bin
-#kamanjainstallsystemlib=$installPath/KamanjaInstall-$ver210/lib/system
-#kamanjainstallapplib=$installPath/KamanjaInstall-$ver210/lib/application
-#kamanjainstallconfig=$installPath/KamanjaInstall-$ver210/config
 kamanjainstallconfig=$installPath/Kamanja-$ver210/ClusterInstall
 if [ "$build210" == "1" ]; then #beginning of the 2.10 build
 
@@ -244,14 +240,12 @@ cp Utils/ClusterInstaller/InstallDriver/target/scala-2.10/InstallDriver* $kamanj
 cp Utils/ClusterInstaller/GetComponent/target/scala-2.10/GetComponent* $kamanjainstallbin
 cp Utils/ClusterInstaller/InstallDriver/src/main/resources/GetComponentsVersions.sh $kamanjainstallbin
 cp Utils/PmmlTestTool/target/pmmltesttool* $systemlib
-#cp Utils/Migrate/MigrateManager/target/MigrateManager* $bin
 cp Utils/JsonChecker/target/scala-2.10/jsonchecker* $systemlib
 cp Utils/QueryGenerator/target/scala-2.10/querygenerator* $systemlib
 cp Utils/GenerateMessage/target/scala-2.10/generatemessage* $systemlib
 cp $ivyPath/cache/org.apache.commons/commons-pool2/jars/commons-pool2-2.4.2.jar $systemlib
 
 # copy fat jars to KamanjaInstall
-#cp Utils/Migrate/MigrateManager/target/MigrateManager* $kamanjainstallbin
 cp $srcPath/Utils/NodeInfoExtract/target/scala-2.10/nodeinfoextract* $systemlib
 
 # copy jars used to reduce package size
@@ -330,6 +324,12 @@ cp -rf * $installPath/Kamanja-$ver210/documentation
 # cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.10/* $installPath/Kamanja-$ver210/ClusterInstall/
 # cp $srcPath/Utils/NodeInfoExtract/target/scala-2.10/NodeInfoExtract* $installPath/Kamanja-$ver210/ClusterInstall/
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.10/*.sh $kamanjainstallbin
+
+#Moving StartKamanjaCluster.sh, StatusKamanjaCluster.sh & StopKamanjaCluster.sh to bin
+mv $kamanjainstallbin/StartKamanjaCluster.sh $bin
+mv $kamanjainstallbin/StatusKamanjaCluster.sh $bin
+mv $kamanjainstallbin/StopKamanjaCluster.sh $bin
+
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.10/*log4*.xml $kamanjainstallconfig
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.10/*.json $kamanjainstallconfig
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.10/*.properties $kamanjainstallconfig
@@ -490,10 +490,6 @@ applib=$installPath/Kamanja-$ver211/lib/application
 
 kamanjaui=$installPath/Kamanja-$ver211/KamanjaUI
 kamanjainstallbin=$installPath/Kamanja-$ver211/ClusterInstall
-#kamanjainstallbin=$installPath/KamanjaInstall-$ver211/bin
-#kamanjainstallsystemlib=$installPath/KamanjaInstall-$ver211/lib/system
-#kamanjainstallapplib=$installPath/KamanjaInstall-$ver211/lib/application
-#kamanjainstallconfig=$installPath/KamanjaInstall-$ver211/config
 kamanjainstallconfig=$installPath/Kamanja-$ver211/ClusterInstall
 
 
@@ -617,7 +613,6 @@ cp $srcPath/Utils/ClusterInstaller/GetComponent/target/scala-2.11/*.jar $systeml
 
 #copy kamanja to bin directory
 cp $srcPath/Utils/Script/scala-2.11/kamanja $bin
-#cp $srcPath/Utils/Script/MedicalApp.sh $bin
 cp $srcPath/MetadataAPI/target/scala-2.11/classes/HelpMenu.txt $installPath/Kamanja-$ver211/input
 # *******************************
 # COPD messages data prep
@@ -639,6 +634,12 @@ cp -rf * $installPath/Kamanja-$ver211/documentation
 # cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.11/* $installPath/Kamanja-$ver211/ClusterInstall/
 # cp $srcPath/Utils/NodeInfoExtract/target/scala-2.11/NodeInfoExtract* $installPath/Kamanja-$ver211/ClusterInstall/
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.11/*.sh $kamanjainstallbin
+
+#Moving StartKamanjaCluster.sh, StatusKamanjaCluster.sh & StopKamanjaCluster.sh to bin
+mv $kamanjainstallbin/StartKamanjaCluster.sh $bin
+mv $kamanjainstallbin/StatusKamanjaCluster.sh $bin
+mv $kamanjainstallbin/StopKamanjaCluster.sh $bin
+
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.11/*log4*.xml $kamanjainstallconfig
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.11/*.json $kamanjainstallconfig
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.11/*.properties $kamanjainstallconfig
