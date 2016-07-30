@@ -90,7 +90,9 @@ public class AITUserDailyProfileSink implements BufferedMessageProcessor {
 			String groupKey = fields[2]+":"+fields[3];
 			Object[] newRecord = new Object[fields.length];
 			
-			for(int i = 0; i < fields.length; i++) {
+			newRecord[0] = new Integer(fields[0]);
+			newRecord[1] = new Long(fields[1]);
+			for(int i = 2; i < fields.length; i++) {
 				if(checkIfExists(sumFields, i))
 					newRecord[i] = new Long(fields[i]);
 				else
@@ -134,10 +136,7 @@ public class AITUserDailyProfileSink implements BufferedMessageProcessor {
 
 			       	ContainerInterface counters = writer.GetContainerInterface(collectionContainerNames[1]);
 			       	for(int i = 5; i < fields.length; i++) {
-						if(fields[i] instanceof String)
-							counters.set(fieldNames[i], fields[i]);
-						else
-							counters.set(fieldNames[i], fields[i].toString());
+						counters.set(fieldNames[i], fields[i]);
 					}
 			       	profileRec.set(collectionFieldNames[1], counters);
 			       	uaList.add(profileRec);
