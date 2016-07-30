@@ -481,6 +481,7 @@ object ModelUtils {
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"Unknown Outmessage ${optMsgProduced.get.toLowerCase} error = ${ErrorCodeConstants.Add_Model_Failed}")
         return apiResult.toString
       } else {
+        logger.warn("optMsgProduced.get.toLowerCase "+optMsgProduced.get.toLowerCase);
         if (modelType == ModelType.KPMML && !MessageAndContainerUtils.IsMappedMessage(msg)) {
           logger.info("outputmsg " + optMsgProduced.get.toLowerCase + " not a mapped message ");
 
@@ -798,7 +799,8 @@ object ModelUtils {
         MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, srcText, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
 
         // save the outMessage
-        AddOutMsgToModelDef(modDef, ModelType.PYTHON, optMsgProduced, userid)
+        if(modDef.outputMsgs != null && modDef.outputMsgs.size == 0)
+          AddOutMsgToModelDef(modDef, ModelType.PYTHON, optMsgProduced, userid)
 
         // save the jar file first
         PersistenceUtils.UploadJarsToDB(modDef)
