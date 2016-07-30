@@ -66,12 +66,17 @@
 
 <!-- JDBC ADD IT MANULLY // mvn -e install:install-file -e install:install-file "-Dfile=SaveContainerDataComponent-1.0.jar" "-Dpackaging=jar" "-DgroupId=com.ligadata.tools.SaveContainerDataComponent" "-DartifactId=SaveContainerDataComponent" "-Dversion=1.0" -->
 		<dependency>
-			<groupId>com.ligadata.tools.SaveContainerDataComponent</groupId>
+			<groupId>com.ligadata.kamanja</groupId>
 			<artifactId>SaveContainerDataComponent</artifactId>
-			<version>1.0</version>
+			<version>1.5.1</version>
 			<scope>provided</scope>
 		</dependency>
-
+		<dependency>
+			<groupId>com.ligadata.kamanja</groupId>
+			<artifactId>KamanjaInternalDeps</artifactId>
+			<version>1.5.1</version>
+			<scope>provided</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-dbcp2</artifactId>

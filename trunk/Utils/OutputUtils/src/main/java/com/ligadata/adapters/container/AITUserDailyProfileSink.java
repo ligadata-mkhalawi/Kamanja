@@ -6,21 +6,17 @@ import java.util.HashMap;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
-import com.ligadata.KamanjaBase.JsonData;
-import com.ligadata.KamanjaBase.MessageContainerBase;
+import com.ligadata.KamanjaBase.ContainerInterface;
 import com.ligadata.adapters.AdapterConfiguration;
 import com.ligadata.adapters.BufferedMessageProcessor;
 import com.ligadata.tools.SaveContainerDataComponent;
-
-import scala.Option;
-import scala.collection.immutable.Map;
-import scala.collection.mutable.ArrayBuffer;
 
 public class AITUserDailyProfileSink implements BufferedMessageProcessor {
 	static Logger logger = LogManager.getLogger(AITUserDailyProfileSink.class);
 
 	private HashMap<String, HashMap<String, Object[]>> buffer = new HashMap<String, HashMap<String, Object[]>>();
 	private String containerName = null;
+	private String[] collectionContainerNames;	
 	private String fieldDelimiter = ",";
 	private String[] fieldNames;	
 	private String[] collectionFieldNames;	
@@ -60,13 +56,18 @@ public class AITUserDailyProfileSink implements BufferedMessageProcessor {
 
 		String fieldNamesStr = config.getProperty(AdapterConfiguration.MESSAGE_FIELD_NAMES);
 		if(fieldNamesStr == null)
-			throw new Exception("Field namess not specified for container " + containerName);
+			throw new Exception("Field names not specified for container " + containerName);
 		fieldNames = fieldNamesStr.split(",");
 
 		String collectionFieldNamesStr = config.getProperty(AdapterConfiguration.COLLECTION_FIELD_NAMES);
 		if(collectionFieldNamesStr == null)
 			throw new Exception("Collection field names not specified for container " + containerName);
 		collectionFieldNames = collectionFieldNamesStr.split(",");
+
+		String collectionContainerNamesStr = config.getProperty(AdapterConfiguration.COLLECTION_CONTAINER_NAMES);
+		if(collectionContainerNamesStr == null)
+			throw new Exception("Collection container names not specified for container " + containerName);
+		collectionContainerNames = collectionContainerNamesStr.split(",");
 
 		String sumFieldsStr = config.getProperty(AdapterConfiguration.MESSAGE_SUM_FIELDS);
 		if(sumFieldsStr == null)
@@ -119,44 +120,38 @@ public class AITUserDailyProfileSink implements BufferedMessageProcessor {
 
 	@Override
 	public void processAll() throws Exception {
-			ArrayList<MessageContainerBase> data = new ArrayList<MessageContainerBase>();
+			ArrayList<ContainerInterface> data = new ArrayList<ContainerInterface>();
 			for( HashMap<String, Object[]> record : buffer.values()) {
-				ArrayBuffer<Map<String, Object>> uaList = new ArrayBuffer<Map<String, Object>>();
+				ArrayList<ContainerInterface> uaList = new ArrayList<ContainerInterface>();
 
 				Object[] rec = null;
 				for(Object[] fields : record.values()) {
 			       	rec = fields;
-			       	scala.collection.mutable.HashMap<String, Object> uaRec = new scala.collection.mutable.HashMap<String, Object>();
-			       	uaRec.put(fieldNames[2], fields[2]); // user
-			       	uaRec.put(fieldNames[3], fields[3]); // ait
-			       	uaRec.put(fieldNames[4], fields[4]); // jobcode
+			       	ContainerInterface profileRec = writer.GetContainerInterface(collectionContainerNames[0]);
+			       	profileRec.set(fieldNames[2], fields[2]); // user
+			       	profileRec.set(fieldNames[3], fields[3]); // ait
+			       	profileRec.set(fieldNames[4], fields[4]); // jobcode
 
-			       	scala.collection.mutable.HashMap<String, Object> counters = new scala.collection.mutable.HashMap<String, Object>();
+			       	ContainerInterface counters = writer.GetContainerInterface(collectionContainerNames[1]);
 			       	for(int i = 5; i < fields.length; i++) {
 						if(fields[i] instanceof String)
-							counters.put(fieldNames[i], fields[i]);
+							counters.set(fieldNames[i], fields[i]);
 						else
-							counters.put(fieldNames[i], fields[i].toString());
+							counters.set(fieldNames[i], fields[i].toString());
 					}
-			       	uaRec.put(collectionFieldNames[1], (new scala.collection.immutable.HashMap<String, Object>()).$plus$plus(counters));
-			       	uaList.$plus$eq((new scala.collection.immutable.HashMap<String, Object>()).$plus$plus(uaRec));
+			       	profileRec.set(collectionFieldNames[1], counters);
+			       	uaList.add(profileRec);
 				}
 				
-				scala.collection.mutable.HashMap<String, Object> json = new scala.collection.mutable.HashMap<String, Object>();
-		       	json.put(fieldNames[0], rec[0]); // hashkey
-		       	json.put(fieldNames[1], rec[1]); // date
-		       	json.put(collectionFieldNames[0], uaList.toList());
-							
-				MessageContainerBase container = writer.GetMessageContainerBase(containerName);
+		       	ContainerInterface container = writer.GetContainerInterface(containerName);
+				container.set(fieldNames[0], rec[0]); // hashkey
+				container.set(fieldNames[1], rec[1]); // date
+				container.set(collectionFieldNames[0], uaList.toArray(new ContainerInterface[0]));
 						
-				JsonData jd = new JsonData("");
-		        jd.root_json_$eq(Option.apply((Object)(new scala.collection.immutable.HashMap<String, Object>()).$plus$plus(json)));
-		       	jd.cur_json_$eq(Option.apply((Object)( new scala.collection.immutable.HashMap<String, Object>()).$plus$plus(json)));
-				container.populate(jd);
 				data.add(container);
 			}
 			
-			writer.SaveMessageContainerBase(containerName, data.toArray(new MessageContainerBase[0]), true, true);
+			writer.SaveContainerInterface(containerName, data.toArray(new ContainerInterface[0]), true, true);
 	}
 
 	@Override

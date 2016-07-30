@@ -88,6 +88,7 @@ public class AdapterConfiguration {
 	public static final String MESSAGE_KEYVALUE_DELIMITER = "message.keyvalue.delimiter";
 	public static final String MESSAGE_FIELD_NAMES = "message.field.names";
 	public static final String COLLECTION_FIELD_NAMES = "collection.field.names";
+	public static final String COLLECTION_CONTAINER_NAMES = "collection.container.names";
 	public static final String MESSAGE_GROUP_BY_FIELDS = "message.groupby.fields";
 	public static final String MESSAGE_SUM_FIELDS = "message.sum.fields";
 
