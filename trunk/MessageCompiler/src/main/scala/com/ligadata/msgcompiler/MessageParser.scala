@@ -171,10 +171,8 @@ class MessageParser {
         if (MsgUtils.isTrue(MsgUtils.LowerCase(persist)))
           persistMsg = true
         log.info(message)
-        val casesensitive = message.getOrElse("casesensitive", "false").toString.toLowerCase
-        log.info("ca  " + casesensitive)
-        if (MsgUtils.isTrue(MsgUtils.LowerCase(casesensitive)))
-          caseSnstive = true
+        caseSnstive = message.getOrElse("casesensitive", "false").toString.trim.toLowerCase.toBoolean
+        log.info("isCaseSensitive:" + caseSnstive.toString)
 
         if (message.getOrElse("description", null) == null)
           Description = ""
@@ -186,7 +184,6 @@ class MessageParser {
 
         for (key: String <- message.keys) {
           if (key.equals("elements") || key.equals("fields")) {
-            log.info("caseSnstive " + caseSnstive)
             val (elmnts, msgs) = getElementsObj(message, key, caseSnstive)
             elements = elmnts
           }
@@ -663,14 +660,13 @@ class MessageParser {
           else
             timePartitionKey = timePartitionMap.get("key").get.asInstanceOf[String].toLowerCase()
 
-          println("==========" + fldList.toList)
           if (!fldList.contains(timePartitionKey))
             throw new Exception("Time Partition Key " + timePartitionKey + " should be defined as one of the fields in the message definition");
 
         } else throw new Exception("Time Partition Key should be defined in the message definition");
 
         if (timePartitionMap.contains("format") && (timePartitionMap.get("format").get.isInstanceOf[String])) {
-          timePartitionKeyFormat = timePartitionMap.get("format").get.asInstanceOf[String] //.toLowerCase()
+          timePartitionKeyFormat = timePartitionMap.get("format").get.asInstanceOf[String]
 
           if (!validateTimePartitionFormat(timePartitionKeyFormat.toLowerCase()))
             throw new Exception("Time Parition format given in message definition " + timePartitionKeyFormat + " is not a valid format");
@@ -682,7 +678,6 @@ class MessageParser {
           if (!containsIgnoreCase(timePartitionTypeList, timePartitionType))
             throw new Exception("Time Parition Type " + timePartitionType + " defined in the message definition is not a valid Type");
         } else throw new Exception("Time Partition Type should be defined in the message definition");
-
       }
     } catch {
       case e: Exception => {

@@ -77,9 +77,9 @@ public abstract class MessageContainerBase extends ContainerOrConcept {
 	final public void setTimePartitionData() {
 
 		TimePartitionInfo tmPartInfo = getTimePartitionInfo();
-		if (tmPartInfo == null)
+		if (tmPartInfo == null || tmPartInfo.getTimePartitionType() == tmPartInfo.timePartitionType.NONE ) {
 			setTimePartitionData(0);
-		else {
+		} else {
 			// Get column data and pass it
 			long timepartVal = com.ligadata.Utils.ComputeTimePartition
 					.ComputeTimePartitionData(com.ligadata.BaseTypes.StringImpl
