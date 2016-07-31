@@ -170,8 +170,9 @@ class MessageParser {
         val persist = message.getOrElse("persist", "false").toString.toLowerCase
         if (MsgUtils.isTrue(MsgUtils.LowerCase(persist)))
           persistMsg = true
-
+        log.info(message)
         val casesensitive = message.getOrElse("casesensitive", "false").toString.toLowerCase
+        log.info("ca  " + casesensitive)
         if (MsgUtils.isTrue(MsgUtils.LowerCase(casesensitive)))
           caseSnstive = true
 
@@ -185,6 +186,7 @@ class MessageParser {
 
         for (key: String <- message.keys) {
           if (key.equals("elements") || key.equals("fields")) {
+            log.info("caseSnstive " + caseSnstive)
             val (elmnts, msgs) = getElementsObj(message, key, caseSnstive)
             elements = elmnts
           }
@@ -198,7 +200,8 @@ class MessageParser {
             var partitionKeys = message.getOrElse("partitionkey", null)
             if (partitionKeys != null) {
               partitionKeysList = partitionKeys.asInstanceOf[List[String]]
-              partitionKeysList = partitionKeysList.map(p => MsgUtils.LowerCase(p))
+              if (!caseSnstive)
+                partitionKeysList = partitionKeysList.map(p => MsgUtils.LowerCase(p))
             }
           }
           if (key.equals("primarykey")) {
@@ -206,12 +209,16 @@ class MessageParser {
 
             if (primaryKeys != null) {
               primaryKeysList = primaryKeys.asInstanceOf[List[String]]
-              primaryKeysList = primaryKeysList.map(p => MsgUtils.LowerCase(p))
+              if (!caseSnstive)
+                primaryKeysList = primaryKeysList.map(p => MsgUtils.LowerCase(p))
             }
           }
           var fldList: Set[String] = Set[String]()
           if (elements != null && elements.size > 0) {
-            elements.foreach(Fld => { fldList += Fld.Name })
+            elements.foreach(Fld => {
+              log.info("Fld.Name  " + Fld.Name)
+              fldList += Fld.Name
+            })
 
             if (fldList != null && fldList.size > 0) {
               if (partitionKeysList != null && partitionKeysList.size > 0) {
@@ -225,7 +232,7 @@ class MessageParser {
               }
 
               if (message.getOrElse(timePartInfo, null) != null) {
-                timePartition = parseTimePartitionInfo(timePartInfo, message, fldList)
+                timePartition = parseTimePartitionInfo(timePartInfo, message, fldList, caseSnstive)
               }
 
             }
@@ -637,7 +644,7 @@ class MessageParser {
   /*
    * parse timepartitionInfo
    */
-  private def parseTimePartitionInfo(key: String, message: scala.collection.mutable.Map[String, Any], fldList: Set[String]): TimePartition = {
+  private def parseTimePartitionInfo(key: String, message: scala.collection.mutable.Map[String, Any], fldList: Set[String], casesensitive: Boolean): TimePartition = {
     var timePartitionKey: String = null
     var timePartitionKeyFormat: String = null
     var timePartitionType: String = null
@@ -645,25 +652,32 @@ class MessageParser {
     try {
 
       if (message.getOrElse(key, null) != null && message.get(key).get.isInstanceOf[Map[_, _]]) {
-        val timePartitionMap: sMap = message.get(key).get.asInstanceOf[sMap]
+        val timePartMap: sMap = message.get(key).get.asInstanceOf[sMap]
 
-        if (timePartitionMap.contains("Key") && (timePartitionMap.get("Key").get.isInstanceOf[String])) {
-          timePartitionKey = timePartitionMap.get("Key").get.asInstanceOf[String].toLowerCase()
+        val timePartitionMap: scala.collection.mutable.Map[String, Any] = scala.collection.mutable.Map[String, Any]()
+        timePartMap.foreach(kv => { timePartitionMap(kv._1.trim().toLowerCase()) = kv._2 })
 
+        if (timePartitionMap.contains("key") && (timePartitionMap.get("key").get.isInstanceOf[String])) {
+          if (casesensitive)
+            timePartitionKey = timePartitionMap.get("key").get.asInstanceOf[String]
+          else
+            timePartitionKey = timePartitionMap.get("key").get.asInstanceOf[String].toLowerCase()
+
+          println("==========" + fldList.toList)
           if (!fldList.contains(timePartitionKey))
             throw new Exception("Time Partition Key " + timePartitionKey + " should be defined as one of the fields in the message definition");
 
         } else throw new Exception("Time Partition Key should be defined in the message definition");
 
-        if (timePartitionMap.contains("Format") && (timePartitionMap.get("Format").get.isInstanceOf[String])) {
-          timePartitionKeyFormat = timePartitionMap.get("Format").get.asInstanceOf[String] //.toLowerCase()
+        if (timePartitionMap.contains("format") && (timePartitionMap.get("format").get.isInstanceOf[String])) {
+          timePartitionKeyFormat = timePartitionMap.get("format").get.asInstanceOf[String] //.toLowerCase()
 
           if (!validateTimePartitionFormat(timePartitionKeyFormat.toLowerCase()))
             throw new Exception("Time Parition format given in message definition " + timePartitionKeyFormat + " is not a valid format");
         } else throw new Exception("Time Partition Format should be defined in the message definition");
 
-        if (timePartitionMap.contains("Type") && (timePartitionMap.get("Type").get.isInstanceOf[String])) {
-          timePartitionType = timePartitionMap.get("Type").get.asInstanceOf[String].toLowerCase()
+        if (timePartitionMap.contains("type") && (timePartitionMap.get("type").get.isInstanceOf[String])) {
+          timePartitionType = timePartitionMap.get("type").get.asInstanceOf[String].toLowerCase()
 
           if (!containsIgnoreCase(timePartitionTypeList, timePartitionType))
             throw new Exception("Time Parition Type " + timePartitionType + " defined in the message definition is not a valid Type");
