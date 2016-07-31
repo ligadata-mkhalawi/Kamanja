@@ -55,7 +55,7 @@ case class Result(val name: String, val result: Any)
 object ModelsResults {
   def ValueString(v: Any): String = {
     if (v == null) {
-      return "null"
+      return ""
     }
     if (v.isInstanceOf[Set[_]]) {
       return v.asInstanceOf[Set[_]].mkString(",")
@@ -338,7 +338,7 @@ trait EnvContext /* extends Monitorable */  {
 
   // Final Commit for the given transaction
   // outputResults has AdapterName, PartitionKey & Message
-  def commitData(tenantId: String, txnCtxt: TransactionContext, data: Array[(String, Array[ContainerInterface])]): Unit
+  def commitData(tenantId: String, txnCtxt: TransactionContext, data: Array[(String, Array[ContainerInterface])], forceCommit: Boolean): Unit
 
   def rollbackData(): Unit
 
@@ -378,7 +378,7 @@ trait EnvContext /* extends Monitorable */  {
   // Just get the cached container key and see what are the containers we need to cache
   def cacheContainers(clusterId: String): Unit
 
-  //  def EnableEachTransactionCommit: Boolean
+  def EnableEachTransactionCommit: Boolean
 
   // Lock functions
 //  def lockKeyInCluster(key: String): Unit

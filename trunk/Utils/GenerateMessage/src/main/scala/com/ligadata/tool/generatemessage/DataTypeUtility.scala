@@ -151,4 +151,10 @@ class DataTypeUtility extends LogTrait{ // This class created to check the value
       return true
     else return false
   }
+
+  def validateMessageName(variableName: String): Boolean={
+    if(variableName.matches("^[a-zA-Z_$][a-zA-Z_$.0-9]*$") && ! variableName.charAt(0).equals('.') && !  variableName.charAt(variableName.length -1 ).equals('.') ){
+      return true
+    } else return false
+  }
 }

@@ -234,7 +234,7 @@ object KamanjaMdCfg {
     var isEntCtxt = false
     var curClz = clz
 
-    while (clz != null && isEntCtxt == false) {
+    while (curClz != null && isEntCtxt == false) {
       isEntCtxt = Utils.isDerivedFrom(curClz, "com.ligadata.KamanjaBase.EnvContext")
       if (isEntCtxt == false)
         curClz = curClz.getSuperclass()
@@ -556,7 +556,7 @@ object KamanjaMdCfg {
     var isOutputAdapter = false
     var curClz = clz
 
-    while (clz != null && isOutputAdapter == false) {
+    while (curClz != null && isOutputAdapter == false) {
       isOutputAdapter = Utils.isDerivedFrom(curClz, "com.ligadata.InputOutputAdapterInfo.OutputAdapterFactory")
       if (isOutputAdapter == false)
         curClz = curClz.getSuperclass()
@@ -671,7 +671,7 @@ object KamanjaMdCfg {
     var isInputAdapter = false
     var curClz = clz
 
-    while (clz != null && isInputAdapter == false) {
+    while (curClz != null && isInputAdapter == false) {
       isInputAdapter = Utils.isDerivedFrom(curClz, "com.ligadata.InputOutputAdapterInfo.InputAdapterFactory")
       if (isInputAdapter == false)
         curClz = curClz.getSuperclass()
