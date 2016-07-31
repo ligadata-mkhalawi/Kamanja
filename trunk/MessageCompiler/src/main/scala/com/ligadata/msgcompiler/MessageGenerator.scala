@@ -674,7 +674,7 @@ class MessageGenerator {
 
   /** isCaseSensitiveFunc function in generate message code **/
   private def isCaseSensitiveFunc(message: Message) : String = {
-    """ def isCaseSensitive(): Boolean = """ + message.Name + """.isCaseSensitive() """
+    """    def isCaseSensitive(): Boolean = """ + message.Name + """.isCaseSensitive(); """
   }
 
   /** caseSensitiveFunc function in generate message code **/

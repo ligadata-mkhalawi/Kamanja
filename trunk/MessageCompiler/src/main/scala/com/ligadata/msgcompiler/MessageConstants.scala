@@ -44,7 +44,7 @@ class MessageConstants {
   val createNewContainer = "%soverride def CreateNewContainer: %s = new %s(); %s"; //ContainerInterface = new CustAlertHistory()
   val createNewMessage = "%soverride def CreateNewMessage: %s = new %s(); %s"; //ContainerInterface = new CustAlertHistory()
   val isFixed: String = "%soverride def isFixed: Boolean = %s; %s"; //true;
-  val isCaseSensitive: String = "%sdef isCaseSensitive: Boolean = %s; %s"; //true;
+  val isCaseSensitive: String = "%sdef isCaseSensitive(): Boolean = %s; %s"; //true;
   val isKV: String = "%soverride def IsKv: Boolean = %s; %s"; //false;
   val canPersist: String = "%soverride def CanPersist: Boolean = %s; %s"; //true;
   val getFullName: String = "%soverride def getFullName = getFullTypeName; %s";
