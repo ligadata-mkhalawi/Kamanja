@@ -17,8 +17,6 @@ public interface MessageContainerObjBase extends ContainerOrConceptFactory {
 
 	public boolean isFixed();
 	
-	public boolean isCaseSensitive();
-
 	public String getAvroSchema();
 
 	public String[] getPrimaryKeyNames();

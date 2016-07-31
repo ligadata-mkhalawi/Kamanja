@@ -45,10 +45,6 @@ public abstract class MessageContainerBase extends ContainerOrConcept {
 		return getContainerFactory().isFixed();
 	}
 	
-	final public boolean isCaseSensitive() {
-		return getContainerFactory().isCaseSensitive();
-	}
-
 	final public String getAvroSchema() {
 		return getContainerFactory().getAvroSchema();
 	}
