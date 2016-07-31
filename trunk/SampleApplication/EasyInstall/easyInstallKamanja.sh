@@ -202,6 +202,7 @@ cp Utils/PmmlTestTool/target/pmmltesttool* $systemlib
 #cp Utils/Migrate/MigrateManager/target/MigrateManager* $bin
 cp Utils/JsonChecker/target/scala-2.10/jsonchecker* $systemlib
 cp Utils/QueryGenerator/target/scala-2.10/querygenerator* $systemlib
+cp Utils/OrientDBScalabilityTesting/target/scala-2.10/scalabilitysesting* $systemlib
 cp Utils/GenerateMessage/target/scala-2.10/generatemessage* $systemlib
 cp $ivyPath/cache/org.apache.commons/commons-pool2/jars/commons-pool2-2.4.2.jar $systemlib
 
@@ -510,6 +511,7 @@ cp $srcPath/Utils/NodeInfoExtract/target/scala-2.11/nodeinfoextract* $systemlib
 cp Utils/PmmlTestTool/target/pmmltesttool* $systemlib
 cp Utils/JsonChecker/target/scala-2.11/jsonchecker* $systemlib
 cp Utils/QueryGenerator/target/scala-2.11/querygenerator* $systemlib
+cp Utils/OrientDBScalabilityTesting/target/scala-2.11/scalabilitytesting* $systemlib
 cp Utils/GenerateMessage/target/scala-2.11/generatemessage* $systemlib
 cp $ivyPath/cache/org.apache.commons/commons-pool2/jars/commons-pool2-2.4.2.jar $systemlib
 
