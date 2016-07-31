@@ -6,7 +6,7 @@
 #	compressed flag (1 = compressed 0 = uncompressed)
 #	remaining args are the files to push
 
-currentKamanjaVersion=1.5.1
+currentKamanjaVersion=1.5.2
 
 if [[ $# -gt 2 ]]; then
 	topicName="$1"
