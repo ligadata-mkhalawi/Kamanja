@@ -45,7 +45,7 @@ script_dir=$(dirname "$0")
 
 scalaversion="2.11"
 name1=$1
-currentKamanjaVersion=1.5.1
+currentKamanjaVersion=1.5.2
 
 Usage()
 {

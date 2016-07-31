@@ -16,7 +16,7 @@ Usage()
 }
 
 name1=$1
-currentKamanjaVersion=1.5.1
+currentKamanjaVersion=1.5.2
 
 if [ "$#" -eq 6 ]; then
 	echo
