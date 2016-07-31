@@ -43,7 +43,7 @@ class MessageObjectGenerator {
       msgObjeGenerator = msgObjeGenerator.append(msgObjVarsGeneration(message))
       msgObjeGenerator = msgObjeGenerator.append(msgConstants.msgObjectBuildStmts)
       msgObjeGenerator = msgObjeGenerator.append(keysCodeGeneration(message))
-      msgObjeVerGenerator = msgObjeVerGenerator.append(msgObjeGenerator.toString() + convFunc._1 + ObjDeprecatedMethods(message) + msgConstants.closeBrace)      
+      msgObjeVerGenerator = msgObjeVerGenerator.append(msgObjeGenerator.toString() + convFunc._1 + ObjDeprecatedMethods(message) + msgConstants.closeBrace)
       msgObjeNonVerGenerator = msgObjeNonVerGenerator.append(msgObjeGenerator.toString() + convFunc._2 + ObjDeprecatedMethods(message) + msgConstants.closeBrace)
 
       // log.info("========== Message object End==============")
@@ -98,12 +98,18 @@ class MessageObjectGenerator {
       }
 
       var isFixed: String = ""
+      var isCaseSensitive: String = ""
       var isKV: String = ""
       if (message.Fixed.equalsIgnoreCase(msgConstants.True)) {
         isFixed = msgConstants.True
       } else if (message.Fixed.equalsIgnoreCase(msgConstants.False)) {
         isFixed = msgConstants.False
       }
+
+      if (message.CaseSensitive)
+        isCaseSensitive = msgConstants.True
+      else
+        isCaseSensitive = msgConstants.False
 
       msgObjeGenerator.append(msgConstants.template.format(msgConstants.pad1, message.Name, msgConstants.newline))
       msgObjeGenerator.append(msgConstants.fullName.format(msgConstants.pad1, message.NameSpace, message.Name, msgConstants.newline))
@@ -114,6 +120,7 @@ class MessageObjectGenerator {
       msgObjeGenerator.append(msgConstants.tenantId.format(msgConstants.pad1, message.tenantId, msgConstants.newline))
       msgObjeGenerator.append(msgConstants.createInstance.format(msgConstants.pad1, message.Name, message.Name, message.Name, msgConstants.newline))
       msgObjeGenerator.append(msgConstants.isFixed.format(msgConstants.pad1, isFixed, msgConstants.newline))
+      msgObjeGenerator.append(msgConstants.isCaseSensitive.format(msgConstants.pad1, isCaseSensitive, msgConstants.newline))
       msgObjeGenerator.append(getContainerType.format(msgConstants.pad1) + msgConstants.newline)
       msgObjeGenerator.append(msgConstants.getFullName.format(msgConstants.pad1, msgConstants.newline))
       msgObjeGenerator.append(msgConstants.getRddTenantId.format(msgConstants.pad1, msgConstants.newline))
@@ -172,6 +179,8 @@ class MessageObjectGenerator {
 
   private def getTimeParitionInfo(message: Message): String = {
     var timePartType: String = "";
+    var timePartFormat: String = ""
+    var timePartKey: String = ""
 
     if (message.timePartition != null) {
       if (message.timePartition.DType == null || message.timePartition.DType.trim() == "")
@@ -182,12 +191,16 @@ class MessageObjectGenerator {
         timePartType = "TimePartitionInfo.TimePartitionType.MONTHLY";
       if (message.timePartition.DType.equalsIgnoreCase("daily"))
         timePartType = "TimePartitionInfo.TimePartitionType.DAILY";
-
+      timePartFormat = message.timePartition.Format
+      if (message.CaseSensitive)
+        timePartKey = message.timePartition.Key
+      else
+        timePartKey = message.timePartition.Key.toLowerCase()
       return """
   override def getTimePartitionInfo: TimePartitionInfo = {
     var timePartitionInfo: TimePartitionInfo = new TimePartitionInfo();
-    timePartitionInfo.setFieldName("""" + message.timePartition.Key.toLowerCase() + """");
-    timePartitionInfo.setFormat("""" + message.timePartition.Format + """");
+    timePartitionInfo.setFieldName("""" + timePartKey + """");
+    timePartitionInfo.setFormat("""" + timePartFormat + """");
     timePartitionInfo.setTimePartitionType(""" + timePartType + """);
     return timePartitionInfo
   }

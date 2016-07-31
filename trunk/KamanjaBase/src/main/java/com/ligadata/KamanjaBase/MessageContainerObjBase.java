@@ -16,6 +16,8 @@ public interface MessageContainerObjBase extends ContainerOrConceptFactory {
 	// CONTAINER
 
 	public boolean isFixed();
+	
+	public boolean isCaseSensitive();
 
 	public String getAvroSchema();
 
@@ -37,7 +39,7 @@ public interface MessageContainerObjBase extends ContainerOrConceptFactory {
 
 	public boolean isContainer();
 
-	public boolean IsFixed();
+	public boolean IsFixed();	
 
 	public boolean CanPersist();
 

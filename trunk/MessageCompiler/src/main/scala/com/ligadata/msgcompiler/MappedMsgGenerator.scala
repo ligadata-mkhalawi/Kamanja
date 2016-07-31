@@ -714,7 +714,7 @@ class MappedMsgGenerator {
     """
      if (other.valuesMap != null) {
       other.valuesMap.foreach(vMap => {
-        val key = vMap._1.toLowerCase
+        val key = caseSensitiveKey(vMap._1)
         val attribVal = vMap._2
         val valType = attribVal.getValueType.getTypeCategory.getValue
         if (attribVal.getValue != null && attribVal.getValueType != null) {
