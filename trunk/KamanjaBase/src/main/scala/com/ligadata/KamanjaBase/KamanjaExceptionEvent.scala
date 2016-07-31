@@ -20,6 +20,7 @@ object KamanjaExceptionEvent extends RDDObject[KamanjaExceptionEvent] with Messa
   override def getTenantId: String = "System";
   override def createInstance: KamanjaExceptionEvent = new KamanjaExceptionEvent(KamanjaExceptionEvent);
   override def isFixed: Boolean = true;
+  override def isCaseSensitive: Boolean = false;
   override def getContainerType: ContainerTypes.ContainerType = ContainerTypes.ContainerType.MESSAGE
   override def getFullName = getFullTypeName;
   override def getRddTenantId = getTenantId;

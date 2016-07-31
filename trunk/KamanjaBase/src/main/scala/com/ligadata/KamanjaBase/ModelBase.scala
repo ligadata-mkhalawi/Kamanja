@@ -55,7 +55,7 @@ case class Result(val name: String, val result: Any)
 object ModelsResults {
   def ValueString(v: Any): String = {
     if (v == null) {
-      return "null"
+      return ""
     }
     if (v.isInstanceOf[Set[_]]) {
       return v.asInstanceOf[Set[_]].mkString(",")
