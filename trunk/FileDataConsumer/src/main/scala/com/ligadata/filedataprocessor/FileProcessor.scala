@@ -1409,7 +1409,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
         throw new MissingPropertyException("Missing Paramter: " + SmartFileAdapterConstants.KAFKA_BROKER, null)
       }
 
-      FileProcessor.setProperties(props, path)  
+      FileProcessor.setProperties(props, path)
       FileProcessor.startGlobalFileMonitor
 
       logger.info("SMART_FILE_CONSUMER (" + partitionId + ") Initializing Kafka loading process")
