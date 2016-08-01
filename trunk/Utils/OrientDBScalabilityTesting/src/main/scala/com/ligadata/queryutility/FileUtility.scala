@@ -17,7 +17,7 @@ import scala.io.Source._
   * Created by Yousef on 6/16/2016.
   */
 class FileUtility extends LogTrait{
-  case class databaseConfigFile(username: Option[String], password: Option[String], url: Option[String], numberOfVertices: Option[Int])
+  case class databaseConfigFile(username: Option[String], password: Option[String], url: Option[String], numberOfVertices: Option[String]/*, durationTime: Option[Double]*/)
 
   def ParseFile(filePath: String): json4s.JValue ={//This method used to parse a config file (JSON format)
     try{
@@ -78,13 +78,20 @@ class FileUtility extends LogTrait{
 
     if(configInfo.numberOfVertices.get == None){
       logger.info("The defult value for numberOfVertices is 1000")
-      logger.info("[RESULT] - The defult value for numberOfVertices is 1000")
+      println("[RESULT] - The defult value for numberOfVertices is 1000")
       configBeanObj.numberOfVertices_=(1000)
     } else {
-      configBeanObj.numberOfVertices_=(configInfo.numberOfVertices.get)
+      configBeanObj.numberOfVertices_=(configInfo.numberOfVertices.get.toInt)
     }
-
-
+/*
+    if(configInfo.durationTime.get == None){
+      logger.info("The default value for durationTime is 5 min (300 sec)")
+      println("The default value for durationTime is 5 min (300 sec)")
+      configBeanObj.durationTime_=(300)
+    } else {
+      configBeanObj.durationTime_=(configInfo.durationTime.get)
+    }
+*/
     return configBeanObj
   }
 

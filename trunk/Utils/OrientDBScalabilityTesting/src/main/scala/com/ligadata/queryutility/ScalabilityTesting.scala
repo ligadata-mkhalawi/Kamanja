@@ -16,20 +16,10 @@
 
 package com.ligadata.scalabilityutility
 
-import java.util.Properties
 
-import com.ligadata.MetadataAPI.MetadataAPIImpl
-import com.ligadata.Utils.{KamanjaLoaderInfo, Utils}
-import com.ligadata.kamanja.metadata.MdMgr._
-import com.ligadata.kamanja.metadata._
 import org.apache.logging.log4j._
 import java.sql.Connection
-
-import org.json4s.DefaultFormats
-import org.json4s.native.JsonMethods._
 import shapeless.option
-
-import scala.collection.mutable.ArrayBuffer
 
 trait LogTrait {
   val loggerName = this.getClass.getName()
@@ -65,10 +55,10 @@ Usage:  bash $KAMANJA_HOME/bin/ScalabilityTesting.sh --databaseconfig $KAMANJA_H
 
   override def main(args: Array[String]) {
 
-    logger.debug("QueryGenerator.main begins")
+    logger.debug("ScalabilityTesting.main begins")
 
     if (args.length == 0) {
-      logger.error("Pleasedatabase config file after --databaseconfig")
+      logger.error("Please pass database config file after --databaseconfig")
       logger.warn(usage)
       sys.exit(1)
     }
@@ -90,8 +80,7 @@ Usage:  bash $KAMANJA_HOME/bin/ScalabilityTesting.sh --databaseconfig $KAMANJA_H
 
     val databasefileContent = fileObj.ReadFile(databaseConfig)
 
-    if (databasefileContent == null || databasefileContent.size == 0) {
-      // check if config file includes data
+    if (databasefileContent == null || databasefileContent.size == 0) {// check if config file includes data
       logger.error("This file %s does not include data. Check your file please.".format(databaseConfig))
       logger.warn(usage)
       sys.exit(1)
@@ -112,88 +101,61 @@ Usage:  bash $KAMANJA_HOME/bin/ScalabilityTesting.sh --databaseconfig $KAMANJA_H
     *  2- add missing classes to GraphDB
      */
 
-    val verticesClassesName = Array("testvertex")
-    val edgesClassesName = Array("testedge")
-
     if (recreateFlag) {
-      var idx = edgesClassesName.size - 1
-      while (idx >= 0) {
-        val classnm = edgesClassesName(idx)
-        idx = idx - 1
-        var commandsta = "delete edge " + classnm
-        queryObj.executeQuery(conn, commandsta)
-        logger.debug(commandsta)
-        println(commandsta)
-        commandsta = "drop class " + classnm
-        queryObj.executeQuery(conn, commandsta)
-        logger.debug(commandsta)
-        println(commandsta)
-      }
-
-      idx = verticesClassesName.size - 1
-      while (idx >= 0) {
-        val classnm = verticesClassesName(idx)
-        idx = idx - 1
-        var commandsta = "delete vertex " + classnm
-        queryObj.executeQuery(conn, commandsta)
-        logger.debug(commandsta)
-        println(commandsta)
-        commandsta = "drop class " + classnm
-        queryObj.executeQuery(conn, commandsta)
-        logger.debug(commandsta)
-        println(commandsta)
-      }
+      var commandsta = "delete edge " + "testedge"
+      queryObj.executeQuery(conn, commandsta)
+      logger.debug(commandsta)
+      println(commandsta)
+      commandsta = "drop class " + "testedge"
+      queryObj.executeQuery(conn, commandsta)
+      logger.debug(commandsta)
+      println(commandsta)
+      commandsta = "delete vertex " + "testvertex"
+      queryObj.executeQuery(conn, commandsta)
+      logger.debug(commandsta)
+      println(commandsta)
+      commandsta = "drop class " + "testvertex"
+      queryObj.executeQuery(conn, commandsta)
+      logger.debug(commandsta)
+      println(commandsta)
     }
 
+    var className = "testvertex"
     var dataQuery = queryObj.getAllExistDataQuery(elementType = "class", extendClass = option("V"))
     var data = queryObj.getAllClasses(conn, dataQuery)
-    var extendsClass = "testvertex"
-
-    for (className <- verticesClassesName) {
-      // if (!data.contains(className)) {
-      if (className.equalsIgnoreCase("testvertex")) extendsClass = "V" else extendsClass = "testvertex"
-      val createClassQuery = queryObj.createQuery(elementType = "class", className = className, setQuery = "", extendsClass = Option(extendsClass))
-      val existFlag = queryObj.createclassInDB(conn, createClassQuery)
-      if (existFlag == false) {
-        logger.debug(createClassQuery)
-        println(createClassQuery)
-        if (className.equalsIgnoreCase("testvertex")) {
-          val propertyList = queryObj.getAllProperty("testvertex")
-          for (prop <- propertyList) {
-            queryObj.executeQuery(conn, prop)
-            logger.debug(prop)
-            println(prop)
-          }
+    var createClassQuery = queryObj.createQuery(elementType = "class", className = className , setQuery = "", extendsClass = Option("V"))
+    var existFlag = queryObj.createclassInDB(conn, createClassQuery)
+    if (existFlag == false) {
+      logger.debug(createClassQuery)
+      println(createClassQuery)
+      val propertyList = queryObj.getAllProperty(className)
+      for (prop <- propertyList) {
+        queryObj.executeQuery(conn, prop)
+        logger.debug(prop)
+        println(prop)
         }
-      } else {
-        logger.debug("The %s class exsists".format(className))
-        println("The %s class exsists".format(className))
-      }
+    } else {
+      logger.debug("The %s class exsists".format(className))
+      println("The %s class exsists".format(className))
     }
 
+    className = "testedge"
     dataQuery = queryObj.getAllExistDataQuery(elementType = "class", extendClass = option("E"))
     data = queryObj.getAllClasses(conn, dataQuery)
-
-    extendsClass = "testedge"
-    for (className <- edgesClassesName) {
-      if (className.equalsIgnoreCase("testedge")) extendsClass = "E" else extendsClass = "testedge"
-      val createClassQuery = queryObj.createQuery(elementType = "class", className = className, setQuery = "", extendsClass = Option(extendsClass))
-      val existFlag = queryObj.createclassInDB(conn, createClassQuery)
-      if (existFlag == false) {
-        logger.debug(createClassQuery)
-        println(createClassQuery)
-        if (className.equalsIgnoreCase("testedge")) {
-          val propertyList = queryObj.getAllProperty("testedge")
-          for (prop <- propertyList) {
-            queryObj.executeQuery(conn, prop)
-            logger.debug(prop)
-            println(prop)
-          }
+    createClassQuery = queryObj.createQuery(elementType = "class", className = className, setQuery = "", extendsClass = Option("E"))
+    existFlag = queryObj.createclassInDB(conn, createClassQuery)
+    if (existFlag == false) {
+      logger.debug(createClassQuery)
+      println(createClassQuery)
+      val propertyList = queryObj.getAllProperty(className)
+      for (prop <- propertyList) {
+        queryObj.executeQuery(conn, prop)
+        logger.debug(prop)
+        println(prop)
         }
-      } else {
-        logger.debug("The %s class exsists".format(className))
-        println("The %s class exsists".format(className))
-      }
+    } else {
+      logger.debug("The %s class exsists".format(className))
+      println("The %s class exsists".format(className))
     }
 
     /* Step 2

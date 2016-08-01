@@ -81,23 +81,18 @@ class QueryBuilder extends LogTrait {
   }
 
   def getAllVertices(conn: Connection, query: String): Map[String, String] ={
-//    val dataByRid = scala.collection.mutable.Map[String, String]()
     val dataByTypAndFullName = scala.collection.mutable.Map[String, String]()
     val stmt: Statement = conn.createStatement()
     val result: ResultSet = stmt.executeQuery(query)
     var json: json4s.JValue = null
     while (result.next()){
-      //data +=  (result.getString(1) -> result.getString(2))
       json = parse(result.getString("jsonrec"))
       val adapCfgValues = json.values.asInstanceOf[Map[String, Any]]
-      //data +=  (result.getString("id") -> result.getString("FullName"))
       val rid = adapCfgValues.get("@rid").get.toString
       val cls = adapCfgValues.get("@class").get.toString
       val fullName = adapCfgValues.get("FullName").get.toString
-//      dataByRid += (rid -> fullName)
       dataByTypAndFullName += ((cls + "," + fullName).toLowerCase -> rid)
     }
-//    return (dataByRid.toMap, dataByTypAndFullName.toMap)
     return dataByTypAndFullName.toMap
   }
 
@@ -179,17 +174,6 @@ class QueryBuilder extends LogTrait {
       logger.debug("There are no %s in metadata".format(elementType))
       println("There are no %s in metadata".format(elementType))
     }
-  }
-
-  def isCotnainer(name: String, cont: scala.collection.immutable.Set[ContainerDef]): Boolean ={
-    if (!cont.isEmpty){
-      for (container <- cont){
-        if(container.FullName.equalsIgnoreCase(name)){
-          return true
-        }
-      }
-    }
-    return false
   }
 
 }

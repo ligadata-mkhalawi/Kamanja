@@ -10,12 +10,14 @@ class ConfigBean {
   private var _url = ""
   private var _numberOfVertices: Int = 0
   private var _numberOfEdges: Int= 0
+  private var _durationTime: Double = 0
   // Getter
   def username = _username
   def password = _password
   def url = _url
   def numberOfVertices = _numberOfVertices
   def numberOfEdges = _numberOfEdges
+  def duratrionTime = _durationTime
 
   // Setter
   def username_= (value:String):Unit = _username = value
@@ -23,4 +25,5 @@ class ConfigBean {
   def url_= (value:String):Unit = _url = value
   def numberOfVertices_= (value:Int):Unit = _numberOfVertices = value
   def numberOfEdges_= (value:Int):Unit = _numberOfEdges = value
+  def durationTime_= (value:Double):Unit = _durationTime
 }
