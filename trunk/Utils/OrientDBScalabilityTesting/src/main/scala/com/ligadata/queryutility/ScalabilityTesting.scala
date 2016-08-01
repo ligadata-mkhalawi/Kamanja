@@ -214,18 +214,18 @@ Usage:  bash $KAMANJA_HOME/bin/ScalabilityTesting.sh --databaseconfig $KAMANJA_H
           logger.debug("The edge exist between this two nodes %s , %s".format(fromVertexId, toVertexId))
           println("The edge exist between this two nodes %s, %s".format(fromVertexId, toVertexId))
         }
-        linkKey = toVertexId + "," + fromVertexId  + ",share"
-        currentEdgesSet += linkKey.toLowerCase
-        if (!edgeData.contains(linkKey.toLowerCase) && fromVertexId != null && toVertexId != null) {
-          val setQuery = "set Name = \"share\""
-          val query: String = queryObj.createQuery(elementType = "edge", className = "testedge", setQuery = setQuery, linkTo = Option(fromVertexId), linkFrom = Option(toVertexId))
-          queryObj.executeQuery(conn, query)
-          logger.debug(query)
-          println(query)
-        } else if(fromVertexId != null && toVertexId != null){
-          logger.debug("The edge exist between this two nodes %s , %s".format(fromVertexId, toVertexId))
-          println("The edge exist between this two nodes %s, %s".format(fromVertexId, toVertexId))
-        }
+//        linkKey = toVertexId + "," + fromVertexId  + ",share"
+//        currentEdgesSet += linkKey.toLowerCase
+//        if (!edgeData.contains(linkKey.toLowerCase) && fromVertexId != null && toVertexId != null) {
+//          val setQuery = "set Name = \"share\""
+//          val query: String = queryObj.createQuery(elementType = "edge", className = "testedge", setQuery = setQuery, linkTo = Option(fromVertexId), linkFrom = Option(toVertexId))
+//          queryObj.executeQuery(conn, query)
+//          logger.debug(query)
+//          println(query)
+//        } else if(fromVertexId != null && toVertexId != null){
+//          logger.debug("The edge exist between this two nodes %s , %s".format(fromVertexId, toVertexId))
+//          println("The edge exist between this two nodes %s, %s".format(fromVertexId, toVertexId))
+//        }
       }
     }
     // Invalid Edges (Which are removed from previous run)
