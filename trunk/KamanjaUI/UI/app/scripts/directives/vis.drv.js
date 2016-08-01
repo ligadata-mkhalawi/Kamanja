@@ -132,7 +132,9 @@ angular
             _.each(messageObj.ModelCounter, function(model){
               var node = _.find(data.nodes._data, {ID: model.Id});
               if(node){
-                node.number = model.In;
+                data.nodes.update([{id: node.id, number: model.In}]);
+                //node.update({number: model.In});
+                //node.number = model.In;
               }
             });
           }
