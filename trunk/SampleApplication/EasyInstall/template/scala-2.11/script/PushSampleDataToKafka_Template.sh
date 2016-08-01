@@ -42,7 +42,7 @@ fi
 
 echo "User selected: $INPUTFILE"
 
-currentKamanjaVersion=1.5.1
+currentKamanjaVersion=1.5.2
 
 java  $JAAS_CLIENT_OPT $KERBEROS_CONFIG_OPT -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-${currentKamanjaVersion}.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-${currentKamanjaVersion}.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-${currentKamanjaVersion}.jar:$KAMANJA_HOME/lib/system/simplekafkaproducer_2.11-${currentKamanjaVersion}.jar com.ligadata.tools.SimpleKafkaProducer --gz true --topics "testin_1" --threads 1 --topicpartitions 8 --brokerlist "$kafkahostname" --files $INPUTFILE   --partitionkeyidxs "1" --format CSV $SECURITY_PROP_OPT
 

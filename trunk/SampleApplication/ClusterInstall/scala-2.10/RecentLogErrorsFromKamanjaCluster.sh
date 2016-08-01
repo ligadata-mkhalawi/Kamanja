@@ -113,7 +113,7 @@ ipPathPairFile="ipPath.txt"
 ipIdCfgTargPathQuartetFileName="ipIdCfgTarg.txt"
 installDir=`cat $metadataAPIConfig | grep '[Rr][Oo][Oo][Tt]_[Dd][Ii][Rr]' | sed 's/.*=\(.*\)$/\1/g' | sed 's/[\x01-\x1F\x7F]//g'`
 
-currentKamanjaVersion=1.5.1
+currentKamanjaVersion=1.5.2
 
 echo "...extract node information for the cluster to be started from the Metadata configuration information supplied"
 

@@ -144,6 +144,10 @@ object FileProcessor {
     if (FileProcessor.randomFailureThreshHold > bigCheck) throw new Exception(thisCause + " (" + bigCheck + "/" + FileProcessor.randomFailureThreshHold + ")")
   }
 
+  def shutdownInputWatchers: Unit = {
+    isMontoringDirectories = false
+  }
+
   def executeCallWithElapsed[A](f: => A, reasonToTrace: String): (A) = {
     val startTS: Long = System.nanoTime()
     if (logger.isTraceEnabled) logger.trace(reasonToTrace + " start call: " + startTS)
@@ -990,6 +994,7 @@ object FileProcessor {
                     Thread.sleep(refreshRate/3)
                   } catch {
                     case e: InterruptedException => {
+                      isMontoringDirectories = false
                       logger.error("Reading of " + directorToWatch + " has been interrupted")
                       throw e
                     }
@@ -997,9 +1002,10 @@ object FileProcessor {
                   isfileProcessorBusy = if (FileProcessor.getFileQSize < FILE_Q_FULL_CONDITION) false else true
                 }
 
-                executeCallWithElapsed(processExistingFiles(directorToWatch.toFile()), "Quering directory " + directorToWatch.toFile())
+                if (isMontoringDirectories) executeCallWithElapsed(processExistingFiles(directorToWatch.toFile()), "Quering directory " + directorToWatch.toFile())
                 errorWaitTime = 1000
               } catch {
+                case ie: InterruptedException =>
                 case e: Exception => {
                   logger.warn("Unable to access Directory, Retrying after " + errorWaitTime + " seconds", e)
                   Thread.sleep(errorWaitTime)
@@ -1011,7 +1017,15 @@ object FileProcessor {
                   errorWaitTime = scala.math.min((errorWaitTime * 2), FileProcessor.MAX_WAIT_TIME)
                 }
               }
-              Thread.sleep(refreshRate)
+              try {
+                if (isMontoringDirectories) Thread.sleep(refreshRate)
+              } catch {
+                case e: InterruptedException => {
+                  isMontoringDirectories = false
+                  logger.error("Reading of " + directorToWatch + " has been interrupted")
+                  throw e
+                }
+              }
             }
           }
         })
@@ -1020,14 +1034,30 @@ object FileProcessor {
       // Suspend and wait for the shutdown
       while (isMontoringDirectories) Thread.sleep(refreshRate)
 
+      // On the way out...  clean up.
+      fileDirectoryWatchers.shutdownNow()
+      if (zkc != null)
+        zkc.close
+
     }  catch {
       case ie: InterruptedException => {
         isMontoringDirectories = false
         logger.error("Shutting down due to InterruptedException: " + ie)
-        fileDirectoryWatchers.shutdownNow() }
-      case ioe: IOException         => logger.error("Unable to find the directory to watch, Shutting down File Consumer", ioe)
-      case e: Exception             => logger.error("Exception: ", e)
-      case e: Throwable => logger.error("Throwable: ", e)
+        fileDirectoryWatchers.shutdownNow()
+        globalFileMonitorService.shutdownNow()
+      }
+      case e: Exception             => {
+        logger.error("Shutting down due to Exception: ", e)
+        isMontoringDirectories = false
+        fileDirectoryWatchers.shutdownNow()
+        globalFileMonitorService.shutdownNow()
+      }
+      case e: Throwable => {
+        logger.error("Shutting down due to Throwable: ", e)
+        isMontoringDirectories = false
+        fileDirectoryWatchers.shutdownNow()
+        globalFileMonitorService.shutdownNow()
+      }
     }
   }
 
@@ -2035,8 +2065,10 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
    *
    */
   private def shutdown: Unit = {
+    FileProcessor.shutdownInputWatchers
     isConsuming = false
     isProducing = false
+
     if (fileConsumers != null) {
       fileConsumers.shutdown()
     }

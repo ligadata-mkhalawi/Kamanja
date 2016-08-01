@@ -45,7 +45,7 @@ script_dir=$(dirname "$0")
 
 scalaversion="2.11"
 name1=$1
-currentKamanjaVersion=1.5.1
+currentKamanjaVersion=1.5.2
 
 Usage()
 {
@@ -650,6 +650,8 @@ while read LINE; do
 		echo "...copying $workDir/MetadataAPIConfig_${id}.properties to $machine:$targetPath/MetadataAPIConfig.properties"
 		scp -o StrictHostKeyChecking=no "$workDir/MetadataAPIConfig_${id}.properties" "$machine:$targetPath/MetadataAPIConfig.properties"
 	fi
+        echo "...copying $workDir/node${id}.cfg to $machine:$targetPath/Engine1Config.properties"
+        scp -o StrictHostKeyChecking=no "$workDir/node${id}.cfg" "$machine:$targetPath/Engine1Config.properties"
 done
 exec 0<&12 12<&-
 

@@ -19,7 +19,7 @@ Usage()
 
 scalaVersion="2.11"
 name1=$1
-currentKamanjaVersion=1.5.1
+currentKamanjaVersion=1.5.2
 
 if [[ "$#" -eq 4 || "$#" -eq 6 ]]; then
 	echo

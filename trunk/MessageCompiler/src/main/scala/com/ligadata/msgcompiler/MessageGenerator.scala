@@ -63,6 +63,7 @@ class MessageGenerator {
         messageGenerator = messageGenerator.append(mappedMsgGen.getFromFuncFixed(message, mdMgr))
       }
       messageGenerator = messageGenerator.append(msgConstants.generateWithMethods(message))
+      messageGenerator = messageGenerator.append(isCaseSensitiveFunc(message));
       messageGenerator = messageGenerator.append(caseSensitiveFunc(message))
       messageGenerator = messageGenerator.append(messageContructor(message))
       messageGenerator = messageGenerator.append(msgConstants.newline + msgConstants.closeBrace);
@@ -671,21 +672,26 @@ class MessageGenerator {
 """
   }
 
+  /** isCaseSensitiveFunc function in generate message code **/
+  private def isCaseSensitiveFunc(message: Message) : String = {
+    """    def isCaseSensitive(): Boolean = """ + message.Name + """.isCaseSensitive(); """
+  }
+
   /** caseSensitiveFunc function in generate message code **/
-  
+
   private def caseSensitiveFunc(message: Message) : String = {
-    var caseSentivie: String = ""
     """
     def caseSensitiveKey(keyName: String): String = {
       if(isCaseSensitive)
         return keyName;
-      else return keyName.toLowerCase;     
+      else return keyName.toLowerCase;
     }
-      
-      
-   """
-    
+
+
+    """
+
   }
+
   /*
    * some overridable methods from MessageInterface
    */
