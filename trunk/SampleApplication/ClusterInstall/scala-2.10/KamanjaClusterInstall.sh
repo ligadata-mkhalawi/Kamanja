@@ -588,7 +588,6 @@ while read LINE; do
     echo "NodeInfo = $machine, $id, $cfgFile, $targetPath, $roles"
     echo "...copying $cfgFile for nodeId $id to $machine:$targetPath"
     scp -o StrictHostKeyChecking=no "$cfgFile" "$machine:$targetPath/"
-    scp -o StrictHostKeyChecking=no "$cfgFile" "$machine:$targetPath/Engine1Config.properties"
 
     # Engine Logfile. For now all nodes log files are same. May be later we can change.
     sed "s/{InstallPath}/$installDir_repl/g;s/{NodeId}/$id/g" $script_dir/engine_log4j2_template.xml > $workDir/engine_log4j2.xml
@@ -651,6 +650,8 @@ while read LINE; do
 		echo "...copying $workDir/MetadataAPIConfig_${id}.properties to $machine:$targetPath/MetadataAPIConfig.properties"
 		scp -o StrictHostKeyChecking=no "$workDir/MetadataAPIConfig_${id}.properties" "$machine:$targetPath/MetadataAPIConfig.properties"
 	fi
+        echo "...copying $workDir/node${id}.cfg to $machine:$targetPath/Engine1Config.properties"
+        scp -o StrictHostKeyChecking=no "$workDir/node${id}.cfg" "$machine:$targetPath/Engine1Config.properties"
 done
 exec 0<&12 12<&-
 
