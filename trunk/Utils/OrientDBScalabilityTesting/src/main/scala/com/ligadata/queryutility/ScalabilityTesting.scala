@@ -197,7 +197,7 @@ Usage:  bash $KAMANJA_HOME/bin/ScalabilityTesting.sh --databaseconfig $KAMANJA_H
     queryObj.PrintAllResult(edgeData, "Edges")
 
     for (item <- 1 to configBeanObj.numberOfVertices) {
-      for(index <- 1 to 5) {
+      for(index <- 1 to configBeanObj.numberOfEdges) {
         val fromVer = ("testvertex," + "v" + item).toLowerCase
         val toVer = ("testvertex," + "v" + (item+index)).toLowerCase
         val fromVertexId = verticesNewByTypAndFullName.getOrElse(fromVer, null)
@@ -210,7 +210,7 @@ Usage:  bash $KAMANJA_HOME/bin/ScalabilityTesting.sh --databaseconfig $KAMANJA_H
           queryObj.executeQuery(conn, query)
           logger.debug(query)
           println(query)
-        } else {
+        } else if(fromVertexId != null && toVertexId != null){
           logger.debug("The edge exist between this two nodes %s , %s".format(fromVertexId, toVertexId))
           println("The edge exist between this two nodes %s, %s".format(fromVertexId, toVertexId))
         }
@@ -222,7 +222,7 @@ Usage:  bash $KAMANJA_HOME/bin/ScalabilityTesting.sh --databaseconfig $KAMANJA_H
           queryObj.executeQuery(conn, query)
           logger.debug(query)
           println(query)
-        } else {
+        } else if(fromVertexId != null && toVertexId != null){
           logger.debug("The edge exist between this two nodes %s , %s".format(fromVertexId, toVertexId))
           println("The edge exist between this two nodes %s, %s".format(fromVertexId, toVertexId))
         }

@@ -17,7 +17,7 @@ import scala.io.Source._
   * Created by Yousef on 6/16/2016.
   */
 class FileUtility extends LogTrait{
-  case class databaseConfigFile(username: Option[String], password: Option[String], url: Option[String], numberOfVertices: Option[String]/*, durationTime: Option[Double]*/)
+  case class databaseConfigFile(username: Option[String], password: Option[String], url: Option[String], numberOfVertices: Option[String], numberOfEdges: Option[String]/*, durationTime: Option[Double]*/)
 
   def ParseFile(filePath: String): json4s.JValue ={//This method used to parse a config file (JSON format)
     try{
@@ -82,6 +82,14 @@ class FileUtility extends LogTrait{
       configBeanObj.numberOfVertices_=(1000)
     } else {
       configBeanObj.numberOfVertices_=(configInfo.numberOfVertices.get.toInt)
+    }
+
+    if(configInfo.numberOfEdges.get == None){
+      logger.info("The defult value for numberOfEdges is 5")
+      println("[RESULT] - The defult value for numberOfEdges is 5")
+      configBeanObj.numberOfEdges_=(5)
+    } else {
+      configBeanObj.numberOfEdges_=(configInfo.numberOfEdges.get.toInt)
     }
 /*
     if(configInfo.durationTime.get == None){
