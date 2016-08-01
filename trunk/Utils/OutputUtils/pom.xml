@@ -18,20 +18,17 @@
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-api</artifactId>
 			<version>2.4.1</version>
-			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-core</artifactId>
 			<version>2.4.1</version>
-			<scope>provided</scope>
 		</dependency>
 		<!-- Kafka Consumer -->
 		<dependency>
 			<groupId>org.apache.kafka</groupId>
 			<artifactId>kafka-clients</artifactId>
 			<version>0.9.0.1</version>
-			<scope>provided</scope>
 			<exclusions>
 				<exclusion>
 					<artifactId>jmxri</artifactId>
@@ -53,7 +50,6 @@
 			<groupId>com.googlecode.json-simple</groupId>
 			<artifactId>json-simple</artifactId>
 			<version>1.1</version>
-			<scope>provided</scope>
 		</dependency>
 
 		<!-- JDBC ADD IT MANULLY // mvn -e install:install-file "-Dfile=sqljdbc41.jar" "-Dpackaging=jar" "-DgroupId=com.microsoft.sqlserver" "-DartifactId=sqljdbc4" "-Dversion=4.0" -->
@@ -81,7 +77,6 @@
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-dbcp2</artifactId>
 			<version>2.1.1</version>
-			<scope>provided</scope>
 		</dependency>
 
 		<!-- JUNIT TESTING -->
@@ -109,25 +104,21 @@
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-hdfs</artifactId>
 			<version>2.6.0</version>
-			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-auth</artifactId>
 			<version>2.6.0</version>
-			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-common</artifactId>
 			<version>2.6.0</version>
-			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.hadoop</groupId>
 			<artifactId>hadoop-core</artifactId>
 			<version>1.2.1</version>
-			<scope>provided</scope>
 		</dependency>
 		
 		<!-- Start For Mail Utils -->

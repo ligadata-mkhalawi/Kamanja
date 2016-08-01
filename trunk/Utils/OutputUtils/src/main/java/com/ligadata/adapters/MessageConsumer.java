@@ -137,6 +137,7 @@ public class MessageConsumer implements Runnable {
 		long messageCount = 0;
 		long nextSyncTime = System.currentTimeMillis() + syncInterval;
 		long start = System.currentTimeMillis();
+		try {
 		while (!stop) {
 			try {
 				ConsumerRecords<String, String> records = consumer.poll(pollInterval);
@@ -173,7 +174,10 @@ public class MessageConsumer implements Runnable {
 				start = System.currentTimeMillis();
 			}
 		}
-
+		} catch (Throwable e) {
+			logger.error("Error in processor: " + e.getMessage(), e);
+		}
+		
 		consumer.close();
 
 		logger.info("Shutting down after processing " + totalMessageCount + " messages with " + errorMessageCount
