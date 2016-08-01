@@ -5,14 +5,10 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.Statement
 import java.sql.ResultSet
-
-import scala.collection.mutable.HashMap
 import org.json4s._
 import org.json4s.native.JsonMethods._
-import com.ligadata.kamanja.metadata._
 import org.json4s
 
-import scala.collection.immutable.HashMap.HashMap1;
 /**
   * Created by Yousef on 6/16/2016.
   */
