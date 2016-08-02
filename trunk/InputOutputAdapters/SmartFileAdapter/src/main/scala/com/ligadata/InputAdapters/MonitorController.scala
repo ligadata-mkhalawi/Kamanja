@@ -137,8 +137,8 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
 
         val newlyAdded = ArrayBuffer[SmartFileHandler]()
 
-        //val iter = bufferingQ_map.iterator
-        bufferingQ_map.foreach(fileTuple => {
+        val iter = bufferingQ_map.iterator
+        iter.foreach(fileTuple => {
 
           //TODO C&S - changes
           var thisFileFailures: Int = fileTuple._2._3
