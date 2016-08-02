@@ -30,7 +30,7 @@ object KamanjaKafkaConsumer extends InputAdapterFactory {
   val POLLING_INTERVAL = 100
 
   // Statistics Keys
-  val ADAPTER_DESCRIPTION = "Kafka 0.10.0.0 Client"
+  val ADAPTER_DESCRIPTION = "Kafka 0.10.0.0 Consumer Client"
 
   def CreateInputAdapter(inputConfig: AdapterConfiguration, execCtxtObj: ExecContextFactory, nodeContext: NodeContext): InputAdapter = new KamanjaKafkaConsumer(inputConfig, execCtxtObj, nodeContext)
 }
@@ -160,7 +160,12 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
       if (qc.ssl_trust_manager_algorithm != null) props.put("ssl.trustmanager.algorithm", qc.ssl_trust_manager_algorithm)
     }
   }
-
+  // Add the rest of the properties.
+  qc.otherconfigs.foreach(p => {
+    if (!props.containsKey(p._1)) {
+      props.put(p._1, p._2)
+    }
+  })
 
   var isConsumerInitialized: Boolean = false
 

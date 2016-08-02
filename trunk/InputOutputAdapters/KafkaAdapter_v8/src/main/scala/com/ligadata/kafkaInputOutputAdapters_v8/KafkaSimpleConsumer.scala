@@ -50,7 +50,7 @@ object KafkaSimpleConsumer extends InputAdapterFactory {
   val HB_PERIOD = 5000
 
   // Statistics Keys
-  val ADAPTER_DESCRIPTION = "Kafka 0.8.2.2 Client"
+  val ADAPTER_DESCRIPTION = "Kafka 0.8.2.2 Consumer Client"
 
   def CreateInputAdapter(inputConfig: AdapterConfiguration, execCtxtObj: ExecContextFactory, nodeContext: NodeContext): InputAdapter = new KafkaSimpleConsumer(inputConfig, execCtxtObj, nodeContext)
 }
