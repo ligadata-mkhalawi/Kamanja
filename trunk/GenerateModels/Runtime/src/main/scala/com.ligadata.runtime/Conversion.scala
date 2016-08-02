@@ -143,11 +143,10 @@ class Conversion {
     }
   }
 
-  def ToDate(v: Any, format : String): Date = {
-    val formatDate = if(format == null || format.length ==0) None else Some(new java.text.SimpleDateFormat(format))
+  def ToDate(v: Any, format : java.text.SimpleDateFormat): Date = {
     v match {
       case null => null
-      case y: String => if(formatDate.isDefined) formatDate.get.parse(y) else Conversion.formatDate.parse(y)
+      case y: String => if(format != null) format.parse(y) else Conversion.formatDate.parse(y)
       case y: Date => y
     }
   }

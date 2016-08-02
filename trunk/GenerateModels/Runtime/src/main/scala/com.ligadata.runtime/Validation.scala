@@ -104,18 +104,8 @@ object Validation {
     valid
   }
 
-  /**
-    *
-    * @param value
-    * @param fieldType
-    * @param startRange if empty, no min condition will be checked
-    * @param endRange if empty, no max condition will be checked
-    * @param valuesPattern necessary for date/time values, if empty, default value from Conversion class is used
-    * @param fieldName
-    * @param errHandler
-    * @return
-    */
-  def isValidRange(value : String, fieldType : String, startRange : String, endRange : String, valuesPattern : String,
+
+  /*def isValidRange(value : String, fieldType : String, startRange : String, endRange : String, valuesPattern : String,
                       fieldName : String, errHandler : (String, String)=>Unit
                      ): Boolean = {
 
@@ -188,7 +178,7 @@ object Validation {
       case _ => throw new Exception("Unsupported field type " + fieldType)
     }
 
-  }
+  }*/
 
   def isValidLength(value : String, length : Int,
                     fieldName : String, errHandler : (String, String)=>Unit): Boolean = {
@@ -200,18 +190,11 @@ object Validation {
     valid
   }
 
-  def isValidDatePattern(value : String, format : String,
-                    fieldName : String, errHandler : (String, String)=>Unit): Boolean = {
-
-    //truncate the last 6 digits from nanoS
-    val parseFormat =
-      if (format.count(_ == 'S') >= 4)
-        format.substring(0, format.lastIndexOf('.') + 4)
-      else format
-
+  def isValidDatePattern(value : String, format : java.text.SimpleDateFormat,
+                         fieldName : String, errHandler : (String, String)=>Unit): Boolean = {
     val valid =
       try {
-        val parsedDate: SimpleDateFormat = new SimpleDateFormat(parseFormat)
+        format.parse(value)
         true
       }
       catch{
@@ -223,6 +206,30 @@ object Validation {
 
     valid
   }
+
+  /*def isValidDatePattern(value : String, format : String,
+                    fieldName : String, errHandler : (String, String)=>Unit): Boolean = {
+
+    //truncate the last 6 digits from nanoS
+    val parseFormat =
+      if (format.count(_ == 'S') >= 4)
+        format.substring(0, format.lastIndexOf('.') + 4)
+      else format
+
+    val valid =
+      try {
+        val parsedDate= new SimpleDateFormat(parseFormat).parse(value)
+        true
+      }
+      catch{
+        case e : Exception => false
+      }
+
+    if (!valid)
+      errHandler(fieldName, "isValidDatePattern")
+
+    valid
+  }*/
 
   def isValidNumberPattern(value : String, pattern : String,
                     fieldName : String, errHandler : (String, String)=>Unit): Boolean = {
@@ -238,7 +245,7 @@ object Validation {
     valid
   }
 
-  def isValidStringPattern(value : String, pattern : String,
+  def isValidStringPattern(value : String, pattern : scala.util.matching.Regex,
                            fieldName : String, errHandler : (String, String)=>Unit): Boolean = {
 
     val valid = isPatternMatch(value, pattern)
@@ -273,8 +280,7 @@ object Validation {
     valid
   }
 
-  def isPatternMatch(name : String, regex : String): Boolean ={
-    val pattern = regex.r
+  def isPatternMatch(name : String, pattern : scala.util.matching.Regex): Boolean ={
     val matchList = pattern.findAllIn(name).matchData.toList
     matchList.nonEmpty
   }
