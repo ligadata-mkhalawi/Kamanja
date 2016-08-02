@@ -41,7 +41,7 @@ object KafkaProducer extends OutputAdapterFactory {
   val HB_PERIOD = 5000
 
   // Statistics Keys
-  val ADAPTER_DESCRIPTION = "Kafka 0.9.0.x+ Client"
+  val ADAPTER_DESCRIPTION = "Kafka 0.9.0.1 Producer Client"
   val SEND_MESSAGE_COUNT_KEY = "Messages Sent"
   val SEND_CALL_COUNT_KEY = "Send Call Count"
   val LAST_FAILURE_TIME = "Last_Failure"
