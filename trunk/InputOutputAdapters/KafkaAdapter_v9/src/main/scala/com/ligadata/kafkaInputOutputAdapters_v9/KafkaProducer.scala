@@ -184,6 +184,12 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
     }
   }
 
+  // Add the rest of the properties.  max.outstanding.messages is a special thing ????
+  qc.otherconfigs.foreach(p => {
+    if (!props.containsKey(p._1) && !"max.outstanding.messages".equalsIgnoreCase(p._1)) {
+      props.put(p._1, p._2)
+    }
+  })
 
   val max_outstanding_messages = qc.otherconfigs.getOrElse("max.outstanding.messages", default_outstanding_messages).toString.trim().toInt
 

@@ -40,7 +40,7 @@ object KafkaProducer extends OutputAdapterFactory {
   val HB_PERIOD = 5000
 
   // Statistics Keys
-  val ADAPTER_DESCRIPTION = "Kafka 0.8.2.2 Client"
+  val ADAPTER_DESCRIPTION = "Kafka 0.8.2.2 Producer Client"
   val SEND_MESSAGE_COUNT_KEY = "Messages Sent"
   val SEND_CALL_COUNT_KEY = "Send Call Count"
   val LAST_FAILURE_TIME = "Last_Failure"
@@ -182,6 +182,13 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       if (qc.ssl_trust_manager_algorithm != null) props.put("ssl.trustmanager.algorithm", qc.ssl_trust_manager_algorithm)
     }
   }
+
+  // Add the rest of the properties.  max.outstanding.messages is a special thing ????
+  qc.otherconfigs.foreach(p => {
+    if (!props.containsKey(p._1) && !"max.outstanding.messages".equalsIgnoreCase(p._1)) {
+      props.put(p._1, p._2)
+    }
+  })
 
 
   val max_outstanding_messages = qc.otherconfigs.getOrElse("max.outstanding.messages", default_outstanding_messages).toString.trim().toInt
