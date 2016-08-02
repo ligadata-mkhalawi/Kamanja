@@ -362,12 +362,17 @@ class MdMgr {
     * @param depJars   -
     */
 
-  private def SetBaseElem(be: BaseElemDef, nameSpace: String, name: String, ver: Long, jarNm: String, depJars: Array[String], ownerId: String, tenantId: String, uniqueId: Long, mdElementId: Long): Unit = {
-    if (msgdefSystemCols.contains(name.trim.toLowerCase)) {
+  private def SetBaseElem(be: BaseElemDef, nameSpace: String, name: String, ver: Long, jarNm: String, depJars: Array[String], ownerId: String, tenantId: String, uniqueId: Long, mdElementId: Long, caseSensitive: Boolean = false): Unit = {
+    if (caseSensitive) {
       be.name = name.trim
     } else {
-      be.name = name.trim.toLowerCase
+      if (msgdefSystemCols.contains(name.trim.toLowerCase)) {
+        be.name = name.trim
+      } else {
+        be.name = name.trim.toLowerCase
+      }
     }
+
     be.nameSpace = nameSpace.trim.toLowerCase
     be.ver = ver
     // be.uniqueId = MdIdSeq.next
@@ -417,7 +422,7 @@ class MdMgr {
     if (ad.aType.DependencyJarNames != null) depJarSet ++= ad.aType.DependencyJarNames
     val dJars = if (depJarSet.size > 0) depJarSet.toArray else null
 
-    SetBaseElem(ad, nameSpace, name, ver, null, dJars, ownerId, tenantId, uniqueId, mdElementId)
+    SetBaseElem(ad, nameSpace, name, ver, null, dJars, ownerId, tenantId, uniqueId, mdElementId, true)
     if (collectionType == null) {
       ad.collectionType = tNone
     } else {
@@ -3134,9 +3139,11 @@ class MdMgr {
   def AddTenantInfo(tenant : TenantInfo) : Option[String] = {
     // Update the tenantId in this cache, but also see if there was a meaniful change
     // in the existing element - it will not need to be sent to other nodes.
+
     if (tenantIdMap.contains(tenant.tenantId.trim.toLowerCase)) {
       var isSame = tenant.equals(tenantIdMap.get(tenant.tenantId.trim.toLowerCase).get.asInstanceOf[TenantInfo])
       tenantIdMap(tenant.tenantId.trim.toLowerCase) = tenant
+      // return a None if we already have this object but it didnt change.
       if (!isSame) return Some("Update") else return None
     } else {
       tenantIdMap(tenant.tenantId.trim.toLowerCase) = tenant

@@ -802,7 +802,7 @@ object ConfigUtils {
               clusterInfoDef.nameSpace = "clusterInfo"
               clusterInfoDef.tranId = getMetadataAPI.GetNewTranId
               clusterNotifications.append(clusterInfoDef)
-              println("cic Change for " + clusterInfoDef.name )
+              logger.debug("cic Change for " + clusterInfoDef.name )
               if (addClusterResult.get.equalsIgnoreCase("add"))
                 clusterNotifyActions.append("Add")
               else
@@ -856,7 +856,7 @@ object ConfigUtils {
                   nodeDef.clusterId = ci.clusterId
                   nodeDef.elementType = "nodeDef"
                   clusterNotifications.append(nodeDef)
-                  println("node Change for " + nodeDef.name )
+                  logger.debug("node Change for " + nodeDef.name )
                   if (addNodeResult.get.equalsIgnoreCase("add"))
                     clusterNotifyActions.append("Add")
                   else
@@ -890,7 +890,7 @@ object ConfigUtils {
                   tenantDef.clusterId = ci.clusterId
                   tenantDef.elementType = "TenantDef"
                   clusterNotifications.append(tenantDef)
-                  println("tenant Change for " + tenantDef.name )
+                  logger.debug("tenant Change for " + tenantDef.name )
                   if (addTenantResult.get.equalsIgnoreCase("add"))
                     clusterNotifyActions.append("Add")
                   else
@@ -960,7 +960,7 @@ object ConfigUtils {
                   adapterDef.clusterId = ClusterId
                   adapterDef.elementType = "adapterDef"
                   clusterNotifications.append(adapterDef)
-                  println("adapter Change for " + adapterDef.name )
+                  logger.debug("adapter Change for " + adapterDef.name )
                   if (addAdapterResult.get.equalsIgnoreCase("add"))
                     clusterNotifyActions.append("Add")
                   else
@@ -994,7 +994,7 @@ object ConfigUtils {
                 upDef.elementType = "upDef"
                 clusterNotifications.append(upDef)
 
-                println("UP Change for " + upDef.clusterId )
+                logger.debug("UP Change for " + upDef.clusterId )
                 if (upAddResults.get.equalsIgnoreCase("add"))
                   clusterNotifyActions.append("Add")
                 else

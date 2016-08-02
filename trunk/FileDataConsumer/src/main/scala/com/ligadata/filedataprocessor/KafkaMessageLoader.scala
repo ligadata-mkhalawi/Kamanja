@@ -73,7 +73,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
   // Add all the new security paramterst
   val secProt = inConfiguration.getOrElse(SmartFileAdapterConstants.SEC_PROTOCOL, "plaintext").toString
   if (secProt.length > 0 &&
-       !secProt.equalsIgnoreCase("plaintext")) {
+    !secProt.equalsIgnoreCase("plaintext")) {
 
     props.put(SmartFileAdapterConstants.SEC_PROTOCOL, secProt)
 
@@ -235,6 +235,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
     // Simply creating new object and returning. Not checking for MsgContainerType. This is issue if the child level messages ask for the type
     return objInst.createInstance
   }
+
 
   override def getInstance(schemaId: Long): ContainerInterface = {
     //BUGBUG:: For now we are getting latest class. But we need to get the old one too.
@@ -482,14 +483,14 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
           if (//respFutures.contains(currentMessage) &&
               !successVector(currentMessage)) {
             // Send the request to Kafka
-            val response = producer.send(msg, new Callback {
+            val response = FileProcessor.executeCallWithElapsed(producer.send(msg, new Callback {
               override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
                 if (exception != null) {
                   failedPush += 1
                   logger.warn("SMART FILE CONSUMER ("+partIdx+") has detected a problem with pushing a message into the " +msg.topic + " will retry " +exception.getMessage)
                 }
               }
-            })
+            }), " Sending data to kafka" )
             respFutures(currentMessage) = response
           }
           currentMessage += 1
@@ -577,7 +578,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
 
       //Take care of multiple directories
       logger.info("SMART FILE CONSUMER ("+partIdx+") Moving File" + fileName + " to " + inConfiguration(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO))
-      Files.move(Paths.get(fileName), Paths.get( inConfiguration(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO) + "/" + fileStruct(fileStruct.size - 1)),REPLACE_EXISTING)
+      FileProcessor.executeCallWithElapsed(Files.move(Paths.get(fileName), Paths.get( inConfiguration(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO) + "/" + fileStruct(fileStruct.size - 1)),REPLACE_EXISTING),"Moving file " + fileName)
       
       //Use the full filename
       FileProcessor.removeFromZK(fileName)

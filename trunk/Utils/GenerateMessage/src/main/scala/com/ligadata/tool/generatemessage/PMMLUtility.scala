@@ -18,6 +18,7 @@ import org.jpmml.model.{JAXBUtil, ImportFilter}
 import org.jpmml.evaluator._
 import org.xml.sax.InputSource
 import org.xml.sax.helpers.XMLReaderFactory
+import org.jpmml.sas._
 
 class PMMLUtility extends LogTrait{
   def XMLReader(pmmlText: String): ModelEvaluator[_ <: Model]={
@@ -33,6 +34,13 @@ class PMMLUtility extends LogTrait{
     unmarshaller.setEventHandler(SimpleValidationEventHandler)
 
     val pmml: PMML = unmarshaller.unmarshal(source).asInstanceOf[PMML]
+    // 1320, 1313 Changes begin
+    if (pmml.getHeader().getApplication().getName().contains("SAS")) {
+      val visitor : Visitor  = new org.jpmml.sas.visitors.ExpressionCorrector()
+      visitor.applyTo(pmml);
+    }
+    // 1320, 1313 Changes end
+
     val modelEvaluatorFactory = ModelEvaluatorFactory.newInstance()
     val modelEvaluator = modelEvaluatorFactory.newModelManager(pmml)
 
@@ -88,33 +96,73 @@ class PMMLUtility extends LogTrait{
   def TargetFields(modelEvaluator: ModelEvaluator[_ <: Model]): scala.Array[(String,String)] ={
     val dataTypeBean: DataTypeUtility = new DataTypeUtility
     val targetFieldNames: JList[FieldName] = modelEvaluator.getTargetFields
-    val targetFields: scala.Array[Target] = {
-      targetFieldNames.asScala.filter(nm => modelEvaluator.getTarget(nm) != null).map(nm => modelEvaluator.getTarget(nm))
+    //val x = modelEvaluator.getMiningField(targetFieldNames.get(0))
+    val targetFields: scala.Array[FieldName] = {
+      targetFieldNames.asScala.map(nm => nm)
     }.toArray
-    val targetFieldContent : scala.Array[(String,String)] = if (targetFields != null && targetFields.length > 0) {
+    val targetFieldContent : scala.Array[(String,String)] = if (targetFieldNames != null && targetFieldNames.size() > 0) {
+      //for( i <- 0 until targetFieldNames.size()){
+        //println(targetFieldNames.get(i))
       targetFields.map(fld => {
-        val field : FieldName = fld.getField
+        val field : FieldName = fld
         var optype: OpType = null
         val miningField: MiningField = modelEvaluator.getMiningField(field)
         val datafield : DataField =  modelEvaluator.getDataField(field)
         if(miningField != null && miningField.getOpType != null) {
-           optype = miningField.getOpType
+          optype = miningField.getOpType
         }
         if(datafield != null && datafield.getOpType != null){
           optype = datafield.getOpType
         }
-        if(datafield.getDataType != null){
-        (datafield.getName.getValue, dataTypeBean.FindPMMLFieldType(datafield.getDataType.value))
-        } else if(optype != null){
-          if(optype.toString.trim.equalsIgnoreCase("continuous"))
-            (datafield.getName.getValue, "Double")
-          else (datafield.getName.getValue, "String")
-        } else (datafield.getName.getValue,"String")
-
+        if(datafield != null){
+          if(datafield.getDataType != null){
+            (datafield.getName.getValue, dataTypeBean.FindPMMLFieldType(datafield.getDataType.value))
+          } else if(optype != null){
+            if(optype.toString.trim.equalsIgnoreCase("continuous"))
+              (datafield.getName.getValue, "Double")
+            else (datafield.getName.getValue, "String")
+          } else (datafield.getName.getValue,"String")
+        } else {
+          (field.toString,"String")
+        }
+//        if(datafield.getDataType != null){
+//          (datafield.getName.getValue, dataTypeBean.FindPMMLFieldType(datafield.getDataType.value))
+//        } else if(optype != null){
+//          if(optype.toString.trim.equalsIgnoreCase("continuous"))
+//            (datafield.getName.getValue, "Double")
+//          else (datafield.getName.getValue, "String")
+//        } else (datafield.getName.getValue,"String")
       })
     } else {
       scala.Array[(String,String)]()
     }
+//    val targetFields: scala.Array[Target] = {
+//      targetFieldNames.asScala.filter(nm => modelEvaluator.getTarget(nm) != null).map(nm => modelEvaluator.getTarget(nm))
+//    }.toArray
+//    val targetFieldContent : scala.Array[(String,String)] = if (targetFields != null && targetFields.length > 0) {
+//      targetFields.map(fld => {
+//        val field : FieldName = fld.getField
+//        var optype: OpType = null
+//        val miningField: MiningField = modelEvaluator.getMiningField(field)
+//        val datafield : DataField =  modelEvaluator.getDataField(field)
+//        if(miningField != null && miningField.getOpType != null) {
+//           optype = miningField.getOpType
+//        }
+//        if(datafield != null && datafield.getOpType != null){
+//          optype = datafield.getOpType
+//        }
+//        if(datafield.getDataType != null){
+//        (datafield.getName.getValue, dataTypeBean.FindPMMLFieldType(datafield.getDataType.value))
+//        } else if(optype != null){
+//          if(optype.toString.trim.equalsIgnoreCase("continuous"))
+//            (datafield.getName.getValue, "Double")
+//          else (datafield.getName.getValue, "String")
+//        } else (datafield.getName.getValue,"String")
+//
+//      })
+//    } else {
+//      scala.Array[(String,String)]()
+//    }
     return targetFieldContent
   }
 
