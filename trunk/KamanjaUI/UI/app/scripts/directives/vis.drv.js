@@ -85,16 +85,21 @@ angular
         };
 
         var network = new vis.Network(container, data, options);
-
+        var linearScale = d3.scaleLinear()
+                                   .domain([0,2000])
+                                   .range([10,40])
+                                   .interpolate(d3.interpolateRound);
         var Node = function (n) {
           var imagePath = serviceConfig.classImageColorPath;
           var types = serviceConfig.classImageColorMap;
           this.id = n.id;
           this.ID = n.ID;
           this.number = n.number;
+          this.number = Math.round(Math.random() * 2000);
           this._label = n.name || '';
           this.shape = n.shape || 'image';
           this.size = n.size || 16;
+          this.size = linearScale(this.number);
           this.type = types[n['class']];
           this.image = imagePath + this.type.image + '.inactive.' + this.type.extension;
           this.active = false;

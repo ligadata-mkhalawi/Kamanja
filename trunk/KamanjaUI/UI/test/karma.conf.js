@@ -29,6 +29,7 @@ module.exports = function(config) {
       'bower_components/vis/dist/vis.js',
       'bower_components/lodash/lodash.js',
       'bower_components/angular-resource/angular-resource.js',
+      'bower_components/d3/d3.js',
       'bower_components/angular-mocks/angular-mocks.js',
       // endbower
       'app/scripts/**/*.js',

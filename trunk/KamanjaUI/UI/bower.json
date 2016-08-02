@@ -10,7 +10,8 @@
     "vis": "^4.16.1",
     "font-awesome": "^4.6.3",
     "lodash": "^4.13.1",
-    "angular-resource": "^1.5.7"
+    "angular-resource": "^1.5.7",
+    "d3": "4"
   },
   "devDependencies": {
     "angular-mocks": "^1.4.0"
