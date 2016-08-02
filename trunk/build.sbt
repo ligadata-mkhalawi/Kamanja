@@ -106,7 +106,7 @@ lazy val PmmlUdfs = project.in(file("Pmml/PmmlUdfs")).configs(TestConfigs.all: _
 lazy val MethodExtractor = project.in(file("Pmml/MethodExtractor")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", PmmlUdfs, Metadata, KamanjaBase, Serialize, Exceptions) // added
 // no external dependencies
 
-lazy val MetadataAPI = project.in(file("MetadataAPI")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageManager, Metadata, PmmlCompiler, Serialize, ZooKeeperClient, ZooKeeperListener, OutputMsgDef, Exceptions, SecurityAdapterBase, KamanjaUtils, HeartBeat, KamanjaBase, JpmmlFactoryOfModelInstanceFactory, jtm, SimpleApacheShiroAdapter % "test")
+lazy val MetadataAPI = project.in(file("MetadataAPI")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageManager, Metadata, PmmlCompiler, Serialize, ZooKeeperClient, ZooKeeperListener, OutputMsgDef, Exceptions, SecurityAdapterBase, KamanjaUtils, HeartBeat, KamanjaBase, JpmmlFactoryOfModelInstanceFactory, jtm, SimpleApacheShiroAdapter % "test", KamanjaTestUtils % "test")
     .settings(
       parallelExecution in Test := false,
       test <<= (test in Test).dependsOn(assembleDependencies)
@@ -244,6 +244,11 @@ lazy val HttpEndpoint = project.in(file("Utils/HttpEndpoint")).configs(TestConfi
 lazy val DemoKafkaProducer = project.in(file("Utils/DemoKafkaProducer")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(KamanjaVersion)
 
 lazy val KamanjaUIREST = project.in(file("KamanjaUI/Rest/KamanjaUIRest")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild )
+
+
+// TEST LIBRARIES ONLY TO BE INCLUDED AS PART OF TESTS
+
+lazy val KamanjaTestUtils = project.in(file("Utils/KamanjaTestUtils")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided")
 
 /*
 val commonSettings = Seq(
