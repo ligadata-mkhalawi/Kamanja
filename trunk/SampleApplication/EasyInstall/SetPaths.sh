@@ -65,6 +65,9 @@ sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/Extr
 sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/JdbcDataCollector_Template.sh > $install_dir/bin/JdbcDataCollector.sh
 sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/GenerateMessage_Template.sh > $install_dir/bin/GenerateMessage.sh
 
+sed "s/{KAMANJA_CLUSTER_INSTALL_HOME}/$install_dir_repl/g" $install_dir/template/script/KamanjaClusterInstaller_Template.sh > $install_dir/ClusterInstall/KamanjaClusterInstaller.sh
+
+
 #new one
 #HelloWorld
 sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_home_repl/g;s/{JavaInstallDirectory}/$java_home_repl/g" $install_dir/input/SampleApplications/template/script/HelloWorldApp_Template.sh > $install_dir/input/SampleApplications/bin/HelloWorldApp.sh
