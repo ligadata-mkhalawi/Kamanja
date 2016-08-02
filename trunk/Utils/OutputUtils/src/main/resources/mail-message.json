@@ -1,0 +1,15 @@
+{
+	"alertId": 1234,
+	"alertType": "EAHM",
+	"alertTimestamp": "2016-01-25T19:50:35.0000000Z",
+	"ait": 313,
+	"emailNotify": "Y",
+	"associateName": "John Doe",
+	"associateJobCode": "CSR",
+	"associateNBId": "NBK2TEST",
+	"associateEmail": "john@test.com",
+	"supervisorName": "Bill Hill",
+	"supervisorEmail": "bill@test.com",
+	"usageFlag": "EXCEPTION",
+	"usageCount": 10
+}

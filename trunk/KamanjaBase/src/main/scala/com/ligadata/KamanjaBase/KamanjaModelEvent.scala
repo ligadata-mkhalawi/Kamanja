@@ -23,7 +23,8 @@ object KamanjaModelEvent extends RDDObject[KamanjaModelEvent] with ContainerFact
   override def getSchemaId: Int = 5; 
   override def getTenantId: String = "system"; 
   override def createInstance: KamanjaModelEvent = new KamanjaModelEvent(KamanjaModelEvent); 
-  override def isFixed: Boolean = true; 
+  override def isFixed: Boolean = true;
+  def isCaseSensitive(): Boolean = false;
   override def getContainerType: ContainerTypes.ContainerType = ContainerTypes.ContainerType.CONTAINER
   override def getFullName = getFullTypeName; 
   override def getRddTenantId = getTenantId; 
@@ -98,8 +99,9 @@ object KamanjaModelEvent extends RDDObject[KamanjaModelEvent] with ContainerFact
   override def NeedToTransformData: Boolean = false
 }
 
-class KamanjaModelEvent(factory: ContainerFactoryInterface, other: KamanjaModelEvent) extends ContainerInterface(factory) { 
-  
+class KamanjaModelEvent(factory: ContainerFactoryInterface, other: KamanjaModelEvent) extends ContainerInterface(factory) {
+  def isCaseSensitive(): Boolean = KamanjaModelEvent.isCaseSensitive();
+
   val log = KamanjaModelEvent.log
 
   var attributeTypes = generateAttributeTypes;

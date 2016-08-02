@@ -1,0 +1,190 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.ligadata</groupId>
+	<artifactId>KafkaOutputAdapters</artifactId>
+	<version>1.0</version>
+	<packaging>jar</packaging>
+
+	<name>KafkaOutputAdapters</name>
+	<url>http://maven.apache.org</url>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-api</artifactId>
+			<version>2.4.1</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-core</artifactId>
+			<version>2.4.1</version>
+			<scope>provided</scope>
+		</dependency>
+		<!-- Kafka Consumer -->
+		<dependency>
+			<groupId>org.apache.kafka</groupId>
+			<artifactId>kafka-clients</artifactId>
+			<version>0.9.0.1</version>
+			<scope>provided</scope>
+			<exclusions>
+				<exclusion>
+					<artifactId>jmxri</artifactId>
+					<groupId>com.sun.jmx</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>jms</artifactId>
+					<groupId>javax.jms</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>jmxtools</artifactId>
+					<groupId>com.sun.jdmk</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<!-- JSON -->
+		<dependency>
+			<groupId>com.googlecode.json-simple</groupId>
+			<artifactId>json-simple</artifactId>
+			<version>1.1</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<!-- JDBC ADD IT MANULLY // mvn -e install:install-file "-Dfile=sqljdbc41.jar" "-Dpackaging=jar" "-DgroupId=com.microsoft.sqlserver" "-DartifactId=sqljdbc4" "-Dversion=4.0" -->
+		<dependency>
+			<groupId>com.microsoft.sqlserver</groupId>
+			<artifactId>sqljdbc4</artifactId>
+			<version>4.2</version>
+			<scope>provided</scope>
+		</dependency>
+
+<!-- JDBC ADD IT MANULLY // mvn -e install:install-file -e install:install-file "-Dfile=SaveContainerDataComponent-1.0.jar" "-Dpackaging=jar" "-DgroupId=com.ligadata.tools.SaveContainerDataComponent" "-DartifactId=SaveContainerDataComponent" "-Dversion=1.0" -->
+		<dependency>
+			<groupId>com.ligadata.kamanja</groupId>
+			<artifactId>SaveContainerDataComponent</artifactId>
+			<version>1.5.1</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.ligadata.kamanja</groupId>
+			<artifactId>KamanjaInternalDeps</artifactId>
+			<version>1.5.1</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-dbcp2</artifactId>
+			<version>2.1.1</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<!-- JUNIT TESTING -->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.11 </version>
+			<scope>test</scope>
+		</dependency>
+
+		<!-- AVRO -->
+		<dependency>
+			<groupId>org.apache.avro</groupId>
+			<artifactId>avro</artifactId>
+			<version>1.7.7</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.avro</groupId>
+			<artifactId>avro-mapred</artifactId>
+			<version>1.7.7</version>
+		</dependency>
+
+		<!-- Hadoop -->
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-hdfs</artifactId>
+			<version>2.6.0</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-auth</artifactId>
+			<version>2.6.0</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-common</artifactId>
+			<version>2.6.0</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.hadoop</groupId>
+			<artifactId>hadoop-core</artifactId>
+			<version>1.2.1</version>
+			<scope>provided</scope>
+		</dependency>
+		
+		<!-- Start For Mail Utils -->
+		<dependency>
+			<groupId>org.codemonkey.simplejavamail</groupId>
+			<artifactId>simple-java-mail</artifactId>
+			<version>2.5.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.antlr</groupId>
+			<artifactId>ST4</artifactId>
+			<version>4.0.8</version>
+		</dependency>
+		<dependency>
+			 <groupId>org.projectlombok</groupId>
+			 <artifactId>lombok</artifactId>
+			 <version>1.16.6</version>
+		 </dependency>
+		<!-- End For Mail Utils -->
+	</dependencies>
+	<build>
+		<finalName>KafkaOutputAdapters</finalName>
+
+		<plugins>
+
+			<!-- Maven Assembly Plugin -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>2.4.1</version>
+				<configuration>
+					<finalName>KamanjaEndpointServices</finalName>
+					<appendAssemblyId>false</appendAssemblyId>
+					<!-- get all project dependencies -->
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+					<!-- MainClass in mainfest make a executable jar -->
+					<archive>
+						<manifest>
+							<mainClass>com.ligadata.adapters.KafkaAdapter</mainClass>
+						</manifest>
+					</archive>
+
+				</configuration>
+				<executions>
+					<execution>
+						<id>make-assembly</id>
+						<!-- bind to the packaging phase -->
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+
+	</build>
+</project>

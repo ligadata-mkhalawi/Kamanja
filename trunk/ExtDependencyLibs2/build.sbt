@@ -2,19 +2,14 @@ import sbtassembly.AssemblyPlugin._
 
 name := "ExtDependencyLibs2"
 
-version := "1.0"
-val kamanjaVersion = "1.5.1"
-
-
 shellPrompt := { state => "sbt (%s)> ".format(Project.extract(state).currentProject.id) }
 
 assemblyOption in assembly ~= {
   _.copy(prependShellScript = Some(defaultShellScript))
 }
 
-//assemblyJarName in assembly := { s"${name.value}-${version.value}"}
 assemblyJarName in assembly := {
-  s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"
+  s"${name.value}_${scalaBinaryVersion.value}-${version.value}.jar"
 }
 
 assemblyMergeStrategy in assembly := {
@@ -73,7 +68,7 @@ assemblyMergeStrategy in assembly := {
 
 }
 
-excludeFilter in unmanagedJars := s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"
+excludeFilter in unmanagedJars := s"${name.value}_${scalaBinaryVersion.value}-${version.value}.jar"
 
 excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
   val excludes = Set("commons-beanutils-1.7.0.jar", "google-collections-1.0.jar", "commons-collections4-4.0.jar", "log4j-1.2.17.jar", "commons-beanutils-1.8.3.jar", "log4j-1.2.16.jar", "log4j-over-slf4j-1.7.7.jar")

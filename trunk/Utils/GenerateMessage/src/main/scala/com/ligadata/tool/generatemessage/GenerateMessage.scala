@@ -130,6 +130,10 @@ Usage:  bash $KAMANJA_HOME/bin/GenerateMessage.sh --inputfile $KAMANJA_HOME/inpu
        }
        if (configBeanObj.hasPartitionKey == true) configBeanObj.partitionKeyArray = dataTypeObj.CheckKeys(headerFields,configBeanObj.partitionKey)
        if (configBeanObj.hasPrimaryKey == true) configBeanObj.primaryKeyArray = dataTypeObj.CheckKeys(headerFields, configBeanObj.primaryKey)
+       if (configBeanObj.hasTimePartition == true) {
+         val check = dataTypeObj.CheckKeys(headerFields, configBeanObj.timePartition)
+       }
+
        for(itemIndex <- 0 to headerFields.length-1) {
          if (dataTypeObj.isAllDigits(headerFields(itemIndex))) {
            //Check if all character are digits
@@ -168,6 +172,9 @@ Usage:  bash $KAMANJA_HOME/bin/GenerateMessage.sh --inputfile $KAMANJA_HOME/inpu
        }
        if (configBeanObj.hasPartitionKey == true) configBeanObj.partitionKeyArray = dataTypeObj.CheckKeys(keyArray,configBeanObj.partitionKey)
        if (configBeanObj.hasPrimaryKey == true) configBeanObj.primaryKeyArray = dataTypeObj.CheckKeys(keyArray, configBeanObj.primaryKey)
+       if (configBeanObj.hasTimePartition == true) {
+         val check2  = dataTypeObj.CheckKeys(keyArray, configBeanObj.timePartition).toString
+       }
      }
      val jsonBean: JsonUtility = new JsonUtility()
      val fileName = fileBean.CreateFileName(configBeanObj.outputPath) // create name for output file

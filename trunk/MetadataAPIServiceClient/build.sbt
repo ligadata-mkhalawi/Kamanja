@@ -1,7 +1,5 @@
 name := "MetadataAPIServiceClient"
 
-version := "0.1"
-
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
 
 //libraryDependencies ++= Seq(

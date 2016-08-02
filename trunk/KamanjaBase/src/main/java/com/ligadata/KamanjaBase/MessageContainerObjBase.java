@@ -16,7 +16,7 @@ public interface MessageContainerObjBase extends ContainerOrConceptFactory {
 	// CONTAINER
 
 	public boolean isFixed();
-
+	
 	public String getAvroSchema();
 
 	public String[] getPrimaryKeyNames();
@@ -37,7 +37,7 @@ public interface MessageContainerObjBase extends ContainerOrConceptFactory {
 
 	public boolean isContainer();
 
-	public boolean IsFixed();
+	public boolean IsFixed();	
 
 	public boolean CanPersist();
 

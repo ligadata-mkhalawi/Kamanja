@@ -68,6 +68,10 @@ class FileUtility  extends LogTrait{
   }
 
   def SplitFile (filePath: String, delimiter: String): Array[String] = {//This method used to split file based on delimiter
+    if(!filePath.contains(delimiter)){
+      logger.error("This delimiter %s does not exist in file".format(delimiter))
+      sys.exit(1)
+    }
     return filePath.split(delimiter)
   }
 
@@ -112,9 +116,19 @@ class FileUtility  extends LogTrait{
         sys.exit(1)
       }
 
+    if(dataTypeObj.validateMessageName(configInfo.nameSpace.getOrElse("com.message"))){ //////// check the . character
       configBeanObj.nameSpace_=(configInfo.nameSpace.getOrElse("com.message"))
+    } else {
+      logger.error("The namespace is invalid. please check the namespace in config file.")
+      sys.exit(1)
+    }
 
+    if(dataTypeObj.validateMessageName(configInfo.messageName.getOrElse("testmessage"))){
       configBeanObj.messageName_=(configInfo.messageName.getOrElse("testmessage"))
+    } else {
+      logger.error("The messageName is invalid. Please check the messageName in config file.")
+      sys.exit(1)
+    }
 
       configBeanObj.partitionKey_=(configInfo.partitionKey.getOrElse(""))
       if(!configBeanObj.partitionKey.trim.equalsIgnoreCase("")) configBeanObj.hasPartitionKey_=(true) else configBeanObj.hasPartitionKey_=(false)
@@ -169,7 +183,10 @@ class FileUtility  extends LogTrait{
       sys.exit(1)
     } else {
       val dateFormat = new SimpleDateFormat("yyyyMMddhhmmss")
-       filename = outputPath + "/message_" + dateFormat.format(new java.util.Date()) + ".json"
+      var messageName = "/message_" + dateFormat.format(new java.util.Date()) + ".json"
+      if(outputPath.charAt(outputPath.length -1 ).equals('/'))
+        messageName = "message_" + dateFormat.format(new java.util.Date()) + ".json"
+       filename = outputPath + messageName
     }
     return filename
   }

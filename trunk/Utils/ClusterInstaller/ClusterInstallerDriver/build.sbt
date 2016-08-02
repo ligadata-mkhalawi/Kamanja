@@ -54,8 +54,6 @@ unmanagedJars in Compile <<= baseDirectory map { base => (base ** "*.jar").class
 
 name := "ClusterInstallerDriver"
 
-version := "1.5.1"
-
 // Enables publishing to maven repo
 // publishMavenStyle := true
 

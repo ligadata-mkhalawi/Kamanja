@@ -475,10 +475,8 @@ class JSONSerDes extends SerializeDeserialize {
           case FLOAT => toFloat(v)
           case BOOLEAN => toBoolean(v)
           case DOUBLE => toDouble(v)
-          case STRING => v
-          case CHAR => {
-            if (v != null && v.isInstanceOf[String] && v.asInstanceOf[String].size > 0) v.asInstanceOf[String].charAt(0) else ' '
-          }
+          case STRING => toString(v)
+          case CHAR => toChar(v)
           case MAP => jsonAsMap(at, v.asInstanceOf[Map[String, Any]])
           case (CONTAINER | MESSAGE) => {
             val containerTypeName: String = null //BUGBUG:: Fix this to make the container object properly
@@ -561,6 +559,31 @@ class JSONSerDes extends SerializeDeserialize {
     itm.toString.trim.toBoolean
   }
 
+  private def toString(itm: Any, valueSeparator: String = ","): String = {
+    if (itm == null)
+      return ""
+
+    val sep = if (valueSeparator != null) valueSeparator else ""
+
+    if (itm.isInstanceOf[Set[_]]) {
+      return itm.asInstanceOf[Set[_]].mkString(sep)
+    }
+    if (itm.isInstanceOf[List[_]]) {
+      return itm.asInstanceOf[List[_]].mkString(sep)
+    }
+    if (itm.isInstanceOf[Array[_]]) {
+      return itm.asInstanceOf[Array[_]].mkString(sep)
+    }
+    itm.toString
+  }
+
+  private def toChar(itm: Any): Char = {
+    if (itm == null)
+      return ' '
+    val str = toString(itm)
+    if (str.size > 0) str.charAt(0) else ' '
+  }
+
   /**
     * Coerce the list of mapped elements to an array of the mapped elements' values
     *
@@ -592,10 +615,10 @@ class JSONSerDes extends SerializeDeserialize {
         retVal = collElements.map(itm => toFloat(itm)).toArray
       }
       case STRING => {
-        retVal = collElements.map(itm => itm.asInstanceOf[String]).toArray
+        retVal = collElements.map(itm => toString(itm)).toArray
       }
       case CHAR => {
-        retVal = collElements.map(itm => if (itm != null && itm.isInstanceOf[String] && itm.asInstanceOf[String].size > 0) itm.asInstanceOf[String].charAt(0) else ' ').toArray
+        retVal = collElements.map(itm => toChar(itm)).toArray
       }
       case MAP => {
         retVal = collElements.map(itm => itm.asInstanceOf[Map[String, Any]]).toArray
@@ -635,10 +658,8 @@ class JSONSerDes extends SerializeDeserialize {
         case FLOAT => toFloat(value)
         case BOOLEAN => toBoolean(value)
         case DOUBLE => toDouble(value)
-        case STRING => value
-        case CHAR => {
-          if (value != null && value.isInstanceOf[String] && value.asInstanceOf[String].size > 0) value.asInstanceOf[String].charAt(0) else ' '
-        }
+        case STRING => toString(value)
+        case CHAR => toChar(value)
         case MAP => value.asInstanceOf[Map[String, Any]]
         case (CONTAINER | MESSAGE) => {
           val containerTypeName: String = null //BUGBUG:: Fix this to make the container object properly

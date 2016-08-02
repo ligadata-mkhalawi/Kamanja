@@ -8,10 +8,8 @@ assemblyOption in assembly ~= {
   _.copy(prependShellScript = Some(defaultShellScript))
 }
 
-val kamanjaVersion = "1.5.1"
-
 assemblyJarName in assembly := {
-  s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"
+  s"${name.value}_${scalaBinaryVersion.value}-${version.value}.jar"
 }
 
 // for some reason the merge strategy for non ligadata classes are not working and thus added those conflicting jars in exclusions
@@ -61,8 +59,6 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
 }
 
 name := "MetadataAPIService"
-
-version := "1.5.1"
 
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
 

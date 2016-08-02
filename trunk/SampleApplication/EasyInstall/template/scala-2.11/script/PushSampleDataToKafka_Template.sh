@@ -31,8 +31,8 @@ if [ "$KAMANJA_SEC_CONFIG" ]; then
 fi
 
 if [ "$KAMANJA_KERBEROS_CONFIG" ]; then
-  KERBEROS_CONFIG_OPT="-Djava.security.krb5.confg="$KAMANJA_KERBEROS_CONFIG
-  echo "Using java.security.krb5.confg="$KERBEROS_CONFIG_OPT
+  KERBEROS_CONFIG_OPT="-Djava.security.krb5.conf="$KAMANJA_KERBEROS_CONFIG
+  echo "Using java.security.krb5.conf="$KERBEROS_CONFIG_OPT
 fi
 
 if [ "$KAMANJA_SECURITY_CLIENT" ]; then
@@ -40,24 +40,9 @@ if [ "$KAMANJA_SECURITY_CLIENT" ]; then
   echo "Using security client = "$SECURITY_PROP_OPT
 fi
 
-KEYSTORE_CONFIG_OPT=""
-KEYSTORE_PASS_CONFIG_OPT=""
-
-# -Djavax.net.ssl.keyStore=/tmp/config/cert/kamanja.ks -Djavax.net.ssl.keyStorePassword=password
-if [ "$KAMANJA_KEYSTORE" != "" ]; then
-	KEYSTORE_CONFIG_OPT="-Djavax.net.ssl.keyStore=$KAMANJA_KEYSTORE"
-	KEYSTORE_PASS_CONFIG_OPT="-Djavax.net.ssl.keyStorePassword=$KAMANJA_KEYSTORE_PASS"
-fi
-
-TRUSTSTORE_CONFIG_OPT=""
-TRUSTSTORE_PASS_CONFIG_OPT=""
-
-# -Djavax.net.ssl.trustStore=/tmp/config/cert/kamanja.ts -Djavax.net.ssl.trustStorePassword=password
-if [ "$KAMANJA_TRUSTSTORE" != "" ]; then
-	TRUSTSTORE_CONFIG_OPT="-Djavax.net.ssl.trustStore=$KAMANJA_TRUSTSTORE"
-	TRUSTSTORE_PASS_CONFIG_OPT="-Djavax.net.ssl.trustStorePassword=$KAMANJA_TRUSTSTORE_PASS"
-fi
-
 echo "User selected: $INPUTFILE"
-java  $JAAS_CLIENT_OPT $KERBEROS_CONFIG_OPT $KEYSTORE_CONFIG_OPT $KEYSTORE_PASS_CONFIG_OPT $TRUSTSTORE_CONFIG_OPT $TRUSTSTORE_PASS_CONFIG_OPT -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-1.5.1.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-1.5.1.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-1.5.1.jar:$KAMANJA_HOME/lib/system/simplekafkaproducer_2.11-1.5.1.jar com.ligadata.tools.SimpleKafkaProducer --gz true --topics "testin_1" --threads 1 --topicpartitions 8 --brokerlist "$kafkahostname" --files $INPUTFILE   --partitionkeyidxs "1" --format CSV $SECURITY_PROP_OPT
+
+currentKamanjaVersion=1.5.2
+
+java  $JAAS_CLIENT_OPT $KERBEROS_CONFIG_OPT -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-${currentKamanjaVersion}.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-${currentKamanjaVersion}.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-${currentKamanjaVersion}.jar:$KAMANJA_HOME/lib/system/simplekafkaproducer_2.11-${currentKamanjaVersion}.jar com.ligadata.tools.SimpleKafkaProducer --gz true --topics "testin_1" --threads 1 --topicpartitions 8 --brokerlist "$kafkahostname" --files $INPUTFILE   --partitionkeyidxs "1" --format CSV $SECURITY_PROP_OPT
 

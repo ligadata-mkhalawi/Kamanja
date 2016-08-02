@@ -57,8 +57,6 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
 
 name := "UtilityService"
 
-version := "1.0"
-
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
 
 //resolvers ++= Seq(
