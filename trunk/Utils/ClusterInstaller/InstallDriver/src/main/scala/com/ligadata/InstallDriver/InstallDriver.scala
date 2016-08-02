@@ -169,7 +169,7 @@ Usage:
             building their respective objects. If the requested version has not been installed on the cluster nodes in question,
             the installation will fail.
 
-        [--fromKamanja] optional for install but required for upgrade..."N.N" where "N.N" can be either "1.1" or "1.2" or "1.3"
+        [--fromKamanja] optional for install but required for upgrade..."N.N" where "N.N" can be either "1.1" or "1.2" or "1.3" or "1.4" or "1.4.1" or "1.5.0"
         [--fromScala "2.10"] an optional parameter that, for the 1.3 InstallDriver, simply documents the version of Scala that
             the current 1.1. or 1.2 is using.  The value "2.10" is the only possible value for this release.
 
@@ -439,7 +439,7 @@ Try again.
     val apiConfigPathOk: Boolean = apiConfigPath != null && apiConfigPath.nonEmpty
     val nodeConfigPathOk: Boolean = apiConfigPath != null && apiConfigPath.nonEmpty
     val tarballPathOk: Boolean = tarballPath != null && tarballPath.nonEmpty
-    val fromKamanjaOk: Boolean = install || (upgrade && fromKamanja != null && fromKamanja.nonEmpty && (fromKamanja == "1.1" || fromKamanja == "1.2") || fromKamanja == "1.3" || fromKamanja == "1.4" || fromKamanja == "1.4.1" )
+    val fromKamanjaOk: Boolean = install || (upgrade && fromKamanja != null && fromKamanja.nonEmpty && (fromKamanja == "1.1" || fromKamanja == "1.2") || fromKamanja == "1.3" || fromKamanja == "1.4" || fromKamanja == "1.4.1" || fromKamanja == "1.5.0" )
     val fromScalaOk: Boolean = install || (upgrade && fromScala != null && fromScala.nonEmpty && (fromScala == "2.10" || fromScala == "2.11"))
     val toScalaOk: Boolean = (toScala != null && toScala.nonEmpty && (toScala == "2.10" || toScala == "2.11"))
     val workingDirOk: Boolean = workingDir != null && workingDir.nonEmpty
@@ -469,7 +469,7 @@ Try again.
       if (!apiConfigPathOk) printAndLogError("\tapiConfigPath", log)
       if (!nodeConfigPathOk) printAndLogError("\t--apiConfigPath <path to the metadata api properties file that contains the ROOT_DIR property location>", log)
       if (!tarballPathOk) printAndLogError("\t--tarballPath <location of the prepared 1.3 installation tarball to be installed>", log)
-      if (upgrade && !fromKamanjaOk) printAndLogError("\t--fromKamanja <the prior installation version being upgraded... either '1.1' or '1.2' or '1.3' or '1.4' or '1.4.1'>", log)
+      if (upgrade && !fromKamanjaOk) printAndLogError("\t--fromKamanja <the prior installation version being upgraded... either '1.1' or '1.2' or '1.3' or '1.4' or '1.4.1' or '1.5.0'>", log)
       if (upgrade && !fromScalaOk) printAndLogError("\t--fromScala <either scala version '2.10' or '2.11'", log)
       if (!logDirOk) printAndLogError("\t--logDir <the directory path where the Cluster logs (InstallDriver.yyyyMMdd_HHmmss.log) is to be written ", log)
       printAndLogDebug(usage, log)
@@ -563,6 +563,7 @@ Try again.
       validMigrationPaths.add("1.3 => 1.5.2") 
       validMigrationPaths.add("1.4 => 1.5.2") 
       validMigrationPaths.add("1.4.1 => 1.5.2") 
+      validMigrationPaths.add("1.5.0 => 1.5.2") 
 
       if ( ! validMigrationPaths.contains(fromKamanja + " => " + toKamanja) ) {
         printAndLogError(s"The upgrade path ($fromKamanja => $toKamanja) is not valid with this release... ", log)
@@ -803,6 +804,12 @@ Try again.
               closeLog
               sys.exit(1)
             }
+	    if( fromKamanja.substring(0,2).equals(toKamanja.substring(0,2))){
+              printAndLogDebug("Migration not required... patch upgrade was selected", log)
+              printAndLogDebug("Processing is Complete!", log)
+              closeLog
+              sys.exit(0)
+	    }
           } else {
             printAndLogDebug("Migration not required... new installation was selected", log)
           }
@@ -1583,7 +1590,7 @@ Try again.
 			  , tenantId: String
 			  , adapterMessageBindings: String): Boolean = {
 
-    val migrationToBeDone: String = if (fromKamanja == "1.1") "1.1=>1.5.2" else if (fromKamanja == "1.2") "1.2=>1.5.2" else if (fromKamanja == "1.3") "1.3=>1.5.2" else if (fromKamanja == "1.4") "1.4=>1.5.2" else if (fromKamanja == "1.4.1") "1.4.1=>1.5.2" else "hmmm"
+    val migrationToBeDone: String = if (fromKamanja == "1.1") "1.1=>1.5.2" else if (fromKamanja == "1.2") "1.2=>1.5.2" else if (fromKamanja == "1.3") "1.3=>1.5.2" else if (fromKamanja == "1.4") "1.4=>1.5.2" else if (fromKamanja == "1.4.1") "1.4.1=>1.5.2" else if (fromKamanja == "1.5.0") "1.5.0=>1.5.2" else "hmmm"
 
     // We should use these insted of below ones
     // val kamanjaFromVersion: String = fromKamanja
@@ -1723,8 +1730,33 @@ Try again.
         printAndLogDebug("Pending migrate %s with config %s".format(migrationToBeDone, migrateConfigJSON))
         true
       }
+      case "1.5.0=>1.5.2" => {
+        val kamanjaFromVersion: String = "1.5.0"
+        val kamanjaFromVersionWithUnderscore: String = "1_5_0"
+        val migrateConfigJSON: String = createMigrationConfig(log
+          , migrateConfigFilePath
+          , nodeConfigPath
+          , apiConfigFile
+          , kamanjaFromVersion
+          , kamanjaFromVersionWithUnderscore
+          , newInstallDirName
+          , priorInstallDirName
+          , fromScala
+          , toScala
+          , unhandledMetadataDumpDir
+          , parentPath
+          , physicalRootDir
+          , rootDirPath
+          , tenantId
+          , adapterMessageBindings
+        )
+        migratePending = true
+        migrateConfig = migrateConfigJSON
+        printAndLogDebug("Pending migrate %s with config %s".format(migrationToBeDone, migrateConfigJSON))
+        true
+      }
       case _ => {
-        printAndLogError("The 'fromKamanja' parameter is incorrect... this needs to be fixed.  The value can only be '1.1' or '1.2' or '1.3' or '1.4' or '1.4.1' for the '1.5.2' upgrade", log)
+        printAndLogError("The 'fromKamanja' parameter is incorrect... this needs to be fixed.  The value can only be '1.1' or '1.2' or '1.3' or '1.4' or '1.4.1' or 1.5.0 for the '1.5.2' upgrade", log)
         false
       }
     }
