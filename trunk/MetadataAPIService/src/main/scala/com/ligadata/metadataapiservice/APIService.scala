@@ -4,21 +4,16 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
  *     http://www.apache.org/licenses/LICENSE-2.0
- *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.ligadata.metadataapiservice
-
 import java.io.File
 import java.nio.file.{Path, Files}
-
 import akka.actor.{ActorSystem, Props}
 import akka.actor.ActorDSL._
 import akka.event.Logging
@@ -26,7 +21,6 @@ import akka.io.IO
 import akka.io.Tcp._
 import com.typesafe.config.ConfigFactory
 import spray.can.Http
-
 import org.json4s.jackson.JsonMethods._
 import com.ligadata.kamanja.metadata.ObjType._
 import com.ligadata.kamanja.metadata._
@@ -271,7 +265,15 @@ object APIService {
 
     mgr.StartService(args)
   }
-
+  private var mgr : APIService = null
+  def startAPISevrice(args: Array[String]): Unit = {
+    mgr = new APIService
+    mgr.StartService(args)
+  }
+  def shutdownAPISevrice(): Unit = {
+    if(mgr != null)
+      mgr.Shutdown(0)
+  }
 
   /**
    * extractNameFromJson - applies to a simple Kamanja object
@@ -309,5 +311,6 @@ object APIService {
     })
     return firstOccurence
   }
+
 }
 // $COVERAGE-ON$

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ligadata.jsonutility
+package com.ligadata.SocketServices
 
 import org.apache.commons.io.FilenameUtils
 import org.json4s._

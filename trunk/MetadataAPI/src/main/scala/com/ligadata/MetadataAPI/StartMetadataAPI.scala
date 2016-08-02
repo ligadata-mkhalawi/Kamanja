@@ -951,4 +951,33 @@ object StartMetadataAPI {
 
      response
    } */
+  object MetadataAPIManager {
+    private val LOG = LogManager.getLogger(getClass)
+
+    def start(args: Array[String]): Unit = {
+
+      var port = -1
+      if(args != null){
+        for(i <- 0 to args.length - 1){
+          if(args(i).equalsIgnoreCase("--port") && args.length >= i + 2)
+            port = args(i + 1).toInt
+        }
+      }
+      if(port < 0)
+        throw new Exception("Metadata Api socket port is not configured correctly")
+
+
+      val kmResult = new MetadataAPIServer(port).run()//TODO : maybe better to use a singleton
+      if (kmResult != 0) {
+        LOG.error(s"MetadataAPIManager: Kamanja shutdown with error code $kmResult")
+      }
+    }
+
+    def shutdown(): Unit ={
+      if (!StartMetadataAPI.isShutdown) {
+        LOG.warn("MetadataAPIManager: Received shutdown request")
+        StartMetadataAPI.isShutdown = true // Setting the global shutdown
+      }
+    }
+  }
 }
