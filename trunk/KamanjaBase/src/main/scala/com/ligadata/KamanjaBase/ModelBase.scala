@@ -653,7 +653,7 @@ abstract class ModelInstanceFactory(val modelDef: ModelDef, val nodeContext: Nod
   }
 
   // Creating new model instance related to this ModelInstanceFactory.
-  def createModelInstance(): ModelInstance
+  def createModelInstance(txnCtxt: TransactionContext): ModelInstance
 
   // Creating ModelResultBase associated this model/modelfactory.
   def createResultObject(): ModelResultBase = {
@@ -1013,7 +1013,7 @@ class ModelBaseObjMdlInstanceFactory(modelDef: ModelDef, nodeContext: NodeContex
 
   override def isValidMessage(msg: MessageContainerBase): Boolean = mdlBaseObj.IsValidMessage(msg)
 
-  override def createModelInstance() = new ModelBaseMdlInstance(this)
+  override def createModelInstance(txnCtxt: TransactionContext) = new ModelBaseMdlInstance(this)
 
   override def createResultObject() = mdlBaseObj.CreateResultObject()
 

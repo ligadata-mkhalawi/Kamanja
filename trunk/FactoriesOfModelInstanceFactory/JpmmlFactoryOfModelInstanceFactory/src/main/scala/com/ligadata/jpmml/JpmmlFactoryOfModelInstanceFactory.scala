@@ -391,8 +391,8 @@ class JpmmlAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends 
         val msgVersion : String = msgVersionDots.filter(_ != '.').toString
         val msgNameKey : String = s"$msgFullName.$msgVersion".toLowerCase()
         val yum : Boolean = if (modelDef != null && modelDef.inputMsgSets != null) {
-            val filter = modelDef.inputMsgSets.filter(s => (s.size == 1 && s(0).message.toLowerCase == msgNameKey))
-            return filter.size > 0
+            val filter = modelDef.inputMsgSets.filter(s => s.length == 1 && s(0).message.toLowerCase == msgNameKey)
+            return filter.length > 0
         } else {
             false
         }
@@ -401,10 +401,10 @@ class JpmmlAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends 
 
     /**
       * Answer a model instance, obtaining a pre-existing one in the cache if possible.
-      *
+      * @param txnContext the partition key among other things are found here.
       * @return - a ModelInstance that can process the message found in the TransactionContext supplied at execution time
       */
-    override def createModelInstance(): ModelInstance = {
+    override def createModelInstance(txnContext: TransactionContext): ModelInstance = {
 
         val useThisModel : ModelInstance = if (modelDef != null) {
             /** Ingest the pmml here and build an evaluator */
@@ -476,6 +476,5 @@ class JpmmlAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends 
     }
 
 }
-
 
 

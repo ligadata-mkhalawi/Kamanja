@@ -17,28 +17,38 @@
 
 package com.ligadata.KamanjaManager
 
+import java.io.File
+
 import com.ligadata.Exceptions.KamanjaException
-import com.ligadata.InputOutputAdapterInfo.{OutputAdapter, InputAdapter}
+import com.ligadata.InputOutputAdapterInfo.{InputAdapter, OutputAdapter}
 import com.ligadata.StorageBase.DataStore
-import com.ligadata.jpmml.JpmmlAdapter
-import com.ligadata.kamanja.metadata.{BaseElem, MappedMsgTypeDef, BaseAttributeDef, StructTypeDef, EntityType, AttributeDef, MessageDef, ContainerDef, ModelDef}
+import com.ligadata.kamanja.metadata.{AttributeDef, BaseAttributeDef, BaseElem, ContainerDef, EntityType, MappedMsgTypeDef, MessageDef, ModelDef, StructTypeDef}
 import com.ligadata.kamanja.metadata._
 import com.ligadata.kamanja.metadata.MdMgr._
-
 import com.ligadata.kamanja.metadataload.MetadataLoad
-import com.ligadata.utils.dag.{EdgeId, Dag}
+import com.ligadata.utils.dag.{Dag, EdgeId}
+
 import scala.collection.mutable.TreeSet
 import scala.util.control.Breaks._
 import com.ligadata.KamanjaBase._
+
 import scala.collection.mutable.HashMap
 import org.apache.logging.log4j._
+
 import scala.collection.mutable.ArrayBuffer
 import com.ligadata.Serialize._
 import com.ligadata.ZooKeeper._
 import com.ligadata.MetadataAPI.MetadataAPIImpl
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import com.ligadata.Utils.{Utils, KamanjaClassLoader, KamanjaLoaderInfo}
+import java.util.concurrent.locks.ReentrantReadWriteLock
+
+import com.ligadata.Utils.{KamanjaClassLoader, KamanjaLoaderInfo, Utils}
+import org.json4s._
+import org.json4s.native.JsonMethods._
+
+
 import scala.actors.threadpool.{ExecutorService, Executors}
+import scala.collection.immutable.Map
+import scala.collection.mutable
 
 
 class MdlInfo(val mdl: ModelInstanceFactory, val jarPath: String, val dependencyJarNames: Array[String], val nodeId: Long, val inputs: Array[Array[EdgeId]], val outputs: Array[Long]) {
@@ -460,11 +470,113 @@ class KamanjaMetadata(var envCtxt: EnvContext) {
 
   }
 
-  private def PrepareModelsFactories(tmpModelDefs: Option[scala.collection.immutable.Set[ModelDef]]): Unit = {
+    /**
+      * Configure for python models.  The necessary variables are set up to establish python servers for the partitions
+      * that are being managed by the engine on a given Kamanja cluster node... available in the node context properties.
+      *
+      * Information is picked out of the Kamanja configuration information.
+      *
+      * import org.json4s._
+      * import org.json4s.native.JsonMethods._
+      */
+    val PYTHON_CONFIG : String = "python_config"
+    val ROOT_DIR : String = "root_dir"
+    private def PreparePythonConfiguration(): Unit = {
+        val properties: java.util.Properties = KamanjaConfiguration.allConfigs
+        val pythonPropertiesStr : String = properties.getProperty(PYTHON_CONFIG)
+        if (pythonPropertiesStr != null) {
+            implicit val formats = org.json4s.DefaultFormats
+            //val pyPropertyMap : Map[String, Any] = parse(pythonPropertiesStr).extract[Map[String, Any]]
+            val pyPropertyMap : Map[String,Any] = parse(pythonPropertiesStr).values.asInstanceOf[Map[String,Any]]
+            var pyPath : String = pyPropertyMap.getOrElse("PYTHON_PATH", "").asInstanceOf[String]
+            val pySrvStartPort : Int = pyPropertyMap.getOrElse("SERVER_BASE_PORT", 8100).asInstanceOf[scala.math.BigInt].toInt
+            val pySrvMaxSrvrs : Int = pyPropertyMap.getOrElse("SERVER_NODE_LIMIT", 20).asInstanceOf[scala.math.BigInt].toInt
+            val host : String = pyPropertyMap.getOrElse("SERVER_HOST", "localhost").asInstanceOf[String]
+            var loggerConfigPath : String = pyPropertyMap.getOrElse("PYTHON_LOG_CONFIG_PATH", "").asInstanceOf[String]
+            var logFilePath : String = pyPropertyMap.getOrElse("PYTHON_LOG_PATH", "").asInstanceOf[String]
+            /** if there is no pyPath in the python config string, then base some of the properties on the ${ROOT_DIR} as needed*/
+            pyPath = if (pyPath == null) {
+                val installLoc : String = properties.getProperty("ROOT_DIR")
+                if (installLoc != null) {
+                    if (loggerConfigPath == "")
+                        loggerConfigPath = s"$pyPath/bin/pythonlog4j.cfg"
+                    if (logFilePath == null) {
+                        logFilePath = s"$pyPath/bin/pythonlog4j.cfg"
+                    }
+                    installLoc
+                } else {
+                    logger.error("Kamanja's root directory is not available in the 'allConfigs'... bad news!")
+                    throw new KamanjaException("Kamanja's root directory is not available in the 'allConfigs'... bad news!",null)
+                }
+            } else {
+                pyPath
+            }
+
+            /** Generate the port iterator used by the python model factories on this node to configure the servers. */
+            val lastOne : Int = pySrvStartPort + pySrvMaxSrvrs - 1
+            val pyPortsForUse : Iterator[Int] = (for ( p <- pySrvStartPort to lastOne ) yield p).toIterator
+            KamanjaMetadata.gNodeContext.putValue("PYTHON_CONNECTION_PORTS", pyPortsForUse)
+            KamanjaMetadata.gNodeContext.putValue("HOST", host)
+            KamanjaMetadata.gNodeContext.putValue("PYTHON_PATH", pyPath)
+            KamanjaMetadata.gNodeContext.putValue("PYTHON_CONNECTIONS", new mutable.HashMap[String,Any]())
+            KamanjaMetadata.gNodeContext.putValue("PYTHON_LOG_CONFIG_PATH",  loggerConfigPath)
+            KamanjaMetadata.gNodeContext.putValue("PYTHON_LOG_PATH", logFilePath)
+
+            /** for diagnostics at run time, put the whole propertyMap */
+            KamanjaMetadata.gNodeContext.putValue("pyPropertyMap", pyPropertyMap)
+        } else { /** we can stand not having the python config defaults for everything but the python path... iff
+          * (with this version at least) the pyPath is the 'python' subdirectory of the root dir.  If it is not there
+          * an exception is thrown. The server code has to exist there for this 'last stab' to work. */
+            val installRoot : String = properties.getProperty(ROOT_DIR)
+            if (installRoot != null) {
+                val pyPath : String = s"$installRoot/python"
+                val f : File = new File(pyPath)
+                val ok : Boolean = if (f.exists() && f.isDirectory) {
+                    val pythonServerPath : String = s"$pyPath/pythonserver.py"
+                    val pf : File = new File(pythonServerPath)
+                    pf.exists() && pf.isFile
+                } else {
+                    logger.error(s"Kamanja's python directory is not available in the '$pyPath'... bad news!")
+                    throw new KamanjaException(s"Kamanja's python directory is not available in the '$pyPath'... bad news!",null)
+                }
+                if (ok) {
+                    /** use default values to populate the node context for the python factories use */
+                    KamanjaMetadata.gNodeContext.putValue("HOST", "localhost")
+                    KamanjaMetadata.gNodeContext.putValue("PYTHON_PATH", pyPath)
+                    /** connections are HashMap[partitionKey, PyServerConnection] */
+                    KamanjaMetadata.gNodeContext.putValue("PYTHON_CONNECTIONS", new mutable.HashMap[String,Any]())
+                    /** With these default values (8100, 20) add an iterator to get a port from when the time comes to build a connection */
+                    val p : Int = 8100 /** ports starting here for 20... */
+                    val it = Iterator[Int](p, p+1, p+2, p+3, p+4, p+5, p+6, p+7, p+8, p+9, p+10, p+11, p+12, p+13, p+14, p+15, p+16, p+17, p+18, p+19)
+                    KamanjaMetadata.gNodeContext.putValue("PYTHON_CONNECTION_PORTS", it)
+                    KamanjaMetadata.gNodeContext.putValue("PYTHON_LOG_CONFIG_PATH",  s"$pyPath/bin/pythonlog4j.cfg")
+                    KamanjaMetadata.gNodeContext.putValue("PYTHON_LOG_PATH", s"$pyPath/logs/pythonserver.log")
+                    KamanjaMetadata.gNodeContext.putValue("pyPropertyMap", Map[String,Any]())
+                }
+            } else {
+                logger.error("there is no entry in the config for ROOT_DIR... we need that to find Kamanja's python directory")
+                logger.error("... better yet, be specific and define the engine config's 'PYTHON_CONFIG' dictionary")
+                logger.error("See the manual for more information")
+                throw new KamanjaException("there is no entry in the config for ROOT_DIR... we need that to find Kamanja's python directory",null)
+            }
+        }
+    }
+
+
+    private def PrepareModelsFactories(tmpModelDefs: Option[scala.collection.immutable.Set[ModelDef]]): Unit = {
     if (tmpModelDefs == None) // Not found any models
       return
 
     val modelDefs = tmpModelDefs.get
+
+    /** Set up the python key values in the node context.  Connections are generated at make python proxy instance time
+      * Conceivably, we could avoid setup if there were no models, only to have to set them up when the engine accepts
+      * a newly added model. Ergo, we set the configuration up as if we were to need them. */
+    val hasPythonModels : Boolean = modelDefs.find(m => m.modelRepresentation == ModelRepresentation.PYTHON).getOrElse(null) != null
+    logger.debug("This cluster node has python models")
+
+    /** Add a number of properties to the node context that are needed by the python factories to set up the servers */
+    PreparePythonConfiguration
 
     // Load all jars first
     modelDefs.foreach(mdl => {

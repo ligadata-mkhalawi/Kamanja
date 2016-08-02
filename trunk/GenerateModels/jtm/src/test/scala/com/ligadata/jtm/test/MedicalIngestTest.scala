@@ -27,7 +27,7 @@ import org.scalatest.{BeforeAndAfter, FunSuite}
 class MedicalIngestTest  extends FunSuite with BeforeAndAfter {
 
   val logger = LogManager.getLogger(this.getClass.getName)
-/*
+
   test("test") {
 
     val fileInput = getClass.getResource("/samples/medical/medicalingest.jtm").getPath
@@ -77,7 +77,7 @@ class MedicalIngestTest  extends FunSuite with BeforeAndAfter {
     assert(actual == expected)
     DeleteFile(fileOutput)
   }
-*/
+
   test("test2") {
 
     val fileInput = getClass.getResource("/samples/medical/medicalingest2.jtm").getPath
@@ -102,7 +102,7 @@ class MedicalIngestTest  extends FunSuite with BeforeAndAfter {
     assert(actual == expected)
     DeleteFile(fileOutput)
   }
-/*
+
   test("test3") {
 
     val fileInput = getClass.getResource("/samples/medical/medicalingest3.jtm").getPath
@@ -127,5 +127,5 @@ class MedicalIngestTest  extends FunSuite with BeforeAndAfter {
     assert(actual == expected)
     DeleteFile(fileOutput)
   }
-  */
+
 }
