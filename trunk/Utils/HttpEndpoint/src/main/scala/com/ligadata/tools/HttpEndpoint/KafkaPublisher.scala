@@ -58,6 +58,10 @@ class KafkaPublisher(serviceName: String) {
     props.put("key.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer")
     props.put("max.block.ms", KafkaPublisher.kafkaTimeout.toString)
     props.put("retries", "0")
+    
+    val kc = Configuration.values.services(serviceName).kafkaConfig
+    if(kc != null)
+      for((k,v) <- kc) props.put(k, v)
 
     // create the producer object
     producer = new KafkaProducer[Array[Byte], Array[Byte]](props)

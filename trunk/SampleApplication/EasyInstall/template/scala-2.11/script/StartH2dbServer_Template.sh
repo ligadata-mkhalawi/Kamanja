@@ -15,4 +15,6 @@ fi
 
 cd {InstallDirectory}/bin
 
-java -Dh2.baseDir=../storage -cp {InstallDirectory}/lib/system/ExtDependencyLibs2_2.11-1.5.1.jar org.h2.tools.Server -$connectionMode -tcpPort 9100 -tcpAllowOthers
+currentKamanjaVersion=1.5.2
+
+java -Dh2.baseDir=../storage -cp {InstallDirectory}/lib/system/ExtDependencyLibs2_2.11-${currentKamanjaVersion}.jar org.h2.tools.Server -$connectionMode -tcpPort 9100 -tcpAllowOthers

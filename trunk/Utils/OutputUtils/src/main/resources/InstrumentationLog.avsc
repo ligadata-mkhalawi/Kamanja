@@ -1,0 +1,44 @@
+{
+  "type": "record",
+  "name": "InstrumentationLog",
+  "namespace": "cops.datalake",
+  "doc": "Instrumentation Log record in HDFS datalake",
+  "fields": [
+    {
+      "name": "Id",
+      "type": "string"
+    },
+    {
+      "name": "applicationId",
+      "type": "string"
+    },
+    {
+      "name": "createdAt",
+      "type": "string"
+    },
+    {
+      "name": "timestamp",
+      "type": "string"
+    },
+   {
+      "name": "timezone",
+      "type": "string"
+    },
+    {
+      "name": "correlationId",
+      "type": "string"
+    },
+    {
+      "name": "correlationParentId",
+      "type": "string"
+    },
+    {
+      "name": "dqscore",
+      "type": "int"
+    },
+    {
+      "name": "details",
+      "type": {"type": "map", "values": "string"}
+    }
+  ]
+}

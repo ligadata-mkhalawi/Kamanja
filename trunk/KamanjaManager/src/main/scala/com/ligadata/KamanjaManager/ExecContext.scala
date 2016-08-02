@@ -188,6 +188,9 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
 
       val (msg2TenantId, cntr1) = KamanjaManager.instance.resolveMsg2TenantId
 
+      val forceCommitVal = txnCtxt.getValue("forcecommit")
+      val forceCommitFlag = forceCommitVal != null
+
       if (allData != null && nodeContext != null && nodeContext.getEnvCtxt() != null) {
 
         if (LOG.isDebugEnabled) {
@@ -218,7 +221,7 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
             LOG.debug("Save Data AfterFilter: Tenant:%s has %d values.".format(kv._1, kv._2.size))
           }
           try {
-            nodeContext.getEnvCtxt().commitData(kv._1, txnCtxt, kv._2.toArray)
+            nodeContext.getEnvCtxt().commitData(kv._1, txnCtxt, kv._2.toArray, forceCommitFlag)
           } catch {
             case e: Exception => {
               LOG.error("Failed to commit data into primary datastore for tenantid:" + kv._1, e)
@@ -229,10 +232,13 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
           }
         })
       }
+
       if (txnCtxt != null && nodeContext != null && nodeContext.getEnvCtxt() != null) {
         if (txnCtxt.origin.key != null && txnCtxt.origin.value != null && txnCtxt.origin.key.trim.size > 0 && txnCtxt.origin.value.trim.size > 0) {
           eventsCntr += 1
-          if (KamanjaConfiguration.commitOffsetsMsgCnt == 0 || (eventsCntr % KamanjaConfiguration.commitOffsetsMsgCnt) == 0) {
+          if (forceCommitFlag ||
+            (nodeContext.getEnvCtxt().EnableEachTransactionCommit &&
+              (KamanjaConfiguration.commitOffsetsMsgCnt == 0 || (eventsCntr % KamanjaConfiguration.commitOffsetsMsgCnt) == 0))) {
             try {
               nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(txnCtxt.origin.key, txnCtxt.origin.value)
             } catch {
@@ -247,8 +253,11 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
         }
       }
       else {
-        if (logger.isDebugEnabled)
-          logger.debug(s"Not Saving AdapterUniqKvData key:${txnCtxt.origin.key}, value:${txnCtxt.origin.value}. txnCtxt: ${txnCtxt}, nodeContext: ${nodeContext}")
+        if (logger.isDebugEnabled) {
+          val key = if (txnCtxt != null && txnCtxt.origin != null && txnCtxt.origin.key != null) txnCtxt.origin.key else ""
+          val value = if (txnCtxt != null && txnCtxt.origin != null && txnCtxt.origin.value != null) txnCtxt.origin.value  else ""
+          logger.debug(s"Not Saving AdapterUniqKvData key:${key}, value:${value}. txnCtxt: ${txnCtxt}, nodeContext: ${nodeContext}")
+        }
       }
     } catch {
       case e: Throwable => throw e

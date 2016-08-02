@@ -21,6 +21,7 @@ object KamanjaStatusEvent extends RDDObject[KamanjaStatusEvent] with MessageFact
   override def getTenantId: String = "System";
   override def createInstance: KamanjaStatusEvent = new KamanjaStatusEvent(KamanjaStatusEvent);
   override def isFixed: Boolean = true;
+  def isCaseSensitive(): Boolean = false;
   override def getContainerType: ContainerTypes.ContainerType = ContainerTypes.ContainerType.MESSAGE
   override def getFullName = getFullTypeName;
   override def getRddTenantId = getTenantId;
@@ -94,6 +95,7 @@ object KamanjaStatusEvent extends RDDObject[KamanjaStatusEvent] with MessageFact
 }
 
 class KamanjaStatusEvent(factory: MessageFactoryInterface, other: KamanjaStatusEvent) extends MessageInterface(factory) {
+  def isCaseSensitive(): Boolean = KamanjaStatusEvent.isCaseSensitive();
 
   val log = KamanjaStatusEvent.log
 

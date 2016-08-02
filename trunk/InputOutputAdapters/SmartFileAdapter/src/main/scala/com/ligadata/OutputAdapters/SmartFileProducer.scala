@@ -152,7 +152,6 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
                 }
               }
             }
-            partitionStreams.clear()
           } finally {
             WriteUnlock(_reent_lock)
           }
@@ -176,7 +175,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     try {
       for ((name, pf) <- partitionStreams) {
         if (pf != null) {
-          LOG.debug("Smart File Producer " + fc.Name + ": Rolling file at " + name)
+          LOG.info("Smart File Producer " + fc.Name + ": Rolling file at " + name)
           try {
             pf.synchronized {
               flushPartitionFile(pf)
@@ -249,10 +248,10 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
         var fs: FileSystem = FileSystem.get(uri, hdfsConf);
 
         if (fs.exists(path)) {
-          LOG.info("Loading existing file " + uri)
+          LOG.info("Smart File Producer " + fc.Name + "(" + this + ") : Loading existing file " + uri)
           os = fs.append(path)
         } else {
-          LOG.info("Creating new file " + uri);
+          LOG.info("Smart File Producer " + fc.Name + "(" + this + ") : Creating new file " + uri);
           os = fs.create(path);
         }
       } catch {
@@ -284,37 +283,51 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   }
 
   private def getPartionFile(record: ContainerInterface): PartitionFile = {
-    var key = record.getTypeName();
+    var typeName = record.getFullTypeName();
     val dateTime = record.getTimePartitionData()
-    val fileBufferSize = fc.typeLevelConfig.getOrElse(key, fc.flushBufferSize);
+    val fileBufferSize = fc.typeLevelConfig.getOrElse(typeName, fc.flushBufferSize);
 
+    var key = typeName.replace(".", "_")
     val pk = record.getPartitionKey()
     var bucket: Int = 0
     if (pk != null && pk.length > 0 && fc.partitionBuckets > 1) {
+      LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile pk for the record - [" + pk.mkString(",") + "]")
       bucket = pk.mkString("").hashCode() % fc.partitionBuckets
     }
 
     if (dateTime > 0 && partitionFormatString != null && partitionDateFormats != null) {
+      LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile time partion data for the record - [" + dateTime + "]")
       val dtTm = new java.util.Date(dateTime)
       val values = partitionDateFormats.map(fmt => fmt.format(dtTm))
-      key = record.getTypeName() + "/" + partitionFormatString.format(values: _*)
+      key = key + "/" + partitionFormatString.format(values: _*)
     }
 
     val path = key
     key = key + bucket
+    
+    if(LOG.isInfoEnabled()) {
+      LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile key for the record - [" + key + "]")
+      LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile key in partitionStreams - [" + partitionStreams.keys .mkString(",") + "]")
+    }
 
+    var partKey: PartitionFile = null
     ReadLock(_reent_lock)
-    if (!partitionStreams.contains(key)) {
-      //upgrade to write lock
-      ReadUnlock(_reent_lock)
+    partKey = partitionStreams.getOrElse(key, null)
+    ReadUnlock(_reent_lock)
+    
+    if (partKey == null) {
       WriteLock(_reent_lock)
       try {
+        LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile key[" + key + "] not found")
         // need to check again to make sure other threads did not update
-        if (!partitionStreams.contains(key)) {
+        partKey = partitionStreams.getOrElse(key, null)
+        if (partKey == null) {
+          LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile key[" + key + "] still not found will add")
           // need to check again
           val dt = if (nextRolloverTime > 0) nextRolloverTime - (fc.rolloverInterval * 60 * 1000) else System.currentTimeMillis
           val ts = new java.text.SimpleDateFormat("yyyyMMdd'T'HHmm").format(new java.util.Date(dt))
           val fileName = "%s/%s/%s%s-%d-%s.dat%s".format(fc.uri, path, fc.fileNamePrefix, nodeId, bucket, ts, extensions.getOrElse(fc.compressionString, ""))
+          LOG.info("Smart File Producer " + fc.Name + "(" + this + "): Opening file " + fileName)
           var os = openFile(fileName)
           if (compress)
             os = new CompressorStreamFactory().createCompressorOutputStream(fc.compressionString, os)
@@ -323,29 +336,28 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           if (fileBufferSize > 0)
             buffer = new ArrayBuffer[Byte];
 
-          partitionStreams(key) = new PartitionFile(key, fileName, os, 0, 0, buffer, 0, fileBufferSize)
-          ReadLock(_reent_lock) // downgrade to original readlock
+          partKey = new PartitionFile(key, fileName, os, 0, 0, buffer, 0, fileBufferSize)
+          
+          LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile adding key - [" + key + "]")
+          partitionStreams(key) = partKey
         }
       } finally {
         WriteUnlock(_reent_lock) // release write lock
       }
     }
 
-    try {
-      return partitionStreams(key)
-    } finally {
-      ReadUnlock(_reent_lock)
-    }
+    return partKey
   }
 
   private def flushPartitionFile(file: PartitionFile) = {
+    LOG.info("Smart File Producer :" + fc.Name + " : In flushPartitionFile key - [" + file.key + "]")
     var pf = file;
     var isSuccess = false
     numOfRetries = 0
     while (!isSuccess) {
       try {
         pf.synchronized {
-          if (pf.flushBufferSize > 0) {
+          if (pf.flushBufferSize > 0 && pf.buffer.size > 0) {
             write(pf.outStream, pf.buffer.toArray)
             pf.size += pf.buffer.size
             pf.records += pf.recordsInBuffer
@@ -377,6 +389,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   }
 
   private def reopenPartitionFile(pf: PartitionFile): PartitionFile = {
+    LOG.info("Smart File Producer :" + fc.Name + " : In PartitionFile key - [" + pf.key + "]")
     WriteLock(_reent_lock)
     try {
       partitionStreams.remove(pf.key)
@@ -442,10 +455,12 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           try {
             pf.synchronized {
               if (pf.flushBufferSize > 0) {
+                LOG.info("Smart File Producer " + fc.Name + ": adding record to buffer for file " + pf.name)
                 pf.buffer ++= message
                 pf.buffer ++= fc.messageSeparator.getBytes
                 pf.recordsInBuffer += 1
                 if (pf.buffer.size > pf.flushBufferSize) {
+                  LOG.info("Smart File Producer " + fc.Name + ": buffer is full writing to file " + pf.name)
                   write(pf.outStream, pf.buffer.toArray)
                   pf.size += pf.buffer.size
                   pf.records += pf.recordsInBuffer
@@ -453,6 +468,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
                   pf.recordsInBuffer = 0
                 }
               } else {
+                LOG.info("Smart File Producer " + fc.Name + ": writing record to file " + pf.name)
                 val data = message ++ fc.messageSeparator.getBytes
                 write(pf.outStream, data)
                 pf.records += 1
@@ -460,7 +476,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
               }
             }
             isSuccess = true
-            LOG.debug("finished writing message")
+            LOG.info("finished writing message")
             metrics("MessagesProcessed").asInstanceOf[AtomicLong].incrementAndGet()
           } catch {
             case fio: IOException => {
@@ -503,7 +519,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
 
       for ((name, pf) <- partitionStreams) {
         if (pf != null) {
-          LOG.debug("Smart File Producer " + fc.Name + ": closing file at " + name)
+          LOG.info("Smart File Producer " + fc.Name + ": closing file at " + name)
           pf.synchronized {
             pf.outStream.close
           }

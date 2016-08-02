@@ -106,12 +106,12 @@ object ConfigDefaults {
   logger.info("jarResourceDir " + jarResourceDir)
 
   def envContextClassName: String = "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$"
-  def envContextDependecyJarList: List[String] = List(s"ExtDependencyLibs_$scalaVersion-1.5.1.jar", s"KamanjaInternalDeps_$scalaVersion-1.5.1.jar", s"ExtDependencyLibs2_$scalaVersion-1.5.1.jar")
+  def envContextDependecyJarList: List[String] = List(s"ExtDependencyLibs_$scalaVersion-1.5.2.jar", s"KamanjaInternalDeps_$scalaVersion-1.5.2.jar", s"ExtDependencyLibs2_$scalaVersion-1.5.2.jar")
   def envContextJarName = s"simpleenvcontextimpl_$scalaVersion-1.0.jar"
 
-  def nodeClassPath: String = s".:$jarResourceDir/ExtDependencyLibs_$scalaVersion-1.5.1.jar:$jarResourceDir/KamanjaInternalDeps_$scalaVersion-1.5.1.jar:$jarResourceDir/ExtDependencyLibs2_$scalaVersion-1.5.1.jar"
+  def nodeClassPath: String = s".:$jarResourceDir/ExtDependencyLibs_$scalaVersion-1.5.2.jar:$jarResourceDir/KamanjaInternalDeps_$scalaVersion-1.5.2.jar:$jarResourceDir/ExtDependencyLibs2_$scalaVersion-1.5.2.jar"
 
-  def adapterDepJars: List[String] = List(s"ExtDependencyLibs_$scalaVersion-1.5.1.jar", s"KamanjaInternalDeps_$scalaVersion-1.5.1.jar", s"ExtDependencyLibs2_$scalaVersion-1.5.1.jar")
+  def adapterDepJars: List[String] = List(s"ExtDependencyLibs_$scalaVersion-1.5.2.jar", s"KamanjaInternalDeps_$scalaVersion-1.5.2.jar", s"ExtDependencyLibs2_$scalaVersion-1.5.2.jar")
 
   val scala_home = System.getenv("SCALA_HOME")
 
@@ -126,8 +126,8 @@ object ConfigDefaults {
   def dataStorePropertiesFile:String = metadataDirectory + "/config/DataStore.properties"
 
   val metadataClasspath: String = List(
-    s"ExtDependencyLibs_$scalaVersion-1.5.1.jar",
-    s"KamanjaInternalDeps_$scalaVersion-1.5.1.jar",
-    s"ExtDependencyLibs2_$scalaVersion-1.5.1.jar"
+    s"ExtDependencyLibs_$scalaVersion-1.5.2.jar",
+    s"KamanjaInternalDeps_$scalaVersion-1.5.2.jar",
+    s"ExtDependencyLibs2_$scalaVersion-1.5.2.jar"
   ).mkString(s""""$jarResourceDir/""", s":$jarResourceDir/", "\"")
 }

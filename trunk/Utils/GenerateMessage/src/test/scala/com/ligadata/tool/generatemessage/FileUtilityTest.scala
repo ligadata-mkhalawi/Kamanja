@@ -28,7 +28,7 @@ class FileUtilityTest extends FeatureSpec with GivenWhenThen {
       val filePath = getResourceFullPath("/configFile.json")
       val filePathEmpty = getResourceFullPath("/configFileEmpty.json")
       val inputFile = getResourceFullPath("/inputFile.txt")
-
+      val datatypeObj = new DataTypeUtility
       Given("Test readFile function")
 
       When("The file includes data")
@@ -64,7 +64,6 @@ class FileUtilityTest extends FeatureSpec with GivenWhenThen {
       println(fileHeader)
 
       Given("Test SplitHeader function")
-
       When("The file in path")
       val headerFeilds = fileBean.SplitFile(fileHeader,",")
       Then("The size of array should not be 4")
@@ -98,6 +97,13 @@ class FileUtilityTest extends FeatureSpec with GivenWhenThen {
       if("yousef".matches("^[a-zA-Z][a-zA-Z0-9]*?$"))
         println("valid")
       else println("invalid")
+
+      val variableName = "Kamanja.com"
+//      println(variableName.length)
+//      println(variableName.charAt(variableName.length-1))
+      if(datatypeObj.validateMessageName(variableName))
+        println(variableName + " is valid")
+      else println(variableName + " is invalid")
 //      Given("Test CreateFileName function")
 //      val filename = fileBean.CreateFileName(configObj.outputPath)
 //      When("The file includes data")
