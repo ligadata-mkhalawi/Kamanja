@@ -1,6 +1,7 @@
 package com.ligadata.InputAdapters
 
 import java.io.IOException
+import java.util.concurrent.locks.ReentrantReadWriteLock
 import com.ligadata.Exceptions.KamanjaException
 
 import scala.actors.threadpool.TimeUnit
@@ -71,6 +72,8 @@ object SmartFileConsumer extends InputAdapterFactory {
     }
 
 case class SmartFileExceptionInfo (Last_Failure: String, Last_Recovery: String)
+
+case class ArchiveFileInfo(adapterConfig: SmartFileAdapterConfiguration, srcFileDir: String, srcFileBaseName: String, componentsMap: scala.collection.immutable.Map[String, String])
 
 class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecContextFactory, val nodeContext: NodeContext) extends InputAdapter {
 
@@ -147,6 +150,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
   private var envContext : EnvContext = nodeContext.getEnvCtxt()
   private var clusterStatus : ClusterStatus = null
+  private var archiveExecutor : ExecutorService = null
+  private var archiveInfo = new scala.collection.mutable.Queue[ArchiveFileInfo]()
   private var participantExecutor : ExecutorService = null
   private var leaderExecutor : ExecutorService = null
   private var filesParallelism : Int = -1
@@ -170,7 +175,54 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
   envContext.registerNodesChangeNotification(nodeChangeCallback)
 
-  //add the node callback
+  private val _reent_lock = new ReentrantReadWriteLock(true)
+
+  private def ReadLock(reent_lock: ReentrantReadWriteLock): Unit = {
+    if (reent_lock != null)
+      reent_lock.readLock().lock()
+  }
+
+  private def ReadUnlock(reent_lock: ReentrantReadWriteLock): Unit = {
+    if (reent_lock != null)
+      reent_lock.readLock().unlock()
+  }
+
+  private def WriteLock(reent_lock: ReentrantReadWriteLock): Unit = {
+    if (reent_lock != null)
+      reent_lock.writeLock().lock()
+  }
+
+  private def WriteUnlock(reent_lock: ReentrantReadWriteLock): Unit = {
+    if (reent_lock != null)
+      reent_lock.writeLock().unlock()
+  }
+
+  private def hasNextArchiveFileInfo: Boolean = {
+    (archiveInfo.size > 0)
+  }
+
+  private def getNextArchiveFileInfo: ArchiveFileInfo = {
+    var archInfo: ArchiveFileInfo = null
+    ReadLock(_reent_lock)
+    try {
+      if (archiveInfo.size > 0)
+        archInfo = archiveInfo.dequeue()
+    } finally {
+      ReadUnlock(_reent_lock)
+    }
+    archInfo
+  }
+
+  private def addArchiveFileInfo(archInfo: ArchiveFileInfo): Unit = {
+    WriteLock(_reent_lock)
+    try {
+      archiveInfo += archInfo
+    } finally {
+      WriteUnlock(_reent_lock)
+    }
+  }
+
+    //add the node callback
   private def initializeNode: Unit ={
     LOG.debug("Max memeory = "+Runtime.getRuntime().maxMemory())
 
@@ -1160,8 +1212,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       }
 
       isFileMoved = moveFile(smartFileHandler)
-      if (isFileMoved) {
-        SmartFileHandlerFactory.archiveFile(adapterConfig, targetMoveDir, flBaseName, componentsMap)
+      if (isFileMoved && adapterConfig.archiveConfig != null) {
+        addArchiveFileInfo(ArchiveFileInfo(adapterConfig, targetMoveDir, flBaseName, componentsMap))
       }
     } catch {
       case e: Throwable => {
@@ -1308,9 +1360,42 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     infoBuffer.toArray
   }
 
+  private def sleepMs(sleepTimeInMs: Int): Unit = {
+    try {
+      Thread.sleep(sleepTimeInMs)
+    } catch {
+      case e: Throwable => {}
+    }
+  }
 
   override def StartProcessing(partitionIds: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = {
     isShutdown = false
+
+    if (adapterConfig.archiveConfig != null) {
+      var archiveParallelism = 1
+      var archiveSleepTimeInMs = 10
+      archiveExecutor = Executors.newFixedThreadPool(archiveParallelism)
+
+      for (i <- 0 until archiveParallelism) {
+        val archiveThread = new Runnable() {
+          override def run(): Unit = {
+            while (true) {
+              if (hasNextArchiveFileInfo) {
+                val archInfo = getNextArchiveFileInfo
+                if (archInfo != null) {
+                  SmartFileHandlerFactory.archiveFile(archInfo.adapterConfig, archInfo.srcFileDir, archInfo.srcFileBaseName, archInfo.componentsMap)
+                } else {
+                  sleepMs(archiveSleepTimeInMs)
+                }
+              } else {
+                sleepMs(archiveSleepTimeInMs)
+              }
+            }
+          }
+        }
+        archiveExecutor.execute(archiveThread)
+      }
+    }
 
     _ignoreFirstMsg = ignoreFirstMsg
     var lastHb: Long = 0
@@ -1473,6 +1558,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
     initialized = false
     isShutdown = true
+
+    if (archiveExecutor != null)
+      archiveExecutor.shutdownNow()
+    archiveExecutor = null
 
     if(monitorController!=null)
       monitorController.stopMonitoring
