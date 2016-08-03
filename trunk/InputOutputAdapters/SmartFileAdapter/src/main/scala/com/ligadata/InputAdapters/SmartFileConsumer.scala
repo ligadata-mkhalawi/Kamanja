@@ -1149,8 +1149,11 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       var flBaseName: String = null
       if (adapterConfig.archiveConfig != null) {
         val parentDir = smartFileHandler.getParentDir
-        if(locationsMap.contains(parentDir))
-          componentsMap = MonitorUtils.getFileComponents(smartFileHandler, locationsMap(parentDir))
+        if(locationsMap.contains(parentDir)) {
+          val locationInfo = locationsMap(parentDir)
+          if (locationInfo != null)
+            componentsMap = MonitorUtils.getFileComponents(smartFileHandler, locationInfo)
+        }
         val (targetMoveDir1, flBaseName1) = getTargetFile(smartFileHandler)
         targetMoveDir = targetMoveDir1
         flBaseName = flBaseName1
