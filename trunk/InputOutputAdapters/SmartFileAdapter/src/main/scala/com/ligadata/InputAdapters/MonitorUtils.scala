@@ -296,6 +296,7 @@ object SmartFileHandlerFactory{
       }
 
       fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, srcFileToArchive, true)
+      fileHandler.openForRead()
       os = osWriter.openFile(adapterConfig.archiveConfig, dstFileToArchive, false)
 
       var curReadLen = -1
