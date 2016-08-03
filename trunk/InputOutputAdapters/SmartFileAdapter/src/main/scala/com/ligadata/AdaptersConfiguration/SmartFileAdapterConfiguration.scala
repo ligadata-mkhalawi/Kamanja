@@ -390,18 +390,24 @@ object SmartFileAdapterConfiguration {
       monitoringConfig.msgTags.foreach(tag => if(!isValidMsgTag(tag)) throw new Exception(s"Invalid msg tag ($tag) for file input adatper ($adapterName)"))
     }*/
 
-    val archiveConfig: SmartFileProducerConfiguration =
-      if (adapCfgValues.contains("ArchiveConfig")) {
+    var archiveConfig: SmartFileProducerConfiguration = null
+    if (adapCfgValues.contains("ArchiveConfig")) {
+      try {
         val connConf = adapCfgValues.get("ArchiveConfig").get.asInstanceOf[Map[String, Any]]
         val aConfig = SmartFileProducerConfiguration.getAdapterConfigFromMap(connConf)
         aConfig.Name = ""
         aConfig.className = ""
         aConfig.jarName = ""
         aConfig.dependencyJars = Set[String]()
-        aConfig
-      } else {
-        null
+        archiveConfig = aConfig
+      } catch {
+        case e: Throwable => {
+          logger.error("Failed to load ArchiveConfig", e)
+        }
       }
+    }
+
+    logger.debug("archiveConfig:" + archiveConfig + ", has ArchiveConfig:" + adapCfgValues.contains("ArchiveConfig"))
 
     //TODO : validation for FilesOrdering
 
