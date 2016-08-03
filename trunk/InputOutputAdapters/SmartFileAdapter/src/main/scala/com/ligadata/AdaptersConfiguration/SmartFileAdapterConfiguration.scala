@@ -9,14 +9,21 @@ import org.json4s.native.JsonMethods._
 
 import scala.collection.mutable.{ArrayBuffer, MutableList}
 
+class ArchiveConfig {
+  var archiveSleepTimeInMs: Int = 10
+  var archiveParallelism: Int = 1
+  var outputConfig: SmartFileProducerConfiguration = null
+}
+
 /**
   * Created by Yasser on 3/10/2016.
   */
 class SmartFileAdapterConfiguration extends AdapterConfiguration {
   var _type: String = _ // FileSystem, hdfs, sftp
 
-  var connectionConfig : FileAdapterConnectionConfig = null
-  var monitoringConfig : FileAdapterMonitoringConfig = null
+  var connectionConfig: FileAdapterConnectionConfig = null
+  var monitoringConfig: FileAdapterMonitoringConfig = null
+  var archiveConfig: ArchiveConfig = null
 }
 
 class FileAdapterConnectionConfig {
@@ -29,66 +36,66 @@ class FileAdapterConnectionConfig {
   var passphrase: String = _
   var keyFile: String = _
 
-  var hadoopConfig  : List[(String,String)]=null
+  var hadoopConfig: List[(String, String)] = null
 }
 
 class FileAdapterMonitoringConfig {
-  var waitingTimeMS : Int = _
-  var dirCheckThreshold : Int = 0 //when > 0 listing watched folders should stop when count of files waiting to be processed is above the threshold
+  var waitingTimeMS: Int = _
+  var dirCheckThreshold: Int = 0 //when > 0 listing watched folders should stop when count of files waiting to be processed is above the threshold
 
   //var locations : Array[String] = Array.empty[String] //folders to monitor, simple comma separated list
   //var targetMoveDir : String = "" //generic target dir to move files to. used when src dir has no target
 
-  var detailedLocations : Array[LocationInfo] = Array.empty[LocationInfo] //folders to monitor, with other info
+  var detailedLocations: Array[LocationInfo] = Array.empty[LocationInfo] //folders to monitor, with other info
 
   var fileBufferingTimeout = 300 // in seconds
   //folders to move consumed files to. either one directory for all input (locations) or same number as (locations)
   //var targetMoveDirs : Array[String] = Array.empty[String]
-  var consumersCount : Int = _
-  var workerBufferSize : Int = 4 //buffer size in MB to read messages from files
+  var consumersCount: Int = _
+  var workerBufferSize: Int = 4 //buffer size in MB to read messages from files
 
 
-  var msgTags : Array[String] = Array.empty[String] //public
-  var tagDelimiter : String = "," //public
+  var msgTags: Array[String] = Array.empty[String]  //public
+  var tagDelimiter: String = "," //public
 
-  var messageSeparator : Char = 10
-  var orderBy : Array[String] = Array.empty[String]
+  var messageSeparator: Char = 10
+  var orderBy: Array[String] = Array.empty[String]
 
-  var enableMoving : String = "on" //on, off - public
-  def isMovingEnabled : Boolean = enableMoving == null || enableMoving.length ==0 || enableMoving.equalsIgnoreCase("on")
+  var enableMoving: String = "on"  //on, off - public
+  def isMovingEnabled: Boolean = enableMoving == null || enableMoving.length == 0 || enableMoving.equalsIgnoreCase("on")
 }
 
 class Padding {
   //var componentName : String = ""
-  var padPos: String = "left" //left, right
-  var padSize : Int = 0
-  var padStr : String = ""
+  var padPos: String = "left"  //left, right
+  var padSize: Int = 0
+  var padStr: String = ""
 }
 
 class FileComponents {
-  var components : Array[String] = Array.empty[String]
+  var components: Array[String] = Array.empty[String]
   var regex: String = ""
-  var paddings : Map[String, Padding] = Map[String, Padding]()
+  var paddings: Map[String, Padding] = Map[String, Padding]()
 }
 
-class LocationInfo{
+class LocationInfo {
 
   var srcDir = ""
   var targetDir = ""
 
-  var fileComponents : FileComponents = null
+  var fileComponents: FileComponents = null
   //array of keywords, each one has a meaning to the adapter, which will add corresponding data to msg before sending to engine
-  var msgTags : Array[String] = Array.empty[String]
-  var tagDelimiter : String = "" //if empty get public one
+  var msgTags: Array[String] = Array.empty[String]
+  var tagDelimiter: String = "" //if empty get public one
 
-  var messageSeparator : Char = 0 //0 this means separator is not set, so get it from public attributes
-  var orderBy : Array[String] = Array.empty[String]
+  var messageSeparator: Char = 0  //0 this means separator is not set, so get it from public attributes
+  var orderBy: Array[String] = Array.empty[String]
 
-  var enableMoving : String = "" //on, off, empty means get it from public attribute
-  def isMovingEnabled : Boolean = enableMoving == null || enableMoving.length ==0 || enableMoving.equalsIgnoreCase("on")
+  var enableMoving: String = ""  //on, off, empty means get it from public attribute
+  def isMovingEnabled: Boolean = enableMoving == null || enableMoving.length == 0 || enableMoving.equalsIgnoreCase("on")
 }
 
-object SmartFileAdapterConfiguration{
+object SmartFileAdapterConfiguration {
 
   val defaultWaitingTimeMS = 1000
   val defaultConsumerCount = 2
@@ -98,7 +105,8 @@ object SmartFileAdapterConfiguration{
   lazy val logger = LogManager.getLogger(loggerName)
 
   val validMsgTags = Set("MsgType", "FileName", "FileFullPath")
-  def isValidMsgTag(tag : String) = tag != null && (validMsgTags contains tag)
+
+  def isValidMsgTag(tag: String) = tag != null && (validMsgTags contains tag)
 
   def getAdapterConfig(inputConfig: AdapterConfiguration): SmartFileAdapterConfiguration = {
 
@@ -109,30 +117,31 @@ object SmartFileAdapterConfiguration{
 
     val adapterConfig = new SmartFileAdapterConfiguration()
     adapterConfig.Name = inputConfig.Name
-//    adapterConfig.formatName = inputConfig.formatName
-//    adapterConfig.validateAdapterName = inputConfig.validateAdapterName
-//    adapterConfig.failedEventsAdapterName = inputConfig.failedEventsAdapterName
+    //    adapterConfig.formatName = inputConfig.formatName
+    //    adapterConfig.validateAdapterName = inputConfig.validateAdapterName
+    //    adapterConfig.failedEventsAdapterName = inputConfig.failedEventsAdapterName
     adapterConfig.className = inputConfig.className
     adapterConfig.jarName = inputConfig.jarName
     adapterConfig.dependencyJars = inputConfig.dependencyJars
-//    adapterConfig.associatedMsg = if (inputConfig.associatedMsg == null) null else inputConfig.associatedMsg.trim
-//    adapterConfig.keyAndValueDelimiter = if (inputConfig.keyAndValueDelimiter == null) null else inputConfig.keyAndValueDelimiter.trim
-//    adapterConfig.fieldDelimiter = if (inputConfig.fieldDelimiter == null) null else inputConfig.fieldDelimiter.trim
-//    adapterConfig.valueDelimiter = if (inputConfig.valueDelimiter == null) null else inputConfig.valueDelimiter.trim
+    //    adapterConfig.associatedMsg = if (inputConfig.associatedMsg == null) null else inputConfig.associatedMsg.trim
+    //    adapterConfig.keyAndValueDelimiter = if (inputConfig.keyAndValueDelimiter == null) null else inputConfig.keyAndValueDelimiter.trim
+    //    adapterConfig.fieldDelimiter = if (inputConfig.fieldDelimiter == null) null else inputConfig.fieldDelimiter.trim
+    //    adapterConfig.valueDelimiter = if (inputConfig.valueDelimiter == null) null else inputConfig.valueDelimiter.trim
 
     adapterConfig.adapterSpecificCfg = inputConfig.adapterSpecificCfg
 
-    logger.debug("SmartFileAdapterConfiguration (getAdapterConfig)- inputConfig.adapterSpecificCfg==null is "+
+    logger.debug("SmartFileAdapterConfiguration (getAdapterConfig)- inputConfig.adapterSpecificCfg==null is " +
       (inputConfig.adapterSpecificCfg == null))
-    val (_type, connectionConfig, monitoringConfig) = parseSmartFileAdapterSpecificConfig(inputConfig.Name, inputConfig.adapterSpecificCfg)
+    val (_type, connectionConfig, monitoringConfig, archiveConfig) = parseSmartFileAdapterSpecificConfig(inputConfig.Name, inputConfig.adapterSpecificCfg)
     adapterConfig._type = _type
     adapterConfig.connectionConfig = connectionConfig
     adapterConfig.monitoringConfig = monitoringConfig
+    adapterConfig.archiveConfig = archiveConfig
 
     adapterConfig
   }
 
-  def parseSmartFileAdapterSpecificConfig(adapterName : String, adapterSpecificCfgJson : String) : (String, FileAdapterConnectionConfig, FileAdapterMonitoringConfig) = {
+  def parseSmartFileAdapterSpecificConfig(adapterName: String, adapterSpecificCfgJson: String): (String, FileAdapterConnectionConfig, FileAdapterMonitoringConfig, ArchiveConfig) = {
 
     val adapCfg = parse(adapterSpecificCfgJson)
 
@@ -143,7 +152,7 @@ object SmartFileAdapterConfiguration{
 
     val adapCfgValues = adapCfg.values.asInstanceOf[Map[String, Any]]
 
-    if(adapCfgValues.getOrElse("Type", null) == null) {
+    if (adapCfgValues.getOrElse("Type", null) == null) {
       val err = "Not found Type for Smart File Adapter Config:" + adapterName
       throw new KamanjaException(err, null)
     }
@@ -152,14 +161,14 @@ object SmartFileAdapterConfiguration{
     val connectionConfig = new FileAdapterConnectionConfig()
     val monitoringConfig = new FileAdapterMonitoringConfig()
 
-    if(adapCfgValues.getOrElse("ConnectionConfig", null) == null){
+    if (adapCfgValues.getOrElse("ConnectionConfig", null) == null) {
       val err = "Not found ConnectionConfig for Smart File Adapter Config:" + adapterName
       throw new KamanjaException(err, null)
     }
 
-    var simpleLocations : Array[String] = Array.empty[String] //folders to monitor, simple comma separated list
-    var publicTargetMoveDir : String = "" //generic target dir to move files to. used when src dir has no target
-    var publicFileComponents : FileComponents = null
+    var simpleLocations: Array[String] = Array.empty[String] //folders to monitor, simple comma separated list
+    var publicTargetMoveDir: String = "" //generic target dir to move files to. used when src dir has no target
+    var publicFileComponents: FileComponents = null
 
     val connConf = adapCfgValues.get("ConnectionConfig").get.asInstanceOf[Map[String, Any]]
     //val connConfValues = connConf.values.asInstanceOf[Map[String, String]]
@@ -171,35 +180,39 @@ object SmartFileAdapterConfiguration{
         val userID = kv._2.asInstanceOf[String]
         connectionConfig.userId = userID.trim
       } else if (kv._1.compareToIgnoreCase("Password") == 0) {
-        val password  = kv._2.asInstanceOf[String]
+        val password = kv._2.asInstanceOf[String]
         connectionConfig.password = password.trim
       } else if (kv._1.compareToIgnoreCase("Authentication") == 0) {
         val authentication = kv._2.asInstanceOf[String]
         connectionConfig.authentication = authentication.trim
-      } else if (kv._1.compareToIgnoreCase("Principal") == 0) {//kerberos
+      } else if (kv._1.compareToIgnoreCase("Principal") == 0) {
+        //kerberos
         val principal = kv._2.asInstanceOf[String]
         connectionConfig.principal = principal.trim
-      } else if (kv._1.compareToIgnoreCase("Keytab") == 0) {//kerberos
+      } else if (kv._1.compareToIgnoreCase("Keytab") == 0) {
+        //kerberos
         val keyTab = kv._2.asInstanceOf[String]
         connectionConfig.keytab = keyTab.trim
-      } else if (kv._1.compareToIgnoreCase("Passphrase") == 0) {//ssh
-        val passPhrase =kv._2.asInstanceOf[String]
+      } else if (kv._1.compareToIgnoreCase("Passphrase") == 0) {
+        //ssh
+        val passPhrase = kv._2.asInstanceOf[String]
         connectionConfig.passphrase = passPhrase.trim
-      } else if (kv._1.compareToIgnoreCase("KeyFile") == 0) {//ssh
+      } else if (kv._1.compareToIgnoreCase("KeyFile") == 0) {
+        //ssh
         val keyFile = kv._2.asInstanceOf[String]
         connectionConfig.keyFile = keyFile.trim
-      }else if (kv._1.compareToIgnoreCase("hadoopConfig")==0){
-        val hadoopConfig = kv._2.asInstanceOf[Map[String,String]]
-        connectionConfig.hadoopConfig= List[(String,String)]()
-        hadoopConfig.foreach(hconf =>{
+      } else if (kv._1.compareToIgnoreCase("hadoopConfig") == 0) {
+        val hadoopConfig = kv._2.asInstanceOf[Map[String, String]]
+        connectionConfig.hadoopConfig = List[(String, String)]()
+        hadoopConfig.foreach(hconf => {
           connectionConfig.hadoopConfig ::=(hconf._1, hconf._2)
         })
       }
     })
-    if(connectionConfig.authentication == null || connectionConfig.authentication == "")
-      connectionConfig.authentication = "simple"//default
+    if (connectionConfig.authentication == null || connectionConfig.authentication == "")
+      connectionConfig.authentication = "simple" //default
 
-    if(adapCfgValues.getOrElse("MonitoringConfig", null) == null){
+    if (adapCfgValues.getOrElse("MonitoringConfig", null) == null) {
       val err = "Not found MonitoringConfig for Smart File Adapter Config:" + adapterName
       throw new KamanjaException(err, null)
     }
@@ -225,40 +238,43 @@ object SmartFileAdapterConfiguration{
       else if (kv._1.compareToIgnoreCase("MessageSeparator") == 0) {
         monitoringConfig.messageSeparator = kv._2.asInstanceOf[String].trim.toInt.toChar
       }
-      else if(kv._1.compareToIgnoreCase("OrderBy")== 0) {
+      else if (kv._1.compareToIgnoreCase("OrderBy") == 0) {
         monitoringConfig.orderBy = kv._2.asInstanceOf[List[String]].toArray
       }
       else if (kv._1.compareToIgnoreCase("TagDelimiter") == 0) {
         monitoringConfig.tagDelimiter = kv._2.asInstanceOf[String]
       }
-      else  if (kv._1.compareToIgnoreCase("MsgTags") == 0) {
+      else if (kv._1.compareToIgnoreCase("MsgTags") == 0) {
         monitoringConfig.msgTags = kv._2.asInstanceOf[List[String]].toArray
       }
-      else  if (kv._1.compareToIgnoreCase("DirCheckThreshold") == 0) {
+      else if (kv._1.compareToIgnoreCase("DirCheckThreshold") == 0) {
         monitoringConfig.dirCheckThreshold = kv._2.asInstanceOf[String].trim.toInt
       }
-      else  if (kv._1.compareToIgnoreCase("Locations") == 0) {//old fashioned-simple locations
+      else if (kv._1.compareToIgnoreCase("Locations") == 0) {
+        //old fashioned-simple locations
         simpleLocations = kv._2.asInstanceOf[String].split(",").map(str => str.trim).filter(str => str.size > 0)
       }
-      else  if (kv._1.compareToIgnoreCase("TargetMoveDir") == 0) {//public targetMoveDir
+      else if (kv._1.compareToIgnoreCase("TargetMoveDir") == 0) {
+        //public targetMoveDir
         publicTargetMoveDir = kv._2.asInstanceOf[String]
         //println("publicTargetMoveDir============="+publicTargetMoveDir)
       }
       else if (kv._1.compareToIgnoreCase("EnableMoving") == 0) {
         monitoringConfig.enableMoving = kv._2.asInstanceOf[String]
       }
-      else if (kv._1.compareToIgnoreCase("FileComponents")==0){//public FileComponents
-        val componentsMap = kv._2.asInstanceOf[Map[String,Any]]
+      else if (kv._1.compareToIgnoreCase("FileComponents") == 0) {
+        //public FileComponents
+        val componentsMap = kv._2.asInstanceOf[Map[String, Any]]
         publicFileComponents = extractFileComponents(componentsMap)
       }
 
-      else  if (kv._1.compareToIgnoreCase("DetailedLocations") == 0) {
+      else if (kv._1.compareToIgnoreCase("DetailedLocations") == 0) {
         val locationsInfoBuffer = ArrayBuffer[LocationInfo]()
 
         val locations = kv._2.asInstanceOf[List[Map[String, Any]]]
         locations.foreach(loc => {
           val locationInfo = new LocationInfo
-          loc.foreach(kv =>{
+          loc.foreach(kv => {
             if (kv._1.compareToIgnoreCase("srcDir") == 0) {
               locationInfo.srcDir = kv._2.asInstanceOf[String].trim
             }
@@ -268,7 +284,7 @@ object SmartFileAdapterConfiguration{
             else if (kv._1.compareToIgnoreCase("EnableMoving") == 0) {
               locationInfo.enableMoving = kv._2.asInstanceOf[String]
             }
-            else if(kv._1.compareToIgnoreCase("MsgTags")== 0) {
+            else if (kv._1.compareToIgnoreCase("MsgTags") == 0) {
               locationInfo.msgTags = kv._2.asInstanceOf[List[String]].toArray
             }
             else if (kv._1.compareToIgnoreCase("TagDelimiter") == 0) {
@@ -277,11 +293,11 @@ object SmartFileAdapterConfiguration{
             else if (kv._1.compareToIgnoreCase("MessageSeparator") == 0) {
               locationInfo.messageSeparator = kv._2.asInstanceOf[String].trim.toInt.toChar
             }
-            else if(kv._1.compareToIgnoreCase("OrderBy")== 0) {
+            else if (kv._1.compareToIgnoreCase("OrderBy") == 0) {
               locationInfo.orderBy = kv._2.asInstanceOf[List[String]].toArray
             }
-            else if (kv._1.compareToIgnoreCase("FileComponents")==0){
-              val componentsMap = kv._2.asInstanceOf[Map[String,Any]]
+            else if (kv._1.compareToIgnoreCase("FileComponents") == 0) {
+              val componentsMap = kv._2.asInstanceOf[Map[String, Any]]
               val fileComponents = extractFileComponents(componentsMap)
               locationInfo.fileComponents = fileComponents
             }
@@ -298,9 +314,9 @@ object SmartFileAdapterConfiguration{
 
 
     //if no detailedLocations defined, use locations, define them as detailedLocations
-    if(monitoringConfig.detailedLocations.length == 0){
-      if(simpleLocations.length > 0){
-        if((!monitoringConfig.isMovingEnabled) && (publicTargetMoveDir == null || publicTargetMoveDir.length == 0)){
+    if (monitoringConfig.detailedLocations.length == 0) {
+      if (simpleLocations.length > 0) {
+        if ((!monitoringConfig.isMovingEnabled) && (publicTargetMoveDir == null || publicTargetMoveDir.length == 0)) {
           val err = "Not found TargetMoveDir corresponding to locatoins for Smart File Adapter Config:" + adapterName
           throw new KamanjaException(err, null)
         }
@@ -310,11 +326,11 @@ object SmartFileAdapterConfiguration{
           locationInfo.srcDir = loc
           locationInfo.targetDir = publicTargetMoveDir
           locationInfo.orderBy = //get public order by or default
-            if(monitoringConfig.orderBy == null || monitoringConfig.orderBy.length == 0) defaultOrderBy
+            if (monitoringConfig.orderBy == null || monitoringConfig.orderBy.length == 0) defaultOrderBy
             else monitoringConfig.orderBy
 
           locationInfo.enableMoving =
-            if(monitoringConfig.enableMoving == null || monitoringConfig.enableMoving.length == 0) "on"
+            if (monitoringConfig.enableMoving == null || monitoringConfig.enableMoving.length == 0) "on"
             else monitoringConfig.enableMoving
 
           locationInfo.messageSeparator = monitoringConfig.messageSeparator
@@ -325,34 +341,35 @@ object SmartFileAdapterConfiguration{
       }
 
     }
-    else{
+    else {
       //for each location, if local attributes have no values get them from public corresponding attributes
       monitoringConfig.detailedLocations.foreach(locationInfo => {
-        if(locationInfo.targetDir == null || locationInfo.targetDir.trim.length == 0)
+        if (locationInfo.targetDir == null || locationInfo.targetDir.trim.length == 0)
           locationInfo.targetDir = publicTargetMoveDir
 
-        if(locationInfo.orderBy.length == 0) {
+        if (locationInfo.orderBy.length == 0) {
           locationInfo.orderBy = //get public order by or default
             if (monitoringConfig.orderBy == null || monitoringConfig.orderBy.length == 0) defaultOrderBy
             else monitoringConfig.orderBy
         }
 
-        if(locationInfo.enableMoving.length == 0) {
+        if (locationInfo.enableMoving.length == 0) {
           locationInfo.enableMoving = //get public order by or default
             if (monitoringConfig.enableMoving == null || monitoringConfig.enableMoving.length == 0) "on"
             else monitoringConfig.enableMoving
         }
 
-        if(locationInfo.messageSeparator == 0){//this location has no separator, get the public value
+        if (locationInfo.messageSeparator == 0) {
+          //this location has no separator, get the public value
           locationInfo.messageSeparator = monitoringConfig.messageSeparator
         }
-        if(locationInfo.fileComponents == null)
+        if (locationInfo.fileComponents == null)
           locationInfo.fileComponents = publicFileComponents
 
-        if(locationInfo.msgTags == null || locationInfo.msgTags.length == 0)
+        if (locationInfo.msgTags == null || locationInfo.msgTags.length == 0)
           locationInfo.msgTags = monitoringConfig.msgTags
 
-        if(locationInfo.tagDelimiter == null || locationInfo.tagDelimiter.length == 0)
+        if (locationInfo.tagDelimiter == null || locationInfo.tagDelimiter.length == 0)
           locationInfo.tagDelimiter = monitoringConfig.tagDelimiter
       })
     }
@@ -365,10 +382,10 @@ object SmartFileAdapterConfiguration{
       throw new KamanjaException(err, null)
     }*/
 
-   /* if(monitoringConfig.targetMoveDirs == null || monitoringConfig.targetMoveDirs.length == 0) {
-      val err = "Not found targetMoveDirs for Smart File Adapter Config:" + adapterName
-      throw new KamanjaException(err, null)
-    }*/
+    /* if(monitoringConfig.targetMoveDirs == null || monitoringConfig.targetMoveDirs.length == 0) {
+       val err = "Not found targetMoveDirs for Smart File Adapter Config:" + adapterName
+       throw new KamanjaException(err, null)
+     }*/
 
     /*if(monitoringConfig.targetMoveDirs.length > 1 && monitoringConfig.targetMoveDirs.length < monitoringConfig.locations.length) {
       val err = "targetMoveDir should either have one dir or same number as (location) for Smart File Adapter Config:" + adapterName
@@ -379,34 +396,60 @@ object SmartFileAdapterConfiguration{
       monitoringConfig.msgTags.foreach(tag => if(!isValidMsgTag(tag)) throw new Exception(s"Invalid msg tag ($tag) for file input adatper ($adapterName)"))
     }*/
 
+    var archiveConfig: ArchiveConfig = null
+    if (adapCfgValues.contains("ArchiveConfig")) {
+      try {
+        val connConf = adapCfgValues.get("ArchiveConfig").get.asInstanceOf[Map[String, Any]]
+        val aConfig = SmartFileProducerConfiguration.getAdapterConfigFromMap(connConf)
+        aConfig.Name = ""
+        aConfig.className = ""
+        aConfig.jarName = ""
+        aConfig.dependencyJars = Set[String]()
+
+        archiveConfig = new ArchiveConfig()
+
+        archiveConfig.outputConfig = aConfig
+        archiveConfig.archiveParallelism = if (connConf.contains("ArchiveParallelism")) connConf.getOrElse("ArchiveParallelism", "1").toString.trim.toInt else 1
+        if (archiveConfig.archiveParallelism <= 0) archiveConfig.archiveParallelism = 1
+
+        archiveConfig.archiveSleepTimeInMs = if (connConf.contains("ArchiveSleepTimeInMs")) connConf.getOrElse("ArchiveSleepTimeInMs", "10").toString.trim.toInt else 10
+        if (archiveConfig.archiveSleepTimeInMs < 0) archiveConfig.archiveSleepTimeInMs = 10
+      } catch {
+        case e: Throwable => {
+          logger.error("Failed to load ArchiveConfig", e)
+        }
+      }
+    }
+
+    logger.debug("archiveConfig:" + archiveConfig + ", has ArchiveConfig:" + adapCfgValues.contains("ArchiveConfig"))
 
     //TODO : validation for FilesOrdering
 
-    (_type, connectionConfig, monitoringConfig)
+    (_type, connectionConfig, monitoringConfig, archiveConfig)
   }
 
 
-  def extractFileComponents(componentsMap :  Map[String,Any]) : FileComponents = {
+  def extractFileComponents(componentsMap: Map[String, Any]): FileComponents = {
     val fileComponents = new FileComponents
     componentsMap.foreach(componentTuple => {
-      if(componentTuple._1.equalsIgnoreCase("Components"))
+      if (componentTuple._1.equalsIgnoreCase("Components"))
         fileComponents.components = componentTuple._2.asInstanceOf[List[String]].toArray
-      else if(componentTuple._1.equalsIgnoreCase("Regex"))
+      else if (componentTuple._1.equalsIgnoreCase("Regex"))
         fileComponents.regex = componentTuple._2.asInstanceOf[String]
-      else if (componentTuple._1.compareToIgnoreCase("Paddings")==0){
+      else if (componentTuple._1.compareToIgnoreCase("Paddings") == 0) {
         val paddingsMap = componentTuple._2.asInstanceOf[Map[String, Any]]
 
         paddingsMap.foreach(paddingTuple => {
           val paddingInfo = new Padding
           val paddingJsonInfoList = paddingTuple._2.asInstanceOf[List[Any]]
-          if(paddingJsonInfoList != null && paddingJsonInfoList.length == 3){
+          if (paddingJsonInfoList != null && paddingJsonInfoList.length == 3) {
             paddingInfo.padPos = paddingJsonInfoList(0).asInstanceOf[String]
             paddingInfo.padSize = //accept number whether as num or string
-              try{
+              try {
                 paddingJsonInfoList(1).asInstanceOf[scala.math.BigInt].toInt
               }
-              catch{
-                case ex : Exception => paddingJsonInfoList(1).asInstanceOf[String].toInt
+              catch {
+                case ex: Exception => paddingJsonInfoList(1).asInstanceOf[String].toInt
               }
 
             paddingInfo.padStr = paddingJsonInfoList(2).asInstanceOf[String]
@@ -426,21 +469,23 @@ case class SmartFileKeyData(Version: Int, Type: String, Name: String, PartitionI
 
 class SmartFilePartitionUniqueRecordKey extends PartitionUniqueRecordKey {
   val Version: Int = 1
-  var Name: String = _ // Name
+  var Name: String = _  // Name
   val Type: String = "SmartFile"
   var PartitionId: Int = _ // Partition Id
 
-  override def Serialize: String = { // Making String from key
-  val json =
-    ("Version" -> Version) ~
-      ("Type" -> Type) ~
-      ("Name" -> Name) ~
-      ("PartitionId" -> PartitionId)
+  override def Serialize: String = {
+    // Making String from key
+    val json =
+      ("Version" -> Version) ~
+        ("Type" -> Type) ~
+        ("Name" -> Name) ~
+        ("PartitionId" -> PartitionId)
     compact(render(json))
   }
 
-  override def Deserialize(key: String): Unit = { // Making Key from Serialized String
-  implicit val jsonFormats: Formats = DefaultFormats
+  override def Deserialize(key: String): Unit = {
+    // Making Key from Serialized String
+    implicit val jsonFormats: Formats = DefaultFormats
     val keyData = parse(key).extract[SmartFileKeyData]
     if (keyData.Version == Version && keyData.Type.compareTo(Type) == 0) {
       Name = keyData.Name
@@ -450,11 +495,11 @@ class SmartFilePartitionUniqueRecordKey extends PartitionUniqueRecordKey {
   }
 }
 
-case class SmartFileRecData(Version: Int, FileName : String, Offset: Option[Long])
+case class SmartFileRecData(Version: Int, FileName: String, Offset: Option[Long])
 
 class SmartFilePartitionUniqueRecordValue extends PartitionUniqueRecordValue {
   val Version: Int = 1
-  var FileName : String = _
+  var FileName: String = _
   var Offset: Long = -1 // Offset of next message in the file
 
   override def Serialize: String = {

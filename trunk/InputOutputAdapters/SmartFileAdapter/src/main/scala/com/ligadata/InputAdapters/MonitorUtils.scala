@@ -1,6 +1,6 @@
 package com.ligadata.InputAdapters
 
-import java.io.{InputStream, IOException, File, FileInputStream}
+import java.io._
 import java.nio.file.{Paths, Files}
 
 import com.ligadata.AdaptersConfiguration.{LocationInfo, SmartFileAdapterConfiguration, FileAdapterMonitoringConfig, FileAdapterConnectionConfig}
@@ -152,8 +152,8 @@ object MonitorUtils {
     */
   def compareFiles(fileHandler1: SmartFileHandler, fileHandler2: SmartFileHandler, locationInfo : LocationInfo) : Int = {
 
-    val fileComponentsMap1 = getFileComponents(fileHandler1, locationInfo)
-    val fileComponentsMap2 = getFileComponents(fileHandler2, locationInfo)
+    val fileComponentsMap1 = getFileComponents(fileHandler1.getFullPath, locationInfo)
+    val fileComponentsMap2 = getFileComponents(fileHandler2.getFullPath, locationInfo)
 
 
     breakable{
@@ -198,25 +198,23 @@ object MonitorUtils {
 
   /**
     * based on file name and ordering config, returns a value representing new file name
-    * @param fileHandler  assuming file name already checked against the pattern
+    * @param fileFullPath
     * @param locationInfo
     * @return
     */
-  def getFileComponents(fileHandler: SmartFileHandler, locationInfo : LocationInfo) : Map[String, String] = {
-
-    val filePath = fileHandler.getFullPath
-    val fileName = getFileName(filePath)
+  def getFileComponents(fileFullPath: String, locationInfo : LocationInfo) : Map[String, String] = {
+    val fileName = getFileName(fileFullPath)
     val pattern = locationInfo.fileComponents.regex.r
 
     //println("orderingInfo.fileComponents.regex="+orderingInfo.fileComponents.regex)
     val matchList = pattern.findAllIn(fileName).matchData.toList
     //println("matchList.length="+matchList.length)
     if(matchList.isEmpty)
-      throw new Exception(s"File name (${filePath}) does not follow configured pattern ($pattern)")
+      throw new Exception(s"File name (${fileFullPath}) does not follow configured pattern ($pattern)")
 
     val firstMatch = matchList.head
     if(firstMatch.groupCount < locationInfo.fileComponents.components.length)
-      throw new Exception(s"File name (${filePath}) does not contain all configured components. " +
+      throw new Exception(s"File name (${fileFullPath}) does not contain all configured components. " +
       s"components count=${locationInfo.fileComponents.components.length} while found groups = ${firstMatch.groupCount}")
 
     //check if padding is needed for any component. then put components into map (component name -> value)
@@ -262,21 +260,94 @@ object MonitorUtils {
       processedFilesMap.remove(processedFilesMap.head._1)//remove first item to make place
 
     processedFilesMap.put(filePath, timeAsLong)
-
   }
 }
 
-
 object SmartFileHandlerFactory{
-  def createSmartFileHandler(adapterConfig : SmartFileAdapterConfiguration, fileFullPath : String): SmartFileHandler ={
+  lazy val loggerName = this.getClass.getName
+  lazy val logger = LogManager.getLogger(loggerName)
+
+  def archiveFile(adapterConfig: SmartFileAdapterConfiguration, srcFileDir: String, srcFileBaseName: String, componentsMap: scala.collection.immutable.Map[String, String]): Boolean = {
+    if (adapterConfig.archiveConfig == null || adapterConfig.archiveConfig.outputConfig == null)
+      return true
+
+    var status = false
+    val partitionVariable = "\\$\\{([^\\}]+)\\}".r
+    val partitionFormats = partitionVariable.findAllMatchIn(adapterConfig.archiveConfig.outputConfig.uri).map(x => x.group(1)).toList
+    val partitionFormatString = partitionVariable.replaceAllIn(adapterConfig.archiveConfig.outputConfig.uri, "%s")
+
+    val values = partitionFormats.map(fmt => { componentsMap.getOrElse(fmt, "default").toString.trim })
+
+    val srcFileToArchive = srcFileDir + "/" + srcFileBaseName
+    val dstFileToArchive =  partitionFormatString.format(values: _*) + "/" + srcFileBaseName
+
+    logger.debug("Archiving file from " + srcFileToArchive + " to " + dstFileToArchive)
+
+    var fileHandler: SmartFileHandler = null
+    var osWriter = new com.ligadata.OutputAdapters.OutputStreamWriter()
+    var os: OutputStream = null
+
+    try {
+      if (osWriter.isFileExists(adapterConfig.archiveConfig.outputConfig, dstFileToArchive)) {
+        // Delete existing file in Archive folder
+        logger.error("Deleting previously archived/partially archived file " + dstFileToArchive)
+        osWriter.removeFile(adapterConfig.archiveConfig.outputConfig, dstFileToArchive)
+      }
+
+      fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, srcFileToArchive, true)
+      fileHandler.openForRead()
+      os = osWriter.openFile(adapterConfig.archiveConfig.outputConfig, dstFileToArchive, false)
+
+      var curReadLen = -1
+      val bufferSz = 8 * 1024 * 1024
+      val buf = new Array[Byte](bufferSz)
+
+      do {
+        curReadLen = fileHandler.read(buf, 0, bufferSz)
+        if (curReadLen > 0) {
+          os.write(buf, 0, curReadLen)
+        }
+      } while (curReadLen > 0)
+      fileHandler.deleteFile(srcFileToArchive) // Deleting file after archive
+      status = true
+    } catch {
+      case e: Throwable => {
+        logger.error("Failed to archive file from " + srcFileToArchive + " to " + dstFileToArchive, e)
+        status = false
+      }
+    } finally {
+      if (fileHandler != null) {
+        try {
+          fileHandler.close()
+        } catch {
+          case e: Throwable => {
+            logger.error("Failed to close InputStream for " + srcFileToArchive, e)
+          }
+        }
+      }
+
+      if (os != null) {
+        try {
+          os.close()
+        } catch {
+          case e: Throwable => {
+            logger.error("Failed to close OutputStream for " + dstFileToArchive, e)
+          }
+        }
+      }
+    }
+    status
+  }
+
+  def createSmartFileHandler(adapterConfig : SmartFileAdapterConfiguration, fileFullPath : String, isBinary: Boolean = false): SmartFileHandler ={
     val connectionConf = adapterConfig.connectionConfig
     val monitoringConf =adapterConfig.monitoringConfig
 
     val handler : SmartFileHandler =
       adapterConfig._type.toLowerCase() match {
-        case "das/nas" => new PosixFileHandler(fileFullPath)
-        case "sftp" => new SftpFileHandler(fileFullPath, connectionConf)
-        case "hdfs" => new HdfsFileHandler(fileFullPath, connectionConf)
+        case "das/nas" => new PosixFileHandler(fileFullPath, isBinary)
+        case "sftp" => new SftpFileHandler(fileFullPath, connectionConf, isBinary)
+        case "hdfs" => new HdfsFileHandler(fileFullPath, connectionConf, isBinary)
         case _ => throw new KamanjaException("Unsupported Smart file adapter type", null)
       }
 

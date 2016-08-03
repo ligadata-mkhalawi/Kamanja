@@ -43,13 +43,20 @@ class HdfsFileHandler extends SmartFileHandler{
 
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
-  
+
+  private var isBinary: Boolean = false
+
   def this(fullPath : String, connectionConf : FileAdapterConnectionConfig){
     this()
 
     fileFullPath = fullPath
     hdfsConfig = HdfsUtility.createConfig(connectionConf)
     hdFileSystem = FileSystem.newInstance(hdfsConfig)
+  }
+
+  def this(fullPath : String, connectionConf : FileAdapterConnectionConfig, isBin: Boolean) {
+    this(fullPath, connectionConf)
+    isBinary = isBin
   }
 
   /*def this(fullPath : String, fs : FileSystem){
@@ -95,9 +102,13 @@ class HdfsFileHandler extends SmartFileHandler{
   @throws(classOf[KamanjaException])
   def openForRead(): InputStream = {
     try {
-
-      val compressionType = CompressionUtil.getFileType(this, null)
-      in = CompressionUtil.getProperInputStream(getDefaultInputStream, compressionType)
+      val is = getDefaultInputStream()
+      if (!isBinary) {
+        val compressionType = CompressionUtil.getFileType(this, null)
+        in = CompressionUtil.getProperInputStream(is, compressionType)
+      } else {
+        in = is
+      }
       in
     }
     catch{
@@ -206,6 +217,30 @@ class HdfsFileHandler extends SmartFileHandler{
   }
 
   @throws(classOf[KamanjaException])
+  override def deleteFile(fileName: String) : Boolean = {
+    logger.info(s"Hdfs File Handler - Deleting file ($fileName)")
+    try {
+      hdFileSystem = FileSystem.get(hdfsConfig)
+      hdFileSystem.delete(new Path(fileName), true)
+      logger.debug("Successfully deleted")
+      true
+    }
+    catch {
+      case ex : Exception => {
+        logger.error("Hdfs File Handler - Error while trying to delete file " + fileName, ex)
+        false
+      }
+      case ex : Throwable => {
+        logger.error("Hdfs File Handler - Error while trying to delete file " + fileName, ex)
+        false
+      }
+
+    } finally {
+
+    }
+  }
+
+  @throws(classOf[KamanjaException])
   def close(): Unit = {
     if(in != null){
       logger.info("Hdfs File Handler - Closing file " + getFullPath)
@@ -283,7 +318,7 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
   private val processedFilesMap : scala.collection.mutable.LinkedHashMap[String, Long] = scala.collection.mutable.LinkedHashMap[String, Long]()
 
   def init(adapterSpecificCfgJson: String): Unit ={
-    val(_type, c, m) =  SmartFileAdapterConfiguration.parseSmartFileAdapterSpecificConfig(adapterName, adapterSpecificCfgJson)
+    val(_type, c, m, a) =  SmartFileAdapterConfiguration.parseSmartFileAdapterSpecificConfig(adapterName, adapterSpecificCfgJson)
     connectionConf = c
     monitoringConf = m
 
@@ -536,5 +571,10 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
 
   def stopMonitoring(){
     isMonitoring = false
+  }
+
+  override def listFiles(path: String): Array[String] ={
+    val fs = FileSystem.get(hdfsConfig)
+    getFolderContents(path, fs).filter(f => f.isFile).map(f => f.getPath.getName)
   }
 }

@@ -13,4 +13,7 @@ public interface SmartFileMonitor {
 
     //when passing true => monitor should stop listing files in folders
     void setMonitoringStatus(boolean status);
+
+    // List files for the given path
+    String[] listFiles(String path);
 }

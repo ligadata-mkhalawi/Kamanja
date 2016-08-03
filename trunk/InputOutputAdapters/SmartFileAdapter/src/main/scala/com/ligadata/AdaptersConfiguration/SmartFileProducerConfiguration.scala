@@ -47,27 +47,42 @@ class KerberosConfig {
 }
 
 object SmartFileProducerConfiguration {
-
-  def getAdapterConfig(inputConfig: AdapterConfiguration): SmartFileProducerConfiguration = {
-
-    if (inputConfig.adapterSpecificCfg == null || inputConfig.adapterSpecificCfg.size == 0) {
-      val err = "Not found Type and Connection info for Smart File Adapter Config:" + inputConfig.Name
+  def getAdapterConfig(config: AdapterConfiguration): SmartFileProducerConfiguration = {
+    if (config.adapterSpecificCfg == null || config.adapterSpecificCfg.size == 0) {
+      val err = "Not found Type and Connection info for Smart File Adapter Config:" + config.Name
       throw new KamanjaException(err, null)
     }
 
-    val adapterConfig = new SmartFileProducerConfiguration()
-    adapterConfig.Name = inputConfig.Name
-    adapterConfig.className = inputConfig.className
-    adapterConfig.jarName = inputConfig.jarName
-    adapterConfig.dependencyJars = inputConfig.dependencyJars
-
-    val adapCfg = parse(inputConfig.adapterSpecificCfg)
+    val adapCfg = parse(config.adapterSpecificCfg)
     if (adapCfg == null || adapCfg.values == null) {
-      val err = "Smart File Producer configuration must be specified for " + adapterConfig.Name
+      val err = "Smart File Producer configuration must be specified for " + config.Name
       throw new KamanjaException(err, null)
     }
-
     val adapCfgValues = adapCfg.values.asInstanceOf[Map[String, Any]]
+
+    val adapterConfig = getAdapterConfigFromMap(adapCfgValues)
+
+    adapterConfig.Name = config.Name
+    adapterConfig.className = config.className
+    adapterConfig.jarName = config.jarName
+    adapterConfig.dependencyJars = config.dependencyJars
+
+    adapterConfig
+  }
+
+  def getAdapterConfigFromMap(adapCfgValues: Map[String, Any]): SmartFileProducerConfiguration = {
+    val adapterConfig = new SmartFileProducerConfiguration()
+/*
+    if (adapCfgValues.contains("Name"))
+      adapterConfig.Name = adapCfgValues.get("Name").toString.trim
+    if (adapCfgValues.contains("ClassName"))
+      adapterConfig.className = adapCfgValues.get("ClassName").toString.trim
+    if (adapCfgValues.contains("JarName"))
+      adapterConfig.jarName = adapCfgValues.get("JarName").toString.trim
+    if (adapCfgValues.contains("DependencyJars"))
+      adapterConfig.dependencyJars =
+*/
+
     adapCfgValues.foreach(kv => {
       if (kv._1.compareToIgnoreCase("Uri") == 0) {
         adapterConfig.uri = kv._2.toString.trim

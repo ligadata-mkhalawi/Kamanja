@@ -98,6 +98,17 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
     })
   }
 
+  def listFiles(path: String): Array[String] ={
+    if (smartFileMonitor == null) {
+      smartFileMonitor = SmartFileMonitorFactory.createSmartFileMonitor(adapterConfig.Name, adapterConfig._type, fileDetectedCallback)
+      smartFileMonitor.init(adapterConfig.adapterSpecificCfg)
+    }
+    if(smartFileMonitor != null)
+      smartFileMonitor.listFiles(path)
+    else
+      Array[String]()
+  }
+
   def stopMonitoring(): Unit ={
 
     logger.debug("MonitorController - shutting down")

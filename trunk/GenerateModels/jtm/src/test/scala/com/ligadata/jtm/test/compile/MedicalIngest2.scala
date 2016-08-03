@@ -28,7 +28,7 @@ import com.ligadata.runtime.Conversion
 class TransactionIngestFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
   // Factory code start
   // Factory code end
-  override def createModelInstance(txnCtxt: com.ligadata.KamanjaBase.TransactionContext): ModelInstance = return new TransactionIngest(this)
+  override def createModelInstance(): ModelInstance = return new TransactionIngest(this)
   override def getModelName: String = "com.ligadata.models.samples.medical2.TransactionIngest"
   override def getVersion: String = "0.0.1"
   override def createResultObject(): ModelResultBase = new MappedModelResults()

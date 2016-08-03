@@ -50,6 +50,8 @@ class SftpFileHandler extends SmartFileHandler{
   private var jsch : JSch = null
   def getNewSession = jsch.getSession(connectionConfig.userId, host, port)
 
+  private var isBinary: Boolean = false
+
   def this(path : String, config : FileAdapterConnectionConfig){
     this()
     this.remoteFullPath = path
@@ -68,6 +70,11 @@ class SftpFileHandler extends SmartFileHandler{
     }
   }
 
+  def this(fullPath : String, config : FileAdapterConnectionConfig, isBin: Boolean) {
+    this(fullPath, config)
+    isBinary = isBin
+  }
+
   def getParentDir : String = {
     val filePath = getPathOnly(getFullPath)
     val idx = filePath.lastIndexOf("/")
@@ -78,7 +85,6 @@ class SftpFileHandler extends SmartFileHandler{
 
   //gets the input stream according to file system type - SFTP here
   def getDefaultInputStream : InputStream = {
-
     val ui=new SftpUserInfo(connectionConfig.password, passphrase)
 
     session = getNewSession
@@ -91,7 +97,6 @@ class SftpFileHandler extends SmartFileHandler{
     logger.info("Sftp File Handler - opening file " + getFullPath)
     val inputStream : InputStream =
       try {
-
         channelSftp.get(remoteFullPath)
       }
       catch {
@@ -119,8 +124,13 @@ class SftpFileHandler extends SmartFileHandler{
       /*manager = new StandardFileSystemManager()
       manager.init()*/
 
-      val compressionType = CompressionUtil.getFileType(this, null)
-      in = CompressionUtil.getProperInputStream(getDefaultInputStream(), compressionType)
+      val is = getDefaultInputStream()
+      if (!isBinary) {
+        val compressionType = CompressionUtil.getFileType(this, null)
+        in = CompressionUtil.getProperInputStream(is, compressionType)
+      } else {
+        in = is
+      }
       in
     }
     catch{
@@ -233,6 +243,42 @@ class SftpFileHandler extends SmartFileHandler{
       case ex: Throwable =>
         logger.error("Sftp File Handler - Error while trying to delete sftp file " + getFullPath, ex)
          false
+
+    }
+    finally{
+      if(channelSftp != null) channelSftp.exit()
+      if(session != null) session.disconnect()
+    }
+  }
+
+  @throws(classOf[Exception])
+  override def deleteFile(fileName: String) : Boolean = {
+    logger.info(s"Sftp File Handler - Deleting file (${hashPath(fileName)}")
+
+    val ui = new SftpUserInfo(connectionConfig.password, passphrase)
+
+    try {
+      session = getNewSession
+      session.setUserInfo(ui)
+      session.connect()
+      val channel = session.openChannel("sftp")
+      channel.connect()
+      channelSftp = channel.asInstanceOf[ChannelSftp]
+      channelSftp.rm(fileName)
+
+      channelSftp.exit()
+      session.disconnect()
+
+      true
+    }
+    catch {
+      case ex: Exception =>
+        logger.error("Sftp File Handler - Error while trying to delete sftp file " + fileName, ex)
+        false
+
+      case ex: Throwable =>
+        logger.error("Sftp File Handler - Error while trying to delete sftp file " + fileName, ex)
+        false
 
     }
     finally{
@@ -367,7 +413,7 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
   private val processedFilesMap : scala.collection.mutable.LinkedHashMap[String, Long] = scala.collection.mutable.LinkedHashMap[String, Long]()
 
   def init(adapterSpecificCfgJson: String): Unit ={
-    val(_, c, m) =  SmartFileAdapterConfiguration.parseSmartFileAdapterSpecificConfig(adapterName, adapterSpecificCfgJson)
+    val(_, c, m, a) =  SmartFileAdapterConfiguration.parseSmartFileAdapterSpecificConfig(adapterName, adapterSpecificCfgJson)
     connectionConf = c
     monitoringConf = m
 
@@ -633,4 +679,11 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
     afterHostUrl.substring(afterHostUrl.indexOf("/"))
   }
 
+  override def listFiles(path: String): Array[String] ={
+    val sftpEncodedUri = createConnectionString(connectionConf, path)
+    val manager : StandardFileSystemManager  = new StandardFileSystemManager()
+    manager.init()
+    val remoteDir : FileObject = manager.resolveFile(sftpEncodedUri)
+    remoteDir.getChildren.filter(x => x.getType.getName.equalsIgnoreCase("folder") == false).map(x => x.getName.getBaseName)
+  }
 }

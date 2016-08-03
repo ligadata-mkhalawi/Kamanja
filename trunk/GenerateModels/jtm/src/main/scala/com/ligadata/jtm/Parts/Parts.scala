@@ -53,7 +53,7 @@ object Parts {
        |  // Factory code start
        |  {external.factorycode}
        |  // Factory code end
-       |  override def createModelInstance(txnCtxt: com.ligadata.KamanjaBase.TransactionContext): ModelInstance = return new {modelclass.name}(this)
+       |  override def createModelInstance(): ModelInstance = return new {modelclass.name}(this)
        |  override def getModelName: String = "{model.name}"
        |  override def getVersion: String = "{model.version}"
        |

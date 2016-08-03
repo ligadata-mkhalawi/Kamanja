@@ -7,6 +7,7 @@ import java.nio.file._
 import java.util
 import java.util.zip.GZIPInputStream
 import com.ligadata.Exceptions.{KamanjaException}
+import com.ligadata.InputOutputAdapterInfo.AdapterConfiguration
 
 import org.apache.logging.log4j.{ Logger, LogManager }
 
@@ -37,10 +38,16 @@ class PosixFileHandler extends SmartFileHandler{
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
 
+  private var isBinary: Boolean = false
+
   def this(fullPath : String){
     this()
-
     fileFullPath = fullPath
+  }
+
+  def this(fullPath : String, isBin: Boolean) {
+    this(fullPath)
+    isBinary = isBin
   }
 
   def getParentDir : String = MonitorUtils.simpleDirPath(fileObject.getParent.trim)
@@ -66,9 +73,14 @@ class PosixFileHandler extends SmartFileHandler{
   @throws(classOf[KamanjaException])
   def openForRead(): InputStream = {
     try {
-      val fileType = CompressionUtil.getFileType(this, null)
-      in = CompressionUtil.getProperInputStream(getDefaultInputStream, fileType)
-      //bufferedReader = new BufferedReader(in)
+      val is = getDefaultInputStream()
+      if (!isBinary) {
+        val fileType = CompressionUtil.getFileType(this, null)
+        in = CompressionUtil.getProperInputStream(is, fileType)
+        //bufferedReader = new BufferedReader(in)
+      } else {
+        in = is
+      }
       in
     }
     catch{
@@ -153,6 +165,27 @@ class PosixFileHandler extends SmartFileHandler{
   }
 
   @throws(classOf[KamanjaException])
+  override def deleteFile(fileName: String) : Boolean = {
+    logger.info(s"Posix File Handler - Deleting file ($fileName)")
+    try {
+      val flObj = new File(fileName)
+      flObj.delete
+      logger.debug("Successfully deleted")
+      return true
+    }
+    catch {
+      case ex : Exception => {
+        logger.error("", ex)
+        return false
+      }
+      case ex : Throwable => {
+        logger.error("", ex)
+        return false
+      }
+    }
+  }
+
+  @throws(classOf[KamanjaException])
   def close(): Unit = {
     logger.info("Posix File Handler - Closing file " + getFullPath)
     try {
@@ -200,6 +233,7 @@ class PosixFileHandler extends SmartFileHandler{
 
 /**
   *  adapterName might be used for error messages
+  *
   * @param adapterName
   * @param modifiedFileCallback
   */
@@ -231,7 +265,7 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
     logger.debug("PosixChangesMonitor (init)- adapterSpecificCfgJson==null is "+
       (adapterSpecificCfgJson == null))
 
-    val(_type, c, m) =  SmartFileAdapterConfiguration.parseSmartFileAdapterSpecificConfig(adapterName, adapterSpecificCfgJson)
+    val(_type, c, m, a) =  SmartFileAdapterConfiguration.parseSmartFileAdapterSpecificConfig(adapterName, adapterSpecificCfgJson)
     connectionConf = c
     monitoringConf = m
   }
@@ -408,6 +442,7 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
 
   /**
     * checkIfFileHandled: previously checkIfFileBeingProcessed - if for some reason a file name is queued twice... this will prevent it
+    *
     * @param file
     * @return
     */
@@ -428,6 +463,14 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
     }
   }
 
+  override def listFiles(path: String): Array[String] ={
+    val dir = new File(path)
+    if (dir.exists && dir.isDirectory) {
+      dir.listFiles.filter(_.isFile).map(f => f.getName).toArray
+    } else {
+      Array[String]()
+    }
+  }
 }
 
 
