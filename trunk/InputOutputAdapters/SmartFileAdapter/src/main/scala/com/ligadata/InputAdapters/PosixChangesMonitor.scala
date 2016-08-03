@@ -7,6 +7,7 @@ import java.nio.file._
 import java.util
 import java.util.zip.GZIPInputStream
 import com.ligadata.Exceptions.{KamanjaException}
+import com.ligadata.InputOutputAdapterInfo.AdapterConfiguration
 
 import org.apache.logging.log4j.{ Logger, LogManager }
 

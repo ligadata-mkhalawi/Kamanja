@@ -135,7 +135,7 @@ object SmartFileAdapterConfiguration {
     adapterConfig
   }
 
-  private def parseSmartFileAdapterSpecificConfig(adapterName: String, adapterSpecificCfgJson: String, inputConfig: AdapterConfiguration): (String, FileAdapterConnectionConfig, FileAdapterMonitoringConfig, SmartFileProducerConfiguration) = {
+  def parseSmartFileAdapterSpecificConfig(adapterName: String, adapterSpecificCfgJson: String, inputConfig: AdapterConfiguration): (String, FileAdapterConnectionConfig, FileAdapterMonitoringConfig, SmartFileProducerConfiguration) = {
 
     val adapCfg = parse(adapterSpecificCfgJson)
 
