@@ -203,18 +203,18 @@ object MonitorUtils {
     * @return
     */
   def getFileComponents(fileFullPath: String, locationInfo : LocationInfo) : Map[String, String] = {
-    val fileName = getFileName(filePath)
+    val fileName = getFileName(fileFullPath)
     val pattern = locationInfo.fileComponents.regex.r
 
     //println("orderingInfo.fileComponents.regex="+orderingInfo.fileComponents.regex)
     val matchList = pattern.findAllIn(fileName).matchData.toList
     //println("matchList.length="+matchList.length)
     if(matchList.isEmpty)
-      throw new Exception(s"File name (${filePath}) does not follow configured pattern ($pattern)")
+      throw new Exception(s"File name (${fileFullPath}) does not follow configured pattern ($pattern)")
 
     val firstMatch = matchList.head
     if(firstMatch.groupCount < locationInfo.fileComponents.components.length)
-      throw new Exception(s"File name (${filePath}) does not contain all configured components. " +
+      throw new Exception(s"File name (${fileFullPath}) does not contain all configured components. " +
       s"components count=${locationInfo.fileComponents.components.length} while found groups = ${firstMatch.groupCount}")
 
     //check if padding is needed for any component. then put components into map (component name -> value)
