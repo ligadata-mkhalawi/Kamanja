@@ -165,7 +165,10 @@ echo "clean, package and assemble $srcPath ..."
 cd $srcPath/
 
 sbt clean '++ 2.10.4 package' '++ 2.10.4 ExtDependencyLibs/assembly' '++ 2.10.4 ExtDependencyLibs2/assembly' '++ 2.10.4 KamanjaInternalDeps/assembly' 
-sbt '++ 2.10.4 ClusterInstallerDriver/assembly' '++ 2.10.4 GetComponent/assembly' '++ 2.10.4 InstallDriver/assembly' 
+sbt '++ 2.10.4 ClusterInstallerDriver/assembly' '++ 2.10.4 GetComponent/assembly' '++ 2.10.4 InstallDriver/assembly'
+sbt '++ 2.10.4 KafkaAdapters_v8/package'
+sbt '++ 2.10.4 KafkaAdapters_v9/package'
+sbt '++ 2.10.4 KafkaAdapters_v10/package'
 #   '++ 2.10.4 NodeInfoExtract/assembly' '++ 2.10.4 MigrateManager/assembly'
 
 #sbt clean '++ 2.10.4 package' '++ 2.10.4 KamanjaManager/assembly' '++ 2.10.4 MetadataAPI/assembly' '++ 2.10.4 KVInit/assembly' '++ 2.10.4 SimpleKafkaProducer/assembly'
@@ -190,7 +193,14 @@ cp Utils/SaveContainerDataComponent/target/scala-2.10/savecontainerdatacomponent
 
 
 # cp Pmml/MethodExtractor/target/scala-2.10/methodextractor* $bin
-cp Utils/SimpleKafkaProducer/target/scala-2.10/simplekafkaproducer* $systemlib
+
+cp Utils/SimpleKafkaProducer/v8/target/scala-2.10/simplekafkaproducer* $systemlib
+cp Utils/SimpleKafkaProducer/v9/target/scala-2.10/simplekafkaproducer* $systemlib
+cp Utils/SimpleKafkaProducer/v10/target/scala-2.10/simplekafkaproducer* $systemlib
+cp InputOutputAdapters/KafkaAdapters_v8/target/scala-2.10/simplekafkaproducer* $systemlib
+cp InputOutputAdapters/KafkaAdapters_v9/target/scala-2.10/simplekafkaproducer* $systemlib
+cp InputOutputAdapters/KafkaAdapters_v10/target/scala-2.10/simplekafkaproducer* $systemlib
+
 cp Utils/ExtractData/target/scala-2.10/extractdata* $systemlib
 cp Utils/JdbcDataCollector/target/scala-2.10/jdbcdatacollector* $systemlib
 cp MetadataAPIService/target/scala-2.10/metadataapiservice* $systemlib
@@ -213,6 +223,12 @@ cp $srcPath/Utils/NodeInfoExtract/target/scala-2.10/nodeinfoextract* $systemlib
 cp ExtDependencyLibs/target/scala-2.10/ExtDependencyLibs_2.10-${currentKamanjaVersion}.jar $systemlib
 cp ExtDependencyLibs2/target/scala-2.10/ExtDependencyLibs2_2.10-${currentKamanjaVersion}.jar $systemlib
 cp KamanjaInternalDeps/target/scala-2.10/KamanjaInternalDeps_2.10-${currentKamanjaVersion}.jar $systemlib
+
+# Copy jars needed for Kafka
+cp $ivyPath/cache/org.apache.kafka/kafka_2.10/jars/kafka_2.10-0.8.2.2.jar $systemlib
+cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.9.0.1.jar $systemlib
+cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.10.0.0.jar $systemlib
+cp $ivyPath/cache/com.yammer.metrics/metrics-core/jars/metrics-core-2.2.0.jar  $systemlib
 
 # *******************************
 # Copy jars required for version-2.10 (more than required if the fat jars are used)
@@ -475,6 +491,10 @@ sbt clean '++ 2.11.7 package' '++ 2.11.7 ExtDependencyLibs/assembly' '++ 2.11.7 
 sbt '++ 2.11.7 ClusterInstallerDriver/assembly' '++ 2.11.7 GetComponent/assembly' '++ 2.11.7 InstallDriver/assembly' 
 #'++ 2.11.7 NodeInfoExtract/assembly' '++ 2.11.7 MigrateManager/assembly'
 
+sbt '++ 2.11.7 KafkaAdapters_v8/package'
+sbt '++ 2.11.7 KafkaAdapters_v9/package'
+sbt '++ 2.11.7 KafkaAdapters_v10/package'
+
 #sbt clean '++ 2.11.7 package' '++ 2.11.7 KamanjaManager/assembly' '++ 2.11.7 MetadataAPI/assembly' '++ 2.11.7 KVInit/assembly' '++ 2.11.7 SimpleKafkaProducer/assembly'
 #sbt '++ 2.11.7 NodeInfoExtract/assembly' '++ 2.11.7 MetadataAPIService/assembly' '++ 2.11.7 JdbcDataCollector/assembly'
 #sbt '++ 2.11.7 FileDataConsumer/assembly' '++ 2.11.7 CleanUtil/assembly' '++ 2.11.7 MigrateManager/assembly' '++ 2.11.7 ClusterInstallerDriver/assembly' '++ 2.11.7 InstallDriver/assembly' '++ 2.11.7 GetComponent/assembly' '++ 2.11.7 PmmlTestTool/assembly' '++ 2.11.7 ExtDependencyLibs/assembly' '++ 2.11.7 ExtDependencyLibs2/assembly' '++ 2.11.7 KamanjaInternalDeps/assembly'
@@ -496,6 +516,15 @@ cp KamanjaManager/target/scala-2.11/kamanjamanager* $systemlib
 cp Utils/SaveContainerDataComponent/target/scala-2.11/savecontainerdatacomponent_2.11* $systemlib
 
 cp Utils/SimpleKafkaProducer/target/scala-2.11/simplekafkaproducer* $systemlib
+
+
+cp Utils/SimpleKafkaProducer/v8/target/scala-2.11/simplekafkaproducer* $systemlib
+cp Utils/SimpleKafkaProducer/v9/targetscala-2.11/simplekafkaproducer* $systemlib
+cp Utils/SimpleKafkaProducer/v10/target/scala-2.11/simplekafkaproducer* $systemlib
+cp InputOutputAdapters/KafkaAdapters_v8/target/scala-2.11/simplekafkaproducer* $systemlib
+cp InputOutputAdapters/KafkaAdapters_v9/target/scala-2.11/simplekafkaproducer* $systemlib
+cp InputOutputAdapters/KafkaAdapters_v10/target/scala-2.11/simplekafkaproducer* $systemlib
+
 cp Utils/ExtractData/target/scala-2.11/extractdata* $systemlib
 cp Utils/JdbcDataCollector/target/scala-2.11/jdbcdatacollector* $systemlib
 cp MetadataAPIService/target/scala-2.11/metadataapiservice* $systemlib
@@ -516,6 +545,11 @@ cp $ivyPath/cache/org.apache.commons/commons-pool2/jars/commons-pool2-2.4.2.jar 
 cp ExtDependencyLibs/target/scala-2.11/ExtDependencyLibs_2.11-${currentKamanjaVersion}.jar $systemlib
 cp ExtDependencyLibs2/target/scala-2.11/ExtDependencyLibs2_2.11-${currentKamanjaVersion}.jar $systemlib
 cp KamanjaInternalDeps/target/scala-2.11/KamanjaInternalDeps_2.11-${currentKamanjaVersion}.jar $systemlib
+
+cp $ivyPath/cache/org.apache.kafka/kafka_2.11/jars/kafka_2.11-0.8.2.2.jar $systemlib
+cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.9.0.1.jar $systemlib
+cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.10.0.0.jar $systemlib
+cp $ivyPath/cache/com.yammer.metrics/metrics-core/jars/metrics-core-2.2.0.jar  $systemlib
 
 # *******************************
 # Copy jars required version-2.11 (more than required if the fat jars are used)
