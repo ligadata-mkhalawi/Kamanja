@@ -1144,10 +1144,21 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     var isFileMoved = false
     try {
       val smartFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, originalFilePath)
-      val (targetMoveDir, flBaseName) = getTargetFile(smartFileHandler)
+      var componentsMap = scala.collection.immutable.Map[String, String]()
+      var targetMoveDir: String = null
+      var flBaseName: String = null
+      if (adapterConfig.archiveConfig != null) {
+        val parentDir = smartFileHandler.getParentDir
+        if(locationsMap.contains(parentDir))
+          componentsMap = MonitorUtils.getFileComponents(smartFileHandler, locationsMap(parentDir))
+        val (targetMoveDir1, flBaseName1) = getTargetFile(smartFileHandler)
+        targetMoveDir = targetMoveDir1
+        flBaseName = flBaseName1
+      }
+
       isFileMoved = moveFile(smartFileHandler)
       if (isFileMoved) {
-        SmartFileHandlerFactory.archiveFile(adapterConfig, targetMoveDir, flBaseName)
+        SmartFileHandlerFactory.archiveFile(adapterConfig, targetMoveDir, flBaseName, componentsMap)
       }
     } catch {
       case e: Throwable => {

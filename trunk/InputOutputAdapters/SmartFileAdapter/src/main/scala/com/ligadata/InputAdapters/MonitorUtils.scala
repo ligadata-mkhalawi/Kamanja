@@ -269,12 +269,18 @@ object SmartFileHandlerFactory{
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
 
-  def archiveFile(adapterConfig: SmartFileAdapterConfiguration, srcFileDir: String, srcFileBaseName: String): Unit = {
+  def archiveFile(adapterConfig: SmartFileAdapterConfiguration, srcFileDir: String, srcFileBaseName: String, componentsMap: scala.collection.immutable.Map[String, String]): Unit = {
     if (adapterConfig.archiveConfig == null)
       return
 
+    val partitionVariable = "\\$\\{([^\\}]+)\\}".r
+    val partitionFormats = partitionVariable.findAllMatchIn(adapterConfig.archiveConfig.uri).map(x => x.group(1)).toList
+    val partitionFormatString = partitionVariable.replaceAllIn(adapterConfig.archiveConfig.uri, "%s")
+
+    val values = partitionFormats.map(fmt => { componentsMap.getOrElse(fmt, "default").toString.trim })
+
     val srcFileToArchive = srcFileDir + "/" + srcFileBaseName
-    val dstFileToArchive =  adapterConfig.archiveConfig.uri+ "/" + srcFileBaseName
+    val dstFileToArchive =  partitionFormatString.format(values: _*) + "/" + srcFileBaseName
 
     logger.debug("Archiving file from " + srcFileToArchive + " to " + dstFileToArchive)
 
