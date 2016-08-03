@@ -36,7 +36,7 @@ fi
 
 if [ "$KAMANJA_KERBEROS_CONFIG" ]; then
   KERBEROS_CONFIG_OPT="-Djava.security.krb5.confg="$KAMANJA_KERBEROS_CONFIG
-  echo "Using java.security.krb5.confg="$KERBEROS_CONFIG_OPT
+  echo "Using java.security.krb5.conf="$KERBEROS_CONFIG_OPT
 fi
 
 if [ "$KAMANJA_SECURITY_CLIENT" ]; then
