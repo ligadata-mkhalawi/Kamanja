@@ -217,6 +217,30 @@ class HdfsFileHandler extends SmartFileHandler{
   }
 
   @throws(classOf[KamanjaException])
+  override def deleteFile(fileName: String) : Boolean = {
+    logger.info(s"Hdfs File Handler - Deleting file ($fileName)")
+    try {
+      hdFileSystem = FileSystem.get(hdfsConfig)
+      hdFileSystem.delete(new Path(fileName), true)
+      logger.debug("Successfully deleted")
+      true
+    }
+    catch {
+      case ex : Exception => {
+        logger.error("Hdfs File Handler - Error while trying to delete file " + fileName, ex)
+        false
+      }
+      case ex : Throwable => {
+        logger.error("Hdfs File Handler - Error while trying to delete file " + fileName, ex)
+        false
+      }
+
+    } finally {
+
+    }
+  }
+
+  @throws(classOf[KamanjaException])
   def close(): Unit = {
     if(in != null){
       logger.info("Hdfs File Handler - Closing file " + getFullPath)

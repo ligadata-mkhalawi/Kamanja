@@ -269,10 +269,11 @@ object SmartFileHandlerFactory{
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
 
-  def archiveFile(adapterConfig: SmartFileAdapterConfiguration, srcFileDir: String, srcFileBaseName: String, componentsMap: scala.collection.immutable.Map[String, String]): Unit = {
+  def archiveFile(adapterConfig: SmartFileAdapterConfiguration, srcFileDir: String, srcFileBaseName: String, componentsMap: scala.collection.immutable.Map[String, String]): Boolean = {
     if (adapterConfig.archiveConfig == null)
-      return
+      return true
 
+    var status = false
     val partitionVariable = "\\$\\{([^\\}]+)\\}".r
     val partitionFormats = partitionVariable.findAllMatchIn(adapterConfig.archiveConfig.uri).map(x => x.group(1)).toList
     val partitionFormatString = partitionVariable.replaceAllIn(adapterConfig.archiveConfig.uri, "%s")
@@ -309,9 +310,12 @@ object SmartFileHandlerFactory{
           os.write(buf, 0, curReadLen)
         }
       } while (curReadLen > 0)
+      fileHandler.deleteFile(srcFileToArchive) // Deleting file after archive
+      status = true
     } catch {
       case e: Throwable => {
         logger.error("Failed to archive file from " + srcFileToArchive + " to " + dstFileToArchive, e)
+        status = false
       }
     } finally {
       if (fileHandler != null) {
@@ -334,6 +338,7 @@ object SmartFileHandlerFactory{
         }
       }
     }
+    status
   }
 
   def createSmartFileHandler(adapterConfig : SmartFileAdapterConfiguration, fileFullPath : String, isBinary: Boolean = false): SmartFileHandler ={

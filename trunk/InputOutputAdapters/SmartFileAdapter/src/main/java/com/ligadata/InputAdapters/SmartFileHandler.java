@@ -20,6 +20,7 @@ public interface SmartFileHandler {
     void close();
     boolean moveTo(String newPath) throws KamanjaException;
     boolean delete() throws KamanjaException;
+    boolean deleteFile(String fileName) throws KamanjaException;
     long length() throws KamanjaException;
     long lastModified() throws KamanjaException;
     boolean exists() throws KamanjaException;

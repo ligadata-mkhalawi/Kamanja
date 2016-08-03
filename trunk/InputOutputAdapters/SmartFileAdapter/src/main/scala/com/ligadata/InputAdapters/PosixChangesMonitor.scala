@@ -165,6 +165,27 @@ class PosixFileHandler extends SmartFileHandler{
   }
 
   @throws(classOf[KamanjaException])
+  override def deleteFile(fileName: String) : Boolean = {
+    logger.info(s"Posix File Handler - Deleting file ($fileName)")
+    try {
+      val flObj = new File(fileName)
+      flObj.delete
+      logger.debug("Successfully deleted")
+      return true
+    }
+    catch {
+      case ex : Exception => {
+        logger.error("", ex)
+        return false
+      }
+      case ex : Throwable => {
+        logger.error("", ex)
+        return false
+      }
+    }
+  }
+
+  @throws(classOf[KamanjaException])
   def close(): Unit = {
     logger.info("Posix File Handler - Closing file " + getFullPath)
     try {

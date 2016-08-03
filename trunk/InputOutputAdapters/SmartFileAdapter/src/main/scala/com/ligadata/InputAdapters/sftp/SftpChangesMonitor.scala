@@ -252,6 +252,42 @@ class SftpFileHandler extends SmartFileHandler{
   }
 
   @throws(classOf[Exception])
+  override def deleteFile(fileName: String) : Boolean = {
+    logger.info(s"Sftp File Handler - Deleting file (${hashPath(fileName)}")
+
+    val ui = new SftpUserInfo(connectionConfig.password, passphrase)
+
+    try {
+      session = getNewSession
+      session.setUserInfo(ui)
+      session.connect()
+      val channel = session.openChannel("sftp")
+      channel.connect()
+      channelSftp = channel.asInstanceOf[ChannelSftp]
+      channelSftp.rm(fileName)
+
+      channelSftp.exit()
+      session.disconnect()
+
+      true
+    }
+    catch {
+      case ex: Exception =>
+        logger.error("Sftp File Handler - Error while trying to delete sftp file " + fileName, ex)
+        false
+
+      case ex: Throwable =>
+        logger.error("Sftp File Handler - Error while trying to delete sftp file " + fileName, ex)
+        false
+
+    }
+    finally{
+      if(channelSftp != null) channelSftp.exit()
+      if(session != null) session.disconnect()
+    }
+  }
+
+  @throws(classOf[Exception])
   def close(): Unit = {
     logger.info("Sftp File Handler - Closing file " + hashPath(getFullPath))
     /*if(bufferedReader != null)

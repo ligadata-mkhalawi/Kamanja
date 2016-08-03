@@ -99,7 +99,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
   }
 
   def listFiles(path: String): Array[String] ={
-    if (smartFileMonitor != null) {
+    if (smartFileMonitor == null) {
       smartFileMonitor = SmartFileMonitorFactory.createSmartFileMonitor(adapterConfig.Name, adapterConfig._type, fileDetectedCallback)
       smartFileMonitor.init(adapterConfig.adapterSpecificCfg)
     }

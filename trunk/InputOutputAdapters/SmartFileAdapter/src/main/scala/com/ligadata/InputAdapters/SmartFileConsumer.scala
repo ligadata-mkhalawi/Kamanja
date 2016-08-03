@@ -1378,66 +1378,6 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   override def StartProcessing(partitionIds: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = {
     isShutdown = false
 
-    if (adapterConfig.archiveConfig != null && clusterStatus != null && clusterStatus.isLeader && clusterStatus.leaderNodeId.equals(clusterStatus.nodeId)) {
-      var archiveParallelism = 1
-      var archiveSleepTimeInMs = 10
-      archiveExecutor = Executors.newFixedThreadPool(archiveParallelism)
-
-      for (i <- 0 until archiveParallelism) {
-        val archiveThread = new Runnable() {
-          override def run(): Unit = {
-            var interruptedVal = false
-            while (!interruptedVal) {
-              if (hasNextArchiveFileInfo) {
-                val archInfo = getNextArchiveFileInfo
-                if (archInfo != null) {
-                  try {
-                    SmartFileHandlerFactory.archiveFile(archInfo.adapterConfig, archInfo.srcFileDir, archInfo.srcFileBaseName, archInfo.componentsMap)
-                  } catch {
-                    case e: Throwable => {
-                      logger.error("Failed to archive file:" + archInfo.srcFileDir + "/" + archInfo.srcFileBaseName, e)
-                    }
-                  }
-                } else {
-                  interruptedVal = sleepMs(archiveSleepTimeInMs)
-                }
-              } else {
-                interruptedVal = sleepMs(archiveSleepTimeInMs)
-              }
-            }
-          }
-        }
-        archiveExecutor.execute(archiveThread)
-      }
-
-      if (locationTargetMoveDirsMap != null) {
-        val processedDirs = scala.collection.mutable.Set[String]()
-        val tmpMonitorController = new MonitorController(adapterConfig, this, DummyCallback)
-        locationTargetMoveDirsMap.foreach(kv => {
-          val srcDir = kv._1.trim
-          val tgtDir = kv._2.trim
-          if (!processedDirs.contains(srcDir)) {
-            val flsLst = tmpMonitorController.listFiles(tgtDir)
-            if (flsLst != null) {
-              var smartFileHandler: SmartFileHandler = null
-              flsLst.foreach(f => {
-                if (smartFileHandler != null)
-                  smartFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, tgtDir + "/" + f)
-                var componentsMap = scala.collection.immutable.Map[String, String]()
-                if(locationsMap.contains(srcDir)) {
-                  val locationInfo = locationsMap(srcDir)
-                  if (locationInfo != null && locationInfo.fileComponents != null)
-                    componentsMap = MonitorUtils.getFileComponents(smartFileHandler, locationInfo)
-                }
-                addArchiveFileInfo(ArchiveFileInfo(adapterConfig, tgtDir, f, componentsMap))
-              })
-            }
-            processedDirs += srcDir
-          }
-        })
-      }
-    }
-
     _ignoreFirstMsg = ignoreFirstMsg
     var lastHb: Long = 0
     startHeartBeat = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
@@ -1472,6 +1412,70 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
     initializeNode//register the callbacks
 
+    if (adapterConfig.archiveConfig != null && clusterStatus != null && clusterStatus.isLeader && clusterStatus.leaderNodeId.equals(clusterStatus.nodeId)) {
+      var archiveParallelism = 1
+      var archiveSleepTimeInMs = 10
+      archiveExecutor = Executors.newFixedThreadPool(archiveParallelism)
+
+      for (i <- 0 until archiveParallelism) {
+        val archiveThread = new Runnable() {
+          override def run(): Unit = {
+            var interruptedVal = false
+            while (!interruptedVal) {
+              if (hasNextArchiveFileInfo) {
+                val archInfo = getNextArchiveFileInfo
+                if (archInfo != null) {
+                  try {
+                    val status = SmartFileHandlerFactory.archiveFile(archInfo.adapterConfig, archInfo.srcFileDir, archInfo.srcFileBaseName, archInfo.componentsMap)
+                    if (! status)
+                      addArchiveFileInfo(archInfo)
+                  } catch {
+                    case e: Throwable => {
+                      addArchiveFileInfo(archInfo)
+                      logger.error("Failed to archive file:" + archInfo.srcFileDir + "/" + archInfo.srcFileBaseName, e)
+                    }
+                  }
+                } else {
+                  interruptedVal = sleepMs(archiveSleepTimeInMs)
+                }
+              } else {
+                interruptedVal = sleepMs(archiveSleepTimeInMs)
+              }
+            }
+          }
+        }
+        archiveExecutor.execute(archiveThread)
+      }
+
+      if (locationTargetMoveDirsMap != null) {
+        val processedDirs = scala.collection.mutable.Set[String]()
+        val tmpMonitorController = new MonitorController(adapterConfig, this, DummyCallback)
+        locationTargetMoveDirsMap.foreach(kv => {
+          val srcDir = kv._1.trim
+          val tgtDir = kv._2.trim
+          logger.info("Collecting files to archive from : " + tgtDir)
+          if (!processedDirs.contains(srcDir)) {
+            val flsLst = tmpMonitorController.listFiles(tgtDir)
+            if (flsLst != null) {
+              var smartFileHandler: SmartFileHandler = null
+              logger.info("Files list from: " + flsLst.mkString(","))
+              flsLst.foreach(f => {
+                if (smartFileHandler != null)
+                  smartFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, tgtDir + "/" + f)
+                var componentsMap = scala.collection.immutable.Map[String, String]()
+                if(locationsMap.contains(srcDir)) {
+                  val locationInfo = locationsMap(srcDir)
+                  if (locationInfo != null && locationInfo.fileComponents != null)
+                    componentsMap = MonitorUtils.getFileComponents(smartFileHandler, locationInfo)
+                }
+                addArchiveFileInfo(ArchiveFileInfo(adapterConfig, tgtDir, f, componentsMap))
+              })
+            }
+            processedDirs += srcDir
+          }
+        })
+      }
+    }
 
     //(1,file1,0,true)~(2,file2,0,true)~(3,file3,1000,true)
     val myPartitionInfo = partitionIds.map(pid => (pid._key.asInstanceOf[SmartFilePartitionUniqueRecordKey].PartitionId,
