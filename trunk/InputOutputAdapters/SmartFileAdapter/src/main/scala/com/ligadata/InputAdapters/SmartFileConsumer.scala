@@ -1141,11 +1141,18 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
   //after a file is changed, move it into targetMoveDir
   def moveFile(originalFilePath : String): Boolean = {
-    val smartFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, originalFilePath)
-    val isFileMoved = moveFile(smartFileHandler)
-    if (isFileMoved) {
+    var isFileMoved = false
+    try {
+      val smartFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, originalFilePath)
       val (targetMoveDir, flBaseName) = getTargetFile(smartFileHandler)
-      SmartFileHandlerFactory.archiveFile(adapterConfig, targetMoveDir, flBaseName)
+      isFileMoved = moveFile(smartFileHandler)
+      if (isFileMoved) {
+        SmartFileHandlerFactory.archiveFile(adapterConfig, targetMoveDir, flBaseName)
+      }
+    } catch {
+      case e: Throwable => {
+        LOG.error("Failed to move/archive file", e)
+      }
     }
     isFileMoved
   }
