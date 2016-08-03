@@ -144,7 +144,7 @@ lazy val JsonDataGen = project.in(file("Utils/JsonDataGen")).configs(TestConfigs
 
 lazy val NodeInfoExtract = project.in(file("Utils/NodeInfoExtract")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", MetadataAPI, Exceptions)
 
-lazy val Controller = project.in(file("Utils/Controller")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KafkaAdapter_v8 % "provided", ZooKeeperClient, ZooKeeperListener, KafkaSimpleInputOutputAdapters, Exceptions)
+lazy val Controller = project.in(file("Utils/Controller")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KafkaAdapters_v8 % "provided", ZooKeeperClient, ZooKeeperListener, KafkaSimpleInputOutputAdapters, Exceptions)
 
 lazy val SimpleApacheShiroAdapter = project.in(file("Utils/Security/SimpleApacheShiroAdapter")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, Exceptions, SecurityAdapterBase)
 
@@ -248,11 +248,11 @@ lazy val DemoKafkaProducer = project.in(file("Utils/DemoKafkaProducer")).configs
 
 lazy val KamanjaUIREST = project.in(file("KamanjaUI/Rest/KamanjaUIRest")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*)
 
-lazy val KafkaAdapter_v8 = project.in(file("InputOutputAdapters/KafkaAdapter_v8")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(KafkaSimpleInputOutputAdapters % "provided")
+lazy val KafkaAdapters_v8 = project.in(file("InputOutputAdapters/KafkaAdapters_v8")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(KafkaSimpleInputOutputAdapters % "provided")
 
-lazy val KafkaAdapter_v9 = project.in(file("InputOutputAdapters/KafkaAdapter_v9")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(KafkaSimpleInputOutputAdapters % "provided")
+lazy val KafkaAdapters_v9 = project.in(file("InputOutputAdapters/KafkaAdapters_v9")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(KafkaSimpleInputOutputAdapters % "provided")
 
-lazy val KafkaAdapter_v10 = project.in(file("InputOutputAdapters/KafkaAdapter_v10")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(KafkaSimpleInputOutputAdapters % "provided")
+lazy val KafkaAdapters_v10 = project.in(file("InputOutputAdapters/KafkaAdapters_v10")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(KafkaSimpleInputOutputAdapters % "provided")
 
 lazy val SimpleKafkaProducer_v10 = project.in(file("Utils/SimpleKafkaProducer/v10")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, Exceptions)
 
