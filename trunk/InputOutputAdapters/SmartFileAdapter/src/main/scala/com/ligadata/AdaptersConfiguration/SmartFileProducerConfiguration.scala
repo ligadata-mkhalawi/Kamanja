@@ -47,27 +47,29 @@ class KerberosConfig {
 }
 
 object SmartFileProducerConfiguration {
-
-  def getAdapterConfig(inputConfig: AdapterConfiguration): SmartFileProducerConfiguration = {
-
-    if (inputConfig.adapterSpecificCfg == null || inputConfig.adapterSpecificCfg.size == 0) {
-      val err = "Not found Type and Connection info for Smart File Adapter Config:" + inputConfig.Name
+  def getAdapterConfig(config: AdapterConfiguration): SmartFileProducerConfiguration = {
+    if (config.adapterSpecificCfg == null || config.adapterSpecificCfg.size == 0) {
+      val err = "Not found Type and Connection info for Smart File Adapter Config:" + config.Name
       throw new KamanjaException(err, null)
     }
 
-    val adapterConfig = new SmartFileProducerConfiguration()
-    adapterConfig.Name = inputConfig.Name
-    adapterConfig.className = inputConfig.className
-    adapterConfig.jarName = inputConfig.jarName
-    adapterConfig.dependencyJars = inputConfig.dependencyJars
-
-    val adapCfg = parse(inputConfig.adapterSpecificCfg)
+    val adapCfg = parse(config.adapterSpecificCfg)
     if (adapCfg == null || adapCfg.values == null) {
-      val err = "Smart File Producer configuration must be specified for " + adapterConfig.Name
+      val err = "Smart File Producer configuration must be specified for " + config.Name
       throw new KamanjaException(err, null)
     }
-
     val adapCfgValues = adapCfg.values.asInstanceOf[Map[String, Any]]
+
+    getAdapterConfigFromMap(adapCfgValues, config)
+  }
+
+  def getAdapterConfigFromMap(adapCfgValues: Map[String, Any], config: AdapterConfiguration): SmartFileProducerConfiguration = {
+    val adapterConfig = new SmartFileProducerConfiguration()
+    adapterConfig.Name = config.Name
+    adapterConfig.className = config.className
+    adapterConfig.jarName = config.jarName
+    adapterConfig.dependencyJars = config.dependencyJars
+
     adapCfgValues.foreach(kv => {
       if (kv._1.compareToIgnoreCase("Uri") == 0) {
         adapterConfig.uri = kv._2.toString.trim

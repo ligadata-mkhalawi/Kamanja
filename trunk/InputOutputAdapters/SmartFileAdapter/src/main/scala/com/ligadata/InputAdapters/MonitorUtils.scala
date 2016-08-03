@@ -1,6 +1,6 @@
 package com.ligadata.InputAdapters
 
-import java.io.{InputStream, IOException, File, FileInputStream}
+import java.io._
 import java.nio.file.{Paths, Files}
 
 import com.ligadata.AdaptersConfiguration.{LocationInfo, SmartFileAdapterConfiguration, FileAdapterMonitoringConfig, FileAdapterConnectionConfig}
@@ -262,21 +262,82 @@ object MonitorUtils {
       processedFilesMap.remove(processedFilesMap.head._1)//remove first item to make place
 
     processedFilesMap.put(filePath, timeAsLong)
-
   }
 }
 
-
 object SmartFileHandlerFactory{
-  def createSmartFileHandler(adapterConfig : SmartFileAdapterConfiguration, fileFullPath : String): SmartFileHandler ={
+  lazy val loggerName = this.getClass.getName
+  lazy val logger = LogManager.getLogger(loggerName)
+
+  def archiveFile(adapterConfig: SmartFileAdapterConfiguration, srcFileDir: String, srcFileBaseName: String): Unit = {
+    if (adapterConfig.archiveConfig == null)
+      return
+
+    val srcFileToArchive = srcFileDir + "/" + srcFileBaseName
+    val dstFileToArchive =  adapterConfig.archiveConfig.uri+ "/" + srcFileBaseName
+
+    logger.debug("Archiving file from " + srcFileToArchive + " to " + dstFileToArchive)
+
+    var fileHandler: SmartFileHandler = null
+    var osWriter = new com.ligadata.OutputAdapters.OutputStreamWriter()
+    var os: OutputStream = null
+
+    try {
+      if (osWriter.isFileExists(adapterConfig.archiveConfig, dstFileToArchive)) {
+        // Delete existing file in Archive folder
+        logger.error("Deleting previously archived/partially archived file " + dstFileToArchive)
+        osWriter.removeFile(adapterConfig.archiveConfig, dstFileToArchive)
+      }
+
+      fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, srcFileToArchive, true)
+      os = osWriter.openFile(adapterConfig.archiveConfig, dstFileToArchive, false)
+
+      var curReadLen = -1
+      val bufferSz = 8 * 1024 * 1024
+      val buf = new Array[Byte](bufferSz)
+
+      do {
+        curReadLen = fileHandler.read(buf, 0, bufferSz)
+        if (curReadLen > 0) {
+          os.write(buf, 0, curReadLen)
+        }
+      } while (curReadLen > 0)
+    } catch {
+      case e: Throwable => {
+        logger.error("Failed to archive file from " + srcFileToArchive + " to " + dstFileToArchive, e)
+      }
+    } finally {
+      if (fileHandler != null) {
+        try {
+          fileHandler.close()
+        } catch {
+          case e: Throwable => {
+            logger.error("Failed to close InputStream for " + srcFileToArchive, e)
+          }
+        }
+      }
+
+      if (os != null) {
+        try {
+          os.close()
+        } catch {
+          case e: Throwable => {
+            logger.error("Failed to close OutputStream for " + dstFileToArchive, e)
+          }
+        }
+      }
+    }
+  }
+
+  def createSmartFileHandler(adapterConfig : SmartFileAdapterConfiguration, fileFullPath : String, isBinary: Boolean = false): SmartFileHandler ={
     val connectionConf = adapterConfig.connectionConfig
     val monitoringConf =adapterConfig.monitoringConfig
 
     val handler : SmartFileHandler =
       adapterConfig._type.toLowerCase() match {
-        case "das/nas" => new PosixFileHandler(fileFullPath)
-        case "sftp" => new SftpFileHandler(fileFullPath, connectionConf)
-        case "hdfs" => new HdfsFileHandler(fileFullPath, connectionConf)
+        case "das/nas" => new PosixFileHandler(fileFullPath, isBinary)
+        case "sftp" => new SftpFileHandler(fileFullPath, connectionConf, isBinary)
+        case "hdfs" => new HdfsFileHandler(fileFullPath, connectionConf, isBinary)
         case _ => throw new KamanjaException("Unsupported Smart file adapter type", null)
       }
 

@@ -37,10 +37,16 @@ class PosixFileHandler extends SmartFileHandler{
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
 
+  private var isBinary: Boolean = false
+
   def this(fullPath : String){
     this()
-
     fileFullPath = fullPath
+  }
+
+  def this(fullPath : String, isBin: Boolean) {
+    this(fullPath)
+    isBinary = isBin
   }
 
   def getParentDir : String = MonitorUtils.simpleDirPath(fileObject.getParent.trim)
@@ -66,9 +72,14 @@ class PosixFileHandler extends SmartFileHandler{
   @throws(classOf[KamanjaException])
   def openForRead(): InputStream = {
     try {
-      val fileType = CompressionUtil.getFileType(this, null)
-      in = CompressionUtil.getProperInputStream(getDefaultInputStream, fileType)
-      //bufferedReader = new BufferedReader(in)
+      val is = getDefaultInputStream()
+      if (!isBinary) {
+        val fileType = CompressionUtil.getFileType(this, null)
+        in = CompressionUtil.getProperInputStream(is, fileType)
+        //bufferedReader = new BufferedReader(in)
+      } else {
+        is
+      }
       in
     }
     catch{
@@ -200,6 +211,7 @@ class PosixFileHandler extends SmartFileHandler{
 
 /**
   *  adapterName might be used for error messages
+  *
   * @param adapterName
   * @param modifiedFileCallback
   */
@@ -231,7 +243,7 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
     logger.debug("PosixChangesMonitor (init)- adapterSpecificCfgJson==null is "+
       (adapterSpecificCfgJson == null))
 
-    val(_type, c, m) =  SmartFileAdapterConfiguration.parseSmartFileAdapterSpecificConfig(adapterName, adapterSpecificCfgJson)
+    val(_type, c, m, a) =  SmartFileAdapterConfiguration.parseSmartFileAdapterSpecificConfig(adapterName, adapterSpecificCfgJson, null)
     connectionConf = c
     monitoringConf = m
   }
@@ -408,6 +420,7 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
 
   /**
     * checkIfFileHandled: previously checkIfFileBeingProcessed - if for some reason a file name is queued twice... this will prevent it
+    *
     * @param file
     * @return
     */

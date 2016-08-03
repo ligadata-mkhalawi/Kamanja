@@ -43,13 +43,20 @@ class HdfsFileHandler extends SmartFileHandler{
 
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
-  
+
+  private var isBinary: Boolean = false
+
   def this(fullPath : String, connectionConf : FileAdapterConnectionConfig){
     this()
 
     fileFullPath = fullPath
     hdfsConfig = HdfsUtility.createConfig(connectionConf)
     hdFileSystem = FileSystem.newInstance(hdfsConfig)
+  }
+
+  def this(fullPath : String, connectionConf : FileAdapterConnectionConfig, isBin: Boolean) {
+    this(fullPath, connectionConf)
+    isBinary = isBin
   }
 
   /*def this(fullPath : String, fs : FileSystem){
@@ -95,9 +102,13 @@ class HdfsFileHandler extends SmartFileHandler{
   @throws(classOf[KamanjaException])
   def openForRead(): InputStream = {
     try {
-
-      val compressionType = CompressionUtil.getFileType(this, null)
-      in = CompressionUtil.getProperInputStream(getDefaultInputStream, compressionType)
+      val is = getDefaultInputStream()
+      if (!isBinary) {
+        val compressionType = CompressionUtil.getFileType(this, null)
+        in = CompressionUtil.getProperInputStream(is, compressionType)
+      } else {
+        is
+      }
       in
     }
     catch{

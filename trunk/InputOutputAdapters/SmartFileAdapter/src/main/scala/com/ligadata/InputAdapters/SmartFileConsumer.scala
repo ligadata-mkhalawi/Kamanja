@@ -1137,17 +1137,22 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         participantExecutor.execute(executorThread)
       })
     }
-
   }
 
   //after a file is changed, move it into targetMoveDir
   def moveFile(originalFilePath : String): Boolean = {
     val smartFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, originalFilePath)
-    moveFile(smartFileHandler)
+    val isFileMoved = moveFile(smartFileHandler)
+    if (isFileMoved) {
+      val (targetMoveDir, flBaseName) = getTargetFile(smartFileHandler)
+      SmartFileHandlerFactory.archiveFile(adapterConfig, targetMoveDir, flBaseName)
+    }
+    isFileMoved
   }
-  def moveFile(fileHandler : SmartFileHandler): Boolean = {
+
+  // Returns target
+  private def getTargetFile(fileHandler : SmartFileHandler): (String, String) = {
     val originalFilePath = fileHandler.getFullPath
-    //get corresponding directory to move file to
 
     val parentDir = fileHandler.getParentDir
     if(!locationTargetMoveDirsMap.contains(parentDir))
@@ -1156,11 +1161,19 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     val targetMoveDir = locationTargetMoveDirsMap(parentDir)
 
     val fileStruct = originalFilePath.split("/")
+
+    (targetMoveDir, fileStruct(fileStruct.size - 1))
+  }
+
+  def moveFile(fileHandler : SmartFileHandler): Boolean = {
+    val originalFilePath = fileHandler.getFullPath
+    val (targetMoveDir, flBaseName) = getTargetFile(fileHandler)
+
     try {
 
       LOG.info("SMART FILE CONSUMER Moving File" + originalFilePath + " to " + targetMoveDir)
       if (fileHandler.exists()) {
-        return fileHandler.moveTo(targetMoveDir + "/" + fileStruct(fileStruct.size - 1))
+        return fileHandler.moveTo(targetMoveDir + "/" + flBaseName)
         //fileCacheRemove(fileHandler.getFullPath)
       } else {
         LOG.warn("SMART FILE CONSUMER File has been deleted " + originalFilePath);
@@ -1180,6 +1193,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       }
     }
   }
+
   //******************************************************************************************************
 
   override def Shutdown: Unit = lock.synchronized {
@@ -1299,7 +1313,6 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       val srcDir = MonitorUtils.simpleDirPath(location.srcDir)
       locationsMap.put(srcDir, location)
     })
-
     partitionIds.foreach(part => {
       val partitionId = part._key.asInstanceOf[SmartFilePartitionUniqueRecordKey].PartitionId
       // Initialize the monitoring status
@@ -1442,6 +1455,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
     if(monitorController!=null)
       monitorController.stopMonitoring
+    monitorController = null
 
     if(leaderExecutor != null) {
       LOG.debug("Smart File Consumer - shutting down leader executor service")

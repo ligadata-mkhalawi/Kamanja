@@ -50,6 +50,8 @@ class SftpFileHandler extends SmartFileHandler{
   private var jsch : JSch = null
   def getNewSession = jsch.getSession(connectionConfig.userId, host, port)
 
+  private var isBinary: Boolean = false
+
   def this(path : String, config : FileAdapterConnectionConfig){
     this()
     this.remoteFullPath = path
@@ -68,6 +70,11 @@ class SftpFileHandler extends SmartFileHandler{
     }
   }
 
+  def this(fullPath : String, config : FileAdapterConnectionConfig, isBin: Boolean) {
+    this(fullPath, config)
+    isBinary = isBin
+  }
+
   def getParentDir : String = {
     val filePath = getPathOnly(getFullPath)
     val idx = filePath.lastIndexOf("/")
@@ -78,7 +85,6 @@ class SftpFileHandler extends SmartFileHandler{
 
   //gets the input stream according to file system type - SFTP here
   def getDefaultInputStream : InputStream = {
-
     val ui=new SftpUserInfo(connectionConfig.password, passphrase)
 
     session = getNewSession
@@ -91,7 +97,6 @@ class SftpFileHandler extends SmartFileHandler{
     logger.info("Sftp File Handler - opening file " + getFullPath)
     val inputStream : InputStream =
       try {
-
         channelSftp.get(remoteFullPath)
       }
       catch {
@@ -119,8 +124,13 @@ class SftpFileHandler extends SmartFileHandler{
       /*manager = new StandardFileSystemManager()
       manager.init()*/
 
-      val compressionType = CompressionUtil.getFileType(this, null)
-      in = CompressionUtil.getProperInputStream(getDefaultInputStream(), compressionType)
+      val is = getDefaultInputStream()
+      if (!isBinary) {
+        val compressionType = CompressionUtil.getFileType(this, null)
+        in = CompressionUtil.getProperInputStream(is, compressionType)
+      } else {
+        is
+      }
       in
     }
     catch{
