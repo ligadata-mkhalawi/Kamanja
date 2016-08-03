@@ -79,7 +79,7 @@ class PosixFileHandler extends SmartFileHandler{
         in = CompressionUtil.getProperInputStream(is, fileType)
         //bufferedReader = new BufferedReader(in)
       } else {
-        is
+        in = is
       }
       in
     }

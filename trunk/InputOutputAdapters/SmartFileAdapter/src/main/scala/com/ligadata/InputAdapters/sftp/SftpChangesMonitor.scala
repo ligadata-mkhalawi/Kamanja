@@ -129,7 +129,7 @@ class SftpFileHandler extends SmartFileHandler{
         val compressionType = CompressionUtil.getFileType(this, null)
         in = CompressionUtil.getProperInputStream(is, compressionType)
       } else {
-        is
+        in = is
       }
       in
     }
