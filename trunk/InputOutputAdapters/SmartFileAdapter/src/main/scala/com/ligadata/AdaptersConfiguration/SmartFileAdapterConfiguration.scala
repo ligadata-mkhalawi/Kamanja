@@ -126,7 +126,7 @@ object SmartFileAdapterConfiguration {
 
     logger.debug("SmartFileAdapterConfiguration (getAdapterConfig)- inputConfig.adapterSpecificCfg==null is " +
       (inputConfig.adapterSpecificCfg == null))
-    val (_type, connectionConfig, monitoringConfig, archiveConfig) = parseSmartFileAdapterSpecificConfig(inputConfig.Name, inputConfig.adapterSpecificCfg, inputConfig)
+    val (_type, connectionConfig, monitoringConfig, archiveConfig) = parseSmartFileAdapterSpecificConfig(inputConfig.Name, inputConfig.adapterSpecificCfg)
     adapterConfig._type = _type
     adapterConfig.connectionConfig = connectionConfig
     adapterConfig.monitoringConfig = monitoringConfig
@@ -135,7 +135,7 @@ object SmartFileAdapterConfiguration {
     adapterConfig
   }
 
-  def parseSmartFileAdapterSpecificConfig(adapterName: String, adapterSpecificCfgJson: String, inputConfig: AdapterConfiguration): (String, FileAdapterConnectionConfig, FileAdapterMonitoringConfig, SmartFileProducerConfiguration) = {
+  def parseSmartFileAdapterSpecificConfig(adapterName: String, adapterSpecificCfgJson: String): (String, FileAdapterConnectionConfig, FileAdapterMonitoringConfig, SmartFileProducerConfiguration) = {
 
     val adapCfg = parse(adapterSpecificCfgJson)
 
@@ -391,13 +391,13 @@ object SmartFileAdapterConfiguration {
     }*/
 
     val archiveConfig: SmartFileProducerConfiguration =
-      if (inputConfig != null && adapCfgValues.contains("ArchiveConfig")) {
+      if (adapCfgValues.contains("ArchiveConfig")) {
         val connConf = adapCfgValues.get("ArchiveConfig").get.asInstanceOf[Map[String, Any]]
         val aConfig = SmartFileProducerConfiguration.getAdapterConfigFromMap(connConf)
-        aConfig.Name = inputConfig.Name
-        aConfig.className = inputConfig.className
-        aConfig.jarName = inputConfig.jarName
-        aConfig.dependencyJars = inputConfig.dependencyJars
+        aConfig.Name = ""
+        aConfig.className = ""
+        aConfig.jarName = ""
+        aConfig.dependencyJars = Set[String]()
         aConfig
       } else {
         null

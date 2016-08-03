@@ -244,7 +244,7 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
     logger.debug("PosixChangesMonitor (init)- adapterSpecificCfgJson==null is "+
       (adapterSpecificCfgJson == null))
 
-    val(_type, c, m, a) =  SmartFileAdapterConfiguration.parseSmartFileAdapterSpecificConfig(adapterName, adapterSpecificCfgJson, null)
+    val(_type, c, m, a) =  SmartFileAdapterConfiguration.parseSmartFileAdapterSpecificConfig(adapterName, adapterSpecificCfgJson)
     connectionConf = c
     monitoringConf = m
   }
