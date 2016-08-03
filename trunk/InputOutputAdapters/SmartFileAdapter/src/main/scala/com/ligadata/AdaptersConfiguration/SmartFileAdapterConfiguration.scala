@@ -393,7 +393,12 @@ object SmartFileAdapterConfiguration {
     val archiveConfig: SmartFileProducerConfiguration =
       if (inputConfig != null && adapCfgValues.contains("ArchiveConfig")) {
         val connConf = adapCfgValues.get("ArchiveConfig").get.asInstanceOf[Map[String, Any]]
-        SmartFileProducerConfiguration.getAdapterConfigFromMap(connConf, inputConfig)
+        val aConfig = SmartFileProducerConfiguration.getAdapterConfigFromMap(connConf)
+        aConfig.Name = inputConfig.Name
+        aConfig.className = inputConfig.className
+        aConfig.jarName = inputConfig.jarName
+        aConfig.dependencyJars = inputConfig.dependencyJars
+        aConfig
       } else {
         null
       }

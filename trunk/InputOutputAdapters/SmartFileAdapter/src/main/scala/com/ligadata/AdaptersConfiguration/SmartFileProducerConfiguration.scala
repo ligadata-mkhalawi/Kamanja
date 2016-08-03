@@ -60,15 +60,28 @@ object SmartFileProducerConfiguration {
     }
     val adapCfgValues = adapCfg.values.asInstanceOf[Map[String, Any]]
 
-    getAdapterConfigFromMap(adapCfgValues, config)
-  }
+    val adapterConfig = getAdapterConfigFromMap(adapCfgValues)
 
-  def getAdapterConfigFromMap(adapCfgValues: Map[String, Any], config: AdapterConfiguration): SmartFileProducerConfiguration = {
-    val adapterConfig = new SmartFileProducerConfiguration()
     adapterConfig.Name = config.Name
     adapterConfig.className = config.className
     adapterConfig.jarName = config.jarName
     adapterConfig.dependencyJars = config.dependencyJars
+
+    adapterConfig
+  }
+
+  def getAdapterConfigFromMap(adapCfgValues: Map[String, Any]): SmartFileProducerConfiguration = {
+    val adapterConfig = new SmartFileProducerConfiguration()
+/*
+    if (adapCfgValues.contains("Name"))
+      adapterConfig.Name = adapCfgValues.get("Name").toString.trim
+    if (adapCfgValues.contains("ClassName"))
+      adapterConfig.className = adapCfgValues.get("ClassName").toString.trim
+    if (adapCfgValues.contains("JarName"))
+      adapterConfig.jarName = adapCfgValues.get("JarName").toString.trim
+    if (adapCfgValues.contains("DependencyJars"))
+      adapterConfig.dependencyJars =
+*/
 
     adapCfgValues.foreach(kv => {
       if (kv._1.compareToIgnoreCase("Uri") == 0) {

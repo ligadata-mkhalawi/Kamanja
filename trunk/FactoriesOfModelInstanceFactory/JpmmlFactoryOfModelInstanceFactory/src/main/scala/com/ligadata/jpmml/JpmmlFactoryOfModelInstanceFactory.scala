@@ -404,7 +404,7 @@ class JpmmlAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends 
       * @param txnContext the partition key among other things are found here.
       * @return - a ModelInstance that can process the message found in the TransactionContext supplied at execution time
       */
-    override def createModelInstance(txnContext: TransactionContext): ModelInstance = {
+    override def createModelInstance(): ModelInstance = {
 
         val useThisModel : ModelInstance = if (modelDef != null) {
             /** Ingest the pmml here and build an evaluator */
