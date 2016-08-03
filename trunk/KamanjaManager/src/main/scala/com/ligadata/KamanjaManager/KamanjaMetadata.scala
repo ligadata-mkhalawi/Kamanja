@@ -572,11 +572,11 @@ class KamanjaMetadata(var envCtxt: EnvContext) {
     /** Set up the python key values in the node context.  Connections are generated at make python proxy instance time
       * Conceivably, we could avoid setup if there were no models, only to have to set them up when the engine accepts
       * a newly added model. Ergo, we set the configuration up as if we were to need them. */
-    val hasPythonModels : Boolean = modelDefs.find(m => m.modelRepresentation == ModelRepresentation.PYTHON).getOrElse(null) != null
-    logger.debug("This cluster node has python models")
+    // val hasPythonModels : Boolean = modelDefs.find(m => m.modelRepresentation == ModelRepresentation.PYTHON).getOrElse(null) != null
+    // logger.debug("This cluster node has python models")
 
     /** Add a number of properties to the node context that are needed by the python factories to set up the servers */
-    PreparePythonConfiguration
+    // PreparePythonConfiguration
 
     // Load all jars first
     modelDefs.foreach(mdl => {
