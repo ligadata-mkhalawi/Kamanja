@@ -643,4 +643,11 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
     afterHostUrl.substring(afterHostUrl.indexOf("/"))
   }
 
+  override def listFiles(path: String): Array[String] ={
+    val sftpEncodedUri = createConnectionString(connectionConf, path)
+    val manager : StandardFileSystemManager  = new StandardFileSystemManager()
+    manager.init()
+    val remoteDir : FileObject = manager.resolveFile(sftpEncodedUri)
+    remoteDir.getChildren.filter(x => x.getType.getName.equalsIgnoreCase("folder") == false).map(x => x.getName.getBaseName)
+  }
 }

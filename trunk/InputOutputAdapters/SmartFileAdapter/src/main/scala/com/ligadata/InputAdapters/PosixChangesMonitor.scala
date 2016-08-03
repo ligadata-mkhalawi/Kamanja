@@ -442,6 +442,14 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
     }
   }
 
+  override def listFiles(path: String): Array[String] ={
+    val dir = new File(path)
+    if (dir.exists && dir.isDirectory) {
+      dir.listFiles.filter(_.isFile).map(f => f.getName).toArray
+    } else {
+      Array[String]()
+    }
+  }
 }
 
 

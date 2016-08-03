@@ -1372,10 +1372,13 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     interruptedVal
   }
 
+  private def DummyCallback(fileName : String): Unit ={
+  }
+
   override def StartProcessing(partitionIds: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = {
     isShutdown = false
 
-    if (adapterConfig.archiveConfig != null) {
+    if (adapterConfig.archiveConfig != null && clusterStatus != null && clusterStatus.isLeader && clusterStatus.leaderNodeId.equals(clusterStatus.nodeId)) {
       var archiveParallelism = 1
       var archiveSleepTimeInMs = 10
       archiveExecutor = Executors.newFixedThreadPool(archiveParallelism)
@@ -1388,7 +1391,13 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
               if (hasNextArchiveFileInfo) {
                 val archInfo = getNextArchiveFileInfo
                 if (archInfo != null) {
-                  SmartFileHandlerFactory.archiveFile(archInfo.adapterConfig, archInfo.srcFileDir, archInfo.srcFileBaseName, archInfo.componentsMap)
+                  try {
+                    SmartFileHandlerFactory.archiveFile(archInfo.adapterConfig, archInfo.srcFileDir, archInfo.srcFileBaseName, archInfo.componentsMap)
+                  } catch {
+                    case e: Throwable => {
+                      logger.error("Failed to archive file:" + archInfo.srcFileDir + "/" + archInfo.srcFileBaseName, e)
+                    }
+                  }
                 } else {
                   interruptedVal = sleepMs(archiveSleepTimeInMs)
                 }
@@ -1399,6 +1408,33 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
           }
         }
         archiveExecutor.execute(archiveThread)
+      }
+
+      if (locationTargetMoveDirsMap != null) {
+        val processedDirs = scala.collection.mutable.Set[String]()
+        val tmpMonitorController = new MonitorController(adapterConfig, this, DummyCallback)
+        locationTargetMoveDirsMap.foreach(kv => {
+          val srcDir = kv._1.trim
+          val tgtDir = kv._2.trim
+          if (!processedDirs.contains(srcDir)) {
+            val flsLst = tmpMonitorController.listFiles(tgtDir)
+            if (flsLst != null) {
+              var smartFileHandler: SmartFileHandler = null
+              flsLst.foreach(f => {
+                if (smartFileHandler != null)
+                  smartFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, tgtDir + "/" + f)
+                var componentsMap = scala.collection.immutable.Map[String, String]()
+                if(locationsMap.contains(srcDir)) {
+                  val locationInfo = locationsMap(srcDir)
+                  if (locationInfo != null && locationInfo.fileComponents != null)
+                    componentsMap = MonitorUtils.getFileComponents(smartFileHandler, locationInfo)
+                }
+                addArchiveFileInfo(ArchiveFileInfo(adapterConfig, tgtDir, f, componentsMap))
+              })
+            }
+            processedDirs += srcDir
+          }
+        })
       }
     }
 
@@ -1567,6 +1603,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     if (archiveExecutor != null)
       archiveExecutor.shutdownNow()
     archiveExecutor = null
+    archiveInfo.clear()
 
     if(monitorController!=null)
       monitorController.stopMonitoring

@@ -548,4 +548,9 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
   def stopMonitoring(){
     isMonitoring = false
   }
+
+  override def listFiles(path: String): Array[String] ={
+    val fs = FileSystem.get(hdfsConfig)
+    getFolderContents(path, fs).filter(f => f.isFile).map(f => f.getPath.getName)
+  }
 }
