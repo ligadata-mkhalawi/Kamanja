@@ -238,13 +238,13 @@ class OutputStreamWriter {
     }
   }
 
-  def openFile(fc: SmartFileProducerConfiguration, fileName: String, canAppend: Boolean = true): OutputStream = if (fc.uri.startsWith("hdfs://")) openHdfsFile(fc, fileName, canAppend) else openFsFile(fc, fileName, canAppend)
+  final def openFile(fc: SmartFileProducerConfiguration, fileName: String, canAppend: Boolean = true): OutputStream = if (fc.uri.startsWith("hdfs://")) openHdfsFile(fc, fileName, canAppend) else openFsFile(fc, fileName, canAppend)
 
-  def isFileExists(fc: SmartFileProducerConfiguration, fileName: String): Boolean = if (fc.uri.startsWith("hdfs://")) isHdfsFileExists(fc, fileName) else isFsFileExists(fc, fileName)
+  final def isFileExists(fc: SmartFileProducerConfiguration, fileName: String): Boolean = if (fc.uri.startsWith("hdfs://")) isHdfsFileExists(fc, fileName) else isFsFileExists(fc, fileName)
 
-  def removeFile(fc: SmartFileProducerConfiguration, fileName: String): Unit = if (fc.uri.startsWith("hdfs://")) removeHdfsFile(fc, fileName) else removeFsFile(fc, fileName)
+  final def removeFile(fc: SmartFileProducerConfiguration, fileName: String): Unit = if (fc.uri.startsWith("hdfs://")) removeHdfsFile(fc, fileName) else removeFsFile(fc, fileName)
 
-  def write(fc: SmartFileProducerConfiguration, os: OutputStream, message: Array[Byte]): Unit = if (fc.uri.startsWith("hdfs://")) writeToHdfs(fc, os, message) else writeToFs(fc, os, message)
+  final def write(fc: SmartFileProducerConfiguration, os: OutputStream, message: Array[Byte]): Unit = if (fc.uri.startsWith("hdfs://")) writeToHdfs(fc, os, message) else writeToFs(fc, os, message)
 
   /*
     def hasCompressedFlag(fc: SmartFileProducerConfiguration): Boolean = {
@@ -409,10 +409,6 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     }
   }
 
-  private def openFile(fileName: String) = openFile(fc, fileName)
-
-  private def write(os: OutputStream, message: Array[Byte]) = write(fc, os, message)
-
   override def getComponentStatusAndMetrics: MonitorComponentInfo = {
     implicit val formats = org.json4s.DefaultFormats
     return new MonitorComponentInfo(AdapterConfiguration.TYPE_OUTPUT, fc.Name, SmartFileProducer.ADAPTER_DESCRIPTION, startTime, lastSeen, Serialization.write(metrics).toString)
@@ -468,7 +464,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           val ts = new java.text.SimpleDateFormat("yyyyMMdd'T'HHmm").format(new java.util.Date(dt))
           val fileName = "%s/%s/%s%s-%d-%s.dat%s".format(fc.uri, path, fc.fileNamePrefix, nodeId, bucket, ts, extensions.getOrElse(fc.compressionString, ""))
           LOG.info("Smart File Producer " + fc.Name + "(" + this + "): Opening file " + fileName)
-          var os = openFile(fileName)
+          var os = openFile(fc, fileName)
           if (compress)
             os = new CompressorStreamFactory().createCompressorOutputStream(fc.compressionString, os)
 
@@ -498,7 +494,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       try {
         pf.synchronized {
           if (pf.flushBufferSize > 0 && pf.buffer.size > 0) {
-            write(pf.outStream, pf.buffer.toArray)
+            write(fc, pf.outStream, pf.buffer.toArray)
             pf.size += pf.buffer.size
             pf.records += pf.recordsInBuffer
             pf.buffer.clear()
@@ -533,7 +529,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     WriteLock(_reent_lock)
     try {
       partitionStreams.remove(pf.key)
-      var os = openFile(pf.name)
+      var os = openFile(fc, pf.name)
       if (compress)
         os = new CompressorStreamFactory().createCompressorOutputStream(fc.compressionString, os)
 
@@ -581,7 +577,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
                 pf.recordsInBuffer += 1
                 if (pf.buffer.size > pf.flushBufferSize) {
                   LOG.info("Smart File Producer " + fc.Name + ": buffer is full writing to file " + pf.name)
-                  write(pf.outStream, pf.buffer.toArray)
+                  write(fc, pf.outStream, pf.buffer.toArray)
                   pf.size += pf.buffer.size
                   pf.records += pf.recordsInBuffer
                   pf.buffer.clear()
@@ -590,7 +586,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
               } else {
                 LOG.info("Smart File Producer " + fc.Name + ": writing record to file " + pf.name)
                 val data = message ++ fc.messageSeparator.getBytes
-                write(pf.outStream, data)
+                write(fc, pf.outStream, data)
                 pf.records += 1
                 pf.size += data.length
               }
