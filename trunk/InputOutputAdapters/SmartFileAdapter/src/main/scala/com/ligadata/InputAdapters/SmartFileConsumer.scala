@@ -1199,7 +1199,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       var componentsMap = scala.collection.immutable.Map[String, String]()
       var targetMoveDir: String = null
       var flBaseName: String = null
-      if (adapterConfig.archiveConfig != null) {
+      if (adapterConfig.archiveConfig != null && adapterConfig.archiveConfig.outputConfig != null) {
         val parentDir = smartFileHandler.getParentDir
         if(locationsMap.contains(parentDir)) {
           val locationInfo = locationsMap(parentDir)
@@ -1212,7 +1212,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       }
 
       isFileMoved = moveFile(smartFileHandler)
-      if (isFileMoved && adapterConfig.archiveConfig != null) {
+      if (isFileMoved && adapterConfig.archiveConfig != null && adapterConfig.archiveConfig.outputConfig != null) {
         addArchiveFileInfo(ArchiveFileInfo(adapterConfig, targetMoveDir, flBaseName, componentsMap))
       }
     } catch {
@@ -1365,8 +1365,11 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     try {
       Thread.sleep(sleepTimeInMs)
     } catch {
-      case e: Throwable => {
+      case e: InterruptedException => {
         interruptedVal = true
+      }
+      case e: Throwable => {
+        ///
       }
     }
     interruptedVal
@@ -1412,9 +1415,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
     initializeNode//register the callbacks
 
-    if (adapterConfig.archiveConfig != null && clusterStatus != null && clusterStatus.isLeader && clusterStatus.leaderNodeId.equals(clusterStatus.nodeId)) {
-      var archiveParallelism = 1
-      var archiveSleepTimeInMs = 10
+    if (adapterConfig.archiveConfig != null && adapterConfig.archiveConfig.outputConfig != null && clusterStatus != null && clusterStatus.isLeader && clusterStatus.leaderNodeId.equals(clusterStatus.nodeId)) {
+      val archiveParallelism = if (adapterConfig.archiveConfig.archiveParallelism <= 0) 1 else adapterConfig.archiveConfig.archiveParallelism
+      val archiveSleepTimeInMs = if (adapterConfig.archiveConfig.archiveSleepTimeInMs < 0) 1 else adapterConfig.archiveConfig.archiveSleepTimeInMs
+      logger.info("Archival Init. archiveParallelism:" + archiveParallelism + ", archiveSleepTimeInMs:" + archiveSleepTimeInMs)
       archiveExecutor = Executors.newFixedThreadPool(archiveParallelism)
 
       for (i <- 0 until archiveParallelism) {
@@ -1422,24 +1426,35 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
           override def run(): Unit = {
             var interruptedVal = false
             while (!interruptedVal) {
-              if (hasNextArchiveFileInfo) {
-                val archInfo = getNextArchiveFileInfo
-                if (archInfo != null) {
-                  try {
-                    val status = SmartFileHandlerFactory.archiveFile(archInfo.adapterConfig, archInfo.srcFileDir, archInfo.srcFileBaseName, archInfo.componentsMap)
-                    if (! status)
-                      addArchiveFileInfo(archInfo)
-                  } catch {
-                    case e: Throwable => {
-                      addArchiveFileInfo(archInfo)
-                      logger.error("Failed to archive file:" + archInfo.srcFileDir + "/" + archInfo.srcFileBaseName, e)
+              try {
+                if (hasNextArchiveFileInfo) {
+                  val archInfo = getNextArchiveFileInfo
+                  if (archInfo != null) {
+                    try {
+                      val status = SmartFileHandlerFactory.archiveFile(archInfo.adapterConfig, archInfo.srcFileDir, archInfo.srcFileBaseName, archInfo.componentsMap)
+                      if (! status)
+                        addArchiveFileInfo(archInfo)
+                    } catch {
+                      case e: Throwable => {
+                        addArchiveFileInfo(archInfo)
+                        logger.error("Failed to archive file:" + archInfo.srcFileDir + "/" + archInfo.srcFileBaseName, e)
+                      }
                     }
+                  } else {
+                    if (archiveSleepTimeInMs > 0)
+                      interruptedVal = sleepMs(archiveSleepTimeInMs)
                   }
                 } else {
-                  interruptedVal = sleepMs(archiveSleepTimeInMs)
+                  if (archiveSleepTimeInMs > 0)
+                    interruptedVal = sleepMs(archiveSleepTimeInMs)
                 }
-              } else {
-                interruptedVal = sleepMs(archiveSleepTimeInMs)
+              } catch {
+                case e: InterruptedException => {
+                  interruptedVal = true
+                }
+                case e: Throwable => {
+                  ///
+                }
               }
             }
           }

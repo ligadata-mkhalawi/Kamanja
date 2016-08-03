@@ -268,13 +268,13 @@ object SmartFileHandlerFactory{
   lazy val logger = LogManager.getLogger(loggerName)
 
   def archiveFile(adapterConfig: SmartFileAdapterConfiguration, srcFileDir: String, srcFileBaseName: String, componentsMap: scala.collection.immutable.Map[String, String]): Boolean = {
-    if (adapterConfig.archiveConfig == null)
+    if (adapterConfig.archiveConfig == null || adapterConfig.archiveConfig.outputConfig == null)
       return true
 
     var status = false
     val partitionVariable = "\\$\\{([^\\}]+)\\}".r
-    val partitionFormats = partitionVariable.findAllMatchIn(adapterConfig.archiveConfig.uri).map(x => x.group(1)).toList
-    val partitionFormatString = partitionVariable.replaceAllIn(adapterConfig.archiveConfig.uri, "%s")
+    val partitionFormats = partitionVariable.findAllMatchIn(adapterConfig.archiveConfig.outputConfig.uri).map(x => x.group(1)).toList
+    val partitionFormatString = partitionVariable.replaceAllIn(adapterConfig.archiveConfig.outputConfig.uri, "%s")
 
     val values = partitionFormats.map(fmt => { componentsMap.getOrElse(fmt, "default").toString.trim })
 
@@ -288,15 +288,15 @@ object SmartFileHandlerFactory{
     var os: OutputStream = null
 
     try {
-      if (osWriter.isFileExists(adapterConfig.archiveConfig, dstFileToArchive)) {
+      if (osWriter.isFileExists(adapterConfig.archiveConfig.outputConfig, dstFileToArchive)) {
         // Delete existing file in Archive folder
         logger.error("Deleting previously archived/partially archived file " + dstFileToArchive)
-        osWriter.removeFile(adapterConfig.archiveConfig, dstFileToArchive)
+        osWriter.removeFile(adapterConfig.archiveConfig.outputConfig, dstFileToArchive)
       }
 
       fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, srcFileToArchive, true)
       fileHandler.openForRead()
-      os = osWriter.openFile(adapterConfig.archiveConfig, dstFileToArchive, false)
+      os = osWriter.openFile(adapterConfig.archiveConfig.outputConfig, dstFileToArchive, false)
 
       var curReadLen = -1
       val bufferSz = 8 * 1024 * 1024

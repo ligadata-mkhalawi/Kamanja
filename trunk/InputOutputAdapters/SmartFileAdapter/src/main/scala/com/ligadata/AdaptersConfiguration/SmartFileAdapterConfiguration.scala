@@ -9,6 +9,12 @@ import org.json4s.native.JsonMethods._
 
 import scala.collection.mutable.{ArrayBuffer, MutableList}
 
+class ArchiveConfig {
+  var archiveSleepTimeInMs: Int = 10
+  var archiveParallelism: Int = 1
+  var outputConfig: SmartFileProducerConfiguration = null
+}
+
 /**
   * Created by Yasser on 3/10/2016.
   */
@@ -17,7 +23,7 @@ class SmartFileAdapterConfiguration extends AdapterConfiguration {
 
   var connectionConfig: FileAdapterConnectionConfig = null
   var monitoringConfig: FileAdapterMonitoringConfig = null
-  var archiveConfig: SmartFileProducerConfiguration = null
+  var archiveConfig: ArchiveConfig = null
 }
 
 class FileAdapterConnectionConfig {
@@ -135,7 +141,7 @@ object SmartFileAdapterConfiguration {
     adapterConfig
   }
 
-  def parseSmartFileAdapterSpecificConfig(adapterName: String, adapterSpecificCfgJson: String): (String, FileAdapterConnectionConfig, FileAdapterMonitoringConfig, SmartFileProducerConfiguration) = {
+  def parseSmartFileAdapterSpecificConfig(adapterName: String, adapterSpecificCfgJson: String): (String, FileAdapterConnectionConfig, FileAdapterMonitoringConfig, ArchiveConfig) = {
 
     val adapCfg = parse(adapterSpecificCfgJson)
 
@@ -390,7 +396,7 @@ object SmartFileAdapterConfiguration {
       monitoringConfig.msgTags.foreach(tag => if(!isValidMsgTag(tag)) throw new Exception(s"Invalid msg tag ($tag) for file input adatper ($adapterName)"))
     }*/
 
-    var archiveConfig: SmartFileProducerConfiguration = null
+    var archiveConfig: ArchiveConfig = null
     if (adapCfgValues.contains("ArchiveConfig")) {
       try {
         val connConf = adapCfgValues.get("ArchiveConfig").get.asInstanceOf[Map[String, Any]]
@@ -399,7 +405,15 @@ object SmartFileAdapterConfiguration {
         aConfig.className = ""
         aConfig.jarName = ""
         aConfig.dependencyJars = Set[String]()
-        archiveConfig = aConfig
+
+        archiveConfig = new ArchiveConfig()
+
+        archiveConfig.outputConfig = aConfig
+        archiveConfig.archiveParallelism = if (connConf.contains("ArchiveParallelism")) connConf.getOrElse("ArchiveParallelism", "1").toString.trim.toInt else 1
+        if (archiveConfig.archiveParallelism <= 0) archiveConfig.archiveParallelism = 1
+
+        archiveConfig.archiveSleepTimeInMs = if (connConf.contains("ArchiveSleepTimeInMs")) connConf.getOrElse("ArchiveSleepTimeInMs", "10").toString.trim.toInt else 10
+        if (archiveConfig.archiveSleepTimeInMs < 0) archiveConfig.archiveSleepTimeInMs = 10
       } catch {
         case e: Throwable => {
           logger.error("Failed to load ArchiveConfig", e)
