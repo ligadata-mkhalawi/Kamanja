@@ -1360,12 +1360,16 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     infoBuffer.toArray
   }
 
-  private def sleepMs(sleepTimeInMs: Int): Unit = {
+  private def sleepMs(sleepTimeInMs: Int): Boolean = {
+    var interruptedVal = false
     try {
       Thread.sleep(sleepTimeInMs)
     } catch {
-      case e: Throwable => {}
+      case e: Throwable => {
+        interruptedVal = true
+      }
     }
+    interruptedVal
   }
 
   override def StartProcessing(partitionIds: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = {
@@ -1379,16 +1383,17 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       for (i <- 0 until archiveParallelism) {
         val archiveThread = new Runnable() {
           override def run(): Unit = {
-            while (true) {
+            var interruptedVal = false
+            while (!interruptedVal) {
               if (hasNextArchiveFileInfo) {
                 val archInfo = getNextArchiveFileInfo
                 if (archInfo != null) {
                   SmartFileHandlerFactory.archiveFile(archInfo.adapterConfig, archInfo.srcFileDir, archInfo.srcFileBaseName, archInfo.componentsMap)
                 } else {
-                  sleepMs(archiveSleepTimeInMs)
+                  interruptedVal = sleepMs(archiveSleepTimeInMs)
                 }
               } else {
-                sleepMs(archiveSleepTimeInMs)
+                interruptedVal = sleepMs(archiveSleepTimeInMs)
               }
             }
           }
