@@ -152,8 +152,8 @@ object MonitorUtils {
     */
   def compareFiles(fileHandler1: SmartFileHandler, fileHandler2: SmartFileHandler, locationInfo : LocationInfo) : Int = {
 
-    val fileComponentsMap1 = getFileComponents(fileHandler1, locationInfo)
-    val fileComponentsMap2 = getFileComponents(fileHandler2, locationInfo)
+    val fileComponentsMap1 = getFileComponents(fileHandler1.getFullPath, locationInfo)
+    val fileComponentsMap2 = getFileComponents(fileHandler2.getFullPath, locationInfo)
 
 
     breakable{
@@ -198,13 +198,11 @@ object MonitorUtils {
 
   /**
     * based on file name and ordering config, returns a value representing new file name
-    * @param fileHandler  assuming file name already checked against the pattern
+    * @param fileFullPath
     * @param locationInfo
     * @return
     */
-  def getFileComponents(fileHandler: SmartFileHandler, locationInfo : LocationInfo) : Map[String, String] = {
-
-    val filePath = fileHandler.getFullPath
+  def getFileComponents(fileFullPath: String, locationInfo : LocationInfo) : Map[String, String] = {
     val fileName = getFileName(filePath)
     val pattern = locationInfo.fileComponents.regex.r
 

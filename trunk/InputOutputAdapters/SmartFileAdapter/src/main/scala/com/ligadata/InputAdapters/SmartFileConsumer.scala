@@ -1204,7 +1204,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         if(locationsMap.contains(parentDir)) {
           val locationInfo = locationsMap(parentDir)
           if (locationInfo != null && locationInfo.fileComponents != null)
-            componentsMap = MonitorUtils.getFileComponents(smartFileHandler, locationInfo)
+            componentsMap = MonitorUtils.getFileComponents(originalFilePath, locationInfo)
         }
         val (targetMoveDir1, flBaseName1) = getTargetFile(smartFileHandler)
         targetMoveDir = targetMoveDir1
@@ -1466,7 +1466,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                 if(locationsMap.contains(srcDir)) {
                   val locationInfo = locationsMap(srcDir)
                   if (locationInfo != null && locationInfo.fileComponents != null)
-                    componentsMap = MonitorUtils.getFileComponents(smartFileHandler, locationInfo)
+                    componentsMap = MonitorUtils.getFileComponents(tgtDir + "/" + f, locationInfo)
                 }
                 addArchiveFileInfo(ArchiveFileInfo(adapterConfig, tgtDir, f, componentsMap))
               })
