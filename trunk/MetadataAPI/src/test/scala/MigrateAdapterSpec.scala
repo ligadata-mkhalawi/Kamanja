@@ -19,17 +19,17 @@ package com.ligadata.automation.unittests.api
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType
 import com.ligadata.automation.unittests.api.setup._
 import org.scalatest._
-import Matchers._
-
 import com.ligadata.MetadataAPI._
 import com.ligadata.kamanja.metadata._
 import com.ligadata.kamanja.metadata.MdMgr._
-
 import com.ligadata.Utils._
+
 import util.control.Breaks._
 import scala.io._
 import java.util.Date
 import java.io._
+
+import com.ligadata.MetadataAPI.test.MetadataAPIProperties
 
 import sys.process._
 import org.apache.logging.log4j._
@@ -37,16 +37,17 @@ import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import com.ligadata.Serialize._
-
 import org.json4s.native.Serialization
-import org.json4s.native.Serialization.{ read, write, writePretty }
-
+import org.json4s.native.Serialization.{read, write, writePretty}
 import com.ligadata.kamanja.metadataload.MetadataLoad
+import com.ligadata.test.embedded.zookeeper._
+import com.ligadata.test.utils._
+import com.ligadata.test.configuration.cluster.adapters.interfaces._
 
 case class adapterMessageBinding(var AdapterName: String,var MessageNames: List[String], var Options: Map[String,String], var Serializer: String)
 
 
-class MigrateAdapterSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
+class MigrateAdapterSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen with Matchers {
   var res: String = null;
   var statusCode: Int = -1;
   var apiResKey: String = "\"Status Code\" : 0"
@@ -78,7 +79,7 @@ class MigrateAdapterSpec extends FunSpec with LocalTestFixtures with BeforeAndAf
     val db = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
     assert(null != db)
     db match {
-      case "sqlserver" | "mysql" | "hbase" | "cassandra" | "hashmap" | "treemap" => {
+      case "sqlserver" | "mysql" | "hbase" | "cassandra" | "hashmap" | "treemap" | "h2db" => {
         var ds = MetadataAPIImpl.GetMainDS
         var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id")
         ds.TruncateContainer(containerList)
@@ -111,17 +112,17 @@ class MigrateAdapterSpec extends FunSpec with LocalTestFixtures with BeforeAndAf
 
       logger.info("resource dir => " + getClass.getResource("/").getPath)
 
+      val zkServer = new EmbeddedZookeeper
+      zkServer.startup
+
       logger.info("Initialize MetadataManager")
-      mdMan.config.classPath = ConfigDefaults.metadataClasspath
-      mdMan.initMetadataCfg
+      //mdMan.config.classPath = ConfigDefaults.metadataClasspath
+      mdMan.initMetadataCfg(new MetadataAPIProperties(H2DBStore.name, H2DBStore.connectionMode, ConfigDefaults.storageDirectory, zkConnStr = zkServer.getConnection))
 
       logger.info("Initialize MdMgr")
       MdMgr.GetMdMgr.truncate
       val mdLoader = new MetadataLoad(MdMgr.mdMgr, "", "", "", "")
       mdLoader.initialize
-
-      val zkServer = EmbeddedZookeeper
-      zkServer.instance.startup
 
       logger.info("Initialize zooKeeper connection")
       MetadataAPIImpl.initZkListeners(false)
@@ -602,6 +603,8 @@ class MigrateAdapterSpec extends FunSpec with LocalTestFixtures with BeforeAndAf
       case "hashmap" | "treemap" => {
         DropDbStore
       }
+      case "h2db" =>
+        TestUtils.deleteFile(new File(ConfigDefaults.storageDirectory))
       case _ => {
         logger.info("cleanup...")
       }
@@ -611,6 +614,6 @@ class MigrateAdapterSpec extends FunSpec with LocalTestFixtures with BeforeAndAf
   }
 
   if (zkServer != null) {
-    zkServer.instance.shutdown
+    zkServer.shutdown
   }
 }

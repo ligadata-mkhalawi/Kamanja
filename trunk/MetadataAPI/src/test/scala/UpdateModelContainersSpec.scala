@@ -19,13 +19,11 @@ package com.ligadata.automation.unittests.api
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType
 import com.ligadata.automation.unittests.api.setup._
 import org.scalatest._
-import Matchers._
-
 import com.ligadata.MetadataAPI._
 import com.ligadata.kamanja.metadata._
 import com.ligadata.kamanja.metadata.MdMgr._
-
 import com.ligadata.Utils._
+
 import util.control.Breaks._
 import scala.io._
 import java.util.Date
@@ -37,11 +35,14 @@ import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import com.ligadata.Serialize._
-
 import com.ligadata.kamanja.metadataload.MetadataLoad
 import com.ligadata.Exceptions._
+import com.ligadata.MetadataAPI.test.MetadataAPIProperties
+import com.ligadata.test.embedded.zookeeper._
+import com.ligadata.test.configuration.cluster.adapters.interfaces._
+import com.ligadata.test.utils._
 
-class UpdateModelContainersSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
+class UpdateModelContainersSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen with Matchers {
   var res: String = null;
   var statusCode: Int = -1;
   var apiResKey: String = "\"Status Code\" : 0"
@@ -63,13 +64,13 @@ class UpdateModelContainersSpec extends FunSpec with LocalTestFixtures with Befo
     val db = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
     assert(null != db)
     db match {
-      case "sqlserver" | "mysql" | "hbase" | "cassandra" | "hashmap" | "treemap" => {
-	var ds = MetadataAPIImpl.GetMainDS
-	var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id")
-	ds.TruncateContainer(containerList)
+      case "sqlserver" | "mysql" | "hbase" | "cassandra" | "hashmap" | "treemap" | "h2db" => {
+        var ds = MetadataAPIImpl.GetMainDS
+        var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id")
+        ds.TruncateContainer(containerList)
       }
       case _ => {
-	logger.info("TruncateDbStore is not supported for database " + db)
+        logger.info("TruncateDbStore is not supported for database " + db)
       }
     }
   }
@@ -79,12 +80,12 @@ class UpdateModelContainersSpec extends FunSpec with LocalTestFixtures with Befo
     assert(null != db)
     db match {
       case "sqlserver" | "mysql" | "hbase" | "cassandra" | "hashmap" | "treemap" => {
-	var ds = MetadataAPIImpl.GetMainDS
-	var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id")
-	ds.DropContainer(containerList)
+        var ds = MetadataAPIImpl.GetMainDS
+        var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id")
+        ds.DropContainer(containerList)
       }
       case _ => {
-	logger.info("DropDbStore is not supported for database " + db)
+        logger.info("DropDbStore is not supported for database " + db)
       }
     }
   }
@@ -97,18 +98,18 @@ class UpdateModelContainersSpec extends FunSpec with LocalTestFixtures with Befo
 
       logger.info("resource dir => " + getClass.getResource("/").getPath)
 
+      logger.info("Startup embedded zooKeeper ")
+      zkServer = new EmbeddedZookeeper
+      zkServer.startup
+
       logger.info("Initialize MetadataManager")
-      mdMan.config.classPath = ConfigDefaults.metadataClasspath
-      mdMan.initMetadataCfg
+      //mdMan.config.classPath = ConfigDefaults.metadataClasspath
+      mdMan.initMetadataCfg(new MetadataAPIProperties(H2DBStore.name, H2DBStore.connectionMode, ConfigDefaults.storageDirectory, zkConnStr = zkServer.getConnection))
 
       logger.info("Initialize MdMgr")
       MdMgr.GetMdMgr.truncate
       val mdLoader = new MetadataLoad(MdMgr.mdMgr, "", "", "", "")
       mdLoader.initialize
-
-      logger.info("Startup embedded zooKeeper ")
-      val zkServer = EmbeddedZookeeper
-      zkServer.instance.startup
 
       logger.info("Initialize zooKeeper connection")
       MetadataAPIImpl.initZkListeners(false)
@@ -127,7 +128,7 @@ class UpdateModelContainersSpec extends FunSpec with LocalTestFixtures with Befo
 
       And("PutTranId updates the tranId")
       noException should be thrownBy {
-	MetadataAPIImpl.PutTranId(0)
+        MetadataAPIImpl.PutTranId(0)
       }
 
       logger.info("Load All objects into cache")
@@ -149,7 +150,7 @@ class UpdateModelContainersSpec extends FunSpec with LocalTestFixtures with Befo
     }
     catch {
       case e: EmbeddedZookeeperException => {
-	throw new EmbeddedZookeeperException("EmbeddedZookeeperException detected")
+        throw new EmbeddedZookeeperException("EmbeddedZookeeperException detected")
       }
       case e: Exception => throw new Exception("Failed to execute set up properly", e)
     }
@@ -168,12 +169,12 @@ class UpdateModelContainersSpec extends FunSpec with LocalTestFixtures with Befo
       val db = cfg.getProperty("DATABASE")
       assert(null != db)
       if (db == "cassandra") {
-	And("The property MetadataLocation must have been defined for store type " + db)
-	val loc = cfg.getProperty("DATABASE_LOCATION")
-	assert(null != loc)
-	And("The property MetadataSchemaName must have been defined for store type " + db)
-	val schema = cfg.getProperty("DATABASE_SCHEMA")
-	assert(null != schema)
+        And("The property MetadataLocation must have been defined for store type " + db)
+        val loc = cfg.getProperty("DATABASE_LOCATION")
+        assert(null != loc)
+        And("The property MetadataSchemaName must have been defined for store type " + db)
+        val schema = cfg.getProperty("DATABASE_SCHEMA")
+        assert(null != schema)
       }
       And("The property NODE_ID must have been defined")
       assert(null != cfg.getProperty("NODE_ID"))
@@ -265,33 +266,33 @@ class UpdateModelContainersSpec extends FunSpec with LocalTestFixtures with Befo
       val contFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith(".json"))
       assert(0 != contFiles.length)
 
-      fileList = List("CoughCodes.json","EnvCodes.json","DyspnoeaCodes.json","SmokeCodes.json","SputumCodes.json")
+      fileList = List("CoughCodes.json", "EnvCodes.json", "DyspnoeaCodes.json", "SmokeCodes.json", "SputumCodes.json")
       fileList.foreach(f1 => {
-	And("Add the Container From " + f1)
-	And("Make Sure " + f1 + " exist")
-	var exists = false
-	var file: java.io.File = null
-	breakable {
-	  contFiles.foreach(f2 => {
-	    if (f2.getName() == f1) {
-	      exists = true
-	      file = f2
-	      break
-	    }
-	  })
-	}
-	assert(true == exists)
+        And("Add the Container From " + f1)
+        And("Make Sure " + f1 + " exist")
+        var exists = false
+        var file: java.io.File = null
+        breakable {
+          contFiles.foreach(f2 => {
+            if (f2.getName() == f1) {
+              exists = true
+              file = f2
+              break
+            }
+          })
+        }
+        assert(true == exists)
 
-	And("AddContainer from " + file.getPath)
-	contStr = Source.fromFile(file).mkString
-	res = MetadataAPIImpl.AddContainer(contStr, "JSON", None, tenantId,None)
-	res should include regex ("\"Status Code\" : 0")
+        And("AddContainer from " + file.getPath)
+        contStr = Source.fromFile(file).mkString
+        res = MetadataAPIImpl.AddContainer(contStr, "JSON", None, tenantId, None)
+        res should include regex ("\"Status Code\" : 0")
 
-	And("GetContainerDef API to fetch the container that was just added")
-	var objName = f1.stripSuffix(".json").toLowerCase
-	var version = "0000000000001000000"
-	res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", version, None,None)
-	res should include regex ("\"Status Code\" : 0")
+        And("GetContainerDef API to fetch the container that was just added")
+        var objName = f1.stripSuffix(".json").toLowerCase
+        var version = "0000000000001000000"
+        res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", version, None, None)
+        res should include regex ("\"Status Code\" : 0")
 
       })
     }
@@ -312,33 +313,33 @@ class UpdateModelContainersSpec extends FunSpec with LocalTestFixtures with Befo
       val msgFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith(".json"))
       assert(0 != msgFiles.length)
 
-      fileList = List("outpatientclaim.json","inpatientclaim.json","hl7.json","beneficiary.json","COPDInputMessage.json","COPDOutputMessage.json")
+      fileList = List("outpatientclaim.json", "inpatientclaim.json", "hl7.json", "beneficiary.json", "COPDInputMessage.json", "COPDOutputMessage.json")
       fileList.foreach(f1 => {
-	And("Add the Message From " + f1)
-	And("Make Sure " + f1 + " exist")
-	var exists = false
-	var file: java.io.File = null
-	breakable {
-	  msgFiles.foreach(f2 => {
-	    if (f2.getName() == f1) {
-	      exists = true
-	      file = f2
-	      break
-	    }
-	  })
-	}
-	assert(true == exists)
+        And("Add the Message From " + f1)
+        And("Make Sure " + f1 + " exist")
+        var exists = false
+        var file: java.io.File = null
+        breakable {
+          msgFiles.foreach(f2 => {
+            if (f2.getName() == f1) {
+              exists = true
+              file = f2
+              break
+            }
+          })
+        }
+        assert(true == exists)
 
-	And("AddMessage first time from " + file.getPath)
-	var msgStr = Source.fromFile(file).mkString
-	res = MetadataAPIImpl.AddMessage(msgStr, "JSON", None,tenantId,None)
-	res should include regex ("\"Status Code\" : 0")
+        And("AddMessage first time from " + file.getPath)
+        var msgStr = Source.fromFile(file).mkString
+        res = MetadataAPIImpl.AddMessage(msgStr, "JSON", None, tenantId, None)
+        res should include regex ("\"Status Code\" : 0")
 
-	And("GetMessageDef API to fetch the message that was just added")
-	var objName = f1.stripSuffix(".json").toLowerCase
-	var version = "0000000000001000000"
-	res = MetadataAPIImpl.GetMessageDef("com.ligadata.kamanja.samples.messages", objName, "JSON", version, None,None)
-	res should include regex ("\"Status Code\" : 0")
+        And("GetMessageDef API to fetch the message that was just added")
+        var objName = f1.stripSuffix(".json").toLowerCase
+        var version = "0000000000001000000"
+        res = MetadataAPIImpl.GetMessageDef("com.ligadata.kamanja.samples.messages", objName, "JSON", version, None, None)
+        res should include regex ("\"Status Code\" : 0")
       })
     }
 
@@ -361,40 +362,40 @@ class UpdateModelContainersSpec extends FunSpec with LocalTestFixtures with Befo
       //  Model Config Object
       fileList = List("COPDRiskAssessmentCompileCfg.json")
       fileList.foreach(f1 => {
-	And("Add the Model Config From " + f1)
-	And("Make Sure " + f1 + " exist")
-	var exists = false
-	var file: java.io.File = null
-	breakable {
-	  modFiles.foreach(f2 => {
-	    if (f2.getName() == f1) {
-	      exists = true
-	      file = f2
-	      break
-	    }
-	  })
-	}
-	assert(true == exists)
+        And("Add the Model Config From " + f1)
+        And("Make Sure " + f1 + " exist")
+        var exists = false
+        var file: java.io.File = null
+        breakable {
+          modFiles.foreach(f2 => {
+            if (f2.getName() == f1) {
+              exists = true
+              file = f2
+              break
+            }
+          })
+        }
+        assert(true == exists)
 
-	And("Call UploadModelConfig MetadataAPI Function to add Model from " + file.getPath)
-	var modStr = Source.fromFile(file).mkString
-	res = MetadataAPIImpl.UploadModelsConfig(modStr,
-						 userid,   // userid
-						 null,   // objectList
-						 true   // isFromNotify
-					       )
-	res should include regex ("\"Status Code\" : 0")
+        And("Call UploadModelConfig MetadataAPI Function to add Model from " + file.getPath)
+        var modStr = Source.fromFile(file).mkString
+        res = MetadataAPIImpl.UploadModelsConfig(modStr,
+          userid, // userid
+          null, // objectList
+          true // isFromNotify
+        )
+        res should include regex ("\"Status Code\" : 0")
 
-	And("Dump  modelConfig that was just added")
-	MdMgr.GetMdMgr.DumpModelConfigs
-	And("GetModelDependencies to fetch the modelConfig that was just added")
+        And("Dump  modelConfig that was just added")
+        MdMgr.GetMdMgr.DumpModelConfigs
+        And("GetModelDependencies to fetch the modelConfig that was just added")
 
-	var cfgName = "COPDRiskAssessment"
-	var dependencies = MetadataAPIImpl.getModelDependencies(userid.get + "." + cfgName,userid)
-	assert(dependencies.length == 0) 
+        var cfgName = "COPDRiskAssessment"
+        var dependencies = MetadataAPIImpl.getModelDependencies(userid.get + "." + cfgName, userid)
+        assert(dependencies.length == 0)
 
-	var msgsAndContainers = MetadataAPIImpl.getModelMessagesContainers(userid.get + "." + cfgName,userid)
-	assert(msgsAndContainers.length == 8) 
+        var msgsAndContainers = MetadataAPIImpl.getModelMessagesContainers(userid.get + "." + cfgName, userid)
+        assert(msgsAndContainers.length == 8)
       })
     }
 
@@ -417,123 +418,123 @@ class UpdateModelContainersSpec extends FunSpec with LocalTestFixtures with Befo
       // Scala Models
       fileList = List("COPDRiskAssessment.java")
       fileList.foreach(f1 => {
-	And("Add the Model From " + f1)
-	And("Make Sure " + f1 + " exist")
-	var exists = false
-	var file: java.io.File = null
-	breakable {
-	  modFiles.foreach(f2 => {
-	    if (f2.getName() == f1) {
-	      exists = true
-	      file = f2
-	      break
-	    }
-	  })
-	}
-	assert(true == exists)
+        And("Add the Model From " + f1)
+        And("Make Sure " + f1 + " exist")
+        var exists = false
+        var file: java.io.File = null
+        breakable {
+          modFiles.foreach(f2 => {
+            if (f2.getName() == f1) {
+              exists = true
+              file = f2
+              break
+            }
+          })
+        }
+        assert(true == exists)
 
-	And("Call AddModel MetadataAPI Function to add Model from " + file.getPath)
-	var modStr = Source.fromFile(file).mkString
-	logger.info("scala model => " + modStr)
-	res = MetadataAPIImpl.AddModel(ModelType.JAVA, // modelType
-				       modStr, // input
-				       userid,   // optUserid
-				       Some("testTenantId"),  // tenantId
-				       Some("kamanja.COPDRiskAssessment"),   // optModelName
-				       None,   // optVersion
-				       None,   // optMsgConsumed
-				       None,   // optMsgVersion
-				       //Some("system.helloworld_msg_output_def") // optMsgProduced
-				       None,
-				       None
-				     )
-	res should include regex ("\"Status Code\" : 0")
+        And("Call AddModel MetadataAPI Function to add Model from " + file.getPath)
+        var modStr = Source.fromFile(file).mkString
+        logger.info("scala model => " + modStr)
+        res = MetadataAPIImpl.AddModel(ModelType.JAVA, // modelType
+          modStr, // input
+          userid, // optUserid
+          Some("testTenantId"), // tenantId
+          Some("kamanja.COPDRiskAssessment"), // optModelName
+          None, // optVersion
+          None, // optMsgConsumed
+          None, // optMsgVersion
+          //Some("system.helloworld_msg_output_def") // optMsgProduced
+          None,
+          None
+        )
+        res should include regex ("\"Status Code\" : 0")
 
-	And("GetModelDef API to fetch the model that was just added")
-	// Unable to use fileName to identify the name of the object
-	// Use this function to extract the name of the model
-	var nameSpace = "com.ligadata.kamanja.samples.models"
-	var objName = "COPDRiskAssessment"
-	logger.info("ModelName => " + objName)
-	var version = "0000000000000000001"
-	res = MetadataAPIImpl.GetModelDef(nameSpace, objName, "XML", version, userid)
-	res should include regex ("\"Status Code\" : 0")
+        And("GetModelDef API to fetch the model that was just added")
+        // Unable to use fileName to identify the name of the object
+        // Use this function to extract the name of the model
+        var nameSpace = "com.ligadata.kamanja.samples.models"
+        var objName = "COPDRiskAssessment"
+        logger.info("ModelName => " + objName)
+        var version = "0000000000000000001"
+        res = MetadataAPIImpl.GetModelDef(nameSpace, objName, "XML", version, userid)
+        res should include regex ("\"Status Code\" : 0")
 
-	And("Check whether outmsg has been created")
-	val msgNameSpace = "com.ligadata.kamanja.samples.messages"
-	val msgName = "COPDOutputMessage"
-	version = "0000000000001000000"
-	res = MetadataAPIImpl.GetMessageDef(msgNameSpace, msgName, "JSON", version, userid,tenantId)
-	res should include regex ("\"Status Code\" : 0")
+        And("Check whether outmsg has been created")
+        val msgNameSpace = "com.ligadata.kamanja.samples.messages"
+        val msgName = "COPDOutputMessage"
+        version = "0000000000001000000"
+        res = MetadataAPIImpl.GetMessageDef(msgNameSpace, msgName, "JSON", version, userid, tenantId)
+        res should include regex ("\"Status Code\" : 0")
 
-	val modDefs = MdMgr.GetMdMgr.Models(nameSpace, objName, true, true)
-	assert(modDefs != None)
-	
-	val models = modDefs.get.toArray
-	assert(models.length == 1)
-	
-	// there should be two sets in this test
-	And("Validate contents of inputMsgSets")
-	var imsgs = models(0).inputMsgSets
-	assert(imsgs.length == 1) // only beneficiary is added
+        val modDefs = MdMgr.GetMdMgr.Models(nameSpace, objName, true, true)
+        assert(modDefs != None)
 
-	// The order of msgSets in ModelDef.inputMsgSets may not exactly correspond to the order in model config definition
-	var msgAttrArrays = imsgs(0)
-	assert(msgAttrArrays.length == 1 )
-	var msgAttr = msgAttrArrays(0)
-	assert(msgAttr != null)
-	assert(msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.beneficiary") || 
-	       msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.inpatientclaim") || 
-	       msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.outpatientclaim") || 
-	       msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.hl7") || 
-	       msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.coughcodes") || 
-	       msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.sputumcodes") || 
-	       msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.envcodes") || 	    
-	       msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.dyspnoeacodes") || 
-	       msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.smokecodes") )
+        val models = modDefs.get.toArray
+        assert(models.length == 1)
+
+        // there should be two sets in this test
+        And("Validate contents of inputMsgSets")
+        var imsgs = models(0).inputMsgSets
+        assert(imsgs.length == 1) // only beneficiary is added
+
+        // The order of msgSets in ModelDef.inputMsgSets may not exactly correspond to the order in model config definition
+        var msgAttrArrays = imsgs(0)
+        assert(msgAttrArrays.length == 1)
+        var msgAttr = msgAttrArrays(0)
+        assert(msgAttr != null)
+        assert(msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.beneficiary") ||
+          msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.inpatientclaim") ||
+          msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.outpatientclaim") ||
+          msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.hl7") ||
+          msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.coughcodes") ||
+          msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.sputumcodes") ||
+          msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.envcodes") ||
+          msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.dyspnoeacodes") ||
+          msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.smokecodes"))
 
 
-	var cfgName = "COPDRiskAssessment"
+        var cfgName = "COPDRiskAssessment"
 
-	And("Validate contents of outputMsgSets")
-	var omsgs = models(0).outputMsgs
-	assert(omsgs.length == 1)
+        And("Validate contents of outputMsgSets")
+        var omsgs = models(0).outputMsgs
+        assert(omsgs.length == 1)
 
-	var omsg = omsgs(0)
-	assert(omsg != null)
-	assert(omsg.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.COPDOutputMessage"))
+        var omsg = omsgs(0)
+        assert(omsg != null)
+        assert(omsg.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.COPDOutputMessage"))
 
-	And("Validate the ModelDef.modelConfig")
-	modStr = models(0).modelConfig
+        And("Validate the ModelDef.modelConfig")
+        modStr = models(0).modelConfig
 
-	And("Load the modelConfig again")
-	res = MetadataAPIImpl.UploadModelsConfig(modStr,
-						 userid,   // userid
-						 null,   // objectList
-						 true   // isFromNotify
-					       )
-	res should include regex ("\"Status Code\" : 0")
+        And("Load the modelConfig again")
+        res = MetadataAPIImpl.UploadModelsConfig(modStr,
+          userid, // userid
+          null, // objectList
+          true // isFromNotify
+        )
+        res should include regex ("\"Status Code\" : 0")
 
-	And("Validate dependencies and typeDependencies of modelConfig object")
-	var dependencies = MetadataAPIImpl.getModelDependencies(userid.get + "." + cfgName,userid)
-	assert(dependencies.length == 0) 
+        And("Validate dependencies and typeDependencies of modelConfig object")
+        var dependencies = MetadataAPIImpl.getModelDependencies(userid.get + "." + cfgName, userid)
+        assert(dependencies.length == 0)
 
-	var msgsAndContainers = MetadataAPIImpl.getModelMessagesContainers(userid.get + "." + cfgName,userid)
-	assert(msgsAndContainers.length == 8)
+        var msgsAndContainers = MetadataAPIImpl.getModelMessagesContainers(userid.get + "." + cfgName, userid)
+        assert(msgsAndContainers.length == 8)
 
-	msgsAndContainers.foreach(message => {
-	  logger.info("message =>  " + message)
-	  assert(message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.beneficiary") || 
-	       message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.inpatientclaim") || 
-	       message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.outpatientclaim") || 
-	       message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.hl7") || 
-	       message.equalsIgnoreCase("com.ligadata.kamanja.samples.containers.coughcodes") || 
-	       message.equalsIgnoreCase("com.ligadata.kamanja.samples.containers.sputumcodes") || 
-	       message.equalsIgnoreCase("com.ligadata.kamanja.samples.containers.envcodes") || 	    
-	       message.equalsIgnoreCase("com.ligadata.kamanja.samples.containers.dyspnoeacodes") || 
-	       message.equalsIgnoreCase("com.ligadata.kamanja.samples.containers.smokecodes") )
+        msgsAndContainers.foreach(message => {
+          logger.info("message =>  " + message)
+          assert(message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.beneficiary") ||
+            message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.inpatientclaim") ||
+            message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.outpatientclaim") ||
+            message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.hl7") ||
+            message.equalsIgnoreCase("com.ligadata.kamanja.samples.containers.coughcodes") ||
+            message.equalsIgnoreCase("com.ligadata.kamanja.samples.containers.sputumcodes") ||
+            message.equalsIgnoreCase("com.ligadata.kamanja.samples.containers.envcodes") ||
+            message.equalsIgnoreCase("com.ligadata.kamanja.samples.containers.dyspnoeacodes") ||
+            message.equalsIgnoreCase("com.ligadata.kamanja.samples.containers.smokecodes"))
 
-	})
+        })
       })
     }
 
@@ -551,10 +552,10 @@ class UpdateModelContainersSpec extends FunSpec with LocalTestFixtures with Befo
 
       val modDefs = MdMgr.GetMdMgr.Models(nameSpace, objName, true, true)
       assert(modDefs != None)
-      
+
       val models = modDefs.get.toArray
       assert(models.length == 1)
-      
+
       // there should be two sets in this test
       And("Validate contents of inputMsgSets")
       var imsgs = models(0).inputMsgSets
@@ -562,19 +563,19 @@ class UpdateModelContainersSpec extends FunSpec with LocalTestFixtures with Befo
 
       // The order of msgSets in ModelDef.inputMsgSets may not exactly correspond to the order in model config definition
       imsgs.foreach(msgAttrArrays => {
-	msgAttrArrays.foreach(msgAttr => {
-	  assert(msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.beneficiary") || 
-		 msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.inpatientclaim") || 
-		 msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.outpatientclaim") || 
-		 msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.hl7") || 
-		 msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.coughcodes") || 
-		 msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.sputumcodes") || 
-		 msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.envcodes") || 	    
-		 msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.dyspnoeacodes") || 
-		 msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.smokecodes") )
-	})
+        msgAttrArrays.foreach(msgAttr => {
+          assert(msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.beneficiary") ||
+            msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.inpatientclaim") ||
+            msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.outpatientclaim") ||
+            msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.hl7") ||
+            msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.coughcodes") ||
+            msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.sputumcodes") ||
+            msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.envcodes") ||
+            msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.dyspnoeacodes") ||
+            msgAttr.message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.smokecodes"))
+        })
       })
-      
+
       var cfgName = "COPDRiskAssessment"
 
       And("Validate contents of outputMsgSets")
@@ -588,30 +589,30 @@ class UpdateModelContainersSpec extends FunSpec with LocalTestFixtures with Befo
       And("Validate the ModelDef.modelConfig")
 
       And("Validate dependencies and typeDependencies of modelConfig object")
-      var dependencies = MetadataAPIImpl.getModelDependencies(userid.get + "." + cfgName,userid)
-      assert(dependencies.length == 0) 
+      var dependencies = MetadataAPIImpl.getModelDependencies(userid.get + "." + cfgName, userid)
+      assert(dependencies.length == 0)
 
-      var msgsAndContainers = MetadataAPIImpl.getModelMessagesContainers(userid.get + "." + cfgName,userid)
+      var msgsAndContainers = MetadataAPIImpl.getModelMessagesContainers(userid.get + "." + cfgName, userid)
       assert(msgsAndContainers.length == 8)
 
       msgsAndContainers.foreach(message => {
-	logger.info("message =>  " + message)
-	assert(message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.beneficiary") || 
-	       message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.inpatientclaim") || 
-	       message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.outpatientclaim") || 
-	       message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.hl7") || 
-	       message.equalsIgnoreCase("com.ligadata.kamanja.samples.containers.coughcodes") || 
-	       message.equalsIgnoreCase("com.ligadata.kamanja.samples.containers.sputumcodes") || 
-	       message.equalsIgnoreCase("com.ligadata.kamanja.samples.containers.envcodes") || 	    
-	       message.equalsIgnoreCase("com.ligadata.kamanja.samples.containers.dyspnoeacodes") || 
-	       message.equalsIgnoreCase("com.ligadata.kamanja.samples.containers.smokecodes") )
+        logger.info("message =>  " + message)
+        assert(message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.beneficiary") ||
+          message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.inpatientclaim") ||
+          message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.outpatientclaim") ||
+          message.equalsIgnoreCase("com.ligadata.kamanja.samples.messages.hl7") ||
+          message.equalsIgnoreCase("com.ligadata.kamanja.samples.containers.coughcodes") ||
+          message.equalsIgnoreCase("com.ligadata.kamanja.samples.containers.sputumcodes") ||
+          message.equalsIgnoreCase("com.ligadata.kamanja.samples.containers.envcodes") ||
+          message.equalsIgnoreCase("com.ligadata.kamanja.samples.containers.dyspnoeacodes") ||
+          message.equalsIgnoreCase("com.ligadata.kamanja.samples.containers.smokecodes"))
 
       })
       And("Validate contents of DepContainers")
       val deps = models(0).depContainers
       assert(deps.length == 5)
       deps.foreach(dep => {
-	assert(MessageAndContainerUtils.IsContainer(dep))
+        assert(MessageAndContainerUtils.IsContainer(dep))
       })
 
       var md = models(0)
@@ -620,15 +621,15 @@ class UpdateModelContainersSpec extends FunSpec with LocalTestFixtures with Befo
       var cfgmap = parse(md.modelConfig).values.asInstanceOf[Map[String, Any]]
       logger.debug("Count of objects in cfgmap : " + cfgmap.keys.size)
       var depContainers = List[String]()
-      cfgmap.keys.foreach( key => {
-	cfgName = key
-	var containers = MessageAndContainerUtils.getContainersFromModelConfig(None,cfgName)
-	logger.debug("containers => " + containers)
-	depContainers = depContainers ::: containers.toList
+      cfgmap.keys.foreach(key => {
+        cfgName = key
+        var containers = MessageAndContainerUtils.getContainersFromModelConfig(None, cfgName)
+        logger.debug("containers => " + containers)
+        depContainers = depContainers ::: containers.toList
       })
       logger.debug("depContainers => " + depContainers)
       md.depContainers = depContainers.toArray
-      MetadataAPIImpl.UpdateObjectInDB(md)      
+      MetadataAPIImpl.UpdateObjectInDB(md)
     }
   }
 
@@ -638,10 +639,17 @@ class UpdateModelContainersSpec extends FunSpec with LocalTestFixtures with Befo
     if (file.exists()) {
       TestUtils.deleteFile(file)
     }
-    MetadataAPIImpl.shutdown
-  }
 
-  if (zkServer != null) {
-    zkServer.instance.shutdown
+    val db = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
+    db match {
+      case "h2db" =>
+        TestUtils.deleteFile(new File(ConfigDefaults.storageDirectory))
+    }
+
+    MetadataAPIImpl.shutdown
+
+    if (zkServer != null) {
+      zkServer.shutdown
+    }
   }
 }

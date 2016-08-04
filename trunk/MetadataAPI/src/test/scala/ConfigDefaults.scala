@@ -22,6 +22,7 @@ import java.io._
 import java.nio.channels._
 import sys.process._
 import org.apache.logging.log4j._
+import com.ligadata.test.utils.TestUtils
 
 /**
  * Created by wtarver on 1/28/15.
@@ -106,12 +107,12 @@ object ConfigDefaults {
   logger.info("jarResourceDir " + jarResourceDir)
 
   def envContextClassName: String = "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$"
-  def envContextDependecyJarList: List[String] = List(s"ExtDependencyLibs_$scalaVersion-1.5.2.jar", s"KamanjaInternalDeps_$scalaVersion-1.5.2.jar", s"ExtDependencyLibs2_$scalaVersion-1.5.2.jar")
+  def envContextDependecyJarList: List[String] = List(s"ExtDependencyLibs_$scalaVersion-${TestUtils.kamanjaVersion}.jar", s"KamanjaInternalDeps_$scalaVersion-${TestUtils.kamanjaVersion}.jar", s"ExtDependencyLibs2_$scalaVersion-${TestUtils.kamanjaVersion}.jar")
   def envContextJarName = s"simpleenvcontextimpl_$scalaVersion-1.0.jar"
 
-  def nodeClassPath: String = s".:$jarResourceDir/ExtDependencyLibs_$scalaVersion-1.5.2.jar:$jarResourceDir/KamanjaInternalDeps_$scalaVersion-1.5.2.jar:$jarResourceDir/ExtDependencyLibs2_$scalaVersion-1.5.2.jar"
+  def nodeClassPath: String = s".:$jarResourceDir/ExtDependencyLibs_$scalaVersion-${TestUtils.kamanjaVersion}.jar:$jarResourceDir/KamanjaInternalDeps_$scalaVersion-${TestUtils.kamanjaVersion}.jar:$jarResourceDir/ExtDependencyLibs2_$scalaVersion-${TestUtils.kamanjaVersion}.jar"
 
-  def adapterDepJars: List[String] = List(s"ExtDependencyLibs_$scalaVersion-1.5.2.jar", s"KamanjaInternalDeps_$scalaVersion-1.5.2.jar", s"ExtDependencyLibs2_$scalaVersion-1.5.2.jar")
+  def adapterDepJars: List[String] = List(s"ExtDependencyLibs_$scalaVersion-${TestUtils.kamanjaVersion}.jar", s"KamanjaInternalDeps_$scalaVersion-${TestUtils.kamanjaVersion}.jar", s"ExtDependencyLibs2_$scalaVersion-${TestUtils.kamanjaVersion}.jar")
 
   val scala_home = System.getenv("SCALA_HOME")
 
@@ -120,14 +121,16 @@ object ConfigDefaults {
   def dataDirectory = getClass.getResource("/DataDirectories").getPath
   logger.info("dataDirectory => " + dataDirectory)
 
+  def storageDirectory = dataDirectory + "/storage"
+
   def metadataDirectory = getClass.getResource("/Metadata").getPath
   logger.info("metadataDirectory => " + metadataDirectory)
 
   def dataStorePropertiesFile:String = metadataDirectory + "/config/DataStore.properties"
 
   val metadataClasspath: String = List(
-    s"ExtDependencyLibs_$scalaVersion-1.5.2.jar",
-    s"KamanjaInternalDeps_$scalaVersion-1.5.2.jar",
-    s"ExtDependencyLibs2_$scalaVersion-1.5.2.jar"
+    s"ExtDependencyLibs_$scalaVersion-${TestUtils.kamanjaVersion}.jar",
+    s"KamanjaInternalDeps_$scalaVersion-${TestUtils.kamanjaVersion}.jar",
+    s"ExtDependencyLibs2_$scalaVersion-${TestUtils.kamanjaVersion}.jar"
   ).mkString(s""""$jarResourceDir/""", s":$jarResourceDir/", "\"")
 }

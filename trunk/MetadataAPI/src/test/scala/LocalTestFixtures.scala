@@ -16,6 +16,9 @@
 
 package com.ligadata.automation.unittests.api.setup
 
+import com.ligadata.MetadataAPI.test.{MetadataAPIProperties, MetadataManager}
+import com.ligadata.test.embedded.zookeeper._
+
 trait CommonResources {
   def dataDirectory:String = Some(getClass.getResource("/DataDirectories").getPath).getOrElse(throw new Exception("Failed to get resource 'DataDirectories'"))
   def configurationDirectory:String = Some(getClass.getResource("/ConfigurationFiles").getPath).getOrElse(throw new Exception("Failed to get resource 'ConfigurationFiles'"))
@@ -27,6 +30,7 @@ trait CommonResources {
 }
 
 trait LocalTestFixtures extends CommonResources {
-  val zkServer = EmbeddedZookeeper
-  val mdMan: MetadataManager = new MetadataManager(new MetadataAPIProperties(zkConnStr = zkServer.instance.getConnection))
+  var zkServer = new EmbeddedZookeeper
+  var mdMan: MetadataManager = new MetadataManager
+
 }

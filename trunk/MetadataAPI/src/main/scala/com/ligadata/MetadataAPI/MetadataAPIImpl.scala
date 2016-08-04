@@ -4392,10 +4392,8 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param databaseInfo
     */
   def InitMdMgr(mgr: MdMgr, jarPathsInfo: String, databaseInfo: String) {
-
     val mdLoader = new MetadataLoad(mgr, "", "", "", "")
     mdLoader.initialize
-
     metadataAPIConfig.setProperty("JAR_PATHS", jarPathsInfo)
     metadataAPIConfig.setProperty("METADATA_DATASTORE", databaseInfo)
 

@@ -1,6 +1,7 @@
 import sbtassembly.AssemblyPlugin.defaultShellScript
 import sbt._
 import Keys._
+import sbt.Tests.{Group, SubProcess}
 
 shellPrompt := { state => "sbt (%s)> ".format(Project.extract(state).currentProject.id) }
 
@@ -114,3 +115,13 @@ coverageMinimum := 80
 coverageFailOnMinimum := false
 
 coverageExcludedPackages := "com.ligadata.MetadataAPI.SampleData;com.ligadata.MetadataAPI.TestMetadataAPI"
+
+// The following block forces each test suite into a new JVM
+def singleTests(tests: Seq[TestDefinition]): Seq[Group] =
+  tests map { test =>
+    new Group(name = test.name,
+      tests = Seq(test),
+      runPolicy = SubProcess(javaOptions = Seq.empty[String]))
+  }
+
+testGrouping in Test <<= definedTests in Test map singleTests

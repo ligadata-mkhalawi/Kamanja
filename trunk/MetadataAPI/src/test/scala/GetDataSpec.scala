@@ -19,13 +19,11 @@ package com.ligadata.automation.unittests.api
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType
 import com.ligadata.automation.unittests.api.setup._
 import org.scalatest._
-import Matchers._
-
 import com.ligadata.MetadataAPI._
 import com.ligadata.kamanja.metadata._
 import com.ligadata.kamanja.metadata.MdMgr._
-
 import com.ligadata.Utils._
+
 import util.control.Breaks._
 import scala.io._
 import java.util.Date
@@ -37,11 +35,13 @@ import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import com.ligadata.Serialize._
-
 import com.ligadata.Exceptions._
-import com.ligadata.KvBase.{ Key, TimeRange }
-
+import com.ligadata.KvBase.{Key, TimeRange}
+import com.ligadata.MetadataAPI.test.MetadataAPIProperties
 import com.ligadata.kamanja.metadataload.MetadataLoad
+import com.ligadata.test.embedded.zookeeper._
+import com.ligadata.test.configuration.cluster.adapters.interfaces._
+import com.ligadata.test.utils._
 
 class GetDataSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
   var res: String = null;
@@ -67,7 +67,7 @@ class GetDataSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter wit
     val db = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
     assert(null != db)
     db match {
-      case "sqlserver" | "mysql" | "hbase" | "cassandra" | "hashmap" | "treemap" => {
+      case "sqlserver" | "mysql" | "hbase" | "cassandra" | "hashmap" | "treemap" | "h2db" => {
 	var ds = MetadataAPIImpl.GetMainDS
 	var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id")
 	ds.TruncateContainer(containerList)
@@ -82,7 +82,7 @@ class GetDataSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter wit
     val db = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
     assert(null != db)
     db match {
-      case "sqlserver" | "mysql" | "hbase" | "cassandra" | "hashmap" | "treemap" => {
+      case "sqlserver" | "mysql" | "hbase" | "cassandra" | "hashmap" | "treemap" | "h2db" => {
 	var ds = MetadataAPIImpl.GetMainDS
 	var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id")
 	ds.DropContainer(containerList)
@@ -96,24 +96,31 @@ class GetDataSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter wit
   override def beforeAll = {
     try {
 
-      logger.info("starting...");
+      logger.info("Starting test suite " + this.getClass.getName);
 
       logger.info("resource dir => " + getClass.getResource("/").getPath)
 
+      logger.info("Starting Embedded Zookeeper")
+      zkServer = new EmbeddedZookeeper
+      zkServer.startup
+      logger.info("Zookeeper started with")
+
       logger.info("Initialize MetadataManager")
-      mdMan.config.classPath = ConfigDefaults.metadataClasspath
-      mdMan.initMetadataCfg
+      //mdMan.config.classPath = ConfigDefaults.metadataClasspath
+      mdMan.initMetadataCfg(new MetadataAPIProperties(H2DBStore.name, H2DBStore.connectionMode, ConfigDefaults.storageDirectory, zkConnStr = zkServer.getConnection))
 
-      logger.info("Initialize MdMgr")
-      MdMgr.GetMdMgr.truncate
-      val mdLoader = new MetadataLoad(MdMgr.mdMgr, "", "", "", "")
-      mdLoader.initialize
+      //logger.info("Initialize MdMgr")
+      //MdMgr.GetMdMgr.truncate
+      //val mdLoader = new MetadataLoad(MdMgr.mdMgr, "", "", "", "")
+      //mdLoader.initialize
 
-      val zkServer = EmbeddedZookeeper
-      zkServer.instance.startup
 
       logger.info("Initialize zooKeeper connection")
-      MetadataAPIImpl.initZkListeners(false)
+      println("ZK CONNECT STRING BEFORE ALL: " + zkServer.getConnection)
+      //println("ZK CONNECT STRING BEFORE ALL: " + MetadataAPIImpl.metadataAPIConfig.getProperty("ZOOKEEPER_CONNECT_STRING"))
+
+
+        MetadataAPIImpl.initZkListeners(false)
 
       logger.info("Initialize datastore")
       var tmpJarPaths = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS")
@@ -355,8 +362,10 @@ class GetDataSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter wit
       case "hashmap" | "treemap" => {
 	DropDbStore
       }
+      case "h2db" =>
+        TestUtils.deleteFile(new File(ConfigDefaults.storageDirectory))
       case _ => {
-	logger.info("cleanup...")
+        logger.info("cleanup...")
       }
     }
     //TruncateDbStore
@@ -364,6 +373,6 @@ class GetDataSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter wit
   }
 
   if (zkServer != null) {
-    zkServer.instance.shutdown
+    zkServer.shutdown
   }
 }
