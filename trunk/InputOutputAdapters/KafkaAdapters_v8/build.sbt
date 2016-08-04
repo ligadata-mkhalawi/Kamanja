@@ -26,19 +26,19 @@ version := "1.5.1"
 
 libraryDependencies += "org.apache.kafka" %% "kafka" % "0.8.2.2"
 
-libraryDependencies += "org.scala-lang" % "scala-library" % scalaVersion.value
+//libraryDependencies += "org.scala-lang" % "scala-library" % scalaVersion.value
 
-libraryDependencies += "org.scala-lang" % "scala-actors" % scalaVersion.value
+//libraryDependencies += "org.scala-lang" % "scala-actors" % scalaVersion.value
 
-libraryDependencies += "org.json4s" %% "json4s-native" % "3.2.9"
+//libraryDependencies += "org.json4s" %% "json4s-native" % "3.2.9"
 
-libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.2.9"
+//libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.2.9"
 
-libraryDependencies += "org.apache.logging.log4j" % "log4j-1.2-api" % "2.4.1"
+//libraryDependencies += "org.apache.logging.log4j" % "log4j-1.2-api" % "2.4.1"
 
-libraryDependencies += "org.apache.logging.log4j" % "log4j-api" % "2.4.1"
+//libraryDependencies += "org.apache.logging.log4j" % "log4j-api" % "2.4.1"
 
-libraryDependencies += "org.apache.logging.log4j" % "log4j-core" % "2.4.1"
+//libraryDependencies += "org.apache.logging.log4j" % "log4j-core" % "2.4.1"
 
 coverageMinimum := 80
 
