@@ -46,7 +46,7 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
 name := "SimpleKafkaProducer_v10"
 
 
-version := "1.5.1"
+version := "1.5.2"
 
 //resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 //
