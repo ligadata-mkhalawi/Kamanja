@@ -87,7 +87,7 @@ angular
 
         var network = new vis.Network(container, data, options);
         var linearScale = d3.scaleLinear()
-                                   .domain([0,2000])
+                                   .domain([0,serviceConfig.upperLimitToInValues])
                                    .range([10,40])
                                    .interpolate(d3.interpolateRound);
         var Node = function (n) {
