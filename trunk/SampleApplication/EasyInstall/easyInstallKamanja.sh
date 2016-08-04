@@ -514,10 +514,10 @@ cp Utils/SimpleKafkaProducer/target/scala-2.11/simplekafkaproducer* $systemlib
 
 
 cp Utils/SimpleKafkaProducer/v8/target/scala-2.11/simplekafkaproducer* $systemlib
-cp Utils/SimpleKafkaProducer/v9/targetscala-2.11/simplekafkaproducer* $systemlib
+cp Utils/SimpleKafkaProducer/v9/target/scala-2.11/simplekafkaproducer* $systemlib
 cp Utils/SimpleKafkaProducer/v10/target/scala-2.11/simplekafkaproducer* $systemlib
 cp InputOutputAdapters/KafkaAdapters_v8/target/scala-2.11/kamanjakafkaadapters* $systemlib
-cp InputOutputAdapters/KafkaAdapters_v9/target/scala-2.11/kamanjakafkaadapters* $systemlib
+cp InputOutputAdapters/KafkaAdapt/ers_v9/target/scala-2.11/kamanjakafkaadapters* $systemlib
 cp InputOutputAdapters/KafkaAdapters_v10/target/scala-2.11/kamanjakafkaadapters* $systemlib
 
 cp Utils/ExtractData/target/scala-2.11/extractdata* $systemlib
