@@ -16,7 +16,7 @@ import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.actors.threadpool.{ Executors, ExecutorService }
 import java.io.{InputStream}
 import org.apache.logging.log4j.{ Logger, LogManager }
-import com.ligadata.InputAdapters.{CompressionUtil, SmartFileHandler, SmartFileMonitor}
+import com.ligadata.InputAdapters.{MonitorUtils, CompressionUtil, SmartFileHandler, SmartFileMonitor}
 import scala.actors.threadpool.{Executors, ExecutorService}
 
 class HdfsFileEntry {
@@ -43,13 +43,20 @@ class HdfsFileHandler extends SmartFileHandler{
 
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
-  
+
+  private var isBinary: Boolean = false
+
   def this(fullPath : String, connectionConf : FileAdapterConnectionConfig){
     this()
 
     fileFullPath = fullPath
     hdfsConfig = HdfsUtility.createConfig(connectionConf)
     hdFileSystem = FileSystem.newInstance(hdfsConfig)
+  }
+
+  def this(fullPath : String, connectionConf : FileAdapterConnectionConfig, isBin: Boolean) {
+    this(fullPath, connectionConf)
+    isBinary = isBin
   }
 
   /*def this(fullPath : String, fs : FileSystem){
@@ -60,6 +67,13 @@ class HdfsFileHandler extends SmartFileHandler{
   }*/
 
   def getFullPath = fileFullPath
+  def getParentDir : String = {
+
+    val simpleFilePath = HdfsUtility.getFilePathNoProtocol(getFullPath)
+
+    val idx = simpleFilePath.lastIndexOf("/")
+    MonitorUtils.simpleDirPath(simpleFilePath.substring(0, idx))
+  }
 
   //gets the input stream according to file system type - HDFS here
   def getDefaultInputStream() : InputStream = {
@@ -68,6 +82,7 @@ class HdfsFileHandler extends SmartFileHandler{
     val inputStream : FSDataInputStream =
       try {
         val inFile : Path = new Path(getFullPath)
+        logger.info("Hdfs File Handler - opening file " + getFullPath)
         hdFileSystem.open(inFile)
       }
       catch {
@@ -87,9 +102,13 @@ class HdfsFileHandler extends SmartFileHandler{
   @throws(classOf[KamanjaException])
   def openForRead(): InputStream = {
     try {
-
-      val compressionType = CompressionUtil.getFileType(this, null)
-      in = CompressionUtil.getProperInputStream(getDefaultInputStream, compressionType)
+      val is = getDefaultInputStream()
+      if (!isBinary) {
+        val compressionType = CompressionUtil.getFileType(this, null)
+        in = CompressionUtil.getProperInputStream(is, compressionType)
+      } else {
+        in = is
+      }
       in
     }
     catch{
@@ -129,6 +148,8 @@ class HdfsFileHandler extends SmartFileHandler{
 
   @throws(classOf[KamanjaException])
   def moveTo(newFilePath : String) : Boolean = {
+    logger.info(s"Hdfs File Handler - moving file ($getFullPath) to ($newFilePath)")
+
      if(getFullPath.equals(newFilePath)){
       logger.warn(s"Trying to move file ($getFullPath) but source and destination are the same")
       return false
@@ -149,21 +170,21 @@ class HdfsFileHandler extends SmartFileHandler{
           hdFileSystem.rename(srcPath, destPath)
           logger.debug("Moved file success")
           fileFullPath = newFilePath
-            return true
+            true
         }
         else{
             logger.warn("Source file was not found")
-            return false
+            false
         }
      } 
      catch {
        case ex : Exception => {
          logger.error("", ex)
-         return false
+         false
        }
        case ex : Throwable => {
          logger.error("", ex)
-         return false
+         false
        }
 
      } finally {
@@ -173,21 +194,21 @@ class HdfsFileHandler extends SmartFileHandler{
   
   @throws(classOf[KamanjaException])
   def delete() : Boolean = {
-    logger.info(s"Deleting file ($getFullPath)")
+    logger.info(s"Hdfs File Handler - Deleting file ($getFullPath)")
      try {
        hdFileSystem = FileSystem.get(hdfsConfig)
        hdFileSystem.delete(new Path(getFullPath), true)
         logger.debug("Successfully deleted")
-        return true
+        true
      } 
      catch {
        case ex : Exception => {
         logger.error("Hdfs File Handler - Error while trying to delete file " + getFullPath, ex)
-        return false 
+        false
        }
        case ex : Throwable => {
          logger.error("Hdfs File Handler - Error while trying to delete file " + getFullPath, ex)
-         return false
+         false
        }
         
      } finally {
@@ -196,9 +217,35 @@ class HdfsFileHandler extends SmartFileHandler{
   }
 
   @throws(classOf[KamanjaException])
+  override def deleteFile(fileName: String) : Boolean = {
+    logger.info(s"Hdfs File Handler - Deleting file ($fileName)")
+    try {
+      hdFileSystem = FileSystem.get(hdfsConfig)
+      hdFileSystem.delete(new Path(fileName), true)
+      logger.debug("Successfully deleted")
+      true
+    }
+    catch {
+      case ex : Exception => {
+        logger.error("Hdfs File Handler - Error while trying to delete file " + fileName, ex)
+        false
+      }
+      case ex : Throwable => {
+        logger.error("Hdfs File Handler - Error while trying to delete file " + fileName, ex)
+        false
+      }
+
+    } finally {
+
+    }
+  }
+
+  @throws(classOf[KamanjaException])
   def close(): Unit = {
-    if(in != null)
+    if(in != null){
+      logger.info("Hdfs File Handler - Closing file " + getFullPath)
       in.close()
+    }
     if(hdFileSystem != null) {
       logger.debug("Closing Hd File System object hdFileSystem")
       hdFileSystem.close()
@@ -206,22 +253,30 @@ class HdfsFileHandler extends SmartFileHandler{
   }
 
   @throws(classOf[KamanjaException])
-  def length : Long = getHdFileSystem.getFileStatus(new Path(getFullPath)).getLen
+  def length : Long = getHdFileSystem("get length").getFileStatus(new Path(getFullPath)).getLen
 
   @throws(classOf[KamanjaException])
-  def lastModified : Long = getHdFileSystem.getFileStatus(new Path(getFullPath)).getModificationTime
+  def lastModified : Long = getHdFileSystem("get modification time").getFileStatus(new Path(getFullPath)).getModificationTime
 
   @throws(classOf[KamanjaException])
-  override def exists(): Boolean = getHdFileSystem.exists(new Path(getFullPath))
+  override def exists(): Boolean = getHdFileSystem("check existence").exists(new Path(getFullPath))
 
   @throws(classOf[KamanjaException])
-  override def isFile: Boolean = getHdFileSystem.isFile(new Path(getFullPath))
+  override def isFile: Boolean = getHdFileSystem("check if file").isFile(new Path(getFullPath))
 
   @throws(classOf[KamanjaException])
-  override def isDirectory: Boolean = getHdFileSystem.isDirectory(new Path(getFullPath))
+  override def isDirectory: Boolean = getHdFileSystem("check if dir").isDirectory(new Path(getFullPath))
 
-  private def getHdFileSystem() : FileSystem = {
+  /**
+    *
+    * @param op for logging purposes
+    * @return
+    */
+  private def getHdFileSystem(op : String) : FileSystem = {
     try {
+      if(op != null)
+        logger.info(s"Hdfs File Handler - accessing file ($getFullPath) to " + op)
+
       hdFileSystem = FileSystem.get(hdfsConfig)
       hdFileSystem
     }
@@ -247,6 +302,7 @@ class HdfsFileHandler extends SmartFileHandler{
 class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileHandler, Boolean) => Unit) extends SmartFileMonitor{
 
   private var isMonitoring = false
+  private var checkFolders = true
   
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
@@ -259,9 +315,10 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
   private var monitorsExecutorService: ExecutorService = null
   private var hdfsConfig : Configuration = null
   private val filesStatusMap = Map[String, HdfsFileEntry]()
+  private val processedFilesMap : scala.collection.mutable.LinkedHashMap[String, Long] = scala.collection.mutable.LinkedHashMap[String, Long]()
 
   def init(adapterSpecificCfgJson: String): Unit ={
-    val(_type, c, m) =  SmartFileAdapterConfiguration.parseSmartFileAdapterSpecificConfig(adapterName, adapterSpecificCfgJson)
+    val(_type, c, m, a) =  SmartFileAdapterConfiguration.parseSmartFileAdapterSpecificConfig(adapterName, adapterSpecificCfgJson)
     connectionConf = c
     monitoringConf = m
 
@@ -283,11 +340,18 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
   def markFileAsProcessed(filePath : String) : Unit = {
     logger.info("Smart File Consumer (SFTP Monitor) - removing file {} from map {} as it is processed", filePath, filesStatusMap)
     filesStatusMap.remove(filePath)
+
+    //MonitorUtils.addProcessedFileToMap(filePath, processedFilesMap) //TODO : uncomment later
+  }
+
+  def setMonitoringStatus(status : Boolean): Unit ={
+    checkFolders = status
   }
 
   def shutdown: Unit ={
 
     isMonitoring = false
+    processedFilesMap.clear()
     monitorsExecutorService.shutdown()
   }
 
@@ -309,11 +373,12 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
   }
 
   def monitor(){
-
+    val validModifiedFiles = ArrayBuffer[(SmartFileHandler, FileChangeType)]()
     isMonitoring = true
-    monitorsExecutorService = Executors.newFixedThreadPool(monitoringConf.locations.length)
+    monitorsExecutorService = Executors.newFixedThreadPool(monitoringConf.detailedLocations.length)
 
-    monitoringConf.locations.foreach(folderToWatch => {
+    monitoringConf.detailedLocations.foreach(location => {
+      val folderToWatch = location.srcDir
       val dirMonitorthread = new Runnable() {
         private var targetFolder: String = _
         def init(dir: String) = targetFolder = dir
@@ -324,56 +389,75 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
 
           while (isMonitoring) {
 
-            try {
-              logger.info(s"Checking configured HDFS directory (targetFolder)...")
+            if (checkFolders) {
+              try {
+                logger.info(s"Checking configured HDFS directory (targetFolder)...")
 
 
-              val modifiedDirs = new ArrayBuffer[String]()
-              modifiedDirs += targetFolder
-              while (modifiedDirs.nonEmpty) {
-                //each time checking only updated folders: first find direct children of target folder that were modified
-                // then for each folder of these search for modified files and folders, repeat for the modified folders
+                val modifiedDirs = new ArrayBuffer[String]()
+                modifiedDirs += targetFolder
+                while (modifiedDirs.nonEmpty) {
+                  //each time checking only updated folders: first find direct children of target folder that were modified
+                  // then for each folder of these search for modified files and folders, repeat for the modified folders
 
-                val aFolder = modifiedDirs.head
-                val modifiedFiles = Map[SmartFileHandler, FileChangeType]() // these are the modified files found in folder $aFolder
+                  val aFolder = modifiedDirs.head
+                  val modifiedFiles = Map[SmartFileHandler, FileChangeType]() // these are the modified files found in folder $aFolder
 
-                modifiedDirs.remove(0)
-                val fs = FileSystem.get(hdfsConfig)
-                findDirModifiedDirectChilds(aFolder, fs, modifiedDirs, modifiedFiles, firstCheck)
+                  modifiedDirs.remove(0)
+                  val fs = FileSystem.get(hdfsConfig)
+                  findDirModifiedDirectChilds(aFolder, fs, modifiedDirs, modifiedFiles, firstCheck)
 
-                //logger.debug("Closing Hd File System object fs in monitorDirChanges()")
-                //fs.close()
+                  //logger.debug("Closing Hd File System object fs in monitorDirChanges()")
+                  //fs.close()
 
-                if (modifiedFiles.nonEmpty)
-                  modifiedFiles.foreach(tuple => {
-
-                    try {
-                      modifiedFileCallback(tuple._1, tuple._2 == AlreadyExisting)
-                    }
-                    catch{
-                      case e : Throwable =>
-                        logger.error("Smart File Consumer (Hdfs) : Error while notifying Monitor about new file", e)
-                    }
-
+                  //check for file names pattern
+                  validModifiedFiles.clear()
+                  if(location.fileComponents != null){
+                    modifiedFiles.foreach(tuple => {
+                      if(MonitorUtils.isPatternMatch(MonitorUtils.getFileName(tuple._1.getFullPath), location.fileComponents.regex))
+                        validModifiedFiles.append(tuple)
+                      else
+                        logger.warn("Smart File Consumer (Hdfs) : File {}, does not follow configured name pattern ({}), so it will be ignored - Adapter {}",
+                          tuple._1.getFullPath, location.fileComponents.regex, adapterName)
+                    })
                   }
-                  )
+                  else
+                    validModifiedFiles.appendAll(modifiedFiles)
+
+                  val orderedModifiedFiles = validModifiedFiles.map(tuple => (tuple._1, tuple._2)).toList.
+                    sortWith((tuple1, tuple2) => MonitorUtils.compareFiles(tuple1._1,tuple2._1,location) < 0)
+
+                  if (orderedModifiedFiles.nonEmpty)
+                    orderedModifiedFiles.foreach(tuple => {
+
+                      try {
+                        modifiedFileCallback(tuple._1, tuple._2 == AlreadyExisting)
+                      }
+                      catch {
+                        case e: Throwable =>
+                          logger.error("Smart File Consumer (Hdfs) : Error while notifying Monitor about new file", e)
+                      }
+
+                    }
+                    )
+
+                }
 
               }
+              catch {
+                case ex: Exception => {
+                  logger.error("Smart File Consumer (Hdfs Monitor) - Error while checking the folder", ex)
+                }
+                case ex: Throwable => {
+                  logger.error("Smart File Consumer (Hdfs Monitor) - Error while checking the folder", ex)
+                }
+              }
 
+              firstCheck = false
+
+              logger.info(s"Sleepng for ${monitoringConf.waitingTimeMS} milliseconds...............................")
+              Thread.sleep(monitoringConf.waitingTimeMS)
             }
-            catch {
-              case ex: Exception => {
-                logger.error("Smart File Consumer (Hdfs Monitor) - Error while checking the folder", ex)
-              }
-              case ex: Throwable => {
-                logger.error("Smart File Consumer (Hdfs Monitor) - Error while checking the folder", ex)
-              }
-            }
-
-            firstCheck = false
-
-            logger.info(s"Sleepng for ${monitoringConf.waitingTimeMS} milliseconds...............................")
-            Thread.sleep(monitoringConf.waitingTimeMS)
           }
         }
       }
@@ -386,8 +470,8 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
 
   private def findDirModifiedDirectChilds(parentfolder : String, hdFileSystem : FileSystem,
                                           modifiedDirs : ArrayBuffer[String], modifiedFiles : Map[SmartFileHandler, FileChangeType], isFirstCheck : Boolean){
-    logger.info("checking folder with full path: " + parentfolder)
 
+    logger.info("HDFS Changes Monitor - listing dir " + parentfolder)
     val directChildren = getFolderContents(parentfolder, hdFileSystem).sortWith(_.getModificationTime < _.getModificationTime)
     var changeType : FileChangeType = null //new, modified
 
@@ -395,38 +479,43 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
     directChildren.foreach(fileStatus => {
       var isChanged = false
       val uniquePath = fileStatus.getPath.toString
-      if(!filesStatusMap.contains(uniquePath)){
-        //path is new
-        isChanged = true
-        changeType = if(isFirstCheck) AlreadyExisting else New
-
-        val fileEntry = makeFileEntry(fileStatus, parentfolder)
-        filesStatusMap.put(uniquePath, fileEntry)
-        if(fileStatus.isDirectory)
-          modifiedDirs += uniquePath
-      }
-      else{
-        val storedEntry = filesStatusMap.get(uniquePath).get
-        if(fileStatus.getModificationTime >  storedEntry.lastModificationTime){//file has been modified
-          storedEntry.lastModificationTime = fileStatus.getModificationTime
+      if (processedFilesMap.contains(uniquePath))
+        logger.info("Smart File Consumer (Sftp) - File {} already processed, ignoring - Adapter {}", uniquePath, adapterName)
+      else {
+        if (!filesStatusMap.contains(uniquePath)) {
+          //path is new
           isChanged = true
+          changeType = if (isFirstCheck) AlreadyExisting else New
 
-          changeType = Modified
+          val fileEntry = makeFileEntry(fileStatus, parentfolder)
+          filesStatusMap.put(uniquePath, fileEntry)
+          if (fileStatus.isDirectory)
+            modifiedDirs += uniquePath
         }
-      }
-      
-      //TODO : this method to find changed folders is not working as expected. so for now check all dirs
-      if(fileStatus.isDirectory)
-        modifiedDirs += uniquePath
+        else {
+          val storedEntry = filesStatusMap.get(uniquePath).get
+          if (fileStatus.getModificationTime > storedEntry.lastModificationTime) {
+            //file has been modified
+            storedEntry.lastModificationTime = fileStatus.getModificationTime
+            isChanged = true
 
-      if(isChanged){
-        if(fileStatus.isDirectory){
-          
+            changeType = Modified
+          }
         }
-        else{
-          if(changeType == New || changeType == AlreadyExisting) {
-            val fileHandler = new HdfsFileHandler(uniquePath, connectionConf)
-            modifiedFiles.put(fileHandler, changeType)
+
+        //TODO : this method to find changed folders is not working as expected. so for now check all dirs
+        if (fileStatus.isDirectory)
+          modifiedDirs += uniquePath
+
+        if (isChanged) {
+          if (fileStatus.isDirectory) {
+
+          }
+          else {
+            if (changeType == New || changeType == AlreadyExisting) {
+              val fileHandler = new HdfsFileHandler(uniquePath, connectionConf)
+              modifiedFiles.put(fileHandler, changeType)
+            }
           }
         }
       }
@@ -482,5 +571,10 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
 
   def stopMonitoring(){
     isMonitoring = false
+  }
+
+  override def listFiles(path: String): Array[String] ={
+    val fs = FileSystem.get(hdfsConfig)
+    getFolderContents(path, fs).filter(f => f.isFile).map(f => f.getPath.getName)
   }
 }

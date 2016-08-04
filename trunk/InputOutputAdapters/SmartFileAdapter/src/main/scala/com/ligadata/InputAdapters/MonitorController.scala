@@ -14,7 +14,7 @@ import scala.collection.mutable.ArrayBuffer
   * @param adapterConfig
   * @param newFileDetectedCallback callback to notify leader whenever a file is detected
   */
-class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
+class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSmartFileConsumer : SmartFileConsumer,
                         newFileDetectedCallback :(String) => Unit) {
 
   val NOT_RECOVERY_SITUATION = -1
@@ -23,8 +23,18 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
   private val bufferingQLock = new Object
   private var smartFileMonitor : SmartFileMonitor = null
 
+  implicit def orderedEnqueuedFileHandler(f: EnqueuedFileHandler): Ordered[EnqueuedFileHandler] = new Ordered[EnqueuedFileHandler] {
+    def compare(other: EnqueuedFileHandler) = {
+      val locationInfo1 = parentSmartFileConsumer.getSrcDirLocationInfo(MonitorUtils.simpleDirPath(f.fileHandler.getParentDir))
+      val locationInfo2 = parentSmartFileConsumer.getSrcDirLocationInfo(MonitorUtils.simpleDirPath(other.fileHandler.getParentDir))
+      //not sure why but had to invert sign
+      (MonitorUtils.compareFiles(f.fileHandler, locationInfo1, other.fileHandler, locationInfo2)) * -1
+    }
+  }
   private var fileQ: scala.collection.mutable.PriorityQueue[EnqueuedFileHandler] =
-      new scala.collection.mutable.PriorityQueue[EnqueuedFileHandler]()(Ordering.by(OldestFile))
+      //new scala.collection.mutable.PriorityQueue[EnqueuedFileHandler]()(Ordering.by(fileComparisonField))
+     new scala.collection.mutable.PriorityQueue[EnqueuedFileHandler]()//use above implicit compare function
+
   private val fileQLock = new Object
 
   private var refreshRate: Int = 2000 //Refresh rate for monitorBufferingFiles
@@ -45,19 +55,23 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
   }
 
   def checkConfigDirsAccessibility(): Unit ={
-    adapterConfig.monitoringConfig.locations.foreach(dir => {
-      val handler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, dir)
-      if(!handler.exists())
-        throw new KamanjaException("Smart File Consumer - Dir to watch (" + dir + ") does not exist", null)
-      else if(!handler.isAccessible)
-        throw new KamanjaException("Smart File Consumer - Dir to watch (" + dir + ") is not accessible. It must be readable and writable", null)
+    adapterConfig.monitoringConfig.detailedLocations.foreach(location => {
+
+      val srcHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, location.srcDir)
+      if(!srcHandler.exists())
+        throw new KamanjaException("Smart File Consumer - Dir to watch (" + location.srcDir + ") does not exist", null)
+      else if(!srcHandler.isAccessible)
+        throw new KamanjaException("Smart File Consumer - Dir to watch (" + location.srcDir + ") is not accessible. It must be readable and writable", null)
+
+      if(location.isMovingEnabled) {
+        val targetHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, location.targetDir)
+        if (!targetHandler.exists())
+          throw new KamanjaException("Smart File Consumer - Target Dir (" + location.targetDir + ") does not exist", null)
+        else if (!targetHandler.isAccessible)
+          throw new KamanjaException("Smart File Consumer - Target Dir (" + location.targetDir + ") is not accessible. It must be readable and writable", null)
+      }
     })
 
-    val handler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, adapterConfig.monitoringConfig.targetMoveDir)
-    if(!handler.exists())
-      throw new KamanjaException("Smart File Consumer - Target Dir (" + adapterConfig.monitoringConfig.targetMoveDir + ") does not exist", null)
-    else if(!handler.isAccessible)
-      throw new KamanjaException("Smart File Consumer - Target Dir (" + adapterConfig.monitoringConfig.targetMoveDir + ") is not accessible. It must be readable and writable", null)
   }
 
   def markFileAsProcessed(filePath : String) : Unit = {
@@ -82,6 +96,17 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
         //}
       }
     })
+  }
+
+  def listFiles(path: String): Array[String] ={
+    if (smartFileMonitor == null) {
+      smartFileMonitor = SmartFileMonitorFactory.createSmartFileMonitor(adapterConfig.Name, adapterConfig._type, fileDetectedCallback)
+      smartFileMonitor.init(adapterConfig.adapterSpecificCfg)
+    }
+    if(smartFileMonitor != null)
+      smartFileMonitor.listFiles(path)
+    else
+      Array[String]()
   }
 
   def stopMonitoring(): Unit ={
@@ -119,6 +144,11 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
     file.createDate * -1
   }
 
+  /*def fileComparisonField(file: EnqueuedFileHandler) : String = {
+    adapterConfig.monitoringConfig
+    ""
+  }*/
+
   /**
     *  Look at the files on the DEFERRED QUEUE... if we see that it stops growing, then move the file onto the READY
     *  to process QUEUE.
@@ -131,6 +161,13 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
     var specialWarnCounter: Int = 1
 
     while (keepMontoringBufferingFiles) {
+
+      //inform monitor to start/stop listing folders contents based on current number of waiting files compared to a threshold
+      if(adapterConfig.monitoringConfig.dirCheckThreshold > 0 &&
+        waitingFilesToProcessCount > adapterConfig.monitoringConfig.dirCheckThreshold)
+        smartFileMonitor.setMonitoringStatus(false)
+      else smartFileMonitor.setMonitoringStatus(true)
+
       // Scan all the files that we are buffering, if there is not difference in their file size.. move them onto
       // the FileQ, they are ready to process.
       bufferingQLock.synchronized {
@@ -146,9 +183,11 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
           var thisFileOrigLength: Long = fileTuple._2._1
           val initiallyExists = fileTuple._2._4
 
+          val fileHandler = fileTuple._1
+          val currentFileParentDir = fileHandler.getParentDir
+          val currentFileLocationInfo = parentSmartFileConsumer.getSrcDirLocationInfo(currentFileParentDir)
 
           try {
-            val fileHandler = fileTuple._1
 
             logger.debug("SMART FILE CONSUMER (MonitorController):  monitorBufferingFiles - file " + fileHandler.getFullPath)
 
@@ -195,13 +234,25 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
                       val diff = System.currentTimeMillis - thisFileStarttime //d.lastModified
                       if (diff > bufferTimeout) {
                         logger.warn("SMART FILE CONSUMER (MonitorController): Detected that " + fileHandler.getFullPath + " has been on the buffering queue longer then " + bufferTimeout / 1000 + " seconds - Cleaning up")
-                        moveFile(fileTuple._1)
+
+                        if(currentFileLocationInfo.isMovingEnabled)
+                          parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
+                        else
+                          logger.info("SMART FILE CONSUMER (MonitorController): File {} will not be moved since moving is disabled for folder {} - Adapter {}",
+                            fileHandler.getFullPath, currentFileParentDir, adapterConfig.Name)
+
                         bufferingQ_map.remove(fileTuple._1)
                       }
                     } else {
                       //Invalid File - due to content type
-                      logger.error("SMART FILE CONSUMER (MonitorController): Moving out " + fileHandler.getFullPath + " with invalid file type ")
-                      moveFile(fileTuple._1)
+                      if(currentFileLocationInfo.isMovingEnabled) {
+                        logger.error("SMART FILE CONSUMER (MonitorController): Moving out " + fileHandler.getFullPath + " with invalid file type ")
+                        parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
+                      }
+                      else{
+                        logger.info("SMART FILE CONSUMER (MonitorController): File {} has invalid file type but will not be moved since moving is disabled for folder {} - Adapter {}",
+                          fileHandler.getFullPath, currentFileParentDir, adapterConfig.Name)
+                      }
                       bufferingQ_map.remove(fileTuple._1)
                     }
                   }
@@ -219,10 +270,10 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
           } catch {
             case ioe: IOException => {
               thisFileFailures += 1
-              if ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors) {
+              if (currentFileLocationInfo.isMovingEnabled && ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
                 logger.warn("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + fileTuple._1.getFullPath + " on the buffering queue", ioe)
                 try {
-                  moveFile(fileTuple._1)
+                  parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
                   bufferingQ_map.remove(fileTuple._1)
                 } catch {
                   case e: Throwable => {
@@ -236,10 +287,10 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
             }
             case e: Throwable => {
               thisFileFailures += 1
-              if ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors) {
+              if (currentFileLocationInfo.isMovingEnabled && ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
                 logger.error("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + fileTuple._1 + " on the buffering queue", e)
                 try {
-                  moveFile(fileTuple._1)
+                  parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
                   bufferingQ_map.remove(fileTuple._1)
                 } catch {
                   case e: Throwable => {
@@ -301,13 +352,19 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
     }
   }
 
+  private def waitingFilesToProcessCount : Int = {
+    fileQLock.synchronized {
+      fileQ.length
+    }
+  }
+
   //get file name only for now
   def getNextFileToProcess : String = {
     val f = deQFile
     if(f == null) null else f.fileHandler.getFullPath
   }
 
-  private def moveFile(fileHandler: SmartFileHandler): Unit = {
+  /*private def moveFile(fileHandler: SmartFileHandler): Unit = {
     val targetMoveDir = adapterConfig.monitoringConfig.targetMoveDir
 
     val fileStruct = fileHandler.getFullPath.split("/")
@@ -318,5 +375,5 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration,
     } else {
       logger.warn("SMART FILE CONSUMER File has been deleted" + fileHandler.getFullPath);
     }
-  }
+  }*/
 }

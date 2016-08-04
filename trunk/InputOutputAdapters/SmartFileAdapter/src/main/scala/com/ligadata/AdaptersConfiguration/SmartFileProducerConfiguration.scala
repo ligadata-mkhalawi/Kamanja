@@ -30,9 +30,16 @@ class SmartFileProducerConfiguration extends AdapterConfiguration {
   var rolloverInterval: Int = 0 // in minutes. create new output file every rolloverInterval mins 
   var partitionFormat: String = null // folder structure for partitions
   var partitionBuckets: Int = 0 //  number of files to create within a partition
-
+  var flushBufferSize: Long = 0 // in bytes. writes the buffer after flushBufferSize bytes.
+  var flushBufferInterval: Long = 0 // in msecs. writes the buffer every flushBufferInterval msecs
+  var typeLevelConfig: collection.mutable.Map[String, Long] = collection.mutable.Map[String, Long]() // type level overrides for flushBufferSize
+  
   var kerberos: KerberosConfig = null
+
+  var hadoopConfig  : List[(String,String)]=null
+
 }
+
 
 class KerberosConfig {
   var principal: String = null
@@ -40,27 +47,42 @@ class KerberosConfig {
 }
 
 object SmartFileProducerConfiguration {
-
-  def getAdapterConfig(inputConfig: AdapterConfiguration): SmartFileProducerConfiguration = {
-
-    if (inputConfig.adapterSpecificCfg == null || inputConfig.adapterSpecificCfg.size == 0) {
-      val err = "Not found Type and Connection info for Smart File Adapter Config:" + inputConfig.Name
+  def getAdapterConfig(config: AdapterConfiguration): SmartFileProducerConfiguration = {
+    if (config.adapterSpecificCfg == null || config.adapterSpecificCfg.size == 0) {
+      val err = "Not found Type and Connection info for Smart File Adapter Config:" + config.Name
       throw new KamanjaException(err, null)
     }
 
-    val adapterConfig = new SmartFileProducerConfiguration()
-    adapterConfig.Name = inputConfig.Name
-    adapterConfig.className = inputConfig.className
-    adapterConfig.jarName = inputConfig.jarName
-    adapterConfig.dependencyJars = inputConfig.dependencyJars
-
-    val adapCfg = parse(inputConfig.adapterSpecificCfg)
+    val adapCfg = parse(config.adapterSpecificCfg)
     if (adapCfg == null || adapCfg.values == null) {
-      val err = "Smart File Producer configuration must be specified for " + adapterConfig.Name
+      val err = "Smart File Producer configuration must be specified for " + config.Name
       throw new KamanjaException(err, null)
     }
-
     val adapCfgValues = adapCfg.values.asInstanceOf[Map[String, Any]]
+
+    val adapterConfig = getAdapterConfigFromMap(adapCfgValues)
+
+    adapterConfig.Name = config.Name
+    adapterConfig.className = config.className
+    adapterConfig.jarName = config.jarName
+    adapterConfig.dependencyJars = config.dependencyJars
+
+    adapterConfig
+  }
+
+  def getAdapterConfigFromMap(adapCfgValues: Map[String, Any]): SmartFileProducerConfiguration = {
+    val adapterConfig = new SmartFileProducerConfiguration()
+/*
+    if (adapCfgValues.contains("Name"))
+      adapterConfig.Name = adapCfgValues.get("Name").toString.trim
+    if (adapCfgValues.contains("ClassName"))
+      adapterConfig.className = adapCfgValues.get("ClassName").toString.trim
+    if (adapCfgValues.contains("JarName"))
+      adapterConfig.jarName = adapCfgValues.get("JarName").toString.trim
+    if (adapCfgValues.contains("DependencyJars"))
+      adapterConfig.dependencyJars =
+*/
+
     adapCfgValues.foreach(kv => {
       if (kv._1.compareToIgnoreCase("Uri") == 0) {
         adapterConfig.uri = kv._2.toString.trim
@@ -76,11 +98,30 @@ object SmartFileProducerConfiguration {
         adapterConfig.partitionFormat = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("PartitionBuckets") == 0) {
         adapterConfig.partitionBuckets = kv._2.toString.toInt
+      } else if (kv._1.compareToIgnoreCase("flushBufferSize") == 0) {
+        adapterConfig.flushBufferSize = kv._2.toString.toLong
+      } else if (kv._1.compareToIgnoreCase("flushBufferInterval") == 0) {
+        adapterConfig.flushBufferInterval = kv._2.toString.toLong
+      } else if (kv._1.compareToIgnoreCase("typeLevelConfig") == 0) {
+        val configs = kv._2.asInstanceOf[List[Any]]
+        configs.foreach( x => {
+          val cfg = x.asInstanceOf[Map[String, String]]
+          val typeStr = cfg.getOrElse("type", null)
+          if(typeStr != null)
+            adapterConfig.typeLevelConfig(typeStr) = cfg.getOrElse("flushBufferSize", "0").toLong
+        })
       } else if (kv._1.compareToIgnoreCase("Kerberos") == 0) {
         adapterConfig.kerberos = new KerberosConfig()
         val kerbConf = kv._2.asInstanceOf[Map[String, String]]
         adapterConfig.kerberos.principal = kerbConf.getOrElse("Principal", null)
         adapterConfig.kerberos.keytab = kerbConf.getOrElse("Keytab", null)
+      }
+      else if (kv._1.compareToIgnoreCase("hadoopConfig")==0){
+        val hadoopConfig = kv._2.asInstanceOf[Map[String,String]]
+        adapterConfig.hadoopConfig= List[(String,String)]()
+        hadoopConfig.foreach(hconf =>{
+          adapterConfig.hadoopConfig ::=(hconf._1, hconf._2)
+        })
       }
     })
 

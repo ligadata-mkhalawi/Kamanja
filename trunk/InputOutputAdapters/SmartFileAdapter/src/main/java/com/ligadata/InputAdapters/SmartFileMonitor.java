@@ -10,4 +10,10 @@ public interface SmartFileMonitor {
 
     //basically will remove the file from monitor's map so that it could be processed and moved again if added again
     void markFileAsProcessed(String filePath);
+
+    //when passing true => monitor should stop listing files in folders
+    void setMonitoringStatus(boolean status);
+
+    // List files for the given path
+    String[] listFiles(String path);
 }
