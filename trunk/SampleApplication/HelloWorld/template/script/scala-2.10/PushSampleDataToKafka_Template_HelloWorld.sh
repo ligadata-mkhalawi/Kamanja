@@ -29,7 +29,6 @@ if [ "$KAMANJA_SECURITY_CLIENT" ]; then
   echo "Using security client = "$SECURITY_PROP_OPT
 fi
 
-
 echo "User selected: $INPUTFILE"
 echo "Running kafka client version $kafkaversion"
 

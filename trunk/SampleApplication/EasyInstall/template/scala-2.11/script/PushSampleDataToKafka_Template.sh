@@ -44,11 +44,10 @@ if [ "$KAMANJA_SECURITY_CLIENT" ]; then
   echo "Using security client = "$SECURITY_PROP_OPT
 fi
 
-
-currentKamanjaVersion=1.5.2
-
 echo "User selected: $INPUTFILE"
 echo "Running kafka client version $kafkaversion"
+
+currentKamanjaVersion=1.5.2
 
 if [$kafkaversion == "0.8"]; then
   java  $JAAS_CLIENT_OPT $KERBEROS_CONFIG_OPT $KEYSTORE_CONFIG_OPT $KEYSTORE_PASS_CONFIG_OPT $TRUSTSTORE_CONFIG_OPT $TRUSTSTORE_PASS_CONFIG_OPT -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-${currentKamanjaVersion}.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-${currentKamanjaVersion}.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-${currentKamanjaVersion}.jar:$KAMANJA_HOME/lib/system/kafka-clients-0.8.2.2.jar:$KAMANJA_HOME/lib/system/simplekafkaproducer_v8_2.11-${currentKamanjaVersion}.jar com.ligadata.tools.kafkaProducer_v8.SimpleKafkaProducer --gz true --topics "testin_1" --threads 1 --topicpartitions 8 --brokerlist "$kafkahostname" --files $INPUTFILE  --partitionkeyidxs "1" --format CSV $SECURITY_PROP_OPT
@@ -57,3 +56,4 @@ elif [$kafkaversion == "0.9"]; then
 else
   java  $JAAS_CLIENT_OPT $KERBEROS_CONFIG_OPT $KEYSTORE_CONFIG_OPT $KEYSTORE_PASS_CONFIG_OPT $TRUSTSTORE_CONFIG_OPT $TRUSTSTORE_PASS_CONFIG_OPT -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-${currentKamanjaVersion}.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-${currentKamanjaVersion}.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-${currentKamanjaVersion}.jar:$KAMANJA_HOME/lib/system/kafka-clients-0.10.0.0.jar:$KAMANJA_HOME/lib/system/simplekafkaproducer_v10_2.11-${currentKamanjaVersion}.jar com.ligadata.tools.kafkaProducer_v10.SimpleKafkaProducer --gz true --topics "testin_1" --threads 1 --topicpartitions 8 --brokerlist "$kafkahostname" --files $INPUTFILE  --partitionkeyidxs "1" --format CSV $SECURITY_PROP_OPT
 fi
+
