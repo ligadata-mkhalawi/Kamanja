@@ -96,11 +96,11 @@ angular
           this.id = n.id;
           this.ID = n.ID;
           this.number = n.number;
-          this.number = Math.round(Math.random() * 2000);
+       //   this.number = Math.round(Math.random() * 2000);
           this._label = n.name || '';
           this.shape = n.shape || 'image';
           this.size = n.size || 16;
-          this.size = linearScale(this.number);
+         // this.size = linearScale(this.number);
           this.type = types[n['class']];
           this.image = imagePath + this.type.image + '.inactive.' + this.type.extension;
           this.active = false;
@@ -132,17 +132,21 @@ angular
         };
 
         serviceSocket.connectStatus(function(response){
-          console.log(scope.symbolClasses);
           if(data.nodes){
             var socketObj = JSON.parse(response);
             var messageObj = JSON.parse(socketObj.message);
-            _.each(messageObj.ModelCounter, function(model){
-              var node = _.find(data.nodes._data, {ID: model.Id});
-              if(node){
-                data.nodes.update([{id: node.id, number: model.In}]);
-                //node.update({number: model.In});
-                //node.number = model.In;
-              }
+            _.each(scope.symbolClasses, function (symbolClass) {
+              _.each(messageObj[symbolClass + 'Counter'], function(model){
+                if (model) {
+                  var node = _.find(data.nodes._data, {ID: model.Id});
+                  if (node) {
+                    console.log(model.In,linearScale(model.In));
+                    data.nodes.update([{id: node.id, number: model.In, size: linearScale(model.In)}]);
+                    //node.update({number: model.In});
+                    //node.number = model.In;
+                  }
+                }
+              });
             });
           }
         });
