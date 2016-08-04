@@ -9,7 +9,7 @@ angular
       scope: {
         showStatus: '@',
         data: '<',
-        symbolList: '<',
+        symbolClasses: '<',
         viewName: '@',
         nodeClick: '<',
         nodeDoubleClick: '<',
@@ -132,6 +132,7 @@ angular
         };
 
         serviceSocket.connectStatus(function(response){
+          console.log(scope.symbolClasses);
           if(data.nodes){
             var socketObj = JSON.parse(response);
             var messageObj = JSON.parse(socketObj.message);
