@@ -289,7 +289,7 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
     //TODO : consider running each folder monitoring in a separate thread
     isMonitoring = true
 
-    monitorsExecutorService = Executors.newFixedThreadPool(monitoringConf.detailedLocations.length)
+    monitorsExecutorService = Executors.newFixedThreadPool(monitoringConf.monitoringThreadsCount)
 
     monitoringConf.detailedLocations.foreach(location => {
 

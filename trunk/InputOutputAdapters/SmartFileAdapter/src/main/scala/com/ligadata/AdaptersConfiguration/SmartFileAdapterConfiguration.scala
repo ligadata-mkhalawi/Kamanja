@@ -51,7 +51,8 @@ class FileAdapterMonitoringConfig {
   var fileBufferingTimeout = 300 // in seconds
   //folders to move consumed files to. either one directory for all input (locations) or same number as (locations)
   //var targetMoveDirs : Array[String] = Array.empty[String]
-  var consumersCount: Int = _
+  var consumersCount: Int = _ //number of threads to read files
+  var monitoringThreadsCount: Int = 1 //number of threads to monitor src dirs
   var workerBufferSize: Int = 4 //buffer size in MB to read messages from files
 
 
@@ -228,6 +229,9 @@ object SmartFileAdapterConfiguration {
         monitoringConfig.consumersCount = kv._2.asInstanceOf[String].trim.toInt
         if (monitoringConfig.consumersCount < 0)
           monitoringConfig.consumersCount = defaultConsumerCount
+      }
+      else if (kv._1.compareToIgnoreCase("MonitoringThreadsCount") == 0) {
+        monitoringConfig.monitoringThreadsCount = kv._2.asInstanceOf[String].trim.toInt
       }
       /*else  if (kv._1.compareToIgnoreCase("TargetMoveDirs") == 0) {
         monitoringConfig.targetMoveDirs = kv._2.asInstanceOf[String].split(",").map(str => str.trim).filter(str => str.size > 0)

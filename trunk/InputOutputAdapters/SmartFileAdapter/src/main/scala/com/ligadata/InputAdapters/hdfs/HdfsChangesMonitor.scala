@@ -307,9 +307,6 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
 
-  val poolSize = 5
-  private val globalFileMonitorCallbackService: ExecutorService = Executors.newFixedThreadPool(poolSize)
-
   private var connectionConf : FileAdapterConnectionConfig = null
   private var monitoringConf :  FileAdapterMonitoringConfig = null
   private var monitorsExecutorService: ExecutorService = null
@@ -375,7 +372,7 @@ class HdfsChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
   def monitor(){
     val validModifiedFiles = ArrayBuffer[(SmartFileHandler, FileChangeType)]()
     isMonitoring = true
-    monitorsExecutorService = Executors.newFixedThreadPool(monitoringConf.detailedLocations.length)
+    monitorsExecutorService = Executors.newFixedThreadPool(monitoringConf.monitoringThreadsCount)
 
     monitoringConf.detailedLocations.foreach(location => {
       val folderToWatch = location.srcDir

@@ -446,7 +446,7 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
     //Initializes the file manager
     manager.init()
 
-    monitorsExecutorService = Executors.newFixedThreadPool(monitoringConf.detailedLocations.length)
+    monitorsExecutorService = Executors.newFixedThreadPool(monitoringConf.monitoringThreadsCount)
 
     monitoringConf.detailedLocations.foreach(location => {
       val folderToWatch = location.srcDir
