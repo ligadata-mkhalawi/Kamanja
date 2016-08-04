@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+ #!/usr/bin/env bash
 ###################################################################
 #
 #  Copyright 2015 ligaDATA
@@ -17,18 +17,20 @@
 ###################################################################
 
 Today=`date +"%Y%m%d"`
-for pid in `ls ${KAMANJA_HOME}/python/logs | sed 's/pythonserver.log//g'`; do
-    if [ ! -z "$pid" -a "$str" != "" ]; then
+for pid in `ls ${KAMANJA_HOME}/python/logs/pythonserver* | sed 's/pythonserver.log//g'`; do
+    if [ ! -z "$pid" -a "$pid" != "" ]; then
         kill -9 $pid
         mkdir -p ${KAMANJA_HOME}/python/logs/${Today}
-        mv ${KAMANJA_HOME}/python/logs/pythonserver.log${pid} ${KAMANJA_HOME}/python/logs/${Today}
+        mv ${KAMANJA_HOME}/python/logs/pythonserver.log${pid}* ${KAMANJA_HOME}/python/logs/${Today}
         echo "$pid  is killed"
     fi
 done
 
 for pid in `ps -ef | grep -i python  | grep "pythonserver.py" | grep 'localhost' |  tr -s " " | cut -f2 -d" "`; do
-    if [ ! -z "$pid" -a "$str" != "" ]; then
+    if [ ! -z "$pid" -a "$pid" != "" ]; then
         kill -9 $pid
+        mkdir -p ${KAMANJA_HOME}/python/logs/${Today}
+        mv ${KAMANJA_HOME}/python/logs/pythonserver.log${pid}* ${KAMANJA_HOME}/python/logs/${Today}
         echo "$pid  is killed"
     fi
 done

@@ -140,7 +140,8 @@ class PyServerConnection(val host : String
             Seq[String]("ssh", userMachine, remoteCmd)
         } else {
             logger.info(s"Start the python server... $pythonCmdStr")
-            Seq[String]("bash", "-c", pythonCmdStr)
+          #            Seq[String]("bash", "-c", pythonCmdStr)
+          pythonCmdStr
         }
 
 
@@ -599,4 +600,3 @@ class MapSubstitution(template: String, subMap: scala.collection.immutable.Map[S
     }
 
 }
-
