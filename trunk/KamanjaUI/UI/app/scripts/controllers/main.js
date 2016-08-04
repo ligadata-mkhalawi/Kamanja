@@ -16,13 +16,16 @@ angular.module('networkApp')
         return $rootScope.showStatus;
       };
 
-      function updateNetworkData() {
+      function updateNetworkData(data) {
         main.selectedViewName = serviceData.getSelectedViewName();
         main.networkData = servicePrepare.viewToVis(serviceData.getSelectedViewData());
+        if (data) {
+          main.symbolClasses = data.SymbolClasses;
+        }
       }
 
       $rootScope.$on('viewChanged', function (event, data) {
-        updateNetworkData();
+        updateNetworkData(data);
       });
       main.nodeDoubleClick = function (id) {
         serviceData.depthTraverse(id, function (response) {
