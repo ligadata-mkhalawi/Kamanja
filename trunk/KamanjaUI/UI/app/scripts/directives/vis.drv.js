@@ -9,6 +9,7 @@ angular
       scope: {
         showStatus: '@',
         data: '<',
+        symbolList: '<',
         viewName: '@',
         nodeClick: '<',
         nodeDoubleClick: '<',
