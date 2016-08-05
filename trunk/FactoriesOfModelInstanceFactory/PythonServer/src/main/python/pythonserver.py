@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/Users/hariramasamy/anaconda/bin/python
 #
 # server.py
 import socket
@@ -12,6 +12,7 @@ import logging
 import logging.config
 import logging.handlers
 import os
+import select
 
 #
 #
@@ -45,9 +46,12 @@ if fileLogPath != "":
 # log basic startup info
 logger.info('starting pythonserver ...\nhost = ' + args['host'] + '\nport = ' + str(args['port']) + '\npythonPath = ' + args['pythonPath'] + '\nlog4jConfig = ' + args['log4jConfig'])
 #
+CONNECTION_LIST = []    # list of socket clients
+RECV_BUFFER = 4096 # Advisable to keep it as an exponent of 2
 # create a socket object
 serversocket = socket.socket(
 	        socket.AF_INET, socket.SOCK_STREAM)
+serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 #
 # get local machine name
 host = '' #listen to whatever the localhost is called .... socket.gethostname()
@@ -144,7 +148,7 @@ def startMsg(conn, startMarker, msgBytes):
 	Obtain the starting FIXED portion of the current msg in the recv.
 	Receive bytes until a complete fixed portion may be considered.
 	Parameters are the connection, the startMarker value sought and any
-	msgBytes that may be left from a prior receive.
+ 	msgBytes that may be left from a prior receive.
 	Answer from receive buffer the fixed part of the message... namely
 	the (startMark, checksum, cmdMsgLen).
 	Note: the assumption is that more than one message can be sent before
@@ -382,19 +386,29 @@ def dispatcher(cmdMsgDict):
 # partition the engine chooses to distribute the input with.
 #
 logger.info("begin listening for connections...")
-serversocket.listen(5)
+
+parentpid=os.getppid()
+serversocket.listen(10)
+# Add server socket to the list of readable connections
+CONNECTION_LIST.append(serversocket)
 result = ''
 msgBytes = ''
 while True:
-    # establish a connection
-	logger.info('accepting connections...')
-	conn, addr = serversocket.accept()
-	logger.info('Connected by', str(addr))
-	while True:
+   # Get the list sockets which are ready to be read through select
+   read_sockets,write_sockets,error_sockets = select.select(CONNECTION_LIST,[],[])
+   for sock in read_sockets:
+        if (sock == serversocket):
+                # establish a connection
+	        logger.info('accepting connections...')
+	        conn, addr = serversocket.accept()
+                CONNECTION_LIST.append(conn)
+                conn.setblocking(0)
+	        logger.info('Connected by', str(addr))
+	else:
 		closedConnection = False
 		exceptionOccurred = False
 		try:
-			cmdMsgDict = nextMsg(conn, msgBytes)
+			cmdMsgDict = nextMsg(sock, msgBytes)
 		except:
 			exceptionType = sys.exc_info()[0]
 			classFailed = sys.exc_info()[1]
@@ -402,10 +416,11 @@ while True:
 			emsg = "nextMsg exception...\ntype = {},\nclass = {},\nstack = {}".format(exceptionType,classFailed,callback)
 			logger.debug(emsg)
 			wireMsg = formatWireMsg(emsg)
-			conn.sendall(wireMsg)
+			sock.sendall(wireMsg)
 			sys.exc_clear()
 			exceptionOccurred = True
-			conn.close()
+                        sock.close()
+                        CONNECTION_LIST.remove(sock)
 			closedConnection = True
 		#
 		if exceptionOccurred == False and closedConnection == False:
@@ -413,23 +428,25 @@ while True:
 				result = dispatcher(cmdMsgDict) # json string answers except stopServer
 			except:
 				wireMsg = exceptionMsg("dispatched cmd exception...")
-				conn.sendall(wireMsg)
+				sock.sendall(wireMsg)
 				sys.exc_clear()
 				exceptionOccurred = True
-				conn.close()
+				sock.close()
+                                CONNECTION_LIST.remove(sock)
 				closedConnection = True
 			if exceptionOccurred == False and closedConnection == False:
 				# result
 				try:
 				    if result != 'kill-9': # stop command will return 'kill-9' as value
 						wireMsg = formatWireMsg(result)
-						conn.sendall(wireMsg)
+						sock.sendall(wireMsg)
 				    else:
 						wireMsg =  goingDownMsg()
-						conn.sendall(wireMsg)
+					        sock.sendall(wireMsg)
 				except:
 					logger.debug("the connection has been broken...closing connection")
-					conn.close()
+					sock.close()
+                                        CONNECTION_LIST.remove(sock)
 					closedConnection = True
 		if closedConnection:
 			break
@@ -437,5 +454,10 @@ while True:
 			break
 	if result == 'kill-9': # stop command stops listener tears down server ...
 		break
+        if (parentpid != os.getppid()):
+                logger.debug("parent pid exited so hence child exiting")
+                os._exit(0)
+        else:
+                logger.debug("parent is alive")
 #
 logger.info('server stopped by admin command')

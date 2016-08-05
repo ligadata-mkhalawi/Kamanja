@@ -17,7 +17,8 @@
 ###################################################################
 
 Today=`date +"%Y%m%d"`
-for pid in `ls ${KAMANJA_HOME}/python/logs/pythonserver* | sed 's/pythonserver.log//g'`; do
+cd $KAMANJA_HOME/python/logs
+for pid in `ls pythonserver* | sed 's/pythonserver.log//g'`; do
     if [ ! -z "$pid" -a "$pid" != "" ]; then
         kill -9 $pid
         mkdir -p ${KAMANJA_HOME}/python/logs/${Today}
