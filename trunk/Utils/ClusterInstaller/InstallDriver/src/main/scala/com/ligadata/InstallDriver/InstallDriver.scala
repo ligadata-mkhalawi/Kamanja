@@ -804,7 +804,7 @@ Try again.
               closeLog
               sys.exit(1)
             }
-	    if( fromKamanja.substring(0,2).equals(toKamanja.substring(0,2))){
+	    if( fromKamanja.substring(0,3).equals(toKamanja.substring(0,3))){
               printAndLogDebug("Migration not required... patch upgrade was selected", log)
               printAndLogDebug("Processing is Complete!", log)
               closeLog
