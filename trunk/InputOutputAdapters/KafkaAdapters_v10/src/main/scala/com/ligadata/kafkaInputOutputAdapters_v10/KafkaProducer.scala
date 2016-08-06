@@ -486,7 +486,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
     try {
       var partitionsMsgMap = scala.collection.mutable.Map[Int, ArrayBuffer[MsgDataRecievedCnt]]()
       var ab = new ArrayBuffer[MsgDataRecievedCnt](256)
-      var partId = (new String(partitionKey)).toInt
+      var partId = 0
 
       partitionsMsgMap(partId) = ab
       val pr = new ProducerRecord(qc.topic, partitionKey, message)
