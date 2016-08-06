@@ -120,6 +120,8 @@ trait OutputAdapter extends AdaptersSerializeDeserializers with Monitorable {
 
   override final def getAdapterName = inputConfig.Name
 
+  def send(message: Array[Byte], partitionKey: Array[Byte]): Unit
+
   def send(tnxCtxt: TransactionContext, outputContainers: Array[ContainerInterface]): Unit
 
   def Shutdown: Unit

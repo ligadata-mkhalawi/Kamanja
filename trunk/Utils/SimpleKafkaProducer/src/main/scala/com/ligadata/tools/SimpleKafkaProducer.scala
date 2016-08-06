@@ -124,19 +124,24 @@ object SimpleKafkaProducer {
   val bufferMemory: Integer = 64 * 1024 * 1024
   val messageSendMaxRetries: Integer = 3
   val requestRequiredAcks: Integer = 1
-
-  val codec = if (compress) DefaultCompressionCodec.codec else NoCompressionCodec.codec
+  val codec = if (compress) "gzip" else "none"
 
   val loggerName = this.getClass.getName
   val logger = LogManager.getLogger(loggerName)
 
  // def send(producer: Producer[AnyRef, AnyRef], topic: String, message: String, partIdx: String): Unit = send(producer, topic, message.getBytes("UTF8"), partIdx.getBytes("UTF8"))
-   def send(producer: KafkaProducer[Array[Byte],Array[Byte]], topic: String, message: String, partIdx: String): Unit = send(producer, topic, message.getBytes("UTF8"), partIdx.getBytes("UTF8"))
+   def send(producer: com.ligadata.InputOutputAdapterInfo.OutputAdapter, //KafkaProducer[Array[Byte],Array[Byte]],
+            topic: String, message: String, partIdx: String): Unit = send(producer, topic, message.getBytes("UTF8"), partIdx.getBytes("UTF8"))
  // def send(producer: Producer[AnyRef, AnyRef], topic: String, message: Array[Byte], partIdx: Array[Byte]): Unit = {
- def send(producer:  KafkaProducer[Array[Byte],Array[Byte]], topic: String, message: Array[Byte], partIdx: Array[Byte]): Unit = {
+
+
+  def send(producer: com.ligadata.InputOutputAdapterInfo.OutputAdapter,// KafkaProducer[Array[Byte],Array[Byte]],
+           topic: String, message: Array[Byte], partIdx: Array[Byte]): Unit = {
     try {
       //producer.send(new KeyedMessage(topic, partIdx, message))
-      producer.send(new ProducerRecord[Array[Byte],Array[Byte]](topic, partIdx , message))
+      producer.send(message, partIdx)
+
+      //producer.send(new ProducerRecord[Array[Byte],Array[Byte]](topic, partIdx , message))
       //producer.send(new KeyedMessage(topic, message))
     } catch {
       case e: Exception =>
@@ -163,7 +168,9 @@ object SimpleKafkaProducer {
     * @param topicpartitions Int
     * @param isVerbose Boolean
     */
-  def ProcessFile(producer:  KafkaProducer[Array[Byte],Array[Byte]], topics: Array[String], threadId: Int, sFileName: String, msg: String, sleeptm: Int, partitionkeyidxs: Any, st: Stats, ignorelines: Int, format: String, isGzip: Boolean, topicpartitions: Int, isVerbose: Boolean): Unit = {
+  def ProcessFile(producer: com.ligadata.InputOutputAdapterInfo.OutputAdapter, topics: Array[String], threadId: Int, sFileName: String, msg: String, sleeptm: Int, partitionkeyidxs: Any, st: Stats, ignorelines: Int, format: String, isGzip: Boolean, topicpartitions: Int, isVerbose: Boolean): Unit = {
+
+ //   def ProcessFile(producer:  KafkaProducer[Array[Byte],Array[Byte]], topics: Array[String], threadId: Int, sFileName: String, msg: String, sleeptm: Int, partitionkeyidxs: Any, st: Stats, ignorelines: Int, format: String, isGzip: Boolean, topicpartitions: Int, isVerbose: Boolean): Unit = {
  // def ProcessFile(producer: Producer[AnyRef, AnyRef], topics: Array[String], threadId: Int, sFileName: String, msg: String, sleeptm: Int, partitionkeyidxs: Any, st: Stats, ignorelines: Int, format: String, isGzip: Boolean, topicpartitions: Int, isVerbose: Boolean): Unit = {    KafkaProducer[String, String]
     var bis: InputStream = null
 
@@ -196,7 +203,8 @@ object SimpleKafkaProducer {
  */
 //  private def processCSVFile(producer: Producer[AnyRef, AnyRef], topics: Array[String], threadId: Int, sFileName: String, msg: String, sleeptm: Int, partitionkeyidxs: Array[Int], st: Stats, ignorelines: Int, topicpartitions: Int, bis: InputStream, isVerbose: Boolean): Unit = {
 
-  private def processCSVFile(producer: KafkaProducer[Array[Byte],Array[Byte]], topics: Array[String], threadId: Int, sFileName: String, msg: String, sleeptm: Int, partitionkeyidxs: Array[Int], st: Stats, ignorelines: Int, topicpartitions: Int, bis: InputStream, isVerbose: Boolean): Unit = {
+  private def processCSVFile(producer: com.ligadata.InputOutputAdapterInfo.OutputAdapter,//KafkaProducer[Array[Byte],Array[Byte]],
+                             topics: Array[String], threadId: Int, sFileName: String, msg: String, sleeptm: Int, partitionkeyidxs: Array[Int], st: Stats, ignorelines: Int, topicpartitions: Int, bis: InputStream, isVerbose: Boolean): Unit = {
 
       var len = 0
     var readlen = 0
@@ -291,7 +299,8 @@ object SimpleKafkaProducer {
     *                   begin and end.  KafkaProducer[String, String]
     */
   //private def processJsonFile(producer: Producer[AnyRef, AnyRef], topics: Array[String], threadId: Int, sFileName: String, msg: String, sleeptm: Int, partitionkeyidxs:scala.collection.mutable.Map[String,List[String]], st: Stats, topicpartitions: Int, bis: InputStream, isVerbose: Boolean): Unit =
-  private def processJsonFile(producer: KafkaProducer[Array[Byte],Array[Byte]], topics: Array[String], threadId: Int, sFileName: String, msg: String, sleeptm: Int, partitionkeyidxs:scala.collection.mutable.Map[String,List[String]], st: Stats, topicpartitions: Int, bis: InputStream, isVerbose: Boolean): Unit ={
+  //private def processJsonFile(producer: KafkaProducer[Array[Byte],Array[Byte]], topics: Array[String], threadId: Int, sFileName: String, msg: String, sleeptm: Int, partitionkeyidxs:scala.collection.mutable.Map[String,List[String]], st: Stats, topicpartitions: Int, bis: InputStream, isVerbose: Boolean): Unit ={
+  private def processJsonFile(producer: com.ligadata.InputOutputAdapterInfo.OutputAdapter, topics: Array[String], threadId: Int, sFileName: String, msg: String, sleeptm: Int, partitionkeyidxs:scala.collection.mutable.Map[String,List[String]], st: Stats, topicpartitions: Int, bis: InputStream, isVerbose: Boolean): Unit ={
 
     var readlen = 0
     val len = 0
@@ -350,7 +359,7 @@ object SimpleKafkaProducer {
   /*
   * processJsonDoc - add an individual json doc to whatever queue is specified here.
   */
-  private def processJsonDoc(doc: String, producer: KafkaProducer[Array[Byte], Array[Byte]],
+  private def processJsonDoc(doc: String, producer:  com.ligadata.InputOutputAdapterInfo.OutputAdapter,//KafkaProducer[Array[Byte], Array[Byte]],
                              topics: Array[String], threadId: Int, msg: String, sleeptm: Int,
                              partitionkeyidxs: scala.collection.mutable.Map[String,List[String]], st: Stats, topicpartitions: Int,
                              isVerbose:Boolean): Unit = {
@@ -454,6 +463,8 @@ object SimpleKafkaProducer {
         nextOption(map ++ Map('version -> "true"), tail)
       case "--secprops" :: value :: tail =>
         nextOption(map ++ Map('secprops -> value), tail)
+      case "--kafkaversion" :: value :: tail =>
+        nextOption(map ++ Map('kafkaversion -> value), tail)
       case option :: tail => {
         println("Unknown option " + option)
         sys.exit(1)
@@ -485,6 +496,9 @@ object SimpleKafkaProducer {
   def main(args: Array[String]): Unit = {
     val options = nextOption(Map(), args.toList)
     val version = options.getOrElse('version, "false").toString
+    var confProps = new com.ligadata.AdaptersConfiguration.KafkaQueueAdapterConfiguration()
+    var otherconfigs = scala.collection.mutable.Map[String, String]()
+
     if (version.equalsIgnoreCase("true")) {
       KamanjaVersion.print
       return
@@ -498,6 +512,8 @@ object SimpleKafkaProducer {
     val sAllFls = sFilesNames.replace("\"", "").trim.split(",")
     val sAllTrimFls = sAllFls.map(flnm => flnm.trim)
     val sAllValidTrimFls = sAllTrimFls.filter(flnm => flnm.size > 0)
+
+    val brokerVersion =  options.getOrElse('kafkaversion, "10").toString
 
     val sleeptmstr = options.getOrElse('sleep, "0").toString
 
@@ -513,7 +529,7 @@ object SimpleKafkaProducer {
     val topics = tmptopics.toList.sorted.toArray // Sort topics by names
 
     val brokerlist = options.getOrElse('brokerlist, "").toString.replace("\"", "").trim // .toLowerCase
-
+    //val brokerArray = bro
     if (brokerlist.size == 0) {
       println("Need Brokers list (brokerlist) in the format of HOST:PORT,HOST:PORT")
       sys.exit(1)
@@ -548,7 +564,51 @@ object SimpleKafkaProducer {
         var propLines = scala.io.Source.fromFile(secPropFile).getLines().foreach(line => {
           var kv = line.split("=")
           if (kv.size == 2) {
-            props.put(kv(0), kv(1))
+            if (kv(0).equalsIgnoreCase("security.protocol")) {
+              confProps.security_protocol = kv(1)
+            } else if (kv(0).equalsIgnoreCase("ssl.key.password")) {
+              confProps.ssl_key_password = kv(1)
+            } else if (kv(0).equalsIgnoreCase("ssl.keystore.password")) {
+              confProps.ssl_keystore_password = kv(1)
+            } else if (kv(0).equalsIgnoreCase("ssl.keystore.location")) {
+              confProps.ssl_keystore_location = kv(1)
+            } else if (kv(0).equalsIgnoreCase("ssl.keystore.type")) {
+              confProps.ssl_keystore_type = kv(1)
+            } else if (kv(0).equalsIgnoreCase("ssl.truststore.password")) {
+              confProps.ssl_truststore_password = kv(1)
+            } else if (kv(0).equalsIgnoreCase("ssl.truststore.location")) {
+              confProps.ssl_truststore_location = kv(1)
+            } else if (kv(0).equalsIgnoreCase("ssl.truststore.type")) {
+              confProps.ssl_truststore_type = kv(1)
+            } else if (kv(0).equalsIgnoreCase("ssl.enabled.protocols")) {
+              confProps.ssl_enabled_protocols = kv(1)
+            } else if (kv(0).equalsIgnoreCase("ssl.protocol")) {
+              confProps.ssl_protocol = kv(1)
+            } else if (kv(0).equalsIgnoreCase("ssl.provider")) {
+              confProps.ssl_provider = kv(1)
+            } else if (kv(0).equalsIgnoreCase("ssl.cipher.suites")) {
+              confProps.ssl_cipher_suites = kv(1)
+            } else if (kv(0).equalsIgnoreCase("ssl.endpoint.identification.algorithm")) {
+              confProps.ssl_endpoint_identification_algorithm = kv(1)
+            } else if (kv(0).equalsIgnoreCase("ssl.endpoint.identification.algorithm")) {
+              confProps.ssl_endpoint_identification_algorithm = kv(1)
+            } else if (kv(0).equalsIgnoreCase("ssl.trust.manager.algorithm")) {
+              confProps.ssl_trust_manager_algorithm = kv(1)
+            } else if (kv(0).equalsIgnoreCase("sasl.kerberos.service.name")) {
+              confProps.sasl_kerberos_service_name = kv(1)
+            } else if (kv(0).equalsIgnoreCase("sasl.mechanism")) {
+              confProps.sasl_mechanism = kv(1)
+            } else if (kv(0).equalsIgnoreCase("sasl.kerberos.kinit.cmd")) {
+              confProps.sasl_kerberos_kinit_cmd = kv(1)
+            } else if (kv(0).equalsIgnoreCase("sasl.kerberos.min.time.before.relogic")) {
+              confProps.sasl_kerberos_min_time_before_relogic = kv(1)
+            } else if (kv(0).equalsIgnoreCase("sasl.kerberos.ticket.renew.jiter")) {
+              confProps.sasl_kerberos_ticket_renew_jiter = kv(1)
+            } else if (kv(0).equalsIgnoreCase("sasl.kerberos.ticket.renew.window.factor")) {
+              confProps.sasl_kerberos_ticket_renew_window_factor = kv(1)
+            } else {
+              println("Warning, unkown security property: " + kv(1))
+            }
           }
         })
       } catch {
@@ -584,24 +644,21 @@ object SimpleKafkaProducer {
 
     val isVerbose = options.getOrElse('verbose, "false").toString
 
-    props.put("compression.codec", codec.toString)
-    props.put("producer.type", if (synchronously) "sync" else "async")
-    //props.put("metadata.broker.list", brokerlist)
-    props.put("bootstrap.servers", brokerlist)
-    props.put("batch.num.messages", batchSize.toString)
-    props.put("batch.size", batchSize.toString)
-    props.put("queue.time", queueTime.toString)
-    props.put("queue.size", queueSize.toString)
-    props.put("message.send.max.retries", messageSendMaxRetries.toString)
-    props.put("request.required.acks", requestRequiredAcks.toString)
-    props.put("buffer.memory", bufferMemory.toString)
-    props.put("buffer.size", bufferMemory.toString)
-    props.put("socket.send.buffer", bufferMemory.toString)
-    props.put("socket.receive.buffer", bufferMemory.toString)
-    props.put("client.id", clientId)
-    //props.put("partitioner.class", "com.ligadata.tools.CustPartitioner");
-    props.put("key.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
-    props.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
+    otherconfigs("compression.codec") = codec.toString
+    otherconfigs("producer.type") = if (synchronously) "sync" else "async"
+    otherconfigs("batch.num.messages") =   batchSize.toString
+    otherconfigs("batch.size") =  batchSize.toString
+    otherconfigs("queue.time") =  queueTime.toString
+    otherconfigs("queue.size") =  queueSize.toString
+    otherconfigs("message.send.max.retries") =  messageSendMaxRetries.toString
+    otherconfigs("request.required.acks") =  requestRequiredAcks.toString
+    otherconfigs("buffer.memory") =  bufferMemory.toString
+    otherconfigs("buffer.size") =  bufferMemory.toString
+    otherconfigs("socket.send.buffer") =  bufferMemory.toString
+    otherconfigs("socket.receive.buffer") =  bufferMemory.toString
+    otherconfigs("client.id") =  clientId
+    otherconfigs("key.serializer") =  "org.apache.kafka.common.serialization.ByteArraySerializer"
+    otherconfigs("value.serializer") =  "org.apache.kafka.common.serialization.ByteArraySerializer"
 
     val s = System.nanoTime
 
@@ -634,18 +691,36 @@ object SimpleKafkaProducer {
             var isGzip: Boolean = false
             override def run() {
               //val producer = new Producer[AnyRef, AnyRef](new ProducerConfig(props))
-              var producer2: KafkaProducer[Array[Byte],Array[Byte]] = new KafkaProducer[Array[Byte],Array[Byte]](props);
+
+              confProps.topic = topics(0)
+              confProps.hosts = brokerlist.split(",")
+              confProps.group_id = "SimpleKafkaConsumer"
+              confProps.otherconfigs = otherconfigs
+
+              var producer3: com.ligadata.InputOutputAdapterInfo.OutputAdapter = null
+
+              if (brokerVersion.equalsIgnoreCase("10")) {
+                producer3 = com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer.CreateOutputAdapter(confProps,null)
+              } else if (brokerVersion.equalsIgnoreCase("9")) {
+                producer3 = com.ligadata.kafkaInputOutputAdapters_v9.KafkaProducer.CreateOutputAdapter(confProps,null)
+              } else if (brokerVersion.equalsIgnoreCase("8")) {
+                producer3 = com.ligadata.kafkaInputOutputAdapters_v8.KafkaProducer.CreateOutputAdapter(confProps,null)
+              }
+
+              //var producer2: KafkaProducer[Array[Byte],Array[Byte]] = new KafkaProducer[Array[Byte],Array[Byte]](props);
               var tm: Long = 0
               val st: Stats = new Stats
               flNames.foreach(fl => {
                 if (gz.trim.compareToIgnoreCase("true") == 0) {
                   isGzip = true
                 }
+                tm = tm + elapsed(ProcessFile(producer3, topics, threadNo, fl, msg, sleeptm, partitionkeyidxs, st, ignorelines, format, isGzip, topicpartitions, isVerbose.equalsIgnoreCase("true")))
+
                 //tm = tm + elapsed(ProcessFile(producer, topics, threadNo, fl, msg, sleeptm, partitionkeyidxs, st, ignorelines, format, isGzip, topicpartitions, isVerbose.equalsIgnoreCase("true")))
-                tm = tm + elapsed(ProcessFile(producer2, topics, threadNo, fl, msg, sleeptm, partitionkeyidxs, st, ignorelines, format, isGzip, topicpartitions, isVerbose.equalsIgnoreCase("true")))
+               //tm = tm + elapsed(ProcessFile(producer2, topics, threadNo, fl, msg, sleeptm, partitionkeyidxs, st, ignorelines, format, isGzip, topicpartitions, isVerbose.equalsIgnoreCase("true")))
                 println("%02d. File:%s ElapsedTime:%.02fms".format(threadNo, fl, tm / 1000000.0))
               })
-              producer2.close
+              producer3.Shutdown
             }
           })
         }

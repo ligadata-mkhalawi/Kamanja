@@ -56,7 +56,11 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   private[this] val LOG = LogManager.getLogger(getClass);
 
   //BUGBUG:: Not Checking whether inputConfig is really QueueAdapterConfiguration or not.
-  private[this] val qc = KafkaQueueAdapterConfiguration.GetAdapterConfig(inputConfig)
+  private[this] var qc: com.ligadata.AdaptersConfiguration.KafkaQueueAdapterConfiguration = null
+  if(!inputConfig.isInstanceOf[com.ligadata.AdaptersConfiguration.KafkaQueueAdapterConfiguration])
+    qc = KafkaQueueAdapterConfiguration.GetAdapterConfig(inputConfig)
+  else
+    qc = inputConfig.asInstanceOf[com.ligadata.AdaptersConfiguration.KafkaQueueAdapterConfiguration]
 
   val default_compression_type = "none" // Valida values at this moment are none, gzip, or snappy.
   val default_value_serializer = "org.apache.kafka.common.serialization.ByteArraySerializer"
@@ -466,6 +470,80 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   override def getComponentSimpleStats: String = {
     return key + "->" + msgCount
   }
+
+
+  override def send(message: Array[Byte], partitionKey: Array[Byte]): Unit = {
+
+    if (!isHeartBeating) runHeartBeat
+
+    // Refreshing Partitions for every refreshPartitionTime.
+    // BUGBUG:: This may execute multiple times from multiple threads. For now it does not hard too much.
+    if ((System.currentTimeMillis - partitionsGetTm) > refreshPartitionTime) {
+      topicPartitionsCount = producer.partitionsFor(qc.topic).size()
+      partitionsGetTm = System.currentTimeMillis
+    }
+
+    try {
+      var partitionsMsgMap = scala.collection.mutable.Map[Int, ArrayBuffer[MsgDataRecievedCnt]]()
+      var ab = new ArrayBuffer[MsgDataRecievedCnt](256)
+      var partId = (new String(partitionKey)).toInt
+
+      partitionsMsgMap(partId) = ab
+      val pr = new ProducerRecord(qc.topic, partitionKey, message)
+      ab += MsgDataRecievedCnt(msgInOrder.getAndIncrement, pr)
+
+      var outstandingMsgs = outstandingMsgCount
+      // LOG.debug("KAFKA PRODUCER: current outstanding messages for topic %s are %d".format(qc.topic, outstandingMsgs))
+
+      var osRetryCount = 0
+      var osWaitTm = 5000
+      while (outstandingMsgs > max_outstanding_messages) {
+        LOG.warn(qc.Name + " KAFKA PRODUCER: %d outstanding messages in queue to write. Waiting for them to flush before we write new messages. Retrying after %dms. Retry count:%d".format(outstandingMsgs, osWaitTm, osRetryCount))
+        try {
+          Thread.sleep(osWaitTm)
+        } catch {
+          case e: Exception => {
+            externalizeExceptionEvent(e)
+            throw e
+          }
+          case e: Throwable => {
+            externalizeExceptionEvent(e)
+            throw e
+          }
+        }
+        outstandingMsgs = outstandingMsgCount
+      }
+
+      partitionsMsgMap.foreach(partIdAndRecs => {
+        val partId = partIdAndRecs._1
+        val keyMessages = partIdAndRecs._2
+
+        // first push all messages to partitionsMap before we really send. So that callback is guaranteed to find the message in partitionsMap
+        addMsgsToMap(partId, keyMessages)
+        sendInfinitely(keyMessages, false)
+      })
+
+    } catch {
+      case e: java.lang.InterruptedException => {
+        // Not doing anythign for now
+        LOG.warn(qc.Name + " KAFKA PRODUCER: Got java.lang.InterruptedException. isShutdown:" + isShutdown)
+      }
+      case fae: FatalAdapterException => {
+        externalizeExceptionEvent(fae)
+        throw fae
+      }
+      case e: Exception               => {
+        externalizeExceptionEvent(e)
+        throw FatalAdapterException("Unknown exception", e)
+      }
+      case e: Throwable               => {
+        externalizeExceptionEvent(e)
+        throw FatalAdapterException("Unknown exception", e)
+      }
+    }
+  }
+
+
 
   /**
     *
