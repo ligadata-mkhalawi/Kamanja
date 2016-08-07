@@ -267,6 +267,29 @@ Usage:
       log.emit(msg, "ERROR")
   }
 
+  private def CheckVerDigits(value: Int, orgVerInfo: String): Unit = {
+    if (value < 0 || value > 999999)
+      throw new Exception("Expecting only 0 to 999999 in major, minor & micro versions, but got %d from %s".format(value, orgVerInfo))
+  }
+
+  // Versions are assumed to have a format x.x.x
+  private def IsSameVersion(fromVersion: String,toVersion: String): Boolean = {
+    val fromVerParts = fromVersion.split('.')
+    val fromMajor = (if (fromVerParts.size > 0) fromVerParts(0).toInt else 0)
+    val fromMini = (if (fromVerParts.size > 1) fromVerParts(1).toInt else 0)
+    CheckVerDigits(fromMajor, fromVersion)
+    CheckVerDigits(fromMini, fromVersion)
+
+    val toVerParts = toVersion.split('.')
+    val toMajor = (if (toVerParts.size > 0) toVerParts(0).toInt else 0)
+    val toMini = (if (toVerParts.size > 1) toVerParts(1).toInt else 0)
+    CheckVerDigits(toMajor, toVersion)
+    CheckVerDigits(toMini, toVersion)
+
+    val isSame = (fromMajor == toMajor && fromMini == toMini)
+    isSame
+  }
+
   override def run(args: Array[String]): Unit = {
     if (args.length == 0) {
       printAndLogError("No arguments provided", log);
@@ -804,7 +827,8 @@ Try again.
               closeLog
               sys.exit(1)
             }
-	    if( fromKamanja.substring(0,3).equals(toKamanja.substring(0,3))){
+	    //if( fromKamanja.substring(0,3).equals(toKamanja.substring(0,3))){
+	    if( IsSameVersion(fromKamanja,toKamanja)){
               printAndLogDebug("Migration not required... patch upgrade was selected", log)
               printAndLogDebug("Processing is Complete!", log)
               closeLog
