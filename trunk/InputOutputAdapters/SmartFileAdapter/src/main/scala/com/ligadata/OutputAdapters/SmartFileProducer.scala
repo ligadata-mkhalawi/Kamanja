@@ -225,8 +225,11 @@ class OutputStreamWriter {
 
   private def writeToHdfs(fc: SmartFileProducerConfiguration, os: OutputStream, message: Array[Byte]) = {
     try {
-      os.write(message);
-      os.flush()
+      //os.write(message);
+      //os.flush()
+      val hdfsOs = os.asInstanceOf[FSDataOutputStream]
+      hdfsOs.write(message);
+      hdfsOs.hsync()
     } catch {
       case e: Exception => {
         if (fc.kerberos != null) {
