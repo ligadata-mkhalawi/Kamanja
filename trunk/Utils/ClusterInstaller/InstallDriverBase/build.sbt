@@ -1,7 +1,5 @@
 name := "InstallDriverBase"
 
-version := "1.0"
-
 // Enables publishing to maven repo
 // publishMavenStyle := true
 

@@ -55,7 +55,7 @@ case class Result(val name: String, val result: Any)
 object ModelsResults {
   def ValueString(v: Any): String = {
     if (v == null) {
-      return "null"
+      return ""
     }
     if (v.isInstanceOf[Set[_]]) {
       return v.asInstanceOf[Set[_]].mkString(",")
@@ -277,6 +277,7 @@ trait EnvContext /* extends Monitorable */  {
   def getAdaptersAndEnvCtxtLoader: KamanjaLoaderInfo
 
   def setObjectResolver(objResolver: ObjectResolver): Unit
+  def getObjectResolver: ObjectResolver
 
   // Setting JarPaths
   def setJarPaths(jarPaths: collection.immutable.Set[String]): Unit
@@ -338,7 +339,7 @@ trait EnvContext /* extends Monitorable */  {
 
   // Final Commit for the given transaction
   // outputResults has AdapterName, PartitionKey & Message
-  def commitData(tenantId: String, txnCtxt: TransactionContext, data: Array[(String, Array[ContainerInterface])]): Unit
+  def commitData(tenantId: String, txnCtxt: TransactionContext, data: Array[(String, Array[ContainerInterface])], forceCommit: Boolean): Unit
 
   def rollbackData(): Unit
 
@@ -355,7 +356,7 @@ trait EnvContext /* extends Monitorable */  {
   // Changed Data & Reloading data are Time in MS, Bucket Key & TransactionId
   //  def getChangedData(tempTransId: Long, includeMessages: Boolean, includeContainers: Boolean): scala.collection.immutable.Map[String, List[Key]]
 
-  //  def ReloadKeys(tempTransId: Long, containerName: String, keys: List[Key]): Unit
+    def ReloadKeys(tempTransId: Long, tenatId: String, containerName: String, keys: List[Key]): Unit
 
   // Set Reload Flag
   //  def setReloadFlag(containerName: String): Unit
@@ -378,7 +379,7 @@ trait EnvContext /* extends Monitorable */  {
   // Just get the cached container key and see what are the containers we need to cache
   def cacheContainers(clusterId: String): Unit
 
-  //  def EnableEachTransactionCommit: Boolean
+  def EnableEachTransactionCommit: Boolean
 
   // Lock functions
 //  def lockKeyInCluster(key: String): Unit
@@ -591,8 +592,10 @@ abstract class ModelInstance(val factory: ModelInstanceFactory) {
   def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
     // Default implementation to invoke old model
     if (execMsgsSet.size == 1 && triggerdSetIndex == 0 && factory.getModelDef().inputMsgSets.size == 1 && factory.getModelDef().inputMsgSets(0).size == 1 &&
-      factory.getModelDef().outputMsgs.size == 1 && execMsgsSet(0) != null && execMsgsSet(0).isInstanceOf[ContainerInterface]) {
-      // This could be calling old model
+        factory.getModelDef().outputMsgs.size >= 1 && execMsgsSet(0) != null && execMsgsSet(0).isInstanceOf[ContainerInterface]) {
+      // original line:  factory.getModelDef().outputMsgs.size == 1 && execMsgsSet(0) != null && execMsgsSet(0).isInstanceOf[ContainerInterface]) {
+
+        // This could be calling old model
       // Holding current transaction information original message and set the new information. Because the model will pull the message from transaction context
       val (origin, orgInputMsg) = txnCtxt.getInitialMessage
       var returnValues = Array[ContainerOrConcept]()
@@ -653,7 +656,7 @@ abstract class ModelInstanceFactory(val modelDef: ModelDef, val nodeContext: Nod
   }
 
   // Creating new model instance related to this ModelInstanceFactory.
-  def createModelInstance(): ModelInstance
+  def createModelInstance(txnCtxt: TransactionContext): ModelInstance
 
   // Creating ModelResultBase associated this model/modelfactory.
   def createResultObject(): ModelResultBase = {
@@ -1013,7 +1016,7 @@ class ModelBaseObjMdlInstanceFactory(modelDef: ModelDef, nodeContext: NodeContex
 
   override def isValidMessage(msg: MessageContainerBase): Boolean = mdlBaseObj.IsValidMessage(msg)
 
-  override def createModelInstance() = new ModelBaseMdlInstance(this)
+  override def createModelInstance(txnCtxt: TransactionContext) = new ModelBaseMdlInstance(this)
 
   override def createResultObject() = mdlBaseObj.CreateResultObject()
 

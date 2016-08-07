@@ -38,14 +38,6 @@ object AdapterConfiguration {
 class AdapterConfiguration {
   // Name of the Adapter, KafkaQueue Name/MQ Name/File Adapter Logical Name/etc
   var Name: String = _
-  //  // CSV/JSON/XML for input adapter.
-  //  var formatName: String = _
-  //  // For output adapter it is just corresponding validate adapter name.
-  //  var validateAdapterName: String = _
-  //  // For input adapter it is just corresponding failed events adapter name.
-  //  var failedEventsAdapterName: String = _
-  //  // Queue Associated Message
-  //  var associatedMsg: String = _
   // Class where the Adapter can be loaded (Object derived from InputAdapterObj)
   var className: String = _
   // Jar where the className can be found
@@ -55,11 +47,6 @@ class AdapterConfiguration {
   // adapter specific (mostly json) string
   var adapterSpecificCfg: String = _
   var tenantId: String = _
-  //  // Delimiter String for keyAndValueDelimiter
-  //  var keyAndValueDelimiter: String = _
-  //  // Delimiter String for fieldDelimiter
-  //  var fieldDelimiter: String = _
-  //  var valueDelimiter: String = _ // Delimiter String for valueDelimiter
 }
 
 // Input Adapter Object to create Adapter
@@ -104,6 +91,19 @@ trait InputAdapter extends AdaptersSerializeDeserializers with Monitorable {
   def getAllPartitionBeginValues: Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)]
 
   def getAllPartitionEndValues: Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)]
+
+  def externalizeExceptionEvent (cause: Throwable): Unit = {
+    try {
+      val exceptionEvent = nodeContext.getEnvCtxt.getContainerInstance("com.ligadata.KamanjaBase.KamanjaExceptionEvent").asInstanceOf[com.ligadata.KamanjaBase.KamanjaExceptionEvent]
+      exceptionEvent.timeoferrorepochms = System.currentTimeMillis()
+      exceptionEvent.componentname = inputConfig.Name
+      exceptionEvent.errortype = "exception"
+      exceptionEvent.errorstring = StackTrace.ThrowableTraceString(cause)
+      nodeContext.getEnvCtxt.postMessages(Array[ContainerInterface](exceptionEvent))
+    } catch {
+      case t:Throwable => {return}
+    }
+  }
 }
 
 // Output Adapter Object to create Adapter
@@ -125,6 +125,21 @@ trait OutputAdapter extends AdaptersSerializeDeserializers with Monitorable {
   def Shutdown: Unit
 
   def Category = "Output"
+
+  def externalizeExceptionEvent (cause: Throwable): Unit = {
+    try {
+      val exceptionEvent = nodeContext.getEnvCtxt.getContainerInstance("com.ligadata.KamanjaBase.KamanjaExceptionEvent").asInstanceOf[com.ligadata.KamanjaBase.KamanjaExceptionEvent]
+      exceptionEvent.timeoferrorepochms = System.currentTimeMillis()
+      exceptionEvent.componentname = inputConfig.Name
+      exceptionEvent.errortype = "exception"
+      exceptionEvent.errorstring = StackTrace.ThrowableTraceString(cause)
+      nodeContext.getEnvCtxt.postMessages(Array[ContainerInterface](exceptionEvent))
+    } catch {
+      case t: Throwable => {
+        return
+      }
+    }
+  }
 }
 
 trait ExecContext {

@@ -10,10 +10,8 @@ assemblyOption in assembly ~= {
   _.copy(prependShellScript = Some(defaultShellScript))
 }
 
-val kamanjaVersion = "1.4.1"
-
 assemblyJarName in assembly := {
-  s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"
+  s"${name.value}_${scalaBinaryVersion.value}-${version.value}.jar"
 }
 
 // for some reason the merge strategy for non ligadata classes are not working and thus added those conflicting jars in exclusions
@@ -46,8 +44,6 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
 name := "SimpleKafkaProducer"
 
 
-version := "1.4.1"
-
 //resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 //
 //libraryDependencies += "org.apache.logging.log4j" % "log4j-1.2-api" % "2.4.1"
@@ -69,6 +65,7 @@ version := "1.4.1"
 //libraryDependencies += "org.json4s" %% "json4s-native" % "3.2.9"
 //
 //libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.2.9"
+libraryDependencies += "org.apache.kafka" %% "kafka" % "0.9.0.0"
 
 coverageMinimum := 80
 

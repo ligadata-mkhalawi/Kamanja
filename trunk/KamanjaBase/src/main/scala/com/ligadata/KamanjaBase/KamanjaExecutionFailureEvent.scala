@@ -21,6 +21,7 @@ object KamanjaExecutionFailureEvent extends RDDObject[KamanjaExecutionFailureEve
   override def getTenantId: String = "System";
   override def createInstance: KamanjaExecutionFailureEvent = new KamanjaExecutionFailureEvent(KamanjaExecutionFailureEvent);
   override def isFixed: Boolean = true;
+  def isCaseSensitive(): Boolean = false;
   override def getContainerType: ContainerTypes.ContainerType = ContainerTypes.ContainerType.MESSAGE
   override def getFullName = getFullTypeName;
   override def getRddTenantId = getTenantId;
@@ -94,6 +95,7 @@ object KamanjaExecutionFailureEvent extends RDDObject[KamanjaExecutionFailureEve
 }
 
 class KamanjaExecutionFailureEvent(factory: MessageFactoryInterface, other: KamanjaExecutionFailureEvent) extends MessageInterface(factory) {
+  def isCaseSensitive(): Boolean = KamanjaExecutionFailureEvent.isCaseSensitive();
 
   val log = KamanjaExecutionFailureEvent.log
 

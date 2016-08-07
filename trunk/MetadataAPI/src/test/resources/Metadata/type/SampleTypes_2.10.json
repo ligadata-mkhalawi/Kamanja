@@ -13,6 +13,7 @@
   "DependencyJars" : [ "metadata_2.10-1.0.jar" ],
   "Implementation" : "com.ligadata.BaseTypes.BoolImpl",
   "OwnerId" : "test_spec",
+  "TenantId" : "testTenantId",
   "UniqueId" : 1,
   "MdElementId" : 1
 },
@@ -29,6 +30,7 @@
   "DependencyJars" : [ "metadata_2.10-1.0.jar" ],
   "Implementation" : "com.ligadata.BaseTypes.StringImpl",
   "OwnerId" : "test_spec",
+  "TenantId" : "testTenantId",
   "UniqueId" : 2,
   "MdElementId" : 2
 },
@@ -45,6 +47,7 @@
   "DependencyJars" : [ "metadata_2.10-1.0.jar" ],
   "Implementation" : "com.ligadata.BaseTypes.AnyImpl",
   "OwnerId" : "test_spec",
+  "TenantId" : "testTenantId",
   "UniqueId" : 3,
   "MdElementId" : 3
 },
@@ -61,6 +64,7 @@
   "DependencyJars" : [ "metadata_2.10-1.0.jar" ],
   "Implementation" : "com.ligadata.BaseTypes.IntImpl",
   "OwnerId" : "test_spec",
+  "TenantId" : "testTenantId",
   "UniqueId" : 4,
   "MdElementId" : 4
 },
@@ -77,6 +81,7 @@
   "DependencyJars" : [ "metadata_2.10-1.0.jar" ],
   "Implementation" : "com.ligadata.BaseTypes.LongImpl",
   "OwnerId" : "test_spec",
+  "TenantId" : "testTenantId",
   "UniqueId" : 5,
   "MdElementId" : 5
 } ]

@@ -20,7 +20,7 @@ import com.ligadata.kamanja.metadata.ModelDef
 import com.ligadata.runtime.Log
 import com.ligadata.runtime.Conversion
 class TransactionIngestFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
-  override def createModelInstance(): ModelInstance = return new TransactionIngest(this)
+  override def createModelInstance(txnContext: TransactionContext): ModelInstance = return new TransactionIngest(this)
   override def getModelName: String = "com.ligadata.models.samples.medical2.TransactionIngest"
   override def getVersion: String = "0.0.1"
   override def createResultObject(): ModelResultBase = new MappedModelResults()

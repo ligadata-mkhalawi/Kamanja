@@ -54,8 +54,6 @@ unmanagedJars in Compile <<= baseDirectory map { base => (base ** "*.jar").class
 
 name := "MigrateManager"
 
-version := "1.4.1"
-
 // Enables publishing to maven repo
 // publishMavenStyle := true
 

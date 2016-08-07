@@ -47,6 +47,9 @@ object TestMetadataAPI {
 
   val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   var serializer = SerializerManager.GetSerializer("kryo")
 
@@ -434,7 +437,7 @@ object TestMetadataAPI {
 
       logger.debug("DependentModels => " + depModels)
 
-      val apiResult = MetadataAPIImpl.GetMessageDef(msgNameSpace, msgName, "JSON", msgVersion, userid)
+      val apiResult = MetadataAPIImpl.GetMessageDef(msgNameSpace, msgName, "JSON", msgVersion, userid, tenantId)
 
       //     val apiResultStr = MetadataAPIImpl.getApiResult(apiResult)
       println("Result as Json String => \n" + apiResult)
@@ -477,13 +480,14 @@ object TestMetadataAPI {
         })
       }
 
-      val apiResult = MetadataAPIImpl.GetMessageDefFromCache(msgNameSpace, msgName, "JSON", msgVersion, userid)
+
+val apiResult = MetadataAPIImpl.GetMessageDefFromCache(msgNameSpace, msgName, "JSON", msgVersion, userid)
       println("Result as Json String => \n" + apiResult)
 
     } catch {
       case e: Exception => {
         logger.debug("", e)
-        
+
       }
     }
   }
@@ -513,7 +517,7 @@ object TestMetadataAPI {
       }
       val contKey = contKeys(choice - 1)
       val (contNameSpace, contName, contVersion) = com.ligadata.kamanja.metadata.Utils.parseNameToken(contKey)
-      val apiResult = MetadataAPIImpl.GetContainerDefFromCache(contNameSpace, contName, "JSON", contVersion, userid)
+      val apiResult = MetadataAPIImpl.GetContainerDefFromCache(contNameSpace, contName, "JSON", contVersion, userid, tenantId)
       println("Result as Json String => \n" + apiResult)
 
     } catch {
@@ -1004,7 +1008,7 @@ object TestMetadataAPI {
           //logger.setLevel(Level.TRACE);  //check again
           val contStr = Source.fromFile(contDefFile).mkString
           //  MetadataAPIImpl.SetLoggerLevel(Level.TRACE)
-          val res: String = MetadataAPIImpl.UpdateContainer(contStr, "JSON", userid)
+          val res: String = MetadataAPIImpl.UpdateContainer(contStr, "JSON", userid, tenantId, None)
           results += Tuple3(choice.toString, contDefFile, res)
         })
       } else {
@@ -1079,7 +1083,7 @@ object TestMetadataAPI {
           //logger.setLevel(Level.TRACE);  //check again
           val contStr = Source.fromFile(contDefFile).mkString
           // MetadataAPIImpl.SetLoggerLevel(Level.TRACE)
-          val res: String = MetadataAPIImpl.AddContainer(contStr, "JSON", userid)
+          val res: String = MetadataAPIImpl.AddContainer(contStr, "JSON", userid, tenantId, None)
           results += Tuple3(choice.toString, contDefFile, res)
         })
       } else {
@@ -1165,7 +1169,7 @@ object TestMetadataAPI {
           //logger.setLevel(Level.TRACE);  //check again
           val msgStr = Source.fromFile(msgDefFile).mkString
           //   MetadataAPIImpl.SetLoggerLevel(Level.TRACE)
-          val res: String = MetadataAPIImpl.UpdateMessage(msgStr, "JSON", userid)
+          val res: String = MetadataAPIImpl.UpdateMessage(msgStr, "JSON", userid, tenantId, None)
           results += Tuple3(choice.toString, msgDefFile, res)
         })
       } else {
@@ -1237,7 +1241,7 @@ object TestMetadataAPI {
           //logger.setLevel(Level.TRACE);  //check again
           val msgStr = Source.fromFile(msgDefFile).mkString
           //   MetadataAPIImpl.SetLoggerLevel(Level.TRACE)
-          val res: String = MetadataAPIImpl.AddContainer(msgStr, "JSON", userid)
+          val res: String = MetadataAPIImpl.AddContainer(msgStr, "JSON", userid, tenantId, None)
           results += Tuple3(choice.toString, msgDefFile, res)
         })
       } else {
@@ -1301,7 +1305,7 @@ object TestMetadataAPI {
       println(pmmlStr)
       // Save the model
       //    MetadataAPIImpl.SetLoggerLevel(Level.TRACE)
-      println("Results as json string => \n" + MetadataAPIImpl.UpdateModel(ModelType.KPMML, pmmlStr, userid, Some("tenantid")))
+      println("Results as json string => \n" + MetadataAPIImpl.UpdateModel(ModelType.KPMML, pmmlStr, userid, Some("tenantid"), None, None, None, None, None, Some("{}")))
     } catch {
       case e: Exception => {
 
@@ -1421,9 +1425,9 @@ object TestMetadataAPI {
       println("CHOSE " + (choice2 - 1) + "  " + modelConfigName)
 
       if (op.equalsIgnoreCase("add")) {
-        println("Results as json string => \n" + MetadataAPIImpl.AddModel(ModelType.JAVA, sourceStr, userid, Some("tenantid"), Some(modelConfigName)))
+        println("Results as json string => \n" + MetadataAPIImpl.AddModel(ModelType.JAVA, sourceStr, userid, Some("tenantid"), Some(modelConfigName), None, None, None, None, None))
       } else {
-        println("Results as json string => \n" + MetadataAPIImpl.UpdateModel(ModelType.JAVA, sourceStr, userid, Some("tenantid"), Some(modelConfigName)))
+        println("Results as json string => \n" + MetadataAPIImpl.UpdateModel(ModelType.JAVA, sourceStr, userid, Some("tenantid"), Some(modelConfigName), None, None, None, None, Some("{}")))
       }
     } catch {
       case e: AlreadyExistsException => {
@@ -1508,9 +1512,9 @@ object TestMetadataAPI {
 
       if (op.equalsIgnoreCase("add")) {
         println("Results as json string => \n" +
-          MetadataAPIImpl.AddModel(ModelType.SCALA, sourceStr, userid, Some("tenantid"), Some(modelConfigName)))
+          getMetadataAPI.AddModel(ModelType.SCALA, sourceStr, userid, Some("tenantid"), Some(modelConfigName), None, None, None, None, None))
       } else {
-        println("Results as json string => \n" + MetadataAPIImpl.UpdateModel(ModelType.SCALA, sourceStr, userid, Some("tenantid"), Some(modelConfigName)))
+        println("Results as json string => \n" + getMetadataAPI.UpdateModel(ModelType.SCALA, sourceStr, userid, Some("tenantid"), Some(modelConfigName), None, None, None, None, Some("{}")))
       }
 
     } catch {
@@ -1535,7 +1539,7 @@ object TestMetadataAPI {
         println("Invalid schemaId " + schemaId + ",start with main menu...")
         return
       }
-      val apiResult = MetadataAPIImpl.GetTypeBySchemaId(schemaId, userid) //val apiResult = MetadataAPIImpl.GetContainerDefFromCache(contNameSpace,contName,"JSON",contVersion,userid)
+      val apiResult = getMetadataAPI.GetTypeBySchemaId(schemaId, userid) //val apiResult = getMetadataAPI.GetContainerDefFromCache(contNameSpace,contName,"JSON",contVersion,userid, tenantId)
       println("Result as Json String => \n" + apiResult)
 
     } catch {
@@ -1557,7 +1561,7 @@ object TestMetadataAPI {
         println("Invalid elementId " + elementId + ",start with main menu...")
         return
       }
-      val apiResult = MetadataAPIImpl.GetTypeByElementId(elementId, userid) //val apiResult = MetadataAPIImpl.GetContainerDefFromCache(contNameSpace,contName,"JSON",contVersion,userid)
+      val apiResult = getMetadataAPI.GetTypeByElementId(elementId, userid) //val apiResult = getMetadataAPI.GetContainerDefFromCache(contNameSpace,contName,"JSON",contVersion,userid, tenantId)
       println("Result as Json String => \n" + apiResult)
 
     } catch {
@@ -1569,9 +1573,9 @@ object TestMetadataAPI {
 
   def AddModel {
     try {
-      var dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
+      var dirName = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
       if (dirName == null) {
-        dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("GIT_ROOT") + "/Kamanja/trunk/MetadataAPI/src/test/SampleTestFiles/Models"
+        dirName = getMetadataAPI.GetMetadataAPIConfig.getProperty("GIT_ROOT") + "/Kamanja/trunk/MetadataAPI/src/test/SampleTestFiles/Models"
         logger.debug("The environment variable MODEL_FILES_DIR is undefined, The directory defaults to " + dirName)
       }
 
@@ -1606,8 +1610,8 @@ object TestMetadataAPI {
       pmmlFilePath = pmmlFiles(choice - 1).toString
       val pmmlStr = Source.fromFile(pmmlFilePath).mkString
       // Save the model
-      // MetadataAPIImpl.SetLoggerLevel(Level.TRACE)
-      println("Results as json string => \n" + MetadataAPIImpl.AddModel(ModelType.KPMML, pmmlStr, userid, Some("tenantid")))
+      // getMetadataAPI.SetLoggerLevel(Level.TRACE)
+      println("Results as json string => \n" + getMetadataAPI.AddModel(ModelType.KPMML, pmmlStr, userid, Some("tenantid"), None, None, None, None, None, None))
     } catch {
       case e: AlreadyExistsException => {
         logger.error("Model Already in the metadata....", e)
@@ -1620,9 +1624,9 @@ object TestMetadataAPI {
 
   def UploadCompileConfig {
     try {
-      var dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CONFIG_FILES_DIR")
+      var dirName = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONFIG_FILES_DIR")
       if (dirName == null) {
-        dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("GIT_ROOT") + "/Kamanja/trunk/SampleApplication/Medical/Configs"
+        dirName = getMetadataAPI.GetMetadataAPIConfig.getProperty("GIT_ROOT") + "/Kamanja/trunk/SampleApplication/Medical/Configs"
         logger.debug("The environment variable MODEL_FILES_DIR is undefined, The directory defaults to " + dirName)
       }
 
@@ -1657,8 +1661,8 @@ object TestMetadataAPI {
       cfgFilePath = cfgFiles(choice - 1).toString
       val cfgStr = Source.fromFile(cfgFilePath).mkString
       // Save the model
-      //  MetadataAPIImpl.SetLoggerLevel(Level.TRACE)
-      println("Results as json string => \n" + MetadataAPIImpl.UploadModelsConfig(cfgStr, userid, "testConf"))
+      //  getMetadataAPI.SetLoggerLevel(Level.TRACE)
+      println("Results as json string => \n" + getMetadataAPI.UploadModelsConfig(cfgStr, userid, "testConf"))
     } catch {
       case e: AlreadyExistsException => {
         logger.error("Object Already in the metadata....", e)
@@ -1671,9 +1675,9 @@ object TestMetadataAPI {
 
   def UploadEngineConfig {
     try {
-      var dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CONFIG_FILES_DIR")
+      var dirName = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONFIG_FILES_DIR")
       if (dirName == null) {
-        dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("GIT_ROOT") + "/Kamanja/trunk/SampleApplication/Medical/Configs"
+        dirName = getMetadataAPI.GetMetadataAPIConfig.getProperty("GIT_ROOT") + "/Kamanja/trunk/SampleApplication/Medical/Configs"
         logger.debug("The environment variable MODEL_FILES_DIR is undefined, The directory defaults to " + dirName)
       }
 
@@ -1708,8 +1712,8 @@ object TestMetadataAPI {
       cfgFilePath = cfgFiles(choice - 1).toString
       val cfgStr = Source.fromFile(cfgFilePath).mkString
       // Save the model
-      //  MetadataAPIImpl.SetLoggerLevel(Level.TRACE)
-      println("Results as json string => \n" + MetadataAPIImpl.UploadConfig(cfgStr, userid, "testConf"))
+      //  getMetadataAPI.SetLoggerLevel(Level.TRACE)
+      println("Results as json string => \n" + getMetadataAPI.UploadConfig(cfgStr, userid, "testConf"))
     } catch {
       case e: AlreadyExistsException => {
 
@@ -1723,9 +1727,9 @@ object TestMetadataAPI {
 
   def RemoveEngineConfig {
     try {
-      var dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CONFIG_FILES_DIR")
+      var dirName = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONFIG_FILES_DIR")
       if (dirName == null) {
-        dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("GIT_ROOT") + "/Kamanja/trunk/SampleApplication/Medical/Configs"
+        dirName = getMetadataAPI.GetMetadataAPIConfig.getProperty("GIT_ROOT") + "/Kamanja/trunk/SampleApplication/Medical/Configs"
         logger.debug("The environment variable MODEL_FILES_DIR is undefined, The directory defaults to " + dirName)
       }
 
@@ -1760,8 +1764,8 @@ object TestMetadataAPI {
       cfgFilePath = cfgFiles(choice - 1).toString
       val cfgStr = Source.fromFile(cfgFilePath).mkString
       // Save the model
-      // MetadataAPIImpl.SetLoggerLevel(Level.TRACE)
-      println("Results as json string => \n" + MetadataAPIImpl.RemoveConfig(cfgStr, userid, "n/a"))
+      // getMetadataAPI.SetLoggerLevel(Level.TRACE)
+      println("Results as json string => \n" + getMetadataAPI.RemoveConfig(cfgStr, userid, "n/a"))
     } catch {
       case e: AlreadyExistsException => {
 
@@ -1775,7 +1779,7 @@ object TestMetadataAPI {
 
   def UploadJarFile {
     try {
-      var dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR")
+      var dirName = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR")
       if (dirName == null) {
         dirName = "/tmp/KamanjaInstall"
         logger.debug("The environment variable JAR_TARGET_DIR is undefined, The directory defaults to " + dirName)
@@ -1811,8 +1815,8 @@ object TestMetadataAPI {
 
       jarFilePath = jarFiles(choice - 1).toString
       // Save the jar
-      // MetadataAPIImpl.SetLoggerLevel(Level.TRACE)
-      println("Results as json string => \n" + MetadataAPIImpl.UploadJar(jarFilePath), userid)
+      // getMetadataAPI.SetLoggerLevel(Level.TRACE)
+      println("Results as json string => \n" + getMetadataAPI.UploadJar(jarFilePath), userid)
     } catch {
       case e: AlreadyExistsException => {
 
@@ -1826,9 +1830,9 @@ object TestMetadataAPI {
 
   def LoadFunctionsFromAFile {
     try {
-      var dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("FUNCTION_FILES_DIR")
+      var dirName = getMetadataAPI.GetMetadataAPIConfig.getProperty("FUNCTION_FILES_DIR")
       if (dirName == null) {
-        dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("GIT_ROOT") + "/Kamanja/trunk/MetadataAPI/src/test/SampleTestFiles/Functions"
+        dirName = getMetadataAPI.GetMetadataAPIConfig.getProperty("GIT_ROOT") + "/Kamanja/trunk/MetadataAPI/src/test/SampleTestFiles/Functions"
         logger.debug("The environment variable FUNCTION_FILES_DIR is undefined, The directory defaults to " + dirName)
       }
 
@@ -1864,8 +1868,8 @@ object TestMetadataAPI {
 
       val functionStr = Source.fromFile(functionFilePath).mkString
       //MdMgr.GetMdMgr.truncate("FunctionDef")
-      val apiResult = MetadataAPIImpl.AddFunctions(functionStr, "JSON", userid)
-      // val apiResultStr = MetadataAPIImpl.getApiResult(apiResult)
+      val apiResult = getMetadataAPI.AddFunctions(functionStr, "JSON", userid)
+      // val apiResultStr = getMetadataAPI.getApiResult(apiResult)
       println("Result as Json String => \n" + apiResult)
     } catch {
       case e: AlreadyExistsException => {
@@ -1880,8 +1884,8 @@ object TestMetadataAPI {
 
   def DumpAllFunctionsAsJson {
     try {
-      val apiResult = MetadataAPIImpl.GetAllFunctionDefs("JSON", userid)
-      //  val apiResultStr = MetadataAPIImpl.getApiResult(apiResult)
+      val apiResult = getMetadataAPI.GetAllFunctionDefs("JSON", userid)
+      //  val apiResultStr = getMetadataAPI.getApiResult(apiResult)
       println("Result as Json String => \n" + apiResult)
     } catch {
       case e: Exception => {
@@ -1893,9 +1897,9 @@ object TestMetadataAPI {
 
   def LoadConceptsFromAFile {
     try {
-      var dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CONCEPT_FILES_DIR")
+      var dirName = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONCEPT_FILES_DIR")
       if (dirName == null) {
-        dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("GIT_ROOT") + "/Kamanja/trunk/MetadataAPI/src/test/SampleTestFiles/Concepts"
+        dirName = getMetadataAPI.GetMetadataAPIConfig.getProperty("GIT_ROOT") + "/Kamanja/trunk/MetadataAPI/src/test/SampleTestFiles/Concepts"
         logger.debug("The environment variable CONCEPT_FILES_DIR is undefined, The directory defaults to " + dirName)
       }
 
@@ -1931,8 +1935,8 @@ object TestMetadataAPI {
 
       val conceptStr = Source.fromFile(conceptFilePath).mkString
       MdMgr.GetMdMgr.truncate("ConceptDef")
-      val apiResult = MetadataAPIImpl.AddConcepts(conceptStr, "JSON", userid)
-      // val apiResultStr = MetadataAPIImpl.getApiResult(apiResult)
+      val apiResult = getMetadataAPI.AddConcepts(conceptStr, "JSON", userid)
+      // val apiResultStr = getMetadataAPI.getApiResult(apiResult)
       println("Result as Json String => \n" + apiResult)
     } catch {
       case e: AlreadyExistsException => {
@@ -1948,8 +1952,8 @@ object TestMetadataAPI {
 
   def DumpAllConceptsAsJson {
     try {
-      val apiResult = MetadataAPIImpl.GetAllConcepts("JSON", userid)
-      //  val apiResultStr = MetadataAPIImpl.getApiResult(apiResult)
+      val apiResult = getMetadataAPI.GetAllConcepts("JSON", userid)
+      //  val apiResultStr = getMetadataAPI.getApiResult(apiResult)
       println("Result as Json String => \n" + apiResult)
     } catch {
       case e: Exception => {
@@ -1961,9 +1965,9 @@ object TestMetadataAPI {
 
   def LoadTypesFromAFile {
     try {
-      var dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("TYPE_FILES_DIR")
+      var dirName = getMetadataAPI.GetMetadataAPIConfig.getProperty("TYPE_FILES_DIR")
       if (dirName == null) {
-        dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("GIT_ROOT") + "/Kamanja/trunk/MetadataAPI/src/test/SampleTestFiles/Types"
+        dirName = getMetadataAPI.GetMetadataAPIConfig.getProperty("GIT_ROOT") + "/Kamanja/trunk/MetadataAPI/src/test/SampleTestFiles/Types"
         logger.debug("The environment variable TYPE_FILES_DIR is undefined, The directory defaults to " + dirName)
       }
 
@@ -1999,8 +2003,8 @@ object TestMetadataAPI {
 
       val typeStr = Source.fromFile(typeFilePath).mkString
       //MdMgr.GetMdMgr.truncate("TypeDef")
-      val apiResult = MetadataAPIImpl.AddTypes(typeStr, "JSON", userid)
-      //   val apiResultStr = MetadataAPIImpl.getApiResult(apiResult)
+      val apiResult = getMetadataAPI.AddTypes(typeStr, "JSON", userid)
+      //   val apiResultStr = getMetadataAPI.getApiResult(apiResult)
       println("Result as Json String => \n" + apiResult)
     } catch {
       case e: AlreadyExistsException => {
@@ -2048,8 +2052,8 @@ object TestMetadataAPI {
         }
       }
 
-      val apiResult = MetadataAPIImpl.GetAllTypesByObjType("JSON", selectedType)
-      //  val apiResultStr = MetadataAPIImpl.getApiResult(apiResult)
+      val apiResult = getMetadataAPI.GetAllTypesByObjType("JSON", selectedType)
+      //  val apiResultStr = getMetadataAPI.getApiResult(apiResult)
       println("Result as Json String => " + apiResult)
     } catch {
       case e: Exception => {
@@ -2061,8 +2065,8 @@ object TestMetadataAPI {
 
   def DumpAllNodesAsJson {
     try {
-      val apiResult = MetadataAPIImpl.GetAllNodes("JSON", userid)
-      // val apiResultStr = MetadataAPIImpl.getApiResult(apiResult)
+      val apiResult = getMetadataAPI.GetAllNodes("JSON", userid)
+      // val apiResultStr = getMetadataAPI.getApiResult(apiResult)
       println("Result as Json String => \n" + apiResult)
     } catch {
       case e: Exception => {
@@ -2074,8 +2078,8 @@ object TestMetadataAPI {
 
   def DumpAllClusterCfgsAsJson {
     try {
-      val apiResult = MetadataAPIImpl.GetAllClusterCfgs("JSON", userid)
-      //    val apiResultStr = MetadataAPIImpl.getApiResult(apiResult)
+      val apiResult = getMetadataAPI.GetAllClusterCfgs("JSON", userid)
+      //    val apiResultStr = getMetadataAPI.getApiResult(apiResult)
       println("Result as Json String => \n" + apiResult)
     } catch {
       case e: Exception => {
@@ -2087,8 +2091,8 @@ object TestMetadataAPI {
 
   def DumpAllClustersAsJson {
     try {
-      val apiResult = MetadataAPIImpl.GetAllClusters("JSON", userid)
-      // val apiResultStr = MetadataAPIImpl.getApiResult(apiResult)
+      val apiResult = getMetadataAPI.GetAllClusters("JSON", userid)
+      // val apiResultStr = getMetadataAPI.getApiResult(apiResult)
       println("Result as Json String => \n" + apiResult)
     } catch {
       case e: Exception => {
@@ -2100,8 +2104,8 @@ object TestMetadataAPI {
 
   def DumpAllAdaptersAsJson {
     try {
-      val apiResult = MetadataAPIImpl.GetAllAdapters("JSON", userid)
-      //  val apiResultStr = MetadataAPIImpl.getApiResult(apiResult)
+      val apiResult = getMetadataAPI.GetAllAdapters("JSON", userid)
+      //  val apiResultStr = getMetadataAPI.getApiResult(apiResult)
       println("Result as Json String => \n" + apiResult)
     } catch {
       case e: Exception => {
@@ -2113,8 +2117,8 @@ object TestMetadataAPI {
 
   def DumpAllCfgObjectsAsJson {
     try {
-      val apiResult = MetadataAPIImpl.GetAllCfgObjects("JSON", userid)
-      //    val apiResultStr = MetadataAPIImpl.getApiResult(apiResult)
+      val apiResult = getMetadataAPI.GetAllCfgObjects("JSON", userid)
+      //    val apiResultStr = getMetadataAPI.getApiResult(apiResult)
       println("Result as Json String => \n" + apiResult)
     } catch {
       case e: Exception => {
@@ -2163,7 +2167,7 @@ object TestMetadataAPI {
   }
 
   def TestKryoSerialize(configFile: String) {
-    MetadataAPIImpl.InitMdMgrFromBootStrap(configFile, true)
+    getMetadataAPI.InitMdMgrFromBootStrap(configFile, true)
     val msgDefs = MdMgr.GetMdMgr.Types(true, true)
     msgDefs match {
       case None => {
@@ -2177,7 +2181,7 @@ object TestMetadataAPI {
   }
 
   def TestSerialize1(serializeType: String) = {
-    //MetadataAPIImpl.InitMdMgrFromBootStrap
+    //getMetadataAPI.InitMdMgrFromBootStrap
     var serializer = SerializerManager.GetSerializer(serializeType)
     // serializer.SetLoggerLevel(Level.TRACE)
     val modelDefs = MdMgr.GetMdMgr.Models(true, true)
@@ -2207,7 +2211,7 @@ object TestMetadataAPI {
   def TestGenericProtobufSerializer = {
     val serializer = new ProtoBufSerializer
     // serializer.SetLoggerLevel(Level.TRACE)
-    //val a = MdMgr.GetMdMgr.MakeConcept("System", "concept1", "System", "Int", "kamanja", tenantId, MetadataAPIImpl.GetUniqueId, 0L /* FIXME:- Not yet handled this */, 1, false)
+    //val a = MdMgr.GetMdMgr.MakeConcept("System", "concept1", "System", "Int", "kamanja", tenantId, getMetadataAPI.GetUniqueId, 0L /* FIXME:- Not yet handled this */, 1, false)
     //val ba = serializer.SerializeObjectToByteArray1(a)
     //val o = serializer.DeserializeObjectFromByteArray1(ba)
     //assert(JsonSerializer.SerializeObjectToJson(a) == JsonSerializer.SerializeObjectToJson(o.asInstanceOf[AttributeDef]))
@@ -2243,7 +2247,7 @@ object TestMetadataAPI {
         var i = 0
         msa.foreach(m => { objList(i) = m; i = i + 1 })
         val operations = for (op <- objList) yield "Add"
-        MetadataAPIImpl.NotifyEngine(objList, operations)
+        getMetadataAPI.NotifyEngine(objList, operations)
       }
     }
   }
@@ -2260,7 +2264,7 @@ object TestMetadataAPI {
         var i = 0
         msa.foreach(m => { objList(i) = m; i = i + 1 })
         val operations = for (op <- objList) yield "Add"
-        MetadataAPIImpl.NotifyEngine(objList, operations)
+        getMetadataAPI.NotifyEngine(objList, operations)
       }
     }
   }
@@ -2269,7 +2273,7 @@ object TestMetadataAPI {
     val serializer = SerializerManager.GetSerializer("kryo")
     var ba = serializer.SerializeObjectToByteArray(value)
     try {
-      MetadataAPIImpl.UpdateObject(key, ba, storeType, "kryo")
+      getMetadataAPI.UpdateObject(key, ba, storeType, "kryo")
     } catch {
       case e: Exception => {
 
@@ -2282,15 +2286,15 @@ object TestMetadataAPI {
     try {
       val serializer = SerializerManager.GetSerializer("kryo")
       testSaveObject("key1", "value1", "other")
-      var obj = MetadataAPIImpl.GetObject("key1", "other")
+      var obj = getMetadataAPI.GetObject("key1", "other")
       var v = serializer.DeserializeObjectFromByteArray(obj._2.asInstanceOf[Array[Byte]]).asInstanceOf[String]
       assert(v == "value1")
       testSaveObject("key1", "value2", "other")
-      obj = MetadataAPIImpl.GetObject("key1", "other")
+      obj = getMetadataAPI.GetObject("key1", "other")
       v = serializer.DeserializeObjectFromByteArray(obj._2.asInstanceOf[Array[Byte]]).asInstanceOf[String]
       assert(v == "value2")
       testSaveObject("key1", "value3", "other")
-      obj = MetadataAPIImpl.GetObject("key1", "other")
+      obj = getMetadataAPI.GetObject("key1", "other")
       v = serializer.DeserializeObjectFromByteArray(obj._2.asInstanceOf[Array[Byte]]).asInstanceOf[String]
       assert(v == "value3")
     } catch {
@@ -2449,32 +2453,32 @@ object TestMetadataAPI {
   }
 
   def TestCheckAuth: Unit = {
-    MetadataAPIImpl.checkAuth(Some("lonestarr"), Some("vespa"), Some("goodguy"), "winnebago:drive:eagle5")
+    getMetadataAPI.checkAuth(Some("lonestarr"), Some("vespa"), Some("goodguy"), "winnebago:drive:eagle5")
   }
 
   def TestCheckAuth1: Unit = {
-    MetadataAPIImpl.checkAuth(Some("Pete Minsky"), Some("readwrite"), Some("ReadwriteUsers"), "winnebago:drive:eagle5")
+    getMetadataAPI.checkAuth(Some("Pete Minsky"), Some("readwrite"), Some("ReadwriteUsers"), "winnebago:drive:eagle5")
   }
 
   def TestLogAuditRec: Unit = {
-    MetadataAPIImpl.logAuditRec(Some("lonestarr"), Some("write"), "Create Model Started", "system.copdriskassessment.100", "success", "-1", "Initiated operation")
+    getMetadataAPI.logAuditRec(Some("lonestarr"), Some("write"), "Create Model Started", "system.copdriskassessment.100", "success", "-1", "Initiated operation")
   }
 
   def TestGetAuditRec: Unit = {
-    MetadataAPIImpl.getAuditRec(new Date((new Date).getTime() - 1500 * 60000), null, null, null, null)
+    getMetadataAPI.getAuditRec(new Date((new Date).getTime() - 1500 * 60000), null, null, null, null)
   }
 
   def TestGetAuditRec1: Unit = {
     val filterParameters = new Array[String](1)
     filterParameters(0) = "20150320000000"
-    MetadataAPIImpl.getAuditRec(filterParameters)
+    getMetadataAPI.getAuditRec(filterParameters)
   }
 
   def TestGetAuditRec2: Unit = {
     val filterParameters = new Array[String](2)
     filterParameters(0) = "20150320000000"
     filterParameters(1) = "20150323000000"
-    MetadataAPIImpl.getAuditRec(filterParameters)
+    getMetadataAPI.getAuditRec(filterParameters)
   }
   /*
   def main(args: Array[String]) {
@@ -2497,7 +2501,7 @@ object TestMetadataAPI {
         }
         myConfigFile = cfgfile.asInstanceOf[String]
       }
-      MetadataAPIImpl.InitMdMgrFromBootStrap(myConfigFile, true)
+      getMetadataAPI.InitMdMgrFromBootStrap(myConfigFile, true)
 
       StartTest
     } catch {
@@ -2505,7 +2509,7 @@ object TestMetadataAPI {
         logger.error("", e)
       }
     } finally {
-      MetadataAPIImpl.shutdown
+      getMetadataAPI.shutdown
     }
   } */
 }

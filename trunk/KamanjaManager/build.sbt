@@ -10,10 +10,8 @@ assemblyOption in assembly ~= {
   _.copy(prependShellScript = Some(defaultShellScript))
 }
 
-val kamanjaVersion = "1.4.1"
-
 assemblyJarName in assembly := {
-  s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"
+  s"${name.value}_${scalaBinaryVersion.value}-${version.value}.jar"
 }
 
 assemblyMergeStrategy in assembly := {
@@ -61,8 +59,6 @@ unmanagedBase <<= baseDirectory { base => base / "custom_lib" }
 unmanagedJars in Compile <<= baseDirectory map { base => (base ** "*.jar").classpath }
 
 name := "KamanjaManager"
-
-version := "1.4.1"
 
 //resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 //

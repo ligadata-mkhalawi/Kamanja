@@ -34,29 +34,33 @@ object UpdateConceptService {
 class UpdateConceptService(requestContext: RequestContext, userid:Option[String], password:Option[String], cert:Option[String]) extends Actor {
 
   import UpdateConceptService._
-  
+
   implicit val system = context.system
   import system.dispatcher
   val log = Logging(system, getClass)
   val APIName = "UpdateConceptService"
-  
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
+
+
   def receive = {
     case Process(conceptJson) =>
       process(conceptJson)
       context.stop(self)
   }
-  
+
   def process(conceptJson:String) = {
-    
+
     log.debug("Requesting UpdateConcept {}",conceptJson)
-    var nameVal = APIService.extractNameFromJson(conceptJson, AuditConstants.CONCEPT) 
-    
-    if (!MetadataAPIImpl.checkAuth(userid,password,cert, MetadataAPIImpl.getPrivilegeName("update","concept"))) {
-      MetadataAPIImpl.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.UPDATEOBJECT,conceptJson,AuditConstants.FAIL,"",nameVal) 
+    var nameVal = APIService.extractNameFromJson(conceptJson, AuditConstants.CONCEPT)
+
+    if (!getMetadataAPI.checkAuth(userid,password,cert, getMetadataAPI.getPrivilegeName("update","concept"))) {
+      getMetadataAPI.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.UPDATEOBJECT,conceptJson,AuditConstants.FAIL,"",nameVal)
       requestContext.complete(new ApiResult(ErrorCodeConstants.Failure,APIName, null, "Error:UPDATE not allowed for this user").toString )
     } else {
-      val apiResult = MetadataAPIImpl.UpdateConcepts(conceptJson,"JSON",userid)    
-      requestContext.complete(apiResult)     
+      val apiResult = getMetadataAPI.UpdateConcepts(conceptJson,"JSON",userid)
+      requestContext.complete(apiResult)
     }
   }
 }

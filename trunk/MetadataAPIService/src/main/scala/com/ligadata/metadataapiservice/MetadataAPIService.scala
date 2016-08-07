@@ -48,6 +48,9 @@ trait MetadataAPIService extends HttpService {
   val loggerName = this.getClass.getName
   val logger = LogManager.getLogger(loggerName)
   // logger.setLevel(Level.TRACE);
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   val metadataAPIRoute = {
     optionalHeaderValueByName("userid") { userId =>
@@ -139,7 +142,15 @@ trait MetadataAPIService extends HttpService {
                                       val objectType = toknRoute(0) + toknRoute(1)
                                       entity(as[String]) { reqBody => { requestContext => processPutRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
                                     }
-                                    case ModelType.PMML =>
+                                    case ModelType.PMML =>{
+                                      val objectType = toknRoute(0) + toknRoute(1)
+                                      entity(as[String]) { reqBody => { requestContext => processPutRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
+                                  }
+                                   case ModelType.PYTHON =>{
+                                      val objectType = toknRoute(0) + toknRoute(1)
+                                      entity(as[String]) { reqBody => { requestContext => processPutRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
+                                  }
+                                 case ModelType.JYTHON =>
                                       val objectType = toknRoute(0) + toknRoute(1)
                                       entity(as[String]) { reqBody => { requestContext => processPutRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
                                   }
@@ -183,7 +194,15 @@ trait MetadataAPIService extends HttpService {
                                   val objectType = toknRoute(0) + toknRoute(1)
                                   entity(as[String]) { reqBody => { requestContext => processPostRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
                                 }
-                                case ModelType.PMML =>
+                                case ModelType.PMML => {
+                                  val objectType = toknRoute(0) + toknRoute(1)
+                                  entity(as[String]) { reqBody => { requestContext => processPostRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
+                              }
+                               case ModelType.PYTHON => {
+                                  val objectType = toknRoute(0) + toknRoute(1)
+                                  entity(as[String]) { reqBody => { requestContext => processPostRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
+                              }
+                             case ModelType.JYTHON => 
                                   val objectType = toknRoute(0) + toknRoute(1)
                                   entity(as[String]) { reqBody => { requestContext => processPostRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
                               }
@@ -270,7 +289,13 @@ trait MetadataAPIService extends HttpService {
       val addModelService: ActorRef = actorRefFactory.actorOf(Props(new UpdateModelService(rContext, userid, password, role, None, tid)))
       addModelService ! UpdateModelService.Process(body)
     } else if (objtype.equalsIgnoreCase("modelpmml")) {
-      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new UpdateModelService(rContext, userid, password, role, modelcompileinfo, tid)))
+      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new UpdateModelService(rContext, userid, password, role, modelcompileinfo, tid, ModelType.PMML)))
+      addModelService ! UpdateModelService.Process(body)
+    }else if (objtype.equalsIgnoreCase("modelpython")) {
+      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new UpdateModelService(rContext, userid, password, role, modelcompileinfo, tid, ModelType.PYTHON)))
+      addModelService ! UpdateModelService.Process(body)
+    }else if (objtype.equalsIgnoreCase("modeljython")) {
+      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new UpdateModelService(rContext, userid, password, role, modelcompileinfo, tid, ModelType.JYTHON)))
       addModelService ! UpdateModelService.Process(body)
     } else {
       rContext.complete((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown PUT route")).toString)
@@ -345,12 +370,19 @@ trait MetadataAPIService extends HttpService {
       val addSourceModelService: ActorRef = actorRefFactory.actorOf(Props(new AddSourceModelService(rContext, userid, password, role, modelcompileinfo, tenantId)))
       addSourceModelService ! AddSourceModelService.ProcessScala(body)
     }else if (objtype.equalsIgnoreCase("modelkpmml")) {
-      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new AddModelService(rContext, userid, password, role, None, tenantId)))
+      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new AddModelService(rContext, userid, password, role, None, tenantId )))
       addModelService ! AddModelService.Process(body)
     } else if (objtype.equalsIgnoreCase("modelpmml")) {
-      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new AddModelService(rContext, userid, password, role, modelcompileinfo, tenantId)))
+      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new AddModelService(rContext, userid, password, role, modelcompileinfo, tenantId, ModelType.PMML)))
       addModelService ! AddModelService.Process(body)
-    } else {
+    } else if (objtype.equalsIgnoreCase("modelpython")) {
+      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new AddModelService(rContext, userid, password, role, modelcompileinfo, tenantId, ModelType.PYTHON)))
+      addModelService ! AddModelService.Process(body)
+    }  else if (objtype.equalsIgnoreCase("modeljython")) {
+      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new AddModelService(rContext, userid, password, role, modelcompileinfo, tenantId, ModelType.JYTHON)))
+      addModelService ! AddModelService.Process(body)
+    }  
+    else {
       rContext.complete((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown POST route")).toString)
     }
   }

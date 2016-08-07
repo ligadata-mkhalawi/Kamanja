@@ -95,7 +95,11 @@ public class Migrate {
             executor = texecutor;
 
             if (srcVer.equalsIgnoreCase("1.1")
-                    && (dstVer.equalsIgnoreCase("1.3") || dstVer.equalsIgnoreCase("1.4"))) {
+                    && (dstVer.equalsIgnoreCase("1.3") ||
+			dstVer.equalsIgnoreCase("1.4") ||
+			dstVer.equalsIgnoreCase("1.4.1") ||
+			dstVer.equalsIgnoreCase("1.5.3")
+			)) {
                 appendData = new byte[8]; // timepartition bytes at the end.
                 for (int i = 0; i < 8; i++)
                     appendData[0] = 0;
@@ -374,17 +378,18 @@ public class Migrate {
             String scalaFrom = configuration.migratingFrom.scalaVersion.trim();
             String scalaTo = configuration.migratingTo.scalaVersion.trim();
             if (configuration.migratingTo.tenantId == null || configuration.migratingTo.tenantId.trim().length() == 0) {
-                sendStatus("Not found adapterMessageBindings", "ERROR");
-                logger.error("Not found adapterMessageBindings");
+                sendStatus("Not found tenantId", "ERROR");
+                logger.error("Not found tenantId");
                 usage();
                 return retCode;
             }
 
             if (configuration.migratingTo.adapterMessageBindings == null || configuration.migratingTo.adapterMessageBindings.trim().length() == 0) {
-                sendStatus("Not found adapterMessageBindings", "ERROR");
-                logger.error("Not found adapterMessageBindings");
-                // usage();
-                // return retCode;
+		if( srcVer.equalsIgnoreCase("1.1") ||
+		    srcVer.equalsIgnoreCase("1.2") || srcVer.equalsIgnoreCase("1.3") ){
+		    sendStatus("Not found adapterMessageBindings", "ERROR");
+		    logger.error("Not found adapterMessageBindings");
+		}
             }
 
             String tenantId = configuration.migratingTo.tenantId.trim();
@@ -392,16 +397,19 @@ public class Migrate {
 
             if (srcVer.equalsIgnoreCase("1.1") == false
                     && srcVer.equalsIgnoreCase("1.2") == false
-                    && srcVer.equalsIgnoreCase("1.3") == false) {
-                sendStatus("We support source versions only 1.1 or 1.2 or 1.3. We don't support " + srcVer, "ERROR");
-                logger.error("We support source versions only 1.1 or 1.2 or 1.3. We don't support " + srcVer);
+                    && srcVer.equalsIgnoreCase("1.3") == false
+                    && srcVer.equalsIgnoreCase("1.4") == false
+                    && srcVer.equalsIgnoreCase("1.4.1") == false
+		) {
+                sendStatus("We support source versions only 1.1 or 1.2 or 1.3 or 1.4 or 1.4.1 We don't support " + srcVer, "ERROR");
+                logger.error("We support source versions only 1.1 or 1.2 or 1.3 or 1.4 or 1.4.1 We don't support " + srcVer);
                 usage();
                 return retCode;
             }
 
-            if (dstVer.equalsIgnoreCase("1.4") == false) {
-                sendStatus("We support destination version only 1.4. We don't support " + dstVer, "ERROR");
-                logger.error("We support destination version only 1.4. We don't support " + dstVer);
+            if (dstVer.equalsIgnoreCase("1.5.3") == false) {
+                sendStatus("We support destination version only 1.5.3. We don't support " + dstVer, "ERROR");
+                logger.error("We support destination version only 1.5.3. We don't support " + dstVer);
                 usage();
                 return retCode;
             }
@@ -468,13 +476,16 @@ public class Migrate {
             // Metadata Upgrade.
             boolean canUpgradeMetadata = ((srcVer.equalsIgnoreCase("1.1") ||
                     srcVer.equalsIgnoreCase("1.2") ||
-                    srcVer.equalsIgnoreCase("1.3")) &&
-                    dstVer.equalsIgnoreCase("1.4"));
+                    srcVer.equalsIgnoreCase("1.3") ||
+                    srcVer.equalsIgnoreCase("1.4") ||
+                    srcVer.equalsIgnoreCase("1.4.1")
+					   ) &&
+                    dstVer.equalsIgnoreCase("1.5.3"));
 
             boolean canUpgradeData = ((srcVer.equalsIgnoreCase("1.1") ||
                     srcVer.equalsIgnoreCase("1.2") ||
                     srcVer.equalsIgnoreCase("1.3")) &&
-                    dstVer.equalsIgnoreCase("1.4"));
+                    dstVer.equalsIgnoreCase("1.5.3"));
 
             if (canUpgradeData && canUpgradeMetadata == false) {
                 sendStatus("We don't support upgrading only data without metadata at this moment", "ERROR");
@@ -791,6 +802,26 @@ public class Migrate {
                     sendStatus("Completed backing up. " + doneTm, "INFO");
                     logger.info("Completed backing up. " + doneTm);
                 }
+
+		{
+		    // If the source version is 1.4, we can make the necessary updates to
+		    // metadata objects  directly in the database. We let the migrateTo
+		    // handle those updates and return immediately. There is no need
+		    // to update anything else
+		    if (srcVer.equalsIgnoreCase("1.4") || srcVer.equalsIgnoreCase("1.4.1")) {
+			if (canUpgradeMetadata) {
+			    logger.debug("Ugrade models to new version");
+			    sendStatus("Upgrade models to new version", "DEBUG");
+			    MetadataFormat[] metadataArr = allMetadata
+                                .toArray(new MetadataFormat[allMetadata.size()]);
+			    msgsAndContainers = migrateTo.addMetadata(metadataArr, true, excludeMetadata);
+			    logger.debug("Done adding metadata to new version");
+			    sendStatus("Done adding metadata to new version", "DEBUG");
+			}
+			return 0;
+		    }
+		}
+
 
                 {
                     StringBuilder sb = new StringBuilder();

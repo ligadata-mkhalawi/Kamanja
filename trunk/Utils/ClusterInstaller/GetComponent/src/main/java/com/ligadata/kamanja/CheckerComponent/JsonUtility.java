@@ -17,6 +17,7 @@ public class JsonUtility {
     String keyType;
     String principal;
     String namespace;
+    java.util.HashMap<String, Object> kafkaMap = new java.util.HashMap<String, Object>();
     JSONObject jsonObject;
     JSONParser jsonParser;
     private Logger LOG = Logger.getLogger(getClass());
@@ -34,7 +35,26 @@ public class JsonUtility {
             component = (String) jsonObject.get("StoreType");
         hostList = (String) jsonObject.get("hostlist");
         if (hostList == null)
-            hostList = (String) jsonObject.get("hostslist");
+            try {
+                hostList = (String) jsonObject.get("hostslist");
+            } catch (Exception e) {
+                org.json.simple.JSONArray temp = (org.json.simple.JSONArray) jsonObject.get("hostslist");
+                boolean isFirst = true;
+                int asize = temp.size();
+                System.out.println("ArraySize = " + asize);
+                java.util.Iterator iter = temp.iterator();
+                while (iter.hasNext()) {
+                    org.json.simple.JSONObject thisObj = (org.json.simple.JSONObject ) iter.next();
+                    String thisHost = (String) thisObj.get("HostList");
+                    kafkaMap.put(thisHost, thisObj);
+                    if (!isFirst) {
+                        hostList = hostList + "," + thisHost;
+                    } else {
+                        isFirst = false;
+                        hostList = thisHost;
+                    }
+                }
+            }
         if (hostList == null)
             hostList = (String) jsonObject.get("Location");
         LOG.info("component:" + component + ",  hostList:" + hostList);

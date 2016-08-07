@@ -300,13 +300,13 @@ class AddModelSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter wi
 
         And("AddContainer first time from " + file.getPath)
         contStr = Source.fromFile(file).mkString
-        res = MetadataAPIImpl.AddContainer(contStr, "JSON", None, tenantId)
+        res = MetadataAPIImpl.AddContainer(contStr, "JSON", None, tenantId,None)
         res should include regex ("\"Status Code\" : 0")
 
         And("GetContainerDef API to fetch the container that was just added")
         var objName = f1.stripSuffix(".json").toLowerCase
         var version = "0000000000001000000"
-        res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", version, None)
+        res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", version, None, None)
         res should include regex ("\"Status Code\" : 0")
 
       })
@@ -350,13 +350,13 @@ class AddModelSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter wi
 
         And("AddMessage first time from " + file.getPath)
         var msgStr = Source.fromFile(file).mkString
-        res = MetadataAPIImpl.AddMessage(msgStr, "JSON", None, tenantId)
+        res = MetadataAPIImpl.AddMessage(msgStr, "JSON", None, tenantId,None)
         res should include regex ("\"Status Code\" : 0")
 
         And("GetMessageDef API to fetch the message that was just added")
         var objName = f1.stripSuffix(".json").toLowerCase
         var version = "0000000000001000000"
-        res = MetadataAPIImpl.GetMessageDef("system", objName, "JSON", version, None)
+        res = MetadataAPIImpl.GetMessageDef("system", objName, "JSON", version, None,None)
         res should include regex ("\"Status Code\" : 0")
       })
     }
@@ -406,7 +406,8 @@ class AddModelSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter wi
           None, // optVersion
           None, // optMsgConsumed
           None, // optMsgVersion
-          Some("system.helloworld_msg_def_2") // optMsgProduced
+          Some("system.helloworld_msg_def_2"), // optMsgProduced
+	  None
         )
         logger.info(res)
         res should include regex ("\"Status Code\" : -1")
@@ -421,7 +422,8 @@ class AddModelSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter wi
           None, // optVersion
           None, // optMsgConsumed
           None, // optMsgVersion
-          None // optMsgProduced
+          None, // optMsgProduced
+	  None
         )
         res should include regex ("\"Status Code\" : 0")
 
@@ -440,7 +442,7 @@ class AddModelSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter wi
 
         val msgName = objName + "_outputmsg"
         version = "000000000000000001"
-        res = MetadataAPIImpl.GetMessageDef(nameSpace, msgName, "JSON", version, None)
+        res = MetadataAPIImpl.GetMessageDef(nameSpace, msgName, "JSON", version, None,None)
         res should include regex ("\"Status Code\" : 0")
 
         val modDefs = MdMgr.GetMdMgr.Models(nameSpace, objName, true, true)
@@ -562,6 +564,7 @@ class AddModelSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter wi
           None, // optMsgConsumed
           None, // optMsgVersion
           //Some("system.helloworld_msg_output_def") // optMsgProduced
+          None,
           None
         )
         res should include regex ("\"Status Code\" : 0")

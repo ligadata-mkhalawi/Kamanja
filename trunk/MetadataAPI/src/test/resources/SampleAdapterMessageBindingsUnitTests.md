@@ -111,7 +111,10 @@ If the above file was called $MetadataDir/config/AdapterMessageBindingsForCluste
 
 Like the other examples, you can also push this directly on the command line too.  It is helpful to have an editor that can pretty print/flatten the JSON text to do these more complicated structures for the command line:
 
-	$KAMANJA_HOME/bin/kamanja $apiConfigProperties add adaptermessagebinding FROMSTRING '[{"AdapterName": "kafkaAdapterInput1", "MessageNames": ["com.botanical.json.ordermsg", "com.botanical.json.shippingmsg"], "Serializer": "com.ligadata.kamanja.serializer.JsonSerDeser"}, {"AdapterName": "kafkaAdapterOutput2", "MessageNames": ["com.botanical.csv.emailmsg"], "Serializer": "com.ligadata.kamanja.serializer.csvserdeser", "Options": {"lineDelimiter": "\r\n", "fieldDelimiter": ",", "produceHeader": "true", "alwaysQuoteFields": "false"} }, {"AdapterName": "hBaseStore1", "MessageNames": ["com.botanical.json.audit.ordermsg", "com.botanical.json.audit.shippingmsg"], "Serializer": "com.ligadata.kamanja.serializer.JsonSerDeser"} ]'
+	export DBG="debug"
+	export DBG=""
+
+	$KAMANJA_HOME/bin/kamanja $DBG $apiConfigProperties add adaptermessagebinding FROMSTRING '[{"AdapterName": "kafkaAdapterInput1", "MessageNames": ["com.botanical.json.ordermsg", "com.botanical.json.shippingmsg"], "Serializer": "com.ligadata.kamanja.serializer.JsonSerDeser"}, {"AdapterName": "kafkaAdapterOutput2", "MessageNames": ["com.botanical.csv.emailmsg"], "Serializer": "com.ligadata.kamanja.serializer.csvserdeser", "Options": {"lineDelimiter": "\r\n", "fieldDelimiter": ",", "produceHeader": "true", "alwaysQuoteFields": "false"} }, {"AdapterName": "hBaseStore1", "MessageNames": ["com.botanical.json.audit.ordermsg", "com.botanical.json.audit.shippingmsg"], "Serializer": "com.ligadata.kamanja.serializer.JsonSerDeser"} ]'
 
 
 **List Adapter Message Bindings**
@@ -158,11 +161,11 @@ _mapped message used in following test case_
 
 $KAMANJA_HOME/bin/kamanja $apiConfigProperties add message $MetadataDir/message/com.botanical.csv.mapped.emailmsg.json tenantid "botanical"
 
-$KAMANJA_HOME/bin/kamanja $apiConfigProperties remove adaptermessagebinding key 'kafkaAdapterOutput2,com.botanical.csv.mappedemailmsg,com.ligadata.kamanja.serializer.csvserdeser'
+$KAMANJA_HOME/bin/kamanja $DBG $apiConfigProperties remove adaptermessagebinding key 'kafkaAdapterOutput2,com.botanical.csv.mappedemailmsg,com.ligadata.kamanja.serializer.csvserdeser'
 
 _csv serializer with mapped message_
 
-	$KAMANJA_HOME/bin/kamanja $apiConfigProperties add adaptermessagebinding FROMSTRING '{"AdapterName": "kafkaAdapterOutput2", "MessageNames": ["com.botanical.csv.mappedemailmsg"], "Serializer": "com.ligadata.kamanja.serializer.csvserdeser", "Options": {"lineDelimiter": "\r\n", "fieldDelimiter": ",", "produceHeader": true, "alwaysQuoteFields": false } }'
+	$KAMANJA_HOME/bin/kamanja $DBG $apiConfigProperties add adaptermessagebinding FROMSTRING '{"AdapterName": "kafkaAdapterOutput2", "MessageNames": ["com.botanical.csv.mappedemailmsg"], "Serializer": "com.ligadata.kamanja.serializer.csvserdeser", "Options": {"lineDelimiter": "\r\n", "fieldDelimiter": ",", "produceHeader": true, "alwaysQuoteFields": false } }'
 
 _csv serializer with container field_
 

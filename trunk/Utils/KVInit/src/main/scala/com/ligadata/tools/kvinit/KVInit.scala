@@ -66,17 +66,21 @@ trait LogTrait {
 
 object KVInit extends App with LogTrait {
 
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
+
   def usage: String = {
-    """ 
-Usage: scala com.ligadata.kvinit.KVInit 
+    """
+Usage: scala com.ligadata.kvinit.KVInit
     --version
     --config <config file while has jarpaths, metadata store information & data store information>
-    --typename <full package qualified name of a Container or Message> 
-    --datafiles <input to load> 
+    --typename <full package qualified name of a Container or Message>
+    --datafiles <input to load>
     --keyfieldname  <name of one of the fields in the first line of the datafiles file>
 
 Nothing fancy here.  Mapdb kv store is created from arguments... style is hash map. Support
-for other styles of input (e.g., JSON, XML) are not supported.  
+for other styles of input (e.g., JSON, XML) are not supported.
 
 The name of the kvstore will be the classname(without it path).
 
@@ -133,6 +137,8 @@ Sample uses:
           nextOption(map ++ Map('deserializer -> value), tail)
         case "--optionsjson" :: value :: tail =>
           nextOption(map ++ Map('optionsjson -> value), tail)
+        case "--onlyappend" :: tail =>
+          nextOption(map ++ Map('onlyappend -> "true"), tail)
         case "--version" :: tail =>
           nextOption(map ++ Map('version -> "true"), tail)
         case option :: tail =>
@@ -156,6 +162,8 @@ Sample uses:
     var commitBatchSize = (if (options.contains('commitbatchsize)) options.apply('commitbatchsize) else "10000").trim.toInt
     var deserializer = if (options.contains('deserializer)) options.apply('deserializer) else null
     var optionsjson = if (options.contains('optionsjson)) options.apply('optionsjson) else null
+
+    val isOnlyAppend = options.getOrElse('onlyappend, "false").toString.trim.toBoolean
 
     if (commitBatchSize <= 0) {
       logger.error("commitbatchsize must be greater than 0")
@@ -229,7 +237,7 @@ Sample uses:
 
       KvInitConfiguration.configFile = cfgfile.toString
 
-      val kvmaker: KVInit = new KVInit(loadConfigs, typename.toLowerCase, dataFiles, keyfieldnames, deserializer, optionsjson, ignoreerrors, ignoreRecords, commitBatchSize)
+      val kvmaker: KVInit = new KVInit(loadConfigs, typename.toLowerCase, dataFiles, keyfieldnames, deserializer, optionsjson, ignoreerrors, ignoreRecords, commitBatchSize, isOnlyAppend)
       if (kvmaker.isOk) {
         var dstore: DataStore = null;
         try {
@@ -296,13 +304,15 @@ object KvInitConfiguration {
 }
 
 class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: Array[String], val keyfieldnames: Array[String], val deserializer: String, val optionsjson: String,
-             ignoreerrors: String, ignoreRecords: Int, commitBatchSize: Int) extends LogTrait with ObjectResolver {
+             ignoreerrors: String, ignoreRecords: Int, commitBatchSize: Int, val isOnlyAppend: Boolean) extends LogTrait with ObjectResolver {
   var ignoreErrsCount = if (ignoreerrors != null && ignoreerrors.size > 0) ignoreerrors.toInt else 0
   if (ignoreErrsCount < 0) ignoreErrsCount = 0
   var isOk: Boolean = true
   var zkcForSetData: CuratorFramework = null
   var totalCommittedMsgs: Int = 0
-
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+    // 646 - 676 Change ends
   val kvInitLoader = new KamanjaLoaderInfo
 
   KvInitConfiguration.nodeId = loadConfigs.getProperty("nodeId".toLowerCase, "0").replace("\"", "").trim.toInt
@@ -314,11 +324,13 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
   var nodeInfo: NodeInfo = _
 
   if (isOk) {
-    MetadataAPIImpl.InitMdMgrFromBootStrap(KvInitConfiguration.configFile, false)
+    getMetadataAPI.InitMdMgrFromBootStrap(KvInitConfiguration.configFile, false)
 
     nodeInfo = mdMgr.Nodes.getOrElse(KvInitConfiguration.nodeId.toString, null)
     if (nodeInfo == null) {
-      logger.error("Node %d not found in metadata".format(KvInitConfiguration.nodeId))
+      // 660 Change begins - bug fix for proper cluster config upload message
+      logger.error("Node %d not found in metadata. Please ensure cluster configuration has been uploaded.".format(KvInitConfiguration.nodeId))
+      // 660 Change ends
       isOk = false
     }
   }
@@ -879,7 +891,7 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
 
               val bucketId = KeyWithBucketIdAndPrimaryKeyCompHelper.BucketIdForBucketKey(keyData)
               val k = KeyWithBucketIdAndPrimaryKey(bucketId, Key(timeVal, keyData, transId, processedRows), hasPrimaryKey, if (hasPrimaryKey) container.getPrimaryKey else null)
-              if (hasPrimaryKey) {
+              if (!isOnlyAppend && hasPrimaryKey) {
                 // Get the record(s) for this partition key, time value & primary key
                 val loadKey = LoadKeyWithBucketId(bucketId, TimeRange(timeVal, timeVal), keyData)
                 LoadDataIfNeeded(loadKey, loadedKeys, dataByBucketKeyPart, kvstore)
@@ -1065,5 +1077,3 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
     SimpDateFmtTimeFromMs(System.currentTimeMillis)
   }
 }
-
-
