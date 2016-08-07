@@ -39,7 +39,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.dmg.pmml.FieldName;
 import org.dmg.pmml.PMML;
+import org.dmg.pmml.Visitor;
 import org.jpmml.evaluator.*;
+
 
 public class PmmlTestTool extends PmmlTestToolBase {
 
@@ -149,6 +151,13 @@ public class PmmlTestTool extends PmmlTestToolBase {
         List<? extends Map<FieldName, ?>> inputRecords = BatchUtil.parseRecords(inputTable, parseFunction);
 
         PMML pmml = readPMML(this._pmmlSrc);
+        // 1320, 1313 Changes begin
+        if (pmml.getHeader().getApplication().getName().contains("SAS")) {
+            Visitor visitor = new org.jpmml.sas.visitors.ExpressionCorrector() ;
+            visitor.applyTo(pmml) ;
+        }
+
+        // 1320, 1313 Changes end
 
         ModelEvaluatorFactory modelEvaluatorFactory = ModelEvaluatorFactory.newInstance();
 

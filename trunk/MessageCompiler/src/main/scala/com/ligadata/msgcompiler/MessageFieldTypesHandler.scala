@@ -57,6 +57,8 @@ class MessageFieldTypesHandler {
         }
       })
     }
+   
+ 
 
     /* message.Elements.foreach(field => {
 

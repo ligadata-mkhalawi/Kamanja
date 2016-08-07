@@ -1,7 +1,5 @@
 name := "KBinarySerDeser"
 
-version := "1.0"
-
 scalacOptions += "-deprecation"
 //
 //libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.0"

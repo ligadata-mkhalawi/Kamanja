@@ -150,7 +150,7 @@ cp $HOME/.ivy2/cache/commons-io/commons-io/jars/commons-io-2.4.jar $KAMANJALIBPA
 cp $HOME/.ivy2/cache/commons-lang/commons-lang/jars/commons-lang-2.6.jar $KAMANJALIBPATH
 cp $HOME/.ivy2/cache/commons-logging/commons-logging/jars/commons-logging-1.1.3.jar $KAMANJALIBPATH
 cp $HOME/.ivy2/cache/commons-net/commons-net/jars/commons-net-3.1.jar $KAMANJALIBPATH
-cp $HOME/.ivy2/cache/commons-pool/commons-pool/jars/commons-pool-1.5.2.jar $KAMANJALIBPATH
+cp $HOME/.ivy2/cache/commons-pool/commons-pool/jars/commons-pool-1.5.3.jar $KAMANJALIBPATH
 cp $HOME/.ivy2/cache/io.netty/netty/bundles/netty-3.9.0.Final.jar $KAMANJALIBPATH
 cp $HOME/.ivy2/cache/javax.activation/activation/jars/activation-1.1.jar $KAMANJALIBPATH
 cp $HOME/.ivy2/cache/javax.servlet.jsp/jsp-api/jars/jsp-api-2.1.jar $KAMANJALIBPATH
@@ -164,7 +164,7 @@ cp $HOME/.ivy2/cache/log4j/log4j/bundles/log4j-1.2.17.jar $KAMANJALIBPATH
 cp $HOME/.ivy2/cache/net.java.dev.jets3t/jets3t/jars/jets3t-0.9.0.jar $KAMANJALIBPATH
 cp $HOME/.ivy2/cache/net.java.dev.jna/jna/jars/jna-3.2.7.jar $KAMANJALIBPATH
 cp $HOME/.ivy2/cache/org.apache.avro/avro/jars/avro-1.7.4.jar $KAMANJALIBPATH
-cp $HOME/.ivy2/cache/org.apache.commons/commons-compress/jars/commons-compress-1.5.1.jar $KAMANJALIBPATH
+cp $HOME/.ivy2/cache/org.apache.commons/commons-compress/jars/commons-compress-1.5.3.jar $KAMANJALIBPATH
 cp $HOME/.ivy2/cache/org.apache.commons/commons-math3/jars/commons-math3-3.1.1.jar $KAMANJALIBPATH
 cp $HOME/.ivy2/cache/org.apache.hadoop/hadoop-annotations/jars/hadoop-annotations-2.4.1.jar $KAMANJALIBPATH
 cp $HOME/.ivy2/cache/org.apache.hadoop/hadoop-auth/jars/hadoop-auth-2.4.1.jar $KAMANJALIBPATH
@@ -207,7 +207,7 @@ cp $HOME/.ivy2/cache/tomcat/jasper-compiler/jars/jasper-compiler-5.5.23.jar $KAM
 cp $HOME/.ivy2/cache/tomcat/jasper-runtime/jars/jasper-runtime-5.5.23.jar $KAMANJALIBPATH
 cp $HOME/.ivy2/cache/voldemort/voldemort/jars/voldemort-0.96.jar $KAMANJALIBPATH
 cp $HOME/.ivy2/cache/xmlenc/xmlenc/jars/xmlenc-0.52.jar $KAMANJALIBPATH
-cp $HOME/.ivy2/cache/commons-pool/commons-pool/jars/commons-pool-1.5.2.jar $KAMANJALIBPATH
+cp $HOME/.ivy2/cache/commons-pool/commons-pool/jars/commons-pool-1.5.3.jar $KAMANJALIBPATH
 cp $HOME/.ivy2/cache/com.twitter/chill_2.11/jars/chill_2.11-0.5.0.jar $KAMANJALIBPATH
 cp $HOME/.ivy2/cache/org.apache.kafka/kafka_2.11/jars/*.jar $KAMANJALIBPATH
 cp $HOME/.ivy2/cache/net.sf.jopt-simple/jopt-simple/jars/jopt-simple-3.2.jar $KAMANJALIBPATH

@@ -137,6 +137,8 @@ Sample uses:
           nextOption(map ++ Map('deserializer -> value), tail)
         case "--optionsjson" :: value :: tail =>
           nextOption(map ++ Map('optionsjson -> value), tail)
+        case "--onlyappend" :: tail =>
+          nextOption(map ++ Map('onlyappend -> "true"), tail)
         case "--version" :: tail =>
           nextOption(map ++ Map('version -> "true"), tail)
         case option :: tail =>
@@ -160,6 +162,8 @@ Sample uses:
     var commitBatchSize = (if (options.contains('commitbatchsize)) options.apply('commitbatchsize) else "10000").trim.toInt
     var deserializer = if (options.contains('deserializer)) options.apply('deserializer) else null
     var optionsjson = if (options.contains('optionsjson)) options.apply('optionsjson) else null
+
+    val isOnlyAppend = options.getOrElse('onlyappend, "false").toString.trim.toBoolean
 
     if (commitBatchSize <= 0) {
       logger.error("commitbatchsize must be greater than 0")
@@ -233,7 +237,7 @@ Sample uses:
 
       KvInitConfiguration.configFile = cfgfile.toString
 
-      val kvmaker: KVInit = new KVInit(loadConfigs, typename.toLowerCase, dataFiles, keyfieldnames, deserializer, optionsjson, ignoreerrors, ignoreRecords, commitBatchSize)
+      val kvmaker: KVInit = new KVInit(loadConfigs, typename.toLowerCase, dataFiles, keyfieldnames, deserializer, optionsjson, ignoreerrors, ignoreRecords, commitBatchSize, isOnlyAppend)
       if (kvmaker.isOk) {
         var dstore: DataStore = null;
         try {
@@ -300,7 +304,7 @@ object KvInitConfiguration {
 }
 
 class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: Array[String], val keyfieldnames: Array[String], val deserializer: String, val optionsjson: String,
-             ignoreerrors: String, ignoreRecords: Int, commitBatchSize: Int) extends LogTrait with ObjectResolver {
+             ignoreerrors: String, ignoreRecords: Int, commitBatchSize: Int, val isOnlyAppend: Boolean) extends LogTrait with ObjectResolver {
   var ignoreErrsCount = if (ignoreerrors != null && ignoreerrors.size > 0) ignoreerrors.toInt else 0
   if (ignoreErrsCount < 0) ignoreErrsCount = 0
   var isOk: Boolean = true
@@ -887,7 +891,7 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
 
               val bucketId = KeyWithBucketIdAndPrimaryKeyCompHelper.BucketIdForBucketKey(keyData)
               val k = KeyWithBucketIdAndPrimaryKey(bucketId, Key(timeVal, keyData, transId, processedRows), hasPrimaryKey, if (hasPrimaryKey) container.getPrimaryKey else null)
-              if (hasPrimaryKey) {
+              if (!isOnlyAppend && hasPrimaryKey) {
                 // Get the record(s) for this partition key, time value & primary key
                 val loadKey = LoadKeyWithBucketId(bucketId, TimeRange(timeVal, timeVal), keyData)
                 LoadDataIfNeeded(loadKey, loadedKeys, dataByBucketKeyPart, kvstore)

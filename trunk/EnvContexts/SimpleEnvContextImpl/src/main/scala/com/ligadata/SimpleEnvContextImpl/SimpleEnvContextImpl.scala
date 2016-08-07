@@ -111,7 +111,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
       |  "jgroups.port": "%d",
       |  "replicatePuts": "true",
       |  "replicateUpdates": "true",
-      |  "replicateUpdatesViaCopy": "false",
+      |  "replicateUpdatesViaCopy": "true",
       |  "replicateRemovals": "true",
       |  "replicateAsynchronously": "true",
       |  "CacheConfig": {
@@ -541,162 +541,6 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     }
   }
 
-  //
-  //  class TransactionContext(var txnId: Long) {
-  //    private[this] val _messagesOrContainers = scala.collection.mutable.Map[String, MsgContainerInfo]()
-  //      private[this] val _adapterUniqKeyValData = scala.collection.mutable.Map[String, String]()
-  //    //    private[this] val _modelsResult = scala.collection.mutable.Map[Key, scala.collection.mutable.Map[String, SavedMdlResult]]()
-  //
-  //    def getMsgContainer(containerName: String, addIfMissing: Boolean): MsgContainerInfo = {
-  //      var fnd = _messagesOrContainers.getOrElse(containerName.toLowerCase, null)
-  //      if (fnd == null && addIfMissing) {
-  //        fnd = new MsgContainerInfo(false)
-  //        _messagesOrContainers(containerName) = fnd
-  //      }
-  //      fnd
-  //    }
-  //
-  //    /*
-  //    def setFetchedObj(containerName: String, partKeyStr: String, kamanjaData: KamanjaData): Unit = {
-  //      val container = getMsgContainer(containerName.toLowerCase, true)
-  //      if (container != null) {
-  //        container.data(partKeyStr) = (false, kamanjaData)
-  //      }
-  //    }
-  //*/
-  //    /*
-  //    def getAllObjects(containerName: String): Array[ContainerInterface] = {
-  //      return TxnContextCommonFunctions.getRddData(getMsgContainer(containerName.toLowerCase, false), null, null, null, null).map(kv => kv._2)
-  //    }
-  //
-  //    def getObject(containerName: String, partKey: List[String], primaryKey: List[String]): (ContainerInterface, Boolean) = {
-  //      return TxnContextCommonFunctions.getRecent(getMsgContainer(containerName.toLowerCase, false), partKey, null, primaryKey, null)
-  //    }
-  //*/
-  //
-  //    /*
-  //    def getObjects(containerName: String, partKey: List[String], appendCurrentChanges: Boolean): (Array[ContainerInterface], Boolean) = {
-  //      val container = getMsgContainer(containerName.toLowerCase, false)
-  //      if (container != null) {
-  //        val kamanjaData = container.data.getOrElse(InMemoryKeyDataInJson(partKey), null)
-  //        if (kamanjaData != null) {
-  //          if (container.current_msg_cont_data.size > 0) {
-  //            val allData = ArrayBuffer[ContainerInterface]()
-  //            if (appendCurrentChanges) {
-  //              allData ++= kamanjaData._2.GetAllData
-  //              allData --= container.current_msg_cont_data
-  //              allData ++= container.current_msg_cont_data // Just to get the current messages to end
-  //            } else {
-  //              allData ++= kamanjaData._2.GetAllData
-  //              allData --= container.current_msg_cont_data
-  //            }
-  //            return (allData.toArray, true)
-  //          } else {
-  //            return (kamanjaData._2.GetAllData, true)
-  //          }
-  //        }
-  //      }
-  //      (Array[ContainerInterface](), false)
-  //    }
-  //*/
-  //
-  //    /*
-  //    def containsAny(containerName: String, partKeys: Array[List[String]], primaryKeys: Array[List[String]]): (Boolean, Array[List[String]]) = {
-  //      val container = getMsgContainer(containerName.toLowerCase, false)
-  //      if (container != null) {
-  //        val notFndPartkeys = ArrayBuffer[List[String]]()
-  //        for (i <- 0 until partKeys.size) {
-  //          if (TxnContextCommonFunctions.IsEmptyKey(partKeys(i)) == false) {
-  //            val kamanjaData = container.data.getOrElse(InMemoryKeyDataInJson(partKeys(i)), null)
-  //            if (kamanjaData != null) {
-  //              if (TxnContextCommonFunctions.IsEmptyKey(primaryKeys(i)) == false) {
-  //                // Search for primary key match
-  //                val fnd = kamanjaData._2.GetContainerInterface(primaryKeys(i).toArray, false)
-  //                if (fnd != null)
-  //                  return (true, Array[List[String]]())
-  //              }
-  //            } else {
-  //              notFndPartkeys += partKeys(i)
-  //            }
-  //          }
-  //        }
-  //        return (false, notFndPartkeys.toArray)
-  //      }
-  //      (false, primaryKeys)
-  //    }
-  //*/
-  //
-  //    /*
-  //    def containsKeys(containerName: String, partKeys: Array[List[String]], primaryKeys: Array[List[String]]): (Array[List[String]], Array[List[String]], Array[List[String]], Array[List[String]]) = {
-  //      val container = getMsgContainer(containerName.toLowerCase, false)
-  //      val matchedPartKeys = ArrayBuffer[List[String]]()
-  //      val unmatchedPartKeys = ArrayBuffer[List[String]]()
-  //      val matchedPrimaryKeys = ArrayBuffer[List[String]]()
-  //      val unmatchedPrimaryKeys = ArrayBuffer[List[String]]()
-  //      if (container != null) {
-  //        for (i <- 0 until partKeys.size) {
-  //          val kamanjaData = container.data.getOrElse(InMemoryKeyDataInJson(partKeys(i)), null)
-  //          if (kamanjaData != null) {
-  //            // Search for primary key match
-  //            val fnd = kamanjaData._2.GetContainerInterface(primaryKeys(i).toArray, false)
-  //            if (fnd != null) {
-  //              matchedPartKeys += partKeys(i)
-  //              matchedPrimaryKeys += primaryKeys(i)
-  //            } else {
-  //              unmatchedPartKeys += partKeys(i)
-  //              unmatchedPrimaryKeys += primaryKeys(i)
-  //            }
-  //          } else {
-  //            unmatchedPartKeys += partKeys(i)
-  //            unmatchedPrimaryKeys += primaryKeys(i)
-  //          }
-  //        }
-  //      }
-  //      (matchedPartKeys.toArray, unmatchedPartKeys.toArray, matchedPrimaryKeys.toArray, unmatchedPrimaryKeys.toArray)
-  //    }
-  //*/
-  //
-  //    def setObjects(containerName: String, tmValues: Array[Long], partKeys: Array[Array[String]], values: Array[ContainerInterface]): Unit = {
-  //      if (tmValues.size != partKeys.size || partKeys.size != values.size) {
-  //        logger.error("All time partition value, bucket keys & values should have the same count in arrays. tmValues.size(%d), partKeys.size(%d), values.size(%d)".format(tmValues.size, partKeys.size, values.size))
-  //        return
-  //      }
-  //
-  //      val container = getMsgContainer(containerName.toLowerCase, true)
-  //      if (container != null) {
-  //        TxnContextCommonFunctions.WriteLockContainer(container)
-  //        try {
-  //          for (i <- 0 until tmValues.size) {
-  //            val bk = partKeys(i)
-  //            if (TxnContextCommonFunctions.IsEmptyKey(bk) == false) {
-  //              val t = tmValues(i)
-  //              val v = values(i)
-  //
-  //              if (v.getTransactionId == 0)
-  //                v.setTransactionId(txnId) // Setting the current transactionid
-  //
-  //              val primkey = v.getPrimaryKey
-  //              val putkey = KeyWithBucketIdAndPrimaryKey(KeyWithBucketIdAndPrimaryKeyCompHelper.BucketIdForBucketKey(bk), Key(t, bk, v.getTransactionId, v.getRowNumber), primkey != null && primkey.size > 0, primkey)
-  //              container.dataByBucketKey.put(putkey, ContainerInterface(true, v))
-  //              container.dataByTmPart.put(putkey, ContainerInterface(true, v))
-  //              /*
-  //              container.current_msg_cont_data -= value
-  //              container.current_msg_cont_data += value // to get the value to end
-  //*/
-  //            }
-  //          }
-  //        } catch {
-  //          case e: Exception => {
-  //            throw e
-  //          }
-  //        } finally {
-  //          TxnContextCommonFunctions.WriteUnlockContainer(container)
-  //        }
-  //      }
-  //
-  //      return
-  //    }
-  //
   // Adapters Keys & values
   override def setAdapterUniqueKeyValue(key: String, value: String): Unit = {
     val bktIdx = getParallelBucketIdx(key)
@@ -796,48 +640,10 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     return retVal.toArray
   }
 
-  //    // Model Results Saving & retrieving. Don't return null, always return empty, if we don't find
-  //    //    def saveModelsResult(key: List[String], value: scala.collection.mutable.Map[String, SavedMdlResult]): Unit = {
-  //    //      _modelsResult(Key(KvBaseDefalts.defaultTime, key.toArray, 0L, 0)) = value
-  //    //    }
-  //    //
-  //    //    def getModelsResult(k: Key): scala.collection.mutable.Map[String, SavedMdlResult] = {
-  //    //      _modelsResult.getOrElse(k, null)
-  //    //    }
-  //
-  //    def getAllMessagesAndContainers = _messagesOrContainers.toMap
-
-  //  private def getAllAdapterUniqKeyValData = {
-  //    _adapterUniqKeyValData.toMap
-  //  }
-
-  //    //    def getAllModelsResult = _modelsResult.toMap
-  //
-  //    def getRecent(containerName: String, partKey: List[String], tmRange: TimeRange, primaryKey: List[String], f: ContainerInterface => Boolean): (ContainerInterface, Boolean) = {
-  //      val (v, foundPartKey) = TxnContextCommonFunctions.getRecent(getMsgContainer(containerName.toLowerCase, false), partKey, tmRange, primaryKey, f)
-  //      (v, foundPartKey)
-  //    }
-  //
-  //    def getRddData(containerName: String, partKey: List[String], tmRange: TimeRange, primaryKey: List[String], f: ContainerInterface => Boolean): Array[(KeyWithBucketIdAndPrimaryKey, ContainerInterface)] = {
-  //      return TxnContextCommonFunctions.getRddData(getMsgContainer(containerName.toLowerCase, false), partKey, tmRange, primaryKey, f)
-  //    }
-  //  }
-
   // Prime number
   //  private[this] val _buckets = 257
   // Prime number
   private[this] val _parallelBuciets = 11
-
-  //  private[this] val _locks = new Array[Object](_buckets)
-
-  // private[this] val _messagesOrContainers = scala.collection.mutable.Map[String, MsgContainerInfo]()
-  // Do we need to have Cached Container per TenatId??????
-  //  private[this] val _cachedContainers = scala.collection.mutable.Map[String, MsgContainerInfo]()
-  //  private[this] val _containersNames = scala.collection.mutable.Set[String]()
-  //  private[this] val _txnContexts = new Array[scala.collection.mutable.Map[Long, TransactionContext]](_buckets)
-
-  //  private[this] val _modelsRsltBuckets = new Array[scala.collection.mutable.Map[String, scala.collection.mutable.Map[String, SavedMdlResult]]](_parallelBuciets)
-  //  private[this] val _modelsRsltBktlocks = new Array[ReentrantReadWriteLock](_parallelBuciets)
 
   private[this] val _adapterUniqKeyValBuckets = new Array[scala.collection.mutable.Map[String, String]](_parallelBuciets)
   private[this] val _adapterUniqKeyValBktlocks = new Array[ReentrantReadWriteLock](_parallelBuciets)
@@ -849,66 +655,12 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     _adapterUniqKeyValBktlocks(i) = new ReentrantReadWriteLock(true);
   }
 
-  //  private[this] var _kryoSer: com.ligadata.Serialize.Serializer = null
-  //  private[this] var _classLoader: java.lang.ClassLoader = null
   private[this] var _metadataLoader: KamanjaLoaderInfo = null
   private[this] var _adaptersAndEnvCtxtLoader: KamanjaLoaderInfo = null
   private[this] var _sysCatalogDatastore: DataStore = null
   private[this] var _objectResolver: ObjectResolver = null
   private[this] var _enableEachTransactionCommit = true
   private[this] var _jarPaths: collection.immutable.Set[String] = null // Jar paths where we can resolve all jars (including dependency jars).
-
-  //  for (i <- 0 until _buckets) {
-  //    _txnContexts(i) = scala.collection.mutable.Map[Long, TransactionContext]()
-  //    _locks(i) = new Object()
-  //  }
-  //
-  //  private[this] def lockIdx(transId: Long): Int = {
-  //    return (math.abs(transId) % _buckets).toInt
-  //  }
-  //
-  //  private[this] def getTransactionContext(addIfMissing: Boolean): TransactionContext = {
-  //    _locks(lockIdx(transId)).synchronized {
-  //      var txnCtxt = _txnContexts(lockIdx(transId)).getOrElse(transId, null)
-  //      if (txnCtxt == null && addIfMissing) {
-  //        txnCtxt = new TransactionContext(transId)
-  //        _txnContexts(lockIdx(transId))(transId) = txnCtxt
-  //      }
-  //      return txnCtxt
-  //    }
-  //  }
-  //
-  //  private[this] def removeTransactionContext(transId: Long): Unit = {
-  //    _locks(lockIdx(transId)).synchronized {
-  //      _txnContexts(lockIdx(transId)) -= transId
-  //    }
-  //  }
-
-  /*
-    private def buildObject(k: Key, v: Value): ContainerInterface = {
-      v.serializerType.toLowerCase match {
-        case "kryo" => {
-          if (_kryoSer == null) {
-            _kryoSer = SerializerManager.GetSerializer("kryo")
-            if (_kryoSer != null && _classLoader != null) {
-              _kryoSer.SetClassLoader(_classLoader)
-            }
-          }
-          if (_kryoSer != null) {
-            return _kryoSer.DeserializeObjectFromByteArray(v.serializedInfo).asInstanceOf[ContainerInterface]
-          }
-        }
-        case "manual" => {
-          return SerializeDeserialize.Deserialize(v.serializedInfo, _mdres, _classLoader, true, "")
-        }
-        case _ => {
-          throw new Exception("Found un-handled Serializer Info: " + v.serializerType)
-        }
-      }
-
-      return null
-    }
-  */
 
   private def GetDataStoreHandle(jarPaths: collection.immutable.Set[String], dataStoreInfo: String): DataStore = {
     try {
@@ -927,259 +679,6 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
       results += ((k.bucketKey(0), new String(v.asInstanceOf[Array[Byte]]))) // taking 1st key, that is what we are expecting
     }
   }
-
-  /*
-    private def buildModelsResult(k: Key, v: Value, objs: Array[(Key, scala.collection.mutable.Map[String, SavedMdlResult])]) {
-      v.serializerType.toLowerCase match {
-        case "kryo" => {
-          if (_kryoSer == null) {
-            _kryoSer = SerializerManager.GetSerializer("kryo")
-            if (_kryoSer != null && _classLoader != null) {
-              _kryoSer.SetClassLoader(_classLoader)
-            }
-          }
-          if (_kryoSer != null) {
-            objs(0) = ((k, _kryoSer.DeserializeObjectFromByteArray(v.serializedInfo).asInstanceOf[scala.collection.mutable.Map[String, SavedMdlResult]]))
-          }
-        }
-        case _ => {
-          throw new Exception("Found un-handled Serializer Info: " + v.serializerType)
-        }
-      }
-    }
-  */
-
-  /*
-  private def loadObjFromDb(msgOrCont: MsgContainerInfo, key: List[String]): KamanjaData = {
-    val partKeyStr = KamanjaData.PrepareKey(msgOrCont.objFullName, key, 0, 0)
-    var objs: Array[KamanjaData] = new Array[KamanjaData](1)
-    val buildOne = (tupleBytes: Value) => {
-      buildObject(tupleBytes, objs, msgOrCont.containerType)
-    }
-    try {
-      _allDataDataStore.get(makeKey(partKeyStr), buildOne)
-    } catch {
-      case e: Exception => {
-        logger.debug("Data not found for key:" + partKeyStr, e)
-      }
-    }
-    if (objs(0) != null) {
-      TxnContextCommonFunctions.WriteLockContainer(msgOrCont)
-      try {
-        msgOrCont.data(InMemoryKeyDataInJson(key)) = (false, objs(0))
-      } catch {
-        case e: Exception => {
-          throw e
-        }
-      } finally {
-        TxnContextCommonFunctions.WriteUnlockContainer(msgOrCont)
-      }
-    }
-    return objs(0)
-  }
-  
-  */
-  //
-  //  private def localGetObject(containerName: String, partKey: List[String], primaryKey: List[String]): ContainerInterface = {
-  //    val txnCtxt = getTransactionContext(transId, true)
-  //    if (txnCtxt != null) {
-  //      // Try to load the key(s) if they exists in global storage.
-  //      LoadDataIfNeeded(txnCtxt, transId, containerName, Array(null), if (partKey == null) Array(null) else Array(partKey.toArray))
-  //    }
-  //
-  //    val retResult = ArrayBuffer[ContainerInterface]()
-  //    if (txnCtxt != null) {
-  //      val res = txnCtxt.getRddData(containerName, partKey, null, primaryKey, null)
-  //      if (res.size > 0) {
-  //        retResult ++= res.map(kv => kv._2)
-  //      }
-  //    }
-  //
-  //    if (retResult.size > 0)
-  //      return retResult(0)
-  //
-  //    null
-  //  }
-  //
-  //  private def localHistoryObjects(containerName: String, partKey: List[String], appendCurrentChanges: Boolean): Array[ContainerInterface] = {
-  //    val txnCtxt = getTransactionContext(transId, true)
-  //    if (txnCtxt != null) {
-  //      // Try to load the key(s) if they exists in global storage.
-  //      LoadDataIfNeeded(txnCtxt, transId, containerName, Array(null), if (partKey == null) Array(null) else Array(partKey.toArray))
-  //    }
-  //
-  //    val retResult = ArrayBuffer[ContainerInterface]()
-  //    if (txnCtxt != null) {
-  //      val res = txnCtxt.getRddData(containerName, partKey, null, null, null)
-  //      if (res.size > 0) {
-  //        retResult ++= res.map(kv => kv._2)
-  //      }
-  //    }
-  //
-  //    retResult.toArray
-  //  }
-  //
-  //  private def localGetAllObjects(tenantId: String, containerName: String): Array[ContainerInterface] = {
-  //    var cacheContainer = _cachedContainers.getOrElse(containerName, null)
-  //    if (cacheContainer != null) {
-  //      // get from Cache
-  //    } else {
-  //      // get from Disk
-  //    }
-  //    val txnCtxt = getTransactionContext(transId, true)
-  //    if (txnCtxt != null) {
-  //      // Try to load the key(s) if they exists in global storage.
-  //      LoadDataIfNeeded(txnCtxt, transId, containerName, Array(null), Array(null))
-  //    }
-  //
-  //    val retResult = ArrayBuffer[ContainerInterface]()
-  //    if (txnCtxt != null) {
-  //      val res = txnCtxt.getRddData(containerName, null, null, null, null)
-  //      if (res.size > 0) {
-  //        retResult ++= res.map(kv => kv._2)
-  //      }
-  //    }
-  //    return retResult.toArray
-  //  }
-
-  /*
-    private def localGetModelsResult(key: List[String]): scala.collection.mutable.Map[String, SavedMdlResult] = {
-      val k = Key(KvBaseDefalts.defaultTime, key.toArray, 0L, 0)
-      val txnCtxt = getTransactionContext(transId, false)
-      if (txnCtxt != null) {
-        val v = txnCtxt.getModelsResult(k)
-        if (v != null) return v
-      }
-
-      val keystr = key.mkString(",")
-      val bktIdx = getParallelBucketIdx(keystr)
-      var v: scala.collection.mutable.Map[String, SavedMdlResult] = null
-
-      _modelsRsltBktlocks(bktIdx).readLock().lock()
-      try {
-        v = _modelsRsltBuckets(bktIdx).getOrElse(keystr, null)
-      } catch {
-        case e: Exception => {
-          throw e
-        }
-      } finally {
-        _modelsRsltBktlocks(bktIdx).readLock().unlock()
-      }
-
-      if (v != null) return v
-
-      var objs = new Array[(Key, scala.collection.mutable.Map[String, SavedMdlResult])](1)
-      val buildMdlOne = (k: Key, v: Value) => { buildModelsResult(k, v, objs) }
-      try {
-        callGetData(_sysCatalogDatastore, "ModelResults", Array(TimeRange(KvBaseDefalts.defaultTime, KvBaseDefalts.defaultTime)), Array(key.toArray), buildMdlOne)
-      } catch {
-        case e: Exception => {
-          logger.debug("Data not found for key:" + key.mkString(","), e)
-        }
-      }
-      if (objs(0) != null) {
-        _modelsRsltBktlocks(bktIdx).writeLock().lock()
-        try {
-          _modelsRsltBuckets(bktIdx)(keystr) = objs(0)._2
-        } catch {
-          case e: Exception => {
-            throw e
-          }
-        } finally {
-          _modelsRsltBktlocks(bktIdx).writeLock().unlock()
-        }
-        return objs(0)._2
-      }
-      return scala.collection.mutable.Map[String, SavedMdlResult]()
-    }
-  */
-
-  /**
-    * Does at least one of the supplied keys exist in a container with the supplied name?
-    */
-  //  private def localContainsAny(containerName: String, partKeys: Array[List[String]], primaryKeys: Array[List[String]]): Boolean = {
-  //    val txnCtxt = getTransactionContext(transId, true)
-  //    /*
-  //    val bucketKeys = partKeys.map(k => k.toArray)
-  //    val tmRanges = partKeys.map(k => TimeRange(Long.MinValue, Long.MaxValue))
-  //
-  //    if (txnCtxt != null) {
-  //      // Try to load the key(s) if they exists in global storage.
-  //      LoadDataIfNeeded(txnCtxt, transId, containerName, tmRanges, bucketKeys)
-  //    }
-  //*/
-  //
-  //    if (txnCtxt != null) {
-  //      if (primaryKeys != null && primaryKeys.size > 0 && partKeys != null && partKeys.size == primaryKeys.size) {
-  //        val sz = partKeys.size
-  //        for (i <- 0 until sz) {
-  //          LoadDataIfNeeded(txnCtxt, transId, containerName, Array(null), Array(partKeys(i).toArray))
-  //          val res = txnCtxt.getRddData(containerName, partKeys(i), null, primaryKeys(i), null)
-  //          if (res.size > 0)
-  //            return true
-  //        }
-  //      } else if (partKeys != null && partKeys.size > 0) {
-  //        val sz = partKeys.size
-  //        for (i <- 0 until sz) {
-  //          LoadDataIfNeeded(txnCtxt, transId, containerName, Array(null), Array(partKeys(i).toArray))
-  //          val res = txnCtxt.getRddData(containerName, partKeys(i), null, null, null)
-  //          if (res.size > 0)
-  //            return true
-  //        }
-  //      }
-  //      /*
-  //      else {
-  //        LoadDataIfNeeded(txnCtxt, transId, containerName, Array(null), Array(null))
-  //        val res = txnCtxt.getRddData(containerName, null, null, null, null)
-  //        if (res.size > 0)
-  //          return true
-  //      }
-  //*/
-  //    }
-  //
-  //    false
-  //  }
-  //
-  //  /**
-  //    * Do all of the supplied keys exist in a container with the supplied name?
-  //    */
-  //  private def localContainsAll(containerName: String, partKeys: Array[List[String]], primaryKeys: Array[List[String]]): Boolean = {
-  //    val txnCtxt = getTransactionContext(transId, true)
-  //    val bucketKeys = partKeys.map(k => k.toArray)
-  //    val tmRanges = partKeys.map(k => TimeRange(Long.MinValue, Long.MaxValue))
-  //
-  //    if (txnCtxt != null) {
-  //      // Try to load the key(s) if they exists in global storage.
-  //      LoadDataIfNeeded(txnCtxt, transId, containerName, tmRanges, bucketKeys)
-  //    }
-  //
-  //    if (txnCtxt != null) {
-  //      var fntCntr = 0
-  //      val partKeysCnt = if (partKeys != null && partKeys.size > 0) partKeys.size else 0
-  //      if (primaryKeys != null && primaryKeys.size > 0 && partKeys != null && partKeys.size == primaryKeys.size) {
-  //        val sz = partKeys.size
-  //        for (i <- 0 until sz) {
-  //          val res = txnCtxt.getRddData(containerName, partKeys(i), null, primaryKeys(i), null)
-  //          if (res.size == 0)
-  //            return false
-  //          fntCntr += 1
-  //        }
-  //      } else if (partKeys != null && partKeys.size > 0) {
-  //        val sz = partKeys.size
-  //        for (i <- 0 until sz) {
-  //          val res = txnCtxt.getRddData(containerName, partKeys(i), null, null, null)
-  //          if (res.size == 0)
-  //            return false
-  //          fntCntr += 1
-  //        }
-  //      }
-  //
-  //      // Checking all partition keys are matching to found keys or not.
-  //      return (fntCntr == partKeysCnt)
-  //    }
-  //
-  //    false
-  //  }
 
   private def collectKeyAndValues(k: Key, v: Any, loadedData: ArrayBuffer[(KeyWithBucketIdAndPrimaryKey, ContainerInterface)]): Unit = {
     if (v != null && v.isInstanceOf[ContainerInterface]) {
@@ -1365,44 +864,6 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     loadedData.toArray
   }
 
-  //  // tmValues, partKeys & values are kind of triplate. So, we should have same size for all those
-  //  private def localSetObject(containerName: String, tmValues: Array[Long], partKeys: Array[Array[String]], values: Array[ContainerInterface]): Unit = {
-  //    val txnCtxt = getTransactionContext(transId, true)
-  //    if (txnCtxt != null) {
-  //      // Try to load the key(s) if they exists in global storage.
-  //      LoadDataIfNeeded(txnCtxt, transId, containerName, tmValues.map(t => TimeRange(t, t)), partKeys)
-  //      txnCtxt.setObjects(containerName, tmValues, partKeys, values)
-  //    }
-  //  }
-  //
-  //  private def localSetAdapterUniqueKeyValue(key: String, value: String, outputResults: List[(String, String, String)]): Unit = {
-  //    var txnCtxt = getTransactionContext(transId, true)
-  //    if (txnCtxt != null) {
-  //      txnCtxt.setAdapterUniqueKeyValue(transId, key, value, outputResults)
-  //    }
-  //  }
-
-  //  private def localSaveModelsResult(key: List[String], value: scala.collection.mutable.Map[String, SavedMdlResult]): Unit = {
-  //    var txnCtxt = getTransactionContext(transId, true)
-  //    if (txnCtxt != null) {
-  //      txnCtxt.saveModelsResult(key, value)
-  //    }
-  //  }
-  /*
-  private def collectKey(key: Key, keys: ArrayBuffer[KamanjaDataKey]): Unit = {
-    implicit val jsonFormats: Formats = DefaultFormats
-    val parsed_key = parse(new String(key.toArray)).extract[KamanjaDataKey]
-    keys += parsed_key
-  }
-*/
-  //  override def setClassLoader(cl: java.lang.ClassLoader): Unit = {
-  //    _classLoader = cl
-  ////    if (_kryoSer != null)
-  ////      _kryoSer.SetClassLoader(_classLoader)
-  //  }
-  //
-  //  override def getClassLoader: java.lang.ClassLoader = _classLoader
-
   override def setMetadataLoader(metadataLoader: KamanjaLoaderInfo): Unit = {
     _metadataLoader = metadataLoader
   }
@@ -1451,22 +912,6 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
       _listenerConfigClusterCache = null
     }
 
-    //    if (_modelsRsltBuckets != null) {
-    //      for (i <- 0 until _parallelBuciets) {
-    //        _modelsRsltBktlocks(i).writeLock().lock()
-    //        try {
-    //          _modelsRsltBuckets(i).clear()
-    //        } catch {
-    //          case e: Exception => {
-    //            logger.warn("", e)
-    //            // throw e
-    //          }
-    //        } finally {
-    //          _modelsRsltBktlocks(i).writeLock().unlock()
-    //        }
-    //      }
-    //    }
-    //
     if (_adapterUniqKeyValBuckets != null) {
       for (i <- 0 until _parallelBuciets) {
         _adapterUniqKeyValBktlocks(i).writeLock().lock()
@@ -1533,13 +978,6 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     }
   }
 
-  /*
-  private def getTableKeys(all_keys: ArrayBuffer[KamanjaDataKey], objName: String): Array[KamanjaDataKey] = {
-    val tmpObjName = objName.toLowerCase
-    all_keys.filter(k => k.T.compareTo(objName) == 0).toArray
-  }
-*/
-
   override def getPropertyValue(clusterId: String, key: String): String = {
     _mgr.GetUserProperty(clusterId, key)
   }
@@ -1578,56 +1016,6 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
       }
     })
   }
-
-  //  // Adding new messages or Containers
-  //  override def RegisterMessageOrContainers(containersInfo: Array[ContainerNameAndDatastoreInfo]): Unit = {
-  //    /*
-  //    if (containersInfo != null)
-  //      logger.info("Messages/Containers:%s".format(containersInfo.map(ci => (if (ci.containerName != null) ci.containerName else "", if (ci.dataDataStoreInfo != null) ci.dataDataStoreInfo else "")).mkString(",")))
-  //
-  //    containersInfo.foreach(ci => {
-  //      val c = ci.containerName.toLowerCase
-  //      val (namespace, name) = Utils.parseNameTokenNoVersion(c)
-  //      var containerType = _mgr.ActiveType(namespace, name)
-  //
-  //      if (containerType != null) {
-  //        val objFullName: String = containerType.FullName.toLowerCase
-  //        val fnd = _messagesOrContainers.getOrElse(objFullName, null)
-  //        if (fnd != null) {
-  //          // We already have this
-  //        } else {
-  //          val newMsgOrContainer = new MsgContainerInfo
-  //          newMsgOrContainer.containerType = containerType
-  //          newMsgOrContainer.objFullName = objFullName
-  //          newMsgOrContainer.isContainer = (_mgr.ActiveContainer(namespace, name) != null)
-  //
-  //          if (ci.dataDataStoreInfo != null)
-  //            newMsgOrContainer.dataStore = GetDataStoreHandle(_jarPaths, ci.dataDataStoreInfo)
-  //          else
-  //            newMsgOrContainer.dataStore = _sysCatalogDatastore
-  //
-  //          /** create a map to cache the entries to be resurrected from the mapdb */
-  //          _messagesOrContainers(objFullName) = newMsgOrContainer
-  //        }
-  //      } else {
-  //        var error_msg = "Message/Container %s not found".format(c)
-  //        logger.error(error_msg)
-  //        throw new Exception(error_msg)
-  //      }
-  //    })
-  //*/
-  //    if (containersInfo != null) {
-  //      containersInfo.foreach(ci => {
-  //        val c = ci.containerName.toLowerCase
-  //        if (_mgr.Container(c, -1, false) != None)
-  //          _containersNames.add(c)
-  //        else
-  //          _containersNames.remove(c) // remove it incase if it exists in set
-  //      })
-  //    }
-  //
-  //    ResolveEnableEachTransactionCommit
-  //  }
 
   override def cacheContainers(clusterId: String): Unit = {
     val tmpContainersStr = _mgr.GetUserProperty(clusterId, "containers2cache")
@@ -1728,16 +1116,6 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     data.map(d => d._2)
   }
 
-  //  override def getAdapterUniqueKeyValue(key: String): (Long, String, List[(String, String, String)]) = {
-  ////    localGetAdapterUniqueKeyValue(transId, key)
-  //    throw new KamanjaException("Function call is not implemented", null)
-  //    null
-  //  }
-
-  //  override def getModelsResult(key: List[String]): scala.collection.mutable.Map[String, SavedMdlResult] = {
-  //    localGetModelsResult(transId, key)
-  //  }
-
   /**
     * Does the supplied key exist in a container with the supplied name?
     */
@@ -1789,403 +1167,38 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     throw new KamanjaException("Function call is not implemented", null)
   }
 
-  //  override def setAdapterUniqueKeyValue(key: String, value: String, outputResults: List[(String, String, String)]): Unit = {
-  ////    localSetAdapterUniqueKeyValue(transId, key, value, outputResults)
-  //  }
-
-  //  override def saveModelsResult(key: List[String], value: scala.collection.mutable.Map[String, SavedMdlResult]): Unit = {
-  //    localSaveModelsResult(transId, key, value)
-  //  }
-  /*
-    override def getChangedData(tempTransId: Long, includeMessages: Boolean, includeContainers: Boolean): scala.collection.immutable.Map[String, List[Key]] = {
-      val changedContainersData = scala.collection.mutable.Map[String, List[Key]]()
-
-      // Commit Data and Removed Transaction information from status
-      val txnCtxt = getTransactionContext(tempTransId, false)
-      if (txnCtxt == null)
-        return changedContainersData.toMap
-
-      val messagesOrContainers = txnCtxt.getAllMessagesAndContainers
-
-      messagesOrContainers.foreach(v => {
-        val canConsiderThis = if (includeMessages && includeContainers) {
-          true
-        } else {
-          val isContainer = _containersNames.contains(v._1)
-          ((includeMessages && isContainer == false) ||
-            (includeContainers && isContainer))
-        }
-
-        if (canConsiderThis) {
-          TxnContextCommonFunctions.ReadLockContainer(v._2)
-          try {
-            var foundPartKeys = new ArrayBuffer[Key](v._2.dataByTmPart.size())
-            var it1 = v._2.dataByTmPart.entrySet().iterator()
-            while (it1.hasNext()) {
-              val entry = it1.next();
-              val v = entry.getValue()
-              if (v.modified)
-                foundPartKeys += entry.getKey().key
-            }
-            if (foundPartKeys.size > 0)
-              changedContainersData(v._1) = foundPartKeys.toList
-          } catch {
-            case e: Exception => {
-              throw e
-            }
-          } finally {
-            TxnContextCommonFunctions.ReadUnlockContainer(v._2)
-          }
-        }
-      })
-
-      return changedContainersData.toMap
-    }
-  */
-
   override def rollbackData(): Unit = {
     //    removeTransactionContext(transId)
     // throw new KamanjaException("Function call is not implemented", null)
   }
 
-  override def commitData(tenantId: String, txnCtxt: TransactionContext, data: Array[(String, Array[ContainerInterface])]): Unit = {
+  override def commitData(tenantId: String, txnCtxt: TransactionContext, data: Array[(String, Array[ContainerInterface])], forceCommit: Boolean): Unit = {
     val tenantInfo: TenantEnvCtxtInfo = _tenantIdMap.getOrElse(tenantId.toLowerCase(), null)
     if (tenantInfo == null) return
-    tenantInfo.datastore.putContainers(txnCtxt, data)
-  }
 
-  //  // Final Commit for the given transaction
-  //  // BUGBUG:: For now we are committing all the data into default datastore. Not yet handled message level datastore.
-  //  override def commitData(key: String, value: String, outResults: List[(String, String, String)], forceCommit: Boolean): Unit = {
-  //
-  //    // This block of code just does in-memory updates for caching containers
-  //    val txnCtxt = getTransactionContext(transId, false)
-  //    val messagesOrContainers = if (txnCtxt != null) txnCtxt.getAllMessagesAndContainers else Map[String, MsgContainerInfo]()
-  //    messagesOrContainers.foreach(v => {
-  //      var cacheContainer = _cachedContainers.getOrElse(v._1, null)
-  //      if (cacheContainer != null) {
-  //        TxnContextCommonFunctions.ReadLockContainer(v._2)
-  //        try {
-  //          var it1 = v._2.dataByTmPart.entrySet().iterator()
-  //          TxnContextCommonFunctions.WriteLockContainer(cacheContainer);
-  //          try {
-  //            while (it1.hasNext()) {
-  //              val entry = it1.next();
-  //              val v = entry.getValue()
-  //              if (v.modified) {
-  //                val k = entry.getKey()
-  //                val v1 = v.value
-  //                cacheContainer.dataByBucketKey.put(k, v1)
-  //                cacheContainer.dataByTmPart.put(k, v1)
-  //              }
-  //            }
-  //          } catch {
-  //            case e: Exception => {
-  //              throw e
-  //            }
-  //          } finally {
-  //            TxnContextCommonFunctions.WriteUnlockContainer(cacheContainer)
-  //          }
-  //        } catch {
-  //          case e: Exception => {
-  //            throw e
-  //          }
-  //        } finally {
-  //          TxnContextCommonFunctions.ReadUnlockContainer(v._2)
-  //        }
-  //      }
-  //    })
-  //
-  //    if (forceCommit == false && _enableEachTransactionCommit == false) {
-  //      removeTransactionContext(transId)
-  //      return
-  //    }
-  //
-  //    val outputResults = if (outResults != null) outResults else List[(String, String, String)]()
-  //
-  //    // Commit Data and Removed Transaction information from status
-  //    // val txnCtxt = getTransactionContext(transId, false)
-  //    if (txnCtxt == null && (key == null || value == null))
-  //      return
-  //
-  //    // Persist current transaction objects
-  //    // val messagesOrContainers = if (txnCtxt != null) txnCtxt.getAllMessagesAndContainers else Map[String, MsgContainerInfo]()
-  //
-  //    val localValues = scala.collection.mutable.Map[String, (Long, String, List[(String, String, String)])]()
-  //
-  //    if (key != null && value != null && outputResults != null)
-  //      localValues(key) = (transId, value, outputResults)
-  //
-  //    val adapterUniqKeyValData = if (localValues.size > 0) localValues.toMap else if (txnCtxt != null) txnCtxt.getAllAdapterUniqKeyValData else Map[String, (Long, String, List[(String, String, String)])]()
-  //    //    val modelsResult = /* if (txnCtxt != null) txnCtxt.getAllModelsResult else */ Map[Key, scala.collection.mutable.Map[String, SavedMdlResult]]()
-  //
-  //    if (_kryoSer == null) {
-  //      _kryoSer = SerializerManager.GetSerializer("kryo")
-  //      if (_kryoSer != null && _classLoader != null) {
-  //        _kryoSer.SetClassLoader(_classLoader)
-  //      }
-  //    }
-  //
-  //    val bos = new ByteArrayOutputStream(1024 * 1024)
-  //    val dos = new DataOutputStream(bos)
-  //
-  //    val commiting_data = ArrayBuffer[(String, Boolean, Array[(Key, String, Any)])]()
-  //    val dataForContainer = ArrayBuffer[(Key, String, Any)]()
-  //
-  //    messagesOrContainers.foreach(v => {
-  //      dataForContainer.clear
-  //      //       val mc = _messagesOrContainers.getOrElse(v._1, null)
-  //      TxnContextCommonFunctions.ReadLockContainer(v._2)
-  //      try {
-  //        var it1 = v._2.dataByTmPart.entrySet().iterator()
-  //        while (it1.hasNext()) {
-  //          val entry = it1.next();
-  //          val v = entry.getValue()
-  //          if (v.modified) {
-  //            val k = entry.getKey()
-  //            bos.reset
-  //            dataForContainer += ((k.key, "manual", v.value))
-  //          }
-  //        }
-  //        // Make sure we lock it if we need to populate mc
-  //        // mc.dataByTmPart.putAll(v._2.dataByTmPart) // Assigning new data
-  //        // mc.dataByBucketKey.putAll(v._2.dataByTmPart) // Assigning new data
-  //
-  //        // v._2.current_msg_cont_data.clear
-  //      } catch {
-  //        case e: Exception => {
-  //          throw e
-  //        }
-  //      } finally {
-  //        TxnContextCommonFunctions.ReadUnlockContainer(v._2)
-  //      }
-  //
-  //      if (dataForContainer.size > 0)
-  //        commiting_data += ((v._1, false, dataForContainer.toArray))
-  //    })
-  //
-  //    dataForContainer.clear
-  //    adapterUniqKeyValData.foreach(v1 => {
-  //      val bktIdx = getParallelBucketIdx(v1._1)
-  //      _adapterUniqKeyValBktlocks(bktIdx).writeLock().lock()
-  //      try {
-  //        _adapterUniqKeyValBuckets(bktIdx)(v1._1) = v1._2
-  //      } catch {
-  //        case e: Exception => {
-  //          throw e
-  //        }
-  //      } finally {
-  //        _adapterUniqKeyValBktlocks(bktIdx).writeLock().unlock()
-  //      }
-  //      val json = ("T" -> v1._2._1) ~
-  //        ("V" -> v1._2._2) ~
-  //        ("Qs" -> v1._2._3.map(qsres => {
-  //          qsres._1
-  //        })) ~
-  //        ("Res" -> v1._2._3.map(qsres => {
-  //          qsres._2
-  //        }))
-  //      val compjson = compact(render(json))
-  //      dataForContainer += ((Key(KvBaseDefalts.defaultTime, Array(v1._1), 0, 0), "json", compjson.getBytes("UTF8")))
-  //    })
-  //    if (dataForContainer.size > 0)
-  //      commiting_data += (("AdapterUniqKvData", true, dataForContainer.toArray))
-  //
-  //    dataForContainer.clear
-  //    /*
-  //        modelsResult.foreach(v1 => {
-  //          val keystr = v1._1.bucketKey.mkString(",")
-  //          val bktIdx = getParallelBucketIdx(keystr)
-  //          _modelsRsltBktlocks(bktIdx).writeLock().lock()
-  //          try {
-  //            _modelsRsltBuckets(bktIdx)(keystr) = v1._2
-  //          } catch {
-  //            case e: Exception => {
-  //              throw e
-  //            }
-  //          } finally {
-  //            _modelsRsltBktlocks(bktIdx).writeLock().unlock()
-  //          }
-  //          dataForContainer += ((v1._1, Value("kryo", _kryoSer.SerializeObjectToByteArray(v1._2))))
-  //        })
-  //    */
-  //
-  //    //    if (dataForContainer.size > 0)
-  //    //      commiting_data += (("ModelResults", false, dataForContainer.toArray))
-  //
-  //    /*
-  //    dataForContainer.clear
-  //    if (adapterUniqKeyValData.size > 0) {
-  //      adapterUniqKeyValData.foreach(v1 => {
-  //        if (v1._2._3 != null && v1._2._3.size > 0) { // If we have output then only commit this, otherwise ignore
-  //
-  //          val json = ("T" -> v1._2._1) ~
-  //            ("V" -> v1._2._2) ~
-  //                ("Out" -> v1._2._3.map(qsres => List(qsres._1, qsres._2, qsres._3)))
-  //              /*
-  //              val json = ("T" -> v1._2._1) ~
-  //                ("V" -> v1._2._2) ~
-  //            ("Qs" -> v1._2._3.map(qsres => { qsres._1 })) ~
-  //                ("Ks" -> v1._2._3.map(qsres => { qsres._2 })) ~
-  //                ("Res" -> v1._2._3.map(qsres => { qsres._3 }))
-  //*/
-  //          val compjson = compact(render(json))
-  //          dataForContainer += ((Key(KvBaseDefalts.defaultTime, Array(v1._1), 0, 0), Value("json", compjson.getBytes("UTF8"))))
-  //        }
-  //      })
-  //      commiting_data += (("UK", true, dataForContainer.toArray))
-  //    }
-  //*/
-  //
-  //    dos.close()
-  //    bos.close()
-  //
-  //    try {
-  //      if (logger.isDebugEnabled) {
-  //        logger.debug("Going to commit data into datastore.")
-  //        commiting_data.foreach(cd => {
-  //          cd._3.foreach(kv => {
-  //            logger.debug("ObjKey:(%d, %s, %d, %d)".format(kv._1.timePartition, kv._1.bucketKey.mkString(","), kv._1.transactionId, kv._1.rowId))
-  //          })
-  //        })
-  //      }
-  //      callSaveData(_sysCatalogDatastore, commiting_data.toArray)
-  //
-  //    } catch {
-  //      case e: Exception => {
-  //        logger.error("Failed to save data", e)
-  //        throw e
-  //      }
-  //    }
-  //
-  //    // Remove the current transaction
-  //    removeTransactionContext(transId)
-  //  }
-
-  /*
-  // Set Reload Flag
-  override def setReloadFlag(containerName: String): Unit = {
-    // BUGBUG:: Set Reload Flag
-    val txnCtxt = getTransactionContext(transId, true)
-    if (txnCtxt != null) {
-      txnCtxt.setReloadFlag(containerName)
-    }
-  }
-*/
-
-  // Clear Intermediate results before Restart processing
-  //BUGBUG:: May be we need to lock before we do anything here
-  //  override def clearIntermediateResults: Unit = {
-  //    /*
-  //    _messagesOrContainers.foreach(v => {
-  //      TxnContextCommonFunctions.WriteLockContainer(v._2)
-  //      try {
-  //        v._2.dataByBucketKey.clear()
-  //        v._2.dataByTmPart.clear()
-  //        // v._2.current_msg_cont_data.clear
-  //      } catch {
-  //        case e: Exception => {
-  //          throw e
-  //        }
-  //      } finally {
-  //        TxnContextCommonFunctions.WriteUnlockContainer(v._2)
-  //      }
-  //    })
-  //*/
-  //
-  //    if (_modelsRsltBuckets != null) {
-  //      for (i <- 0 until _parallelBuciets) {
-  //        _modelsRsltBktlocks(i).writeLock().lock()
-  //        try {
-  //          _modelsRsltBuckets(i).clear()
-  //        } catch {
-  //          case e: Exception => { logger.warn("", e)
-  //            // throw e
-  //          }
-  //        } finally {
-  //          _modelsRsltBktlocks(i).writeLock().unlock()
-  //        }
-  //      }
-  //    }
-  //
-  //    if (_adapterUniqKeyValBuckets != null) {
-  //      for (i <- 0 until _parallelBuciets) {
-  //        _adapterUniqKeyValBktlocks(i).writeLock().lock()
-  //        try {
-  //          _adapterUniqKeyValBuckets(i).clear()
-  //        } catch {
-  //          case e: Exception => { logger.warn("", e)
-  //            // throw e
-  //          }
-  //        } finally {
-  //          _adapterUniqKeyValBktlocks(i).writeLock().unlock()
-  //        }
-  //      }
-  //    }
-  //  }
-  //
-  //  // Clear Intermediate results After updating them on different node or different component (like KVInit), etc
-  //  //BUGBUG:: May be we need to lock before we do anything here
-  //  def clearIntermediateResults(unloadMsgsContainers: Array[String]): Unit = {
-  //    if (unloadMsgsContainers == null)
-  //      return
-  //    /*
-  //    unloadMsgsContainers.foreach(mc => {
-  //      val msgCont = _messagesOrContainers.getOrElse(mc.trim.toLowerCase, null)
-  //      if (msgCont != null) {
-  //        TxnContextCommonFunctions.WriteLockContainer(msgCont)
-  //        try {
-  //          if (msgCont.dataByBucketKey != null)
-  //            msgCont.dataByBucketKey.clear()
-  //          if (msgCont.dataByTmPart != null)
-  //            msgCont.dataByTmPart.clear()
-  //          if (msgCont.current_msg_cont_data != null) msgCont.current_msg_cont_data.clear
-  //        } catch {
-  //          case e: Exception => {
-  //            throw e
-  //          }
-  //        } finally {
-  //          TxnContextCommonFunctions.WriteUnlockContainer(msgCont)
-  //        }
-  //      }
-  //    })
-  //*/
-  //  }
-
-  /*
-  // Save Current State of the machine
-  override def PersistLocalNodeStateEntries: Unit = {
-    // BUGBUG:: Persist all state on this node.
-  }
-
-  // Save Remaining State of the machine
-  override def PersistRemainingStateEntriesOnLeader: Unit = {
-    // BUGBUG:: Persist Remaining state (when other nodes goes down, this helps)
-  }
-*/
-  /*
-    override def PersistValidateAdapterInformation(validateUniqVals: Array[(String, String)]): Unit = {
-      val ukvs = validateUniqVals.map(kv => {
-        (Key(KvBaseDefalts.defaultTime, Array(kv._1), 0L, 0), Value("", kv._2.getBytes("UTF8")))
+    if (tenantInfo.cachedContainers.size > 0) {
+      data.foreach(oneContainerData => {
+        val cacheContainer = tenantInfo.cachedContainers.getOrElse(oneContainerData._1, null)
+        if (cacheContainer != null) {
+          oneContainerData._2.foreach(containerInst => {
+            val tmpPartitionkey = containerInst.getPartitionKey
+            val tmpPrimarykey = containerInst.getPrimaryKey
+            val partitionkey = if (tmpPartitionkey != null) tmpPartitionkey else Array[String]()
+            val primarykey = if (tmpPrimarykey != null) tmpPrimarykey else Array[String]();
+            val tmRng = containerInst.TimePartitionData()
+            val key = KeyWithBucketIdAndPrimaryKey(KeyWithBucketIdAndPrimaryKeyCompHelper.BucketIdForBucketKey(partitionkey),
+              Key(containerInst.TimePartitionData(), containerInst.PartitionKeyData(), containerInst.TransactionId(), containerInst.RowNumber()),
+              primarykey != null && primarykey.size > 0, primarykey)
+            cacheContainer.dataByBucketKey.put(key, containerInst)
+          })
+        }
       })
-      callSaveData(_sysCatalogDatastore, Array(("ValidateAdapterPartitionInfo", ukvs)))
     }
 
-    private def buildValidateAdapInfo(k: Key, v: Value, results: ArrayBuffer[(String, String)]): Unit = {
-      results += ((k.bucketKey(0), new String(v.serializedInfo)))
+    if (forceCommit || EnableEachTransactionCommit) {
+      tenantInfo.datastore.putContainers(txnCtxt, data)
     }
-
-    override def GetValidateAdapterInformation: Array[(String, String)] = {
-      logger.debug(s"GetValidateAdapterInformation() -- Entered")
-      val results = ArrayBuffer[(String, String)]()
-      val collectorValidateAdapInfo = (k: Key, v: Value) => {
-        buildValidateAdapInfo(k, v, results)
-      }
-      callGetData(_sysCatalogDatastore, "CheckPointInformation", Array(TimeRange(KvBaseDefalts.defaultTime, KvBaseDefalts.defaultTime)), collectorValidateAdapInfo)
-      logger.debug("Loaded %d Validate (Check Point) Adapter Information".format(results.size))
-      results.toArray
-    }
-  */
+  }
 
   override def ReloadKeys(tempTransId: Long, tenatId: String, containerName: String, keys: List[Key]): Unit = {
     if (tenatId == null || tenatId.trim.size == 0 || containerName == null || keys == null || keys.size == 0) return;
@@ -2226,72 +1239,6 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     }
   }
 
-  //
-  //  private def getLocalRecent(containerName: String, partKey: List[String], tmRange: TimeRange, f: ContainerInterface => Boolean): Option[ContainerInterface] = {
-  //    if (TxnContextCommonFunctions.IsEmptyKey(partKey))
-  //      return None
-  //
-  //    val txnCtxt = getTransactionContext(transId, true)
-  //    if (txnCtxt != null) {
-  //      val (v, foundPartKey) = txnCtxt.getRecent(containerName, partKey, tmRange, null, f)
-  //      if (foundPartKey) {
-  //        return Some(v)
-  //      }
-  //      if (v != null) return Some(v) // It must be null. Without finding partition key it should not find the primary key
-  //    }
-  //
-  //    if (txnCtxt != null) {
-  //      // Try to load the key(s) if they exists in global storage.
-  //      LoadDataIfNeeded(txnCtxt, transId, containerName, Array(tmRange), Array(partKey.toArray))
-  //    }
-  //
-  //    if (txnCtxt != null) {
-  //      val (v, foundPartKey) = txnCtxt.getRecent(containerName, partKey, tmRange, null, f)
-  //      if (foundPartKey) {
-  //        return Some(v)
-  //      }
-  //      if (v != null) return Some(v) // It must be null. Without finding partition key it should not find the primary key
-  //    }
-  //
-  //    /*
-  //    val container = _messagesOrContainers.getOrElse(containerName.toLowerCase, null)
-  //
-  //    val (v, foundPartKey) = TxnContextCommonFunctions.getRecent(container, partKey, tmRange, null, f)
-  //
-  //    if (foundPartKey)
-  //      return Some(v)
-  //
-  //    if (container != null) { // Loading for partition id
-  //      val readValues = ArrayBuffer[(Key, ContainerInterface)]()
-  //      val buildOne = (k: Key, v: Value) => {
-  //        collectKeyAndValues(k, v, readValues)
-  //      }
-  //
-  //      val tmRng = if (tmRange != null) Array(tmRange) else Array[TimeRange]()
-  //      val prtKeys = if (partKey != null) Array(partKey.toArray) else Array[Array[String]]()
-  //
-  //      get(_sysCatalogDatastore, containerName, tmRng, prtKeys, buildOne)
-  //
-  //      readValues.foreach(kv => {
-  //        val primkey = kv._2.PrimaryKeyData
-  //        val putkey = KeyWithBucketIdAndPrimaryKey(KeyWithBucketIdAndPrimaryKeyCompHelper.BucketIdForBucketKey(kv._1.bucketKey), kv._1, primkey != null && primkey.size > 0, primkey)
-  //        // Lock this container for write if enable these puts
-  //        // container.dataByBucketKey.put(putkey, kv._2)
-  //        // container.dataByTmPart.put(putkey, kv._2)
-  //      })
-  //
-  //      val (v, foundPartKey) = TxnContextCommonFunctions.getRecent(container, partKey, tmRange, null, f)
-  //
-  //      if (foundPartKey)
-  //        return Some(v)
-  //
-  //      return None // If partition key exists, tried DB also, no need to go down
-  //    }
-  //*/
-  //
-  //    None
-  //  }
-
   override def getRecent(tenantId: String, containerName: String, partKey: List[String], tmRange: TimeRange, f: ContainerInterface => Boolean): Option[ContainerInterface] = {
     val tenantInfo: TenantEnvCtxtInfo = _tenantIdMap.getOrElse(tenantId.toLowerCase(), null)
     if (tenantInfo == null) return None
@@ -2319,145 +1266,6 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     val data = getData(tenantId, containerName, if (tmRange != null) Array(tmRange) else Array[TimeRange](), if (partKey != null) Array(partKey.toArray) else Array[Array[String]](), f)
     data.map(d => d._2)
   }
-
-  //
-  //  private def getLocalRDD(containerName: String, partKey: List[String], tmRange: TimeRange, f: ContainerInterface => Boolean): Array[ContainerInterface] = {
-  //    // if (TxnContextCommonFunctions.IsEmptyKey(partKey))
-  //    //  return Array[ContainerInterface]()
-  //
-  //    val txnCtxt = getTransactionContext(transId, true)
-  //    if (txnCtxt != null) {
-  //      // Try to load the key(s) if they exists in global storage.
-  //      LoadDataIfNeeded(txnCtxt, transId, containerName, Array(tmRange), if (partKey != null) Array(partKey.toArray) else Array(null))
-  //    }
-  //
-  //    val retResult = ArrayBuffer[ContainerInterface]()
-  //    if (txnCtxt != null) {
-  //      val res = txnCtxt.getRddData(containerName, partKey, tmRange, null, f)
-  //      if (res.size > 0) {
-  //        retResult ++= res.map(kv => kv._2)
-  //        if (TxnContextCommonFunctions.IsEmptyKey(partKey) == false) // Already found the key, no need to go down
-  //          return retResult.toArray
-  //      }
-  //    }
-  //    /*
-  //    val container = _messagesOrContainers.getOrElse(containerName.toLowerCase, null)
-  //    // In memory
-  //    if (container != null) {
-  //      val (res1, foundPartKeys2) = TxnContextCommonFunctions.getRddData(container, partKey, tmRange, null, f, foundPartKeys.toArray)
-  //      if (foundPartKeys2.size > 0) {
-  //        foundPartKeys ++= foundPartKeys2
-  //        retResult ++= res1 // Add only if we find all here
-  //        if (TxnContextCommonFunctions.IsEmptyKey(partKey) == false) // Already found the key, no need to go down
-  //          return retResult.toArray
-  //      }
-  //    }
-  //
-  //    /*
-  //    if (container != null && TxnContextCommonFunctions.IsEmptyKey(partKey) == false) { // Loading for partition id
-  //      // If not found in memory, try in DB
-  //      val loadedFfData = loadObjFromDb(transId, container, partKey)
-  //      if (loadedFfData != null) {
-  //        val res2 = TxnContextCommonFunctions.getRddDataFromKamanjaData(loadedFfData, tmRange, f)
-  //        retResult ++= res2
-  //      }
-  //      return retResult.toArray
-  //    }
-  //*/
-  //
-  //    if (container != null) {
-  //      // Need to get all keys for this message/container and take all the data
-  //      val all_keys = ArrayBuffer[ContainerInterface]() // All keys for all tables for now
-  //
-  //      val readValues = ArrayBuffer[(Key, ContainerInterface)]()
-  //      val buildOne = (k: Key, v: Value) => {
-  //        collectKeyAndValues(k, v, readValues)
-  //      }
-  //
-  //      val tmRng = if (tmRange != null) Array(tmRange) else Array[TimeRange]()
-  //      val prtKeys = if (partKey != null) Array(partKey.toArray) else Array[Array[String]]()
-  //
-  //      try {
-  //        get(_sysCatalogDatastore, containerName, tmRng, prtKeys, buildOne)
-  //      } catch {
-  //        case e: Exception => {
-  //          logger.debug("Failed", e)
-  //        }
-  //        case t: Throwable => {
-  //          logger.debug("Failed", e)
-  //        }
-  //      }
-  //
-  //      readValues.foreach(kv => {
-  //        val primkey = kv._2.PrimaryKeyData
-  //        val putkey = KeyWithBucketIdAndPrimaryKey(KeyWithBucketIdAndPrimaryKeyCompHelper.BucketIdForBucketKey(kv._1.bucketKey), kv._1, primkey != null && primkey.size > 0, primkey)
-  //        // Lock this container for write if enable these puts
-  //        // container.dataByBucketKey.put(putkey, kv._2)
-  //        // container.dataByTmPart.put(putkey, kv._2)
-  //      })
-  //    }
-  //*/
-  //    return retResult.toArray
-  //  }
-
-  //  override def saveOne(containerName: String, partKey: List[String], value: ContainerInterface): Unit = {
-  //    if (value != null && TxnContextCommonFunctions.IsEmptyKey(partKey) == false) {
-  //      localSetObject(transId, containerName, Array(value.getTimePartitionData), Array(partKey.toArray), Array(value))
-  //    }
-  //    throw new KamanjaException("Function call is not implemented", null)
-  //  }
-  //
-  //  override def saveRDD(containerName: String, values: Array[ContainerInterface]): Unit = {
-  //    if (values == null)
-  //      return
-  //
-  //    val tmValues = ArrayBuffer[Long]()
-  //    val partKeyValues = ArrayBuffer[Array[String]]()
-  //    val finalValues = ArrayBuffer[ContainerInterface]()
-  //
-  //    values.foreach(v => {
-  //      if (v != null) {
-  //        tmValues += v.getTimePartitionData
-  //        partKeyValues += v.getPartitionKey
-  //        finalValues += v
-  //      }
-  //    })
-  //
-  //    localSetObject(transId, containerName, tmValues.toArray, partKeyValues.toArray, finalValues.toArray)
-  //  }
-  //
-  //  override def setAdapterUniqKeyAndValues(keyAndValues: List[(String, String)]): Unit = {
-  //    val dataForContainer = ArrayBuffer[(Key, String, Any)]()
-  //    val emptyLst = List[(String, String, String)]()
-  //    keyAndValues.foreach(v1 => {
-  //      val bktIdx = getParallelBucketIdx(v1._1)
-  //
-  //      _adapterUniqKeyValBktlocks(bktIdx).writeLock().lock()
-  //      try {
-  //        _adapterUniqKeyValBuckets(bktIdx)(v1._1) = (0, v1._2, emptyLst)
-  //      } catch {
-  //        case e: Exception => {
-  //          throw e
-  //        }
-  //      } finally {
-  //        _adapterUniqKeyValBktlocks(bktIdx).writeLock().unlock()
-  //      }
-  //
-  //      val json = ("T" -> 0) ~
-  //        ("V" -> v1._2) ~
-  //        ("Qs" -> emptyLst.map(qsres => {
-  //          qsres._1
-  //        })) ~
-  //        ("Res" -> emptyLst.map(qsres => {
-  //          qsres._2
-  //        }))
-  //      val compjson = compact(render(json))
-  //      dataForContainer += ((Key(KvBaseDefalts.defaultTime, Array(v1._1), 0, 0), "json", compjson.getBytes("UTF8")))
-  //    })
-  //    if (dataForContainer.size > 0) {
-  //      callSaveData(_sysCatalogDatastore, Array(("AdapterUniqKvData", true, dataForContainer.toArray)))
-  //    }
-  //  }
 
   private def callSaveData(dataStore: DataStoreOperations, data_list: Array[(String, Array[(Key, String, Any)])]): Unit = {
     var failedWaitTime = 15000 // Wait time starts at 15 secs
@@ -2763,7 +1571,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     }
   }
 
-  def EnableEachTransactionCommit: Boolean = _enableEachTransactionCommit
+  override def EnableEachTransactionCommit: Boolean = _enableEachTransactionCommit
 
   private def incrementReadCount: Unit = {
     val curr: Long = metrics.getOrElse(SimpleEnvContextImpl.STORAGE_READ_COUNT, 0)
@@ -2782,43 +1590,6 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     }
     metrics(SimpleEnvContextImpl.STORAGE_WRITE_COUNT) = curr + 1
   }
-
-  //
-  //  // Lock functions
-  //  def lockKeyInCluster(key: String): Unit = {
-  //    if (!hasZkConnectionString)
-  //      throw new KamanjaException("Zookeeper information is not yet set", null)
-  //
-  //    try {
-  //      val lock = new InterProcessMutex(zkcForGetRange, key);
-  //      try {
-  //        lock.acquire();
-  //
-  //
-  //      } catch {
-  //        case e: Exception => throw e
-  //      } finally {
-  //        if (lock != null)
-  //          lock.release();
-  //      }
-  //
-  //    } catch {
-  //      case e: Exception => throw e
-  //    } finally {
-  //    }
-  //
-  //  }
-  //
-  //  def lockKeyInNode(key: String): Unit = {}
-  //
-  //  // Unlock functions
-  //  def unlockKeyInCluster(key: String): Unit = {}
-  //
-  //  def unlockKeyInNode(key: String): Unit = {}
-
-  //  def getAllClusterLocks(): Array[String] = null
-  //
-  //  def getAllNodeLocks(nodeId: String): Array[String] = null
 
   override def saveObjectInNodeCache(key: String, value: Any): Unit = {
     WriteLock(_nodeCache_reent_lock)

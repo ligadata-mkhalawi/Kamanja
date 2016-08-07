@@ -123,7 +123,7 @@ object KeyValueManager {
           var isDs = false
           var curClz = clz
 
-          while (clz != null && isDs == false) {
+          while (curClz != null && isDs == false) {
             isDs = isDerivedFrom(curClz, "com.ligadata.StorageBase.StorageAdapterFactory")
             if (isDs == false)
               curClz = curClz.getSuperclass()

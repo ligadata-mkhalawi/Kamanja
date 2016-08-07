@@ -69,6 +69,7 @@ class CreateMessage {
         throw e
       }
     }
+
     msgDef
   }
 
@@ -106,6 +107,7 @@ class CreateMessage {
         throw e
       }
     }
+    
     msgDef
   }
 
@@ -183,6 +185,7 @@ class CreateMessage {
         throw e
       }
     }
+    
     containerDef
   }
 

@@ -20,24 +20,20 @@ import scala.StringBuilder
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.{Map => MutableMap}
-
-import com.ligadata.kamanja.metadata.{MdMgr, ModelDef, BaseElem}
+import com.ligadata.kamanja.metadata.{BaseElem, MdMgr, ModelDef}
 import com.ligadata.KamanjaBase._
-import com.ligadata.Utils.{ Utils, KamanjaClassLoader, KamanjaLoaderInfo }
-
+import com.ligadata.Utils.{KamanjaClassLoader, KamanjaLoaderInfo, Utils}
 import org.apache.logging.log4j.LogManager
-
-import java.io.{PushbackInputStream, ByteArrayInputStream, InputStream}
+import java.io.{ByteArrayInputStream, InputStream, PushbackInputStream}
 import java.nio.charset.StandardCharsets
 import java.util.{List => JList}
 import javax.xml.bind.{ValidationEvent, ValidationEventHandler}
 import javax.xml.transform.sax.SAXSource
+import org.jpmml.sas._
 
-
-import org.dmg.pmml.{PMML, FieldName}
+import org.dmg.pmml.{FieldName, PMML, Visitor}
 import org.jpmml.evaluator._
-import org.jpmml.model.{JAXBUtil, ImportFilter}
-
+import org.jpmml.model.{ImportFilter, JAXBUtil}
 import org.xml.sax.InputSource
 import org.xml.sax.helpers.XMLReaderFactory
 
@@ -441,7 +437,11 @@ class JpmmlAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext) extends 
         val unmarshaller = JAXBUtil.createUnmarshaller
         unmarshaller.setEventHandler(SimpleValidationEventHandler)
 
-        val pmml: PMML = unmarshaller.unmarshal(source).asInstanceOf[PMML]
+        var pmml: PMML = unmarshaller.unmarshal(source).asInstanceOf[PMML]
+        if (pmml.getHeader().getApplication().getName().contains("SAS")) {
+            val visitor : Visitor  = new org.jpmml.sas.visitors.ExpressionCorrector()
+            visitor.applyTo(pmml);
+        }
         val modelEvaluatorFactory = ModelEvaluatorFactory.newInstance()
         val modelEvaluator = modelEvaluatorFactory.newModelManager(pmml)
         modelEvaluator

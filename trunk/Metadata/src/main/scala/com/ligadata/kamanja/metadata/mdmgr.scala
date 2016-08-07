@@ -362,12 +362,17 @@ class MdMgr {
     * @param depJars   -
     */
 
-  private def SetBaseElem(be: BaseElemDef, nameSpace: String, name: String, ver: Long, jarNm: String, depJars: Array[String], ownerId: String, tenantId: String, uniqueId: Long, mdElementId: Long): Unit = {
-    if (msgdefSystemCols.contains(name.trim.toLowerCase)) {
+  private def SetBaseElem(be: BaseElemDef, nameSpace: String, name: String, ver: Long, jarNm: String, depJars: Array[String], ownerId: String, tenantId: String, uniqueId: Long, mdElementId: Long, caseSensitive: Boolean = false): Unit = {
+    if (caseSensitive) {
       be.name = name.trim
     } else {
-      be.name = name.trim.toLowerCase
+      if (msgdefSystemCols.contains(name.trim.toLowerCase)) {
+        be.name = name.trim
+      } else {
+        be.name = name.trim.toLowerCase
+      }
     }
+
     be.nameSpace = nameSpace.trim.toLowerCase
     be.ver = ver
     // be.uniqueId = MdIdSeq.next
@@ -417,7 +422,7 @@ class MdMgr {
     if (ad.aType.DependencyJarNames != null) depJarSet ++= ad.aType.DependencyJarNames
     val dJars = if (depJarSet.size > 0) depJarSet.toArray else null
 
-    SetBaseElem(ad, nameSpace, name, ver, null, dJars, ownerId, tenantId, uniqueId, mdElementId)
+    SetBaseElem(ad, nameSpace, name, ver, null, dJars, ownerId, tenantId, uniqueId, mdElementId, true)
     if (collectionType == null) {
       ad.collectionType = tNone
     } else {
