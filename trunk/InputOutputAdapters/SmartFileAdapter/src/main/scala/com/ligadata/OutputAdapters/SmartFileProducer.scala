@@ -47,8 +47,28 @@ object SmartFileProducer extends OutputAdapterFactory {
 }
 
 case class PartitionFile(key: String, name: String, outStream: OutputStream, var records: Long, var size: Long, var buffer: ArrayBuffer[Byte], var recordsInBuffer: Long, var flushBufferSize: Long)
-case class CompressedStream(val compressStream: OutputStream, val originalStream: Any) extends OutputStream {
-  def write(b: Int) = {
+case class PartitionStream(val compressStream: OutputStream, val originalStream: Any) extends OutputStream {
+  override def	close() = {
+    compressStream.close();
+  }
+  
+  override def	flush() = {
+    compressStream.flush();
+    if(originalStream.isInstanceOf[FSDataOutputStream] ) {
+      val hdfsOs = originalStream.asInstanceOf[FSDataOutputStream]
+      hdfsOs.getWrappedStream().asInstanceOf[DFSOutputStream].hsync(java.util.EnumSet.of(SyncFlag.UPDATE_LENGTH))
+    }
+  }
+  
+  override def	write(b: Array[Byte]) = {
+    compressStream.write(b)
+  }
+  
+  override def	write(b: Array[Byte], off: Int, len: Int) = {
+    compressStream.write(b, off, len)
+  }
+  
+  override def write(b: Int) = {
     compressStream.write(b)
   }
 }
@@ -227,34 +247,22 @@ class OutputStreamWriter {
   }
 
   private def writeToFs(fc: SmartFileProducerConfiguration, os: OutputStream, message: Array[Byte]) = {
-    val stream = os.asInstanceOf[CompressedStream].compressStream
-    stream.write(message)
-    stream.flush()
+    os.write(message)
+    os.flush()
   }
 
   private def writeToHdfs(fc: SmartFileProducerConfiguration, os: OutputStream, message: Array[Byte]) = {
     try {
-      val stream = os.asInstanceOf[CompressedStream].compressStream
-      stream.write(message)
-      stream.flush()
-      
-      if(os.asInstanceOf[CompressedStream].originalStream.isInstanceOf[FSDataOutputStream] ) {
-        val hdfsOs = os.asInstanceOf[CompressedStream].originalStream.asInstanceOf[FSDataOutputStream]
-        hdfsOs.getWrappedStream().asInstanceOf[DFSOutputStream].hsync(java.util.EnumSet.of(SyncFlag.UPDATE_LENGTH))
-      }
+      val stream = os.asInstanceOf[PartitionStream].compressStream
+      os.write(message)
+      os.flush()  // this flush will call hsync for HDFS    
     } catch {
       case e: Exception => {
         if (fc.kerberos != null) {
           LOG.debug("Smart File Producer " + fc.Name + ": Error writing to HDFS. Will relogin and try.")
           ugi.reloginFromTicketCache()
-          val stream = os.asInstanceOf[CompressedStream].compressStream
-          stream.write(message)
-          stream.flush()
-      
-          if(os.asInstanceOf[CompressedStream].originalStream.isInstanceOf[FSDataOutputStream] ) {
-            val hdfsOs = os.asInstanceOf[CompressedStream].originalStream.asInstanceOf[FSDataOutputStream]
-            hdfsOs.getWrappedStream().asInstanceOf[DFSOutputStream].hsync(java.util.EnumSet.of(SyncFlag.UPDATE_LENGTH))
-          }
+          os.write(message)
+          os.flush()
         }
       }
     }
@@ -495,7 +503,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           if (fileBufferSize > 0)
             buffer = new ArrayBuffer[Byte];
 
-          partKey = new PartitionFile(key, fileName, new CompressedStream(os, originalStream), 0, 0, buffer, 0, fileBufferSize)
+          partKey = new PartitionFile(key, fileName, new PartitionStream(os, originalStream), 0, 0, buffer, 0, fileBufferSize)
 
           LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile adding key - [" + key + "]")
           partitionStreams(key) = partKey
@@ -557,7 +565,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       if (compress)
         os = new CompressorStreamFactory().createCompressorOutputStream(fc.compressionString, os)
 
-      partitionStreams(pf.key) = new PartitionFile(pf.key, pf.name, new CompressedStream(os, originalStream), pf.records, pf.size, pf.buffer, pf.recordsInBuffer, pf.flushBufferSize)
+      partitionStreams(pf.key) = new PartitionFile(pf.key, pf.name, new PartitionStream(os, originalStream), pf.records, pf.size, pf.buffer, pf.recordsInBuffer, pf.flushBufferSize)
 
       return partitionStreams(pf.key)
     } finally {
