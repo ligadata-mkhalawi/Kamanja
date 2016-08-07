@@ -31,10 +31,13 @@ import com.ligadata.AdaptersConfiguration.SmartFileProducerConfiguration
 import com.ligadata.Exceptions.{UnsupportedOperationException, FatalAdapterException}
 import com.ligadata.HeartBeat.{Monitorable, MonitorComponentInfo}
 import org.json4s.jackson.Serialization
+import org.apache.hadoop.hdfs.DFSOutputStream
+import org.apache.hadoop.hdfs.client.HdfsDataOutputStream.SyncFlag
 import org.apache.hadoop.fs.{FileSystem, FSDataOutputStream, Path}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.commons.compress.compressors.CompressorStreamFactory
+import org.apache.commons.compress.compressors.CompressorOutputStream
 import scala.collection.mutable.ArrayBuffer
 
 object SmartFileProducer extends OutputAdapterFactory {
@@ -44,6 +47,11 @@ object SmartFileProducer extends OutputAdapterFactory {
 }
 
 case class PartitionFile(key: String, name: String, outStream: OutputStream, var records: Long, var size: Long, var buffer: ArrayBuffer[Byte], var recordsInBuffer: Long, var flushBufferSize: Long)
+case class CompressedStream(val compressStream: OutputStream, val originalStream: Any) extends OutputStream {
+  def write(b: Int) = {
+    compressStream.write(b)
+  }
+}
 
 class OutputStreamWriter {
   private[this] val LOG = LogManager.getLogger(getClass);
@@ -219,23 +227,34 @@ class OutputStreamWriter {
   }
 
   private def writeToFs(fc: SmartFileProducerConfiguration, os: OutputStream, message: Array[Byte]) = {
-    os.write(message);
-    os.flush()
+    val stream = os.asInstanceOf[CompressedStream].compressStream
+    stream.write(message)
+    stream.flush()
   }
 
   private def writeToHdfs(fc: SmartFileProducerConfiguration, os: OutputStream, message: Array[Byte]) = {
     try {
-      //os.write(message);
-      //os.flush()
-      val hdfsOs = os.asInstanceOf[FSDataOutputStream]
-      hdfsOs.write(message);
-      hdfsOs.hsync()
+      val stream = os.asInstanceOf[CompressedStream].compressStream
+      stream.write(message)
+      stream.flush()
+      
+      if(os.asInstanceOf[CompressedStream].originalStream.isInstanceOf[FSDataOutputStream] ) {
+        val hdfsOs = os.asInstanceOf[CompressedStream].originalStream.asInstanceOf[FSDataOutputStream]
+        hdfsOs.getWrappedStream().asInstanceOf[DFSOutputStream].hsync(java.util.EnumSet.of(SyncFlag.UPDATE_LENGTH))
+      }
     } catch {
       case e: Exception => {
         if (fc.kerberos != null) {
           LOG.debug("Smart File Producer " + fc.Name + ": Error writing to HDFS. Will relogin and try.")
           ugi.reloginFromTicketCache()
-          os.write(message);
+          val stream = os.asInstanceOf[CompressedStream].compressStream
+          stream.write(message)
+          stream.flush()
+      
+          if(os.asInstanceOf[CompressedStream].originalStream.isInstanceOf[FSDataOutputStream] ) {
+            val hdfsOs = os.asInstanceOf[CompressedStream].originalStream.asInstanceOf[FSDataOutputStream]
+            hdfsOs.getWrappedStream().asInstanceOf[DFSOutputStream].hsync(java.util.EnumSet.of(SyncFlag.UPDATE_LENGTH))
+          }
         }
       }
     }
@@ -468,6 +487,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           val fileName = "%s/%s/%s%s-%d-%s.dat%s".format(fc.uri, path, fc.fileNamePrefix, nodeId, bucket, ts, extensions.getOrElse(fc.compressionString, ""))
           LOG.info("Smart File Producer " + fc.Name + "(" + this + "): Opening file " + fileName)
           var os = openFile(fc, fileName)
+          val originalStream = os
           if (compress)
             os = new CompressorStreamFactory().createCompressorOutputStream(fc.compressionString, os)
 
@@ -475,7 +495,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           if (fileBufferSize > 0)
             buffer = new ArrayBuffer[Byte];
 
-          partKey = new PartitionFile(key, fileName, os, 0, 0, buffer, 0, fileBufferSize)
+          partKey = new PartitionFile(key, fileName, new CompressedStream(os, originalStream), 0, 0, buffer, 0, fileBufferSize)
 
           LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile adding key - [" + key + "]")
           partitionStreams(key) = partKey
@@ -533,10 +553,11 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     try {
       partitionStreams.remove(pf.key)
       var os = openFile(fc, pf.name)
+      val originalStream = os
       if (compress)
         os = new CompressorStreamFactory().createCompressorOutputStream(fc.compressionString, os)
 
-      partitionStreams(pf.key) = new PartitionFile(pf.key, pf.name, os, pf.records, pf.size, pf.buffer, pf.recordsInBuffer, pf.flushBufferSize)
+      partitionStreams(pf.key) = new PartitionFile(pf.key, pf.name, new CompressedStream(os, originalStream), pf.records, pf.size, pf.buffer, pf.recordsInBuffer, pf.flushBufferSize)
 
       return partitionStreams(pf.key)
     } finally {
