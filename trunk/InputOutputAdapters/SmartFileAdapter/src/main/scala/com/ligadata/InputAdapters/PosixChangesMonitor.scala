@@ -291,7 +291,7 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
 
     val maxThreadCount = Math.min(monitoringConf.monitoringThreadsCount, monitoringConf.detailedLocations.length)
     monitorsExecutorService = Executors.newFixedThreadPool(maxThreadCount)
-    logger.warn("Smart File Monitor - running {} threads to monitor {} dirs",
+    logger.info("Smart File Monitor - running {} threads to monitor {} dirs",
       monitoringConf.monitoringThreadsCount.toString, monitoringConf.detailedLocations.length.toString)
 
     val monitoredDirsQueue = new MonitoredDirsQueue()
@@ -318,10 +318,9 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
                     val isFirstScan = dirQueuedInfo._3
                     val targetFolder = location.srcDir
 
-                    logger.warn("Smart File Monitor - Monitoring folder {} on thread {}", targetFolder, currentThreadId.toString)
+                    logger.info("Smart File Monitor - Monitoring folder {} on thread {}", targetFolder, currentThreadId.toString)
 
                     try {
-                      logger.info(s"Watching directory $targetFolder")
 
                       val dirsToCheck = new ArrayBuffer[String]()
                       dirsToCheck += targetFolder
@@ -353,12 +352,12 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
                   }
                   else {
                     //happens if last time queue head dir was monitored was less than waiting time
-                    logger.warn("Smart File Monitor - no folders to monitor for now. Thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
+                    logger.info("Smart File Monitor - no folders to monitor for now. Thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
                     Thread.sleep(monitoringConf.waitingTimeMS)
                   }
                 }
                 else {
-                  logger.warn("Smart File Monitor - too many files already in process queue. monitoring thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
+                  logger.info("Smart File Monitor - too many files already in process queue. monitoring thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
                   Thread.sleep(monitoringConf.waitingTimeMS)
                 }
               } ///while isMonitoring

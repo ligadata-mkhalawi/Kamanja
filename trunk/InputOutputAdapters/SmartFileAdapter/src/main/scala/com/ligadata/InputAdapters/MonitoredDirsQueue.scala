@@ -21,7 +21,7 @@ class MonitoredDirsQueue {
 
   def getNextDir(re_enqueue : Boolean = true) : (LocationInfo, Long, Boolean) = {
 
-    logger.warn("dirsQueue before calling getNextDir = {}", dirsQueue)
+    logger.debug("dirsQueue before calling getNextDir = {}", dirsQueue)
     qLock.synchronized{
       if(dirsQueue.isEmpty)
         null
@@ -44,7 +44,7 @@ class MonitoredDirsQueue {
         val newDirInfo = (dirInfo._1, System.nanoTime() / 1000, false)
         dirsQueue.enqueue(newDirInfo)
 
-        logger.warn("dirsQueue reEnqueue calling getNextDir = {}", dirsQueue)
+        logger.debug("dirsQueue reEnqueue calling getNextDir = {}", dirsQueue)
       }
       catch{
         case ex : Throwable => logger.error("Error while enqueuing folder for monitoring " + dirInfo._1.srcDir,ex)

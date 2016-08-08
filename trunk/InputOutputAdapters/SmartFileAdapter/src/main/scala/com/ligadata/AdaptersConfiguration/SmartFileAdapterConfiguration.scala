@@ -1,6 +1,7 @@
 package com.ligadata.AdaptersConfiguration
 
 import com.ligadata.Exceptions.KamanjaException
+import com.ligadata.InputAdapters.MonitorUtils
 import com.ligadata.InputOutputAdapterInfo._
 import org.apache.logging.log4j.LogManager
 import org.json4s._
@@ -256,11 +257,11 @@ object SmartFileAdapterConfiguration {
       }
       else if (kv._1.compareToIgnoreCase("Locations") == 0) {
         //old fashioned-simple locations
-        simpleLocations = kv._2.asInstanceOf[String].split(",").map(str => str.trim).filter(str => str.size > 0)
+        simpleLocations = kv._2.asInstanceOf[String].split(",").map(str => MonitorUtils.simpleDirPath(str.trim)).filter(str => str.size > 0)
       }
       else if (kv._1.compareToIgnoreCase("TargetMoveDir") == 0) {
         //public targetMoveDir
-        publicTargetMoveDir = kv._2.asInstanceOf[String]
+        publicTargetMoveDir = MonitorUtils.simpleDirPath(kv._2.asInstanceOf[String])
         //println("publicTargetMoveDir============="+publicTargetMoveDir)
       }
       else if (kv._1.compareToIgnoreCase("EnableMoving") == 0) {
@@ -280,10 +281,10 @@ object SmartFileAdapterConfiguration {
           val locationInfo = new LocationInfo
           loc.foreach(kv => {
             if (kv._1.compareToIgnoreCase("srcDir") == 0) {
-              locationInfo.srcDir = kv._2.asInstanceOf[String].trim
+              locationInfo.srcDir = MonitorUtils.simpleDirPath(kv._2.asInstanceOf[String].trim)
             }
             else if (kv._1.compareToIgnoreCase("targetDir") == 0) {
-              locationInfo.targetDir = kv._2.asInstanceOf[String].trim
+              locationInfo.targetDir = MonitorUtils.simpleDirPath(kv._2.asInstanceOf[String].trim)
             }
             else if (kv._1.compareToIgnoreCase("EnableMoving") == 0) {
               locationInfo.enableMoving = kv._2.asInstanceOf[String]
@@ -321,7 +322,7 @@ object SmartFileAdapterConfiguration {
     if (monitoringConfig.detailedLocations.length == 0) {
       if (simpleLocations.length > 0) {
         if ((!monitoringConfig.isMovingEnabled) && (publicTargetMoveDir == null || publicTargetMoveDir.length == 0)) {
-          val err = "Not found TargetMoveDir corresponding to locatoins for Smart File Adapter Config:" + adapterName
+          val err = "Not found TargetMoveDir corresponding to locations for Smart File Adapter Config:" + adapterName
           throw new KamanjaException(err, null)
         }
 

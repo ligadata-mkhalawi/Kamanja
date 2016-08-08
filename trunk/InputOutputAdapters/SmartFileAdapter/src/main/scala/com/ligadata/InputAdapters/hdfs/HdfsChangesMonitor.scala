@@ -378,7 +378,7 @@ class HdfsChangesMonitor(adapterName: String, modifiedFileCallback: (SmartFileHa
 
     val maxThreadCount = Math.min(monitoringConf.monitoringThreadsCount, monitoringConf.detailedLocations.length)
     monitorsExecutorService = Executors.newFixedThreadPool(maxThreadCount)
-    logger.warn("Smart File Monitor - running {} threads to monitor {} dirs",
+    logger.info("Smart File Monitor - running {} threads to monitor {} dirs",
       monitoringConf.monitoringThreadsCount.toString, monitoringConf.detailedLocations.length.toString)
 
     val monitoredDirsQueue = new MonitoredDirsQueue()
@@ -400,7 +400,7 @@ class HdfsChangesMonitor(adapterName: String, modifiedFileCallback: (SmartFileHa
                 val isFirstScan = dirQueuedInfo._3
                 val targetFolder = location.srcDir
                 try {
-                  logger.warn("Smart File Monitor - Monitoring folder {} on thread {}", targetFolder, currentThreadId.toString)
+                  logger.info("Smart File Monitor - Monitoring folder {} on thread {}", targetFolder, currentThreadId.toString)
 
                   val modifiedDirs = new ArrayBuffer[String]()
                   modifiedDirs += targetFolder
@@ -425,7 +425,7 @@ class HdfsChangesMonitor(adapterName: String, modifiedFileCallback: (SmartFileHa
                         if (MonitorUtils.isPatternMatch(MonitorUtils.getFileName(tuple._1.getFullPath), location.fileComponents.regex))
                           validModifiedFiles.append(tuple)
                         else
-                          logger.warn("Smart File Consumer (Hdfs) : File {}, does not follow configured name pattern ({}), so it will be ignored - Adapter {}",
+                          logger.info("Smart File Consumer (Hdfs) : File {}, does not follow configured name pattern ({}), so it will be ignored - Adapter {}",
                             tuple._1.getFullPath, location.fileComponents.regex, adapterName)
                       })
                     }
@@ -462,13 +462,13 @@ class HdfsChangesMonitor(adapterName: String, modifiedFileCallback: (SmartFileHa
               }
               else {
                 //happens if last time queue head dir was monitored was less than waiting time
-                logger.warn("Smart File Monitor - no folders to monitor for now. Thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
+                logger.info("Smart File Monitor - no folders to monitor for now. Thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
                 Thread.sleep(monitoringConf.waitingTimeMS)
               }
 
             }
             else {
-              logger.warn("Smart File Monitor - too many files already in process queue. monitoring thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
+              logger.info("Smart File Monitor - too many files already in process queue. monitoring thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
               Thread.sleep(monitoringConf.waitingTimeMS)
             }
           }
