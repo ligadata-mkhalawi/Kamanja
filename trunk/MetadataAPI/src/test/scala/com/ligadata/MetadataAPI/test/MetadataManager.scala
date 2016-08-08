@@ -93,7 +93,6 @@ class MetadataManager extends KamanjaTestLogger {
     MetadataAPIImpl.metadataAPIConfig.setProperty("NOTIFY_ENGINE", "NO")
     MetadataAPIImpl.metadataAPIConfig.setProperty("ZNODE_PATH", config.znodeBasePath)
     MetadataAPIImpl.metadataAPIConfig.setProperty("ZOOKEEPER_CONNECT_STRING", config.zkConnStr)
-    println("JUST SET ZOOKEEPER_CONNECT_STRING to " + MetadataAPIImpl.metadataAPIConfig.getProperty("ZOOKEEPER_CONNECT_STRING"))
     MetadataAPIImpl.metadataAPIConfig.setProperty("COMPILER_WORK_DIR", getClass.getResource("/jars/lib/workingdir").getPath)
     MetadataAPIImpl.metadataAPIConfig.setProperty("API_LEADER_SELECTION_ZK_NODE", config.znodeBasePath)
     MetadataAPIImpl.metadataAPIConfig.setProperty("MODEL_EXEC_LOG", config.modelExecLog)
@@ -137,7 +136,6 @@ class MetadataManager extends KamanjaTestLogger {
     MetadataAPIImpl.metadataAPIConfig.setProperty("CONCEPT_FILES_DIR",metadataDir.getAbsoluteFile + "/concept")
     MetadataAPIImpl.metadataAPIConfig.setProperty("TYPE_FILES_DIR",metadataDir.getAbsoluteFile + "/type")
     MetadataAPIImpl.metadataAPIConfig.setProperty("CONFIG_FILES_DIR",metadataDir.getAbsoluteFile + "/config")
-
   }
 
   def addBindings(filepath: String): Int = {
