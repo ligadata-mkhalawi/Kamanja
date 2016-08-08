@@ -438,93 +438,109 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
     checkFolders = status
   }
 
-  def monitor(): Unit ={
+  def monitor(): Unit = {
     val validModifiedFiles = ArrayBuffer[(SmartFileHandler, FileChangeType)]()
-    val manager : StandardFileSystemManager  = new StandardFileSystemManager()
+    val manager: StandardFileSystemManager = new StandardFileSystemManager()
 
     isMonitoring = true
     //Initializes the file manager
     manager.init()
 
-    monitorsExecutorService = Executors.newFixedThreadPool(monitoringConf.monitoringThreadsCount)
+    val maxThreadCount = Math.min(monitoringConf.monitoringThreadsCount, monitoringConf.detailedLocations.length)
+    monitorsExecutorService = Executors.newFixedThreadPool(maxThreadCount)
+    logger.warn("Smart File Monitor - running {} threads to monitor {} dirs",
+      monitoringConf.monitoringThreadsCount.toString, monitoringConf.detailedLocations.length.toString)
 
-    monitoringConf.detailedLocations.foreach(location => {
-      val folderToWatch = location.srcDir
+    val monitoredDirsQueue = new MonitoredDirsQueue()
+    monitoredDirsQueue.init(monitoringConf.detailedLocations, monitoringConf.waitingTimeMS)
+
+    for (currentThreadId <- 1 to maxThreadCount) {
+
       val dirMonitorthread = new Runnable() {
-        private var targetRemoteFolder: String = _
-        def init(dir: String) = targetRemoteFolder = dir
 
         override def run() = {
           try {
-
-            val sftpEncodedUri = createConnectionString(connectionConf, targetRemoteFolder)
 
             var firstCheck = true
 
             while (isMonitoring) {
 
-              if(checkFolders) {
-                try {
-                  logger.info(s"Checking configured SFTP directory ($targetRemoteFolder)...")
+              if (checkFolders) {
 
-                  val modifiedDirs = new ArrayBuffer[String]()
-                  modifiedDirs += sftpEncodedUri
-                  while (modifiedDirs.nonEmpty) {
-                    //each time checking only updated folders: first find direct children of target folder that were modified
-                    // then for each folder of these search for modified files and folders, repeat for the modified folders
+                val dirQueuedInfo = monitoredDirsQueue.getNextDir()
+                if (dirQueuedInfo != null) {
+                  val location = dirQueuedInfo._1
+                  val isFirstScan = dirQueuedInfo._3
+                  val targetRemoteFolder = location.srcDir
+                  try {
+                    val sftpEncodedUri = createConnectionString(connectionConf, targetRemoteFolder)
+                    logger.info(s"Checking configured SFTP directory ($targetRemoteFolder)...")
 
-                    val aFolder = modifiedDirs.head
-                    val modifiedFiles = Map[SmartFileHandler, FileChangeType]() // these are the modified files found in folder $aFolder
+                    val modifiedDirs = new ArrayBuffer[String]()
+                    modifiedDirs += sftpEncodedUri
+                    while (modifiedDirs.nonEmpty) {
+                      //each time checking only updated folders: first find direct children of target folder that were modified
+                      // then for each folder of these search for modified files and folders, repeat for the modified folders
 
-                    modifiedDirs.remove(0)
-                    findDirModifiedDirectChilds(aFolder, manager, modifiedDirs, modifiedFiles, firstCheck)
-                    logger.debug("modifiedFiles map is {}", modifiedFiles)
+                      val aFolder = modifiedDirs.head
+                      val modifiedFiles = Map[SmartFileHandler, FileChangeType]() // these are the modified files found in folder $aFolder
 
-                    //check for file names pattern
-                    validModifiedFiles.clear()
-                    if(location.fileComponents != null){
-                      modifiedFiles.foreach(tuple => {
-                        if(MonitorUtils.isPatternMatch(MonitorUtils.getFileName(tuple._1.getFullPath), location.fileComponents.regex))
-                          validModifiedFiles.append(tuple)
-                        else
-                          logger.warn("Smart File Consumer (SFTP) : File {}, does not follow configured name pattern ({}), so it will be ignored - Adapter {}",
-                            tuple._1.getFullPath, location.fileComponents.regex, adapterName)
-                      })
-                    }
-                    else
-                      validModifiedFiles.appendAll(modifiedFiles)
+                      modifiedDirs.remove(0)
+                      findDirModifiedDirectChilds(aFolder, manager, modifiedDirs, modifiedFiles, firstCheck)
+                      logger.debug("modifiedFiles map is {}", modifiedFiles)
 
-                    val orderedModifiedFiles = validModifiedFiles.map(tuple => (tuple._1, tuple._2)).toList.
-                      sortWith((tuple1, tuple2) => MonitorUtils.compareFiles(tuple1._1,tuple2._1,location) < 0)
-
-                    if (orderedModifiedFiles.nonEmpty)
-                      orderedModifiedFiles.foreach(tuple => {
-
-                        logger.debug("calling sftp monitor is calling file callback for MonitorController for file {}, initial = {}",
-                          tuple._1.getFullPath, (tuple._2 == AlreadyExisting).toString)
-                        try {
-                          modifiedFileCallback(tuple._1, tuple._2 == AlreadyExisting)
-                        }
-                        catch {
-                          case e: Throwable =>
-                            logger.error("Smart File Consumer (Sftp) : Error while notifying Monitor about new file", e)
-                        }
-
+                      //check for file names pattern
+                      validModifiedFiles.clear()
+                      if (location.fileComponents != null) {
+                        modifiedFiles.foreach(tuple => {
+                          if (MonitorUtils.isPatternMatch(MonitorUtils.getFileName(tuple._1.getFullPath), location.fileComponents.regex))
+                            validModifiedFiles.append(tuple)
+                          else
+                            logger.warn("Smart File Consumer (SFTP) : File {}, does not follow configured name pattern ({}), so it will be ignored - Adapter {}",
+                              tuple._1.getFullPath, location.fileComponents.regex, adapterName)
+                        })
                       }
-                      )
+                      else
+                        validModifiedFiles.appendAll(modifiedFiles)
+
+                      val orderedModifiedFiles = validModifiedFiles.map(tuple => (tuple._1, tuple._2)).toList.
+                        sortWith((tuple1, tuple2) => MonitorUtils.compareFiles(tuple1._1, tuple2._1, location) < 0)
+
+                      if (orderedModifiedFiles.nonEmpty)
+                        orderedModifiedFiles.foreach(tuple => {
+
+                          logger.debug("calling sftp monitor is calling file callback for MonitorController for file {}, initial = {}",
+                            tuple._1.getFullPath, (tuple._2 == AlreadyExisting).toString)
+                          try {
+                            modifiedFileCallback(tuple._1, tuple._2 == AlreadyExisting)
+                          }
+                          catch {
+                            case e: Throwable =>
+                              logger.error("Smart File Consumer (Sftp) : Error while notifying Monitor about new file", e)
+                          }
+
+                        }
+                        )
+                    }
+
+                  }
+                  catch {
+                    case ex: Exception => logger.error("Smart File Consumer (sftp Monitor) - Error while checking folder " + targetRemoteFolder, ex)
+                    case ex: Throwable => logger.error("Smart File Consumer (sftp Monitor) - Error while checking folder " + targetRemoteFolder, ex)
                   }
 
+                  monitoredDirsQueue.reEnqueue(dirQueuedInfo) // so the folder gets monitored again
                 }
-                catch {
-                  case ex: Exception => logger.error("Smart File Consumer (sftp Monitor) - Error while checking folder " + targetRemoteFolder, ex)
-                  case ex: Throwable => logger.error("Smart File Consumer (sftp Monitor) - Error while checking folder " + targetRemoteFolder, ex)
+                else {
+                  //happens if last time queue head dir was monitored was less than waiting time
+                  logger.warn("Smart File Monitor - no folders to monitor for now. Thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
+                  Thread.sleep(monitoringConf.waitingTimeMS)
                 }
 
-                firstCheck = false
-
-                logger.info(s"Sleepng for ${monitoringConf.waitingTimeMS} milliseconds...............................")
+              }
+              else {
+                logger.warn("Smart File Monitor - too many files already in process queue. monitoring thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
                 Thread.sleep(monitoringConf.waitingTimeMS)
-
               }
             }
 
@@ -533,10 +549,10 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
           }
           catch {
             case ex: Exception =>
-              logger.error("Error while monitoring folder " + targetRemoteFolder, ex)
+              logger.error("Smart File Monitor - Error", ex)
 
             case ex: Throwable =>
-              logger.error("Error while monitoring folder " + targetRemoteFolder, ex)
+              logger.error("Smart File Monitor - Error", ex)
 
           }
           finally {
@@ -544,9 +560,8 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
           }
         }
       }
-      dirMonitorthread.init(folderToWatch)
       monitorsExecutorService.execute(dirMonitorthread)
-    })
+    }
 
   }
 
