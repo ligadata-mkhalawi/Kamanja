@@ -47,7 +47,7 @@ lazy val KamanjaInternalDeps = project.in(file("KamanjaInternalDeps")).configs(T
   Serialize, ZooKeeperListener, ZooKeeperLeaderLatch, KamanjaUtils, TransactionService, StorageManager, PmmlCompiler, ZooKeeperClient, OutputMsgDef, SecurityAdapterBase, HeartBeat,
   JpmmlFactoryOfModelInstanceFactory, JarFactoryOfModelInstanceFactory, KamanjaVersion, InstallDriverBase, BaseFunctions, KafkaSimpleInputOutputAdapters, FileSimpleInputOutputAdapters, SimpleEnvContextImpl,
   GenericMsgCompiler, MethodExtractor, JsonDataGen, Controller, AuditAdapters, CustomUdfLib, UtilityService,
-  UtilsForModels, MessageCompiler, jtm, Dag, NodeInfoExtract, SmartFileAdapter, Cache, CacheImp, CsvSerDeser, JsonSerDeser, KBinarySerDeser)
+  UtilsForModels, MessageCompiler, jtm, Dag, NodeInfoExtract, SmartFileAdapter, Cache, CacheImp, CsvSerDeser, JsonSerDeser, KBinarySerDeser, KamanjaAppTester)
 
 ////////////////////////
 
@@ -249,10 +249,17 @@ lazy val DemoKafkaProducer = project.in(file("Utils/DemoKafkaProducer")).configs
 
 lazy val KamanjaUIREST = project.in(file("KamanjaUI/Rest/KamanjaUIRest")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild )
 
+lazy val KamanjaAppTester = project.in(file("Utils/KamanjaAppTester"))
+  .configs(TestConfigs.all: _*)
+  .settings(TestSettings.settings: _*)
+  .settings(version <<= version in ThisBuild)
+  .dependsOn(KamanjaManager % "compile->test", MetadataAPI % "compile->test", KamanjaTestUtils, KafkaSimpleInputOutputAdapters % "compile->test")
+
 
 // TEST LIBRARIES ONLY TO BE INCLUDED AS PART OF TESTS
 
 lazy val KamanjaTestUtils = project.in(file("Utils/KamanjaTestUtils")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided")
+
 
 /*
 val commonSettings = Seq(
