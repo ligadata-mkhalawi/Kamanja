@@ -467,7 +467,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
     return key + "->" + msgCount
   }
 
-  override def send(message: Array[Byte], partitionKey: Array[Byte]): Unit = {
+  override def send(messages: Array[Array[Byte]], partitionKeys: Array[Array[Byte]]): Unit = {
 
     if (!isHeartBeating) runHeartBeat
 
@@ -483,9 +483,13 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       var ab = new ArrayBuffer[MsgDataRecievedCnt](256)
       var partId = 0
 
+      var keyIndex = 0
       partitionsMsgMap(partId) = ab
-      val pr = new ProducerRecord(qc.topic, partitionKey, message)
-      ab += MsgDataRecievedCnt(msgInOrder.getAndIncrement, pr)
+      messages.foreach(message => {
+        val pr = new ProducerRecord(qc.topic, partitionKeys(keyIndex), message)
+        ab += MsgDataRecievedCnt(msgInOrder.getAndIncrement, pr)
+        keyIndex += 1
+      })
 
       var outstandingMsgs = outstandingMsgCount
       // LOG.debug("KAFKA PRODUCER: current outstanding messages for topic %s are %d".format(qc.topic, outstandingMsgs))

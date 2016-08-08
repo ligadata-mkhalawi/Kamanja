@@ -340,7 +340,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     }
   }
 
-  override def send(message: Array[Byte], partitionKey: Array[Byte]): Unit = {
+  override def send(message: Array[Array[Byte]], partitionKey: Array[Array[Byte]]): Unit = {
     // Not implemented yet
   }
 

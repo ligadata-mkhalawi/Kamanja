@@ -139,7 +139,11 @@ object SimpleKafkaProducer {
            topic: String, message: Array[Byte], partIdx: Array[Byte]): Unit = {
     try {
       //producer.send(new KeyedMessage(topic, partIdx, message))
-      producer.send(message, partIdx)
+      val messages: Array[Array[Byte]] = new Array[Array[Byte]](1)
+      val pKeys: Array[Array[Byte]] = new Array[Array[Byte]](1)
+      messages(0) = message
+      pKeys(0) = partIdx
+      producer.send(messages, pKeys)
 
       //producer.send(new ProducerRecord[Array[Byte],Array[Byte]](topic, partIdx , message))
       //producer.send(new KeyedMessage(topic, message))
