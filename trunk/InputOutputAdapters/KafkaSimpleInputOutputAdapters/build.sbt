@@ -23,6 +23,10 @@ name := "KafkaSimpleInputOutputAdapters"
 //
 //libraryDependencies += "org.json4s" %% "json4s-native" % "3.2.9"
 
+// Adding test libs for testing purposes
+//libraryDependencies += "org.apache.kafka" %% "kafka" % "0.9.0.1" % "test" classifier "test"
+//libraryDependencies += "org.apache.kafka" % "kafka-clients" % "0.9.0.1" % "test"
+
 coverageMinimum := 80
 
 coverageFailOnMinimum := false

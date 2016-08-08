@@ -33,9 +33,9 @@ val Organization = "com.ligadata"
 val assembleDependencies = TaskKey[Unit]("assembleDependencies")
 
 assembleDependencies in Global := {
-  (assembly in ExtDependencyLibs).value
-  (assembly in ExtDependencyLibs2).value
-  (assembly in KamanjaInternalDeps).value
+  (assembly in Test in ExtDependencyLibs).value
+  (assembly in Test in ExtDependencyLibs2).value
+  (assembly in Test in KamanjaInternalDeps).value
 }
 
 //newly added
@@ -81,7 +81,11 @@ lazy val KamanjaManager = project.in(file("KamanjaManager")).configs(TestConfigs
 
 lazy val InputOutputAdapterBase = project.in(file("InputOutputAdapters/InputOutputAdapterBase")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Exceptions, DataDelimiters, HeartBeat, KamanjaBase, ZooKeeperClient, StorageBase, StorageManager, TransactionService)
 
-lazy val KafkaSimpleInputOutputAdapters = project.in(file("InputOutputAdapters/KafkaSimpleInputOutputAdapters")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", InputOutputAdapterBase, Exceptions, DataDelimiters)
+lazy val KafkaSimpleInputOutputAdapters = project.in(file("InputOutputAdapters/KafkaSimpleInputOutputAdapters")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", InputOutputAdapterBase, Exceptions, DataDelimiters, KamanjaTestUtils % "test", SimpleKafkaProducer % "test")
+  .settings(
+    parallelExecution in Test := false,
+    test <<= (test in Test).dependsOn(assembleDependencies)
+  )
 
 lazy val FileSimpleInputOutputAdapters = project.in(file("InputOutputAdapters/FileSimpleInputOutputAdapters")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", InputOutputAdapterBase, Exceptions, DataDelimiters)
 

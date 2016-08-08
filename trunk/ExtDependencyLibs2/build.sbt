@@ -115,7 +115,7 @@ libraryDependencies ++= Seq(
 
 ////////////////////// CleanUtil
 libraryDependencies ++= Seq(
-  "com.101tec" % "zkclient" % "0.6",
+  "com.101tec" % "zkclient" % "0.7",
   "org.apache.curator" % "curator-test" % "2.8.0"
     exclude("javax.jms", "jms")
     exclude("com.sun.jdmk", "jmxtools")

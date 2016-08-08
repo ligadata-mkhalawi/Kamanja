@@ -60,7 +60,6 @@ assemblyMergeStrategy in assembly := {
   case x =>
     val oldStrategy = (assemblyMergeStrategy in assembly).value
     oldStrategy(x)
-
 }
 
 excludeFilter in unmanagedJars := s"${name.value}_${scalaBinaryVersion.value}-${version.value}.jar"
@@ -127,6 +126,10 @@ resolvers += "Apache repo" at "https://repository.apache.org/content/repositorie
 
 //libraryDependencies += "org.apache.kafka" %% "kafka" % "0.10.0.0"
 libraryDependencies += "org.apache.kafka" %% "kafka" % "0.9.0.1"
+//libraryDependencies += "org.apache.kafka" %% "kafka" % "0.9.0.1" % "test" classifier "test"
+libraryDependencies += "org.apache.kafka" % "kafka-clients" % "0.9.0.1"
+
+
 //libraryDependencies += "org.apache.kafka" %% "kafka" % "0.10.0.0"
 
 /////////////////////// PmmlTestTool
