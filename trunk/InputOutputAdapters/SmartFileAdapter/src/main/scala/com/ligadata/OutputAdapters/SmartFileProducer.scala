@@ -369,7 +369,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   if (fc.rolloverInterval > 0) {
     LOG.info("Smart File Producer " + fc.Name + ": File rollover is configured. Will rollover files every " + fc.rolloverInterval + " minutes.")
     val dt = System.currentTimeMillis()
-    nextRolloverTime = (dt - (dt % (fc.rolloverInterval * 60 * 1000))) + fc.rolloverInterval * 60 * 1000
+    nextRolloverTime = (dt - (dt % (fc.rolloverInterval * 60 * 1000))) + (fc.rolloverInterval * 60 * 1000)
   }
 
   var bufferFlusher: Thread = null
@@ -580,9 +580,11 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
 
     val dt = System.currentTimeMillis
     lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(dt))
-    if (nextRolloverTime > 0 && dt > nextRolloverTime) {
-      rolloverFiles()
-      nextRolloverTime += (fc.rolloverInterval * 60 * 1000)
+    this.synchronized {
+      if (nextRolloverTime > 0 && dt > nextRolloverTime) {
+        rolloverFiles()
+        nextRolloverTime += (fc.rolloverInterval * 60 * 1000)
+      }
     }
 
     val (outContainers, serializedContainerData, serializerNames) = serialize(tnxCtxt, outputContainers)
