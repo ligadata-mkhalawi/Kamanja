@@ -2,7 +2,6 @@
 angular.module('networkApp')
   .service('serviceConfig', [function () {
     return {
-      upperLimitToInValues: 2000,
       classImageColorPath: "./images/",
       classImageColorMap: {
         model: {

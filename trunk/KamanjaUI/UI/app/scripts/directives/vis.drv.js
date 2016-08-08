@@ -86,10 +86,7 @@ angular
         };
 
         var network = new vis.Network(container, data, options);
-        var linearScale = d3.scaleLinear()
-                                   .domain([0,serviceConfig.upperLimitToInValues])
-                                   .range([10,40])
-                                   .interpolate(d3.interpolateRound);
+
         var Node = function (n) {
           var imagePath = serviceConfig.classImageColorPath;
           var types = serviceConfig.classImageColorMap;
@@ -135,8 +132,18 @@ angular
           if(data.nodes){
             var socketObj = JSON.parse(response);
             var messageObj = JSON.parse(socketObj.message);
+            var maxVal = 0;
             _.each(scope.symbolClasses, function (symbolClass) {
-              _.each(messageObj[symbolClass + 'Counter'], function(model){
+              _.each(messageObj[symbolClass + 'Counter'], function(model) {
+                maxVal = Math.max(maxVal, model.In);
+              });
+            });
+            var linearScale = d3.scaleLinear()
+              .domain([0,maxVal])
+              .range([10,40])
+              .interpolate(d3.interpolateRound);
+            _.each(scope.symbolClasses, function (symbolClass) {
+              _.each(messageObj[symbolClass.trim() + 'Counter'], function(model){
                 if (model) {
                   var node = _.find(data.nodes._data, {ID: model.Id});
                   if (node) {
