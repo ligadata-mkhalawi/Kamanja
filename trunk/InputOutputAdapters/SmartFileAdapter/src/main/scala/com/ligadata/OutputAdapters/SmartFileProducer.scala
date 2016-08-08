@@ -136,7 +136,7 @@ class OutputStreamWriter {
         var fs: FileSystem = FileSystem.get(uri, hdfsConf);
 
         if (fs.exists(path)) {
-          if (canAppend) {
+          if (!canAppend) {
             throw UnsupportedOperationException("File %s exists but append is not permitted".format(fileName), null)
           }
           LOG.info("Smart File Producer " + fc.Name + "(" + this + ") : Loading existing file " + uri)
