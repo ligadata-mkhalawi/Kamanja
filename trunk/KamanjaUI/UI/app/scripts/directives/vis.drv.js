@@ -142,9 +142,12 @@ angular
               .domain([0,maxVal])
               .range([10,40])
               .interpolate(d3.interpolateRound);
+            data.nodes.forEach(function(node){
+              var randomNum = 700 + Math.round(Math.random() * 500);
+              data.nodes.update([{id: node.id, number: randomNum, size: linearScale(randomNum)}]);
+            });
             _.each(scope.symbolClasses, function (symbolClass) {
               _.each(messageObj[symbolClass.trim() + 'Counter'], function(model){
-                if (model) {
                   var node = _.find(data.nodes._data, {ID: model.Id});
                   if (node) {
                     console.log(model.In,linearScale(model.In));
@@ -152,7 +155,6 @@ angular
                     //node.update({number: model.In});
                     //node.number = model.In;
                   }
-                }
               });
             });
           }
