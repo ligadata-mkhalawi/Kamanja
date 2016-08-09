@@ -138,19 +138,25 @@ angular
                 maxVal = Math.max(maxVal, model.In);
               });
             });
+            data.nodes.forEach(function(node){
+              var randomNum = 0 + Math.round(Math.random() * 2000);
+              maxVal = Math.max(maxVal, randomNum);
+              data.nodes.update([{id: node.id, number: randomNum}]);
+            });
+            console.log(maxVal);
             var linearScale = d3.scaleLinear()
               .domain([0,maxVal])
               .range([10,40])
               .interpolate(d3.interpolateRound);
+
             data.nodes.forEach(function(node){
-              var randomNum = 700 + Math.round(Math.random() * 500);
-              data.nodes.update([{id: node.id, number: randomNum, size: linearScale(randomNum)}]);
+              var number  = node.number;
+              data.nodes.update([{id: node.id, size: linearScale(number)}]);
             });
             _.each(scope.symbolClasses, function (symbolClass) {
               _.each(messageObj[symbolClass.trim() + 'Counter'], function(model){
                   var node = _.find(data.nodes._data, {ID: model.Id});
                   if (node) {
-                    console.log(model.In,linearScale(model.In));
                     data.nodes.update([{id: node.id, number: model.In, size: linearScale(model.In)}]);
                     //node.update({number: model.In});
                     //node.number = model.In;
