@@ -6,7 +6,7 @@ import org.apache.commons.io.FilenameUtils
 import org.apache.logging.log4j.LogManager
 import org.json4s.native.JsonMethods._
 import com.ligadata.Utils.{KamanjaLoaderInfo, Utils}
-
+import com.ligadata.KamanjaManager._
 import scala.io.Source._
 import com.ligadata.MetadataAPI.{MetadataAPI, MetadataAPIImpl}
 import java.io.File
@@ -37,7 +37,7 @@ Usage:  bash $KAMANJA_HOME/bin/JsonChecker.sh --inputfile $KAMANJA_HOME/config/C
     list match {
       case Nil => map
       case "--kamanjapath" :: value :: tail =>
-        nextOption(map ++ Map('kamanajapath -> value), tail)
+        nextOption(map ++ Map('kamanjapath -> value), tail)
       case "--inputfile" :: value :: tail =>
         nextOption(map ++ Map('inputfile -> value), tail)
       case "--outputpath" :: value :: tail =>
@@ -81,9 +81,10 @@ Usage:  bash $KAMANJA_HOME/bin/JsonChecker.sh --inputfile $KAMANJA_HOME/config/C
     //fileBean.CheckFileContent(outputPath, "output") //check if file includes data
     fileBean.CheckFileContent(dependencyFile, "dependency") //check if file includes data
     fileBean.CheckFileContent(clusterConfig, "clusterconfig") //check if file includes data
+    val dependencyFileContent = fileBean.ReadFile(dependencyFile)
 
 
-    val parsedConfig = fileBean.ParseFile(dependencyFile) //Parse config file
+    val parsedConfig = fileBean.ParseFile(dependencyFileContent) //Parse config file
     val extractedInfo = fileBean.extractInfo(parsedConfig) //Extract information from parsed file
     val configBeanObj = fileBean.createConfigBeanObj(extractedInfo)// create a config object that store the result from extracting config file
     if (configBeanObj.hasMessages == true) configBeanObj.messagesArray = fileBean.SplitStringToArray(configBeanObj.messages)
@@ -104,10 +105,10 @@ Usage:  bash $KAMANJA_HOME/bin/JsonChecker.sh --inputfile $KAMANJA_HOME/config/C
     }
 
     MetadataAPIImpl.InitMdMgrFromBootStrap(clusterConfig.toString, false)
-
+    fileBean.cleanDirectory(kamanjaPath + "/storage/")
     var response =""
-    var filePath = new File(kamanjaPath)
     val pluginpre: PluginPrerequisites = new PluginPrerequisites()
+    response = pluginpre.AddClusterConfig(kamanjaPath) //upload cluster config
     if(configBeanObj.hasMessages) {
       response = pluginpre.AddMessageDefinition(configBeanObj, kamanjaPath) //add message to kamanja
     } else response = "no message added in config file"
@@ -132,6 +133,10 @@ Usage:  bash $KAMANJA_HOME/bin/JsonChecker.sh --inputfile $KAMANJA_HOME/config/C
       response = pluginpre.AddMessageBinding(configBeanObj, kamanjaPath)// add messageBinding to kamanja
     } else response = "no messageBinding added in config file"
     println(response)
+
+    val engineCfg = Array[String]("--config", kamanjaPath + "/config/Engine1Config.properties")
+    //val kamanjamngr: KamanjaManager = new KamanjaManager
+    KamanjaManager.main(engineCfg)
   }
 }
 
@@ -142,7 +147,7 @@ class PluginPrerequisites extends LogTrait{
     for (message <- configBeanObj.messagesArray) {
       val filePath = new File(kamanjaPath + "/" + message)
       val messageDef = Source.fromFile(filePath).mkString
-      response = MetadataAPIImpl.AddMessage(messageText = messageDef, format = "JSON", pStr = None)
+      response = MetadataAPIImpl.AddMessage(messageText = messageDef, format = "JSON", pStr = None, tid = Some("tenant1"))
     }
     return response
   }
@@ -152,7 +157,7 @@ class PluginPrerequisites extends LogTrait{
     for (container <- configBeanObj.containersArray) {
       val filePath = new File(kamanjaPath + "/" + container)
       val containerDef = Source.fromFile(filePath).mkString
-      response = MetadataAPIImpl.AddContainer(containerText = containerDef, format = "JSON", pStr = None)
+      response = MetadataAPIImpl.AddContainer(containerText = containerDef, format = "JSON", pStr = None, tenantId = Some("tenant1"))
     }
     return response
   }
@@ -172,7 +177,7 @@ class PluginPrerequisites extends LogTrait{
     for (jtm <- configBeanObj.jtmsArray) {
       val filePath = new File(kamanjaPath + "/" + jtm)
       val jtmDef = Source.fromFile(filePath).mkString
-      response = MetadataAPIImpl.AddModel(modelType = ModelType.JTM, input = jtmDef, pStr = None)
+      response = MetadataAPIImpl.AddModel(modelType = ModelType.JTM, input = jtmDef, pStr = None, optTenantid = Some("tenant1"))
     }
     return response
   }
@@ -182,7 +187,7 @@ class PluginPrerequisites extends LogTrait{
       for (model <- configBeanObj.modelsArray) {
         val filePath = new File(kamanjaPath + "/" + model) // ad path for message
         val modelDef = Source.fromFile(filePath).mkString //////save model in file then add the model to kamanaja
-        response = MetadataAPIImpl.getMetadataAPI.AddModel(ModelType.JAVA, modelDef, pStr = None)
+        response = MetadataAPIImpl.getMetadataAPI.AddModel(ModelType.JAVA, modelDef, pStr = None, tenantid = Some("tenant1"))
       }
     return response
   }
@@ -194,6 +199,14 @@ class PluginPrerequisites extends LogTrait{
       val messageBindingDef = Source.fromFile(filePath).mkString
       response = com.ligadata.MetadataAPI.Utility.AdapterMessageBindingService.addFromFileAnAdapterMessageBinding(messageBindingDef, None)
     }
+    return response
+  }
+
+  def AddClusterConfig(kamanjaPath: String): String={
+    var response = ""
+    val filePath = new File(kamanjaPath + "/config/ClusterConfig.json")
+    val cfgDef = Source.fromFile(filePath).mkString
+    response = MetadataAPIImpl.UploadConfig(cfgDef, None, "configuration")
     return response
   }
 }

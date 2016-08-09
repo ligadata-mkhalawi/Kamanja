@@ -1,12 +1,10 @@
 package com.ligadata.pluginsutility
 
 import java.io.PrintWriter
-import java.text.SimpleDateFormat
-
 import com.ligadata.Exceptions.KamanjaException
 import org.apache.commons.io.FilenameUtils
 import org.json4s
-import org.json4s.{JsonAST, DefaultFormats}
+import org.json4s.DefaultFormats
 import org.json4s.native.JsonMethods._
 import scala.io.Source._
 /**
@@ -162,5 +160,9 @@ class FileUtility  extends LogTrait{
           write(fileContent);
           close
         }
+  }
+
+  def cleanDirectory(directoryPath: String): Unit={
+    org.apache.commons.io.FileUtils.cleanDirectory(new java.io.File(directoryPath));
   }
 }
