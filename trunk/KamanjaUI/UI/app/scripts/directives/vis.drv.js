@@ -18,8 +18,9 @@ angular
       },
       template: '<div><div id="visJsDiv"></div>' ,
       replace: true,
-      link: function (scope) {
-        var isNodeActive, updateNodesImagesToBeInactive, updateNodeToBeActive;
+      link: function (scope , element) {
+        var selectedNodes = new Set();
+        var isNodeActive, updateNodesImagesToBeInactive, updateNodeToBeActive, updateNodeToBeInactive;
         var container = document.getElementById('visJsDiv');
         var data = {nodes: new vis.DataSet([]), edges: new vis.DataSet([])};
         var options = {
@@ -138,29 +139,21 @@ angular
                 maxVal = Math.max(maxVal, model.In);
               });
             });
-            data.nodes.forEach(function(node){
-              var randomNum = 0 + Math.round(Math.random() * 2000);
-              maxVal = Math.max(maxVal, randomNum);
-              data.nodes.update([{id: node.id, number: randomNum}]);
-            });
-            console.log(maxVal);
             var linearScale = d3.scaleLinear()
               .domain([0,maxVal])
               .range([10,40])
               .interpolate(d3.interpolateRound);
-
-            data.nodes.forEach(function(node){
-              var number  = node.number;
-              data.nodes.update([{id: node.id, size: linearScale(number)}]);
-            });
             _.each(scope.symbolClasses, function (symbolClass) {
-              _.each(messageObj[symbolClass.trim() + 'Counter'], function(model){
+              _.each(messageObj[trim(symbolClass) + 'Counter'], function(model){
+                if (model) {
                   var node = _.find(data.nodes._data, {ID: model.Id});
                   if (node) {
+                    console.log(model.In,linearScale(model.In));
                     data.nodes.update([{id: node.id, number: model.In, size: linearScale(model.In)}]);
                     //node.update({number: model.In});
                     //node.number = model.In;
                   }
+                }
               });
             });
           }
@@ -251,6 +244,17 @@ angular
               active: true,
               size: 17
             });
+            selectedNodes.add(node.id);
+          };
+          updateNodeToBeInactive = function (id) {
+            var node = data.nodes.getItemById(id);
+            data.nodes.update({
+              id: id,
+              image: serviceConfig.classImageColorPath + node.type.image + '.inactive.' + node.type.extension,
+              active: false,
+              size: 16
+            });
+            selectedNodes.delete(node.id);
           };
         }());
         scope.$on('closeSideMenu', function () {
@@ -260,9 +264,11 @@ angular
           var id = params.nodes[0];
           if (id) {
             var alreadyActive = isNodeActive(id);
-            updateNodesImagesToBeInactive();
+            // updateNodesImagesToBeInactive();
             if (!alreadyActive) {
               updateNodeToBeActive(id);
+            } else {
+              updateNodeToBeInactive(id);
             }
           }
         });

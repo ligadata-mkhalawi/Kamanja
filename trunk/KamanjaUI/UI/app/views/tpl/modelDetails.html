@@ -12,7 +12,6 @@
         </div>
       </div>
     </div>
-
   </div>
 </div>
 <div ng-show="modelDetails.isError" class="error">
@@ -21,6 +20,8 @@
 <div class="details">
   <div ng-repeat="item in modelDetails.modelInfo" class="form-group">
     <span class="title" for="{{item.key}}">{{item.key}}:<span class="detailText" id="{{item.key}}">{{item.value}}</span></span>
-
+  </div>
+  <div class="form-group">
+    <span class="title" for="Group">Group:<span class="detailText ng-binding" id="Group"></span></span>
   </div>
 </div>
