@@ -19,7 +19,7 @@ package com.ligadata.Controller
 import java.io.File
 
 import com.ligadata.AdaptersConfiguration.KafkaPartitionUniqueRecordValue
-import com.ligadata.InputAdapters.KafkaSimpleConsumer
+import  com.ligadata.kafkaInputOutputAdapters_v8._
 import com.ligadata.InputOutputAdapterInfo._
 import com.ligadata.ZooKeeper.{ ZooKeeperListener, CreateClient }
 import org.apache.curator.framework.CuratorFramework
@@ -121,7 +121,7 @@ class KamanjaMonitor {
       // Start all the neede Kafka Adapters for Output queues
       oAdaptersConfigs.foreach(conf => {
         // Create Kafka Consumer Here for the output queue
-        val t_adapter = KafkaSimpleConsumer.CreateInputAdapter(conf, ExecContextFactoryImpl, null)
+        val t_adapter = com.ligadata.kafkaInputOutputAdapters_v8.KafkaSimpleConsumer.CreateInputAdapter(conf, ExecContextFactoryImpl, null)
         val t_adapterMeta: Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)] = t_adapter.getAllPartitionEndValues
 
         //  Initialize and start the adapter that is going to read the output queues here.
@@ -138,7 +138,7 @@ class KamanjaMonitor {
 
       // Initialize and start the adapter that is going to read the status queue here.  - there is onlly 1 of these for now.
       var sub: Boolean = false
-      s_adapter = KafkaSimpleConsumer.CreateInputAdapter(sAdaptersConfigs.head, ExecContextFactoryImpl, null)
+      s_adapter = com.ligadata.kafkaInputOutputAdapters_v8.KafkaSimpleConsumer.CreateInputAdapter(sAdaptersConfigs.head, ExecContextFactoryImpl, null)
       val s_adapterMeta: Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)] = s_adapter.getAllPartitionEndValues
       val s_inputMeta = s_adapterMeta.map(partMeta => {
         if (!sub) {
