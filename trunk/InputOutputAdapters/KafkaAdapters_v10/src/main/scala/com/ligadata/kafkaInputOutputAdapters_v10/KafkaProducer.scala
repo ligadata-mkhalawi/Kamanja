@@ -41,7 +41,7 @@ object KafkaProducer extends OutputAdapterFactory {
   val HB_PERIOD = 5000
 
   // Statistics Keys
-  val ADAPTER_DESCRIPTION = "Kafka 0.9.0.1 Producer Client"
+  val ADAPTER_DESCRIPTION = "Kafka 0.10.0.0 Producer Client"
   val SEND_MESSAGE_COUNT_KEY = "Messages Sent"
   val SEND_CALL_COUNT_KEY = "Send Call Count"
   val LAST_FAILURE_TIME = "Last_Failure"
@@ -470,85 +470,6 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   }
 
 
-
-
-  override def send(messages: Array[Array[Byte]], partitionKeys: Array[Array[Byte]]): Unit = {
-
-    if (!isHeartBeating) runHeartBeat
-
-    // Refreshing Partitions for every refreshPartitionTime.
-    // BUGBUG:: This may execute multiple times from multiple threads. For now it does not hard too much.
-    if ((System.currentTimeMillis - partitionsGetTm) > refreshPartitionTime) {
-      topicPartitionsCount = producer.partitionsFor(qc.topic).size()
-      partitionsGetTm = System.currentTimeMillis
-    }
-
-    try {
-      var partitionsMsgMap = scala.collection.mutable.Map[Int, ArrayBuffer[MsgDataRecievedCnt]]()
-      var ab = new ArrayBuffer[MsgDataRecievedCnt](256)
-      var partId = 0
-
-      var keyIndex = 0
-      partitionsMsgMap(partId) = ab
-      messages.foreach(message => {
-        val pr = new ProducerRecord(qc.topic, partitionKeys(keyIndex), message)
-        ab += MsgDataRecievedCnt(msgInOrder.getAndIncrement, pr)
-        keyIndex += 1
-      })
-
-      var outstandingMsgs = outstandingMsgCount
-      // LOG.debug("KAFKA PRODUCER: current outstanding messages for topic %s are %d".format(qc.topic, outstandingMsgs))
-
-      var osRetryCount = 0
-      var osWaitTm = 5000
-      while (outstandingMsgs > max_outstanding_messages) {
-        LOG.warn(qc.Name + " KAFKA PRODUCER: %d outstanding messages in queue to write. Waiting for them to flush before we write new messages. Retrying after %dms. Retry count:%d".format(outstandingMsgs, osWaitTm, osRetryCount))
-        try {
-          Thread.sleep(osWaitTm)
-        } catch {
-          case e: Exception => {
-            externalizeExceptionEvent(e)
-            throw e
-          }
-          case e: Throwable => {
-            externalizeExceptionEvent(e)
-            throw e
-          }
-        }
-        outstandingMsgs = outstandingMsgCount
-      }
-
-      partitionsMsgMap.foreach(partIdAndRecs => {
-        val partId = partIdAndRecs._1
-        val keyMessages = partIdAndRecs._2
-
-        // first push all messages to partitionsMap before we really send. So that callback is guaranteed to find the message in partitionsMap
-        addMsgsToMap(partId, keyMessages)
-        sendInfinitely(keyMessages, false)
-      })
-
-    } catch {
-      case e: java.lang.InterruptedException => {
-        // Not doing anythign for now
-        LOG.warn(qc.Name + " KAFKA PRODUCER: Got java.lang.InterruptedException. isShutdown:" + isShutdown)
-      }
-      case fae: FatalAdapterException => {
-        externalizeExceptionEvent(fae)
-        throw fae
-      }
-      case e: Exception               => {
-        externalizeExceptionEvent(e)
-        throw FatalAdapterException("Unknown exception", e)
-      }
-      case e: Throwable               => {
-        externalizeExceptionEvent(e)
-        throw FatalAdapterException("Unknown exception", e)
-      }
-    }
-  }
-
-
-
   /**
     *
     * @param tnxCtxt
@@ -574,6 +495,17 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
 
     if (serializedContainerData.size == 0) return
 
+    val partitionKeys = ArrayBuffer[Array[Byte]]()
+
+    for (i <- 0 until serializedContainerData.size) {
+      partitionKeys += outContainers(i).getPartitionKey.mkString(",").getBytes()
+    }
+
+    send(serializedContainerData, partitionKeys.toArray)
+  }
+
+
+  override def send(messages: Array[Array[Byte]], partitionKeys: Array[Array[Byte]]): Unit = {
     if (!isHeartBeating) runHeartBeat
 
     // Refreshing Partitions for every refreshPartitionTime.
@@ -586,14 +518,21 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
     try {
       var partitionsMsgMap = scala.collection.mutable.Map[Int, ArrayBuffer[MsgDataRecievedCnt]]();
 
-      for (i <- 0 until serializedContainerData.size) {
-        val partId = getPartition(outContainers(i).getPartitionKey.mkString(",").getBytes(), topicPartitionsCount)
+      for (i <- 0 until messages.size) {
+
+        val partId = getPartition(partitionKeys(i), topicPartitionsCount)
+        println(qc.topic + "  PUSHING MESSAGE ----> " + partId)
         var ab = partitionsMsgMap.getOrElse(partId, null)
         if (ab == null) {
           ab = new ArrayBuffer[MsgDataRecievedCnt](256)
           partitionsMsgMap(partId) = ab
         }
-        val pr = new ProducerRecord(qc.topic, partId, outContainers(i).getPartitionKey.mkString(",").getBytes(), serializedContainerData(i))
+
+        partitionKeys.foreach(x => {
+          println("pkeys are " + new String(x))
+        })
+        println(" MESSAGE ----> " + new String(messages(i)))
+        val pr = new ProducerRecord(qc.topic, partId, partitionKeys(i), messages(i))
         ab += MsgDataRecievedCnt(msgInOrder.getAndIncrement, pr)
       }
 
