@@ -3,11 +3,16 @@ package com.ligadata.test.application.configuration
 import com.ligadata.test.application.metadata.{PmmlModelElement, _}
 import org.scalatest._
 
-class ApplicationConfigurationTest extends FlatSpec {
-  "ApplicationConfiguration" should "read in a configuration file and generate a List of MetadataElement" in {
-    val configFile: String = getClass.getResource("/ApplicationConfigurationTest/TestConfig.json").getPath
-    val appConfig = new ApplicationConfiguration(configFile)
+class ApplicationConfigurationTest extends FlatSpec with BeforeAndAfterAll {
+  var configFile: String = ""
+  var appConfig: ApplicationConfiguration = _
 
+  override def beforeAll {
+    configFile = getClass.getResource("/ApplicationConfigurationTest/TestConfig.json").getPath
+    appConfig = new ApplicationConfiguration(configFile)
+  }
+
+  "ApplicationConfiguration" should "read in a configuration file and generate a List of MetadataElement" in {
     assert(!appConfig.metadataElements.isEmpty)
 
     appConfig.metadataElements.foreach(md => {
@@ -52,5 +57,23 @@ class ApplicationConfigurationTest extends FlatSpec {
           assert(e.filename == "adapterMsgBindings.json")
       }
     })
+  }
+
+  it should "read in a configuration file and generate a List of DataSets" in {
+    assert(!appConfig.dataSets.isEmpty)
+
+    val ds1 = appConfig.dataSets(0)
+    val ds2 = appConfig.dataSets(1)
+
+    assert(ds1.inputDataFile == "inputFile1.csv")
+    assert(ds1.inputDataFormat == "CSV")
+    assert(ds1.expectedResultsFile == "expectedResults1.csv")
+    assert(ds1.expectedResultsFormat == "CSV")
+
+    assert(ds2.inputDataFile == "inputFile2.json")
+    assert(ds2.inputDataFormat == "JSON")
+    assert(ds2.expectedResultsFile == "expectedResults2.json")
+    assert(ds2.expectedResultsFormat == "JSON")
+
   }
 }

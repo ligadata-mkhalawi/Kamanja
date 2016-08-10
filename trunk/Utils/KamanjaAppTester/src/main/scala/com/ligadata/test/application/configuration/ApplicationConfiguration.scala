@@ -68,10 +68,9 @@ class ApplicationConfiguration(configFile: String) extends KamanjaTestLogger {
   }
 
   private def parseDataSets: Unit = {
-    val dataSets: List[Map[String, Any]] = (json \\ "DataSets").values.asInstanceOf[List[Map[String, Any]]]
-    dataSets.foreach(set => {
-      println(set)
-      //dataSets = dataSets :+ new DataSet(set("InputFile").toString, set("InputFormat").toString, set("ExpectedResultsFile").toString, set("ExpectedResultsFormat").toString)
+    val data: List[Map[String, Any]] = (json \\ "DataSets").values.asInstanceOf[List[Map[String, Any]]]
+    data.foreach(set => {
+      this.dataSets = this.dataSets :+ new DataSet(set("InputDataFile").toString, set("InputDataFormat").toString, set("ExpectedResultsFile").toString, set("ExpectedResultsFormat").toString)
     })
   }
 

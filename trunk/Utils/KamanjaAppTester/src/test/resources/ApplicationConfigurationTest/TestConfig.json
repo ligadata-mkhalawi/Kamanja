@@ -64,16 +64,16 @@
     ],
     "DataSets": [
       {
-        "InputFile": "inputFile1.csv",
+        "InputDataFile": "inputFile1.csv",
+        "InputDataFormat": "CSV",
         "ExpectedResultsFile": "expectedResults1.csv",
-        "InputFormat": "CSV",
-        "OutputFormat": "CSV"
+        "ExpectedResultsFormat": "CSV"
       },
       {
-        "InputFile": "inputFile2.json",
-        "ExpectedResultsFiles": "expectedResults2.json",
-        "InputFormat": "JSON",
-        "OutputFormat": "JSON"
+        "InputDataFile": "inputFile2.json",
+        "InputDataFormat": "JSON",
+        "ExpectedResultsFile": "expectedResults2.json",
+        "ExpectedResultsFormat": "JSON"
       }
     ]
   }
