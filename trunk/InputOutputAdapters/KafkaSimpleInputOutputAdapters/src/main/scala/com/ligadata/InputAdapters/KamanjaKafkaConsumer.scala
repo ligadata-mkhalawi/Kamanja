@@ -1,4 +1,4 @@
-package com.ligadata.InputAdapters
+/*package com.ligadata.InputAdapters
 
 import java.util
 import java.util.Properties
@@ -751,4 +751,4 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     var cVal: Long = partitonCounts.getOrElse(pid.toString, 0)
     partitonCounts(pid.toString) = cVal + 1
   }
-}
+}*/

@@ -94,6 +94,50 @@ class FileProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeC
     ""
   }
 
+  override def send(messages: Array[Array[Byte]], partitionKey: Array[Array[Byte]]): Unit = {
+    try {
+      // Op is not atomic
+      messages.foreach(message => {
+        var isSuccess = false
+        numOfRetries = 0
+        while (!isSuccess) {
+          try {
+            os.write(message ++ NEW_LINE);
+            isSuccess = true
+          }
+          catch {
+            case zio: ZipException => {
+              LOG.error("File input adapter " + fc.Name + ": File Corruption (bad compression)", zio)
+              throw zio
+            }
+            case fio: IOException => {
+              LOG.warn("File input adapter " + fc.Name + ": Unable to write to file " + sFileName)
+              if (numOfRetries >= MAX_RETRIES) {
+                LOG.error("File input adapter " + fc.Name + ": Unable to create a file destination after " + MAX_RETRIES +" tries.  Aborting.", fio)
+                throw FatalAdapterException("Unable to open connection to specified file after " + MAX_RETRIES +" retries", fio)
+              }
+              numOfRetries += 1
+              LOG.warn("File input adapter " + fc.Name + ": Retyring "+ numOfRetries + "/" + MAX_RETRIES)
+              Thread.sleep(FAIL_WAIT)
+            }
+            case e: Exception => {
+              LOG.error("File input adapter " + fc.Name + ": Unable to write output message: " + new String(message), e)
+              throw e
+            }
+          }
+        }
+      })
+      // val key = Category + "/" + fc.Name + "/evtCnt"
+      // cntrAdapter.addCntr(key, messages.size) // for now adding rows
+    } catch {
+      case e: Exception => {
+        LOG.error("File input adapter " + fc.Name + ": Failed to send", e)
+        throw FatalAdapterException("Unable to send message",e)
+      }
+    }
+  }
+
+
   // Locking before we write into file
   // To send an array of messages. messages.size should be same as partKeys.size
   override def send(tnxCtxt: TransactionContext, outputContainers: Array[ContainerInterface]): Unit = _lock.synchronized {
