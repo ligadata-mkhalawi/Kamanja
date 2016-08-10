@@ -571,6 +571,11 @@ class MappedMsgGenerator {
     var fromFuncBuf = new StringBuilder(8 * 1024)
     try {
       val implName = field.FieldTypeImplementationName
+      var arrayType = field.FldMetaataType.asInstanceOf[ArrayTypeDef]
+      var typeStr: String = ""
+      if (field.FldMetaataType.typeString.toString().split("\\[").size == 2) {
+        typeStr = field.FldMetaataType.typeString.toString().split("\\[")(1)
+      }
       if (implName != null && implName.trim() != "") {
         fromFuncBuf = fromFuncBuf.append("%s { %s".format(msgConstants.pad2, msgConstants.newline))
         fromFuncBuf = fromFuncBuf.append("%s  if (other.valuesMap.contains(\"%s\")) { %s".format(msgConstants.pad3, field.Name, msgConstants.newline))
@@ -580,7 +585,7 @@ class MappedMsgGenerator {
         fromFuncBuf = fromFuncBuf.append("%s  val o = fld.asInstanceOf[%s] %s".format(msgConstants.pad3, field.FldMetaataType.typeString, msgConstants.newline))
         fromFuncBuf = fromFuncBuf.append("%s var %s = new %s(o.size) %s".format(msgConstants.pad3, field.Name, field.FldMetaataType.typeString, msgConstants.newline))
         fromFuncBuf = fromFuncBuf.append("%s for (i <- 0 until o.length) { %s".format(msgConstants.pad3, msgConstants.newline))
-        fromFuncBuf = fromFuncBuf.append("%s %s(i) = %s.Clone(o(i)) %s".format(msgConstants.pad3, field.Name, implName, msgConstants.newline))
+        fromFuncBuf = fromFuncBuf.append("%s %s(i) = %s.Clone(o(i)).asInstanceOf[%s %s".format(msgConstants.pad3, field.Name, implName, typeStr, msgConstants.newline))
         fromFuncBuf = fromFuncBuf.append("%s } %s".format(msgConstants.pad3, msgConstants.newline))
         fromFuncBuf = fromFuncBuf.append("%s  valuesMap.put(\"%s\", new AttributeValue(%s, other.valuesMap(\"%s\").getValueType))%s".format(msgConstants.pad3, field.Name, field.Name, field.Name, msgConstants.newline))
         fromFuncBuf = fromFuncBuf.append("%s  } %s".format(msgConstants.pad3, msgConstants.newline))
@@ -721,12 +726,12 @@ class MappedMsgGenerator {
           var attributeValue: AttributeValue = null
           valType match {
             case 1 => { attributeValue = new AttributeValue(com.ligadata.BaseTypes.StringImpl.Clone(attribVal.getValue.asInstanceOf[String]), attribVal.getValueType) }
-            case 0 => { attributeValue = new AttributeValue(com.ligadata.BaseTypes.IntImpl.Clone(attribVal.getValue.asInstanceOf[Int]), attribVal.getValueType) }
-            case 2 => { attributeValue = new AttributeValue(com.ligadata.BaseTypes.FloatImpl.Clone(attribVal.getValue.asInstanceOf[Float]), attribVal.getValueType) }
-            case 3 => { attributeValue = new AttributeValue(com.ligadata.BaseTypes.DoubleImpl.Clone(attribVal.getValue.asInstanceOf[Double]), attribVal.getValueType) }
-            case 7 => { attributeValue = new AttributeValue(com.ligadata.BaseTypes.BoolImpl.Clone(attribVal.getValue.asInstanceOf[Boolean]), attribVal.getValueType) }
-            case 4 => { attributeValue = new AttributeValue(com.ligadata.BaseTypes.LongImpl.Clone(attribVal.getValue.asInstanceOf[Long]), attribVal.getValueType) }
-            case 6 => { attributeValue = new AttributeValue(com.ligadata.BaseTypes.CharImpl.Clone(attribVal.getValue.asInstanceOf[Char]), attribVal.getValueType) }
+            case 0 => { attributeValue = new AttributeValue(com.ligadata.BaseTypes.IntImpl.Clone(attribVal.getValue.asInstanceOf[java.lang.Integer]), attribVal.getValueType) }
+            case 2 => { attributeValue = new AttributeValue(com.ligadata.BaseTypes.FloatImpl.Clone(attribVal.getValue.asInstanceOf[java.lang.Float]), attribVal.getValueType) }
+            case 3 => { attributeValue = new AttributeValue(com.ligadata.BaseTypes.DoubleImpl.Clone(attribVal.getValue.asInstanceOf[java.lang.Double]), attribVal.getValueType) }
+            case 7 => { attributeValue = new AttributeValue(com.ligadata.BaseTypes.BoolImpl.Clone(attribVal.getValue.asInstanceOf[java.lang.Boolean]), attribVal.getValueType) }
+            case 4 => { attributeValue = new AttributeValue(com.ligadata.BaseTypes.LongImpl.Clone(attribVal.getValue.asInstanceOf[java.lang.Long]), attribVal.getValueType) }
+            case 6 => { attributeValue = new AttributeValue(com.ligadata.BaseTypes.CharImpl.Clone(attribVal.getValue.asInstanceOf[java.lang.Character]), attribVal.getValueType) }
             case _ => {} // do nothhing
           }
           valuesMap.put(key, attributeValue);

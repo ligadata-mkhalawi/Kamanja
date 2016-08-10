@@ -673,13 +673,13 @@ class MessageGenerator {
   }
 
   /** isCaseSensitiveFunc function in generate message code **/
-  private def isCaseSensitiveFunc(message: Message) : String = {
+  private def isCaseSensitiveFunc(message: Message): String = {
     """    def isCaseSensitive(): Boolean = """ + message.Name + """.isCaseSensitive(); """
   }
 
   /** caseSensitiveFunc function in generate message code **/
 
-  private def caseSensitiveFunc(message: Message) : String = {
+  private def caseSensitiveFunc(message: Message): String = {
     """
     def caseSensitiveKey(keyName: String): String = {
       if(isCaseSensitive)
@@ -1190,11 +1190,17 @@ class MessageGenerator {
   private def fromFuncForArrayScalarFixed(field: Element): String = {
     var fromFuncBuf = new StringBuilder(8 * 1024)
     try {
+      var arrayType = field.FldMetaataType.asInstanceOf[ArrayTypeDef]
+      var typeStr: String = ""
+      if (field.FldMetaataType.typeString.toString().split("\\[").size == 2) {
+        typeStr = field.FldMetaataType.typeString.toString().split("\\[")(1)
+      }
+
       val implName = field.FieldTypeImplementationName
       if (implName != null && implName.trim() != "") {
         fromFuncBuf = fromFuncBuf.append("%s if (other.%s != null ) { %s".format(msgConstants.pad2, field.Name, msgConstants.newline))
         fromFuncBuf = fromFuncBuf.append("%s %s = new %s(other.%s.length); %s".format(msgConstants.pad2, field.Name, field.FldMetaataType.typeString, field.Name, msgConstants.newline)) //typ.get.typeString
-        fromFuncBuf = fromFuncBuf.append("%s %s = other.%s.map(v => %s.Clone(v)); %s".format(msgConstants.pad2, field.Name, field.Name, implName, msgConstants.newline)) //arrayType.elemDef.implementationName
+        fromFuncBuf = fromFuncBuf.append("%s %s = other.%s.map(v => %s.Clone(v).asInstanceOf[%s); %s".format(msgConstants.pad2, field.Name, field.Name, implName, typeStr, msgConstants.newline)) //arrayType.elemDef.implementationName
         fromFuncBuf = fromFuncBuf.append("%s } %s".format(msgConstants.pad2, msgConstants.newline))
         fromFuncBuf = fromFuncBuf.append("%s else this.%s = null; %s".format(msgConstants.pad2, field.Name, msgConstants.newline))
       }
@@ -1286,7 +1292,7 @@ class MessageGenerator {
       typeInfo match {
         case "tscalar" => {
           fromFuncBuf = fromFuncBuf.append("%s if (other.%s != null) { %s ".format(msgConstants.pad2, field.Name, msgConstants.newline))
-          fromFuncBuf = fromFuncBuf.append("%s this.%s = other.%s.map { a => (com.ligadata.BaseTypes.StringImpl.Clone(a._1), %s.Clone(a._2)) }.toMap%s ".format(msgConstants.pad2, field.Name, field.Name, maptypeDef.valDef.implementationName, msgConstants.newline))
+          fromFuncBuf = fromFuncBuf.append("%s this.%s = other.%s.map { a => (com.ligadata.BaseTypes.StringImpl.Clone(a._1), %s.Clone(a._2).asInstanceOf[%s]) }.toMap%s ".format(msgConstants.pad2, field.Name, field.Name, maptypeDef.valDef.implementationName, maptypeDef.valDef.physicalName, msgConstants.newline))
           fromFuncBuf = fromFuncBuf.append("%s} else this.%s = null;%s ".format(msgConstants.pad2, field.Name, msgConstants.newline))
         }
         case "tcontainer" => {

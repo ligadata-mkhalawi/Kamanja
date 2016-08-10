@@ -57,8 +57,6 @@ class MessageFieldTypesHandler {
         }
       })
     }
-   
- 
 
     /* message.Elements.foreach(field => {
 
@@ -124,7 +122,7 @@ class MessageFieldTypesHandler {
         log.info("fieldBaseType.implementationName====" + fieldBaseType.PhysicalName);
         val valTypeId = -1 //getAttributeValTypeId(fieldBaseType.PhysicalName.toLowerCase());
         val keyTypeId = -1 //getAttributeValTypeId(fieldBaseType.PhysicalName.toLowerCase());
-        types(2) = new ArrtibuteInfo(fieldBaseType.PhysicalName.toUpperCase(), valTypeId, keyTypeId, 0)
+        types(2) = new ArrtibuteInfo(getAttributeTypeName(fieldBaseType.Name.toLowerCase()), valTypeId, keyTypeId, 0) //new ArrtibuteInfo(fieldBaseType.PhysicalName.toUpperCase(), valTypeId, keyTypeId, 0)
 
       }
       case "tcontainer" => {
@@ -195,6 +193,7 @@ class MessageFieldTypesHandler {
   private def getAttributeValTypeId(implName: String): Int = {
     implName match {
       case "string"    => return AttributeTypeInfo.TypeCategory.STRING.getValue;
+      case "integer"   => return AttributeTypeInfo.TypeCategory.INT.getValue;
       case "int"       => return AttributeTypeInfo.TypeCategory.INT.getValue;
       case "float"     => return AttributeTypeInfo.TypeCategory.FLOAT.getValue;
       case "double"    => return AttributeTypeInfo.TypeCategory.DOUBLE.getValue;
@@ -202,6 +201,7 @@ class MessageFieldTypesHandler {
       case "byte"      => return AttributeTypeInfo.TypeCategory.BYTE.getValue;
       case "char"      => return AttributeTypeInfo.TypeCategory.CHAR.getValue;
       case "boolean"   => return AttributeTypeInfo.TypeCategory.BOOLEAN.getValue;
+      case "bool"      => return AttributeTypeInfo.TypeCategory.BOOLEAN.getValue;
       case "container" => return AttributeTypeInfo.TypeCategory.CONTAINER.getValue;
       case "map"       => return AttributeTypeInfo.TypeCategory.MAP.getValue;
       case "array"     => return AttributeTypeInfo.TypeCategory.ARRAY.getValue;
@@ -211,12 +211,36 @@ class MessageFieldTypesHandler {
     return -1
   }
 
+  /*
+   * get the AttributeValType
+   */
+  private def getAttributeTypeName(implName: String): String = {
+    implName match {
+      case "string"    => return "STRING";
+      case "integer"   => return "INT";
+      case "int"       => return "INT";
+      case "float"     => return "FLOAT";
+      case "double"    => return "DOUBLE";
+      case "long"      => return "LONG";
+      case "byte"      => return "BYTE";
+      case "char"      => return "CHAR";
+      case "boolean"   => return "BOOLEAN";
+      case "bool"      => return "BOOLEAN";
+      case "container" => return "CONTAINER";
+      case "map"       => return "MAP";
+      case "array"     => return "ARRAY";
+
+    }
+    return ""
+  }
+
   private def getAttributeTypeInfo(typeInfo: String, typtytpe: BaseTypeDef, mdMgr: MdMgr, fieldName: String, msgName: String): ArrtibuteInfo = {
 
     var typetyprStr: String = typtytpe.tType.toString().toLowerCase()
     typeInfo match {
       case "tscalar" => {
-        val valTypeId = getAttributeValTypeId(typtytpe.PhysicalName.toLowerCase());
+        println("typtytpe.Name.toLowerCase() " + typtytpe.Name.toLowerCase())
+        val valTypeId = getAttributeValTypeId(typtytpe.Name.toLowerCase()); //getAttributeValTypeId(typtytpe.PhysicalName.toLowerCase());
         val keyTypeId = -1
         return new ArrtibuteInfo("ARRAY", valTypeId, keyTypeId, 0)
       }
@@ -228,7 +252,7 @@ class MessageFieldTypesHandler {
             var msgDef: ContainerDef = null;
             msgDef = mdMgr.Message(typtytpe.FullName, -1, true).getOrElse(null) //field.FieldtypeVer is -1 for now, need to put proper version
             if (msgDef != null) {
-              throw new Exception("Array of Messages cannot be allowed for field "+ fieldName +" in Message/Container "+msgName)
+              throw new Exception("Array of Messages cannot be allowed for field " + fieldName + " in Message/Container " + msgName)
             }
 
             if (msgDef == null)
@@ -242,7 +266,7 @@ class MessageFieldTypesHandler {
             var ctrDef: ContainerDef = null;
             ctrDef = mdMgr.Message(typtytpe.FullName, -1, true).getOrElse(null) //field.FieldtypeVer is -1 for now, need to put proper version
             if (ctrDef != null) {
-              throw new Exception("Array of Messages cannot be allowed for field "+ fieldName +" in Message/Container "+msgName)
+              throw new Exception("Array of Messages cannot be allowed for field " + fieldName + " in Message/Container " + msgName)
             }
 
             if (ctrDef == null)
@@ -275,7 +299,8 @@ class MessageFieldTypesHandler {
     var typetyprStr: String = typtytpe.tType.toString().toLowerCase()
     typeInfo match {
       case "tscalar" => {
-        val valTypeId = getAttributeValTypeId(typtytpe.PhysicalName.toLowerCase());
+        println("getMapAttributeTypeInfo - typtytpe.name.toLowerCase() " + typtytpe.name.toLowerCase())
+        val valTypeId = getAttributeValTypeId(typtytpe.name.toLowerCase()); //getAttributeValTypeId(typtytpe.PhysicalName.toLowerCase());
         val keyTypeId = 1
         return new ArrtibuteInfo("MAP", valTypeId, keyTypeId, 0)
       }
@@ -287,7 +312,7 @@ class MessageFieldTypesHandler {
             var msgDef: ContainerDef = null;
             msgDef = mdMgr.Message(typtytpe.FullName, -1, true).getOrElse(null) //field.FieldtypeVer is -1 for now, need to put proper version
             if (msgDef != null) {
-              throw new Exception("Message cannot be a Value Type of field "+fieldName + " Message/Container "+msgName)
+              throw new Exception("Message cannot be a Value Type of field " + fieldName + " Message/Container " + msgName)
             }
 
             if (msgDef == null)
@@ -301,7 +326,7 @@ class MessageFieldTypesHandler {
             var ctrDef: ContainerDef = null;
             ctrDef = mdMgr.Message(typtytpe.FullName, -1, true).getOrElse(null) //field.FieldtypeVer is -1 for now, need to put proper version
             if (ctrDef != null) {
-              throw new Exception("Message cannot be a Value Type of field "+fieldName + " Message/Container "+msgName)
+              throw new Exception("Message cannot be a Value Type of field " + fieldName + " Message/Container " + msgName)
             }
 
             if (ctrDef == null)
