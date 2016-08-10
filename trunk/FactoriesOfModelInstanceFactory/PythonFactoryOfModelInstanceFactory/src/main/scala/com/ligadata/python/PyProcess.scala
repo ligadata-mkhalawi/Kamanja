@@ -116,7 +116,7 @@ class PyProcess(host: String,
 
   def initPyProcess(): Unit = {
     var cmdString: String =
-      cPyPath + "pythonserver.py " +
+      cPyPath + "/pythonserver.py " +
       HostText + SingleSpace + cHost + SingleSpace +
       PortText + SingleSpace + cPort + SingleSpace +
       PyPathText + SingleSpace + cPyPath + SingleSpace +

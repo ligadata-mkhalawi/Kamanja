@@ -396,7 +396,7 @@ result = ''
 msgBytes = ''
 while True:
    # Get the list sockets which are ready to be read through select
-   read_sockets,write_sockets,error_sockets = select.select(CONNECTION_LIST,[],[])
+   read_sockets,write_sockets,error_sockets = select.select(CONNECTION_LIST,[],[], 0.1)
    for sock in read_sockets:
         if (sock == serversocket):
                 # establish a connection
