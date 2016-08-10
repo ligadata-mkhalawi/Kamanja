@@ -13,11 +13,11 @@ import org.json4s.jackson.JsonMethods._
 
 import scala.io.Source
 
-class ApplicationConfiguration(configFile: String) extends KamanjaTestLogger {
+class KamanjaApplicationConfiguration(configFile: String) extends KamanjaTestLogger {
 
   private val config: File = new File(configFile)
   if(!config.exists()) {
-    throw new ApplicationConfigurationException("[Application Tester - Configuration]: Configuration File: '" + configFile + "' does not exist")
+    throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - ApplicationConfiguration]: Configuration File: '" + configFile + "' does not exist")
   }
 
   private val source = Source.fromFile(config)

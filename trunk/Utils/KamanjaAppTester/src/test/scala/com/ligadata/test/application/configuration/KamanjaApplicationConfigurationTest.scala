@@ -5,14 +5,14 @@ import com.ligadata.test.application.KamanjaApplication
 
 import org.scalatest._
 
-class ApplicationConfigurationTest extends FlatSpec with BeforeAndAfterAll {
+class KamanjaApplicationConfigurationTest extends FlatSpec with BeforeAndAfterAll {
   var configFile: String = ""
-  var appConfig: ApplicationConfiguration = _
+  var appConfig: KamanjaApplicationConfiguration = _
   var app: KamanjaApplication = _
 
   override def beforeAll {
     configFile = getClass.getResource("/ApplicationConfigurationTest/TestConfig.json").getPath
-    appConfig = new ApplicationConfiguration(configFile)
+    appConfig = new KamanjaApplicationConfiguration(configFile)
     app = appConfig.initializeApplication
   }
 
