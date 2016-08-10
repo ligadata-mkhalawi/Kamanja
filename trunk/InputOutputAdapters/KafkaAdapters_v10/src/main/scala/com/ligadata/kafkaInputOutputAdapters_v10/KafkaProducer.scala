@@ -521,17 +521,11 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       for (i <- 0 until messages.size) {
 
         val partId = getPartition(partitionKeys(i), topicPartitionsCount)
-        println(qc.topic + "  PUSHING MESSAGE ----> " + partId)
         var ab = partitionsMsgMap.getOrElse(partId, null)
         if (ab == null) {
           ab = new ArrayBuffer[MsgDataRecievedCnt](256)
           partitionsMsgMap(partId) = ab
         }
-
-        partitionKeys.foreach(x => {
-          println("pkeys are " + new String(x))
-        })
-        println(" MESSAGE ----> " + new String(messages(i)))
         val pr = new ProducerRecord(qc.topic, partId, partitionKeys(i), messages(i))
         ab += MsgDataRecievedCnt(msgInOrder.getAndIncrement, pr)
       }
