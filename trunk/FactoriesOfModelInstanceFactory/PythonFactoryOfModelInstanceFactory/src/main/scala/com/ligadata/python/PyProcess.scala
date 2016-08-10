@@ -19,13 +19,15 @@ package com.ligadata.python
 import java.lang.reflect.Field
 import scala.actors._
 import scala.actors.Actor._
+import org.apache.logging.log4j.LogManager
+
 
 object PyProcessGlobalLogger {
   val loggerName = this.getClass.getName
   val logger = LogManager.getLogger(loggerName)
 }
 
-trait LogTrait {
+trait LogProcessTrait {
   val logger = PyProcessGlobalLogger.logger
 }
 
@@ -33,7 +35,7 @@ trait LogTrait {
 class PyProcess(host: String,
                 port: Int,
 //  PyPath: String)  {
-  PyPath: String) extends LogTrait {
+  PyPath: String) extends LogProcessTrait {
 
   val HostText: String = "--host"
   val Host: String = "localhost"

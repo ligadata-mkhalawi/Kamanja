@@ -98,7 +98,7 @@ class PyServerConnection(val host : String
         logger.debug(s"PyServerConnection.initialize ... start server result = $startServerResult")
         implicit val formats = org.json4s.DefaultFormats
         val startResultsMap : Map[String,Any] = parse(startServerResult).values.asInstanceOf[Map[String,Any]]
-        val startRc : Int = startResultsMap.getOrElse("code", -1).asInstanceOf[scala.math.BigInt].toInt
+        val pid : Int = startResultsMap.getOrElse("pid", -1).asInstanceOf[scala.math.BigInt].toInt
 
         /** create a connection to the server on the port that it is listening. */
         val inetbyname = InetAddress.getByName(host)
@@ -107,7 +107,7 @@ class PyServerConnection(val host : String
         _in = new DataInputStream(_sock.getInputStream)
         _out = new DataOutputStream(_sock.getOutputStream)
 
-        val (rc, result) : (Int,String) = if (startRc == 0 && _sock != null && _in != null && _out != null) {
+        val (rc, result) : (Int,String) = if (pid >  0 && _sock != null && _in != null && _out != null) {
             (0, "connection created")
         } else {
             (-1 ,"connection creation failed")
@@ -133,43 +133,16 @@ class PyServerConnection(val host : String
     private def startServer : String = {
         val useSSH : Boolean = host != "localhost"
 
-        val pythonCmdStr = s"python $pyPath/pythonserver.py --host $host --port ${port.toString} --pythonPath $pyPath --log4jConfig $log4jConfigPath --fileLogPath $fileLogPath"
-        val cmdSeq : Seq[String] = if (useSSH) {
-            val userMachine : String = s"$user@$host"
-            val remoteCmd : String = s"python $pythonCmdStr"
-            Seq[String]("ssh", userMachine, remoteCmd)
-        } else {
-            logger.info(s"Start the python server... $pythonCmdStr")
-          //           Seq[String]("bash", "-c", pythonCmdStr)
-          Seq[String](pythonCmdStr)
-        }
+      val pyProcess : PyProcess = new PyProcess(host, port, pyPath)
+//        val pythonCmdStr = s"python $pyPath/pythonserver.py --host $host --port ${port.toString} --pythonPath $pyPath --log4jConfig $log4jConfigPath --fileLogPath $fileLogPath"
+      pyProcess.initPyProcess()
 
 
-        /**
-          * Note that if we ask for the result, the call will block.  This is not a good idea for the start server.
-          * We really want it to be put in background.  We might add a process logging here to get the output from
-          * the pythonserver via ProcessLogger (see runCmdCollectOutput for example that waits for completion with
-          * the .! invocation.
-          */
 
-        val pySrvCmd = Process(cmdSeq)
-        pySrvCmd.run
-
-        /** the last of the pids scraped out is the pythonserver that was just started */
-        val processInfo = ("ps aux" #| "grep python" #| s"grep ${port.toString}").!!.trim
-        val re = """[A-Za-z0-9]+[\t ]+([0-9]+).*""".r
-        val allMatches = re.findAllMatchIn(processInfo)
-        val pids : ArrayBuffer[String] = ArrayBuffer[String]()
-        allMatches.foreach ( m =>
-            pids += m.group(1)
-        )
-        //logger.debug(pids.toString)
-        val pid : String = if (pids != null) pids.last else null
-        val (rc, result) : (Int, String) = if (pid != null) (0, "Server started successfully") else (-1, "Server start failed")
-        val pidStr : String = if (pid != null) pid else s"${'"'}----${'"'}"
+        val pidStr : String = if (pyProcess.pid != null) pyProcess.pid.toString else s"${'"'}----${'"'}"
 
         /** prepare the result string */
-        val resultStr : String = s"{ ${'"'}code${'"'} : $rc,  ${'"'}result${'"'} : ${'"'}$result${'"'},  ${'"'}pid${'"'} : $pidStr }"
+        val resultStr : String = s"{ ${'"'}pid${'"'} : $pidStr }"
 
         resultStr
     }
