@@ -1,7 +1,7 @@
 package com.ligadata.test.application.configuration
 
 import com.ligadata.test.utils.KamanjaTestLogger
-import com.ligadata.test.application.Application
+import com.ligadata.test.application.KamanjaApplication
 import java.io.File
 
 import com.ligadata.test.application.data.DataSet
@@ -20,10 +20,6 @@ class ApplicationConfiguration(configFile: String) extends KamanjaTestLogger {
     throw new ApplicationConfigurationException("[Application Tester - Configuration]: Configuration File: '" + configFile + "' does not exist")
   }
 
-  private var applicationDir: String = _
-  var metadataElements: List[MetadataElement] = List()
-  var dataSets: List[DataSet] = List()
-
   private val source = Source.fromFile(config)
   private val jsonStr: String = source.getLines().mkString
   source.close()
@@ -31,7 +27,11 @@ class ApplicationConfiguration(configFile: String) extends KamanjaTestLogger {
   private val json = parse(jsonStr)
   logger.debug(s"Config JSON:\n${pretty(render(json))}")
 
-  private def parseMdElements: Unit = {
+  parseMdElements
+  parseDataSets
+
+  private def parseMdElements: List[MetadataElement] = {
+    var metadataElements: List[MetadataElement] = List()
     val mdElems: List[Map[String, Any]] = (json \\ "MetadataElements").values.asInstanceOf[List[Map[String, Any]]]
     mdElems.foreach(elem => {
       elem("Type").toString.toLowerCase match {
@@ -65,15 +65,19 @@ class ApplicationConfiguration(configFile: String) extends KamanjaTestLogger {
         case _ => println("Unknown Metadata Type: " + elem("Type"))
       }
     })
+    return metadataElements
   }
 
-  private def parseDataSets: Unit = {
+  private def parseDataSets: List[DataSet] = {
+    var dataSets: List[DataSet] = List()
     val data: List[Map[String, Any]] = (json \\ "DataSets").values.asInstanceOf[List[Map[String, Any]]]
     data.foreach(set => {
-      this.dataSets = this.dataSets :+ new DataSet(set("InputDataFile").toString, set("InputDataFormat").toString, set("ExpectedResultsFile").toString, set("ExpectedResultsFormat").toString)
+      dataSets = dataSets :+ new DataSet(set("InputDataFile").toString, set("InputDataFormat").toString, set("ExpectedResultsFile").toString, set("ExpectedResultsFormat").toString)
     })
+    return dataSets
   }
 
-  parseMdElements
-  parseDataSets
+  def initializeApplication: KamanjaApplication = {
+    return new KamanjaApplication((json \ "Application" \ "Name").values.toString, parseMdElements, parseDataSets)
+  }
 }
