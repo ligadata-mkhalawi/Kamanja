@@ -34,7 +34,7 @@ parallelExecution in Test := false
 //
 //libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.4" % "test->default"
 //
-//libraryDependencies += "com.novocode" % "junit-interface" % "0.9" % "test->default"
+//libraryDependencies += "com.novocode" % "junit-com.ligadata.test.application.interface" % "0.9" % "test->default"
 //
 //libraryDependencies += "junit" % "junit" % "4.11" % "test->default"
 //

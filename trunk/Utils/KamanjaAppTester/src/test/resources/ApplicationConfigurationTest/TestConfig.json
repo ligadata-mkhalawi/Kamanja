@@ -1,0 +1,80 @@
+{
+  "Application": {
+    "Name": "TestApp",
+    "ClusterConfiguration": "ClusterConfig.json",
+    "MetadataElements": [
+      {
+        "Type": "AdapterMessageBindings",
+        "Filename": "adapterMsgBindings.json"
+      },
+      {
+        "Type": "Container",
+        "Filename": "container.json",
+        "Tenant": "tenant1"
+      },
+      {
+        "Type": "Message",
+        "Filename": "inputMessage.json",
+        "Tenant": "tenant1"
+      },
+      {
+        "Type": "Message",
+        "Filename": "outputMessage.json",
+        "Tenant": "tenant1"
+      },
+      {
+        "Type": "ModelConfiguration",
+        "Filename": "modelCfg.json"
+      },
+      {
+        "Type": "Model",
+        "ModelType": "Scala",
+        "Filename": "model.scala",
+        "Tenant": "tenant1",
+        "ModelConfiguration": "modelCfg"
+      },
+      {
+        "Type": "Model",
+        "ModelType": "Java",
+        "Filename": "model.java",
+        "Tenant": "tenant1",
+        "ModelConfiguration": "modelCfg"
+      },
+      {
+        "Type": "Model",
+        "ModelType": "PMML",
+        "Filename": "pmmlModel.xml",
+        "MessageConsumed": "com.ligadata.test.message.InputMessage",
+        "MessageProduced": "com.ligadata.test.message.OutputMessage",
+        "Tenant": "tenant1"
+      },
+      {
+        "Type": "Model",
+        "ModelType": "PMML",
+        "Filename": "pmmlModel2.xml",
+        "MessageConsumed": "com.ligadata.test.message.InputMessage",
+        "Tenant": "tenant1"
+      },
+      {
+        "Type": "Model",
+        "ModelType": "KPMML",
+        "Filename": "kpmmlModel.xml",
+        "Tenant": "tenant1"
+      }
+    ],
+    "DataSets": [
+      {
+        "InputFile": "inputFile1.csv",
+        "ExpectedResultsFile": "expectedResults1.csv",
+        "InputFormat": "CSV",
+        "OutputFormat": "CSV"
+      },
+      {
+        "InputFile": "inputFile2.json",
+        "ExpectedResultsFiles": "expectedResults2.json",
+        "InputFormat": "JSON",
+        "OutputFormat": "JSON"
+      }
+    ]
+  }
+}

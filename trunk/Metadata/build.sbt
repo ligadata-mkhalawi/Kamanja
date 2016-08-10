@@ -14,7 +14,7 @@ name := "Metadata"
 //
 //libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.0" % "test"
 //
-//libraryDependencies += "com.novocode" % "junit-interface" % "0.11-RC1" % "test"
+//libraryDependencies += "com.novocode" % "junit-com.ligadata.test.application.interface" % "0.11-RC1" % "test"
 
 scalacOptions += "-deprecation"
 

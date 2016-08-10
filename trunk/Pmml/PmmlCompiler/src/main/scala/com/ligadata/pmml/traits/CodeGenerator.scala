@@ -21,16 +21,16 @@ import com.ligadata.pmml.support._
 import com.ligadata.pmml.syntaxtree.cooked.common._
 
 /**
- * The CodePrinterDispatch interface accepts some kind of PmmlExecNode, a buffer to fill 
+ * The CodePrinterDispatch interface accepts some kind of PmmlExecNode, a buffer to fill
  * with generated output, an instance of the CodeGeneratorDispatch so that recursive calls back to 
  * the code printer dispatch can be made, and the sort of code fragment to generate.
  * 
- * This interface acts as the manager or central control that is called back when recursion 
+ * This interface acts as the manager or central control that is called back when recursion
  * to a sub-node is required.
  * 
  * The intention here is to allow for the generation of alternate outputs either in strategy 
  * or even in the language used.  Currently there is a Scala printer that implements this 
- * interface.  A C++ version is planned.  Conceivably alternate versions of a given 
+ * interface.  A C++ version is planned.  Conceivably alternate versions of a given
  * syntax tree node instance could be generated in the same language.
  * 
  */
@@ -56,7 +56,7 @@ trait CodePrinterDispatch {
 }
 
 /**
- * The CodePrinter is an an interface that describes a common print behavior that is 
+ * The CodePrinter is an an interface that describes a common print behavior that is
  * implemented by all PmmlExecNode instances.  Its method, print, answers a 
  * string representation of itself according to the code fragment requested and the semantics
  * of the generator itself (e.g., will a scala code fragment be generated or a c++ one?).
