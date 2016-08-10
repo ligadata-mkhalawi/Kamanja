@@ -4,6 +4,45 @@
       <img class="logo" id="imgLogo" src="./images/logo.svg" width="168"
            height="47" alt="" data-mu-svgfallback="./images/logo.png">
       <span class="version">beta v0.1</span>
+      <div class="row filtersearch">
+        <div class="col-md-6">
+          <div>
+            <i class="fa fa-search fa-2" aria-hidden="true"></i>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <span data-toggle="collapse" data-target=".filter">
+            <i class="fa fa-filter fa-2" aria-hidden="true"></i>
+            </span>
+          <div class="filter collapse">
+            <table class="table">
+              <tr>
+                <td>
+                  <i class="fa fa-filter fa-2" aria-hidden="true"></i>
+                </td>
+                <td>
+                  Model Types
+                </td>
+              </tr>
+              <tr>
+                <td></td>
+                <td>
+                  <div ng-repeat="item in header.filterList">
+                    <div class="checkbox">
+                      <label>
+                        <img ng-src="images/{{item.imageName}}" width="{{item.imageWidth}}"
+                             height="{{item.imageHeight}}" alt=""/>
+                        {{item.displayName}}
+                        <input type="checkbox" id="{{item.displayName}}"><label for="{{item.displayName}}"></label>
+                      </label>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
     <div class="col-sm-6 col-xs-6 col-md-6">
       <div class="row">
@@ -11,7 +50,8 @@
           <ul class="list-inline rightItems">
             <li>
               <div class="checkbox">
-                <input type="checkbox" ng-click="header.toggleShowStatus()" ng-checked="header.getShowStatus()" id="chkShowStatus">
+                <input type="checkbox" ng-click="header.toggleShowStatus()" ng-checked="header.getShowStatus()"
+                       id="chkShowStatus">
                 <label for="chkShowStatus">Show status</label>
               </div>
             </li>

@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('networkApp')
-  .directive('header', ['$rootScope', 'serviceData', function ($rootScope, serviceData) {
+  .directive('header', ['$rootScope', 'serviceData', 'serviceConfig', function ($rootScope, serviceData, serviceConfig) {
     return {
       restrict: 'E',
       templateUrl: 'views/tpl/header.html',
@@ -36,8 +36,23 @@ angular.module('networkApp')
           });
         };
 
+        header.generateFilterList = function(viewObj){
+          header.filterList = [];
+          _.forEach(viewObj.SymbolClasses, function (item) {
+            var type = serviceConfig.classImageColorMap[item.toLowerCase()];
+            var filterObj = {
+              displayName: item === 'Input' || item === 'Output' || item === 'Storage' ? item + " " + "Adapter" : item,
+              imageName: type.image + '.inactive.' + type.extension,
+              imageWidth: type.width,
+              imageHeight: type.height
+            };
+            header.filterList.push(filterObj);
+          });
+        };
+
         header.setView = function (viewObj) {
           serviceData.setSelectedView(viewObj);
+          header.generateFilterList(viewObj);
           header.selectedView = serviceData.getSelectedViewName();
         };
 

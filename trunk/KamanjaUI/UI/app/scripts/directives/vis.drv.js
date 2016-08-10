@@ -1,9 +1,10 @@
 /*globals angular,_,vis, console, document */
+'use strict';
+
 angular
   .module('networkApp')
   .directive('uiHomeVisDemo', ['serviceConfig', 'serviceSocket', '$timeout', '$window',
       function (serviceConfig, serviceSocket, $timeout, $window) {
-    'use strict';
     return {
       restrict: 'E',
       scope: {
@@ -144,7 +145,7 @@ angular
               .range([10,40])
               .interpolate(d3.interpolateRound);
             _.each(scope.symbolClasses, function (symbolClass) {
-              _.each(messageObj[trim(symbolClass) + 'Counter'], function(model){
+              _.each(messageObj[symbolClass + 'Counter'], function(model){
                 if (model) {
                   var node = _.find(data.nodes._data, {ID: model.Id});
                   if (node) {
@@ -381,7 +382,6 @@ angular
   }]);
 (function () {
   vis.DataSet.prototype.getItemById = function (id) {
-    'use strict';
     return this.get({
       filter: function (item) {
         return item.id === id;
@@ -389,7 +389,6 @@ angular
     })[0];
   };
   vis.DataSet.prototype.removeAll = function () {
-    'use strict';
     var self = this;
     this.forEach(function (d) {
       self.remove(d.id);

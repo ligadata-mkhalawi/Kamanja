@@ -1292,6 +1292,7 @@ _:-ms-lang(x), .layout-fixed .wrapper > .aside > .aside-inner {
 .sidebar > .nav > .nav-heading:first-child {
   padding-top: 20px;
   text-align: center;
+  padding-right: 50px;
 }
 .sidebar > .nav > li {
   border-left: 3px solid transparent;

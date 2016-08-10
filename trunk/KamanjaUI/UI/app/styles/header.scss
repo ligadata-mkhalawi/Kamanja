@@ -64,6 +64,15 @@
       position: relative;
       left: 24px;
     }
+    .filtersearch {
+      color: white;
+      .filter {
+        min-height: 200px;
+        background-color: black;
+        width: 250px;
+        border: solid white 1px;
+      }
+    }
     .rightSection{
       padding-right: 30px;
     }
