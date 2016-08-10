@@ -230,9 +230,7 @@ cp Utils/SaveContainerDataComponent/target/scala-2.10/savecontainerdatacomponent
 
 # cp Pmml/MethodExtractor/target/scala-2.10/methodextractor* $bin
 
-cp Utils/SimpleKafkaProducer/v8/target/scala-2.10/simplekafkaproducer* $systemlib
-cp Utils/SimpleKafkaProducer/v9/target/scala-2.10/simplekafkaproducer* $systemlib
-cp Utils/SimpleKafkaProducer/v10/target/scala-2.10/simplekafkaproducer* $systemlib
+cp Utils/SimpleKafkaProducer/target/scala-2.10/simplekafkaproducer* $systemlib
 cp InputOutputAdapters/KafkaAdapters_v8/target/scala-2.10/kamanjakafkaadapters* $systemlib
 cp InputOutputAdapters/KafkaAdapters_v9/target/scala-2.10/kamanjakafkaadapters* $systemlib
 cp InputOutputAdapters/KafkaAdapters_v10/target/scala-2.10/kamanjakafkaadapters* $systemlib
@@ -588,11 +586,6 @@ cp KamanjaManager/target/scala-2.11/kamanjamanager* $systemlib
 cp Utils/SaveContainerDataComponent/target/scala-2.11/savecontainerdatacomponent_2.11* $systemlib
 
 cp Utils/SimpleKafkaProducer/target/scala-2.11/simplekafkaproducer* $systemlib
-
-
-cp Utils/SimpleKafkaProducer/v8/target/scala-2.11/simplekafkaproducer* $systemlib
-cp Utils/SimpleKafkaProducer/v9/target/scala-2.11/simplekafkaproducer* $systemlib
-cp Utils/SimpleKafkaProducer/v10/target/scala-2.11/simplekafkaproducer* $systemlib
 cp InputOutputAdapters/KafkaAdapters_v8/target/scala-2.11/kamanjakafkaadapters* $systemlib
 cp InputOutputAdapters/KafkaAdapters_v9/target/scala-2.11/kamanjakafkaadapters* $systemlib
 cp InputOutputAdapters/KafkaAdapters_v10/target/scala-2.11/kamanjakafkaadapters* $systemlib
