@@ -92,7 +92,8 @@ class PyProcess(host: String,
     processBuilder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
 
     proc = processBuilder.start()
-    reader ! proc
+    Thread.sleep(2000)
+//    reader ! proc
 
     try {
       if (proc.getClass().getName().equals("java.lang.UNIXProcess")) {
@@ -100,7 +101,7 @@ class PyProcess(host: String,
         var f: Field = proc.getClass().getDeclaredField("pid")
         f.setAccessible(true)
         pid = f.getLong(proc)
-        logger.debug("The server started at host " + cHost + " at port " + cPort + " and the processor id is " + pid)
+        logger.debug("Py Process The server started at host " + cHost + " at port " + cPort + " and the processor id is " + pid)
         f.setAccessible(false)
       }
     }
@@ -122,7 +123,7 @@ class PyProcess(host: String,
       PyPathText + SingleSpace + cPyPath + SingleSpace +
       LogConfigText + SingleSpace + cPyPath + "/config/" + LogConfigFileName + SingleSpace +
       LogFilePathText + SingleSpace + cPyPath + "/logs/" + LogFileName
-    logger.debug(cmdString)
+    logger.debug("THis is pyprocess scala  must see this if logger here works " + cmdString)
 
     run (cmdString)
 

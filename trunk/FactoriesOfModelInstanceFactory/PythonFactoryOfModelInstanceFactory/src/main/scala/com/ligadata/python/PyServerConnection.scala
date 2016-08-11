@@ -26,7 +26,6 @@ import scala.sys.process._
 import scala.util.control.Breaks._
 import scala.collection.immutable.Map
 
-
 import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
@@ -94,26 +93,39 @@ class PyServerConnection(val host : String
     def initialize : (String,String) = {
 
         /** start the server */
-        val startServerResult : String = startServer
+      val startServerResult : String = startServer
+
         logger.debug(s"PyServerConnection.initialize ... start server result = $startServerResult")
         implicit val formats = org.json4s.DefaultFormats
         val startResultsMap : Map[String,Any] = parse(startServerResult).values.asInstanceOf[Map[String,Any]]
         val pid : Int = startResultsMap.getOrElse("pid", -1).asInstanceOf[scala.math.BigInt].toInt
-
+      var attempts : Int  = 0
+      logger.debug (" THe value of host is " + host + " in the initialize of PyServerConnection ")
+      while (attempts < 10) {
         /** create a connection to the server on the port that it is listening. */
         val inetbyname = InetAddress.getByName(host)
-        logger.debug("PyServerConnection.initialize ... connecting to host known as '$inetbyname'")
+        logger.debug("PyServerConnection.initialize ... connecting to host known as '$inetbyname' " + inetbyname + " " + port.toString)
         _sock = new Socket(inetbyname, port)
         _in = new DataInputStream(_sock.getInputStream)
         _out = new DataOutputStream(_sock.getOutputStream)
 
         val (rc, result) : (Int,String) = if (pid >  0 && _sock != null && _in != null && _out != null) {
-            (0, "connection created")
+          (0, "connection created")
+
+          break
         } else {
             (-1 ,"connection creation failed")
         }
+          attempts +=  1
+        }
+      val (rc, result) : (Int,String) = if (pid >  0 && attempts < 10) {
+        (0, "connection created")
 
-        val connResult : String = s"{ ${'"'}code${'"'} : $rc,  ${'"'}result${'"'} : ${'"'}$result${'"'}}"
+      }
+      else {
+        (-1, null)
+      }
+      val connResult : String = s"{ ${'"'}code${'"'} : $rc,  ${'"'}result${'"'} : ${'"'}$result${'"'}}"
         logger.debug(s"PyServerConnection.initialize ... conection result = $connResult")
         (startServerResult, connResult)
     }
