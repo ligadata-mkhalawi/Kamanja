@@ -83,4 +83,6 @@ class KamanjaApplicationConfigurationTest extends FlatSpec with BeforeAndAfterAl
   it should "read in a configuration file and produce an Application name" in {
     assert(app.name == "TestApp")
   }
+
+
 }

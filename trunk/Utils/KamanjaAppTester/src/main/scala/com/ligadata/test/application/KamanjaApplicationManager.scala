@@ -39,20 +39,13 @@ class KamanjaApplicationManager(baseDir: String) extends KamanjaTestLogger {
           logger.warn(s"[Kamanja Application Tester - ApplicationManager]: Multiple files found in the application directory '${d.getName}'. Using the first file found '${files(0)}'. " +
             s"If this file is not correct, please remove any files you do not wish to use.")
         files.foreach(file => {
-          if(file.getName.toLowerCase != "applicationconfiguration.json" || dir.getName.toLowerCase != "appconfig.json") {
+          if(file.getName.toLowerCase != "applicationconfiguration.json" || file.getName.toLowerCase != "appconfig.json") {
             throw new KamanjaApplicationException("[Kamanja Application Tester - ApplicationManager]: invalid name for configuration file found: " + file.getName + ". The configuration file " +
               "should be named either 'ApplicationConfiguration.json' or 'AppConfig.json' (case insensitive search applies).")
           }
           else
             applicationConfigFiles = applicationConfigFiles :+ files(0)
         })
-
-        /*
-        if(dir.getName.toLowerCase != "applicationconfig.json" || dir.getName.toLowerCase != "appconfig.json"){
-          throw new KamanjaApplicationException("Expected a single application configuration file with name 'ApplicationConfig.json' or 'AppConfig.json' but found " + dir.getName)
-        }
-        applicationConfigFiles = applicationConfigFiles :+ dir
-      */
       }
     })
     return applicationConfigFiles.toList
