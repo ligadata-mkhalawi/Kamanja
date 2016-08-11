@@ -36,6 +36,14 @@ angular.module('networkApp')
           });
         };
 
+        header.filterNodes = function($event){
+          var chk = $event.target;
+          $rootScope.$broadcast('filterNodesChanged', {
+            type: chk.id.toLowerCase(),
+            visible: chk.checked
+          });
+        };
+
         header.generateFilterList = function(viewObj){
           header.filterList = [];
           _.forEach(viewObj.SymbolClasses, function (item) {
@@ -44,7 +52,8 @@ angular.module('networkApp')
               displayName: item === 'Input' || item === 'Output' || item === 'Storage' ? item + " " + "Adapter" : item,
               imageName: type.image + '.inactive.' + type.extension,
               imageWidth: type.width,
-              imageHeight: type.height
+              imageHeight: type.height,
+              name: item
             };
             header.filterList.push(filterObj);
           });

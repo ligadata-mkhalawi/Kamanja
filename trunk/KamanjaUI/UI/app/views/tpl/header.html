@@ -33,7 +33,7 @@
                         <img ng-src="images/{{item.imageName}}" width="{{item.imageWidth}}"
                              height="{{item.imageHeight}}" alt=""/>
                         {{item.displayName}}
-                        <input type="checkbox" id="{{item.displayName}}"><label for="{{item.displayName}}"></label>
+                        <input type="checkbox" ng-click="header.filterNodes($event)" id="{{item.name}}"><label for="{{item.name}}"></label>
                       </label>
                     </div>
                   </div>
