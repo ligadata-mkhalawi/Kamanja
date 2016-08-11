@@ -37,31 +37,49 @@ object Conversion {
   // Source -> Map[Target, Function]  // Source -> Map[Target, Function]
   val builtin: Map[String, Map[String, String]] = Map(
     "Int" -> Map("String" -> "ToString"),
+    "java.lang.Integer" -> Map("String" -> "ToString"),
     "Double" -> Map("String" -> "ToString"),
+    "java.lang.Double" -> Map("String" -> "ToString"),
     "Boolean" -> Map("String" -> "ToString"),
+    "java.lang.Boolean" -> Map("String" -> "ToString"),
     "Date" -> Map("String" -> "ToString"),
     "BigDecimal" -> Map("String" -> "ToString"),
     "Long" -> Map("String" -> "ToString"),
+    "java.lang.Long" -> Map("String" -> "ToString"),
     "Char" -> Map("String" -> "ToString"),
+    "java.lang.Character" -> Map("String" -> "ToString"),
     "Float" -> Map("String" -> "ToString"),
+    "java.lang.Float" -> Map("String" -> "ToString"),
     "String" -> Map("Int" -> "ToInteger",
+      "java.lang.Integer" -> "ToInteger",
       "Char" -> "ToChar",
+      "java.lang.Character" -> "ToChar",
       "Double" -> "ToDouble",
-      "Boolean" -> "ToBoolean",
-      "Date" -> "ToDate",
-      "Timestamp" -> "ToTimestamp",
-      "BigDecimal" -> "ToBigDecimal",
-      "Long" -> "ToLong"),
-    "Any" -> Map("Int" -> "ToInteger",
-      "Char" -> "ToChar",
+      "java.lang.Double" -> "ToDouble",
       "Float" -> "ToFloat",
-      "Double" -> "ToDouble",
+      "java.lang.Float" -> "ToFloat",
       "Boolean" -> "ToBoolean",
+      "java.lang.Boolean" -> "ToBoolean",
       "Date" -> "ToDate",
       "Timestamp" -> "ToTimestamp",
       "BigDecimal" -> "ToBigDecimal",
-      "Long" -> "ToBLong")
-  )
+      "Long" -> "ToLong",
+      "java.lang.Long" -> "ToLong"),
+    "Any" -> Map("Int" -> "ToInteger",
+      "java.lang.Int" -> "ToInteger",
+      "Char" -> "ToChar",
+      "java.lang.Character" -> "ToChar",
+      "Float" -> "ToFloat",
+      "java.lang.Float" -> "ToFloat",
+      "Double" -> "ToDouble",
+      "java.lang.Double" -> "ToDouble",
+      "Boolean" -> "ToBoolean",
+      "java.lang.Boolean" -> "ToBoolean",
+      "Date" -> "ToDate",
+      "Timestamp" -> "ToTimestamp",
+      "BigDecimal" -> "ToBigDecimal",
+      "Long" -> "ToBLong",
+      "java.lang.Long" -> "ToBLong"))
 
   val formatDate = new java.text.SimpleDateFormat("yyyy-MM-dd")
   val formatTs = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
@@ -137,24 +155,24 @@ class Conversion {
 
   def ToDate(v: Any): Date = {
     v match {
-      case null => null
+      case null      => null
       case y: String => Conversion.formatDate.parse(y)
-      case y: Date => y
+      case y: Date   => y
     }
   }
 
   def ToTimestamp(v: Any): Timestamp = {
     v match {
-      case null => null
-      case y: String => new Timestamp(Conversion.formatTs.parse(y).getTime)
+      case null         => null
+      case y: String    => new Timestamp(Conversion.formatTs.parse(y).getTime)
       case y: Timestamp => y
     }
   }
 
   def ToBigDecimal(v: Any): BigDecimal = {
     v match {
-      case null => 0
-      case y: String => BigDecimal.apply(y)
+      case null          => 0
+      case y: String     => BigDecimal.apply(y)
       case y: BigDecimal => y
     }
   }
@@ -174,15 +192,15 @@ class Conversion {
 
   def ToString(v: Any): String = {
     v match {
-      case y: String => y
-      case y: Char => y.toString
-      case y: Int => y.toString
-      case y: Long => y.toString
-      case y: Float => y.toString
-      case y: Double => y.toString
-      case y: Boolean => y.toString
-      case y: Timestamp => Conversion.formatTs.format(y)
-      case y: Date => Conversion.formatDate.format(y)
+      case y: String     => y
+      case y: Char       => y.toString
+      case y: Int        => y.toString
+      case y: Long       => y.toString
+      case y: Float      => y.toString
+      case y: Double     => y.toString
+      case y: Boolean    => y.toString
+      case y: Timestamp  => Conversion.formatTs.format(y)
+      case y: Date       => Conversion.formatDate.format(y)
       case y: BigDecimal => y.toString
     }
   }
@@ -223,4 +241,16 @@ class Conversion {
     if (InputData == null || valueDelim == null) return Array[Char]()
     InputData.split(valueDelim, -1).map(v => ToChar(v))
   }
+
+  def ToIntegerArrayBoxing(InputData: String, valueDelim: String): Array[Integer] = ToIntArray(InputData, valueDelim).map(Int.box)
+
+  def ToLongArrayBoxing(InputData: String, valueDelim: String): Array[java.lang.Long] = ToLongArray(InputData, valueDelim).map(Long.box)
+
+  def ToFloatArrayBoxing(InputData: String, valueDelim: String): Array[java.lang.Float] = ToFloatArray(InputData, valueDelim).map(Float.box)
+
+  def ToDoubleArrayBoxing(InputData: String, valueDelim: String): Array[java.lang.Double] = ToDoubleArray(InputData, valueDelim).map(Double.box)
+
+  def ToBooleanArrayBoxing(InputData: String, valueDelim: String): Array[java.lang.Boolean] = ToBooleanArray(InputData, valueDelim).map(Boolean.box)
+  
+  def ToCharArrayBoxing(InputData: String, valueDelim: String): Array[java.lang.Character] = ToCharArray(InputData, valueDelim).map(Char.box)
 }

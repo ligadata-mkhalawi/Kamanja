@@ -112,7 +112,7 @@ class MessageCompilerTestSuite extends FunSuite {
     var idCodeDimFixed = new IdCodeDimFixed(IdCodeDimFixed);
     var idCodeDimMapped = new IdCodeDimMapped(IdCodeDimMapped);
 
-    var a1: Int = 0
+    var a1: Int = 10
     var a2: Float = 0f
     var a3: Double = 0.0
     var a4: Long = 0L
@@ -145,8 +145,10 @@ class MessageCompilerTestSuite extends FunSuite {
     println("==================Set 3=============");
 
     idCodeDimFixed.set("id", a1)
+    println("============================"+idCodeDimFixed.get("id"))
+   
     idCodeDimFixed.set("code1", a2)
-    idCodeDimFixed.set("code2", a3)
+     idCodeDimFixed.set("code2", a3)
     idCodeDimFixed.set("code3", a4)
     idCodeDimFixed.set("code4", a5)
     idCodeDimFixed.set("code5", a6)
