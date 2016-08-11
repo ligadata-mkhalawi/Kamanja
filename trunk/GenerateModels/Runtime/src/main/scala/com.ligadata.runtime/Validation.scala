@@ -13,9 +13,12 @@ object Validation {
     else false
   }
 
-  def isInt(value : String, fieldName : String, errHandler : (String, String)=>Unit) : Boolean = {
-    if(value == null || value.length == 0)//either value is allowed to have null or null check will be validated first
+  def isInt(value : String, fieldName : String, fieldIndex : Int, nullFlags : Array[Boolean],
+            errHandler : (String, String)=>Unit) : Boolean = {
+    if(value == null || value.length == 0) { //either value is allowed to have null or null check will be validated first
+      if(nullFlags != null) nullFlags(fieldIndex) = true
       return true
+    }
     val res = (
       try{
         Some(value.toInt)
@@ -29,9 +32,13 @@ object Validation {
     res
   }
 
-  def isLong(value : String, fieldName : String, errHandler : (String, String)=>Unit) : Boolean = {
-    if(value == null || value.length == 0)//either value is allowed to have null or null check will be validated first
+  def isLong(value : String, fieldName : String, fieldIndex : Int, nullFlags : Array[Boolean],
+             errHandler : (String, String)=>Unit) : Boolean = {
+    if(value == null || value.length == 0) {
+      //either value is allowed to have null or null check will be validated first
+      if(nullFlags != null) nullFlags(fieldIndex) = true
       return true
+    }
     val res = (
       try{
         Some(value.toLong)
@@ -45,9 +52,13 @@ object Validation {
     res
   }
 
-  def isDouble(value : String, fieldName : String, errHandler : (String, String)=>Unit) : Boolean = {
-    if(value == null || value.length == 0)//either value is allowed to have null or null check will be validated first
+  def isDouble(value : String, fieldName : String, fieldIndex : Int, nullFlags : Array[Boolean],
+               errHandler : (String, String)=>Unit) : Boolean = {
+    if(value == null || value.length == 0) {
+      //either value is allowed to have null or null check will be validated first
+      if(nullFlags != null) nullFlags(fieldIndex) = true
       return true
+    }
     val res = (
       try{
         Some(value.toDouble)
@@ -61,9 +72,13 @@ object Validation {
     res
   }
 
-  def isFloat(value : String, fieldName : String, errHandler : (String, String)=>Unit) : Boolean = {
-    if(value == null || value.length == 0)//either value is allowed to have null or null check will be validated first
+  def isFloat(value : String, fieldName : String, fieldIndex : Int, nullFlags : Array[Boolean],
+              errHandler : (String, String)=>Unit) : Boolean = {
+    if(value == null || value.length == 0) {
+      //either value is allowed to have null or null check will be validated first
+      if(nullFlags != null) nullFlags(fieldIndex) = true
       return true
+    }
     val res = (
       try{
         Some(value.toFloat)
@@ -77,9 +92,13 @@ object Validation {
     res
   }
 
-  def isBoolean(value : String, fieldName : String, errHandler : (String, String)=>Unit) : Boolean = {
-    if(value == null || value.length == 0)//either value is allowed to have null or null check will be validated first
+  def isBoolean(value : String, fieldName : String,  fieldIndex : Int, nullFlags : Array[Boolean],
+                errHandler : (String, String)=>Unit) : Boolean = {
+    if(value == null || value.length == 0) {
+      //either value is allowed to have null or null check will be validated first
+      if(nullFlags != null) nullFlags(fieldIndex) = true
       return true
+    }
     val valid = (
       try{
         Some(value.toBoolean)
