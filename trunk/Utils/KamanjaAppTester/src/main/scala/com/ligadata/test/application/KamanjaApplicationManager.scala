@@ -1,6 +1,6 @@
 package com.ligadata.test.application
 
-import java.io.File
+import java.io.{File, FilenameFilter}
 
 import com.ligadata.test.application.configuration.KamanjaApplicationConfiguration
 import com.ligadata.test.utils.KamanjaTestLogger
@@ -8,6 +8,8 @@ import com.ligadata.test.utils.KamanjaTestLogger
 import scala.collection.mutable.ListBuffer
 
 class KamanjaApplicationManager(baseDir: String) extends KamanjaTestLogger {
+
+  lazy val kamanjaApplications = initializeApplications(baseDir)
 
   /** Given a directory, this will return a list of directories contained with the baseDir/tests
     *
@@ -33,19 +35,28 @@ class KamanjaApplicationManager(baseDir: String) extends KamanjaTestLogger {
   private def getApplicationConfigFiles(applicationDirs: List[File]): List[File] = {
     var applicationConfigFiles: ListBuffer[File] = ListBuffer[File]()
     applicationDirs.foreach(d => {
-      if(d.exists && d.isDirectory) {
+      if (d.exists && d.isDirectory) {
+        var dirFiles: ListBuffer[File] = ListBuffer[File]()
         val files = d.listFiles.filter(_.isFile).toList
-        if(files.length > 1)
-          logger.warn(s"[Kamanja Application Tester - ApplicationManager]: Multiple files found in the application directory '${d.getName}'. Using the first file found '${files(0)}'. " +
-            s"If this file is not correct, please remove any files you do not wish to use.")
+
         files.foreach(file => {
-          if(file.getName.toLowerCase != "applicationconfiguration.json" || file.getName.toLowerCase != "appconfig.json") {
-            throw new KamanjaApplicationException("[Kamanja Application Tester - ApplicationManager]: invalid name for configuration file found: " + file.getName + ". The configuration file " +
-              "should be named either 'ApplicationConfiguration.json' or 'AppConfig.json' (case insensitive search applies).")
+          if (file.getName.toLowerCase != "applicationconfiguration.json" && file.getName.toLowerCase != "appconfig.json") {
+            logger.warn(s"[Kamanja Application Tester - ApplicationManager]: File '${file.getName}' is an unaccepted name for a configuration file, please use either 'ApplicationConfiguration.json' or 'AppConfig.json'")
           }
-          else
-            applicationConfigFiles = applicationConfigFiles :+ files(0)
+          else {
+            dirFiles = dirFiles :+ file
+          }
         })
+
+        if (dirFiles.length == 0) {
+          logger.warn(s"[Kamanja ApplicationTester - ApplicationManager]: Failed to discover any configuration files in application directory '${d.getName}'. This application will not be tested.")
+        }
+        else if (dirFiles.length > 1) {
+          logger.warn(s"[Kamanja Application Tester - ApplicationManager]: Multiple configuration files found. Using the first file found '${dirFiles(0)}'")
+        }
+        else {
+          applicationConfigFiles = applicationConfigFiles :+ dirFiles(0)
+        }
       }
     })
     return applicationConfigFiles.toList
@@ -56,7 +67,7 @@ class KamanjaApplicationManager(baseDir: String) extends KamanjaTestLogger {
     * @param testDir
     * @return
     */
-  def initializeApplications(testDir: String): List[KamanjaApplication] = {
+  private def initializeApplications(testDir: String): List[KamanjaApplication] = {
     val dir = new File(testDir)
     var applicationConfigFiles: List[File] = List[File]()
     var apps: ListBuffer[KamanjaApplication] = ListBuffer[KamanjaApplication]()

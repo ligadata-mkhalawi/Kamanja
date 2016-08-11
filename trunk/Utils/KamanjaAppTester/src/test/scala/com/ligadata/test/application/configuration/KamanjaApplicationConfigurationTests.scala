@@ -5,7 +5,7 @@ import com.ligadata.test.application.KamanjaApplication
 
 import org.scalatest._
 
-class KamanjaApplicationConfigurationTest extends FlatSpec with BeforeAndAfterAll {
+class KamanjaApplicationConfigurationTests extends FlatSpec with BeforeAndAfterAll {
   var configFile: String = ""
   var appConfig: KamanjaApplicationConfiguration = _
   var app: KamanjaApplication = _
