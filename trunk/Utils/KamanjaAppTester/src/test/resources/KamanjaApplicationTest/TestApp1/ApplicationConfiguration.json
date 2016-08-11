@@ -1,0 +1,45 @@
+{
+  "Application": {
+    "Name": "TestApp1",
+    "MetadataElements": [
+      {
+        "Type": "AdapterMessageBindings",
+        "Filename": "testApp1AdapterMessageBindings.json"
+      },
+      {
+        "Type": "Container",
+        "Filename": "testApp1Container.json",
+        "Tenant": "tenant1"
+      },
+      {
+        "Type": "Message",
+        "Filename": "testApp1Message.json",
+        "Tenant": "tenant1"
+      },
+      {
+        "Type": "Message",
+        "Filename": "testApp1OutputMessage.json",
+        "Tenant": "tenant1"
+      },
+      {
+        "Type": "ModelConfiguration",
+        "Filename": "testApp1ModelConfiguration.json"
+      },
+      {
+        "Type": "Model",
+        "ModelType": "Scala",
+        "Filename": "testApp1Model.scala",
+        "Tenant": "tenant1",
+        "ModelConfiguration": "testApp1ModelConfiguration"
+      }
+    ],
+    "DataSets": [
+      {
+        "InputDataFile": "testApp1InputFile.csv",
+        "InputDataFormat": "CSV",
+        "ExpectedResultsFile": "testApp1ExpectedResults.csv",
+        "ExpectedResultsFormat": "CSV"
+      }
+    ]
+  }
+}

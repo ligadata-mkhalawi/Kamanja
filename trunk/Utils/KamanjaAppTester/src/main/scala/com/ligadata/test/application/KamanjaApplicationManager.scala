@@ -61,10 +61,13 @@ class KamanjaApplicationManager(baseDir: String) extends KamanjaTestLogger {
     var applicationConfigFiles: List[File] = List[File]()
     var apps: ListBuffer[KamanjaApplication] = ListBuffer[KamanjaApplication]()
     if(dir.exists && dir.isDirectory) {
-      applicationConfigFiles = getApplicationConfigFiles(getApplicationDirectories(dir.getAbsolutePath))
-      applicationConfigFiles.foreach(file => {
-        val appConfig = new KamanjaApplicationConfiguration(file.getAbsolutePath)
-        apps = apps :+ appConfig.initializeApplication
+      val appDirs = getApplicationDirectories(dir.getAbsolutePath)
+      var count = 0
+      applicationConfigFiles = getApplicationConfigFiles(appDirs)
+      applicationConfigFiles.foreach(appConfigFile => {
+        val appConfig = new KamanjaApplicationConfiguration
+        apps = apps :+ appConfig.initializeApplication(appDirs(count).getAbsolutePath, appConfigFile.getAbsolutePath)
+        count = count + 1
       })
       return apps.toList
     }
