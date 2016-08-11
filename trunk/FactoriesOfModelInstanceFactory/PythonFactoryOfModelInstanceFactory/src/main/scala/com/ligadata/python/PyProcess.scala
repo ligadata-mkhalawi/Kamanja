@@ -78,13 +78,13 @@ class PyProcess(host: String,
             stringBuilder.append("\n")
           }
           bufferedReader.close
-          logger.debug(stringBuilder.toString)
+          logger.debug("PyProcess : The process pid " + pid.toString + stringBuilder.toString)
       }
     }
   }
 
   def run(command: String) {
-    logger.debug(s"gonna runa a command: " + Thread.currentThread + " " + command)
+    logger.debug(s"going to run the command: " + Thread.currentThread + " " + command)
     val args = command.split(" ")
     processBuilder = new ProcessBuilder(args: _*)
     processBuilder.redirectErrorStream(true)

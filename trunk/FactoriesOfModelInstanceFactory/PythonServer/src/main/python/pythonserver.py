@@ -455,6 +455,7 @@ while True:
 			break
 	if result == 'kill-9': # stop command stops listener tears down server ...
 		break
+
    if (parentpid != os.getppid()):
       logger.debug("parent pid exited so hence child exiting")
       os._exit(0)
