@@ -203,6 +203,9 @@ object MonitorUtils {
     * @return
     */
   def getFileComponents(fileFullPath: String, locationInfo : LocationInfo) : Map[String, String] = {
+    if(locationInfo.fileComponents == null)
+      return Map[String, String]()
+
     val fileName = getFileName(fileFullPath)
     val pattern = locationInfo.fileComponents.regex.r
 

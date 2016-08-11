@@ -12,7 +12,7 @@ import com.ligadata.InputOutputAdapterInfo.AdapterConfiguration
 import org.apache.logging.log4j.{ Logger, LogManager }
 
 import scala.actors.threadpool.{Executors, ExecutorService}
-import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.collection.mutable.{MultiMap, ArrayBuffer, HashMap}
 import scala.util.control.Breaks._
 import com.ligadata.AdaptersConfiguration._
 import CompressionUtil._
@@ -289,70 +289,93 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
     //TODO : consider running each folder monitoring in a separate thread
     isMonitoring = true
 
-    monitorsExecutorService = Executors.newFixedThreadPool(monitoringConf.detailedLocations.length)
+    val maxThreadCount = Math.min(monitoringConf.monitoringThreadsCount, monitoringConf.detailedLocations.length)
+    monitorsExecutorService = Executors.newFixedThreadPool(maxThreadCount)
+    logger.info("Smart File Monitor - running {} threads to monitor {} dirs",
+      monitoringConf.monitoringThreadsCount.toString, monitoringConf.detailedLocations.length.toString)
 
-    monitoringConf.detailedLocations.foreach(location => {
+    val monitoredDirsQueue = new MonitoredDirsQueue()
+    monitoredDirsQueue.init(monitoringConf.detailedLocations, monitoringConf.waitingTimeMS)
 
-      val folderToWatch = location.srcDir
+    for( currentThreadId <- 1 to maxThreadCount) {
 
       val dirMonitorthread = new Runnable() {
-        private var targetFolder: String = _
-        def init(dir: String) = targetFolder = dir
+        //private var locaions: Array[LocationInfo] = _
+        //def init(locs: Array[LocationInfo]) = locaions = locs
 
         override def run() = {
-          try{
+          try {
             breakable {
-              var isFirstScan = true
+
+              //var isFirstScan = true
+
               while (isMonitoring) {
 
-                if(checkFolders) {
-                  try {
-                    logger.info(s"Watching directory $targetFolder")
+                if (checkFolders) {
+                  val dirQueuedInfo = monitoredDirsQueue.getNextDir()
+                  if (dirQueuedInfo != null) {
+                    val location = dirQueuedInfo._1
+                    val isFirstScan = dirQueuedInfo._3
+                    val targetFolder = location.srcDir
 
-                    val dirsToCheck = new ArrayBuffer[String]()
-                    dirsToCheck += targetFolder
+                    logger.info("Smart File Monitor - Monitoring folder {} on thread {}", targetFolder, currentThreadId.toString)
 
-                    while (dirsToCheck.nonEmpty) {
-                      val dirToCheck = dirsToCheck.head
-                      dirsToCheck.remove(0)
+                    try {
 
-                      val dir = new File(dirToCheck)
-                      checkExistingFiles(dir, isFirstScan, location)
-                      //dir.listFiles.filter(_.isDirectory).foreach(d => dirsToCheck += d.toString)
+                      val dirsToCheck = new ArrayBuffer[String]()
+                      dirsToCheck += targetFolder
+
+                      while (dirsToCheck.nonEmpty) {
+                        val dirToCheck = dirsToCheck.head
+                        dirsToCheck.remove(0)
+
+                        val dir = new File(dirToCheck)
+                        checkExistingFiles(dir, isFirstScan, location)
+                        //dir.listFiles.filter(_.isDirectory).foreach(d => dirsToCheck += d.toString)
+
+                        errorWaitTime = 1000
+                      }
 
 
-                      errorWaitTime = 1000
+                    } catch {
+                      case e: Exception => {
+                        logger.warn("Unable to access Directory, Retrying after " + errorWaitTime + " seconds", e)
+                        errorWaitTime = scala.math.min((errorWaitTime * 2), MAX_WAIT_TIME)
+                      }
+                      case e: Throwable => {
+                        logger.warn("Unable to access Directory, Retrying after " + errorWaitTime + " seconds", e)
+                        errorWaitTime = scala.math.min((errorWaitTime * 2), MAX_WAIT_TIME)
+                      }
                     }
 
-                    isFirstScan = false
-
-                  } catch {
-                    case e: Exception => {
-                      logger.warn("Unable to access Directory, Retrying after " + errorWaitTime + " seconds", e)
-                      errorWaitTime = scala.math.min((errorWaitTime * 2), MAX_WAIT_TIME)
-                    }
-                    case e: Throwable => {
-                      logger.warn("Unable to access Directory, Retrying after " + errorWaitTime + " seconds", e)
-                      errorWaitTime = scala.math.min((errorWaitTime * 2), MAX_WAIT_TIME)
-                    }
+                    monitoredDirsQueue.reEnqueue(dirQueuedInfo) // so the folder gets monitored again
                   }
+                  else {
+                    //happens if last time queue head dir was monitored was less than waiting time
+                    logger.info("Smart File Monitor - no folders to monitor for now. Thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
+                    Thread.sleep(monitoringConf.waitingTimeMS)
+                  }
+                }
+                else {
+                  logger.info("Smart File Monitor - too many files already in process queue. monitoring thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
                   Thread.sleep(monitoringConf.waitingTimeMS)
                 }
-              }
+              } ///while isMonitoring
+
             }
-          }  catch {
+          } catch {
             case ie: InterruptedException => logger.error("InterruptedException: ", ie)
-            case ioe: IOException         => logger.error("Unable to find the directory to watch, Shutting down File Consumer", ioe)
-            case e: Exception             => logger.error("Exception: ", e)
-            case e: Throwable             => logger.error("Throwable: ", e)
+            case ioe: IOException => logger.error("Unable to find the directory to watch", ioe)
+            case e: Exception => logger.error("Exception: ", e)
+            case e: Throwable => logger.error("Throwable: ", e)
           }
         }
       }
 
-      dirMonitorthread.init(folderToWatch)
+      //dirMonitorthread.init(currentThreadLocations.toArray)
       monitorsExecutorService.execute(dirMonitorthread)
 
-    })
+    }
 
   }
 
