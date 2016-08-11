@@ -214,8 +214,8 @@ class MessageFieldTypesHandler {
   /*
    * get the AttributeValType
    */
-  private def getAttributeTypeName(implName: String): String = {
-    implName match {
+  private def getAttributeTypeName(typeName: String): String = {
+    typeName match {
       case "string"    => return "STRING";
       case "integer"   => return "INT";
       case "int"       => return "INT";
@@ -239,7 +239,7 @@ class MessageFieldTypesHandler {
     var typetyprStr: String = typtytpe.tType.toString().toLowerCase()
     typeInfo match {
       case "tscalar" => {
-        println("typtytpe.Name.toLowerCase() " + typtytpe.Name.toLowerCase())
+        log.info("typtytpe.Name.toLowerCase() " + typtytpe.Name.toLowerCase())
         val valTypeId = getAttributeValTypeId(typtytpe.Name.toLowerCase()); //getAttributeValTypeId(typtytpe.PhysicalName.toLowerCase());
         val keyTypeId = -1
         return new ArrtibuteInfo("ARRAY", valTypeId, keyTypeId, 0)
@@ -299,7 +299,7 @@ class MessageFieldTypesHandler {
     var typetyprStr: String = typtytpe.tType.toString().toLowerCase()
     typeInfo match {
       case "tscalar" => {
-        println("getMapAttributeTypeInfo - typtytpe.name.toLowerCase() " + typtytpe.name.toLowerCase())
+        log.info("getMapAttributeTypeInfo - typtytpe.name.toLowerCase() " + typtytpe.name.toLowerCase())
         val valTypeId = getAttributeValTypeId(typtytpe.name.toLowerCase()); //getAttributeValTypeId(typtytpe.PhysicalName.toLowerCase());
         val keyTypeId = 1
         return new ArrtibuteInfo("MAP", valTypeId, keyTypeId, 0)

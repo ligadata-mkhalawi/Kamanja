@@ -410,7 +410,7 @@ class MessageGenerator {
         val fieldTypeType = fieldBaseType.tTypeType.toString().toLowerCase()
         fieldTypeType match {
           case "tscalar" => {
-            getSetByIndexStr = getSetByIndexStr.append(setByIndexScalar(field, msgName, timePartKey))
+            getSetByIndexStr = getSetByIndexStr.append(setByIndexScalar(field, msgName, timePartKey, true))
           }
           case "tcontainer" => {
             fieldType match {
@@ -455,23 +455,49 @@ class MessageGenerator {
   /*
    * Set By Ordinal Function generation
    */
-  private def setByIndexScalar(field: Element, msgName: String, timePartKey: String): String = {
+  private def setByIndexScalar(field: Element, msgName: String, timePartKey: String, isPrimType: Boolean): String = {
     var setByOffset = new StringBuilder(8 * 1024)
+    var scalaPrimType: String = ""
+
     try {
       if (field != null) {
-        if (timePartKey != null && timePartKey.trim().size != 0 && field.Name.equalsIgnoreCase(timePartKey)) {
-          setByOffset.append("%scase %s => { %s".format(msgConstants.pad4, field.FieldOrdinal, msgConstants.newline))
-          setByOffset.append("%sif(value.isInstanceOf[%s]){ %s".format(msgConstants.pad4, field.FieldTypePhysicalName, msgConstants.newline))
-          setByOffset.append("%s  this.%s = value.asInstanceOf[%s]; %s".format(msgConstants.pad4, field.Name, field.FieldTypePhysicalName, msgConstants.newline))
-          setByOffset.append("%s  setTimePartitionData; %s".format(msgConstants.pad4, msgConstants.newline))
-          setByOffset.append("%s} else throw new Exception(s\"Value is the not the correct type for field %s in message %s\") %s".format(msgConstants.pad4, field.Name, msgName, msgConstants.newline))
-          setByOffset.append("%s} %s".format(msgConstants.pad4, msgConstants.newline))
+        if (isPrimType) {
+          if (field.FldMetaataType != null && field.FldMetaataType.Name != null && field.FldMetaataType.Name.trim() != "") {
+            val p = getScalaPrimitiveType(field.FldMetaataType.Name)
+            if (p != null && p.trim() != "") {
+              scalaPrimType = "|| value.isInstanceOf[%s]".format(p)
+            }
+          }
+
+          if (timePartKey != null && timePartKey.trim().size != 0 && field.Name.equalsIgnoreCase(timePartKey)) {
+            setByOffset.append("%scase %s => { %s".format(msgConstants.pad4, field.FieldOrdinal, msgConstants.newline))
+            setByOffset.append("%sif(value.isInstanceOf[%s] %s){ %s".format(msgConstants.pad4, field.FieldTypePhysicalName, scalaPrimType, msgConstants.newline))
+            setByOffset.append("%s  this.%s = value.asInstanceOf[%s]; %s".format(msgConstants.pad4, field.Name, field.FieldTypePhysicalName, msgConstants.newline))
+            setByOffset.append("%s  setTimePartitionData; %s".format(msgConstants.pad4, msgConstants.newline))
+            setByOffset.append("%s} else throw new Exception(s\"Value is the not the correct type for field %s in message %s\") %s".format(msgConstants.pad4, field.Name, msgName, msgConstants.newline))
+            setByOffset.append("%s} %s".format(msgConstants.pad4, msgConstants.newline))
+          } else {
+            setByOffset.append("%scase %s => { %s".format(msgConstants.pad4, field.FieldOrdinal, msgConstants.newline))
+            setByOffset.append("%sif(value.isInstanceOf[%s] %s) %s".format(msgConstants.pad4, field.FieldTypePhysicalName, scalaPrimType, msgConstants.newline))
+            setByOffset.append("%s  this.%s = value.asInstanceOf[%s]%s; ".format(msgConstants.pad4, field.Name, field.FieldTypePhysicalName, msgConstants.newline))
+            setByOffset.append("%s else throw new Exception(s\"Value is the not the correct type for field %s in message %s\") %s".format(msgConstants.pad4, field.Name, msgName, msgConstants.newline))
+            setByOffset.append("%s} %s".format(msgConstants.pad4, msgConstants.newline))
+          }
         } else {
-          setByOffset.append("%scase %s => { %s".format(msgConstants.pad4, field.FieldOrdinal, msgConstants.newline))
-          setByOffset.append("%sif(value.isInstanceOf[%s]) %s".format(msgConstants.pad4, field.FieldTypePhysicalName, msgConstants.newline))
-          setByOffset.append("%s  this.%s = value.asInstanceOf[%s]; %s".format(msgConstants.pad4, field.Name, field.FieldTypePhysicalName, msgConstants.newline))
-          setByOffset.append("%s else throw new Exception(s\"Value is the not the correct type for field %s in message %s\") %s".format(msgConstants.pad4, field.Name, msgName, msgConstants.newline))
-          setByOffset.append("%s} %s".format(msgConstants.pad4, msgConstants.newline))
+          if (timePartKey != null && timePartKey.trim().size != 0 && field.Name.equalsIgnoreCase(timePartKey)) {
+            setByOffset.append("%scase %s => { %s".format(msgConstants.pad4, field.FieldOrdinal, msgConstants.newline))
+            setByOffset.append("%sif(value.isInstanceOf[%s]){ %s".format(msgConstants.pad4, field.FieldTypePhysicalName, msgConstants.newline))
+            setByOffset.append("%s  this.%s = value.asInstanceOf[%s]; %s".format(msgConstants.pad4, field.Name, field.FieldTypePhysicalName, msgConstants.newline))
+            setByOffset.append("%s  setTimePartitionData; %s".format(msgConstants.pad4, msgConstants.newline))
+            setByOffset.append("%s} else throw new Exception(s\"Value is the not the correct type for field %s in message %s\") %s".format(msgConstants.pad4, field.Name, msgName, msgConstants.newline))
+            setByOffset.append("%s} %s".format(msgConstants.pad4, msgConstants.newline))
+          } else {
+            setByOffset.append("%scase %s => { %s".format(msgConstants.pad4, field.FieldOrdinal, msgConstants.newline))
+            setByOffset.append("%sif(value.isInstanceOf[%s]) %s".format(msgConstants.pad4, field.FieldTypePhysicalName, msgConstants.newline))
+            setByOffset.append("%s  this.%s = value.asInstanceOf[%s]%s; ".format(msgConstants.pad4, field.Name, field.FieldTypePhysicalName, msgConstants.newline))
+            setByOffset.append("%s else throw new Exception(s\"Value is the not the correct type for field %s in message %s\") %s".format(msgConstants.pad4, field.Name, msgName, msgConstants.newline))
+            setByOffset.append("%s} %s".format(msgConstants.pad4, msgConstants.newline))
+          }
         }
       }
     } catch {
@@ -484,6 +510,21 @@ class MessageGenerator {
     return setByOffset.toString
   }
 
+  private def getScalaPrimitiveType(scalarType: String): String = {
+    scalarType.toLowerCase() match {
+      case "integer" => return "Int";
+      case "int"     => return "Int";
+      case "float"   => return "Float";
+      case "double"  => return "Double";
+      case "long"    => return "Long";
+      case "char"    => return "Char";
+      case "boolean" => return "Boolean";
+      case "bool"    => return "Boolean";
+      case "string"  => return "";
+    }
+    return ""
+
+  }
   private def setByIndexArrays(field: Element, msgName: String): String = {
     var setByOffset = new StringBuilder(8 * 1024)
     var ttype: String = ""
@@ -574,7 +615,7 @@ class MessageGenerator {
       var typetyprStr: String = maptypeDef.valDef.tType.toString().toLowerCase()
       typeInfo match {
         case "tscalar" => {
-          setByOffset = setByOffset.append(setByIndexScalar(field, msgName, null))
+          setByOffset = setByOffset.append(setByIndexScalar(field, msgName, null, false))
         }
         case "tcontainer" => {
           typetyprStr match {
