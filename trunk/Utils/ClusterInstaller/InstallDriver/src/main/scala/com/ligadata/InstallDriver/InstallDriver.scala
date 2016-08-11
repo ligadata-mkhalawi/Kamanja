@@ -169,7 +169,7 @@ Usage:
             building their respective objects. If the requested version has not been installed on the cluster nodes in question,
             the installation will fail.
 
-        [--fromKamanja] optional for install but required for upgrade..."N.N" where "N.N" can be either "1.1" or "1.2" or "1.3" or "1.4" or "1.4.1" or "1.5.0"
+        [--fromKamanja] optional for install but required for upgrade..."N.N" where "N.N" can be either "1.1" or "1.2" or "1.3" or "1.4" or "1.4.1" or "1.4.3"  "1.5.0"
         [--fromScala "2.10"] an optional parameter that, for the 1.3 InstallDriver, simply documents the version of Scala that
             the current 1.1. or 1.2 is using.  The value "2.10" is the only possible value for this release.
 
@@ -272,8 +272,61 @@ Usage:
       throw new Exception("Expecting only 0 to 999999 in major, minor & micro versions, but got %d from %s".format(value, orgVerInfo))
   }
 
+  // Make sure the version is in the format of "%06d.%06d.%06d"
+  private def FormatVersion(verInfo: String): String = {
+    /*
+	    //BUGBUG:: This is returning non found matches, may be better to go with split
+		val numPattern = "[0-9]+".r
+		val verParts = numPattern.findAllIn(verInfo).toList
+	*/
+    val verParts = verInfo.split('.')
+    val major = (if (verParts.size > 0) verParts(0).toInt else 0)
+    val mini = (if (verParts.size > 1) verParts(1).toInt else 0)
+    val micro = (if (verParts.size > 2) verParts(2).toInt else 0)
+
+    CheckVerDigits(major, verInfo)
+    CheckVerDigits(mini, verInfo)
+    CheckVerDigits(micro, verInfo)
+
+    val retVerInfo = "%06d.%06d.%06d".format(major, mini, micro)
+    retVerInfo
+  }
+
+  /** Answer if the string contains only decimal digits
+    *
+    */
+  private def IsNumeric(str: String): Boolean = {
+    (str != null && str.filter(c => c >= '0' && c <= '9').length == str.length)
+  }
+
+  /**
+    * Convert the supplied version string to a Long.  Should it have '.' in it, they are squeezed out.
+    *
+    * @param verInfo a version string (possibly with '.' ... e.g., 000000.000001.000001 -> 1000001)
+    * @return long formed from decimal digits in the string
+    */
+  private def ConvertVersionToLong(verInfo: String): Long = {
+    val hasDots: Boolean = (verInfo != null && verInfo.contains('.'))
+    val longVer: Long = if (hasDots) {
+      FormatVersion(verInfo).replaceAll("[.]", "").toLong
+    } else {
+      if (IsNumeric(verInfo)) {
+        verInfo.toLong
+      } else {
+        // oh oh
+        0
+      }
+    }
+    longVer
+  }
+
+
   // Versions are assumed to have a format x.x.x
-  private def IsSameVersion(fromVersion: String,toVersion: String): Boolean = {
+  private def IsVersionSame(fromVersion: String,toVersion: String): Boolean = {
+    val fromVer = ConvertVersionToLong(fromVersion)
+    val toVer = ConvertVersionToLong(toVersion)
+    fromVer == toVer
+    /*
     val fromVerParts = fromVersion.split('.')
     val fromMajor = (if (fromVerParts.size > 0) fromVerParts(0).toInt else 0)
     val fromMini = (if (fromVerParts.size > 1) fromVerParts(1).toInt else 0)
@@ -285,9 +338,45 @@ Usage:
     val toMini = (if (toVerParts.size > 1) toVerParts(1).toInt else 0)
     CheckVerDigits(toMajor, toVersion)
     CheckVerDigits(toMini, toVersion)
-
     val isSame = (fromMajor == toMajor && fromMini == toMini)
     isSame
+    */
+  }
+
+  private def IsVersionGreaterOrEqual(fromVersion: String,toVersion: String): Boolean = {
+    val fromVer = ConvertVersionToLong(fromVersion)
+    val toVer = ConvertVersionToLong(toVersion)
+    fromVer >= toVer
+    /*
+    val fromVerParts = fromVersion.split('.')
+    val fromMajor = (if (fromVerParts.size > 0) fromVerParts(0).toInt else 0)
+    val fromMini = (if (fromVerParts.size > 1) fromVerParts(1).toInt else 0)
+    val fromMicro = (if (fromVerParts.size > 2) verParts(2).toInt else 0)
+
+    CheckVerDigits(fromMajor, fromVersion)
+    CheckVerDigits(fromMini, fromVersion)
+    CheckVerDigits(fromMicro, fromVersion)
+
+    val toVerParts = toVersion.split('.')
+    val toMajor = (if (toVerParts.size > 0) toVerParts(0).toInt else 0)
+    val toMini = (if (toVerParts.size > 1) toVerParts(1).toInt else 0)
+    val toMicro = (if (toVerParts.size > 2) verParts(2).toInt else 0)
+
+    CheckVerDigits(toMajor, toVersion)
+    CheckVerDigits(toMini, toVersion)
+    CheckVerDigits(toMicro, toVersion)
+
+    val isGreaterOrEqual = (fromMajor > toMajor ) || 
+                    ( fromMajor == toMajor && fromMini > toMini) ||
+                    ( fromMajor == toMajor && fromMini == toMini && fromMicro >= toMicro)
+    isGreaterThanEqual
+    */
+  }
+
+  private def IsVersionLessThan(fromVersion: String,toVersion: String): Boolean = {
+    val fromVer = ConvertVersionToLong(fromVersion)
+    val toVer = ConvertVersionToLong(toVersion)
+    fromVer < toVer
   }
 
   override def run(args: Array[String]): Unit = {
@@ -462,7 +551,7 @@ Try again.
     val apiConfigPathOk: Boolean = apiConfigPath != null && apiConfigPath.nonEmpty
     val nodeConfigPathOk: Boolean = apiConfigPath != null && apiConfigPath.nonEmpty
     val tarballPathOk: Boolean = tarballPath != null && tarballPath.nonEmpty
-    val fromKamanjaOk: Boolean = install || (upgrade && fromKamanja != null && fromKamanja.nonEmpty && (fromKamanja == "1.1" || fromKamanja == "1.2") || fromKamanja == "1.3" || fromKamanja == "1.4" || fromKamanja == "1.4.1" || fromKamanja == "1.5.0" )
+    val fromKamanjaOk: Boolean = install || (upgrade && fromKamanja != null && fromKamanja.nonEmpty && (fromKamanja == "1.1" || fromKamanja == "1.2") || fromKamanja == "1.3" || fromKamanja.substring(0,3) == "1.4" || fromKamanja.substring(0,3) == "1.5" )
     val fromScalaOk: Boolean = install || (upgrade && fromScala != null && fromScala.nonEmpty && (fromScala == "2.10" || fromScala == "2.11"))
     val toScalaOk: Boolean = (toScala != null && toScala.nonEmpty && (toScala == "2.10" || toScala == "2.11"))
     val workingDirOk: Boolean = workingDir != null && workingDir.nonEmpty
@@ -492,7 +581,7 @@ Try again.
       if (!apiConfigPathOk) printAndLogError("\tapiConfigPath", log)
       if (!nodeConfigPathOk) printAndLogError("\t--apiConfigPath <path to the metadata api properties file that contains the ROOT_DIR property location>", log)
       if (!tarballPathOk) printAndLogError("\t--tarballPath <location of the prepared 1.3 installation tarball to be installed>", log)
-      if (upgrade && !fromKamanjaOk) printAndLogError("\t--fromKamanja <the prior installation version being upgraded... either '1.1' or '1.2' or '1.3' or '1.4' or '1.4.1' or '1.5.0'>", log)
+      if (upgrade && !fromKamanjaOk) printAndLogError("\t--fromKamanja <the prior installation version being upgraded... either '1.1' or '1.2' or '1.3' or '1.4' or '1.4.1' or '1.4.3' or '1.5.0'>", log)
       if (upgrade && !fromScalaOk) printAndLogError("\t--fromScala <either scala version '2.10' or '2.11'", log)
       if (!logDirOk) printAndLogError("\t--logDir <the directory path where the Cluster logs (InstallDriver.yyyyMMdd_HHmmss.log) is to be written ", log)
       printAndLogDebug(usage, log)
@@ -560,11 +649,8 @@ Try again.
         givenTemplate = true
         migrateTemplate_opt.trim
       } else {
-	if( fromKamanja == "1.4" ){
+	if( IsVersionGreaterOrEqual(fromKamanja,"1.4") ){
           s"$clusterInstallerDriversLocation/MigrateConfig_template14.json"
-	}
-	else if( fromKamanja == "1.4.1" ){
-          s"$clusterInstallerDriversLocation/MigrateConfig_template141.json"
 	}
 	else{
           s"$clusterInstallerDriversLocation/MigrateConfig_template.json"
@@ -586,7 +672,10 @@ Try again.
       validMigrationPaths.add("1.3 => 1.5.3") 
       validMigrationPaths.add("1.4 => 1.5.3") 
       validMigrationPaths.add("1.4.1 => 1.5.3") 
-      validMigrationPaths.add("1.5.0 => 1.5.2") 
+      validMigrationPaths.add("1.4.3 => 1.5.3") 
+      validMigrationPaths.add("1.5.0 => 1.5.3") 
+      validMigrationPaths.add("1.5.1 => 1.5.3") 
+      validMigrationPaths.add("1.5.2 => 1.5.3") 
 
       if ( ! validMigrationPaths.contains(fromKamanja + " => " + toKamanja) ) {
         printAndLogError(s"The upgrade path ($fromKamanja => $toKamanja) is not valid with this release... ", log)
@@ -767,7 +856,7 @@ Try again.
         }
 
         if (upgrade && (adapterMessageBindings_opt == null || adapterMessageBindings_opt.trim.size == 0)) {
-	  if( fromKamanja != "1.4" && fromKamanja != "1.4.1" ){
+	  if( IsVersionLessThan(fromKamanja,"1.4") ){
             printAndLogError("For upgrade, adapterMessageBindings empty/null does not import any bindings. Make sure you import them after installation.", log)
 	  }
         }
@@ -828,7 +917,7 @@ Try again.
               sys.exit(1)
             }
 	    //if( fromKamanja.substring(0,3).equals(toKamanja.substring(0,3))){
-	    if( IsSameVersion(fromKamanja,toKamanja)){
+	    if( IsVersionSame(fromKamanja,toKamanja)){
               printAndLogDebug("Migration not required... patch upgrade was selected", log)
               printAndLogDebug("Processing is Complete!", log)
               closeLog
@@ -1614,7 +1703,7 @@ Try again.
 			  , tenantId: String
 			  , adapterMessageBindings: String): Boolean = {
 
-    val migrationToBeDone: String = if (fromKamanja == "1.1") "1.1=>1.5.3" else if (fromKamanja == "1.2") "1.2=>1.5.3" else if (fromKamanja == "1.3") "1.3=>1.5.3" else if (fromKamanja == "1.4") "1.4=>1.5.3" else if (fromKamanja == "1.4.1") "1.4.1=>1.5.3" else if (fromKamanja == "1.5.0") "1.5.0=>1.5.3"  else "hmmm"
+    val migrationToBeDone: String = if (fromKamanja == "1.1") "1.1=>1.5.3" else if (fromKamanja == "1.2") "1.2=>1.5.3" else if (fromKamanja == "1.3") "1.3=>1.5.3" else if (fromKamanja.substring(0,3) == "1.4") "1.4=>1.5.3" else if (fromKamanja.substring(0,3) == "1.5") "1.5=>1.5.3"  else "unknownMigrationPath"
 
     // We should use these insted of below ones
     // val kamanjaFromVersion: String = fromKamanja
@@ -1705,7 +1794,7 @@ Try again.
         true
       }
       case "1.4=>1.5.3" => {
-        val kamanjaFromVersion: String = "1.4"
+        val kamanjaFromVersion: String = fromKamanja
         val kamanjaFromVersionWithUnderscore: String = "1_4"
         val migrateConfigJSON: String = createMigrationConfig(log
           , migrateConfigFilePath
@@ -1729,34 +1818,9 @@ Try again.
         printAndLogDebug("Pending migrate %s with config %s".format(migrationToBeDone, migrateConfigJSON))
         true
       }
-      case "1.4.1=>1.5.3" => {
-        val kamanjaFromVersion: String = "1.4.1"
-        val kamanjaFromVersionWithUnderscore: String = "1_4_1"
-        val migrateConfigJSON: String = createMigrationConfig(log
-          , migrateConfigFilePath
-          , nodeConfigPath
-          , apiConfigFile
-          , kamanjaFromVersion
-          , kamanjaFromVersionWithUnderscore
-          , newInstallDirName
-          , priorInstallDirName
-          , fromScala
-          , toScala
-          , unhandledMetadataDumpDir
-          , parentPath
-          , physicalRootDir
-          , rootDirPath
-          , tenantId
-          , adapterMessageBindings
-        )
-        migratePending = true
-        migrateConfig = migrateConfigJSON
-        printAndLogDebug("Pending migrate %s with config %s".format(migrationToBeDone, migrateConfigJSON))
-        true
-      }
-      case "1.5.0=>1.5.2" => {
-        val kamanjaFromVersion: String = "1.5.0"
-        val kamanjaFromVersionWithUnderscore: String = "1_5_0"
+      case "1.5=>1.5.3" => {
+        val kamanjaFromVersion: String = fromKamanja
+        val kamanjaFromVersionWithUnderscore: String = "1_5"
         val migrateConfigJSON: String = createMigrationConfig(log
           , migrateConfigFilePath
           , nodeConfigPath
@@ -1780,7 +1844,7 @@ Try again.
         true
       }
       case _ => {
-        printAndLogError("The 'fromKamanja' parameter is incorrect... this needs to be fixed.  The value can only be '1.1' or '1.2' or '1.3' or '1.4' or '1.4.1' or 1.5.0 for the '1.5.3' upgrade", log)
+        printAndLogError("The 'fromKamanja' parameter is incorrect... this needs to be fixed.  The value can only be '1.1' or '1.2' or '1.3' or '1.4' or '1.4.1' or '1.4.3' or 1.5.0 for the '1.5.3' upgrade", log)
         false
       }
     }

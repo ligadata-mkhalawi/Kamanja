@@ -96,9 +96,8 @@ public class Migrate {
 
             if (srcVer.equalsIgnoreCase("1.1")
                     && (dstVer.equalsIgnoreCase("1.3") ||
-			dstVer.equalsIgnoreCase("1.4") ||
-			dstVer.equalsIgnoreCase("1.4.1") ||
-			dstVer.equalsIgnoreCase("1.5.3")
+			dstVer.substring(0,3).equalsIgnoreCase("1.4") ||
+			dstVer.substring(0,3).equalsIgnoreCase("1.5")
 			)) {
                 appendData = new byte[8]; // timepartition bytes at the end.
                 for (int i = 0; i < 8; i++)
@@ -398,12 +397,11 @@ public class Migrate {
             if (srcVer.equalsIgnoreCase("1.1") == false
                     && srcVer.equalsIgnoreCase("1.2") == false
                     && srcVer.equalsIgnoreCase("1.3") == false
-                    && srcVer.equalsIgnoreCase("1.4") == false
-                    && srcVer.equalsIgnoreCase("1.4.1") == false
-                    && srcVer.equalsIgnoreCase("1.5.0") == false
+		&& srcVer.substring(0,3).equalsIgnoreCase("1.4") == false
+		&& srcVer.substring(0,3).equalsIgnoreCase("1.5") == false
 		) {
-                sendStatus("We support source versions only 1.1 or 1.2 or 1.3 or 1.4 or 1.4.1 or 1.5.0 We don't support " + srcVer, "ERROR");
-                logger.error("We support source versions only 1.1 or 1.2 or 1.3 or 1.4 or 1.4.1 or 1.5.0 We don't support " + srcVer);
+                sendStatus("We support source versions only 1.1 or 1.2 or 1.3 or 1.4 or 1.4.1 or 1.4.3 or 1.5.0 We don't support " + srcVer, "ERROR");
+                logger.error("We support source versions only 1.1 or 1.2 or 1.3 or 1.4 or 1.4.1 or 1.4.3 or 1.5.0 We don't support " + srcVer);
                 usage();
                 return retCode;
             }
@@ -471,15 +469,14 @@ public class Migrate {
             }
 
 
-            // From Srouce version 1.1 to Destination version 1.3 we do both
+            // From Srouce version 1.1,1.2,1.3 to Destination version 1.5.3 we do both
             // Metadata Upgrade & Data Upgrade
-            // From Source Version 1.2 to Destination version 1.3, we only do
+            // From Source Version 1.3,1.4 to Destination version 1.5.3, we only do
             // Metadata Upgrade.
             boolean canUpgradeMetadata = ((srcVer.equalsIgnoreCase("1.1") ||
                     srcVer.equalsIgnoreCase("1.2") ||
                     srcVer.equalsIgnoreCase("1.3") ||
-                    srcVer.equalsIgnoreCase("1.4") ||
-                    srcVer.equalsIgnoreCase("1.4.1")
+		    srcVer.substring(0,3).equalsIgnoreCase("1.4")
 					   ) &&
                     dstVer.equalsIgnoreCase("1.5.3"));
 
@@ -809,7 +806,7 @@ public class Migrate {
 		    // metadata objects  directly in the database. We let the migrateTo
 		    // handle those updates and return immediately. There is no need
 		    // to update anything else
-		    if (srcVer.equalsIgnoreCase("1.4") || srcVer.equalsIgnoreCase("1.4.1")) {
+		    if (srcVer.substring(0,3).equalsIgnoreCase("1.4")) {
 			if (canUpgradeMetadata) {
 			    logger.debug("Ugrade models to new version");
 			    sendStatus("Upgrade models to new version", "DEBUG");
