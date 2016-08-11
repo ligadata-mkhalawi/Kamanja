@@ -93,7 +93,7 @@ class PyProcess(host: String,
 
     proc = processBuilder.start()
     Thread.sleep(2000)
-//    reader ! proc
+    reader ! proc
 
     try {
       if (proc.getClass().getName().equals("java.lang.UNIXProcess")) {

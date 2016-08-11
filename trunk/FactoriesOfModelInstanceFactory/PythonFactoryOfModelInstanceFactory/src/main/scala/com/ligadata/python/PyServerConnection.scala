@@ -101,7 +101,6 @@ class PyServerConnection(val host : String
         val pid : Int = startResultsMap.getOrElse("pid", -1).asInstanceOf[scala.math.BigInt].toInt
       var attempts : Int  = 0
       logger.debug (" THe value of host is " + host + " in the initialize of PyServerConnection ")
-      while (attempts < 10) {
         /** create a connection to the server on the port that it is listening. */
         val inetbyname = InetAddress.getByName(host)
         logger.debug("PyServerConnection.initialize ... connecting to host known as '$inetbyname' " + inetbyname + " " + port.toString)
@@ -112,19 +111,9 @@ class PyServerConnection(val host : String
         val (rc, result) : (Int,String) = if (pid >  0 && _sock != null && _in != null && _out != null) {
           (0, "connection created")
 
-          break
         } else {
             (-1 ,"connection creation failed")
         }
-          attempts +=  1
-        }
-      val (rc, result) : (Int,String) = if (pid >  0 && attempts < 10) {
-        (0, "connection created")
-
-      }
-      else {
-        (-1, null)
-      }
       val connResult : String = s"{ ${'"'}code${'"'} : $rc,  ${'"'}result${'"'} : ${'"'}$result${'"'}}"
         logger.debug(s"PyServerConnection.initialize ... conection result = $connResult")
         (startServerResult, connResult)
@@ -149,12 +138,10 @@ class PyServerConnection(val host : String
 //        val pythonCmdStr = s"python $pyPath/pythonserver.py --host $host --port ${port.toString} --pythonPath $pyPath --log4jConfig $log4jConfigPath --fileLogPath $fileLogPath"
       pyProcess.initPyProcess()
 
+      val (rc, result) : (Int, String) = if (pyProcess.pid != null) (0, "Server started successfully") else (-1, "Server start failed")
+      val pidStr : String = if (pyProcess.pid != null) pyProcess.pid.toString else s"${'"'}----${'"'}"
 
-
-        val pidStr : String = if (pyProcess.pid != null) pyProcess.pid.toString else s"${'"'}----${'"'}"
-
-        /** prepare the result string */
-        val resultStr : String = s"{ ${'"'}pid${'"'} : $pidStr }"
+      val resultStr : String = s"{ ${'"'}code${'"'} : $rc,  ${'"'}result${'"'} : ${'"'}$result${'"'},  ${'"'}pid${'"'} : $pidStr }"
 
         resultStr
     }
