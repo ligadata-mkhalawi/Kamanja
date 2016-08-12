@@ -223,16 +223,18 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
                   val tmpData = nodeContext.getEnvCtxt.getRDD(tenatId.toLowerCase(), containerAndData._1.toLowerCase(), partKey, tmRange, null)
                   var finalData: ContainerInterface = null
                   if (tmpData != null && tmpData.size > 0) {
+                    if (LOG.isDebugEnabled())
+                      LOG.debug("Got RDD for PartitionKey:%s and PrimaryKey:%s.".format(d.PartitionKeyData().mkString(","), d.PrimaryKeyData().mkString(",")))
                     val newPrimaryKey = d.getPrimaryKey
                     var mIdx = 0
 
-                    while (finalData != null && mIdx < tmpData.size) {
+                    while (finalData == null && mIdx < tmpData.size) {
                       val m = tmpData(mIdx)
                       mIdx += 1
                       val oldPrimaryKey = m.getPrimaryKey
-                      if (finalData != null && newPrimaryKey.size == oldPrimaryKey.size) {
+                      if (finalData == null && newPrimaryKey.size == oldPrimaryKey.size) {
                         var idx = 0
-                        while (finalData != null && idx < newPrimaryKey.size) {
+                        while (finalData == null && idx < newPrimaryKey.size) {
                           val cmp = newPrimaryKey(idx).compareTo(oldPrimaryKey(idx))
                           if (cmp == 0)
                             finalData = m
@@ -240,10 +242,17 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
                         }
                       }
                     }
+                  } else {
+                    if (LOG.isDebugEnabled())
+                      LOG.debug("Did not get RDD for PartitionKey:%s and PrimaryKey:%s.".format(d.PartitionKeyData().mkString(","), d.PrimaryKeyData().mkString(",")))
                   }
                   if (finalData == null) {
+                    if (LOG.isDebugEnabled())
+                      LOG.debug("PartitionKey:%s and PrimaryKey:%s not found.".format(d.PartitionKeyData().mkString(","), d.PrimaryKeyData().mkString(",")))
                     finalData = d
                   } else {
+                    if (LOG.isDebugEnabled())
+                      LOG.debug("PartitionKey:%s and PrimaryKey:%s found.".format(finalData.PartitionKeyData().mkString(","), finalData.PrimaryKeyData().mkString(",")))
                     finalData.setRowNumber(d.getRowNumber)
                     finalData.setTransactionId(d.getTransactionId)
                   }
