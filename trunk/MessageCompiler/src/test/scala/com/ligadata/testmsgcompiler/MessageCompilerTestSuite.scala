@@ -21,7 +21,7 @@ import com.ligadata.KamanjaBase._;
 class MessageCompilerTestSuite extends FunSuite {
   val log = LogManager.getLogger(getClass)
 
-   test("Process Message Compiler") {
+  test("Process Message Compiler") {
     val mdLoader: MetadataLoad = new MetadataLoad(MdMgr.GetMdMgr, "", "", "", "")
     mdLoader.initialize
     var msgDfType: String = "JSON"
@@ -112,7 +112,7 @@ class MessageCompilerTestSuite extends FunSuite {
     var idCodeDimFixed = new IdCodeDimFixed(IdCodeDimFixed);
     var idCodeDimMapped = new IdCodeDimMapped(IdCodeDimMapped);
 
-    var a1: Int = 10
+    var a1: java.lang.Integer = null
     var a2: Float = 0f
     var a3: Double = 0.0
     var a4: Long = 0L
@@ -132,9 +132,7 @@ class MessageCompilerTestSuite extends FunSuite {
     for (i <- 0 until 3) {
       arrcode(i) = com.ligadata.BaseTypes.FloatImpl.Clone(arr1(i))
     }
-    println("=============" + arrcode.toList);
     println("==================Set 2=============");
-
     idCodeDimFixed.set(0, a1)
     idCodeDimFixed.set(1, a2)
     idCodeDimFixed.set(2, a3)
@@ -145,10 +143,10 @@ class MessageCompilerTestSuite extends FunSuite {
     println("==================Set 3=============");
 
     idCodeDimFixed.set("id", a1)
-    println("============================"+idCodeDimFixed.get("id"))
-   
+    println("============================" + idCodeDimFixed.get("id"))
+
     idCodeDimFixed.set("code1", a2)
-     idCodeDimFixed.set("code2", a3)
+    idCodeDimFixed.set("code2", a3)
     idCodeDimFixed.set("code3", a4)
     idCodeDimFixed.set("code4", a5)
     idCodeDimFixed.set("code5", a6)

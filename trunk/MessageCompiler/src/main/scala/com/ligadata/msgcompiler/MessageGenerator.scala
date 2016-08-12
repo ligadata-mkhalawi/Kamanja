@@ -471,32 +471,48 @@ class MessageGenerator {
 
           if (timePartKey != null && timePartKey.trim().size != 0 && field.Name.equalsIgnoreCase(timePartKey)) {
             setByOffset.append("%scase %s => { %s".format(msgConstants.pad4, field.FieldOrdinal, msgConstants.newline))
+            setByOffset.append("%s	if (value == null) this.%s = null;%s".format(msgConstants.pad4, field.Name, msgConstants.newline)) //if (value == null) this.id = null;
+            setByOffset.append("%s  else {	%s".format(msgConstants.pad4, msgConstants.newline)) //else {
             setByOffset.append("%sif(value.isInstanceOf[%s] %s){ %s".format(msgConstants.pad4, field.FieldTypePhysicalName, scalaPrimType, msgConstants.newline))
             setByOffset.append("%s  this.%s = value.asInstanceOf[%s]; %s".format(msgConstants.pad4, field.Name, field.FieldTypePhysicalName, msgConstants.newline))
             setByOffset.append("%s  setTimePartitionData; %s".format(msgConstants.pad4, msgConstants.newline))
             setByOffset.append("%s} else throw new Exception(s\"Value is the not the correct type for field %s in message %s\") %s".format(msgConstants.pad4, field.Name, msgName, msgConstants.newline))
             setByOffset.append("%s} %s".format(msgConstants.pad4, msgConstants.newline))
+            setByOffset.append("%s} %s".format(msgConstants.pad4, msgConstants.newline))
           } else {
             setByOffset.append("%scase %s => { %s".format(msgConstants.pad4, field.FieldOrdinal, msgConstants.newline))
+            setByOffset.append("%s	if (value == null) this.%s = null;%s".format(msgConstants.pad4, field.Name, msgConstants.newline)) //if (value == null) this.id = null;
+            setByOffset.append("%s  else {	%s".format(msgConstants.pad4, msgConstants.newline)) //else {
             setByOffset.append("%sif(value.isInstanceOf[%s] %s) %s".format(msgConstants.pad4, field.FieldTypePhysicalName, scalaPrimType, msgConstants.newline))
             setByOffset.append("%s  this.%s = value.asInstanceOf[%s]; %s".format(msgConstants.pad4, field.Name, field.FieldTypePhysicalName, msgConstants.newline))
             setByOffset.append("%s else throw new Exception(s\"Value is the not the correct type for field %s in message %s\") %s".format(msgConstants.pad4, field.Name, msgName, msgConstants.newline))
             setByOffset.append("%s} %s".format(msgConstants.pad4, msgConstants.newline))
+            setByOffset.append("%s} %s".format(msgConstants.pad4, msgConstants.newline))
+
           }
         } else {
           if (timePartKey != null && timePartKey.trim().size != 0 && field.Name.equalsIgnoreCase(timePartKey)) {
             setByOffset.append("%scase %s => { %s".format(msgConstants.pad4, field.FieldOrdinal, msgConstants.newline))
+            setByOffset.append("%s	if (value == null) this.%s = null;%s".format(msgConstants.pad4, field.Name, msgConstants.newline)) //if (value == null) this.id = null;
+            setByOffset.append("%s  else {	%s".format(msgConstants.pad4, msgConstants.newline)) //else {
             setByOffset.append("%sif(value.isInstanceOf[%s]){ %s".format(msgConstants.pad4, field.FieldTypePhysicalName, msgConstants.newline))
             setByOffset.append("%s  this.%s = value.asInstanceOf[%s]; %s".format(msgConstants.pad4, field.Name, field.FieldTypePhysicalName, msgConstants.newline))
             setByOffset.append("%s  setTimePartitionData; %s".format(msgConstants.pad4, msgConstants.newline))
             setByOffset.append("%s} else throw new Exception(s\"Value is the not the correct type for field %s in message %s\") %s".format(msgConstants.pad4, field.Name, msgName, msgConstants.newline))
             setByOffset.append("%s} %s".format(msgConstants.pad4, msgConstants.newline))
+            setByOffset.append("%s} %s".format(msgConstants.pad4, msgConstants.newline))
+
           } else {
             setByOffset.append("%scase %s => { %s".format(msgConstants.pad4, field.FieldOrdinal, msgConstants.newline))
+            setByOffset.append("%s	if (value == null) this.%s = null;%s".format(msgConstants.pad4, field.Name, msgConstants.newline)) //if (value == null) this.id = null;
+            setByOffset.append("%s  else {	%s".format(msgConstants.pad4, msgConstants.newline)) //else {
+
             setByOffset.append("%sif(value.isInstanceOf[%s]) %s".format(msgConstants.pad4, field.FieldTypePhysicalName, msgConstants.newline))
             setByOffset.append("%s  this.%s = value.asInstanceOf[%s]; %s".format(msgConstants.pad4, field.Name, field.FieldTypePhysicalName, msgConstants.newline))
             setByOffset.append("%s else throw new Exception(s\"Value is the not the correct type for field %s in message %s\") %s".format(msgConstants.pad4, field.Name, msgName, msgConstants.newline))
             setByOffset.append("%s} %s".format(msgConstants.pad4, msgConstants.newline))
+            setByOffset.append("%s} %s".format(msgConstants.pad4, msgConstants.newline))
+
           }
         }
       }
@@ -564,11 +580,14 @@ class MessageGenerator {
       }
       if (field != null) {
         setByOffset.append("%scase %s => { %s".format(msgConstants.pad4, field.FieldOrdinal, msgConstants.newline))
+        setByOffset.append("%s	if (value == null) this.%s = null;%s".format(msgConstants.pad4, field.Name, msgConstants.newline)) //if (value == null) this.id = null;
+        setByOffset.append("%s  else {	%s".format(msgConstants.pad4, msgConstants.newline)) //else {
         setByOffset.append("%sif(value.isInstanceOf[%s]) %s".format(msgConstants.pad4, field.FieldTypePhysicalName, msgConstants.newline))
         setByOffset.append("%s  this.%s = value.asInstanceOf[%s]; %s".format(msgConstants.pad4, field.Name, field.FieldTypePhysicalName, msgConstants.newline))
         setByOffset.append("%selse if(value.isInstanceOf[scala.Array[%s]]) %s".format(msgConstants.pad4, ttype, msgConstants.newline))
         setByOffset.append("%s  this.%s = value.asInstanceOf[scala.Array[%s]].map(v => v.asInstanceOf[%s); %s".format(msgConstants.pad4, field.Name, ttype, typeStr, msgConstants.newline))
         setByOffset.append("%s else throw new Exception(s\"Value is the not the correct type for field %s in message %s\") %s".format(msgConstants.pad4, field.Name, msgName, msgConstants.newline))
+        setByOffset.append("%s} %s".format(msgConstants.pad4, msgConstants.newline))
         setByOffset.append("%s} %s".format(msgConstants.pad4, msgConstants.newline))
       }
     } catch {
@@ -586,11 +605,14 @@ class MessageGenerator {
       if (field != null) {
 
         setByOffset.append("%scase %s => { %s".format(msgConstants.pad4, field.FieldOrdinal, msgConstants.newline))
+        setByOffset.append("%s	if (value == null) this.%s = null;%s".format(msgConstants.pad4, field.Name, msgConstants.newline)) //if (value == null) this.id = null;
+        setByOffset.append("%s  else {	%s".format(msgConstants.pad4, msgConstants.newline)) //else {
         setByOffset.append("%sif(value.isInstanceOf[%s]) %s".format(msgConstants.pad4, field.FieldTypePhysicalName, msgConstants.newline))
         setByOffset.append("%s  this.%s = value.asInstanceOf[%s]; %s".format(msgConstants.pad4, field.Name, field.FieldTypePhysicalName, msgConstants.newline))
         setByOffset.append("%selse if(value.isInstanceOf[ContainerInterface]) %s".format(msgConstants.pad4, msgConstants.newline))
         setByOffset.append("%s  this.%s = value.asInstanceOf[%s]; %s".format(msgConstants.pad4, field.Name, field.FieldTypePhysicalName, msgConstants.newline))
         setByOffset.append("%s else throw new Exception(s\"Value is the not the correct type for field %s in message %s\") %s".format(msgConstants.pad4, field.Name, msgName, msgConstants.newline))
+        setByOffset.append("%s} %s".format(msgConstants.pad4, msgConstants.newline))
         setByOffset.append("%s} %s".format(msgConstants.pad4, msgConstants.newline))
       }
     } catch {
@@ -659,11 +681,14 @@ class MessageGenerator {
     var setByOffset = new StringBuilder(8 * 1024)
     if (field != null) {
       setByOffset.append("%scase %s => { %s".format(msgConstants.pad4, field.FieldOrdinal, msgConstants.newline))
+      setByOffset.append("%s	if (value == null) this.%s = null;%s".format(msgConstants.pad4, field.Name, msgConstants.newline)) //if (value == null) this.id = null;
+      setByOffset.append("%s  else {	%s".format(msgConstants.pad4, msgConstants.newline)) //else {
       setByOffset.append("%sif(value.isInstanceOf[%s]) %s".format(msgConstants.pad4, field.FieldTypePhysicalName, msgConstants.newline))
       setByOffset.append("%s  this.%s = value.asInstanceOf[%s]; %s".format(msgConstants.pad4, field.Name, field.FieldTypePhysicalName, msgConstants.newline))
       setByOffset.append("%selse if(value.isInstanceOf[scala.collection.immutable.Map[String, ContainerInterface]]) %s".format(msgConstants.pad4, msgConstants.newline))
       setByOffset.append("%s  this.%s = value.asInstanceOf[scala.collection.immutable.Map[String, ContainerInterface]].map(v => (v._1, v._2.asInstanceOf[%s])); %s".format(msgConstants.pad4, field.Name, ctrDef.PhysicalName, msgConstants.newline))
       setByOffset.append("%s else throw new Exception(s\"Value is the not the correct type for field %s in message %s\") %s".format(msgConstants.pad4, field.Name, msgName, msgConstants.newline))
+      setByOffset.append("%s} %s".format(msgConstants.pad4, msgConstants.newline))
       setByOffset.append("%s} %s".format(msgConstants.pad4, msgConstants.newline))
     }
     setByOffset.toString;

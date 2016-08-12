@@ -352,96 +352,141 @@ class IdCodeDimFixed(factory: ContainerFactoryInterface, other: IdCodeDimFixed) 
   }
 
   def set(index: Int, value: Any): Unit = {
-    if (value == null) throw new Exception(s"Value is null for index $index in message IdCodeDimFixed ")
+    // if (value == null) throw new Exception(s"Value is null for index $index in message IdCodeDimFixed ")
     try {
       index match {
         case 0 => {
-          if (value.isInstanceOf[java.lang.Integer]) {
-            this.id = value.asInstanceOf[java.lang.Integer];
-            setTimePartitionData;
-          } else throw new Exception(s"Value is the not the correct type for field id in message IdCodeDimFixed")
+          if (value == null) this.id = null;
+          else {
+            if (value.isInstanceOf[java.lang.Integer] || value.isInstanceOf[Int]) {
+              this.id = value.asInstanceOf[java.lang.Integer];
+              setTimePartitionData;
+            } else throw new Exception(s"Value is the not the correct type for field id in message IdCodeDimFixed")
+          }
         }
         case 1 => {
-          if (value.isInstanceOf[java.lang.Float])
-            this.code1 = value.asInstanceOf[java.lang.Float];
-          else throw new Exception(s"Value is the not the correct type for field code1 in message IdCodeDimFixed")
+          if (value == null) this.code1 = null;
+          else {
+            if (value.isInstanceOf[java.lang.Float] || value.isInstanceOf[Float])
+              this.code1 = value.asInstanceOf[java.lang.Float];
+            else throw new Exception(s"Value is the not the correct type for field code1 in message IdCodeDimFixed")
+          }
         }
         case 2 => {
-          if (value.isInstanceOf[java.lang.Double])
-            this.code2 = value.asInstanceOf[java.lang.Double];
-          else throw new Exception(s"Value is the not the correct type for field code2 in message IdCodeDimFixed")
+          if (value == null) this.code2 = null;
+          else {
+            if (value.isInstanceOf[java.lang.Double] || value.isInstanceOf[Double])
+              this.code2 = value.asInstanceOf[java.lang.Double];
+            else throw new Exception(s"Value is the not the correct type for field code2 in message IdCodeDimFixed")
+          }
         }
         case 3 => {
-          if (value.isInstanceOf[java.lang.Long])
-            this.code3 = value.asInstanceOf[java.lang.Long];
-          else throw new Exception(s"Value is the not the correct type for field code3 in message IdCodeDimFixed")
+          if (value == null) this.code3 = null;
+          else {
+            if (value.isInstanceOf[java.lang.Long] || value.isInstanceOf[Long])
+              this.code3 = value.asInstanceOf[java.lang.Long];
+            else throw new Exception(s"Value is the not the correct type for field code3 in message IdCodeDimFixed")
+          }
         }
         case 4 => {
-          if (value.isInstanceOf[java.lang.Character])
-            this.code4 = value.asInstanceOf[java.lang.Character];
-          else throw new Exception(s"Value is the not the correct type for field code4 in message IdCodeDimFixed")
+          if (value == null) this.code4 = null;
+          else {
+            if (value.isInstanceOf[java.lang.Character] || value.isInstanceOf[Char])
+              this.code4 = value.asInstanceOf[java.lang.Character];
+            else throw new Exception(s"Value is the not the correct type for field code4 in message IdCodeDimFixed")
+          }
         }
         case 5 => {
-          if (value.isInstanceOf[java.lang.Boolean])
-            this.code5 = value.asInstanceOf[java.lang.Boolean];
-          else throw new Exception(s"Value is the not the correct type for field code5 in message IdCodeDimFixed")
+          if (value == null) this.code5 = null;
+          else {
+            if (value.isInstanceOf[java.lang.Boolean] || value.isInstanceOf[Boolean])
+              this.code5 = value.asInstanceOf[java.lang.Boolean];
+            else throw new Exception(s"Value is the not the correct type for field code5 in message IdCodeDimFixed")
+          }
         }
         case 6 => {
-          if (value.isInstanceOf[scala.Array[java.lang.Float]])
-            this.arrcode1 = value.asInstanceOf[scala.Array[java.lang.Float]];
-          else if (value.isInstanceOf[scala.Array[_]])
-            this.arrcode1 = value.asInstanceOf[scala.Array[_]].map(v => v.asInstanceOf[java.lang.Float]);
-          else throw new Exception(s"Value is the not the correct type for field arrcode1 in message IdCodeDimFixed")
+          if (value == null) this.arrcode1 = null;
+          else {
+            if (value.isInstanceOf[scala.Array[java.lang.Float]])
+              this.arrcode1 = value.asInstanceOf[scala.Array[java.lang.Float]];
+            else if (value.isInstanceOf[scala.Array[_]])
+              this.arrcode1 = value.asInstanceOf[scala.Array[_]].map(v => v.asInstanceOf[java.lang.Float]);
+            else throw new Exception(s"Value is the not the correct type for field arrcode1 in message IdCodeDimFixed")
+          }
         }
         case 7 => {
-          if (value.isInstanceOf[scala.Array[java.lang.Double]])
-            this.arrcode2 = value.asInstanceOf[scala.Array[java.lang.Double]];
-          else if (value.isInstanceOf[scala.Array[_]])
-            this.arrcode2 = value.asInstanceOf[scala.Array[_]].map(v => v.asInstanceOf[java.lang.Double]);
-          else throw new Exception(s"Value is the not the correct type for field arrcode2 in message IdCodeDimFixed")
+          if (value == null) this.arrcode2 = null;
+          else {
+            if (value.isInstanceOf[scala.Array[java.lang.Double]])
+              this.arrcode2 = value.asInstanceOf[scala.Array[java.lang.Double]];
+            else if (value.isInstanceOf[scala.Array[_]])
+              this.arrcode2 = value.asInstanceOf[scala.Array[_]].map(v => v.asInstanceOf[java.lang.Double]);
+            else throw new Exception(s"Value is the not the correct type for field arrcode2 in message IdCodeDimFixed")
+          }
         }
         case 8 => {
-          if (value.isInstanceOf[scala.Array[java.lang.Integer]])
-            this.arrcode3 = value.asInstanceOf[scala.Array[java.lang.Integer]];
-          else if (value.isInstanceOf[scala.Array[_]])
-            this.arrcode3 = value.asInstanceOf[scala.Array[_]].map(v => v.asInstanceOf[java.lang.Integer]);
-          else throw new Exception(s"Value is the not the correct type for field arrcode3 in message IdCodeDimFixed")
+          if (value == null) this.arrcode3 = null;
+          else {
+            if (value.isInstanceOf[scala.Array[java.lang.Integer]])
+              this.arrcode3 = value.asInstanceOf[scala.Array[java.lang.Integer]];
+            else if (value.isInstanceOf[scala.Array[_]])
+              this.arrcode3 = value.asInstanceOf[scala.Array[_]].map(v => v.asInstanceOf[java.lang.Integer]);
+            else throw new Exception(s"Value is the not the correct type for field arrcode3 in message IdCodeDimFixed")
+          }
         }
         case 9 => {
-          if (value.isInstanceOf[scala.Array[java.lang.Boolean]])
-            this.arrcode4 = value.asInstanceOf[scala.Array[java.lang.Boolean]];
-          else if (value.isInstanceOf[scala.Array[_]])
-            this.arrcode4 = value.asInstanceOf[scala.Array[_]].map(v => v.asInstanceOf[java.lang.Boolean]);
-          else throw new Exception(s"Value is the not the correct type for field arrcode4 in message IdCodeDimFixed")
+          if (value == null) this.arrcode4 = null;
+          else {
+            if (value.isInstanceOf[scala.Array[java.lang.Boolean]])
+              this.arrcode4 = value.asInstanceOf[scala.Array[java.lang.Boolean]];
+            else if (value.isInstanceOf[scala.Array[_]])
+              this.arrcode4 = value.asInstanceOf[scala.Array[_]].map(v => v.asInstanceOf[java.lang.Boolean]);
+            else throw new Exception(s"Value is the not the correct type for field arrcode4 in message IdCodeDimFixed")
+          }
         }
         case 10 => {
-          if (value.isInstanceOf[scala.Array[java.lang.Long]])
-            this.arrcode5 = value.asInstanceOf[scala.Array[java.lang.Long]];
-          else if (value.isInstanceOf[scala.Array[_]])
-            this.arrcode5 = value.asInstanceOf[scala.Array[_]].map(v => v.asInstanceOf[java.lang.Long]);
-          else throw new Exception(s"Value is the not the correct type for field arrcode5 in message IdCodeDimFixed")
+          if (value == null) this.arrcode5 = null;
+          else {
+            if (value.isInstanceOf[scala.Array[java.lang.Long]])
+              this.arrcode5 = value.asInstanceOf[scala.Array[java.lang.Long]];
+            else if (value.isInstanceOf[scala.Array[_]])
+              this.arrcode5 = value.asInstanceOf[scala.Array[_]].map(v => v.asInstanceOf[java.lang.Long]);
+            else throw new Exception(s"Value is the not the correct type for field arrcode5 in message IdCodeDimFixed")
+          }
         }
         case 11 => {
-          if (value.isInstanceOf[scala.Array[String]])
-            this.description = value.asInstanceOf[scala.Array[String]];
-          else if (value.isInstanceOf[scala.Array[_]])
-            this.description = value.asInstanceOf[scala.Array[_]].map(v => v.asInstanceOf[String]);
-          else throw new Exception(s"Value is the not the correct type for field description in message IdCodeDimFixed")
+          if (value == null) this.description = null;
+          else {
+            if (value.isInstanceOf[scala.Array[String]])
+              this.description = value.asInstanceOf[scala.Array[String]];
+            else if (value.isInstanceOf[scala.Array[_]])
+              this.description = value.asInstanceOf[scala.Array[_]].map(v => v.asInstanceOf[String]);
+            else throw new Exception(s"Value is the not the correct type for field description in message IdCodeDimFixed")
+          }
         }
         case 12 => {
-          if (value.isInstanceOf[scala.collection.immutable.Map[String, java.lang.Integer]])
-            this.mapcodes1 = value.asInstanceOf[scala.collection.immutable.Map[String, java.lang.Integer]];
-          else throw new Exception(s"Value is the not the correct type for field mapcodes1 in message IdCodeDimFixed")
+          if (value == null) this.mapcodes1 = null;
+          else {
+            if (value.isInstanceOf[scala.collection.immutable.Map[String, java.lang.Integer]])
+              this.mapcodes1 = value.asInstanceOf[scala.collection.immutable.Map[String, java.lang.Integer]];
+            else throw new Exception(s"Value is the not the correct type for field mapcodes1 in message IdCodeDimFixed")
+          }
         }
         case 13 => {
-          if (value.isInstanceOf[scala.collection.immutable.Map[String, java.lang.Float]])
-            this.mapcodes2 = value.asInstanceOf[scala.collection.immutable.Map[String, java.lang.Float]];
-          else throw new Exception(s"Value is the not the correct type for field mapcodes2 in message IdCodeDimFixed")
+          if (value == null) this.mapcodes2 = null;
+          else {
+            if (value.isInstanceOf[scala.collection.immutable.Map[String, java.lang.Float]])
+              this.mapcodes2 = value.asInstanceOf[scala.collection.immutable.Map[String, java.lang.Float]];
+            else throw new Exception(s"Value is the not the correct type for field mapcodes2 in message IdCodeDimFixed")
+          }
         }
         case 14 => {
-          if (value.isInstanceOf[scala.collection.immutable.Map[String, java.lang.Double]])
-            this.mapcodes3 = value.asInstanceOf[scala.collection.immutable.Map[String, java.lang.Double]];
-          else throw new Exception(s"Value is the not the correct type for field mapcodes3 in message IdCodeDimFixed")
+          if (value == null) this.mapcodes3 = null;
+          else {
+            if (value.isInstanceOf[scala.collection.immutable.Map[String, java.lang.Double]])
+              this.mapcodes3 = value.asInstanceOf[scala.collection.immutable.Map[String, java.lang.Double]];
+            else throw new Exception(s"Value is the not the correct type for field mapcodes3 in message IdCodeDimFixed")
+          }
         }
 
         case _ => throw new Exception(s"$index is a bad index for message IdCodeDimFixed");
