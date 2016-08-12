@@ -385,7 +385,7 @@ class MessageGenerator {
     getFuncByOffset = """
       
     def set(index : Int, value :Any): Unit = {
-      if (value == null) throw new Exception(s"Value is null for index $index in message """ + msgName + """ ")
+     // if (value == null) throw new Exception(s"Value is null for index $index in message """ + msgName + """ ")
       try{
         index match {
  """ + getSetByIndexStr(fields, msgName, mdMgr, timePartKey) + """
