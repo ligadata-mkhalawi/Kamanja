@@ -39,7 +39,7 @@ fileLogPath = args['fileLogPath']
 fileLogPath += str(os.getpid())
 if fileLogPath != "":
 #	fileHandler = logging.handlers.RotatingFileHandler(fileLogPath, mode='a', maxBytes=500000, backupCount=3)
-        fileHandler = logging.StreamHandler(stream="stdout")
+        fileHandler = logging.StreamHandler()
 	formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 	fileHandler.setFormatter(formatter)
 	logger.addHandler(fileHandler)
@@ -459,7 +459,7 @@ while True:
    if (parentpid != os.getppid()):
       logger.debug("parent pid exited so hence child exiting")
       os._exit(0)
-   else:
-      logger.debug("parent is alive")
+#   else:
+#      logger.debug("")
 #
 logger.info('server stopped by admin command')

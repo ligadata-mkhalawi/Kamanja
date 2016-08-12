@@ -79,6 +79,7 @@ class PyProcess(host: String,
           }
           bufferedReader.close
           logger.debug("PyProcess : The process pid " + pid.toString + stringBuilder.toString)
+
       }
     }
   }
@@ -87,7 +88,7 @@ class PyProcess(host: String,
     logger.debug(s"going to run the command: " + Thread.currentThread + " " + command)
     val args = command.split(" ")
     processBuilder = new ProcessBuilder(args: _*)
-    processBuilder.redirectErrorStream(true)
+    processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT)
 
     processBuilder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
 

@@ -197,9 +197,13 @@ class PythonAdapter(factory : PythonAdapterFactory
      *
      */
     override def init(partitionKey: String): Unit = {
-        _partitionKey = partitionKey /** preserve the partition key ... it will be used to get the latest server connection
-          * for this model's python server */
-        if (factory == null) {
+      _partitionKey = partitionKey
+      logger.debug ("The partition key value is  -----------" + _partitionKey)
+
+      /** preserve the partition key ... it will be used to get the latest server connection
+        * for this model's python server */
+
+      if (factory == null) {
             logger.error("PythonAdapter initialization failed... adapter constructed with a null factory ")
             throw new KamanjaException("PythonAdapter initialization failed... adapter constructed with a null factory",null)
         }
@@ -669,6 +673,3 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext, val ser
 
 
 }
-
-
-
