@@ -479,7 +479,7 @@ class MessageGenerator {
           } else {
             setByOffset.append("%scase %s => { %s".format(msgConstants.pad4, field.FieldOrdinal, msgConstants.newline))
             setByOffset.append("%sif(value.isInstanceOf[%s] %s) %s".format(msgConstants.pad4, field.FieldTypePhysicalName, scalaPrimType, msgConstants.newline))
-            setByOffset.append("%s  this.%s = value.asInstanceOf[%s]%s; ".format(msgConstants.pad4, field.Name, field.FieldTypePhysicalName, msgConstants.newline))
+            setByOffset.append("%s  this.%s = value.asInstanceOf[%s]; %s".format(msgConstants.pad4, field.Name, field.FieldTypePhysicalName, msgConstants.newline))
             setByOffset.append("%s else throw new Exception(s\"Value is the not the correct type for field %s in message %s\") %s".format(msgConstants.pad4, field.Name, msgName, msgConstants.newline))
             setByOffset.append("%s} %s".format(msgConstants.pad4, msgConstants.newline))
           }
@@ -494,7 +494,7 @@ class MessageGenerator {
           } else {
             setByOffset.append("%scase %s => { %s".format(msgConstants.pad4, field.FieldOrdinal, msgConstants.newline))
             setByOffset.append("%sif(value.isInstanceOf[%s]) %s".format(msgConstants.pad4, field.FieldTypePhysicalName, msgConstants.newline))
-            setByOffset.append("%s  this.%s = value.asInstanceOf[%s]%s; ".format(msgConstants.pad4, field.Name, field.FieldTypePhysicalName, msgConstants.newline))
+            setByOffset.append("%s  this.%s = value.asInstanceOf[%s]; %s".format(msgConstants.pad4, field.Name, field.FieldTypePhysicalName, msgConstants.newline))
             setByOffset.append("%s else throw new Exception(s\"Value is the not the correct type for field %s in message %s\") %s".format(msgConstants.pad4, field.Name, msgName, msgConstants.newline))
             setByOffset.append("%s} %s".format(msgConstants.pad4, msgConstants.newline))
           }
