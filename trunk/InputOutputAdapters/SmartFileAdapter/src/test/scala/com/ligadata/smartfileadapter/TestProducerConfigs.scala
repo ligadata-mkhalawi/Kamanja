@@ -53,10 +53,34 @@ class TestProducerConfigs extends FunSpec with BeforeAndAfter with ShouldMatcher
       conf.kerberos.principal shouldEqual "user@domain.com"
       conf.kerberos.keytab shouldEqual "/path/to/keytab/user.keytab"
       conf.typeLevelConfig.size shouldEqual 2
-      conf.typeLevelConfig("com.ligadata.test.msg1") shouldEqual 1024
-      conf.typeLevelConfig("com.ligadata.test.msg2") shouldEqual 2048
+      conf.typeLevelConfig("com.ligadata.test.msg1").flushBufferSize shouldEqual 1024
+      conf.typeLevelConfig("com.ligadata.test.msg2").flushBufferSize shouldEqual 2048
     }
     
+    it("should read message level overrides from config file") {
+      val location = getClass.getResource("/producer").getPath
+      inputConfig.adapterSpecificCfg = "{\"Uri\": \"file://nameservice/folder/to/save\", \"typeLevelConfigFile\": \"" + location + "/typelevel.json\"}"
+      val conf = SmartFileProducerConfiguration.getAdapterConfig(inputConfig)
+
+      conf.typeLevelConfig("com.ligadata.test.msg1").flushBufferSize shouldEqual 1024
+      conf.typeLevelConfig("com.ligadata.test.msg1").partitionFormat shouldEqual "country=${country}"
+      conf.typeLevelConfig("com.ligadata.test.msg2").flushBufferSize shouldEqual 2048
+      conf.typeLevelConfig("com.ligadata.test.msg2").partitionFormat shouldEqual "region=${region}"
+    }
+    
+    it("should read message level overrides from config file and overide inline configs") {
+      val location = getClass.getResource("/producer").getPath
+      inputConfig.adapterSpecificCfg = "{\"Uri\": \"file://nameservice/folder/to/save\", " + 
+      "\"typeLevelConfig\": [{\"type\": \"com.ligadata.test.msg1\", \"PartitionFormat\": \"name=${name}\"}]," +
+      "\"typeLevelConfigFile\": \"" + location + "/typelevel.json\"}"
+      val conf = SmartFileProducerConfiguration.getAdapterConfig(inputConfig)
+
+      conf.typeLevelConfig("com.ligadata.test.msg1").flushBufferSize shouldEqual 1024
+      conf.typeLevelConfig("com.ligadata.test.msg1").partitionFormat shouldEqual "country=${country}"
+      conf.typeLevelConfig("com.ligadata.test.msg2").flushBufferSize shouldEqual 2048
+      conf.typeLevelConfig("com.ligadata.test.msg2").partitionFormat shouldEqual "region=${region}"
+    }
+
     it("should throw FatalAdapterException if uri is missing") {
 
       inputConfig.adapterSpecificCfg = 

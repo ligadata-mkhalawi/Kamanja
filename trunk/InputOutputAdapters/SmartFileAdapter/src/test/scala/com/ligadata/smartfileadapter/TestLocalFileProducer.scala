@@ -305,6 +305,24 @@ class TestLocalFileProducer extends FunSpec with BeforeAndAfter with ShouldMatch
     data(2).set(2, "value3")
     data(2).setTimePartitionData(1462999243000L)  // May 11, 2016
 
+    val data2 = new Array[ContainerInterface](6)
+    data.copyToArray(data2)
+    data2(3) = new ParameterContainer(ParameterContainer)
+    data2(3).set(0, 40)
+    data2(3).set(1, "parameter1")
+    data2(3).set(2, "value11")
+    data2(3).setTimePartitionData(1462999243000L)  // May 11, 2016
+    data2(4) = new ParameterContainer(ParameterContainer)
+    data2(4).set(0, 50)
+    data2(4).set(1, "parameter2")
+    data2(4).set(2, "value21")
+    data2(4).setTimePartitionData(1462999243000L)  // May 11, 2016
+    data2(5) = new ParameterContainer(ParameterContainer)
+    data2(5).set(0, 60)
+    data2(5).set(1, "parameter3")
+    data2(5).set(2, "value31")
+    data2(5).setTimePartitionData(1462912843000L)  // May 10, 2016
+
     it("should produce a text file with json output") {
       
       inputConfig.adapterSpecificCfg =
@@ -431,6 +449,75 @@ class TestLocalFileProducer extends FunSpec with BeforeAndAfter with ShouldMatch
           FileUtils.readFileToString(new File(location + "/parameter2partitionjson.expected"))
         else if (file.getAbsolutePath.contains("name=parameter3"))
           FileUtils.readFileToString(new File(location + "/parameter3partitionjson.expected"))
+        else ""
+        val actual = FileUtils.readFileToString(file)
+        assert(actual == expected)
+      })
+    }
+
+    it("should partition using both message fields and time partion data") {
+      
+      inputConfig.adapterSpecificCfg =
+        "{\"Uri\": \"file://" + location + "\",\"FileNamePrefix\": \"Data-\", \"PartitionFormat\": \"name=${name}/year=${time:yyyy}/month=${time:MM}/day=${time:dd}\"}"
+
+      val sfp = new SmartFileProducer(inputConfig, null) with JsonDefaultSerializerDeserializer
+      sfp.send(null, data2)
+      sfp.Shutdown()
+
+      val outfiles = FileUtils.listFiles(dir, Array("dat"), true)
+      println("Number of file produced: " + outfiles.size())
+      assert(outfiles.size() > 1)
+      
+      outfiles.foreach(file => {
+        println("File " + file.getAbsolutePath)
+        val expected = if (file.getAbsolutePath.contains("name=parameter1/year=2016/month=05/day=10"))
+          FileUtils.readFileToString(new File(location + "/parameter1may10json.expected"))
+        else if (file.getAbsolutePath.contains("name=parameter1/year=2016/month=05/day=11"))
+          FileUtils.readFileToString(new File(location + "/parameter1may11json.expected"))
+        else if (file.getAbsolutePath.contains("name=parameter2/year=2016/month=05/day=10"))
+          FileUtils.readFileToString(new File(location + "/parameter2may10json.expected"))
+        else if (file.getAbsolutePath.contains("name=parameter2/year=2016/month=05/day=11"))
+          FileUtils.readFileToString(new File(location + "/parameter2may11json.expected"))
+        else if (file.getAbsolutePath.contains("name=parameter3/year=2016/month=05/day=10"))
+          FileUtils.readFileToString(new File(location + "/parameter3may10json.expected"))
+        else if (file.getAbsolutePath.contains("name=parameter3/year=2016/month=05/day=11"))
+          FileUtils.readFileToString(new File(location + "/parameter3may11json.expected"))
+        else ""
+        val actual = FileUtils.readFileToString(file)
+        assert(actual == expected)
+      })
+    }
+
+    it("should partition using message level partition overrides") {
+      
+      inputConfig.adapterSpecificCfg =
+        "{\"Uri\": \"file://" + location + "\",\"FileNamePrefix\": \"Data-\", " + 
+        "\"PartitionFormat\": \"name=${name}\", \"typeLevelConfig\": "  + 
+        "[{\"type\": \"com.ligadata.smartfileadapter.test.ParameterContainer\", " + 
+        "\"PartitionFormat\": \"name=${name}/year=${time:yyyy}/month=${time:MM}/day=${time:dd}\"}]}"
+
+      val sfp = new SmartFileProducer(inputConfig, null) with JsonDefaultSerializerDeserializer
+      sfp.send(null, data2)
+      sfp.Shutdown()
+
+      val outfiles = FileUtils.listFiles(dir, Array("dat"), true)
+      println("Number of file produced: " + outfiles.size())
+      assert(outfiles.size() > 1)
+      
+      outfiles.foreach(file => {
+        println("File " + file.getAbsolutePath)
+        val expected = if (file.getAbsolutePath.contains("name=parameter1/year=2016/month=05/day=10"))
+          FileUtils.readFileToString(new File(location + "/parameter1may10json.expected"))
+        else if (file.getAbsolutePath.contains("name=parameter1/year=2016/month=05/day=11"))
+          FileUtils.readFileToString(new File(location + "/parameter1may11json.expected"))
+        else if (file.getAbsolutePath.contains("name=parameter2/year=2016/month=05/day=10"))
+          FileUtils.readFileToString(new File(location + "/parameter2may10json.expected"))
+        else if (file.getAbsolutePath.contains("name=parameter2/year=2016/month=05/day=11"))
+          FileUtils.readFileToString(new File(location + "/parameter2may11json.expected"))
+        else if (file.getAbsolutePath.contains("name=parameter3/year=2016/month=05/day=10"))
+          FileUtils.readFileToString(new File(location + "/parameter3may10json.expected"))
+        else if (file.getAbsolutePath.contains("name=parameter3/year=2016/month=05/day=11"))
+          FileUtils.readFileToString(new File(location + "/parameter3may11json.expected"))
         else ""
         val actual = FileUtils.readFileToString(file)
         assert(actual == expected)

@@ -320,6 +320,33 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       reent_lock.writeLock().unlock()
   }
 
+  private def parsePartitionFormat(formatStr: String): (String, List[Any]) = {
+    var partitionFormatString: String = null
+    var partitionFormatObjects: List[Any] = null
+    if (formatStr != null) {
+      val partitionVariable = "\\$\\{([^\\}]+)\\}".r
+      partitionFormatObjects = partitionVariable.findAllMatchIn(formatStr).map(x => try {
+        val spec = x.group(1).split(":");
+        if (spec.length > 1 && spec(0).equalsIgnoreCase("time")) {
+          val fmt = new SimpleDateFormat(spec(1))
+          fmt.setTimeZone(TimeZone.getTimeZone("UTC"))
+          fmt
+        } else if (spec.length > 1) {
+          spec(1)
+        } else {
+          spec(0)
+        }
+      } catch {
+        case e: Exception => {
+          throw FatalAdapterException(x.group(1) + " is not a valid date format string.", e)
+        }
+      }).toList
+      partitionFormatString = partitionVariable.replaceAllIn(formatStr, "%s")
+    }
+    
+    (partitionFormatString, partitionFormatObjects)
+  }
+
   private[this] val fc = SmartFileProducerConfiguration.getAdapterConfig(inputConfig)
   private var partitionStreams: collection.mutable.Map[String, PartitionFile] = collection.mutable.Map[String, PartitionFile]()
   private var extensions: scala.collection.immutable.Map[String, String] = Map(
@@ -354,27 +381,13 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     fc.partitionFormat = fc.timePartitionFormat.replace("${", "${time:")
   }
 
-  var partitionFormatString: String = null
-  var partitionDateFormats: List[Any] = null
-  if (fc.partitionFormat != null) {
-    val partitionVariable = "\\$\\{([^\\}]+)\\}".r
-    partitionDateFormats = partitionVariable.findAllMatchIn(fc.partitionFormat).map(x => try {
-      val spec = x.group(1).split(":");
-      if(spec.length > 1 && spec(0).equalsIgnoreCase("time")) {
-        val fmt = new SimpleDateFormat(spec(1))
-        fmt.setTimeZone(TimeZone.getTimeZone("UTC"))
-        fmt
-      } else if(spec.length > 1) {
-        spec(1)
-      } else {
-        spec(0)
-      }
-    } catch {
-      case e: Exception => {
-        throw FatalAdapterException(x.group(1) + " is not a valid date format string.", e)
-      }
-    }).toList
-    partitionFormatString = partitionVariable.replaceAllIn(fc.partitionFormat, "%s")
+  val (glbPartitionFormatString, glbPartitionFormatObjects) = parsePartitionFormat(fc.partitionFormat)
+  for((typeName, tlcfg) <- fc.typeLevelConfig) {
+    if(tlcfg != null) {
+      val (pfs, pfo) = parsePartitionFormat(tlcfg.partitionFormat)
+      tlcfg.partitionFormatString = pfs
+      tlcfg.partitionFormatObjects = pfo
+    }
   }
 
   var nextRolloverTime: Long = 0
@@ -463,7 +476,15 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   private def getPartionFile(record: ContainerInterface): PartitionFile = {
     var typeName = record.getFullTypeName();
     val dateTime = record.getTimePartitionData()
-    val fileBufferSize = fc.typeLevelConfig.getOrElse(typeName, fc.flushBufferSize);
+    val tlcfg = fc.typeLevelConfig.getOrElse(typeName, null);
+    var fileBufferSize = fc.flushBufferSize;
+    var partitionFormatString = glbPartitionFormatString
+    var partitionFormatObjects = glbPartitionFormatObjects
+    if(tlcfg != null) {
+      fileBufferSize = tlcfg.flushBufferSize
+      partitionFormatString = tlcfg.partitionFormatString
+      partitionFormatObjects = tlcfg.partitionFormatObjects
+    }
 
     var key = typeName.replace(".", "_")
     val pk = record.getPartitionKey()
@@ -473,10 +494,10 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       bucket = pk.mkString("").hashCode() % fc.partitionBuckets
     }
 
-    if (dateTime > 0 && partitionFormatString != null && partitionDateFormats != null) {
+    if (dateTime > 0 && partitionFormatString != null && partitionFormatObjects != null) {
       LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile time partion data for the record - [" + dateTime + "]")
       val dtTm = new java.util.Date(dateTime)
-      val values = partitionDateFormats.map(fmt => {
+      val values = partitionFormatObjects.map(fmt => {
         if(fmt.isInstanceOf[SimpleDateFormat])
           fmt.asInstanceOf[SimpleDateFormat].format(dtTm)
         else
