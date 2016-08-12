@@ -195,7 +195,8 @@ class KamanjaMessageEvent(factory: MessageFactoryInterface, other: KamanjaMessag
     } catch {
       case e: Exception => {
         log.debug("", e)
-        throw e
+        if(defaultVal == null) return null;
+        return defaultVal.asInstanceOf[AnyRef];
       }
     }
     return null;
@@ -230,7 +231,8 @@ class KamanjaMessageEvent(factory: MessageFactoryInterface, other: KamanjaMessag
     } catch {
       case e: Exception => {
         log.debug("", e)
-        throw e
+        if(defaultVal == null) return null;
+        return defaultVal.asInstanceOf[AnyRef];
       }
     }
     return null;
