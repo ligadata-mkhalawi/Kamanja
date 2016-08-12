@@ -46,7 +46,7 @@ class TestProducerConfigs extends FunSpec with BeforeAndAfter with ShouldMatcher
       conf.messageSeparator shouldEqual "\n"
       conf.compressionString shouldEqual "gz"
       conf.rolloverInterval shouldEqual 3600
-      conf.partitionFormat shouldEqual "year=${yyyy}/month=${MM}/day=${dd}"
+      conf.timePartitionFormat shouldEqual "year=${yyyy}/month=${MM}/day=${dd}"
       conf.partitionBuckets shouldEqual 10
       conf.flushBufferSize shouldEqual 10485760
       conf.flushBufferInterval shouldEqual 1000

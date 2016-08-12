@@ -259,7 +259,9 @@ class ParameterContainer(factory: ContainerFactoryInterface) extends ContainerIn
 
 trait JsonDefaultSerializerDeserializer extends AdaptersSerializeDeserializers{
   override def getDefaultSerializerDeserializer(): MsgBindingInfo = { 
-    new MsgBindingInfo("com.ligadata.kamanja.serializer.jsonserdes", scala.collection.immutable.Map[String, Any](), "", new com.ligadata.kamanja.serializer.JSONSerDes())
+    var ser = new com.ligadata.kamanja.serializer.JSONSerDes();
+    ser.configure(null, Map("emitSystemColumns" -> "true"))
+    new MsgBindingInfo("com.ligadata.kamanja.serializer.jsonserdes", scala.collection.immutable.Map[String, Any](), "", ser)
   }
 }
 
@@ -267,7 +269,7 @@ class TestLocalFileProducer extends FunSpec with BeforeAndAfter with ShouldMatch
 
   val location = getClass.getResource("/producer").getPath
   println(location)
-  val dir = new File(location + "/ParameterContainer")
+  val dir = new File(location + "/com_ligadata_smartfileadapter_test_ParameterContainer")
 
   before {
     println("Before Test Deleting directory " + dir.getAbsolutePath)
@@ -402,6 +404,33 @@ class TestLocalFileProducer extends FunSpec with BeforeAndAfter with ShouldMatch
           FileUtils.readFileToString(new File(location + "/may10partitionjson.expected"))
         else if (file.getAbsolutePath.contains("year=2016/month=05/day=11"))
           FileUtils.readFileToString(new File(location + "/may11partitionjson.expected"))
+        else ""
+        val actual = FileUtils.readFileToString(file)
+        assert(actual == expected)
+      })
+    }
+
+    it("should partition using any given field when PartitionFormat is given") {
+      
+      inputConfig.adapterSpecificCfg =
+        "{\"Uri\": \"file://" + location + "\",\"FileNamePrefix\": \"Data-\", \"PartitionFormat\": \"name=${name}\"}"
+
+      val sfp = new SmartFileProducer(inputConfig, null) with JsonDefaultSerializerDeserializer
+      sfp.send(null, data)
+      sfp.Shutdown()
+
+      val outfiles = FileUtils.listFiles(dir, Array("dat"), true)
+      println("Number of file produced: " + outfiles.size())
+      assert(outfiles.size() > 1)
+      
+      outfiles.foreach(file => {
+        println("File " + file.getAbsolutePath)
+        val expected = if (file.getAbsolutePath.contains("name=parameter1"))
+          FileUtils.readFileToString(new File(location + "/parameter1partitionjson.expected"))
+        else if (file.getAbsolutePath.contains("name=parameter2"))
+          FileUtils.readFileToString(new File(location + "/parameter2partitionjson.expected"))
+        else if (file.getAbsolutePath.contains("name=parameter3"))
+          FileUtils.readFileToString(new File(location + "/parameter3partitionjson.expected"))
         else ""
         val actual = FileUtils.readFileToString(file)
         assert(actual == expected)

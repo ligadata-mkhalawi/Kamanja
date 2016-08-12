@@ -28,7 +28,8 @@ class SmartFileProducerConfiguration extends AdapterConfiguration {
   var messageSeparator: String = "" // optional separator inserted between messages
   var compressionString: String = null // If it is null or empty we treat it as TEXT file
   var rolloverInterval: Int = 0 // in minutes. create new output file every rolloverInterval mins 
-  var partitionFormat: String = null // folder structure for partitions
+  var timePartitionFormat: String = null // folder structure for partitions - deprecated
+  var partitionFormat: String = null // folder structure for partitions, will support time partition and other fields
   var partitionBuckets: Int = 0 //  number of files to create within a partition
   var flushBufferSize: Long = 0 // in bytes. writes the buffer after flushBufferSize bytes.
   var flushBufferInterval: Long = 0 // in msecs. writes the buffer every flushBufferInterval msecs
@@ -95,6 +96,8 @@ object SmartFileProducerConfiguration {
       } else if (kv._1.compareToIgnoreCase("RolloverInterval") == 0) {
         adapterConfig.rolloverInterval = kv._2.toString.toInt
       } else if (kv._1.compareToIgnoreCase("TimePartitionFormat") == 0) {
+        adapterConfig.timePartitionFormat = kv._2.toString.trim
+      } else if (kv._1.compareToIgnoreCase("PartitionFormat") == 0) {
         adapterConfig.partitionFormat = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("PartitionBuckets") == 0) {
         adapterConfig.partitionBuckets = kv._2.toString.toInt

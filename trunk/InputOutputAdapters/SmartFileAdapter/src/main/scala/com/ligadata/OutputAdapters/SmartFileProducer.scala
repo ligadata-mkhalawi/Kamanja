@@ -348,15 +348,27 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     else
       throw FatalAdapterException("Unsupported compression type " + fc.compressionString + " for Smart File Producer: " + fc.Name, new Exception("Invalid Parameters"))
   }
+  
+  if (fc.partitionFormat == null && fc.timePartitionFormat != null) {
+    // for backward compatibility if timePartitionFormat given and not partitionFormat then use it
+    fc.partitionFormat = fc.timePartitionFormat.replace("${", "${time:")
+  }
 
   var partitionFormatString: String = null
-  var partitionDateFormats: List[SimpleDateFormat] = null
+  var partitionDateFormats: List[Any] = null
   if (fc.partitionFormat != null) {
     val partitionVariable = "\\$\\{([^\\}]+)\\}".r
     partitionDateFormats = partitionVariable.findAllMatchIn(fc.partitionFormat).map(x => try {
-      val fmt = new SimpleDateFormat(x.group(1))
-      fmt.setTimeZone(TimeZone.getTimeZone("UTC"))
-      fmt
+      val spec = x.group(1).split(":");
+      if(spec.length > 1 && spec(0).equalsIgnoreCase("time")) {
+        val fmt = new SimpleDateFormat(spec(1))
+        fmt.setTimeZone(TimeZone.getTimeZone("UTC"))
+        fmt
+      } else if(spec.length > 1) {
+        spec(1)
+      } else {
+        spec(0)
+      }
     } catch {
       case e: Exception => {
         throw FatalAdapterException(x.group(1) + " is not a valid date format string.", e)
@@ -464,7 +476,12 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     if (dateTime > 0 && partitionFormatString != null && partitionDateFormats != null) {
       LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile time partion data for the record - [" + dateTime + "]")
       val dtTm = new java.util.Date(dateTime)
-      val values = partitionDateFormats.map(fmt => fmt.format(dtTm))
+      val values = partitionDateFormats.map(fmt => {
+        if(fmt.isInstanceOf[SimpleDateFormat])
+          fmt.asInstanceOf[SimpleDateFormat].format(dtTm)
+        else
+          record.getOrElse(fmt.asInstanceOf[String], "").toString
+      })
       key = key + "/" + partitionFormatString.format(values: _*)
     }
 
