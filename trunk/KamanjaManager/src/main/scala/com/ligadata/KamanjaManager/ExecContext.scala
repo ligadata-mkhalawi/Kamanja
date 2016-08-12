@@ -247,6 +247,7 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
                     finalData.setRowNumber(d.getRowNumber)
                     finalData.setTransactionId(d.getTransactionId)
                   }
+                  finalData
                 })
               } else {
                 cData
