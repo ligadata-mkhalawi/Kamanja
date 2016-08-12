@@ -405,7 +405,7 @@ object SmartFileAdapterConfiguration {
     if (adapCfgValues.contains("ArchiveConfig")) {
       try {
         val connConf = adapCfgValues.get("ArchiveConfig").get.asInstanceOf[Map[String, Any]]
-        val aConfig = SmartFileProducerConfiguration.getAdapterConfigFromMap(connConf)
+        val aConfig = SmartFileProducerConfiguration.getAdapterConfigFromMap(null, connConf)
         aConfig.Name = ""
         aConfig.className = ""
         aConfig.jarName = ""

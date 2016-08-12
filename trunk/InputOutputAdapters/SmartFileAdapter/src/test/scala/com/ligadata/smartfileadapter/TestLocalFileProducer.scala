@@ -269,7 +269,7 @@ class TestLocalFileProducer extends FunSpec with BeforeAndAfter with ShouldMatch
 
   val location = getClass.getResource("/producer").getPath
   println(location)
-  val dir = new File(location + "/com_ligadata_smartfileadapter_test_ParameterContainer")
+  val dir = new File(location + "/com.ligadata.smartfileadapter.test.ParameterContainer")
 
   before {
     println("Before Test Deleting directory " + dir.getAbsolutePath)

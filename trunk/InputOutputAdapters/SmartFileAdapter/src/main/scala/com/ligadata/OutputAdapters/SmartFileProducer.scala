@@ -347,7 +347,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     (partitionFormatString, partitionFormatObjects)
   }
 
-  private[this] val fc = SmartFileProducerConfiguration.getAdapterConfig(inputConfig)
+  private[this] val fc = SmartFileProducerConfiguration.getAdapterConfig(nodeContext, inputConfig)
   private var partitionStreams: collection.mutable.Map[String, PartitionFile] = collection.mutable.Map[String, PartitionFile]()
   private var extensions: scala.collection.immutable.Map[String, String] = Map(
     (CompressorStreamFactory.BZIP2, ".bz2"),
@@ -486,7 +486,11 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       partitionFormatObjects = tlcfg.partitionFormatObjects
     }
 
-    var key = typeName.replace(".", "_")
+    var key = record.getTypeName()
+    if(fc.useTypeFullNameForPartition) {
+      key = if(fc.replaceSeparator) typeName.replace(".", fc.separatorCharForTypeName) else typeName
+    }
+    
     val pk = record.getPartitionKey()
     var bucket: Int = 0
     if (pk != null && pk.length > 0 && fc.partitionBuckets > 1) {

@@ -17,6 +17,7 @@
 package com.ligadata.AdaptersConfiguration
 
 import com.ligadata.Exceptions.{ KamanjaException, FatalAdapterException }
+import com.ligadata.KamanjaBase.{NodeContext}
 import com.ligadata.InputOutputAdapterInfo._
 import org.json4s._
 import org.json4s.JsonDSL._
@@ -39,8 +40,12 @@ class SmartFileProducerConfiguration extends AdapterConfiguration {
   var timePartitionFormat: String = null // folder structure for partitions - deprecated
   var partitionFormat: String = null // folder structure for partitions, will support time partition and other fields
   var partitionBuckets: Int = 0 //  number of files to create within a partition
+  var useTypeFullNameForPartition: Boolean = true // when true uses full type name to create partition directory
+  var replaceSeparator: Boolean = false
+  var separatorCharForTypeName: String = "." // this character will be used to replace "." in type full name before creating partition directory 
   var flushBufferSize: Long = 0 // in bytes. writes the buffer after flushBufferSize bytes.
   var flushBufferInterval: Long = 0 // in msecs. writes the buffer every flushBufferInterval msecs
+  var typeLevelConfigKey: String = null
   var typeLevelConfigFile: String = null // file name that contains type level override configuration. Will override inline type level config
   var typeLevelConfig: collection.mutable.Map[String, TypeLevelConfiguration] = collection.mutable.Map[String, TypeLevelConfiguration]() // inline type level override configuration 
   
@@ -57,7 +62,7 @@ class KerberosConfig {
 }
 
 object SmartFileProducerConfiguration {
-  def getAdapterConfig(config: AdapterConfiguration): SmartFileProducerConfiguration = {
+  def getAdapterConfig(nodeContext: NodeContext, config: AdapterConfiguration): SmartFileProducerConfiguration = {
     if (config.adapterSpecificCfg == null || config.adapterSpecificCfg.size == 0) {
       val err = "Not found Type and Connection info for Smart File Adapter Config:" + config.Name
       throw new KamanjaException(err, null)
@@ -70,7 +75,7 @@ object SmartFileProducerConfiguration {
     }
     val adapCfgValues = adapCfg.values.asInstanceOf[Map[String, Any]]
 
-    val adapterConfig = getAdapterConfigFromMap(adapCfgValues)
+    val adapterConfig = getAdapterConfigFromMap(nodeContext, adapCfgValues)
 
     adapterConfig.Name = config.Name
     adapterConfig.className = config.className
@@ -80,7 +85,7 @@ object SmartFileProducerConfiguration {
     adapterConfig
   }
 
-  def getAdapterConfigFromMap(adapCfgValues: Map[String, Any]): SmartFileProducerConfiguration = {
+  def getAdapterConfigFromMap(nodeContext: NodeContext, adapCfgValues: Map[String, Any]): SmartFileProducerConfiguration = {
     val adapterConfig = new SmartFileProducerConfiguration()
 /*
     if (adapCfgValues.contains("Name"))
@@ -110,10 +115,17 @@ object SmartFileProducerConfiguration {
         adapterConfig.partitionFormat = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("PartitionBuckets") == 0) {
         adapterConfig.partitionBuckets = kv._2.toString.toInt
+      } else if (kv._1.compareToIgnoreCase("UseTypeFullNameForPartition") == 0) {
+        adapterConfig.useTypeFullNameForPartition = kv._2.toString.trim.equalsIgnoreCase("true")
+      } else if (kv._1.compareToIgnoreCase("SeparatorCharForTypeName") == 0) {
+        adapterConfig.separatorCharForTypeName = kv._2.toString.trim
+        adapterConfig.replaceSeparator = !adapterConfig.separatorCharForTypeName.equalsIgnoreCase(".")
       } else if (kv._1.compareToIgnoreCase("flushBufferSize") == 0) {
         adapterConfig.flushBufferSize = kv._2.toString.toLong
       } else if (kv._1.compareToIgnoreCase("flushBufferInterval") == 0) {
         adapterConfig.flushBufferInterval = kv._2.toString.toLong
+      } else if (kv._1.compareToIgnoreCase("typeLevelConfigKey") == 0) {
+        adapterConfig.typeLevelConfigKey = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("typeLevelConfigFile") == 0) {
         adapterConfig.typeLevelConfigFile = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("typeLevelConfig") == 0) {
@@ -148,15 +160,12 @@ object SmartFileProducerConfiguration {
         throw FatalAdapterException("Keytab should be specified for Kerberos authentication for Smart File Producer: " + adapterConfig.Name, new Exception("Invalid Parameters"))
     }
 
+    var jsonStr: String = null;
     if (adapterConfig.typeLevelConfigFile != null) {
       var source: Source = null
       try {
         source = Source.fromFile(adapterConfig.typeLevelConfigFile)
-        val jsonStr = source.mkString
-        val tlConfigs = parse(jsonStr)
-        if (tlConfigs == null)
-          throw new Exception("Smart File Producer:" + adapterConfig.Name + " - Invalid JSON in config file " + adapterConfig.typeLevelConfigFile)
-        loadTypeLevelConfig(adapterConfig, tlConfigs.values.asInstanceOf[List[Map[String, String]]])
+        jsonStr = source.mkString
       } catch {
         case e: Throwable => {
           throw FatalAdapterException("Smart File Producer:" + adapterConfig.Name + " - Error parsing config file " + adapterConfig.typeLevelConfigFile, e)
@@ -164,8 +173,17 @@ object SmartFileProducerConfiguration {
       } finally {
         if (source != null) source.close()
       }
+    } else if(adapterConfig.typeLevelConfigKey != null && nodeContext != null && nodeContext.getEnvCtxt() != null && nodeContext.getEnvCtxt()._mgr != null) {
+      jsonStr = nodeContext.getEnvCtxt()._mgr.GetUserProperty(nodeContext.getEnvCtxt().getClusterId(), adapterConfig.typeLevelConfigKey)
     }
-
+    
+    if(jsonStr != null && !jsonStr.trim.isEmpty()) {
+      val tlConfigs = parse(jsonStr)
+      if (tlConfigs == null)
+        throw new FatalAdapterException("Smart File Producer:" + adapterConfig.Name + " - Invalid JSON in config file " + adapterConfig.typeLevelConfigFile, new Exception("Invalid Parameters"))
+      loadTypeLevelConfig(adapterConfig, tlConfigs.values.asInstanceOf[List[Map[String, String]]])
+    }
+ 
     adapterConfig
   }
 
