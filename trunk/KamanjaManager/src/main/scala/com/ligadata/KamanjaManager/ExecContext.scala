@@ -221,42 +221,39 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
                     else
                       com.ligadata.KvBase.TimeRange(com.ligadata.KvBase.KvBaseDefalts.defaultTime, com.ligadata.KvBase.KvBaseDefalts.defaultTime)
                   val tmpData = nodeContext.getEnvCtxt.getRDD(tenatId.toLowerCase(), containerAndData._1.toLowerCase(), partKey, tmRange, null)
-                  var finalData: ContainerInterface = null
+                  var oldData: ContainerInterface = null
                   if (tmpData != null && tmpData.size > 0) {
-                    if (LOG.isDebugEnabled())
-                      LOG.debug("Got RDD for PartitionKey:%s and PrimaryKey:%s.".format(d.PartitionKeyData().mkString(","), d.PrimaryKeyData().mkString(",")))
+                    if (LOG.isTraceEnabled())
+                      LOG.trace("Got RDD for TxnId:%d, RowNumber:%d, PartitionKey:%s and PrimaryKey:%s.".format(d.getTransactionId, d.getRowNumber, d.PartitionKeyData().mkString(","), d.PrimaryKeyData().mkString(",")))
                     val newPrimaryKey = d.getPrimaryKey
                     var mIdx = 0
 
-                    while (finalData == null && mIdx < tmpData.size) {
+                    while (oldData == null && newPrimaryKey.size > 0 && mIdx < tmpData.size) {
                       val m = tmpData(mIdx)
                       mIdx += 1
                       val oldPrimaryKey = m.getPrimaryKey
-                      if (finalData == null && newPrimaryKey.size == oldPrimaryKey.size) {
+                      if (oldData == null && newPrimaryKey.size == oldPrimaryKey.size) {
                         var idx = 0
-                        while (finalData == null && idx < newPrimaryKey.size) {
-                          val cmp = newPrimaryKey(idx).compareTo(oldPrimaryKey(idx))
-                          if (cmp == 0)
-                            finalData = m
+                        var cmp = 0
+                        while (cmp == 0 && idx < newPrimaryKey.size) {
+                          cmp = newPrimaryKey(idx).compareTo(oldPrimaryKey(idx))
                           idx += 1
                         }
+                        if (cmp == 0 && idx >= newPrimaryKey.size)
+                          oldData = m
                       }
                     }
                   } else {
-                    if (LOG.isDebugEnabled())
-                      LOG.debug("Did not get RDD for PartitionKey:%s and PrimaryKey:%s.".format(d.PartitionKeyData().mkString(","), d.PrimaryKeyData().mkString(",")))
+                    if (LOG.isTraceEnabled())
+                      LOG.trace("Did not get RDD for TxnId:%d, RowNumber:%d, PartitionKey:%s and PrimaryKey:%s.".format(d.getTransactionId, d.getRowNumber, d.PartitionKeyData().mkString(","), d.PrimaryKeyData().mkString(",")))
                   }
-                  if (finalData == null) {
-                    if (LOG.isDebugEnabled())
-                      LOG.debug("PartitionKey:%s and PrimaryKey:%s not found.".format(d.PartitionKeyData().mkString(","), d.PrimaryKeyData().mkString(",")))
-                    finalData = d
-                  } else {
-                    if (LOG.isDebugEnabled())
-                      LOG.debug("PartitionKey:%s and PrimaryKey:%s found.".format(finalData.PartitionKeyData().mkString(","), finalData.PrimaryKeyData().mkString(",")))
-                    finalData.setRowNumber(d.getRowNumber)
-                    finalData.setTransactionId(d.getTransactionId)
+                  if (oldData != null) {
+                    d.setRowNumber(oldData.getRowNumber)
+                    d.setTransactionId(oldData.getTransactionId)
+                    if (LOG.isTraceEnabled())
+                      LOG.trace("TxnId:%d, RowNumber:%d, PartitionKey:%s and PrimaryKey:%s found.".format(d.getTransactionId, d.getRowNumber, d.PartitionKeyData().mkString(","), d.PrimaryKeyData().mkString(",")))
                   }
-                  finalData
+                  d
                 })
               } else {
                 cData
