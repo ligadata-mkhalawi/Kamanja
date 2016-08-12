@@ -323,54 +323,15 @@ Usage:
 
   // Versions are assumed to have a format x.x.x
   private def IsVersionSame(fromVersion: String,toVersion: String): Boolean = {
-    val fromVer = ConvertVersionToLong(fromVersion)
-    val toVer = ConvertVersionToLong(toVersion)
+    val fromVer = ConvertVersionToLong(fromVersion.substring(0,3))
+    val toVer = ConvertVersionToLong(toVersion.substring(0,3))
     fromVer == toVer
-    /*
-    val fromVerParts = fromVersion.split('.')
-    val fromMajor = (if (fromVerParts.size > 0) fromVerParts(0).toInt else 0)
-    val fromMini = (if (fromVerParts.size > 1) fromVerParts(1).toInt else 0)
-    CheckVerDigits(fromMajor, fromVersion)
-    CheckVerDigits(fromMini, fromVersion)
-
-    val toVerParts = toVersion.split('.')
-    val toMajor = (if (toVerParts.size > 0) toVerParts(0).toInt else 0)
-    val toMini = (if (toVerParts.size > 1) toVerParts(1).toInt else 0)
-    CheckVerDigits(toMajor, toVersion)
-    CheckVerDigits(toMini, toVersion)
-    val isSame = (fromMajor == toMajor && fromMini == toMini)
-    isSame
-    */
   }
 
   private def IsVersionGreaterOrEqual(fromVersion: String,toVersion: String): Boolean = {
     val fromVer = ConvertVersionToLong(fromVersion)
     val toVer = ConvertVersionToLong(toVersion)
     fromVer >= toVer
-    /*
-    val fromVerParts = fromVersion.split('.')
-    val fromMajor = (if (fromVerParts.size > 0) fromVerParts(0).toInt else 0)
-    val fromMini = (if (fromVerParts.size > 1) fromVerParts(1).toInt else 0)
-    val fromMicro = (if (fromVerParts.size > 2) verParts(2).toInt else 0)
-
-    CheckVerDigits(fromMajor, fromVersion)
-    CheckVerDigits(fromMini, fromVersion)
-    CheckVerDigits(fromMicro, fromVersion)
-
-    val toVerParts = toVersion.split('.')
-    val toMajor = (if (toVerParts.size > 0) toVerParts(0).toInt else 0)
-    val toMini = (if (toVerParts.size > 1) toVerParts(1).toInt else 0)
-    val toMicro = (if (toVerParts.size > 2) verParts(2).toInt else 0)
-
-    CheckVerDigits(toMajor, toVersion)
-    CheckVerDigits(toMini, toVersion)
-    CheckVerDigits(toMicro, toVersion)
-
-    val isGreaterOrEqual = (fromMajor > toMajor ) || 
-                    ( fromMajor == toMajor && fromMini > toMini) ||
-                    ( fromMajor == toMajor && fromMini == toMini && fromMicro >= toMicro)
-    isGreaterThanEqual
-    */
   }
 
   private def IsVersionLessThan(fromVersion: String,toVersion: String): Boolean = {
