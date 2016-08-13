@@ -19,7 +19,7 @@ import java.io.File
 import java.net.{InetAddress, URL, URLClassLoader}
 import java.sql.{CallableStatement, Connection, Driver, DriverManager, DriverPropertyInfo, PreparedStatement, ResultSet, Statement}
 import java.text.SimpleDateFormat
-import java.util.{Properties, TimeZone}
+import java.util.{Calendar, Properties, TimeZone}
 
 import com.ligadata.Exceptions._
 import com.ligadata.KamanjaBase.NodeContext
@@ -28,6 +28,7 @@ import com.ligadata.StorageBase.{DataStore, StorageAdapterFactory, Transaction}
 import com.ligadata.Utils.KamanjaLoaderInfo
 import com.ligadata.kamanja.metadata.AdapterInfo
 import org.apache.commons.dbcp2.BasicDataSource
+import org.elasticsearch.action.bulk.BulkResponse
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.transport.InetSocketTransportAddress
 import org.elasticsearch.common.xcontent.{XContentBuilder, XContentFactory}
@@ -494,10 +495,11 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
       var hits: SearchHits = response.getHits()
       var id = ""
-      if (hits.totalHits() == 1) {
-        id = hits.getAt(1).id()
-      } else {
-        System.out.println(" found " + hits.totalHits() + " hits, NOT VALID")
+
+      hits.totalHits() match {
+        case 0 => id = tableName + Calendar.getInstance().getTimeInMillis
+        case 1 => id = hits.getAt(1).id()
+        case x => println(" found " + hits.totalHits() + " hits, NOT VALID")
       }
 
       // index the data
@@ -517,20 +519,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
       System.out.println("data indexed into " + indexResponse.getIndex)
 
-
-
-      // statement in H2db
-      //      sql = "merge into " + tableName + "(timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo) key(timePartition, bucketKey, transactionId, rowId) values (?,?,?,?,?,?,?)"
-      //      pstmt = con.prepareStatement(sql)
-      //      pstmt.setLong(1, 0)
-      //      pstmt.setString(2, key.bucketKey.mkString(","))
-      //      pstmt.setLong(3, key.transactionId)
-      //      pstmt.setInt(4, key.rowId)
-      //      pstmt.setInt(5, value.schemaId)
-      //      pstmt.setString(6, value.serializerType)
-      //
-      //      pstmt.setBytes(7, newBuffer)
-      //      pstmt.executeUpdate();
       updateOpStats("put", tableName, 1)
       updateObjStats("put", tableName, 1)
       updateByteStats("put", tableName, getKeySize(key) + getValueSize(value))
@@ -551,9 +539,9 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   }
 
   override def put(data_list: Array[(String, Array[(Key, Value)])]): Unit = {
-    var con: Connection = null
-    var pstmt: PreparedStatement = null
-    var sql: String = null
+    var client: TransportClient = null
+    //    var pstmt: PreparedStatement = null
+    //    var sql: String = null
     var totalRowsUpdated = 0;
     try {
       if (IsSingleRowPut(data_list)) {
@@ -565,78 +553,80 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
         put(containerName, key, value)
       } else {
         logger.debug("Get a new connection...")
-        con = getConnection
-        // we need to commit entire batch
-        con.setAutoCommit(false)
+        client = getConnection
+
+        var bulkRequest = client.prepareBulk()
+
         var byteCount = 0
         data_list.foreach(f = li => {
           var containerName = li._1
           CheckTableExists(containerName)
           var tableName = toFullTableName(containerName)
           var keyValuePairs = li._2
-          logger.info("Input row count for the table " + tableName + " => " + keyValuePairs.length)
-          sql = "merge into " + tableName + "(timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo) key (timePartition, bucketKey, transactionId, rowId) values(?,?,?,?,?,?,?)"
-          logger.debug("sql => " + sql)
-          pstmt = con.prepareStatement(sql)
+
           keyValuePairs.foreach(f = keyValuePair => {
             var key = keyValuePair._1
             var value = keyValuePair._2
-            pstmt.setLong(1, key.timePartition)
-            pstmt.setString(2, key.bucketKey.mkString(","))
-            pstmt.setLong(3, key.transactionId)
-            pstmt.setInt(4, key.rowId)
-            pstmt.setInt(5, value.schemaId)
-            pstmt.setString(6, value.serializerType)
-            var newBuffer: Array[Byte] = new Array[Byte](value.serializedInfo.length);
+            // get the Document unique id
+            val response = client
+              .prepareSearch(tableName)
+              .setTypes("type1")
+              .setQuery(QueryBuilders.boolQuery().must(QueryBuilders.termQuery("timePartition", 0))
+                .must(QueryBuilders.termQuery("bucketKey", key.bucketKey.mkString(",").toLowerCase()))
+                .must(QueryBuilders.termQuery("transactionId", key.transactionId))
+                .must(QueryBuilders.termQuery("rowId", key.rowId))
+              ).execute().actionGet()
+
+            val hits: SearchHits = response.getHits()
+            var id = ""
+
+            hits.totalHits() match {
+              case 0 => id = tableName + Calendar.getInstance().getTimeInMillis
+              case 1 => id = hits.getAt(1).id()
+              case x => println(" found " + hits.totalHits() + " hits, NOT VALID")
+            }
+
+            // index the data
+            val newBuffer: Array[Byte] = new Array[Byte](value.serializedInfo.length)
             var c: Int = 0;
             c = new java.io.ByteArrayInputStream(value.serializedInfo).read(newBuffer, 0, value.serializedInfo.length)
-            pstmt.setBytes(7, newBuffer)
-            pstmt.addBatch()
+
+            val builder: XContentBuilder =
+              XContentFactory.jsonBuilder().startObject()
+                .field("timePartition", 0)
+                .field("bucketKey", key.bucketKey.mkString(","))
+                .field("transactionId", key.transactionId)
+                .field("rowId", key.rowId)
+                .field("schemaId", value.schemaId)
+                .field("serializerType", value.serializerType)
+                .field("serializedInfo", newBuffer)
+                .endObject()
+
+            bulkRequest.add(client.prepareIndex(tableName, "type1", id).setSource(builder))
+            totalRowsUpdated = totalRowsUpdated + 1
+
             byteCount = byteCount + getKeySize(key) + getValueSize(value)
           })
           logger.debug("Executing bulk upsert...")
           var updateCount: Array[Int] = null
-          //          con.synchronized {
-          updateCount = pstmt.executeBatch();
-          //          }
-          updateCount.foreach(cnt => {
-            totalRowsUpdated += cnt
-          });
-          if (pstmt != null) {
-            pstmt.clearBatch();
-            pstmt.close
-            pstmt = null;
+          //                    updateCount = pstmt.executeBatch();
+          val bulkResponse = bulkRequest.execute().actionGet()
+
+          if (bulkResponse.hasFailures()) {
+            System.err.println(bulkResponse.buildFailureMessage())
+          } else {
+            System.out.println("Bulk indexing succeeded.")
           }
+
           updateOpStats("put", tableName, 1)
           updateObjStats("put", tableName, totalRowsUpdated)
           updateByteStats("put", tableName, byteCount)
           logger.info("Inserted/Updated " + totalRowsUpdated + " rows for " + tableName)
         })
-        con.commit()
-        con.close
-        con = null
       }
     } catch {
       case e: Exception => {
-        if (con != null) {
-          try {
-            // rollback has thrown exception in some special scenarios, capture it
-            con.rollback()
-          } catch {
-            case ie: Exception => {
-              logger.error("", ie)
-            }
-          }
-        }
-        throw CreateDMLException("Failed to save a batch of objects into the table :" + "sql => " + sql, e)
-      }
-    } finally {
-      if (pstmt != null) {
-        pstmt.close
-        pstmt = null
-      }
-      if (con != null) {
-        con.close
+        throw CreateDMLException("Failed to save a batch of objects into indexes ", e)
       }
     }
   }
