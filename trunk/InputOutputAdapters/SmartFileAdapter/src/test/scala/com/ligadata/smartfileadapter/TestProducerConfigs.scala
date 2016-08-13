@@ -39,24 +39,48 @@ class TestProducerConfigs extends FunSpec with BeforeAndAfter with ShouldMatcher
 	  	  |}
 		    """.stripMargin
 
-      val conf = SmartFileProducerConfiguration.getAdapterConfig(inputConfig)
+      val conf = SmartFileProducerConfiguration.getAdapterConfig(null, inputConfig)
 
       conf.uri shouldEqual  "hdfs://nameservice/folder/to/save"
       conf.fileNamePrefix shouldEqual "Data"
       conf.messageSeparator shouldEqual "\n"
       conf.compressionString shouldEqual "gz"
       conf.rolloverInterval shouldEqual 3600
-      conf.partitionFormat shouldEqual "year=${yyyy}/month=${MM}/day=${dd}"
+      conf.timePartitionFormat shouldEqual "year=${yyyy}/month=${MM}/day=${dd}"
       conf.partitionBuckets shouldEqual 10
       conf.flushBufferSize shouldEqual 10485760
       conf.flushBufferInterval shouldEqual 1000
       conf.kerberos.principal shouldEqual "user@domain.com"
       conf.kerberos.keytab shouldEqual "/path/to/keytab/user.keytab"
       conf.typeLevelConfig.size shouldEqual 2
-      conf.typeLevelConfig("com.ligadata.test.msg1") shouldEqual 1024
-      conf.typeLevelConfig("com.ligadata.test.msg2") shouldEqual 2048
+      conf.typeLevelConfig("com.ligadata.test.msg1").flushBufferSize shouldEqual 1024
+      conf.typeLevelConfig("com.ligadata.test.msg2").flushBufferSize shouldEqual 2048
     }
     
+    it("should read message level overrides from config file") {
+      val location = getClass.getResource("/producer").getPath
+      inputConfig.adapterSpecificCfg = "{\"Uri\": \"file://nameservice/folder/to/save\", \"typeLevelConfigFile\": \"" + location + "/typelevel.json\"}"
+      val conf = SmartFileProducerConfiguration.getAdapterConfig(null, inputConfig)
+
+      conf.typeLevelConfig("com.ligadata.test.msg1").flushBufferSize shouldEqual 1024
+      conf.typeLevelConfig("com.ligadata.test.msg1").partitionFormat shouldEqual "country=${country}"
+      conf.typeLevelConfig("com.ligadata.test.msg2").flushBufferSize shouldEqual 2048
+      conf.typeLevelConfig("com.ligadata.test.msg2").partitionFormat shouldEqual "region=${region}"
+    }
+    
+    it("should read message level overrides from config file and overide inline configs") {
+      val location = getClass.getResource("/producer").getPath
+      inputConfig.adapterSpecificCfg = "{\"Uri\": \"file://nameservice/folder/to/save\", " + 
+      "\"typeLevelConfig\": [{\"type\": \"com.ligadata.test.msg1\", \"PartitionFormat\": \"name=${name}\"}]," +
+      "\"typeLevelConfigFile\": \"" + location + "/typelevel.json\"}"
+      val conf = SmartFileProducerConfiguration.getAdapterConfig(null, inputConfig)
+
+      conf.typeLevelConfig("com.ligadata.test.msg1").flushBufferSize shouldEqual 1024
+      conf.typeLevelConfig("com.ligadata.test.msg1").partitionFormat shouldEqual "country=${country}"
+      conf.typeLevelConfig("com.ligadata.test.msg2").flushBufferSize shouldEqual 2048
+      conf.typeLevelConfig("com.ligadata.test.msg2").partitionFormat shouldEqual "region=${region}"
+    }
+
     it("should throw FatalAdapterException if uri is missing") {
 
       inputConfig.adapterSpecificCfg = 
@@ -67,7 +91,7 @@ class TestProducerConfigs extends FunSpec with BeforeAndAfter with ShouldMatcher
         """.stripMargin
 
       a [FatalAdapterException] should be thrownBy {
-        val conf = SmartFileProducerConfiguration.getAdapterConfig(inputConfig)
+        val conf = SmartFileProducerConfiguration.getAdapterConfig(null, inputConfig)
       }
     }
 
@@ -82,7 +106,7 @@ class TestProducerConfigs extends FunSpec with BeforeAndAfter with ShouldMatcher
         """.stripMargin
 
       a [FatalAdapterException] should be thrownBy {
-        val conf = SmartFileProducerConfiguration.getAdapterConfig(inputConfig)
+        val conf = SmartFileProducerConfiguration.getAdapterConfig(null, inputConfig)
       }
     }
 
@@ -100,7 +124,7 @@ class TestProducerConfigs extends FunSpec with BeforeAndAfter with ShouldMatcher
         """.stripMargin
 
       a [FatalAdapterException] should be thrownBy {
-        val conf = SmartFileProducerConfiguration.getAdapterConfig(inputConfig)
+        val conf = SmartFileProducerConfiguration.getAdapterConfig(null, inputConfig)
       }
     }
     
@@ -118,7 +142,7 @@ class TestProducerConfigs extends FunSpec with BeforeAndAfter with ShouldMatcher
         """.stripMargin
 
       a [FatalAdapterException] should be thrownBy {
-        val conf = SmartFileProducerConfiguration.getAdapterConfig(inputConfig)
+        val conf = SmartFileProducerConfiguration.getAdapterConfig(null, inputConfig)
       }
     }
 
