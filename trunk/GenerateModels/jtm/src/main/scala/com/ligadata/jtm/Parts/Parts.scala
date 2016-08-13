@@ -58,6 +58,8 @@ object Parts {
        |  override def getVersion: String = "{model.version}"
        |
        |  override def createResultObject(): ModelResultBase = new MappedModelResults()
+       |
+       |  override def isModelInstanceReusable(): Boolean = true;
        |}""".stripMargin
 
   val model =
