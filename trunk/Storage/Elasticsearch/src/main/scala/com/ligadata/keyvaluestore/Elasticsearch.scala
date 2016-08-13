@@ -473,7 +473,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     var client: TransportClient = null
     var pstmt: PreparedStatement = null
     var tableName = toFullTableName(containerName)
-    var sql = ""
     try {
       CheckTableExists(containerName)
       client = getConnection
@@ -499,7 +498,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       hits.totalHits() match {
         case 0 => id = tableName + Calendar.getInstance().getTimeInMillis
         case 1 => id = hits.getAt(1).id()
-        case x => println(" found " + hits.totalHits() + " hits, NOT VALID")
+        case x => System.err.println(" found " + hits.totalHits() + " hits, NOT VALID")
       }
 
       // index the data
@@ -524,7 +523,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       updateByteStats("put", tableName, getKeySize(key) + getValueSize(value))
     } catch {
       case e: Exception => {
-        throw CreateDMLException("Failed to save an object in the table " + tableName + ":" + "sql => " + sql, e)
+        throw CreateDMLException("Failed to save an object in the table " + tableName + ":", e)
       }
     }
   }
@@ -583,7 +582,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             hits.totalHits() match {
               case 0 => id = tableName + Calendar.getInstance().getTimeInMillis
               case 1 => id = hits.getAt(1).id()
-              case x => println(" found " + hits.totalHits() + " hits, NOT VALID")
+              case x => System.err.println(" found " + hits.totalHits() + " hits, NOT VALID")
             }
 
             // index the data
@@ -603,25 +602,25 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
                 .endObject()
 
             bulkRequest.add(client.prepareIndex(tableName, "type1", id).setSource(builder))
-            totalRowsUpdated = totalRowsUpdated + 1
 
             byteCount = byteCount + getKeySize(key) + getValueSize(value)
           })
           logger.debug("Executing bulk upsert...")
-          var updateCount: Array[Int] = null
+          //          var updateCount: Array[Int] = null
           //                    updateCount = pstmt.executeBatch();
+          totalRowsUpdated = bulkRequest.numberOfActions()
           val bulkResponse = bulkRequest.execute().actionGet()
+
 
           if (bulkResponse.hasFailures()) {
             System.err.println(bulkResponse.buildFailureMessage())
           } else {
-            System.out.println("Bulk indexing succeeded.")
+            logger.info("Inserted/Updated " + totalRowsUpdated + " rows for " + tableName)
           }
 
           updateOpStats("put", tableName, 1)
           updateObjStats("put", tableName, totalRowsUpdated)
           updateByteStats("put", tableName, byteCount)
-          logger.info("Inserted/Updated " + totalRowsUpdated + " rows for " + tableName)
         })
       }
     } catch {
@@ -633,68 +632,56 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
   // delete operations
   override def del(containerName: String, keys: Array[Key]): Unit = {
-    var con: Connection = null
-    var pstmt: PreparedStatement = null
-    var cstmt: CallableStatement = null
-    var tableName = toFullTableName(containerName)
-    var sql = ""
+    var client: TransportClient = null
+    val tableName = toFullTableName(containerName)
+    var deleteCount = 0
     try {
       CheckTableExists(containerName)
-      con = getConnection
-
-      sql = "delete from " + tableName + " where timePartition = ? and bucketKey = ? and transactionid = ? and rowId = ?"
-      pstmt = con.prepareStatement(sql)
-      // we need to commit entire batch
-      con.setAutoCommit(false)
+      client = getConnection
+      var bulkRequest = client.prepareBulk()
       keys.foreach(key => {
-        pstmt.setLong(1, key.timePartition)
-        pstmt.setString(2, key.bucketKey.mkString(","))
-        pstmt.setLong(3, key.transactionId)
-        pstmt.setInt(4, key.rowId)
-        // Add it to the batch
-        pstmt.addBatch()
+        val response = client
+          .prepareSearch(tableName)
+          .setTypes("type1")
+          .setQuery(QueryBuilders.boolQuery()
+            .must(QueryBuilders.termQuery("timePartition", 0))
+            .must(QueryBuilders.termQuery("bucketKey", key.bucketKey.mkString(",").toLowerCase()))
+            .must(QueryBuilders.termQuery("transactionid", key.transactionId))
+            .must(QueryBuilders.termQuery("rowId", key.rowId))
+          ).execute().actionGet()
+
+        var hits: SearchHits = response.getHits()
+        var id = ""
+
+        hits.totalHits() match {
+          case 0 => id = "noRecords"
+          case 1 => id = hits.getAt(1).id()
+          case x => System.err.println(" found " + hits.totalHits() + " hits, NOT VALID")
+        }
+        // create and add delete statement to bulk
+        bulkRequest.add(client.prepareDelete(tableName, "type1", id))
       })
-      var deleteCount = pstmt.executeBatch();
-      con.commit()
-      var totalRowsDeleted = 0;
-      deleteCount.foreach(cnt => {
-        totalRowsDeleted += cnt
-      });
-      logger.info("Deleted " + totalRowsDeleted + " rows from " + tableName)
-      pstmt.clearBatch()
-      pstmt.close
-      pstmt = null
-      con.close
-      con = null
+      deleteCount = bulkRequest.numberOfActions()
+      val bulkResponse = bulkRequest.execute().actionGet()
+
+      if (bulkResponse.hasFailures()) {
+        System.err.println(bulkResponse.buildFailureMessage())
+      } else {
+        logger.info("Deleted " + deleteCount + " rows from " + tableName)
+      }
+
     } catch {
       case e: Exception => {
-        if (con != null) {
-          try {
-            // rollback has thrown exception in some special scenarios, capture it
-            con.rollback()
-          } catch {
-            case ie: Exception => {
-              logger.error("", e)
-            }
-          }
-        }
-        throw CreateDMLException("Failed to delete object(s) from the table " + tableName + ":" + "sql => " + sql, e)
-      }
-    } finally {
-      if (cstmt != null) {
-        cstmt.close
-      }
-      if (pstmt != null) {
-        pstmt.close
-      }
-      if (con != null) {
-        con.close
+        throw CreateDMLException("Failed to delete object(s) from the table " + tableName + ":", e)
       }
     }
   }
 
   override def del(containerName: String, time: TimeRange, keys: Array[Array[String]]): Unit = {
-    var con: Connection = null
+    var client: TransportClient = null
+    var bulkRequest = client.prepareBulk()
+    var deleteCount = 0
+
     var pstmt: PreparedStatement = null
     var cstmt: CallableStatement = null
     var tableName = toFullTableName(containerName)
@@ -704,54 +691,46 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       logger.info("end time => " + dateFormat.format(time.endTime))
       CheckTableExists(containerName)
 
-      con = getConnection
-      // we need to commit entire batch
-      con.setAutoCommit(false)
-      sql = "delete from " + tableName + " where timePartition >= ?  and timePartition <= ? and bucketKey = ?"
-      pstmt = con.prepareStatement(sql)
+      client = getConnection
+
       keys.foreach(keyList => {
         var keyStr = keyList.mkString(",")
-        pstmt.setLong(1, time.beginTime)
-        pstmt.setLong(2, time.endTime)
-        pstmt.setString(3, keyStr)
-        // Add it to the batch
-        pstmt.addBatch()
+        val response = client
+          .prepareSearch(tableName)
+          .setTypes("type1")
+          .setQuery(QueryBuilders.boolQuery()
+            .must(QueryBuilders.termQuery("bucketKey", keyStr)))
+          .setQuery(
+            QueryBuilders.andQuery(
+              QueryBuilders.rangeQuery("timePartition").gte(time.beginTime),
+              QueryBuilders.rangeQuery("timePartition").lte(time.endTime)))
+          .execute().actionGet()
+
+        var hits: SearchHits = response.getHits()
+        var id = ""
+
+        hits.totalHits() match {
+          case 0 => id = "noRecords"
+          case 1 => id = hits.getAt(1).id()
+          case x => System.err.println(" found " + hits.totalHits() + " hits, NOT VALID")
+        }
+        // create and add delete statement to bulk
+        bulkRequest.add(client.prepareDelete(tableName, "type1", id))
       })
-      var deleteCount = pstmt.executeBatch();
-      con.commit()
-      var totalRowsDeleted = 0;
-      deleteCount.foreach(cnt => {
-        totalRowsDeleted += cnt
-      });
-      logger.info("Deleted " + totalRowsDeleted + " rows from " + tableName)
-      pstmt.clearBatch()
-      pstmt.close
-      pstmt = null
-      con.close
-      con = null
+
+      deleteCount = bulkRequest.numberOfActions()
+      val bulkResponse = bulkRequest.execute().actionGet()
+
+      if (bulkResponse.hasFailures()) {
+        System.err.println(bulkResponse.buildFailureMessage())
+      } else {
+        logger.info("Deleted " + deleteCount + " rows from " + tableName)
+      }
+
+      //      sql = "delete from " + tableName + " where timePartition >= ?  and timePartition <= ? and bucketKey = ?"
     } catch {
       case e: Exception => {
-        if (con != null) {
-          try {
-            // rollback has thrown exception in some special scenarios, capture it
-            con.rollback()
-          } catch {
-            case ie: Exception => {
-              logger.error("", e)
-            }
-          }
-        }
         throw CreateDMLException("Failed to delete object(s) from the table " + tableName + ":" + "sql => " + sql, e)
-      }
-    } finally {
-      if (cstmt != null) {
-        cstmt.close
-      }
-      if (pstmt != null) {
-        pstmt.close
-      }
-      if (con != null) {
-        con.close
       }
     }
   }
