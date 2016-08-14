@@ -112,7 +112,7 @@ object Validation {
     valid
   }
 
-  private def isValidRange[T](value : T, startRange : Option[T], endRange : Option[T],
+  def isValidRange[T](value : T, startRange : Option[T], endRange : Option[T],
                       fieldName : String, errHandler : (String, String)=>Unit
                      )
                      (implicit comp: Ordering[T]) : Boolean = {
