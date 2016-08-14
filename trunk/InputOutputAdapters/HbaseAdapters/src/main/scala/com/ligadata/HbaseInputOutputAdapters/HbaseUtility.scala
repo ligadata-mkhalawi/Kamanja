@@ -1,18 +1,41 @@
 package com.ligadata.HbaseInputOutputAdapters
 
-import com.ligadata.Exceptions.FatalAdapterException
+import com.ligadata.Exceptions.{ConnectionFailedException, FatalAdapterException}
+import com.ligadata.KvBase.{Key, Value}
 import com.ligadata.adapterconfiguration.HbaseAdapterConfiguration
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase._
 import org.apache.hadoop.hbase.util.Bytes
+import org.apache.logging.log4j.LogManager
+import scala.collection.mutable.ArrayBuffer
 /**
   * Created by Yousef on 8/13/2016.
   */
-object HbaseUtility {
+trait LogTrait {
+  val loggerName = this.getClass.getName()
+  val logger = LogManager.getLogger(loggerName)
+}
+
+class HbaseUtility /*extends LogTrait*/{
   val hbaseConfig = new Configuration()
   var ugi = new UserGroupInformation()
+  var conn: Connection=_
+  var _getOps:scala.collection.mutable.Map[String,Long] = new scala.collection.mutable.HashMap()
+  var _getObjs:scala.collection.mutable.Map[String,Long] = new scala.collection.mutable.HashMap()
+  var _getBytes:scala.collection.mutable.Map[String,Long] = new scala.collection.mutable.HashMap()
+  var _putObjs:scala.collection.mutable.Map[String,Long] = new scala.collection.mutable.HashMap()
+  var _putOps:scala.collection.mutable.Map[String,Long] = new scala.collection.mutable.HashMap()
+  var _putBytes:scala.collection.mutable.Map[String,Long] = new scala.collection.mutable.HashMap()
+  private val siStrBytes = "serializedInfo".getBytes()
+  private val baseStrBytes = "base".getBytes()
+  private val siStrBytesLen = siStrBytes.length
+  private val stStrBytes = "serializerType".getBytes()
+  private val stStrBytesLen = stStrBytes.length
+  private val schemaIdStrBytes = "schemaId".getBytes()
+  private val schemaIdStrBytesLen = schemaIdStrBytes.length
+  private[this] val lock = new Object
 
   def createConnection(adapterConfig: HbaseAdapterConfiguration): Configuration = {
     hbaseConfig.setInt("zookeeper.session.timeout", 10000)
@@ -44,12 +67,12 @@ object HbaseUtility {
     }
   }
 
-  def getConnection(): Connection={
+  def getConnection() : Connection={
     val conn = ConnectionFactory.createConnection(hbaseConfig)
     conn
   }
 
-  def createNamespace(conn: Connection, namespace: String): Unit={
+  def createNamespace(namespace: String): Unit={
     relogin()
     try {
       val desc = conn.getAdmin.getNamespaceDescriptor(namespace)
@@ -72,6 +95,322 @@ object HbaseUtility {
       result
     } catch{
       case e: Exception => throw FatalAdapterException("Failed to get data into table: "+ tableName, new Exception("Fiald on read"))
+    }
+  }
+
+  def toTableName(tableName: String, nameSpace: String): String = {
+    // we need to check for other restrictions as well
+    // such as length of the table, special characters etc
+    nameSpace + ':' + tableName.toLowerCase.replace('.', '_').replace('-', '_').replace(' ', '_')
+  }
+
+  private def getTableFromConnection(tableName: String): Table = {
+    try {
+      relogin
+      return conn.getTable(TableName.valueOf(tableName))
+    } catch {
+      case e: Exception => {
+        throw ConnectionFailedException("Failed to get table " + tableName, e)
+      }
+    }
+
+    return null
+  }
+
+  private def updateOpStats(operation: String, tableName: String, opCount: Int) : Unit = lock.synchronized{
+    operation match {
+      case "get" => {
+        if( _getOps.get(tableName) != None ){
+          _getOps(tableName) = _getOps(tableName) + opCount
+        }
+        else{
+          _getOps(tableName) = + opCount
+        }
+      }
+      case "put" => {
+        if( _putOps.get(tableName) != None ){
+          _putOps(tableName) = _putOps(tableName) + opCount
+        }
+        else{
+          _putOps(tableName) = opCount
+        }
+      }
+      case _ => {
+        throw FatalAdapterException("Internal Error: Failed to Update Op-stats for " + tableName, new Exception("Invalid operation " + operation))
+      }
+    }
+  }
+
+  private def getRowSize(r: Result) : Int = {
+    var keySize     = r.getRow().length
+    var valSize     = 0
+    if( r.containsNonEmptyColumn(siStrBytes, baseStrBytes) ){
+      valSize = r.getValue(siStrBytes, baseStrBytes).length
+    }
+    keySize + valSize
+  }
+
+  private def updateObjStats(operation: String, tableName: String, objCount: Int) : Unit = lock.synchronized{
+    operation match {
+      case "get" => {
+        if( _getObjs.get(tableName) != None ){
+          _getObjs(tableName) = _getObjs(tableName) + objCount
+        }
+        else{
+          _getObjs(tableName) = + objCount
+        }
+      }
+      case "put" => {
+        if( _putObjs.get(tableName) != None ){
+          _putObjs(tableName) = _putObjs(tableName) + objCount
+        }
+        else{
+          _putObjs(tableName) = objCount
+        }
+      }
+      case _ => {
+        throw FatalAdapterException("Internal Error: Failed to Update Obj-stats for " + tableName, new Exception("Invalid operation " + operation))
+      }
+    }
+  }
+
+  private def updateByteStats(operation: String, tableName: String, byteCount: Int) : Unit = lock.synchronized{
+    operation match {
+      case "get" => {
+        if( _getBytes.get(tableName) != None ){
+          _getBytes(tableName) = _getBytes(tableName) + byteCount
+        }
+        else{
+          _getBytes(tableName) = byteCount
+        }
+      }
+      case "put" => {
+        if( _putBytes.get(tableName) != None ){
+          _putBytes(tableName) = _putBytes(tableName) + byteCount
+        }
+        else{
+          _putBytes(tableName) = byteCount
+        }
+      }
+      case _ => {
+        throw FatalAdapterException("Internal Error: Failed to Update Byte Stats for " + tableName, new Exception("Invalid operation " + operation))
+      }
+    }
+  }
+
+  private def MakeBucketKeyFromByteArr(keyBytes: Array[Byte], startIdx: Int): (Array[String], Int) = {
+    if (keyBytes.size > startIdx) {
+      var cntr = startIdx
+      val cnt = (0xff & keyBytes(cntr).toInt)
+      cntr += 1
+
+      val bucketKey = new Array[String](cnt)
+      for (i <- 0 until cnt) {
+        val b1 = keyBytes(cntr)
+        cntr += 1
+        val b2 = keyBytes(cntr)
+        cntr += 1
+
+        val sz = ((0xff & b1.asInstanceOf[Int]) << 8) + ((0xff & b2.asInstanceOf[Int]) << 0)
+        bucketKey(i) = new String(keyBytes, cntr, sz)
+        cntr += sz
+      }
+
+      (bucketKey, (cntr - startIdx))
+    } else {
+      (Array[String](), 0)
+    }
+  }
+
+  private def MakeBucketKeyFromByteArr(keyBytes: Array[Byte]): Array[String] = {
+    val (bucketKey, consumedBytes) = MakeBucketKeyFromByteArr(keyBytes, 0)
+    bucketKey
+  }
+
+  private def GetKeyFromCompositeKey(compKey: Array[Byte], isMetadataContainer: Boolean): Key = {
+    if( isMetadataContainer ){
+      var cntr = 0
+      val k = new String(compKey)
+      val bucketKey = new Array[String](1)
+      bucketKey(0) = k
+      new Key(0, bucketKey, 0, 0)
+    }
+    else{
+      var cntr = 0
+      val tp_b1 = compKey(cntr)
+      cntr += 1
+      val tp_b2 = compKey(cntr)
+      cntr += 1
+      val tp_b3 = compKey(cntr)
+      cntr += 1
+      val tp_b4 = compKey(cntr)
+      cntr += 1
+      val tp_b5 = compKey(cntr)
+      cntr += 1
+      val tp_b6 = compKey(cntr)
+      cntr += 1
+      val tp_b7 = compKey(cntr)
+      cntr += 1
+      val tp_b8 = compKey(cntr)
+      cntr += 1
+
+      val timePartition =
+        (((0xff & tp_b1.asInstanceOf[Long]) << 56) + ((0xff & tp_b2.asInstanceOf[Long]) << 48) +
+          ((0xff & tp_b3.asInstanceOf[Long]) << 40) + ((0xff & tp_b4.asInstanceOf[Long]) << 32) +
+          ((0xff & tp_b5.asInstanceOf[Long]) << 24) + ((0xff & tp_b6.asInstanceOf[Long]) << 16) +
+          ((0xff & tp_b7.asInstanceOf[Long]) << 8) + ((0xff & tp_b8.asInstanceOf[Long]) << 0))
+
+      val (bucketKey, consumedBytes) = MakeBucketKeyFromByteArr(compKey, cntr)
+      cntr += consumedBytes
+
+      val tx_b1 = compKey(cntr)
+      cntr += 1
+      val tx_b2 = compKey(cntr)
+      cntr += 1
+      val tx_b3 = compKey(cntr)
+      cntr += 1
+      val tx_b4 = compKey(cntr)
+      cntr += 1
+      val tx_b5 = compKey(cntr)
+      cntr += 1
+      val tx_b6 = compKey(cntr)
+      cntr += 1
+      val tx_b7 = compKey(cntr)
+      cntr += 1
+      val tx_b8 = compKey(cntr)
+      cntr += 1
+
+      val transactionId =
+        (((0xff & tx_b1.asInstanceOf[Long]) << 56) + ((0xff & tx_b2.asInstanceOf[Long]) << 48) +
+          ((0xff & tx_b3.asInstanceOf[Long]) << 40) + ((0xff & tx_b4.asInstanceOf[Long]) << 32) +
+          ((0xff & tx_b5.asInstanceOf[Long]) << 24) + ((0xff & tx_b6.asInstanceOf[Long]) << 16) +
+          ((0xff & tx_b7.asInstanceOf[Long]) << 8) + ((0xff & tx_b8.asInstanceOf[Long]) << 0))
+
+      val rowid_b1 = compKey(cntr)
+      cntr += 1
+      val rowid_b2 = compKey(cntr)
+      cntr += 1
+      val rowid_b3 = compKey(cntr)
+      cntr += 1
+      val rowid_b4 = compKey(cntr)
+      cntr += 1
+
+      val rowId =
+        (((0xff & rowid_b1.asInstanceOf[Int]) << 24) + ((0xff & rowid_b2.asInstanceOf[Int]) << 16) +
+          ((0xff & rowid_b3.asInstanceOf[Int]) << 8) + ((0xff & rowid_b4.asInstanceOf[Int]) << 0))
+
+      new Key(timePartition, bucketKey, transactionId, rowId)
+    }
+  }
+
+  private def processRow(k: Array[Byte], isMetadata: Boolean, schemaId: Int, st: String, si: Array[Byte], callbackFunction: (Key, Value) => Unit) {
+    try {
+      var key = GetKeyFromCompositeKey(k,isMetadata)
+      // format the data to create Key/Value
+      var value = new Value(schemaId, st, si)
+      if (callbackFunction != null)
+        (callbackFunction)(key, value)
+    } catch {
+      case e: Exception => {
+     //   externalizeExceptionEvent(e)
+        throw e
+      }
+    }
+  }
+    def get(containerName: String, namespace: String, conn: Connection, callbackFunction: (Key, Value) => Unit): Unit = {
+    var tableName = toTableName(tableName, namespace)
+    var tableHBase: Table = null
+    try {
+      relogin
+     // val isMetadata = CheckTableExists(containerName)
+      tableHBase = getTableFromConnection(tableName);
+      var scan = new Scan();
+      var rs = tableHBase.getScanner(scan);
+      updateOpStats("get",tableName,1)
+      val it = rs.iterator()
+      var byteCount = 0
+      var recCount = 0
+      while (it.hasNext()) {
+        val r = it.next()
+        byteCount = byteCount + getRowSize(r)
+        recCount = recCount + 1
+        val st = Bytes.toString(r.getValue(stStrBytes, baseStrBytes))
+        val si = r.getValue(siStrBytes, baseStrBytes)
+        val schemaId = Bytes.toInt(r.getValue(schemaIdStrBytes, baseStrBytes))
+        processRow(r.getRow(), true /*isMetaData*/, schemaId, st, si, callbackFunction)
+      }
+      updateByteStats("get",tableName,byteCount)
+      updateObjStats("get",tableName,recCount)
+    } catch {
+      case e: Exception => {
+      //  externalizeExceptionEvent(e)
+        throw FatalAdapterException("Failed to fetch data from the table " + tableName, e)
+      }
+    } finally {
+      if (tableHBase != null) {
+        tableHBase.close()
+      }
+    }
+  }
+
+  private def MakeLongSerializedVal(l: Long): Array[Byte] = {
+    val ab = new ArrayBuffer[Byte](16)
+    ab += (((l >>> 56) & 0xFF).toByte)
+    ab += (((l >>> 48) & 0xFF).toByte)
+    ab += (((l >>> 40) & 0xFF).toByte)
+    ab += (((l >>> 32) & 0xFF).toByte)
+    ab += (((l >>> 24) & 0xFF).toByte)
+    ab += (((l >>> 16) & 0xFF).toByte)
+    ab += (((l >>> 8) & 0xFF).toByte)
+    ab += (((l >>> 0) & 0xFF).toByte)
+
+    ab.toArray
+  }
+
+
+    def get(tableName: String, time_range: Long, namespace: String, callbackFunction: (Key, Value) => Unit): Unit = {
+    var tableName = toTableName(tableName, namespace)
+    var tableHBase: Table = null
+    try {
+      relogin
+      //val isMetadata = CheckTableExists(containerName)
+      tableHBase = getTableFromConnection(tableName);
+
+   //   val tmRanges = getUnsignedTimeRanges(time_ranges)
+      var byteCount = 0
+      var recCount = 0
+      var opCount = 0
+//      tmRanges.foreach(time_range => {
+        // try scan with beginRow and endRow
+        var scan = new Scan()
+//        scan.setStartRow(MakeLongSerializedVal(time_range.beginTime))
+//        scan.setStopRow(MakeLongSerializedVal(time_range.endTime + 1))
+      scan.setStartRow(MakeLongSerializedVal(time_range))
+        val rs = tableHBase.getScanner(scan);
+        opCount = opCount + 1
+        val it = rs.iterator()
+        while (it.hasNext()) {
+          val r = it.next()
+          byteCount = byteCount + getRowSize(r)
+          recCount = recCount + 1
+          val st = Bytes.toString(r.getValue(stStrBytes, baseStrBytes))
+          val si = r.getValue(siStrBytes, baseStrBytes)
+          val schemaId = Bytes.toInt(r.getValue(schemaIdStrBytes, baseStrBytes))
+          processRow(r.getRow(), true/*isMetadata*/, schemaId, st, si, callbackFunction)
+        }
+//      })
+      updateByteStats("get",tableName,byteCount)
+      updateObjStats("get",tableName,recCount)
+      updateOpStats("get",tableName,opCount)
+    } catch {
+      case e: Exception => {
+        //externalizeExceptionEvent(e)
+        throw FatalAdapterException("Failed to fetch data from the table " + tableName, e)
+      }
+    } finally {
+      if (tableHBase != null) {
+        tableHBase.close()
+      }
     }
   }
 }

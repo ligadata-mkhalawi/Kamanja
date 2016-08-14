@@ -1,7 +1,9 @@
 package com.ligadata.adapterconfiguration
 
 import com.ligadata.Exceptions.{FatalAdapterException, KamanjaException}
-import com.ligadata.InputOutputAdapterInfo.AdapterConfiguration
+import com.ligadata.InputOutputAdapterInfo.{AdapterConfiguration, PartitionUniqueRecordKey, PartitionUniqueRecordValue}
+import org.json4s._
+import org.json4s.JsonDSL._
 import org.json4s.native.JsonMethods._
 
 /**
@@ -12,6 +14,8 @@ class HbaseAdapterConfiguration extends AdapterConfiguration{
   var scehmaName: String = "" // prefix for the file names
   var TableName: String = "" // optional separator inserted between messages
   var kerberos: KerberosConfig = null
+  var instancePartitions: Set[Int] = _
+  var noDataSleepTimeInMs: Int = 300
 }
 
 class KerberosConfig {
@@ -56,6 +60,8 @@ object HbaseAdapterConfiguration {
       }
     })
 
+    adapterConfig.instancePartitions = Set[Int]()
+
     if (adapterConfig.host == null || adapterConfig.host.size == 0)
       throw FatalAdapterException("host should not be NULL or empty for Hbase Producer" + adapterConfig.Name, new Exception("Invalid Parameters"))
 
@@ -69,4 +75,66 @@ object HbaseAdapterConfiguration {
 
     adapterConfig
   }
+}
+
+case class HbaseKeyData(Version: Int, Type: String, Name: String, PartitionId: Int)
+
+class HbasePartitionUniqueRecordKey extends PartitionUniqueRecordKey {
+  val Version: Int = 1
+  var Name: String = _ // Name
+  val Type: String = "Hbase"
+  var PartitionId: Int = _ // Partition Id
+
+  override def Serialize: String = { // Making String from key
+  val json =
+    ("Version" -> Version) ~
+      ("Type" -> Type) ~
+      ("Name" -> Name) ~
+      ("PartitionId" -> PartitionId)
+    compact(render(json))
+  }
+
+  override def Deserialize(key: String): Unit = { // Making Key from Serialized String
+  implicit val jsonFormats: Formats = DefaultFormats
+    val keyData = parse(key).extract[HbaseKeyData]
+    if (keyData.Version == Version && keyData.Type.compareTo(Type) == 0) {
+      Name = keyData.Name
+      PartitionId = keyData.PartitionId
+    }
+  }
+}
+
+case class HbaseRecData(Version: Int, FileName : String, Offset: Option[Long])
+
+class HbasePartitionUniqueRecordValue extends PartitionUniqueRecordValue {
+  val Version: Int = 1
+  var FileName : String = _
+  var Offset: Long = -1 // Offset of next message in the file
+
+  override def Serialize: String = {
+    // Making String from Value
+    val json =
+      ("Version" -> Version) ~
+        ("Offset" -> Offset) ~
+        ("FileName" -> FileName)
+    compact(render(json))
+  }
+
+  override def Deserialize(key: String): Unit = {
+    // Making Value from Serialized String
+    implicit val jsonFormats: Formats = DefaultFormats
+    val recData = parse(key).extract[HbaseRecData]
+    if (recData.Version == Version) {
+      Offset = recData.Offset.get
+      FileName = recData.FileName
+    }
+    // else { } // Not yet handling other versions
+  }
+}
+
+object KamanjaHbaseAdapterConstants {
+  // Statistics Keys
+  val PARTITION_COUNT_KEYS = "Partition Counts"
+  val PARTITION_DEPTH_KEYS = "Partition Depths"
+  val EXCEPTION_SUMMARY = "Exception Summary"
 }

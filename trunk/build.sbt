@@ -251,7 +251,7 @@ lazy val KafkaAdapters_v9 = project.in(file("InputOutputAdapters/KafkaAdapters_v
 
 lazy val KafkaAdapters_v10 = project.in(file("InputOutputAdapters/KafkaAdapters_v10")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KafkaSimpleInputOutputAdapters % "provided")
 
-lazy val HbaseAdapters = project.in(file("InputOutputAdapters/HbaseAdapters")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided",InputOutputAdapterBase, Exceptions)
+lazy val HbaseAdapters = project.in(file("InputOutputAdapters/HbaseAdapters")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided",InputOutputAdapterBase, Exceptions, StorageHBase)
 
 
 /*
