@@ -65,9 +65,12 @@ class PyProcess(host: String,
         case TIMEOUT =>
           //caller ! "react timeout"
         case proc: Process =>
-          logger.debug("entering first actor " + Thread.currentThread)
+          logger.debug("PyProcess : entering first actor " + Thread.currentThread)
+          try {
           val streamReader = new java.io.InputStreamReader(proc.getInputStream)
+            logger.debug("PyProcess : came after stream reader " )
           val bufferedReader = new java.io.BufferedReader(streamReader)
+            logger.debug("PyProcess : came after buffered reader " )
           val stringBuilder = new java.lang.StringBuilder()
           var line: String = null
           while ( {
@@ -79,7 +82,14 @@ class PyProcess(host: String,
           }
           bufferedReader.close
 //          caller ! stringBuilder.toString
-                   logger.debug("PyProcess : The process pid in reader " + pid.toString + stringBuilder.toString)
+          logger.debug("PyProcess : The process pid in reader " + pid.toString + stringBuilder.toString)
+      }
+      catch {
+
+        case e: Exception => {
+          logger.debug("PyProcess : The process pid in reader has Exception " + pid.toString)
+        }
+      }
 
       }
     }
@@ -89,14 +99,9 @@ class PyProcess(host: String,
     logger.debug(s"going to run the command: " + Thread.currentThread + " " + command)
     val args = command.split(" ")
     processBuilder = new ProcessBuilder(args: _*)
-    processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT)
-
-    processBuilder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
 
     proc = processBuilder.start()
     Thread.sleep(2000)
-    reader ! proc
-
     try {
       if (proc.getClass().getName().equals("java.lang.UNIXProcess")) {
         proc.getClass().getDeclaredField("pid").setAccessible(true)
@@ -114,6 +119,12 @@ class PyProcess(host: String,
         logger.debug("Problem in starting the python server " + cHost + " at " + cPort)
       }
     }
+    processBuilder.redirectErrorStream(true)
+
+    processBuilder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+
+    reader ! proc
+
   }
 
 
