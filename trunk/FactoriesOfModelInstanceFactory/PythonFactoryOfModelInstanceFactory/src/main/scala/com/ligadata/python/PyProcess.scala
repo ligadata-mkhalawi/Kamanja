@@ -17,6 +17,7 @@
 package com.ligadata.python
 
 import java.lang.reflect.Field
+import java.lang._
 import scala.actors._
 import scala.actors.Actor._
 import org.apache.logging.log4j.LogManager
@@ -60,43 +61,37 @@ class PyProcess(host: String,
   private val reader = actor {
     logger.debug("created actor: " + Thread.currentThread)
     var continue = true
-    loopWhile(continue) {
+    loop {
       reactWithin(WAIT_TIME) {
         case TIMEOUT =>
           //caller ! "react timeout"
         case proc: Process =>
-          logger.debug("PyProcess : entering first actor " + Thread.currentThread)
+          logger.debug("PyProcess : receiving message from python subprocess pid " +  pid.toString)
           try {
-          val streamReader = new java.io.InputStreamReader(proc.getInputStream)
-            logger.debug("PyProcess : came after stream reader " )
-          val bufferedReader = new java.io.BufferedReader(streamReader)
-            logger.debug("PyProcess : came after buffered reader " )
-          val stringBuilder = new java.lang.StringBuilder()
-          var line: String = null
-          while ( {
-            line = bufferedReader.readLine;
-            line != null
-          }) {
-            stringBuilder.append(line)
-            stringBuilder.append("\n")
+            val streamReader = new java.io.InputStreamReader(proc.getInputStream)
+            val bufferedReader = new java.io.BufferedReader(streamReader)
+            val sb = new java.lang.StringBuilder()
+            var line: String = null
+            line = bufferedReader.readLine
+            logger.debug("PyProcess :  "  + line)
+            while  (line != null) {
+              logger.debug("PyProcess log from process pid '" + pid.toString + "' : " + line)
+              sb.append(line)
+              line = bufferedReader.readLine
+            }
+            bufferedReader.close
+            logger.debug("PyProcess : complete log from process  pid '" + pid.toString + "' : " + sb.toString)
           }
-          bufferedReader.close
-//          caller ! stringBuilder.toString
-          logger.debug("PyProcess : The process pid in reader " + pid.toString + stringBuilder.toString)
-      }
-      catch {
-
-        case e: Exception => {
-          logger.debug("PyProcess : The process pid in reader has Exception " + pid.toString)
-        }
-      }
-
+          catch {
+            case e: Exception => {
+              logger.debug("PyProcess : The process pid in reader has Exception " + pid.toString)
+            }
+          }
       }
     }
   }
 
   def run(command: String) {
-    logger.debug(s"going to run the command: " + Thread.currentThread + " " + command)
     val args = command.split(" ")
     processBuilder = new ProcessBuilder(args: _*)
 
@@ -108,7 +103,7 @@ class PyProcess(host: String,
         var f: Field = proc.getClass().getDeclaredField("pid")
         f.setAccessible(true)
         pid = f.getLong(proc)
-        logger.debug("Py Process The server started at host " + cHost + " at port " + cPort + " and the processor id is " + pid)
+        logger.debug("Scala Process The python server started at host " + cHost + " at port " + cPort + " and the processor id is " + pid)
         f.setAccessible(false)
       }
     }
@@ -136,17 +131,10 @@ class PyProcess(host: String,
       PyPathText + SingleSpace + cPyPath + SingleSpace +
       LogConfigText + SingleSpace + cPyPath + "/config/" + LogConfigFileName + SingleSpace +
       LogFilePathText + SingleSpace + cPyPath + "/logs/" + LogFileName
-    logger.debug("THis is pyprocess scala  must see this if logger here works " + cmdString)
+    logger.debug("Scala process going to start python server using " + cmdString)
 
     run (cmdString)
 
-//    while (true) {
-      //Receive the console output from the actor.
-      //receiveWithin(2000) {
-//        case TIMEOUT => //println("receiving Timeout")
-        //case result: String => logger.debug("PyProcess : The process pid " + pid.toString + " " + result)
-      //}
-    //}
   }
 
   def killSubProcess(): Unit = {
