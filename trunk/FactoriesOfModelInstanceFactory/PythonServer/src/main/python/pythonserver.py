@@ -1,4 +1,4 @@
-#!/Users/hariramasamy/anaconda/bin/python
+#!/usr/bin/python
 #
 # server.py
 import socket
