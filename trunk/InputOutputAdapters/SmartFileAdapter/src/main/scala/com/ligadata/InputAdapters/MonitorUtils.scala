@@ -139,7 +139,7 @@ object MonitorUtils {
     val parentDir2 = simpleDirPath(fileHandler2.getParentDir)
     if(parentDir1.compareTo(parentDir2) == 0)
       compareFiles(fileHandler1, fileHandler2, locationInfo1)
-    else parentDir1.compareTo(parentDir2)
+    else fileHandler1.lastModified().compareTo(fileHandler2.lastModified())
 
   }
 
