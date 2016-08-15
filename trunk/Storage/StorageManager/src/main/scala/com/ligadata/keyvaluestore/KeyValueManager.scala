@@ -22,18 +22,19 @@ import com.ligadata.kamanja.metadata.AdapterInfo
 import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
-import com.ligadata.StorageBase.{ DataStore }
+import com.ligadata.StorageBase.{DataStore}
 import org.apache.logging.log4j._
 import com.ligadata.keyvaluestore._
 import com.ligadata.Utils.Utils._
-import com.ligadata.Utils.{ KamanjaClassLoader, KamanjaLoaderInfo }
+import com.ligadata.Utils.{KamanjaClassLoader, KamanjaLoaderInfo}
 import com.ligadata.StorageBase.StorageAdapterFactory
 
 object KeyValueManager {
   private val loggerName = this.getClass.getName
   private val logger = LogManager.getLogger(loggerName)
   private val kvManagerLoader = new KamanjaLoaderInfo
-  // We will add more implementations here 
+
+  // We will add more implementations here
   // so we can test  the system characteristics
   //
   def Get(jarPaths: collection.immutable.Set[String], datastoreConfig: String, nodeCtxt: NodeContext, adapterInfo: AdapterInfo): DataStore = {
@@ -75,6 +76,8 @@ object KeyValueManager {
       // Other relational stores such as sqlserver, mysql
       case "sqlserver" => return SqlServerAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
       case "h2db" => return H2dbAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+      //      case "elasticsearch" => return H2dbAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+
       // case "mysql" => return MySqlAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig)
 
       // Default, Load it from Class

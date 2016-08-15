@@ -20,6 +20,7 @@ import java.net.{InetAddress, URL, URLClassLoader}
 import java.sql.{CallableStatement, Connection, Driver, DriverManager, DriverPropertyInfo, PreparedStatement, ResultSet, Statement}
 import java.text.SimpleDateFormat
 import java.util.{Calendar, Properties, TimeZone}
+import javassist.bytecode.ByteArray
 
 import com.ligadata.Exceptions._
 import com.ligadata.KamanjaBase.NodeContext
@@ -737,114 +738,106 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
   // Added by Yousef Abu Elbeh at 2016-03-13 from here
   override def del(containerName: String, time: TimeRange /*, keys: Array[Array[String]]*/): Unit = {
-    var con: Connection = null
-    var pstmt: PreparedStatement = null
-    var cstmt: CallableStatement = null
+    var client: TransportClient = null
+    var bulkRequest = client.prepareBulk()
+    var deleteCount = 0
     var tableName = toFullTableName(containerName)
-    var sql = ""
-    try {
+    try
       logger.info("begin time => " + dateFormat.format(time.beginTime))
       logger.info("end time => " + dateFormat.format(time.endTime))
       CheckTableExists(containerName)
 
-      con = getConnection
-      // we need to commit entire batch
-      con.setAutoCommit(false)
-      sql = "delete from " + tableName + " where timePartition >= ?  and timePartition <= ?"
-      pstmt = con.prepareStatement(sql)
-      pstmt.setLong(1, time.beginTime)
-      pstmt.setLong(2, time.endTime)
-      // Add it to the batch
-      pstmt.addBatch()
-      var deleteCount = pstmt.executeBatch();
-      con.commit()
-      var totalRowsDeleted = 0;
-      deleteCount.foreach(cnt => {
-        totalRowsDeleted += cnt
-      });
-      logger.info("Deleted " + totalRowsDeleted + " rows from " + tableName)
-      pstmt.clearBatch()
-      pstmt.close
-      pstmt = null
-      con.close
-      con = null
-    } catch {
+      client = getConnection
+
+      val response = client
+        .prepareSearch(tableName)
+        .setTypes("type1")
+        .setQuery(
+          QueryBuilders.andQuery(
+            QueryBuilders.rangeQuery("timePartition").gte(time.beginTime),
+            QueryBuilders.rangeQuery("timePartition").lte(time.endTime)))
+        .execute().actionGet()
+
+      var hits: SearchHits = response.getHits()
+      var id = ""
+
+      hits.totalHits() match {
+        case 0 => id = "noRecords"
+        case 1 => id = hits.getAt(1).id()
+        case x => System.err.println(" found " + hits.totalHits() + " hits, NOT VALID")
+      }
+
+      bulkRequest.add(client.prepareDelete(tableName, "type1", id))
+
+      deleteCount = bulkRequest.numberOfActions()
+      val bulkResponse = bulkRequest.execute().actionGet()
+
+      if (bulkResponse.hasFailures()) {
+        System.err.println(bulkResponse.buildFailureMessage())
+      } else {
+        logger.info("Deleted " + deleteCount + " rows from " + tableName)
+      }
+
+    //      sql = "delete from " + tableName + " where timePartition >= ?  and timePartition <= ?"
+    catch {
       case e: Exception => {
-        if (con != null) {
-          try {
-            // rollback has thrown exception in some special scenarios, capture it
-            con.rollback()
-          } catch {
-            case ie: Exception => {
-              logger.error("", e)
-            }
-          }
-        }
         throw CreateDMLException("Failed to delete object(s) from the table " + tableName + ":" + "sql => " + sql, e)
-      }
-    } finally {
-      if (cstmt != null) {
-        cstmt.close
-      }
-      if (pstmt != null) {
-        pstmt.close
-      }
-      if (con != null) {
-        con.close
       }
     }
   }
 
   // to here
-  // get operations
-  def getRowCount(containerName: String, whereClause: String): Int = {
-    var con: Connection = null
-    var stmt: Statement = null
-    var rs: ResultSet = null
-    var rowCount = 0
-    var tableName = ""
-    var query = ""
-    try {
-      con = getConnection
-      CheckTableExists(containerName)
 
-      tableName = toFullTableName(containerName)
-      query = "select count(*) from " + tableName
-      if (whereClause != null) {
-        query = query + whereClause
-      }
-      stmt = con.createStatement()
-      rs = stmt.executeQuery(query);
-      while (rs.next()) {
-        rowCount = rs.getInt(1)
-      }
-      rowCount
-    } catch {
-      case e: Exception => {
-        throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
-      }
-    } finally {
-      if (rs != null) {
-        rs.close
-      }
-      if (stmt != null) {
-        stmt.close
-      }
-      if (con != null) {
-        con.close
-      }
-    }
-  }
+
+  // get operations
+  //  def getRowCount(containerName: String, whereClause: String): Int = {
+  //    var con: Connection = null
+  //    var stmt: Statement = null
+  //    var rs: ResultSet = null
+  //    var rowCount = 0
+  //    var tableName = ""
+  //    var query = ""
+  //    try {
+  //      con = getConnection
+  //      CheckTableExists(containerName)
+  //
+  //      tableName = toFullTableName(containerName)
+  //      query = "select count(*) from " + tableName
+  //      if (whereClause != null) {
+  //        query = query + whereClause
+  //      }
+  //      stmt = con.createStatement()
+  //      rs = stmt.executeQuery(query);
+  //      while (rs.next()) {
+  //        rowCount = rs.getInt(1)
+  //      }
+  //      rowCount
+  //    } catch {
+  //      case e: Exception => {
+  //        throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
+  //      }
+  //    } finally {
+  //      if (rs != null) {
+  //        rs.close
+  //      }
+  //      if (stmt != null) {
+  //        stmt.close
+  //      }
+  //      if (con != null) {
+  //        con.close
+  //      }
+  //    }
+  //  }
 
   private def getData(tableName: String, query: String, callbackFunction: (Key, Value) => Unit): Unit = {
-    var con: Connection = null
+    var client: TransportClient = null
     var stmt: Statement = null
     var rs: ResultSet = null
     logger.info("Fetch the results of " + query)
     try {
-      con = getConnection
+      client = getConnection
 
-      stmt = con.createStatement()
+      con.createStatement()
       rs = stmt.executeQuery(query);
       var recCount = 0
       var byteCount = 0
@@ -889,8 +882,39 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   override def get(containerName: String, callbackFunction: (Key, Value) => Unit): Unit = {
     CheckTableExists(containerName)
     var tableName = toFullTableName(containerName)
-    var query = "select timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo from " + tableName
-    getData(tableName, query, callbackFunction)
+    var client = getConnection
+    var recCount = 0
+    var byteCount = 0
+
+    val response = client
+      .prepareSearch(tableName)
+      .setTypes("type1")
+      .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId", "schemaId", "serializerType", "serializedInfo"),
+        null).execute().actionGet()
+
+    val results: SearchHits = response.getHits
+    val hit: SearchHit = null
+
+    results.getHits.foreach((hit: SearchHit) => {
+      var timePartition = hit.getSource.get("timePartition").toString.toLong
+      var keyStr: String = hit.getSource.get("bucketKey").toString
+      var tId = hit.getSource.get("transactionId").toString.toLong
+      var rId = hit.getSource.get("rowId").toString.toInt
+      var schemaId = hit.getSource.get("schemaId").toString.toInt
+      var st = hit.getSource.get("serializerType").toString
+      var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
+      val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
+      var key = new Key(timePartition, bucketKey, tId, rId)
+      // yet to understand how split serializerType and serializedInfo from ba
+      // so hard coding serializerType to "kryo" for now
+      var value = new Value(schemaId, st, ba)
+      recCount = recCount + 1
+      byteCount = byteCount + getKeySize(key) + getValueSize(value)
+      if (callbackFunction != null)
+        (callbackFunction) (key, value)
+    })
+    //    var query = "select timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo from " + tableName
+    //    getData(tableName, query, callbackFunction)
   }
 
   private def getKeys(tableName: String, query: String, callbackFunction: (Key) => Unit): Unit = {
@@ -1041,11 +1065,46 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
   override def get(containerName: String, time_ranges: Array[TimeRange], callbackFunction: (Key, Value) => Unit): Unit = {
     CheckTableExists(containerName)
+    var client: TransportClient = null
     var tableName = toFullTableName(containerName)
+    var recCount = 0
+    var byteCount = 0
+
+    client = getConnection
     time_ranges.foreach(time_range => {
-      var query = "select timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo from " + tableName + " where timePartition >= " + time_range.beginTime + " and timePartition <= " + time_range.endTime
-      logger.debug("query => " + query)
-      getData(tableName, query, callbackFunction)
+      val response = client
+        .prepareSearch(tableName)
+        .setTypes("type1").setQuery(
+        QueryBuilders.andQuery(
+          QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime),
+          QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
+        .execute().actionGet()
+
+      val results: SearchHits = response.getHits
+      val hit: SearchHit = null
+
+      results.getHits.foreach((hit: SearchHit) => {
+        var timePartition = hit.getSource.get("timePartition").toString.toLong
+        var keyStr: String = hit.getSource.get("bucketKey").toString
+        var tId = hit.getSource.get("transactionId").toString.toLong
+        var rId = hit.getSource.get("rowId").toString.toInt
+        var schemaId = hit.getSource.get("schemaId").toString.toInt
+        var st = hit.getSource.get("serializerType").toString
+        var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
+        val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
+        var key = new Key(timePartition, bucketKey, tId, rId)
+        // yet to understand how split serializerType and serializedInfo from ba
+        // so hard coding serializerType to "kryo" for now
+        var value = new Value(schemaId, st, ba)
+        recCount = recCount + 1
+        byteCount = byteCount + getKeySize(key) + getValueSize(value)
+        if (callbackFunction != null)
+          (callbackFunction) (key, value)
+      })
+
+      //      var query = "select timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo from " + tableName + " where timePartition >= " + time_range.beginTime + " and timePartition <= " + time_range.endTime
+      //      logger.debug("query => " + query)
+      //      getData(tableName, query, callbackFunction)
     })
   }
 
