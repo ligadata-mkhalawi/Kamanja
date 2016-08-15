@@ -78,7 +78,8 @@ class PyProcess(host: String,
             stringBuilder.append("\n")
           }
           bufferedReader.close
-          logger.debug("PyProcess : The process pid " + pid.toString + stringBuilder.toString)
+//          caller ! stringBuilder.toString
+                   logger.debug("PyProcess : The process pid in reader " + pid.toString + stringBuilder.toString)
 
       }
     }
@@ -128,7 +129,13 @@ class PyProcess(host: String,
 
     run (cmdString)
 
-
+//    while (true) {
+      //Receive the console output from the actor.
+      //receiveWithin(2000) {
+//        case TIMEOUT => //println("receiving Timeout")
+        //case result: String => logger.debug("PyProcess : The process pid " + pid.toString + " " + result)
+      //}
+    //}
   }
 
   def killSubProcess(): Unit = {
