@@ -485,8 +485,8 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
       // get the Document unique id
       val response = client
-        .prepareSearch("sampleschema")
-        .setTypes("sampletype")
+        .prepareSearch(tableName)
+        .setTypes("type1")
         .setQuery(QueryBuilders.boolQuery().must(QueryBuilders.termQuery("timePartition", 0))
           .must(QueryBuilders.termQuery("bucketKey", key.bucketKey.mkString(",").toLowerCase()))
           .must(QueryBuilders.termQuery("transactionId", key.transactionId))
@@ -525,6 +525,10 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     } catch {
       case e: Exception => {
         throw CreateDMLException("Failed to save an object in the table " + tableName + ":", e)
+      }
+    } finally {
+      if (client != null) {
+        client.close
       }
     }
   }
@@ -628,6 +632,10 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       case e: Exception => {
         throw CreateDMLException("Failed to save a batch of objects into indexes ", e)
       }
+    } finally {
+      if (client != null) {
+        client.close
+      }
     }
   }
 
@@ -674,6 +682,10 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     } catch {
       case e: Exception => {
         throw CreateDMLException("Failed to delete object(s) from the table " + tableName + ":", e)
+      }
+    } finally {
+      if (client != null) {
+        client.close
       }
     }
   }
@@ -733,6 +745,10 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       case e: Exception => {
         throw CreateDMLException("Failed to delete object(s) from the table " + tableName + ":" + "sql => " + sql, e)
       }
+    } finally {
+      if (client != null) {
+        client.close
+      }
     }
   }
 
@@ -783,6 +799,10 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       case e: Exception => {
         throw CreateDMLException("Failed to delete object(s) from the table " + tableName + ":" + "sql => " + sql, e)
       }
+    } finally {
+      if (client != null) {
+        client.close
+      }
     }
   }
 
@@ -829,55 +849,55 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   //    }
   //  }
 
-  private def getData(tableName: String, query: String, callbackFunction: (Key, Value) => Unit): Unit = {
-    var client: TransportClient = null
-    var stmt: Statement = null
-    var rs: ResultSet = null
-    logger.info("Fetch the results of " + query)
-    try {
-      client = getConnection
-
-      con.createStatement()
-      rs = stmt.executeQuery(query);
-      var recCount = 0
-      var byteCount = 0
-      updateOpStats("get", tableName, 1)
-      while (rs.next()) {
-        var timePartition = rs.getLong(1)
-        var keyStr = rs.getString(2)
-        var tId = rs.getLong(3)
-        var rId = rs.getInt(4)
-        var schemaId = rs.getInt(5)
-        var st = rs.getString(6)
-        var ba = rs.getBytes(7)
-        val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
-        var key = new Key(timePartition, bucketKey, tId, rId)
-        // yet to understand how split serializerType and serializedInfo from ba
-        // so hard coding serializerType to "kryo" for now
-        var value = new Value(schemaId, st, ba)
-        recCount = recCount + 1
-        byteCount = byteCount + getKeySize(key) + getValueSize(value)
-        if (callbackFunction != null)
-          (callbackFunction) (key, value)
-      }
-      updateByteStats("get", tableName, byteCount)
-      updateObjStats("get", tableName, recCount)
-    } catch {
-      case e: Exception => {
-        throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
-      }
-    } finally {
-      if (rs != null) {
-        rs.close
-      }
-      if (stmt != null) {
-        stmt.close
-      }
-      if (con != null) {
-        con.close
-      }
-    }
-  }
+  //  private def getData(tableName: String, query: String, callbackFunction: (Key, Value) => Unit): Unit = {
+  //    var client: TransportClient = null
+  //    var stmt: Statement = null
+  //    var rs: ResultSet = null
+  //    logger.info("Fetch the results of " + query)
+  //    try {
+  //      client = getConnection
+  //
+  //      con.createStatement()
+  //      rs = stmt.executeQuery(query);
+  //      var recCount = 0
+  //      var byteCount = 0
+  //      updateOpStats("get", tableName, 1)
+  //      while (rs.next()) {
+  //        var timePartition = rs.getLong(1)
+  //        var keyStr = rs.getString(2)
+  //        var tId = rs.getLong(3)
+  //        var rId = rs.getInt(4)
+  //        var schemaId = rs.getInt(5)
+  //        var st = rs.getString(6)
+  //        var ba = rs.getBytes(7)
+  //        val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
+  //        var key = new Key(timePartition, bucketKey, tId, rId)
+  //        // yet to understand how split serializerType and serializedInfo from ba
+  //        // so hard coding serializerType to "kryo" for now
+  //        var value = new Value(schemaId, st, ba)
+  //        recCount = recCount + 1
+  //        byteCount = byteCount + getKeySize(key) + getValueSize(value)
+  //        if (callbackFunction != null)
+  //          (callbackFunction) (key, value)
+  //      }
+  //      updateByteStats("get", tableName, byteCount)
+  //      updateObjStats("get", tableName, recCount)
+  //    } catch {
+  //      case e: Exception => {
+  //        throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
+  //      }
+  //    } finally {
+  //      if (rs != null) {
+  //        rs.close
+  //      }
+  //      if (stmt != null) {
+  //        stmt.close
+  //      }
+  //      if (con != null) {
+  //        con.close
+  //      }
+  //    }
+  //  }
 
   override def get(containerName: String, callbackFunction: (Key, Value) => Unit): Unit = {
     CheckTableExists(containerName)
@@ -913,6 +933,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       if (callbackFunction != null)
         (callbackFunction) (key, value)
     })
+    client.close()
     //    var query = "select timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo from " + tableName
     //    getData(tableName, query, callbackFunction)
   }
@@ -963,102 +984,150 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   override def getKeys(containerName: String, callbackFunction: (Key) => Unit): Unit = {
     CheckTableExists(containerName)
     var tableName = toFullTableName(containerName)
-    var query = "select timePartition,bucketKey,transactionId,rowId from " + tableName
-    getKeys(tableName, query, callbackFunction)
+    var client = getConnection
+    var recCount = 0
+    var byteCount = 0
+    // var query = "select timePartition,bucketKey,transactionId,rowId from " + tableName
+
+    val response = client
+      .prepareSearch(tableName)
+      .setTypes("type1")
+      .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId"), null)
+      .execute().actionGet()
+
+    updateOpStats("get", tableName, 1)
+
+    val results: SearchHits = response.getHits
+    val hit: SearchHit = null
+
+    results.getHits.foreach((hit: SearchHit) => {
+      var timePartition = hit.getSource.get("timePartition").toString.toLong
+      var keyStr = hit.getSource.get("bucketKey").toString
+      var tId = hit.getSource.get("transactionId").toString.toLong
+      var rId = hit.getSource.get("rowId").toString.toInt
+      val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
+      var key = new Key(timePartition, bucketKey, tId, rId)
+      recCount = recCount + 1
+      byteCount = byteCount + getKeySize(key)
+      if (callbackFunction != null)
+        (callbackFunction) (key)
+    })
+    updateByteStats("get", tableName, byteCount)
+    updateObjStats("get", tableName, recCount)
+
+    client.close()
+    //  getKeys(tableName, query, callbackFunction)
   }
 
   override def getKeys(containerName: String, keys: Array[Key], callbackFunction: (Key) => Unit): Unit = {
-    var con: Connection = null
-    var pstmt: PreparedStatement = null
+    var client: TransportClient = null
     var tableName = toFullTableName(containerName)
-    var query = ""
+
     try {
       CheckTableExists(containerName)
-      con = getConnection
-
-      query = "select timePartition,bucketKey,transactionId,rowId from " + tableName + " where timePartition = ? and bucketKey = ? and transactionid = ? and rowId = ?"
-      pstmt = con.prepareStatement(query)
+      client = getConnection
       var recCount = 0
       var byteCount = 0
+
       keys.foreach(key => {
-        pstmt.setLong(1, key.timePartition)
-        pstmt.setString(2, key.bucketKey.mkString(","))
-        pstmt.setLong(3, key.transactionId)
-        pstmt.setInt(4, key.rowId)
-        var rs = pstmt.executeQuery();
+        val response = client
+          .prepareSearch(tableName)
+          .setTypes("type1")
+          .setQuery(QueryBuilders
+            .boolQuery()
+            .must(QueryBuilders.termQuery("timePartition", key.timePartition))
+            .must(QueryBuilders.termQuery("bucketKey", key.bucketKey.mkString(",")))
+            .must(QueryBuilders.termQuery("transactionid", key.transactionId))
+            .must(QueryBuilders.termQuery("rowId", key.rowId))
+          )
+          .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId"), null)
+          .execute().actionGet()
+
         updateOpStats("get", tableName, 1)
-        while (rs.next()) {
-          var timePartition = rs.getLong(1)
-          var keyStr = rs.getString(2)
-          var tId = rs.getLong(3)
-          var rId = rs.getInt(4)
+
+        val results: SearchHits = response.getHits
+        val hit: SearchHit = null
+
+        results.getHits.foreach((hit: SearchHit) => {
+          var timePartition = hit.getSource.get("timePartition").toString.toLong
+          var keyStr = hit.getSource.get("bucketKey").toString
+          var tId = hit.getSource.get("transactionId").toString.toLong
+          var rId = hit.getSource.get("rowId").toString.toInt
           val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
           var key = new Key(timePartition, bucketKey, tId, rId)
           recCount = recCount + 1
           byteCount = byteCount + getKeySize(key)
           if (callbackFunction != null)
             (callbackFunction) (key)
-        }
+        })
       })
       updateByteStats("get", tableName, byteCount)
       updateObjStats("get", tableName, recCount)
+
+      //      query = "select timePartition,bucketKey,transactionId,rowId from " + tableName + " where timePartition = ? and bucketKey = ? and transactionid = ? and rowId = ?"
+
     } catch {
       case e: Exception => {
-        throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
+        throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     } finally {
-      if (pstmt != null) {
-        pstmt.close
-      }
-      if (con != null) {
-        con.close
+      if (client != null) {
+        client.close
       }
     }
   }
 
   override def get(containerName: String, keys: Array[Key], callbackFunction: (Key, Value) => Unit): Unit = {
-    var con: Connection = null
-    var pstmt: PreparedStatement = null
+    var client: TransportClient = null
     var tableName = toFullTableName(containerName)
-    var query = ""
     try {
       CheckTableExists(containerName)
-      con = getConnection
-
-      query = "select schemaId,serializerType,serializedInfo from " + tableName + " where timePartition = ? and bucketKey = ? and transactionid = ? and rowId = ?"
-      pstmt = con.prepareStatement(query)
+      client = getConnection
       var recCount = 0
       var byteCount = 0
       keys.foreach(key => {
-        pstmt.setLong(1, key.timePartition)
-        pstmt.setString(2, key.bucketKey.mkString(","))
-        pstmt.setLong(3, key.transactionId)
-        pstmt.setInt(4, key.rowId)
-        var rs = pstmt.executeQuery();
+        val response = client
+          .prepareSearch(tableName)
+          .setTypes("type1")
+          .setQuery(QueryBuilders
+            .boolQuery()
+            .must(QueryBuilders.termQuery("timePartition", key.timePartition))
+            .must(QueryBuilders.termQuery("bucketKey", key.bucketKey.mkString(",")))
+            .must(QueryBuilders.termQuery("transactionid", key.transactionId))
+            .must(QueryBuilders.termQuery("rowId", key.rowId))
+          )
+          .setFetchSource(Array("schemaId", "serializerType", "serializedInfo"), null)
+          .execute().actionGet()
+
         updateOpStats("get", tableName, 1)
-        while (rs.next()) {
-          val schemaId = rs.getInt(1)
-          val st = rs.getString(2)
-          val ba = rs.getBytes(3)
+
+        val results: SearchHits = response.getHits
+        val hit: SearchHit = null
+
+        results.getHits.foreach((hit: SearchHit) => {
+          val schemaId = hit.getSource.get("schemaId").toString.toInt
+          val st = hit.getSource.get("serializerType").toString
+          val ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
           val value = new Value(schemaId, st, ba)
           recCount = recCount + 1
           byteCount = byteCount + getKeySize(key) + getValueSize(value)
           if (callbackFunction != null)
             (callbackFunction) (key, value)
-        }
+        })
       })
+
       updateByteStats("get", tableName, byteCount)
       updateObjStats("get", tableName, recCount)
+
+
+      // query = "select schemaId,serializerType,serializedInfo from " + tableName + " where timePartition = ? and bucketKey = ? and transactionid = ? and rowId = ?"
     } catch {
       case e: Exception => {
-        throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
+        throw CreateDMLException("Failed to fetch data from the table " + tableName + ": ", e)
       }
     } finally {
-      if (pstmt != null) {
-        pstmt.close
-      }
-      if (con != null) {
-        con.close
+      if (client != null) {
+        client.close
       }
     }
   }
@@ -1106,44 +1175,84 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       //      logger.debug("query => " + query)
       //      getData(tableName, query, callbackFunction)
     })
+    client.close()
   }
 
   override def getKeys(containerName: String, time_ranges: Array[TimeRange], callbackFunction: (Key) => Unit): Unit = {
     CheckTableExists(containerName)
     var tableName = toFullTableName(containerName)
+    var client = getConnection
+    var recCount = 0
+    var byteCount = 0
+
     time_ranges.foreach(time_range => {
-      var query = "select timePartition,bucketKey,transactionId,rowId from " + tableName + " where timePartition >= " + time_range.beginTime + " and timePartition <= " + time_range.endTime
-      logger.debug("query => " + query)
-      getKeys(tableName, query, callbackFunction)
+      val response = client
+        .prepareSearch(tableName)
+        .setTypes("type1")
+        .setQuery(
+          QueryBuilders.andQuery(
+            QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime),
+            QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
+        .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId"), null)
+        .execute().actionGet()
+
+      updateOpStats("get", tableName, 1)
+
+      val results: SearchHits = response.getHits
+      val hit: SearchHit = null
+
+      results.getHits.foreach((hit: SearchHit) => {
+        var timePartition = hit.getSource.get("timePartition").toString.toLong
+        var keyStr = hit.getSource.get("bucketKey").toString
+        var tId = hit.getSource.get("transactionId").toString.toLong
+        var rId = hit.getSource.get("rowId").toString.toInt
+        val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
+        var key = new Key(timePartition, bucketKey, tId, rId)
+        recCount = recCount + 1
+        byteCount = byteCount + getKeySize(key)
+        if (callbackFunction != null)
+          (callbackFunction) (key)
+      })
+      updateByteStats("get", tableName, byteCount)
+      updateObjStats("get", tableName, recCount)
+      //      var query = "select timePartition,bucketKey,transactionId,rowId from " + tableName + " where timePartition >= " + time_range.beginTime + " and timePartition <= " + time_range.endTime
+      //      getKeys(tableName, query, callbackFunction)
     })
+    client.close
   }
 
   override def get(containerName: String, time_ranges: Array[TimeRange], bucketKeys: Array[Array[String]], callbackFunction: (Key, Value) => Unit): Unit = {
-    var con: Connection = null
-    var pstmt: PreparedStatement = null
+    var client: TransportClient = null
     var tableName = toFullTableName(containerName)
-    var query = ""
     try {
       CheckTableExists(containerName)
       //con = DriverManager.getConnection(jdbcUrl);
-      con = getConnection
+      client = getConnection
       var recCount = 0
       var byteCount = 0
       time_ranges.foreach(time_range => {
-        query = "select timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo from " + tableName + " where timePartition >= " + time_range.beginTime + " and timePartition <= " + time_range.endTime + " and bucketKey = ? "
-        pstmt = con.prepareStatement(query)
         bucketKeys.foreach(bucketKey => {
-          pstmt.setString(1, bucketKey.mkString(","))
-          var rs = pstmt.executeQuery();
-          updateOpStats("get", tableName, 1)
-          while (rs.next()) {
-            var timePartition = rs.getLong(1)
-            var keyStr = rs.getString(2)
-            var tId = rs.getLong(3)
-            var rId = rs.getInt(4)
-            val schemaId = rs.getInt(5)
-            var st = rs.getString(6)
-            var ba = rs.getBytes(7)
+          val response = client
+            .prepareSearch(tableName)
+            .setTypes("type1")
+            .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId", "schemaId", "serializerType", "serializedInfo"), null)
+            .setQuery(
+              QueryBuilders.andQuery(
+                QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime),
+                QueryBuilders.rangeQuery("field2").lte(time_range.endTime)))
+            .execute().actionGet()
+
+          val results: SearchHits = response.getHits
+          val hit: SearchHit = null
+
+          results.getHits.foreach((hit: SearchHit) => {
+            var timePartition = hit.getSource.get("serializerType").toString.toLong
+            var keyStr = hit.getSource.get("bucketKey").toString
+            var tId = hit.getSource.get("transactionId").toString.toLong
+            var rId = hit.getSource.get("rowId").toString.toInt
+            val schemaId = hit.getSource.get("schemaId").toString.toInt
+            var st = hit.getSource.get("serializerType").toString
+            var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
             val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
             var key = new Key(timePartition, bucketKey, tId, rId)
             var value = new Value(schemaId, st, ba)
@@ -1151,106 +1260,110 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             byteCount = byteCount + getKeySize(key) + getValueSize(value)
             if (callbackFunction != null)
               (callbackFunction) (key, value)
-          }
+          })
         })
-        if (pstmt != null) {
-          pstmt.close
-          pstmt = null
-        }
+        // query = "select timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo from " + tableName + " where timePartition >= " + time_range.beginTime + " and timePartition <= " + time_range.endTime + " and bucketKey = ? "
       })
       updateByteStats("get", tableName, byteCount)
       updateObjStats("get", tableName, recCount)
-    } catch {
+    }
+
+    catch {
       case e: Exception => {
-        throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
+        throw CreateDMLException("Failed to fetch data from the table " + tableName + ": ", e)
       }
     } finally {
-      if (pstmt != null) {
-        pstmt.close
-      }
-      if (con != null) {
-        con.close
+      if (client != null) {
+        client.close
       }
     }
   }
 
   override def getKeys(containerName: String, time_ranges: Array[TimeRange], bucketKeys: Array[Array[String]], callbackFunction: (Key) => Unit): Unit = {
-    var con: Connection = null
-    var pstmt: PreparedStatement = null
+    var client: TransportClient = null
     var tableName = toFullTableName(containerName)
-    var query = ""
     try {
       CheckTableExists(containerName)
-      con = getConnection
+      client = getConnection
       var recCount = 0
       var byteCount = 0
+
       time_ranges.foreach(time_range => {
-        query = "select timePartition,bucketKey,transactionId,rowId from " + tableName + " where timePartition >= " + time_range.beginTime + " and timePartition <= " + time_range.endTime + " and bucketKey = ? "
-        logger.debug("query => " + query)
-        pstmt = con.prepareStatement(query)
         bucketKeys.foreach(bucketKey => {
-          pstmt.setString(1, bucketKey.mkString(","))
-          var rs = pstmt.executeQuery();
+          val response = client
+            .prepareSearch(tableName)
+            .setTypes("type1")
+            .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId"), null)
+            .setQuery(QueryBuilders.boolQuery().must(QueryBuilders.termQuery("bucketKey", bucketKey.mkString(","))))
+            .setQuery(
+              QueryBuilders.andQuery(
+                QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime),
+                QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
+            .execute().actionGet()
           updateOpStats("get", tableName, 1)
-          while (rs.next()) {
-            var timePartition = rs.getLong(1)
-            var keyStr = rs.getString(2)
-            var tId = rs.getLong(3)
-            var rId = rs.getInt(4)
+
+          val results: SearchHits = response.getHits
+          val hit: SearchHit = null
+
+          results.getHits.foreach((hit: SearchHit) => {
+            val timePartition = hit.getSource.get("timePartition").toString.toLong
+            val keyStr = hit.getSource.get("bucketKey").toString
+            val tId = hit.getSource.get("transactionId").toString.toLong
+            val rId = hit.getSource.get("transactionId").toString.toInt
             val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
             var key = new Key(timePartition, bucketKey, tId, rId)
             recCount = recCount + 1
             byteCount = byteCount + getKeySize(key)
             if (callbackFunction != null)
               (callbackFunction) (key)
-          }
+          })
         })
-        if (pstmt != null) {
-          pstmt.close
-          pstmt = null
-        }
       })
       updateByteStats("get", tableName, byteCount)
       updateObjStats("get", tableName, recCount)
     } catch {
       case e: Exception => {
-        throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
+        throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     } finally {
-      if (pstmt != null) {
-        pstmt.close
-      }
-      if (con != null) {
-        con.close
+      if (client != null) {
+        client.close
       }
     }
   }
 
   override def get(containerName: String, bucketKeys: Array[Array[String]], callbackFunction: (Key, Value) => Unit): Unit = {
-    var con: Connection = null
-    var pstmt: PreparedStatement = null
+    var client: TransportClient = null
     var tableName = toFullTableName(containerName)
-    var query = ""
     try {
       CheckTableExists(containerName)
-      con = getConnection
+      client = getConnection
       var recCount = 0
       var byteCount = 0
 
-      query = "select timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo from " + tableName + " where  bucketKey = ? "
-      pstmt = con.prepareStatement(query)
       bucketKeys.foreach(bucketKey => {
-        pstmt.setString(1, bucketKey.mkString(","))
-        var rs = pstmt.executeQuery();
+        val response = client
+          .prepareSearch(tableName)
+          .setTypes("type1")
+          .setQuery(QueryBuilders
+            .boolQuery()
+            .must(QueryBuilders.termQuery("bucketKey", bucketKey.mkString(","))))
+          .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId", "schemaId", "serializerType", "serializedInfo"), null)
+          .execute().actionGet()
+
         updateOpStats("get", tableName, 1)
-        while (rs.next()) {
-          var timePartition = rs.getLong(1)
-          var keyStr = rs.getString(2)
-          var tId = rs.getLong(3)
-          var rId = rs.getInt(4)
-          val schemaId = rs.getInt(5)
-          var st = rs.getString(6)
-          var ba = rs.getBytes(7)
+
+        val results: SearchHits = response.getHits
+        val hit: SearchHit = null
+
+        results.getHits.foreach((hit: SearchHit) => {
+          var timePartition = hit.getSource.get("timePartition").toString.toLong
+          var keyStr = hit.getSource.get("bucketKey").toString
+          var tId = hit.getSource.get("transactionId").toString.toLong
+          var rId = hit.getSource.get("rowId").toString.toInt
+          val schemaId = hit.getSource.get("schemaId").toString.toInt
+          var st = hit.getSource.get("serializerType").toString
+          var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
           val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
           var key = new Key(timePartition, bucketKey, tId, rId)
           var value = new Value(schemaId, st, ba)
@@ -1258,20 +1371,20 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           byteCount = byteCount + getKeySize(key)
           if (callbackFunction != null)
             (callbackFunction) (key, value)
-        }
+        })
       })
       updateByteStats("get", tableName, byteCount)
       updateObjStats("get", tableName, recCount)
+
+      // query = "select timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo from " + tableName + " where  bucketKey = ? "
+
     } catch {
       case e: Exception => {
-        throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
+        throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     } finally {
-      if (pstmt != null) {
-        pstmt.close
-      }
-      if (con != null) {
-        con.close
+      if (client != null) {
+        client.close
       }
     }
   }
@@ -1326,11 +1439,14 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     new H2dbAdapterTx(this)
   }
 
-  override def endTx(tx: Transaction): Unit = {}
+  override def endTx(tx: Transaction): Unit = {
+  }
 
-  override def commitTx(tx: Transaction): Unit = {}
+  override def commitTx(tx: Transaction): Unit = {
+  }
 
-  override def rollbackTx(tx: Transaction): Unit = {}
+  override def rollbackTx(tx: Transaction): Unit = {
+  }
 
   override def Shutdown(): Unit = {
     logger.info("close the connection pool")
