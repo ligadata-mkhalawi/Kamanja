@@ -1,14 +1,20 @@
 package com.ligadata.HbaseInputOutputAdapters
 
-import com.ligadata.Exceptions.{ConnectionFailedException, FatalAdapterException}
-import com.ligadata.KvBase.{Key, Value}
+import com.ligadata.Exceptions.{ConnectionFailedException, FatalAdapterException, KamanjaException}
+import com.ligadata.KamanjaBase.{ContainerInterface, SerializeDeserialize}
+import com.ligadata.KvBase.{Key, TimeRange, Value}
 import com.ligadata.adapterconfiguration.HbaseAdapterConfiguration
+import com.ligadata.kamanja.metadata.MdMgr
+import com.ligadata.kamanja.metadata.MdMgr._
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.hbase._
 import org.apache.hadoop.hbase.util.Bytes
 import org.apache.logging.log4j.LogManager
+import org.json4s.jackson.JsonMethods._
+import org.json4s.{DefaultFormats, Formats}
+
 import scala.collection.mutable.ArrayBuffer
 /**
   * Created by Yousef on 8/13/2016.
@@ -36,6 +42,10 @@ class HbaseUtility /*extends LogTrait*/{
   private val schemaIdStrBytes = "schemaId".getBytes()
   private val schemaIdStrBytesLen = schemaIdStrBytes.length
   private[this] val lock = new Object
+  var tableName: String=_
+  var namespace: String=_
+  var fulltableName: String=_
+  var serName: String=_
 
   def createConnection(adapterConfig: HbaseAdapterConfiguration): Configuration = {
     hbaseConfig.setInt("zookeeper.session.timeout", 10000)
@@ -72,7 +82,14 @@ class HbaseUtility /*extends LogTrait*/{
     conn
   }
 
-  def createNamespace(namespace: String): Unit={
+  def setConnection(connect: Connection) : Unit={
+    conn = connect
+  }
+
+  def closeConnection(): Unit={
+    conn.close()
+  }
+  def createNamespace(): Unit={
     relogin()
     try {
       val desc = conn.getAdmin.getNamespaceDescriptor(namespace)
@@ -86,7 +103,7 @@ class HbaseUtility /*extends LogTrait*/{
     }
   }
 
-  def getData(tableName: String): Result ={
+  def getData(): Result ={
     try {
       relogin()
       var hTable = new HTable(hbaseConfig, tableName)
@@ -98,26 +115,26 @@ class HbaseUtility /*extends LogTrait*/{
     }
   }
 
-  def toTableName(tableName: String, nameSpace: String): String = {
+  def toTableName(): String = {
     // we need to check for other restrictions as well
     // such as length of the table, special characters etc
-    nameSpace + ':' + tableName.toLowerCase.replace('.', '_').replace('-', '_').replace(' ', '_')
+    namespace + ':' + tableName.toLowerCase.replace('.', '_').replace('-', '_').replace(' ', '_')
   }
 
-  private def getTableFromConnection(tableName: String): Table = {
+  private def getTableFromConnection(): Table = {
     try {
       relogin
-      return conn.getTable(TableName.valueOf(tableName))
+      return conn.getTable(TableName.valueOf(fulltableName))
     } catch {
       case e: Exception => {
-        throw ConnectionFailedException("Failed to get table " + tableName, e)
+        throw ConnectionFailedException("Failed to get table " + fulltableName, e)
       }
     }
 
     return null
   }
 
-  private def updateOpStats(operation: String, tableName: String, opCount: Int) : Unit = lock.synchronized{
+  private def updateOpStats(operation: String,  tableName: String, opCount: Int) : Unit = lock.synchronized{
     operation match {
       case "get" => {
         if( _getOps.get(tableName) != None ){
@@ -317,16 +334,17 @@ class HbaseUtility /*extends LogTrait*/{
       }
     }
   }
-    def get(containerName: String, namespace: String, conn: Connection, callbackFunction: (Key, Value) => Unit): Unit = {
-    var tableName = toTableName(tableName, namespace)
+
+  def get(callbackFunction: (Key, Value) => Unit): Unit = {
+   // var FulltableName = toTableName(tableName, namespace)
     var tableHBase: Table = null
     try {
       relogin
      // val isMetadata = CheckTableExists(containerName)
-      tableHBase = getTableFromConnection(tableName);
+      tableHBase = getTableFromConnection
       var scan = new Scan();
       var rs = tableHBase.getScanner(scan);
-      updateOpStats("get",tableName,1)
+      updateOpStats("get",fulltableName,1)
       val it = rs.iterator()
       var byteCount = 0
       var recCount = 0
@@ -339,8 +357,8 @@ class HbaseUtility /*extends LogTrait*/{
         val schemaId = Bytes.toInt(r.getValue(schemaIdStrBytes, baseStrBytes))
         processRow(r.getRow(), true /*isMetaData*/, schemaId, st, si, callbackFunction)
       }
-      updateByteStats("get",tableName,byteCount)
-      updateObjStats("get",tableName,recCount)
+      updateByteStats("get",fulltableName,byteCount)
+      updateObjStats("get",fulltableName,recCount)
     } catch {
       case e: Exception => {
       //  externalizeExceptionEvent(e)
@@ -367,14 +385,13 @@ class HbaseUtility /*extends LogTrait*/{
     ab.toArray
   }
 
-
-    def get(tableName: String, time_range: Long, namespace: String, callbackFunction: (Key, Value) => Unit): Unit = {
-    var tableName = toTableName(tableName, namespace)
+  def get(time_range: Long, callbackFunction: (Key, Value) => Unit): Unit = {
+    //var tableName = toTableName(tableName, namespace)
     var tableHBase: Table = null
     try {
       relogin
       //val isMetadata = CheckTableExists(containerName)
-      tableHBase = getTableFromConnection(tableName);
+      tableHBase = getTableFromConnection
 
    //   val tmRanges = getUnsignedTimeRanges(time_ranges)
       var byteCount = 0
@@ -399,18 +416,217 @@ class HbaseUtility /*extends LogTrait*/{
           processRow(r.getRow(), true/*isMetadata*/, schemaId, st, si, callbackFunction)
         }
 //      })
-      updateByteStats("get",tableName,byteCount)
-      updateObjStats("get",tableName,recCount)
-      updateOpStats("get",tableName,opCount)
+      updateByteStats("get",fulltableName,byteCount)
+      updateObjStats("get",fulltableName,recCount)
+      updateOpStats("get",fulltableName,opCount)
     } catch {
       case e: Exception => {
         //externalizeExceptionEvent(e)
-        throw FatalAdapterException("Failed to fetch data from the table " + tableName, e)
+        throw FatalAdapterException("Failed to fetch data from the table " + fulltableName, e)
       }
     } finally {
       if (tableHBase != null) {
         tableHBase.close()
       }
     }
+  }
+
+  def getKeys(time_range: TimeRange, callbackFunction: (Key) => Unit): Unit = {
+    //var tableName = toTableName(tableName, namespace)
+    var tableHBase: Table = null
+    try {
+      relogin
+   //   val isMetadata = CheckTableExists(containerName)
+      tableHBase = getTableFromConnection
+
+ //     val tmRanges = getUnsignedTimeRanges(time_ranges)
+      var byteCount = 0
+      var recCount = 0
+      var opCount = 0
+//      tmRanges.foreach(time_range => {
+        // try scan with beginRow and endRow
+        var scan = new Scan()
+        scan.setStartRow(MakeLongSerializedVal(time_range.beginTime))
+        scan.setStopRow(MakeLongSerializedVal(time_range.endTime + 1))
+        val rs = tableHBase.getScanner(scan);
+        opCount = opCount + 1
+        val it = rs.iterator()
+        while (it.hasNext()) {
+          val r = it.next()
+          byteCount = byteCount + getRowSize(r)
+          recCount = recCount + 1
+          processKey(r.getRow(),true /*isMetadata*/, callbackFunction)
+        }
+//      })
+      updateByteStats("get",fulltableName,byteCount)
+      updateObjStats("get",fulltableName,recCount)
+      updateOpStats("get",fulltableName,opCount)
+    } catch {
+      case e: Exception => {
+     //   externalizeExceptionEvent(e)
+        throw FatalAdapterException("Failed to fetch data from the table " + fulltableName, e)
+      }
+    } finally {
+      if (tableHBase != null) {
+        tableHBase.close()
+      }
+    }
+  }
+
+  private def processKey(k: Array[Byte], isMetadata: Boolean, callbackFunction: (Key) => Unit) {
+    try {
+      var key = GetKeyFromCompositeKey(k,isMetadata)
+      if (callbackFunction != null)
+        (callbackFunction)(key)
+    } catch {
+      case e: Exception => {
+   //     externalizeExceptionEvent(e)
+        throw e
+      }
+    }
+  }
+
+  private def processKey(key: Key, callbackFunction: (Key) => Unit) {
+    try {
+      if (callbackFunction != null)
+        (callbackFunction)(key)
+    } catch {
+      case e: Exception => {
+   //     externalizeExceptionEvent(e)
+        throw e
+      }
+    }
+  }
+
+  def initilizeVariable(adapterConfig: HbaseAdapterConfiguration): Unit={
+    tableName = adapterConfig.TableName
+    namespace = adapterConfig.scehmaName
+    fulltableName = toTableName
+  }
+
+  def getMdMgr: MdMgr = mdMgr
+
+  private def AddBucketKeyToArrayBuffer(bucketKey: Array[String], ab: ArrayBuffer[Byte]): Unit = {
+    // First one is Number of Array Elements
+    // Next follows Each Element size & Element Data
+    ab += ((bucketKey.size).toByte)
+    bucketKey.foreach(k => {
+      val kBytes = k.getBytes
+      val sz = kBytes.size
+      ab += (((sz >>> 8) & 0xFF).toByte)
+      ab += (((sz >>> 0) & 0xFF).toByte)
+      ab ++= kBytes
+    })
+  }
+
+  private def MakeCompositeKey(key: Key,isMetadataContainer: Boolean): Array[Byte] = {
+    if( isMetadataContainer ){
+      key.bucketKey(0).getBytes
+    }
+    else{
+      val ab = new ArrayBuffer[Byte](256)
+      ab += (((key.timePartition >>> 56) & 0xFF).toByte)
+      ab += (((key.timePartition >>> 48) & 0xFF).toByte)
+      ab += (((key.timePartition >>> 40) & 0xFF).toByte)
+      ab += (((key.timePartition >>> 32) & 0xFF).toByte)
+      ab += (((key.timePartition >>> 24) & 0xFF).toByte)
+      ab += (((key.timePartition >>> 16) & 0xFF).toByte)
+      ab += (((key.timePartition >>> 8) & 0xFF).toByte)
+      ab += (((key.timePartition >>> 0) & 0xFF).toByte)
+
+      AddBucketKeyToArrayBuffer(key.bucketKey, ab)
+
+      ab += (((key.transactionId >>> 56) & 0xFF).toByte)
+      ab += (((key.transactionId >>> 48) & 0xFF).toByte)
+      ab += (((key.transactionId >>> 40) & 0xFF).toByte)
+      ab += (((key.transactionId >>> 32) & 0xFF).toByte)
+      ab += (((key.transactionId >>> 24) & 0xFF).toByte)
+      ab += (((key.transactionId >>> 16) & 0xFF).toByte)
+      ab += (((key.transactionId >>> 8) & 0xFF).toByte)
+      ab += (((key.transactionId >>> 0) & 0xFF).toByte)
+
+      ab += (((key.rowId >>> 24) & 0xFF).toByte)
+      ab += (((key.rowId >>> 16) & 0xFF).toByte)
+      ab += (((key.rowId >>> 8) & 0xFF).toByte)
+      ab += (((key.rowId >>> 0) & 0xFF).toByte)
+
+      ab.toArray
+    }
+  }
+
+  private def getKeySize(k: Key): Int = {
+    var bucketKeySize = 0
+    k.bucketKey.foreach(bk => { bucketKeySize = bucketKeySize + bk.length })
+    8 + bucketKeySize + 8 + 4
+  }
+
+  private def getValueSize(v: Value): Int = {
+    v.serializedInfo.length
+  }
+
+   def put(tableName: String, key: Key, value: Value): Unit = {
+  //  var fulltableName = toFullTableName(containerName)
+    var tableHBase: Table = null
+    try {
+      relogin
+      //val isMetadata = CheckTableExists(containerName)
+      tableHBase = getTableFromConnection();
+      var kba = MakeCompositeKey(key,true/*isMetadata*/)
+      var p = new Put(kba)
+      p.addColumn(stStrBytes, baseStrBytes, Bytes.toBytes(value.serializerType))
+      p.addColumn(siStrBytes, baseStrBytes, value.serializedInfo)
+      p.addColumn(schemaIdStrBytes, baseStrBytes,Bytes.toBytes(value.schemaId))
+      tableHBase.put(p)
+      updateOpStats("put",fulltableName,1)
+      updateObjStats("put",fulltableName,1)
+      updateByteStats("put",fulltableName,getKeySize(key)+getValueSize(value))
+    } catch {
+      case e: Exception => {
+        //externalizeExceptionEvent(e)
+        throw new KamanjaException("Failed to save an object in table " + fulltableName, e)
+      }
+    } finally {
+      if (tableHBase != null) {
+        tableHBase.close()
+      }
+    }
+  }
+
+   def getManager(request: String, callbackFunction: (Array[Byte]) => Unit): Unit={
+    var serDeser: SerializeDeserialize = null
+    val serInfo = getMdMgr.GetSerializer(serName)
+    if (serInfo == null) {
+      throw new KamanjaException(s"Not found Serializer/Deserializer for ${serName}", null)
+    }
+
+    val phyName = serInfo.PhysicalName
+    if (phyName == null) {
+      throw new KamanjaException(s"Not found Physical name for Serializer/Deserializer for ${serName}", null)
+    }
+
+      val aclass = Class.forName(phyName).newInstance
+      val ser = aclass.asInstanceOf[SerializeDeserialize]
+//      val map = new java.util.HashMap[String, String] //BUGBUG:: we should not convert the 2nd param to String. But still need to see how can we convert scala map to java map
+//      ser.configure(this, map)
+//      ser.setObjectResolver(this)
+      serDeser = ser
+
+    val retriveData = (k: Key, v: Any, serializerTyp: String, tableName: String, ver: Int)=>{
+      val value = v.asInstanceOf[ContainerInterface]
+      if(!value.equals(null)) {
+        try {
+          val serData = serDeser.serialize(value)
+          callbackFunction(serData)
+        } catch {
+          case e: Throwable => {
+            throw e
+          }
+        }
+      }
+    }
+
+     if(request.equalsIgnoreCase("getdata")){
+       //get(retriveData)
+     }
   }
 }

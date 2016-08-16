@@ -9,7 +9,7 @@ import com.ligadata.adapterconfiguration.{HbaseAdapterConfiguration, HbasePartit
 import org.apache.hadoop.hbase.client.Connection
 import org.json4s.jackson.Serialization
 
-import scala.actors.threadpool.ExecutorService
+import scala.actors.threadpool.{ExecutorService, Executors}
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -27,6 +27,7 @@ object KamanjaHbaseConsumer  extends InputAdapterFactory {
 
   def CreateInputAdapter(inputConfig: AdapterConfiguration, execCtxtObj: ExecContextFactory, nodeContext: NodeContext): InputAdapter = new KamanjaHbaseConsumer(inputConfig, execCtxtObj, nodeContext)
 }
+
 class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecContextFactory, val nodeContext: NodeContext) extends InputAdapter{
   val input = this
   //  lazy val loggerName = this.getClass.getName
@@ -54,13 +55,21 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   metrics(com.ligadata.adapterconfiguration.KamanjaHbaseAdapterConstants.EXCEPTION_SUMMARY) = partitionExceptions
   metrics(com.ligadata.adapterconfiguration.KamanjaHbaseAdapterConstants.PARTITION_DEPTH_KEYS) = partitonDepths
 
-  override def StartProcessing(partitionIds: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = {
-    isShutdown = false
+  override def StartProcessing(partitionIds: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = {  //////create all code hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+  val hbaseutil: HbaseUtility = new HbaseUtility
+    var HbaseConsumer: Connection = null
+    hbaseutil.createConnection(adapterConfig)
+    hbaseutil.initilizeVariable(adapterConfig)
+    HbaseConsumer = hbaseutil.getConnection()
+    hbaseutil.setConnection(HbaseConsumer)
 
+    isShutdown = false
+    var maxPartNumber = -1
     _ignoreFirstMsg = ignoreFirstMsg
     var lastHb: Long = 0
     startHeartBeat = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
-
+    var numberOfThreads = partitionIds.size
+    readExecutor = Executors.newFixedThreadPool(numberOfThreads)
     LOG.info("Hbase_ADAPTER - START_PROCESSING CALLED")
 
     // Check to see if this already started
@@ -88,23 +97,36 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
         quad._validateInfoVal.asInstanceOf[HbasePartitionUniqueRecordValue])
     })
 
-    initialFilesHandled = false
-
- //////////////////////////////////   initializeNode//register the callbacks
-
-
-    //(1,file1,0,true)~(2,file2,0,true)~(3,file3,1000,true)
     val myPartitionInfo = partitionIds.map(pid => (pid._key.asInstanceOf[HbasePartitionUniqueRecordKey].PartitionId,
-      pid._val.asInstanceOf[HbasePartitionUniqueRecordValue].FileName,
-      pid._val.asInstanceOf[HbasePartitionUniqueRecordValue].Offset, ignoreFirstMsg)).mkString("~")
+      pid._val.asInstanceOf[HbasePartitionUniqueRecordValue].TableName,
+      pid._val.asInstanceOf[HbasePartitionUniqueRecordValue].TimeStamp, ignoreFirstMsg)).mkString("~") //////add key
 
-//    val SendStartInfoToLeaderPath = sendStartInfoToLeaderParentPath + "/" + clusterStatus.nodeId  // Should be different for each Nodes
-//    LOG.info("Hbase; Consumer - Node {} is sending start info to leader. path is {}, value is {} ",
-//      clusterStatus.nodeId, SendStartInfoToLeaderPath, myPartitionInfo)
-//    envContext.setListenerCacheKey(SendStartInfoToLeaderPath, myPartitionInfo) // => Goes to Leader
-//
-//    if(clusterStatus.isLeader)
-//      handleStartInfo()  ///////fix this
+    readExecutor.execute(new Runnable() {
+      var intSleepTimer = KamanjaHbaseConsumer.INITIAL_SLEEP
+
+      var execContexts : Array[ExecContext] = new Array[ExecContext](maxPartNumber + 1)
+      var uniqueVals : Array[HbasePartitionUniqueRecordKey] = new Array[HbasePartitionUniqueRecordKey](maxPartNumber + 1)
+     //////////////////////// var topicPartitions: Array[org.apache.kafka.common.TopicPartition] = new Array[org.apache.kafka.common.TopicPartition](maxPartNumber + 1)
+      var initialOffsets: Array[Long] = new Array[Long](maxPartNumber + 1)
+      var ignoreUntilOffsets: Array[Long] = new Array[Long](maxPartNumber + 1)
+
+
+
+      override def run(): Unit = {
+        val readTmMs = System.currentTimeMillis
+        var isRecordSentToKamanja = false
+        val uniqueVal = new HbasePartitionUniqueRecordValue
+        while (!isRecordSentToKamanja && !isQuiese) {
+          msgCount += 1
+          val retrievedata = (data: Array[Byte]) => {
+            if (data != null) {
+              execContexts(1/*record.partition*/).execute(data, uniqueVals(1/*record.partition*/), uniqueVal, readTmMs)
+            }
+          }
+          hbaseutil.getManager("get",retrievedata)
+        }
+      }
+    })
   }
 
   override def Shutdown: Unit = lock.synchronized {
@@ -163,8 +185,8 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
       rKey.PartitionId = partitionId
       rKey.Name = adapterConfig.Name
 
-      rValue.Offset = -1
-      rValue.FileName = ""
+      //////////////////////////rValue.Offset = -1
+      /////////////////////////rValue.FileName = ""
 
       infoBuffer.append((rKey, rValue))
     }
@@ -194,7 +216,10 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     while (!isSuccessfulConnection && !isQuiese) {
       try {
         hbaseutil.createConnection(adapterConfig)
+        hbaseutil.namespace = adapterConfig.scehmaName
+        hbaseutil.tableName = adapterConfig.TableName
         HbaseConsumer = hbaseutil.getConnection()
+       // results = hbaseutil.getKeys()
       //  results = hbaseutil.partitionsFor(qc.topic)  //change it fix this bug
         isSuccessfulConnection = true
         HbaseConsumer.close()
@@ -281,11 +306,11 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
 
     return new MonitorComponentInfo(AdapterConfiguration.TYPE_INPUT, adapterConfig.Name, KamanjaHbaseConsumer.ADAPTER_DESCRIPTION,
       startHeartBeat, lastSeen,  Serialization.write(metrics).toString)
-  }
+  } ///get status with more details for each node monitoring rest api
 
   override def getComponentSimpleStats: String = {
     return "Input/"+ adapterConfig.Name +"/evtCnt" + "->" + msgCount
-  }
+  } /////// return status on status queue
 
   private def terminateReaderTasks(): Unit = {
     if (readExecutor == null) return

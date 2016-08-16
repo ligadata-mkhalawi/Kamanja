@@ -13,6 +13,7 @@ class HbaseAdapterConfiguration extends AdapterConfiguration{
   var host: String = null //folder to write files
   var scehmaName: String = "" // prefix for the file names
   var TableName: String = "" // optional separator inserted between messages
+  var serializerName: String =""
   var kerberos: KerberosConfig = null
   var instancePartitions: Set[Int] = _
   var noDataSleepTimeInMs: Int = 300
@@ -52,7 +53,9 @@ object HbaseAdapterConfiguration {
         adapterConfig.scehmaName = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("TableName") == 0) {
         adapterConfig.TableName = kv._2.toString
-      } else if (kv._1.compareToIgnoreCase("Kerberos") == 0) {
+      } else if (kv._1.compareToIgnoreCase("serializerName") == 0) {
+        adapterConfig.serializerName = kv._2.toString
+      }else if (kv._1.compareToIgnoreCase("Kerberos") == 0) {
         adapterConfig.kerberos = new KerberosConfig()
         val kerbConf = kv._2.asInstanceOf[Map[String, String]]
         adapterConfig.kerberos.principal = kerbConf.getOrElse("Principal", null)
@@ -63,14 +66,17 @@ object HbaseAdapterConfiguration {
     adapterConfig.instancePartitions = Set[Int]()
 
     if (adapterConfig.host == null || adapterConfig.host.size == 0)
-      throw FatalAdapterException("host should not be NULL or empty for Hbase Producer" + adapterConfig.Name, new Exception("Invalid Parameters"))
+      throw new KamanjaException("host should not be NULL or empty for Hbase Producer" + adapterConfig.Name, null)
+
+    if (adapterConfig.serializerName == null || adapterConfig.serializerName.size == 0)
+      throw new KamanjaException("serializerName should not be NULL or empty for Hbase Producer" + adapterConfig.Name, null)
 
     if (adapterConfig.kerberos != null) {
       if (adapterConfig.kerberos.principal == null || adapterConfig.kerberos.principal.size == 0)
-        throw FatalAdapterException("Principal should be specified for Kerberos authentication for Hbase Producer: " + adapterConfig.Name, new Exception("Invalid Parameters"))
+        throw new KamanjaException("Principal should be specified for Kerberos authentication for Hbase Producer: " + adapterConfig.Name, null)
 
       if (adapterConfig.kerberos.keytab == null || adapterConfig.kerberos.keytab.size == 0)
-        throw FatalAdapterException("Keytab should be specified for Kerberos authentication for Hbase Producer: " + adapterConfig.Name, new Exception("Invalid Parameters"))
+        throw new KamanjaException("Keytab should be specified for Kerberos authentication for Hbase Producer: " + adapterConfig.Name, null)
     }
 
     adapterConfig
@@ -104,19 +110,21 @@ class HbasePartitionUniqueRecordKey extends PartitionUniqueRecordKey {
   }
 }
 
-case class HbaseRecData(Version: Int, FileName : String, Offset: Option[Long])
+case class HbaseRecData(Version: Int, TableName : String, Key: Option[Long], TimeStamp: Long)
 
 class HbasePartitionUniqueRecordValue extends PartitionUniqueRecordValue {
   val Version: Int = 1
-  var FileName : String = _
-  var Offset: Long = -1 // Offset of next message in the file
+  var TableName : String = _
+  var Key: Long = -1 // key of next message in the file
+  var TimeStamp: Long = -1 // timestamp of next message in the file
 
   override def Serialize: String = {
     // Making String from Value
     val json =
       ("Version" -> Version) ~
-        ("Offset" -> Offset) ~
-        ("FileName" -> FileName)
+        ("Key" -> Key) ~
+        ("TableName" -> TableName)
+        ("TimeStamp" -> TimeStamp)
     compact(render(json))
   }
 
@@ -125,8 +133,9 @@ class HbasePartitionUniqueRecordValue extends PartitionUniqueRecordValue {
     implicit val jsonFormats: Formats = DefaultFormats
     val recData = parse(key).extract[HbaseRecData]
     if (recData.Version == Version) {
-      Offset = recData.Offset.get
-      FileName = recData.FileName
+      Key = recData.Key.get
+      TableName = recData.TableName
+      TimeStamp = recData.TimeStamp
     }
     // else { } // Not yet handling other versions
   }
@@ -137,4 +146,11 @@ object KamanjaHbaseAdapterConstants {
   val PARTITION_COUNT_KEYS = "Partition Counts"
   val PARTITION_DEPTH_KEYS = "Partition Depths"
   val EXCEPTION_SUMMARY = "Exception Summary"
+}
+
+object HbaseConstants {
+  val HBASE_SEND_SUCCESS = 0
+  val HBASE_SEND_Q_FULL = 1
+  val HBASE_SEND_DEAD_PRODUCER = 2
+  val HBASE_NOT_SEND = 3
 }
