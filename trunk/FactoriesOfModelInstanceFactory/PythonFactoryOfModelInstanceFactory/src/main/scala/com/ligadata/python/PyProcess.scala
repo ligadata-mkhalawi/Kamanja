@@ -56,35 +56,35 @@ class PyProcess(host: String,
   var pid: Long = _
 
   private val caller = self
-  private val WAIT_TIME = 2000
+  private val WAIT_TIME = 1000
 
   private val reader = actor {
-    logger.debug("created actor: " + Thread.currentThread)
+    logger.error("created actor: " + Thread.currentThread)
     var continue = true
     loop {
       reactWithin(WAIT_TIME) {
         case TIMEOUT =>
           //caller ! "react timeout"
         case proc: Process =>
-          logger.debug("PyProcess : receiving message from python subprocess pid " +  pid.toString)
+          logger.error("PyProcess : receiving message from python subprocess pid " +  pid.toString)
           try {
             val streamReader = new java.io.InputStreamReader(proc.getInputStream)
             val bufferedReader = new java.io.BufferedReader(streamReader)
             val sb = new java.lang.StringBuilder()
             var line: String = null
             line = bufferedReader.readLine
-            logger.debug("PyProcess :  "  + line)
+            logger.error("PyProcess :  "  + line)
             while  (line != null) {
-              logger.debug("PyProcess log from process pid '" + pid.toString + "' : " + line)
+              logger.error("PyProcess log from process pid '" + pid.toString + "' : " + line)
               sb.append(line)
               line = bufferedReader.readLine
             }
             bufferedReader.close
-            logger.debug("PyProcess : complete log from process  pid '" + pid.toString + "' : " + sb.toString)
+            logger.error("PyProcess : complete log from process  pid '" + pid.toString + "' : " + sb.toString)
           }
           catch {
             case e: Exception => {
-              logger.debug("PyProcess : The process pid in reader has Exception " + pid.toString)
+              logger.error("PyProcess : The process pid in reader has Exception " + pid.toString)
             }
           }
       }
@@ -103,7 +103,7 @@ class PyProcess(host: String,
         var f: Field = proc.getClass().getDeclaredField("pid")
         f.setAccessible(true)
         pid = f.getLong(proc)
-        logger.debug("Scala Process The python server started at host " + cHost + " at port " + cPort + " and the processor id is " + pid)
+        logger.error("Scala Process The python server started at host " + cHost + " at port " + cPort + " and the processor id is " + pid)
         f.setAccessible(false)
       }
     }
@@ -111,7 +111,7 @@ class PyProcess(host: String,
 
       case e : Exception => {
         pid = - 1
-        logger.debug("Problem in starting the python server " + cHost + " at " + cPort)
+        logger.error("Problem in starting the python server " + cHost + " at " + cPort)
       }
     }
     processBuilder.redirectErrorStream(true)
@@ -131,7 +131,7 @@ class PyProcess(host: String,
       PyPathText + SingleSpace + cPyPath + SingleSpace +
       LogConfigText + SingleSpace + cPyPath + "/config/" + LogConfigFileName + SingleSpace +
       LogFilePathText + SingleSpace + cPyPath + "/logs/" + LogFileName
-    logger.debug("Scala process going to start python server using " + cmdString)
+    logger.error("Scala process going to start python server using " + cmdString)
 
     run (cmdString)
 
