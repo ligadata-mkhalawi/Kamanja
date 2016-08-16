@@ -33,7 +33,7 @@ import scala.collection.immutable.Map
  * @param tenantId the tenant for whom this model is being added/updated.
  * @param optMsgProduced the output message this model should produce
  * @param pStr global options (JSON) that may be supplied to control certain ingestion mechanisms
- * @param modelOptions  model specific options to be saved with the model definition produced here... elements used 
+ * @param modelOptions  model specific options to be saved with the model definition produced here... elements used
  *                      at model instance construction time complete initialization... do things peculiar to this model.
  * @param metadataAPIConfig the Properties file for the metadata api application that contains certain information needed
  *                          to complete the production of the model definition.
@@ -58,7 +58,8 @@ class PythonMdlSupport ( val mgr: MdMgr
     /** Kamanja's PYTHONPATH key where a) server code is located and b) where the Python Module directories to support
       * the python server are found (i.e., common, commands, models sub-directories)
       */
-    val PYTHON_PATH : String = "PYTHON_PATH"
+  val PYTHON_PATH : String = "PYTHON_PATH"
+  val PYTHON_BIN_DIR : String = "PYTHON_BIN_DIR"
     val PYTHON_CONFIG : String = "PYTHON_CONFIG"
     val ROOT_DIR : String = "ROOT_DIR"
 
@@ -176,9 +177,11 @@ class PythonMdlSupport ( val mgr: MdMgr
         val pyFilePath : String = s"$modelDir/$pyFileName"
         val pyFileCmd : String = s"-m py_compile $pyFilePath"
         val exportcmd : String = s"export PYTHONPATH=$pyPath"
+        val pybinpath : String = pyPropertyMap(PYTHON_BIN_DIR).toString
+        val pybindir : String = if (pybinpath.endsWith("/")) pybinpath else pybinpath + "/"
 
         writeSrcFile(pythonMdlText, pyFilePath)
-        val cmdSeq : Seq[String] = Seq[String]("python", "-m", "compileall", modelDir)
+        val cmdSeq : Seq[String] = Seq[String](pybindir + "python", "-m", "compileall", modelDir)
         val (rc, stdoutResult, stderrResult) : (Int, String, String) = runCmdCollectOutput(cmdSeq)
         //val rmCompileFiles : String = pyFilePath.dropRight(3) + "*" /** rm the .py and .pyc */
         val rmCompileFiles : String = s"$modelDir/*"
@@ -338,7 +341,7 @@ class PythonMdlSupport ( val mgr: MdMgr
     }
     modelDefinition
   }
-  
+
    /** Prepare a new model with the new python/jython source supplied in the constructor.
     *
     * @return a newly constructed model def that reflects the new PMML source
