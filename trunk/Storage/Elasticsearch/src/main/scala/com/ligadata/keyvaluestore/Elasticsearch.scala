@@ -158,14 +158,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     throw CreateConnectionException("Unable to find Location in adapterConfig ", new Exception("Invalid adapterConfig"))
   }
 
-  val hostname = if (parsed_json.contains("hostlist")) parsed_json.getOrElse("hostlist", "localhost").toString.trim else parsed_json.getOrElse("Location", "localhost").toString.trim
-  val namespace = if (parsed_json.contains("SchemaName")) parsed_json.getOrElse("SchemaName", "default").toString.trim else parsed_json.getOrElse("SchemaName", "default").toString.trim
-
-  var instanceName: String = null;
-  if (parsed_json.contains("instancename")) {
-    instanceName = parsed_json.get("instancename").get.toString.trim
-  }
-
   var portNumber: String = null;
   if (parsed_json.contains("portnumber")) {
     portNumber = parsed_json.get("portnumber").get.toString.trim
@@ -209,7 +201,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     autoCreateTables = parsed_json.get("autoCreateTables").get.toString.trim
   }
 
-  logger.info("hostname => " + hostname)
   logger.info("SchemaName => " + SchemaName)
   logger.info("autoCreateTables  => " + autoCreateTables)
 
@@ -1633,105 +1624,107 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     isTableExists(tableNamespace + "." + tableName)
   }
 
-  def renameTable(srcTableName: String, destTableName: String, forceCopy: Boolean = false): Unit = lock.synchronized {
-    var client: TransportClient = null
-    var stmt: Statement = null
-    var rs: ResultSet = null
-    logger.info("renaming " + srcTableName + " to " + destTableName);
-    var query = ""
-    try {
-      // check whether source table exists
-      var exists = isTableExists(srcTableName)
-      if (!exists) {
-        throw CreateDDLException("Failed to rename the table " + srcTableName + ":", new Exception("Source Table doesn't exist"))
-      }
-      // check if the destination table already exists
-      exists = isTableExists(destTableName)
-      if (exists) {
-        logger.info("The table " + destTableName + " exists.. ")
-        if (forceCopy) {
-          dropTable(destTableName)
-        } else {
-          throw CreateDDLException("Failed to rename the table " + srcTableName + ":", new Exception("Destination Table already exist"))
-        }
-      }
-      client = getConnection
-
-      var indicies: util.Map[String, IndexStats] = client.admin().indices().prepareStats().clear().get().getIndices()
-
-      if (indicies.get(srcTableName) != null) {
-        val response = client.admin().indices().prepareAliases()
-          .addAlias(toFullTableName(srcTableName), toFullTableName(destTableName))
-          .execute().actionGet()
-      } else {
-
-        val response = client.admin().indices().prepareAliases()
-          .removeAlias("my_old_index", "my_alias")
-          .addAlias("my_index", "my_alias")
-          .execute().actionGet();
-
-      }
-
-
-
-
-
-      query = "sp_rename '" + SchemaName + "." + srcTableName + "' , '" + destTableName + "'"
-      stmt = con.createStatement()
-      stmt.executeUpdate(query);
-    } catch {
-      case e: Exception => {
-        throw CreateDDLException("Failed to rename the table " + srcTableName + ":" + "query => " + query, e)
-      }
-    } finally {
-      if (rs != null) {
-        rs.close
-      }
-      if (stmt != null) {
-        stmt.close
-      }
-      if (con != null) {
-        con.close
-      }
-    }
-  }
-
-
-//  def getIndicesFromAliasName(aliasName: String, client: TransportClient): Set[String] = {
-//
-//    val iac: IndicesAdminClient = client.admin().indices();
-//
-//
-//    val map: ImmutableOpenMap[String, util.List[AliasMetaData]] = iac.getAliases(new GetAliasesRequest(aliasName))
-//      .actionGet().getAliases()
-//
-//    val allIndices: Set[String] = null
-//    val key: String = null
-//
-//    map.keysIt().forEachRemaining((key1:String) => {
-//
-//
-//
-//
-//    })
-//
-////    map.keysIt().forEachRemaining(allIndices::add);
-////    return allIndices;
-//  }
+  // not implemented yet
+  //  def renameTable(srcTableName: String, destTableName: String, forceCopy: Boolean = false): Unit = lock.synchronized {
+  //    var client: TransportClient = null
+  //    var stmt: Statement = null
+  //    var rs: ResultSet = null
+  //    logger.info("renaming " + srcTableName + " to " + destTableName);
+  //    var query = ""
+  //    try {
+  //      // check whether source table exists
+  //      var exists = isTableExists(srcTableName)
+  //      if (!exists) {
+  //        throw CreateDDLException("Failed to rename the table " + srcTableName + ":", new Exception("Source Table doesn't exist"))
+  //      }
+  //      // check if the destination table already exists
+  //      exists = isTableExists(destTableName)
+  //      if (exists) {
+  //        logger.info("The table " + destTableName + " exists.. ")
+  //        if (forceCopy) {
+  //          dropTable(destTableName)
+  //        } else {
+  //          throw CreateDDLException("Failed to rename the table " + srcTableName + ":", new Exception("Destination Table already exist"))
+  //        }
+  //      }
+  //      client = getConnection
+  //
+  //      var indicies: util.Map[String, IndexStats] = client.admin().indices().prepareStats().clear().get().getIndices()
+  //
+  //      if (indicies.get(srcTableName) != null) {
+  //        val response = client.admin().indices().prepareAliases()
+  //          .addAlias(toFullTableName(srcTableName), toFullTableName(destTableName))
+  //          .execute().actionGet()
+  //      } else {
+  //
+  //        val response = client.admin().indices().prepareAliases()
+  //          .removeAlias("my_old_index", "my_alias")
+  //          .addAlias("my_index", "my_alias")
+  //          .execute().actionGet();
+  //
+  //      }
+  //
+  //
+  //      query = "sp_rename '" + SchemaName + "." + srcTableName + "' , '" + destTableName + "'"
+  //      stmt = con.createStatement()
+  //      stmt.executeUpdate(query);
+  //    }
+  //  catch
+  //  {
+  //    case e: Exception => {
+  //      throw CreateDDLException("Failed to rename the table " + srcTableName + ":" + "query => " + query, e)
+  //    }
+  //  } finally
+  //  {
+  //    if (rs != null) {
+  //      rs.close
+  //    }
+  //    if (stmt != null) {
+  //      stmt.close
+  //    }
+  //    if (con != null) {
+  //      con.close
+  //    }
+  //  }
+  //}
 
 
+  //  def getIndicesFromAliasName(aliasName: String, client: TransportClient): Set[String] = {
+  //
+  //    val iac: IndicesAdminClient = client.admin().indices();
+  //
+  //
+  //    val map: ImmutableOpenMap[String, util.List[AliasMetaData]] = iac.getAliases(new GetAliasesRequest(aliasName))
+  //      .actionGet().getAliases()
+  //
+  //    val allIndices: Set[String] = null
+  //    val key: String = null
+  //
+  //    map.keysIt().forEachRemaining((key1:String) => {
+  //
+  //
+  //
+  //
+  //    })
+  //
+  ////    map.keysIt().forEachRemaining(allIndices::add);
+  ////    return allIndices;
+  //  }
+
+  // not implemented yet
   def backupContainer(containerName: String): Unit = lock.synchronized {
     var tableName = toTableName(containerName)
     var oldTableName = tableName
     var newTableName = tableName + "_bak"
-    renameTable(oldTableName, newTableName)
+    //    renameTable(oldTableName, newTableName)
   }
 
+  // not implemented yet
   def restoreContainer(containerName: String): Unit = lock.synchronized {
     var tableName = toTableName(containerName)
     var oldTableName = tableName + "_bak"
     var newTableName = tableName
-    renameTable(oldTableName, newTableName)
+    //    renameTable(oldTableName, newTableName)
   }
 
   override def isContainerExists(containerName: String): Boolean = {
@@ -1740,6 +1733,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     isTableExists(tableName)
   }
 
+  // code to be implemented
   override def copyContainer(srcContainerName: String, destContainerName: String, forceCopy: Boolean): Unit = lock.synchronized {
     if (srcContainerName.equalsIgnoreCase(destContainerName)) {
       throw CreateDDLException("Failed to copy the container " + srcContainerName, new Exception("Source Container Name can't be same as destination container name"))
@@ -1747,7 +1741,8 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     var srcTableName = toTableName(srcContainerName)
     var destTableName = toTableName(destContainerName)
     try {
-      renameTable(srcTableName, destTableName, forceCopy)
+      //      renameTable(srcTableName, destTableName, forceCopy)
+      logger.info("code  not implemented yet")
     } catch {
       case e: Exception => {
         throw CreateDDLException("Failed to copy the container " + srcContainerName, e)
@@ -1758,27 +1753,24 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   override def getAllTables: Array[String] = {
     var tbls = new Array[String](0)
     // check whether corresponding table exists
-    var con: Connection = null
+    var client: TransportClient = null
     var rs: ResultSet = null
     try {
-      con = getConnection
-      val dbm = con.getMetaData();
-      rs = dbm.getTables(null, SchemaName.toUpperCase, null, null);
-      while (rs.next()) {
-        var t = rs.getString(3)
-        tbls = tbls :+ t
-      }
-      tbls
+      client = getConnection
+
+      val indicies: Array[String] = client.admin().cluster()
+        .prepareState().execute()
+        .actionGet().getState()
+        .getMetaData().concreteAllIndices()
+
+      indicies
     } catch {
       case e: Exception => {
-        throw CreateDMLException("Unable to fetch the list of tables in the schema  " + SchemaName, e)
+        throw CreateDMLException("Unable to fetch the list of tables Elasticsearch ", e)
       }
     } finally {
-      if (rs != null) {
-        rs.close
-      }
-      if (con != null) {
-        con.close
+      if (client != null) {
+        client.close
       }
     }
   }
@@ -1799,12 +1791,14 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     dropTables(tbls.map(t => t._1 + ':' + t._2))
   }
 
+  // not implemented yet
   override def copyTable(srcTableName: String, destTableName: String, forceCopy: Boolean): Unit = {
-    renameTable(srcTableName, destTableName, forceCopy)
+    //    renameTable(srcTableName, destTableName, forceCopy)
   }
 
+  // not implemented yet
   override def copyTable(namespace: String, srcTableName: String, destTableName: String, forceCopy: Boolean): Unit = {
-    copyTable(namespace + '.' + srcTableName, namespace + '.' + destTableName, forceCopy)
+    //    copyTable(namespace + '.' + srcTableName, namespace + '.' + destTableName, forceCopy)
   }
 }
 
