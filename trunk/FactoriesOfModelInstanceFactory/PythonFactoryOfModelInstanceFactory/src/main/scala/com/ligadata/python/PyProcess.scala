@@ -36,7 +36,8 @@ trait LogProcessTrait {
 class PyProcess(host: String,
                 port: Int,
 //  PyPath: String)  {
-  PyPath: String) extends LogProcessTrait {
+  PyPath: String,
+  pyBinPath : String ) extends LogProcessTrait {
 
   val HostText: String = "--host"
   val Host: String = "localhost"
@@ -124,7 +125,9 @@ class PyProcess(host: String,
 
 
   def initPyProcess(): Unit = {
-    var cmdString: String =
+    val pyBinDir : String = if (pyBinPath.endsWith("/")) pyBinPath else pyBinPath + "/"
+
+    var cmdString: String = pyBinDir + "python " +
       cPyPath + "/pythonserver.py " +
       HostText + SingleSpace + cHost + SingleSpace +
       PortText + SingleSpace + cPort + SingleSpace +

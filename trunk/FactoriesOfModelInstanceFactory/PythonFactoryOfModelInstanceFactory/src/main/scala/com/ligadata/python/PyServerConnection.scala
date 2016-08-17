@@ -75,9 +75,11 @@ trait LogTrait {
 class PyServerConnection(val host : String
                          , val port : Int
                          , val user : String
-                         , val log4jConfigPath : String
-                         , val fileLogPath : String
-                         , val pyPath : String) extends LogTrait {
+  , val log4jConfigPath : String,
+  val fileLogPath : String,
+  val pyPath : String,
+  val pyBinPath : String
+  ) extends LogTrait {
 
     private var _sock : Socket = null
     private var _in : DataInputStream = null
@@ -134,7 +136,7 @@ class PyServerConnection(val host : String
     private def startServer : String = {
         val useSSH : Boolean = host != "localhost"
 
-      val pyProcess : PyProcess = new PyProcess(host, port, pyPath)
+      val pyProcess : PyProcess = new PyProcess(host, port, pyPath, pyBinPath)
 //        val pythonCmdStr = s"python $pyPath/pythonserver.py --host $host --port ${port.toString} --pythonPath $pyPath --log4jConfig $log4jConfigPath --fileLogPath $fileLogPath"
       pyProcess.initPyProcess()
 

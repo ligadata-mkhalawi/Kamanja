@@ -504,7 +504,12 @@ class PythonAdapter(factory : PythonAdapterFactory
             val pyLogPath : String = if (nodeContext.getValue("PYTHON_LOG_PATH") != null)
                 nodeContext.getValue("PYTHON_LOG_PATH").asInstanceOf[String]
             else
-                s"$pyPath/logs/pythonserver.log"
+              s"$pyPath/logs/pythonserver.log"
+
+          val pyBinPath : String = if (nodeContext.getValue("PYTHON_BIN_DIR") != null)
+            nodeContext.getValue("PYTHON_BIN_DIR").asInstanceOf[String]
+          else
+            s"/usr/bin/"
             /** peer inside the pyPropMap to see if things are correct when debuging needed */
             val pyPropMap : Map[String,Any] = nodeContext.getValue("pyPropertyMap").asInstanceOf[Map[String,Any]]
 
@@ -513,7 +518,8 @@ class PythonAdapter(factory : PythonAdapterFactory
                 ,"kamanja"
                 ,pyLogConfigPath
                 ,pyLogPath
-                ,pyPath)
+              ,pyPath,
+            pyBinPath)
             val (startValid, connValid) : (Boolean, Boolean) = if (pyConn != null) {
                 /** setup server and connection to it */
                 val (startServerResult, connResult) : (String,String) = pyConn.initialize
