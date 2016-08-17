@@ -15,6 +15,10 @@ angular.module('networkApp')
           header.currentDate = Date.now();
         }, 1000);
 
+        $rootScope.$on('configData', function(event, data){
+          header.showFilter = data.showFilter;
+          header.showStatus = data.socketOn;
+        });
 
         header.hideSideMenu = function () {
           $rootScope.$broadcast('closeSideMenu');

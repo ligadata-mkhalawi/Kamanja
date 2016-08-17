@@ -4,9 +4,12 @@
 'use strict'
 
 angular.module('networkApp')
-  .factory('serviceSocket', function () {
+  .factory('serviceSocket', function ($rootScope) {
     var wsStatus;
-    var socketUrl = 'ws://54.176.225.148:7080/v2/broker/?topics=testmessageevents_1';
+    var socketUrl = '';
+    $rootScope.$on('configData', function(event, data){
+      socketUrl = data.socketUrl;
+    });
     return {
       connectStatus: function (callback) {
         if ('WebSocket' in window) {

@@ -13,6 +13,7 @@ angular.module('networkApp')
         data: {}
       }, function(response){
         serviceRest.setConfig(response);
+        $rootScope.$broadcast('configData', response);
         callback();
       });
     };

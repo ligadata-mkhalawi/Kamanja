@@ -4,7 +4,7 @@
       <img class="logo" id="imgLogo" src="./images/logo.svg" width="168"
            height="47" alt="" data-mu-svgfallback="./images/logo.png">
       <span class="version">beta v0.1</span>
-      <div class="row filtersearch">
+      <div ng-show="header.showFilter" class="row filtersearch">
         <div class="col-md-6">
           <div>
             <i class="fa fa-search fa-2" data-toggle="collapse" data-target=".search-container" aria-hidden="true"></i>
@@ -67,7 +67,7 @@
       <div class="row">
         <div class="col-md-12 rightSection">
           <ul class="list-inline rightItems">
-            <li>
+            <li ng-show="header.showStatus">
               <div class="checkbox">
                 <input type="checkbox" ng-click="header.toggleShowStatus()" ng-checked="header.getShowStatus()"
                        id="chkShowStatus">
