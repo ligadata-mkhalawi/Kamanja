@@ -36,12 +36,13 @@ angular.module('networkApp')
           });
         };
 
-        header.filterNodes = function($event){
-          var chk = $event.target;
-          $rootScope.$broadcast('filterNodesChanged', {
-            type: chk.id.toLowerCase(),
-            visible: chk.checked
-          });
+        header.filterChecked = function($event){
+          header.filterNodes();
+        };
+
+        header.filterNodes = function(){
+          $rootScope.$broadcast('filterNodesChanged',
+            {filterList: this.filterList, searchText: header.selectedSearch});
         };
 
         header.generateFilterList = function(viewObj){
@@ -53,7 +54,8 @@ angular.module('networkApp')
               imageName: type.image + '.inactive.' + type.extension,
               imageWidth: type.width,
               imageHeight: type.height,
-              name: item
+              name: item,
+              checked: true
             };
             header.filterList.push(filterObj);
           });
@@ -63,6 +65,13 @@ angular.module('networkApp')
           serviceData.setSelectedView(viewObj);
           header.generateFilterList(viewObj);
           header.selectedView = serviceData.getSelectedViewName();
+          $rootScope.$on('viewChanged', function(event, data){
+            header.selectedViewData = serviceData.getSelectedViewData().result;
+          });
+        };
+
+        header.onSearchSelectChange = function($item, $model, $label, $event){
+          console.log($item);
         };
 
         header.init = function(){

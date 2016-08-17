@@ -12,7 +12,8 @@ angular
   .module('networkApp', [
     'ngAnimate',
     'ui.router',
-    'ngResource'
+    'ngResource',
+    'ui.bootstrap'
   ])
   .config(function ($stateProvider, $urlRouterProvider) {
 
