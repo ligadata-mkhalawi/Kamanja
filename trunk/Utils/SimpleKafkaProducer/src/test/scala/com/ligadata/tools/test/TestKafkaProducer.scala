@@ -1,0 +1,79 @@
+package com.ligadata.tools.test
+
+import java.util.Properties
+
+import com.ligadata.tools.SimpleKafkaProducer
+import com.ligadata.test.configuration.cluster.zookeeper._
+import com.ligadata.test.configuration.cluster.adapters.interfaces._
+
+class TestKafkaProducer {
+  /**
+    * Designed to leverage the SimpleKafkaProducer tool to input messages into a running kafka queue.
+    */
+  def inputMessages(iOAdapterConfig: IOAdapter, file: String, dataFormat: String, partitionKeyIdxs: String = "1"): Unit = {
+    if (!dataFormat.equalsIgnoreCase("CSV") && !dataFormat.equalsIgnoreCase("JSON"))
+      throw new Exception("AUTOMATION-KAFKA-MESSAGE-HANDLER: Invalid data format '" + dataFormat + "' provided. Accepted formats: CSV | JSON")
+
+    val validJsonMap = scala.collection.mutable.Map[String, List[String]]()
+    var partKeys: Any = null
+    if (dataFormat.equalsIgnoreCase("json")) {
+      val msgTypeKeys = partitionKeyIdxs.replace("\"", "").trim.split(",").filter(part => part.size > 0)
+
+      msgTypeKeys.foreach(msgType => {
+        val keyStructure = msgType.split(":")
+        var keyList: List[String] = List()
+        keyStructure(1).split("~").foreach(key => {
+          keyList = List(key) ::: keyList
+        })
+
+        validJsonMap(keyStructure(0)) = keyList
+      })
+      partKeys = validJsonMap
+    } else {
+      // This is the CSV path, partitionkeyidx is in the Array[Int] format
+      // If this is old path... keep as before for now....
+      partKeys = partitionKeyIdxs.replace("\"", "").trim.split(",").map(part => part.trim).filter(part => part.size > 0).map(part => part.toInt)
+    }
+
+    val (topicName, hostList) = {
+      iOAdapterConfig.adapterSpecificConfig match {
+        case cfg: KafkaAdapterSpecificConfig =>
+          (cfg.topicName, cfg.hostList)
+      }
+    }
+
+    val props = new Properties()
+    props.put("bootstrap.servers", hostList)
+    props.put("producer.type", "async")
+    props.put("batch.num.messages", "1024")
+    props.put("batch.size", "1024")
+    props.put("queue.time", "50")
+    props.put("queue.size", (16 * 1024 * 1024).toString)
+    props.put("message.send.max.retries", "3")
+    props.put("request.required.acks", "1")
+    val bufferMemory: Integer = 64 * 1024 * 1024
+    props.put("buffer.memory", bufferMemory.toString)
+    props.put("buffer.size", bufferMemory.toString)
+    props.put("socket.send.buffer", bufferMemory.toString)
+    props.put("socket.receive.buffer", bufferMemory.toString)
+    props.put("client.id", "Client1")
+    //props.put("partitioner.class", "com.ligadata.tools.CustPartitioner")
+    props.put("key.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
+    props.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
+
+    //val producer = new Producer[Array[Byte], Array[Byte]](new ProducerConfig(props))
+    //val producer = new org.apache.kafka.clients.producer.KafkaProducer[Array[Byte], Array[Byte]](props)
+    val oAdapter = com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer.CreateOutputAdapter(props, null)
+
+    try {
+      //ProcessFile(producer, topics, threadNo, fl, msg, sleeptm, partitionkeyidxs, st, ignorelines, format, isGzip, topicpartitions, isVerbose.equalsIgnoreCase("true"))
+      SimpleKafkaProducer.ProcessFile(oAdapter, Array(topicName), 1, file, "", 0, partKeys, new SimpleKafkaProducer.Stats, 0, dataFormat, false, 8, true)
+
+      //SimpleKafkaProducer.main(Array("--gz", "false", "--format", dataFormat, "--topics", topicName, "--brokerlist", hostList,
+      //  "--files", file, "--partitionkeyidxs", partitionKeyIdxs, "--threads", "1", "--topicpartitions", "8"))
+    }
+    catch {
+      case e: Exception => throw new Exception("AUTOMATION-KAFKA-MESSAGE-HANDLER: Failed to send message to kafka", e)
+    }
+  }
+}

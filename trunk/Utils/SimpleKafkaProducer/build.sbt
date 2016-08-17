@@ -4,8 +4,6 @@ import Keys._
 
 shellPrompt := { state => "sbt (%s)> ".format(Project.extract(state).currentProject.id) }
 
-
-
 assemblyOption in assembly ~= {
   _.copy(prependShellScript = Some(defaultShellScript))
 }
@@ -28,6 +26,8 @@ assemblyMergeStrategy in assembly := {
   case x if x endsWith "org/apache/commons/beanutils/BasicDynaBean.class" => MergeStrategy.last
   case x if x contains "org/apache/commons/collections" => MergeStrategy.last
   case x if x contains "org\\apache\\commons\\collections" => MergeStrategy.last
+  case x if x contains "com/ligadata/keyvaluestore/DriverShim.class" => MergeStrategy.last
+  case x if x contains "com/ligadata/keyvaluestore/JdbcClassLoader.class" => MergeStrategy.last
   case "log4j.properties" => MergeStrategy.first
   case "unwanted.txt" => MergeStrategy.discard
   case x =>
@@ -42,7 +42,6 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
 }
 
 name := "SimpleKafkaProducer"
-
 
 //resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 //
@@ -65,6 +64,7 @@ name := "SimpleKafkaProducer"
 //libraryDependencies += "org.json4s" %% "json4s-native" % "3.2.9"
 //
 //libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.2.9"
+//libraryDependencies += "org.apache.kafka" %% "kafka" % "0.9.0.0"
 
 coverageMinimum := 80
 

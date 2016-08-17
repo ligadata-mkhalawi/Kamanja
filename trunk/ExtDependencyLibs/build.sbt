@@ -125,12 +125,6 @@ resolvers += "Apache repo" at "https://repository.apache.org/content/repositorie
 //)
 
 //libraryDependencies += "org.apache.kafka" %% "kafka" % "0.10.0.0"
-libraryDependencies += "org.apache.kafka" %% "kafka" % "0.9.0.1"
-//libraryDependencies += "org.apache.kafka" %% "kafka" % "0.9.0.1" % "test" classifier "test"
-libraryDependencies += "org.apache.kafka" % "kafka-clients" % "0.9.0.1"
-
-
-//libraryDependencies += "org.apache.kafka" %% "kafka" % "0.10.0.0"
 
 /////////////////////// PmmlTestTool
 // 1.2.9 is currently used in other engine... use same here

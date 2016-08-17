@@ -102,17 +102,15 @@ object ConfigDefaults {
   //copy(new File("lib_managed"))
   copy(new File("."))
 
-  def jarResourceDir = getClass.getResource("/jars/lib/system").getPath
+  val jarResourceDir = getClass.getResource("/jars/lib/system").getPath
 
   logger.info("jarResourceDir " + jarResourceDir)
 
-  def envContextClassName: String = "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$"
-  def envContextDependecyJarList: List[String] = List(s"ExtDependencyLibs_$scalaVersion-${TestUtils.kamanjaVersion}.jar", s"KamanjaInternalDeps_$scalaVersion-${TestUtils.kamanjaVersion}.jar", s"ExtDependencyLibs2_$scalaVersion-${TestUtils.kamanjaVersion}.jar")
-  def envContextJarName = s"simpleenvcontextimpl_$scalaVersion-1.0.jar"
-
-  def nodeClassPath: String = s".:$jarResourceDir/ExtDependencyLibs_$scalaVersion-${TestUtils.kamanjaVersion}.jar:$jarResourceDir/KamanjaInternalDeps_$scalaVersion-${TestUtils.kamanjaVersion}.jar:$jarResourceDir/ExtDependencyLibs2_$scalaVersion-${TestUtils.kamanjaVersion}.jar"
-
-  def adapterDepJars: List[String] = List(s"ExtDependencyLibs_$scalaVersion-${TestUtils.kamanjaVersion}.jar", s"KamanjaInternalDeps_$scalaVersion-${TestUtils.kamanjaVersion}.jar", s"ExtDependencyLibs2_$scalaVersion-${TestUtils.kamanjaVersion}.jar")
+  val envContextClassName: String = "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$"
+  val envContextDependecyJarList: List[String] = List(s"ExtDependencyLibs_$scalaVersion-${TestUtils.kamanjaVersion}.jar", s"KamanjaInternalDeps_$scalaVersion-${TestUtils.kamanjaVersion}.jar", s"ExtDependencyLibs2_$scalaVersion-${TestUtils.kamanjaVersion}.jar")
+  val envContextJarName = s"simpleenvcontextimpl_$scalaVersion-1.0.jar"
+  val nodeClassPath: String = s".:$jarResourceDir/ExtDependencyLibs_$scalaVersion-${TestUtils.kamanjaVersion}.jar:$jarResourceDir/KamanjaInternalDeps_$scalaVersion-${TestUtils.kamanjaVersion}.jar:$jarResourceDir/ExtDependencyLibs2_$scalaVersion-${TestUtils.kamanjaVersion}.jar"
+  val adapterDepJars: List[String] = List(s"ExtDependencyLibs_$scalaVersion-${TestUtils.kamanjaVersion}.jar", s"KamanjaInternalDeps_$scalaVersion-${TestUtils.kamanjaVersion}.jar", s"ExtDependencyLibs2_$scalaVersion-${TestUtils.kamanjaVersion}.jar")
 
   val scala_home = System.getenv("SCALA_HOME")
 
