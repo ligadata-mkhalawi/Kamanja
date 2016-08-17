@@ -3,7 +3,10 @@ package com.ligadata.kafkaInputOutputAdapters_v10.embedded
 import java.io.FileNotFoundException
 import java.util.Properties
 
-import org.apache.logging.log4j.{Logger, LogManager}
+import kafka.server.{KafkaConfig, KafkaServer}
+
+import com.ligadata.test.utils._
+import org.apache.logging.log4j.{LogManager, Logger}
 
 case class EmbeddedKafkaException(message: String, cause: Throwable = null) extends Exception(message, cause)
 
@@ -37,7 +40,7 @@ class KafkaBroker(hostname: String, port: Int, private var brokerId: Int, zkConn
   }
 
   private def init(): Unit = {
-    logger.info("AUTOMATION-EMBEDDED-KAFKA: Initializing Kafka Broker")
+    logger.info("[Embedded Kafka Broker]: Initializing Kafka Broker")
     val props = new Properties()
     props.put("host.name", "127.0.0.1")
     props.put("port", _port.toString)
@@ -57,14 +60,14 @@ class KafkaBroker(hostname: String, port: Int, private var brokerId: Int, zkConn
       init()
     }
     if (!isRunning) {
-      logger.info(s"AUTOMATION-EMBEDDED-KAFKA: Starting Kafka Broker:\n\tHost Name: $hostname\n\tID: $brokerId\n\tPort: ${_port}\n\tLog Directory: $logDir\n")
+      logger.info(s"[Embedded Kafka Broker]: Starting Kafka Broker:\n\tHost Name: $hostname\n\tID: $brokerId\n\tPort: ${_port}\n\tLog Directory: $logDir\n")
       try {
         TestUtils.retry(3) {
           kafkaServer.startup()
         }
       }
       catch {
-        case e: Exception => throw new EmbeddedKafkaException(s"AUTOMATION-EMBEDDED-KAFKA: Failed to start Kafka Broker:\n\tHost Name: $hostname\n\tID: $brokerId\n\tPort: ${_port}\n\tLog Directory: $logDir\n", e)
+        case e: Exception => throw new EmbeddedKafkaException(s"[Embedded Kafka Broker]: Failed to start Kafka Broker:\n\tHost Name: $hostname\n\tID: $brokerId\n\tPort: ${_port}\n\tLog Directory: $logDir\n", e)
       }
       isRunning = true
     }
@@ -72,7 +75,7 @@ class KafkaBroker(hostname: String, port: Int, private var brokerId: Int, zkConn
 
   def stop(cleanup:Boolean = true): Unit = {
     if(isRunning) {
-      logger.info(s"AUTOMATION-EMBEDDED-KAFKA: Stopping Kafka Broker:\n\tHost Name: $hostname\n\tID: $brokerId\n\tPort: ${_port}\n\tLog Directory: $logDir\n")
+      logger.info(s"[Embedded Kafka Broker]: Stopping Kafka Broker:\n\tHost Name: $hostname\n\tID: $brokerId\n\tPort: ${_port}\n\tLog Directory: $logDir\n")
       kafkaServer.shutdown()
       kafkaServer.awaitShutdown()
       isRunning = false
@@ -82,7 +85,7 @@ class KafkaBroker(hostname: String, port: Int, private var brokerId: Int, zkConn
           cleanLogDir()
         }
         catch {
-          case e: FileNotFoundException => throw new EmbeddedKafkaException("AUTOMATION-EMBEDDED-KAFKA-CLUSTER: Unable to find file '" + this.logDir + "'", e)
+          case e: FileNotFoundException => throw new EmbeddedKafkaException("[Embedded Kafka Cluster]: Unable to find file '" + this.logDir + "'", e)
         }
       }
     }
@@ -96,7 +99,7 @@ class KafkaBroker(hostname: String, port: Int, private var brokerId: Int, zkConn
     var count = 0
     while(logDir.exists() && count < timeout) {
       if(count >= timeout) {
-        throw new EmbeddedKafkaException(s"AUTOMATION-EMBEDDED-KAFKA: Failed to delete log directory $logDir")
+        throw new EmbeddedKafkaException(s"[Embedded Kafka Broker]: Failed to delete log directory $logDir")
       }
       count += 1
       if(TestUtils.deleteFile(logDir))
@@ -115,8 +118,8 @@ class EmbeddedKafkaCluster {
   def getBrokers = brokers
 
   def startCluster: Unit = {
-    if(brokers.length == 0){
-      throw new Exception("AUTOMATION-EMBEDDED-KAFKA-CLUSTER: No brokers found to start")
+    if(brokers.length == 0){ 
+      throw new Exception("[Embedded Kafka Cluster]: No brokers found to start")
     }
     brokers.foreach(broker => {
       broker.start
@@ -126,7 +129,7 @@ class EmbeddedKafkaCluster {
 
   def stopCluster: Unit = {
     if (brokers.length == 0) {
-      throw new Exception("AUTOMATION-EMBEDDED-KAFKA-CLUSTER: No brokers found to stop")
+      throw new Exception("[Embedded Kafka Cluster]: No brokers found to stop")
     }
     brokers.foreach(broker => broker.stop())
     brokers = List()
@@ -134,7 +137,7 @@ class EmbeddedKafkaCluster {
   }
 
   def withBroker(kafkaBroker: KafkaBroker): EmbeddedKafkaCluster = {
-    logger.debug("AUTOMATION-EMBEDDED-KAFKA-CLUSTER: Adding Kafka Broker:")
+    logger.debug("[Embedded Kafka Cluster]: Adding Kafka Broker:")
     logger.debug("\tBroker ID: " + kafkaBroker.getBrokerId)
     logger.debug("\tBroker Hostname: " + kafkaBroker.getHostname)
     brokers = brokers :+ kafkaBroker

@@ -15,36 +15,36 @@ class EmbeddedZookeeper extends KamanjaTestLogger {
   def startup: Unit = {
     // This should get a new port at startup and set EmbeddedZookeeper.port at the new port
     if (!isRunning) {
-      logger.info("AUTOMATION-EMBEDDED-ZOOKEEPER: Starting Zookeeper...")
+      logger.info("[Embedded-Zookeeper]: Starting Zookeeper...")
       this.factory = ServerCnxnFactory.createFactory(new InetSocketAddress("localhost", getPort), 1024)
       this.snapshotDir = TestUtils.constructTempDir("zookeeper/snapshot")
       this.logDir = TestUtils.constructTempDir("zookeeper/data")
       try {
         factory.startup(new ZooKeeperServer(snapshotDir, logDir, 500))
-        logger.info("AUTOMATION-EMBEDDED-ZOOKEEPER: Zookeeper server launched. Connection String='" + getConnection + "'")
+        logger.info("[Embedded-Zookeeper]: Zookeeper server launched. Connection String='" + getConnection + "'")
         isRunning = true
       }
       catch {
-        case e: InterruptedException => throw new EmbeddedZookeeperException("AUTOMATION-EMBEDDED-ZOOKEEPER: Failed to start embedded zookeeper instance with exception:\n" + e)
+        case e: InterruptedException => throw new EmbeddedZookeeperException("[Embedded-Zookeeper]: Failed to start embedded zookeeper instance with exception:\n" + e)
       }
     }
   }
 
   def shutdown: Unit = {
     if (isRunning) {
-      logger.info("AUTOMATION-EMBEDDED-ZOOKEEPER: Shutting down zookeeper")
+      logger.info("[Embedded-Zookeeper]: Shutting down zookeeper")
       factory.shutdown()
-      logger.info("AUTOMATION-EMBEDDED-ZOOKEEPER: Zookeeper shutdown")
+      logger.info("[Embedded-Zookeeper]: Zookeeper shutdown")
       isRunning = false
       try {
-        logger.info(s"AUTOMATION-EMBEDDED-ZOOKEEPER: Deleting zookeeper snapshot directory $snapshotDir")
+        logger.info(s"[Embedded-Zookeeper]: Deleting zookeeper snapshot directory $snapshotDir")
         TestUtils.deleteFile(snapshotDir)
-        logger.info(s"AUTOMATION-EMBEDDED-ZOOKEEPER: Deleting zookeeper snapshot directory $logDir")
+        logger.info(s"[Embedded-Zookeeper]: Deleting zookeeper snapshot directory $logDir")
         TestUtils.deleteFile(logDir)
-        logger.info("AUTOMATION-EMBEDDED-ZOOKEEPER: Zookeeper files deleted")
+        logger.info("[Embedded-Zookeeper]: Zookeeper files deleted")
       }
       catch {
-        case e: FileNotFoundException => throw new EmbeddedZookeeperException(s"AUTOMATION-EMBEDDED-ZOOKEEPER: Unable to find file $logDir or $snapshotDir", e)
+        case e: FileNotFoundException => throw new EmbeddedZookeeperException(s"[Embedded-Zookeeper]: Unable to find file $logDir or $snapshotDir", e)
       }
     }
   }

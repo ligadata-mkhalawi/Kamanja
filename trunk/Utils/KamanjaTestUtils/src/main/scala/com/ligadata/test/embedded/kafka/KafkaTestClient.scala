@@ -31,18 +31,18 @@ class KafkaTestClient(zookeeperConn: String) extends KamanjaTestLogger {
 
     try {
       if (!AdminUtils.topicExists(zkUtils, topicName)) {
-        logger.info("AUTOMATION-KAFKA: Creating Topic: " + topicName)
+        logger.info("KAFKA-TEST-CLIENT: Creating Topic: " + topicName)
         AdminUtils.createTopic(zkUtils, topicName, numPartitions, replicationFactor, topicConfig)
         Thread sleep 3000
-        logger.info("AUTOMATION-KAFKA: Topic Created: " + topicName)
+        logger.info("KAFKA-TEST-CLIENT: Topic Created: " + topicName)
       }
       else {
         logger.info("AUTOMAT ION-KAFKA: Topic '" + topicName + "' already exists")
       }
     }
     catch {
-      case e: TopicExistsException => logger.info("AUTOMATION-KAFKA: Topic " + topicName + " already created. Continuing...")
-      case e: Exception => throw new KafkaTestClientException("AUTOMATION-KAFKA: Failed to create topic '" + topicName + "' with error:\n" + e)
+      case e: TopicExistsException => logger.info("KAFKA-TEST-CLIENT: Topic " + topicName + " already created. Continuing...")
+      case e: Exception => throw new KafkaTestClientException("KAFKA-TEST-CLIENT: Failed to create topic '" + topicName + "' with error:\n" + e)
     }
     finally {
       if (zkClient != null) {
@@ -60,13 +60,13 @@ class KafkaTestClient(zookeeperConn: String) extends KamanjaTestLogger {
     val zkUtils: ZkUtils = new ZkUtils(zkClient, new ZkConnection(zookeeperConn), false)
     if (AdminUtils.topicExists(zkUtils, topicName)) {
       try {
-        logger.info("AUTOMATION-KAFKA: Deleting topic {}", topicName)
+        logger.info("KAFKA-TEST-CLIENT: Deleting topic {}", topicName)
         AdminUtils.deleteTopic(zkUtils, topicName)
         val servers = kafkaBrokers.map(broker => broker.kafkaServer)
         kafka.utils.TestUtils.waitUntilMetadataIsPropagated(servers, topicName, 0, 10000L)
       }
       catch {
-        case e: Exception => throw new KafkaTestClientException(s"AUTOMATION-KAFKA: Failed to delete topic $topicName")
+        case e: Exception => throw new KafkaTestClientException(s"KAFKA-TEST-CLIENT: Failed to delete topic $topicName")
       }
     }
   }

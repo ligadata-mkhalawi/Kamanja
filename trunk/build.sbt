@@ -262,7 +262,7 @@ lazy val KamanjaAppTester = project.in(file("Utils/KamanjaAppTester"))
   .configs(TestConfigs.all: _*)
   .settings(TestSettings.settings: _*)
   .settings(version <<= version in ThisBuild)
-  .dependsOn(KamanjaManager % "compile->test", MetadataAPI % "compile->test", KamanjaTestUtils)
+  .dependsOn(KamanjaManager % "compile->test", MetadataAPI % "compile->test", KamanjaTestUtils, KafkaAdapters_v10 % "compile->test")
 
 
 // TEST LIBRARIES ONLY TO BE INCLUDED AS PART OF TESTS
