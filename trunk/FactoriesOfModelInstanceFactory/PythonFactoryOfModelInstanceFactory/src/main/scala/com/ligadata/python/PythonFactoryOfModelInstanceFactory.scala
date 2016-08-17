@@ -208,7 +208,7 @@ class PythonAdapter(factory : PythonAdapterFactory
             throw new KamanjaException("PythonAdapter initialization failed... adapter constructed with a null factory",null)
         }
         if (factory.getModelDef() == null) {
-            logger.error("PythonAdapter initialization failed... factory's model def is null ")
+          logger.error("PythonAdapter initialization failed... factory's model def is null ")
             throw new KamanjaException("PythonAdapter initialization failed... factory's model def is null",null)
         }
 
@@ -220,7 +220,8 @@ class PythonAdapter(factory : PythonAdapterFactory
             throw new KamanjaException(s"Python initialization for model '$modelName' failed... the python server connection could not be established", null)
         }
 
-        /** retrieve the model options */
+
+      /** retrieve the model options */
         implicit val formats = org.json4s.DefaultFormats
         val modelDef : ModelDef = factory.getModelDef()
         val modelOptStr : String = modelDef.modelConfig
@@ -231,7 +232,15 @@ class PythonAdapter(factory : PythonAdapterFactory
         val (moduleName, modelName) : (String,String) = ModuleNModelNames
 
         val resultStr : String = pyServerConnection.addModel(moduleName, modelName, modelDef.objectDefinition, modelOptions)
-        val resultMap : Map[String,Any] = parse(resultStr).values.asInstanceOf[Map[String,Any]]
+
+      logger.debug("PythonAdapter getting called for ... ModuleName :  "
+        + moduleName +
+        " , ModelName : "
+        + modelName +
+        ", PartitionID : "
+        + _partitionKey)
+
+      val resultMap : Map[String,Any] = parse(resultStr).values.asInstanceOf[Map[String,Any]]
         val host : String = pyServerConnection.host
         val port : String = pyServerConnection.port.toString
         val rc = resultMap.getOrElse("Code", -1)

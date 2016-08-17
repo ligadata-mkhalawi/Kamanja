@@ -127,6 +127,7 @@ class PyProcess(host: String,
   def initPyProcess(): Unit = {
     val pyBinDir : String = if (pyBinPath.endsWith("/")) pyBinPath else pyBinPath + "/"
 
+    logger.debug("The pyBinDir is " + pyBinDir)
     var cmdString: String = pyBinDir + "python " +
       cPyPath + "/pythonserver.py " +
       HostText + SingleSpace + cHost + SingleSpace +
