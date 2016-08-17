@@ -19,6 +19,7 @@ import java.io.File
 import java.net.{InetAddress, URL, URLClassLoader}
 import java.sql.{CallableStatement, Connection, Driver, DriverManager, DriverPropertyInfo, PreparedStatement, ResultSet, Statement}
 import java.text.SimpleDateFormat
+import java.util
 import java.util.{Calendar, Properties, TimeZone}
 import javassist.bytecode.ByteArray
 
@@ -29,8 +30,14 @@ import com.ligadata.StorageBase.{DataStore, StorageAdapterFactory, Transaction}
 import com.ligadata.Utils.KamanjaLoaderInfo
 import com.ligadata.kamanja.metadata.AdapterInfo
 import org.apache.commons.dbcp2.BasicDataSource
+import org.elasticsearch.action.admin.indices.alias.get.{GetAliasesRequest, GetAliasesResponse}
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
+import org.elasticsearch.action.admin.indices.stats.IndexStats
 import org.elasticsearch.action.bulk.BulkResponse
+import org.elasticsearch.client.IndicesAdminClient
 import org.elasticsearch.client.transport.TransportClient
+import org.elasticsearch.cluster.metadata.AliasMetaData
+import org.elasticsearch.common.collect.ImmutableOpenMap
 import org.elasticsearch.common.transport.InetSocketTransportAddress
 import org.elasticsearch.common.xcontent.{XContentBuilder, XContentFactory}
 import org.elasticsearch.index.query.QueryBuilders
@@ -100,16 +107,16 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   }
 
   if (adapterConfig.size == 0) {
-    msg = "Invalid H2db Json Configuration string:" + adapterConfig
+    msg = "Invalid Elasticsearch Json Configuration string:" + adapterConfig
     throw CreateConnectionException(msg, new Exception("Invalid Configuration"))
   }
 
-  logger.debug("H2db configuration:" + adapterConfig)
+  logger.debug("Elasticsearch configuration:" + adapterConfig)
   var parsed_json: Map[String, Any] = null
   try {
     val json = parse(adapterConfig)
     if (json == null || json.values == null) {
-      msg = "Failed to parse H2db JSON configuration string:" + adapterConfig
+      msg = "Failed to parse Elasticsearch JSON configuration string:" + adapterConfig
       throw CreateConnectionException(msg, new Exception("Invalid Configuration"))
     }
     parsed_json = json.values.asInstanceOf[Map[String, Any]]
@@ -938,48 +945,48 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     //    getData(tableName, query, callbackFunction)
   }
 
-  private def getKeys(tableName: String, query: String, callbackFunction: (Key) => Unit): Unit = {
-    var con: Connection = null
-    var stmt: Statement = null
-    var rs: ResultSet = null
-    try {
-      con = getConnection
-
-      stmt = con.createStatement()
-      rs = stmt.executeQuery(query);
-      var recCount = 0
-      var byteCount = 0
-      updateOpStats("get", tableName, 1)
-      while (rs.next()) {
-        var timePartition = rs.getLong(1)
-        var keyStr = rs.getString(2)
-        var tId = rs.getLong(3)
-        var rId = rs.getInt(4)
-        val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
-        var key = new Key(timePartition, bucketKey, tId, rId)
-        recCount = recCount + 1
-        byteCount = byteCount + getKeySize(key)
-        if (callbackFunction != null)
-          (callbackFunction) (key)
-      }
-      updateByteStats("get", tableName, byteCount)
-      updateObjStats("get", tableName, recCount)
-    } catch {
-      case e: Exception => {
-        throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
-      }
-    } finally {
-      if (rs != null) {
-        rs.close
-      }
-      if (stmt != null) {
-        stmt.close
-      }
-      if (con != null) {
-        con.close
-      }
-    }
-  }
+  //  private def getKeys(tableName: String, query: String, callbackFunction: (Key) => Unit): Unit = {
+  //    var con: Connection = null
+  //    var stmt: Statement = null
+  //    var rs: ResultSet = null
+  //    try {
+  //      con = getConnection
+  //
+  //      stmt = con.createStatement()
+  //      rs = stmt.executeQuery(query);
+  //      var recCount = 0
+  //      var byteCount = 0
+  //      updateOpStats("get", tableName, 1)
+  //      while (rs.next()) {
+  //        var timePartition = rs.getLong(1)
+  //        var keyStr = rs.getString(2)
+  //        var tId = rs.getLong(3)
+  //        var rId = rs.getInt(4)
+  //        val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
+  //        var key = new Key(timePartition, bucketKey, tId, rId)
+  //        recCount = recCount + 1
+  //        byteCount = byteCount + getKeySize(key)
+  //        if (callbackFunction != null)
+  //          (callbackFunction) (key)
+  //      }
+  //      updateByteStats("get", tableName, byteCount)
+  //      updateObjStats("get", tableName, recCount)
+  //    } catch {
+  //      case e: Exception => {
+  //        throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
+  //      }
+  //    } finally {
+  //      if (rs != null) {
+  //        rs.close
+  //      }
+  //      if (stmt != null) {
+  //        stmt.close
+  //      }
+  //      if (con != null) {
+  //        con.close
+  //      }
+  //    }
+  //  }
 
   override def getKeys(containerName: String, callbackFunction: (Key) => Unit): Unit = {
     CheckTableExists(containerName)
@@ -1390,53 +1397,64 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   }
 
   override def getKeys(containerName: String, bucketKeys: Array[Array[String]], callbackFunction: (Key) => Unit): Unit = {
-    var con: Connection = null
+    var client: TransportClient = null
     var pstmt: PreparedStatement = null
     var tableName = toFullTableName(containerName)
     var query = ""
     try {
       CheckTableExists(containerName)
-      con = getConnection
+      client = getConnection
       var recCount = 0
       var byteCount = 0
 
-      query = "select timePartition,bucketKey,transactionId,rowId from " + tableName + " where  bucketKey = ? "
-      pstmt = con.prepareStatement(query)
       bucketKeys.foreach(bucketKey => {
-        pstmt.setString(1, bucketKey.mkString(","))
-        var rs = pstmt.executeQuery();
+        val response = client
+          .prepareSearch(tableName)
+          .setTypes("type1")
+          .setQuery(QueryBuilders
+            .boolQuery().must(QueryBuilders.termQuery("timePartition", bucketKey.mkString(","))))
+          .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId"), null)
+          .execute().actionGet()
+
         updateOpStats("get", tableName, 1)
-        while (rs.next()) {
-          var timePartition = rs.getLong(1)
-          var keyStr = rs.getString(2)
-          var tId = rs.getLong(3)
-          var rId = rs.getInt(4)
+
+        val results: SearchHits = response.getHits
+        val hit: SearchHit = null
+
+        results.getHits.foreach((hit: SearchHit) => {
+          val schemaId = hit.getSource.get("schemaId").toString.toInt
+          val st = hit.getSource.get("serializerType").toString
+          val ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
+          val value = new Value(schemaId, st, ba)
+          var timePartition = hit.getSource.get("timePartition").toString.toLong
+          var keyStr = hit.getSource.get("bucketKey").toString
+          var tId = hit.getSource.get("transactionId").toString.toLong
+          var rId = hit.getSource.get("rowId").toString.toInt
           val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
           var key = new Key(timePartition, bucketKey, tId, rId)
           recCount = recCount + 1
           byteCount = byteCount + getKeySize(key)
           if (callbackFunction != null)
             (callbackFunction) (key)
-        }
+
+        })
       })
       updateByteStats("get", tableName, byteCount)
       updateObjStats("get", tableName, recCount)
+      //query = "select timePartition,bucketKey,transactionId,rowId from " + tableName + " where  bucketKey = ? "
     } catch {
       case e: Exception => {
         throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
       }
     } finally {
-      if (pstmt != null) {
-        pstmt.close
-      }
-      if (con != null) {
-        con.close
+      if (client != null) {
+        client.close
       }
     }
   }
 
   override def beginTx(): Transaction = {
-    new H2dbAdapterTx(this)
+    new ElasticsearchAdapterTx(this)
   }
 
   override def endTx(tx: Transaction): Unit = {
@@ -1453,27 +1471,23 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   }
 
   private def TruncateContainer(containerName: String): Unit = {
-    var con: Connection = null
-    var stmt: Statement = null
+    var client: TransportClient = null
     var tableName = toFullTableName(containerName)
-    var query = ""
     try {
       CheckTableExists(containerName)
-      con = getConnection
-
-      query = "truncate table " + tableName
-      stmt = con.createStatement()
-      stmt.executeUpdate(query);
+      client = getConnection
+      logger.info("delete the index/container ")
+      var response = client.admin().indices()
+        .delete(new DeleteIndexRequest(tableName)).actionGet()
+      logger.info("create the index/container again ")
+      CreateContainer(containerName, "ddl")
     } catch {
       case e: Exception => {
-        throw CreateDDLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
+        throw CreateDDLException("Failed to fetch data from the table " + tableName, e)
       }
     } finally {
-      if (stmt != null) {
-        stmt.close
-      }
-      if (con != null) {
-        con.close
+      if (client != null) {
+        client.close
       }
     }
   }
@@ -1487,36 +1501,29 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   }
 
   private def dropTable(tableName: String): Unit = lock.synchronized {
-    var con: Connection = null
-    var stmt: Statement = null
-    var rs: ResultSet = null
+    var client: TransportClient = null
     var fullTableName = SchemaName + "." + tableName
-    var query = ""
     try {
-      con = getConnection
-      // check if the container already dropped
-      val dbm = con.getMetaData();
-      rs = dbm.getTables(null, SchemaName.toUpperCase, tableName.toUpperCase, null);
-      if (!rs.next()) {
-        logger.info("The table " + tableName + " doesn't exist in the schema " + SchemaName + "  may have beem dropped already ")
+      client = getConnection
+      val indicies = client.admin().cluster()
+        .prepareState().execute()
+        .actionGet().getState()
+        .getMetaData().concreteAllIndices()
+
+      if (indicies.contains(tableName) == 0) {
+        var response = client.admin().indices()
+          .delete(new DeleteIndexRequest(tableName)).actionGet()
       } else {
-        query = "drop table " + fullTableName
-        stmt = con.createStatement()
-        stmt.executeUpdate(query);
+        logger.info("The Index " + tableName + " doesn't exist, it may have beem dropped already ")
       }
+
     } catch {
       case e: Exception => {
-        throw CreateDDLException("Failed to drop the table " + fullTableName + ":" + "query => " + query, e)
+        throw CreateDDLException("Failed to drop the Index " + fullTableName, e)
       }
     } finally {
-      if (rs != null) {
-        rs.close
-      }
-      if (stmt != null) {
-        stmt.close
-      }
-      if (con != null) {
-        con.close
+      if (client != null) {
+        client.close
       }
     }
   }
@@ -1535,20 +1542,20 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   }
 
   private def CreateContainer(containerName: String, apiType: String): Unit = lock.synchronized {
-    var con: Connection = null
-    var stmt: Statement = null
-    var rs: ResultSet = null
-    var tableName = toTableName(containerName)
-    var fullTableName = toFullTableName(containerName)
-    var query = ""
-    try {
-      con = getConnection
-      // check if the container already exists
-      val dbm = con.getMetaData();
-      rs = dbm.getTables(null, SchemaName.toUpperCase, tableName.toUpperCase, null);
-      if (rs.next()) {
-        logger.debug("The table " + tableName + " already exists ")
+    var client: TransportClient = null
+    var tableName = toFullTableName(containerName)
+    try
+      client = getConnection
+
+      val indicies = client.admin().cluster()
+        .prepareState().execute()
+        .actionGet().getState()
+        .getMetaData().concreteAllIndices()
+
+      if (indicies.contains(tableName) == 0) {
+        logger.debug("The Index " + tableName + " already exists ")
       } else {
+
         if (autoCreateTables.equalsIgnoreCase("NO")) {
           apiType match {
             case "dml" => {
@@ -1559,57 +1566,24 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             }
           }
         }
-        query = "create table " + fullTableName + "(timePartition bigint,bucketKey varchar(1024), transactionId bigint, rowId Int, schemaId Int, serializerType varchar(128), serializedInfo varbinary(max))"
-        stmt = con.createStatement()
-        stmt.executeUpdate(query);
-        stmt.close
-        var index_name = "ix_" + tableName
-        var query1 = ""
-        var query2 = ""
-        var query3 = ""
-        var query4 = ""
-        if (clusteredIndex.equalsIgnoreCase("YES")) {
-          logger.info("Creating clustered index...")
-          query1 = "create clustered index " + index_name + " on " + fullTableName + "(timePartition,bucketKey,transactionId,rowId)"
-          query2 = "create clustered index " + index_name + "2 on " + fullTableName + "(timePartition,bucketKey)"
-          query3 = "create clustered index " + index_name + "3 on " + fullTableName + "(timePartition)"
-          query4 = "create clustered index " + index_name + "4 on " + fullTableName + "(bucketKey)"
-        } else {
-          logger.info("Creating non-clustered index...")
-          query1 = "create index " + index_name + " on " + fullTableName + "(timePartition,bucketKey,transactionId,rowId)"
-          query2 = "create index " + index_name + "2 on " + fullTableName + "(timePartition,bucketKey)"
-          query3 = "create index " + index_name + "3 on " + fullTableName + "(timePartition)"
-          query4 = "create index " + index_name + "4 on " + fullTableName + "(bucketKey)"
-        }
-        stmt = con.createStatement()
-        stmt.executeUpdate(query1);
-        stmt.executeUpdate(query2);
-        stmt.executeUpdate(query3);
-        stmt.executeUpdate(query4);
-        stmt.close
-        //index_name = "ix1_" + tableName
-        //query = "create index " + index_name + " on " + fullTableName + "(bucketKey,transactionId,rowId)"
-        //stmt = con.createStatement()
-        //stmt.executeUpdate(query);
-        //stmt.close
-        //index_name = "ix2_" + tableName
-        //query = "create index " + index_name + " on " + fullTableName + "(timePartition,bucketKey)"
-        //stmt = con.createStatement()
-        //stmt.executeUpdate(query);
+
+        val response = client
+          .admin()
+          .indices()
+          .prepareCreate(tableName)
+          .setSource(XContentFactory.jsonBuilder().startObject()
+            .startObject("settings").endObject()
+            .endObject()).execute().actionGet();
       }
-    } catch {
+
+    //query = "create table " + fullTableName + "(timePartition bigint,bucketKey varchar(1024), transactionId bigint, rowId Int, schemaId Int, serializerType varchar(128), serializedInfo varbinary(max))"
+    catch {
       case e: Exception => {
-        throw CreateDDLException("Failed to create table or index " + tableName + ": ddl = " + query, e)
+        throw CreateDDLException("Failed to create Index " + tableName, e)
       }
     } finally {
-      if (rs != null) {
-        rs.close
-      }
-      if (stmt != null) {
-        stmt.close
-      }
-      if (con != null) {
-        con.close
+      if (client != null) {
+        client.close
       }
     }
   }
@@ -1628,14 +1602,18 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
   override def isTableExists(tableName: String): Boolean = {
     // check whether corresponding table exists
-    var con: Connection = null
+    var client: TransportClient = null
     var rs: ResultSet = null
-    logger.info("Checking the existence of the table " + tableName)
+    logger.info("Checking the existence of the Index " + tableName)
     try {
-      con = getConnection
-      val dbm = con.getMetaData();
-      rs = dbm.getTables(null, SchemaName.toUpperCase, tableName.toUpperCase, null);
-      if (rs.next()) {
+      client = getConnection
+
+      val indicies = client.admin().cluster()
+        .prepareState().execute()
+        .actionGet().getState()
+        .getMetaData().concreteAllIndices()
+
+      if (indicies.contains(tableName) == 0) {
         return true
       } else {
         return false
@@ -1645,11 +1623,8 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
         throw CreateDMLException("Unable to verify table existence of table " + tableName, e)
       }
     } finally {
-      if (rs != null) {
-        rs.close
-      }
-      if (con != null) {
-        con.close
+      if (client != null) {
+        client.close
       }
     }
   }
@@ -1659,7 +1634,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   }
 
   def renameTable(srcTableName: String, destTableName: String, forceCopy: Boolean = false): Unit = lock.synchronized {
-    var con: Connection = null
+    var client: TransportClient = null
     var stmt: Statement = null
     var rs: ResultSet = null
     logger.info("renaming " + srcTableName + " to " + destTableName);
@@ -1680,7 +1655,27 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           throw CreateDDLException("Failed to rename the table " + srcTableName + ":", new Exception("Destination Table already exist"))
         }
       }
-      con = getConnection
+      client = getConnection
+
+      var indicies: util.Map[String, IndexStats] = client.admin().indices().prepareStats().clear().get().getIndices()
+
+      if (indicies.get(srcTableName) != null) {
+        val response = client.admin().indices().prepareAliases()
+          .addAlias(toFullTableName(srcTableName), toFullTableName(destTableName))
+          .execute().actionGet()
+      } else {
+
+        val response = client.admin().indices().prepareAliases()
+          .removeAlias("my_old_index", "my_alias")
+          .addAlias("my_index", "my_alias")
+          .execute().actionGet();
+
+      }
+
+
+
+
+
       query = "sp_rename '" + SchemaName + "." + srcTableName + "' , '" + destTableName + "'"
       stmt = con.createStatement()
       stmt.executeUpdate(query);
@@ -1700,6 +1695,30 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       }
     }
   }
+
+
+//  def getIndicesFromAliasName(aliasName: String, client: TransportClient): Set[String] = {
+//
+//    val iac: IndicesAdminClient = client.admin().indices();
+//
+//
+//    val map: ImmutableOpenMap[String, util.List[AliasMetaData]] = iac.getAliases(new GetAliasesRequest(aliasName))
+//      .actionGet().getAliases()
+//
+//    val allIndices: Set[String] = null
+//    val key: String = null
+//
+//    map.keysIt().forEachRemaining((key1:String) => {
+//
+//
+//
+//
+//    })
+//
+////    map.keysIt().forEachRemaining(allIndices::add);
+////    return allIndices;
+//  }
+
 
   def backupContainer(containerName: String): Unit = lock.synchronized {
     var tableName = toTableName(containerName)
@@ -1909,7 +1928,7 @@ class ElasticsearchAdapterTx(val parent: DataStore) extends Transaction {
 
 }
 
-// To create H2db Datastore instance
-object Elasticsearchdapter extends StorageAdapterFactory {
-  override def CreateStorageAdapter(kvManagerLoader: KamanjaLoaderInfo, datastoreConfig: String, nodeCtxt: NodeContext, adapterInfo: AdapterInfo): DataStore = new H2dbAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+// To create Elasticsearch Datastore instance
+object ElasticsearchAdapter extends StorageAdapterFactory {
+  override def CreateStorageAdapter(kvManagerLoader: KamanjaLoaderInfo, datastoreConfig: String, nodeCtxt: NodeContext, adapterInfo: AdapterInfo): DataStore = new ElasticsearchAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
 }
