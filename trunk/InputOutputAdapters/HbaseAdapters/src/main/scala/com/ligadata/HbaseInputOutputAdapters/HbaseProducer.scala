@@ -1,22 +1,20 @@
 package com.ligadata.HbaseInputOutputAdapters
 
 import java.util.Arrays
-
 import com.ligadata.KamanjaBase.{ContainerInterface, NodeContext, TransactionContext}
 import org.apache.logging.log4j.{LogManager, Logger}
 import com.ligadata.InputOutputAdapterInfo._
 import com.ligadata.Exceptions.{FatalAdapterException, KamanjaException}
 import com.ligadata.HeartBeat.{MonitorComponentInfo, Monitorable}
 import org.json4s.jackson.Serialization
-
 import scala.collection.mutable.ArrayBuffer
 import java.util.concurrent.{Future, TimeUnit}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
-
 import scala.actors.threadpool.{ExecutorService, Executors, TimeUnit}
 import java.util.concurrent.locks.ReentrantReadWriteLock
-
+import com.ligadata.KvBase.Key
+import com.ligadata.Utils.KamanjaLoaderInfo
 import com.ligadata.adapterconfiguration.{HbaseAdapterConfiguration, HbaseConstants}
 import org.apache.hadoop.hbase.client.Connection
 
@@ -62,12 +60,13 @@ class HbaseProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   private val adapterConfig = HbaseAdapterConfiguration.getAdapterConfig(inputConfig)
   Thread.currentThread().setContextClassLoader(tempContext);
   val hbaseutil: HbaseUtility = new HbaseUtility
-  var producer: Connection = null
-  hbaseutil.createConnection(adapterConfig)
-  hbaseutil.initilizeVariable(adapterConfig)
-  producer = hbaseutil.getConnection()
-  hbaseutil.setConnection(producer)
-  hbaseutil.initilizeVariable(adapterConfig)
+  private val kvManagerLoader = new KamanjaLoaderInfo
+  //  var producer: Connection = null
+//  hbaseutil.createConnection(adapterConfig)
+//  hbaseutil.initilizeVariable(adapterConfig)
+//  producer = hbaseutil.getConnection()
+//  hbaseutil.setConnection(producer)
+//  hbaseutil.initilizeVariable(adapterConfig)
   var transId: Long = 0
   val key = Category + "/" + adapterConfig.Name + "/evtCnt"
   val randomPartitionCntr = new java.util.Random
@@ -84,111 +83,126 @@ class HbaseProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   val partitionsMap = new ConcurrentHashMap[Int, ConcurrentHashMap[Long, MsgDataRecievedCnt]](128);
   val failedMsgsMap = new ConcurrentHashMap[Int, ConcurrentHashMap[Long, MsgDataRecievedCnt]](128); // We just need Array Buffer as Innser value. But the only issue is we need to make sure we handle it for multiple threads.
 
+  var dataStoreInfo = hbaseutil.createDataStorageInfo(adapterConfig)
+  var dataStore = hbaseutil.GetDataStoreHandle(dataStoreInfo)
+
   override def send(messages: Array[Array[Byte]], partitionKeys: Array[Array[Byte]]): Unit = {
-    if (!isHeartBeating) runHeartBeat
-
-    // Refreshing Partitions for every refreshPartitionTime.
-    // BUGBUG:: This may execute multiple times from multiple threads. For now it does not hard too much.
-    if ((System.currentTimeMillis - partitionsGetTm) > refreshPartitionTime) {
-      //topicPartitionsCount = producer.partitionsFor(qc.topic).size()
-      partitionsGetTm = System.currentTimeMillis
-    }
-
-    try {
-      var partitionsMsgMap = scala.collection.mutable.Map[Int, ArrayBuffer[MsgDataRecievedCnt]]();
-      timePartition = System.currentTimeMillis()
-      transId = transService.getNextTransId
-
-      for (i <- 0 until messages.size) {
-      /////////////////////  hbaseutil.put("","","")
-//        val partId = getPartition(partitionKeys(i), topicPartitionsCount)
-//        var ab = partitionsMsgMap.getOrElse(partId, null)
-//        if (ab == null) {
-//          ab = new ArrayBuffer[MsgDataRecievedCnt](256)
-//          partitionsMsgMap(partId) = ab
+//    if (!isHeartBeating) runHeartBeat
+//
+//    // Refreshing Partitions for every refreshPartitionTime.
+//    // BUGBUG:: This may execute multiple times from multiple threads. For now it does not hard too much.
+//    if ((System.currentTimeMillis - partitionsGetTm) > refreshPartitionTime) {
+//      //topicPartitionsCount = producer.partitionsFor(qc.topic).size()
+//      partitionsGetTm = System.currentTimeMillis
+//    }
+//
+//    try {
+//      var partitionsMsgMap = scala.collection.mutable.Map[Int, ArrayBuffer[MsgDataRecievedCnt]]();
+//      timePartition = System.currentTimeMillis()
+//      transId = transService.getNextTransId
+//
+//
+//      for (i <- 0 until messages.size) {
+//      /////////////////////  hbaseutil.put("","","")
+////        val partId = getPartition(partitionKeys(i), topicPartitionsCount)
+////        var ab = partitionsMsgMap.getOrElse(partId, null)
+////        if (ab == null) {
+////          ab = new ArrayBuffer[MsgDataRecievedCnt](256)
+////          partitionsMsgMap(partId) = ab
+////        }
+////        val pr = new ProducerRecord(qc.topic, partId, partitionKeys(i), messages(i))
+////        ab += MsgDataRecievedCnt(msgInOrder.getAndIncrement, pr)
+//      }
+//
+//      var outstandingMsgs = outstandingMsgCount
+//      // LOG.debug("KAFKA PRODUCER: current outstanding messages for topic %s are %d".format(qc.topic, outstandingMsgs))
+//
+//      var osRetryCount = 0
+//      var osWaitTm = 5000
+//      while (outstandingMsgs > max_outstanding_messages) {
+//        LOG.warn(adapterConfig.Name + " Hbase PRODUCER: %d outstanding messages in queue to write. Waiting for them to flush before we write new messages. Retrying after %dms. Retry count:%d".format(outstandingMsgs, osWaitTm, osRetryCount))
+//        try {
+//          Thread.sleep(osWaitTm)
+//        } catch {
+//          case e: Exception => {
+//            externalizeExceptionEvent(e)
+//            throw e
+//          }
+//          case e: Throwable => {
+//            externalizeExceptionEvent(e)
+//            throw e
+//          }
 //        }
-//        val pr = new ProducerRecord(qc.topic, partId, partitionKeys(i), messages(i))
-//        ab += MsgDataRecievedCnt(msgInOrder.getAndIncrement, pr)
-      }
-
-      var outstandingMsgs = outstandingMsgCount
-      // LOG.debug("KAFKA PRODUCER: current outstanding messages for topic %s are %d".format(qc.topic, outstandingMsgs))
-
-      var osRetryCount = 0
-      var osWaitTm = 5000
-      while (outstandingMsgs > max_outstanding_messages) {
-        LOG.warn(adapterConfig.Name + " Hbase PRODUCER: %d outstanding messages in queue to write. Waiting for them to flush before we write new messages. Retrying after %dms. Retry count:%d".format(outstandingMsgs, osWaitTm, osRetryCount))
-        try {
-          Thread.sleep(osWaitTm)
-        } catch {
-          case e: Exception => {
-            externalizeExceptionEvent(e)
-            throw e
-          }
-          case e: Throwable => {
-            externalizeExceptionEvent(e)
-            throw e
-          }
-        }
-        outstandingMsgs = outstandingMsgCount
-      }
-
-      partitionsMsgMap.foreach(partIdAndRecs => {
-        val partId = partIdAndRecs._1
-        val keyMessages = partIdAndRecs._2
-
-        // first push all messages to partitionsMap before we really send. So that callback is guaranteed to find the message in partitionsMap
-        addMsgsToMap(partId, keyMessages)
-        sendInfinitely(keyMessages, false)
-      })
-
-    } catch {
-      case e: java.lang.InterruptedException => {
-        // Not doing anythign for now
-        LOG.warn(adapterConfig.Name + " Hbase PRODUCER: Got java.lang.InterruptedException. isShutdown:" + isShutdown)
-      }
-      case fae: FatalAdapterException => {
-        externalizeExceptionEvent(fae)
-        throw fae
-      }
-      case e: Exception               => {
-        externalizeExceptionEvent(e)
-        throw FatalAdapterException("Unknown exception", e)
-      }
-      case e: Throwable               => {
-        externalizeExceptionEvent(e)
-        throw FatalAdapterException("Unknown exception", e)
-      }
-    }
-  }
+//        outstandingMsgs = outstandingMsgCount
+//      }
+//
+//      partitionsMsgMap.foreach(partIdAndRecs => {
+//        val partId = partIdAndRecs._1
+//        val keyMessages = partIdAndRecs._2
+//
+//        // first push all messages to partitionsMap before we really send. So that callback is guaranteed to find the message in partitionsMap
+//        addMsgsToMap(partId, keyMessages)
+//        sendInfinitely(keyMessages, false)
+//      })
+//
+//    } catch {
+//      case e: java.lang.InterruptedException => {
+//        // Not doing anythign for now
+//        LOG.warn(adapterConfig.Name + " Hbase PRODUCER: Got java.lang.InterruptedException. isShutdown:" + isShutdown)
+//      }
+//      case fae: FatalAdapterException => {
+//        externalizeExceptionEvent(fae)
+//        throw fae
+//      }
+//      case e: Exception               => {
+//        externalizeExceptionEvent(e)
+//        throw FatalAdapterException("Unknown exception", e)
+//      }
+//      case e: Throwable               => {
+//        externalizeExceptionEvent(e)
+//        throw FatalAdapterException("Unknown exception", e)
+//      }
+//    }
+  } ///////not implemented yet
 
   override def send(tnxCtxt: TransactionContext, outputContainers: Array[ContainerInterface]): Unit = {
     if (outputContainers.size == 0) return
 
     // Sanity checks
     if (isShutdown) {
-      val szMsg = adapterConfig.Name + " KAFKA PRODUCER: Producer is not available for processing"
+      val szMsg = adapterConfig.Name + " Hbase PRODUCER: Producer is not available for processing"
       LOG.error(szMsg)
       throw new Exception(szMsg)
     }
+//
+//    val (outContainers, serializedContainerData, serializerNames) = serialize(tnxCtxt, outputContainers)
+//
+//    if (outContainers.size != serializedContainerData.size || outContainers.size != serializerNames.size) {
+//      val szMsg = adapterConfig.Name + " Hbase PRODUCER: Messages, messages serialized data & serializer names should has same number of elements. Messages:%d, Messages Serialized data:%d, serializerNames:%d".format(outContainers.size, serializedContainerData.size, serializerNames.size)
+//      LOG.error(szMsg)
+//      throw new Exception(szMsg)
+//    }
+//
+//    if (serializedContainerData.size == 0) return
+//
+//    val partitionKeys = ArrayBuffer[Array[Byte]]()
+//
+//    for (i <- 0 until serializedContainerData.size) {
+//      partitionKeys += outContainers(i).getPartitionKey.mkString(",").getBytes()
+//    }
+//
+//    send(serializedContainerData, partitionKeys.toArray)
 
-    val (outContainers, serializedContainerData, serializerNames) = serialize(tnxCtxt, outputContainers)
-
-    if (outContainers.size != serializedContainerData.size || outContainers.size != serializerNames.size) {
-      val szMsg = adapterConfig.Name + " Hbase PRODUCER: Messages, messages serialized data & serializer names should has same number of elements. Messages:%d, Messages Serialized data:%d, serializerNames:%d".format(outContainers.size, serializedContainerData.size, serializerNames.size)
-      LOG.error(szMsg)
-      throw new Exception(szMsg)
+    for (i <- 0 until outputContainers.size) {
+      metrics("MessagesProcessed").asInstanceOf[AtomicLong].incrementAndGet()
     }
+    val data_list = outputContainers.groupBy(_.getFullTypeName.toLowerCase).map(oneContainerData => {
+      (oneContainerData._1, oneContainerData._2.map(container => {
+        (Key(container.TimePartitionData(), container.PartitionKeyData(), container.TransactionId(), container.RowNumber()), "", container.asInstanceOf[Any])
+      }))
+    }).toArray
 
-    if (serializedContainerData.size == 0) return
-
-    val partitionKeys = ArrayBuffer[Array[Byte]]()
-
-    for (i <- 0 until serializedContainerData.size) {
-      partitionKeys += outContainers(i).getPartitionKey.mkString(",").getBytes()
-    }
-
-    send(serializedContainerData, partitionKeys.toArray)
+    dataStore.put(tnxCtxt, data_list)
   }
 
   override def getComponentStatusAndMetrics: MonitorComponentInfo = {
@@ -242,8 +256,8 @@ class HbaseProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       }
     }
 
-    if (producer != null)
-      producer.close
+    if (dataStore != null)
+      dataStore.Shutdown()
   }
 
   private def updateMetricValue(key: String, value: Any): Unit = {
@@ -499,77 +513,6 @@ class HbaseProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
 //    return HbaseConstants.HBASE_SEND_SUCCESS
 //  }
 
-  private def addBackFailedToSendRec(lastAccessRec: MsgDataRecievedCnt): Unit = {
-    if (lastAccessRec != null)
-      addToFailedMap(lastAccessRec)
-  }
 
-  private def addToFailedMap(msgAndCntr: MsgDataRecievedCnt): Unit = {
-//    if (msgAndCntr == null) return
-//    val partId = msgAndCntr.msg.partition()
-//    var msgMap = failedMsgsMap.get(partId)
-//    if (msgMap == null) {
-//      failedMsgsMap.synchronized {
-//        msgMap = failedMsgsMap.get(partId)
-//        if (msgMap == null) {
-//          val tmpMsgMap = new ConcurrentHashMap[Long, MsgDataRecievedCnt](1024);
-//          failedMsgsMap.put(partId, tmpMsgMap)
-//          msgMap = tmpMsgMap
-//        }
-//      }
-//    }
-//
-//    if (msgMap != null) {
-//      try {
-//        msgMap.put(msgAndCntr.cntrToOrder, msgAndCntr)
-//      } catch {
-//        case e: Exception => {
-//          externalizeExceptionEvent(e)
-//          // Failed to insert into Map
-//          throw e
-//        }
-//      }
-//    }
-  } //check this
-
-  private def removeMsgFromFailedMap(msgAndCntr: MsgDataRecievedCnt): Unit = {
-//     if (msgAndCntr == null) return
-//     val partId = msgAndCntr.msg.partition()
-//     val msgMap = failedMsgsMap.get(partId)
-//     if (msgMap != null) {
-//       try {
-//         msgMap.remove(msgAndCntr.cntrToOrder)
-//       } catch {
-//         case e: Exception => {
-//           externalizeExceptionEvent(e)
-//           LOG.warn("", e)
-//         }
-//         case e: Throwable => {
-//           externalizeExceptionEvent(e)
-//           LOG.warn("", e)
-//         }
-//       }
-//     }
-   }    ///check this
-
-  private def removeMsgFromMap(msgAndCntr: MsgDataRecievedCnt): Unit = {
-//    if (msgAndCntr == null) return
-//    val partId = msgAndCntr.msg.partition()
-//    val msgMap = partitionsMap.get(partId)
-//    if (msgMap != null) {
-//      try {
-//        msgMap.remove(msgAndCntr.cntrToOrder) // This must present. Because we are adding the records into partitionsMap before we send messages. If it does not present we simply ignore it.
-//      } catch {
-//        case e: Exception => {
-//          externalizeExceptionEvent(e)
-//          LOG.warn("", e)
-//        }
-//        case e: Throwable => {
-//          externalizeExceptionEvent(e)
-//          LOG.warn("", e)
-//        }
-//      }
-//    }
-  }  ///check this
 
 }

@@ -10,7 +10,7 @@ import org.json4s.native.JsonMethods._
   * Created by Yousef on 8/13/2016.
   */
 class HbaseAdapterConfiguration extends AdapterConfiguration{
-  var host: String = null //folder to write files
+  var hostList: String = null //folder to write files
   var scehmaName: String = "" // prefix for the file names
   var TableName: String = "" // optional separator inserted between messages
   var serializerName: String =""
@@ -22,6 +22,8 @@ class HbaseAdapterConfiguration extends AdapterConfiguration{
 class KerberosConfig {
   var principal: String = null
   var keytab: String = null
+  var masterPrincipal: String = null
+  var regionServer: String = null
 }
 
 object HbaseAdapterConfiguration {
@@ -48,7 +50,7 @@ object HbaseAdapterConfiguration {
     val adapCfgValues = adapCfg.values.asInstanceOf[Map[String, Any]]
     adapCfgValues.foreach(kv => {
       if (kv._1.compareToIgnoreCase("host") == 0) {
-        adapterConfig.host = kv._2.toString.trim
+        adapterConfig.hostList = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("scehmaName") == 0) {
         adapterConfig.scehmaName = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("TableName") == 0) {
@@ -60,12 +62,14 @@ object HbaseAdapterConfiguration {
         val kerbConf = kv._2.asInstanceOf[Map[String, String]]
         adapterConfig.kerberos.principal = kerbConf.getOrElse("Principal", null)
         adapterConfig.kerberos.keytab = kerbConf.getOrElse("Keytab", null)
+        adapterConfig.kerberos.masterPrincipal = kerbConf.getOrElse("masterprincipal", null)
+        adapterConfig.kerberos.regionServer = kerbConf.getOrElse("regionserve", null)
       }
     })
 
     adapterConfig.instancePartitions = Set[Int]()
 
-    if (adapterConfig.host == null || adapterConfig.host.size == 0)
+    if (adapterConfig.hostList == null || adapterConfig.hostList.size == 0)
       throw new KamanjaException("host should not be NULL or empty for Hbase Producer" + adapterConfig.Name, null)
 
     if (adapterConfig.serializerName == null || adapterConfig.serializerName.size == 0)
