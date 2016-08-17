@@ -749,7 +749,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     var bulkRequest = client.prepareBulk()
     var deleteCount = 0
     var tableName = toFullTableName(containerName)
-    try
+    try {
       logger.info("begin time => " + dateFormat.format(time.beginTime))
       logger.info("end time => " + dateFormat.format(time.endTime))
       CheckTableExists(containerName)
@@ -784,7 +784,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       } else {
         logger.info("Deleted " + deleteCount + " rows from " + tableName)
       }
-
+    }
     //      sql = "delete from " + tableName + " where timePartition >= ?  and timePartition <= ?"
     catch {
       case e: Exception => {
@@ -1526,7 +1526,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   private def CreateContainer(containerName: String, apiType: String): Unit = lock.synchronized {
     var client: TransportClient = null
     var tableName = toFullTableName(containerName)
-    try
+    try {
       client = getConnection
 
       val indicies = client.admin().cluster()
@@ -1557,7 +1557,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             .startObject("settings").endObject()
             .endObject()).execute().actionGet();
       }
-
+    }
     //query = "create table " + fullTableName + "(timePartition bigint,bucketKey varchar(1024), transactionId bigint, rowId Int, schemaId Int, serializerType varchar(128), serializedInfo varbinary(max))"
     catch {
       case e: Exception => {
