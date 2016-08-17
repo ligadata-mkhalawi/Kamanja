@@ -440,7 +440,6 @@ class PythonAdapter(factory : PythonAdapterFactory
         }
         msgReturned
     }
-
     /**
       * Send only those fields that are specified in the inputField state retrieved from the addModel result.
       *
