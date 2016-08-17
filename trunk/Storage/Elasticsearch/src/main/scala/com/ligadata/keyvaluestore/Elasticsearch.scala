@@ -470,7 +470,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
   override def put(containerName: String, key: Key, value: Value): Unit = {
     var client: TransportClient = null
-    var pstmt: PreparedStatement = null
     var tableName = toFullTableName(containerName)
     try {
       CheckTableExists(containerName)
@@ -542,8 +541,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
   override def put(data_list: Array[(String, Array[(Key, Value)])]): Unit = {
     var client: TransportClient = null
-    //    var pstmt: PreparedStatement = null
-    //    var sql: String = null
     var totalRowsUpdated = 0;
     try {
       if (IsSingleRowPut(data_list)) {
@@ -692,11 +689,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     var client: TransportClient = null
     var bulkRequest = client.prepareBulk()
     var deleteCount = 0
-
-    var pstmt: PreparedStatement = null
-    var cstmt: CallableStatement = null
     var tableName = toFullTableName(containerName)
-    var sql = ""
     try {
       logger.info("begin time => " + dateFormat.format(time.beginTime))
       logger.info("end time => " + dateFormat.format(time.endTime))
@@ -741,7 +734,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       //      sql = "delete from " + tableName + " where timePartition >= ?  and timePartition <= ? and bucketKey = ?"
     } catch {
       case e: Exception => {
-        throw CreateDMLException("Failed to delete object(s) from the table " + tableName + ":" + "sql => " + sql, e)
+        throw CreateDMLException("Failed to delete object(s) from the table " + tableName, e)
       }
     } finally {
       if (client != null) {
@@ -1389,9 +1382,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
   override def getKeys(containerName: String, bucketKeys: Array[Array[String]], callbackFunction: (Key) => Unit): Unit = {
     var client: TransportClient = null
-    var pstmt: PreparedStatement = null
     var tableName = toFullTableName(containerName)
-    var query = ""
     try {
       CheckTableExists(containerName)
       client = getConnection
@@ -1435,7 +1426,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       //query = "select timePartition,bucketKey,transactionId,rowId from " + tableName + " where  bucketKey = ? "
     } catch {
       case e: Exception => {
-        throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
+        throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     } finally {
       if (client != null) {
