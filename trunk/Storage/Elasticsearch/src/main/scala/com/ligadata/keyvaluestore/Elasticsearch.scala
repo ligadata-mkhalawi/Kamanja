@@ -795,7 +795,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     //      sql = "delete from " + tableName + " where timePartition >= ?  and timePartition <= ?"
     catch {
       case e: Exception => {
-        throw CreateDMLException("Failed to delete object(s) from the table " + tableName + ":" + "sql => " + sql, e)
+        throw CreateDMLException("Failed to delete object(s) from the table " + tableName, e)
       }
     } finally {
       if (client != null) {
