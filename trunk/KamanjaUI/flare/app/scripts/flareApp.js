@@ -22,69 +22,83 @@ angular.module('flareApp', ['ngAnimate', 'ui.router'])
       });
   })
   .controller('mainCtrl',[function(){
+
     var network;
     var color = 'gray';
     var len = undefined;
+
     var nodes = [
 
-      {id: "AppAccessLog", label: "AppAccessLog", group: 'logsCluster', color:{border:''}},
-      {id: "URLAccessLog", label: "URLAccessLog", group: 'logsCluster'},
-      {id: "RemoteAccessLog", label: "RemoteAccessLog", group: 'logsCluster'},
-      {id: "RootLog", hidden:true, group: 'logsCluster'},
-
-      {id: "Mozilla Browser", label: "Mozilla Browser", group: 'browsersCluster', color:{border:''}},
-      {id: "Chrome Browser", label: "Chrome Browser", group: 'browsersCluster'},
-      {id: "RootBrowser", hidden:true, group: 'browsersCluster'},
-
-      {id: "Jane", label: "Jane", group: "userCluster"},
-      {id: "John", label: "John", group: "userCluster"},
-      {id: "Jill", label: "Jill", group: "userCluster"},
-      {id: "RootUser", hidden:true, group: "userCluster"},
-
-      {id: "BadApp", label: "BadApp", group: "BadAppsCluster"},
-      {id: "RootBadApp", hidden:true, group: "BadAppsCluster"},
-
-      {id: "Outlook", label: "Outlook", group: "EmailAppsCluster"},
-      {id: "GMail", label: "GMail", group: "EmailAppsCluster"},
-      {id: "RootEmailApp", hidden:true, group: "EmailAppsCluster"}
+      // {id: "AppAccessLog", label: "AppAccessLog", group: 'logsCluster', color:{border:''}},
+      // {id: "URLAccessLog", label: "URLAccessLog", group: 'logsCluster'},
+      // {id: "RemoteAccessLog", label: "RemoteAccessLog", group: 'logsCluster'},
+      // {id: "RootLog", hidden:true, group: 'logsCluster'},
+      //
+      // {id: "Mozilla Browser", label: "Mozilla Browser", group: 'browsersCluster', color:{border:''}},
+      // {id: "Chrome Browser", label: "Chrome Browser", group: 'browsersCluster'},
+      // {id: "RootBrowser", hidden:true, group: 'browsersCluster'},
+      //
+      // {id: "Jane", label: "Jane", group: "userCluster"},
+      // {id: "John", label: "John", group: "userCluster"},
+      // {id: "Jill", label: "Jill", group: "userCluster"},
+      // {id: "RootUser", hidden:true, group: "userCluster"},
+      //
+      // {id: "BadApp", label: "BadApp", group: "BadAppsCluster"},
+      // {id: "RootBadApp", hidden:true, group: "BadAppsCluster"},
+      //
+      // {id: "Outlook", label: "Outlook", group: "EmailAppsCluster"},
+      // {id: "GMail", label: "GMail", group: "EmailAppsCluster"},
+      // {id: "RootEmailApp", hidden:true, group: "EmailAppsCluster"}
 
     ];
-
     var edges = [
 
       // Clustering Node
 
-//        {from: 'Chrome Browser', to: 'RootBrowser', hidden:true, length:150},
-//        {from: 'Mozilla Browser', to: 'RootBrowser', hidden:true, length:150},
-
-//        {from: 'AppAccessLog', to: 'RootLog',hidden:true,length:100},
-//        {from: 'RemoteAccessLog', to: 'RootLog',hidden:true,length:100},
-//        {from: 'URLAccessLog', to: 'RootLog',hidden:true,length:100},
-
-//        {from: 'John', to: 'RootUser', hidden:true, length:100},
-//        {from: 'Jane', to: 'RootUser', hidden:true, length:100},
-//        {from: 'Jill', to: 'RootUser', hidden:true, length:100},
-
-//        {from: 'Outlook', to: 'RootEmailApp', hidden:true, length:100},
-//        {from: 'GMail', to: 'RootEmailApp', hidden:true, length:100},
-
-//        {from: 'BadApp', to: 'RootBadApp', hidden:true, length:100},
-
+      //  {from: 'Chrome Browser', to: 'RootBrowser', hidden:true, length:150},
+      //  {from: 'Mozilla Browser', to: 'RootBrowser', hidden:true, length:150},
       //
+      //  {from: 'AppAccessLog', to: 'RootLog',hidden:true,length:100},
+      //  {from: 'RemoteAccessLog', to: 'RootLog',hidden:true,length:100},
+      //  {from: 'URLAccessLog', to: 'RootLog',hidden:true,length:100},
+      //
+      //  {from: 'John', to: 'RootUser', hidden:true, length:100},
+      //  {from: 'Jane', to: 'RootUser', hidden:true, length:100},
+      //  {from: 'Jill', to: 'RootUser', hidden:true, length:100},
+      //
+      //  {from: 'Outlook', to: 'RootEmailApp', hidden:true, length:100},
+      //  {from: 'GMail', to: 'RootEmailApp', hidden:true, length:100},
+      //
+      //  {from: 'BadApp', to: 'RootBadApp', hidden:true, length:100},
+      //
+      // //
+      //
+      // {from: 'Chrome Browser', to: 'AppAccessLog', label:'logsTo'},
+      // {from: 'Chrome Browser', to: 'URLAccessLog', label:'logsTo'},
+      //
+      // {from: 'Jane', to: 'Chrome Browser', label:'access'},
+      // {from: 'John', to: 'Chrome Browser', label:'access'},
+      //
+      // {from: 'John', to: 'BadApp', label:'downloads'},
+      // {from: 'John', to: 'BadApp', label:'installs'},
+      //
+      // {from: 'BadApp', to: 'Outlook', label:'access'},
+      // {from: 'Jill', to: 'Outlook', label:'access'},
 
-      {from: 'Chrome Browser', to: 'AppAccessLog', label:'logsTo'},
-      {from: 'Chrome Browser', to: 'URLAccessLog', label:'logsTo'},
+    ];
 
-      {from: 'Jane', to: 'Chrome Browser', label:'access'},
-      {from: 'John', to: 'Chrome Browser', label:'access'},
 
-      {from: 'John', to: 'BadApp', label:'downloads'},
-      {from: 'John', to: 'BadApp', label:'installs'},
+    var groups = ['logsCluster','browsersCluster', 'userCluster', 'BadAppsCluster', 'EmailAppsCluster']
 
-      {from: 'BadApp', to: 'Outlook', label:'access'},
-      {from: 'Jill', to: 'Outlook', label:'access'},
+    for (var x = 1 ; x <= 500 ; x++){
 
-    ]
+      nodes.push({id: x, label: x, group: groups[getRandomInt(1,5)]});
+    }
+
+    for (var x = 0 ; x < 1000 ; x++){
+
+      edges.push({from: getRandomInt(1,250),  to: getRandomInt(251,500)})
+    }
 
     // create a network
     var container = document.getElementById('mynetwork');
@@ -93,11 +107,14 @@ angular.module('flareApp', ['ngAnimate', 'ui.router'])
       edges: edges
     };
     var options = {
+      layout: {
+        improvedLayout:false
+      },
       nodes: {
         shape: 'dot',
         scaling: {
-          min: 10,
-          max: 30
+          // min: 10,
+          // max: 30
         },
         font: {
           size: 12,
@@ -114,12 +131,12 @@ angular.module('flareApp', ['ngAnimate', 'ui.router'])
           background: '#ffffff'
         }
       },
-      "physics": {
-        "barnesHut": {
-          "gravitationalConstant": -1000,
-          "centralGravity":0.03,
-          "springLength": 100,
-          "avoidOverlap":0
+      'physics': {
+        'barnesHut': {
+          'gravitationalConstant': -8000,
+          // "centralGravity":0.03,
+          'springLength': 200,
+          'avoidOverlap': 0
         }
       },
       groups:{
@@ -150,5 +167,10 @@ angular.module('flareApp', ['ngAnimate', 'ui.router'])
       }
     };
     network = new vis.Network(container, data, options);
-  }])
-;
+  }]);
+
+
+function getRandomInt(min, max) {
+
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
