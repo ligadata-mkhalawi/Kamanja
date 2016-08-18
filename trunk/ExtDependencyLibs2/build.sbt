@@ -43,6 +43,7 @@ assemblyMergeStrategy in assembly := {
   case x if x contains "com.fasterxml.jackson.core" => MergeStrategy.first
   case x if x contains "com/fasterxml/jackson/core" => MergeStrategy.first
   // newly added
+  case x if x contains "ScalaTestBundle.properties" => MergeStrategy.first
   case x if x contains "StaticLoggerBinder.class" => MergeStrategy.first
   case x if x contains "StaticMDCBinder.class" => MergeStrategy.first
   case x if x contains "StaticMarkerBinder.class" => MergeStrategy.first
