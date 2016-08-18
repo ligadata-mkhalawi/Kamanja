@@ -16,6 +16,7 @@
 
     <!-- build:css styles/main.css -->
     <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="/bower_components/vis/dist/vis.min.css">
     <!-- endbuild -->
 
   </head>
@@ -25,7 +26,9 @@
     <![endif]-->
 
     <header></header>
-
+    <div class="mainContent" id="mainContent">
+      <div ui-view=""></div>
+    </div>
 
     <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
     <script>
@@ -61,6 +64,7 @@
     <script src="/bower_components/angular-animate/angular-animate.min.js"></script>
     <script src="/bower_components/angular-ui-router/release/angular-ui-router.min.js"></script>
     <script src="/bower_components/underscore/underscore-min.js"></script>
+    <script src="/bower_components/vis/dist/vis.min.js"></script>
 
     <!-- endbuild -->
 
