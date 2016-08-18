@@ -1,6 +1,4 @@
-.header {
-  margin-bottom: 30px;
-}
+
 
 /* Custom page header */
 .header {
@@ -12,5 +10,25 @@
     margin-bottom: 0;
     line-height: 40px;
     padding-bottom: 19px;
+  }
+
+  .icon-bar {
+    border-radius: 1px;
+    display: block;
+    height: 2px;
+    width: 22px;
+    margin-top: 3px
+  }
+
+  &.navbar-default {
+    background-color: #080808!important;
+  }
+}
+
+/* Responsive: Portrait tablets and up */
+@media screen and (min-width: 768px) {
+  /* Space out the masthead */
+  .header {
+    margin-bottom: 30px;
   }
 }
