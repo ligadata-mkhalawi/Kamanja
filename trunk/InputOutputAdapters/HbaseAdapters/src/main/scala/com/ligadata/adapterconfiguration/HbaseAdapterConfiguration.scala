@@ -13,7 +13,7 @@ class HbaseAdapterConfiguration extends AdapterConfiguration{
   var hostList: String = null //folder to write files
   var scehmaName: String = "" // prefix for the file names
   var TableName: String = "" // optional separator inserted between messages
-  var serializerName: String =""
+//  var serializerName: String =""
   var kerberos: KerberosConfig = null
   var instancePartitions: Set[Int] = _
   var noDataSleepTimeInMs: Int = 300
@@ -49,14 +49,14 @@ object HbaseAdapterConfiguration {
 
     val adapCfgValues = adapCfg.values.asInstanceOf[Map[String, Any]]
     adapCfgValues.foreach(kv => {
-      if (kv._1.compareToIgnoreCase("host") == 0) {
+      if (kv._1.compareToIgnoreCase("hostList") == 0) {
         adapterConfig.hostList = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("scehmaName") == 0) {
         adapterConfig.scehmaName = kv._2.toString.trim
-      } else if (kv._1.compareToIgnoreCase("TableName") == 0) {
+      } else if (kv._1.compareToIgnoreCase("tableName") == 0) {
         adapterConfig.TableName = kv._2.toString
-      } else if (kv._1.compareToIgnoreCase("serializerName") == 0) {
-        adapterConfig.serializerName = kv._2.toString
+//      } else if (kv._1.compareToIgnoreCase("serializerName") == 0) {
+//        adapterConfig.serializerName = kv._2.toString
       }else if (kv._1.compareToIgnoreCase("Kerberos") == 0) {
         adapterConfig.kerberos = new KerberosConfig()
         val kerbConf = kv._2.asInstanceOf[Map[String, String]]
@@ -71,9 +71,9 @@ object HbaseAdapterConfiguration {
 
     if (adapterConfig.hostList == null || adapterConfig.hostList.size == 0)
       throw new KamanjaException("host should not be NULL or empty for Hbase Producer" + adapterConfig.Name, null)
-
-    if (adapterConfig.serializerName == null || adapterConfig.serializerName.size == 0)
-      throw new KamanjaException("serializerName should not be NULL or empty for Hbase Producer" + adapterConfig.Name, null)
+//
+//    if (adapterConfig.serializerName == null || adapterConfig.serializerName.size == 0)
+//      throw new KamanjaException("serializerName should not be NULL or empty for Hbase Producer" + adapterConfig.Name, null)
 
     if (adapterConfig.kerberos != null) {
       if (adapterConfig.kerberos.principal == null || adapterConfig.kerberos.principal.size == 0)

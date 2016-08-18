@@ -1,21 +1,28 @@
-import sbtassembly.AssemblyPlugin.defaultShellScript
-import sbt._
-import Keys._
+//import sbtassembly.AssemblyPlugin.defaultShellScript
+//import sbt._
+//import Keys._
+//
+//shellPrompt := { state => "sbt (%s)> ".format(Project.extract(state).currentProject.id) }
+//
+////crossScalaVersions := Seq("2.11.7", "2.10.4")
+//
+//assemblyOption in assembly ~= {
+//  _.copy(prependShellScript = Some(defaultShellScript))
+//}
+//
+//val kamanjaVersion = "1.5.1"
+//
+//assemblyJarName in assembly := {
+//  s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"
+//}
 
-shellPrompt := { state => "sbt (%s)> ".format(Project.extract(state).currentProject.id) }
+assemblyMergeStrategy in assembly := {
+  case x if x endsWith ".class" => MergeStrategy.first
+  case x =>
+    val oldStrategy = (assemblyMergeStrategy in assembly).value
+    oldStrategy(x)
 
-//crossScalaVersions := Seq("2.11.7", "2.10.4")
-
-assemblyOption in assembly ~= {
-  _.copy(prependShellScript = Some(defaultShellScript))
 }
-
-val kamanjaVersion = "1.5.1"
-
-assemblyJarName in assembly := {
-  s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"
-}
-
 
 name := "KamanjaHbaseAdapters"
 

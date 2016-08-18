@@ -6,6 +6,7 @@ import com.ligadata.InputOutputAdapterInfo.{PartitionUniqueRecordValue, StartPro
 import com.ligadata.KamanjaBase.{EnvContext, NodeContext}
 import com.ligadata.Utils.ClusterStatus
 import com.ligadata.adapterconfiguration.{HbaseAdapterConfiguration, HbasePartitionUniqueRecordKey, HbasePartitionUniqueRecordValue}
+import com.ligadata.keyvaluestore.HBaseAdapter
 import org.apache.hadoop.hbase.client.Connection
 import org.json4s.jackson.Serialization
 
@@ -55,14 +56,11 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   metrics(com.ligadata.adapterconfiguration.KamanjaHbaseAdapterConstants.EXCEPTION_SUMMARY) = partitionExceptions
   metrics(com.ligadata.adapterconfiguration.KamanjaHbaseAdapterConstants.PARTITION_DEPTH_KEYS) = partitonDepths
 
-  override def StartProcessing(partitionIds: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = {  //////create all code hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
   val hbaseutil: HbaseUtility = new HbaseUtility
-    var HbaseConsumer: Connection = null
-    hbaseutil.createConnection(adapterConfig)
-    hbaseutil.initilizeVariable(adapterConfig)
-    HbaseConsumer = hbaseutil.getConnection()
-    hbaseutil.setConnection(HbaseConsumer)
+  var dataStoreInfo = hbaseutil.createDataStorageInfo(adapterConfig)
+  var dataStore = hbaseutil.GetDataStoreHandle(dataStoreInfo).asInstanceOf[HBaseAdapter]
 
+  override def StartProcessing(partitionIds: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = {  //////create all code hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
     isShutdown = false
     var maxPartNumber = -1
     _ignoreFirstMsg = ignoreFirstMsg
@@ -118,12 +116,13 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
         val uniqueVal = new HbasePartitionUniqueRecordValue
         while (!isRecordSentToKamanja && !isQuiese) {
           msgCount += 1
+          dataStore.getAllRecords("")
           val retrievedata = (data: Array[Byte]) => {
             if (data != null) {
               execContexts(1/*record.partition*/).execute(data, uniqueVals(1/*record.partition*/), uniqueVal, readTmMs)
             }
           }
-          hbaseutil.getManager("get",retrievedata)
+   //       hbaseutil.getManager("get",retrievedata)
         }
       }
     })
@@ -178,15 +177,16 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   private def getKeyValuePairs(): Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)] = {
     val infoBuffer = ArrayBuffer[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)]()
 
-    for(partitionId <- 1 to 10/*adapterConfig.monitoringConfig.consumersCount*/){/////////////////////fix this
+    for(partitionId <- 1 to 1/*adapterConfig.monitoringConfig.consumersCount*/){/////////////////////fix this
       val rKey = new HbasePartitionUniqueRecordKey
       val rValue = new HbasePartitionUniqueRecordValue
 
       rKey.PartitionId = partitionId
       rKey.Name = adapterConfig.Name
 
-      //////////////////////////rValue.Offset = -1
-      /////////////////////////rValue.FileName = ""
+      rValue.TimeStamp = -1
+      rValue.Key = -1
+      rValue.TableName = adapterConfig.TableName
 
       infoBuffer.append((rKey, rValue))
     }
@@ -211,18 +211,12 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     var results: java.util.List[String] = null //change this bug (string ->)
     var partitionNames: scala.collection.mutable.ListBuffer[HbasePartitionUniqueRecordKey] = scala.collection.mutable.ListBuffer()
     val hbaseutil: HbaseUtility = new HbaseUtility
-    var HbaseConsumer: Connection = null
     var isSuccessfulConnection = false
     while (!isSuccessfulConnection && !isQuiese) {
       try {
-        hbaseutil.createConnection(adapterConfig)
-        hbaseutil.namespace = adapterConfig.scehmaName
-        hbaseutil.tableName = adapterConfig.TableName
-        HbaseConsumer = hbaseutil.getConnection()
-       // results = hbaseutil.getKeys()
       //  results = hbaseutil.partitionsFor(qc.topic)  //change it fix this bug
         isSuccessfulConnection = true
-        HbaseConsumer.close()
+        dataStore.Shutdown()
       } catch {
         case e: Throwable => {
           externalizeExceptionEvent(e)
@@ -234,16 +228,16 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
               externalizeExceptionEvent(ie)
               LOG.warn("KamanjaHbaseConsumer - sleep interrupted, shutting donw ")
               Shutdown
-              HbaseConsumer.close()
-              HbaseConsumer = null
+              dataStore.Shutdown()
+              dataStore = null
               throw ie
             }
             case t: Throwable => {
               externalizeExceptionEvent(t)
               LOG.warn("KamanjaHbaseConsumer - sleep interrupted (UNKNOWN CAUSE), shutting down ",t)
               Shutdown
-              HbaseConsumer.close()
-              HbaseConsumer = null
+              dataStore.Shutdown()
+              dataStore = null
               throw t
             }
           }

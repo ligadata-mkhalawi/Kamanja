@@ -198,7 +198,7 @@ class HbaseProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
     }
     val data_list = outputContainers.groupBy(_.getFullTypeName.toLowerCase).map(oneContainerData => {
       (oneContainerData._1, oneContainerData._2.map(container => {
-        (Key(container.TimePartitionData(), container.PartitionKeyData(), container.TransactionId(), container.RowNumber()), "", container.asInstanceOf[Any])
+        (Key(container.TimePartitionData(), container.PartitionKeyData(), 0, 0), "", container.asInstanceOf[Any])
       }))
     }).toArray
 
