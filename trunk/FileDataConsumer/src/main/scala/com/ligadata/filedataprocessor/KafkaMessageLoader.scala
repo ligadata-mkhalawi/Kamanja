@@ -164,7 +164,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
           inputData = CreateKafkaInput(msg, SmartFileAdapterConstants.MESSAGE_NAME, delimiters)
           msgStr = new String(msg.msg)
 
-          if (msgStr.size > allowedSize ) throw new KVMessageFormatingException("Message size exceeds the maximum alloweable size ", null)
+          if (msgStr.size > allowedSize ) throw new KVMessageFormatingException("Message size exceeds the maximum alloweable size ")
 
           if(message_metadata && !msgStr.startsWith("fileId")){
             msgStr = "fileId" + delimiters.keyAndValueDelimiter + FileProcessor.getIDFromFileCache(msg.relatedFileName) +
