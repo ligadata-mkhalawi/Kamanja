@@ -48,4 +48,7 @@ object SmartFileAdapterConstants {
   //Applicable content types, sniff them via Apache TIKA
   val VALID_CONTENT_TYPES="allow.content"
 
+  // Defalts to 64K
+  val MAX_MESSAGE_SIZE = "maxMessageSize"
+
 }
