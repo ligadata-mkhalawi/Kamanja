@@ -182,6 +182,7 @@ class PythonMdlSupport ( val mgr: MdMgr
 
         writeSrcFile(pythonMdlText, pyFilePath)
         val cmdSeq : Seq[String] = Seq[String](pybindir + "python", "-m", "compileall", modelDir)
+        logger.debug ("In PythonMdlSupport " + " the path is " + pybinpath + ", bin dir is " + pybindir + "python")
         val (rc, stdoutResult, stderrResult) : (Int, String, String) = runCmdCollectOutput(cmdSeq)
         //val rmCompileFiles : String = pyFilePath.dropRight(3) + "*" /** rm the .py and .pyc */
         val rmCompileFiles : String = s"$modelDir/*"

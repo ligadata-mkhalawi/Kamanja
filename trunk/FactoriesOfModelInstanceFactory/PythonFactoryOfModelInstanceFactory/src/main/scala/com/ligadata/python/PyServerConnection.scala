@@ -162,7 +162,7 @@ class PyServerConnection(val host : String
         val cmdLen: Int = cmdMsg.length
         out.write(cmdMsg, 0, cmdLen)
         out.flush()
-
+      logger.debug (" In Process Msg ----- port number ---------- " + port.toString)
         /** Contend with multiple messages results returned */
         val answeredBytes: ArrayBuffer[Byte] = ArrayBuffer[Byte]()
         var bytesReceived = in.read(buffer)
@@ -184,6 +184,7 @@ class PyServerConnection(val host : String
             }
         }
 
+      logger.debug (" In the end of Process Msg ----- port number ---------- " + port.toString + ", bytes left = " + answeredBytes.nonEmpty.toString)
         if (answeredBytes.nonEmpty) {
             logger.error("*****************************************************************************************************************************")
             logger.error("... in processMsg, there are resisdual bytes remaining suggesting multiple commands were dispatched with no intervening receipt of response bytes... some component is sending multiple commands or commands are being sent to this connection from multiple threads... a violation of the supposed contract. ")
@@ -271,21 +272,26 @@ class PyServerConnection(val host : String
         /** serialize the modelOptions */
         val modelOpts : String = Json(DefaultFormats).write(modelOptions)
         /** copy the file into a tmp file from string for either local copy to models or possibly remote copy to other server */
+      logger.debug("Before add model in PyServerConnection moduleName " + moduleName + " moduleSrc " + moduleSrc)
         cpSrcFile(moduleName, moduleSrc)
-        val addMsg : String = s"{${'"'}Cmd${'"'}: ${'"'}addModel${'"'}, ${'"'}CmdVer${'"'}: 1, ${'"'}CmdOptions${'"'}: {${'"'}Module${'"'}: ${'"'}$moduleName${'"'}, ${'"'}ModelName${'"'}: ${'"'}$modelName${'"'} }, ${'"'}ModelOptions${'"'}: ${'"'}{OPTIONS_KEY}${'"'} }"
+      logger.debug("After  add model in PyServerConnection moduleName " + moduleName + " moduleSrc " + moduleSrc)
+      val addMsg : String = s"{${'"'}Cmd${'"'}: ${'"'}addModel${'"'}, ${'"'}CmdVer${'"'}: 1, ${'"'}CmdOptions${'"'}: {${'"'}Module${'"'}: ${'"'}$moduleName${'"'}, ${'"'}ModelName${'"'}: ${'"'}$modelName${'"'} }, ${'"'}ModelOptions${'"'}: ${'"'}{OPTIONS_KEY}${'"'} }"
 
+logger.debug("The add msg is " + addMsg)
         val subMap : Map[String,String] = Map[String,String]("{OPTIONS_KEY}" -> modelOpts)
         val sub = new MapSubstitution(addMsg, subMap)
         val payloadStr : String = sub.makeSubstitutions
 
+logger.debug("payloadStr  is " + payloadStr)
         val result : String = encodeAndProcess("addModel", payloadStr)
+logger.debug("result of encode and process is  " + result)
         result
     }
 
     private def cpSrcFile(moduleName : String, moduleSrc : String) : Unit = {
 
         val srcTargetPath : String = s"$pyPath/tmp/$moduleName.py"
-        logger.debug(s"create disk file for supplied moduleSrc ... srcTargetPath = $srcTargetPath")
+      logger.debug(s"create disk file for supplied moduleSrc ... srcTargetPath = $srcTargetPath")
         writeSrcFile(moduleSrc, srcTargetPath)
 
         /** copy the python model source file to $pyPath/models */
