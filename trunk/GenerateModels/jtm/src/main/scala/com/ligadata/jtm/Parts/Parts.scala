@@ -72,6 +72,7 @@ object Parts {
        |  {external.modelcode}
        |  // Model code end
        |  override def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
+       |    context.Reset(); // Resetting the JtmContext before executing the model
        |    if (isTraceEnabled)
        |      Trace(s"Model::execute transid=%d triggeredset=%d outputdefault=%s".format(txnCtxt.transId, triggerdSetIndex, outputDefault.toString))
        |    if(isDebugEnabled)
