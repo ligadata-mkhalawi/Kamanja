@@ -51,6 +51,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
   val MAX_RETRY = 1
   val INIT_KAFKA_UNAVAILABLE_WAIT_VALUE = 1000
   val MAX_WAIT = 60000
+  val allowedSize: Int = inConfiguration.getOrElse(SmartFileAdapterConstants.MAX_MESSAGE_SIZE, "65536").toInt
 
   var currentSleepValue = INIT_KAFKA_UNAVAILABLE_WAIT_VALUE
 
@@ -162,6 +163,9 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
           //Pass in the complete message instead of just the message string
           inputData = CreateKafkaInput(msg, SmartFileAdapterConstants.MESSAGE_NAME, delimiters)
           msgStr = new String(msg.msg)
+
+          if (msgStr.size > allowedSize ) throw new KVMessageFormatingException("Message size exceeds the maximum alloweable size ", null)
+
           if(message_metadata && !msgStr.startsWith("fileId")){
             msgStr = "fileId" + delimiters.keyAndValueDelimiter + FileProcessor.getIDFromFileCache(msg.relatedFileName) +
               delimiters.fieldDelimiter +
@@ -462,33 +466,41 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
    *
    * @param msg
    */
-  private def writeErrorMsg(msg: KafkaMessage): Unit = {
+   private def writeErrorMsg(msg: KafkaMessage): Unit = {
 
     if (errorTopic == null) return
 
     val cdate: Date = new Date
-    
-    val errorMsg1 = dateFormat.format(cdate) + "," + msg.relatedFileName + "," + (new String(msg.msg))
-    
-    //Add message offset 
-    val errorMsg2 = dateFormat.format(cdate) + "," + msg.relatedFileName + "," +  msg.msgOffset + "," + (new String(msg.msg))
-    
+
+    // if the message is corrupted and results in a message larger then kafka can accept trucate it to a reasonable size\
+    val org_error_msg: String = new String(msg.msg)
+    var error_msg = org_error_msg
+    if (error_msg.size > allowedSize) {
+      error_msg = error_msg.substring(0,allowedSize - 1)
+    }
+
     logger.warn(" SMART FILE CONSUMER ("+partIdx+"): invalid message in file " + msg.relatedFileName)
-    
+
     val keyMessages = new ArrayBuffer[ProducerRecord[Array[Byte], Array[Byte]]](1)
-    
+
     if(exception_metadata){
-      logger.warn(errorMsg2)
-      keyMessages += new ProducerRecord(inConfiguration(SmartFileAdapterConstants.KAFKA_ERROR_TOPIC), 
+      //Add message offset
+      val org_errorMsg2 = dateFormat.format(cdate) + "," + msg.relatedFileName + "," +  msg.msgOffset + "," + org_error_msg
+      logger.warn(org_errorMsg2)
+      val errorMsg2 = dateFormat.format(cdate) + "," + msg.relatedFileName + "," +  msg.msgOffset + "," + error_msg
+      keyMessages += new ProducerRecord(inConfiguration(SmartFileAdapterConstants.KAFKA_ERROR_TOPIC),
         "rare event".getBytes("UTF8"), errorMsg2.getBytes("UTF8"))
     }else{
-      logger.warn(errorMsg1)
-      keyMessages += new ProducerRecord(inConfiguration(SmartFileAdapterConstants.KAFKA_ERROR_TOPIC), 
+      val org_errorMsg1 = dateFormat.format(cdate) + "," + msg.relatedFileName + "," + org_error_msg
+      logger.warn(org_errorMsg1)
+      val errorMsg1 = dateFormat.format(cdate) + "," + msg.relatedFileName + "," + error_msg
+      keyMessages += new ProducerRecord(inConfiguration(SmartFileAdapterConstants.KAFKA_ERROR_TOPIC),
         "rare event".getBytes("UTF8"), errorMsg1.getBytes("UTF8"))
     }
     // Write a Error Message
     sendToKafka(keyMessages, "Error")
- }
+  }
+
 
   private def writeGenericMsg(msg: String, fileName: String, topicName: String): Unit = {
 
