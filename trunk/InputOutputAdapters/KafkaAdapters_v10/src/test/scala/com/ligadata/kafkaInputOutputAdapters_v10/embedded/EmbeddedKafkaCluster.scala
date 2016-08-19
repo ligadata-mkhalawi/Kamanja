@@ -155,7 +155,6 @@ class EmbeddedKafkaCluster {
         append(":").
         append(broker.getPort)
     })
-    println("AUTOMATION-KAFKA: Get Broker List Returns: " + sb.toString())
     return sb.toString()
   }
 }

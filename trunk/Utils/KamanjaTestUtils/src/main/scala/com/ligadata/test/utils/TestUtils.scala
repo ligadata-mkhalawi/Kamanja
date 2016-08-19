@@ -5,13 +5,15 @@ import java.net.ServerSocket
 
 import scala.util.Random
 
+import com.ligadata.KamanjaVersion.KamanjaVersion
+
 /**
  * Created by wtarver on 4/23/15.
  */
 object TestUtils extends KamanjaTestLogger {
   val scalaVersionFull = scala.util.Properties.versionNumberString
   val scalaVersion = scalaVersionFull.substring(0, scalaVersionFull.lastIndexOf('.'))
-  val kamanjaVersion = "1.5.2"
+  val kamanjaVersion = s"${KamanjaVersion.getMajorVersion()}.${KamanjaVersion.getMinorVersion()}.${KamanjaVersion.getMicroVersion()}"
   private val random: Random = new Random()
 
   def constructTempDir(dirPrefix:String):File = {

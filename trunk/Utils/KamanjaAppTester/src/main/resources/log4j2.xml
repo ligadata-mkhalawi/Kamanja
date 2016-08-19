@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Configuration monitorInterval="300">
+    <Properties>
+        <Property name="LOGPATH">./logs</Property>
+    </Properties>
+
+    <Appenders>
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <PatternLayout pattern="%5p [%t] - %m%n" />
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <ROOT level="DEBUG">
+            <AppenderRef ref="CONSOLE"/>
+        </ROOT>
+        <!--
+        <Logger name="com.ligadata.KamanjaManager.embedded.EmbeddedKamanjaManager" level="OFF"/>
+        <Logger name="com.ligadata.test.application.EmbeddedServicesManager" level="OFF"/>
+        <Logger name="com.ligadata.MetadataAPI.PersistenceUtils" level="OFF"/>
+        -->
+    </Loggers>
+</Configuration>

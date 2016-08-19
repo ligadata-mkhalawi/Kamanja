@@ -140,7 +140,7 @@ class KafkaAdapterBuilder {
       new KafkaAdapterConfig(name, adapterType, associatedMessage, keyValueDelimiter, fieldDelimiter, valueDelimiter, className, jarName, dependencyJars, adapterSpecificConfig, tenantId)
     }
     catch {
-      case e: Exception => throw new KamanjaConfigurationException("AUTOMATION-KAFKA-ADAPTER-CONFIG: Failed to create KafkaAdapterConfig", e)
+      case e: Exception => throw new KamanjaConfigurationException("[Embedded Kafka]: Failed to create KafkaAdapterConfig", e)
     }
   }
 }

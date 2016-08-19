@@ -1,6 +1,6 @@
 {
   "Application": {
-    "Name": "TestApp1",
+    "Name": "TestApp2",
     "MetadataElements": [
       {
         "Type": "AdapterMessageBindings",

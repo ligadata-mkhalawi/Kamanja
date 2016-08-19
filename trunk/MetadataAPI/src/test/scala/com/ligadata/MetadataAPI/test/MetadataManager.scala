@@ -12,7 +12,7 @@ import com.ligadata.MetadataAPI.Utility.AdapterMessageBindingService
 import com.ligadata.test.configuration.cluster.Cluster
 import com.ligadata.test.configuration.cluster.adapters.StorageConfiguration
 import com.ligadata.test.configuration.cluster.adapters.interfaces.KafkaIOAdapter
-import com.ligadata.test.utils.{Globals, KamanjaTestLogger}
+import com.ligadata.test.utils.{Globals, KamanjaTestLogger, TestUtils}
 import com.ligadata.kamanja.metadata.{AdapterInfo, MdMgr, ModelDef}
 import com.ligadata.keyvaluestore.KeyValueManager
 
@@ -27,6 +27,8 @@ case class MetadataAPIProperties(var database: String,
                                  var databaseHost: String,
                                  var databaseSchema: String = "kamanja",
                                  var classPath: String = MetadataDefaults.metadataClasspath,
+                                 var systemJarPath: String = "",
+                                 var appJarPath: String = "",
                                  var znodeBasePath: String = "/kamanja",
                                  var zkConnStr: String = "localhost:2181",
                                  var modelExecLog: String = "true",
@@ -65,15 +67,20 @@ class MetadataManager extends KamanjaTestLogger {
       throw new MetadataManagerException("Failed to retrieve environmental variable 'JAVA_HOME'. You must set this variable in order to run tests.")
     }
 
-    val jarPathSystem: String = getClass.getResource("/jars/lib/system").getPath
-    val jarPathApp: String = getClass.getResource("/jars/lib/application").getPath
+    if(config.systemJarPath == "") {
+      config.systemJarPath = getClass.getResource("/jars/lib/system").getPath
+    }
+    if(config.appJarPath == "") {
+      config.appJarPath = getClass.getResource("/jars/lib/aplication").getPath
+    }
+
     val mdDataStore = new MetadataDataStore(config.database, config.connectionMode, config.databaseSchema, config.databaseHost)
 
-    MetadataAPIImpl.metadataAPIConfig.setProperty("JAR_PATHS",  jarPathSystem + "," + jarPathApp)
+    MetadataAPIImpl.metadataAPIConfig.setProperty("JAR_PATHS",  config.systemJarPath + "," + config.appJarPath)
     MetadataAPIImpl.metadataAPIConfig.setProperty("METADATA_DATASTORE", mdDataStore.toString)
 
     try {
-      logger.info("AUTOMATION-METADATA: Initializing Metadata Configuration...")
+      logger.info("[Metadata Manager]: Initializing Metadata Configuration...")
 
       //MetadataAPIImpl.InitMdMgr(MdMgr.mdMgr, config.database, config.databaseHost, config.databaseSchema, config.databaseHost, config.adapterSpecificConfig)
       MetadataAPIImpl.InitMdMgr(MdMgr.mdMgr, MetadataAPIImpl.metadataAPIConfig.get("JAR_PATHS").toString, MetadataAPIImpl.metadataAPIConfig.get("METADATA_DATASTORE").toString)
@@ -81,25 +88,25 @@ class MetadataManager extends KamanjaTestLogger {
     }
     catch {
       case e: AlreadyExistsException =>
-      case e: Exception => throw new MetadataManagerException("AUTOMATION-METADATA: Failed to initialize MetadataAPI with the following exception:\n" + e)
+      case e: Exception => throw new MetadataManagerException("[Metadata Manager]: Failed to initialize MetadataAPI with the following exception:\n" + e)
     }
     MetadataAPIImpl.metadataAPIConfig.setProperty("NODE_ID", "1")
     MetadataAPIImpl.metadataAPIConfig.setProperty("ROOT_DIR", "")
     MetadataAPIImpl.metadataAPIConfig.setProperty("GIT_ROOT", "")
     MetadataAPIImpl.metadataAPIConfig.setProperty("DATABASE", config.database)
-    MetadataAPIImpl.metadataAPIConfig.setProperty("JAR_TARGET_DIR", jarPathApp)
+    MetadataAPIImpl.metadataAPIConfig.setProperty("JAR_TARGET_DIR", config.appJarPath)
     MetadataAPIImpl.metadataAPIConfig.setProperty("MANIFEST_PATH", metadataDir.getAbsoluteFile + "/manifest.mf")
     MetadataAPIImpl.metadataAPIConfig.setProperty("CLASSPATH", config.classPath)
     MetadataAPIImpl.metadataAPIConfig.setProperty("NOTIFY_ENGINE", "NO")
     MetadataAPIImpl.metadataAPIConfig.setProperty("ZNODE_PATH", config.znodeBasePath)
     MetadataAPIImpl.metadataAPIConfig.setProperty("ZOOKEEPER_CONNECT_STRING", config.zkConnStr)
-    MetadataAPIImpl.metadataAPIConfig.setProperty("COMPILER_WORK_DIR", getClass.getResource("/jars/lib/workingdir").getPath)
+    MetadataAPIImpl.metadataAPIConfig.setProperty("COMPILER_WORK_DIR", TestUtils.constructTempDir("workingdir").getPath)//getClass.getResource("/jars/lib/workingdir").getPath)
     MetadataAPIImpl.metadataAPIConfig.setProperty("API_LEADER_SELECTION_ZK_NODE", config.znodeBasePath)
     MetadataAPIImpl.metadataAPIConfig.setProperty("MODEL_EXEC_LOG", config.modelExecLog)
-    MetadataAPIImpl.metadataAPIConfig.setProperty("SECURITY_IMPL_JAR", jarPathSystem + "/simpleapacheshiroadapter_2.11-1.0.jar")
+    MetadataAPIImpl.metadataAPIConfig.setProperty("SECURITY_IMPL_JAR", config.systemJarPath + "/simpleapacheshiroadapter_2.11-1.0.jar")
     MetadataAPIImpl.metadataAPIConfig.setProperty("SECURITY_IMPL_CLASS", "com.ligadata.Security.SimpleApacheShiroAdapter")
     MetadataAPIImpl.metadataAPIConfig.setProperty("DO_AUTH", "NO")
-    MetadataAPIImpl.metadataAPIConfig.setProperty("AUDIT_IMPL_JAR", jarPathSystem + "/auditadapters_2.11-1.0.jar")
+    MetadataAPIImpl.metadataAPIConfig.setProperty("AUDIT_IMPL_JAR", config.systemJarPath + "/auditadapters_2.11-1.0.jar")
     MetadataAPIImpl.metadataAPIConfig.setProperty("DO_AUDIT", "NO")
     MetadataAPIImpl.metadataAPIConfig.setProperty("ADAPTER_SPECIFIC_CONFIG", config.adapterSpecificConfig)
     MetadataAPIImpl.metadataAPIConfig.setProperty("SERVICE_HOST", config.serviceHost)
@@ -141,9 +148,9 @@ class MetadataManager extends KamanjaTestLogger {
   def addBindings(filepath: String): Int = {
     val file = new File(filepath)
 
-    logger.info(s"AUTOMATION-METADATA-MANAGER: Adding message bindings from file $filepath")
+    logger.info(s"[Metadata Manager]: Adding message bindings from file $filepath")
     if(!file.exists())
-      throw new MetadataManagerException(s"AUTOMATION-METADATA-MANAGER: The file ${file.getAbsolutePath} does not exist")
+      throw new MetadataManagerException(s"[Metadata Manager]: The file ${file.getAbsolutePath} does not exist")
 
     val source = Source.fromFile(file)
     val mdString = source.mkString
@@ -165,9 +172,9 @@ class MetadataManager extends KamanjaTestLogger {
     var result: ApiResult = null
     val file = new File(filepath)
 
-    logger.info(s"AUTOMATION-METADATA-MANAGER: Adding $mdType from file $filepath")
+    logger.info(s"[Metadata Manager]: Adding $mdType from file $filepath")
     if(!file.exists())
-      throw new MetadataManagerException(s"AUTOMATION-METADATA-MANAGER: The file '${file.getAbsoluteFile}' does not exist")
+      throw new MetadataManagerException(s"[Metadata Manager]: The file '${file.getAbsoluteFile}' does not exist")
 
     val source = Source.fromFile(file)
     val mdString = source.mkString
@@ -178,7 +185,7 @@ class MetadataManager extends KamanjaTestLogger {
       case "model" => {
         modelType match {
           case None =>
-            throw new MetadataManagerException("AUTOMATION-METADATA-MANAGER: Adding a model requires the model type to be specified")
+            throw new MetadataManagerException("[Metadata Manager]: Adding a model requires the model type to be specified")
           case Some(ModelType.SCALA) | Some(ModelType.JAVA) =>
             result = parseApiResult(MetadataAPIImpl.AddModel(modelType.get, mdString, Some(userId), tenantId, Some(userId + "." + modelName.get), modelVersion, msgConsumed, msgVersion, msgProduced, None))
           case Some(_) =>
@@ -190,13 +197,13 @@ class MetadataManager extends KamanjaTestLogger {
       case "jar" => result = parseApiResult(MetadataAPIImpl.UploadJar(filepath))
       case "compileconfig" => result = parseApiResult(MetadataAPIImpl.UploadModelsConfig(mdString, Some(userId), "", false))
     }
-    logger.info(s"AUTOMATION-METADATA-MANAGER: API Result =>\n${result.toString}")
+    logger.info(s"[Metadata Manager]: API Result =>\n${result.toString}")
     result.statusCode
   }
 
   def remove(mdType: String, namespace: String, name: String, version: String): Int = {
     var result: ApiResult = null
-    logger.info("AUTOMATION-METADATA-MANAGER: Removing " + mdType + s" $namespace.$name.$version")
+    logger.info("[Metadata Manager]: Removing " + mdType + s" $namespace.$name.$version")
     mdType.toLowerCase match {
       case "message" => result = parseApiResult(MetadataAPIImpl.RemoveMessage(namespace, name, version.toLong, Some(userId)))
       case "container" => result = parseApiResult(MetadataAPIImpl.RemoveContainer(namespace, name, version.toLong, Some(userId)))
@@ -207,14 +214,14 @@ class MetadataManager extends KamanjaTestLogger {
       case "function" => result = parseApiResult(MetadataAPIImpl.RemoveFunction(namespace, name, version.toLong, Some(userId)))
       case _ => throw new MetadataManagerException(s"Metadata Type $mdType is an invalid type.")
     }
-    logger.info("AUTOMATION-METADATA-MANAGER: API Result =>")
+    logger.info("[Metadata Manager]: API Result =>")
     logger.info(result.toString)
     result.statusCode
   }
 
   def get(mdType: String, namespace: String, name: String, version: String): Int = {
     var result: ApiResult = null
-    logger.info(s"AUTOMATION-METADATA-MANAGER: Getting $mdType $namespace.$name.$version")
+    logger.info(s"[Metadata Manager]: Getting $mdType $namespace.$name.$version")
     mdType.toLowerCase match {
       case "message" => result = parseApiResult(MetadataAPIImpl.GetMessageDef(namespace + "." + name, "JSON", version, Some(userId), None))
       case "container" => result = parseApiResult(MetadataAPIImpl.GetContainerDef(namespace + "." + name, "JSON", version, Some(userId), None))
@@ -222,7 +229,7 @@ class MetadataManager extends KamanjaTestLogger {
       case "function" => result = parseApiResult(MetadataAPIImpl.GetFunctionDef(namespace, name, "JSON", version, Some(userId)))
       case _ => throw new MetadataManagerException(s"Metadata Type $mdType is an invalid type.")
     }
-    logger.info("AUTOMATION-METADATA-MANAGER: API Result =>")
+    logger.info("[Metadata Manager]: API Result =>")
     logger.info(result.toString)
     result.statusCode
   }
@@ -240,9 +247,9 @@ class MetadataManager extends KamanjaTestLogger {
     var result: ApiResult = null
     val file: File = new File(filepath)
 
-    logger.info(s"AUTOMATION-METADATA-MANAGER: Updating $mdType from file '$filepath'")
+    logger.info(s"[Metadata Manager]: Updating $mdType from file '$filepath'")
     if (!file.exists())
-      throw new MetadataManagerException("AUTOMATION-METADATA-MANAGER: The file " + file.getAbsoluteFile + " does not exist")
+      throw new MetadataManagerException("[Metadata Manager]: The file " + file.getAbsoluteFile + " does not exist")
 
     val source = Source.fromFile(file)
     val mdString = source.mkString
@@ -253,7 +260,7 @@ class MetadataManager extends KamanjaTestLogger {
       case "model" => {
         modelType match {
           case None =>
-            throw new MetadataManagerException("AUTOMATION-METADATA-MANAGER: Adding a model requires the model type to be specified")
+            throw new MetadataManagerException("[Metadata Manager]: Adding a model requires the model type to be specified")
           case Some(_) =>
             result = parseApiResult(MetadataAPIImpl.UpdateModel(modelType.get, mdString, Some(userId), tenantId, modelName, modelVersion, modelVersionBeingUpdated, msgProduced, None))
         }
@@ -261,7 +268,7 @@ class MetadataManager extends KamanjaTestLogger {
       case "function" => result = parseApiResult(MetadataAPIImpl.UpdateFunctions(mdString, "JSON", Some(userId)))
       case _ => throw new MetadataManagerException(s"Metadata Type $mdType is an invalid type.")
     }
-    logger.info("AUTOMATION-METADATA-MANAGER: API Result =>")
+    logger.info("[Metadata Manager]: API Result =>")
     logger.info(result.toString)
     result.statusCode
   }
@@ -269,13 +276,13 @@ class MetadataManager extends KamanjaTestLogger {
   def addConfig(cluster: Cluster): Int = {
     try {
       val result = parseApiResult(MetadataAPIImpl.UploadConfig(cluster.toString, Some(userId), ""))
-      logger.info("AUTOMATION-METADATA-MANAGER: Upload Cluster Configuration API Result =>\n")
+      logger.info("[Metadata Manager]: Upload Cluster Configuration API Result =>\n")
       logger.info(result.toString)
       result.statusCode
     }
     catch {
       case e: Exception => {
-        logger.error("AUTOMATION-METADATA-MANAGER: Failed to add Cluster Configuration", e)
+        logger.error("[Metadata Manager]: Failed to add Cluster Configuration", e)
         e.printStackTrace()
         -1
       }
@@ -295,7 +302,7 @@ class MetadataManager extends KamanjaTestLogger {
 
   /// Returns 0 if all results are 0, otherwise returns the non-zero code
   def validateApiResults(apiResults: String): Int = {
-    println("AUTOMATION-METADATA-MANAGER: Validating API Results =>\n" + apiResults)
+    println("[Metadata Manager]: Validating API Results =>\n" + apiResults)
     val json = parse(apiResults)
     val results = (json \\ "Status Code")
 
@@ -306,7 +313,7 @@ class MetadataManager extends KamanjaTestLogger {
 
     codes map { code =>
       if (code != 0) {
-        logger.error(s"AUTOMATION-METADATA-MANAGER: An APIResult returned with Status Code $code")
+        logger.error(s"[Metadata Manager]: An APIResult returned with Status Code $code")
         return code.toInt
       }
     }

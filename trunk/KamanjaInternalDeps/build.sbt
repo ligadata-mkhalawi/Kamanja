@@ -13,6 +13,7 @@ assemblyMergeStrategy in assembly := {
   case x if x contains "com/ligadata/keyvaluestore/JdbcClassLoader.class" => MergeStrategy.first
   case "shiro.ini" => MergeStrategy.first
   case "log4j2.xml" => MergeStrategy.discard
+  case "logback.xml" => MergeStrategy.discard
   case x =>
     val oldStrategy = (assemblyMergeStrategy in assembly).value
     oldStrategy(x)

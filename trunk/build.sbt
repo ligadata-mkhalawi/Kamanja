@@ -274,7 +274,7 @@ lazy val KamanjaTestUtils = project.in(file("Utils/KamanjaTestUtils"))
   .configs(TestConfigs.all: _*)
   .settings(TestSettings.settings: _*)
   .settings(version <<= version in ThisBuild)
-  .dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided")
+  .dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KamanjaVersion)
 
 /*
 val commonSettings = Seq(

@@ -11,7 +11,7 @@ import com.ligadata.test.configuration.cluster.zookeeper._
 import com.ligadata.test.embedded.zookeeper._
 import com.ligadata.kafkaInputOutputAdapters_v10.embedded._
 import com.ligadata.test.utils._
-import com.ligadata.MetadataAPI.test.MetadataManager
+import com.ligadata.MetadataAPI.test._
 
 object EmbeddedServicesManager {
   private var embeddedKamanjaManager: EmbeddedKamanjaManager = _
@@ -23,14 +23,25 @@ object EmbeddedServicesManager {
   private var clusterConfig: Cluster = _
 
   def startServices(kamanjaInstallDir: String): Boolean = {
-    val zkStartCode = startZookeeper
-    val kafkaStartCode = startKafka
-    clusterConfig = generateClusterConfiguration(kamanjaInstallDir)
-    val mdMan = new MetadataManager
-    val result = mdMan.addConfig(clusterConfig)
-    if(result != 0)
-      println("[Kamanja Application Tester] - ***ERROR*** Attempted to upload cluster configuration but failed")
-    return zkStartCode && kafkaStartCode && startKamanja
+    try {
+      val zkStartCode = startZookeeper
+      val kafkaStartCode = startKafka
+      clusterConfig = generateClusterConfiguration(kamanjaInstallDir)
+      val mdMan = new MetadataManager
+
+      mdMan.setSSLPassword("")
+      mdMan.initMetadataCfg(new MetadataAPIProperties(H2DBStore.name, H2DBStore.connectionMode, storageDir, zkConnStr = embeddedZookeeper.getConnection, systemJarPath = s"$kamanjaInstallDir/lib/system", appJarPath = s"$kamanjaInstallDir/lib/application"))
+
+      val result = mdMan.addConfig(clusterConfig)
+      if (result != 0) {
+        println("[Kamanja Application Tester] - ***ERROR*** Attempted to upload cluster configuration but failed\n\t")
+        return false
+      }
+      return zkStartCode && kafkaStartCode && startKamanja
+    }
+    catch {
+      case e:Exception => throw new Exception("[Kamanja Application Tester] - ***ERROR*** Failed to start services", e)
+    }
   }
 
   def stopServices: Boolean = {
@@ -53,7 +64,7 @@ object EmbeddedServicesManager {
     try {
       println("[Kamanja Application Tester] - Starting Kamanja...")
       val startCode = embeddedKamanjaManager.startup(kamanjaConfigFile, clusterConfig.zookeeperConfig, zkClient)
-      if (startCode == 1) {
+      if (startCode != 0) {
         println("[Kamanja Application Tester] - ***ERROR*** Failed to start Kamanja")
       }
       else {
