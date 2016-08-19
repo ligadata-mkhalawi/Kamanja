@@ -328,7 +328,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
   private def getConnection: TransportClient = {
     try {
-      var client = TransportClient.builder().build().addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(location), portNumber.toInt));
+      var client = TransportClient.builder().build().addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(location), portNumber.toInt))
       client
     } catch {
       case e: Exception => {
@@ -413,7 +413,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       }
     } catch {
       case e: Exception => {
-        throw new Exception("Failed to create table  " + toTableName(containerName), e)
+        throw new Exception("Failed to create table  " + toFullTableName(containerName), e)
       }
     }
   }
@@ -450,22 +450,22 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   //    }
   //  }
 
-  private def toTableName(containerName: String): String = {
-    // Ideally, we need to check for all restrictions for naming a table
-    // such as length of the table, special characters etc
-    // containerName.replace('.','_')
-    containerName.toLowerCase.replace('.', '_').replace('-', '_')
-  }
+  //  private def toTableName(containerName: String): String = {
+  //    // Ideally, we need to check for all restrictions for naming a table
+  //    // such as length of the table, special characters etc
+  //    // containerName.replace('.','_')
+  //    containerName.toLowerCase.replace('.', '_').replace('-', '_')
+  //  }
 
   // made the following function public to make it available to scala test
   // components.
   def toFullTableName(containerName: String): String = {
-    SchemaName + "." + toTableName(containerName)
+    SchemaName + "." + toFullTableName(containerName)
   }
 
   // accessor used for testing
   override def getTableName(containerName: String): String = {
-    toTableName(containerName)
+    toFullTableName(containerName)
   }
 
   override def put(containerName: String, key: Key, value: Value): Unit = {
@@ -1511,7 +1511,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   }
 
   private def DropContainer(containerName: String): Unit = lock.synchronized {
-    var tableName = toTableName(containerName)
+    var tableName = toFullTableName(containerName)
     dropTable(tableName)
   }
 
@@ -1704,7 +1704,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
   // not implemented yet
   def backupContainer(containerName: String): Unit = lock.synchronized {
-    var tableName = toTableName(containerName)
+    var tableName = toFullTableName(containerName)
     var oldTableName = tableName
     var newTableName = tableName + "_bak"
     //    renameTable(oldTableName, newTableName)
@@ -1712,7 +1712,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
   // not implemented yet
   def restoreContainer(containerName: String): Unit = lock.synchronized {
-    var tableName = toTableName(containerName)
+    var tableName = toFullTableName(containerName)
     var oldTableName = tableName + "_bak"
     var newTableName = tableName
     //    renameTable(oldTableName, newTableName)
@@ -1720,7 +1720,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
   override def isContainerExists(containerName: String): Boolean = {
     // check whether corresponding table exists
-    var tableName = toTableName(containerName)
+    var tableName = toFullTableName(containerName)
     isTableExists(tableName)
   }
 
@@ -1729,8 +1729,8 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     if (srcContainerName.equalsIgnoreCase(destContainerName)) {
       throw CreateDDLException("Failed to copy the container " + srcContainerName, new Exception("Source Container Name can't be same as destination container name"))
     }
-    var srcTableName = toTableName(srcContainerName)
-    var destTableName = toTableName(destContainerName)
+    var srcTableName = toFullTableName(srcContainerName)
+    var destTableName = toFullTableName(destContainerName)
     try {
       //      renameTable(srcTableName, destTableName, forceCopy)
       logger.info("code  not implemented yet")
