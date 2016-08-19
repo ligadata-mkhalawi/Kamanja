@@ -636,7 +636,8 @@ object StartMetadataAPI {
         // 1116 - Changes end - The above line is commented since the TYPE actions is deprecated
         case Action.DUMPALLTYPESBYOBJTYPEASJSON => response = TypeService.dumpAllTypesByObjTypeAsJson
 
-        //function management
+        //function management- deprecated
+        /*
         case Action.ADDFUNCTION => response = FunctionService.addFunction(input)
         case Action.GETFUNCTION => response = {
           val fcnName: String = extraCmdArgs.getOrElse(FUNCTIONNAME, "")
@@ -662,7 +663,7 @@ object StartMetadataAPI {
           //response = FunctionService.loadFunctionsFromAFile(input)
           // 1295 Changes end
         case Action.DUMPALLFUNCTIONSASJSON => response = FunctionService.dumpAllFunctionsAsJson
-
+  */
         //config
         case Action.UPLOADCLUSTERCONFIG => response = ConfigService.uploadClusterConfig(input)
         case Action.UPLOADCOMPILECONFIG => response = ConfigService.uploadCompileConfig(input)
