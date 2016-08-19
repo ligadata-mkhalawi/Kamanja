@@ -22,7 +22,7 @@ class EmbeddedKamanjaManager {
   var nodeId: String = ""
 
   def startup(configFile: String, zkConfig: ZookeeperConfig, zkc: ZookeeperClient): Int = {
-    logger.info("EMBEDDED-KAMANJA-MANAGER: Starting Kamanja Manager...")
+    logger.info("[Embedded Kamanja Manager]: Starting Kamanja Manager...")
     val confProperties: Properties = new Properties()
     confProperties.load(new FileInputStream(configFile))
     nodeId = confProperties.getProperty("NODEID")
@@ -34,12 +34,12 @@ class EmbeddedKamanjaManager {
             val argArray = Array("--config", configFile)
             KamanjaManager.main(argArray)
             //if (returnCode != 0) {
-              //throw new EmbeddedKamanjaManagerException("EMBEDDED-KAMANJA-MANAGER: Kamanja Manager failed to start with return code " + returnCode)
+              //throw new EmbeddedKamanjaManagerException("[Embedded Kamanja Manager]: Kamanja Manager failed to start with return code " + returnCode)
             //}
           }
           catch {
-            case e: Exception => throw new EmbeddedKamanjaManagerException("EMBEDDED-KAMANJA-MANAGER: Failed to start the engine with the following exception:\n" + e)
-            case e: Throwable => throw new EmbeddedKamanjaManagerException("EMBEDDED-KAMANJA-MANAGER: Failed to start the engine with the following exception:\n" + e)
+            case e: Exception => throw new EmbeddedKamanjaManagerException("[Embedded Kamanja Manager]: Failed to start the engine with the following exception:\n" + e)
+            case e: Throwable => throw new EmbeddedKamanjaManagerException("[Embedded Kamanja Manager]: Failed to start the engine with the following exception:\n" + e)
           }
         }
       }
@@ -50,7 +50,7 @@ class EmbeddedKamanjaManager {
       breakable {
         for (i <- 0 to 30) {
           if (isRunning(zkConfig, zkc)) {
-            logger.info("EMBEDDED-KAMANJA-MANAGER: Kamanja Manager started")
+            logger.info("[Embedded Kamanja Manager]: Kamanja Manager started")
             return 0
           }
           Thread sleep 1000
@@ -58,46 +58,46 @@ class EmbeddedKamanjaManager {
       }
 
       engThread = null
-      logger.error("EMBEDDED-KAMANJA-MANAGER: Failed to start Kamanja Manager")
+      logger.error("[Embedded Kamanja Manager]: Failed to start Kamanja Manager")
       return 1
     }
     else {
-      logger.info("EMBEDDED-KAMANJA-MANAGER: Kamanja Manager is already running. Continuing...")
+      logger.info("[Embedded Kamanja Manager]: Kamanja Manager is already running. Continuing...")
       return 0
     }
   }
 
   def shutdown(zkConfig: ZookeeperConfig, zkc: ZookeeperClient): Int = {
-    logger.info("EMBEDDED-KAMANJA-MANAGER: Shutting down Kamanja Manager...")
+    logger.info("[Embedded Kamanja Manager]: Shutting down Kamanja Manager...")
     KamanjaConfiguration.shutdown = true
 
     for (i <- 0 to 30) {
       if (!isRunning(zkConfig, zkc)) {
-        logger.info("EMBEDDED-KAMANJA-MANAGER: Kamanja Manager successfully shut down")
+        logger.info("[Embedded Kamanja Manager]: Kamanja Manager successfully shut down")
         return 0
       }
       Thread sleep 1000
     }
-    logger.error("EMBEDDED-KAMANJA-MANAGER: Failed to shut down Kamanja Manager")
+    logger.error("[Embedded Kamanja Manager]: Failed to shut down Kamanja Manager")
     return 1
   }
 
   def restart(configFile: String, zkConfig: ZookeeperConfig, zkc: ZookeeperClient): Int = {
-    logger.info("EMBEDDED-KAMANJA-MANAGER: Restarting Kamanja Manager...")
+    logger.info("[Embedded Kamanja Manager]: Restarting Kamanja Manager...")
 
     val shutdownStatus = shutdown(zkConfig,zkc)
     if (shutdownStatus != 0) {
-      logger.error("EMBEDDED-KAMANJA-MANAGER: Failed to restart Kamanja Manager")
+      logger.error("[Embedded Kamanja Manager]: Failed to restart Kamanja Manager")
       return shutdownStatus
     }
 
     val startupStatus = startup(configFile, zkConfig, zkc)
     if (startupStatus != 0) {
-      logger.error("EMBEDDED-KAMANJA-MANAGER: Failed to restart Kamanja Manager")
+      logger.error("[Embedded Kamanja Manager]: Failed to restart Kamanja Manager")
       return startupStatus
     }
 
-    logger.info("EMBEDDED-KAMANJA-MANAGER: Kamanja Manager has been restarted")
+    logger.info("[Embedded Kamanja Manager]: Kamanja Manager has been restarted")
 
     return 0
   }
@@ -108,7 +108,7 @@ class EmbeddedKamanjaManager {
     try {
       heartbeatJson = zkc.getNodeData(zkConfig.zkNodeBasePath + s"/monitor/engine/$nodeId")
       if (heartbeatJson == "") {
-        logger.info("EMBEDDED-KAMANJA-MANAGER: Kamanja Manager is not running")
+        logger.info("[Embedded Kamanja Manager]: Kamanja Manager is not running")
         return false
       }
       else {
@@ -117,23 +117,23 @@ class EmbeddedKamanjaManager {
           val lastSeenHBJson: String = zkc.getNodeData(zkConfig.zkNodeBasePath + s"/monitor/engine/$nodeId")
           val lastSeen: DateTime = formatter.parseDateTime((parse(lastSeenHBJson) \ "LastSeen").values.toString)
           if (firstSeen.isBefore(lastSeen)) {
-            logger.info("EMBEDDED-KAMANJA-MANAGER: Kamanja Manager is running")
+            logger.info("[Embedded Kamanja Manager]: Kamanja Manager is running")
             return true
           }
           else {
             Thread sleep 1000
           }
         }
-        logger.info("EMBEDDED-KAMANJA-MANAGER: Kamanja Manager is not running")
+        logger.info("[Embedded Kamanja Manager]: Kamanja Manager is not running")
         return false
       }
     }
     catch {
       case e: EmbeddedZookeeperException =>
-        logger.info("EMBEDDED-KAMANJA-MANAGER: Kamanja Manager is not running")
+        logger.info("[Embedded Kamanja Manager]: Kamanja Manager is not running")
         return false
       case e: Exception =>
-        logger.error("EMBEDDED-KAMANJA-MANAGER: Unexpected exception caught...", e)
+        logger.error("[Embedded Kamanja Manager]: Unexpected exception caught...", e)
         return false
     }
   }

@@ -106,9 +106,9 @@ libraryDependencies ++= Seq(
   "org.apache.commons" % "commons-collections4" % "4.0",
   "commons-configuration" % "commons-configuration" % "1.7",
   "commons-logging" % "commons-logging" % "1.1.1",
-  "org.apache.curator" % "curator-client" % "2.6.0",
-  "org.apache.curator" % "curator-framework" % "2.6.0",
-  "org.apache.curator" % "curator-recipes" % "2.6.0"
+  "org.apache.curator" % "curator-client" % "2.11.0",
+  "org.apache.curator" % "curator-framework" % "2.11.0",
+  "org.apache.curator" % "curator-recipes" % "2.11.0"
 )
 
 
@@ -116,7 +116,7 @@ libraryDependencies ++= Seq(
 ////////////////////// CleanUtil
 libraryDependencies ++= Seq(
   "com.101tec" % "zkclient" % "0.7",
-  "org.apache.curator" % "curator-test" % "2.8.0"
+  "org.apache.curator" % "curator-test" % "2.11.0"
     exclude("javax.jms", "jms")
     exclude("com.sun.jdmk", "jmxtools")
     exclude("com.sun.jmx", "jmxri")

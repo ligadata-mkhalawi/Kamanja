@@ -27,7 +27,7 @@ import scala.collection.mutable.HashMap
 case class Cluster(var id: String,
                    var systemCatalog: StorageAdapter,
                    var tenants: Array[TenantConfiguration],
-                   var zkInfo: ZookeeperConfig,
+                   var zookeeperConfig: ZookeeperConfig,
                    var envContext: EnvironmentContextConfig,
                    var clusterCacheConfig: ClusterCacheConfig,
                    var nodes: Array[NodeConfiguration],
@@ -65,7 +65,7 @@ case class Cluster(var id: String,
       }
       builder.append(s"""      ],""" + "\n")
       builder.append(s"""      "ZooKeeperInfo": """ + "\n")
-      builder.append(s"""        ${zkInfo.toString},""" + "\n")
+      builder.append(s"""        ${zookeeperConfig.toString},""" + "\n")
       builder.append(s"""        ${envContext.toString}, """ + "\n")
       builder.append(s"""        ${clusterCacheConfig.toString},""" + "\n")
       builder.append(s"""      "Nodes": [""" + "\n")

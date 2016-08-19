@@ -28,6 +28,8 @@ import com.ligadata.Exceptions.{FatalAdapterException}
 import scala.actors.threadpool.{ExecutorService}
 import com.ligadata.KamanjaVersion.KamanjaVersion
 
+import scala.collection.JavaConversions._
+
 class KamanjaServer(port: Int) extends Runnable {
   private val LOG = LogManager.getLogger(getClass);
   private val serverSocket = new ServerSocket(port)
@@ -728,6 +730,7 @@ class KamanjaManager extends Observer {
       LOG.error(failStr)
       return Shutdown(1)
     }
+
     if (loadConfigs == null) {
       return Shutdown(1)
     }
