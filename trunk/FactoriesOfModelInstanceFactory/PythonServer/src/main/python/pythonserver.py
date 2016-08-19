@@ -1,4 +1,4 @@
-#
+#!/usr/bin/python
 # server.py
 import socket
 import time
