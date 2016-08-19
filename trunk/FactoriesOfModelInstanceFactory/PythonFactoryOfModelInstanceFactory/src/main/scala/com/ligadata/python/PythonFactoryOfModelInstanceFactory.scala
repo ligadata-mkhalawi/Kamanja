@@ -517,7 +517,7 @@ class PythonAdapter(factory : PythonAdapterFactory
           val pyBinPath : String = if (nodeContext.getValue("PYTHON_BIN_DIR") != null)
             nodeContext.getValue("PYTHON_BIN_DIR").asInstanceOf[String]
           else
-            s"/usr/bin/"
+            s"/usr/local/bin/"
             /** peer inside the pyPropMap to see if things are correct when debuging needed */
             val pyPropMap : Map[String,Any] = nodeContext.getValue("pyPropertyMap").asInstanceOf[Map[String,Any]]
 

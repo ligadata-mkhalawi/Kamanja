@@ -60,28 +60,27 @@ class PyProcess(host: String,
   private val WAIT_TIME = 1000
 
   private val reader = actor {
-    logger.error("created actor: " + Thread.currentThread)
+    logger.warn("created actor: " + Thread.currentThread)
     var continue = true
     loop {
       reactWithin(WAIT_TIME) {
         case TIMEOUT =>
           //caller ! "react timeout"
         case proc: Process =>
-          logger.error("PyProcess : receiving message from python subprocess pid " +  pid.toString)
+          logger.warn("PyProcess : receiving message from python subprocess pid " +  pid.toString)
           try {
             val streamReader = new java.io.InputStreamReader(proc.getInputStream)
             val bufferedReader = new java.io.BufferedReader(streamReader)
             val sb = new java.lang.StringBuilder()
             var line: String = null
             line = bufferedReader.readLine
-            logger.error("PyProcess :  "  + line)
+            logger.warn("PyProcess :  "  + line)
             while  (line != null) {
-              logger.error("PyProcess log from process pid '" + pid.toString + "' : " + line)
               sb.append(line)
               line = bufferedReader.readLine
             }
+            logger.warn("PyProcess : complete log from process  pid '" + pid.toString + "' : " + sb.toString)
             bufferedReader.close
-            logger.error("PyProcess : complete log from process  pid '" + pid.toString + "' : " + sb.toString)
           }
           catch {
             case e: Exception => {
@@ -97,14 +96,13 @@ class PyProcess(host: String,
     processBuilder = new ProcessBuilder(args: _*)
 
     proc = processBuilder.start()
-    Thread.sleep(2000)
     try {
       if (proc.getClass().getName().equals("java.lang.UNIXProcess")) {
         proc.getClass().getDeclaredField("pid").setAccessible(true)
         var f: Field = proc.getClass().getDeclaredField("pid")
         f.setAccessible(true)
         pid = f.getLong(proc)
-        logger.error("Scala Process The python server started at host " + cHost + " at port " + cPort + " and the processor id is " + pid)
+        logger.warn("Scala Process The python server started at host " + cHost + " at port " + cPort + " and the processor id is " + pid)
         f.setAccessible(false)
       }
     }
@@ -135,7 +133,7 @@ class PyProcess(host: String,
       PyPathText + SingleSpace + cPyPath + SingleSpace +
       LogConfigText + SingleSpace + cPyPath + "/config/" + LogConfigFileName + SingleSpace +
       LogFilePathText + SingleSpace + cPyPath + "/logs/" + LogFileName
-    logger.error("Scala process going to start python server using " + cmdString)
+    logger.warn("Scala process going to start python server using " + cmdString)
 
     run (cmdString)
 
