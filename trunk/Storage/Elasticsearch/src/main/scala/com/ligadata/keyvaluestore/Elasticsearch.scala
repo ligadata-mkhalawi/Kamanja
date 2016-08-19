@@ -495,7 +495,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
       hits.totalHits() match {
         case 0 => id = tableName + Calendar.getInstance().getTimeInMillis
-        case 1 => id = hits.getAt(1).id()
+        case 1 => id = hits.getAt(0).id()
         case x => System.err.println(" found " + hits.totalHits() + " hits, NOT VALID")
       }
 
@@ -581,7 +581,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
             hits.totalHits() match {
               case 0 => id = tableName + Calendar.getInstance().getTimeInMillis
-              case 1 => id = hits.getAt(1).id()
+              case 1 => id = hits.getAt(0).id()
               case x => System.err.println(" found " + hits.totalHits() + " hits, NOT VALID")
             }
 
@@ -659,7 +659,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
         hits.totalHits() match {
           case 0 => id = "noRecords"
-          case 1 => id = hits.getAt(1).id()
+          case 1 => id = hits.getAt(0).id()
           case x => System.err.println(" found " + hits.totalHits() + " hits, NOT VALID")
         }
         // create and add delete statement to bulk
@@ -715,7 +715,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
         hits.totalHits() match {
           case 0 => id = "noRecords"
-          case 1 => id = hits.getAt(1).id()
+          case 1 => id = hits.getAt(0).id()
           case x => System.err.println(" found " + hits.totalHits() + " hits, NOT VALID")
         }
         // create and add delete statement to bulk
@@ -770,7 +770,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
       hits.totalHits() match {
         case 0 => id = "noRecords"
-        case 1 => id = hits.getAt(1).id()
+        case 1 => id = hits.getAt(0).id()
         case x => System.err.println(" found " + hits.totalHits() + " hits, NOT VALID")
       }
 
@@ -1534,7 +1534,8 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
         .actionGet().getState()
         .getMetaData().concreteAllIndices()
 
-      if (indicies.contains(tableName) == 0) {
+
+      if (indicies.contains(tableName) == true) {
         logger.debug("The Index " + tableName + " already exists ")
       } else {
 
