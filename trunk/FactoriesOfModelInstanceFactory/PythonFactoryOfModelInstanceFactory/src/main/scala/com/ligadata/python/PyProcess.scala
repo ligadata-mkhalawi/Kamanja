@@ -113,11 +113,11 @@ class PyProcess(host: String,
         logger.error("Problem in starting the python server " + cHost + " at " + cPort)
       }
     }
-    processBuilder.redirectErrorStream(true)
+//    processBuilder.redirectErrorStream(true)
 
-    processBuilder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+//    processBuilder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
 
-    reader ! proc
+//    reader ! proc
 
   }
 

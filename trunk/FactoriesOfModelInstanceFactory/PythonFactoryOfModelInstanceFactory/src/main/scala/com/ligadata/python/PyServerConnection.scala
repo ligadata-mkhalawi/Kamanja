@@ -187,7 +187,8 @@ class PyServerConnection(val host : String
       logger.debug (" In the end of Process Msg ----- port number ---------- " + port.toString + ", bytes left = " + answeredBytes.nonEmpty.toString)
         if (answeredBytes.nonEmpty) {
             logger.error("*****************************************************************************************************************************")
-            logger.error("... in processMsg, there are resisdual bytes remaining suggesting multiple commands were dispatched with no intervening receipt of response bytes... some component is sending multiple commands or commands are being sent to this connection from multiple threads... a violation of the supposed contract. ")
+          logger.error("... in processMsg, there are resisdual bytes remaining suggesting multiple commands were dispatched with no intervening receipt of response bytes... some component is sending multiple commands or commands are being sent to this connection from multiple threads... a violation of the supposed contract. ")
+          logger.error (" this is the result at that time " + result)
             logger.error("*****************************************************************************************************************************")
         }
 
@@ -499,14 +500,15 @@ class Decoder extends LogTrait {
             val crc : Long = byteBuffer.getLong()
             val payloadLen : Int = byteBuffer.getInt()
             val startMarkStr : String = new String(startMark)
-            //logger.debug(s"startMark = $startMarkStr, crc = $crc, payload len = $payloadLen")
+          logger.debug(s"startMark = $startMarkStr, crc = $crc, payload len = $payloadLen")
+          logger.debug(s"startMark = $startMarkStr, crc = $crc, endMarkerLoan = $endMarkerValueLen")
             val payloadArray : scala.Array[Byte] = new scala.Array[Byte](payloadLen)
             byteBuffer.get(payloadArray,0,payloadLen)
             byteBuffer.get(endMark,0,endMarkerValueLen)
             val endMarkStr : String = new String(endMark)
             val payloadStr : String = new String(payloadArray)
-            //logger.debug(s"payload = $payloadStr")
-            //logger.debug(s"endMark = $endMarkStr")
+            logger.debug(s"payload = $payloadStr")
+            logger.debug(s"endMark = $endMarkStr")
             payloadStr
         } else {
             "unreasonable bytes returned... either null or insufficient bytes in the supplied result"
