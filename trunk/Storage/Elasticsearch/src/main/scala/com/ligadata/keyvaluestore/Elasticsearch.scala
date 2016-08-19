@@ -891,42 +891,52 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   //  }
 
   override def get(containerName: String, callbackFunction: (Key, Value) => Unit): Unit = {
-    CheckTableExists(containerName)
     var tableName = toFullTableName(containerName)
     var client = getConnection
-    var recCount = 0
-    var byteCount = 0
+    try {
+      CheckTableExists(containerName)
+      var recCount = 0
+      var byteCount = 0
 
-    val response = client
-      .prepareSearch(tableName)
-      .setTypes("type1")
-      .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId", "schemaId", "serializerType", "serializedInfo"),
-        null).execute().actionGet()
+      val response = client
+        .prepareSearch(tableName)
+        .setTypes("type1")
+        .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId", "schemaId", "serializerType", "serializedInfo"),
+          null).execute().actionGet()
 
-    val results: SearchHits = response.getHits
-    val hit: SearchHit = null
+      val results: SearchHits = response.getHits
+      val hit: SearchHit = null
 
-    results.getHits.foreach((hit: SearchHit) => {
-      var timePartition = hit.getSource.get("timePartition").toString.toLong
-      var keyStr: String = hit.getSource.get("bucketKey").toString
-      var tId = hit.getSource.get("transactionId").toString.toLong
-      var rId = hit.getSource.get("rowId").toString.toInt
-      var schemaId = hit.getSource.get("schemaId").toString.toInt
-      var st = hit.getSource.get("serializerType").toString
-      var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
-      val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
-      var key = new Key(timePartition, bucketKey, tId, rId)
-      // yet to understand how split serializerType and serializedInfo from ba
-      // so hard coding serializerType to "kryo" for now
-      var value = new Value(schemaId, st, ba)
-      recCount = recCount + 1
-      byteCount = byteCount + getKeySize(key) + getValueSize(value)
-      if (callbackFunction != null)
-        (callbackFunction) (key, value)
-    })
-    client.close()
-    //    var query = "select timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo from " + tableName
-    //    getData(tableName, query, callbackFunction)
+      results.getHits.foreach((hit: SearchHit) => {
+        var timePartition = hit.getSource.get("timePartition").toString.toLong
+        var keyStr: String = hit.getSource.get("bucketKey").toString
+        var tId = hit.getSource.get("transactionId").toString.toLong
+        var rId = hit.getSource.get("rowId").toString.toInt
+        var schemaId = hit.getSource.get("schemaId").toString.toInt
+        var st = hit.getSource.get("serializerType").toString
+        var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
+        val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
+        var key = new Key(timePartition, bucketKey, tId, rId)
+        // yet to understand how split serializerType and serializedInfo from ba
+        // so hard coding serializerType to "kryo" for now
+        var value = new Value(schemaId, st, ba)
+        recCount = recCount + 1
+        byteCount = byteCount + getKeySize(key) + getValueSize(value)
+        if (callbackFunction != null)
+          (callbackFunction) (key, value)
+      })
+      //      client.close()
+      //    var query = "select timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo from " + tableName
+      //    getData(tableName, query, callbackFunction)
+    } catch {
+      case e: Exception => {
+        throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
+      }
+    } finally {
+      if (client != null) {
+        client.close
+      }
+    }
   }
 
   //  private def getKeys(tableName: String, query: String, callbackFunction: (Key) => Unit): Unit = {
@@ -1124,49 +1134,59 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   }
 
   override def get(containerName: String, time_ranges: Array[TimeRange], callbackFunction: (Key, Value) => Unit): Unit = {
-    CheckTableExists(containerName)
     var client: TransportClient = null
     var tableName = toFullTableName(containerName)
-    var recCount = 0
-    var byteCount = 0
+    try {
+      var recCount = 0
+      var byteCount = 0
+      CheckTableExists(containerName)
+      client = getConnection
+      time_ranges.foreach(time_range => {
+        val response = client
+          .prepareSearch(tableName)
+          .setTypes("type1").setQuery(
+          QueryBuilders.andQuery(
+            QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime),
+            QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
+          .execute().actionGet()
 
-    client = getConnection
-    time_ranges.foreach(time_range => {
-      val response = client
-        .prepareSearch(tableName)
-        .setTypes("type1").setQuery(
-        QueryBuilders.andQuery(
-          QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime),
-          QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
-        .execute().actionGet()
+        val results: SearchHits = response.getHits
+        val hit: SearchHit = null
 
-      val results: SearchHits = response.getHits
-      val hit: SearchHit = null
+        results.getHits.foreach((hit: SearchHit) => {
+          var timePartition = hit.getSource.get("timePartition").toString.toLong
+          var keyStr: String = hit.getSource.get("bucketKey").toString
+          var tId = hit.getSource.get("transactionId").toString.toLong
+          var rId = hit.getSource.get("rowId").toString.toInt
+          var schemaId = hit.getSource.get("schemaId").toString.toInt
+          var st = hit.getSource.get("serializerType").toString
+          var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
+          val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
+          var key = new Key(timePartition, bucketKey, tId, rId)
+          // yet to understand how split serializerType and serializedInfo from ba
+          // so hard coding serializerType to "kryo" for now
+          var value = new Value(schemaId, st, ba)
+          recCount = recCount + 1
+          byteCount = byteCount + getKeySize(key) + getValueSize(value)
+          if (callbackFunction != null)
+            (callbackFunction) (key, value)
+        })
 
-      results.getHits.foreach((hit: SearchHit) => {
-        var timePartition = hit.getSource.get("timePartition").toString.toLong
-        var keyStr: String = hit.getSource.get("bucketKey").toString
-        var tId = hit.getSource.get("transactionId").toString.toLong
-        var rId = hit.getSource.get("rowId").toString.toInt
-        var schemaId = hit.getSource.get("schemaId").toString.toInt
-        var st = hit.getSource.get("serializerType").toString
-        var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
-        val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
-        var key = new Key(timePartition, bucketKey, tId, rId)
-        // yet to understand how split serializerType and serializedInfo from ba
-        // so hard coding serializerType to "kryo" for now
-        var value = new Value(schemaId, st, ba)
-        recCount = recCount + 1
-        byteCount = byteCount + getKeySize(key) + getValueSize(value)
-        if (callbackFunction != null)
-          (callbackFunction) (key, value)
+        //      var query = "select timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo from " + tableName + " where timePartition >= " + time_range.beginTime + " and timePartition <= " + time_range.endTime
+        //      logger.debug("query => " + query)
+        //      getData(tableName, query, callbackFunction)
       })
+      //    client.close()
+    } catch {
+      case e: Exception => {
+        throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
+      }
+    } finally {
+      if (client != null) {
+        client.close
+      }
+    }
 
-      //      var query = "select timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo from " + tableName + " where timePartition >= " + time_range.beginTime + " and timePartition <= " + time_range.endTime
-      //      logger.debug("query => " + query)
-      //      getData(tableName, query, callbackFunction)
-    })
-    client.close()
   }
 
   override def getKeys(containerName: String, time_ranges: Array[TimeRange], callbackFunction: (Key) => Unit): Unit = {
@@ -1534,6 +1554,13 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
         .actionGet().getState()
         .getMetaData().concreteAllIndices()
 
+      //      System.out.println("table to create: " +tableName)
+      //      System.out.println("List of existing tables: ")
+      //
+      //      indicies.foreach(str =>{
+      //
+      //        System.out.println(str)
+      //      })
 
       if (indicies.contains(tableName) == true) {
         logger.debug("The Index " + tableName + " already exists ")
