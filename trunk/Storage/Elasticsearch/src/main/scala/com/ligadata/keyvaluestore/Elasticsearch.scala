@@ -508,8 +508,16 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
         .field("rowId", key.rowId)
         .field("schemaId", value.schemaId)
         .field("serializerType", value.serializerType)
-        .field("serializedInfo", newBuffer)
+        .field("serializedInfo", new String(newBuffer))
         .endObject()
+
+      logger.info(">>>>>>>>>> timePartition " + 0)
+      logger.info(">>>>>>>>>> bucketKey " + key.bucketKey.mkString(","))
+      logger.info(">>>>>>>>>> transactionId " + key.transactionId)
+      logger.info(">>>>>>>>>> rowId " + key.rowId)
+      logger.info(">>>>>>>>>> schemaId " + value.schemaId)
+      logger.info(">>>>>>>>>> serializerType " + value.serializerType)
+      logger.info(">>>>>>>>>> serializedInfo " + new String(newBuffer))
 
       val indexResponse = client.prepareIndex(tableName, "type1", id)
         .setSource(builder).get()
@@ -598,8 +606,16 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
                 .field("rowId", key.rowId)
                 .field("schemaId", value.schemaId)
                 .field("serializerType", value.serializerType)
-                .field("serializedInfo", newBuffer)
+                .field("serializedInfo", new String(newBuffer))
                 .endObject()
+
+            logger.info(">>>>>>>>>> timePartition " + 0)
+            logger.info(">>>>>>>>>> bucketKey " + key.bucketKey.mkString(","))
+            logger.info(">>>>>>>>>> transactionId " + key.transactionId)
+            logger.info(">>>>>>>>>> rowId " + key.rowId)
+            logger.info(">>>>>>>>>> schemaId " + value.schemaId)
+            logger.info(">>>>>>>>>> serializerType " + value.serializerType)
+            logger.info(">>>>>>>>>> serializedInfo " + new String(newBuffer))
 
             bulkRequest.add(client.prepareIndex(tableName, "type1", id).setSource(builder))
 
@@ -922,8 +938,17 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
         var value = new Value(schemaId, st, ba)
         recCount = recCount + 1
         byteCount = byteCount + getKeySize(key) + getValueSize(value)
-        if (callbackFunction != null)
+        if (callbackFunction != null) {
+          logger.info(">>>>>>>>>>>>>>>>>>> key = " + key)
+          logger.info(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
+          logger.info(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
+          logger.info(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
+          logger.info(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
+          logger.info(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
+          logger.info(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
+          logger.info(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
           (callbackFunction) (key, value)
+        }
       })
       //      client.close()
       //    var query = "select timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo from " + tableName
