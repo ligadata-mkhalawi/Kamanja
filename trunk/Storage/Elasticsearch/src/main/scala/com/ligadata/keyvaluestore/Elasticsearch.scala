@@ -460,7 +460,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   // made the following function public to make it available to scala test
   // components.
   def toFullTableName(containerName: String): String = {
-    SchemaName + "." + toFullTableName(containerName)
+    SchemaName + "." + containerName
   }
 
   // accessor used for testing
