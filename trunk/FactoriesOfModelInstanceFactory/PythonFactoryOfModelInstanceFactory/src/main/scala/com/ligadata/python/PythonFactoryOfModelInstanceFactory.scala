@@ -22,7 +22,7 @@ import com.ligadata.KamanjaBase._
 import com.ligadata.Utils.{KamanjaLoaderInfo, Utils}
 import org.apache.logging.log4j.LogManager
 import java.io.{ByteArrayInputStream, InputStream, PushbackInputStream}
-import java.net.{SocketException, SocketTimeoutException}
+import java.net.{SocketException, SocketTimeoutException, ConnectException}
 import java.nio.charset.StandardCharsets
 
 import scala.util.control.Breaks._
@@ -434,10 +434,16 @@ class PythonAdapter(factory : PythonAdapterFactory
                         /** Fixme: The behavior here is to retry, but wait a twice as long... this is no doubt incorrect... consider this a
                           * place holder for actual behavior for actual problems....
                           */
-                        logger.error(s"Exception encountered processing $modelName... unable to produce result...exception = ${ste.toString}")
-                        mSecsToSleep *= 2
-                        Thread.sleep(mSecsToSleep)
+                      logger.error(s"Exception encountered processing $modelName... unable to produce result...exception = ${ste.toString}")
+                      mSecsToSleep *= 2
+                      Thread.sleep(mSecsToSleep)
                     }
+                  case co : ConnectException => {
+
+                    logger.error(s"Connection Exception encountered processing $modelName... unable to connectt...exception = ${co.toString}")
+                    mSecsToSleep *= 2
+                    Thread.sleep(mSecsToSleep)
+                  }
                     case e: Exception => {
                         /** if it is not one of the supported retry exceptions... we blow out of here */
                         logger.error(s"Exception encountered processing $modelName... unable to produce result...exception = ${e.toString}")
