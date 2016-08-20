@@ -55,6 +55,8 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   metrics(com.ligadata.adapterconfiguration.KamanjaHbaseAdapterConstants.PARTITION_COUNT_KEYS) = partitonCounts
   metrics(com.ligadata.adapterconfiguration.KamanjaHbaseAdapterConstants.EXCEPTION_SUMMARY) = partitionExceptions
   metrics(com.ligadata.adapterconfiguration.KamanjaHbaseAdapterConstants.PARTITION_DEPTH_KEYS) = partitonDepths
+  private var startTimestamp: Long = 0 /// take data from this timestamp
+  private var endTimeStamp: Long = 0 /// take data to this timestamp
 
   val hbaseutil: HbaseUtility = new HbaseUtility
   var dataStoreInfo = hbaseutil.createDataStorageInfo(adapterConfig)
@@ -102,13 +104,16 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     readExecutor.execute(new Runnable() {
       var intSleepTimer = KamanjaHbaseConsumer.INITIAL_SLEEP
 
-      var execContexts : Array[ExecContext] = new Array[ExecContext](maxPartNumber + 1)
-      var uniqueVals : Array[HbasePartitionUniqueRecordKey] = new Array[HbasePartitionUniqueRecordKey](maxPartNumber + 1)
+      var execContexts : ExecContext = null
+      var uniqueKey = new HbasePartitionUniqueRecordKey
      //////////////////////// var topicPartitions: Array[org.apache.kafka.common.TopicPartition] = new Array[org.apache.kafka.common.TopicPartition](maxPartNumber + 1)
-      var initialOffsets: Array[Long] = new Array[Long](maxPartNumber + 1)
-      var ignoreUntilOffsets: Array[Long] = new Array[Long](maxPartNumber + 1)
+//      var initialOffsets: Array[Long] = new Array[Long](maxPartNumber + 1)
+//      var ignoreUntilOffsets: Array[Long] = new Array[Long](maxPartNumber + 1)
 
-
+      // Create a new EngineMessage and call the engine.
+      if (execContexts == null) {
+        execContexts = execCtxtObj.CreateExecContext(input, uniqueKey, nodeContext)
+      }
 
       override def run(): Unit = {
         val readTmMs = System.currentTimeMillis
@@ -116,13 +121,13 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
         val uniqueVal = new HbasePartitionUniqueRecordValue
         while (!isRecordSentToKamanja && !isQuiese) {
           msgCount += 1
-          dataStore.getAllRecords("")
+         // dataStore.getAllRecords("")
           val retrievedata = (data: Array[Byte]) => {
             if (data != null) {
-              execContexts(1/*record.partition*/).execute(data, uniqueVals(1/*record.partition*/), uniqueVal, readTmMs)
+              execContexts.execute(data, uniqueKey , uniqueVal, readTmMs)
             }
           }
-   //       hbaseutil.getManager("get",retrievedata)
+          dataStore.getAllRecords(adapterConfig.TableName, retrievedata)
         }
       }
     })

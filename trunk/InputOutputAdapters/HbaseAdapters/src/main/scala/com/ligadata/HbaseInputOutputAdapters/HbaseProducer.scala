@@ -1,19 +1,23 @@
 package com.ligadata.HbaseInputOutputAdapters
 
 import java.util.Arrays
+
 import com.ligadata.KamanjaBase.{ContainerInterface, NodeContext, TransactionContext}
 import org.apache.logging.log4j.{LogManager, Logger}
 import com.ligadata.InputOutputAdapterInfo._
 import com.ligadata.Exceptions.{FatalAdapterException, KamanjaException}
 import com.ligadata.HeartBeat.{MonitorComponentInfo, Monitorable}
 import org.json4s.jackson.Serialization
+
 import scala.collection.mutable.ArrayBuffer
 import java.util.concurrent.{Future, TimeUnit}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
+
 import scala.actors.threadpool.{ExecutorService, Executors, TimeUnit}
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import com.ligadata.KvBase.Key
+
+import com.ligadata.KvBase.{Key, Value}
 import com.ligadata.Utils.KamanjaLoaderInfo
 import com.ligadata.adapterconfiguration.{HbaseAdapterConfiguration, HbaseConstants}
 import org.apache.hadoop.hbase.client.Connection
@@ -196,12 +200,55 @@ class HbaseProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
     for (i <- 0 until outputContainers.size) {
       metrics("MessagesProcessed").asInstanceOf[AtomicLong].incrementAndGet()
     }
+
+//    val (outContainers, serializedContainerData, serializerNames) = serialize(tnxCtxt, outputContainers)
+//
+//    if (outputContainers.size != serializedContainerData.size || outputContainers.size != serializerNames.size) {
+//      LOG.error("Hbase Producer " + adapterConfig.Name + ": Messages, messages serialized data & serializer names should has same number of elements. Messages:%d, Messages Serialized data:%d, serializerNames:%d".format(outputContainers.size, serializedContainerData.size, serializerNames.size))
+//      return
+//    }
+//    if (serializedContainerData.size == 0) return
+
     val data_list = outputContainers.groupBy(_.getFullTypeName.toLowerCase).map(oneContainerData => {
       (oneContainerData._1, oneContainerData._2.map(container => {
         (Key(container.TimePartitionData(), container.PartitionKeyData(), 0, 0), "", container.asInstanceOf[Any])
       }))
     }).toArray
-
+////////////////////////
+    data_list.foreach({li =>
+      println("++tablename++"+li._1)
+      var test2 = li._2
+      test2.foreach({ li2 =>
+        println("++data++"+ li2._3.toString )
+      })
+    })
+    val putData = data_list.map(oneContainerData => {
+      val containerData: Array[(com.ligadata.KvBase.Key, com.ligadata.KvBase.Value)] = oneContainerData._2.map(row => {
+        if (row._3.isInstanceOf[ContainerInterface]) {
+          val cont = row._3.asInstanceOf[ContainerInterface]
+          val (containers, serData, serializers) = serialize(tnxCtxt, Array(cont))
+          if (containers == null || containers.size == 0) {
+            // throw new KamanjaException("Failed to serialize container/message:" + cont.getFullTypeName, null)
+            // Ignoring these rows later
+            (null, Value(0, null, null))
+          } else {
+            (row._1, Value(cont.getSchemaId, serializers(0), serData(0)))
+          }
+        } else {
+          (row._1, Value(0, row._2, row._3.asInstanceOf[Array[Byte]]))
+        }
+      }).filter(row => row._1 != null || row._2.serializedInfo != null || row._2.serializerType != null || row._2.schemaId != 0)
+      (oneContainerData._1, containerData)
+    }).filter(oneContainerData => oneContainerData._2.size > 0)
+ /////////////////////////////////////
+    putData.foreach(li =>{
+      println("++tablename++" + li._1)
+      var keyValuePairs = li._2
+      keyValuePairs.foreach(keyValuePair => {
+        println("++key++" + keyValuePair._1.bucketKey.mkString(","))
+        println("++value++"+ keyValuePair._2.serializedInfo.toString)
+      })
+    })
     dataStore.put(tnxCtxt, data_list)
   }
 
