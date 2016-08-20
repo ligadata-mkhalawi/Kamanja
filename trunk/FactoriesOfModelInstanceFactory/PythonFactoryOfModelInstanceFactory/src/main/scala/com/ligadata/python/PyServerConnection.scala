@@ -20,6 +20,7 @@ import java.io._
 import java.net.{InetAddress, Socket}
 import java.nio.ByteBuffer
 import java.util.regex.{Matcher, Pattern}
+import java.net.{SocketException, SocketTimeoutException, ConnectException}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.sys.process._
@@ -105,8 +106,44 @@ class PyServerConnection(val host : String
       logger.debug (" THe value of host is " + host + " in the initialize of PyServerConnection ")
         /** create a connection to the server on the port that it is listening. */
         val inetbyname = InetAddress.getByName(host)
-        logger.debug("PyServerConnection.initialize ... connecting to host known as '$inetbyname' " + inetbyname + " " + port.toString)
-        _sock = new Socket(inetbyname, port)
+      logger.debug("PyServerConnection.initialize ... connecting to host known as '$inetbyname' " + inetbyname + " " + port.toString)
+      var mSecsToSleep : Long = 500
+      Thread.sleep(mSecsToSleep/2)
+      _sock = new Socket(inetbyname, port)
+      while (_sock == null && attempts < 10) {
+        try {
+          _sock = new Socket(inetbyname, port)
+        }
+        catch {
+          case ne : NullPointerException => {
+          }
+          case ste: SocketTimeoutException => {
+                                    /** Fixme: The behavior here is to retry, but wait a twice as long... this is no doubt incorrect... consider this a
+                                      *  place holder for actual behavior for actual problems....
+                                      */
+            logger.error(s"Exception encountered processing ... unable to produce result...exception = ${ste.toString}")
+          }
+          case co : ConnectException => {
+
+            logger.error(s"Connection Exception encountered processing ... unable to connectt...exception = ${co.toString}")
+          }
+          case e: Exception => {
+            /** if it is not one of the supported retry exceptions... we blow out of here */
+            logger.error(s"Exception encountered processing ... unable to produce result...exception = ${e.toString}")
+            break
+          }
+        }
+        if (_sock == null) {
+          mSecsToSleep *= 2
+          Thread.sleep(mSecsToSleep)
+          attempts = attempts + 1
+          logger.debug ("Continuting to connect for attempt " + attempts.toString)
+        }
+        else {
+          break
+        }
+
+      }
         _in = new DataInputStream(_sock.getInputStream)
         _out = new DataOutputStream(_sock.getOutputStream)
 
