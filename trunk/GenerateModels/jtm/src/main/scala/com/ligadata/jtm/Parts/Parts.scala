@@ -71,15 +71,8 @@ object Parts {
        |  // Model code start
        |  {external.modelcode}
        |  // Model code end
-       |
-       |  private def DumpState(action: String, txnCtxt: TransactionContext): Unit = {
-       |    if (isWarnEnabled) { Warning("==================> " + action + " =====> this:" + this + " ====================>Key: " + txnCtxt.getPartitionKey()) }
-       |  }
-       |
-       |
        |  override def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
        |    context.Reset(); // Resetting the JtmContext before executing the model
-       |    DumpState("Enter", txnCtxt)
        |    if (isTraceEnabled)
        |      Trace(s"Model::execute transid=%d triggeredset=%d outputdefault=%s".format(txnCtxt.transId, triggerdSetIndex, outputDefault.toString))
        |    if(isDebugEnabled)
@@ -100,7 +93,6 @@ object Parts {
        |    {
        |      results.foreach(m => Debug( s"Output: %s -> %s".format(m.getFullTypeName, m.toString())))
        |    }
-       |    DumpState("Exit", txnCtxt)
        |    results.asInstanceOf[Array[ContainerOrConcept]]
        |  }
        |}""".stripMargin
