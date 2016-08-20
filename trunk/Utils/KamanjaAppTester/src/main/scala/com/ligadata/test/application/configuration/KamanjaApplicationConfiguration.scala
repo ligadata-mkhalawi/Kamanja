@@ -54,12 +54,7 @@ class KamanjaApplicationConfiguration {
             throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Container' requires 'Filename' to be defined.")
           }
 
-          if (!elem.keySet.exists(_ == "Tenant")) {
-            println("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Container' requires 'Tenant' to be defined.")
-            throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Container' requires 'Tenant' to be defined.")
-          }
-
-          metadataElements = metadataElements :+ new ContainerElement(appDir + "/metadata/container/" + elem("Filename").toString, elem("Tenant").toString)
+          metadataElements = metadataElements :+ new ContainerElement(appDir + "/metadata/container/" + elem("Filename").toString)
         }
         case "message" => {
           if (!elem.keySet.exists(_ == "Filename")) {
@@ -67,12 +62,7 @@ class KamanjaApplicationConfiguration {
             throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Message' requires 'Filename' to be defined.")
           }
 
-          if (!elem.keySet.exists(_ == "Tenant")) {
-            println("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Message' requires 'Tenant' to be defined.")
-            throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Message' requires 'Tenant' to be defined.")
-          }
-
-          metadataElements = metadataElements :+ new MessageElement(appDir + "/metadata/message/" + elem("Filename").toString, elem("Tenant").toString)
+          metadataElements = metadataElements :+ new MessageElement(appDir + "/metadata/message/" + elem("Filename").toString)
         }
         case "model" => {
           elem("ModelType").toString.toLowerCase match {
@@ -82,51 +72,34 @@ class KamanjaApplicationConfiguration {
                 throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'Java' requires 'Filename' to be defined.")
               }
 
-              if (!elem.keySet.exists(_ == "Tenant")) {
-                println("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'Java' requires 'Tenant' to be defined.")
-                throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'Java' requires 'Tenant' to be defined.")
-              }
-
               if(!elem.keySet.exists(_ == "ModelConfiguration")) {
                 println("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'Java' requires 'ModelConfiguration' to be defined.")
                 throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'Java' requires 'ModelConfiguration' to be defined.")
               }
 
-              metadataElements = metadataElements :+ new JavaModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("Tenant").toString, elem("ModelConfiguration").toString)
+              metadataElements = metadataElements :+ new JavaModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("ModelConfiguration").toString)
             case "scala" => {
               if (!elem.keySet.exists(_ == "Filename")) {
                 println("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'Scala' requires 'Filename' to be defined.")
                 throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'Scala' requires 'Filename' to be defined.")
               }
-              if (!elem.keySet.exists(_ == "Tenant")) {
-                println("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'Scala' requires 'Tenant' to be defined.")
-                throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'Scala' requires 'Tenant' to be defined.")
-              }
               if(!elem.keySet.exists(_ == "ModelConfiguration")) {
                 println("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'Scala' requires 'ModelConfiguration' to be defined.")
                 throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'Scala' requires 'ModelConfiguration' to be defined.")
               }
-              metadataElements = metadataElements :+ new ScalaModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("Tenant").toString, elem("ModelConfiguration").toString)
+              metadataElements = metadataElements :+ new ScalaModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("ModelConfiguration").toString)
             }
             case "kpmml" => {
               if (!elem.keySet.exists(_ == "Filename")) {
                 println("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'KPMML' requires 'Filename' to be defined.")
                 throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'KPMML' requires 'Filename' to be defined.")
               }
-              if (!elem.keySet.exists(_ == "Tenant")) {
-                println("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'KPMML' requires 'Tenant' to be defined.")
-                throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'KPMML' requires 'Tenant' to be defined.")
-              }
-              metadataElements = metadataElements :+ new KPmmlModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("Tenant").toString)
+              metadataElements = metadataElements :+ new KPmmlModelElement(appDir + "/metadata/model/" + elem("Filename").toString)
             }
             case "pmml" => {
               if (!elem.keySet.exists(_ == "Filename")) {
                 println("[Kamanja Application Tester - Application Configuration]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'PMML' requires 'Filename' to be defined.")
                 throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'PMML' requires 'Filename' to be defined.")
-              }
-              if (!elem.keySet.exists(_ == "Tenant")) {
-                println("[Kamanja Application Tester - Application Configuration]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'PMML' requires 'Tenant' to be defined.")
-                throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'PMML' requires 'Tenant' to be defined.")
               }
               if(!elem.keySet.exists(_ == "MessageConsumed")) {
                 println("[Kamanja Application Tester - Application Configuration]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'PMML' requires 'MessageConsumed' to be defined.")
@@ -134,10 +107,10 @@ class KamanjaApplicationConfiguration {
               }
               if (elem.keySet.exists(_ == "MessageProduced")) {
                 if (elem("MessageProduced") != null && elem("MessageProduced") != "") {
-                  metadataElements = metadataElements :+ new PmmlModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("Tenant").toString, elem("MessageConsumed").toString, Some(elem("MessageProduced").toString))
+                  metadataElements = metadataElements :+ new PmmlModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("MessageConsumed").toString, Some(elem("MessageProduced").toString))
                 }
                 else {
-                  metadataElements = metadataElements :+ new PmmlModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("Tenant").toString, elem("MessageConsumed").toString, None)
+                  metadataElements = metadataElements :+ new PmmlModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("MessageConsumed").toString, None)
                 }
               }
             }

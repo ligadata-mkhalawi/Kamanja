@@ -163,6 +163,7 @@ class MetadataManager extends KamanjaTestLogger {
           filepath: String,
           tenantId: Option[String] = None,
           modelType: Option[ModelType] = None,
+          modelCfg: Option[String] = None,
           modelName: Option[String] = None,
           modelVersion: Option[String] = None,
           msgConsumed: Option[String] = None,
@@ -187,7 +188,7 @@ class MetadataManager extends KamanjaTestLogger {
           case None =>
             throw new MetadataManagerException("[Metadata Manager]: Adding a model requires the model type to be specified")
           case Some(ModelType.SCALA) | Some(ModelType.JAVA) =>
-            result = parseApiResult(MetadataAPIImpl.AddModel(modelType.get, mdString, Some(userId), tenantId, Some(userId + "." + modelName.get), modelVersion, msgConsumed, msgVersion, msgProduced, None))
+            result = parseApiResult(MetadataAPIImpl.AddModel(modelType.get, mdString, Some(userId), tenantId, Some(userId + "." + modelCfg.get), modelVersion, msgConsumed, msgVersion, msgProduced, None))
           case Some(_) =>
             result = parseApiResult(MetadataAPIImpl.AddModel(modelType.get, mdString, Some(userId), tenantId, modelName, modelVersion, msgConsumed, msgVersion, msgProduced, None))
             val model: Option[ModelDef] = MdMgr.GetMdMgr.Model(s"$modelName", MdMgr.ConvertVersionToLong(modelVersion.getOrElse("-1")), true)

@@ -1,3 +1,8 @@
 package com.ligadata.test.application.metadata.interfaces
 
-trait ModelElement extends MetadataElement
+import com.ligadata.MetadataAPI.MetadataAPI.ModelType
+import com.ligadata.MetadataAPI.MetadataAPI.ModelType.ModelType
+
+trait ModelElement extends MetadataElement {
+  def modelType: ModelType
+}
