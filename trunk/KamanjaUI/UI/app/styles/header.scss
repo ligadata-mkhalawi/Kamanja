@@ -66,6 +66,11 @@
     }
     .filtersearch {
       color: white;
+      .filterTable {
+        td {
+          padding: 8px;
+        }
+      }
       .filter {
         min-height: 200px;
         background-color: black;

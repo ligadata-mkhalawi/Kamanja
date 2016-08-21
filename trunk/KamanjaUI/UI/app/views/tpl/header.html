@@ -4,63 +4,73 @@
       <img class="logo" id="imgLogo" src="./images/logo.svg" width="168"
            height="47" alt="" data-mu-svgfallback="./images/logo.png">
       <span class="version">beta v0.1</span>
-      <div ng-show="header.showFilter" class="row filtersearch">
-        <div class="col-md-6">
-          <div>
-            <i class="fa fa-search fa-2" data-toggle="collapse" data-target=".search-container" aria-hidden="true"></i>
-            <div class="search-container collapse">
-              <div class="row">
-                <div class="col-sm-6 col-sm-offset-3">
-                  <div id="imaginary_container">
-                    <div class="input-group stylish-input-group">
-                      <input type="text" ng-model="header.selectedSearch" typeahead-popup-template-url="searchPopupTemplate.html"
-                             uib-typeahead="item as item.Name for item in header.selectedViewData | filter: {Name: $viewValue}"
-                             typeahead-on-select="header.onSearchSelectChange($item, $model, $label, $event)"
-                             class="form-control"  placeholder="Search" ng-change="header.filterNodes()">
-                      <span class="input-group-addon">
+      <div ng-show="header.showFilter" class="filtersearch">
+        <table class="filterTable">
+          <tr>
+            <td>
+              <div>
+                <i class="glyphicon glyphicon-search"
+                   ng-click="header.isSearchBoxShown = true" ng-show="header.isSearchBoxShown == false"
+                   aria-hidden="true"></i>
+                <div class="search-container" ng-show="header.isSearchBoxShown == true">
+                  <div>
+                    <div>
+                      <div id="imaginary_container">
+                        <div class="input-group stylish-input-group">
+                          <input type="text" ng-model="header.selectedSearch"
+                                 typeahead-popup-template-url="searchPopupTemplate.html"
+                                 uib-typeahead="item as item.Name for item in header.selectedViewData | filter: {Name: $viewValue}"
+                                 typeahead-on-select="header.onSearchSelectChange($item, $model, $label, $event)"
+                                 class="form-control" placeholder="Search" ng-change="header.filterNodes()">
+                          <span class="input-group-addon">
                         <button type="submit">
                             <span class="glyphicon glyphicon-search"></span>
                         </button>
                     </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <span data-toggle="collapse" data-target=".filter">
-            <i class="fa fa-filter fa-2" aria-hidden="true"></i>
-            </span>
-          <div class="filter collapse">
-            <table class="table">
-              <tr>
-                <td>
-                  <i class="fa fa-filter fa-2" aria-hidden="true"></i>
-                </td>
-                <td>
-                  Model Types
-                </td>
-              </tr>
-              <tr>
-                <td></td>
-                <td>
-                  <div ng-repeat="item in header.filterList">
-                    <div class="checkbox">
-                      <label>
-                        <img ng-src="images/{{item.imageName}}" width="{{item.imageWidth}}"
-                             height="{{item.imageHeight}}" alt=""/>
-                        {{item.displayName}}
-                        <input type="checkbox" ng-model="item.checked" ng-checked="item.checked" ng-click="header.filterChecked($event)" id="{{item.name}}"><label for="{{item.name}}"></label>
-                      </label>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-            </table>
-          </div>
-        </div>
+            </td>
+            <td>
+              <span>
+                <i class="glyphicon glyphicon-filter" ng-show="header.isFilterShown == false"
+                   ng-click="header.isFilterShown = true" aria-hidden="true"></i>
+              </span>
+              <div ng-show="header.isFilterShown == true" class="filter">
+                <table class="table">
+                  <tr>
+                    <td>
+                      <i class="glyphicon glyphicon-filter" ng-click="header.isFilterShown = false" aria-hidden="true"></i>
+                    </td>
+                    <td>
+                      Model Types
+                    </td>
+                  </tr>
+                  <tr>
+                    <td></td>
+                    <td>
+                      <div ng-repeat="item in header.filterList">
+                        <div class="checkbox">
+                          <label>
+                            <img ng-src="images/{{item.imageName}}" width="{{item.imageWidth}}"
+                                 height="{{item.imageHeight}}" alt=""/>
+                            {{item.displayName}}
+                            <input type="checkbox" ng-model="item.checked" ng-checked="item.checked"
+                                   ng-click="header.filterChecked($event)" id="{{item.name}}"><label
+                            for="{{item.name}}"></label>
+                          </label>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+            </td>
+          </tr>
+        </table>
       </div>
     </div>
     <div class="col-sm-6 col-xs-6 col-md-6">
@@ -109,7 +119,8 @@
     <p class="message">select from drop down.</p>
 
     <ul class="dropdown-menu" role="listbox">
-      <li class="uib-typeahead-match" ng-repeat="match in matches track by $index" ng-class="{active: isActive($index) }"
+      <li class="uib-typeahead-match" ng-repeat="match in matches track by $index"
+          ng-class="{active: isActive($index) }"
           ng-mouseenter="selectActive($index)" ng-click="selectMatch($index)" role="option" id="{{::match.id}}">
         <div uib-typeahead-match index="$index" match="match" query="query" template-url="templateUrl"></div>
       </li>

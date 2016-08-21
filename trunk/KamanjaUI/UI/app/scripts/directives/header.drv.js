@@ -10,6 +10,8 @@ angular.module('networkApp')
       controller: function ($interval) {
         var header = this;
         header.listViews = [];
+        header.isSearchBoxShown = false;
+        header.isFilterShown = false;
 
         $interval(function () {
           header.currentDate = Date.now();

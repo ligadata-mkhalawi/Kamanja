@@ -163,40 +163,48 @@ angular
 
           $rootScope.$on('filterNodesChanged', function (event, filterObj) {
             if (data.nodes) {
-              _.each(data.nodes._data, function(item){
+              _.each(data.nodes._data, function (item) {
                 data.nodes.update([{id: item.id, hidden: false}]);
               });
 
-              _.each(data.edges._data, function(item){
+              _.each(data.edges._data, function (item) {
                 data.edges.update([{id: item.id, hidden: false}]);
               });
 
               filterObj.filterList = _.orderBy(filterObj.filterList, ['checked'], ['desc']);
-              _.each(filterObj.filterList, function(filterData){
+              _.each(filterObj.filterList, function (filterData) {
                 var selectedNodes = _.filter(data.nodes._data, {class: filterData.name.toLowerCase()});
                 if (selectedNodes && selectedNodes.length > 0) {
                   _.each(selectedNodes, function (item) {
                     //item.hidden = filterData.visible;
                     data.nodes.update([{id: item.id, hidden: !filterData.checked}]);
-                    var selectedEdges = _.filter(data.edges._data, function(edge){
+                    var selectedEdges = _.filter(data.edges._data, function (edge) {
                       return edge.from == item.id || edge.to == item.id;
                     });
-                    if(selectedEdges && selectedEdges.length > 0){
-                      _.each(selectedEdges, function(edge){
+                    if (selectedEdges && selectedEdges.length > 0) {
+                      _.each(selectedEdges, function (edge) {
                         data.edges.update([{id: edge.id, hidden: !filterData.checked}]);
                       });
                     }
                   });
                 }
               });
-              if(filterObj.searchText != ""){
-                var selectedNodes = _.filter(data.nodes._data, function(node){
-                  return !node.class.toLowerCase().contains(filterObj.searchText.toLowerCase())
+              if (filterObj.searchText != "") {
+                var selectedNodes = _.filter(data.nodes._data, function (node) {
+                  return !node._label.toLowerCase().contains(filterObj.searchText.toLowerCase())
                     && node.hidden == false;
                 });
 
-                _.each(selectedNodes, function(node){
+                _.each(selectedNodes, function (node) {
                   data.nodes.update([{id: node.id, hidden: true}]);
+                  var selectedEdges = _.filter(data.edges._data, function (edge) {
+                    return edge.from == node.id || edge.to == node.id;
+                  });
+                  if (selectedEdges && selectedEdges.length > 0) {
+                    _.each(selectedEdges, function (edge) {
+                      data.edges.update([{id: edge.id, hidden: true}]);
+                    });
+                  }
                 });
               }
             }
