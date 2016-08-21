@@ -12,16 +12,23 @@
     padding-bottom: 19px;
   }
 
-  .icon-bar {
-    border-radius: 1px;
-    display: block;
-    height: 2px;
-    width: 22px;
-    margin-top: 3px
-  }
-
   &.navbar-default {
     background-color: #080808!important;
+  }
+
+  .middleMenu {
+    .title {
+      color: #787878;
+    }
+
+    .icon-bar {
+      color: white;
+    }
+  }
+
+  .top {
+    padding-top: 15px;
+    padding-bottom: 15px;
   }
 }
 
