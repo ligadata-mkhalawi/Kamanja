@@ -108,7 +108,7 @@ class PyServerConnection(val host : String
         val inetbyname = InetAddress.getByName(host)
       logger.debug("PyServerConnection.initialize ... connecting to host known as '$inetbyname' " + inetbyname + " " + port.toString)
       var mSecsToSleep : Long = 500
-      Thread.sleep(mSecsToSleep/2)
+      Thread.sleep(mSecsToSleep)
       _sock = new Socket(inetbyname, port)
       while (_sock == null && attempts < 10) {
         try {

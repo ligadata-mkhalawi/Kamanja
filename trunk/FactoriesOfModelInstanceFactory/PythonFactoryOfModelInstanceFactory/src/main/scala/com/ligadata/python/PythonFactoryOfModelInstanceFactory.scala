@@ -348,7 +348,8 @@ class PythonAdapter(factory : PythonAdapterFactory
     private def evaluateModel(msg : ContainerInterface): String = {
 
         val (moduleName, modelName) : (String,String) = ModuleNModelNames
-        /** get the current connection for this model's server */
+      /** get the current connection for this model's server */
+      logger.debug (s"Evaluate Model for (moduleName = $moduleName, modelName = '$modelName')")
         val pyServerConnection : PyServerConnection = getServerConnection
         if (pyServerConnection == null) {
             logger.error(s"Python evaluateModel (moduleName = $moduleName, modelName = '$modelName') ... the python server connection could not be obtained... giving up")
