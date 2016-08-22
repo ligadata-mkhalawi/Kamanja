@@ -16,26 +16,26 @@ angular
 
           var nodes = [
 
-            {id: "AppAccessLog", _label: "AppAccessLog", group: 'logsCluster', color: {border: ''}},
-            {id: "URLAccessLog", _label: "URLAccessLog", group: 'logsCluster'},
-            {id: "RemoteAccessLog", _label: "RemoteAccessLog", group: 'logsCluster'},
-            {id: "RootLog", _label: "RootLog", hidden: true, group: 'logsCluster'},
+            {id: 'AppAccessLog', _label: 'AppAccessLog', group: 'logsCluster', color: {border: ''}},
+            {id: 'URLAccessLog', _label: 'URLAccessLog', group: 'logsCluster'},
+            {id: 'RemoteAccessLog', _label: 'RemoteAccessLog', group: 'logsCluster'},
+            {id: 'RootLog', _label: 'RootLog', hidden: true, group: 'logsCluster'},
 
-            {id: "Mozilla Browser", _label: "Mozilla Browser", group: 'browsersCluster', color: {border: ''}},
-            {id: "Chrome Browser", _label: "Chrome Browser", group: 'browsersCluster'},
-            {id: "RootBrowser", _label: "RootBrowser", hidden: true, group: 'browsersCluster'},
+            {id: 'Mozilla Browser', _label: 'Mozilla Browser', group: 'browsersCluster', color: {border: ''}},
+            {id: 'Chrome Browser', _label: 'Chrome Browser', group: 'browsersCluster'},
+            {id: 'RootBrowser', _label: 'RootBrowser', hidden: true, group: 'browsersCluster'},
 
-            {id: "Jane", _label: "Jane", group: "userCluster"},
-            {id: "John", _label: "John", group: "userCluster"},
-            {id: "Jill", _label: "Jill", group: "userCluster"},
-            {id: "RootUser", _label: "RootUser", hidden: true, group: "userCluster"},
+            {id: 'Jane', _label: 'Jane', group: 'userCluster'},
+            {id: 'John', _label: 'John', group: 'userCluster'},
+            {id: 'Jill', _label: 'Jill', group: 'userCluster'},
+            {id: 'RootUser', _label: 'RootUser', hidden: true, group: 'userCluster'},
 
-            {id: "BadApp", _label: "BadApp", group: "BadAppsCluster"},
-            {id: "RootBadApp", _label: "RootBadApp", hidden: true, group: "BadAppsCluster"},
+            {id: 'BadApp', _label: 'BadApp', group: 'BadAppsCluster'},
+            {id: 'RootBadApp', _label: 'RootBadApp', hidden: true, group: 'BadAppsCluster'},
 
-            {id: "Outlook", _label: "Outlook", group: "EmailAppsCluster"},
-            {id: "GMail", _label: "GMail", group: "EmailAppsCluster"},
-            {id: "RootEmailApp", _label:"RootEmailApp", hidden: true, group: "EmailAppsCluster"}
+            {id: 'Outlook', _label: 'Outlook', group: 'EmailAppsCluster'},
+            {id: 'GMail', _label: 'GMail', group: 'EmailAppsCluster'},
+            {id: 'RootEmailApp', _label:'RootEmailApp', hidden: true, group: 'EmailAppsCluster'}
 
           ];
           var edges = [
@@ -124,7 +124,7 @@ angular
               //   avoidOverlap: 0,
               // },
               timestep: 1,
-              solver: "repulsion"
+              solver: 'repulsion'
             },
 
             interaction: {
@@ -155,7 +155,7 @@ angular
                 font: {color: '#fff'}
               }
             }
-            
+
           };
 
           network = new vis.Network(container, data, options);
