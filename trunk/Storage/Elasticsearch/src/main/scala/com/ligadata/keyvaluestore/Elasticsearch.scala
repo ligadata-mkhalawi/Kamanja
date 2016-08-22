@@ -1695,7 +1695,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
         var putMappingResponse = client.admin().indices().prepareCreate(tableName)
           //          .preparePutMapping(tableName)
           //          .setType("type1")
-          .setSource("{\"mappings\": {\"type1\": {\"properties\": {\"serializedInfo\": {\"type\": \"binary\"}}}}}")
+          .setSource("{\"mappings\": {\"type1\": {\"properties\": {\"serializedInfo\": {\"type\": \"binary\",\"store\":\"true\"}}}}}")
           .execute().actionGet()
 
 

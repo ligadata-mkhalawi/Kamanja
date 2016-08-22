@@ -1241,6 +1241,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @return <description please>
     */
   def IsDownloadNeeded(jar: String, obj: BaseElemDef): Boolean = {
+    return false
     try {
       if (jar == null) {
         logger.debug("The object " + obj.FullName + "." + MdMgr.Pad0s2Version(obj.Version) + " has no jar associated with it. Nothing to download..")
