@@ -328,8 +328,10 @@ logger.debug("result of encode and process is  " + result)
 
     private def cpSrcFile(moduleName : String, moduleSrc : String) : Unit = {
 
-        val srcTargetPath : String = s"$pyPath/tmp/$moduleName.py"
-      logger.debug(s"create disk file for supplied moduleSrc ... srcTargetPath = $srcTargetPath")
+      val srcTargetPath : String = s"$pyPath/tmp/$moduleName.py"
+      if (logger.isDebugEnabled() ) {
+        logger.debug(s"create disk file for supplied moduleSrc ... srcTargetPath = $srcTargetPath")
+      }
         writeSrcFile(moduleSrc, srcTargetPath)
 
         /** copy the python model source file to $pyPath/models */
@@ -458,7 +460,12 @@ logger.debug("result of encode and process is  " + result)
       * @return cmd result (a JSON string)
       */
     private def encodeAndProcess(cmdName : String, cmdStr : String) : String = {
-        val payload : Array[Byte] = cmdStr.getBytes
+
+      if (logger.isDebugEnabled()) {
+        logger.debug("cmdName = " + cmdName + " , cmdStr = " + cmdStr)
+      }
+
+      val payload : Array[Byte] = cmdStr.getBytes
         val checksumBytes : ByteBuffer = ByteBuffer.allocate(CmdConstants.lenOfCheckSum)
         checksumBytes.putLong(0L)
         val chkBytesArray : scala.Array[Byte] = checksumBytes.array()
@@ -471,8 +478,10 @@ logger.debug("result of encode and process is  " + result)
             payload ++
             CmdConstants.endMarkerArray
 
+      if (logger.isDebugEnabled()) {
         logger.debug(s"$cmdName msg = ${CmdConstants.startMarkerValue} 0L ${payload.length} $cmdStr ${CmdConstants.endMarkerValue}")
         logger.debug(s"$cmdName msg len = ${cmdBytes.length}")
+      }
 
         val result : String = if (cmdBytes.length == 0) {
             logger.error(s"there were no commands formed for cmdName = $cmdName... abandoning processing")
@@ -526,6 +535,9 @@ class Decoder extends LogTrait {
         val startMarkerValueLen : Int = CmdConstants.startMarkerValue.length
         val endMarkerValueLen : Int = CmdConstants.endMarkerValue.length
 
+      if (logger.isDebugEnabled()) {
+        logger.debug ("in unpack answeredByteds = " + answeredBytes.toString)
+      }
         val reasonable : Boolean = answeredBytes != null &&
             answeredBytes.length > (startMarkerValueLen + lenOfCheckSum + lenOfInt + endMarkerValueLen)
         val answer : String = if (reasonable) {
@@ -536,16 +548,21 @@ class Decoder extends LogTrait {
             byteBuffer.get(startMark,0,startMarkerValueLen)
             val crc : Long = byteBuffer.getLong()
             val payloadLen : Int = byteBuffer.getInt()
-            val startMarkStr : String = new String(startMark)
+          val startMarkStr : String = new String(startMark)
+          if (logger.isDebugEnabled()) {
           logger.debug(s"startMark = $startMarkStr, crc = $crc, payload len = $payloadLen")
           logger.debug(s"startMark = $startMarkStr, crc = $crc, endMarkerLoan = $endMarkerValueLen")
+          }
             val payloadArray : scala.Array[Byte] = new scala.Array[Byte](payloadLen)
             byteBuffer.get(payloadArray,0,payloadLen)
             byteBuffer.get(endMark,0,endMarkerValueLen)
             val endMarkStr : String = new String(endMark)
-            val payloadStr : String = new String(payloadArray)
+          val payloadStr : String = new String(payloadArray)
+          if ( logger.isDebugEnabled()) {
             logger.debug(s"payload = $payloadStr")
             logger.debug(s"endMark = $endMarkStr")
+          }
+
             payloadStr
         } else {
             "unreasonable bytes returned... either null or insufficient bytes in the supplied result"
@@ -568,7 +585,10 @@ object PyServerHelpers extends LogTrait {
       * @param cmd external command sequence
       * @return (rc, stdout, stderr)
       */
-    def runCmdCollectOutput(cmd: Seq[String]): (Int, String, String) = {
+  def runCmdCollectOutput(cmd: Seq[String]): (Int, String, String) = {
+    if (logger.isDebugEnabled()) {
+      logger.debug ("in runCmdCollectOutput cmd string is  " + cmd.mkString (" ") )
+    }
         val stdoutStream = new ByteArrayOutputStream
         val stderrStream = new ByteArrayOutputStream
         val stdoutWriter = new PrintWriter(stdoutStream)
@@ -576,7 +596,10 @@ object PyServerHelpers extends LogTrait {
         val exitValue = cmd.!(ProcessLogger(stdoutWriter.println, stderrWriter.println))
         stdoutWriter.close()
         stderrWriter.close()
-        (exitValue, stdoutStream.toString, stderrStream.toString)
+    if (logger.isDebugEnabled()) {
+      logger.debug ("in runCmdCollectOutput result is   " + exitValue.toString + " stdout = " + stdoutStream.toString + ", stderr = " + stderrStream.toString )
+    }
+    (exitValue, stdoutStream.toString, stderrStream.toString)
     }
 
 }
@@ -593,7 +616,7 @@ object PyServerHelpers extends LogTrait {
   * @param template the string to have its embedded keys substituted
   * @param subMap a map of substutitions to make.
   */
-class MapSubstitution(template: String, subMap: scala.collection.immutable.Map[String, String]) {
+class MapSubstitution(template: String, subMap: scala.collection.immutable.Map[String, String]) extends LogTrait {
 
     def findAndReplace(m: Matcher)(callback: String => String): String = {
         val sb = new StringBuffer

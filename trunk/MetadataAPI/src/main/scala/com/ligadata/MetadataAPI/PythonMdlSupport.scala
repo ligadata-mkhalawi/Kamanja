@@ -76,6 +76,9 @@ class PythonMdlSupport ( val mgr: MdMgr
     *
     */
   def CreateModel(recompile: Boolean = false, isPython: Boolean): ModelDef = {
+    if (logger.isDebugEnabled()) {
+      logger.debug ("In CreateModel Python  " + moduleName + ", msgName = " + msgName)
+    }
     val reasonable: Boolean = mgr != null &&
                               moduleName != null && moduleName.nonEmpty &&
                               modelNamespace != null && // empty ok for python ... moduleName really is namespace for python modules.
@@ -183,7 +186,7 @@ class PythonMdlSupport ( val mgr: MdMgr
         writeSrcFile(pythonMdlText, pyFilePath)
         val cmdSeq : Seq[String] = Seq[String](pybindir + "python", "-m", "compileall", modelDir)
         logger.debug ("In PythonMdlSupport " + " the path is " + pybinpath + ", bin dir is " + pybindir + "python")
-        val (rc, stdoutResult, stderrResult) : (Int, String, String) = runCmdCollectOutput(cmdSeq)
+        val (rc, stdoutResult, stderrResult) : (Int, String, String) = runCommand(cmdSeq)
         //val rmCompileFiles : String = pyFilePath.dropRight(3) + "*" /** rm the .py and .pyc */
         val rmCompileFiles : String = s"$modelDir/*"
         val rmFileCmd : String = s"rm -f $rmCompileFiles"
@@ -252,6 +255,17 @@ class PythonMdlSupport ( val mgr: MdMgr
             logger.debug(modelDefToString(mdl))
             mdl
         }
+        // This is to perform live update
+        val fromCpArgsStr : String = s"$pyFilePath"
+        val slash : String = if (pyPath != null && pyPath.endsWith("/")) "" else "/"
+        val toCpArgsStr : String = s"$pyPath${slash}models/"
+        val cpCmdSeq : Seq[String] = Seq[String]("cp", fromCpArgsStr, toCpArgsStr)
+        val (result, stdoutStr, stderrStr) : (Int, String, String) = runCmdCollectOutput(cpCmdSeq)
+        if (result != 0) {
+          logger.error(s"AddModel failed... unable to copy $pyFilePath to $pyPath${slash}models/")
+          logger.error(s"copy error message(s):\n\t$stderrStr")
+        }
+
         model
       } else {
         logger.error(s"The supplied message def is not available in the metadata... msgName=$msgNamespace.$msgName.$msgVersion ... a model definition will not be created for model name=$modelNamespace.$modelName.$version")
@@ -261,6 +275,38 @@ class PythonMdlSupport ( val mgr: MdMgr
     }
     modelDefinition
   }
+
+      /**
+        *  Execute the supplied command sequence. Answer with the rc, the stdOut, and stdErr outputs from
+        *  the external command represented in the sequence.
+        *
+        *  Warning: This function will wait for the process to end.  It is **_not_** to be used to launch a daemon. Use
+        *  cmd.run instead. If this application is itself a server, you can run it with the ProcessLogger as done
+        *  here ... possibly with a different kind of underlying stream that writes to a log file or in some fashion
+        *  consumable with the program.
+        *
+        *  @param cmd external command sequence
+        *  @return (rc, stdout, stderr)
+        */
+  private def runCommand(cmd: Seq[String]): (Int, String, String) = {
+    if (logger.isDebugEnabled()) {
+      logger.debug ("in runCmdCollectOutput cmd string is  " + cmd.mkString (" ") )
+
+    }
+    val stdoutStream = new ByteArrayOutputStream
+    val stderrStream = new ByteArrayOutputStream
+    val stdoutWriter = new PrintWriter(stdoutStream)
+    val stderrWriter = new PrintWriter(stderrStream)
+    val exitValue = cmd.!(ProcessLogger(stdoutWriter.println, stderrWriter.println))
+    stdoutWriter.close()
+    stderrWriter.close()
+    if (logger.isDebugEnabled()) {
+      logger.debug ("in runCmdCollectOutput result is   " + exitValue.toString + " stdout = " + stdoutStream.toString + ", stderr = " + stderrStream.toString )
+
+    }
+    (exitValue, stdoutStream.toString, stderrStream.toString)
+  }
+
 
   /**
    * Create Jython ModelDef

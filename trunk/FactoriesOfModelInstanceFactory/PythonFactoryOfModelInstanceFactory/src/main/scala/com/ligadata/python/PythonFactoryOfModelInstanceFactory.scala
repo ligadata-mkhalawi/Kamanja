@@ -116,6 +116,11 @@ object PythonFactoryOfModelInstanceFactory extends FactoryOfModelInstanceFactory
                                          , nodeContext: NodeContext
                                          , loaderInfo: KamanjaLoaderInfo
                                          , jarPaths: collection.immutable.Set[String]): ModelInstanceFactory = {
+      val logSupInfo : String = "In getModelInstanceFactory in PythonFactoryOfModelInstanceFactory "
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("In getModelInstanceFactory in PythonFactoryOfModelInstanceFactory ")
+      }
+
 
         LoadJarIfNeeded(loaderInfo, jarPaths, modelDef)
 
@@ -127,6 +132,9 @@ object PythonFactoryOfModelInstanceFactory extends FactoryOfModelInstanceFactory
         }
 
         val isReasonable : Boolean = modelDef != null && modelDef.FullNameWithVer != null && modelDef.FullNameWithVer.nonEmpty
+
+
+
         val mdlInstanceFactory : ModelInstanceFactory = if (isReasonable) {
 
             val factory: PythonAdapterFactory = new PythonAdapterFactory(modelDef, nodeContext, jser)
@@ -198,7 +206,10 @@ class PythonAdapter(factory : PythonAdapterFactory
      */
     override def init(partitionKey: String): Unit = {
       _partitionKey = partitionKey
-      logger.debug ("The partition key value is  -----------" + _partitionKey)
+      if (logger.isDebugEnabled()) {
+        logger.debug("In init - file PythonFactoryOfModelInstanaceFactory - The partition key value is  -----------" + _partitionKey)
+      }
+
 
       /** preserve the partition key ... it will be used to get the latest server connection
         * for this model's python server */
@@ -214,11 +225,15 @@ class PythonAdapter(factory : PythonAdapterFactory
 
         val pyServerConnection : PyServerConnection = getServerConnection
 
+      if (logger.isDebugEnabled()) {
+        logger.debug ()
+      }
         if (pyServerConnection == null) {
-            val modelName : String = factory.getModelName()
-            logger.error(s"Python initialization for model '$modelName' failed... the python server connection could not be established")
-            throw new KamanjaException(s"Python initialization for model '$modelName' failed... the python server connection could not be established", null)
+          val modelName: String = factory.getModelName()
+          logger.error(s"Python initialization for model '$modelName' failed... the python server connection could not be established")
+          throw new KamanjaException(s"Python initialization for model '$modelName' failed... the python server connection could not be established", null)
         }
+
 
 
       /** retrieve the model options */
@@ -233,12 +248,14 @@ class PythonAdapter(factory : PythonAdapterFactory
 
         val resultStr : String = pyServerConnection.addModel(moduleName, modelName, modelDef.objectDefinition, modelOptions)
 
+      if (logger.isDebugEnabled() ){
       logger.debug("PythonAdapter getting called for ... ModuleName :  "
         + moduleName +
         " , ModelName : "
         + modelName +
         ", PartitionID : "
         + _partitionKey)
+        }
 
       val resultMap : Map[String,Any] = parse(resultStr).values.asInstanceOf[Map[String,Any]]
         val host : String = pyServerConnection.host
@@ -246,8 +263,10 @@ class PythonAdapter(factory : PythonAdapterFactory
         val rc = resultMap.getOrElse("Code", -1)
         if (rc == 0) {
             _inputFields = resultMap.getOrElse("InputFields", Map[String,Any]()).asInstanceOf[Map[String,Any]]
-            _outputFields = resultMap.getOrElse("OutputFields", Map[String,Any]()).asInstanceOf[Map[String,Any]]
+          _outputFields = resultMap.getOrElse("OutputFields", Map[String,Any]()).asInstanceOf[Map[String,Any]]
+          if (logger.isDebugEnabled()) {
             logger.debug(s"Module '$moduleName.${modelDef.Name} successfully added to python server at $host($port")
+          }
         } else {
             logger.error(s"Module '$moduleName.${modelDef.Name} could not be added to python server at $host($port")
             logger.error(s"error details: '$resultStr'")
@@ -265,8 +284,10 @@ class PythonAdapter(factory : PythonAdapterFactory
             nodeContext.getValue(CONNECTION_KEY).asInstanceOf[scala.collection.mutable.HashMap[String,Any]]
         val pySrvConn : PyServerConnection = connectionMap.getOrElse(_partitionKey, null).asInstanceOf[PyServerConnection]
 
-        val pyServerConnection : PyServerConnection = if (pySrvConn == null) {
-            logger.debug("PythonAdapter found no python server connection ... building one now...")
+      val pyServerConnection : PyServerConnection = if (pySrvConn == null) {
+        if (logger.isDebugEnabled()) {
+          logger.debug("PythonAdapter found no python server connection ... building one now...")
+          }
             createConnection(_partitionKey)
         } else {
             pySrvConn
@@ -349,7 +370,9 @@ class PythonAdapter(factory : PythonAdapterFactory
 
         val (moduleName, modelName) : (String,String) = ModuleNModelNames
       /** get the current connection for this model's server */
-      logger.debug (s"Evaluate Model for (moduleName = $moduleName, modelName = '$modelName')")
+      if (logger.isDebugEnabled()){
+        logger.debug (s"Evaluate Model for (moduleName = $moduleName, modelName = '$modelName')")
+      }
         val pyServerConnection : PyServerConnection = getServerConnection
         if (pyServerConnection == null) {
             logger.error(s"Python evaluateModel (moduleName = $moduleName, modelName = '$modelName') ... the python server connection could not be obtained... giving up")
@@ -414,6 +437,9 @@ class PythonAdapter(factory : PythonAdapterFactory
         val attemptsLimit = 10
         var mSecsToSleep : Long = 500
 
+      if (logger.isDebugEnabled()) {
+        logger.debug(s"In evaluateModel1 for moduleName = $modulelName, modelName = $modelName")
+      }
         breakable {
             while (true) {
                 try {
@@ -424,6 +450,9 @@ class PythonAdapter(factory : PythonAdapterFactory
                         break
                     }
                     msgReturned = pyServerConnection.executeModel(modulelName, modelName, prepareFields(msg))
+                  if (logger.isDebugEnabled()) {
+                    logger.debug(s"In evaluateModel1 after executeModel for moduleName = $modulelName, modelName = $modelName")
+                  }
                     break
                 } catch {
                     case se: SocketException => {
@@ -470,8 +499,10 @@ class PythonAdapter(factory : PythonAdapterFactory
             })
         })
 
-        val msgDict : String = Json(DefaultFormats).write(inputDictionary)
+      val msgDict : String = Json(DefaultFormats).write(inputDictionary)
+      if (logger.isDebugEnabled()) {
         logger.debug(s"model ${factory.getModelDef().Name} msg = $msgDict")
+      }
         inputDictionary
     }
 
@@ -484,12 +515,19 @@ class PythonAdapter(factory : PythonAdapterFactory
       */
     private def createConnection(partitionKey : String): PyServerConnection = {
 
+      if (logger.isDebugEnabled()) {
+        logger.debug("in createConnection partionKey = " + partitionKey.toString)
+      }
         val modelDef : ModelDef = factory.getModelDef()
         if (partitionKey == null) return null // first time engine case... there is no valid key yet ... wait until we got a partition key that is valid
 
         val connMap : scala.collection.mutable.HashMap[String,Any] =
             nodeContext.getValue(CONNECTION_KEY).asInstanceOf[scala.collection.mutable.HashMap[String,Any]]
-        val pyServCon: PyServerConnection = if (connMap != null && connMap.contains(partitionKey)) connMap(partitionKey).asInstanceOf[PyServerConnection] else null
+      val pyServCon: PyServerConnection = if (connMap != null && connMap.contains(partitionKey)) connMap(partitionKey).asInstanceOf[PyServerConnection] else null
+
+      if (logger.isDebugEnabled()) {
+        logger.debug("Checking Python Server  connection ----")
+      }
         val pySerververConnection : PyServerConnection = if (pyServCon != null) {
 
             val connObjStr: String = "valid PyServerConnection previously prepared"
@@ -534,7 +572,13 @@ class PythonAdapter(factory : PythonAdapterFactory
                 ,pyLogConfigPath
                 ,pyLogPath
               ,pyPath,
-            pyBinPath)
+              pyBinPath)
+
+          if (logger.isDebugEnabled()) {
+            logger.debug("Creating connection ---- " + host + ", port = " + port.toString + ", logConfigPath = " + pyLogConfigPath +
+              ", LogPath = " + pyLogPath + ", pyPath = " + pyPath + ", pyBinPath " + pyBinPath)
+          }
+
             val (startValid, connValid) : (Boolean, Boolean) = if (pyConn != null) {
                 /** setup server and connection to it */
                 val (startServerResult, connResult) : (String,String) = pyConn.initialize
@@ -571,6 +615,9 @@ class PythonAdapter(factory : PythonAdapterFactory
 
                 logger.error(s"The values are:\nhost = $hostStr\nport = $portStr\npyPath = $pyPathStr\nconnection object = $connObjStr")
             }
+          if (logger.isDebugEnabled()) {
+            logger.debug("Connection  created ----")
+          }
             pyConn
         }
         pySerververConnection
