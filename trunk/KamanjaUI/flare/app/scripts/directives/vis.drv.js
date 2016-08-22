@@ -40,21 +40,21 @@ angular
           ];
           var edges = [
 
-            {from: 'Chrome Browser', to: 'RootBrowser', hidden: true, length: 150},
-            {from: 'Mozilla Browser', to: 'RootBrowser', hidden: true, length: 150},
-
-            {from: 'AppAccessLog', to: 'RootLog', hidden: true, length: 100},
-            {from: 'RemoteAccessLog', to: 'RootLog', hidden: true, length: 100},
-            {from: 'URLAccessLog', to: 'RootLog', hidden: true, length: 100},
-
-            {from: 'John', to: 'RootUser', hidden: true, length: 100},
-            {from: 'Jane', to: 'RootUser', hidden: true, length: 100},
-            {from: 'Jill', to: 'RootUser', hidden: true, length: 100},
-
-            {from: 'Outlook', to: 'RootEmailApp', hidden: true, length: 100},
-            {from: 'GMail', to: 'RootEmailApp', hidden: true, length: 100},
-
-            {from: 'BadApp', to: 'RootBadApp', hidden: true, length: 100},
+            // {from: 'Chrome Browser', to: 'RootBrowser', hidden: true, length: 150},
+            // {from: 'Mozilla Browser', to: 'RootBrowser', hidden: true, length: 150},
+            //
+            // {from: 'AppAccessLog', to: 'RootLog', hidden: true, length: 100},
+            // {from: 'RemoteAccessLog', to: 'RootLog', hidden: true, length: 100},
+            // {from: 'URLAccessLog', to: 'RootLog', hidden: true, length: 100},
+            //
+            // {from: 'John', to: 'RootUser', hidden: true, length: 100},
+            // {from: 'Jane', to: 'RootUser', hidden: true, length: 100},
+            // {from: 'Jill', to: 'RootUser', hidden: true, length: 100},
+            //
+            // {from: 'Outlook', to: 'RootEmailApp', hidden: true, length: 100},
+            // {from: 'GMail', to: 'RootEmailApp', hidden: true, length: 100},
+            //
+            // {from: 'BadApp', to: 'RootBadApp', hidden: true, length: 100},
 
             //
 
@@ -84,43 +84,56 @@ angular
             edges: edges
           };
           var options = {
+
             layout: {
-              improvedLayout: false
+              improvedLayout: true,
+              forceDirection : 'horizontal'
             },
+
             nodes: {
               shape: 'dot',
               scaling: {
-                // min: 10,
-                // max: 30
+                min: 100,
+                max: 300
               },
               font: {
-                size: 12,
-                face: 'Tahoma'
+                size: 15,
+                // face: 'Tahoma'
               }
             },
+
             edges: {
-              width: 2,
               smooth: {
-                type: 'continuous'
+                type: 'dynamic',
+                roundness: 0.55,
               },
+              arrows:'to',
               font: {
-                size: 12,
+                size: 15,
                 background: '#ffffff'
               }
             },
-            'physics': {
-              'barnesHut': {
-                'gravitationalConstant': -8000,
-                // "centralGravity":0.03,
-                'springLength': 200,
-                'avoidOverlap': 0
-              }
+
+            physics: {
+              adaptiveTimestep: true,
+              stabilization: false,
+              // barnesHut: {
+              //   gravitationalConstant: -2000,
+              //   centralGravity: 10,
+              //   springLength: 50,
+              //   avoidOverlap: 0,
+              // },
+              timestep: 1,
+              solver: "repulsion"
             },
+
             interaction: {
               hover: true,
               navigationButtons: true,
-              keyboard: true
+              keyboard: true,
+              hideEdgesOnDrag: true
             },
+
             groups: {
               'logsCluster': {
                 color: {background: '#599465', border: '#599465'},
@@ -142,8 +155,11 @@ angular
                 font: {color: '#fff'}
               }
             }
+            
           };
+
           network = new vis.Network(container, data, options);
+
           network.on('afterDrawing', function (ctx) {
             nodes.forEach(function (d) {
               if (d.hidden) {
