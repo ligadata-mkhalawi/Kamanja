@@ -2,6 +2,7 @@
 
 /* Custom page header */
 .header {
+  height: 70px;
   border-bottom: 1px solid #e5e5e5;
 
   /* Make the masthead heading the same height as the navigation */
@@ -13,7 +14,7 @@
   }
 
   &.navbar-default {
-    background-color: #080808!important;
+    background-color: #202020!important;
   }
 
   .middleMenu {
@@ -29,6 +30,19 @@
   .top {
     padding-top: 15px;
     padding-bottom: 15px;
+  }
+
+  .btnIconWithLabel {
+    text-align: center;
+    height: 30px;
+    width: 60px;
+    background-color: #363636;
+    color: white;
+    div {
+      position: relative;
+      top: 5px;
+      color: #7d7d7d;
+    }
   }
 }
 
