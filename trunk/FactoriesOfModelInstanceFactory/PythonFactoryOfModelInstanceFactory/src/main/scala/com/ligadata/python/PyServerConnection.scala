@@ -210,8 +210,11 @@ class PyServerConnection(val host : String
                 /** print one result each loop... and then the remaining (if any) after bytesReceived == 0) */
                 val endMarkerIdx: Int = answeredBytes.indexOfSlice(CmdConstants.endMarkerArray)
                 if (endMarkerIdx >= 0) {
-                    val endMarkerIncludedIdx: Int = endMarkerIdx + CmdConstants.endMarkerArray.length
-                    val responseBytes: Array[Byte] = answeredBytes.slice(0, endMarkerIncludedIdx).toArray
+                  val endMarkerIncludedIdx: Int = endMarkerIdx + CmdConstants.endMarkerArray.length
+                  if (logger.isDebugEnabled()) {
+                    logger.debug (" The value of endMarkerIncludedIdx is  " + endMarkerIncludedIdx.toString)
+                  }
+                    val responseBytes: ArrayBuffer[Byte] = answeredBytes.slice(0, endMarkerIncludedIdx).toArray
                     result = _decoder.unpack(responseBytes)
                     logger.info(s"$cmd reply = \n$result")
                     answeredBytes.remove(0, endMarkerIncludedIdx)
@@ -536,7 +539,8 @@ class Decoder extends LogTrait {
         val endMarkerValueLen : Int = CmdConstants.endMarkerValue.length
 
       if (logger.isDebugEnabled()) {
-        logger.debug ("in unpack answeredByteds = " + answeredBytes.toString)
+        logger.debug ("in unpack answeredBytes = " + answeredBytes.toString)
+        logger.debug ("in unpack content of answeredBytes is " + answeredBytes.toString)
       }
         val reasonable : Boolean = answeredBytes != null &&
             answeredBytes.length > (startMarkerValueLen + lenOfCheckSum + lenOfInt + endMarkerValueLen)
