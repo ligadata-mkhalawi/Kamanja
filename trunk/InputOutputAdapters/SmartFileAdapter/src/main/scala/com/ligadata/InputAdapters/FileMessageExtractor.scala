@@ -303,15 +303,14 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
 
         val endTm = System.nanoTime
         val elapsedTm = endTm - fileProcessingStartTm
-        val thisStr = "this:" + this
 
         if(processingInterrupted) {
           logger.debug("SMART FILE CONSUMER (FileMessageExtractor) - sending interrupting flag for file {}", fileName)
-          logger.warn("SMART FILE CONSUMER - finished reading file %s. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d. %s".format(fileName, elapsedTm/1000000.0, consumerContext.nodeId, consumerContext.partitionId.toString, fileProcessingStartTm, endTm, thisStr))
+          logger.warn("SMART FILE CONSUMER - finished reading file %s. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(fileName, elapsedTm/1000000.0, consumerContext.nodeId, consumerContext.partitionId.toString, fileProcessingStartTm, endTm))
           finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_ProcessingInterrupted)
         }
         else {
-          logger.warn("SMART FILE CONSUMER - finished reading file %s. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d. %s".format(fileName, elapsedTm/1000000.0, consumerContext.nodeId, consumerContext.partitionId.toString, fileProcessingStartTm, endTm, thisStr))
+          logger.warn("SMART FILE CONSUMER - finished reading file %s. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(fileName, elapsedTm/1000000.0, consumerContext.nodeId, consumerContext.partitionId.toString, fileProcessingStartTm, endTm))
           finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_FINISHED)
         }
       }
