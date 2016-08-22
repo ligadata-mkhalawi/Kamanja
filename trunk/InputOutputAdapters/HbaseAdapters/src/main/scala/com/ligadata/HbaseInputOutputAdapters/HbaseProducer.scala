@@ -240,7 +240,7 @@ class HbaseProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
 
     if (putData.size > 0)
       dataStore.put(putData)
-    //dataStore.put(tnxCtxt, data_list)
+   // dataStore.put(tnxCtxt, data_list)
   }
 
   override def getComponentStatusAndMetrics: MonitorComponentInfo = {

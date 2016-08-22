@@ -1900,7 +1900,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
           val value = /*keyString + */data.substring(0,data.length-1)
         //  println("++key++")
           println("++Header++"+header+"++Header++")
-          println("++Data++"+"++Data++")
+          println("++Data++"+ value + "++Data++")
           callbackFunction(value.getBytes)
           rr = rs.next()
         }

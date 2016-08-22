@@ -1,5 +1,7 @@
 package com.ligadata.HbaseInputOutputAdapters
 
+import java.lang
+
 import com.ligadata.Exceptions.KamanjaException
 import com.ligadata.HeartBeat.MonitorComponentInfo
 import com.ligadata.InputOutputAdapterInfo.{PartitionUniqueRecordValue, StartProcPartInfo, _}
@@ -8,6 +10,7 @@ import com.ligadata.Utils.ClusterStatus
 import com.ligadata.adapterconfiguration.{HbaseAdapterConfiguration, HbasePartitionUniqueRecordKey, HbasePartitionUniqueRecordValue}
 import com.ligadata.keyvaluestore.HBaseAdapter
 import org.apache.hadoop.hbase.client.Connection
+import org.apache.hadoop.hbase.util.Bytes
 import org.json4s.jackson.Serialization
 
 import scala.actors.threadpool.{ExecutorService, Executors}
@@ -116,24 +119,31 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
       }
 
       override def run(): Unit = {
-        val readTmMs = System.currentTimeMillis
+        var readTmMs = System.currentTimeMillis
         var isRecordSentToKamanja = false
         val uniqueVal = new HbasePartitionUniqueRecordValue
-        while (!isRecordSentToKamanja && !isQuiese) {
-          msgCount += 1
-         // dataStore.getAllRecords("")
+        while (/*!isRecordSentToKamanja &&*/ !isQuiese) {
           val retrievedata = (data: Array[Byte]) => {
+            readTmMs = System.currentTimeMillis
             if (data != null) {
+              val uniqueVal = new HbasePartitionUniqueRecordValue
+              uniqueVal.TimeStamp = readTmMs
+              uniqueVal.TableName = adapterConfig.TableName
+              uniqueVal.Key = new String(data).substring(0, new String(data).indexOf(',')).toInt
+              msgCount += 1
               execContexts.execute(data, uniqueKey , uniqueVal, readTmMs)
             }
           }
-          dataStore.getAllRecords(adapterConfig.TableName, retrievedata)
+          val fulltablename = adapterConfig.scehmaName + ":" + adapterConfig.TableName
+          dataStore.getAllRecords(fulltablename, retrievedata)
+            Thread.sleep(1000)
         }
       }
     })
   }
 
   override def Shutdown: Unit = lock.synchronized {
+    isQuiese = true
     StopProcessing
   }
 
@@ -180,21 +190,32 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   }
 
   private def getKeyValuePairs(): Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)] = {
+//    val infoBuffer = ArrayBuffer[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)]()
+//
+//    for(partitionId <- 1 to 1/*adapterConfig.monitoringConfig.consumersCount*/){/////////////////////fix this
+//      val rKey = new HbasePartitionUniqueRecordKey
+//      val rValue = new HbasePartitionUniqueRecordValue
+//
+//      rKey.PartitionId = partitionId
+//      rKey.Name = adapterConfig.Name
+//
+//      rValue.TimeStamp = -1
+//      rValue.Key = -1
+//      rValue.TableName = adapterConfig.TableName
+//
+//      infoBuffer.append((rKey, rValue))
+//    }
+//
+//    infoBuffer.toArray
     val infoBuffer = ArrayBuffer[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)]()
-
-    for(partitionId <- 1 to 1/*adapterConfig.monitoringConfig.consumersCount*/){/////////////////////fix this
-      val rKey = new HbasePartitionUniqueRecordKey
-      val rValue = new HbasePartitionUniqueRecordValue
-
-      rKey.PartitionId = partitionId
-      rKey.Name = adapterConfig.Name
-
-      rValue.TimeStamp = -1
-      rValue.Key = -1
-      rValue.TableName = adapterConfig.TableName
-
-      infoBuffer.append((rKey, rValue))
-    }
+    val rKey = new HbasePartitionUniqueRecordKey
+    val rValue = new HbasePartitionUniqueRecordValue
+    rKey.PartitionId = 1
+    rKey.Name = adapterConfig.Name
+    rValue.TimeStamp = -1
+    rValue.Key = -1
+    rValue.TableName = adapterConfig.TableName
+    infoBuffer.append((rKey, rValue))
 
     infoBuffer.toArray
   }
@@ -212,67 +233,76 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   }
 
   override def GetAllPartitionUniqueRecordKey: Array[PartitionUniqueRecordKey] = lock.synchronized {
-    LOG.debug("Getting all partionas for " + adapterConfig.Name)
-    var results: java.util.List[String] = null //change this bug (string ->)
-    var partitionNames: scala.collection.mutable.ListBuffer[HbasePartitionUniqueRecordKey] = scala.collection.mutable.ListBuffer()
-    val hbaseutil: HbaseUtility = new HbaseUtility
-    var isSuccessfulConnection = false
-    while (!isSuccessfulConnection && !isQuiese) {
-      try {
-      //  results = hbaseutil.partitionsFor(qc.topic)  //change it fix this bug
-        isSuccessfulConnection = true
-        dataStore.Shutdown()
-      } catch {
-        case e: Throwable => {
-          externalizeExceptionEvent(e)
-          LOG.error ("Exception processing PARTITIONSFOR request..  Retrying ",e)
-          try {
-            Thread.sleep(getSleepTimer)
-          } catch {
-            case ie: InterruptedException => {
-              externalizeExceptionEvent(ie)
-              LOG.warn("KamanjaHbaseConsumer - sleep interrupted, shutting donw ")
-              Shutdown
-              dataStore.Shutdown()
-              dataStore = null
-              throw ie
-            }
-            case t: Throwable => {
-              externalizeExceptionEvent(t)
-              LOG.warn("KamanjaHbaseConsumer - sleep interrupted (UNKNOWN CAUSE), shutting down ",t)
-              Shutdown
-              dataStore.Shutdown()
-              dataStore = null
-              throw t
-            }
-          }
-        }
-      }
-    }
-    resetSleepTimer
-    if (isQuiese) {
-      // return the info back to the Engine.  if quiesing
-      LOG.warn("Quiese request is receive during GetAllPartitionUniqueRecordKey")
-      partitionNames.toArray
-    }
+//    LOG.debug("Getting all partionas for " + adapterConfig.Name)
+//    var results: java.util.List[String] = null //change this bug (string ->)
+//    var partitionNames: scala.collection.mutable.ListBuffer[HbasePartitionUniqueRecordKey] = scala.collection.mutable.ListBuffer()
+//    val hbaseutil: HbaseUtility = new HbaseUtility
+//    var isSuccessfulConnection = false
+//    while (!isSuccessfulConnection && !isQuiese) {
+//      try {
+//      //  results = hbaseutil.partitionsFor(qc.topic)  //change it fix this bug
+//        isSuccessfulConnection = true
+//        dataStore.Shutdown()
+//      } catch {
+//        case e: Throwable => {
+//          externalizeExceptionEvent(e)
+//          LOG.error ("Exception processing PARTITIONSFOR request..  Retrying ",e)
+//          try {
+//            Thread.sleep(getSleepTimer)
+//          } catch {
+//            case ie: InterruptedException => {
+//              externalizeExceptionEvent(ie)
+//              LOG.warn("KamanjaHbaseConsumer - sleep interrupted, shutting donw ")
+//              Shutdown
+//              dataStore.Shutdown()
+//              dataStore = null
+//              throw ie
+//            }
+//            case t: Throwable => {
+//              externalizeExceptionEvent(t)
+//              LOG.warn("KamanjaHbaseConsumer - sleep interrupted (UNKNOWN CAUSE), shutting down ",t)
+//              Shutdown
+//              dataStore.Shutdown()
+//              dataStore = null
+//              throw t
+//            }
+//          }
+//        }
+//      }
+//    }
+//    resetSleepTimer
+//    if (isQuiese) {
+//      // return the info back to the Engine.  if quiesing
+//      LOG.warn("Quiese request is receive during GetAllPartitionUniqueRecordKey")
+//      partitionNames.toArray
+//    }
+//
+//    if (results == null)  {
+//      // return the info back to the Engine.  Just in case we end up with null result
+//      LOG.warn("Kafka broker returned a null during GetAllPartitionUniqueRecordKey")
+//      partitionNames.toArray
+//    }
+//
+//    // Successful fetch of metadata.. return the values to the engine.
+//    var iter = results.iterator
+//    while(iter.hasNext && !isQuiese) {
+//      var thisRes = iter.next()
+//      var newkey = new HbasePartitionUniqueRecordKey
+//      newkey.PartitionId = 1
+//      newkey.Name = adapterConfig.Name
+//      //      newVal.PartitionId = thisRes.partition            ///////fix this
+//      partitionNames += newkey
+//      //   LOG.debug(" GetAllPartitions returned " +thisRes.partition)  ////fix this
+//    }
+//    partitionNames.toArray
+val infoBuffer = ArrayBuffer[PartitionUniqueRecordKey]()
 
-    if (results == null)  {
-      // return the info back to the Engine.  Just in case we end up with null result
-      LOG.warn("Kafka broker returned a null during GetAllPartitionUniqueRecordKey")
-      partitionNames.toArray
-    }
+    var newkey = new HbasePartitionUniqueRecordKey
+    newkey.PartitionId = 1
+    newkey.Name = adapterConfig.Name
+    infoBuffer.append(newkey)
 
-    // Successful fetch of metadata.. return the values to the engine.
-    var iter = results.iterator
-    while(iter.hasNext && !isQuiese) {
-      var thisRes = iter.next()
-      var newVal = new HbasePartitionUniqueRecordKey
-      newVal.Name = adapterConfig.Name
-//      newVal.PartitionId = thisRes.partition            ///////fix this
-      partitionNames += newVal
-   //   LOG.debug(" GetAllPartitions returned " +thisRes.partition)  ////fix this
-    }
-    partitionNames.toArray
+    infoBuffer.toArray
   }
 
   private def getSleepTimer() : Int = {
