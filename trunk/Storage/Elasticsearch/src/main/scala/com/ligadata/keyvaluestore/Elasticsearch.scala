@@ -15,6 +15,7 @@
  */
 package com.ligadata.keyvaluestore
 
+import util.control.Breaks._
 import java.io.File
 import java.net.{InetAddress, URL, URLClassLoader}
 import java.sql.{CallableStatement, Connection, Driver, DriverManager, DriverPropertyInfo, PreparedStatement, ResultSet, Statement}
@@ -32,6 +33,8 @@ import com.ligadata.Utils.KamanjaLoaderInfo
 import com.ligadata.kamanja.metadata.AdapterInfo
 import org.apache.commons.codec.binary.Base64
 import org.apache.commons.dbcp2.BasicDataSource
+import org.dmg.pmml
+import org.dmg.pmml.TimeValue
 import org.elasticsearch.action.admin.indices.alias.get.{GetAliasesRequest, GetAliasesResponse}
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
 import org.elasticsearch.action.admin.indices.mapping.put
@@ -48,6 +51,7 @@ import org.elasticsearch.common.transport.InetSocketTransportAddress
 import org.elasticsearch.common.xcontent.{XContentBuilder, XContentFactory}
 import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.index.query.SimpleQueryParser.Settings
+import org.elasticsearch.search.sort.{SortOrder, SortParseElement}
 import org.elasticsearch.search.{SearchHit, SearchHits}
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
@@ -923,46 +927,62 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       var recCount = 0
       var byteCount = 0
 
-      val response = client
-        .prepareSearch(tableName)
+      var timeToLive: TimeValue = new pmml.TimeValue(60000)
+      var response = client.prepareSearch(tableName)
         .setTypes("type1")
         .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId", "schemaId", "serializerType", "serializedInfo"),
-          null).execute().actionGet()
+          null)
+        .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
+        .setScroll("6000")
+        .setSize(5)
+        .execute().actionGet()
 
       val results: SearchHits = response.getHits
       val hit: SearchHit = null
 
-      results.getHits.foreach((hit: SearchHit) => {
-        var timePartition = hit.getSource.get("timePartition").toString.toLong
-        var keyStr: String = hit.getSource.get("bucketKey").toString
-        var tId = hit.getSource.get("transactionId").toString.toLong
-        var rId = hit.getSource.get("rowId").toString.toInt
-        var schemaId = hit.getSource.get("schemaId").toString.toInt
-        var st = hit.getSource.get("serializerType").toString
-        //        var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
-        var ba = Base64.decodeBase64(hit.getSource.get("serializedInfo").toString.getBytes)
+      while (true) {
+        response.getHits.getHits.foreach((hit: SearchHit) => {
+          var timePartition = hit.getSource.get("timePartition").toString.toLong
+          var keyStr: String = hit.getSource.get("bucketKey").toString
+          var tId = hit.getSource.get("transactionId").toString.toLong
+          var rId = hit.getSource.get("rowId").toString.toInt
+          var schemaId = hit.getSource.get("schemaId").toString.toInt
+          var st = hit.getSource.get("serializerType").toString
+          //        var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
+          var ba = Base64.decodeBase64(hit.getSource.get("serializedInfo").toString.getBytes)
 
-        val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
-        var key = new Key(timePartition, bucketKey, tId, rId)
-        // yet to understand how split serializerType and serializedInfo from ba
-        // so hard coding serializerType to "kryo" for now
-        var value = new Value(schemaId, st, ba)
-        recCount = recCount + 1
-        byteCount = byteCount + getKeySize(key) + getValueSize(value)
-        if (callbackFunction != null) {
-          System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
-          System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
-          System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
-          System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
-          System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
-          System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
-          System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
-          System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
-          System.out.println(ba)
-          System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
-          (callbackFunction) (key, value)
+          val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
+          var key = new Key(timePartition, bucketKey, tId, rId)
+          // yet to understand how split serializerType and serializedInfo from ba
+          // so hard coding serializerType to "kryo" for now
+          var value = new Value(schemaId, st, ba)
+          recCount = recCount + 1
+          byteCount = byteCount + getKeySize(key) + getValueSize(value)
+          if (callbackFunction != null) {
+            System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
+            System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
+            System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
+            System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
+            System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
+            System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
+            System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
+            System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
+            System.out.println(ba)
+            System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
+            (callbackFunction) (key, value)
+          }
+        })
+
+
+        response = client.prepareSearchScroll(response.getScrollId()).setScroll("60000").execute().actionGet()
+        //Break condition: No hits are returned
+        if (response.getHits().getHits().length == 0) {
+          break
         }
-      })
+      }
+
+
+
       //      client.close()
       //    var query = "select timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo from " + tableName
       //    getData(tableName, query, callbackFunction)
@@ -1125,7 +1145,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       var recCount = 0
       var byteCount = 0
       keys.foreach(key => {
-        val response = client
+        var response = client
           .prepareSearch(tableName)
           .setTypes("type1")
           .setQuery(QueryBuilders
@@ -1136,6 +1156,9 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             .must(QueryBuilders.termQuery("rowId", key.rowId))
           )
           .setFetchSource(Array("schemaId", "serializerType", "serializedInfo"), null)
+          .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
+          .setScroll("6000")
+          .setSize(5)
           .execute().actionGet()
 
         updateOpStats("get", tableName, 1)
@@ -1143,22 +1166,32 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
         val results: SearchHits = response.getHits
         val hit: SearchHit = null
 
-        results.getHits.foreach((hit: SearchHit) => {
-          val schemaId = hit.getSource.get("schemaId").toString.toInt
-          val st = hit.getSource.get("serializerType").toString
-          val ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
-          val value = new Value(schemaId, st, ba)
-          recCount = recCount + 1
-          byteCount = byteCount + getKeySize(key) + getValueSize(value)
-          if (callbackFunction != null) {
-            System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
-            System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
-            System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
-            System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
-            System.out.println(ba)
-            (callbackFunction) (key, value)
+
+        while (true) {
+
+          response.getHits.getHits.foreach((hit: SearchHit) => {
+            val schemaId = hit.getSource.get("schemaId").toString.toInt
+            val st = hit.getSource.get("serializerType").toString
+            val ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
+            val value = new Value(schemaId, st, ba)
+            recCount = recCount + 1
+            byteCount = byteCount + getKeySize(key) + getValueSize(value)
+            if (callbackFunction != null) {
+              System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
+              System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
+              System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
+              System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
+              System.out.println(ba)
+              (callbackFunction) (key, value)
+            }
+          })
+
+          response = client.prepareSearchScroll(response.getScrollId()).setScroll("60000").execute().actionGet()
+          //Break condition: No hits are returned
+          if (response.getHits().getHits().length == 0) {
+            break
           }
-        })
+        }
       })
 
       updateByteStats("get", tableName, byteCount)
@@ -1186,48 +1219,58 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       CheckTableExists(containerName)
       client = getConnection
       time_ranges.foreach(time_range => {
-        val response = client
+        var response = client
           .prepareSearch(tableName)
           .setTypes("type1").setQuery(
           QueryBuilders.andQuery(
             QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime),
             QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
+          .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
+          .setScroll("6000")
+          .setSize(5)
           .execute().actionGet()
 
         val results: SearchHits = response.getHits
         val hit: SearchHit = null
 
-        results.getHits.foreach((hit: SearchHit) => {
-          var timePartition = hit.getSource.get("timePartition").toString.toLong
-          var keyStr: String = hit.getSource.get("bucketKey").toString
-          var tId = hit.getSource.get("transactionId").toString.toLong
-          var rId = hit.getSource.get("rowId").toString.toInt
-          var schemaId = hit.getSource.get("schemaId").toString.toInt
-          var st = hit.getSource.get("serializerType").toString
-          //          var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
-          var ba = Base64.decodeBase64(hit.getSource.get("serializedInfo").toString.getBytes)
+        while (true) {
+          response.getHits.getHits.foreach((hit: SearchHit) => {
+            var timePartition = hit.getSource.get("timePartition").toString.toLong
+            var keyStr: String = hit.getSource.get("bucketKey").toString
+            var tId = hit.getSource.get("transactionId").toString.toLong
+            var rId = hit.getSource.get("rowId").toString.toInt
+            var schemaId = hit.getSource.get("schemaId").toString.toInt
+            var st = hit.getSource.get("serializerType").toString
+            //          var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
+            var ba = Base64.decodeBase64(hit.getSource.get("serializedInfo").toString.getBytes)
 
-          val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
-          var key = new Key(timePartition, bucketKey, tId, rId)
-          // yet to understand how split serializerType and serializedInfo from ba
-          // so hard coding serializerType to "kryo" for now
-          var value = new Value(schemaId, st, ba)
-          recCount = recCount + 1
-          byteCount = byteCount + getKeySize(key) + getValueSize(value)
-          if (callbackFunction != null) {
-            System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
-            System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
-            System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
-            System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
-            System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
-            System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
-            System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
-            System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
-            System.out.println(ba)
-            System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
-            (callbackFunction) (key, value)
+            val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
+            var key = new Key(timePartition, bucketKey, tId, rId)
+            // yet to understand how split serializerType and serializedInfo from ba
+            // so hard coding serializerType to "kryo" for now
+            var value = new Value(schemaId, st, ba)
+            recCount = recCount + 1
+            byteCount = byteCount + getKeySize(key) + getValueSize(value)
+            if (callbackFunction != null) {
+              System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
+              System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
+              System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
+              System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
+              System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
+              System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
+              System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
+              System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
+              System.out.println(ba)
+              System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
+              (callbackFunction) (key, value)
+            }
+          })
+          response = client.prepareSearchScroll(response.getScrollId()).setScroll("60000").execute().actionGet()
+          //Break condition: No hits are returned
+          if (response.getHits().getHits().length == 0) {
+            break
           }
-        })
+        }
 
         //      var query = "select timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo from " + tableName + " where timePartition >= " + time_range.beginTime + " and timePartition <= " + time_range.endTime
         //      logger.debug("query => " + query)
@@ -1300,7 +1343,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       var byteCount = 0
       time_ranges.foreach(time_range => {
         bucketKeys.foreach(bucketKey => {
-          val response = client
+          var response = client
             .prepareSearch(tableName)
             .setTypes("type1")
             .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId", "schemaId", "serializerType", "serializedInfo"), null)
@@ -1308,40 +1351,52 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
               QueryBuilders.andQuery(
                 QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime),
                 QueryBuilders.rangeQuery("field2").lte(time_range.endTime)))
+            .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
+            .setScroll("6000")
+            .setSize(5)
             .execute().actionGet()
 
           val results: SearchHits = response.getHits
           val hit: SearchHit = null
 
-          results.getHits.foreach((hit: SearchHit) => {
-            var timePartition = hit.getSource.get("serializerType").toString.toLong
-            var keyStr = hit.getSource.get("bucketKey").toString
-            var tId = hit.getSource.get("transactionId").toString.toLong
-            var rId = hit.getSource.get("rowId").toString.toInt
-            val schemaId = hit.getSource.get("schemaId").toString.toInt
-            var st = hit.getSource.get("serializerType").toString
-            //            var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
-            var ba = Base64.decodeBase64(hit.getSource.get("serializedInfo").toString.getBytes)
+          while (true) {
+            response.getHits.getHits.foreach((hit: SearchHit) => {
+              var timePartition = hit.getSource.get("serializerType").toString.toLong
+              var keyStr = hit.getSource.get("bucketKey").toString
+              var tId = hit.getSource.get("transactionId").toString.toLong
+              var rId = hit.getSource.get("rowId").toString.toInt
+              val schemaId = hit.getSource.get("schemaId").toString.toInt
+              var st = hit.getSource.get("serializerType").toString
+              //            var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
+              var ba = Base64.decodeBase64(hit.getSource.get("serializedInfo").toString.getBytes)
 
-            val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
-            var key = new Key(timePartition, bucketKey, tId, rId)
-            var value = new Value(schemaId, st, ba)
-            recCount = recCount + 1
-            byteCount = byteCount + getKeySize(key) + getValueSize(value)
-            if (callbackFunction != null) {
-              System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
-              System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
-              System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
-              System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
-              System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
-              System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
-              System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
-              System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
-              System.out.println(ba)
-              System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
-              (callbackFunction) (key, value)
+              val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
+              var key = new Key(timePartition, bucketKey, tId, rId)
+              var value = new Value(schemaId, st, ba)
+              recCount = recCount + 1
+              byteCount = byteCount + getKeySize(key) + getValueSize(value)
+              if (callbackFunction != null) {
+                System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
+                System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
+                System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
+                System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
+                System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
+                System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
+                System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
+                System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
+                System.out.println(ba)
+                System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
+                (callbackFunction) (key, value)
+              }
+            })
+
+            response = client.prepareSearchScroll(response.getScrollId()).setScroll("60000").execute().actionGet()
+            //Break condition: No hits are returned
+            if (response.getHits().getHits().length == 0) {
+              break
             }
-          })
+          }
+
         })
         // query = "select timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo from " + tableName + " where timePartition >= " + time_range.beginTime + " and timePartition <= " + time_range.endTime + " and bucketKey = ? "
       })
@@ -1423,13 +1478,16 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       var byteCount = 0
 
       bucketKeys.foreach(bucketKey => {
-        val response = client
+        var response = client
           .prepareSearch(tableName)
           .setTypes("type1")
           .setQuery(QueryBuilders
             .boolQuery()
             .must(QueryBuilders.termQuery("bucketKey", bucketKey.mkString(","))))
           .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId", "schemaId", "serializerType", "serializedInfo"), null)
+          .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
+          .setScroll("6000")
+          .setSize(5)
           .execute().actionGet()
 
         updateOpStats("get", tableName, 1)
@@ -1437,35 +1495,43 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
         val results: SearchHits = response.getHits
         val hit: SearchHit = null
 
-        results.getHits.foreach((hit: SearchHit) => {
-          var timePartition = hit.getSource.get("timePartition").toString.toLong
-          var keyStr = hit.getSource.get("bucketKey").toString
-          var tId = hit.getSource.get("transactionId").toString.toLong
-          var rId = hit.getSource.get("rowId").toString.toInt
-          val schemaId = hit.getSource.get("schemaId").toString.toInt
-          var st = hit.getSource.get("serializerType").toString
-          //          var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
-          var ba = Base64.decodeBase64(hit.getSource.get("serializedInfo").toString.getBytes)
+        while (true) {
+          response.getHits.getHits.foreach((hit: SearchHit) => {
+            var timePartition = hit.getSource.get("timePartition").toString.toLong
+            var keyStr = hit.getSource.get("bucketKey").toString
+            var tId = hit.getSource.get("transactionId").toString.toLong
+            var rId = hit.getSource.get("rowId").toString.toInt
+            val schemaId = hit.getSource.get("schemaId").toString.toInt
+            var st = hit.getSource.get("serializerType").toString
+            //          var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
+            var ba = Base64.decodeBase64(hit.getSource.get("serializedInfo").toString.getBytes)
 
-          val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
-          var key = new Key(timePartition, bucketKey, tId, rId)
-          var value = new Value(schemaId, st, ba)
-          recCount = recCount + 1
-          byteCount = byteCount + getKeySize(key)
-          if (callbackFunction != null) {
-            System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
-            System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
-            System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
-            System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
-            System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
-            System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
-            System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
-            System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
-            System.out.println(ba)
-            System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
-            (callbackFunction) (key, value)
+            val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
+            var key = new Key(timePartition, bucketKey, tId, rId)
+            var value = new Value(schemaId, st, ba)
+            recCount = recCount + 1
+            byteCount = byteCount + getKeySize(key)
+            if (callbackFunction != null) {
+              System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
+              System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
+              System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
+              System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
+              System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
+              System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
+              System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
+              System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
+              System.out.println(ba)
+              System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
+              (callbackFunction) (key, value)
+            }
+          })
+
+          response = client.prepareSearchScroll(response.getScrollId()).setScroll("60000").execute().actionGet()
+          //Break condition: No hits are returned
+          if (response.getHits().getHits().length == 0) {
+            break
           }
-        })
+        }
       })
       updateByteStats("get", tableName, byteCount)
       updateObjStats("get", tableName, recCount)
