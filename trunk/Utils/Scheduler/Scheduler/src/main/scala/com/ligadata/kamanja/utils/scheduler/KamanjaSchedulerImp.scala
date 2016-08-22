@@ -32,7 +32,7 @@ class KamanjaSchedulerImp extends KamanjaScheduler {
   scheduler.start()
 
 
-  override def add(json: String, callback: CacheCallback) = {
+  override def add(json: String, callback: SchedulerCallback) = {
 
     val jsonjob = parseJson(json)
 
@@ -111,7 +111,7 @@ class SchedulerJob extends Job {
 
   override def execute(context: JobExecutionContext): Unit = {
     val dataMap = context.getJobDetail().getJobDataMap
-    val callback = dataMap.get(KamanjaSchedulerImp.CALLBACK).asInstanceOf[CacheCallback]
+    val callback = dataMap.get(KamanjaSchedulerImp.CALLBACK).asInstanceOf[SchedulerCallback]
     val payload = dataMap.get(KamanjaSchedulerImp.PAYLOAD).asInstanceOf[Array[String]]
     callback.call(context.getJobDetail.getKey.getName, context.getFireTime.toString, payload)
   }
