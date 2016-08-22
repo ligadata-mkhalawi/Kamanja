@@ -305,12 +305,11 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
 
         if(processingInterrupted) {
           logger.debug("SMART FILE CONSUMER (FileMessageExtractor) - sending interrupting flag for file {}", fileName)
-          logger.warn("SMART FILE CONSUMER - finished reading file %s . Operation took %fms".format(fileName, elapsedTm/1000000.0))
-
+          logger.warn("SMART FILE CONSUMER - finished reading file %s. Operation took %fms on Node %s, PartitionId %s".format(fileName, elapsedTm/1000000.0, consumerContext.nodeId, consumerContext.partitionId.toString))
           finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_ProcessingInterrupted)
         }
         else {
-          logger.warn("SMART FILE CONSUMER - finished reading file %s . Operation took %fms".format(fileName, elapsedTm/1000000.0))
+          logger.warn("SMART FILE CONSUMER - finished reading file %s. Operation took %fms on Node %s, PartitionId %s".format(fileName, elapsedTm/1000000.0, consumerContext.nodeId, consumerContext.partitionId.toString))
           finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_FINISHED)
         }
       }
