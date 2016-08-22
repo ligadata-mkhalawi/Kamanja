@@ -29,12 +29,12 @@ angular.module('flareApp', ['ngAnimate', 'ui.router'])
 
     var nodes = [
 
-      // {id: "AppAccessLog", label: "AppAccessLog", group: 'logsCluster', color:{border:''}},
+      // {id: "AppAccessLog", label: "AppAccessLog", group: 'logsCluster'},
       // {id: "URLAccessLog", label: "URLAccessLog", group: 'logsCluster'},
       // {id: "RemoteAccessLog", label: "RemoteAccessLog", group: 'logsCluster'},
       // {id: "RootLog", hidden:true, group: 'logsCluster'},
       //
-      // {id: "Mozilla Browser", label: "Mozilla Browser", group: 'browsersCluster', color:{border:''}},
+      // {id: "Mozilla Browser", label: "Mozilla Browser", group: 'browsersCluster'},
       // {id: "Chrome Browser", label: "Chrome Browser", group: 'browsersCluster'},
       // {id: "RootBrowser", hidden:true, group: 'browsersCluster'},
       //
@@ -55,24 +55,24 @@ angular.module('flareApp', ['ngAnimate', 'ui.router'])
 
       // Clustering Node
 
-      //  {from: 'Chrome Browser', to: 'RootBrowser', hidden:true, length:150},
-      //  {from: 'Mozilla Browser', to: 'RootBrowser', hidden:true, length:150},
+       // {from: 'Chrome Browser', to: 'RootBrowser', hidden:true, length:50},
+       // {from: 'Mozilla Browser', to: 'RootBrowser', hidden:true, length:50},
+       //
+       // {from: 'AppAccessLog', to: 'RootLog',hidden:true,length:50},
+       // {from: 'RemoteAccessLog', to: 'RootLog',hidden:true,length:50},
+       // {from: 'URLAccessLog', to: 'RootLog',hidden:true,length:50},
+       //
+       // {from: 'John', to: 'RootUser', hidden:true, length:50},
+       // {from: 'Jane', to: 'RootUser', hidden:true, length:50},
+       // {from: 'Jill', to: 'RootUser', hidden:true, length:50},
+       //
+       // {from: 'Outlook', to: 'RootEmailApp', hidden:true, length:50},
+       // {from: 'GMail', to: 'RootEmailApp', hidden:true, length:50},
+       //
+       // {from: 'BadApp', to: 'RootBadApp', hidden:true, length:50},
+
       //
-      //  {from: 'AppAccessLog', to: 'RootLog',hidden:true,length:100},
-      //  {from: 'RemoteAccessLog', to: 'RootLog',hidden:true,length:100},
-      //  {from: 'URLAccessLog', to: 'RootLog',hidden:true,length:100},
-      //
-      //  {from: 'John', to: 'RootUser', hidden:true, length:100},
-      //  {from: 'Jane', to: 'RootUser', hidden:true, length:100},
-      //  {from: 'Jill', to: 'RootUser', hidden:true, length:100},
-      //
-      //  {from: 'Outlook', to: 'RootEmailApp', hidden:true, length:100},
-      //  {from: 'GMail', to: 'RootEmailApp', hidden:true, length:100},
-      //
-      //  {from: 'BadApp', to: 'RootBadApp', hidden:true, length:100},
-      //
-      // //
-      //
+
       // {from: 'Chrome Browser', to: 'AppAccessLog', label:'logsTo'},
       // {from: 'Chrome Browser', to: 'URLAccessLog', label:'logsTo'},
       //
@@ -90,60 +90,78 @@ angular.module('flareApp', ['ngAnimate', 'ui.router'])
 
     var groups = ['logsCluster','browsersCluster', 'userCluster', 'BadAppsCluster', 'EmailAppsCluster']
 
-    for (var x = 1 ; x <= 500 ; x++){
+    var nodeCount = 1000;
+    for (var x = 1 ; x <= nodeCount ; x++){
 
-      nodes.push({id: x, label: x, group: groups[getRandomInt(1,5)]});
+      nodes.push({id: x, label: x, group: groups[getRandomInt(0,2)], size: getRandomInt(10,40)});
     }
 
-    for (var x = 0 ; x < 1000 ; x++){
+    var edgeCount = 200;
+    for (var x = 0 ; x < edgeCount ; x++){
 
-      edges.push({from: getRandomInt(1,250),  to: getRandomInt(251,500)})
+      edges.push({from: getRandomInt(1,nodeCount),  to: getRandomInt(1,nodeCount)})
     }
+
+    console.log('data is ready');
 
     // create a network
     var container = document.getElementById('mynetwork');
+
     var data = {
       nodes: nodes,
       edges: edges
     };
+
     var options = {
+
       layout: {
-        improvedLayout:false
+        improvedLayout: true,
       },
+
       nodes: {
         shape: 'dot',
         scaling: {
-          // min: 10,
-          // max: 30
+          min: 100,
+          max: 300
         },
         font: {
           size: 12,
           face: 'Tahoma'
         }
       },
+
       edges: {
-        width: 2,
-        smooth:{
-          type:'continuous'
+        smooth: {
+          type: "dynamic",
+          roundness: 0.55,
+          forceDirection : "horizontal"
         },
-        font:{
-          size: 12,
-          background: '#ffffff'
-        }
+        arrows:'to',
+        forceDirection : "horizontal"
       },
-      'physics': {
-        'barnesHut': {
-          'gravitationalConstant': -8000,
-          // "centralGravity":0.03,
-          'springLength': 200,
-          'avoidOverlap': 0
-        }
+
+      physics: {
+        adaptiveTimestep: true,
+        stabilization: false,
+        barnesHut: {
+          gravitationalConstant: -2000,
+          centralGravity: 10,
+          springLength: 50,
+          avoidOverlap: 0,
+        },
+        timestep: 1,
+        solver: "repulsion"
       },
+
+      interaction: {
+        tooltipDelay: 200,
+        hideEdgesOnDrag: true
+      },
+
       groups:{
         'logsCluster':{
           color:{background:'#C0392B',border:'#D1D1D3'},
-          font:{color:'#000'},
-          // shape:'circle'
+          // font:{color:'#000'}
         },
         'browsersCluster':{
           color:{background:'#8E44AD',border:'#D1D1D3'},
@@ -151,20 +169,21 @@ angular.module('flareApp', ['ngAnimate', 'ui.router'])
         },
         'userCluster':{
           color:{background:'#5DADE2',border:'#D1D1D3'},
-          font:{color:'#000'},
+          // font:{color:'#000'},
           // shape:'circle'
         },
         'BadAppsCluster':{
           color:{background:'#48C9B0',border:'#D1D1D3'},
-          font:{color:'#000'},
+          // font:{color:'#000'},
           // shape:'circle'
         },
         'EmailAppsCluster':{
           color:{background:'#F4D03F',border:'#D1D1D3'},
-          font:{color:'#000'},
+          // font:{color:'#000'},
           // shape:'circle'
         }
       }
+
     };
     network = new vis.Network(container, data, options);
   }]);
