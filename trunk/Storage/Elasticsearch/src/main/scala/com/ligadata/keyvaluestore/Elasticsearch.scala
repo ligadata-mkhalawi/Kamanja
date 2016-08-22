@@ -23,24 +23,31 @@ import java.util
 import java.util.{Calendar, Properties, TimeZone}
 import javassist.bytecode.ByteArray
 
+import com.carrotsearch.hppc.cursors.ObjectObjectCursor
 import com.ligadata.Exceptions._
 import com.ligadata.KamanjaBase.NodeContext
 import com.ligadata.KvBase.{Key, TimeRange, Value}
 import com.ligadata.StorageBase.{DataStore, StorageAdapterFactory, Transaction}
 import com.ligadata.Utils.KamanjaLoaderInfo
 import com.ligadata.kamanja.metadata.AdapterInfo
+import org.apache.commons.codec.binary.Base64
 import org.apache.commons.dbcp2.BasicDataSource
 import org.elasticsearch.action.admin.indices.alias.get.{GetAliasesRequest, GetAliasesResponse}
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
+import org.elasticsearch.action.admin.indices.mapping.put
+import org.elasticsearch.action.admin.indices.mapping.put.{PutMappingRequestBuilder, PutMappingResponse}
+import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse
 import org.elasticsearch.action.admin.indices.stats.IndexStats
 import org.elasticsearch.action.bulk.BulkResponse
 import org.elasticsearch.client.IndicesAdminClient
 import org.elasticsearch.client.transport.TransportClient
-import org.elasticsearch.cluster.metadata.AliasMetaData
+import org.elasticsearch.cluster.ClusterState
+import org.elasticsearch.cluster.metadata.{AliasMetaData, IndexMetaData, MappingMetaData}
 import org.elasticsearch.common.collect.ImmutableOpenMap
 import org.elasticsearch.common.transport.InetSocketTransportAddress
 import org.elasticsearch.common.xcontent.{XContentBuilder, XContentFactory}
 import org.elasticsearch.index.query.QueryBuilders
+import org.elasticsearch.index.query.SimpleQueryParser.Settings
 import org.elasticsearch.search.{SearchHit, SearchHits}
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
@@ -508,8 +515,10 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
         .field("rowId", key.rowId)
         .field("schemaId", value.schemaId)
         .field("serializerType", value.serializerType)
-        .field("serializedInfo", new String(newBuffer))
+        .field("serializedInfo", Base64.encodeBase64String(newBuffer))
         .endObject()
+
+      //Base64.encodeBase64String( output.toByteArray()  )
 
       logger.info(">>>>>>>>>> timePartition " + 0)
       logger.info(">>>>>>>>>> bucketKey " + key.bucketKey.mkString(","))
@@ -606,7 +615,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
                 .field("rowId", key.rowId)
                 .field("schemaId", value.schemaId)
                 .field("serializerType", value.serializerType)
-                .field("serializedInfo", new String(newBuffer))
+                .field("serializedInfo", Base64.encodeBase64String(newBuffer))
                 .endObject()
 
             logger.info(">>>>>>>>>> timePartition " + 0)
@@ -930,7 +939,9 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
         var rId = hit.getSource.get("rowId").toString.toInt
         var schemaId = hit.getSource.get("schemaId").toString.toInt
         var st = hit.getSource.get("serializerType").toString
-        var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
+        //        var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
+        var ba = Base64.decodeBase64(hit.getSource.get("serializedInfo").toString.getBytes)
+
         val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
         var key = new Key(timePartition, bucketKey, tId, rId)
         // yet to understand how split serializerType and serializedInfo from ba
@@ -939,14 +950,16 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
         recCount = recCount + 1
         byteCount = byteCount + getKeySize(key) + getValueSize(value)
         if (callbackFunction != null) {
-          logger.info(">>>>>>>>>>>>>>>>>>> key = " + key)
-          logger.info(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
-          logger.info(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
-          logger.info(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
-          logger.info(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
-          logger.info(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
-          logger.info(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
-          logger.info(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
+          System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
+          System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
+          System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
+          System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
+          System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
+          System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
+          System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
+          System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
+          System.out.println(ba)
+          System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
           (callbackFunction) (key, value)
         }
       })
@@ -1137,8 +1150,14 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           val value = new Value(schemaId, st, ba)
           recCount = recCount + 1
           byteCount = byteCount + getKeySize(key) + getValueSize(value)
-          if (callbackFunction != null)
+          if (callbackFunction != null) {
+            System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
+            System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
+            System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
+            System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
+            System.out.println(ba)
             (callbackFunction) (key, value)
+          }
         })
       })
 
@@ -1185,7 +1204,9 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           var rId = hit.getSource.get("rowId").toString.toInt
           var schemaId = hit.getSource.get("schemaId").toString.toInt
           var st = hit.getSource.get("serializerType").toString
-          var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
+          //          var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
+          var ba = Base64.decodeBase64(hit.getSource.get("serializedInfo").toString.getBytes)
+
           val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
           var key = new Key(timePartition, bucketKey, tId, rId)
           // yet to understand how split serializerType and serializedInfo from ba
@@ -1193,8 +1214,19 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           var value = new Value(schemaId, st, ba)
           recCount = recCount + 1
           byteCount = byteCount + getKeySize(key) + getValueSize(value)
-          if (callbackFunction != null)
+          if (callbackFunction != null) {
+            System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
+            System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
+            System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
+            System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
+            System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
+            System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
+            System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
+            System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
+            System.out.println(ba)
+            System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
             (callbackFunction) (key, value)
+          }
         })
 
         //      var query = "select timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo from " + tableName + " where timePartition >= " + time_range.beginTime + " and timePartition <= " + time_range.endTime
@@ -1288,14 +1320,27 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             var rId = hit.getSource.get("rowId").toString.toInt
             val schemaId = hit.getSource.get("schemaId").toString.toInt
             var st = hit.getSource.get("serializerType").toString
-            var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
+            //            var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
+            var ba = Base64.decodeBase64(hit.getSource.get("serializedInfo").toString.getBytes)
+
             val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
             var key = new Key(timePartition, bucketKey, tId, rId)
             var value = new Value(schemaId, st, ba)
             recCount = recCount + 1
             byteCount = byteCount + getKeySize(key) + getValueSize(value)
-            if (callbackFunction != null)
+            if (callbackFunction != null) {
+              System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
+              System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
+              System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
+              System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
+              System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
+              System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
+              System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
+              System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
+              System.out.println(ba)
+              System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
               (callbackFunction) (key, value)
+            }
           })
         })
         // query = "select timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo from " + tableName + " where timePartition >= " + time_range.beginTime + " and timePartition <= " + time_range.endTime + " and bucketKey = ? "
@@ -1399,14 +1444,27 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           var rId = hit.getSource.get("rowId").toString.toInt
           val schemaId = hit.getSource.get("schemaId").toString.toInt
           var st = hit.getSource.get("serializerType").toString
-          var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
+          //          var ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
+          var ba = Base64.decodeBase64(hit.getSource.get("serializedInfo").toString.getBytes)
+
           val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
           var key = new Key(timePartition, bucketKey, tId, rId)
           var value = new Value(schemaId, st, ba)
           recCount = recCount + 1
           byteCount = byteCount + getKeySize(key)
-          if (callbackFunction != null)
+          if (callbackFunction != null) {
+            System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
+            System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
+            System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
+            System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
+            System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
+            System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
+            System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
+            System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
+            System.out.println(ba)
+            System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
             (callbackFunction) (key, value)
+          }
         })
       })
       updateByteStats("get", tableName, byteCount)
@@ -1602,14 +1660,63 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           }
         }
 
-        val response = client
-          .admin()
-          .indices()
-          .prepareCreate(tableName)
-          .setSource(XContentFactory.jsonBuilder().startObject()
-            .startObject("settings").endObject()
-            .endObject()).execute().actionGet();
+        //        // MAPPING GOES HERE
+        //        var createIndexRequestBuilder = client.admin().indices().prepareCreate(tableName);
+        //
+        //        val mappingBuilder = XContentFactory.jsonBuilder().field("serializedInfo").startObject()
+        //          .field("store", "true").field("type", "binary").endObject()
+        //          .endObject()
+        //        System.out.println(mappingBuilder.string());
+        //        createIndexRequestBuilder.addMapping("type1", mappingBuilder);
+        //
+        //        createIndexRequestBuilder.execute().actionGet();
+
+
+        //        val response = client
+        //          .admin()
+        //          .indices()
+        //          .prepareCreate(tableName)
+        //          .setSource(XContentFactory.jsonBuilder().startObject()
+        //            .startObject("settings").endObject()
+        //            .endObject()).execute().actionGet()
+
+        //        var mapping = XContentFactory.jsonBuilder()
+        //          .startObject()
+        //          .startObject("general")
+        //          .startObject("properties")
+        //          .startObject("serializedInfo")
+        //          .field("type", "binary")
+        //          .field("store", "true")
+        //          .endObject()
+        //          .endObject()
+        //          .endObject()
+        //          .endObject()
+
+        var putMappingResponse = client.admin().indices().prepareCreate(tableName)
+          //          .preparePutMapping(tableName)
+          //          .setType("type1")
+          .setSource("{\"mappings\": {\"type1\": {\"properties\": {\"serializedInfo\": {\"type\": \"binary\"}}}}}")
+          .execute().actionGet()
+
+
+        //        val mapping = XContentFactory.jsonBuilder()
+        //          .field("serializedInfo")
+        //          .startObject()
+        //          .field("store", "true")
+        //          .field("type", "binary")
+        //          .endObject()
+        //
+        //
+        //        var putMappingResponse = client.admin().indices()
+        //          .preparePutMapping(tableName)
+        ////          .setIndices(tableName)
+        //          .setType("type1")
+        //          .setSource(mapping)
+        //          .execute().actionGet()
+
       }
+
+
     }
     //query = "create table " + fullTableName + "(timePartition bigint,bucketKey varchar(1024), transactionId bigint, rowId Int, schemaId Int, serializerType varchar(128), serializedInfo varbinary(max))"
     catch {
