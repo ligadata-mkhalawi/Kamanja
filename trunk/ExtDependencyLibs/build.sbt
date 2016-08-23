@@ -70,6 +70,8 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
   cp filter { jar => excludes(jar.data.getName) }
 }
 
+///////////////////////Scheduler
+libraryDependencies += "org.quartz-scheduler" % "quartz" % "2.2.1"
 
 /////////////////////// KamanjaManager
 resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
