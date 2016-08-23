@@ -23,34 +23,26 @@ class KamanjaApplicationConfigurationTests extends FlatSpec with BeforeAndAfterA
       md match {
         case e: ContainerElement =>
           assert(e.filename == "/TestApp/metadata/container/container.json")
-          assert(e.tenantId == "tenant1")
         case e: MessageElement =>
           e.filename match {
             case "/TestApp/metadata/message/inputMessage.json" =>
-              assert(e.tenantId == "tenant1")
             case "/TestApp/metadata/message/outputMessage.json" =>
-              assert(e.tenantId == "tenant1")
             case _ => fail(s"Unrecognized filename: " + e.filename)
           }
         case e: JavaModelElement =>
           assert(e.filename == "/TestApp/metadata/model/model.java")
-          assert(e.tenantId == "tenant1")
           assert(e.modelCfg == "modelCfg")
         case e: ScalaModelElement =>
           assert(e.filename == "/TestApp/metadata/model/model.scala")
-          assert(e.tenantId == "tenant1")
           assert(e.modelCfg == "modelCfg")
         case e: KPmmlModelElement =>
           assert(e.filename == "/TestApp/metadata/model/kpmmlModel.xml")
-          assert(e.tenantId == "tenant1")
         case e: PmmlModelElement =>
           if(e.filename == "/TestApp/metadata/model/pmmlModel.xml") {
-            assert(e.tenantId == "tenant1")
             assert(e.msgConsumed == "com.ligadata.test.message.InputMessage")
             assert(e.msgProduced == Some("com.ligadata.test.message.OutputMessage"))
           }
           else if(e.filename == "/TestApp/metadata/model/pmmlModel2.xml") {
-            assert(e.tenantId == "tenant1")
             assert(e.msgConsumed == "com.ligadata.test.message.InputMessage")
             assert(e.msgProduced == None)
           }

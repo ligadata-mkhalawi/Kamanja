@@ -50,16 +50,15 @@ class KamanjaApplicationConfiguration {
       elem("Type").toString.toLowerCase match {
         case "container" => {
           if (!elem.keySet.exists(_ == "Filename")) {
-            println("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Container' requires 'Filename' to be defined.")
-            throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Container' requires 'Filename' to be defined.")
+            println("[Kamanja Application Tester - Application Configuration]: ***ERROR*** Metadata Element Type 'Container' requires 'Filename' to be defined.")
+            throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: ***ERROR*** Metadata Element Type 'Container' requires 'Filename' to be defined.")
           }
-
           metadataElements = metadataElements :+ new ContainerElement(appDir + "/metadata/container/" + elem("Filename").toString)
         }
         case "message" => {
           if (!elem.keySet.exists(_ == "Filename")) {
-            println("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Message' requires 'Filename' to be defined.")
-            throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Message' requires 'Filename' to be defined.")
+            println("[Kamanja Application Tester - Application Configuration]: ***ERROR*** Metadata Element Type 'Message' requires 'Filename' to be defined.")
+            throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: ***ERROR*** Metadata Element Type 'Message' requires 'Filename' to be defined.")
           }
 
           metadataElements = metadataElements :+ new MessageElement(appDir + "/metadata/message/" + elem("Filename").toString)
@@ -68,31 +67,31 @@ class KamanjaApplicationConfiguration {
           elem("ModelType").toString.toLowerCase match {
             case "java" =>
               if (!elem.keySet.exists(_ == "Filename")) {
-                println("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'Java' requires 'Filename' to be defined.")
-                throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'Java' requires 'Filename' to be defined.")
+                println("[Kamanja Application Tester - Application Configuration]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'Java' requires 'Filename' to be defined.")
+                throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'Java' requires 'Filename' to be defined.")
               }
 
               if(!elem.keySet.exists(_ == "ModelConfiguration")) {
-                println("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'Java' requires 'ModelConfiguration' to be defined.")
-                throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'Java' requires 'ModelConfiguration' to be defined.")
+                println("[Kamanja Application Tester - Application Configuration]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'Java' requires 'ModelConfiguration' to be defined.")
+                throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'Java' requires 'ModelConfiguration' to be defined.")
               }
 
               metadataElements = metadataElements :+ new JavaModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("ModelConfiguration").toString)
             case "scala" => {
               if (!elem.keySet.exists(_ == "Filename")) {
-                println("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'Scala' requires 'Filename' to be defined.")
-                throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'Scala' requires 'Filename' to be defined.")
+                println("[Kamanja Application Tester - Application Configuration]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'Scala' requires 'Filename' to be defined.")
+                throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'Scala' requires 'Filename' to be defined.")
               }
               if(!elem.keySet.exists(_ == "ModelConfiguration")) {
-                println("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'Scala' requires 'ModelConfiguration' to be defined.")
-                throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'Scala' requires 'ModelConfiguration' to be defined.")
+                println("[Kamanja Application Tester - Application Configuration]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'Scala' requires 'ModelConfiguration' to be defined.")
+                throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'Scala' requires 'ModelConfiguration' to be defined.")
               }
               metadataElements = metadataElements :+ new ScalaModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("ModelConfiguration").toString)
             }
             case "kpmml" => {
               if (!elem.keySet.exists(_ == "Filename")) {
-                println("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'KPMML' requires 'Filename' to be defined.")
-                throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: Metadata Element Type 'Model' with ModelType 'KPMML' requires 'Filename' to be defined.")
+                println("[Kamanja Application Tester - Application Configuration]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'KPMML' requires 'Filename' to be defined.")
+                throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester - Application Configuration]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'KPMML' requires 'Filename' to be defined.")
               }
               metadataElements = metadataElements :+ new KPmmlModelElement(appDir + "/metadata/model/" + elem("Filename").toString)
             }

@@ -23,6 +23,14 @@ object EmbeddedServicesManager {
   private var clusterConfig: Cluster = _
 
   def startServices(kamanjaInstallDir: String): Boolean = {
+    val classPath: String = {
+        List(
+          s"ExtDependencyLibs_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
+          s"ExtDependencyLibs2_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
+          s"KamanjaInternalDeps_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar"
+        ).mkString(s"$kamanjaInstallDir/lib/system/", s":$kamanjaInstallDir/lib/system/", "")
+      }
+
     try {
       val zkStartCode = startZookeeper
       val kafkaStartCode = startKafka
@@ -30,7 +38,7 @@ object EmbeddedServicesManager {
       val mdMan = new MetadataManager
 
       mdMan.setSSLPassword("")
-      mdMan.initMetadataCfg(new MetadataAPIProperties(H2DBStore.name, H2DBStore.connectionMode, storageDir, zkConnStr = embeddedZookeeper.getConnection, systemJarPath = s"$kamanjaInstallDir/lib/system", appJarPath = s"$kamanjaInstallDir/lib/application"))
+      mdMan.initMetadataCfg(new MetadataAPIProperties(H2DBStore.name, H2DBStore.connectionMode, storageDir, zkConnStr = embeddedZookeeper.getConnection, classPath = classPath, systemJarPath = s"$kamanjaInstallDir/lib/system", appJarPath = s"$kamanjaInstallDir/lib/application"))
 
       val result = mdMan.addConfig(clusterConfig)
       if (result != 0) {

@@ -68,10 +68,11 @@ class MetadataManager extends KamanjaTestLogger {
     }
 
     if(config.systemJarPath == "") {
-      config.systemJarPath = getClass.getResource("/jars/lib/system").getPath
+      config.systemJarPath = this.getClass.getResource("/jars/lib/system").getPath
     }
+
     if(config.appJarPath == "") {
-      config.appJarPath = getClass.getResource("/jars/lib/aplication").getPath
+      config.appJarPath = this.getClass.getResource("/jars/lib/aplication").getPath
     }
 
     val mdDataStore = new MetadataDataStore(config.database, config.connectionMode, config.databaseSchema, config.databaseHost)
@@ -83,6 +84,8 @@ class MetadataManager extends KamanjaTestLogger {
       logger.info("[Metadata Manager]: Initializing Metadata Configuration...")
 
       //MetadataAPIImpl.InitMdMgr(MdMgr.mdMgr, config.database, config.databaseHost, config.databaseSchema, config.databaseHost, config.adapterSpecificConfig)
+      //When restarting in-proc, MdMgr somehow causes a NullPointerException when InitMdMgr is called again. Creating a new MdMgr before initializing to avoid that.
+      MdMgr.mdMgr = new MdMgr
       MetadataAPIImpl.InitMdMgr(MdMgr.mdMgr, MetadataAPIImpl.metadataAPIConfig.get("JAR_PATHS").toString, MetadataAPIImpl.metadataAPIConfig.get("METADATA_DATASTORE").toString)
 
     }
@@ -303,7 +306,7 @@ class MetadataManager extends KamanjaTestLogger {
 
   /// Returns 0 if all results are 0, otherwise returns the non-zero code
   def validateApiResults(apiResults: String): Int = {
-    println("[Metadata Manager]: Validating API Results =>\n" + apiResults)
+    logger.info("[Metadata Manager]: Validating API Results =>\n" + apiResults)
     val json = parse(apiResults)
     val results = (json \\ "Status Code")
 

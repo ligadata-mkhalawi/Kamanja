@@ -13,20 +13,53 @@ object TestExecutor {
 
   private type OptionMap = Map[Symbol, Any]
 
-  private def addApplicationMetadata(kamanjaApp: KamanjaApplication): Unit = {
+  private def addApplicationMetadata(kamanjaApp: KamanjaApplication): Boolean = {
+    var result = 0
     kamanjaApp.metadataElements.foreach(element => {
       element match {
-        case e: MessageElement => mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant))
-        case e: ContainerElement => mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant))
-        case e: JavaModelElement => mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant), Some(e.modelType), Some(e.modelCfg))
-        case e: ScalaModelElement => mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant), Some(e.modelType), Some(e.modelCfg))
-        case e: KPmmlModelElement => mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant), Some(e.modelType))
-        case e: PmmlModelElement => mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant), Some(e.modelType), None, Some("0.0.1"), Some(e.msgConsumed), None, e.msgProduced)
-        case e: AdapterMessageBindingElement => mdMan.addBindings(e.filename)
-        case e: ModelConfigurationElement => mdMan.add(e.elementType, e.filename)
+        case e: MessageElement => {
+          println(s"[Kamanja Application Tester] - Adding message from file '${e.filename}'")
+          result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant))
+        }
+        case e: ContainerElement => {
+          println(s"[Kamanja Application Tester] - Adding container from file '${e.filename}'")
+          result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant))
+        }
+        case e: JavaModelElement => {
+          println(s"[Kamanja Application Tester] - Adding java model from file '${e.filename}' with model configuration '${e.modelCfg}'")
+          result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant), Some(e.modelType), Some(e.modelCfg))
+        }
+        case e: ScalaModelElement => {
+          println(s"[Kamanja Application Tester] - Adding scala model from file '${e.filename}' with model configuration '${e.modelCfg}'")
+          result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant), Some(e.modelType), Some(e.modelCfg))
+        }
+        case e: KPmmlModelElement => {
+          println(s"[Kamanja Application Tester] - Adding KPMML model from file '${e.filename}'")
+          result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant), Some(e.modelType))
+        }
+        case e: PmmlModelElement => {
+          println(s"[Kamanja Application Tester] - Adding PMML model from file '${e.filename}' with message consumed '${e.msgConsumed}'")
+          result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant), Some(e.modelType), None, Some("0.0.1"), Some(e.msgConsumed), None, e.msgProduced)
+        }
+        case e: AdapterMessageBindingElement => {
+          println(s"[Kamanja Application Tester] - Adding adapter message bindings from file '${e.filename}'")
+          result = mdMan.addBindings(e.filename)
+        }
+        case e: ModelConfigurationElement => {
+          println(s"[Kamanja Application Tester] - Adding model configuration from file '${e.filename}'")
+          result = mdMan.add(e.elementType, e.filename)
+        }
         case _ => throw new TestExecutorException("[Kamanja Application Tester] - ***ERROR*** Unknown element type: '" + element.elementType)
       }
+
+      if(result != 0) {
+        println(s"[Kamanja Application Tester] - ***ERROR*** Failed too add '${element.elementType}' from file '${element.filename}' with result '$result'")
+        return false
+      }
+      else
+        println(s"[Kamanja Application Tester] - '${element.elementType}' successfully added")
     })
+    return true
   }
 
   //TODO: Need to determine if we want the user to specify the kamanja install directory.
@@ -41,9 +74,15 @@ object TestExecutor {
       }
       val installDir: String = options('kamanjadir).asInstanceOf[String]
       val appManager = new KamanjaApplicationManager(installDir + "/test")
+      var mdAddResult = true
       appManager.kamanjaApplications.foreach(app => {
-        println(app.name)
+        println(s"[Kamanja Application Tester] - Adding metadata for application '${app.name}'")
+        if(!addApplicationMetadata(app)) {
+          println(s"[Kamanja Application Tester] - ***ERROR*** Failed to add metadata for application '${app.name}'")
+          throw new Exception(s"[Kamanja Application Tester] - ***ERROR*** Failed to add metadata for application '${app.name}'")
+        }
       })
+
     }
   }
 
