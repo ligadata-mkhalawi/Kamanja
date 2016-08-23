@@ -125,6 +125,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
   /**
     * this method is used as callback to be passed to monitor
     * it basically does what method processExistingFiles used to do in file consumer tool
+    *
     * @param fileHandler
     */
   def fileDetectedCallback (fileHandler : SmartFileHandler, initiallyExists : Boolean) : Unit = {
@@ -173,137 +174,149 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
       bufferingQLock.synchronized {
 
         val newlyAdded = ArrayBuffer[SmartFileHandler]()
+        val removedEntries = ArrayBuffer[SmartFileHandler]()
 
         val iter = bufferingQ_map.iterator
         iter.foreach(fileTuple => {
-
-          //TODO C&S - changes
-          var thisFileFailures: Int = fileTuple._2._3
-          var thisFileStarttime: Long = fileTuple._2._2
-          var thisFileOrigLength: Long = fileTuple._2._1
-          val initiallyExists = fileTuple._2._4
-
-          val fileHandler = fileTuple._1
-          val currentFileParentDir = fileHandler.getParentDir
-          val currentFileLocationInfo = parentSmartFileConsumer.getSrcDirLocationInfo(currentFileParentDir)
-
           try {
+            //TODO C&S - changes
+            var thisFileFailures: Int = fileTuple._2._3
+            var thisFileStarttime: Long = fileTuple._2._2
+            var thisFileOrigLength: Long = fileTuple._2._1
+            val initiallyExists = fileTuple._2._4
 
-            logger.debug("SMART FILE CONSUMER (MonitorController):  monitorBufferingFiles - file " + fileHandler.getFullPath)
+            val fileHandler = fileTuple._1
+            val currentFileParentDir = fileHandler.getParentDir
+            val currentFileLocationInfo = parentSmartFileConsumer.getSrcDirLocationInfo(currentFileParentDir)
 
-            /*val matchingFileInfo : List[(String, Int, String, Int)] =
+            try {
+
+              logger.debug("SMART FILE CONSUMER (MonitorController):  monitorBufferingFiles - file " + fileHandler.getFullPath)
+
+              /*val matchingFileInfo : List[(String, Int, String, Int)] =
               if (initialFiles ==null) null
               else initialFiles.filter(tuple => tuple._3.equals(fileHandler.getFullPath))*/
 
-            if (initiallyExists && initialFiles != null && initialFiles.contains(fileHandler.getFullPath)) {
-              //this is an initial file, the leader will take care of it, ignore
-              /*initialFiles.filter(tuple => tuple._3.equals(fileHandler.getFullPath)) match{
+              if (initiallyExists && initialFiles != null && initialFiles.contains(fileHandler.getFullPath)) {
+                //this is an initial file, the leader will take care of it, ignore
+                /*initialFiles.filter(tuple => tuple._3.equals(fileHandler.getFullPath)) match{
                 case None =>
                 case Some(initialFileInfo) => initialFiles = initialFiles diff List(initialFileInfo)
               }*/
-              logger.debug("SMART FILE CONSUMER (MonitorController): file {} is already in initial files", fileHandler.getFullPath)
-              bufferingQ_map.remove(fileHandler)
-              //initialFiles = initialFiles diff fileHandler.getFullPath
+                logger.debug("SMART FILE CONSUMER (MonitorController): file {} is already in initial files", fileHandler.getFullPath)
+                // bufferingQ_map.remove(fileHandler)
+                removedEntries += fileHandler
+                //initialFiles = initialFiles diff fileHandler.getFullPath
 
-              logger.debug("SMART FILE CONSUMER (MonitorController): now initialFiles = {}",initialFiles)
-            }
-            else {
-              // If the filesystem is accessible
-              if (fileHandler.exists) {
+                logger.debug("SMART FILE CONSUMER (MonitorController): now initialFiles = {}", initialFiles)
+              }
+              else {
+                // If the filesystem is accessible
+                if (fileHandler.exists) {
 
-                //TODO C&S - Changes
-                thisFileOrigLength = fileHandler.length
+                  //TODO C&S - Changes
+                  thisFileOrigLength = fileHandler.length
 
-                // If file hasn't grown in the past 2 seconds - either a delay OR a completed transfer.
-                if (fileTuple._2._1 == thisFileOrigLength) {
-                  // If the length is > 0, we assume that the file completed transfer... (very problematic, but unless
-                  // told otherwise by BofA, not sure what else we can do here.
-                  if (thisFileOrigLength > 0 && MonitorUtils.isValidFile(fileHandler)) {
-                    if(isEnqueued(fileTuple._1)){
-                      logger.debug("SMART FILE CONSUMER (MonitorController):  File already enqueued " + fileHandler.getFullPath)
-                    }else{
-                      logger.info("SMART FILE CONSUMER (MonitorController):  File READY TO PROCESS " + fileHandler.getFullPath)
-                      enQFile(fileTuple._1, NOT_RECOVERY_SITUATION, fileHandler.lastModified)
-                      newlyAdded.append(fileHandler)
-                    }
-                    bufferingQ_map.remove(fileTuple._1)
-
-                  } else {
-                    // Here becayse either the file is sitll of len 0,or its deemed to be invalid.
-                    if (thisFileOrigLength == 0) {
-                      val diff = System.currentTimeMillis - thisFileStarttime //d.lastModified
-                      if (diff > bufferTimeout) {
-                        logger.warn("SMART FILE CONSUMER (MonitorController): Detected that " + fileHandler.getFullPath + " has been on the buffering queue longer then " + bufferTimeout / 1000 + " seconds - Cleaning up")
-
-                        if(currentFileLocationInfo.isMovingEnabled)
-                          parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
-                        else
-                          logger.info("SMART FILE CONSUMER (MonitorController): File {} will not be moved since moving is disabled for folder {} - Adapter {}",
-                            fileHandler.getFullPath, currentFileParentDir, adapterConfig.Name)
-
-                        bufferingQ_map.remove(fileTuple._1)
+                  // If file hasn't grown in the past 2 seconds - either a delay OR a completed transfer.
+                  if (fileTuple._2._1 == thisFileOrigLength) {
+                    // If the length is > 0, we assume that the file completed transfer... (very problematic, but unless
+                    // told otherwise by BofA, not sure what else we can do here.
+                    if (thisFileOrigLength > 0 && MonitorUtils.isValidFile(fileHandler)) {
+                      if (isEnqueued(fileTuple._1)) {
+                        logger.debug("SMART FILE CONSUMER (MonitorController):  File already enqueued " + fileHandler.getFullPath)
+                      } else {
+                        logger.info("SMART FILE CONSUMER (MonitorController):  File READY TO PROCESS " + fileHandler.getFullPath)
+                        enQFile(fileTuple._1, NOT_RECOVERY_SITUATION, fileHandler.lastModified)
+                        newlyAdded.append(fileHandler)
                       }
+                      // bufferingQ_map.remove(fileTuple._1)
+                      removedEntries += fileTuple._1
                     } else {
-                      //Invalid File - due to content type
-                      if(currentFileLocationInfo.isMovingEnabled) {
-                        logger.error("SMART FILE CONSUMER (MonitorController): Moving out " + fileHandler.getFullPath + " with invalid file type ")
-                        parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
+                      // Here becayse either the file is sitll of len 0,or its deemed to be invalid.
+                      if (thisFileOrigLength == 0) {
+                        val diff = System.currentTimeMillis - thisFileStarttime //d.lastModified
+                        if (diff > bufferTimeout) {
+                          logger.warn("SMART FILE CONSUMER (MonitorController): Detected that " + fileHandler.getFullPath + " has been on the buffering queue longer then " + bufferTimeout / 1000 + " seconds - Cleaning up")
+
+                          if (currentFileLocationInfo.isMovingEnabled)
+                            parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
+                          else
+                            logger.info("SMART FILE CONSUMER (MonitorController): File {} will not be moved since moving is disabled for folder {} - Adapter {}",
+                              fileHandler.getFullPath, currentFileParentDir, adapterConfig.Name)
+
+                          // bufferingQ_map.remove(fileTuple._1)
+                          removedEntries += fileTuple._1
+                        }
+                      } else {
+                        //Invalid File - due to content type
+                        if (currentFileLocationInfo.isMovingEnabled) {
+                          logger.error("SMART FILE CONSUMER (MonitorController): Moving out " + fileHandler.getFullPath + " with invalid file type ")
+                          parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
+                        }
+                        else {
+                          logger.info("SMART FILE CONSUMER (MonitorController): File {} has invalid file type but will not be moved since moving is disabled for folder {} - Adapter {}",
+                            fileHandler.getFullPath, currentFileParentDir, adapterConfig.Name)
+                        }
+                        // bufferingQ_map.remove(fileTuple._1)
+                        removedEntries += fileTuple._1
                       }
-                      else{
-                        logger.info("SMART FILE CONSUMER (MonitorController): File {} has invalid file type but will not be moved since moving is disabled for folder {} - Adapter {}",
-                          fileHandler.getFullPath, currentFileParentDir, adapterConfig.Name)
-                      }
-                      bufferingQ_map.remove(fileTuple._1)
+                    }
+                  } else {
+                    logger.debug("SMART FILE CONSUMER (MonitorController):  File {} size changed from {} to {}",
+                      fileHandler.getFullPath, thisFileOrigLength.toString, fileTuple._2._1.toString)
+                    bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
+                  }
+                } else {
+                  // File System is not accessible.. issue a warning and go on to the next file.
+                  logger.warn("SMART FILE CONSUMER (MonitorController): File on the buffering Q is not found " + fileHandler.getFullPath)
+                  // bufferingQ_map.remove(fileTuple._1)
+                  removedEntries += fileTuple._1
+                }
+              }
+            } catch {
+              case ioe: IOException => {
+                thisFileFailures += 1
+                if (currentFileLocationInfo.isMovingEnabled && ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
+                  logger.warn("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + fileTuple._1.getFullPath + " on the buffering queue", ioe)
+                  try {
+                    parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
+                    // bufferingQ_map.remove(fileTuple._1)
+                    removedEntries += fileTuple._1
+                  } catch {
+                    case e: Throwable => {
+                      logger.error("SMART_FILE_CONSUMER: Failed to move file, retyring", e)
                     }
                   }
                 } else {
-                  logger.debug("SMART FILE CONSUMER (MonitorController):  File {} size changed from {} to {}",
-                    fileHandler.getFullPath, thisFileOrigLength.toString, fileTuple._2._1.toString)
                   bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
+                  logger.warn("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue ", ioe)
                 }
-              } else {
-                // File System is not accessible.. issue a warning and go on to the next file.
-                logger.warn("SMART FILE CONSUMER (MonitorController): File on the buffering Q is not found " + fileHandler.getFullPath)
-                bufferingQ_map.remove(fileTuple._1)
               }
-            }
-          } catch {
-            case ioe: IOException => {
-              thisFileFailures += 1
-              if (currentFileLocationInfo.isMovingEnabled && ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
-                logger.warn("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + fileTuple._1.getFullPath + " on the buffering queue", ioe)
-                try {
-                  parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
-                  bufferingQ_map.remove(fileTuple._1)
-                } catch {
-                  case e: Throwable => {
-                    logger.error("SMART_FILE_CONSUMER: Failed to move file, retyring", e)
+              case e: Throwable => {
+                thisFileFailures += 1
+                if (currentFileLocationInfo.isMovingEnabled && ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
+                  logger.error("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + fileTuple._1 + " on the buffering queue", e)
+                  try {
+                    parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
+                    // bufferingQ_map.remove(fileTuple._1)
+                    removedEntries += fileTuple._1
+                  } catch {
+                    case e: Throwable => {
+                      logger.error("SMART_FILE_CONSUMER (MonitorController): Failed to move file, retyring", e)
+                    }
                   }
+                } else {
+                  bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
+                  logger.error("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue ", e)
                 }
-              } else {
-                bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
-                logger.warn("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue ", ioe)
-              }
-            }
-            case e: Throwable => {
-              thisFileFailures += 1
-              if (currentFileLocationInfo.isMovingEnabled && ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
-                logger.error("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + fileTuple._1 + " on the buffering queue", e)
-                try {
-                  parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
-                  bufferingQ_map.remove(fileTuple._1)
-                } catch {
-                  case e: Throwable => {
-                    logger.error("SMART_FILE_CONSUMER (MonitorController): Failed to move file, retyring", e)
-                  }
-                }
-              } else {
-                bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
-                logger.error("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue ", e)
               }
             }
           }
-
+          catch {
+            case e: Throwable => {
+              logger.error("Smart File Adapter (MonitorController) - Failed to check for entry in bufferingQ_map", e)
+            }
+          }
         })
 
         newlyAdded.foreach(fileHandler => {
@@ -314,6 +327,13 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
           }
         })
 
+        try {
+          bufferingQ_map --= removedEntries
+        } catch {
+          case e: Throwable => {
+            logger.error("Smart File Adapter (MonitorController) - Failed to remove entries from bufferingQ_map", e)
+          }
+        }
       }
 
       // Give all the files a 1 second to add a few bytes to the contents
