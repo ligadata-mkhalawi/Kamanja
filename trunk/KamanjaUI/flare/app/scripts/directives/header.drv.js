@@ -9,8 +9,10 @@ angular.module('flareApp')
       restrict: 'E',
       templateUrl: 'views/tpl/header.html',
       controllerAs: 'header',
-      controller: function(){
-
-      }
+      controller: ['$scope','$rootScope',function($scope, $rootScope){
+        $scope.toggleSideBar = function(){
+          $rootScope.$broadcast('sideBarToggled');
+        };
+      }]
     };
   });

@@ -86,8 +86,7 @@ angular
           var options = {
 
             layout: {
-              improvedLayout: true,
-              forceDirection : 'horizontal'
+              improvedLayout: true
             },
 
             nodes: {

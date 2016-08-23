@@ -31,14 +31,74 @@ body {
   }
 
 }
-#visJsDiv {
-  width: 100%;
-  height: 800px;
-  border: 1px solid lightgray;
-}
 
 p {
   max-width:700px;
+}
+.mainContainer{
+  $height : 750px;
+  padding-top:65px;
+  background-color: #333333;
+  .col-md-2.sideBar {
+    background-color: #1A1A1A;
+    height: $height;
+    .listItem {
+      color: #949494;
+      padding: 10px 15px;
+      &.listParent{
+        background-color: #121212;
+      }
+      .list-group{
+        background-color: #1A1A1A;
+      }
+      .list-group-item{
+        background-color: inherit;
+        border:0;
+      }
+    }
+
+      /* The starting CSS styles for the enter animation */
+    .listItem.ng-enter {
+      transition:0.5s linear all;
+      opacity:0;
+    }
+
+    /* The finishing CSS styles for the enter animation */
+    .listItem§.ng-enter.ng-enter-active {
+      opacity:1;
+    }
+
+    .circle {
+      top:20px;
+      display:inline-block;
+      border-radius: 50%;
+      width: 14px;
+      height: 14px;
+      &.green{
+        background-color: #099665;
+      }
+      &.purple{
+        background-color: #cc02c5;
+      }
+      &.blue{
+        background-color: #036b94;
+      }
+      &.lightBlue{
+        background-color: #50cccc;
+      }
+      &.red {
+        background-color: #f5474a;
+      }
+      &.yellow{
+        background-color: #fac800;
+      }
+    }
+  }
+  #visJsDiv {
+    width: 100%;
+    height: $height;
+  }
+
 }
 
 div.vis-network {
