@@ -6,6 +6,7 @@ import com.ligadata.Exceptions.KamanjaException
 import com.ligadata.HeartBeat.MonitorComponentInfo
 import com.ligadata.InputOutputAdapterInfo.{PartitionUniqueRecordValue, StartProcPartInfo, _}
 import com.ligadata.KamanjaBase.{EnvContext, NodeContext}
+import com.ligadata.KvBase.TimeRange
 import com.ligadata.Utils.ClusterStatus
 import com.ligadata.adapterconfiguration.{HbaseAdapterConfiguration, HbasePartitionUniqueRecordKey, HbasePartitionUniqueRecordValue}
 import com.ligadata.keyvaluestore.HBaseAdapter
@@ -42,7 +43,7 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   private val lock = new Object()
   private var readExecutor: ExecutorService = _
   private var metrics: collection.mutable.Map[String,Any] = collection.mutable.Map[String,Any]()
-  private val adapterConfig = HbaseAdapterConfiguration.getAdapterConfig(inputConfig)
+  private val adapterConfig = HbaseAdapterConfiguration.getAdapterConfig(inputConfig, "input")
   private var isShutdown = false
   private var isQuiesced = false
   private var startTime: Long = 0
@@ -64,6 +65,7 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   val hbaseutil: HbaseUtility = new HbaseUtility
   var dataStoreInfo = hbaseutil.createDataStorageInfo(adapterConfig)
   var dataStore = hbaseutil.GetDataStoreHandle(dataStoreInfo).asInstanceOf[HBaseAdapter]
+  //dataStore.setDefaultSerializerDeserializer("com.ligadata.kamanja.serializer.kbinaryserdeser", scala.collection.immutable.Map[String, Any]())
 
   override def StartProcessing(partitionIds: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = {  //////create all code hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
     isShutdown = false
@@ -102,43 +104,66 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
 
     val myPartitionInfo = partitionIds.map(pid => (pid._key.asInstanceOf[HbasePartitionUniqueRecordKey].PartitionId,
       pid._val.asInstanceOf[HbasePartitionUniqueRecordValue].TableName,
-      pid._val.asInstanceOf[HbasePartitionUniqueRecordValue].TimeStamp, ignoreFirstMsg)).mkString("~") //////add key
+      pid._val.asInstanceOf[HbasePartitionUniqueRecordValue].TimeStamp, ignoreFirstMsg)) //////add key
 
-    readExecutor.execute(new Runnable() {
-      var intSleepTimer = KamanjaHbaseConsumer.INITIAL_SLEEP
+    val myPartitionInfoMap = partitionIds.map(pid =>
+      pid._key.asInstanceOf[HbasePartitionUniqueRecordKey].PartitionId ->
+        (pid._val.asInstanceOf[HbasePartitionUniqueRecordValue].TimeStamp, ignoreFirstMsg)
+    ).toMap
 
-      var execContexts : ExecContext = null
-      var uniqueKey = new HbasePartitionUniqueRecordKey
-     //////////////////////// var topicPartitions: Array[org.apache.kafka.common.TopicPartition] = new Array[org.apache.kafka.common.TopicPartition](maxPartNumber + 1)
-//      var initialOffsets: Array[Long] = new Array[Long](maxPartNumber + 1)
-//      var ignoreUntilOffsets: Array[Long] = new Array[Long](maxPartNumber + 1)
+   // myPartitionInfoMap
 
-      // Create a new EngineMessage and call the engine.
-      if (execContexts == null) {
-        execContexts = execCtxtObj.CreateExecContext(input, uniqueKey, nodeContext)
-      }
+    val partitionListDisplay = partitionIds.map(x => {
+      x._key.asInstanceOf[HbasePartitionUniqueRecordKey].PartitionId
+    }).mkString(",")
 
-      override def run(): Unit = {
-        var readTmMs = System.currentTimeMillis
-        var isRecordSentToKamanja = false
-        val uniqueVal = new HbasePartitionUniqueRecordValue
-        while (/*!isRecordSentToKamanja &&*/ !isQuiese) {
-          val retrievedata = (data: Array[Byte]) => {
-            readTmMs = System.currentTimeMillis
-            if (data != null) {
-              val uniqueVal = new HbasePartitionUniqueRecordValue
-              uniqueVal.TimeStamp = readTmMs
-              uniqueVal.TableName = adapterConfig.TableName
-              uniqueVal.Key = new String(data).substring(0, new String(data).indexOf(',')).toInt
-              msgCount += 1
-              execContexts.execute(data, uniqueKey , uniqueVal, readTmMs)
-            }
-          }
-          val fulltablename = adapterConfig.scehmaName + ":" + adapterConfig.TableName
-          dataStore.getAllRecords(fulltablename, retrievedata)
-            Thread.sleep(1000)
+    //data is comma separated partition ids
+    val currentNodePartitions = partitionListDisplay.split(",").map(idStr => idStr.toInt).toList
+
+
+    currentNodePartitions.foreach(partitionid => {
+      val initialTimestamp = myPartitionInfoMap(partitionid)._1
+
+      readExecutor.execute(new Runnable() {
+        var intSleepTimer = KamanjaHbaseConsumer.INITIAL_SLEEP
+
+        var execContexts: ExecContext = null
+        var uniqueKey = new HbasePartitionUniqueRecordKey
+        //////////////////////// var topicPartitions: Array[org.apache.kafka.common.TopicPartition] = new Array[org.apache.kafka.common.TopicPartition](maxPartNumber + 1)
+        //      var initialOffsets: Array[Long] = new Array[Long](maxPartNumber + 1)
+        //      var ignoreUntilOffsets: Array[Long] = new Array[Long](maxPartNumber + 1)
+
+        // Create a new EngineMessage and call the engine.
+        if (execContexts == null) {
+          execContexts = execCtxtObj.CreateExecContext(input, uniqueKey, nodeContext)
         }
-      }
+
+        var timerange: TimeRange = _
+
+        override def run(): Unit = {
+          var readTmMs = System.currentTimeMillis
+          var isRecordSentToKamanja = false
+          val uniqueVal = new HbasePartitionUniqueRecordValue
+          while ( /*!isRecordSentToKamanja &&*/ !isQuiese) {
+            val retrievedata = (data: Array[Byte]) => {
+              readTmMs = System.currentTimeMillis
+              if (data != null) {
+                val uniqueVal = new HbasePartitionUniqueRecordValue
+                uniqueVal.TimeStamp = readTmMs
+                uniqueVal.TableName = adapterConfig.TableName
+                uniqueVal.Key = new String(data).substring(0, new String(data).indexOf(',')).toInt
+                msgCount += 1
+                execContexts.execute(data, uniqueKey, uniqueVal, readTmMs)
+              }
+            }
+            endTimeStamp = System.currentTimeMillis
+            val fulltablename = adapterConfig.scehmaName + ":" + adapterConfig.TableName
+            timerange = TimeRange(initialTimestamp+1, endTimeStamp) ///filter data based on time range
+            dataStore.getAllRecords(fulltablename, timerange, retrievedata)
+            Thread.sleep(1000)
+          }
+        }
+      })
     })
   }
 
@@ -190,33 +215,17 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   }
 
   private def getKeyValuePairs(): Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)] = {
-//    val infoBuffer = ArrayBuffer[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)]()
-//
-//    for(partitionId <- 1 to 1/*adapterConfig.monitoringConfig.consumersCount*/){/////////////////////fix this
-//      val rKey = new HbasePartitionUniqueRecordKey
-//      val rValue = new HbasePartitionUniqueRecordValue
-//
-//      rKey.PartitionId = partitionId
-//      rKey.Name = adapterConfig.Name
-//
-//      rValue.TimeStamp = -1
-//      rValue.Key = -1
-//      rValue.TableName = adapterConfig.TableName
-//
-//      infoBuffer.append((rKey, rValue))
-//    }
-//
-//    infoBuffer.toArray
     val infoBuffer = ArrayBuffer[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)]()
-    val rKey = new HbasePartitionUniqueRecordKey
-    val rValue = new HbasePartitionUniqueRecordValue
-    rKey.PartitionId = 1
-    rKey.Name = adapterConfig.Name
-    rValue.TimeStamp = -1
-    rValue.Key = -1
-    rValue.TableName = adapterConfig.TableName
-    infoBuffer.append((rKey, rValue))
-
+    for(partitionId <- 1 to adapterConfig.numberOfThread) {
+      val rKey = new HbasePartitionUniqueRecordKey
+      val rValue = new HbasePartitionUniqueRecordValue
+      rKey.PartitionId = partitionId
+      rKey.Name = adapterConfig.Name
+      rValue.TimeStamp = 0
+      rValue.Key = -1
+      rValue.TableName = adapterConfig.TableName
+      infoBuffer.append((rKey, rValue))
+    }
     infoBuffer.toArray
   }
 
@@ -233,75 +242,13 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   }
 
   override def GetAllPartitionUniqueRecordKey: Array[PartitionUniqueRecordKey] = lock.synchronized {
-//    LOG.debug("Getting all partionas for " + adapterConfig.Name)
-//    var results: java.util.List[String] = null //change this bug (string ->)
-//    var partitionNames: scala.collection.mutable.ListBuffer[HbasePartitionUniqueRecordKey] = scala.collection.mutable.ListBuffer()
-//    val hbaseutil: HbaseUtility = new HbaseUtility
-//    var isSuccessfulConnection = false
-//    while (!isSuccessfulConnection && !isQuiese) {
-//      try {
-//      //  results = hbaseutil.partitionsFor(qc.topic)  //change it fix this bug
-//        isSuccessfulConnection = true
-//        dataStore.Shutdown()
-//      } catch {
-//        case e: Throwable => {
-//          externalizeExceptionEvent(e)
-//          LOG.error ("Exception processing PARTITIONSFOR request..  Retrying ",e)
-//          try {
-//            Thread.sleep(getSleepTimer)
-//          } catch {
-//            case ie: InterruptedException => {
-//              externalizeExceptionEvent(ie)
-//              LOG.warn("KamanjaHbaseConsumer - sleep interrupted, shutting donw ")
-//              Shutdown
-//              dataStore.Shutdown()
-//              dataStore = null
-//              throw ie
-//            }
-//            case t: Throwable => {
-//              externalizeExceptionEvent(t)
-//              LOG.warn("KamanjaHbaseConsumer - sleep interrupted (UNKNOWN CAUSE), shutting down ",t)
-//              Shutdown
-//              dataStore.Shutdown()
-//              dataStore = null
-//              throw t
-//            }
-//          }
-//        }
-//      }
-//    }
-//    resetSleepTimer
-//    if (isQuiese) {
-//      // return the info back to the Engine.  if quiesing
-//      LOG.warn("Quiese request is receive during GetAllPartitionUniqueRecordKey")
-//      partitionNames.toArray
-//    }
-//
-//    if (results == null)  {
-//      // return the info back to the Engine.  Just in case we end up with null result
-//      LOG.warn("Kafka broker returned a null during GetAllPartitionUniqueRecordKey")
-//      partitionNames.toArray
-//    }
-//
-//    // Successful fetch of metadata.. return the values to the engine.
-//    var iter = results.iterator
-//    while(iter.hasNext && !isQuiese) {
-//      var thisRes = iter.next()
-//      var newkey = new HbasePartitionUniqueRecordKey
-//      newkey.PartitionId = 1
-//      newkey.Name = adapterConfig.Name
-//      //      newVal.PartitionId = thisRes.partition            ///////fix this
-//      partitionNames += newkey
-//      //   LOG.debug(" GetAllPartitions returned " +thisRes.partition)  ////fix this
-//    }
-//    partitionNames.toArray
-val infoBuffer = ArrayBuffer[PartitionUniqueRecordKey]()
-
-    var newkey = new HbasePartitionUniqueRecordKey
-    newkey.PartitionId = 1
-    newkey.Name = adapterConfig.Name
-    infoBuffer.append(newkey)
-
+    val infoBuffer = ArrayBuffer[PartitionUniqueRecordKey]()
+    for(partitionId <- 1 to adapterConfig.numberOfThread){
+      var newkey = new HbasePartitionUniqueRecordKey
+      newkey.PartitionId = partitionId
+      newkey.Name = adapterConfig.Name
+      infoBuffer.append(newkey)
+    }
     infoBuffer.toArray
   }
 

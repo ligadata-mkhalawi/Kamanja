@@ -61,7 +61,7 @@ class HbaseProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   val counterLock = new Object
   var tempContext = Thread.currentThread().getContextClassLoader
   Thread.currentThread().setContextClassLoader(null);
-  private val adapterConfig = HbaseAdapterConfiguration.getAdapterConfig(inputConfig)
+  private val adapterConfig = HbaseAdapterConfiguration.getAdapterConfig(inputConfig, "output")
   Thread.currentThread().setContextClassLoader(tempContext);
   val hbaseutil: HbaseUtility = new HbaseUtility
   private val kvManagerLoader = new KamanjaLoaderInfo

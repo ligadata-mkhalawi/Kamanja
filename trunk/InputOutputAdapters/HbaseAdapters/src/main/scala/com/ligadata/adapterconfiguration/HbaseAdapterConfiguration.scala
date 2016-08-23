@@ -14,6 +14,9 @@ class HbaseAdapterConfiguration extends AdapterConfiguration{
   var scehmaName: String = "" // prefix for the file names
   var TableName: String = "" // optional separator inserted between messages
 //  var serializerName: String =""
+  var columnName: String = ""
+  var familyName: String = ""
+  var numberOfThread: Int = 1
   var kerberos: KerberosConfig = null
   var instancePartitions: Set[Int] = _
   var noDataSleepTimeInMs: Int = 300
@@ -28,10 +31,10 @@ class KerberosConfig {
 
 object HbaseAdapterConfiguration {
 
-  def getAdapterConfig(inputConfig: AdapterConfiguration): HbaseAdapterConfiguration = {
+  def getAdapterConfig(inputConfig: AdapterConfiguration, inputType: String): HbaseAdapterConfiguration = {
 
     if (inputConfig.adapterSpecificCfg == null || inputConfig.adapterSpecificCfg.size == 0) {
-      val err = "Not found Type and Connection info for Smart File Adapter Config:" + inputConfig.Name
+      val err = "Not found Type and Connection info for Hbase Adapter Config:" + inputConfig.Name
       throw new KamanjaException(err, null)
     }
 
@@ -40,10 +43,11 @@ object HbaseAdapterConfiguration {
     adapterConfig.className = inputConfig.className
     adapterConfig.jarName = inputConfig.jarName
     adapterConfig.dependencyJars = inputConfig.dependencyJars
+    adapterConfig.tenantId = inputConfig.tenantId
 
     val adapCfg = parse(inputConfig.adapterSpecificCfg)
     if (adapCfg == null || adapCfg.values == null) {
-      val err = "Smart File Producer configuration must be specified for " + adapterConfig.Name
+      val err = "Hbase File Producer configuration must be specified for " + adapterConfig.Name
       throw new KamanjaException(err, null)
     }
 
@@ -64,13 +68,19 @@ object HbaseAdapterConfiguration {
         adapterConfig.kerberos.keytab = kerbConf.getOrElse("Keytab", null)
         adapterConfig.kerberos.masterPrincipal = kerbConf.getOrElse("masterprincipal", null)
         adapterConfig.kerberos.regionServer = kerbConf.getOrElse("regionserve", null)
+      }  else if (kv._1.compareToIgnoreCase("columnName") == 0) {
+        adapterConfig.columnName = kv._2.toString.trim
+      }  else if (kv._1.compareToIgnoreCase("numberOfThread") == 0) {
+        adapterConfig.numberOfThread = kv._2.toString.trim.toInt
+      }  else if (kv._1.compareToIgnoreCase("familyName") == 0) {
+        adapterConfig.familyName = kv._2.toString.trim
       }
     })
 
     adapterConfig.instancePartitions = Set[Int]()
 
     if (adapterConfig.hostList == null || adapterConfig.hostList.size == 0)
-      throw new KamanjaException("host should not be NULL or empty for Hbase Producer" + adapterConfig.Name, null)
+      throw new KamanjaException("hostList should not be NULL or empty for Hbase Producer" + adapterConfig.Name, null)
 //
 //    if (adapterConfig.serializerName == null || adapterConfig.serializerName.size == 0)
 //      throw new KamanjaException("serializerName should not be NULL or empty for Hbase Producer" + adapterConfig.Name, null)
@@ -81,6 +91,24 @@ object HbaseAdapterConfiguration {
 
       if (adapterConfig.kerberos.keytab == null || adapterConfig.kerberos.keytab.size == 0)
         throw new KamanjaException("Keytab should be specified for Kerberos authentication for Hbase Producer: " + adapterConfig.Name, null)
+    }
+
+    if (adapterConfig.scehmaName == null)
+      throw new KamanjaException("schemaName should be specified to read/write data from Hbase storage for Hbase Producer: " + adapterConfig.Name, null)
+
+    if(inputType.equalsIgnoreCase("input")){
+
+      if (adapterConfig.numberOfThread == 0)
+        throw new KamanjaException("numberOfThread should be more than 0 for Hbase Producer: " + adapterConfig.Name, null)
+
+      if (adapterConfig.TableName == null || adapterConfig.TableName.size == 0)
+        throw new KamanjaException("tableName should be specified for Hbase Producer: " + adapterConfig.Name, null)
+
+      if (adapterConfig.columnName == null || adapterConfig.columnName.size == 0)
+        throw new KamanjaException("columnName should be specified for Hbase Producer: " + adapterConfig.Name, null)
+
+      if (adapterConfig.familyName == null || adapterConfig.familyName.size == 0)
+        throw new KamanjaException("familyName should be specified for Hbase Producer: " + adapterConfig.Name, null)
     }
 
     adapterConfig

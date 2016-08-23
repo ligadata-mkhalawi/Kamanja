@@ -1807,7 +1807,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
     }
   }
 
-  def getAllRecords(tableName: String, callbackFunction: (Array[Byte]) => Unit): Unit = {
+  def getAllRecords(tableName: String, time_range: TimeRange,callbackFunction: (Array[Byte]) => Unit): Unit = {
 //    val listener = new BufferedMutator.ExceptionListener() {
 //      override def onException(e: RetriesExhaustedWithDetailsException, mutator: BufferedMutator) {
 //        for (i <- 0 until e.getNumExceptions)
@@ -1820,7 +1820,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
 //    try {
       relogin
       if (!admin.tableExists(TableName.valueOf(tableName))) {
-        logger.warn("The table being renamed doesn't exist, nothing to be done")
+        logger.warn("The table being read doesn't exist, nothing to be done")
         throw CreateDDLException("Failed to read from the table " + tableName + ":", new Exception("Source Table doesn't exist"))
       }
 //      // Open Source Table
@@ -1872,6 +1872,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
     ///////////////////////////////////\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
     tableHBase = getTableFromConnection(tableName)
     var scan = new Scan()
+    scan.setTimeRange(time_range.beginTime, time_range.endTime)
     var rs = tableHBase.getScanner(scan)
     updateOpStats("get",tableName,1)
     try {
@@ -1892,8 +1893,8 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
           var keyString: String =""
           while (iter.hasNext()) {
             var kv: KeyValue  = iter.next();
-            header += Bytes.toString(kv.getFamily()) + ":" + Bytes.toString(kv.getQualifier()) + ","
-            data += Bytes.toString(kv.getValue()) + ","
+            header += Bytes.toString(kv.getFamily()) + ":" + Bytes.toString(kv.getQualifier()) + "," //family name and column name
+            data += Bytes.toString(kv.getValue()) + ","  //data for column
             // keyString = Bytes.toString(kv.getKey)
           }
 
@@ -1918,6 +1919,56 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
     }
   }
 
+  def getAllKey(tableName: String, time_range: TimeRange, familyName: String, columnName: String, callbackFunction: (Array[Byte])): Unit= {
+    var tableHBase: Table = null
+    relogin
+    if (!admin.tableExists(TableName.valueOf(tableName))) {
+      logger.warn("The table being read doesn't exist, nothing to be done")
+      throw CreateDDLException("Failed to read from the table " + tableName + ":", new Exception("Source Table doesn't exist"))
+    }
+    tableHBase = getTableFromConnection(tableName)
+    var scan = new Scan()
+    scan.setTimeRange(time_range.beginTime, time_range.endTime)
+    //scan.addFamily(Bytes.toBytes(familyName))
+    scan.addColumn(Bytes.toBytes(familyName), Bytes.toBytes(columnName));
+    var rs = tableHBase.getScanner(scan)
+    updateOpStats("get",tableName,1)
+    try {
+      var byteCount = 0
+      var recCount = 0
+      var rr: Result = rs.next()
+      while(rr != null){
+        for(kv: KeyValue <- rr.list()){
+          val key = "key" + Bytes.toString(kv.getFamily) + ":" + Bytes.toString(kv.getQualifier)
+          val data = "value" + Bytes.toString(kv.getValue)
+          val dataArray = "++array of val++" + Bytes.toString(kv.getValueArray)
+        }
+          byteCount = byteCount + getRowSize(rr)
+          recCount = recCount + 1
+          var key: String = Bytes.toString(rr.getRow())
+          var iter = rr.list().iterator()
+          var header: String  = "Key:\t"
+          var data: String  = key + ","
+          var keyString: String =""
+          while (iter.hasNext()) {
+            var kv: KeyValue  = iter.next();
+            header += Bytes.toString(kv.getFamily()) + ":" + Bytes.toString(kv.getQualifier()) + "," //family name and column name
+            data += Bytes.toString(kv.getValue()) + ","  //data for column
+          }
+          rr = rs.next()
+      }
+      updateByteStats("get",tableName,byteCount)
+      updateObjStats("get",tableName,recCount)
+    } catch {
+      case e: Exception => {
+        externalizeExceptionEvent(e)
+        throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
+      }
+    } finally {
+      rs.close();
+      tableHBase.close()
+    }
+  }
   override def isContainerExists(containerName: String): Boolean = {
     relogin
     var tableName = toFullTableName(containerName)
