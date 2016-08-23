@@ -922,6 +922,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   override def get(containerName: String, callbackFunction: (Key, Value) => Unit): Unit = {
     var tableName = toFullTableName(containerName)
     var client = getConnection
+    println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> TABLENAME:" + tableName)
     try {
       CheckTableExists(containerName)
       var recCount = 0
@@ -961,16 +962,16 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             if (callbackFunction != null) {
               System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
               System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
-//              System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
-//              System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
+              //              System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
+              //              System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
               System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
-//              System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
-//              System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
-//              System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
-//              System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
-//              System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
-              System.out.println(ba)
-//              System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
+              //              System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
+              //              System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
+              //              System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
+              //              System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
+              //              System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
+              //              System.out.println(ba)
+              //              System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
               (callbackFunction) (key, value)
             }
           })
@@ -1049,9 +1050,11 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     var client = getConnection
     var recCount = 0
     var byteCount = 0
+    val timeToLive = "1m"
+
     // var query = "select timePartition,bucketKey,transactionId,rowId from " + tableName
 
-    val response = client
+    var response = client
       .prepareSearch(tableName)
       .setTypes("type1")
       .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId"), null)
@@ -1062,18 +1065,27 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     val results: SearchHits = response.getHits
     val hit: SearchHit = null
 
-    results.getHits.foreach((hit: SearchHit) => {
-      var timePartition = hit.getSource.get("timePartition").toString.toLong
-      var keyStr = hit.getSource.get("bucketKey").toString
-      var tId = hit.getSource.get("transactionId").toString.toLong
-      var rId = hit.getSource.get("rowId").toString.toInt
-      val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
-      var key = new Key(timePartition, bucketKey, tId, rId)
-      recCount = recCount + 1
-      byteCount = byteCount + getKeySize(key)
-      if (callbackFunction != null)
-        (callbackFunction) (key)
-    })
+    breakable {
+      while (true) {
+        results.getHits.foreach((hit: SearchHit) => {
+          var timePartition = hit.getSource.get("timePartition").toString.toLong
+          var keyStr = hit.getSource.get("bucketKey").toString
+          var tId = hit.getSource.get("transactionId").toString.toLong
+          var rId = hit.getSource.get("rowId").toString.toInt
+          val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
+          var key = new Key(timePartition, bucketKey, tId, rId)
+          recCount = recCount + 1
+          byteCount = byteCount + getKeySize(key)
+          if (callbackFunction != null)
+            (callbackFunction) (key)
+        })
+        response = client.prepareSearchScroll(response.getScrollId()).setScroll(timeToLive).execute().actionGet()
+        //Break condition: No hits are returned
+        if (response.getHits().getHits().length == 0) {
+          break
+        }
+      }
+    }
     updateByteStats("get", tableName, byteCount)
     updateObjStats("get", tableName, recCount)
 
@@ -1090,9 +1102,10 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       client = getConnection
       var recCount = 0
       var byteCount = 0
+      val timeToLive = "1m"
 
       keys.foreach(key => {
-        val response = client
+        var response = client
           .prepareSearch(tableName)
           .setTypes("type1")
           .setQuery(QueryBuilders
@@ -1109,19 +1122,28 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
         val results: SearchHits = response.getHits
         val hit: SearchHit = null
+        breakable {
+          while (true) {
+            results.getHits.foreach((hit: SearchHit) => {
+              var timePartition = hit.getSource.get("timePartition").toString.toLong
+              var keyStr = hit.getSource.get("bucketKey").toString
+              var tId = hit.getSource.get("transactionId").toString.toLong
+              var rId = hit.getSource.get("rowId").toString.toInt
+              val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
+              var key = new Key(timePartition, bucketKey, tId, rId)
+              recCount = recCount + 1
+              byteCount = byteCount + getKeySize(key)
+              if (callbackFunction != null)
+                (callbackFunction) (key)
+            })
 
-        results.getHits.foreach((hit: SearchHit) => {
-          var timePartition = hit.getSource.get("timePartition").toString.toLong
-          var keyStr = hit.getSource.get("bucketKey").toString
-          var tId = hit.getSource.get("transactionId").toString.toLong
-          var rId = hit.getSource.get("rowId").toString.toInt
-          val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
-          var key = new Key(timePartition, bucketKey, tId, rId)
-          recCount = recCount + 1
-          byteCount = byteCount + getKeySize(key)
-          if (callbackFunction != null)
-            (callbackFunction) (key)
-        })
+            response = client.prepareSearchScroll(response.getScrollId()).setScroll(timeToLive).execute().actionGet()
+            //Break condition: No hits are returned
+            if (response.getHits().getHits().length == 0) {
+              break
+            }
+          }
+        }
       })
       updateByteStats("get", tableName, byteCount)
       updateObjStats("get", tableName, recCount)
@@ -1143,6 +1165,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     var client: TransportClient = null
     var tableName = toFullTableName(containerName)
     val timeToLive = "1m"
+    println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> TABLENAME:" + tableName)
     try {
       CheckTableExists(containerName)
       client = getConnection
@@ -1185,9 +1208,9 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
                 System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
                 System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
                 System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
-//                System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
-//                System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
-                System.out.println(ba)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
+                //                System.out.println(ba)
                 (callbackFunction) (key, value)
               }
             })
@@ -1220,6 +1243,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   override def get(containerName: String, time_ranges: Array[TimeRange], callbackFunction: (Key, Value) => Unit): Unit = {
     var client: TransportClient = null
     var tableName = toFullTableName(containerName)
+    println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> TABLENAME:" + tableName)
     try {
       var recCount = 0
       var byteCount = 0
@@ -1262,16 +1286,16 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
               if (callbackFunction != null) {
                 System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
                 System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
-//                System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
-//                System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
                 System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
-//                System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
-//                System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
-//                System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
-//                System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
-//                System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
-                System.out.println(ba)
-//                System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
+                //                System.out.println(ba)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
                 (callbackFunction) (key, value)
               }
             })
@@ -1306,9 +1330,10 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     var client = getConnection
     var recCount = 0
     var byteCount = 0
+    val timeToLive = "1m"
 
     time_ranges.foreach(time_range => {
-      val response = client
+      var response = client
         .prepareSearch(tableName)
         .setTypes("type1")
         .setQuery(
@@ -1323,18 +1348,28 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       val results: SearchHits = response.getHits
       val hit: SearchHit = null
 
-      results.getHits.foreach((hit: SearchHit) => {
-        var timePartition = hit.getSource.get("timePartition").toString.toLong
-        var keyStr = hit.getSource.get("bucketKey").toString
-        var tId = hit.getSource.get("transactionId").toString.toLong
-        var rId = hit.getSource.get("rowId").toString.toInt
-        val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
-        var key = new Key(timePartition, bucketKey, tId, rId)
-        recCount = recCount + 1
-        byteCount = byteCount + getKeySize(key)
-        if (callbackFunction != null)
-          (callbackFunction) (key)
-      })
+
+      breakable {
+        while (true) {
+          results.getHits.foreach((hit: SearchHit) => {
+            var timePartition = hit.getSource.get("timePartition").toString.toLong
+            var keyStr = hit.getSource.get("bucketKey").toString
+            var tId = hit.getSource.get("transactionId").toString.toLong
+            var rId = hit.getSource.get("rowId").toString.toInt
+            val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
+            var key = new Key(timePartition, bucketKey, tId, rId)
+            recCount = recCount + 1
+            byteCount = byteCount + getKeySize(key)
+            if (callbackFunction != null)
+              (callbackFunction) (key)
+          })
+          response = client.prepareSearchScroll(response.getScrollId()).setScroll(timeToLive).execute().actionGet()
+          //Break condition: No hits are returned
+          if (response.getHits().getHits().length == 0) {
+            break
+          }
+        }
+      }
       updateByteStats("get", tableName, byteCount)
       updateObjStats("get", tableName, recCount)
       //      var query = "select timePartition,bucketKey,transactionId,rowId from " + tableName + " where timePartition >= " + time_range.beginTime + " and timePartition <= " + time_range.endTime
@@ -1346,6 +1381,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   override def get(containerName: String, time_ranges: Array[TimeRange], bucketKeys: Array[Array[String]], callbackFunction: (Key, Value) => Unit): Unit = {
     var client: TransportClient = null
     var tableName = toFullTableName(containerName)
+    println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> TABLENAME:" + tableName)
     try {
       CheckTableExists(containerName)
       //con = DriverManager.getConnection(jdbcUrl);
@@ -1363,6 +1399,9 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
               QueryBuilders.andQuery(
                 QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime),
                 QueryBuilders.rangeQuery("field2").lte(time_range.endTime)))
+            .setQuery(QueryBuilders
+              .boolQuery()
+              .must(QueryBuilders.termQuery("bucketKey", bucketKey.mkString(","))))
             .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
             .setScroll(timeToLive)
             .setSize(5)
@@ -1390,16 +1429,16 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
                 if (callbackFunction != null) {
                   System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
                   System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
-//                  System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
-//                  System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
+                  //                  System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
+                  //                  System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
                   System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
-//                  System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
-//                  System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
-//                  System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
-//                  System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
-//                  System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
-                  System.out.println(ba)
-//                  System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
+                  //                  System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
+                  //                  System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
+                  //                  System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
+                  //                  System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
+                  //                  System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
+                  //                  System.out.println(ba)
+                  //                  System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
                   (callbackFunction) (key, value)
                 }
               })
@@ -1438,10 +1477,12 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       client = getConnection
       var recCount = 0
       var byteCount = 0
+      val timeToLive = "1m"
+
 
       time_ranges.foreach(time_range => {
         bucketKeys.foreach(bucketKey => {
-          val response = client
+          var response = client
             .prepareSearch(tableName)
             .setTypes("type1")
             .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId"), null)
@@ -1456,18 +1497,27 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           val results: SearchHits = response.getHits
           val hit: SearchHit = null
 
-          results.getHits.foreach((hit: SearchHit) => {
-            val timePartition = hit.getSource.get("timePartition").toString.toLong
-            val keyStr = hit.getSource.get("bucketKey").toString
-            val tId = hit.getSource.get("transactionId").toString.toLong
-            val rId = hit.getSource.get("transactionId").toString.toInt
-            val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
-            var key = new Key(timePartition, bucketKey, tId, rId)
-            recCount = recCount + 1
-            byteCount = byteCount + getKeySize(key)
-            if (callbackFunction != null)
-              (callbackFunction) (key)
-          })
+          breakable {
+            while (true) {
+              results.getHits.foreach((hit: SearchHit) => {
+                val timePartition = hit.getSource.get("timePartition").toString.toLong
+                val keyStr = hit.getSource.get("bucketKey").toString
+                val tId = hit.getSource.get("transactionId").toString.toLong
+                val rId = hit.getSource.get("transactionId").toString.toInt
+                val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
+                var key = new Key(timePartition, bucketKey, tId, rId)
+                recCount = recCount + 1
+                byteCount = byteCount + getKeySize(key)
+                if (callbackFunction != null)
+                  (callbackFunction) (key)
+              })
+              response = client.prepareSearchScroll(response.getScrollId()).setScroll(timeToLive).execute().actionGet()
+              //Break condition: No hits are returned
+              if (response.getHits().getHits().length == 0) {
+                break
+              }
+            }
+          }
         })
       })
       updateByteStats("get", tableName, byteCount)
@@ -1486,6 +1536,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   override def get(containerName: String, bucketKeys: Array[Array[String]], callbackFunction: (Key, Value) => Unit): Unit = {
     var client: TransportClient = null
     var tableName = toFullTableName(containerName)
+    println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> TABLENAME:" + tableName)
     try {
       CheckTableExists(containerName)
       client = getConnection
@@ -1530,16 +1581,16 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
               if (callbackFunction != null) {
                 System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
                 System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
-//                System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
-//                System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
                 System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
-//                System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
-//                System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
-//                System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
-//                System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
-//                System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
-                System.out.println(ba)
-//                System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
+                //                System.out.println(ba)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
                 (callbackFunction) (key, value)
               }
             })
@@ -1576,9 +1627,10 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       client = getConnection
       var recCount = 0
       var byteCount = 0
+      val timeToLive = "1m"
 
       bucketKeys.foreach(bucketKey => {
-        val response = client
+        var response = client
           .prepareSearch(tableName)
           .setTypes("type1")
           .setQuery(QueryBuilders
@@ -1591,23 +1643,32 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
         val results: SearchHits = response.getHits
         val hit: SearchHit = null
 
-        results.getHits.foreach((hit: SearchHit) => {
-          val schemaId = hit.getSource.get("schemaId").toString.toInt
-          val st = hit.getSource.get("serializerType").toString
-          val ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
-          val value = new Value(schemaId, st, ba)
-          var timePartition = hit.getSource.get("timePartition").toString.toLong
-          var keyStr = hit.getSource.get("bucketKey").toString
-          var tId = hit.getSource.get("transactionId").toString.toLong
-          var rId = hit.getSource.get("rowId").toString.toInt
-          val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
-          var key = new Key(timePartition, bucketKey, tId, rId)
-          recCount = recCount + 1
-          byteCount = byteCount + getKeySize(key)
-          if (callbackFunction != null)
-            (callbackFunction) (key)
+        breakable {
+          while (true) {
+            results.getHits.foreach((hit: SearchHit) => {
+              val schemaId = hit.getSource.get("schemaId").toString.toInt
+              val st = hit.getSource.get("serializerType").toString
+              val ba: Array[Byte] = hit.getSource.get("serializedInfo").toString.getBytes()
+              val value = new Value(schemaId, st, ba)
+              var timePartition = hit.getSource.get("timePartition").toString.toLong
+              var keyStr = hit.getSource.get("bucketKey").toString
+              var tId = hit.getSource.get("transactionId").toString.toLong
+              var rId = hit.getSource.get("rowId").toString.toInt
+              val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
+              var key = new Key(timePartition, bucketKey, tId, rId)
+              recCount = recCount + 1
+              byteCount = byteCount + getKeySize(key)
+              if (callbackFunction != null)
+                (callbackFunction) (key)
 
-        })
+            })
+            response = client.prepareSearchScroll(response.getScrollId()).setScroll(timeToLive).execute().actionGet()
+            //Break condition: No hits are returned
+            if (response.getHits().getHits().length == 0) {
+              break
+            }
+          }
+        }
       })
       updateByteStats("get", tableName, byteCount)
       updateObjStats("get", tableName, recCount)
