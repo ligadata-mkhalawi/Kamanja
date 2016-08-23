@@ -292,6 +292,11 @@ class PythonAdapter(factory : PythonAdapterFactory
         } else {
             pySrvConn
         }
+
+        connectionMap foreach
+          ((conn) => logger.debug ("Connection map key values are " +
+            conn._1.toString + " = " + conn._2.toString))
+
         pyServerConnection
     }
 
