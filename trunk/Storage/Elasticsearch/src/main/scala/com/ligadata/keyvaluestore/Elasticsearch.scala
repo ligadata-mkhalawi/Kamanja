@@ -471,7 +471,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   // made the following function public to make it available to scala test
   // components.
   def toFullTableName(containerName: String): String = {
-    SchemaName + "." + containerName
+    (SchemaName + "." + containerName).toLowerCase()
   }
 
   // accessor used for testing
@@ -959,16 +959,18 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             recCount = recCount + 1
             byteCount = byteCount + getKeySize(key) + getValueSize(value)
             if (callbackFunction != null) {
-              System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
-              System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
+              System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
+              System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
+//              System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
+//              System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
               System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
-              System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
-              System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
-              System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
-              System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
-              System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
+//              System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
+//              System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
+//              System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
+//              System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
+//              System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
               System.out.println(ba)
-              System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
+//              System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
               (callbackFunction) (key, value)
             }
           })
@@ -1179,10 +1181,12 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
               recCount = recCount + 1
               byteCount = byteCount + getKeySize(key) + getValueSize(value)
               if (callbackFunction != null) {
+                System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
+                System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
                 System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
                 System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
-                System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
-                System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
+//                System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
+//                System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
                 System.out.println(ba)
                 (callbackFunction) (key, value)
               }
@@ -1256,16 +1260,18 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
               recCount = recCount + 1
               byteCount = byteCount + getKeySize(key) + getValueSize(value)
               if (callbackFunction != null) {
-                System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
-                System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
+                System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
+                System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
+//                System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
+//                System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
                 System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
-                System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
-                System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
-                System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
-                System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
-                System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
+//                System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
+//                System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
+//                System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
+//                System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
+//                System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
                 System.out.println(ba)
-                System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
+//                System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
                 (callbackFunction) (key, value)
               }
             })
@@ -1382,16 +1388,18 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
                 recCount = recCount + 1
                 byteCount = byteCount + getKeySize(key) + getValueSize(value)
                 if (callbackFunction != null) {
-                  System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
-                  System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
+                  System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
+                  System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
+//                  System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
+//                  System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
                   System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
-                  System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
-                  System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
-                  System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
-                  System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
-                  System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
+//                  System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
+//                  System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
+//                  System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
+//                  System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
+//                  System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
                   System.out.println(ba)
-                  System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
+//                  System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
                   (callbackFunction) (key, value)
                 }
               })
@@ -1520,16 +1528,18 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
               recCount = recCount + 1
               byteCount = byteCount + getKeySize(key)
               if (callbackFunction != null) {
-                System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
-                System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
+                System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
+                System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
+//                System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
+//                System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
                 System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
-                System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
-                System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
-                System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
-                System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
-                System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
+//                System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
+//                System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
+//                System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
+//                System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
+//                System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
                 System.out.println(ba)
-                System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
+//                System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
                 (callbackFunction) (key, value)
               }
             })
