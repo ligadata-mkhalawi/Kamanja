@@ -10,46 +10,54 @@
     </div>
     <div class="row">
       <div class="col-md-12 listItem listParent">
-        <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span> Entities (160)
+        <div class="head">
+          <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> Entities (160)
+        </div>
       </div>
     </div>
     <div class="row">
       <div class="col-md-12 listItem listParent">
-        <div ng-click="main.toggleShowList('Coloring by Cluster')">
+        <div class="head" ng-click="main.toggleShowList('Coloring by Cluster')">
           <span class="glyphicon "
-                ng-class="{'glyphicon-chevron-right': !main.showList['Coloring by Cluster'], 'glyphicon-chevron-down': main.showList['Coloring by Cluster']}"
+                ng-class="{'glyphicon-menu-right': !main.showList['Coloring by Cluster'], 'glyphicon-menu-down': main.showList['Coloring by Cluster']}"
                 aria-hidden="true"></span> Coloring by Cluster
         </div>
-        <ul class="list-group" ng-if  ="main.showList['Coloring by Cluster']">
+        <ul class="list-group" ng-if="main.showList['Coloring by Cluster']">
           <li class="list-group-item">
-            <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span> <span class="circle red" ></span> Applications (45) <span
+            <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> <span class="circle red"></span>
+            Applications (45) <span
             class="glyphicon glyphicon-eye-open" aria-hidden="true"></span></li>
           <li class="list-group-item">
-            <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span> <span class="circle green" ></span> Logs (60) <span
+            <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> <span
+            class="circle green"></span> Logs (60) <span
             class="glyphicon glyphicon-eye-open" aria-hidden="true"></span></li>
           <li class="list-group-item">
-            <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span> <span class="circle blue" ></span> People (30) <span
+            <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> <span class="circle blue"></span>
+            People (30) <span
             class="glyphicon glyphicon-eye-open" aria-hidden="true"></span></li>
           <li class="list-group-item">
-            <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span> <span class="circle lightBlue" ></span> Countries (5) <span
+            <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> <span
+            class="circle lightBlue"></span> Countries (5) <span
             class="glyphicon glyphicon-eye-open" aria-hidden="true"></span></li>
           <li class="list-group-item">
-            <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span> <span class="circle purple" ></span> Organizations (15) <span
+            <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> <span
+            class="circle purple"></span> Organizations (15) <span
             class="glyphicon glyphicon-eye-open" aria-hidden="true"></span></li>
           <li class="list-group-item">
-            <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span> <span class="circle yellow" ></span> Alerts (5) <span
+            <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> <span
+            class="circle yellow"></span> Alerts (5) <span
             class="glyphicon glyphicon-eye-open" aria-hidden="true"></span></li>
         </ul>
       </div>
     </div>
     <div class="row">
       <div class="col-md-12 listItem listParent">
-        <div ng-click="main.toggleShowList('Relationships')">
+        <div class="head" ng-click="main.toggleShowList('Relationships')">
           <span class="glyphicon "
-                ng-class="{'glyphicon-chevron-right': !main.showList['Relationships'], 'glyphicon-chevron-down': main.showList['Relationships']}"
+                ng-class="{'glyphicon-menu-right': !main.showList['Relationships'], 'glyphicon-menu-down': main.showList['Relationships']}"
                 aria-hidden="true"></span> Relationships (800)
         </div>
-        <ul class="list-group" ng-if  ="main.showList['Relationships']">
+        <ul class="list-group" ng-if="main.showList['Relationships']">
           <li class="list-group-item">
             Accesses (100) <span
             class="glyphicon glyphicon-eye-open" aria-hidden="true"></span></li>
@@ -80,8 +88,10 @@
 
     <div class="row">
       <div class="col-md-12 listItem listParent">
-        <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span> Groups (0) <span
-        class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
+        <div class="head">
+          <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> Groups (0) <span
+          class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
+        </div>
       </div>
     </div>
   </div>
