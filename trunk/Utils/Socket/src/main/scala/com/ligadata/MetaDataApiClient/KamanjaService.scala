@@ -21,10 +21,11 @@ object KamanjaService {
 
 
   def main(args : Array[String]) : Unit = {
- val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
-        val filePath = new File("/opt/KAM/Kamanja-1.5.3_2.11/config/ClusterConfig.json")
+    println("--------------------------") 
+val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+        val filePath = "/opt/KAM/Kamanja-1.5.3_2.11/config/MetadataAPIConfig.properties"
         val config = Source.fromFile(filePath).mkString
-	getMetadataAPI.InitMdMgrFromBootStrap(config, false)
+	getMetadataAPI.InitMdMgrFromBootStrap(filePath, false)
 	val mdMgr = GetMdMgr
 	val tenatInfo = mdMgr.GetAllTenantInfos
     println("--------------------------")
