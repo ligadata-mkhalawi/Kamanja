@@ -32,7 +32,12 @@ case class StorageConfiguration(storeType: StoreType,
       builder.append(s""""Name": "$name",""" + "\n")
     }
     storeType match {
-      case s @ H2DBStore => builder.append(s""""connectionMode": "${s.connectionMode}",""" + "\n")
+      case s @ H2DBStore => {
+        builder.append(s""""connectionMode": "${s.connectionMode}",""" + "\n")
+        builder.append(s""""portnumber": "9100",""" + "\n")
+        builder.append(s""""user": "test",""" + "\n")
+        builder.append(s""""password": "test",""" + "\n")
+      }
     }
 
     if(typeString != "" && typeString != null) {

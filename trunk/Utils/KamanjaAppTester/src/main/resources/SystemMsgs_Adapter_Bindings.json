@@ -1,0 +1,31 @@
+[
+  {
+    "AdapterName": "TestStatus_1",
+    "MessageNames": [
+      "com.ligadata.KamanjaBase.KamanjaStatusEvent"
+    ],
+    "Serializer": "com.ligadata.kamanja.serializer.csvserdeser",
+    "Options": {
+      "alwaysQuoteFields": false,
+      "fieldDelimiter": ","
+    }
+  },
+  {
+    "AdapterName": "TestFailedEvents_1",
+    "MessageNames": [
+      "com.ligadata.KamanjaBase.KamanjaExecutionFailureEvent"
+    ],
+    "Serializer": "com.ligadata.kamanja.serializer.jsonserdeser",
+    "Options": {
+    }
+  },
+  {
+    "AdapterName": "TestMessageEvents_1",
+    "MessageNames": [
+      "com.ligadata.KamanjaBase.KamanjaMessageEvent"
+    ],
+    "Serializer": "com.ligadata.kamanja.serializer.jsonserdeser",
+    "Options": {
+    }
+  }
+]

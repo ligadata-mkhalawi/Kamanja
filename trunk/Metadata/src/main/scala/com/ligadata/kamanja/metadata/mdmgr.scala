@@ -3426,7 +3426,7 @@ class MdMgr {
       * @return the corresponding SerializeDeserializeConfig or null if not found
       */
     def GetSerializer(fullName : String) : SerializeDeserializeConfig = {
-        serializers.getOrElse(fullName.toLowerCase,null)
+      serializers.getOrElse(fullName,null)
     }
 
     /**

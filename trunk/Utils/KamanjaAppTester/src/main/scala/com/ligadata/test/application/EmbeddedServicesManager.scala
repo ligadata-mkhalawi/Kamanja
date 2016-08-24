@@ -38,17 +38,23 @@ object EmbeddedServicesManager {
       val mdMan = new MetadataManager
 
       mdMan.setSSLPassword("")
-      mdMan.initMetadataCfg(new MetadataAPIProperties(H2DBStore.name, H2DBStore.connectionMode, storageDir, zkConnStr = embeddedZookeeper.getConnection, classPath = classPath, systemJarPath = s"$kamanjaInstallDir/lib/system", appJarPath = s"$kamanjaInstallDir/lib/application"))
+      mdMan.initMetadataCfg(new MetadataAPIProperties(H2DBStore.name, H2DBStore.connectionMode, storageDir, "kamanja", classPath, zkConnStr = embeddedZookeeper.getConnection, systemJarPath = s"$kamanjaInstallDir/lib/system", appJarPath = s"$kamanjaInstallDir/lib/application"))
 
-      val result = mdMan.addConfig(clusterConfig)
-      if (result != 0) {
-        println("[Kamanja Application Tester] - ***ERROR*** Attempted to upload cluster configuration but failed\n\t")
+      println(s"Cluster Config:\n$clusterConfig")
+
+      val addConfigResult = mdMan.addConfig(clusterConfig)
+
+      if (addConfigResult != 0) {
+        println("[Kamanja Application Tester] ---> ***ERROR*** Attempted to upload cluster configuration but failed")
         return false
       }
+
+      val addSystemBindingsResult = mdMan.addBindings(this.getClass.getResource("/SystemMsgs_Adapter_Bindings.json").getPath)
+
       return zkStartCode && kafkaStartCode && startKamanja
     }
     catch {
-      case e:Exception => throw new Exception("[Kamanja Application Tester] - ***ERROR*** Failed to start services", e)
+      case e:Exception => throw new Exception("[Kamanja Application Tester] ---> ***ERROR*** Failed to start services", e)
     }
   }
 
@@ -70,19 +76,20 @@ object EmbeddedServicesManager {
 
     zkClient = new ZookeeperClient(embeddedZookeeper.getConnection)
     try {
-      println("[Kamanja Application Tester] - Starting Kamanja...")
+      println("[Kamanja Application Tester] ---> Starting Kamanja...")
       val startCode = embeddedKamanjaManager.startup(kamanjaConfigFile, clusterConfig.zookeeperConfig, zkClient)
       if (startCode != 0) {
-        println("[Kamanja Application Tester] - ***ERROR*** Failed to start Kamanja")
+        println("[Kamanja Application Tester] ---> ***ERROR*** Failed to start Kamanja")
+        return false
       }
       else {
-        println("[Kamanja Application Tester] - Kamanja started")
+        println("[Kamanja Application Tester] ---> Kamanja started")
       }
       return true
     }
     catch {
       case e: Exception => {
-        println("[Kamanja Application Tester] - ***ERROR*** Failed to start Kamanja\nCause: " + e)
+        println("[Kamanja Application Tester] ---> ***ERROR*** Failed to start Kamanja\nCause: " + e)
         return false
       }
     }
@@ -90,20 +97,20 @@ object EmbeddedServicesManager {
 
   private def stopKamanja: Boolean = {
     try {
-      println("[Kamanja Application Tester] - Stopping Kamanja...")
+      println("[Kamanja Application Tester] ---> Stopping Kamanja...")
       val shutdownCode = embeddedKamanjaManager.shutdown(clusterConfig.zookeeperConfig, zkClient)
       if(shutdownCode != 0){
-        println("[Kamanja Application Tester] - ***ERROR*** Failed to stop Kamanja. Return code: " + shutdownCode)
+        println("[Kamanja Application Tester] ---> ***ERROR*** Failed to stop Kamanja. Return code: " + shutdownCode)
         return false
       }
       else {
-        println("[Kamanja Application Tester] - Kamanja stopped")
+        println("[Kamanja Application Tester] ---> Kamanja stopped")
         return true
       }
     }
     catch {
       case e: Exception => {
-        println("[Kamanja Application Tester] - ***ERROR*** Failed to stop Kamanja\nCause: " + e)
+        println("[Kamanja Application Tester] ---> ***ERROR*** Failed to stop Kamanja\nCause: " + e)
         return false
       }
     }
@@ -112,14 +119,14 @@ object EmbeddedServicesManager {
   private def startZookeeper: Boolean = {
     embeddedZookeeper = new EmbeddedZookeeper
     try {
-      println("[Kamanja Application Tester] - Starting Zookeeper...")
+      println("[Kamanja Application Tester] ---> Starting Zookeeper...")
       embeddedZookeeper.startup
-      println("[Kamanja Application Tester] - Zookeeper started")
+      println("[Kamanja Application Tester] ---> Zookeeper started")
       return true
     }
     catch {
       case e: Exception => {
-        println("[Kamanja Application Tester] - ***ERROR*** Failed to start Zookeeper\nCause: " + e)
+        println("[Kamanja Application Tester] ---> ***ERROR*** Failed to start Zookeeper\nCause: " + e)
         return false
       }
     }
@@ -127,14 +134,14 @@ object EmbeddedServicesManager {
 
   private def stopZookeeper: Boolean = {
     try {
-      println("[Kamanja Application Tester] - Stopping Zookeeper...")
+      println("[Kamanja Application Tester] ---> Stopping Zookeeper...")
       embeddedZookeeper.shutdown
-      println("[Kamanja Application Tester] - Zookeeper stopped")
+      println("[Kamanja Application Tester] ---> Zookeeper stopped")
       return true
     }
     catch {
       case e: Exception => {
-        println("[Kamanja Application Tester - ***ERROR* Failed to stop Zookeeper\nCause: " + e)
+        println("[Kamanja Application Tester] ---> ***ERROR* Failed to stop Zookeeper\nCause: " + e)
         return false
       }
     }
@@ -142,16 +149,16 @@ object EmbeddedServicesManager {
 
   private def startKafka: Boolean = {
     try {
-      println("[Kamanja Application Tester] - Starting Kafka...")
+      println("[Kamanja Application Tester] ---> Starting Kafka...")
       kafkaCluster = new EmbeddedKafkaCluster().
         withBroker(new KafkaBroker(1, embeddedZookeeper.getConnection))
       kafkaCluster.startCluster
-      println("[Kamanja Application Tester] - Kafka started")
+      println("[Kamanja Application Tester] ---> Kafka started")
       return true
     }
     catch {
       case e: Exception => {
-        println("[Kamanja Application Tester] - ***ERROR*** Failed to start Kafka\nCause: " + e)
+        println("[Kamanja Application Tester] ---> ***ERROR*** Failed to start Kafka\nCause: " + e)
         return false
       }
     }
@@ -159,14 +166,14 @@ object EmbeddedServicesManager {
 
   private def stopKafka: Boolean = {
     try {
-      println("[Kamanja Application Tester] - Stopping Kafka...")
+      println("[Kamanja Application Tester] ---> Stopping Kafka...")
       kafkaCluster.stopCluster
-      println("[Kamanja Application Tester] - Kafka stopped")
+      println("[Kamanja Application Tester] ---> Kafka stopped")
       return true
     }
     catch {
       case e: Exception => {
-        println("[Kamanja Application Tester] - ***ERROR*** Failed to stop Kafka\nCause: " + e)
+        println("[Kamanja Application Tester] ---> ***ERROR*** Failed to stop Kafka\nCause: " + e)
         return false
       }
     }
@@ -234,6 +241,8 @@ object EmbeddedServicesManager {
       .withClassPath(classPath)
       .build
 
+    val envContext = new EnvironmentContextConfig()
+
     val cluster = new ClusterBuilder()
       .withId("testcluster")
       .withAdapter(inputAdapter)
@@ -241,7 +250,7 @@ object EmbeddedServicesManager {
       .withAdapter(statusAdapter)
       .withAdapter(exceptionAdapter)
       .withAdapter(messageEventAdapter)
-      .withEnvContext(new EnvironmentContextConfig)
+      .withEnvContext(envContext)
       .withNode(node1)
       .withSystemCatalog(clusterDataStore)
       .withClusterCacheConfig(new ClusterCacheConfig())

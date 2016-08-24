@@ -61,7 +61,6 @@ class TestModelConfigToJsonSpec extends FunSpec with LocalTestFixtures with Befo
   private val logger = LogManager.getLogger(loggerName)
 
   private def TruncateDbStore = {
-    println("1")
     val db = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
     println("DB: " + db.toString)
     assert(null != db, "DBStore is null")

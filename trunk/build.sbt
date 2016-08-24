@@ -264,6 +264,8 @@ lazy val KamanjaAppTester = project.in(file("Utils/KamanjaAppTester"))
   .settings(version <<= version in ThisBuild)
   .settings(
     parallelExecution in Test := false,
+    parallelExecution in testOnly := false,
+    testOnly <<= (testOnly in Test).dependsOn(assembleDependencies),
     test <<= (test in Test).dependsOn(assembleDependencies)
   )
   .dependsOn(KamanjaManager % "compile->test", MetadataAPI % "compile->test", KamanjaTestUtils, KafkaAdapters_v10 % "compile->test", ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided")

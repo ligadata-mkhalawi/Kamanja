@@ -66,8 +66,12 @@ class KafkaAdapterBuilder {
   private var fieldDelimiter: String = _
   private var valueDelimiter: String = _
   private var className: String = _
-  private var jarName: String = s"KamanjaInternalDeps_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar"
-  private var dependencyJars: List[String] = List(s"ExtDependencyLibs_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar", s"ExtDependencyLibs2_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar")
+  private var jarName: String = s"kamanjakafkaadapters_0_10_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar"
+  private var dependencyJars: List[String] =
+    List(s"kafka-clients-0.10.0.0.jar",
+      s"KamanjaInternalDeps_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
+      s"ExtDependencyLibs_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
+      s"ExtDependencyLibs2_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar")
   private var adapterSpecificConfig: KafkaAdapterSpecificConfig = _
   private var tenantId: String = _
 
@@ -80,7 +84,7 @@ class KafkaAdapterBuilder {
     this.adapterType = adapterType
     // If the classname hasn't already been set, it should default to one of two classes based on the adapterType given.
     if(className == "" || className == null) {
-      className = if (adapterType.name.toLowerCase == "input") "com.ligadata.InputAdapters.KamanjaKafkaConsumer$" else "com.ligadata.OutputAdapters.KafkaProducer$"
+      className = if (adapterType.name.toLowerCase == "input") "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$" else "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$"
     }
     this
   }
