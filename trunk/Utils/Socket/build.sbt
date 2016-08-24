@@ -60,7 +60,7 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
 
 name := "Socket"
 
-version := "1.5.6"
+version := "1.5.3"
 
 //resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 //
