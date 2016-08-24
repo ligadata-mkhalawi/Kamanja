@@ -4,8 +4,8 @@
   </div>
   <div class="col-md-2 sideBar" ng-if="main.showSideBar">
     <div class="row">
-      <div class="col-md-12 listItem">
-        Labels <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
+      <div class="col-md-12 listItem" ng-click="main.toggleShowList('Labels')">
+        Labels <span class="glyphicon glyphicon-eye-open" aria-hidden="true" ng-class="{'hideEye':!main.showList['Labels']}"></span>
       </div>
     </div>
     <div class="row">
@@ -23,10 +23,10 @@
                 aria-hidden="true"></span> Coloring by Cluster
         </div>
         <ul class="list-group" ng-if="main.showList['Coloring by Cluster']">
-          <li class="list-group-item">
-            <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> <span class="circle red"></span>
+          <li class="list-group-item" ng-click="main.toggleShowList('Applications')" >
+            <span class="glyphicon glyphicon-menu-right" aria-hidden="true" ></span> <span class="circle red"></span>
             Applications (45) <span
-            class="glyphicon glyphicon-eye-open" aria-hidden="true"></span></li>
+            class="glyphicon glyphicon-eye-open" aria-hidden="true"  ng-class="{'hideEye':!main.showList['Applications']}"></span></li>
           <li class="list-group-item">
             <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> <span
             class="circle green"></span> Logs (60) <span

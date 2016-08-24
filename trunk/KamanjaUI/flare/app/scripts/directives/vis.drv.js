@@ -3,8 +3,8 @@
 
 angular
   .module('flareApp')
-  .directive('vis', [
-    function () {
+  .directive('vis', ['$rootScope',
+    function ($rootScope) {
       return {
         restrict: 'E',
         scope: {},
@@ -161,7 +161,7 @@ angular
 
           network.on('afterDrawing', function (ctx) {
             nodes.forEach(function (d) {
-              if (d.hidden) {
+              if (d.hidden || !$rootScope.showOptions['Labels']) {
                 return;
               }
               var position = network.getPositions(d.id)[d.id];
@@ -170,6 +170,17 @@ angular
               ctx.fillStyle = '#ffffff';
               ctx.fillText(d._label, (position.x + -10), (position.y + -2));
             });
+          });
+
+          $rootScope.$on('labelsToggled', function () {
+            network.redraw();
+          });
+          $rootScope.$on('applicationsToggled', function () {
+            options.groups['EmailAppsCluster'].hidden = $rootScope.showOptions['Applications'];
+            var opts = angular.copy(options);
+            console.log(opts.groups['EmailAppsCluster']);
+            network.setOptions(opts);
+            network.redraw();
           });
         }
       }

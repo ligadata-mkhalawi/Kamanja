@@ -45,6 +45,7 @@ p {
     .listItem {
       color: #949494;
       padding: 10px 15px;
+      cursor: pointer;
       &.listParent{
         background-color: #121212;
         padding-left:0;
@@ -62,6 +63,17 @@ p {
         background-color: inherit;
         border:0;
         padding-left:0;
+      }
+      .glyphicon{
+        &.hideEye:after{
+          content:'-';
+          position: absolute;
+          font-size:45px;
+          color:black;
+          line-height:0px;
+          left: -1px;
+          top:-5px;
+        }
       }
     }
 
