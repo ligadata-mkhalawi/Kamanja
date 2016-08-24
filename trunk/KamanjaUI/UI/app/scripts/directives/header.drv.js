@@ -77,7 +77,8 @@ angular.module('networkApp')
         };
 
         header.onSearchSelectChange = function($item, $model, $label, $event){
-          console.log($item);
+          $rootScope.$broadcast('filterNodesChanged',
+            {filterList: this.filterList, searchText: $item.name});
         };
 
         header.init = function(){
