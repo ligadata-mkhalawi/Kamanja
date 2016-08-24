@@ -23,7 +23,7 @@ import scala.collection.mutable.ArrayBuffer
 case class HbaseExceptionInfo (Last_Failure: String, Last_Recovery: String)
 
 object KamanjaHbaseConsumer  extends InputAdapterFactory {
-  val INITIAL_SLEEP = 500
+  val INITIAL_SLEEP = 1000
   val MAX_SLEEP = 30000
   val POLLING_INTERVAL = 100
 
@@ -67,9 +67,8 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   var dataStore = hbaseutil.GetDataStoreHandle(dataStoreInfo).asInstanceOf[HBaseAdapter]
   //dataStore.setDefaultSerializerDeserializer("com.ligadata.kamanja.serializer.kbinaryserdeser", scala.collection.immutable.Map[String, Any]())
 
-  override def StartProcessing(partitionIds: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = {  //////create all code hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+  override def StartProcessing(partitionIds: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = {  //start processing from here
     isShutdown = false
-    var maxPartNumber = -1
     _ignoreFirstMsg = ignoreFirstMsg
     var lastHb: Long = 0
     startHeartBeat = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
@@ -122,45 +121,44 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
 
 
     currentNodePartitions.foreach(partitionid => {
-      val initialTimestamp = myPartitionInfoMap(partitionid)._1
+      var initialTimestamp = myPartitionInfoMap(partitionid)._1
 
       readExecutor.execute(new Runnable() {
         var intSleepTimer = KamanjaHbaseConsumer.INITIAL_SLEEP
 
         var execContexts: ExecContext = null
         var uniqueKey = new HbasePartitionUniqueRecordKey
-        //////////////////////// var topicPartitions: Array[org.apache.kafka.common.TopicPartition] = new Array[org.apache.kafka.common.TopicPartition](maxPartNumber + 1)
-        //      var initialOffsets: Array[Long] = new Array[Long](maxPartNumber + 1)
-        //      var ignoreUntilOffsets: Array[Long] = new Array[Long](maxPartNumber + 1)
-
         // Create a new EngineMessage and call the engine.
         if (execContexts == null) {
           execContexts = execCtxtObj.CreateExecContext(input, uniqueKey, nodeContext)
         }
 
         var timerange: TimeRange = _
-
         override def run(): Unit = {
           var readTmMs = System.currentTimeMillis
+          var currentTimestamp = initialTimestamp
           var isRecordSentToKamanja = false
           val uniqueVal = new HbasePartitionUniqueRecordValue
-          while ( /*!isRecordSentToKamanja &&*/ !isQuiese) {
+          while (!isQuiese) {
             val retrievedata = (data: Array[Byte]) => {
               readTmMs = System.currentTimeMillis
               if (data != null) {
                 val uniqueVal = new HbasePartitionUniqueRecordValue
-                uniqueVal.TimeStamp = readTmMs
+                uniqueVal.TimeStamp = currentTimestamp
                 uniqueVal.TableName = adapterConfig.TableName
-                uniqueVal.Key = new String(data).substring(0, new String(data).indexOf(',')).toInt
+                uniqueVal.Key = 1
                 msgCount += 1
                 execContexts.execute(data, uniqueKey, uniqueVal, readTmMs)
               }
             }
             endTimeStamp = System.currentTimeMillis
             val fulltablename = adapterConfig.scehmaName + ":" + adapterConfig.TableName
-            timerange = TimeRange(initialTimestamp+1, endTimeStamp) ///filter data based on time range
-            dataStore.getAllRecords(fulltablename, timerange, retrievedata)
-            Thread.sleep(1000)
+            timerange = TimeRange(currentTimestamp+1, endTimeStamp) ///filter data based on time range
+         //   val keyArray = dataStore.getAllKey(fulltablename, timerange)
+         //   val keyArrayPart = Splitter(keyArray,currentNodePartitions.size,partitionid)
+            dataStore.getAllRecords(fulltablename, timerange, /*keyArrayPart, */retrievedata)
+            currentTimestamp = endTimeStamp
+            Thread.sleep(intSleepTimer)
           }
         }
       })
@@ -250,6 +248,23 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
       infoBuffer.append(newkey)
     }
     infoBuffer.toArray
+  }
+
+   def Splitter(keyArray: Array[String], partitionCount: Int ,partitionNumber: Int): Array[String] ={
+    val keyArrayLeng = keyArray.length
+    var count: Int = 0
+    var numberOfItem: Int = math.ceil(keyArrayLeng/partitionCount).toInt
+     if (numberOfItem == 0)
+       numberOfItem = keyArrayLeng
+    for(i <- 0 until keyArrayLeng - numberOfItem + 1 by numberOfItem){
+      count+= 1
+      if(count != partitionCount){
+        return keyArray.slice(i , i+numberOfItem)
+      } else{
+        return  keyArray.slice(i , keyArrayLeng - 1)
+      }
+    }
+     return null
   }
 
   private def getSleepTimer() : Int = {

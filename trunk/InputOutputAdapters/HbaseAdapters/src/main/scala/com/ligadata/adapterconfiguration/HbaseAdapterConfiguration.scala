@@ -104,11 +104,11 @@ object HbaseAdapterConfiguration {
       if (adapterConfig.TableName == null || adapterConfig.TableName.size == 0)
         throw new KamanjaException("tableName should be specified for Hbase Producer: " + adapterConfig.Name, null)
 
-      if (adapterConfig.columnName == null || adapterConfig.columnName.size == 0)
-        throw new KamanjaException("columnName should be specified for Hbase Producer: " + adapterConfig.Name, null)
-
-      if (adapterConfig.familyName == null || adapterConfig.familyName.size == 0)
-        throw new KamanjaException("familyName should be specified for Hbase Producer: " + adapterConfig.Name, null)
+//      if (adapterConfig.columnName == null || adapterConfig.columnName.size == 0)
+//        throw new KamanjaException("columnName should be specified for Hbase Producer: " + adapterConfig.Name, null)
+//
+//      if (adapterConfig.familyName == null || adapterConfig.familyName.size == 0)
+//        throw new KamanjaException("familyName should be specified for Hbase Producer: " + adapterConfig.Name, null)
     }
 
     adapterConfig
@@ -155,7 +155,7 @@ class HbasePartitionUniqueRecordValue extends PartitionUniqueRecordValue {
     val json =
       ("Version" -> Version) ~
         ("Key" -> Key) ~
-        ("TableName" -> TableName)
+        ("TableName" -> TableName)~
         ("TimeStamp" -> TimeStamp)
     compact(render(json))
   }
