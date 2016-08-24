@@ -11,6 +11,7 @@ import org.quartz.{JobExecutionContext, Job}
 import org.quartz.impl.{StdSchedulerFactory, JobDetailImpl}
 import scala.collection.JavaConversions._
 import java.util.{Map => JMap}
+import java.util.{List => JList}
 import org.json4s.native.JsonMethods._
 
 /**
@@ -18,7 +19,7 @@ import org.json4s.native.JsonMethods._
   */
 
 object KamanjaSchedulerImp {
-  val DEFAULT_GROUP = "DEFAULT"
+  val DEFAULT_GROUP = "com.ligadata.scheduler.default"
   val CALLBACK = "callback"
   val PAYLOAD = "payload"
 
@@ -38,6 +39,7 @@ class KamanjaSchedulerImp extends KamanjaScheduler {
 
     val job = new JobDetailImpl
     job.setName(jsonjob.name)
+    job.setGroup(getGroup(jsonjob.jobname))
     job.setJobClass(classOf[SchedulerJob])
     job.getJobDataMap.put(KamanjaSchedulerImp.CALLBACK, callback)
     job.getJobDataMap.put(KamanjaSchedulerImp.PAYLOAD, jsonjob.payload)
@@ -53,7 +55,7 @@ class KamanjaSchedulerImp extends KamanjaScheduler {
 
     val trigger = createTrigger(jsonjob)
 
-    scheduler.getJobKeys(GroupMatcher.jobGroupEquals(KamanjaSchedulerImp.DEFAULT_GROUP)).toList
+    scheduler.getJobKeys(GroupMatcher.jobGroupEquals(getGroup(jsonjob.jobname))).toList
       .filter(jobKey => jobKey.getName.equals(jsonjob.name))
       .foreach(jobKey => {
         scheduler.rescheduleJob(scheduler.getTriggersOfJob(jobKey).get(0).getKey, trigger)
@@ -61,23 +63,21 @@ class KamanjaSchedulerImp extends KamanjaScheduler {
       )
   }
 
-  override def remove(jobName: String) = {
-    scheduler.getJobKeys(GroupMatcher.jobGroupEquals(KamanjaSchedulerImp.DEFAULT_GROUP)).toList
+  override def remove(jobName: String, groupName: String) = {
+    scheduler.getJobKeys(GroupMatcher.jobGroupEquals(groupName)).toList
       .filter(jobKey => jobKey.getName.equals(jobName))
       .foreach(scheduler.deleteJob(_))
   }
 
 
-  override def getAll(): JMap[String, String] = {
-    val map = (for {
-      jobKey <- scheduler.getJobKeys(GroupMatcher.jobGroupEquals(KamanjaSchedulerImp.DEFAULT_GROUP))
-      jobName = jobKey.getName()
-      jobGroup = jobKey.getGroup()
-      //get job's trigger
-      triggers = scheduler.getTriggersOfJob(jobKey)
-      nextFireTime = triggers.get(0).getNextFireTime()
-
-    } yield (jobName -> nextFireTime.toString)).toMap
+  override def getAll(): JMap[String, AnyRef] = {
+    val map: Map[String, AnyRef] = (for {
+      groupName <- scheduler.getJobGroupNames
+      list = (for {
+        jobKey <- scheduler.getJobKeys(GroupMatcher.jobGroupEquals(groupName))
+        jobName = jobKey.getName()
+      } yield jobName).toList
+    } yield (groupName -> list)).toMap
 
     map
   }
@@ -86,7 +86,7 @@ class KamanjaSchedulerImp extends KamanjaScheduler {
     scheduler.shutdown()
   }
 
-  case class JsonJob(name: String, startTime: String, endTime: String, cronJobPattern: String, payload: Array[String])
+  case class JsonJob(name: String, startTime: String, endTime: String, cronJobPattern: String, payload: Array[String], jobname: Option[String])
 
   private def parseJson(json: String): JsonJob = {
     implicit val formats = DefaultFormats
@@ -105,6 +105,10 @@ class KamanjaSchedulerImp extends KamanjaScheduler {
     trigger
   }
 
+  private def getGroup(jsonjob: Option[String]): String = jsonjob match {
+    case None => KamanjaSchedulerImp.DEFAULT_GROUP
+    case Some(i) => Some(i).get.toString
+  }
 }
 
 class SchedulerJob extends Job {

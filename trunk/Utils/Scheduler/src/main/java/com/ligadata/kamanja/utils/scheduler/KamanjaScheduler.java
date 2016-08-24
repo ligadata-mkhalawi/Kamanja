@@ -1,5 +1,6 @@
 package com.ligadata.kamanja.utils.scheduler;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -8,11 +9,11 @@ import java.util.Map;
 public interface KamanjaScheduler {
     void add(String name, SchedulerCallback callback);
 
-    void remove(String jobName);
+    void remove(String jobName, String groupName);
 
     void update(String jobName);
 
-    Map<String, String> getAll();
+    Map<String, Object> getAll();
 
     void shutdown();
 

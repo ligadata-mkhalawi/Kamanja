@@ -16,7 +16,8 @@ object Test {
               "startTime":"2016-08-22 6:00:00",
               "endTime":"2017-08-23 6:30:00",
               "cronJobPattern":"0/5 * * * * ?",
-              "payload": ["a", "b", "c"]
+              "payload": ["a", "b", "c"],
+              "jobname": "com.ligadata.adapter1job"
               }""", new CallBack)
     sch.add(
       """{
@@ -24,7 +25,8 @@ object Test {
               "startTime":"2016-08-22 6:00:00",
               "endTime":"2017-08-23 6:30:00",
               "cronJobPattern":"0/5 * * * * ?",
-              "payload": ["e", "f", "g"]
+              "payload": ["e", "f", "g"],
+              "jobname": "com.ligadata.adapter1job"
               }""", new CallBack)
 
     sch.getAll().foreach(println(_))
@@ -35,16 +37,29 @@ object Test {
               "startTime":"2016-08-22 6:00:00",
               "endTime":"2017-08-23 6:30:00",
               "cronJobPattern":"0/5 * * * * ?",
+              "payload": ["q", "w", "e"],
+              "jobname": "com.ligadata.adapter1job"
+              }""", new CallBack)
+
+
+    sch.add(
+      """{
+              "name":"test4",
+              "startTime":"2016-08-22 6:00:00",
+              "endTime":"2017-08-23 6:30:00",
+              "cronJobPattern":"0/5 * * * * ?",
               "payload": ["q", "w", "e"]
               }""", new CallBack)
 
-    sch.remove("test1")
+
+    sch.remove("test1", "com.ligadata.adapter1job")
     sch.update(
       """{
               "name":"test2",
               "startTime":"2016-08-22 6:00:00",
               "endTime":"2017-08-23 6:30:00",
-              "cronJobPattern":"0/1 * * * * ?"
+              "cronJobPattern":"0/1 * * * * ?",
+              "jobname": "com.ligadata.adapter1job"
               }""")
 
     sch.getAll().foreach(println(_))
