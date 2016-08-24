@@ -922,7 +922,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   override def get(containerName: String, callbackFunction: (Key, Value) => Unit): Unit = {
     var tableName = toFullTableName(containerName)
     var client = getConnection
-    println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> TABLENAME:" + tableName)
+    //    println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> TABLENAME:" + tableName)
     try {
       CheckTableExists(containerName)
       var recCount = 0
@@ -960,11 +960,11 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             recCount = recCount + 1
             byteCount = byteCount + getKeySize(key) + getValueSize(value)
             if (callbackFunction != null) {
-              System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
-              System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
+              //              System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
+              //              System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
               //              System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
               //              System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
-              System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
+              //              System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
               //              System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
               //              System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
               //              System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
@@ -1165,7 +1165,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     var client: TransportClient = null
     var tableName = toFullTableName(containerName)
     val timeToLive = "1m"
-    println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> TABLENAME:" + tableName)
+    //    println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> TABLENAME:" + tableName)
     try {
       CheckTableExists(containerName)
       client = getConnection
@@ -1204,10 +1204,10 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
               recCount = recCount + 1
               byteCount = byteCount + getKeySize(key) + getValueSize(value)
               if (callbackFunction != null) {
-                System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
-                System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
-                System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
-                System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
                 //                System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
                 //                System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
                 //                System.out.println(ba)
@@ -1243,7 +1243,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   override def get(containerName: String, time_ranges: Array[TimeRange], callbackFunction: (Key, Value) => Unit): Unit = {
     var client: TransportClient = null
     var tableName = toFullTableName(containerName)
-    println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> TABLENAME:" + tableName)
+    //    println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> TABLENAME:" + tableName)
     try {
       var recCount = 0
       var byteCount = 0
@@ -1284,11 +1284,11 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
               recCount = recCount + 1
               byteCount = byteCount + getKeySize(key) + getValueSize(value)
               if (callbackFunction != null) {
-                System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
-                System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
                 //                System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
                 //                System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
-                System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
                 //                System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
                 //                System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
                 //                System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
@@ -1381,7 +1381,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   override def get(containerName: String, time_ranges: Array[TimeRange], bucketKeys: Array[Array[String]], callbackFunction: (Key, Value) => Unit): Unit = {
     var client: TransportClient = null
     var tableName = toFullTableName(containerName)
-    println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> TABLENAME:" + tableName)
+    //    println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> TABLENAME:" + tableName)
     try {
       CheckTableExists(containerName)
       //con = DriverManager.getConnection(jdbcUrl);
@@ -1427,11 +1427,11 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
                 recCount = recCount + 1
                 byteCount = byteCount + getKeySize(key) + getValueSize(value)
                 if (callbackFunction != null) {
-                  System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
-                  System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
+                  //                  System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
+                  //                  System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
                   //                  System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
                   //                  System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
-                  System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
+                  //                  System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
                   //                  System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
                   //                  System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
                   //                  System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
@@ -1536,7 +1536,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   override def get(containerName: String, bucketKeys: Array[Array[String]], callbackFunction: (Key, Value) => Unit): Unit = {
     var client: TransportClient = null
     var tableName = toFullTableName(containerName)
-    println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> TABLENAME:" + tableName)
+    //    println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> TABLENAME:" + tableName)
     try {
       CheckTableExists(containerName)
       client = getConnection
@@ -1579,11 +1579,11 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
               recCount = recCount + 1
               byteCount = byteCount + getKeySize(key)
               if (callbackFunction != null) {
-                System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
-                System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
                 //                System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
                 //                System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
-                System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
+                //                System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
                 //                System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
                 //                System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
                 //                System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
