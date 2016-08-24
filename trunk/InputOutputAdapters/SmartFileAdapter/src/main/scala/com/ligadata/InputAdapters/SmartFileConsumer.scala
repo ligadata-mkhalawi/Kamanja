@@ -768,9 +768,16 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
                 //there are files that need to process
 
-                envContext.setListenerCacheKey(fileToProcessKeyPath, data)
                 val newProcessingItem = requestingNodeId + "/" + requestingThreadId + ":" + fileToProcessFullPath
                 addToProcessingQueue(newProcessingItem)
+
+                try {
+                  envContext.setListenerCacheKey(fileToProcessKeyPath, data)
+                } catch {
+                  case e: Throwable => {
+                    removeFromProcessingQueue(newProcessingItem)
+                  }
+                }
 
                 requestAssigned = true
               }

@@ -171,8 +171,8 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
 
       // Scan all the files that we are buffering, if there is not difference in their file size.. move them onto
       // the FileQ, they are ready to process.
-      bufferingQLock.synchronized {
 
+      bufferingQLock.synchronized {
         val newlyAdded = ArrayBuffer[SmartFileHandler]()
         val removedEntries = ArrayBuffer[SmartFileHandler]()
 
@@ -375,6 +375,12 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
   private def waitingFilesToProcessCount : Int = {
     fileQLock.synchronized {
       fileQ.length
+    }
+  }
+
+  private def getFilesTobeProcessed: List[String] = {
+    fileQLock.synchronized {
+      return fileQ.map(f => f.fileHandler.getFullPath).toList
     }
   }
 
