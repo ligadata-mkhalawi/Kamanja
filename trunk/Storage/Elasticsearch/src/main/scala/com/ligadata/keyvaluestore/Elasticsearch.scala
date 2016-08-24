@@ -591,7 +591,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             val response = client
               .prepareSearch(tableName)
               .setTypes("type1")
-              .setQuery(QueryBuilders.boolQuery().must(QueryBuilders.termQuery("timePartition", 0))
+              .setQuery(QueryBuilders.boolQuery().must(QueryBuilders.termQuery("timePartition", key.timePartition))
                 .must(QueryBuilders.termQuery("bucketKey", key.bucketKey.mkString(",").toLowerCase()))
                 .must(QueryBuilders.termQuery("transactionId", key.transactionId))
                 .must(QueryBuilders.termQuery("rowId", key.rowId))
@@ -613,7 +613,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
             val builder: XContentBuilder =
               XContentFactory.jsonBuilder().startObject()
-                .field("timePartition", 0)
+                .field("timePartition", key.timePartition)
                 .field("bucketKey", key.bucketKey.mkString(","))
                 .field("transactionId", key.transactionId)
                 .field("rowId", key.rowId)
@@ -622,7 +622,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
                 .field("serializedInfo", Base64.encodeBase64String(newBuffer))
                 .endObject()
 
-            logger.info(">>>>>>>>>> timePartition " + 0)
+            logger.info(">>>>>>>>>> timePartition " + key.timePartition)
             logger.info(">>>>>>>>>> bucketKey " + key.bucketKey.mkString(","))
             logger.info(">>>>>>>>>> transactionId " + key.transactionId)
             logger.info(">>>>>>>>>> rowId " + key.rowId)
