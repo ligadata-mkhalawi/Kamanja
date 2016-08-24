@@ -127,6 +127,7 @@ object KamanjaConfiguration {
   // Debugging info configs -- End
 
   var commitOffsetsMsgCnt = 0
+  var commitOffsetsTimeInterval = 0
 
   var shutdown = false
   var participentsChangedCntr: Long = 0
@@ -156,6 +157,7 @@ object KamanjaConfiguration {
     // Debugging info configs -- End
 
     commitOffsetsMsgCnt = 0
+    commitOffsetsTimeInterval = 0
 
     shutdown = false
     participentsChangedCntr = 0
@@ -543,6 +545,17 @@ class KamanjaManager extends Observer {
         val commitOffsetsMsgCnt = loadConfigs.getProperty("CommitOffsetsMsgCnt".toLowerCase, "0").replace("\"", "").trim.toInt
         if (commitOffsetsMsgCnt > 0) {
           KamanjaConfiguration.commitOffsetsMsgCnt = commitOffsetsMsgCnt
+        }
+      } catch {
+        case e: Exception => {
+          LOG.warn("", e)
+        }
+      }
+
+      try {
+        val commitOffsetsTmInterval = loadConfigs.getProperty("CommitOffsetsTimeInterval".toLowerCase, "0").replace("\"", "").trim.toInt
+        if (commitOffsetsTmInterval > 0) {
+          KamanjaConfiguration.commitOffsetsTimeInterval = commitOffsetsTmInterval
         }
       } catch {
         case e: Exception => {
