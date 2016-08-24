@@ -3,7 +3,7 @@ package com.ligadata.adapters.jdbc;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -79,7 +79,17 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
 
 			statement.executeBatch();
 		} catch (BatchUpdateException e) {
-			logger.error("Error saving messages : " + e.getMessage(), e);
+			StringBuilder sb = new StringBuilder();
+			sb.append("Error saving messages : " + e.getMessage() + "\n");
+			int[] updateCounts = e.getUpdateCounts();
+			JSONObject[] stmts = buffer.toArray(new JSONObject[0]);
+			for (int i = 0; i < updateCounts.length; i++) {
+				if (updateCounts[i] == Statement.EXECUTE_FAILED) {
+					sb.append("  ==>" + stmts[i].toJSONString() + "\n");
+				}
+			}
+			logger.error(sb.toString(), e);
+			// logger.error("Error saving messages : " + e.getMessage(), e);
 		} finally {
 			try {
 				connection.commit();
