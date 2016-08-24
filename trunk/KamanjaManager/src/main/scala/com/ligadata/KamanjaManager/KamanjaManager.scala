@@ -1185,5 +1185,11 @@ object KamanjaManager {
       LOG.error(s"KAMANJA-MANAGER: Kamanja shutdown with error code $kmResult")
     }
   }
+def startKamanjaManager(args: Array[String]): Unit = {
+    val kmResult = instance.run(args)
+    if(kmResult != 0) {
+      LOG.error(s"KAMANJA-MANAGER: Kamanja shutdown with error code $kmResult")
+    }
+  }
 }
 

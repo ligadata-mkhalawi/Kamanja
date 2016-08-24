@@ -26,14 +26,15 @@ import org.apache.logging.log4j.{Logger, LogManager}
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType
 import com.ligadata.MetadataAPI.Utility._
 import com.ligadata.kamanja.metadata.MdMgr
-
+import java.net.{Socket, ServerSocket}
 
 import scala.collection.mutable
 import scala.collection.immutable
 import com.ligadata.KamanjaVersion.KamanjaVersion
 import scala.io.Source
 import java.nio.file.{Files, FileSystems}
-
+import scala.util.control.Breaks._
+import scala.actors.threadpool.{ExecutorService}
 /**
   * Created by dhaval Kolapkar on 7/24/15.
   */
@@ -116,7 +117,254 @@ object StartMetadataAPI {
   // 646 - 675,676 Change ends
 
   val extraCmdArgs = mutable.Map[String, String]()
+var isShutdown = false
 
+  def clearVariables(): Unit ={
+    extraCmdArgs.clear()
+    action = ""
+  }
+
+  def execCmd(args : Array[String]): String ={
+    println("calling StartMetadataApi.execCmd with args: " + args.mkString("\n"))
+
+    clearVariables
+
+    if (args.length > 0 && args(0).equalsIgnoreCase("--version")) {
+      return KamanjaVersion.getVersionString
+    }
+
+    /** FIXME: the user id should be discovered in the parse of the args array */
+    val userId: Option[String] = Some("kamanja")
+    try {
+      val jsonBuffer: StringBuilder = new StringBuilder
+
+      args.foreach(arg => {
+
+        if (arg.endsWith(".json")
+          || arg.endsWith(".jtm")
+          || arg.endsWith(".xml")
+          || arg.endsWith(".pmml")
+          || arg.endsWith(".scala")
+          || arg.endsWith(".java")
+          || arg.endsWith(".jar")) {
+          extraCmdArgs(INPUTLOC) = arg
+          if (expectBindingFromFile) {
+            /** the json test above can prevent the ordinary catch of the name below */
+            extraCmdArgs(FROMFILE) = extraCmdArgs.getOrElse(INPUTLOC, null)
+            expectBindingFromFile = false
+          }
+
+        } else if (arg.endsWith(".properties")) {
+          config = arg
+        } else {
+          if (arg != "debug") {
+            /** ignore the debug tag */
+            if (arg.equalsIgnoreCase(TENANTID)) {
+              expectTid = true
+              extraCmdArgs(TENANTID) = ""
+            } else if (arg.equalsIgnoreCase(WITHDEP)) {
+              expectDep = true
+              extraCmdArgs(WITHDEP) = ""
+            } else if (arg.equalsIgnoreCase(MODELNAME)) {
+              expectModelName = true
+            } else if (arg.equalsIgnoreCase(MODELVERSION)) {
+              expectModelVer = true
+            } else if (arg.equalsIgnoreCase(MESSAGENAME)) {
+              expectMessageName = true
+            } else if (arg.equalsIgnoreCase(OUTPUTMSG)) {
+              expectOutputMsg = true
+            } else if (arg.equalsIgnoreCase(KEY)) {
+              expectRemoveBindingKey = true
+            } else if (arg.equalsIgnoreCase(FROMFILE)) {
+              expectBindingFromFile = true
+            } else if (arg.equalsIgnoreCase(FROMSTRING)) {
+              expectBindingFromString = true
+            } else if (arg.equalsIgnoreCase(ADAPTERFILTER)) {
+              expectAdapterFilter = true
+            } else if (arg.equalsIgnoreCase(MESSAGEFILTER)) {
+              expectMessageFilter = true
+            } else if (arg.equalsIgnoreCase(SERIALIZERFILTER)) {
+              expectSerializerFilter = true
+            } else if (arg.equalsIgnoreCase(SCHEMAID)) {
+              expectSchemaId = true
+              extraCmdArgs(SCHEMAID) = ""
+            } else if (arg.equalsIgnoreCase(ELEMENTID)) {
+              expectElementId = true
+              extraCmdArgs(ELEMENTID) = ""
+            } else {
+              var argVar = arg
+              if (expectTid) {
+                extraCmdArgs(TENANTID) = arg
+                expectTid = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectDep) {
+                extraCmdArgs(WITHDEP) = arg
+                expectDep = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectModelName) {
+                extraCmdArgs(MODELNAME) = arg
+                expectModelName = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectModelVer) {
+                extraCmdArgs(MODELVERSION) = arg
+                expectModelVer = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectMessageName) {
+                extraCmdArgs(MESSAGENAME) = arg
+                expectMessageName = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectOutputMsg) {
+                extraCmdArgs(OUTPUTMSG) = arg
+                expectOutputMsg = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectRemoveBindingKey) {
+                expectRemoveBindingKey = false
+                extraCmdArgs(Action.REMOVEADAPTERMESSAGEBINDING.toString) = arg
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectBindingFromString) {
+                extraCmdArgs(FROMSTRING) = arg
+                expectBindingFromString = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectBindingFromFile) {
+                extraCmdArgs(FROMFILE) = arg
+                expectBindingFromFile = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectAdapterFilter) {
+                extraCmdArgs(ADAPTERFILTER) = arg
+                expectAdapterFilter = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectMessageFilter) {
+                extraCmdArgs(MESSAGEFILTER) = arg
+                expectMessageFilter = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectSerializerFilter) {
+                extraCmdArgs(SERIALIZERFILTER) = arg
+                expectSerializerFilter = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectSchemaId) {
+                extraCmdArgs(SCHEMAID) = arg
+                expectSchemaId = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectElementId) {
+                extraCmdArgs(ELEMENTID) = arg
+                expectElementId = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+
+              /**
+                * FIXME:
+                * FIXME: The removes have positional keys... right after the command.  Downside is that
+                * the tenant id collection uses a named style, which means that it MUST follow the
+                * object name to be removed.  When this thing gets reworked, the object key should also
+                * have a name like "key" as is used with the REMOVEADAPTERMESSAGEBINDING. The name/value pairs can
+                * then be expressed in any order to the liking of the user.
+                */
+              if (action.equalsIgnoreCase("getmodel") || action.equalsIgnoreCase("removemodel")) {
+                /** only take the first one */
+                if (! extraCmdArgs.contains(MODELNAME)) extraCmdArgs(MODELNAME) = arg
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (action.equalsIgnoreCase("getmessage") || action.equalsIgnoreCase("removemessage")) {
+                /** only take the first one */
+                if (! extraCmdArgs.contains(MESSAGENAME)) extraCmdArgs(MESSAGENAME) = arg
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (action.equalsIgnoreCase("removecontainer") || action.equalsIgnoreCase("getcontainer")) {
+                /** only take the first one */
+                if (! extraCmdArgs.contains(CONTAINERNAME)) extraCmdArgs(CONTAINERNAME) = arg
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (action.equalsIgnoreCase("removetype") || action.equalsIgnoreCase("gettype")) {
+                /** only take the first one */
+                if (! extraCmdArgs.contains(TYPENAME)) extraCmdArgs(TYPENAME) = arg
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (action.equalsIgnoreCase("removefunction") || action.equalsIgnoreCase("getfunction")) {
+                /** only take the first one */
+                if (! extraCmdArgs.contains(FUNCTIONNAME)) extraCmdArgs(FUNCTIONNAME) = arg
+                argVar = "" // Make sure we don't add to the routing command
+              }
+
+              action += argVar
+            }
+          }
+        }
+      })
+      //add configuration
+      if (config == "") {
+        println("Using default configuration " + defaultConfig)
+        config = defaultConfig
+      }
+
+      MetadataAPIImpl.InitMdMgrFromBootStrap(config, false)
+      if (action == "") {
+        TestMetadataAPI.StartTest
+        return "StartTest"
+      }
+      else {
+        response = route(Action.withName(action.trim),  extraCmdArgs.getOrElse(INPUTLOC,""),
+          extraCmdArgs.getOrElse(WITHDEP,""), extraCmdArgs.getOrElse(TENANTID,""), args, userId ,extraCmdArgs.toMap,"")
+        println("Result: " + response)
+      }
+    }
+    catch {
+      case e: NoSuchElementException => {
+        println("action trim"+action.trim());
+        logger.error("Route not found",e.getMessage)
+        /** preserve the original response ... */
+        response =   new ApiResult(-1, "StartMetadataAPI", null, e.getMessage).toString
+        println("Result: " + response)
+        /** one more try ... going the alternate route */  // do we still need this ??
+        /* val altResponse: String = AltRoute(args)
+         if (altResponse != null) {
+           //response = altResponse
+           println(response)
+           usage
+         } else {
+           /* if the AltRoute doesn't produce a valid result, we will complain with the original failure */
+           println(response)
+           usage
+         }*/
+      }
+      case e: java.io.FileNotFoundException => {
+        logger.error("Unable to read a file, the file either does not exist or is inaccessible ", e.getMessage)
+        response =   new ApiResult(-1, "StartMetadataAPI", null, e.getMessage).toString
+        println("Result: " + response)
+      }
+      case e: Throwable => {
+        logger.error("Error, due to an unknown exception", e)
+        response =   new ApiResult(-1, "StartMetadataAPI", null, e.getMessage).toString
+        println("Result: " + response)
+      }
+      case e: Exception => {
+        logger.error("Error, due to an unknown exception", e)
+        response =   new ApiResult(-1, "StartMetadataAPI", null, e.getMessage).toString
+        println("Result: " + response)
+      }
+      case e: RuntimeException => {
+        logger.error("Error, due to an unknown exception", e)
+        response =   new ApiResult(-1, "StartMetadataAPI", null, e.getMessage).toString
+        println("Result: " + response)
+      }
+    } finally {
+      MetadataAPIImpl.shutdown
+    }
+
+    return response
+  }
   def main(args: Array[String]) {
     if (args.length > 0 && args(0).equalsIgnoreCase("--version")) {
       KamanjaVersion.print
@@ -951,4 +1199,115 @@ object StartMetadataAPI {
 
      response
    } */
+
+  class MetadataAPIConnHandler(var socket: Socket) extends Runnable {
+    private val LOG = LogManager.getLogger(getClass)
+    private val out = socket.getOutputStream
+    private val in = socket.getInputStream
+
+    socket.setKeepAlive(true)
+
+    LOG.warn("Created a connection to socket. HostAddress:%s, Port:%d, LocalPort:%d".format(socket.getLocalAddress.getHostAddress, socket.getPort, socket.getLocalPort))
+
+    def run() {
+      val vt = 0
+      var keepProcessing = true
+
+      try {
+        breakable {
+          while (!StartMetadataAPI.isShutdown && keepProcessing) {
+
+            //if (strLine == null)  break//TODO : find a way to stop when client is shut
+
+            val (cmdJson, isSteamClosed) = SocketCommunicationHelper.readMsg(in)
+            if(isSteamClosed){
+              keepProcessing = false
+            }
+            else {
+              val cmdParts = SocketCommunicationHelper.getCommandParts(cmdJson)
+              LOG.warn("Current Command:%s. HostAddress:%s, Port:%d, LocalPort:%d".format(cmdParts.mkString(" "), socket.getLocalAddress.getHostAddress, socket.getPort, socket.getLocalPort))
+              val result = StartMetadataAPI.execCmd(cmdParts)
+
+              //LOG.warn("Result to be sent to client: "+result)
+              SocketCommunicationHelper.writeMsg(result, out)
+            }
+          }
+        }
+      } catch {
+        case e: Exception => {
+          LOG.error("", e)
+        }
+      } finally {
+        socket.close()
+      }
+    }
+  }
+
+  class MetadataAPIServer(port: Int) extends Runnable {
+    private val LOG = LogManager.getLogger(getClass)
+    private val serverSocket = new ServerSocket(port)
+    private val exec: ExecutorService = scala.actors.threadpool.Executors.newFixedThreadPool(5)
+
+    LOG.warn("MetadataAPIServer started for port:" + port)
+
+    def run() {
+      try {
+        while (!StartMetadataAPI.isShutdown) {
+          // This will block until a connection comes in.
+          val socket = serverSocket.accept()
+          exec.execute(new MetadataAPIConnHandler(socket))
+        }
+      } catch {
+
+        case e: java.net.SocketException => {
+          if (serverSocket != null && serverSocket.isClosed)
+            LOG.warn("Metadata api - Socket Error. May be closed", e)
+          else
+            LOG.error("Metadata api - Socket Error", e)
+        }
+        case e: Exception => {
+          LOG.error("Metadata api - Socket Error", e)
+        }
+      } finally {
+        exec.shutdownNow()
+        if (serverSocket != null && !serverSocket.isClosed)
+          serverSocket.close()
+      }
+    }
+
+    def shutdown() {
+      if (serverSocket != null && !serverSocket.isClosed)
+        serverSocket.close()
+    }
+  }
+
+ object MetadataAPIManager {
+    private val LOG = LogManager.getLogger(getClass)
+
+    def start(args: Array[String]): Unit = {
+
+      var port = -1
+      if(args != null){
+        for(i <- 0 to args.length - 1){
+          if(args(i).equalsIgnoreCase("--port") && args.length >= i + 2)
+            port = args(i + 1).toInt
+        }
+      }
+      if(port < 0)
+        throw new Exception("Metadata Api socket port is not configured correctly")
+
+
+      val kmResult = new MetadataAPIServer(port).run()//TODO : maybe better to use a singleton
+      if (kmResult != 0) {
+        LOG.error(s"MetadataAPIManager: Kamanja shutdown with error code $kmResult")
+      }
+    }
+
+    def shutdown(): Unit ={
+      if (!StartMetadataAPI.isShutdown) {
+        LOG.warn("MetadataAPIManager: Received shutdown request")
+        StartMetadataAPI.isShutdown = true // Setting the global shutdown
+      }
+    }
+  }
 }

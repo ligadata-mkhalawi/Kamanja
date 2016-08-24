@@ -59,6 +59,7 @@ sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/Star
 sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_home_repl/g;s/{JavaInstallDirectory}/$java_home_repl/g" $install_dir/template/script/StartEngine_Template.sh > $install_dir/bin/StartEngine.sh
 sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/ContainersUtility_Template.sh > $install_dir/bin/ContainersUtility.sh
 sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/JsonChecker_Template.sh > $install_dir/bin/JsonChecker.sh
+sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/Socket_Template.sh > $install_dir/bin/Socket.sh
 sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/QueryGenerator_Template.sh > $install_dir/bin/QueryGenerator.sh
 sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/FileDataConsumer_Template.sh > $install_dir/bin/FileDataConsumer.sh
 sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/ExtractData_Template.sh > $install_dir/bin/ExtractData.sh
