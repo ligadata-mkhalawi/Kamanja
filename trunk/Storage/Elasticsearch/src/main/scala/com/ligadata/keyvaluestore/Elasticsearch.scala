@@ -1398,7 +1398,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             .setQuery(
               QueryBuilders.andQuery(
                 QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime),
-                QueryBuilders.rangeQuery("field2").lte(time_range.endTime)))
+                QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
             .setQuery(QueryBuilders
               .boolQuery()
               .must(QueryBuilders.termQuery("bucketKey", bucketKey.mkString(","))))
@@ -1412,7 +1412,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           breakable {
             while (true) {
               response.getHits.getHits.foreach((hit: SearchHit) => {
-                var timePartition = hit.getSource.get("serializerType").toString.toLong
+                var timePartition = hit.getSource.get("timePartition").toString.toLong
                 var keyStr = hit.getSource.get("bucketKey").toString
                 var tId = hit.getSource.get("transactionId").toString.toLong
                 var rId = hit.getSource.get("rowId").toString.toInt
