@@ -419,6 +419,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
     result :+= "dict.bind()"
     result :+= "dict"
     result :+= "}"
+
     result
   }
 
@@ -729,7 +730,6 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
       // Check grok matches
       //
       val groks1 = groks.filter( g => {
-
         // Check if we have the input
         val nameColumn = ResolveName(g._1, aliaseMessages)
         val matched = if(innerMapping.contains(nameColumn)) {
@@ -749,9 +749,12 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
         // Input determined, emit as output expressions
         if(matched) {
 
+
           AmbiguousCheck(Map(nameColumn->nameColumn), g._2)
 
-          innerTracking += innerMapping.get(g._1).get.variableName
+          var actVar = innerMapping.get(nameColumn).get.variableName
+         // innerTracking += innerMapping.get(g._1).get.variableName
+          innerTracking += innerMapping.get(nameColumn).get.variableName
 
           // Get the expression
           //
@@ -761,14 +764,15 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
 
           // The var name might generate conflicts
           // Let's be optimistic for now
-          val varName = "%s_%s".format(d._1, g._1)
-          methods :+= "lazy val %s = %s.extractNamedGroups(%s)".format(varName, d._1, nameColumn)
+          //val varName = "%s_%s".format(d._1, g._1)
+          val varName = "%s".format(d._1) + "_grp"
+          methods :+= "lazy val %s = %s.extractNamedGroups(%s)".format(varName, d._1, actVar)
 
           // Emit variables w/ null value is needed
           // we are adding a complete expression here
           // potentially we have to decorate it to avoid naming conflicts
           d._3.foreach( e => {
-            val expr = "if(%s.containsKey(\"%s\")) %s.get(\"%s\") else \"\")".format(varName, e, varName, e)
+            val expr = "(if(%s.containsKey(\"%s\")) %s.get(\"%s\") else \"\")".format(varName, e, varName, e)
             innerMapping ++= Map(e -> eval.Tracker(varName, "", "", false, "", expr))
           })
           false
@@ -801,6 +805,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
 
           // Sub names to
           val newExpression = Expressions.FixupColumnNames(f, innerMapping, aliaseMessages)
+
           logger.trace("Matched where expression {}", newExpression)
           // Output the actual filter
           collect :+= "if (!(%s)) {".format(newExpression)
