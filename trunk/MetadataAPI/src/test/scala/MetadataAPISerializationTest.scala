@@ -1,13 +1,13 @@
 /**
-  * Created by Ahmed-Work on 3/17/2016.
-  */
+ * Created by Ahmed-Work on 3/17/2016.
+ */
 
 package com.ligadata.MetadataAPI
 
 import java.util.Date
 
-import com.ligadata.kamanja.metadata.{ObjFormatType, _}
-import org.scalatest.{BeforeAndAfterAll, FlatSpec}
+import com.ligadata.kamanja.metadata.{ ObjFormatType, _ }
+import org.scalatest.{ BeforeAndAfterAll, FlatSpec }
 import com.ligadata.kamanja.metadataload.MetadataLoad
 
 class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
@@ -41,8 +41,7 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
       MdMgr.mdMgr.truncate
       val mdLoader = new MetadataLoad(MdMgr.mdMgr, "", "", "", "")
       mdLoader.initialize
-    }
-    catch {
+    } catch {
       case e: Exception => throw new Exception("Failed to add messagedef", e)
     }
   }
@@ -56,7 +55,7 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
     //actual
     val actual = MetadataAPISerialization.serializeObjectToJson(modelDef)
 
-    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual )
+    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual)
   }
 
   it should "return serialized messageDefJson" in {
@@ -67,7 +66,7 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
       """{"Message":{"Name":"name","PhysicalName":"/opt/kamanja/obj","JarName":"JarName","NameSpace":"com.ligadata.namespace","DependencyJars":["Jar1","Jar2"],"OrigDef":"OrigDef","ObjectDefinition":"ObjectDefinition","ObjectFormat":"JSON","CreationTime":2222222222,"IsFixed":true,"Author":"Author","OwnerId":"ownerId","TenantId":"tenantId","SchemaId":1,"AvroSchema":"avroSchema","PartitionKey":["key1","key2"],"IsActive":true,"IsDeleted":false,"Persist":true,"Description":"Description","MsgAttributes":[],"NumericTypes":{"Version":123456789,"TransId":123123123123,"UniqId":987654321,"CreationTime":2222222222,"ModTime":33333333333,"MdElemStructVer":1,"MdElementId":1},"PrimaryKeys":[{"constraintName":"prim","key":["key1","key2"]}],"ForeignKeys":[{"constraintName":"foreign","key":["key1","key2"],"forignContainerName":"forr","forignKey":["key1","key2"]}]}}"""
     //actual
     val actual = MetadataAPISerialization.serializeObjectToJson(mssgDef)
-    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual )
+    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual)
   }
 
   it should "return serialized containerDefJson" in {
@@ -78,7 +77,7 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
       """{"Container":{"Name":"name","PhysicalName":"/opt/kamanja/obj","JarName":"JarName","NameSpace":"com.ligadata.namespace","DependencyJars":["Jar1","Jar2"],"OrigDef":"OrigDef","ObjectDefinition":"ObjectDefinition","ObjectFormat":"JSON","CreationTime":2222222222,"IsFixed":true,"Author":"Author","OwnerId":"ownerId","TenantId":"tenantId","SchemaId":2,"AvroSchema":"avroSchema","Persist":true,"PartitionKey":["key1","key2"],"IsActive":true,"IsDeleted":false,"Description":"Description","MsgAttributes":[],"NumericTypes":{"Version":123456789,"TransId":123123123123,"UniqId":987654321,"CreationTime":2222222222,"ModTime":33333333333,"MdElemStructVer":1,"MdElementId":1},"PrimaryKeys":[{"constraintName":"prim","key":["key1","key2"]}],"ForeignKeys":[{"constraintName":"foreign","key":["key1","key2"],"forignContainerName":"forr","forignKey":["key1","key2"]}]}}"""
     //actual
     val actual = MetadataAPISerialization.serializeObjectToJson(conDef)
-    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual )
+    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual)
   }
 
   it should "return serialized functionDefJson" in {
@@ -89,9 +88,8 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
       """{"Function":{"Name":"name","PhysicalName":"/opt/kamanja/obj","JarName":"JarName","NameSpace":"com.ligadata.namespace","DependencyJars":["Jar1","Jar2"],"OrigDef":"OrigDef","ObjectDefinition":"ObjectDefinition","ObjectFormat":"JSON","Author":"Author","OwnerId":"ownerId","TenantId":"tenantId","Arguments":[{"ArgName":"type1","ArgTypeNameSpace":"system","ArgTypeName":"int"},{"ArgName":"type2","ArgTypeNameSpace":"system","ArgTypeName":"int"}],"Features":["CLASSUPDATE","HAS_INDEFINITE_ARITY"],"ReturnTypeNameSpace":"system","ReturnTypeName":"int","ClassName":"className","Description":"Description","NumericTypes":{"Version":123456789,"TransId":123123123123,"UniqId":987654321,"CreationTime":2222222222,"ModTime":33333333333,"MdElemStructVer":1,"MdElementId":1},"IsActive":true,"IsDeleted":false}}"""
     //actual
     val actual = MetadataAPISerialization.serializeObjectToJson(funDef)
-    
-    
-    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual )
+
+    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual)
   }
 
   it should "return serialized MapTypeDefJson" in {
@@ -102,7 +100,7 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
       """{"MapType":{"Name":"name","NameSpace":"com.ligadata.namespace","PhysicalName":"/opt/kamanja/obj","TypeTypeName":"tContainer","JarName":"JarName","ObjectFormat":"JSON","DependencyJars":["Jar1","Jar2"],"Implementation":"implementationName","ValueTypeNameSpace":"system","ValueTypeName":"string","ValueTypeTType":"String","ObjectDefinition":"ObjectDefinition","OrigDef":"OrigDef","Author":"Author","OwnerId":"ownerId","TenantId":"tenantId","Description":"Description","NumericTypes":{"Version":123456789,"TransId":123123123123,"UniqId":987654321,"CreationTime":2222222222,"ModTime":33333333333,"MdElemStructVer":1,"MdElementId":1},"IsActive":true,"IsFixed":false,"IsDeleted":false}}"""
     //actual
     val actual = MetadataAPISerialization.serializeObjectToJson(mapTypeDef)
-    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual )
+    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual)
   }
 
   it should "return serialized ArrayTypeDefJson" in {
@@ -113,9 +111,10 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
       """{"ArrayType":{"Name":"name","NameSpace":"com.ligadata.namespace","PhysicalName":"/opt/kamanja/obj","TypeTypeName":"tScalar","TypeName":"int","TypeNameSpace":"system","TypeTType":"Int","NumberOfDimensions":2,"JarName":"JarName","ObjectFormat":"JSON","DependencyJars":["Jar1","Jar2"],"Implementation":"implementationName","ObjectDefinition":"ObjectDefinition","OrigDef":"OrigDef","OwnerId":"ownerId","TenantId":"tenantId","Author":"Author","Description":"Description","NumericTypes":{"Version":123456789,"TransId":123123123123,"UniqId":987654321,"CreationTime":2222222222,"ModTime":33333333333,"MdElemStructVer":1,"MdElementId":1},"IsActive":true,"IsFixed":false,"IsDeleted":false}}"""
     //actual
     val actual = MetadataAPISerialization.serializeObjectToJson(arrayType)
-    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual )
+    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual)
   }
-/*
+
+  /*
   it should "return serialized ArrayBufTypeDefJson" in {
     //input
     val arraybufType = getArrayBufTypeDef
@@ -228,6 +227,7 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
     assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual )
   }
 */
+
   it should "return serialized JarDefJson" in {
     //input
     val jar = getJarDef
@@ -236,7 +236,7 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
       """{"Jar":{"IsActive":true,"IsDeleted":false,"OrigDef":"OrigDef","ObjectDefinition":"ObjectDefinition","ObjectFormat":"JSON","NameSpace":"com.ligadata.namespace","Name":"name","Author":"Author","OwnerId":"ownerId","TenantId":"tenantId","PhysicalName":"/opt/kamanja/obj","JarName":"JarName","DependencyJars":["Jar1","Jar2"],"NumericTypes":{"Version":123456789,"TransId":123123123123,"UniqId":987654321,"CreationTime":2222222222,"ModTime":33333333333,"MdElemStructVer":1,"MdElementId":1},"Description":"Description"}}""".stripMargin
     //actual
     val actual = MetadataAPISerialization.serializeObjectToJson(jar)
-    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual )
+    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual)
   }
 
   it should "return serialized ConfigDefJson" in {
@@ -247,7 +247,7 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
       """{"Config":{"IsActive":true,"IsDeleted":false,"OrigDef":"OrigDef","ObjectDefinition":"ObjectDefinition","ObjectFormat":"JSON","NameSpace":"com.ligadata.namespace","Contents":"Contents","OwnerId":"ownerId","TenantId":"tenantId","Name":"name","Author":"Author","PhysicalName":"/opt/kamanja/obj","JarName":"JarName","DependencyJars":["Jar1","Jar2"],"NumericTypes":{"Version":123456789,"TransId":123123123123,"UniqId":987654321,"CreationTime":2222222222,"ModTime":33333333333,"MdElemStructVer":1,"MdElementId":1},"Description":"Description"}}"""
     //actual
     val actual = MetadataAPISerialization.serializeObjectToJson(config)
-    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual )
+    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual)
   }
 
   it should "return serialized NodeInfoJson" in {
@@ -255,11 +255,11 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
     val nodeInfo = getNodeInfo
     //expected
     val expected: String =
-      """{"Node":{"NodeId":"1","NodePort":2021,"NodeIpAddr":"localhost","JarPaths":["path1","path2"],"Scala_home":"/usr/bin","Java_home":"/usr/bin","Classpath":"/class/path","ClusterId":"1","Power":2,"Roles":["role1","role2"],"Description":"description"}}"""
+      """{"Node":{"NodeId":"1","NodePort":2021,"NodeIpAddr":"localhost","JarPaths":["path1","path2"],"Scala_home":"/usr/bin","Java_home":"/usr/bin","Classpath":"/class/path","ClusterId":"1","Power":2,"Roles":["role1","role2"],"Description":"description","ReadCores":1,"ProcessingCores":1,"LogicalPartitions":8192}}"""
 
     //actual
     val actual = MetadataAPISerialization.serializeObjectToJson(nodeInfo)
-    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual )
+    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual)
   }
 
   it should "return serialized ClusterInfoJson" in {
@@ -267,11 +267,11 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
     val clusterInfo = getClusterInfo
     //expected
     val expected: String =
-      """{"Cluster":{"ClusterId":"1","Description":"description","Privileges":"privilges"}}"""
+      """{"Cluster":{"ClusterId":"1","Description":"description","Privileges":"privilges","ReadCores":1,"ProcessingCores":1,"LogicalPartitions":8192}}"""
 
     //actual
     val actual = MetadataAPISerialization.serializeObjectToJson(clusterInfo)
-    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual )
+    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual)
   }
 
   it should "return serialized ClusterCfgInfoJson" in {
@@ -283,7 +283,7 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
 
     //actual
     val actual = MetadataAPISerialization.serializeObjectToJson(clusterCfgInfo)
-    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual )
+    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual)
   }
 
   it should "return serialized AdapterInfoJson" in {
@@ -295,7 +295,7 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
 
     //actual
     val actual = MetadataAPISerialization.serializeObjectToJson(adapterInfo)
-    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual )
+    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual)
   }
 
   it should "return serialized UserPropertiesInfoJson" in {
@@ -307,7 +307,7 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
 
     //actual
     val actual = MetadataAPISerialization.serializeObjectToJson(userPropertiesInfo)
-    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual )
+    assert(expected === actual, "\nExpected\n" + expected + "\nActual\n" + actual)
   }
 
   "deserializeMetadata" should "return serialized ModelDef" in {
@@ -470,7 +470,8 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
     assert(expected.IsDeleted === actual.IsDeleted)
     assert(expected.IsFixed === actual.IsFixed)
   }
-/*
+
+  /*
   it should "return serialized ArrayBufTypeDef" in {
 
     //input
@@ -718,6 +719,7 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
     assert(expected.IsFixed === actual.IsFixed)
   }
 */
+
   it should "return serialized JarDef" in {
 
     //input
@@ -766,7 +768,7 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
 
     //input
     val input: String =
-      """{"Node":{"NodeId":"1","NodePort":2021,"NodeIpAddr":"localhost","JarPaths":["path1","path2"],"Scala_home":"/usr/bin","Java_home":"/usr/bin","Classpath":"/class/path","ClusterId":"1","Power":2,"Roles":["role1","role2"],"Description":"description"}}"""
+      """{"Node":{"NodeId":"1","NodePort":2021,"NodeIpAddr":"localhost","JarPaths":["path1","path2"],"Scala_home":"/usr/bin","Java_home":"/usr/bin","Classpath":"/class/path","ClusterId":"1","Power":2,"Roles":["role1","role2"],"Description":"description","ReadCores":1,"ProcessingCores":1,"LogicalPartitions":8192}}"""
     //expected
     val expected = getNodeInfo
     //actual
@@ -780,6 +782,9 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
     assert(expected.ClusterId === actual.ClusterId)
     assert(expected.Power === actual.Power)
     assert(expected.Description === actual.Description)
+    assert(expected.ReadCores === actual.ReadCores)
+    assert(expected.ProcessingCores === actual.ProcessingCores)
+    assert(expected.LogicalPartitions === actual.LogicalPartitions)
 
   }
 
@@ -787,7 +792,7 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
 
     //input
     val input: String =
-      """{"Cluster":{"ClusterId":"1","Description":"description","Privileges":"privilges"}}"""
+      """{"Cluster":{"ClusterId":"1","Description":"description","Privileges":"privilges","ReadCores":1,"ProcessingCores":1,"LogicalPartitions":8192}}"""
     //expected
     val expected = getClusterInfo
     //actual
@@ -795,6 +800,9 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
     assert(expected.ClusterId === actual.ClusterId)
     assert(expected.Description === actual.Description)
     assert(expected.Privileges === actual.Privileges)
+    assert(expected.ReadCores === actual.ReadCores)
+    assert(expected.ProcessingCores === actual.ProcessingCores)
+    assert(expected.LogicalPartitions === actual.LogicalPartitions)
   }
 
   it should "return serialized ClusterCfgInfo" in {
@@ -839,7 +847,6 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
     val actual = MetadataAPISerialization.deserializeMetadata(input).asInstanceOf[UserPropertiesInfo]
     assert(expected.ClusterId === actual.ClusterId)
   }
-
 
   private def getModlDef: ModelDef = {
     val modelType = "SCALA"
@@ -956,8 +963,6 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
     featureSet += FcnMacroAttr.fromString("CLASSUPDATE")
     featureSet += FcnMacroAttr.fromString("HAS_INDEFINITE_ARITY")
 
-
-
     val functionDef = MdMgr.GetMdMgr.MakeFunc(nameSpace, name, physicalNameString, (returnTypeNameSpace, returnTypeName),
       argList, featureSet, ownerId, tenantId, uniqID, mdElementId, version, jarName, dependencyJar)
 
@@ -979,11 +984,10 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
 
   private def getMapTypeDef: MapTypeDef = {
 
-
     val objectFormat = "JSON"
     val implementationName = "implementationName"
     val key = "system"
-    val value =  "string"
+    val value = "string"
     //val value = ("system", "string")
 
     val mapType = MdMgr.GetMdMgr.MakeMap(nameSpace, name, key, value, version, ownerId, tenantId, uniqID, mdElementId, false)
@@ -1038,7 +1042,7 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
 
     arrayType
   }
-/*
+  /*
   private def getArrayBufTypeDef: ArrayBufTypeDef = {
 
     val objectFormat = "JSON"
@@ -1343,7 +1347,6 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
     val isActive = true
     val isDeleted = false
 
-
     val jar = MdMgr.GetMdMgr.MakeJarDef(nameSpace, name, version.toString, ownerId, tenantId, uniqID, mdElementId)
 
     jar.tranId = transId
@@ -1416,6 +1419,9 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
     roles(0) = "role1"
     roles(1) = "role2"
     val description = "description"
+    val readCores = 1
+    val processingCores = 1
+    val logicalPartitions = 8192
 
     val nodeInfo = MdMgr.GetMdMgr.MakeNode(
       nodeId,
@@ -1428,7 +1434,10 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
       clusterId,
       power,
       roles,
-      description)
+      description,
+      readCores,
+      processingCores,
+      logicalPartitions)
     nodeInfo
   }
 
@@ -1437,12 +1446,17 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
     val clusterId = "1"
     val description = "description"
     val privilges = "privilges"
+    val readCores = 1
+    val processingCores = 1
+    val logicalPartitions = 8192
 
     val clusterInfo = MdMgr.GetMdMgr.MakeCluster(
       clusterId,
       description,
-      privilges
-    )
+      privilges,
+      readCores,
+      processingCores,
+      logicalPartitions)
     clusterInfo
   }
 
@@ -1458,8 +1472,7 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
       clusterId,
       cfgMap,
       new Date(1458952764),
-      new Date(1459039164)
-    )
+      new Date(1459039164))
     val usrConfigs = new scala.collection.mutable.HashMap[String, String]
 
     usrConfigs.put("key1", "value1")
@@ -1482,8 +1495,7 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
       jarName,
       dependencyJar.toList,
       adapterSpecificCfg,
-      tenantId, fullAdapterConfig
-    )
+      tenantId, fullAdapterConfig)
     adapterInfo
   }
 

@@ -3714,9 +3714,9 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     jarPaths: List[String], scala_home: String,
     java_home: String, classpath: String,
     clusterId: String, power: Int,
-    roles: Array[String], description: String): String = {
+    roles: Array[String], description: String, readCores: Int, processingCores: Int, logicalPartitions: Int): String = {
     ConfigUtils.AddNode(nodeId, nodePort, nodeIpAddr, jarPaths, scala_home,
-        java_home, classpath, clusterId, power, roles, description)
+        java_home, classpath, clusterId, power, roles, description, readCores, processingCores, logicalPartitions)
   }
 
     /**
@@ -3739,10 +3739,10 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     jarPaths: List[String], scala_home: String,
     java_home: String, classpath: String,
     clusterId: String, power: Int,
-    roles: Array[String], description: String): String = {
+    roles: Array[String], description: String, readCores: Int, processingCores: Int, logicalPartitions: Int): String = {
     ConfigUtils.AddNode(nodeId, nodePort, nodeIpAddr, jarPaths, scala_home,
       java_home, classpath,
-      clusterId, power, roles, description)
+      clusterId, power, roles, description, readCores, processingCores, logicalPartitions)
   }
 
     /**
@@ -3825,8 +3825,8 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
      * @param privileges
      * @return
      */
-  def AddCluster(clusterId: String, description: String, privileges: String): String = {
-    ConfigUtils.AddCluster(clusterId,description,privileges)
+  def AddCluster(clusterId: String, description: String, privileges: String, readCores: Int, processingCores: Int, logicalPartitions: Int): String = {
+    ConfigUtils.AddCluster(clusterId,description,privileges, readCores, processingCores, logicalPartitions)
   }
 
     /**
@@ -3837,8 +3837,8 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
      * @param privileges
      * @return
      */
-  def UpdateCluster(clusterId: String, description: String, privileges: String): String = {
-    ConfigUtils.AddCluster(clusterId, description, privileges)
+  def UpdateCluster(clusterId: String, description: String, privileges: String, readCores: Int, processingCores: Int, logicalPartitions: Int): String = {
+    ConfigUtils.AddCluster(clusterId, description, privileges, readCores, processingCores, logicalPartitions)
   }
 
     /**

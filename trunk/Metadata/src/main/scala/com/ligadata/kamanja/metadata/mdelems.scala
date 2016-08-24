@@ -16,20 +16,20 @@
 
 package com.ligadata.kamanja.metadata
 
-import java.io.{DataInputStream, DataOutputStream}
+import java.io.{ DataInputStream, DataOutputStream }
 import java.util._
 
-import com.ligadata.Exceptions.{Json4sSerializationException, KamanjaException}
+import com.ligadata.Exceptions.{ Json4sSerializationException, KamanjaException }
 import com.ligadata.kamanja.metadata.MiningModelType.MiningModelType
 import com.ligadata.kamanja.metadata.ModelRepresentation.ModelRepresentation
 import org.joda.time.DateTime
 import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
-import org.json4s.{DefaultFormats, Formats}
+import org.json4s.{ DefaultFormats, Formats }
 
 import scala.Enumeration
-import scala.collection.mutable.{Map, Set}
+import scala.collection.mutable.{ Map, Set }
 import scala.collection.mutable.ListBuffer
 import scala.collection.mutable.ArrayBuffer
 
@@ -38,32 +38,32 @@ object ObjFormatType extends Enumeration {
   type FormatType = Value
   val fCSV, fJSON, fXML, fSERIALIZED, fJAVA, fSCALA, fPMML, fUNKNOWN = Value
 
-    def asString(typ : FormatType) : String = {
-        val str = typ.toString match {
-            case "fCSV" =>  "CSV"
-            case "fJSON" => "JSON"
-            case "fXML" => "XML"
-            case "fSERIALIZED" => "SERIALIZED"
-            case "fJAVA" => "JAVA"
-            case "fSCALA" => "SCALA"
-            case "fPMML" => "XML"
-            case _ => "Unknown"
-        }
-        str
+  def asString(typ: FormatType): String = {
+    val str = typ.toString match {
+      case "fCSV"        => "CSV"
+      case "fJSON"       => "JSON"
+      case "fXML"        => "XML"
+      case "fSERIALIZED" => "SERIALIZED"
+      case "fJAVA"       => "JAVA"
+      case "fSCALA"      => "SCALA"
+      case "fPMML"       => "XML"
+      case _             => "Unknown"
     }
-    def fromString(typstr : String) : FormatType = {
-        val typ : ObjFormatType.Value = typstr.toUpperCase match {
-            case "CSV" =>  fCSV
-            case "JSON" => fJSON
-            case "XML" => fXML
-            case "SERIALIZED" => fSERIALIZED
-            case "JAVA" => fJAVA
-            case "SCALA" => fSCALA
-            case "PMML" => fXML
-            case _ => fUNKNOWN
-        }
-        typ
+    str
+  }
+  def fromString(typstr: String): FormatType = {
+    val typ: ObjFormatType.Value = typstr.toUpperCase match {
+      case "CSV"        => fCSV
+      case "JSON"       => fJSON
+      case "XML"        => fXML
+      case "SERIALIZED" => fSERIALIZED
+      case "JAVA"       => fJAVA
+      case "SCALA"      => fSCALA
+      case "PMML"       => fXML
+      case _            => fUNKNOWN
     }
+    typ
+  }
 }
 import com.ligadata.kamanja.metadata.ObjFormatType._
 
@@ -88,48 +88,48 @@ object ObjType extends Enumeration {
 
   def asString(typ: Type): String = {
     val str = typ.toString match {
-      case "tNone" => "None"
-      case "tInt" => "Int"
-      case "tAny" => "Any"
-      case "tLong" => "Long"
-      case "tFloat" => "Float"
-      case "tDouble" => "Double"
-      case "tString" => "String"
-      case "tBoolean" => "Boolean"
-      case "tChar" => "Char"
-      case "tArray" => "Array"
-      case "tArrayBuf" => "ArrayBuffer"
-      case "tSet" => "Set"
+      case "tNone"      => "None"
+      case "tInt"       => "Int"
+      case "tAny"       => "Any"
+      case "tLong"      => "Long"
+      case "tFloat"     => "Float"
+      case "tDouble"    => "Double"
+      case "tString"    => "String"
+      case "tBoolean"   => "Boolean"
+      case "tChar"      => "Char"
+      case "tArray"     => "Array"
+      case "tArrayBuf"  => "ArrayBuffer"
+      case "tSet"       => "Set"
       case "tSortedSet" => "SortedSet"
-      case "tTreeSet" => "TreeSet"
-      case "tMap" => "Map"
-      case "tHashMap" => "HashMap"
-      case "tMsgMap" => "Map"
-      case "tList" => "List"
-      case "tQueue" => "Queue"
-      case "tStruct" => "Struct"
-      case "tAttr" => "Attr"
-      case _ => "None"
+      case "tTreeSet"   => "TreeSet"
+      case "tMap"       => "Map"
+      case "tHashMap"   => "HashMap"
+      case "tMsgMap"    => "Map"
+      case "tList"      => "List"
+      case "tQueue"     => "Queue"
+      case "tStruct"    => "Struct"
+      case "tAttr"      => "Attr"
+      case _            => "None"
     }
     str
   }
   def fromString(typeStr: String): Type = {
     val typ: Type = typeStr.toLowerCase match {
-      case "none" => tNone
-      case "any" => tAny
-      case "int" => tInt
-      case "long" => tLong
-      case "float" => tFloat
-      case "double" => tDouble
-      case "string" => tString
+      case "none"    => tNone
+      case "any"     => tAny
+      case "int"     => tInt
+      case "long"    => tLong
+      case "float"   => tFloat
+      case "double"  => tDouble
+      case "string"  => tString
       case "boolean" => tBoolean
-      case "char" => tChar
-      case "array" => tArray
-      case "map" => tMap
-      case "msgmap" => tMap
-      case "struct" => tStruct
-      case "attr" => tAttr
-      case _ => tNone
+      case "char"    => tChar
+      case "array"   => tArray
+      case "map"     => tMap
+      case "msgmap"  => tMap
+      case "struct"  => tStruct
+      case "attr"    => tAttr
+      case _         => tNone
     }
     typ
   }
@@ -144,7 +144,7 @@ object ObjTypeType extends Enumeration {
   def asString(typ: TypeType): String = {
     val str = typ.toString match {
       case "tAny" => "Any"
-      case _ => typ.toString
+      case _      => typ.toString
     }
     str
   }
@@ -160,161 +160,161 @@ object DefaultMdElemStructVer {
 
 // common fields for all metadata elements
 trait BaseElem {
-    def UniqId: Long // UniqueId is unque for each element. If we have different versions of any element it will have different ids.
-    def MdElementId: Long // MdElementId is unque for each element with different versions
-    def FullName: String // Logical Name
-    def FullNameWithVer: String
-    def CreationTime: Long // Time in milliseconds from 1970-01-01T00:00:00
-    def ModTime: Long // Time in milliseconds from 1970-01-01T00:00:00
-    def OrigDef: String
+  def UniqId: Long // UniqueId is unque for each element. If we have different versions of any element it will have different ids.
+  def MdElementId: Long // MdElementId is unque for each element with different versions
+  def FullName: String // Logical Name
+  def FullNameWithVer: String
+  def CreationTime: Long // Time in milliseconds from 1970-01-01T00:00:00
+  def ModTime: Long // Time in milliseconds from 1970-01-01T00:00:00
+  def OrigDef: String
   def Description: String
   // 646 - 675 Change begins - Metadata element addition/changes
   def Comment: String
-  def Tag : String
-  def Params : scala.collection.immutable.Map[String, String]
+  def Tag: String
+  def Params: scala.collection.immutable.Map[String, String]
   // 646 - 675 Change ends
-    def Author: String
-    def NameSpace: String
-    def Name: String
-    def Version: Long
-    def JarName: String
-    def DependencyJarNames: Array[String]
-    def MdElemStructVer: Int // Metadata Element Structure version. By default whole metadata will have same number
-    def PhysicalName: String // Getting Physical name for Logical name (Mapping from Logical name to Physical Name when we generate code)
-    def PhysicalName(phyNm: String): Unit // Setting Physical name for Logical name (Mapping from Logical name to Physical Name when we generate code)
-    def ObjectDefinition: String // Get Original XML/JSON string used during model/message compilation
-    def ObjectDefinition(definition: String): Unit // Set XML/JSON Original string used during model/message compilation
-    def ObjectFormat: ObjFormatType.FormatType // format type for Original string(json, xml, et al) used during model/message compilation
-    def ObjectFormat(otype: ObjFormatType.FormatType): Unit // set the format type for Original element injested
-    def IsActive: Boolean // Return true if the Element is active, otherwise false
-    def IsDeactive: Boolean // Return true if the Element is de-active, otherwise false
-    def IsDeleted: Boolean // Return true if the Element is deleted, otherwise false
-    def TranId: Long // a unique number representing the transaction that modifies this object
-    def Active: Unit // Make the element as Active
-    def Deactive: Unit // Make the element as de-active
-    def Deleted: Unit // Mark the element as deleted
-    def OwnerId: String
-    def TenantId: String
-    def MdElementCategory: String
+  def Author: String
+  def NameSpace: String
+  def Name: String
+  def Version: Long
+  def JarName: String
+  def DependencyJarNames: Array[String]
+  def MdElemStructVer: Int // Metadata Element Structure version. By default whole metadata will have same number
+  def PhysicalName: String // Getting Physical name for Logical name (Mapping from Logical name to Physical Name when we generate code)
+  def PhysicalName(phyNm: String): Unit // Setting Physical name for Logical name (Mapping from Logical name to Physical Name when we generate code)
+  def ObjectDefinition: String // Get Original XML/JSON string used during model/message compilation
+  def ObjectDefinition(definition: String): Unit // Set XML/JSON Original string used during model/message compilation
+  def ObjectFormat: ObjFormatType.FormatType // format type for Original string(json, xml, et al) used during model/message compilation
+  def ObjectFormat(otype: ObjFormatType.FormatType): Unit // set the format type for Original element injested
+  def IsActive: Boolean // Return true if the Element is active, otherwise false
+  def IsDeactive: Boolean // Return true if the Element is de-active, otherwise false
+  def IsDeleted: Boolean // Return true if the Element is deleted, otherwise false
+  def TranId: Long // a unique number representing the transaction that modifies this object
+  def Active: Unit // Make the element as Active
+  def Deactive: Unit // Make the element as de-active
+  def Deleted: Unit // Mark the element as deleted
+  def OwnerId: String
+  def TenantId: String
+  def MdElementCategory: String
 }
 
 class BaseElemDef extends BaseElem {
-    override def UniqId: Long = uniqueId // UniqueId is unque for each element. If we have different versions of any element it will have different ids.
-    override def MdElementId: Long = mdElementId // MdElementId is unque for each element with different versions
-    override def FullName: String = nameSpace + "." + name // Logical Name
-    override def FullNameWithVer: String = nameSpace + "." + name + "." + Version
-    override def CreationTime: Long = creationTime // Time in milliseconds from 1970-01-01T00:00:00
-    override def ModTime: Long = modTime // Time in milliseconds from 1970-01-01T00:00:00
-    override def OrigDef: String = origDef
+  override def UniqId: Long = uniqueId // UniqueId is unque for each element. If we have different versions of any element it will have different ids.
+  override def MdElementId: Long = mdElementId // MdElementId is unque for each element with different versions
+  override def FullName: String = nameSpace + "." + name // Logical Name
+  override def FullNameWithVer: String = nameSpace + "." + name + "." + Version
+  override def CreationTime: Long = creationTime // Time in milliseconds from 1970-01-01T00:00:00
+  override def ModTime: Long = modTime // Time in milliseconds from 1970-01-01T00:00:00
+  override def OrigDef: String = origDef
   override def Description: String = description
   // 646 - 675 Changes begin - Metadata additional element support
-  override def Comment : String = comment
-  override def Tag : String = tag
-  override def Params : scala.collection.immutable.Map[String, String] = params
+  override def Comment: String = comment
+  override def Tag: String = tag
+  override def Params: scala.collection.immutable.Map[String, String] = params
   // 646 - 675 Changes end
-    override def Author: String = author
-    override def NameSpace: String = nameSpace // Part of Logical Name
-    override def Name: String = name // Part of Logical Name
-    override def Version: Long = ver
-    override def JarName: String = jarName
-    override def DependencyJarNames: Array[String] = dependencyJarNames
-    override def MdElemStructVer: Int = mdElemStructVer // Metadata Element version. By default whole metadata will have same number
-    override def PhysicalName: String = physicalName // Getting Physical name for Logical name (Mapping from Logical name to Physical Name when we generate code)
-    override def PhysicalName(phyNm: String): Unit = physicalName = phyNm // Setting Physical name for Logical name (Mapping from Logical name to Physical Name when we generate code). Most of the elements will have Phsical name corresponds to Logical name like Types like System.Int maps to scala.Int as physical name.
-    override def ObjectDefinition: String = objectDefinition // Original XML/JSON string used during model/message compilation
-    override def ObjectDefinition(definition: String): Unit = objectDefinition = definition // Set XML/JSON Original string used during model/message compilation
-    override def ObjectFormat: ObjFormatType.FormatType = objectFormat // format type for Original string(json or xml) used during model/message compilation
-    override def ObjectFormat(otype: ObjFormatType.FormatType): Unit = {objectFormat = otype } // set the format type for Original element injested
+  override def Author: String = author
+  override def NameSpace: String = nameSpace // Part of Logical Name
+  override def Name: String = name // Part of Logical Name
+  override def Version: Long = ver
+  override def JarName: String = jarName
+  override def DependencyJarNames: Array[String] = dependencyJarNames
+  override def MdElemStructVer: Int = mdElemStructVer // Metadata Element version. By default whole metadata will have same number
+  override def PhysicalName: String = physicalName // Getting Physical name for Logical name (Mapping from Logical name to Physical Name when we generate code)
+  override def PhysicalName(phyNm: String): Unit = physicalName = phyNm // Setting Physical name for Logical name (Mapping from Logical name to Physical Name when we generate code). Most of the elements will have Phsical name corresponds to Logical name like Types like System.Int maps to scala.Int as physical name.
+  override def ObjectDefinition: String = objectDefinition // Original XML/JSON string used during model/message compilation
+  override def ObjectDefinition(definition: String): Unit = objectDefinition = definition // Set XML/JSON Original string used during model/message compilation
+  override def ObjectFormat: ObjFormatType.FormatType = objectFormat // format type for Original string(json or xml) used during model/message compilation
+  override def ObjectFormat(otype: ObjFormatType.FormatType): Unit = { objectFormat = otype } // set the format type for Original element injested
 
-    override def IsActive: Boolean = active // Return true if the Element is active, otherwise false
-    override def IsDeactive: Boolean = !active // Return true if the Element is de-active, otherwise false
-    override def IsDeleted: Boolean = deleted // Return true if the Element is deleted, otherwise false
-    override def TranId: Long = tranId // a unique number representing the transaction that modifies this object
-    override def Active: Unit = active = true // Make the element as Active
-    override def Deactive: Unit = active = false // Make the element as de-active
-    override def Deleted: Unit = deleted = true // Mark the element as deleted
-    override def OwnerId: String = ownerId
-    override def TenantId: String = tenantId
-    override def MdElementCategory: String = ""
-    def CheckAndGetDependencyJarNames: Array[String] = if (dependencyJarNames != null) dependencyJarNames else Array[String]()
+  override def IsActive: Boolean = active // Return true if the Element is active, otherwise false
+  override def IsDeactive: Boolean = !active // Return true if the Element is de-active, otherwise false
+  override def IsDeleted: Boolean = deleted // Return true if the Element is deleted, otherwise false
+  override def TranId: Long = tranId // a unique number representing the transaction that modifies this object
+  override def Active: Unit = active = true // Make the element as Active
+  override def Deactive: Unit = active = false // Make the element as de-active
+  override def Deleted: Unit = deleted = true // Mark the element as deleted
+  override def OwnerId: String = ownerId
+  override def TenantId: String = tenantId
+  override def MdElementCategory: String = ""
+  def CheckAndGetDependencyJarNames: Array[String] = if (dependencyJarNames != null) dependencyJarNames else Array[String]()
 
-    // Override in other places if required
-    override def equals(that: Any) = {
-      that match {
-          case f: BaseElemDef => f.FullNameWithVer + "." + f.IsDeleted == FullNameWithVer + "." + IsDeleted
-          case _ => false
-      }
+  // Override in other places if required
+  override def equals(that: Any) = {
+    that match {
+      case f: BaseElemDef => f.FullNameWithVer + "." + f.IsDeleted == FullNameWithVer + "." + IsDeleted
+      case _              => false
     }
+  }
 
-    var uniqueId: Long = 0 // uniqueId is unque for each element. If we have different versions of any element it will have different ids.
-    var mdElementId: Long = 0 // mdElementId is unque for each element with different versions
-    var creationTime: Long = _ // Time in milliseconds from 1970-01-01T00:00:00 (Mostly it is Local time. May be we need to get GMT)
-    var modTime: Long = _ // Time in milliseconds from 1970-01-01T00:00:00 (Mostly it is Local time. May be we need to get GMT)
+  var uniqueId: Long = 0 // uniqueId is unque for each element. If we have different versions of any element it will have different ids.
+  var mdElementId: Long = 0 // mdElementId is unque for each element with different versions
+  var creationTime: Long = _ // Time in milliseconds from 1970-01-01T00:00:00 (Mostly it is Local time. May be we need to get GMT)
+  var modTime: Long = _ // Time in milliseconds from 1970-01-01T00:00:00 (Mostly it is Local time. May be we need to get GMT)
 
-    var origDef: String = _ // string associated with this definition
+  var origDef: String = _ // string associated with this definition
 
   var description: String = _
   // 646 - 675 Changes begin - Metadata additional element support
-  var comment : String = _
+  var comment: String = _
   var tag: String = _
   var params = scala.collection.immutable.Map.empty[String, String]
   // 646 - 675 Changes end
-    var author: String = _
-    var nameSpace: String = _ //
-    var name: String = _ // simple name - may not be unique across all name spaces (coupled with mNameSpace, it will be unique)
-    var ver: Long = _ // version number - nnnnnn.nnnnnn.nnnnnn form (without decimal)
-    var jarName: String = _ // JAR file name in which the generated metadata info is placed (classes, functions, etc.,)
-    var dependencyJarNames: Array[String] = _ // These are the dependency jars for this
-    var mdElemStructVer: Int = DefaultMdElemStructVer.Version // Metadata Element Structure version. By default whole metadata will have same number
-    var physicalName: String = _ // Mapping from Logical name to Physical Name when we generate code. This is Case sensitive.
-    var active: Boolean = true // Represent whether element is active or deactive. By default it is active.
-    var deleted: Boolean = false // Represent whether element is deleted. By default it is false.
-    var tranId: Long = 0
-    var objectDefinition: String = _
-    var objectFormat: ObjFormatType.FormatType = fJSON
-    var ownerId: String = _
-    var tenantId: String = _
+  var author: String = _
+  var nameSpace: String = _ //
+  var name: String = _ // simple name - may not be unique across all name spaces (coupled with mNameSpace, it will be unique)
+  var ver: Long = _ // version number - nnnnnn.nnnnnn.nnnnnn form (without decimal)
+  var jarName: String = _ // JAR file name in which the generated metadata info is placed (classes, functions, etc.,)
+  var dependencyJarNames: Array[String] = _ // These are the dependency jars for this
+  var mdElemStructVer: Int = DefaultMdElemStructVer.Version // Metadata Element Structure version. By default whole metadata will have same number
+  var physicalName: String = _ // Mapping from Logical name to Physical Name when we generate code. This is Case sensitive.
+  var active: Boolean = true // Represent whether element is active or deactive. By default it is active.
+  var deleted: Boolean = false // Represent whether element is deleted. By default it is false.
+  var tranId: Long = 0
+  var objectDefinition: String = _
+  var objectFormat: ObjFormatType.FormatType = fJSON
+  var ownerId: String = _
+  var tenantId: String = _
 
   // 646 - 675,673 Changes begin - support for MetadataAPI changes
-    def setParamValues (paramStr : Option[String]) : Any = {
+  def setParamValues(paramStr: Option[String]): Any = {
 
-      var newParams = scala.collection.mutable.Map.empty[String, String]
-      paramStr match {
+    var newParams = scala.collection.mutable.Map.empty[String, String]
+    paramStr match {
 
-        case None => {
-          description = ""
-          comment = ""
-          tag = ""
-        }
-        case pStr: Option[String] => {
-          val param = pStr getOrElse ""
-          if (param != "") {
-            newParams = scala.collection.mutable.Map() ++ parse(param.toLowerCase).values.asInstanceOf[scala.collection.immutable.Map[String, String]]
-            if (newParams contains "description") {
-              description = newParams.getOrElse("description", "")
-              newParams = newParams - "description"
-            }
-            if (newParams contains "comment") {
-              comment = newParams.getOrElse("comment", "")
-              newParams = newParams - "comment"
-            }
-            if (newParams contains "tag") {
-              tag =  newParams.getOrElse("tag", "")
-              newParams = newParams - "tag"
-            }
+      case None => {
+        description = ""
+        comment = ""
+        tag = ""
+      }
+      case pStr: Option[String] => {
+        val param = pStr getOrElse ""
+        if (param != "") {
+          newParams = scala.collection.mutable.Map() ++ parse(param.toLowerCase).values.asInstanceOf[scala.collection.immutable.Map[String, String]]
+          if (newParams contains "description") {
+            description = newParams.getOrElse("description", "")
+            newParams = newParams - "description"
+          }
+          if (newParams contains "comment") {
+            comment = newParams.getOrElse("comment", "")
+            newParams = newParams - "comment"
+          }
+          if (newParams contains "tag") {
+            tag = newParams.getOrElse("tag", "")
+            newParams = newParams - "tag"
           }
         }
       }
-
-      params = newParams.toMap
     }
 
-    def setCreationTime () : Any = {
-      creationTime = System.currentTimeMillis()
+    params = newParams.toMap
+  }
 
-    }
+  def setCreationTime(): Any = {
+    creationTime = System.currentTimeMillis()
 
-  def setModTime () : Any = {
+  }
+
+  def setModTime(): Any = {
     modTime = System.currentTimeMillis()
   }
 
@@ -349,15 +349,15 @@ abstract class BaseTypeDef extends BaseElemDef with TypeDefInfo {
 
 // basic type definition in the system
 class ScalarTypeDef extends BaseTypeDef {
-  def tTypeType : ObjTypeType.TypeType = tScalar
-  def tType : ObjType.Value = typeArg;
+  def tTypeType: ObjTypeType.TypeType = tScalar
+  def tType: ObjType.Value = typeArg;
 
   var typeArg: Type = _
 }
 
 class AnyTypeDef extends BaseTypeDef {
   def tTypeType: ObjTypeType.TypeType = ObjTypeType.tAny
-  def tType : ObjType.Value = tNone
+  def tType: ObjType.Value = tNone
 
   override def typeString: String = {
     "Any"
@@ -438,7 +438,7 @@ abstract class ContainerTypeDef extends BaseTypeDef {
 //}
 
 class MapTypeDef extends ContainerTypeDef {
-  def tType : ObjType.Value = tMap
+  def tType: ObjType.Value = tMap
 
   var valDef: BaseTypeDef = _
 
@@ -508,7 +508,7 @@ class MapTypeDef extends ContainerTypeDef {
 //}
 
 class ArrayTypeDef extends ContainerTypeDef {
-  def tType : ObjType.Value = tArray
+  def tType: ObjType.Value = tArray
 
   var arrayDims: Int = 0 // 0 is invalid; 1..N - dimensions - indicate array of that many dimensions
   var elemDef: BaseTypeDef = _
@@ -582,8 +582,8 @@ trait EntityType {
   var keys: Array[RelationKeyBase] = _ // Keys (primary & foreign keys) for this container. For now we are consider them for MAP based and STRUCT based containers.
   var partitionKey: Array[String] = _ // Partition Key (attribute names)
   var persist: Boolean = false
-  var schemaId:Int = 0
-  var avroSchema:String = ""
+  var schemaId: Int = 0
+  var avroSchema: String = ""
   def NumMems
   def Keys = keys
   def PartitionKey = partitionKey
@@ -593,7 +593,7 @@ trait EntityType {
 }
 
 class MappedMsgTypeDef extends ContainerTypeDef with EntityType {
-  def tType : ObjType.Value = tMsgMap
+  def tType: ObjType.Value = tMsgMap
 
   var attrMap: Map[String, BaseAttributeDef] = Map[String, BaseAttributeDef]()
 
@@ -612,7 +612,7 @@ class MappedMsgTypeDef extends ContainerTypeDef with EntityType {
 }
 
 class StructTypeDef extends ContainerTypeDef with EntityType {
-  def tType : ObjType.Value = tStruct
+  def tType: ObjType.Value = tStruct
 
   var memberDefs: Array[BaseAttributeDef] = _
 
@@ -623,7 +623,7 @@ class StructTypeDef extends ContainerTypeDef with EntityType {
     val optMbr: Option[BaseAttributeDef] = memberDefs.find(m => m.name == key)
     val mbr: BaseAttributeDef = optMbr match {
       case Some(optMbr) => optMbr
-      case _ => null
+      case _            => null
     }
     mbr
   }
@@ -640,7 +640,7 @@ abstract class BaseAttributeDef extends BaseElemDef {
 }
 
 class AttributeDef extends BaseAttributeDef {
-  def tType : ObjType.Value = tAttr
+  def tType: ObjType.Value = tAttr
   def tTypeType = tContainer
   def parent = inherited
   override def typeDef: BaseTypeDef = aType
@@ -706,8 +706,8 @@ class ArgDef {
   def typeString: String = aType.typeString
 }
 
-class FactoryOfModelInstanceFactoryDef(val modelRepSupported : ModelRepresentation.ModelRepresentation) extends BaseElemDef {
-    def ModelRepSupported : ModelRepresentation.ModelRepresentation = modelRepSupported
+class FactoryOfModelInstanceFactoryDef(val modelRepSupported: ModelRepresentation.ModelRepresentation) extends BaseElemDef {
+  def ModelRepSupported: ModelRepresentation.ModelRepresentation = modelRepSupported
 }
 
 class FunctionDef extends BaseElemDef {
@@ -756,8 +756,8 @@ object FcnMacroAttr extends Enumeration {
 
   def fromString(feat: String): Feature = {
     val feature: Feature = feat match {
-      case "ITERABLE" => ITERABLE
-      case "CLASSUPDATE" => CLASSUPDATE
+      case "ITERABLE"             => ITERABLE
+      case "CLASSUPDATE"          => CLASSUPDATE
       case "HAS_INDEFINITE_ARITY" => HAS_INDEFINITE_ARITY
     }
     feature
@@ -780,57 +780,57 @@ class MacroDef extends FunctionDef {
 
 object MiningModelType extends Enumeration {
   type MiningModelType = Value
-  val BASELINEMODEL,ASSOCIATIONMODEL,CLUSTERINGMODEL,GENERALREGRESSIONMODEL,MININGMODEL,NAIVEBAYESMODEL,NEARESTNEIGHBORMODEL,NEURALNETWORK,REGRESSIONMODEL,RULESETMODEL,SEQUENCEMODEL,SCORECARD,SUPPORTVECTORMACHINEMODEL,TEXTMODEL,TIMESERIESMODEL,TREEMODEL, SCALA, JAVA, BINARY, PYTHON, JTM, UNKNOWN = Value
+  val BASELINEMODEL, ASSOCIATIONMODEL, CLUSTERINGMODEL, GENERALREGRESSIONMODEL, MININGMODEL, NAIVEBAYESMODEL, NEARESTNEIGHBORMODEL, NEURALNETWORK, REGRESSIONMODEL, RULESETMODEL, SEQUENCEMODEL, SCORECARD, SUPPORTVECTORMACHINEMODEL, TEXTMODEL, TIMESERIESMODEL, TREEMODEL, SCALA, JAVA, BINARY, PYTHON, JTM, UNKNOWN = Value
 
-  def modelType(mdlType : String) : MiningModelType = {
-    val typ : MiningModelType.MiningModelType = mdlType.trim.toLowerCase match {
-        case "customscala" => SCALA
-        case "customjava" => JAVA
-        case "rulesetmodel" => RULESETMODEL
-        case "treemodel" => TREEMODEL
-        case "associationmodel" => ASSOCIATIONMODEL
-        case "baselinemodel" => BASELINEMODEL
-        case "clusteringmodel" => CLUSTERINGMODEL
-        case "generalregressionmodel" => GENERALREGRESSIONMODEL
-        case "miningmodel" => MININGMODEL
-        case "naivebayesmodel" => NAIVEBAYESMODEL
-        case "nearestneighbormodel" => NEARESTNEIGHBORMODEL
-        case "neuralnetwork" => NEURALNETWORK
-        case "regressionmodel" => REGRESSIONMODEL
-        case "sequencemodel" => SEQUENCEMODEL
-        case "scorecard" => SCORECARD
-        case "supportvectormachinemodel" => SUPPORTVECTORMACHINEMODEL
-        case "textmodel" => TEXTMODEL
-        case "timeseriesmodel" => TIMESERIESMODEL
-        case "scala" => SCALA
-        case "java" => JAVA
-        case "binary" => BINARY
-        case "python" => PYTHON
-        case "jtm" => JTM
-        case _ => UNKNOWN
+  def modelType(mdlType: String): MiningModelType = {
+    val typ: MiningModelType.MiningModelType = mdlType.trim.toLowerCase match {
+      case "customscala"               => SCALA
+      case "customjava"                => JAVA
+      case "rulesetmodel"              => RULESETMODEL
+      case "treemodel"                 => TREEMODEL
+      case "associationmodel"          => ASSOCIATIONMODEL
+      case "baselinemodel"             => BASELINEMODEL
+      case "clusteringmodel"           => CLUSTERINGMODEL
+      case "generalregressionmodel"    => GENERALREGRESSIONMODEL
+      case "miningmodel"               => MININGMODEL
+      case "naivebayesmodel"           => NAIVEBAYESMODEL
+      case "nearestneighbormodel"      => NEARESTNEIGHBORMODEL
+      case "neuralnetwork"             => NEURALNETWORK
+      case "regressionmodel"           => REGRESSIONMODEL
+      case "sequencemodel"             => SEQUENCEMODEL
+      case "scorecard"                 => SCORECARD
+      case "supportvectormachinemodel" => SUPPORTVECTORMACHINEMODEL
+      case "textmodel"                 => TEXTMODEL
+      case "timeseriesmodel"           => TIMESERIESMODEL
+      case "scala"                     => SCALA
+      case "java"                      => JAVA
+      case "binary"                    => BINARY
+      case "python"                    => PYTHON
+      case "jtm"                       => JTM
+      case _                           => UNKNOWN
     }
     typ
   }
 }
 
 object ModelRepresentation extends Enumeration {
-    type ModelRepresentation = Value
-    val JAR, PMML, PYTHON, JTM, UNKNOWN = Value
+  type ModelRepresentation = Value
+  val JAR, PMML, PYTHON, JTM, UNKNOWN = Value
 
   def modelRep(mdlRep: String): ModelRepresentation = {
-      val rep: ModelRepresentation = mdlRep.toUpperCase match {
-          case "JAR" => JAR
-          case "PMML" => PMML
-          case "PYTHON" => PYTHON
-          case "JTM" => JTM
-          case _ => UNKNOWN
-      }
-      rep
+    val rep: ModelRepresentation = mdlRep.toUpperCase match {
+      case "JAR"    => JAR
+      case "PMML"   => PMML
+      case "PYTHON" => PYTHON
+      case "JTM"    => JTM
+      case _        => UNKNOWN
+    }
+    rep
   }
 }
 
 /**
-*/
+ */
 class MessageAndAttributes {
   var origin: String = "" // This could be Model (Can we handle InputAdapter/StorageAdapter also or only InputAdapter)
   var message: String = _ // Type of the message
@@ -843,8 +843,8 @@ class MessageAndAttributes {
  * one of our own special types (CustomScala, CustomJava, or Unknown when the caller does not supply one).
  *
  * Models, when marked with isReusable, can be cached (are considered idempotent)
-  *
-  * @param modelRepresentation The form of model to be cataloged - JAR, PMML etc.
+ *
+ * @param modelRepresentation The form of model to be cataloged - JAR, PMML etc.
  * @param miningModelType a MininingModelType default = "Unknown"
  * @param inputMsgSets Sets of Messages it depends on (attributes referred in this model). Each set must met (all messages should available) to trigger this model
  * @param outputMsgs All possible output messages produced by this model
@@ -855,17 +855,10 @@ class MessageAndAttributes {
  *                                      thinking here is that the ingestion will occur at 'add model' time just once
  *                                      and out of band from the cluster bootstrap.  FIXME: NOT IMPLEMENTED YET
  */
-class ModelDef( val modelRepresentation: ModelRepresentation = ModelRepresentation.JAR
-                , val miningModelType : MiningModelType = MiningModelType.UNKNOWN
-                , var inputMsgSets : Array[Array[MessageAndAttributes]] = Array[Array[MessageAndAttributes]]()
-                , var outputMsgs: Array[String] = Array[String]()
-                , var isReusable: Boolean = false
-                , var supportsInstanceSerialization: Boolean = false
-                , var modelConfig: String = ""
-	        , var depContainers: Array[String] = Array[String]()) extends BaseElemDef {
-    override def MdElementCategory: String = "Model"
-    def typeString: String = PhysicalName
-    def SupportsInstanceSerialization : Boolean = supportsInstanceSerialization
+class ModelDef(val modelRepresentation: ModelRepresentation = ModelRepresentation.JAR, val miningModelType: MiningModelType = MiningModelType.UNKNOWN, var inputMsgSets: Array[Array[MessageAndAttributes]] = Array[Array[MessageAndAttributes]](), var outputMsgs: Array[String] = Array[String](), var isReusable: Boolean = false, var supportsInstanceSerialization: Boolean = false, var modelConfig: String = "", var depContainers: Array[String] = Array[String]()) extends BaseElemDef {
+  override def MdElementCategory: String = "Model"
+  def typeString: String = PhysicalName
+  def SupportsInstanceSerialization: Boolean = supportsInstanceSerialization
 }
 
 class ConfigDef extends BaseElemDef {
@@ -876,6 +869,9 @@ class ConfigDef extends BaseElemDef {
 class ClusterConfigDef extends BaseElemDef {
   var clusterId: String = _
   var elementType: String = _
+  var readCores: Int = _
+  var processingCores: Int = _
+  var logicalPartitions: Int = _
 }
 
 class JarDef extends BaseElemDef {
@@ -902,6 +898,9 @@ class NodeInfo {
   var power: Int = _
   var roles: Array[String] = new Array[String](0)
   var description: String = _
+  var readCores: Int = _
+  var processingCores: Int = _
+  var logicalPartitions: Int = _
 
   def NodeId: String = nodeId
   def NodePort: Int = nodePort
@@ -915,77 +914,80 @@ class NodeInfo {
   def Roles: Array[String] = roles
   def Description: String = description
   def NodeAddr: String = nodeIpAddr + ":" + nodePort.toString
+  def ReadCores: Int = readCores
+  def ProcessingCores: Int = processingCores
+  def LogicalPartitions: Int = logicalPartitions
 
   def equals(in: NodeInfo): Boolean = {
 
     // Check nodeId
     if ((nodeId != null && in.nodeId != null)) {
-      if(!nodeId.equals(in.nodeId)) return false
-    } else if(!(nodeId == null && in.nodeId == null)) {
+      if (!nodeId.equals(in.nodeId)) return false
+    } else if (!(nodeId == null && in.nodeId == null)) {
       return false
     }
 
     // Check nodePort
-//    if ((nodePort != null && in.nodePort != null)) {
-//      if(!nodePort.equals(in.nodePort)) return false
-//    } else if(!(nodePort == null && in.nodePort == null)) {
-//      return false
-//    }
+    //    if ((nodePort != null && in.nodePort != null)) {
+    //      if(!nodePort.equals(in.nodePort)) return false
+    //    } else if(!(nodePort == null && in.nodePort == null)) {
+    //      return false
+    //    }
 
     // Check nodeIpAddr
     if ((nodeIpAddr != null && in.nodeIpAddr != null)) {
-      if(!nodeIpAddr.equals(in.nodeIpAddr)) return false
-    } else if(!(nodeIpAddr == null && in.nodeIpAddr == null)) {
+      if (!nodeIpAddr.equals(in.nodeIpAddr)) return false
+    } else if (!(nodeIpAddr == null && in.nodeIpAddr == null)) {
       return false
     }
     // Check JarPaths
     if ((jarPaths != null && in.jarPaths != null)) {
-      if((jarPaths.size !=  in.jarPaths.size) || (jarPaths.deep != in.jarPaths.deep)) return false
-    } else if(!(jarPaths == null && in.jarPaths == null)) {
+      if ((jarPaths.size != in.jarPaths.size) || (jarPaths.deep != in.jarPaths.deep)) return false
+    } else if (!(jarPaths == null && in.jarPaths == null)) {
       return false
     }
     // Check description
     if ((scala_home != null && in.scala_home != null)) {
-      if(!scala_home.equals(in.scala_home)) return false
-    } else if(!(scala_home == null && in.scala_home == null)) {
+      if (!scala_home.equals(in.scala_home)) return false
+    } else if (!(scala_home == null && in.scala_home == null)) {
       return false
     }
     // Check description
     if ((java_home != null && in.java_home != null)) {
-      if(!java_home.equals(in.java_home)) return false
-    } else if(!(java_home == null && in.java_home == null)) {
+      if (!java_home.equals(in.java_home)) return false
+    } else if (!(java_home == null && in.java_home == null)) {
       return false
     }
     // Check description
     if ((classpath != null && in.classpath != null)) {
-      if(!classpath.equals(in.classpath)) return false
-    } else if(!(classpath == null && in.classpath == null)) {
+      if (!classpath.equals(in.classpath)) return false
+    } else if (!(classpath == null && in.classpath == null)) {
       return false
     }
     // Check description
     if ((clusterId != null && in.clusterId != null)) {
-      if(!clusterId.equals(in.clusterId)) return false
-    } else if(!(clusterId == null && in.clusterId == null)) {
+      if (!clusterId.equals(in.clusterId)) return false
+    } else if (!(clusterId == null && in.clusterId == null)) {
       return false
     }
 
     // Check description
-//    if ((power != null && in.power != null)) {
-//      if (power != in.power) return false
-//    } else if(!(power == null && in.power == null)) {
-//      return false
-//    }
+    //    if ((power != null && in.power != null)) {
+    //      if (power != in.power) return false
+    //    } else if(!(power == null && in.power == null)) {
+    //      return false
+    //    }
 
     // Check description
     if ((roles != null && in.roles != null)) {
-      if((roles.size !=  in.roles.size) || (Roles.deep != in.Roles.deep)) return false
-    } else if(!(roles == null && in.roles == null)) {
+      if ((roles.size != in.roles.size) || (Roles.deep != in.Roles.deep)) return false
+    } else if (!(roles == null && in.roles == null)) {
       return false
     }
     // Check description
     if ((description != null && in.description != null)) {
-      if(!description.equals(in.description)) return false
-    } else if(!(description == null && in.description == null)) {
+      if (!description.equals(in.description)) return false
+    } else if (!(description == null && in.description == null)) {
       return false
     }
     true
@@ -999,28 +1001,34 @@ class ClusterInfo {
   var clusterId: String = _
   var description: String = _
   var privileges: String = _
+  var readCores: Int = _
+  var processingCores: Int = _
+  var logicalPartitions: Int = _
 
   def ClusterId: String = clusterId
   def Description: String = description
   def Privileges: String = privileges
+  def ReadCores: Int = readCores
+  def ProcessingCores: Int = processingCores
+  def LogicalPartitions: Int = logicalPartitions
 
   def equals(in: ClusterInfo): Boolean = {
     // Check description
     if ((clusterId != null && in.clusterId != null)) {
-      if(!clusterId.equals(in.clusterId)) return false
-    } else if(!(clusterId == null && in.clusterId == null)) {
+      if (!clusterId.equals(in.clusterId)) return false
+    } else if (!(clusterId == null && in.clusterId == null)) {
       return false
     }
     // Check description
     if ((description != null && in.description != null)) {
-      if(!description.equals(in.description)) return false
-    } else if(!(description == null && in.description == null)) {
+      if (!description.equals(in.description)) return false
+    } else if (!(description == null && in.description == null)) {
       return false
     }
     // Check description
     if ((privileges != null && in.privileges != null)) {
-      if(!privileges.equals(in.privileges)) return false
-    } else if(!(privileges == null && in.privileges == null)) {
+      if (!privileges.equals(in.privileges)) return false
+    } else if (!(privileges == null && in.privileges == null)) {
       return false
     }
     true
@@ -1046,22 +1054,22 @@ class ClusterCfgInfo {
   def equals(in: ClusterCfgInfo): Boolean = {
     // Check clusterId
     if ((clusterId != null && in.clusterId != null)) {
-      if(!clusterId.equals(in.clusterId)) return false
-    } else if(!(clusterId == null && in.clusterId == null)) {
+      if (!clusterId.equals(in.clusterId)) return false
+    } else if (!(clusterId == null && in.clusterId == null)) {
       return false
     }
 
     // Check createdTime
     if ((usrConfigs != null && in.usrConfigs != null)) {
-      if(!((usrConfigs.toSet diff in.usrConfigs.toSet).toMap.isEmpty)) return false
-    } else if(!(usrConfigs == null && in.usrConfigs == null)) {
+      if (!((usrConfigs.toSet diff in.usrConfigs.toSet).toMap.isEmpty)) return false
+    } else if (!(usrConfigs == null && in.usrConfigs == null)) {
       return false
     }
 
     // Check createdTime
     if ((cfgMap != null && in.cfgMap != null)) {
-      if(!((cfgMap.toSet diff in.cfgMap.toSet).toMap.isEmpty)) return false
-    } else if(!(cfgMap == null && in.cfgMap == null)) {
+      if (!((cfgMap.toSet diff in.cfgMap.toSet).toMap.isEmpty)) return false
+    } else if (!(cfgMap == null && in.cfgMap == null)) {
       return false
     }
     //(m1.toSet diff m2.toSet).toMap
@@ -1076,20 +1084,20 @@ class AdapterInfo {
    */
   var name: String = _
   var typeString: String = _
-//  var dataFormat: String = _ // valid only for Input or Validate types. Output and Status does not have this
+  //  var dataFormat: String = _ // valid only for Input or Validate types. Output and Status does not have this
   var className: String = _
-//  var inputAdapterToValidate: String = _ // Valid only for Output Adapter.
-//  var failedEventsAdapter: String = _ // Valid only for Input Adapter.
-//  var delimiterString1: String = _ // Delimiter String for CSV
-//  var associatedMsg: String = _ // Queue Associated Message
+  //  var inputAdapterToValidate: String = _ // Valid only for Output Adapter.
+  //  var failedEventsAdapter: String = _ // Valid only for Input Adapter.
+  //  var delimiterString1: String = _ // Delimiter String for CSV
+  //  var associatedMsg: String = _ // Queue Associated Message
   var jarName: String = _
   var dependencyJars: Array[String] = new Array[String](0)
   var adapterSpecificCfg: String = _
   var tenantId: String = _
   var fullAdapterConfig: String = _
-//  var keyAndValueDelimiter: String = _ // Delimiter String for keyAndValueDelimiter
-//  var fieldDelimiter: String = _ // Delimiter String for fieldDelimiter
-//  var valueDelimiter: String = _ // Delimiter String for valueDelimiter
+  //  var keyAndValueDelimiter: String = _ // Delimiter String for keyAndValueDelimiter
+  //  var fieldDelimiter: String = _ // Delimiter String for fieldDelimiter
+  //  var valueDelimiter: String = _ // Delimiter String for valueDelimiter
 
   def Name: String = name
   def TypeString: String = typeString
@@ -1100,11 +1108,11 @@ class AdapterInfo {
   def TenantId: String = tenantId
   def FullAdapterConfig: String = fullAdapterConfig
 
- // def InputAdapterToValidate: String = inputAdapterToValidate
- // def FailedEventsAdapter: String = failedEventsAdapter
- // def DelimiterString1: String = if (fieldDelimiter != null) fieldDelimiter else delimiterString1
- // def AssociatedMessage: String = associatedMsg
-//  def KeyAndValueDelimiter: String = keyAndValueDelimiter
+  // def InputAdapterToValidate: String = inputAdapterToValidate
+  // def FailedEventsAdapter: String = failedEventsAdapter
+  // def DelimiterString1: String = if (fieldDelimiter != null) fieldDelimiter else delimiterString1
+  // def AssociatedMessage: String = associatedMsg
+  //  def KeyAndValueDelimiter: String = keyAndValueDelimiter
   //def FieldDelimiter: String = if (fieldDelimiter != null) fieldDelimiter else delimiterString1
   //def ValueDelimiter: String = valueDelimiter
 
@@ -1112,38 +1120,38 @@ class AdapterInfo {
 
     // Check name
     if ((name != null && aInfo.name != null)) {
-      if(!name.equals(aInfo.name)) return false
-    } else if(!(name == null && aInfo.name == null)) {
+      if (!name.equals(aInfo.name)) return false
+    } else if (!(name == null && aInfo.name == null)) {
       return false
     }
     // Check className
     if ((className != null && aInfo.className != null)) {
-      if(!className.equals(aInfo.className)) return false
-    } else if(!(className == null && aInfo.className == null)) {
+      if (!className.equals(aInfo.className)) return false
+    } else if (!(className == null && aInfo.className == null)) {
       return false
     }
     // Check jarName
     if ((jarName != null && aInfo.jarName != null)) {
-      if(!jarName.equals(aInfo.jarName)) return false
-    } else if(!(jarName == null && aInfo.jarName == null)) {
+      if (!jarName.equals(aInfo.jarName)) return false
+    } else if (!(jarName == null && aInfo.jarName == null)) {
       return false
     }
     // Check dependencyJars
     if ((dependencyJars != null && aInfo.dependencyJars != null)) {
-      if((dependencyJars.size !=  aInfo.dependencyJars.size) || (dependencyJars.deep != aInfo.dependencyJars.deep)) return false
-    } else if(!(dependencyJars == null && aInfo.dependencyJars == null)) {
+      if ((dependencyJars.size != aInfo.dependencyJars.size) || (dependencyJars.deep != aInfo.dependencyJars.deep)) return false
+    } else if (!(dependencyJars == null && aInfo.dependencyJars == null)) {
       return false
     }
     // Check adapterSpecificCfg
     if ((adapterSpecificCfg != null && aInfo.adapterSpecificCfg != null)) {
-      if(!adapterSpecificCfg.equals(aInfo.adapterSpecificCfg)) return false
-    } else if(!(adapterSpecificCfg == null && aInfo.adapterSpecificCfg == null)) {
+      if (!adapterSpecificCfg.equals(aInfo.adapterSpecificCfg)) return false
+    } else if (!(adapterSpecificCfg == null && aInfo.adapterSpecificCfg == null)) {
       return false
     }
 
     if ((tenantId != null && aInfo.tenantId != null)) {
-      if(!tenantId.equals(aInfo.tenantId)) return false
-    } else if(!(tenantId == null && aInfo.tenantId == null)) {
+      if (!tenantId.equals(aInfo.tenantId)) return false
+    } else if (!(tenantId == null && aInfo.tenantId == null)) {
       return false
     }
 
@@ -1161,14 +1169,14 @@ class UserPropertiesInfo {
   def equals(in: UserPropertiesInfo): Boolean = {
     // Check createdTime
     if ((props != null && in.props != null)) {
-      if(!((props.toSet diff in.props.toSet).toMap.isEmpty)) return false
-    } else if(!(props == null && in.props == null)) {
+      if (!((props.toSet diff in.props.toSet).toMap.isEmpty)) return false
+    } else if (!(props == null && in.props == null)) {
       return false
     }
     // Check clusterId
     if ((clusterId != null && in.clusterId != null)) {
-      if(!clusterId.equals(in.clusterId)) return false
-    } else if(!(clusterId == null && in.clusterId == null)) {
+      if (!clusterId.equals(in.clusterId)) return false
+    } else if (!(clusterId == null && in.clusterId == null)) {
       return false
     }
     true
@@ -1176,60 +1184,56 @@ class UserPropertiesInfo {
 }
 
 /**
-  * Current Serialization Types supported
-  * <ul>
-  *     <li>CSV - serialize to csv format</li>
-  *     <li>JSON - serialize to json string </li>
-  *     <li>KBinary - a binary format used internally in Kamanja</li>
-  *     <li>Custom - an unknown format </li>
-  * </ul>
-  */
+ * Current Serialization Types supported
+ * <ul>
+ *     <li>CSV - serialize to csv format</li>
+ *     <li>JSON - serialize to json string </li>
+ *     <li>KBinary - a binary format used internally in Kamanja</li>
+ *     <li>Custom - an unknown format </li>
+ * </ul>
+ */
 object SerializeDeserializeType extends Enumeration {
-    type SerDeserType = Value
-    val CSV, JSON, KBinary, KV, Custom = Value
+  type SerDeserType = Value
+  val CSV, JSON, KBinary, KV, Custom = Value
 }
 
 /**
-  * Elementary SerializeDeserializeConfig object that is supplied to SerializeDesrerialize implementations.
-  * If the implementation has configuration capabilities, an instance of the appropriate derived class should
-  * be supplied instead.
-  *
-  * @param serDeserType a SerializeDeserializeType...the sort of serializer it is
-  */
-class SerializeDeserializeConfig(val serDeserType : SerializeDeserializeType.SerDeserType) extends BaseElemDef {}
+ * Elementary SerializeDeserializeConfig object that is supplied to SerializeDesrerialize implementations.
+ * If the implementation has configuration capabilities, an instance of the appropriate derived class should
+ * be supplied instead.
+ *
+ * @param serDeserType a SerializeDeserializeType...the sort of serializer it is
+ */
+class SerializeDeserializeConfig(val serDeserType: SerializeDeserializeType.SerDeserType) extends BaseElemDef {}
 
 /**
-  * An AdapterMessageBinding describes a triple: the adapter, a message it either consumes or produces, and a serializer
-  * that can interpret a stream represention of an instance of this message or produce a serialized representation of same.
-  *
-  * @param adapterName the name of the adapter (input/output/storage)
-  * @param messageName the namespace.name of the message that is consumed.
-  * @param serializer the SerializeDeserializeConfig namespace.name that can resurrect and serialize the associated message
-  * @param options (optional) serializer options that configure the serializer in some fashion
-  */
-class AdapterMessageBinding(  val adapterName : String
-                            , val messageName : String
-                            , val serializer : String
-                            , val options : scala.collection.immutable.Map[String,Any]
-                                    = scala.collection.immutable.Map[String,Any]())
-        extends BaseElemDef {
+ * An AdapterMessageBinding describes a triple: the adapter, a message it either consumes or produces, and a serializer
+ * that can interpret a stream represention of an instance of this message or produce a serialized representation of same.
+ *
+ * @param adapterName the name of the adapter (input/output/storage)
+ * @param messageName the namespace.name of the message that is consumed.
+ * @param serializer the SerializeDeserializeConfig namespace.name that can resurrect and serialize the associated message
+ * @param options (optional) serializer options that configure the serializer in some fashion
+ */
+class AdapterMessageBinding(val adapterName: String, val messageName: String, val serializer: String, val options: scala.collection.immutable.Map[String, Any] = scala.collection.immutable.Map[String, Any]())
+    extends BaseElemDef {
 
-    def FullBindingName : String = {
-        val adapName : String = if (adapterName != null) adapterName.trim.toLowerCase else "no adapter!"
-        val msgName : String = if (messageName != null) messageName.trim.toLowerCase else "no message!"
-        val serName : String = if (serializer != null) serializer.trim.toLowerCase else "no serializer!"
-        s"$adapName,$msgName,$serName"
-    }
+  def FullBindingName: String = {
+    val adapName: String = if (adapterName != null) adapterName.trim.toLowerCase else "no adapter!"
+    val msgName: String = if (messageName != null) messageName.trim.toLowerCase else "no message!"
+    val serName: String = if (serializer != null) serializer.trim.toLowerCase else "no serializer!"
+    s"$adapName,$msgName,$serName"
+  }
 }
 
 class TenantInfo(val tenantId: String, val description: String, val primaryDataStore: String, val cacheConfig: String) {
 
   def equals(in: TenantInfo): Boolean = {
     implicit val jsonFormats: Formats = DefaultFormats
-    val map_in: scala.collection.immutable.Map[String, Any] =  (parse(primaryDataStore)).values.asInstanceOf[scala.collection.immutable.Map[String, Any]]
+    val map_in: scala.collection.immutable.Map[String, Any] = (parse(primaryDataStore)).values.asInstanceOf[scala.collection.immutable.Map[String, Any]]
     val map_new: scala.collection.immutable.Map[String, Any] = (parse(in.primaryDataStore)).values.asInstanceOf[scala.collection.immutable.Map[String, Any]]
 
-    val cache_map_in: scala.collection.immutable.Map[String, Any] =  (parse(cacheConfig)).values.asInstanceOf[scala.collection.immutable.Map[String, Any]]
+    val cache_map_in: scala.collection.immutable.Map[String, Any] = (parse(cacheConfig)).values.asInstanceOf[scala.collection.immutable.Map[String, Any]]
     val cache_map_new: scala.collection.immutable.Map[String, Any] = (parse(in.cacheConfig)).values.asInstanceOf[scala.collection.immutable.Map[String, Any]]
 
     // Check if description changed
@@ -1252,7 +1256,7 @@ class TenantInfo(val tenantId: String, val description: String, val primaryDataS
       if (newValue.size == 0) return false
 
       // if the value is in there but its different.. they are not equal.  Case Sensitive here
-      if (!map_in.getOrElse(currentKey,"").toString.equals(newValue)) return false
+      if (!map_in.getOrElse(currentKey, "").toString.equals(newValue)) return false
 
     }
 
@@ -1268,10 +1272,9 @@ class TenantInfo(val tenantId: String, val description: String, val primaryDataS
       if (newValue.size == 0) return false
 
       // if the value is in there but its different.. they are not equal.  Case Sensitive here
-      if (!cache_map_in.getOrElse(currentKey,"").toString.equals(newValue)) return false
+      if (!cache_map_in.getOrElse(currentKey, "").toString.equals(newValue)) return false
 
     }
-
 
     return true
   }

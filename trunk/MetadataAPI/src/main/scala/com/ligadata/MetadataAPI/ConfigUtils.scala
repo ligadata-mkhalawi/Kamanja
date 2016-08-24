@@ -39,7 +39,7 @@ import com.ligadata.kamanja.metadata.MdMgr._
 import com.ligadata.kamanja.metadataload.MetadataLoad
 
 // import com.ligadata.keyvaluestore._
-import com.ligadata.HeartBeat.{MonitoringContext, HeartBeatUtil}
+import com.ligadata.HeartBeat.{ MonitoringContext, HeartBeatUtil }
 import com.ligadata.StorageBase.{ DataStore, Transaction }
 import com.ligadata.KvBase.{ Key, TimeRange }
 
@@ -79,7 +79,7 @@ import org.json4s.jackson.Serialization
 
 // The implementation class
 object ConfigUtils {
-  lazy val serializerType = "json4s"//"kryo"
+  lazy val serializerType = "json4s" //"kryo"
   // 646 - 676 Change begins - replace MetadataAPIImpl
   val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
   // 646 - 676 Change ends
@@ -98,39 +98,38 @@ object ConfigUtils {
     "CONCEPT_FILES_DIR", "MESSAGE_FILES_DIR", "CONTAINER_FILES_DIR", "CONFIG_FILES_DIR", "MODEL_EXEC_LOG", "NODE_ID", "SSL_CERTIFICATE", "SSL_PASSWD", "DO_AUTH", "SECURITY_IMPL_CLASS",
     "SECURITY_IMPL_JAR", "AUDIT_IMPL_CLASS", "AUDIT_IMPL_JAR", "DO_AUDIT", "AUDIT_PARMS", "ADAPTER_SPECIFIC_CONFIG", "METADATA_DATASTORE")
 
-
   // This is used to exclude all non-engine related configs from Uplodad Config method
   private val excludeList: Set[String] = Set[String]("ClusterId", "Nodes", "Config", "Adapters", "SystemCatalog", "ZooKeeperInfo", "EnvironmentContext", "Cache")
 
-    /**
-     * AddNode
-      *
-      * @param nodeId a cluster node
-     * @param nodePort
-     * @param nodeIpAddr
-     * @param jarPaths Set of paths where jars are located
-     * @param scala_home
-     * @param java_home
-     * @param classpath
-     * @param clusterId
-     * @param power
-     * @param roles
-     * @param description
-     * @return
-     */
+  /**
+   * AddNode
+   *
+   * @param nodeId a cluster node
+   * @param nodePort
+   * @param nodeIpAddr
+   * @param jarPaths Set of paths where jars are located
+   * @param scala_home
+   * @param java_home
+   * @param classpath
+   * @param clusterId
+   * @param power
+   * @param roles
+   * @param description
+   * @return
+   */
   def AddNode(nodeId: String, nodePort: Int, nodeIpAddr: String,
-    jarPaths: List[String], scala_home: String,
-    java_home: String, classpath: String,
-    clusterId: String, power: Int,
-    roles: Array[String], description: String): String = {
+              jarPaths: List[String], scala_home: String,
+              java_home: String, classpath: String,
+              clusterId: String, power: Int,
+              roles: Array[String], description: String, readCores: Int, processingCores: Int, logicalPartitions: Int): String = {
     try {
       // save in memory
       val ni = MdMgr.GetMdMgr.MakeNode(nodeId, nodePort, nodeIpAddr, jarPaths, scala_home,
-        java_home, classpath, clusterId, power, roles, description)
+        java_home, classpath, clusterId, power, roles, description, readCores, processingCores, logicalPartitions)
       MdMgr.GetMdMgr.AddNode(ni)
       // save in database
       val key = "NodeInfo." + nodeId
-      val value = MetadataAPISerialization.serializeObjectToJson(ni).getBytes//serializer.SerializeObjectToByteArray(ni)
+      val value = MetadataAPISerialization.serializeObjectToJson(ni).getBytes //serializer.SerializeObjectToByteArray(ni)
       getMetadataAPI.SaveObject(key.toLowerCase, value, "config_objects", serializerType)
       var apiResult = new ApiResult(ErrorCodeConstants.Success, "AddNode", null, ErrorCodeConstants.Add_Node_Successful + ":" + nodeId)
       apiResult.toString()
@@ -144,38 +143,38 @@ object ConfigUtils {
     }
   }
 
-    /**
-     * UpdateNode
-      *
-      * @param nodeId a cluster node
-     * @param nodePort
-     * @param nodeIpAddr
-     * @param jarPaths Set of paths where jars are located
-     * @param scala_home
-     * @param java_home
-     * @param classpath
-     * @param clusterId
-     * @param power
-     * @param roles
-     * @param description
-     * @return
-     */
+  /**
+   * UpdateNode
+   *
+   * @param nodeId a cluster node
+   * @param nodePort
+   * @param nodeIpAddr
+   * @param jarPaths Set of paths where jars are located
+   * @param scala_home
+   * @param java_home
+   * @param classpath
+   * @param clusterId
+   * @param power
+   * @param roles
+   * @param description
+   * @return
+   */
   def UpdateNode(nodeId: String, nodePort: Int, nodeIpAddr: String,
-    jarPaths: List[String], scala_home: String,
-    java_home: String, classpath: String,
-    clusterId: String, power: Int,
-    roles: Array[String], description: String): String = {
+                 jarPaths: List[String], scala_home: String,
+                 java_home: String, classpath: String,
+                 clusterId: String, power: Int,
+                 roles: Array[String], description: String, readCores: Int, processingCores: Int, logicalPartitions: Int): String = {
     AddNode(nodeId, nodePort, nodeIpAddr, jarPaths, scala_home,
       java_home, classpath,
-      clusterId, power, roles, description)
+      clusterId, power, roles, description, readCores: Int, processingCores: Int, logicalPartitions: Int)
   }
 
-    /**
-     * RemoveNode
-      *
-      * @param nodeId a cluster node
-     * @return
-     */
+  /**
+   * RemoveNode
+   *
+   * @param nodeId a cluster node
+   * @return
+   */
   def RemoveNode(nodeId: String): String = {
     try {
       MdMgr.GetMdMgr.RemoveNode(nodeId)
@@ -218,11 +217,11 @@ object ConfigUtils {
   }
 
   /**
-    * RemoveNode
-    *
-    * @param tenantId a cluster node
-    * @return
-    */
+   * RemoveNode
+   *
+   * @param tenantId a cluster node
+   * @return
+   */
   def RemoveTenant(tenantId: String): String = {
     try {
       MdMgr.GetMdMgr.RemoveTenantInfo(tenantId)
@@ -240,16 +239,16 @@ object ConfigUtils {
   }
 
   /**
-     * AddAdapter
-    *
-    * @param name
-     * @param typeString
-     * @param className
-     * @param jarName
-     * @param dependencyJars
-     * @param adapterSpecificCfg
-     * @return
-     */
+   * AddAdapter
+   *
+   * @param name
+   * @param typeString
+   * @param className
+   * @param jarName
+   * @param dependencyJars
+   * @param adapterSpecificCfg
+   * @return
+   */
   def AddAdapter(name: String, typeString: String, className: String,
                  jarName: String, dependencyJars: List[String],
                  adapterSpecificCfg: String, tenantId: String, fullAdapterConfig: String): String = {
@@ -259,7 +258,7 @@ object ConfigUtils {
       MdMgr.GetMdMgr.AddAdapter(ai)
       // save in database
       val key = "AdapterInfo." + name
-      val value = MetadataAPISerialization.serializeObjectToJson(ai).getBytes//serializer.SerializeObjectToByteArray(ai)
+      val value = MetadataAPISerialization.serializeObjectToJson(ai).getBytes //serializer.SerializeObjectToByteArray(ai)
       getMetadataAPI.SaveObject(key.toLowerCase, value, "config_objects", serializerType)
       var apiResult = new ApiResult(ErrorCodeConstants.Success, "AddAdapter", null, ErrorCodeConstants.Add_Adapter_Successful + ":" + name)
       apiResult.toString()
@@ -273,29 +272,29 @@ object ConfigUtils {
     }
   }
 
-    /**
-     * RemoveAdapter
-      *
-      * @param name
-     * @param typeString
-     * @param className
-     * @param jarName
-     * @param dependencyJars
-     * @param adapterSpecificCfg
-     * @return
-     */
+  /**
+   * RemoveAdapter
+   *
+   * @param name
+   * @param typeString
+   * @param className
+   * @param jarName
+   * @param dependencyJars
+   * @param adapterSpecificCfg
+   * @return
+   */
   def UpdateAdapter(name: String, typeString: String, className: String,
                     jarName: String, dependencyJars: List[String],
                     adapterSpecificCfg: String, tenantId: String, fullAdapterConfig: String): String = {
     AddAdapter(name, typeString, className, jarName, dependencyJars, adapterSpecificCfg, tenantId, fullAdapterConfig)
   }
 
-    /**
-     * RemoveAdapter
-      *
-      * @param name
-     * @return
-     */
+  /**
+   * RemoveAdapter
+   *
+   * @param name
+   * @return
+   */
   def RemoveAdapter(name: String): String = {
     try {
       MdMgr.GetMdMgr.RemoveAdapter(name)
@@ -313,22 +312,22 @@ object ConfigUtils {
     }
   }
 
-    /**
-     * AddCluster
-      *
-      * @param clusterId
-     * @param description
-     * @param privileges
-     * @return
-     */
-  def AddCluster(clusterId: String, description: String, privileges: String): String = {
+  /**
+   * AddCluster
+   *
+   * @param clusterId
+   * @param description
+   * @param privileges
+   * @return
+   */
+  def AddCluster(clusterId: String, description: String, privileges: String, readCores: Int, processingCores: Int, logicalPartitions: Int): String = {
     try {
       // save in memory
-      val ci = MdMgr.GetMdMgr.MakeCluster(clusterId, description, privileges)
+      val ci = MdMgr.GetMdMgr.MakeCluster(clusterId, description, privileges, readCores, processingCores, logicalPartitions)
       MdMgr.GetMdMgr.AddCluster(ci)
       // save in database
       val key = "ClusterInfo." + clusterId
-      val value = MetadataAPISerialization.serializeObjectToJson(ci).getBytes//serializer.SerializeObjectToByteArray(ci)
+      val value = MetadataAPISerialization.serializeObjectToJson(ci).getBytes //serializer.SerializeObjectToByteArray(ci)
       getMetadataAPI.SaveObject(key.toLowerCase, value, "config_objects", serializerType)
       var apiResult = new ApiResult(ErrorCodeConstants.Success, "AddCluster", null, ErrorCodeConstants.Add_Cluster_Successful + ":" + clusterId)
       apiResult.toString()
@@ -342,24 +341,24 @@ object ConfigUtils {
     }
   }
 
-    /**
-     * UpdateCluster
-      *
-      * @param clusterId
-     * @param description
-     * @param privileges
-     * @return
-     */
-  def UpdateCluster(clusterId: String, description: String, privileges: String): String = {
-    AddCluster(clusterId, description, privileges)
+  /**
+   * UpdateCluster
+   *
+   * @param clusterId
+   * @param description
+   * @param privileges
+   * @return
+   */
+  def UpdateCluster(clusterId: String, description: String, privileges: String, readCores: Int, processingCores: Int, logicalPartitions: Int): String = {
+    AddCluster(clusterId, description, privileges, readCores, processingCores, logicalPartitions)
   }
 
-    /**
-     * RemoveCluster
-      *
-      * @param clusterId
-     * @return
-     */
+  /**
+   * RemoveCluster
+   *
+   * @param clusterId
+   * @return
+   */
   def RemoveCluster(clusterId: String): String = {
     try {
       MdMgr.GetMdMgr.RemoveCluster(clusterId)
@@ -377,24 +376,24 @@ object ConfigUtils {
     }
   }
 
-    /**
-     * Add a cluster configuration from the supplied map with the supplied identifer key
-      *
-      * @param clusterCfgId cluster id to add
-     * @param cfgMap the configuration map
-     * @param modifiedTime when modified
-     * @param createdTime when created
-     * @return results string
-     */
+  /**
+   * Add a cluster configuration from the supplied map with the supplied identifer key
+   *
+   * @param clusterCfgId cluster id to add
+   * @param cfgMap the configuration map
+   * @param modifiedTime when modified
+   * @param createdTime when created
+   * @return results string
+   */
   def AddClusterCfg(clusterCfgId: String, cfgMap: scala.collection.mutable.HashMap[String, String],
-    modifiedTime: Date, createdTime: Date): String = {
+                    modifiedTime: Date, createdTime: Date): String = {
     try {
       // save in memory
       val ci = MdMgr.GetMdMgr.MakeClusterCfg(clusterCfgId, cfgMap, modifiedTime, createdTime)
       MdMgr.GetMdMgr.AddClusterCfg(ci)
       // save in database
       val key = "ClusterCfgInfo." + clusterCfgId
-      val value = MetadataAPISerialization.serializeObjectToJson(ci).getBytes//serializer.SerializeObjectToByteArray(ci)
+      val value = MetadataAPISerialization.serializeObjectToJson(ci).getBytes //serializer.SerializeObjectToByteArray(ci)
       getMetadataAPI.SaveObject(key.toLowerCase, value, "config_objects", serializerType)
       var apiResult = new ApiResult(ErrorCodeConstants.Success, "AddClusterCfg", null, ErrorCodeConstants.Add_Cluster_Config_Successful + ":" + clusterCfgId)
       apiResult.toString()
@@ -408,28 +407,28 @@ object ConfigUtils {
     }
   }
 
-    /**
-     * Update te configuration for the cluster with the supplied id
-      *
-      * @param clusterCfgId
-     * @param cfgMap
-     * @param modifiedTime
-     * @param createdTime
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
-     */
+  /**
+   * Update te configuration for the cluster with the supplied id
+   *
+   * @param clusterCfgId
+   * @param cfgMap
+   * @param modifiedTime
+   * @param createdTime
+   * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *               method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @return
+   */
   def UpdateClusterCfg(clusterCfgId: String, cfgMap: scala.collection.mutable.HashMap[String, String],
-    modifiedTime: Date, createdTime: Date, userid: Option[String] = None): String = {
+                       modifiedTime: Date, createdTime: Date, userid: Option[String] = None): String = {
     AddClusterCfg(clusterCfgId, cfgMap, modifiedTime, createdTime)
   }
 
-    /**
-     * Remove a cluster configuration with the suppplied id
-     *
-     * @param clusterCfgId
-     * @return results string
-     */
+  /**
+   * Remove a cluster configuration with the suppplied id
+   *
+   * @param clusterCfgId
+   * @return results string
+   */
   def RemoveClusterCfg(clusterCfgId: String, userid: Option[String] = None): String = {
     try {
       MdMgr.GetMdMgr.RemoveClusterCfg(clusterCfgId)
@@ -447,20 +446,20 @@ object ConfigUtils {
     }
   }
 
-    /**
-     * Remove a cluster configuration
-      *
-      * @param cfgStr
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @param cobjects
-     * @return results string
-     */
+  /**
+   * Remove a cluster configuration
+   *
+   * @param cfgStr
+   * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *               method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @param cobjects
+   * @return results string
+   */
   def RemoveConfig(cfgStr: String, userid: Option[String], cobjects: String): String = {
     var keyList = new Array[String](0)
-      var clusterNotifications: ArrayBuffer[BaseElemDef] = new ArrayBuffer[BaseElemDef]
-      var clusterNotifyActions: ArrayBuffer[String] =  new ArrayBuffer[String]
-      //BOOOYA
+    var clusterNotifications: ArrayBuffer[BaseElemDef] = new ArrayBuffer[BaseElemDef]
+    var clusterNotifyActions: ArrayBuffer[String] = new ArrayBuffer[String]
+    //BOOOYA
     getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.REMOVECONFIG, cfgStr, AuditConstants.SUCCESS, "", cobjects)
     try {
       // extract config objects
@@ -538,7 +537,7 @@ object ConfigUtils {
 
                 if (tenantId.length > 0) {
                   val tenantDef: ClusterConfigDef = new ClusterConfigDef
-                  tenantDef.name =  tenantId.trim.toLowerCase()
+                  tenantDef.name = tenantId.trim.toLowerCase()
                   tenantDef.tranId = getMetadataAPI.GetNewTranId
                   tenantDef.nameSpace = "Tenants"
                   tenantDef.clusterId = ClusterId
@@ -602,19 +601,18 @@ object ConfigUtils {
     }
   }
 
-
-    /**
-     * Upload a model config.  These are for native models written in Scala or Java
-      *
-      * @param cfgStr
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @param objectList
-     * @param isFromNotify
-     * @return
-     */
+  /**
+   * Upload a model config.  These are for native models written in Scala or Java
+   *
+   * @param cfgStr
+   * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *               method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @param objectList
+   * @param isFromNotify
+   * @return
+   */
   def UploadModelsConfig(cfgStr: String, userid: Option[String], objectList: String, isFromNotify: Boolean = false): String = {
-    try{
+    try {
       var keyList = new Array[String](0)
       var valueList = new Array[Array[Byte]](0)
       val tranId = getMetadataAPI.GetNewTranId
@@ -626,31 +624,31 @@ object ConfigUtils {
       // var objectsAdded: scala.collection.mutable.MutableList[Map[String, List[String]]] = scala.collection.mutable.MutableList[Map[String, List[String]]]()
       var baseElems: Array[BaseElemDef] = new Array[BaseElemDef](cfgmap.keys.size)
       cfgmap.keys.foreach(key => {
-	logger.debug("Model Config Key => " + key)
-	var mdl = cfgmap(key).asInstanceOf[Map[String, List[String]]]
+        logger.debug("Model Config Key => " + key)
+        var mdl = cfgmap(key).asInstanceOf[Map[String, List[String]]]
 
-	// wrap the config objet in Element Def
-	var confElem: ConfigDef = new ConfigDef
-	confElem.tranId = tranId
-	confElem.nameSpace = if(userid != None) userid.get else null
-	confElem.contents = JsonSerializer.SerializeMapToJsonString(mdl)
-	confElem.name = key
-	baseElems(i) = confElem
-	i = i + 1
+        // wrap the config objet in Element Def
+        var confElem: ConfigDef = new ConfigDef
+        confElem.tranId = tranId
+        confElem.nameSpace = if (userid != None) userid.get else null
+        confElem.contents = JsonSerializer.SerializeMapToJsonString(mdl)
+        confElem.name = key
+        baseElems(i) = confElem
+        i = i + 1
 
-	// Prepare KEY/VALUE for persistent insertion
-	var modelKey = userid.getOrElse("_") + "." + key
-	var value = confElem.contents.getBytes //serializer.SerializeObjectToByteArray(mdl)
-	keyList = keyList :+ modelKey.toLowerCase
-	valueList = valueList :+ value
-	// Save in memory
-	getMetadataAPI.AddConfigObjToCache(tranId, modelKey, mdl, MdMgr.GetMdMgr)
+        // Prepare KEY/VALUE for persistent insertion
+        var modelKey = userid.getOrElse("_") + "." + key
+        var value = confElem.contents.getBytes //serializer.SerializeObjectToByteArray(mdl)
+        keyList = keyList :+ modelKey.toLowerCase
+        valueList = valueList :+ value
+        // Save in memory
+        getMetadataAPI.AddConfigObjToCache(tranId, modelKey, mdl, MdMgr.GetMdMgr)
       })
       // Save in Database
       getMetadataAPI.SaveObjectList(keyList, valueList, "model_config_objects", serializerType)
       if (!isFromNotify) {
-	val operations = for (op <- baseElems) yield "Add"
-	getMetadataAPI.NotifyEngine(baseElems, operations)
+        val operations = for (op <- baseElems) yield "Add"
+        getMetadataAPI.NotifyEngine(baseElems, operations)
       }
 
       // return reuslts
@@ -665,12 +663,12 @@ object ConfigUtils {
     }
   }
 
-    /**
-     * getStringFromJsonNode
-      *
-      * @param v just any old thing
-     * @return a string representation
-     */
+  /**
+   * getStringFromJsonNode
+   *
+   * @param v just any old thing
+   * @return a string representation
+   */
   private def getStringFromJsonNode(v: Any): String = {
     if (v == null) return ""
 
@@ -698,22 +696,22 @@ object ConfigUtils {
   }
 */
 
-    /**
-     * Accept a config specification (a JSON str)
-      *
-      * @param cfgStr the json file to be interpted
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @param objectList note on the objects in the configuration to be logged to audit adapter
-     * @return
-     */
+  /**
+   * Accept a config specification (a JSON str)
+   *
+   * @param cfgStr the json file to be interpted
+   * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *               method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @param objectList note on the objects in the configuration to be logged to audit adapter
+   * @return
+   */
   def UploadConfig(cfgStr: String, userid: Option[String], objectList: String): String = {
     var keyList = new Array[String](0)
     var valueList = new Array[Array[Byte]](0)
 
     //TODO: BOOOYA
     var clusterNotifications: ArrayBuffer[BaseElemDef] = new ArrayBuffer[BaseElemDef]
-    var clusterNotifyActions: ArrayBuffer[String] =  new ArrayBuffer[String]
+    var clusterNotifyActions: ArrayBuffer[String] = new ArrayBuffer[String]
 
     getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTCONFIG, cfgStr, AuditConstants.SUCCESS, "", objectList)
 
@@ -736,14 +734,32 @@ object ConfigUtils {
               val apiResult = new ApiResult(ErrorCodeConstants.Failure, "UploadConfig", cfgStr, "Error : ClusterId Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
               return apiResult.toString()
             }
+            val ReadCores = cluster.getOrElse("ReadCores", "0").toString.trim.toInt
+            if (ReadCores == 0) {
+              val apiResult = new ApiResult(ErrorCodeConstants.Failure, "ReadCores", cfgStr, "Error : ReadCores Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
+              return apiResult.toString()
+            }
+            val ProcessingCores = cluster.getOrElse("ProcessingCores", "0").toString.trim.toInt
+            if (ProcessingCores == 0) {
+              val apiResult = new ApiResult(ErrorCodeConstants.Failure, "ProcessingCores", cfgStr, "Error : ProcessingCores Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
+              return apiResult.toString()
+            }
+            val LogicalPartitions = cluster.getOrElse("LogicalPartitions", "0").toString.trim.toInt
+            if (LogicalPartitions == 0) {
+              val apiResult = new ApiResult(ErrorCodeConstants.Failure, "LogicalPartitions", cfgStr, "Error : LogicalPartitions Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
+              return apiResult.toString()
+            }
             logger.debug("Processing the cluster => " + ClusterId)
             // save in memory
-            val ci = MdMgr.GetMdMgr.MakeCluster(ClusterId, "", "")
+            val ci = MdMgr.GetMdMgr.MakeCluster(ClusterId, "", "", ReadCores, ProcessingCores, LogicalPartitions)
             val addCluserReuslt = MdMgr.GetMdMgr.AddCluster(ci)
 
             if (addCluserReuslt != None) {
               var clusterDef: ClusterConfigDef = new ClusterConfigDef
               clusterDef.clusterId = ci.clusterId
+              clusterDef.readCores = ci.readCores
+              clusterDef.processingCores = ci.processingCores
+              clusterDef.logicalPartitions = ci.logicalPartitions
               clusterDef.elementType = "clusterDef"
               clusterDef.nameSpace = "cluster"
               clusterDef.name = ci.clusterId
@@ -761,7 +777,7 @@ object ConfigUtils {
             valueList = valueList :+ value
 
             // gather config name-value pairs
-            var cfgMap: scala.collection.mutable.HashMap[String,String] = null
+            var cfgMap: scala.collection.mutable.HashMap[String, String] = null
 
             // Upload the latest and see if any are new updates - do it like this to make sure
             // incremental update does not remove existing values
@@ -769,7 +785,7 @@ object ConfigUtils {
             if (currentCic == null) {
               cfgMap = new scala.collection.mutable.HashMap[String, String]
             } else {
-              cfgMap = currentCic.CfgMap.map(elem =>{elem._1 -> elem._2})
+              cfgMap = currentCic.CfgMap.map(elem => { elem._1 -> elem._2 })
             }
 
             if (cluster.contains("SystemCatalog"))
@@ -802,7 +818,7 @@ object ConfigUtils {
               clusterInfoDef.nameSpace = "clusterInfo"
               clusterInfoDef.tranId = getMetadataAPI.GetNewTranId
               clusterNotifications.append(clusterInfoDef)
-              logger.debug("cic Change for " + clusterInfoDef.name )
+              logger.debug("cic Change for " + clusterInfoDef.name)
               if (addClusterResult.get.equalsIgnoreCase("add"))
                 clusterNotifyActions.append("Add")
               else
@@ -810,10 +826,9 @@ object ConfigUtils {
             }
 
             key = "ClusterCfgInfo." + cic.clusterId
-            value = MetadataAPISerialization.serializeObjectToJson(cic).getBytes//serializer.SerializeObjectToByteArray(cic)
+            value = MetadataAPISerialization.serializeObjectToJson(cic).getBytes //serializer.SerializeObjectToByteArray(cic)
             keyList = keyList :+ key.toLowerCase
             valueList = valueList :+ value
-
 
             if (cluster.contains("Nodes")) {
               val nodes = cluster.get("Nodes").get.asInstanceOf[List[_]]
@@ -827,6 +842,13 @@ object ConfigUtils {
                 val classpath = node.getOrElse("Classpath", "").toString.trim
                 val jarPaths = if (node.contains("JarPaths")) node.get("JarPaths").get.asInstanceOf[List[String]] else List[String]()
                 val roles = if (node.contains("Roles")) node.get("Roles").get.asInstanceOf[List[String]] else List[String]()
+                var readCores: Int = node.getOrElse("ReadCores", "0").toString.trim.toInt
+                if (readCores == 0) readCores = ReadCores
+
+                var processingCores = node.getOrElse("ProcessingCores", "0").toString.trim.toInt
+                if (processingCores == 0) processingCores = ProcessingCores
+                var logicalPartitions = node.getOrElse("LogicalPartitions", "0").toString.trim.toInt
+                if (logicalPartitions == 0) logicalPartitions = LogicalPartitions
 
                 val validRoles = NodeRole.ValidRoles.map(r => r.toLowerCase).toSet
                 val givenRoles = roles
@@ -845,7 +867,7 @@ object ConfigUtils {
                 }
 
                 val ni = MdMgr.GetMdMgr.MakeNode(nodeId, nodePort, nodeIpAddr, jarPaths,
-                                                 scala_home, java_home, classpath, ClusterId, 0, foundRoles.toArray, "")
+                  scala_home, java_home, classpath, ClusterId, 0, foundRoles.toArray, "", readCores, processingCores, logicalPartitions)
 
                 val addNodeResult = MdMgr.GetMdMgr.AddNode(ni)
                 if (addNodeResult != None) {
@@ -856,16 +878,15 @@ object ConfigUtils {
                   nodeDef.clusterId = ci.clusterId
                   nodeDef.elementType = "nodeDef"
                   clusterNotifications.append(nodeDef)
-                  logger.debug("node Change for " + nodeDef.name )
+                  logger.debug("node Change for " + nodeDef.name)
                   if (addNodeResult.get.equalsIgnoreCase("add"))
                     clusterNotifyActions.append("Add")
                   else
                     clusterNotifyActions.append("Update")
                 }
 
-
                 val key = "NodeInfo." + ni.nodeId
-                val value = MetadataAPISerialization.serializeObjectToJson(ni).getBytes//serializer.SerializeObjectToByteArray(ni)
+                val value = MetadataAPISerialization.serializeObjectToJson(ni).getBytes //serializer.SerializeObjectToByteArray(ni)
                 keyList = keyList :+ key.toLowerCase
                 valueList = valueList :+ value
               })
@@ -890,7 +911,7 @@ object ConfigUtils {
                   tenantDef.clusterId = ci.clusterId
                   tenantDef.elementType = "TenantDef"
                   clusterNotifications.append(tenantDef)
-                  logger.debug("tenant Change for " + tenantDef.name )
+                  logger.debug("tenant Change for " + tenantDef.name)
                   if (addTenantResult.get.equalsIgnoreCase("add"))
                     clusterNotifyActions.append("Add")
                   else
@@ -898,7 +919,7 @@ object ConfigUtils {
                 }
 
                 val key = "TenantInfo." + ti.tenantId.trim.toLowerCase()
-                val value = MetadataAPISerialization.serializeObjectToJson(ti).getBytes//serializer.SerializeObjectToByteArray(ti)
+                val value = MetadataAPISerialization.serializeObjectToJson(ti).getBytes //serializer.SerializeObjectToByteArray(ti)
                 keyList = keyList :+ key.toLowerCase
                 valueList = valueList :+ value
 
@@ -960,14 +981,14 @@ object ConfigUtils {
                   adapterDef.clusterId = ClusterId
                   adapterDef.elementType = "adapterDef"
                   clusterNotifications.append(adapterDef)
-                  logger.debug("adapter Change for " + adapterDef.name )
+                  logger.debug("adapter Change for " + adapterDef.name)
                   if (addAdapterResult.get.equalsIgnoreCase("add"))
                     clusterNotifyActions.append("Add")
                   else
                     clusterNotifyActions.append("Update")
                 }
                 val key = "AdapterInfo." + ai.name
-                val value = MetadataAPISerialization.serializeObjectToJson(ai).getBytes//serializer.SerializeObjectToByteArray(ai)
+                val value = MetadataAPISerialization.serializeObjectToJson(ai).getBytes //serializer.SerializeObjectToByteArray(ai)
                 keyList = keyList :+ key.toLowerCase
                 valueList = valueList :+ value
               })
@@ -994,7 +1015,7 @@ object ConfigUtils {
                 upDef.elementType = "upDef"
                 clusterNotifications.append(upDef)
 
-                logger.debug("UP Change for " + upDef.clusterId )
+                logger.debug("UP Change for " + upDef.clusterId)
                 if (upAddResults.get.equalsIgnoreCase("add"))
                   clusterNotifyActions.append("Add")
                 else
@@ -1002,7 +1023,7 @@ object ConfigUtils {
               }
 
               val upKey = "userProperties." + upProps.clusterId
-              val upValue = MetadataAPISerialization.serializeObjectToJson(upProps).getBytes//serializer.SerializeObjectToByteArray(upProps)
+              val upValue = MetadataAPISerialization.serializeObjectToJson(upProps).getBytes //serializer.SerializeObjectToByteArray(upProps)
               keyList = keyList :+ upKey.toLowerCase
               valueList = valueList :+ upValue
             }
@@ -1011,7 +1032,6 @@ object ConfigUtils {
         } else {
           logger.debug("Found no adapater objects in the config file")
         }
-
 
         getMetadataAPI.SaveObjectList(keyList, valueList, "config_objects", serializerType)
         getMetadataAPI.NotifyEngine(clusterNotifications.toArray, clusterNotifyActions.toArray)
@@ -1027,33 +1047,33 @@ object ConfigUtils {
     }
   }
 
-    /**
-     * Get a property value
-      *
-      * @param ci
-     * @param key
-     * @return
-     */
+  /**
+   * Get a property value
+   *
+   * @param ci
+   * @param key
+   * @return
+   */
   def getUP(ci: String, key: String): String = {
     MdMgr.GetMdMgr.GetUserProperty(ci, key)
   }
 
-    /**
-     * Answer nodes as an array.
-      *
-      * @return
-     */
+  /**
+   * Answer nodes as an array.
+   *
+   * @return
+   */
   def getNodeList1: Array[NodeInfo] = { MdMgr.GetMdMgr.Nodes.values.toArray }
   // All available nodes(format JSON) as a String
-    /**
-     * Get the nodes as json.
-      *
-      * @param formatType format of the return value, either JSON or XML
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
-     *               Supply one.
-     * @return
-     */
+  /**
+   * Get the nodes as json.
+   *
+   * @param formatType format of the return value, either JSON or XML
+   * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
+   *               Supply one.
+   * @return
+   */
   def GetAllNodes(formatType: String, userid: Option[String] = None): String = {
     try {
       val nodes = MdMgr.GetMdMgr.Nodes.values.toArray
@@ -1076,15 +1096,15 @@ object ConfigUtils {
     }
   }
 
-    /**
-     * All available adapters(format JSON) as a String
-      *
-      * @param formatType format of the return value, either JSON or XML
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
-     *               Supply one.
-     * @return
-     */
+  /**
+   * All available adapters(format JSON) as a String
+   *
+   * @param formatType format of the return value, either JSON or XML
+   * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
+   *               Supply one.
+   * @return
+   */
   def GetAllAdapters(formatType: String, userid: Option[String] = None): String = {
     try {
       val adapters = MdMgr.GetMdMgr.Adapters.values.toArray
@@ -1108,13 +1128,12 @@ object ConfigUtils {
     }
   }
 
-
   def GetAllTenants(userid: Option[String] = None): Array[String] = {
-    try{
+    try {
       getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETCONFIG, AuditConstants.CONFIG, AuditConstants.SUCCESS, "", "tenants")
       var tenants = MdMgr.GetMdMgr.GetAllTenantInfos
       var tenantIds: ArrayBuffer[String] = ArrayBuffer[String]()
-      tenants.foreach(x=> tenantIds.append(x.tenantId))
+      tenants.foreach(x => tenantIds.append(x.tenantId))
       return tenantIds.toArray[String]
     } catch {
       case e: Exception => {
@@ -1124,15 +1143,15 @@ object ConfigUtils {
     }
   }
 
-    /**
-     * All available clusters(format JSON) as a String
-      *
-      * @param formatType format of the return value, either JSON or XML
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
-     *               Supply one.
-     * @return
-     */
+  /**
+   * All available clusters(format JSON) as a String
+   *
+   * @param formatType format of the return value, either JSON or XML
+   * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
+   *               Supply one.
+   * @return
+   */
   def GetAllClusters(formatType: String, userid: Option[String] = None): String = {
     try {
       val clusters = MdMgr.GetMdMgr.Clusters.values.toArray
@@ -1156,14 +1175,14 @@ object ConfigUtils {
   }
 
   // All available clusterCfgs(format JSON) as a String
-    /**
-     *
-     * @param formatType format of the return value, either JSON or XML
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
-     *               Supply one.
-     * @return
-     */
+  /**
+   *
+   * @param formatType format of the return value, either JSON or XML
+   * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
+   *               Supply one.
+   * @return
+   */
   def GetAllClusterCfgs(formatType: String, userid: Option[String] = None): String = {
     try {
       getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETCONFIG, AuditConstants.CONFIG, AuditConstants.SUCCESS, "", "ClusterCfg")
@@ -1188,15 +1207,15 @@ object ConfigUtils {
     }
   }
 
-    /**
-     * All available config objects(format JSON) as a String
-      *
-      * @param formatType format of the return value, either JSON or XML
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
-     *               Supply one.
-     * @return
-     */
+  /**
+   * All available config objects(format JSON) as a String
+   *
+   * @param formatType format of the return value, either JSON or XML
+   * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
+   *               Supply one.
+   * @return
+   */
   def GetAllCfgObjects(formatType: String, userid: Option[String] = None): String = {
     var cfgObjList = new Array[Object](0)
     getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETCONFIG, AuditConstants.CONFIG, AuditConstants.SUCCESS, "", "all")
@@ -1264,10 +1283,10 @@ object ConfigUtils {
     }
   }
 
-    /**
-     * Dump the configuration file to the log
-     */
-  def  dumpMetadataAPIConfig {
+  /**
+   * Dump the configuration file to the log
+   */
+  def dumpMetadataAPIConfig {
     val e = getMetadataAPI.GetMetadataAPIConfig.propertyNames()
     while (e.hasMoreElements()) {
       val key = e.nextElement().asInstanceOf[String]
@@ -1276,13 +1295,13 @@ object ConfigUtils {
     }
   }
 
-    /**
-     * setPropertyFromConfigFile - convert a specific KEY:VALUE pair in the config file into the
-     * KEY:VALUE pair in the  Properties object
-      *
-      * @param key a property key
-     * @param value a value
-     */
+  /**
+   * setPropertyFromConfigFile - convert a specific KEY:VALUE pair in the config file into the
+   * KEY:VALUE pair in the  Properties object
+   *
+   * @param key a property key
+   * @param value a value
+   */
   private def setPropertyFromConfigFile(key: String, value: String) {
     var finalKey = key
     var finalValue = value
@@ -1360,12 +1379,12 @@ object ConfigUtils {
     pList = pList - finalKey.toUpperCase
   }
 
-    /**
-     * Refresh the ClusterConfiguration for the specified node
-      *
-      * @param nodeId a cluster node
-     * @return
-     */
+  /**
+   * Refresh the ClusterConfiguration for the specified node
+   *
+   * @param nodeId a cluster node
+   * @return
+   */
   def RefreshApiConfigForGivenNode(nodeId: String): Boolean = {
 
     val nd = mdMgr.Nodes.getOrElse(nodeId, null)
@@ -1433,11 +1452,11 @@ object ConfigUtils {
     true
   }
 
-    /**
-     * Read metadata api configuration properties
-      *
-      * @param configFile the MetadataAPI configuration file
-     */
+  /**
+   * Read metadata api configuration properties
+   *
+   * @param configFile the MetadataAPI configuration file
+   */
   @throws(classOf[MissingPropertyException])
   @throws(classOf[InvalidPropertyException])
   def readMetadataAPIConfigFromPropertiesFile(configFile: String): Unit = {
@@ -1509,11 +1528,11 @@ object ConfigUtils {
     }
   }
 
-    /**
-     * Read the default configuration property values from config file.
-      *
-      * @param cfgFile
-     */
+  /**
+   * Read the default configuration property values from config file.
+   *
+   * @param cfgFile
+   */
   @throws(classOf[MissingPropertyException])
   @throws(classOf[LoadAPIConfigException])
   def readMetadataAPIConfigFromJsonFile(cfgFile: String): Unit = {
@@ -1755,16 +1774,16 @@ object ConfigUtils {
     }
   }
 
-    /**
-     * LoadAllConfigObjectsIntoCache
-      *
-      * @return
-     */
+  /**
+   * LoadAllConfigObjectsIntoCache
+   *
+   * @return
+   */
   def LoadAllConfigObjectsIntoCache: Boolean = {
     try {
       var processed: Long = 0L
       val storeInfo = PersistenceUtils.GetContainerNameAndDataStore("config_objects")
-      storeInfo._2.get(storeInfo._1, { (k: Key, v: Any, serType: String, typ: String, ver:Int) =>
+      storeInfo._2.get(storeInfo._1, { (k: Key, v: Any, serType: String, typ: String, ver: Int) =>
         {
           val strKey = k.bucketKey.mkString(".")
           val i = strKey.indexOf(".")
@@ -1773,33 +1792,33 @@ object ConfigUtils {
           processed += 1
           objType match {
             case "nodeinfo" => {
-              val ni = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[NodeInfo]//serializer.DeserializeObjectFromByteArray(v.asInstanceOf[Array[Byte]]).asInstanceOf[NodeInfo]
+              val ni = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[NodeInfo] //serializer.DeserializeObjectFromByteArray(v.asInstanceOf[Array[Byte]]).asInstanceOf[NodeInfo]
               MdMgr.GetMdMgr.AddNode(ni)
 
             }
             case "adapterinfo" => {
-              val ai = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[AdapterInfo]//serializer.DeserializeObjectFromByteArray(v.asInstanceOf[Array[Byte]]).asInstanceOf[AdapterInfo]
+              val ai = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[AdapterInfo] //serializer.DeserializeObjectFromByteArray(v.asInstanceOf[Array[Byte]]).asInstanceOf[AdapterInfo]
               MdMgr.GetMdMgr.AddAdapter(ai)
             }
             case "clusterinfo" => {
-              val ci = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[ClusterInfo]//serializer.DeserializeObjectFromByteArray(v.asInstanceOf[Array[Byte]]).asInstanceOf[ClusterInfo]
+              val ci = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[ClusterInfo] //serializer.DeserializeObjectFromByteArray(v.asInstanceOf[Array[Byte]]).asInstanceOf[ClusterInfo]
               MdMgr.GetMdMgr.AddCluster(ci)
             }
             case "clustercfginfo" => {
-              val ci = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[ClusterCfgInfo]//serializer.DeserializeObjectFromByteArray(v.asInstanceOf[Array[Byte]]).asInstanceOf[ClusterCfgInfo]
+              val ci = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[ClusterCfgInfo] //serializer.DeserializeObjectFromByteArray(v.asInstanceOf[Array[Byte]]).asInstanceOf[ClusterCfgInfo]
               MdMgr.GetMdMgr.AddClusterCfg(ci)
             }
             case "userproperties" => {
-              val up = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[UserPropertiesInfo]//serializer.DeserializeObjectFromByteArray(v.asInstanceOf[Array[Byte]]).asInstanceOf[UserPropertiesInfo]
+              val up = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[UserPropertiesInfo] //serializer.DeserializeObjectFromByteArray(v.asInstanceOf[Array[Byte]]).asInstanceOf[UserPropertiesInfo]
               MdMgr.GetMdMgr.AddUserProperty(up)
             }
             case "tenantinfo" => {
-                val up = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[TenantInfo] //serializer.DeserializeObjectFromByteArray(v.asInstanceOf[Array[Byte]]).asInstanceOf[TenantInfo]
-                MdMgr.GetMdMgr.AddTenantInfo(up)
+              val up = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[TenantInfo] //serializer.DeserializeObjectFromByteArray(v.asInstanceOf[Array[Byte]]).asInstanceOf[TenantInfo]
+              MdMgr.GetMdMgr.AddTenantInfo(up)
             }
             case "adaptermessagebinding" => {
-                val binding = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[AdapterMessageBinding] //serializer.DeserializeObjectFromByteArray(v.asInstanceOf[Array[Byte]]).asInstanceOf[TenantInfo]
-                MdMgr.GetMdMgr.AddAdapterMessageBinding(binding)
+              val binding = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[AdapterMessageBinding] //serializer.DeserializeObjectFromByteArray(v.asInstanceOf[Array[Byte]]).asInstanceOf[TenantInfo]
+              MdMgr.GetMdMgr.AddAdapterMessageBinding(binding)
             }
             case _ => {
               throw InternalErrorException("LoadAllConfigObjectsIntoCache: Unknown objectType " + objType, null)
@@ -1823,9 +1842,9 @@ object ConfigUtils {
     }
   }
 
-    /**
-     * LoadAllModelConfigsIntoChache
-     */
+  /**
+   * LoadAllModelConfigsIntoChache
+   */
   def LoadAllModelConfigsIntoCache: Unit = {
     val maxTranId = PersistenceUtils.GetTranId
     getMetadataAPI.setCurrentTranLevel(maxTranId)
@@ -1833,7 +1852,7 @@ object ConfigUtils {
 
     var processed: Long = 0L
     val storeInfo = PersistenceUtils.GetContainerNameAndDataStore("model_config_objects")
-    storeInfo._2.get(storeInfo._1, { (k: Key, v: Any, serType: String, typ: String, ver:Int) =>
+    storeInfo._2.get(storeInfo._1, { (k: Key, v: Any, serType: String, typ: String, ver: Int) =>
       {
         processed += 1
         val json = parse(new String(v.asInstanceOf[Array[Byte]]))
@@ -1849,61 +1868,62 @@ object ConfigUtils {
     MdMgr.GetMdMgr.DumpModelConfigs
   }
 
-    /**
-      * LoadAdapterMessageBindingIntoCache
-      *
-      * @param key string of the form "s"${zkMessage.ObjectType}.${zkMessage.Name}" where the object type is the
-      *            "AdapterMessageBinding" and the Name is the FullBindingName of the object to fetch
-      */
-    def LoadAdapterMessageBindingIntoCache(key: String) {
-        try {
-            logger.debug("Fetch the AdapterMessageBinding with key: " + key + " from persistent store ")
-            val (objtype, jsonBytes) : (String, Any) = PersistenceUtils.GetObject(key.toLowerCase, "adapter_message_bindings")
-            logger.debug("Deserialize the binding " + key)
-            val binding : AdapterMessageBinding =
-                    MetadataAPISerialization.deserializeMetadata(new String(jsonBytes.asInstanceOf[Array[Byte]])).asInstanceOf[AdapterMessageBinding]
-            if (binding != null) {
-                if (! binding.IsDeleted) {
-                    logger.debug("Add the binding " + key + " to the metadata cache ")
-                    MdMgr.GetMdMgr.AddAdapterMessageBinding(binding)
-                }
-            }
-        } catch {
-            case e: Exception => {
-                logger.warn("Unable to load the object " + key + " into cache ", e)
-            }
+  /**
+   * LoadAdapterMessageBindingIntoCache
+   *
+   * @param key string of the form "s"${zkMessage.ObjectType}.${zkMessage.Name}" where the object type is the
+   *            "AdapterMessageBinding" and the Name is the FullBindingName of the object to fetch
+   */
+  def LoadAdapterMessageBindingIntoCache(key: String) {
+    try {
+      logger.debug("Fetch the AdapterMessageBinding with key: " + key + " from persistent store ")
+      val (objtype, jsonBytes): (String, Any) = PersistenceUtils.GetObject(key.toLowerCase, "adapter_message_bindings")
+      logger.debug("Deserialize the binding " + key)
+      val binding: AdapterMessageBinding =
+        MetadataAPISerialization.deserializeMetadata(new String(jsonBytes.asInstanceOf[Array[Byte]])).asInstanceOf[AdapterMessageBinding]
+      if (binding != null) {
+        if (!binding.IsDeleted) {
+          logger.debug("Add the binding " + key + " to the metadata cache ")
+          MdMgr.GetMdMgr.AddAdapterMessageBinding(binding)
         }
-    }
-
-    /**
-      * Remove the supplied binding the the supplied zookeeper object and binding specific key.
-      *
-      * @param bindingKey "<adapter name>,<namespace.msgname>,<namespace.serializername>"
-      */
-    def RemoveAdapterMessageBindingFromCache(bindingKey : String): Unit = {
-      try {
-          val binding: AdapterMessageBinding  = mdMgr.RemoveAdapterMessageBinding(bindingKey)
-
-          /** Note that even if it the binding is not in the mdMgr cache, we will proceed to remove it if possible
-            * from the Storage. The MetadataAPI can delete it (it doesn't necessarily notify the engine... NOTIFY_ENGINE = NO... and get it
-            * deleted on the back side during call back.  */
-          val key = s"AdapterMessageBinding.$bindingKey"
-          getMetadataAPI.DeleteObject(key.toLowerCase, "adapter_message_bindings")
-          val apiResult = new ApiResult(ErrorCodeConstants.Success, "RemoveAdapterMessageBindingFromCache", null, ErrorCodeConstants.Remove_AdapterMessageBinding_Successful + ":" + bindingKey)
-          apiResult.toString()
-
-      } catch {
-          case e: Exception => {
-              /**
-                * This is not necessarily catastrophic.  The binding could have been removed earlier depending upon the cluster
-                * configuration. It will attemtp to delete twice when Notify_Engine = yes
-                */
-              logger.debug("", e)
-              val apiResult = new ApiResult(ErrorCodeConstants.Failure, "RemoveAdapterMessageBindingFromCache", null, "Error :" + e.toString() + ErrorCodeConstants.Remove_AdapterMessageBinding_Failed + ":" + s"AdapterMessageBinding.$bindingKey")
-              apiResult.toString()
-          }
+      }
+    } catch {
+      case e: Exception => {
+        logger.warn("Unable to load the object " + key + " into cache ", e)
       }
     }
+  }
 
+  /**
+   * Remove the supplied binding the the supplied zookeeper object and binding specific key.
+   *
+   * @param bindingKey "<adapter name>,<namespace.msgname>,<namespace.serializername>"
+   */
+  def RemoveAdapterMessageBindingFromCache(bindingKey: String): Unit = {
+    try {
+      val binding: AdapterMessageBinding = mdMgr.RemoveAdapterMessageBinding(bindingKey)
+
+      /**
+       * Note that even if it the binding is not in the mdMgr cache, we will proceed to remove it if possible
+       * from the Storage. The MetadataAPI can delete it (it doesn't necessarily notify the engine... NOTIFY_ENGINE = NO... and get it
+       * deleted on the back side during call back.
+       */
+      val key = s"AdapterMessageBinding.$bindingKey"
+      getMetadataAPI.DeleteObject(key.toLowerCase, "adapter_message_bindings")
+      val apiResult = new ApiResult(ErrorCodeConstants.Success, "RemoveAdapterMessageBindingFromCache", null, ErrorCodeConstants.Remove_AdapterMessageBinding_Successful + ":" + bindingKey)
+      apiResult.toString()
+
+    } catch {
+      case e: Exception => {
+        /**
+         * This is not necessarily catastrophic.  The binding could have been removed earlier depending upon the cluster
+         * configuration. It will attemtp to delete twice when Notify_Engine = yes
+         */
+        logger.debug("", e)
+        val apiResult = new ApiResult(ErrorCodeConstants.Failure, "RemoveAdapterMessageBindingFromCache", null, "Error :" + e.toString() + ErrorCodeConstants.Remove_AdapterMessageBinding_Failed + ":" + s"AdapterMessageBinding.$bindingKey")
+        apiResult.toString()
+      }
+    }
+  }
 
 }

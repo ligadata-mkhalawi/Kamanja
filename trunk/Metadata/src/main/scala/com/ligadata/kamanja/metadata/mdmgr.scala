@@ -3036,7 +3036,10 @@ class MdMgr {
                clusterId: String,
                power: Int,
                roles: Array[String],
-               description: String): NodeInfo = {
+               description: String, 
+               readCores:Int,
+               processingCores: Int,
+               logicalPartitions: Int): NodeInfo = {
     val ni = new NodeInfo
     ni.nodeId = nodeId
     ni.nodePort = nodePort
@@ -3051,6 +3054,9 @@ class MdMgr {
     ni.power = power
     ni.roles = roles
     ni.description = description
+    ni.readCores = readCores
+    ni.processingCores = processingCores
+    ni.logicalPartitions = logicalPartitions
     ni
   }
 
@@ -3454,11 +3460,14 @@ class MdMgr {
     upi
   }
 
-  def MakeCluster(clusterId: String, description: String, privileges: String): ClusterInfo = {
+  def MakeCluster(clusterId: String, description: String, privileges: String, readCores: Int,  processingCores: Int,  logicalPartitions: Int): ClusterInfo = {
     val ci = new ClusterInfo
     ci.clusterId = clusterId
     ci.description = description
     ci.privileges = privileges
+    ci.readCores = readCores
+    ci.processingCores = processingCores
+    ci.logicalPartitions = logicalPartitions
     ci
   }
 

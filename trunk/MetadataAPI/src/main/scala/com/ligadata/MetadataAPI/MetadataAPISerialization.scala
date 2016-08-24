@@ -577,7 +577,10 @@ object MetadataAPISerialization {
               ("ClusterId" -> getEmptyIfNull(o.ClusterId)) ~
               ("Power" -> o.Power) ~
               ("Roles" -> getEmptyArrayIfNull(o.Roles).toList) ~
-              ("Description" -> getEmptyIfNull(o.Description))
+              ("Description" -> getEmptyIfNull(o.Description)) ~
+              ("ReadCores" -> o.ReadCores) ~
+              ("ProcessingCores" -> o.ProcessingCores) ~
+              ("LogicalPartitions" -> o.LogicalPartitions)
           outputJson = compact(render(json))
 
         }
@@ -585,7 +588,10 @@ object MetadataAPISerialization {
           val json = "Cluster" ->
             ("ClusterId" -> getEmptyIfNull(o.ClusterId)) ~
               ("Description" -> getEmptyIfNull(o.Description)) ~
-              ("Privileges" -> getEmptyIfNull(o.Privileges))
+              ("Privileges" -> getEmptyIfNull(o.Privileges)) ~
+              ("ReadCores" -> o.ReadCores) ~
+              ("ProcessingCores" -> o.ProcessingCores) ~
+              ("LogicalPartitions" -> o.LogicalPartitions)              
           outputJson = compact(render(json))
 
         }
@@ -2012,7 +2018,11 @@ private def parseContainerDef(contDefJson: JValue): ContainerDef = {
         nodeInst.Node.ClusterId,
         nodeInst.Node.Power,
         nodeInst.Node.Roles.toArray,
-        nodeInst.Node.Description)
+        nodeInst.Node.Description,
+        nodeInst.Node.ReadCores,
+        nodeInst.Node.ProcessingCores,
+        nodeInst.Node.LogicalPartitions
+        )
 
       nodeInfo
 
@@ -2037,7 +2047,10 @@ private def parseContainerDef(contDefJson: JValue): ContainerDef = {
       val clusterInfo = MdMgr.GetMdMgr.MakeCluster(
         clusterInst.Cluster.ClusterId,
         clusterInst.Cluster.Description,
-        clusterInst.Cluster.Privileges
+        clusterInst.Cluster.Privileges,
+        clusterInst.Cluster.ReadCores,
+        clusterInst.Cluster.ProcessingCores,
+        clusterInst.Cluster.LogicalPartitions
       )
       clusterInfo
 
@@ -2260,11 +2273,11 @@ case class ClusterCfgInformation(ClusterId: String, CfgMap: List[KeyVale], Modif
 
 case class ClusterCfg(ClusterCfg: ClusterCfgInformation)
 
-case class ClusterInformation(ClusterId: String, Description: String, Privileges: String)
+case class ClusterInformation(ClusterId: String, Description: String, Privileges: String, ReadCores: Int, ProcessingCores: Int, LogicalPartitions: Int)
 
 case class Cluster(Cluster: ClusterInformation)
 
-case class NodeInformation(NodeId: String, NodePort: Int, NodeIpAddr: String, JarPaths: List[String], Scala_home: String, Java_home: String, Classpath: String, ClusterId: String, Power: Int, Roles: List[String], Description: String)
+case class NodeInformation(NodeId: String, NodePort: Int, NodeIpAddr: String, JarPaths: List[String], Scala_home: String, Java_home: String, Classpath: String, ClusterId: String, Power: Int, Roles: List[String], Description: String, ReadCores: Int, ProcessingCores: Int, LogicalPartitions: Int)
 
 case class Node(Node: NodeInformation)
 
