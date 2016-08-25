@@ -51,7 +51,7 @@ object TestUtils extends KamanjaTestLogger {
         ret = ret && deleteFile(f)
       }
     }
-    logger.debug("AUTOMATION-TESTUTILS: Deleting file '" + path + "'")
+    logger.debug("[Kamanja Test Utils]: Deleting file '" + path + "'")
     return ret && path.delete()
   }
 
