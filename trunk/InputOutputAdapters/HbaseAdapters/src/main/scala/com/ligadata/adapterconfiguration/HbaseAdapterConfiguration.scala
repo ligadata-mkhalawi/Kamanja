@@ -111,7 +111,7 @@ object HbaseAdapterConfiguration extends LogTrait{
       if (adapterConfig.TableName == null || adapterConfig.TableName.size == 0)
         throw new KamanjaException("tableName should be specified for Hbase Producer: " + adapterConfig.Name, null)
 
-      if (adapterConfig.rowkeyIncluded == null) {
+      if (!adapterConfig.rowkeyIncluded.equals(true) && !adapterConfig.rowkeyIncluded.equals(false)) {
         //throw new KamanjaException("rowkeyIncluded should be specified for Hbase Producer: " + adapterConfig.Name, null)
         logger.info("rowkeyIncluded did not pass, the default value is false.")
         adapterConfig.rowkeyIncluded = false

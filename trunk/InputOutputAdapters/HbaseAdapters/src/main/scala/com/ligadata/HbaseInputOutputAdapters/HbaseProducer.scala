@@ -238,6 +238,9 @@ class HbaseProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       (oneContainerData._1, containerData)
     }).filter(oneContainerData => oneContainerData._2.size > 0)
 
+//    putData.foreach({x =>
+//    println("<===containername====>" + x._1 + "contianer size" + x._2.length)})
+
     if (putData.size > 0)
       dataStore.put(putData)
    // dataStore.put(tnxCtxt, data_list)
@@ -258,7 +261,7 @@ class HbaseProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
 
   override def Shutdown(): Unit = {
 
-    LOG.info(/*qc.Name + */" Shutdown detected")
+    LOG.info(adapterConfig.Name +" Shutdown detected")
 
     // Shutdown HB
     isShutdown = true
@@ -329,7 +332,7 @@ class HbaseProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
             externalizeExceptionEvent(e)
             isHeartBeating = false
             if (isShutdown == false)
-              LOG.warn(/*HbaseProducer.Name + */" Heartbeat Interrupt detected", e)
+              LOG.warn(adapterConfig.Name + " Heartbeat Interrupt detected", e)
           }
         }
         LOG.info(adapterConfig.Name + " Heartbeat is shutting down")

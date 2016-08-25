@@ -111,6 +111,8 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     ).toMap
 
    // myPartitionInfoMap
+    myPartitionInfoMap.foreach(x =>
+    println("partitionID ====> "+ x._1 + "=======timestamp ======> "+ x._2._1))
 
     val partitionListDisplay = partitionIds.map(x => {
       x._key.asInstanceOf[HbasePartitionUniqueRecordKey].PartitionId
@@ -121,13 +123,14 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
 
 
     currentNodePartitions.foreach(partitionid => {
-      var initialTimestamp = myPartitionInfoMap(partitionid)._1
+      val initialTimestamp = myPartitionInfoMap(partitionid)._1
 
       readExecutor.execute(new Runnable() {
         var intSleepTimer = KamanjaHbaseConsumer.INITIAL_SLEEP
 
         var execContexts: ExecContext = null
         var uniqueKey = new HbasePartitionUniqueRecordKey
+        uniqueKey.PartitionId = partitionid
         // Create a new EngineMessage and call the engine.
         if (execContexts == null) {
           execContexts = execCtxtObj.CreateExecContext(input, uniqueKey, nodeContext)
@@ -137,22 +140,25 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
         override def run(): Unit = {
           var readTmMs = System.currentTimeMillis
           var currentTimestamp = initialTimestamp
-          var isRecordSentToKamanja = false
+          //var isRecordSentToKamanja = false
           val uniqueVal = new HbasePartitionUniqueRecordValue
+          var messageData: String = ""
           while (!isQuiese) {
             val retrievedata = (data: String, timestamp: Long) => {
               readTmMs = System.currentTimeMillis
               val indexOfDelimiter = data.indexOf(adapterConfig.columnDelimiter)
               val keyHashCode = data.substring(0, indexOfDelimiter).hashCode
               if (data != null && ((keyHashCode % currentNodePartitions.size == partitionid) || (partitionid == currentNodePartitions.size && (keyHashCode % currentNodePartitions.size == 0)))) {
-                val uniqueVal = new HbasePartitionUniqueRecordValue
-                uniqueVal.TimeStamp = currentTimestamp
-                uniqueVal.TableName = adapterConfig.TableName
+                //val uniqueVal = new HbasePartitionUniqueRecordValue
+                uniqueVal.TimeStamp = timestamp
+               // uniqueVal.TableName = adapterConfig.TableName
                 uniqueVal.Key = partitionid
                 msgCount += 1
-                if(!adapterConfig.rowkeyIncluded)
-                  data.substring(indexOfDelimiter+1, data.length)
-                val message = data.getBytes
+                if(adapterConfig.rowkeyIncluded.equals(false))
+                  messageData = data.substring(indexOfDelimiter+1, data.length)
+                else
+                  messageData = data
+                val message = messageData.getBytes
                 execContexts.execute(message, uniqueKey, uniqueVal, readTmMs)
               }
             }
@@ -226,7 +232,7 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
       rKey.PartitionId = partitionId
       rKey.Name = adapterConfig.Name
       rValue.TimeStamp = 0
-      rValue.Key = -1
+      rValue.Key = partitionId
       rValue.TableName = adapterConfig.TableName
       infoBuffer.append((rKey, rValue))
     }
@@ -248,7 +254,7 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   override def GetAllPartitionUniqueRecordKey: Array[PartitionUniqueRecordKey] = lock.synchronized {
     val infoBuffer = ArrayBuffer[PartitionUniqueRecordKey]()
     for(partitionId <- 1 to adapterConfig.numberOfThread){
-      var newkey = new HbasePartitionUniqueRecordKey
+      val newkey = new HbasePartitionUniqueRecordKey
       newkey.PartitionId = partitionId
       newkey.Name = adapterConfig.Name
       infoBuffer.append(newkey)
