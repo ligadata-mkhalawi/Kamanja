@@ -24,6 +24,16 @@ object EmbeddedServicesManager {
   private var clusterConfig: Cluster = _
   private var kafkaConsumer: TestKafkaConsumer = _
 
+  def getInputKafkaAdapterConfig: KafkaAdapterConfig = {
+    if(clusterConfig != null) {
+      throw new Exception("[Kamanja Application Tester] ---> ***ERROR*** Cluster Configuration has not been generated. Please run startServices first.")
+    }
+    else {
+      val inputConfig = clusterConfig.adapters.filter(_.asInstanceOf[KafkaAdapterConfig].adapterSpecificConfig.topicName.toLowerCase == "testin_1")(0).asInstanceOf[KafkaAdapterConfig]
+      return inputConfig
+    }
+  }
+
   def startServices(kamanjaInstallDir: String): Boolean = {
     val classPath: String = {
         List(
