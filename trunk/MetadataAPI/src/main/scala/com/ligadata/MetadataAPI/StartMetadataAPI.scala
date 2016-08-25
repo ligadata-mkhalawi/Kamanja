@@ -771,6 +771,8 @@ object StartMetadataAPI {
           TypeService.getTypeByElementId(elementId)
         }
 
+        case Action.ADDSCHEDULE =>  response = SchedulesService.addSchedule(input, tid, paramStr)
+
         case _ => {
           println(s"Unexpected action! action=$action")
           throw new RuntimeException(s"Unexpected action! action=$action")

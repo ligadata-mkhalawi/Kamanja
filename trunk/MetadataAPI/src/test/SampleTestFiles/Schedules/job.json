@@ -1,0 +1,12 @@
+{
+  "name": "test2",
+  "startTime": "2016-08-22 6:00:00",
+  "endTime": "2020-08-23 6:30:00",
+  "cronJobPattern": "0/5 * * * * ?",
+  "payload": [
+    "e",
+    "f",
+    "g"
+  ],
+  "jobname": "com.ligadata.adapter1job"
+}

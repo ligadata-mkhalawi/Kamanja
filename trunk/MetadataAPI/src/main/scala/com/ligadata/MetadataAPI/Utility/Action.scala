@@ -94,5 +94,8 @@ object Action extends Enumeration {
   
   val GETTYPEBYSCHEMAID = Value("gettypebyschemaid")
   val GETTYPEBYELEMENTID = Value("gettypebyelementid")
+
+  //Schedules
+  val ADDSCHEDULE = Value("addschedule")
    
 }

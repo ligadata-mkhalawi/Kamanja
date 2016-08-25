@@ -78,7 +78,7 @@ import java.util.Date
 
 import org.json4s.jackson.Serialization
 
-case class ParameterMap(RootDir: String, GitRootDir: String, MetadataStoreType: String, MetadataSchemaName: Option[String], /* MetadataAdapterSpecificConfig: Option[String], */ MetadataLocation: String, JarTargetDir: String, ScalaHome: String, JavaHome: String, ManifestPath: String, ClassPath: String, NotifyEngine: String, ZnodePath: String, ZooKeeperConnectString: String, MODEL_FILES_DIR: Option[String], TYPE_FILES_DIR: Option[String], FUNCTION_FILES_DIR: Option[String], CONCEPT_FILES_DIR: Option[String], MESSAGE_FILES_DIR: Option[String], CONTAINER_FILES_DIR: Option[String], COMPILER_WORK_DIR: Option[String], MODEL_EXEC_FLAG: Option[String], OUTPUTMESSAGE_FILES_DIR: Option[String])
+case class ParameterMap(RootDir: String, GitRootDir: String, MetadataStoreType: String, MetadataSchemaName: Option[String], /* MetadataAdapterSpecificConfig: Option[String], */ MetadataLocation: String, JarTargetDir: String, ScalaHome: String, JavaHome: String, ManifestPath: String, ClassPath: String, NotifyEngine: String, ZnodePath: String, ZooKeeperConnectString: String, MODEL_FILES_DIR: Option[String], TYPE_FILES_DIR: Option[String], FUNCTION_FILES_DIR: Option[String], CONCEPT_FILES_DIR: Option[String], MESSAGE_FILES_DIR: Option[String], CONTAINER_FILES_DIR: Option[String], COMPILER_WORK_DIR: Option[String], MODEL_EXEC_FLAG: Option[String], OUTPUTMESSAGE_FILES_DIR: Option[String], SCHEDULE_FILES_DIR: Option[String])
 
 case class ZooKeeperInfo(ZooKeeperNodeBasePath: String, ZooKeeperConnectString: String, ZooKeeperSessionTimeoutMs: Option[String], ZooKeeperConnectionTimeoutMs: Option[String])
 
@@ -4434,5 +4434,23 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     MessageAndContainerUtils.GetTypeByElementId(elementId, userid)
   }
 
-
+  /** Add Schedule given messageText
+    *
+    * @param text text of the schedule (as JSON string as defined by next parameter formatType)
+    * @param formatType  format of scheduleText ( JSON )
+    * @param userid      the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *                    method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
+    *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
+    *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
+    *
+    *         Example
+    *
+    *         {{{
+    *          var apiResult = MetadataAPIImpl.AddSchedule(msgStr,"JSON"))
+    *         }}}
+    */
+  override def addSchedule(text: String, formatType: String, userid: Option[String], tid: Option[String], pStr: Option[String]): String = {
+    ScheduleUtils.addSchedule(text ,formatType, userid, tid, pStr)
+  }
 }

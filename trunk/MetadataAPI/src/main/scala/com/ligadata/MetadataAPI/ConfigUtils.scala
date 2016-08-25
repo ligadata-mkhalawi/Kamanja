@@ -1709,6 +1709,14 @@ object ConfigUtils {
         OUTPUTMESSAGE_FILES_DIR = OUTPUTMESSAGE_FILES_DIR1.get
       logger.debug("OUTPUTMESSAGE_FILES_DIR => " + OUTPUTMESSAGE_FILES_DIR)
 
+      var SCHEDULE_FILES_DIR = ""
+      val SCHEDULE_FILES_DIR1 = configMap.APIConfigParameters.SCHEDULE_FILES_DIR
+      if (SCHEDULE_FILES_DIR1 == None) {
+        SCHEDULE_FILES_DIR = gitRootDir + "/Kamanja/trunk/MetadataAPI/src/test/SampleTestFiles/Schedules"
+      } else
+        SCHEDULE_FILES_DIR = SCHEDULE_FILES_DIR1.get
+      logger.debug("SCHEDULES_FILES_DIR => " + SCHEDULE_FILES_DIR)
+
       getMetadataAPI.GetMetadataAPIConfig.setProperty("ROOT_DIR", rootDir)
       getMetadataAPI.GetMetadataAPIConfig.setProperty("GIT_ROOT", gitRootDir)
       getMetadataAPI.GetMetadataAPIConfig.setProperty("DATABASE", database)
@@ -1738,6 +1746,7 @@ object ConfigUtils {
       getMetadataAPI.GetMetadataAPIConfig.setProperty("MODEL_EXEC_LOG", MODEL_EXEC_FLAG)
       getMetadataAPI.GetMetadataAPIConfig.setProperty("CONFIG_FILES_DIR", CONFIG_FILES_DIR)
       getMetadataAPI.GetMetadataAPIConfig.setProperty("OUTPUTMESSAGE_FILES_DIR", OUTPUTMESSAGE_FILES_DIR)
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("SCHDUALE_FILES_DIR", SCHEDULE_FILES_DIR)
 
       MetadataAPIImpl.propertiesAlreadyLoaded = true;
 

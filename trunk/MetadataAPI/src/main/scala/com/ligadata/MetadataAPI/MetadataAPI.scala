@@ -1644,5 +1644,23 @@ trait MetadataAPI {
     */
   def UpdateObjectInDB(obj: BaseElemDef)
 
+  /** Add Schedule given messageText
+    *
+    * @param text text of the schedule (as JSON string as defined by next parameter formatType)
+    * @param formatType format of scheduleText ( JSON )
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
+    * indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
+    * ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
+    *
+    * Example
+    *
+    * {{{
+    * var apiResult = MetadataAPIImpl.AddSchedule(msgStr,"JSON"))
+    * }}}
+    */
+  def addSchedule(text:String, formatType:String, userid: Option[String] = None, tid: Option[String] = None, pStr: Option[String]): String
+
   }
 // 646 - 674 Change ends
