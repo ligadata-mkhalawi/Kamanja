@@ -127,6 +127,7 @@ object KamanjaConfiguration {
   // Debugging info configs -- End
 
   var commitOffsetsMsgCnt = 0
+  var commitOffsetsTimeInterval = 0
 
   var shutdown = false
   var participentsChangedCntr: Long = 0
@@ -156,6 +157,7 @@ object KamanjaConfiguration {
     // Debugging info configs -- End
 
     commitOffsetsMsgCnt = 0
+    commitOffsetsTimeInterval = 0
 
     shutdown = false
     participentsChangedCntr = 0
@@ -550,6 +552,17 @@ class KamanjaManager extends Observer {
         }
       }
 
+      try {
+        val commitOffsetsTmInterval = loadConfigs.getProperty("CommitOffsetsTimeInterval".toLowerCase, "0").replace("\"", "").trim.toInt
+        if (commitOffsetsTmInterval > 0) {
+          KamanjaConfiguration.commitOffsetsTimeInterval = commitOffsetsTmInterval
+        }
+      } catch {
+        case e: Exception => {
+          LOG.warn("", e)
+        }
+      }
+
       //      try {
       //        val adapterCommitTime = loadConfigs.getProperty("AdapterCommitTime".toLowerCase, "0").replace("\"", "").trim.toInt
       //        if (adapterCommitTime > 0) {
@@ -581,6 +594,67 @@ class KamanjaManager extends Observer {
       } catch {
         case e: Exception => {
           return false
+        }
+      }
+
+      if (KamanjaConfiguration.commitOffsetsMsgCnt == 0) {
+        try {
+          val commitOffsetsMsgCntStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsMsgCnt").replace("\"", "").trim
+          if (! commitOffsetsMsgCntStr.isEmpty) {
+            val commitOffsetsMsgCnt = commitOffsetsMsgCntStr.toInt
+            if (commitOffsetsMsgCnt > 0)
+              KamanjaConfiguration.commitOffsetsMsgCnt = commitOffsetsMsgCnt
+          }
+        } catch {
+          case e: Exception => {
+            LOG.warn("", e)
+          }
+        }
+      }
+
+      if (KamanjaConfiguration.commitOffsetsMsgCnt == 0) {
+        try {
+          val commitOffsetsMsgCntStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsMsgCnt".toLowerCase).replace("\"", "").trim
+          if (! commitOffsetsMsgCntStr.isEmpty) {
+            val commitOffsetsMsgCnt = commitOffsetsMsgCntStr.toInt
+            if (commitOffsetsMsgCnt > 0)
+              KamanjaConfiguration.commitOffsetsMsgCnt = commitOffsetsMsgCnt
+          }
+        } catch {
+          case e: Exception => {
+            LOG.warn("", e)
+          }
+        }
+      }
+
+
+      if (KamanjaConfiguration.commitOffsetsTimeInterval == 0) {
+        try {
+          val commitOffsetsTimeIntervalStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsTimeInterval").replace("\"", "").trim
+          if (! commitOffsetsTimeIntervalStr.isEmpty) {
+            val commitOffsetsTimeInterval = commitOffsetsTimeIntervalStr.toInt
+            if (commitOffsetsTimeInterval > 0)
+              KamanjaConfiguration.commitOffsetsTimeInterval = commitOffsetsTimeInterval
+          }
+        } catch {
+          case e: Exception => {
+            LOG.warn("", e)
+          }
+        }
+      }
+
+      if (KamanjaConfiguration.commitOffsetsTimeInterval == 0) {
+        try {
+          val commitOffsetsTimeIntervalStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsTimeInterval".toLowerCase).replace("\"", "").trim
+          if (! commitOffsetsTimeIntervalStr.isEmpty) {
+            val commitOffsetsTimeInterval = commitOffsetsTimeIntervalStr.toInt
+            if (commitOffsetsTimeInterval > 0)
+              KamanjaConfiguration.commitOffsetsTimeInterval = commitOffsetsTimeInterval
+          }
+        } catch {
+          case e: Exception => {
+            LOG.warn("", e)
+          }
         }
       }
 
