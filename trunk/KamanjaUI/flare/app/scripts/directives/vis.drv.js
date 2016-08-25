@@ -164,6 +164,9 @@ angular
               if (d.hidden || !$rootScope.showOptions['Labels']) {
                 return;
               }
+              if (options.groups[d.group].hidden){
+                return;
+              }
               var position = network.getPositions(d.id)[d.id];
               ctx.textAlign = 'left';
               ctx.font = '9px arial';
@@ -175,12 +178,27 @@ angular
           $rootScope.$on('labelsToggled', function () {
             network.redraw();
           });
-          $rootScope.$on('applicationsToggled', function () {
-            options.groups['EmailAppsCluster'].hidden = $rootScope.showOptions['Applications'];
-            var opts = angular.copy(options);
-            console.log(opts.groups['EmailAppsCluster']);
-            network.setOptions(opts);
-            network.redraw();
+          $rootScope.$on('showOptionsToggled', function () {
+            options.groups['EmailAppsCluster'].hidden = !$rootScope.showOptions['Applications'];
+            options.groups['logsCluster'].hidden = !$rootScope.showOptions['Logs'];
+            options.groups['userCluster'].hidden = !$rootScope.showOptions['People'];
+            options.groups['BadAppsCluster'].hidden = !$rootScope.showOptions['Countries'];
+            options.groups['browsersCluster'].hidden = !$rootScope.showOptions['Organizations'];
+            _.each(edges,function (edge) {
+              var fromAndTo = _.filter(nodes, function(n){
+                return n.id === edge.from || n.id === edge.to
+              });
+              var hidden = false;
+              if (options.groups[fromAndTo[0].group].hidden) {
+                hidden = true;
+              }
+              if (options.groups[fromAndTo[1].group].hidden) {
+                hidden = true;
+              }
+              edge.hidden = hidden;
+            });
+            network.setOptions(options);
+            network.setData(data);
           });
         }
       }

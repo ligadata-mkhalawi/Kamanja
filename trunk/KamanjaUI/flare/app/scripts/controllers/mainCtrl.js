@@ -6,19 +6,27 @@ angular.module('flareApp')
       'Coloring by Cluster':true,
       'Relationships': true,
       'Labels':true,
-      'Applications':true
+      'Applications':true,
+      'Logs':true,
+      'People':true,
+      'Countries':true,
+      'Organizations':true
     };
     $rootScope.showOptions = main.showList;
     main.toggleShowList = function(list) {
+      main.showList[list] = !main.showList[list];
       switch (list){
         case 'Labels':
           $rootScope.$broadcast('labelsToggled');
           break;
         case 'Applications':
-          $rootScope.$broadcast('applicationsToggled');
+        case 'Logs':
+        case 'People':
+        case 'Countries':
+        case 'Organizations':
+          $rootScope.$broadcast('showOptionsToggled');
           break;
       }
-      main.showList[list] = !main.showList[list];
     };
     $scope.$on('sideBarToggled', function() {
       main.showSideBar = !main.showSideBar;
