@@ -4,7 +4,7 @@ $icon-font-path: '../fonts/';
 @import "bower_components/bootstrap-sass/assets/stylesheets/_bootstrap.scss";
 // endbower
 
-@import url("../styles/header.css");
+@import "header.scss";
 
 .browserupgrade {
   margin: 0.2em 0;
