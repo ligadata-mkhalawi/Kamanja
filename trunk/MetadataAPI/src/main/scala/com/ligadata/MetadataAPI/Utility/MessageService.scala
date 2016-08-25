@@ -255,7 +255,7 @@ object MessageService {
       val msgKeys = getMetadataAPI.GetAllMessagesFromCache(true, None)
       if (msgKeys.length == 0) {
         //response="Sorry, No messages available in the Metadata"
-        response = new ApiResult(ErrorCodeConstants.Failure, "removeMessage", null, "No messages in the metadata").toString
+        response = new ApiResult(ErrorCodeConstants.Failure, "getMessage", null, "No messages in the metadata").toString
       }else{
         println("\nPick the message to be presented from the following list: ")
 
@@ -267,7 +267,7 @@ object MessageService {
 
         if (choice < 1 || choice > msgKeys.length) {
          // response = "Invalid choice " + choice + ",start with main menu..."
-          response = new ApiResult(ErrorCodeConstants.Failure, "removeMessage", null, "Invalid choice").toString
+          response = new ApiResult(ErrorCodeConstants.Failure, "getMessage", null, "Invalid choice").toString
         }
         else{
           val msgKey = msgKeys(choice - 1)
