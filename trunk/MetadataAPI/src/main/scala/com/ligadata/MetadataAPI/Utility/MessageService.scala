@@ -198,29 +198,35 @@ object MessageService {
       val messageKeys = getMetadataAPI.GetAllMessagesFromCache(true, None)
 
       if (messageKeys.length == 0) {
-        val errorMsg = "Sorry, No messages available, in the Metadata, to delete!"
-        response = errorMsg
+        //val errorMsg = "Sorry, No messages available, in the Metadata, to delete!"
+        //response = errorMsg
+        response = new ApiResult(ErrorCodeConstants.Failure, "removeMessage", null, "No messages in the metadata").toString
       }
       else {
         println("\nPick the message to be deleted from the following list: ")
         var srno = 0
+        var count =0
         for (messageKey <- messageKeys) {
+          count +=1
           srno += 1
           println("[" + srno + "] " + messageKey)
         }
         println("Enter your choice: ")
         val choice: Int = readInt()
 
-        if (choice < 1 || choice > messageKeys.length) {
-          val errormsg = "Invalid choice " + choice + ". Start with the main menu."
-          response = errormsg
+        if (choice < 1 || choice > count) {
+          //val errormsg = "Invalid choice " + choice + ". Start with the main menu."
+          //response = errormsg
+          response = new ApiResult(ErrorCodeConstants.Failure, "removeMessage", null, "Invalid choice").toString
+
+        }
+        else{
+          val msgKey = messageKeys(choice - 1)
+          val(msgNameSpace, msgName, msgVersion) = com.ligadata.kamanja.metadata.Utils.parseNameToken(msgKey)
+          val apiResult = getMetadataAPI.RemoveMessage(msgNameSpace, msgName, msgVersion.toLong, userid).toString
+          response = apiResult
         }
 
-        val msgKey = messageKeys(choice - 1)
-        val(msgNameSpace, msgName, msgVersion) = com.ligadata.kamanja.metadata.Utils.parseNameToken(msgKey)
-        val apiResult = getMetadataAPI.RemoveMessage(msgNameSpace, msgName, msgVersion.toLong, userid).toString
-
-        response = apiResult
       }
     } catch {
       case e: Exception => {
@@ -248,7 +254,8 @@ object MessageService {
       //val msgKeys = getMetadataAPI.GetAllKeys("MessageDef", None)
       val msgKeys = getMetadataAPI.GetAllMessagesFromCache(true, None)
       if (msgKeys.length == 0) {
-        response="Sorry, No messages available in the Metadata"
+        //response="Sorry, No messages available in the Metadata"
+        response = new ApiResult(ErrorCodeConstants.Failure, "removeMessage", null, "No messages in the metadata").toString
       }else{
         println("\nPick the message to be presented from the following list: ")
 
@@ -259,7 +266,8 @@ object MessageService {
         val choice: Int = readInt()
 
         if (choice < 1 || choice > msgKeys.length) {
-          response = "Invalid choice " + choice + ",start with main menu..."
+         // response = "Invalid choice " + choice + ",start with main menu..."
+          response = new ApiResult(ErrorCodeConstants.Failure, "removeMessage", null, "Invalid choice").toString
         }
         else{
           val msgKey = msgKeys(choice - 1)
