@@ -1288,6 +1288,7 @@ var isShutdown = false
 
       var port = -1
       if(args != null){
+	println(args)
         for(i <- 0 to args.length - 1){
           if(args(i).equalsIgnoreCase("--port") && args.length >= i + 2)
             port = args(i + 1).toInt

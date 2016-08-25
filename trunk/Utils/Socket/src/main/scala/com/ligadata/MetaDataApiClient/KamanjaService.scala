@@ -85,7 +85,7 @@ val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
 
         //TODO : pass config file path, and port (hardcoded temporarily)
         val msgApiCfg = Array[String]("--config", "/opt/KAM/Kamanja-1.5.3_2.11/config/MetadataAPIConfig.properties",
-          "--port", "444")
+          "--port", "9000")
         MetadataAPIManager.start(msgApiCfg)
       }
     }
@@ -97,7 +97,7 @@ val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
         LOG.warn("starting Rest APIService")
 
         //TODO : pass config file path (hardcoded temporarily)
-        val msgApiCfg = Array[String]("--config", "/opt/kam/Kamanja-1.5.3_2.11/config/MetadataAPIConfig.properties")
+        val msgApiCfg = Array[String]("--config", "/opt/KAM/Kamanja-1.5.3_2.11/config/MetadataAPIConfig.properties")
 
         APIService.startAPISevrice(msgApiCfg)
       }

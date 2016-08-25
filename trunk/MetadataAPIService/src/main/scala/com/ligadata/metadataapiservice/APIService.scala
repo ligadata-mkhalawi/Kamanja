@@ -109,6 +109,9 @@ class APIService extends LigadataSSLConfiguration with Runnable{
       if (args.length == 0) {
         try {
           configFile = scala.util.Properties.envOrElse("KAMANJA_HOME", scala.util.Properties.envOrElse("HOME", "~" )) + "/config/MetadataAPIConfig.properties"
+println("------------------")
+println(configFile)
+println("------------------")
         } catch {
           case nsee: java.util.NoSuchElementException => {
             logger.warn("Either a CONFIG FILE parameter must be passed to start this service or KAMANJA_HOME must be set")
