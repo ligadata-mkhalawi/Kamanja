@@ -238,7 +238,7 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
         if (txnCtxt.origin.key != null && txnCtxt.origin.value != null && txnCtxt.origin.key.trim.size > 0 && txnCtxt.origin.value.trim.size > 0) {
           eventsCntr += 1
           if (forceCommitFlag ||
-            (KamanjaConfiguration.commitOffsetsMsgCnt > 0 && (eventsCntr % KamanjaConfiguration.commitOffsetsMsgCnt) == 0) ||
+            (KamanjaConfiguration.commitOffsetsMsgCnt > 0 && eventsCntr >= KamanjaConfiguration.commitOffsetsMsgCnt) ||
             (KamanjaConfiguration.commitOffsetsTimeInterval > 0 && ((lastTimeCommitOffsets + KamanjaConfiguration.commitOffsetsTimeInterval) <= System.currentTimeMillis)) ||
             nodeContext.getEnvCtxt().EnableEachTransactionCommit) {
             try {
