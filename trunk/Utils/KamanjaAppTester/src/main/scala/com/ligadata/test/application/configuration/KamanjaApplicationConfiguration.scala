@@ -147,6 +147,11 @@ class KamanjaApplicationConfiguration {
         println("[Kamanja Application Tester]: ***ERROR*** Data Set requires 'InputDataFormat' to be defined.")
         throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester]: ***ERROR*** Data Set requires 'InputDataFormat' to be defined.")
       }
+      else {
+        if(set("InputDataFormat").toString.toLowerCase != "csv" && set("InputDataFormat").toString.toLowerCase != "json"){
+          throw new KamanjaApplicationConfigurationException(s"[Kamanja Application Tester]: Invalid InputDataFormat '${set("InputDataFormat")}' found. Accepted formats are CSV and JSON.")
+        }
+      }
       if (!set.keySet.exists(_ == "ExpectedResultsFile")) {
         println("[Kamanja Application Tester]: ***ERROR*** Data Set requires 'ExpectedResultsFile' to be defined.")
         throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester]: ***ERROR*** Data Set requires 'ExpectedResultsFile' to be defined.")
@@ -155,8 +160,23 @@ class KamanjaApplicationConfiguration {
         println("[Kamanja Application Tester]: ***ERROR*** Data Set requires 'ExpectedResultsFormat' to be defined.")
         throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester]: ***ERROR*** Data Set requires 'ExpectedResultsFormat' to be defined.")
       }
-      dataSets = dataSets :+ new DataSet(appDir + "/data/" + set("InputDataFile").toString, set("InputDataFormat").toString, appDir + "/data/" + set("ExpectedResultsFile").toString, set("ExpectedResultsFormat").toString)
+
+      var partitionKey: Option[String] = None
+      if(set.keySet.exists(_ == "PartitionKey")) {
+        if(set("InputDataFormat").toString.toLowerCase == "csv" && !isNumeric(set("PartitionKey").toString))
+          throw new KamanjaApplicationConfigurationException(s"[Kamanja Application Tester]: ***ERROR*** Input Data Format is defined as CSV but the partition key ${set("PartitionKey").toString} is a String. It must be an integer.")
+        else if(set("InputDataFormat").toString.toLowerCase == "json" && isNumeric(set("PartitionKey").toString))
+          throw new KamanjaApplicationConfigurationException(s"[Kamanja Application Tester]: ***ERROR*** Input Data Format is defined as JSON but the partition key ${set("PartitionKey").toString} is an Integer. It must be a string in the format 'namespace.message:partitionKey'")
+        else
+          partitionKey = Some(set("PartitionKey").toString)
+      }
+
+      dataSets = dataSets :+ new DataSet(appDir + "/data/" + set("InputDataFile").toString, set("InputDataFormat").toString, appDir + "/data/" + set("ExpectedResultsFile").toString, set("ExpectedResultsFormat").toString, partitionKey)
     })
     return dataSets
+  }
+
+  private def isNumeric(input: String): Boolean = {
+    return input.forall(_.isDigit)
   }
 }

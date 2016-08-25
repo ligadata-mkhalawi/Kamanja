@@ -2,6 +2,8 @@ package com.ligadata.tools.test
 
 import java.util.Properties
 
+import com.ligadata.InputOutputAdapterInfo.AdapterConfiguration
+import com.ligadata.test.configuration.cluster.adapters.KafkaAdapterSpecificConfig
 import com.ligadata.tools.SimpleKafkaProducer
 import com.ligadata.test.configuration.cluster.zookeeper._
 import com.ligadata.test.configuration.cluster.adapters.interfaces._
@@ -12,7 +14,7 @@ class TestKafkaProducer {
     */
   def inputMessages(iOAdapterConfig: IOAdapter, file: String, dataFormat: String, partitionKeyIdxs: String = "1"): Unit = {
     if (!dataFormat.equalsIgnoreCase("CSV") && !dataFormat.equalsIgnoreCase("JSON"))
-      throw new Exception("AUTOMATION-KAFKA-MESSAGE-HANDLER: Invalid data format '" + dataFormat + "' provided. Accepted formats: CSV | JSON")
+      throw new Exception("[Test Kafka Producer]: Invalid data format '" + dataFormat + "' provided. Accepted formats: CSV | JSON")
 
     val validJsonMap = scala.collection.mutable.Map[String, List[String]]()
     var partKeys: Any = null
@@ -58,12 +60,23 @@ class TestKafkaProducer {
     props.put("socket.receive.buffer", bufferMemory.toString)
     props.put("client.id", "Client1")
     //props.put("partitioner.class", "com.ligadata.tools.CustPartitioner")
-    props.put("key.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
-    props.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer");
+    props.put("key.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer")
+    props.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer")
 
     //val producer = new Producer[Array[Byte], Array[Byte]](new ProducerConfig(props))
     //val producer = new org.apache.kafka.clients.producer.KafkaProducer[Array[Byte], Array[Byte]](props)
-    val oAdapter = com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer.CreateOutputAdapter(props, null)
+    //val oAdapter = com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer.CreateOutputAdapter(props, null)
+
+    val adapterConfiguration = new AdapterConfiguration{
+      Name = iOAdapterConfig.name
+      className = iOAdapterConfig.className
+      jarName = iOAdapterConfig.jarName
+      dependencyJars = iOAdapterConfig.dependencyJars.toSet
+      adapterSpecificCfg = iOAdapterConfig.adapterSpecificConfig.toString
+      tenantId = iOAdapterConfig.tenantId
+    }
+
+    val oAdapter = com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer.CreateOutputAdapter(adapterConfiguration, null)
 
     try {
       //ProcessFile(producer, topics, threadNo, fl, msg, sleeptm, partitionkeyidxs, st, ignorelines, format, isGzip, topicpartitions, isVerbose.equalsIgnoreCase("true"))
@@ -73,7 +86,7 @@ class TestKafkaProducer {
       //  "--files", file, "--partitionkeyidxs", partitionKeyIdxs, "--threads", "1", "--topicpartitions", "8"))
     }
     catch {
-      case e: Exception => throw new Exception("AUTOMATION-KAFKA-MESSAGE-HANDLER: Failed to send message to kafka", e)
+      case e: Exception => throw new Exception("[Test Kafka Producer]: Failed to send message to kafka", e)
     }
   }
 }

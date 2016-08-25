@@ -38,7 +38,6 @@ class TestKafkaConsumer(config: KafkaAdapterConfig) extends Runnable with Kamanj
   def run: Unit = {
     try {
       consumer.subscribe(List(config.adapterSpecificConfig.topicName))
-
       while(true) {
         val records = consumer.poll(Long.MaxValue).iterator
 

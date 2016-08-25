@@ -67,13 +67,15 @@
         "InputDataFile": "inputFile1.csv",
         "InputDataFormat": "CSV",
         "ExpectedResultsFile": "expectedResults1.csv",
-        "ExpectedResultsFormat": "CSV"
+        "ExpectedResultsFormat": "CSV",
+        "PartitionKey": "3"
       },
       {
         "InputDataFile": "inputFile2.json",
         "InputDataFormat": "JSON",
         "ExpectedResultsFile": "expectedResults2.json",
-        "ExpectedResultsFormat": "JSON"
+        "ExpectedResultsFormat": "JSON",
+        "PartitionKey": "com.ligadata.test.message.InputMessage:TestKey"
       }
     ]
   }

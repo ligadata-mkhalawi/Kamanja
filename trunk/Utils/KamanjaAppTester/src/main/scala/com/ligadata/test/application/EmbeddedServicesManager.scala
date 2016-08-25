@@ -12,6 +12,7 @@ import com.ligadata.test.embedded.zookeeper._
 import com.ligadata.kafkaInputOutputAdapters_v10.embedded._
 import com.ligadata.test.utils._
 import com.ligadata.MetadataAPI.test._
+import com.ligadata.test.embedded.kafka._
 
 object EmbeddedServicesManager {
   private var embeddedKamanjaManager: EmbeddedKamanjaManager = _
@@ -21,6 +22,7 @@ object EmbeddedServicesManager {
   private var kafkaCluster: EmbeddedKafkaCluster = _
   private var zkClient: ZookeeperClient = _
   private var clusterConfig: Cluster = _
+  private var kafkaConsumer: TestKafkaConsumer = _
 
   def startServices(kamanjaInstallDir: String): Boolean = {
     val classPath: String = {
@@ -35,12 +37,13 @@ object EmbeddedServicesManager {
       val zkStartCode = startZookeeper
       val kafkaStartCode = startKafka
       clusterConfig = generateClusterConfiguration(kamanjaInstallDir)
+
+      val outputAdapterConfig: KafkaAdapterConfig = clusterConfig.adapters.filter(_.asInstanceOf[KafkaAdapterConfig].adapterSpecificConfig.topicName.toLowerCase == "testout_1")(0).asInstanceOf[KafkaAdapterConfig]
+
       val mdMan = new MetadataManager
 
       mdMan.setSSLPassword("")
       mdMan.initMetadataCfg(new MetadataAPIProperties(H2DBStore.name, H2DBStore.connectionMode, storageDir, "kamanja", classPath, zkConnStr = embeddedZookeeper.getConnection, systemJarPath = s"$kamanjaInstallDir/lib/system", appJarPath = s"$kamanjaInstallDir/lib/application"))
-
-      println(s"Cluster Config:\n$clusterConfig")
 
       val addConfigResult = mdMan.addConfig(clusterConfig)
 
@@ -51,7 +54,14 @@ object EmbeddedServicesManager {
 
       val addSystemBindingsResult = mdMan.addBindings(this.getClass.getResource("/SystemMsgs_Adapter_Bindings.json").getPath)
 
-      return zkStartCode && kafkaStartCode && startKamanja
+      //Creating topics from the cluster config adapters
+      val kafkaTestClient = new KafkaTestClient(embeddedZookeeper.getConnection)
+      clusterConfig.adapters.foreach(adapter => {
+        kafkaTestClient.createTopic(adapter.asInstanceOf[KafkaAdapterConfig].adapterSpecificConfig.topicName, 1, 1)
+      })
+
+
+      return zkStartCode && kafkaStartCode && startKamanja && startKafkaConsumer(outputAdapterConfig)
     }
     catch {
       case e:Exception => throw new Exception("[Kamanja Application Tester] ---> ***ERROR*** Failed to start services", e)
@@ -59,9 +69,8 @@ object EmbeddedServicesManager {
   }
 
   def stopServices: Boolean = {
-    return stopKafka && stopZookeeper && stopKamanja
+    return stopKafkaConsumer && stopKafka && stopZookeeper && stopKamanja
   }
-
 
   private def startKamanja: Boolean = {
     embeddedKamanjaManager = new EmbeddedKamanjaManager
@@ -177,6 +186,36 @@ object EmbeddedServicesManager {
         return false
       }
     }
+  }
+
+  private def startKafkaConsumer(adapterConfig: KafkaAdapterConfig): Boolean = {
+    kafkaConsumer = new TestKafkaConsumer(adapterConfig)
+    try {
+      println(s"[Kamanja Application Tester] ---> Starting Kafka consumer against topic '${adapterConfig.adapterSpecificConfig.topicName}'...")
+      kafkaConsumer.run
+      println(s"[Kamanja Application Tester] ---> Kafka consumer started against topic '${adapterConfig.adapterSpecificConfig.topicName}'")
+      return true
+    }
+    catch {
+      case e: Exception => {
+       throw new Exception(s"[Kamanja Application Tester] ---> ***ERROR*** Failed to start kafka consumer against topic '${adapterConfig.adapterSpecificConfig.topicName}'", e)
+      }
+    }
+  }
+
+  private def stopKafkaConsumer: Boolean = {
+    if (kafkaConsumer != null) {
+      try {
+        println("[Kamanja Application Tester] ---> Stopping Kafka consumer...")
+        kafkaConsumer.shutdown
+        println("[Kamanja Application Tester] ---> Kafka consumer stopped")
+        return true
+      }
+      catch {
+        case e: Exception => throw new Exception("[Kamanja Application Tester] ---> ***ERROR*** Failed to stop Kafka consumer", e)
+      }
+    }
+    return true
   }
 
   private def generateClusterConfiguration(kamanjaInstallDir: String): Cluster = {

@@ -346,13 +346,16 @@ trait AdaptersSerializeDeserializers {
       throw new KamanjaException(s"Not found Serializer/Deserializer for ${serName}", null)
     }
 
-    val phyName = serInfo.PhysicalName
+    var phyName = serInfo.PhysicalName
     if (phyName == null) {
       throw new KamanjaException(s"Not found Physical name for Serializer/Deserializer for ${serName}", null)
     }
 
     try {
       val aclass = Class.forName(phyName).newInstance
+      if(phyName == "com.ligadata.kamanja.serializer.kbinaryserdeser") {
+        phyName = "com.ligadata.kamanja.serializer.KBinarySerDeser"
+      }
       val ser = aclass.asInstanceOf[SerializeDeserialize]
       val map = new java.util.HashMap[String, String] //BUGBUG:: we should not convert the 2nd param to String. But still need to see how can we convert scala map to java map
       if (options != null) {

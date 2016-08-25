@@ -21,4 +21,8 @@ class TestExecutorTests extends FlatSpec with BeforeAndAfterAll {
     //TODO: Need to produce output so that I may assert correct results
   }
 
+  it should "push data into Kafka given as a DataSet and return an Array of output messages" in {
+
+  }
+
 }

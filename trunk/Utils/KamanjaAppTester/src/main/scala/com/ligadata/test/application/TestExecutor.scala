@@ -1,9 +1,12 @@
 package com.ligadata.test.application
 
 import com.ligadata.MetadataAPI.test._
+import com.ligadata.test.application.data.DataSet
 import com.ligadata.test.application.metadata._
 import com.ligadata.test.application.metadata.interfaces.ModelElement
+import com.ligadata.test.configuration.cluster.adapters.KafkaAdapterConfig
 import com.ligadata.test.utils.Globals
+import com.ligadata.tools.test._
 
 case class TestExecutorException(message: String, cause: Throwable = null) extends Exception(message, cause)
 
@@ -92,6 +95,14 @@ object TestExecutor {
     }
   }
 
+  private def pushData(dataSet: DataSet, kafkaAdapterConfig: KafkaAdapterConfig): Array[String] = {
+    val producer = new TestKafkaProducer
+    producer.inputMessages(kafkaAdapterConfig, dataSet.inputDataFile, dataSet.partitionKey.getOrElse("1"))
+
+
+
+    return null
+  }
 
   private def nextOption(map: OptionMap, list: List[String]): OptionMap = {
     def isSwitch(s: String) = (s(0) == '-')

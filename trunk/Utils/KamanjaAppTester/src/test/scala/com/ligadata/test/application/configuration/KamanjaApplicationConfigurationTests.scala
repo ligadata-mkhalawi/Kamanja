@@ -65,11 +65,13 @@ class KamanjaApplicationConfigurationTests extends FlatSpec with BeforeAndAfterA
     assert(ds1.inputDataFormat == "CSV")
     assert(ds1.expectedResultsFile == "/TestApp/data/expectedResults1.csv")
     assert(ds1.expectedResultsFormat == "CSV")
+    assert(ds1.partitionKey == Some("3"))
 
     assert(ds2.inputDataFile == "/TestApp/data/inputFile2.json")
     assert(ds2.inputDataFormat == "JSON")
     assert(ds2.expectedResultsFile == "/TestApp/data/expectedResults2.json")
     assert(ds2.expectedResultsFormat == "JSON")
+    assert(ds2.partitionKey == Some("com.ligadata.test.message.InputMessage:TestKey"))
   }
 
   it should "read in a configuration file and produce an Application name" in {
