@@ -140,23 +140,29 @@ class KamanjaHbaseConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
           var isRecordSentToKamanja = false
           val uniqueVal = new HbasePartitionUniqueRecordValue
           while (!isQuiese) {
-            val retrievedata = (data: Array[Byte]) => {
+            val retrievedata = (data: String, timestamp: Long) => {
               readTmMs = System.currentTimeMillis
-              if (data != null) {
+              val indexOfDelimiter = data.indexOf(adapterConfig.columnDelimiter)
+              val keyHashCode = data.substring(0, indexOfDelimiter).hashCode
+              if (data != null && ((keyHashCode % currentNodePartitions.size == partitionid) || (partitionid == currentNodePartitions.size && (keyHashCode % currentNodePartitions.size == 0)))) {
                 val uniqueVal = new HbasePartitionUniqueRecordValue
                 uniqueVal.TimeStamp = currentTimestamp
                 uniqueVal.TableName = adapterConfig.TableName
-                uniqueVal.Key = 1
+                uniqueVal.Key = partitionid
                 msgCount += 1
-                execContexts.execute(data, uniqueKey, uniqueVal, readTmMs)
+                if(!adapterConfig.rowkeyIncluded)
+                  data.substring(indexOfDelimiter+1, data.length)
+                val message = data.getBytes
+                execContexts.execute(message, uniqueKey, uniqueVal, readTmMs)
               }
             }
             endTimeStamp = System.currentTimeMillis
             val fulltablename = adapterConfig.scehmaName + ":" + adapterConfig.TableName
             timerange = TimeRange(currentTimestamp+1, endTimeStamp) ///filter data based on time range
-         //   val keyArray = dataStore.getAllKey(fulltablename, timerange)
-         //   val keyArrayPart = Splitter(keyArray,currentNodePartitions.size,partitionid)
-            dataStore.getAllRecords(fulltablename, timerange, /*keyArrayPart, */retrievedata)
+//            val keyArray = dataStore.getAllKey(fulltablename, timerange)
+//            val keyArrayPart = Splitter(keyArray,currentNodePartitions.size,partitionid)
+//            if(keyArrayPart.size > 0)
+              dataStore.getAllRecords(fulltablename, timerange, adapterConfig.columnDelimiter, /*keyArrayPart, */retrievedata)
             currentTimestamp = endTimeStamp
             Thread.sleep(intSleepTimer)
           }

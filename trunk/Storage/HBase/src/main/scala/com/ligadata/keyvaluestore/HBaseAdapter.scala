@@ -1807,7 +1807,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
     }
   }
 
-  def getAllRecords(tableName: String, time_range: TimeRange,/*keyArrayPart: Array[String],*/callbackFunction: (Array[Byte]) => Unit): Unit = {
+  def getAllRecords(tableName: String, time_range: TimeRange,/*keyArrayPart: Array[String],*/columnDelimiter: String, callbackFunction: (String, Long) => Unit): Unit = {
 //    val listener = new BufferedMutator.ExceptionListener() {
 //      override def onException(e: RetriesExhaustedWithDetailsException, mutator: BufferedMutator) {
 //        for (i <- 0 until e.getNumExceptions)
@@ -1891,12 +1891,12 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
           var key: String = Bytes.toString(rr.getRow())
           var iter = rr.list().iterator()
           var header: String  = "Key:\t"
-          var data: String  = key + ","
+          var data: String = key + columnDelimiter
           var keyString: String =""
           while (iter.hasNext()) {
             var kv: KeyValue  = iter.next();
             header += Bytes.toString(kv.getFamily()) + ":" + Bytes.toString(kv.getQualifier()) + "," //family name and column name
-            data += Bytes.toString(kv.getValue()) + ","  //data for column
+            data += Bytes.toString(kv.getValue()) + columnDelimiter  //data for column
             // keyString = Bytes.toString(kv.getKey)
           }
 
@@ -1904,7 +1904,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
         //  println("++key++")
           println("++Header++"+header+"++Header++")
           println("++Data++"+ value + "++Data++")
-          callbackFunction(value.getBytes)
+          callbackFunction(value, time_range.endTime)
           rr = rs.next()
         }
       }

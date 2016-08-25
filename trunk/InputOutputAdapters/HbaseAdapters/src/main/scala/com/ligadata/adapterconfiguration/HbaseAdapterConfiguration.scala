@@ -1,6 +1,7 @@
 package com.ligadata.adapterconfiguration
 
 import com.ligadata.Exceptions.{FatalAdapterException, KamanjaException}
+import com.ligadata.HbaseInputOutputAdapters.LogTrait
 import com.ligadata.InputOutputAdapterInfo.{AdapterConfiguration, PartitionUniqueRecordKey, PartitionUniqueRecordValue}
 import org.json4s._
 import org.json4s.JsonDSL._
@@ -16,6 +17,8 @@ class HbaseAdapterConfiguration extends AdapterConfiguration{
 //  var serializerName: String =""
   var columnName: String = ""
   var familyName: String = ""
+  var columnDelimiter: String = ""
+  var rowkeyIncluded: Boolean = false
   var numberOfThread: Int = 1
   var kerberos: KerberosConfig = null
   var instancePartitions: Set[Int] = _
@@ -29,7 +32,7 @@ class KerberosConfig {
   var regionServer: String = null
 }
 
-object HbaseAdapterConfiguration {
+object HbaseAdapterConfiguration extends LogTrait{
 
   def getAdapterConfig(inputConfig: AdapterConfiguration, inputType: String): HbaseAdapterConfiguration = {
 
@@ -61,19 +64,23 @@ object HbaseAdapterConfiguration {
         adapterConfig.TableName = kv._2.toString
 //      } else if (kv._1.compareToIgnoreCase("serializerName") == 0) {
 //        adapterConfig.serializerName = kv._2.toString
-      }else if (kv._1.compareToIgnoreCase("Kerberos") == 0) {
+      } else if (kv._1.compareToIgnoreCase("Kerberos") == 0) {
         adapterConfig.kerberos = new KerberosConfig()
         val kerbConf = kv._2.asInstanceOf[Map[String, String]]
         adapterConfig.kerberos.principal = kerbConf.getOrElse("Principal", null)
         adapterConfig.kerberos.keytab = kerbConf.getOrElse("Keytab", null)
         adapterConfig.kerberos.masterPrincipal = kerbConf.getOrElse("masterprincipal", null)
         adapterConfig.kerberos.regionServer = kerbConf.getOrElse("regionserve", null)
-      }  else if (kv._1.compareToIgnoreCase("columnName") == 0) {
+      } else if (kv._1.compareToIgnoreCase("columnName") == 0) {
         adapterConfig.columnName = kv._2.toString.trim
-      }  else if (kv._1.compareToIgnoreCase("numberOfThread") == 0) {
+      } else if (kv._1.compareToIgnoreCase("numberOfThread") == 0) {
         adapterConfig.numberOfThread = kv._2.toString.trim.toInt
-      }  else if (kv._1.compareToIgnoreCase("familyName") == 0) {
+      } else if (kv._1.compareToIgnoreCase("familyName") == 0) {
         adapterConfig.familyName = kv._2.toString.trim
+      } else if (kv._1.compareToIgnoreCase("columnDelimiter") == 0) {
+        adapterConfig.columnDelimiter = kv._2.toString.trim
+      } else if (kv._1.compareToIgnoreCase("rowkeyIncluded") == 0) {
+        adapterConfig.rowkeyIncluded = kv._2.toString.trim.toBoolean
       }
     })
 
@@ -104,6 +111,17 @@ object HbaseAdapterConfiguration {
       if (adapterConfig.TableName == null || adapterConfig.TableName.size == 0)
         throw new KamanjaException("tableName should be specified for Hbase Producer: " + adapterConfig.Name, null)
 
+      if (adapterConfig.rowkeyIncluded == null) {
+        //throw new KamanjaException("rowkeyIncluded should be specified for Hbase Producer: " + adapterConfig.Name, null)
+        logger.info("rowkeyIncluded did not pass, the default value is false.")
+        adapterConfig.rowkeyIncluded = false
+      }
+
+      if (adapterConfig.columnDelimiter == null || adapterConfig.columnDelimiter.size == 0) {
+       // throw new KamanjaException("columnDelimiter should be specified for Hbase Producer: " + adapterConfig.Name, null)
+        logger.info("""columnDelimiter did not pass, the default value is ",". """)
+        adapterConfig.columnDelimiter = ","
+      }
 //      if (adapterConfig.columnName == null || adapterConfig.columnName.size == 0)
 //        throw new KamanjaException("columnName should be specified for Hbase Producer: " + adapterConfig.Name, null)
 //
