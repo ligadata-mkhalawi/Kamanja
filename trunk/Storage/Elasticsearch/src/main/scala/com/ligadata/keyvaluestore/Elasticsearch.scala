@@ -505,10 +505,12 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       var id = ""
 
       hits.totalHits() match {
-        case 0 => id = tableName + Calendar.getInstance().getTimeInMillis
+        case 0 => id = tableName + Calendar.getInstance().getTimeInMillis + System.nanoTime()
         case 1 => id = hits.getAt(0).id()
         case x => System.err.println(" found " + hits.totalHits() + " hits, NOT VALID")
       }
+      println(">>>>>>>>>>>>>>> tableName: " + tableName)
+      println(">>>>>>>>>>>>>>> KEy: " + id)
 
       // index the data
       val builder: XContentBuilder =
@@ -601,10 +603,12 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             var id = ""
 
             hits.totalHits() match {
-              case 0 => id = tableName + Calendar.getInstance().getTimeInMillis
+              case 0 => id = tableName + Calendar.getInstance().getTimeInMillis + System.nanoTime()
               case 1 => id = hits.getAt(0).id()
               case x => System.err.println(" found " + hits.totalHits() + " hits, NOT VALID")
             }
+            println(">>>>>>>>>>>>>>> tableName: " + tableName)
+            println(">>>>>>>>>>>>>>> KEy: " + id)
 
             // index the data
             val newBuffer: Array[Byte] = new Array[Byte](value.serializedInfo.length)
@@ -677,7 +681,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           .prepareSearch(tableName)
           .setTypes("type1")
           .setQuery(QueryBuilders.boolQuery()
-            .must(QueryBuilders.termQuery("timePartition", 0))
+            .must(QueryBuilders.termQuery("timePartition", key.timePartition))
             .must(QueryBuilders.termQuery("bucketKey", key.bucketKey.mkString(",").toLowerCase()))
             .must(QueryBuilders.termQuery("transactionid", key.transactionId))
             .must(QueryBuilders.termQuery("rowId", key.rowId))
@@ -691,6 +695,8 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           case 1 => id = hits.getAt(0).id()
           case x => System.err.println(" found " + hits.totalHits() + " hits, NOT VALID")
         }
+        println(">>>>>>>>>>>>>>> tableName: " + tableName)
+        println(">>>>>>>>>>>>>>> KEy: " + id)
         // create and add delete statement to bulk
         bulkRequest.add(client.prepareDelete(tableName, "type1", id))
       })
@@ -747,6 +753,8 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           case 1 => id = hits.getAt(0).id()
           case x => System.err.println(" found " + hits.totalHits() + " hits, NOT VALID")
         }
+        println(">>>>>>>>>>>>>>> tableName: " + tableName)
+        println(">>>>>>>>>>>>>>> KEy: " + id)
         // create and add delete statement to bulk
         bulkRequest.add(client.prepareDelete(tableName, "type1", id))
       })
@@ -803,6 +811,8 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
         case x => System.err.println(" found " + hits.totalHits() + " hits, NOT VALID")
       }
 
+      println(">>>>>>>>>>>>>>> tableName: " + tableName)
+      println(">>>>>>>>>>>>>>> KEy: " + id)
       bulkRequest.add(client.prepareDelete(tableName, "type1", id))
 
       deleteCount = bulkRequest.numberOfActions()
