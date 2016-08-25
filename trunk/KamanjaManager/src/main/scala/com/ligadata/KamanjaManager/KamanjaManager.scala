@@ -597,6 +597,67 @@ class KamanjaManager extends Observer {
         }
       }
 
+      if (KamanjaConfiguration.commitOffsetsMsgCnt == 0) {
+        try {
+          val commitOffsetsMsgCntStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsMsgCnt").replace("\"", "").trim
+          if (! commitOffsetsMsgCntStr.isEmpty) {
+            val commitOffsetsMsgCnt = commitOffsetsMsgCntStr.toInt
+            if (commitOffsetsMsgCnt > 0)
+              KamanjaConfiguration.commitOffsetsMsgCnt = commitOffsetsMsgCnt
+          }
+        } catch {
+          case e: Exception => {
+            LOG.warn("", e)
+          }
+        }
+      }
+
+      if (KamanjaConfiguration.commitOffsetsMsgCnt == 0) {
+        try {
+          val commitOffsetsMsgCntStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsMsgCnt".toLowerCase).replace("\"", "").trim
+          if (! commitOffsetsMsgCntStr.isEmpty) {
+            val commitOffsetsMsgCnt = commitOffsetsMsgCntStr.toInt
+            if (commitOffsetsMsgCnt > 0)
+              KamanjaConfiguration.commitOffsetsMsgCnt = commitOffsetsMsgCnt
+          }
+        } catch {
+          case e: Exception => {
+            LOG.warn("", e)
+          }
+        }
+      }
+
+
+      if (KamanjaConfiguration.commitOffsetsTimeInterval == 0) {
+        try {
+          val commitOffsetsTimeIntervalStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsTimeInterval").replace("\"", "").trim
+          if (! commitOffsetsTimeIntervalStr.isEmpty) {
+            val commitOffsetsTimeInterval = commitOffsetsTimeIntervalStr.toInt
+            if (commitOffsetsTimeInterval > 0)
+              KamanjaConfiguration.commitOffsetsTimeInterval = commitOffsetsTimeInterval
+          }
+        } catch {
+          case e: Exception => {
+            LOG.warn("", e)
+          }
+        }
+      }
+
+      if (KamanjaConfiguration.commitOffsetsTimeInterval == 0) {
+        try {
+          val commitOffsetsTimeIntervalStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsTimeInterval".toLowerCase).replace("\"", "").trim
+          if (! commitOffsetsTimeIntervalStr.isEmpty) {
+            val commitOffsetsTimeInterval = commitOffsetsTimeIntervalStr.toInt
+            if (commitOffsetsTimeInterval > 0)
+              KamanjaConfiguration.commitOffsetsTimeInterval = commitOffsetsTimeInterval
+          }
+        } catch {
+          case e: Exception => {
+            LOG.warn("", e)
+          }
+        }
+      }
+
       LOG.debug("Validating required jars")
       KamanjaMdCfg.ValidateAllRequiredJars(intiConfigs.jarPaths)
       LOG.debug("Load Environment Context")
