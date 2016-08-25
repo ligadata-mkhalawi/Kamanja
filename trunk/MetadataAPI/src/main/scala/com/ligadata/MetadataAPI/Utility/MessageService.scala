@@ -56,7 +56,8 @@ object MessageService {
     if (input == "") {
       msgFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MESSAGE_FILES_DIR")
       if (msgFileDir == null) {
-        response = "MESSAGE_FILES_DIR property missing in the metadata API configuration"
+        response = new ApiResult(ErrorCodeConstants.Failure,"addMessage",null,"MESSAGE_FILES_DIR property missing in the metadata API configuration").toString
+        //response = "MESSAGE_FILES_DIR property missing in the metadata API configuration"
       } else {
         //verify the directory where messages can be present
         IsValidDir(msgFileDir) match {
@@ -65,8 +66,9 @@ object MessageService {
             val messages: Array[File] = new java.io.File(msgFileDir).listFiles.filter(_.getName.endsWith(".json"))
             messages.length match {
               case 0 => {
-                println("Messages not found at " + msgFileDir)
-                "Messages not found at " + msgFileDir
+                //println("Messages not found at " + msgFileDir)
+                //"Messages not found at " + msgFileDir
+                response=new ApiResult(ErrorCodeConstants.Failure,"addMessage",null,"Messages not found at "+msgFileDir).toString
               }
               case option => {
                 val messageDefs = getUserInputFromMainMenu(messages)
@@ -78,7 +80,8 @@ object MessageService {
           }
           case false => {
             //println("Message directory is invalid.")
-            response = "Message directory is invalid."
+            //response = "Message directory is invalid."
+            response=new ApiResult(ErrorCodeConstants.Failure,"addMessage",null,"Message directory is invalid").toString
           }
         }
       }
@@ -89,7 +92,8 @@ object MessageService {
         val messageDef = Source.fromFile(message).mkString
         response = getMetadataAPI.AddMessage(messageDef, "JSON", userid, finalTid, paramStr)
       }else{
-        response="Message defintion file does not exist"
+        //response="Message defintion file does not exist"
+        response=new ApiResult(ErrorCodeConstants.Failure,"addMessage",null,"Message defintion file does not exist").toString
       }
     }
     //Got the message. Now add them
