@@ -25,11 +25,13 @@ class addModel(CommandBase):
 		else:
 			modelFileName = "noModuleNameWasGiven.py"
 		#
-		self.logger.debug("Entered addModel... model to be added = {} ... file = {}".format(modelName,modelFileName))
+                if self.logger.isEnabledFor(logging.DEBUG): 
+		   sys.stdout.write("Entered addModel... model to be added = {} ... file = {}".format(modelName,modelFileName))
 		
 		pypath = modelDict["PythonInstallPath"]
 		modelSrcPath = "{}/models/{}".format(pypath,modelFileName)
-		self.logger.debug("addModel.handler entered ... modelSrcPath = {}".format(modelSrcPath))
+                if self.logger.isEnabledFor(logging.DEBUG): 
+		   sys.stdout.write("addModel.handler entered ... modelSrcPath = {}".format(modelSrcPath))
 
 		result = ""
 		inputfields = ""
@@ -37,14 +39,17 @@ class addModel(CommandBase):
 		reasonablePath = os.path.exists(modelSrcPath) and os.path.isfile(modelSrcPath) and modelName != "" and modelFileName != "noModuleNameWasGiven.py"
 		if reasonablePath:
 			#(parentDir, file) = os.path.split(modelSrcPath)
-			moduleName = str.split(modelFileName,'.')[0]  
-			self.logger.debug("model to be added = {}.{}".format(moduleName, modelName))
+			moduleName = str.split(modelFileName,'.')[0]
+                        if self.logger.isEnabledFor(logging.DEBUG): 
+			   sys.stdout.write("model to be added = {}.{}".format(moduleName, modelName))
 			#all models found in models subdir of the pypath
 			HandlerClass = self.importName("models." + moduleName, modelName)
 			handler = HandlerClass(str(host), str(port), cmdOptions, self.logger)
-			self.logger.debug("handler produced")
+                        if self.logger.isEnabledFor(logging.DEBUG): 
+			   sys.stdout.write("handler produced")
 			modelDict[str(modelName)] = handler
-			self.logger.debug("model {}.{} added!".format(moduleName, modelName))
+                        if self.logger.isEnabledFor(logging.DEBUG): 
+			   sys.stdout.write("model {}.{} added!".format(moduleName, modelName))
 			(inputfields, outputfields) = handler.getInputOutputFields()
 			modelAddMsg = "model {}.{} added".format(moduleName,modelName)
 			result = json.dumps({'Cmd' : 'addModel', 'Server' : host, 'Port' : str(port), 'Code' : 0, 'Result' : modelAddMsg, 'InputFields' : inputfields, 'OutputFields' : outputfields })
@@ -58,8 +63,9 @@ class addModel(CommandBase):
 			modelAddMsg = "ModuleName.ModelName '{}.{}' is invalid...it does not reference a valid class".format(moduleName, modelName)
 			result = json.dumps({'Cmd' : 'addModel', 'Server' : host, 'Port' : str(port), 'Code' : -1, 'Result' : modelAddMsg, 'InputFields' : inputfields, 'OutputFields' : outputfields })
 
-		self.logger.info("AddModel results = {}".format(result))
-
+		if self.logger.isEnabledFor(logging.INFO):
+                   self.logger.info("AddModel results = {}".format(result))
+                sys.stdout.flush() 
 		return result
 
 	def importName(self, moduleName, name):
@@ -67,9 +73,11 @@ class addModel(CommandBase):
 		Import a named object from a module in the context of this function 
 		"""
 		try:
-			self.logger.debug("load model = " + moduleName)
+			if self.logger.isEnabledFor(logging.DEBUG):
+                           sys.stdout.write("load model = " + moduleName)
 			module = __import__(moduleName, globals(), locals(), [name])
-			self.logger.debug("module obtained")
+                        if self.logger.isEnabledFor(logging.DEBUG): 
+			   sys.stdout.write("module obtained")
 		except ImportError:
 			return None
 		return getattr(module, name)

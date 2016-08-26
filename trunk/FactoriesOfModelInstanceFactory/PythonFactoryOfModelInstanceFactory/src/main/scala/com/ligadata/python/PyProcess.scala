@@ -25,7 +25,7 @@ import org.apache.logging.log4j.LogManager
 
 object PyProcessGlobalLogger {
   val loggerName = this.getClass.getName
-  val logger = LogManager.getLogger(loggerName)
+  val logger = LogManager.getLogger("PyProcess")
 }
 
 trait LogProcessTrait {
@@ -57,7 +57,7 @@ class PyProcess(host: String,
   var pid: Long = _
 
   private val caller = self
-  private val WAIT_TIME = 1000
+  private val WAIT_TIME = 100
 
   private val reader = actor {
     logger.warn("created actor: " + Thread.currentThread)
@@ -71,15 +71,13 @@ class PyProcess(host: String,
           try {
             val streamReader = new java.io.InputStreamReader(proc.getInputStream)
             val bufferedReader = new java.io.BufferedReader(streamReader)
-            val sb = new java.lang.StringBuilder()
             var line: String = null
             line = bufferedReader.readLine
             logger.warn("PyProcess :  "  + line)
             while  (line != null) {
-              sb.append(line)
               line = bufferedReader.readLine
+              logger.warn("PyProcess : complete log from process  pid '" + pid.toString + "' : " + line)
             }
-            logger.warn("PyProcess : complete log from process  pid '" + pid.toString + "' : " + sb.toString)
             bufferedReader.close
           }
           catch {
@@ -113,9 +111,9 @@ class PyProcess(host: String,
         logger.error("Problem in starting the python server " + cHost + " at " + cPort)
       }
     }
-//    processBuilder.redirectErrorStream(true)
-    //processBuilder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
-    //reader ! proc
+    processBuilder.redirectErrorStream(true)
+    processBuilder.redirectOutput(ProcessBuilder.Redirect.INHERIT);
+    reader ! proc
 
   }
 

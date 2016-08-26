@@ -28,6 +28,11 @@ args = vars(parser.parse_args())
 pythonPath = args['pythonPath']
 sys.path.insert(0, args['pythonPath'])
 #
+#
+#set python buffering
+if sys.version_info[0] == 3:
+   os.environ['PYTHONUNBUFFERED'] = '1'
+#
 # initialize logging
 log4jConfig = args['log4jConfig']
 logging.config.fileConfig(log4jConfig)
@@ -44,7 +49,8 @@ if fileLogPath != "":
 	logger.addHandler(fileHandler)
 
 # log basic startup info
-logger.info('starting pythonserver ...\nhost = ' + args['host'] + '\nport = ' + str(args['port']) + '\npythonPath = ' + args['pythonPath'] + '\nlog4jConfig = ' + args['log4jConfig'])
+if logger.isEnabledFor(logging.INFO): 
+   sys.stdout.write('starting pythonserver ...\nhost = ' + args['host'] + '\nport = ' + str(args['port']) + '\npythonPath = ' + args['pythonPath'] + '\nlog4jConfig = ' + args['log4jConfig'])
 #
 CONNECTION_LIST = []    # list of socket clients
 RECV_BUFFER = 4096 # Advisable to keep it as an exponent of 2
@@ -59,7 +65,8 @@ hostDisplayStr = socket.gethostname()
 port = int(args['port'])
 #
 # bind to the port
-logger.info('Connection parms: ' + hostDisplayStr + ", " + str(args['port']))
+if logger.isEnabledFor(logging.INFO): 
+   sys.stdout.write('Connection parms: ' + hostDisplayStr + ", " + str(args['port']))
 serversocket.bind((host, port))
 #
 def importPackageByName(moduleName, name):
@@ -69,7 +76,8 @@ def importPackageByName(moduleName, name):
 	sub-package in the use below).
 	'''
 	try:
-		logger.info("load moduleName = " + moduleName)
+		if logger.isEnabledFor(logging.INFO):
+                   sys.stdout.write("load moduleName = " + moduleName)
 		module = __import__(moduleName, globals(), locals(), [name])
 	except ImportError:
 		return None
@@ -106,7 +114,8 @@ for moduleName in 'addModel', 'removeModel', 'serverStatus', 'executeModel', 'st
 	pkgCmdName = "commands.{}".format(moduleName)
 	className = moduleName # also
 	HandlerClass = importPackageByName(pkgCmdName, className)
-	logger.info("load HandlerClass({},{},{})".format(pkgCmdName,hostDisplayStr,str(port)))
+        if logger.isEnabledFor(logging.INFO): 
+	   sys.stdout.write("load HandlerClass({},{},{})".format(pkgCmdName,hostDisplayStr,str(port)))
 	handler = HandlerClass(pkgCmdName, hostDisplayStr, port, logger)
 	cmdDict[moduleName] = handler
 #self, modelDict, host, port, cmdOptions, modelOptions
@@ -114,7 +123,8 @@ startMarkerValue = "_S_T_A_R_T_"
 endMarkerValue = "_F_I_N_I_"
 crcValueLen = 8
 
-logger.debug("cmds in cmdDict = {}, len = {}".format(str(cmdDict.keys),len(cmdDict)))
+if logger.isEnabledFor(logging.DEBUG):
+   sys.stdout.write("cmds in cmdDict = {}, len = {}".format(str(cmdDict.keys),len(cmdDict)))
 #
 def nextMsg(conn, msgBytes):
     '''
@@ -123,23 +133,28 @@ def nextMsg(conn, msgBytes):
 	checksum, cmdMsgLen, cmdMsg, endMark) and preserve any residual bytes for
 	consideration for the next message.
     '''
-    logger.debug("entering nextMsg...msgBytes = {}".format(str(msgBytes)))
-    logger.debug("calling startMsg(conn, {},{})".format(startMarkerValue, str(msgBytes)))
+    if logger.isEnabledFor(logging.DEBUG):
+       sys.stdout.write("entering nextMsg...msgBytes = {}".format(str(msgBytes)))
+       sys.stdout.write("calling startMsg(conn, {},{})".format(startMarkerValue, str(msgBytes)))
     #
     (startMsgMark, checksum, cmdLen, followingBytes) = startMsg(conn, startMarkerValue, msgBytes)
     #
-    logger.debug("startMsg results = ({},{},{},{})".format(startMsgMark, checksum, cmdLen, str(followingBytes)))
+    if logger.isEnabledFor(logging.DEBUG): 
+       sys.stdout.write("startMsg results = ({},{},{},{})".format(startMsgMark, checksum, cmdLen, str(followingBytes)))
     lenOfFollowingBytes = len(followingBytes)
-    logger.debug("lenOfFollowingBytes = {}".format(lenOfFollowingBytes))
-    logger.debug("calling completeMsg(conn, {},{},{})".format(endMarkerValue, cmdLen, str(followingBytes)))
+    if logger.isEnabledFor(logging.DEBUG): 
+       sys.stdout.write("lenOfFollowingBytes = {}".format(lenOfFollowingBytes))
+       sys.stdout.write("calling completeMsg(conn, {},{},{})".format(endMarkerValue, cmdLen, str(followingBytes)))
 	#
     (cmdMsg, endMsgMark, nextMsgBytes) = completeMsg(conn, endMarkerValue, cmdLen, followingBytes)
     #
-    logger.debug("completeMsg results = ({},{},{})".format(startMsgMark, checksum, cmdLen, str(followingBytes)))
+    if logger.isEnabledFor(logging.DEBUG): 
+       sys.stdout.write("completeMsg results = ({},{},{})".format(startMsgMark, checksum, cmdLen, str(followingBytes)))
 	#
     cmdMsgDict = json.loads(cmdMsg)
     prettycmd = json.dumps(cmdMsgDict, sort_keys=True, indent=4, separators=(',', ': '))
-    logger.debug("cmd = \n{}".format(prettycmd))
+    if logger.isEnabledFor(logging.DEBUG): 
+       sys.stdout.write("cmd = \n{}".format(prettycmd))
     #
     return cmdMsgDict
 #
@@ -177,7 +192,8 @@ def startMsg(conn, startMarker, msgBytes):
 	#
 	#
 	if bytesNeeded > 0:
-		logger.debug("bytesNeeded are {}".format(bytesNeeded))
+                if logger.isEnabledFor(logging.DEBUG): 
+		   sys.stdout.write("bytesNeeded are {}".format(bytesNeeded))
 		# get the additional bytes needed to satisfy the beg mark, crc, and len requisition
 		while bytes_recd < bytesNeeded:
 			chunk = conn.recv(min(bytesNeeded - bytes_recd, 8192))
@@ -191,12 +207,13 @@ def startMsg(conn, startMarker, msgBytes):
 	try:
 		startMarkerBase = rawmsg.index(startMarker)
 	except ValueError:
-		logger.debug('from connection bytes "{}", start marker "{}" was not found'.format(rawmsg, startMarker))
-		logger.debug('giving up... something is fouled')
+		sys.stderr.write('from connection bytes "{}", start marker "{}" was not found'.format(rawmsg, startMarker))
+		sys.stderr.write('giving up... something is fouled')
 		raise
 	if startMarkerBase != 0: #this is not good... there should be no
 		# slack bytes between cmdMsgs in received bytes.
-		logger.debug('there is junk residual found before the start marker... value of junk = "{}"'.format(rawmsg[0:startMarkerBase]))
+                if logger.isEnabledFor(logging.DEBUG): 
+		   sys.stdout.write('there is junk residual found before the start marker... value of junk = "{}"'.format(rawmsg[0:startMarkerBase]))
 		raise BufferError('there is junk residual found before the start marker... value of junk = "{}"'.format(rawmsg[0:startMarkerBase]))
 	#
 	fixedMsgPortion = rawmsg[startMarkerBase:]
@@ -218,12 +235,14 @@ def startMsg(conn, startMarker, msgBytes):
 	payloadLenBytes = fixedMsgPortion[begMark:endMark]
 	(payloadLen,) = struct.unpack('>I', bytearray(payloadLenBytes)) #big endian unsigned int (4 bytes)
 	#
-	logger.debug("startMsg() extracted fixed part = {}, {}, {}".format(startMarkerValue, crc, payloadLen))
+        if logger.isEnabledFor(logging.DEBUG): 
+	   sys.stdout.write("startMsg() extracted fixed part = {}, {}, {}".format(startMarkerValue, crc, payloadLen))
 	#
 	begMark = endMark
 	followingBytes=fixedMsgPortion[begMark:]
 	#
-	logger.debug("startMsg() ...followingBytes = {}, {}, {}".format(str(followingBytes), begMark, (len(fixedMsgPortion) - begMark)))
+        if logger.isEnabledFor(logging.DEBUG): 
+	   sys.stdout.write("startMsg() ...followingBytes = {}, {}, {}".format(str(followingBytes), begMark, (len(fixedMsgPortion) - begMark)))
 	#
 	return (startMarkerValue, crc, payloadLen, followingBytes)
 #
@@ -237,7 +256,8 @@ def completeMsg(conn, endMarkerValue, cmdLen, residualBytesLastRead):
 	residual bytes that may be part of a subsequent command.
 	Answer the tuple, (cmd msg, end tag, the next message bytes buffer)
 	'''
-	logger.debug("entered completeMsg(conn, {},{},{})".format(endMarkerValue, cmdLen, residualBytesLastRead))
+        if logger.isEnabledFor(logging.DEBUG): 
+	   sys.stdout.write("entered completeMsg(conn, {},{},{})".format(endMarkerValue, cmdLen, residualBytesLastRead))
 	#
 	# return values
 	#
@@ -256,7 +276,8 @@ def completeMsg(conn, endMarkerValue, cmdLen, residualBytesLastRead):
 
 	# calculate the number of bytes needed before evaluate and extract
 	bytesNeeded = lenEndMarker + cmdLen - len(residualBytesLastRead)
-	logger.debug("completeMsg(bytesNeeded = {})".format(bytesNeeded))
+        if logger.isEnabledFor(logging.DEBUG): 
+	   sys.stdout.write("completeMsg(bytesNeeded = {})".format(bytesNeeded))
 	#
 	if bytesNeeded > 0:
 		# get the additional bytes (if needed) to satisfy the
@@ -266,15 +287,16 @@ def completeMsg(conn, endMarkerValue, cmdLen, residualBytesLastRead):
 			if chunk == '':
 				raise RuntimeError("socket connection broken")
 			rawmsg.extend(chunk)
-			logger.debug("bytes_recd = {} < bytesNeeded = {}".format(bytes_recd,bytesNeeded))
+                        if logger.isEnabledFor(logging.DEBUG): 
+			   sys.stdout.write("bytes_recd = {} < bytesNeeded = {}".format(bytes_recd,bytesNeeded))
 			bytes_recd = bytes_recd + len(chunk)
 	#
 	endMarkerBase = 0
 	try:
 		endMarkerBase = rawmsg.index(endMarkerValue)
 	except ValueError:
-		logger.debug('completeMsg()...from connection bytes ({}) received that are of sufficient size to contain the cmdMsg and end marker, end marker "{}" was not found'.format(rawmsg, endMarkerValue))
-		logger.debug('giving up... something is fouled')
+		sys.stderr.write('completeMsg()...from connection bytes ({}) received that are of sufficient size to contain the cmdMsg and end marker, end marker "{}" was not found'.format(rawmsg, endMarkerValue))
+		sys.stderr.write('giving up... something is fouled')
 		raise
 	#
 	# get the cmdMsg bytes and end marker value from the enclosed bytes, leaving residual
@@ -285,7 +307,8 @@ def completeMsg(conn, endMarkerValue, cmdLen, residualBytesLastRead):
 	endMsgMark = str(rawmsg[mark:lenEndMarker])
 	followingBytes=rawmsg[mark:]
 
-	logger.debug("completeMsg() ... cmdMsg = {}, endMsgMark = {}, followingBytes = {}".format(cmdMsg,endMsgMark,str(followingBytes)))
+	if logger.isEnabledFor(logging.DEBUG):
+           sys.stdout.write("completeMsg() ... cmdMsg = {}, endMsgMark = {}, followingBytes = {}".format(cmdMsg,endMsgMark,str(followingBytes)))
 	#
 	return (cmdMsg, endMsgMark, followingBytes)
 #
@@ -294,7 +317,8 @@ def formatWireMsg(msg):
 	Format the supplied message for transmission to client.  Format is
 	described in the dispatcher function.
 	"""
-	logger.debug("formatWireMsg msg to package = '{}'".format(str(msg)))
+	if logger.isEnabledFor(logging.DEBUG):
+           sys.stdout.write("formatWireMsg msg to package = '{}'".format(str(msg)))
 	reply = bytearray()
 	reply.extend(startMarkerValue)		# start marker for all messages
 	reply.extend(struct.pack('>Q', 0)) 	# crc (unused)
@@ -303,8 +327,12 @@ def formatWireMsg(msg):
 	reply.extend(msg) 					# msg content
 	reply.extend(endMarkerValue)			# end marker for all messages
 
-	logger.info("formatWireMsg reply = {}".format(str(reply)))
-	logger.debug("formatWireMsg reply length = {}".format(len(reply)))
+	if logger.isEnabledFor(logging.INFO):
+           sys.stdout.write("formatWireMsg reply = {}".format(str(reply)))
+        if logger.isEnabledFor(logging.DEBUG): 
+	   sys.stdout.write("formatWireMsg reply length = {}".format(len(reply)))
+        sys.stdout.flush()
+        sys.stderr.flush()
 	return reply
 #
 def goingDownMsg():
@@ -326,7 +354,8 @@ def exceptionMsg(infoTag):
 	another time.
 	"""
 	prettycmd = json.dumps({'Server' : hostDisplayStr, 'Port' : str(port), 'Result' : infoTag, 'Exception' : str(sys.exc_info()[0]), 'FailedClass' : str(sys.exc_info()[1])}, sort_keys=True, indent=4, separators=(',', ': '))
-	logger.debug(prettycmd)
+        if logger.isEnabledFor(logging.DEBUG): 
+	   sys.stdout.write(prettycmd)
 	xeptMsg = json.dumps({'Server' : hostDisplayStr, 'Port' : str(port), 'Result' : infoTag, 'Exception' : str(sys.exc_info()[0]), 'FailedClass' : str(sys.exc_info()[1])})
  	rawmsg = formatWireMsg(xeptMsg)
 	return rawmsg
@@ -357,8 +386,9 @@ def dispatcher(cmdMsgDict):
 	cmdNames = ["{}".format(v) for v in cmdNameView]
 	cmdValuesView = cmdDict.viewvalues()
 	cmdInsts =  ["{}".format(str(v)) for v in cmdValuesView]
-	logger.debug("cmds in cmdDict = {}, len = {}".format(cmdNames,len(cmdDict)))
-	logger.debug("instances in cmdDict = {}, len = {}".format(cmdInsts,len(cmdDict)))
+        if logger.isEnabledFor(logging.DEBUG): 
+	   sys.stdout.write("cmds in cmdDict = {}, len = {}".format(cmdNames,len(cmdDict)))
+	   sys.stdout.write("instances in cmdDict = {}, len = {}".format(cmdInsts,len(cmdDict)))
 
 	results = ""
 	try:
@@ -369,9 +399,11 @@ def dispatcher(cmdMsgDict):
 	if results == "":
 		try:
 			cmdDesired = cmdMsgDict["Cmd"]
-			logger.debug("cmdDesired = {}".format(cmdDesired))
+                        if logger.isEnabledFor(logging.DEBUG): 
+			   sys.stdout.write("cmdDesired = {}".format(cmdDesired))
 			cmd = cmdDict.get(cmdDesired)
-			logger.debug("cmd instance = {}".format(str(cmd)))
+                        if logger.isEnabledFor(logging.DEBUG): 
+			   sys.stdout.write("cmd instance = {}".format(str(cmd)))
 			results = cmd.handler(modelDict, hostDisplayStr, port, cmdOptions, modelOptions)
 		except:
 			results = exceptionMsg("The command '{}' is having a bad day...".format(cmdkey))
@@ -385,7 +417,8 @@ def dispatcher(cmdMsgDict):
 # the conn are serialized... we mitigate by having a pythonserver for each
 # partition the engine chooses to distribute the input with.
 #
-logger.info("begin listening for connections...")
+if logger.isEnabledFor(logging.INFO):
+   sys.stdout.write("begin listening for connections...")
 
 parentpid=os.getppid()
 serversocket.listen(10)
@@ -399,11 +432,13 @@ while True:
    for sock in read_sockets:
         if (sock == serversocket):
                 # establish a connection
-	        logger.info('accepting connections...')
+                if logger.isEnabledFor(logging.INFO): 
+	           sys.stdout.write('accepting connections...')
 	        conn, addr = serversocket.accept()
                 CONNECTION_LIST.append(conn)
                 conn.setblocking(0)
-	        logger.info('Connected by', str(addr))
+                if logger.isEnabledFor(logging.DEBUG): 
+	           sys.stdout.write('Connected by', str(addr))
 	else:
 		closedConnection = False
 		exceptionOccurred = False
@@ -414,7 +449,8 @@ while True:
 			classFailed = sys.exc_info()[1]
 			callback = sys.exc_info()[2]
 			emsg = "nextMsg exception...\ntype = {},\nclass = {},\nstack = {}".format(exceptionType,classFailed,callback)
-			logger.debug(emsg)
+			if logger.isEnabledFor(logging.DEBUG):
+                            sys.stdout.write(emsg)
 			wireMsg = formatWireMsg(emsg)
 			sock.sendall(wireMsg)
 			sys.exc_clear()
@@ -444,7 +480,7 @@ while True:
 						wireMsg =  goingDownMsg()
 					        sock.sendall(wireMsg)
 				except:
-					logger.debug("the connection has been broken...closing connection")
+					sys.stderr.write("the connection has been broken...closing connection")
 					sock.close()
                                         CONNECTION_LIST.remove(sock)
 					closedConnection = True
@@ -456,9 +492,10 @@ while True:
 		break
 
    if (parentpid != os.getppid()):
-      logger.debug("parent pid exited so hence child exiting")
+      sys.stdout.write("parent pid exited so hence child exiting")
       os._exit(0)
 #   else:
 #      logger.debug("")
 #
-logger.info('server stopped by admin command')
+if logger.isEnabledFor(logging.INFO): 
+   sys.stdout.write('server stopped by admin command')
