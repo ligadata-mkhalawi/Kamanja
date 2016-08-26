@@ -234,7 +234,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   metrics (KafkaProducer.LAST_FAILURE_TIME) = "n/a"
   metrics (KafkaProducer.LAST_RECOVERY_TIME) = "n/a"
 
-  retryExecutor.execute(new RetryFailedMessages())
+  // retryExecutor.execute(new RetryFailedMessages())
 
   class RetryFailedMessages extends Runnable {
     def run() {
@@ -288,6 +288,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   }
 
   private def failedMsgCount: Int = {
+    return 0
     var failedMsgs = 0
 
     val allFailedPartitions = failedMsgsMap.elements()
@@ -299,6 +300,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   }
 
   private def outstandingMsgCount: Int = {
+    return 0
     var outstandingMsgs = 0
     val allPartitions = partitionsMap.elements()
     while (allPartitions.hasMoreElements()) {
@@ -553,7 +555,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
         val keyMessages = partIdAndRecs._2
 
         // first push all messages to partitionsMap before we really send. So that callback is guaranteed to find the message in partitionsMap
-        addMsgsToMap(partId, keyMessages)
+        // addMsgsToMap(partId, keyMessages)
         sendInfinitely(keyMessages, false)
       })
 
@@ -614,26 +616,27 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   }
 
   private def addBackFailedToSendRec(lastAccessRec: MsgDataRecievedCnt): Unit = {
-    if (lastAccessRec != null)
-      addToFailedMap(lastAccessRec)
+    // if (lastAccessRec != null)
+    //  addToFailedMap(lastAccessRec)
   }
 
   private def doSend(keyMessages: ArrayBuffer[MsgDataRecievedCnt], removeFromFailedMap: Boolean): Int = {
     var sentMsgsCntr = 0
     var lastAccessRec: MsgDataRecievedCnt = null
     try {
-      updateMetricValue(KafkaProducer.SEND_MESSAGE_COUNT_KEY,keyMessages.size)
-      updateMetricValue(KafkaProducer.SEND_CALL_COUNT_KEY,1)
+      // updateMetricValue(KafkaProducer.SEND_MESSAGE_COUNT_KEY,keyMessages.size)
+      // updateMetricValue(KafkaProducer.SEND_CALL_COUNT_KEY,1)
 
       // We already populated partitionsMap before we really send. So that callback is guaranteed to find the message in partitionsMap
       keyMessages.map(msgAndCntr => {
         if (isShutdown)
           throw new Exception(qc.Name + " is shutting down")
         lastAccessRec = msgAndCntr
-        if (removeFromFailedMap)
-          removeMsgFromFailedMap(lastAccessRec)
+        // if (removeFromFailedMap)
+        //   removeMsgFromFailedMap(lastAccessRec)
         // Send the request to Kafka
-        producer.send(msgAndCntr.msg, new Callback {
+        msgCount += 1
+        producer.send(msgAndCntr.msg, null/* new Callback {
           override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
             val localMsgAndCntr = msgAndCntr
             msgCount += 1
@@ -651,7 +654,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
 
             }
           }
-        })
+        } */)
         lastAccessRec = null
         sentMsgsCntr += 1
         // cntrAdapter.addCntr(key, 1)
