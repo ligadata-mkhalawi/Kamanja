@@ -612,6 +612,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
         // if (removeFromFailedMap)
         //   removeMsgFromFailedMap(lastAccessRec)
         // Send the request to Kafka
+        msgCount += 1
         producer.send(msgAndCntr.msg, null/* new Callback {
           override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
             val localMsgAndCntr = msgAndCntr
