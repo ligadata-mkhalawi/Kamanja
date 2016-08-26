@@ -399,6 +399,38 @@ class PythonMdlSupport ( val mgr: MdMgr
     CreateModel(recompile, isPython)
   }
 
+   /** Prepare a new model with the new python/jython source supplied in the constructor.
+    *
+    * @return a newly constructed model def that reflects the new PMML source
+    */
+  def RemoveeModel(isPython: Boolean): Any  = {
+    logger.debug("Remove Model from python staging model dirs")
+    /** if properties have been supplied, then give them to the to the model def makers */
+    val pythonPropertiesStr : String = metadataAPIConfig.getProperty(PYTHON_CONFIG)
+    implicit val formats = org.json4s.DefaultFormats
+    val pyPropertyMap : Map[String,Any] = parse(pythonPropertiesStr).values.asInstanceOf[Map[String,Any]]
+      /**
+        * reasonable python text should be compilable... let's do so now.  Reject if non 0 return code.
+        */
+        val pyPath : String = pyPropertyMap(PYTHON_PATH).toString
+        val tmpModelDir : String = if (pyPath.endsWith("/")) s"${pyPath.dropRight(1)}/tmp" else s"$pyPath/tmp"
+        val pyFileName : String = s"${moduleName}.py"
+        val pyTmpFileName : String = s"$tmpModelDir/$pyFileName"
+        val rmTmpModelCmdSeq : Seq[String] = Seq[String]("rm -f ", pyTmpFileName)
+        val (tmpresult, tmpstdoutStr, tmpstderrStr) : (Int, String, String) = runCmdCollectOutput(rmTmpModelCmdSeq)
+        if (tmpresult != 0) {
+          logger.error(s"Remove Model failed...  $pyTmpFileName")
+        }
+        val modelDir : String = if (pyPath.endsWith("/")) s"${pyPath.dropRight(1)}/tmp" else s"$pyPath/models"
+        val pyModelFileName : String = s"$modelDir/$pyFileName"
+        val rmModelCmdSeq : Seq[String] = Seq[String]("rm -f ", pyModelFileName)
+        val (result, stdoutStr, stderrStr) : (Int, String, String) = runCmdCollectOutput(rmModelCmdSeq)
+        if (result != 0) {
+          logger.error(s"Remove Model failed...  $pyTmpFileName")
+        }
+
+  }
+
   /**
    * diagnostic... generate a JSON string to print to the log for the supplied ModelDef.
    *
