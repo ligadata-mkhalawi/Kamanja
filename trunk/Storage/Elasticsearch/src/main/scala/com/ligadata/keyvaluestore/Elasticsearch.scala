@@ -495,7 +495,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       val response = client
         .prepareSearch(tableName)
         .setTypes("type1")
-        .setQuery(QueryBuilders.boolQuery().must(QueryBuilders.termQuery("timePartition", 0))
+        .setQuery(QueryBuilders.boolQuery().must(QueryBuilders.termQuery("timePartition", key.timePartition))
           .must(QueryBuilders.termQuery("bucketKey", key.bucketKey.mkString(",").toLowerCase()))
           .must(QueryBuilders.termQuery("transactionId", key.transactionId))
           .must(QueryBuilders.termQuery("rowId", key.rowId))
@@ -515,7 +515,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       // index the data
       val builder: XContentBuilder =
       XContentFactory.jsonBuilder().startObject()
-        .field("timePartition", 0)
+        .field("timePartition", key.timePartition)
         .field("bucketKey", key.bucketKey.mkString(","))
         .field("transactionId", key.transactionId)
         .field("rowId", key.rowId)
@@ -738,11 +738,14 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           .prepareSearch(tableName)
           .setTypes("type1")
           .setQuery(QueryBuilders.boolQuery()
-            .must(QueryBuilders.termQuery("bucketKey", keyStr)))
-          .setQuery(
-            QueryBuilders.andQuery(
-              QueryBuilders.rangeQuery("timePartition").gte(time.beginTime),
-              QueryBuilders.rangeQuery("timePartition").lte(time.endTime)))
+            .must(QueryBuilders.termQuery("bucketKey", keyStr))
+            .must(QueryBuilders.rangeQuery("timePartition").gte(time.beginTime))
+            .must(QueryBuilders.rangeQuery("timePartition").lte(time.endTime))
+          )
+//          .setQuery(
+//            QueryBuilders.andQuery(
+//              QueryBuilders.rangeQuery("timePartition").gte(time.beginTime),
+//              QueryBuilders.rangeQuery("timePartition").lte(time.endTime)))
           .execute().actionGet()
 
         var hits: SearchHits = response.getHits()
@@ -796,10 +799,13 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       val response = client
         .prepareSearch(tableName)
         .setTypes("type1")
-        .setQuery(
-          QueryBuilders.andQuery(
-            QueryBuilders.rangeQuery("timePartition").gte(time.beginTime),
-            QueryBuilders.rangeQuery("timePartition").lte(time.endTime)))
+        .setQuery(QueryBuilders.boolQuery()
+          .must(QueryBuilders.rangeQuery("timePartition").gte(time.beginTime))
+          .must(QueryBuilders.rangeQuery("timePartition").lte(time.endTime)))
+//        .setQuery(
+//          QueryBuilders.andQuery(
+//            QueryBuilders.rangeQuery("timePartition").gte(time.beginTime),
+//            QueryBuilders.rangeQuery("timePartition").lte(time.endTime)))
         .execute().actionGet()
 
       var hits: SearchHits = response.getHits()
@@ -1263,10 +1269,14 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       time_ranges.foreach(time_range => {
         var response = client
           .prepareSearch(tableName)
-          .setTypes("type1").setQuery(
-          QueryBuilders.andQuery(
-            QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime),
-            QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
+          .setTypes("type1")
+          .setQuery(QueryBuilders.boolQuery()
+            .must(QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime))
+            .must(QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
+//          .setQuery(
+//          QueryBuilders.andQuery(
+//            QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime),
+//            QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
           .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
           .setScroll(timeToLive)
           .setSize(5)
@@ -1346,10 +1356,13 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       var response = client
         .prepareSearch(tableName)
         .setTypes("type1")
-        .setQuery(
-          QueryBuilders.andQuery(
-            QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime),
-            QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
+        .setQuery(QueryBuilders.boolQuery()
+          .must(QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime))
+          .must(QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
+//        .setQuery(
+//          QueryBuilders.andQuery(
+//            QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime),
+//            QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
         .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId"), null)
         .execute().actionGet()
 
@@ -1405,13 +1418,14 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             .prepareSearch(tableName)
             .setTypes("type1")
             .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId", "schemaId", "serializerType", "serializedInfo"), null)
-            .setQuery(
-              QueryBuilders.andQuery(
-                QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime),
-                QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
-            .setQuery(QueryBuilders
-              .boolQuery()
-              .must(QueryBuilders.termQuery("bucketKey", bucketKey.mkString(","))))
+//            .setQuery(
+//              QueryBuilders.andQuery(
+//                QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime),
+//                QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
+            .setQuery(QueryBuilders.boolQuery()
+              .must(QueryBuilders.termQuery("bucketKey", bucketKey.mkString(",")))
+              .must(QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime))
+              .must(QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
             .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
             .setScroll(timeToLive)
             .setSize(5)
@@ -1496,11 +1510,15 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             .prepareSearch(tableName)
             .setTypes("type1")
             .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId"), null)
-            .setQuery(QueryBuilders.boolQuery().must(QueryBuilders.termQuery("bucketKey", bucketKey.mkString(","))))
-            .setQuery(
-              QueryBuilders.andQuery(
-                QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime),
-                QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
+            .setQuery(QueryBuilders.boolQuery()
+              .must(QueryBuilders.termQuery("bucketKey", bucketKey.mkString(",")))
+              .must(QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime))
+              .must(QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime))
+            )
+//            .setQuery(
+//              QueryBuilders.andQuery(
+//                QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime),
+//                QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
             .execute().actionGet()
           updateOpStats("get", tableName, 1)
 
@@ -1743,7 +1761,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
   private def dropTable(tableName: String): Unit = lock.synchronized {
     var client: TransportClient = null
-    var fullTableName = SchemaName + "." + tableName
+//    var fullTableName = SchemaName + "." + tableName
     try {
       client = getConnection
       val indicies = client.admin().cluster()
@@ -1760,7 +1778,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
     } catch {
       case e: Exception => {
-        throw CreateDDLException("Failed to drop the Index " + fullTableName, e)
+        throw CreateDDLException("Failed to drop the Index " + tableName, e)
       }
     } finally {
       if (client != null) {
