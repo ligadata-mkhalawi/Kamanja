@@ -601,8 +601,8 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
     var sentMsgsCntr = 0
     var lastAccessRec: MsgDataRecievedCnt = null
     try {
-      updateMetricValue(KafkaProducer.SEND_MESSAGE_COUNT_KEY,keyMessages.size)
-      updateMetricValue(KafkaProducer.SEND_CALL_COUNT_KEY,1)
+      // updateMetricValue(KafkaProducer.SEND_MESSAGE_COUNT_KEY,keyMessages.size)
+      // updateMetricValue(KafkaProducer.SEND_CALL_COUNT_KEY,1)
 
       // We already populated partitionsMap before we really send. So that callback is guaranteed to find the message in partitionsMap
       keyMessages.map(msgAndCntr => {
