@@ -78,7 +78,8 @@ object ModelService {
             //get the messages location from the config file. If error get the location from github
             modelFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
             if (modelFileDir == null) {
-                response = "MODEL_FILES_DIR property missing in the metadata API configuration"
+              //  response = "MODEL_FILES_DIR property missing in the metadata API configuration"
+                response = new ApiResult(ErrorCodeConstants.Failure, "addModelScala", null, "MODEL_FILES_DIR property missing in the metadata API configuration").toString
             } else {
                 //verify the directory where messages can be present
                 IsValidDir(modelFileDir) match {
@@ -87,8 +88,9 @@ object ModelService {
                         val models: Array[File] = new java.io.File(modelFileDir).listFiles.filter(_.getName.endsWith(".scala"))
                         models.length match {
                             case 0 => {
-                                val errorMsg = "Models not found at " + modelFileDir
-                                response = errorMsg
+//                                val errorMsg = "Models not found at " + modelFileDir
+  //                              response = errorMsg
+                                response = new ApiResult(ErrorCodeConstants.Failure, "addModelScala", null, "Models not found at "+modelFileDir).toString
                             }
                             case option => {
                                 modelDefs=getUserInputFromMainMenu(models)
@@ -97,7 +99,8 @@ object ModelService {
                     }
                     case false => {
                         //println("Message directory is invalid.")
-                        response = "Model directory is invalid."
+//                        response = "Model directory is invalid."
+                        response = new ApiResult(ErrorCodeConstants.Failure, "addModelScala", null, "Model directory is invalid").toString
                     }
                 }
             }
@@ -183,7 +186,8 @@ object ModelService {
             //get the messages location from the config file. If error get the location from github
             modelFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
             if (modelFileDir == null) {
-                response = "MODEL_FILES_DIR property missing in the metadata API configuration"
+                //response = "MODEL_FILES_DIR property missing in the metadata API configuration"
+                response = new ApiResult(ErrorCodeConstants.Failure, "addModelJava", null, "MODEL_FILES_DIR property missing in the metadata API configuration").toString
             } else {
                 //verify the directory where messages can be present
                 IsValidDir(modelFileDir) match {
@@ -192,8 +196,9 @@ object ModelService {
                         val models: Array[File] = new java.io.File(modelFileDir).listFiles.filter(_.getName.endsWith(".java"))
                         models.length match {
                             case 0 => {
-                                val errorMsg = "Models not found at " + modelFileDir
-                                response = errorMsg
+  //                              val errorMsg = "Models not found at " + modelFileDir
+//                                response = errorMsg
+                                response = new ApiResult(ErrorCodeConstants.Failure, "addModelJava", null, "Models not found at "+modelFileDir).toString
                             }
                             case option => {
 
@@ -203,7 +208,8 @@ object ModelService {
                     }
                     case false => {
                         //println("Message directory is invalid.")
-                        response = "Model directory is invalid."
+                        //response = "Model directory is invalid."
+                        response = new ApiResult(ErrorCodeConstants.Failure, "addModelJava", null, "Model directory is invalid").toString
                     }
                 }
             }
@@ -353,7 +359,8 @@ object ModelService {
             //get the messages location from the config file. If error get the location from github
             modelFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
             if (modelFileDir == null) {
-                response = "MODEL_FILES_DIR property missing in the metadata API configuration"
+                //response = "MODEL_FILES_DIR property missing in the metadata API configuration"
+                response=new ApiResult(ErrorCodeConstants.Failure, "addModelKPmml", null,"MODEL_FILES_DIR property missing in the metadata API configuration").toString
             } else {
                 //verify the directory where messages can be present
                 IsValidDir(modelFileDir) match {
@@ -362,9 +369,10 @@ object ModelService {
                         val models: Array[File] = new java.io.File(modelFileDir).listFiles.filter(_.getName.endsWith(".xml"))
                         models.length match {
                             case 0 => {
-                                val errorMsg = "Models not found at " + modelFileDir
-                                println(errorMsg)
-                                response = errorMsg
+                                //val errorMsg = "Models not found at " + modelFileDir
+                                //println(errorMsg)
+                                //response = errorMsg
+                                response=new ApiResult(ErrorCodeConstants.Failure, "addModelKPmml", null,"Models not found at "+modelFileDir).toString
                             }
                             case option => {
                                 var  modelDefs=getUserInputFromMainMenu(models)
@@ -374,7 +382,8 @@ object ModelService {
                         }
                     }
                     case false => {
-                        response = "Model directory is invalid."
+                        //response = "Model directory is invalid."
+                        response=new ApiResult(ErrorCodeConstants.Failure, "addModelKPmml", null,"Model directory is invalid").toString
                     }
                 }
             }
@@ -386,7 +395,8 @@ object ModelService {
                 modelDef= Source.fromFile(model).mkString
                 response = getMetadataAPI.AddModel(ModelType.KPMML, modelDef.toString, userid, finalTid, None,None,None,None,optMsgProduced, pStr)
             }else{
-                response="Model definition file does not exist"
+                    //response="Model definition file does not exist"
+                response=new ApiResult(ErrorCodeConstants.Failure, "addModelKPmml", null,"Model definition file does not exist").toString
             }
         }
         response
