@@ -903,8 +903,9 @@ object ModelService {
           }
           val modelKeys = getMetadataAPI.GetAllModelsFromCache(true, None, tid)
           if (modelKeys.length == 0) {
-            val errorMsg="Sorry, No models available, in the Metadata, to display!"
-            response=errorMsg
+           // val errorMsg="Sorry, No models available, in the Metadata, to display!"
+            //response=errorMsg
+              response = new ApiResult(ErrorCodeConstants.Failure, "getModel", null, "No models available, in the Metadata, to display").toString
           }
           else{
             println("\nPick the model to be displayed from the following list: ")
@@ -916,8 +917,9 @@ object ModelService {
             println("Enter your choice: ")
             val choice: Int = readInt()
             if (choice < 1 || choice > modelKeys.length) {
-              val errormsg="Invalid choice " + choice + ". Start with the main menu."
-              response=errormsg
+             // val errormsg="Invalid choice " + choice + ". Start with the main menu."
+             // response=errormsg
+                response = new ApiResult(ErrorCodeConstants.Failure, "getModel", null, "Invalid choice").toString
             }
             val modelKey = modelKeys(choice - 1)
             val(ns, name, ver) = com.ligadata.kamanja.metadata.Utils.parseNameToken(modelKey)
@@ -943,10 +945,11 @@ object ModelService {
         var response=""
         val modelKeys = getMetadataAPI.GetAllModelsFromCache(true, userid, tid)
         if (modelKeys.length == 0) {
-          response="Sorry, No models available in the Metadata"
+         // response="Sorry, No models available in the Metadata"
+            response = new ApiResult(ErrorCodeConstants.Failure, "getAllModels", null, "No models available, in the Metadata, to display").toString
         }else{
           // 1165 Change begins - replaced with API return json string
-          response= (new ApiResult(ErrorCodeConstants.Success, "ModelService", modelKeys.mkString(", ") , "Successfully retrieved all the models")).toString
+          response= (new ApiResult(ErrorCodeConstants.Success, "getAllModels", modelKeys.mkString(", ") , "Successfully retrieved all the models")).toString
           // 1165 Change ends
         }
         response
@@ -981,7 +984,9 @@ object ModelService {
               val modelKeys = getMetadataAPI.GetAllModelsFromCache(true, None)
 
               if (modelKeys.length == 0) {
-                "Sorry, No models available, in the Metadata, to delete!"
+               // "Sorry, No models available, in the Metadata, to delete!"
+                 new ApiResult(ErrorCodeConstants.Failure, "removeModel", null, "No models available, in the Metadata, to delete").toString
+
               } else {
                   println("\nPick the model to be deleted from the following list: ")
                   var srno = 0
@@ -993,7 +998,8 @@ object ModelService {
                   val choice: Int = readInt()
 
                   if (choice < 1 || choice > modelKeys.length) {
-                      "Invalid choice " + choice + ". Start with the main menu."
+                   //   "Invalid choice " + choice + ". Start with the main menu."
+                      new ApiResult(ErrorCodeConstants.Failure, "removeModel", null, "Invalid choice").toString
                   } else {
                       val modelKey = modelKeys(choice - 1)
                       val (ns, name, ver) = com.ligadata.kamanja.metadata.Utils.parseNameToken(modelKey)
@@ -1033,8 +1039,10 @@ object ModelService {
           }
           val modelKeys = getMetadataAPI.GetAllModelsFromCache(false, None)
           if (modelKeys.length == 0) {
-            val errorMsg="Sorry, No models available, in the Metadata, to activate!"
-            response=errorMsg
+        //    val errorMsg="Sorry, No models available, in the Metadata, to activate!"
+          //  response=errorMsg
+             response= new ApiResult(ErrorCodeConstants.Failure, "activateModel", null, "No models available, in the Metadata, to activate").toString
+
           }
           else{
             println("\nPick the model to be activated from the following list: ")
@@ -1047,8 +1055,10 @@ object ModelService {
             val choice: Int = readInt()
 
             if (choice < 1 || choice > modelKeys.length) {
-              val errormsg="Invalid choice " + choice + ". Start with the main menu."
-              response=errormsg
+            //  val errormsg="Invalid choice " + choice + ". Start with the main menu."
+             // response=errormsg
+                response= new ApiResult(ErrorCodeConstants.Failure, "activateModel", null, "Invalid choice").toString
+
             }
             val modelKey = modelKeys(choice - 1)
             val modelKeyTokens = modelKey.split("\\.")
@@ -1091,9 +1101,11 @@ object ModelService {
           val modelKeys = getMetadataAPI.GetAllModelsFromCache(true, None)
 
           if (modelKeys.length == 0) {
-            val errorMsg="Sorry, No models available, in the Metadata, to deactivate!"
+           // val errorMsg="Sorry, No models available, in the Metadata, to deactivate!"
             //println(errorMsg)
-            response=errorMsg
+            //response=errorMsg
+              response= new ApiResult(ErrorCodeConstants.Failure, "deActivateModel", null, "No models available, in the Metadata, to deactivate").toString
+
           }
           else{
             println("\nPick the model to be de-activated from the following list: ")
@@ -1107,8 +1119,9 @@ object ModelService {
 
 
             if (choice < 1 || choice > modelKeys.length) {
-              val errormsg="Invalid choice " + choice + ". Start with the main menu."
-              response=errormsg
+           //   val errormsg="Invalid choice " + choice + ". Start with the main menu."
+            //  response=errormsg
+                response= new ApiResult(ErrorCodeConstants.Failure, "deActivateModel", null, "Invalid choice").toString
             }
             val modelKey = modelKeys(choice - 1)
             val modelKeyTokens = modelKey.split("\\.")
