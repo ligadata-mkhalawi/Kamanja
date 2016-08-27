@@ -242,5 +242,7 @@ object ErrorCodeConstants {
    val Get_Type_By_SchemaId_Failed = "Failed to fetch message/container from cache";
    val Get_Type_By_ElementId_Failed = "Failed to fetch message/container/model from Cache";
 
-
+   //Schedule
+   val Add_Schedule_Successful = "Schedule Added Successfully";
+   val Add_Schedule_Failed = "Failed to Add Schedule";
 }
