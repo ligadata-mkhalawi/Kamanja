@@ -798,6 +798,7 @@ object PersistenceUtils {
 
       tableStoreMap = Map("metadata_objects" ->("metadata_objects", mainDS),
         "models" ->("metadata_objects", mainDS),
+        "schedules" ->("metadata_objects", mainDS),
         "messages" ->("metadata_objects", mainDS),
         "containers" ->("metadata_objects", mainDS),
         "functions" ->("metadata_objects", mainDS),
