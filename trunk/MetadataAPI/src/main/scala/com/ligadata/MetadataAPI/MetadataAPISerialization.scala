@@ -2109,7 +2109,7 @@ private def parseContainerDef(contDefJson: JValue): ContainerDef = {
       logger.debug("Parsed the json : " + scheduleJson)
 
       val scheduleInst = scheduleJson.extract[Schedule]
-      val scheduleInfo = MdMgr.GetMdMgr.MakeSchedule(scheduleInst.Name,scheduleInst.StartTime,scheduleInst.EndTime,scheduleInst.CronJobPattern,scheduleInst.Payload,scheduleInst.NameSpace)
+      val scheduleInfo = MdMgr.GetMdMgr.MakeSchedule(scheduleInst.Schedule.Name,scheduleInst.Schedule.StartTime,scheduleInst.Schedule.EndTime,scheduleInst.Schedule.CronJobPattern,scheduleInst.Schedule.Payload,scheduleInst.Schedule.NameSpace)
 
       scheduleInfo
 
@@ -2306,7 +2306,9 @@ case class ConfigInfo(Name: String, PhysicalName: String, JarName: String, NameS
 
 case class Config(Config: ConfigInfo)
 
-case class Schedule(Name: String, StartTime: String, EndTime: String, CronJobPattern: String, Payload: Array[String], NameSpace: String)
+case class ScheduleInformation(Name: String, StartTime: String, EndTime: String, CronJobPattern: String, Payload: Array[String], NameSpace: String)
+
+case class Schedule(Schedule: ScheduleInformation)
 
 case class JarInfo(Name: String, PhysicalName: String, JarName: String, NameSpace: String, ObjectDefinition: String, DependencyJars: List[String], OrigDef: String, ObjectFormat: String, Author: String, OwnerId: String, IsActive: Boolean, IsDeleted: Boolean, Description: String, NumericTypes: NumericTypes, TenantId: String)
 
