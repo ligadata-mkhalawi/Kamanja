@@ -660,7 +660,6 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
             }
           }
         } else {
-          msgCount.incrementAndGet()
           null
         }
 
@@ -669,6 +668,8 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
         sentMsgsCntr += 1
         // cntrAdapter.addCntr(key, 1)
       })
+
+      if (! enable_adapter_retries) msgCount.addAndGet(keyMessages.size);
 
       keyMessages.clear()
     } catch {
