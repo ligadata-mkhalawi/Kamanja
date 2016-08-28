@@ -21,41 +21,27 @@ object KamanjaService {
 
 
   def main(args : Array[String]) : Unit = {
-    println("--------------------------") 
-val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+	val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
         val filePath = "/opt/KAM/Kamanja-1.5.3_2.11/config/MetadataAPIConfig.properties"
         val config = Source.fromFile(filePath).mkString
 	getMetadataAPI.InitMdMgrFromBootStrap(filePath, false)
 	val mdMgr = GetMdMgr
-	val tenatInfo = mdMgr.GetAllTenantInfos
-    println("--------------------------")
-    if (tenatInfo.isEmpty) {
-      LOG.warn("Uploading cluster config")
-//      val uploadClusterConfig="sudo kamanja upload cluster config /opt/KAM/Kamanja-1.5.3_2.11/config/ClusterConfig.json".!!
-//      println(uploadClusterConfig)
-        //LOG.warn("Returned value="+uploadClusterConfig)
-	val filePath = new File("/opt/KAM/Kamanja-1.5.3_2.11/config/ClusterConfig.json")
- 	val cfgDef = Source.fromFile(filePath).mkString
-      // getMetadataAPI.shutdown
-//    val mdMgr = GetMdMgr
- //   val tenatInfo = mdMgr.GetAllTenantInfos
-
-//	val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
-//        getMetadataAPI.InitMdMgrFromBootStrap(cfgDef, false)
-//    val mdMgr = GetMdMgr
-//    val tenatInfo = mdMgr.GetAllTenantInfos
-
-      val response=MetadataAPIImpl.UploadConfig(cfgDef, None, "configuration")
-    }
-    else {
-      LOG.warn("cluster config already uploaded")
-    }
+	val tenantInfo = mdMgr.GetAllTenantInfos
+	
+    	if (tenantInfo.length<2) {
+      	  LOG.warn("Uploading cluster config")
+	  val ccFilePath = new File("/opt/KAM/Kamanja-1.5.3_2.11/config/ClusterConfig_kafka_v10.json")
+ 	  val cfgDef = Source.fromFile(ccFilePath).mkString
+          val response=MetadataAPIImpl.UploadConfig(cfgDef, None, "configuration")
+	}
+    	else {
+    	  LOG.warn("cluster config already uploaded")
+    	}
 
     scala.sys.addShutdownHook({
       if (!KamanjaConfiguration.shutdown) {
         LOG.warn("KAMANJA-Service: Received shutdown request")
         KamanjaConfiguration.shutdown = true // Setting the global shutdown
-
         shutdown()
       }
     })
