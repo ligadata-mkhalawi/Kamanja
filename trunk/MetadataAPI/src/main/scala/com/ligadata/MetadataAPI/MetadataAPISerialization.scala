@@ -690,6 +690,7 @@ object MetadataAPISerialization {
         case "Function" => parseFunctionDef(json)
         case "MapType" => parseMapTypeDef(json)
         case "ArrayType" => parseArrayTypeDef(json)
+        case "Schedule" => parseSchedule(json)
        /* case "ArrayBufType" => parseArrayBufTypeDef(json)
         case "SetType" => parseSetTypeDef(json)
         case "ImmutableSetType" => parseImmutableSetTypeDef(json)
@@ -2103,6 +2104,26 @@ private def parseContainerDef(contDefJson: JValue): ContainerDef = {
     }
   }
 
+  private def parseSchedule(scheduleJson: JValue): ScheduleInfo = {
+    try {
+      logger.debug("Parsed the json : " + scheduleJson)
+
+      val scheduleInst = scheduleJson.extract[Schedule]
+      val scheduleInfo = MdMgr.GetMdMgr.MakeSchedule(scheduleInst.Name,scheduleInst.StartTime,scheduleInst.EndTime,scheduleInst.CronJobPattern,scheduleInst.Payload,scheduleInst.NameSpace)
+
+      scheduleInfo
+
+    } catch {
+      case e: MappingException => {
+        logger.debug("", e)
+        throw Json4sParsingException(e.getMessage(), e)
+      }
+      case e: Exception => {
+        logger.error("Failed to parse JSON" + scheduleJson, e)
+        throw e
+      }
+    }
+  }
     private def parseTenantInfo(tenantInfoJson: JValue): TenantInfo = {
         try {
             logger.debug("Parsed the json : " + tenantInfoJson)
@@ -2284,6 +2305,8 @@ case class Argument(ArgName: String, ArgTypeNameSpace: String, ArgTypeName: Stri
 case class ConfigInfo(Name: String, PhysicalName: String, JarName: String, NameSpace: String, ObjectDefinition: String, DependencyJars: List[String], OrigDef: String, ObjectFormat: String, Author: String, OwnerId: String, IsActive: Boolean, IsDeleted: Boolean, Description: String, Contents: String, NumericTypes: NumericTypes, TenantId: String)
 
 case class Config(Config: ConfigInfo)
+
+case class Schedule(Name: String, StartTime: String, EndTime: String, CronJobPattern: String, Payload: Array[String], NameSpace: String)
 
 case class JarInfo(Name: String, PhysicalName: String, JarName: String, NameSpace: String, ObjectDefinition: String, DependencyJars: List[String], OrigDef: String, ObjectFormat: String, Author: String, OwnerId: String, IsActive: Boolean, IsDeleted: Boolean, Description: String, NumericTypes: NumericTypes, TenantId: String)
 

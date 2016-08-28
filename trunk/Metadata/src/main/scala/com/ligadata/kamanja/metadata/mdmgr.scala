@@ -3528,24 +3528,20 @@ class MdMgr {
   }
 
   //Schedule
-  def MakeSchedule(name: String, startTime: String, endTime: String, cronJobPattern: String, payload: Array[String], jobname: Option[String]): ScheduleInfo = {
+  def MakeSchedule(name: String, startTime: String, endTime: String, cronJobPattern: String, payload: Array[String], nameSpace: String): ScheduleInfo = {
     val sch = new ScheduleInfo
     sch.name = name
     sch.startTime = startTime
     sch.endTime = endTime
     sch.cronJobPattern = cronJobPattern
     sch.payload = payload
-    sch.jobname = jobname
+    sch.nameSpace = nameSpace
 
     sch
   }
 
   def AddSchedule(ci: ScheduleInfo): Option[String] = {
-    val jobname = ci.jobname match {
-      case Some(i) => Some(i).get.trim.toLowerCase
-      case None => ""
-    }
-    val key = "%s.%s".format(ci.name.trim.toLowerCase,jobname)
+    val key = "%s.%s".format(ci.name.trim.toLowerCase,ci.nameSpace.trim.toLowerCase)
     if (scheduleDefs.contains(key)) {
       var isSame = scheduleDefs.get(key).get.asInstanceOf[ScheduleInfo].equals(ci)
       scheduleDefs(key) = ci

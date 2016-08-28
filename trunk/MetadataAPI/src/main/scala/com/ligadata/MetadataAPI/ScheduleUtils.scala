@@ -3,6 +3,7 @@ package com.ligadata.MetadataAPI
 import com.ligadata.AuditAdapterInfo.AuditConstants
 import com.ligadata.kamanja.metadata.MdMgr
 import org.apache.logging.log4j.LogManager
+import com.ligadata.kamanja.metadata._
 
 /**
   * Created by Saleh on 8/25/2016.
@@ -25,13 +26,15 @@ object ScheduleUtils {
       sch.endTime = "test"
       sch.cronJobPattern = "test"
       sch.payload = new Array[String](0)
-      sch.jobname = "test"
+      sch.nameSpace = "test"
 
       val value = MetadataAPISerialization.serializeObjectToJson(sch).getBytes
-      getMetadataAPI.SaveObject(key.toLowerCase, text.getBytes, "schedules", serializerType)
+      getMetadataAPI.SaveObject(key.toLowerCase, value, "schedules", serializerType)
       val (objtype, jsonBytes) : (String, Any) = PersistenceUtils.GetObject(key.toLowerCase, "schedules")
 
       println(">>>>>>>>> "+new String(jsonBytes.asInstanceOf[Array[Byte]]))
+      val ss = MetadataAPISerialization.deserializeMetadata(new String(jsonBytes.asInstanceOf[Array[Byte]])).asInstanceOf[ScheduleInfo]
+      println(">>>>>>>>> " + sch.name)
       val apiResult = new ApiResult(ErrorCodeConstants.Success, "AddSchedule", null, ErrorCodeConstants.Add_Schedule_Successful + ": " + key)
 
       apiResult.toString()
