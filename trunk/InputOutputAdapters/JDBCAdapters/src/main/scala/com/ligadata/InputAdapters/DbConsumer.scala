@@ -51,11 +51,6 @@ object DbConsumer extends InputAdapterFactory  {
   def CreateInputAdapter(inputConfig: AdapterConfiguration, execCtxtObj: ExecContextFactory, nodeContext: NodeContext): InputAdapter = new DbConsumer(inputConfig, execCtxtObj, nodeContext)
 }
 
-trait LogTrait {
-  val loggerName = this.getClass.getName()
-  val logger = LogManager.getLogger(loggerName)
-}
-
 class DbConsumer (val inputConfig: AdapterConfiguration, val execCtxtObj: ExecContextFactory, val nodeContext: NodeContext) extends InputAdapter with CountersAdapter{
   private[this] val LOG = LogManager.getLogger(getClass);
   private[this] val dcConf = DbAdapterConfiguration.getAdapterConfig(inputConfig)

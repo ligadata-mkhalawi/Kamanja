@@ -263,5 +263,17 @@ class DbPartitionUniqueRecordValue extends PartitionUniqueRecordValue {
     }
     // else { } // Not yet handling other versions
   }
-  
+}
+
+
+trait LogTrait {
+  val loggerName = this.getClass.getName()
+  val logger = LogManager.getLogger(loggerName)
+}
+
+object JDBCConstants {
+  val JDBC_SEND_SUCCESS = 0
+  val JDBC_SEND_Q_FULL = 1
+  val JDBC_SEND_DEAD_PRODUCER = 2
+  val JDBC_NOT_SEND = 3
 }
