@@ -31,7 +31,7 @@ fi
 echo "User selected: $INPUTFILE"
 echo "Running kafka client version $kafkaversion"
 
-currentKamanjaVersion=1.5.3
+currentKamanjaVersion=1.6.0
 
 if [ "$kafkaversion" = "0.8" ]; then
   java  $JAAS_CLIENT_OPT $KERBEROS_CONFIG_OPT $KEYSTORE_CONFIG_OPT $KEYSTORE_PASS_CONFIG_OPT $TRUSTSTORE_CONFIG_OPT $TRUSTSTORE_PASS_CONFIG_OPT -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-$currentKamanjaVersion.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-$currentKamanjaVersion.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-$currentKamanjaVersion.jar:$KAMANJA_HOME/lib/system/kamanjakafkaadapters_0_8_2.11-$currentKamanjaVersion.jar:$KAMANJA_HOME/lib/system/kafka-clients-0.8.2.2.jar:$KAMANJA_HOME/lib/system/kafka_2.11-0.8.2.2.jar:$KAMANJA_HOME/lib/system/simplekafkaproducer_2.11-$currentKamanjaVersion.jar com.ligadata.tools.SimpleKafkaProducer --gz true --topics "medicalinput" --threads 1 --topicpartitions 8 --brokerlist "$kafkahostname" --files "$KAMANJA_HOME/input/SampleApplications/data/copd_demo_Medical.csv.gz" --partitionkeyidxs "0" --kafkaversion 8 --format CSV $SECURITY_PROP_OPT

@@ -10,7 +10,7 @@ buildOption=$5
 cleanOption=$6
 ignoreMigrationLibsOption=$7
 
-currentKamanjaVersion=1.5.3
+currentKamanjaVersion=1.6.0
 
 ver210=${currentKamanjaVersion}_2.10
 ver211=${currentKamanjaVersion}_2.11
