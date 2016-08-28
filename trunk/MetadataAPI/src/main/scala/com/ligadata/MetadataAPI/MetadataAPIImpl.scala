@@ -1032,6 +1032,11 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
           saveObjFn()
           mdMgr.AddContainerType(o)
         }
+        case o: ScheduleDef => {
+          logger.debug("Adding the Type to the cache: name of the object =>  " + dispkey)
+          saveObjFn()
+          mdMgr.AddSchedule(o, ignoreExistingObjectsOnStartup)
+        }
         case _ => {
           logger.error("SaveObject is not implemented for objects of type " + obj.getClass.getName)
         }
@@ -1484,6 +1489,10 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
         case o: ContainerTypeDef => {
           logger.debug("Adding the Type to the cache: name of the object =>  " + dispkey)
           mdMgr.AddContainerType(o, ignoreExistingObjectsOnStartup)
+        }
+        case o: ScheduleDef => {
+          logger.debug("Adding the Type to the cache: name of the object =>  " + dispkey)
+          mdMgr.AddSchedule(o, ignoreExistingObjectsOnStartup)
         }
         case _ => {
           logger.error("SaveObject is not implemented for objects of type " + obj.getClass.getName)
