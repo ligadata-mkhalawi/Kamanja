@@ -93,7 +93,7 @@ class MdMgr {
   private var tenantIdMap = new HashMap[String, TenantInfo]
 
 
-  private var scheduleDefs = new HashMap[String, ScheduleInfo]
+  private var scheduleDefs = new HashMap[String, ScheduleDef]
 
   private var propertyChanged: scala.collection.mutable.ArrayBuffer[(String,Any)] = scala.collection.mutable.ArrayBuffer[(String,Any)]()
   private val lock: Object = new Object
@@ -3528,8 +3528,8 @@ class MdMgr {
   }
 
   //Schedule
-  def MakeSchedule(name: String, startTime: String, endTime: String, cronJobPattern: String, payload: Array[String], nameSpace: String): ScheduleInfo = {
-    val sch = new ScheduleInfo
+  def MakeSchedule(name: String, startTime: String, endTime: String, cronJobPattern: String, payload: Array[String], nameSpace: String): ScheduleDef = {
+    val sch = new ScheduleDef
     sch.name = name
     sch.startTime = startTime
     sch.endTime = endTime
@@ -3540,10 +3540,10 @@ class MdMgr {
     sch
   }
 
-  def AddSchedule(ci: ScheduleInfo): Option[String] = {
+  def AddSchedule(ci: ScheduleDef): Option[String] = {
     val key = "%s.%s".format(ci.name.trim.toLowerCase,ci.nameSpace.trim.toLowerCase)
     if (scheduleDefs.contains(key)) {
-      var isSame = scheduleDefs.get(key).get.asInstanceOf[ScheduleInfo].equals(ci)
+      var isSame = scheduleDefs.get(key).get.asInstanceOf[ScheduleDef].equals(ci)
       scheduleDefs(key) = ci
       if (!isSame) return Some("Update") else return None
     } else {
@@ -3552,7 +3552,7 @@ class MdMgr {
     }
   }
 
-  def GetSchedule(key: String): ScheduleInfo = {
+  def GetSchedule(key: String): ScheduleDef = {
     return scheduleDefs.getOrElse(key, null)
   }
 

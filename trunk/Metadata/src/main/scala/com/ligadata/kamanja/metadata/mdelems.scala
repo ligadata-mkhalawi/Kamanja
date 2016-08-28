@@ -1083,15 +1083,15 @@ class ClusterCfgInfo {
   }
 }
 
-class ScheduleInfo {
-  var name: String = _
-  var startTime: String = _
-  var endTime: String = _
-  var cronJobPattern: String = _
-  var payload: Array[String] = new Array[String](0)
-  var nameSpace: String = _
-
-}
+//class ScheduleInfo {
+//  var name: String = _
+//  var startTime: String = _
+//  var endTime: String = _
+//  var cronJobPattern: String = _
+//  var payload: Array[String] = new Array[String](0)
+//  var nameSpace: String = _
+//
+//}
 
 class AdapterInfo {
   /**

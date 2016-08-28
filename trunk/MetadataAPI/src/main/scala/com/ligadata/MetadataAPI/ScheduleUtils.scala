@@ -20,7 +20,7 @@ object ScheduleUtils {
   def addSchedule(text: String, format: String, userid: Option[String], tenantId: Option[String] = None, pStr: Option[String]): String = {
     val key = "ClusterInfo.testSchedule"
     try {
-      val sch = new ScheduleInfo
+      val sch = new ScheduleDef
       sch.name = "test"
       sch.startTime = "test"
       sch.endTime = "test"
@@ -31,10 +31,12 @@ object ScheduleUtils {
       val value = MetadataAPISerialization.serializeObjectToJson(sch).getBytes
       getMetadataAPI.SaveObject(key.toLowerCase, value, "schedules", serializerType)
       val (objtype, jsonBytes) : (String, Any) = PersistenceUtils.GetObject(key.toLowerCase, "schedules")
-
+      println(">>>>>>>>> " + MdMgr.GetMdMgr.AddSchedule(sch).get)
       println(">>>>>>>>> "+new String(jsonBytes.asInstanceOf[Array[Byte]]))
-      val ss = MetadataAPISerialization.deserializeMetadata(new String(jsonBytes.asInstanceOf[Array[Byte]])).asInstanceOf[ScheduleInfo]
+      val ss = MetadataAPISerialization.deserializeMetadata(new String(jsonBytes.asInstanceOf[Array[Byte]])).asInstanceOf[ScheduleDef]
       println(">>>>>>>>> " + ss.name)
+      println(">>>>>>>>> " + MdMgr.GetMdMgr.GetSchedule("test.test").name)
+
       val apiResult = new ApiResult(ErrorCodeConstants.Success, "AddSchedule", null, ErrorCodeConstants.Add_Schedule_Successful + ": " + key)
 
       apiResult.toString()
