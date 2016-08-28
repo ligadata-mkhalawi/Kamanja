@@ -92,6 +92,9 @@ class MdMgr {
 
   private var tenantIdMap = new HashMap[String, TenantInfo]
 
+
+  private var scheduleDefs = new HashMap[String, ScheduleInfo]
+
   private var propertyChanged: scala.collection.mutable.ArrayBuffer[(String,Any)] = scala.collection.mutable.ArrayBuffer[(String,Any)]()
   private val lock: Object = new Object
 
@@ -118,6 +121,7 @@ class MdMgr {
     factoryOfMdlInstFactories.clear
     serializers.clear
     adapterMessageBindings.clear
+    scheduleDefs.clear
   }
 
   def truncate(objectType: String) {
@@ -177,6 +181,9 @@ class MdMgr {
       }
       case "Tenants" => {
         tenantIdMap.clear
+      }
+      case "ScheduleDef" => {
+        scheduleDefs.clear
       }
       case _ => {
         logger.error("Unknown object type " + objectType + " in truncate function")
@@ -238,6 +245,9 @@ class MdMgr {
     })
     tenantIdMap.foreach(obj => {
       logger.trace("TenantId:" + obj._1)
+    })
+    scheduleDefs.foreach(obj => {
+      logger.trace("ScheduleDef:" + obj._1)
     })
   }
 
@@ -3514,6 +3524,46 @@ class MdMgr {
     val ni = clusterCfgs.getOrElse(clusterCfgId, null)
     if (ni != null) {
       clusterCfgs -= clusterCfgId
+    }
+  }
+
+  //Schedule
+  def MakeSchedule(name: String, startTime: String, endTime: String, cronJobPattern: String, payload: Array[String], jobname: Option[String]): ScheduleInfo = {
+    val sch = new ScheduleInfo
+    sch.name = name
+    sch.startTime = startTime
+    sch.endTime = endTime
+    sch.cronJobPattern = cronJobPattern
+    sch.payload = payload
+    sch.jobname = jobname
+
+    sch
+  }
+
+  def AddSchedule(ci: ScheduleInfo): Option[String] = {
+    val jobname = ci.jobname match {
+      case Some(i) => Some(i).get.trim.toLowerCase
+      case None => ""
+    }
+    val key = "%s.%s".format(ci.name.trim.toLowerCase,jobname)
+    if (scheduleDefs.contains(key)) {
+      var isSame = scheduleDefs.get(key).get.asInstanceOf[ScheduleInfo].equals(ci)
+      scheduleDefs(key) = ci
+      if (!isSame) return Some("Update") else return None
+    } else {
+      scheduleDefs(key) = ci
+      return Some("Add")
+    }
+  }
+
+  def GetSchedule(key: String): ScheduleInfo = {
+    return scheduleDefs.getOrElse(key, null)
+  }
+
+  def RemoveSchedule(scheduleId: String): Unit = {
+    val ni = scheduleDefs.getOrElse(scheduleId, null)
+    if (ni != null) {
+      scheduleDefs -= scheduleId
     }
   }
 

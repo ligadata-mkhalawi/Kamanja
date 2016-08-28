@@ -2890,7 +2890,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
       var objectsChanged = ArrayBuffer[BaseElemDef]()
       var operations = ArrayBuffer[String]()
 
-      val reqTypes = Array("types", "functions", "messages", "containers", "concepts", "models")
+      val reqTypes = Array("types", "functions", "messages", "containers", "concepts", "models","schedules")
       val processedContainersSet = Set[String]()
       var processed: Long = 0L
 

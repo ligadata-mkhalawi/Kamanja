@@ -873,6 +873,19 @@ class ConfigDef extends BaseElemDef {
   var contents: String = _
 }
 
+//class ScheduleDef extends BaseElemDef {
+//  override def MdElementCategory: String = "Schedule"
+//  var startTime: String = _
+//  var endTime: String = _
+//  var cronJobPattern: String = _
+//  var payload: Array[String] = new Array[String](0)
+//
+//  def StartTime: String = startTime
+//  def EndTime: String = endTime
+//  def CronJobPattern: String = cronJobPattern
+//  def Payload: Array[String] = payload
+//}
+
 class ClusterConfigDef extends BaseElemDef {
   var clusterId: String = _
   var elementType: String = _
@@ -1068,6 +1081,15 @@ class ClusterCfgInfo {
 
     true
   }
+}
+
+class ScheduleInfo {
+  var name: String = _
+  var startTime: String = _
+  var endTime: String = _
+  var cronJobPattern: String = _
+  var payload: Array[String] = new Array[String](0)
+  var jobname: Option[String] = _
 }
 
 class AdapterInfo {

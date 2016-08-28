@@ -623,7 +623,18 @@ object MetadataAPISerialization {
             outputJson = compact(render(json))
 
         }
+        case o: ScheduleInfo => {
+          val json = "Schedule" ->
+              ("Name" -> o.name) ~
+              ("StartTime" -> o.startTime) ~
+              ("EndTime" -> o.endTime) ~
+              ("CronJobPattern" -> o.cronJobPattern) ~
+              ("Payload" -> getEmptyArrayIfNull(o.payload).toList) ~
+              ("Jobname" -> o.jobname)
 
+          outputJson = compact(render(json))
+
+        }
         case o: AdapterMessageBinding => {
             val optionsMapStr : String = SerializeMapToJsonString(o.options) // in com.ligadata.Serialize.JsonSerializer.
             val json = "AdapterMsgBinding" ->

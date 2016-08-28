@@ -19,9 +19,19 @@ object ScheduleUtils {
   def addSchedule(text: String, format: String, userid: Option[String], tenantId: Option[String] = None, pStr: Option[String]): String = {
     val key = "ClusterInfo.testSchedule"
     try {
-      val value = MetadataAPISerialization.serializeObjectToJson(text).getBytes
-      getMetadataAPI.SaveObject(key.toLowerCase, value, "schedules", serializerType)
+      val sch = new ScheduleInfo
+      sch.name = "test"
+      sch.startTime = "test"
+      sch.endTime = "test"
+      sch.cronJobPattern = "test"
+      sch.payload = new Array[String](0)
+      sch.jobname = "test"
 
+      val value = MetadataAPISerialization.serializeObjectToJson(sch).getBytes
+      getMetadataAPI.SaveObject(key.toLowerCase, text.getBytes, "schedules", serializerType)
+      val (objtype, jsonBytes) : (String, Any) = PersistenceUtils.GetObject(key.toLowerCase, "schedules")
+
+      println(">>>>>>>>> "+new String(jsonBytes.asInstanceOf[Array[Byte]]))
       val apiResult = new ApiResult(ErrorCodeConstants.Success, "AddSchedule", null, ErrorCodeConstants.Add_Schedule_Successful + ": " + key)
 
       apiResult.toString()
