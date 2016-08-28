@@ -34,7 +34,7 @@ object ScheduleUtils {
 
       println(">>>>>>>>> "+new String(jsonBytes.asInstanceOf[Array[Byte]]))
       val ss = MetadataAPISerialization.deserializeMetadata(new String(jsonBytes.asInstanceOf[Array[Byte]])).asInstanceOf[ScheduleInfo]
-      println(">>>>>>>>> " + sch.name)
+      println(">>>>>>>>> " + ss.name)
       val apiResult = new ApiResult(ErrorCodeConstants.Success, "AddSchedule", null, ErrorCodeConstants.Add_Schedule_Successful + ": " + key)
 
       apiResult.toString()
