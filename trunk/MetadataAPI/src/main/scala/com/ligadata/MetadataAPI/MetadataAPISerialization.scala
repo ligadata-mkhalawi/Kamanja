@@ -623,7 +623,7 @@ object MetadataAPISerialization {
             outputJson = compact(render(json))
 
         }
-        case o: ScheduleInfo => {
+        case o: ScheduleDef => {
           val json = "Schedule" ->
               ("Name" -> o.name) ~
               ("StartTime" -> o.startTime) ~
@@ -2104,7 +2104,7 @@ private def parseContainerDef(contDefJson: JValue): ContainerDef = {
     }
   }
 
-  private def parseSchedule(scheduleJson: JValue): ScheduleInfo = {
+  private def parseSchedule(scheduleJson: JValue): ScheduleDef = {
     try {
       logger.debug("Parsed the json : " + scheduleJson)
 
