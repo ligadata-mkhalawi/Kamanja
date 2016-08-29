@@ -111,6 +111,7 @@ mkdir -p $installPath/Kamanja-$ver210/input/SampleApplications/metadata/message
 mkdir -p $installPath/Kamanja-$ver210/input/SampleApplications/metadata/model
 mkdir -p $installPath/Kamanja-$ver210/input/SampleApplications/metadata/script
 mkdir -p $installPath/Kamanja-$ver210/input/SampleApplications/metadata/type
+mkdir -p $installPath/Kamanja-$ver210/input/SampleApplications/metadata/schedule
 mkdir -p $installPath/Kamanja-$ver210/input/SampleApplications/template
 #new one
 
@@ -147,6 +148,7 @@ mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications/metadata/message
 mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications/metadata/model
 mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications/metadata/script
 mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications/metadata/type
+mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications/metadata/schedule
 mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications/template
 #new one
 
