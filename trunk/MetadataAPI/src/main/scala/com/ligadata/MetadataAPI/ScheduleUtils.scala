@@ -1,6 +1,7 @@
 package com.ligadata.MetadataAPI
 
 import com.ligadata.AuditAdapterInfo.AuditConstants
+import com.ligadata.Serialize.JsonSerializer
 import com.ligadata.kamanja.metadata.MdMgr
 import org.apache.logging.log4j.LogManager
 import com.ligadata.kamanja.metadata._
@@ -18,20 +19,16 @@ object ScheduleUtils {
   val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
 
   def addSchedule(text: String, format: String, userid: Option[String], tenantId: Option[String] = None, pStr: Option[String]): String = {
-    val key = "ClusterInfo.testSchedule"
+    var key = None:Option[String]
+
     try {
-      val sch = new ScheduleDef
-      sch.name = "test"
-      sch.startTime = "test"
-      sch.endTime = "test"
-      sch.cronJobPattern = "test"
-      sch.payload = new Array[String](0)
-      sch.nameSpace = "test"
+      val sch =  JsonSerializer.parseScheduleDef(text)
+      key = Some("%s.%s.%d".format(sch.nameSpace.trim.toLowerCase,sch.name.trim.toLowerCase,sch.Version))
 
       val value = MetadataAPISerialization.serializeObjectToJson(sch).getBytes
-      getMetadataAPI.SaveObject(key.toLowerCase, value, "schedules", serializerType)
-      val (objtype, jsonBytes) : (String, Any) = PersistenceUtils.GetObject(key.toLowerCase, "schedules")
-      println(">>>>>>>>> " + MdMgr.GetMdMgr.AddSchedule(sch).get)
+      getMetadataAPI.SaveObject(key.get.toLowerCase, value, "schedules", serializerType)
+      val (objtype, jsonBytes) : (String, Any) = PersistenceUtils.GetObject(key.get.toLowerCase, "schedules")
+      println(">>>>>>>>> " + MdMgr.GetMdMgr.AddSchedule(sch))
       println(">>>>>>>>> "+new String(jsonBytes.asInstanceOf[Array[Byte]]))
       val ss = MetadataAPISerialization.deserializeMetadata(new String(jsonBytes.asInstanceOf[Array[Byte]])).asInstanceOf[ScheduleDef]
       println(">>>>>>>>> " + ss.name)

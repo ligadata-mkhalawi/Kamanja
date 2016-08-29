@@ -534,7 +534,7 @@ object JsonSerializer {
 
   @throws(classOf[Json4sParsingException])
   @throws(classOf[ScheduleDefParsingException])
-  def parseScheduleDef(schDefJson: String, formatType: String): ScheduleDef = {
+  def parseScheduleDef(schDefJson: String): ScheduleDef = {
     try {
       implicit val jsonFormats: Formats = DefaultFormats
       val json = parse(schDefJson)
