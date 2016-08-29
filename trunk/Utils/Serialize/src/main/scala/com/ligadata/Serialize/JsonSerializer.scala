@@ -57,6 +57,10 @@ case class MessageStruct(NameSpace: String, Name: String, FullName: String, Vers
 
 case class MessageDefinition(Message: MessageStruct)
 
+case class ScheduleInformation(Name: String, StartTime: String, EndTime: String, CronJobPattern: String, Payload: Array[String], NameSpace: String)
+
+case class Schedule(Schedule: ScheduleInformation)
+
 case class ContainerDefinition(Container: MessageStruct)
 
 //case class ModelInfo(NameSpace: String, Name: String, Version: String, ModelType: String, JarName: String, PhysicalName: String, DependencyJars: List[String], InputAttributes: List[Attr], OutputAttributes: List[Attr])
@@ -524,6 +528,36 @@ object JsonSerializer {
       case e: Exception => {
         logger.debug("", e)
         throw MessageDefParsingException(e.getMessage(), e)
+      }
+    }
+  }
+
+  @throws(classOf[Json4sParsingException])
+  @throws(classOf[ScheduleDefParsingException])
+  def parseMessageDef(schDefJson: String, formatType: String): MessageDef = {
+    try {
+      implicit val jsonFormats: Formats = DefaultFormats
+      val json = parse(schDefJson)
+
+      logger.debug("Parsed the json : " + schDefJson)
+
+      val scheduleInst = json.extract[MessageDefinition]
+      val schDef =  MdMgr.GetMdMgr.MakeSchedule(scheduleInst.Schedule.Name,
+        scheduleInst.Schedule.StartTime,
+        scheduleInst.Schedule.EndTime,
+        scheduleInst.Schedule.CronJobPattern,
+        scheduleInst.Schedule.Payload,
+        scheduleInst.Schedule.NameSpace)
+
+      schDef
+    } catch {
+      case e: MappingException => {
+        logger.debug("", e)
+        throw Json4sParsingException(e.getMessage(), e)
+      }
+      case e: Exception => {
+        logger.debug("", e)
+        throw ScheduleDefParsingException(e.getMessage(), e)
       }
     }
   }

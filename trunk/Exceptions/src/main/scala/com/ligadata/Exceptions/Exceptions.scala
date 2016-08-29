@@ -32,6 +32,7 @@ case class MessageDefParsingException(msg: String, cause: Throwable) extends Kam
 case class ContainerDefParsingException(msg: String, cause: Throwable) extends KamanjaException(msg, cause)
 case class ModelDefParsingException(msg: String, cause: Throwable) extends KamanjaException(msg, cause)
 case class JarDefParsingException(msg: String, cause: Throwable) extends KamanjaException(msg, cause)
+case class ScheduleDefParsingException(msg: String, cause: Throwable) extends KamanjaException(msg, cause)
 
 case class ApiResultParsingException(msg: String, cause: Throwable) extends KamanjaException(msg, cause)
 case class UnexpectedMetadataAPIException(msg: String, cause: Throwable) extends KamanjaException(msg, cause)

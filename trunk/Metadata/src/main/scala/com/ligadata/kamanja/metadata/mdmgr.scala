@@ -3541,13 +3541,12 @@ class MdMgr {
   }
 
   def AddSchedule(ci: ScheduleDef,ignoreExistingObjectsOnStartup: Boolean = false): Unit = {
-    val key = "%s.%s.%d".format(ci.name.trim.toLowerCase,ci.nameSpace.trim.toLowerCase,ci.UniqId)
+    val key = "%s.%s.%d".format(ci.name.trim.toLowerCase,ci.nameSpace.trim.toLowerCase,ci.Version)
     scheduleDefs.put(key,ci)
   }
 
   def AddSchedule(ci: ScheduleDef): Option[String] = {
-    val key = "%s.%s.%d".format(ci.name.trim.toLowerCase,ci.nameSpace.trim.toLowerCase,ci.UniqId)
-    println("in add schedule " + key)
+    val key = "%s.%s.%d".format(ci.name.trim.toLowerCase,ci.nameSpace.trim.toLowerCase,ci.Version)
     if (scheduleDefs.contains(key)) {
       var isSame = scheduleDefs.get(key).get.asInstanceOf[ScheduleDef].equals(ci)
       scheduleDefs(key) = ci
