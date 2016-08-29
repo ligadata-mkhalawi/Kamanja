@@ -26,6 +26,7 @@ parser.add_argument('--port', help='port binding (default=9999)', default="9999"
 parser.add_argument('--pythonPath', required=True, type=str)
 parser.add_argument('--log4jConfig', required=True, type=str)
 parser.add_argument('--fileLogPath', default="", type=str)
+parser.add_argument('--pkey', default="", type=str)
 args = vars(parser.parse_args())
 #
 #
@@ -34,6 +35,8 @@ pythonPath = args['pythonPath']
 sys.path.insert(0, args['pythonPath'])
 #
 #
+#
+partitionkey = args['pkey'] 
 #set python buffering
 if sys.version_info[0] == 3:
    os.environ['PYTHONUNBUFFERED'] = '1'
@@ -70,8 +73,11 @@ class EventHandler(pyinotify.ProcessEvent):
            count=len(namesplit)
            if (count == 2):
               if ((namesplit[1].find("py") != -1) and (namesplit[1].find("pyc") == -1)):
-#                  os.remove(event.pathname + "c") 
-                  py_compile.compile(event.pathname)
+#                  os.remove(event.pathname + "c")
+                  if (partitionkey.find("1")):
+                     py_compile.compile(event.pathname)
+                  else :
+                     time.sleep(1)
                   print("importing module models." + namesplit[0])
                   __import__ ("models." + namesplit[0])
         sys.stdout.flush
@@ -89,10 +95,13 @@ class EventHandler(pyinotify.ProcessEvent):
           if (count == 2):
              if ((namesplit[1].find("py") != -1) and (namesplit[1].find("pyc") == -1)):
                  print("reloading module models." + namesplit[0])
-#                 os.remove(event.pathname + "c") 
-#                 print("removing file ." + event.pathname + "c")
+                 if (partitionkey.find("1")):
+                     os.remove(event.pathname + "c") 
+                     print("removing file ." + event.pathname + "c")
 #                 os.remove(event.pathname + "~") 
-                 py_compile.compile(event.pathname)
+                     py_compile.compile(event.pathname)
+                 else :
+                    time.sleep(1) 
                  reload (sys.modules["models." + module])
 #                 __import__("models." + module, globals(), locals(), ["SubtractTuple"]) 
        sys.stdout.flush
