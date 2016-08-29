@@ -244,5 +244,7 @@ object ErrorCodeConstants {
 
    //Schedule
    val Add_Schedule_Successful = "Schedule Added Successfully";
+   val Add_Schedule_Exist = "Schedule Already Exist";
+   val Add_Schedule_Update = "Schedule Update Successfully";
    val Add_Schedule_Failed = "Failed to Add Schedule";
 }

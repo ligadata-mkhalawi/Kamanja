@@ -25,18 +25,26 @@ object ScheduleUtils {
       val sch = JsonSerializer.parseScheduleDef(text)
       key = Some("%s.%s.%d".format(sch.nameSpace.trim.toLowerCase, sch.name.trim.toLowerCase, sch.Version))
 
-      val value = MetadataAPISerialization.serializeObjectToJson(sch).getBytes
-      getMetadataAPI.SaveObject(key.get.toLowerCase, value, "schedules", serializerType)
-      val (objtype, jsonBytes): (String, Any) = PersistenceUtils.GetObject(key.get.toLowerCase, "schedules")
-      println(">>>>>>>>> " + MdMgr.GetMdMgr.AddSchedule(sch))
-      println(">>>>>>>>> " + new String(jsonBytes.asInstanceOf[Array[Byte]]))
-      val ss = MetadataAPISerialization.deserializeMetadata(new String(jsonBytes.asInstanceOf[Array[Byte]])).asInstanceOf[ScheduleDef]
-      println(">>>>>>>>> " + ss.name)
-      //      println(">>>>>>>>> " + MdMgr.GetMdMgr.GetSchedule("test.test.0").name)
+      val isAdded = MdMgr.GetMdMgr.AddSchedule(sch)
 
-      val apiResult = new ApiResult(ErrorCodeConstants.Success, "AddSchedule", null, ErrorCodeConstants.Add_Schedule_Successful + ": " + key.get)
+      val result = isAdded match {
+        case Some(x) =>
+          val value = MetadataAPISerialization.serializeObjectToJson(sch).getBytes
+          getMetadataAPI.SaveObject(key.get.toLowerCase, value, "schedules", serializerType)
+          val (objtype, jsonBytes): (String, Any) = PersistenceUtils.GetObject(key.get.toLowerCase, "schedules")
+          if (x.equals("Add")) {
+            val apiResult = new ApiResult(ErrorCodeConstants.Success, "AddSchedule", null, ErrorCodeConstants.Add_Schedule_Successful + ": " + key.get)
+            apiResult.toString()
+          } else {
+            val apiResult = new ApiResult(ErrorCodeConstants.Success, "AddSchedule", null, ErrorCodeConstants.Add_Schedule_Update + ": " + key.get)
+            apiResult.toString
+          }
+        case None =>
+          val apiResult = new ApiResult(ErrorCodeConstants.Warning, "AddSchedule", null, ErrorCodeConstants.Add_Schedule_Exist + ": " + key.get)
+          apiResult.toString
+      }
 
-      apiResult.toString()
+      result.toString
     } catch {
       case e: Exception => {
         logger.error("", e)
@@ -45,5 +53,18 @@ object ScheduleUtils {
         apiResult.toString()
       }
     }
+  }
+
+  def removeSchedule(): Unit = {
+  }
+
+  def getSchedule(): Unit = {
+    //    println(">>>>>>>>> " + new String(jsonBytes.asInstanceOf[Array[Byte]]))
+    //    val ss = MetadataAPISerialization.deserializeMetadata(new String(jsonBytes.asInstanceOf[Array[Byte]])).asInstanceOf[ScheduleDef]
+    //    println(">>>>>>>>> " + ss.name)
+    //    println(">>>>>>>>> " + MdMgr.GetMdMgr.GetSchedule("test.test.0").name)
+  }
+
+  def updateSchedule(): Unit = {
   }
 }
