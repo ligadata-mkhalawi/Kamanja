@@ -570,7 +570,7 @@ class PythonAdapter(factory : PythonAdapterFactory
             s"/usr/local/bin/"
             /** peer inside the pyPropMap to see if things are correct when debuging needed */
             val pyPropMap : Map[String,Any] = nodeContext.getValue("pyPropertyMap").asInstanceOf[Map[String,Any]]
-	val params : Map[String, Any] =  parse(_partitionKey).values.asInstanceOf[Map[String, Any]]
+//	val params : Map[String, Any] =  parse(_partitionKey).values.asInstanceOf[Map[String, Any]]
 
             val pyConn : PyServerConnection = new PyServerConnection(host
                 ,port
@@ -579,7 +579,8 @@ class PythonAdapter(factory : PythonAdapterFactory
                 ,pyLogPath
               ,pyPath,
               pyBinPath,
-	      params("PartitionId").toString)
+	      "1")
+//	      params("PartitionId").toString)
 
           if (logger.isDebugEnabled()) {
             logger.debug("Creating connection ---- " + host + ", port = " + port.toString + ", logConfigPath = " + pyLogConfigPath +
