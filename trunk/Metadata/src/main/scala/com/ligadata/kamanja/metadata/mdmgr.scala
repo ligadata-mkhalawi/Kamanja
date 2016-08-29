@@ -3528,7 +3528,7 @@ class MdMgr {
   }
 
   //Schedule
-  def MakeSchedule(name: String, startTime: String, endTime: String, cronJobPattern: String, payload: Array[String], nameSpace: String): ScheduleDef = {
+  def MakeSchedule(name: String, startTime: String, endTime: String, cronJobPattern: String, payload: Array[String], nameSpace: String, version: Long): ScheduleDef = {
     val sch = new ScheduleDef
     sch.name = name
     sch.startTime = startTime
@@ -3536,7 +3536,7 @@ class MdMgr {
     sch.cronJobPattern = cronJobPattern
     sch.payload = payload
     sch.nameSpace = nameSpace
-
+    sch.ver = version
     sch
   }
 
