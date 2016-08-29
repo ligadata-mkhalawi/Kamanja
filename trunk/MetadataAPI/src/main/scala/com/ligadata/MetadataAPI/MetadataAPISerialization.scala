@@ -2306,7 +2306,7 @@ case class ConfigInfo(Name: String, PhysicalName: String, JarName: String, NameS
 
 case class Config(Config: ConfigInfo)
 
-case class ScheduleInformation(Name: String, StartTime: String, EndTime: String, CronJobPattern: String, Payload: Array[String], NameSpace: String, Version: Long)
+case class ScheduleInformation(Name: String, StartTime: String, EndTime: String, CronJobPattern: String, Payload: Array[String], NameSpace: String, Version: String)
 
 case class Schedule(Schedule: ScheduleInformation)
 
