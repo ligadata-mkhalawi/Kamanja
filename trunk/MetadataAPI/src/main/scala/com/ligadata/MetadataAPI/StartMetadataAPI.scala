@@ -772,6 +772,7 @@ object StartMetadataAPI {
         }
 
         case Action.ADDSCHEDULE =>  response = SchedulesService.addSchedule(input, tid, paramStr)
+        case Action.UPDATESCHEDULE =>  response = SchedulesService.addSchedule(input, tid, paramStr)
 
         case _ => {
           println(s"Unexpected action! action=$action")

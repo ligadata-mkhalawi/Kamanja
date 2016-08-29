@@ -97,5 +97,6 @@ object Action extends Enumeration {
 
   //Schedules
   val ADDSCHEDULE = Value("addschedule")
-   
+  val UPDATESCHEDULE = Value("updateschedule")
+
 }

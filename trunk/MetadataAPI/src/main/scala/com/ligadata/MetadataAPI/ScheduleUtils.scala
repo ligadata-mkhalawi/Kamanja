@@ -36,11 +36,11 @@ object ScheduleUtils {
             val apiResult = new ApiResult(ErrorCodeConstants.Success, "AddSchedule", null, ErrorCodeConstants.Add_Schedule_Successful + ": " + key.get)
             apiResult.toString()
           } else {
-            val apiResult = new ApiResult(ErrorCodeConstants.Success, "AddSchedule", null, ErrorCodeConstants.Add_Schedule_Update + ": " + key.get)
+            val apiResult = new ApiResult(ErrorCodeConstants.Success, "UpdateSchedule", null, ErrorCodeConstants.Add_Schedule_Update + ": " + key.get)
             apiResult.toString
           }
         case None =>
-          val apiResult = new ApiResult(ErrorCodeConstants.Warning, "AddSchedule", null, ErrorCodeConstants.Add_Schedule_Exist + ": " + key.get)
+          val apiResult = new ApiResult(ErrorCodeConstants.Warning, "AddSchedule/UpdateSchedule", null, ErrorCodeConstants.Add_Schedule_Exist + ": " + key.get)
           apiResult.toString
       }
 
@@ -49,7 +49,7 @@ object ScheduleUtils {
       case e: Exception => {
         logger.error("", e)
         val fullname = if (key.isDefined) key.get else "key is not defined yet"
-        val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddSchedule", null, "Error :" + e.toString() + ErrorCodeConstants.Add_Schedule_Failed + ": " + key)
+        val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddSchedule/UpdateSchedule", null, "Error :" + e.toString() + ErrorCodeConstants.Add_Schedule_Failed + ": " + key)
         apiResult.toString()
       }
     }
@@ -63,8 +63,5 @@ object ScheduleUtils {
     //    val ss = MetadataAPISerialization.deserializeMetadata(new String(jsonBytes.asInstanceOf[Array[Byte]])).asInstanceOf[ScheduleDef]
     //    println(">>>>>>>>> " + ss.name)
     //    println(">>>>>>>>> " + MdMgr.GetMdMgr.GetSchedule("test.test.0").name)
-  }
-
-  def updateSchedule(): Unit = {
   }
 }
