@@ -1072,7 +1072,6 @@ object ModelService {
         //    val errorMsg="Sorry, No models available, in the Metadata, to activate!"
           //  response=errorMsg
              response= new ApiResult(ErrorCodeConstants.Failure, "activateModel", null, "No models available, in the Metadata, to activate").toString
-
           }
           else{
             println("\nPick the model to be activated from the following list: ")
