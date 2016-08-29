@@ -615,6 +615,10 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     }
   }
 
+  override def send(message: Array[Array[Byte]], partitionKey: Array[Array[Byte]]): Unit = {
+    // Not implemented yet
+  }
+
   // Locking before we write into file
   // To send an array of messages. messages.size should be same as partKeys.size
   override def send(tnxCtxt: TransactionContext, outputContainers: Array[ContainerInterface]): Unit = {

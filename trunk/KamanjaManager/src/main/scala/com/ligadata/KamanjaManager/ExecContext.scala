@@ -42,6 +42,7 @@ import scala.actors.threadpool.{ExecutorService}
 class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUniqueRecordKey, val nodeContext: NodeContext) extends ExecContext {
   private val LOG = LogManager.getLogger(getClass);
   private var eventsCntr: Long = 0
+  private var lastTimeCommitOffsets: Long = System.currentTimeMillis
   //  private var adapterChangedCntr: Long = -1
   //
   //  // Mapping Adapter to Msgs
@@ -285,10 +286,13 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
         if (txnCtxt.origin.key != null && txnCtxt.origin.value != null && txnCtxt.origin.key.trim.size > 0 && txnCtxt.origin.value.trim.size > 0) {
           eventsCntr += 1
           if (forceCommitFlag ||
-            (nodeContext.getEnvCtxt().EnableEachTransactionCommit &&
-              (KamanjaConfiguration.commitOffsetsMsgCnt == 0 || (eventsCntr % KamanjaConfiguration.commitOffsetsMsgCnt) == 0))) {
+            (KamanjaConfiguration.commitOffsetsMsgCnt > 0 && eventsCntr >= KamanjaConfiguration.commitOffsetsMsgCnt) ||
+            (KamanjaConfiguration.commitOffsetsTimeInterval > 0 && ((lastTimeCommitOffsets + KamanjaConfiguration.commitOffsetsTimeInterval) <= System.currentTimeMillis)) ||
+            nodeContext.getEnvCtxt().EnableEachTransactionCommit) {
             try {
               nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(txnCtxt.origin.key, txnCtxt.origin.value)
+              eventsCntr = 0
+              lastTimeCommitOffsets = System.currentTimeMillis
             } catch {
               case e: Exception => {
                 LOG.error("Failed to setAdapterUniqueKeyValue", e)
