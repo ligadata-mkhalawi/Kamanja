@@ -22,7 +22,7 @@
     "implemtedClass": "com.ligadata.Migrate.MigrateTo_V_1_6",
     "jars": [
       "{NewPackageInstallPath}/lib/system/migratebase-1.6.0.jar",
-      "{NewPackageInstallPath}/lib/system/migrateto_v_1_5_{ScalaToVersion}-1.6.0.jar",
+      "{NewPackageInstallPath}/lib/system/migrateto_v_1_6_{ScalaToVersion}-1.6.0.jar",
       "{NewPackageInstallPath}/lib/system/KamanjaInternalDeps_{ScalaToVersion}-1.6.0.jar",
       "{NewPackageInstallPath}/lib/system/ExtDependencyLibs_{ScalaToVersion}-1.6.0.jar",
       "{NewPackageInstallPath}/lib/system/ExtDependencyLibs2_{ScalaToVersion}-1.6.0.jar"
