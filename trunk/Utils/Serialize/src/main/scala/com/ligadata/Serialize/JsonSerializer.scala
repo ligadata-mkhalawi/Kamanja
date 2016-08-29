@@ -541,7 +541,7 @@ object JsonSerializer {
 
       logger.debug("Parsed the json : " + schDefJson)
 
-      val scheduleInst = json.extract[MessageDefinition]
+      val scheduleInst = json.extract[Schedule]
       val schDef =  MdMgr.GetMdMgr.MakeSchedule(scheduleInst.Schedule.Name,
         scheduleInst.Schedule.StartTime,
         scheduleInst.Schedule.EndTime,
