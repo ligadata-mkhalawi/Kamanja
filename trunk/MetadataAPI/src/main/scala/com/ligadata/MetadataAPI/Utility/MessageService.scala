@@ -108,15 +108,14 @@ object MessageService {
       val messageKeys: Array[String] = getMetadataAPI.GetAllMessagesFromCache(true, userid, tid)
       if (messageKeys.length == 0) {
        var emptyAlert="Sorry, No messages are available in the Metadata"
-        response =  (new ApiResult(ErrorCodeConstants.Success, "MessageService",null, emptyAlert)).toString
+        response =  (new ApiResult(ErrorCodeConstants.Success, "getAllMessages",null, emptyAlert)).toString
       } else {
-       response= (new ApiResult(ErrorCodeConstants.Success, "MessageService", messageKeys.mkString(", ") , "Successfully retrieved all the messages")).toString
+       response= (new ApiResult(ErrorCodeConstants.Success, "getAllMessages", messageKeys.mkString(", ") , "Successfully retrieved all the messages")).toString
       }
     } catch {
       case e: Exception => {
-        logger.warn("", e)
-        response = e.getStackTrace.toString
-        response= (new ApiResult(ErrorCodeConstants.Failure, "MessageService",null, response)).toString
+        //logger.warn("", e)
+        response= (new ApiResult(ErrorCodeConstants.Failure, "getAllMessages",null, e.getStackTrace.toString)).toString
       }
     }
     response
@@ -191,7 +190,9 @@ object MessageService {
          try {
            return getMetadataAPI.RemoveMessage(ns, name, ver.toInt, userid)
          } catch {
-           case e: Exception => logger.error("", e)
+           case e: Exception =>
+             //logger.error("", e)
+             response= (new ApiResult(ErrorCodeConstants.Failure, "removeMessage",null, e.getStackTrace.toString)).toString
          }
       }
 
@@ -245,7 +246,9 @@ object MessageService {
         try {
           return getMetadataAPI.GetMessageDef(ns, name, "JSON", ver,  userid, tid)
         } catch {
-          case e: Exception => logger.error("", e)
+          case e: Exception =>
+            //logger.error("", e)
+            response= (new ApiResult(ErrorCodeConstants.Failure, "getMessage",null, e.getStackTrace.toString)).toString
         }
       }
 
