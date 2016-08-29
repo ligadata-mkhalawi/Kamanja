@@ -161,7 +161,7 @@ angular
 
           network.on('afterDrawing', function (ctx) {
             nodes.forEach(function (d) {
-              if (d.hidden || !$rootScope.showOptions['Labels']) {
+              if (d.hidden || !$rootScope.showOptions[$rootScope.currentView]['Labels']) {
                 return;
               }
               if (options.groups[d.group].hidden){
@@ -179,11 +179,12 @@ angular
             network.redraw();
           });
           $rootScope.$on('showOptionsToggled', function () {
-            options.groups['EmailAppsCluster'].hidden = !$rootScope.showOptions['Applications'];
-            options.groups['logsCluster'].hidden = !$rootScope.showOptions['Logs'];
-            options.groups['userCluster'].hidden = !$rootScope.showOptions['People'];
-            options.groups['BadAppsCluster'].hidden = !$rootScope.showOptions['Countries'];
-            options.groups['browsersCluster'].hidden = !$rootScope.showOptions['Organizations'];
+            var showOptions = $rootScope.showOptions[$rootScope.currentView];
+            options.groups['EmailAppsCluster'].hidden = !showOptions['Applications'];
+            options.groups['logsCluster'].hidden = !showOptions['Logs'];
+            options.groups['userCluster'].hidden = !showOptions['People'];
+            options.groups['BadAppsCluster'].hidden = !showOptions['Countries'];
+            options.groups['browsersCluster'].hidden = !showOptions['Organizations'];
             _.each(edges,function (edge) {
               var fromAndTo = _.filter(nodes, function(n){
                 return n.id === edge.from || n.id === edge.to

@@ -3,18 +3,25 @@ angular.module('flareApp')
     var main = this;
     main.showSideBar = true;
     main.showList = {
-      'Coloring by Cluster':true,
-      'Relationships': true,
-      'Labels':true,
-      'Applications':true,
-      'Logs':true,
-      'People':true,
-      'Countries':true,
-      'Organizations':true
+      'firstView': {
+        'Coloring by Cluster': true,
+        'Relationships': true,
+        'Labels': true,
+        'Applications': true,
+        'Logs': true,
+        'People': true,
+        'Countries': true,
+        'Organizations': true
+      }
     };
+    $rootScope.views = ['firstView'];
+    $rootScope.currentView = 'firstView';
     $rootScope.showOptions = main.showList;
+    main.getShowOption = function (option) {
+      return main.showList[$rootScope.currentView][option];
+    };
     main.toggleShowList = function(list) {
-      main.showList[list] = !main.showList[list];
+      main.showList[$rootScope.currentView][list] = !main.showList[$rootScope.currentView][list];
       switch (list){
         case 'Labels':
           $rootScope.$broadcast('labelsToggled');
