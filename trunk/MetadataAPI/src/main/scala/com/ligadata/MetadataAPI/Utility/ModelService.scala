@@ -1064,7 +1064,9 @@ object ModelService {
             try {
               return getMetadataAPI.ActivateModel(ns, name, ver.toInt, userid)
             } catch {
-              case e: Exception => logger.error("", e)
+              case e: Exception =>
+                  //logger.error("", e)
+                  (new ApiResult(ErrorCodeConstants.Failure, "activateModel ",null, e.getStackTrace.toString)).toString
             }
           }
           val modelKeys = getMetadataAPI.GetAllModelsFromCache(false, None)
@@ -1098,8 +1100,9 @@ object ModelService {
 
         } catch {
           case e: Exception => {
-            logger.info("", e)
-            response=e.getStackTrace.toString
+            // logger.info("", e)
+            //response=e.getStackTrace.toString
+              response= (new ApiResult(ErrorCodeConstants.Failure, "activateModel",null, e.getStackTrace.toString)).toString
           }
         }
         response
@@ -1123,7 +1126,9 @@ object ModelService {
             try {
               return getMetadataAPI.DeactivateModel(ns, name, ver.toInt, userid)
             } catch {
-              case e: Exception => logger.error("", e)
+              case e: Exception =>
+                  //logger.error("", e)
+                  (new ApiResult(ErrorCodeConstants.Failure, "activateModel ",null, e.getStackTrace.toString)).toString
             }
           }
           progressReport = 1
@@ -1161,7 +1166,7 @@ object ModelService {
         } catch {
           case e: Exception => {
             if (progressReport == 0) {
-              logger.warn("", e)
+                logger.error("", e)
               response = new ApiResult(ErrorCodeConstants.Failure, "DeactivateModel", null, "Error : Cannot parse ModelName, must be Namespace.Name.Version format").toString
             }
             else {
