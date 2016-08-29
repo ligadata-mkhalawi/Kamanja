@@ -1,6 +1,7 @@
+<node-details></node-details>
 <div class="row mainContainer">
   <div ng-class="{'col-md-10':main.showSideBar,'col-md-12':!main.showSideBar}">
-    <vis></vis>
+    <vis node-click="main.nodeClicked"></vis>
   </div>
   <div class="col-md-2 sideBar" ng-if="main.showSideBar">
     <div class="row">

@@ -1,3 +1,15 @@
 .nodeDetails {
   width: 299px;
+  height: 100%;
+  color: #808080;
+  background-color: #1a1a1a;
+  left: -1000px;
+  position: absolute;
+  top: 70px;
+  .headerDetails {
+    padding: 10px 5px 10px 15px;
+    height: 80px;
+    background-color: #fb4748;
+    color: #fdd7cc;
+  }
 }

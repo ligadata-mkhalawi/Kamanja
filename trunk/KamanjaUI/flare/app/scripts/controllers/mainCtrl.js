@@ -9,6 +9,11 @@ angular.module('flareApp')
       'Applications':true
     };
     $rootScope.showOptions = main.showList;
+
+    main.nodeClicked = function(id){
+      $rootScope.$broadcast('nodeClicked', id);
+    };
+
     main.toggleShowList = function(list) {
       switch (list){
         case 'Labels':
@@ -20,6 +25,7 @@ angular.module('flareApp')
       }
       main.showList[list] = !main.showList[list];
     };
+
     $scope.$on('sideBarToggled', function() {
       main.showSideBar = !main.showSideBar;
     });

@@ -10,7 +10,8 @@
     "vis": "^4.16.1",
     "angular-bootstrap": "^2.0.2",
     "angular-animate": "^1.5.8",
-    "d3": "^4.2.2"
+    "d3": "^4.2.2",
+    "font-awesome": "font-awsome#^4.6.3"
   },
   "overrides": {
     "bootstrap-sass": {

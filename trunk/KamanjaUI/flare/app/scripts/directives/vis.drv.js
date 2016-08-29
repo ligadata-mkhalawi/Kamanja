@@ -7,7 +7,9 @@ angular
     function ($rootScope) {
       return {
         restrict: 'E',
-        scope: {},
+        scope: {
+          nodeClick: '<'
+        },
         template: '<div><div id="visJsDiv"></div>',
         replace: true,
         link: function (scope, element) {
@@ -159,6 +161,9 @@ angular
 
           network = new vis.Network(container, data, options);
 
+          network.on('click', function(param){
+            scope.nodeClick(param.nodes[0]);
+          });
           network.on('afterDrawing', function (ctx) {
             nodes.forEach(function (d) {
               if (d.hidden || !$rootScope.showOptions['Labels']) {
