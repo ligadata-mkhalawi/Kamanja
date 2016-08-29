@@ -14,6 +14,7 @@ angular.module('flareApp')
 
         $rootScope.$on('nodeClicked', function(event, data){
           toggleNodeDetails(true);
+          nodeDetails.applicationName = data;
         });
 
       }

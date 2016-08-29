@@ -1,7 +1,7 @@
 <div class="nodeDetails">
   <div class="headerDetails">
-    Application Name <br />
-    Application: Email Apps <br />
+    Application Name {{nodeDetails.applicationName}} <br/>
+    Application: Email Apps <br/>
     Volume: 980
   </div>
   <div class="row">
@@ -10,6 +10,28 @@
     </div>
     <div class="col-md-4">
       <i class="fa fa-connectdevelop" aria-hidden="true"></i> <span>Group</span>
+    </div>
+  </div>
+  <div class="accordion-panel">
+    <div data-toggle="collapse" ng-click="nodeDetails.openDesc = !nodeDetails.openDesc" data-target="#nodeDesc"
+         class="accordion-heading">
+       <i class="fa" ng-class="{'fa-chevron-down': nodeDetails.openDesc, 'fa-chevron-right': !nodeDetails.openDesc}"></i> Description
+    </div>
+    <div id="nodeDesc" class="accordion-content collapse">
+      <p>
+        Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s,
+      </p>
+    </div>
+  </div>
+  <div class="accordion-panel">
+    <div data-toggle="collapse" ng-click="nodeDetails.openAlerts = !nodeDetails.openAlerts" data-target="#nodeAlerts"
+         class="accordion-heading">
+      <i class="fa" ng-class="{'fa-chevron-down': nodeDetails.openAlerts, 'fa-chevron-right': !nodeDetails.openAlerts}"></i> <Alerts></Alerts>
+    </div>
+    <div id="nodeAlerts" class="accordion-content collapse">
+      <p>
+        Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s,
+      </p>
     </div>
   </div>
 </div>

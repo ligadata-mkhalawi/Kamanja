@@ -1,10 +1,11 @@
 .nodeDetails {
-  width: 299px;
+  width: 259px;
   height: 100%;
   color: #808080;
   background-color: #1a1a1a;
   left: -1000px;
   position: absolute;
+  z-index: 99999;
   top: 70px;
   .headerDetails {
     padding: 10px 5px 10px 15px;
