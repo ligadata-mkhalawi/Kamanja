@@ -18,7 +18,7 @@ package com.ligadata.MetadataAPI.Utility
 
 import java.io.File
 
-import com.ligadata.MetadataAPI.MetadataAPIImpl
+import com.ligadata.MetadataAPI.{ApiResult, ErrorCodeConstants, MetadataAPIImpl}
 
 import scala.io.Source
 import org.apache.logging.log4j._
@@ -42,7 +42,8 @@ def uploadJar(input: String): String ={
   if (input == "") {
     jarFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR")
     if (jarFileDir == null) {
-      response = "JAR_TARGET_DIR property missing in the metadata API configuration"
+      //response = "JAR_TARGET_DIR property missing in the metadata API configuration"
+      response= (new ApiResult(ErrorCodeConstants.Failure, "uploadJar",null,"JAR_TARGET_DIR property missing in the metadata API configuration")).toString
     } else {
       //verify the directory where messages can be present
       IsValidDir(jarFileDir) match {
@@ -51,8 +52,9 @@ def uploadJar(input: String): String ={
           val jars: Array[File] = new java.io.File(jarFileDir).listFiles.filter(_.getName.endsWith(".jar"))
           jars.length match {
             case 0 => {
-              println("Jars not found at " + jarFileDir)
-              response="Jars not found at " + jarFileDir
+              //println("Jars not found at " + jarFileDir)
+              //response="Jars not found at " + jarFileDir
+              response= (new ApiResult(ErrorCodeConstants.Failure, "uploadJar",null,"Jars not found at " + jarFileDir)).toString
             }
             case option => {
               response = uploadJars(jars)
@@ -60,7 +62,8 @@ def uploadJar(input: String): String ={
           }
         }
         case false => {
-          response = "JAR directory is invalid."
+          //response = "JAR directory is invalid."
+          response= (new ApiResult(ErrorCodeConstants.Failure, "uploadJar ",null,"JAR directory is invalid.")).toString
         }
       }
     }
