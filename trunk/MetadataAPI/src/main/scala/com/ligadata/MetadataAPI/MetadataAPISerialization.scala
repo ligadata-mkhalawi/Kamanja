@@ -630,7 +630,8 @@ object MetadataAPISerialization {
               ("EndTime" -> o.endTime) ~
               ("CronJobPattern" -> o.cronJobPattern) ~
               ("Payload" -> getEmptyArrayIfNull(o.payload).toList) ~
-              ("NameSpace" -> o.nameSpace)
+              ("NameSpace" -> o.nameSpace) ~
+              ("Version" -> o.ver)
 
           outputJson = compact(render(json))
 
