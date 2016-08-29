@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 import scala.actors.threadpool.{ExecutorService, Executors, TimeUnit}
 import java.util.concurrent.locks.ReentrantReadWriteLock
-
+import  com.ligadata.Utilities.JDBCUtility
 import com.ligadata.KvBase.{Key, Value}
 import com.ligadata.Utils.KamanjaLoaderInfo
 import org.apache.commons.dbcp2.BasicDataSource
@@ -79,32 +79,36 @@ class HbaseProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   val partitionsMap = new ConcurrentHashMap[Int, ConcurrentHashMap[Long, MsgDataRecievedCnt]](128);
   val failedMsgsMap = new ConcurrentHashMap[Int, ConcurrentHashMap[Long, MsgDataRecievedCnt]](128); // We just need Array Buffer as Innser value. But the only issue is we need to make sure we handle it for multiple threads.
 
-  //Create a DBCP based Connection Pool Here
-  val dataSource = new BasicDataSource
+//  //Create a DBCP based Connection Pool Here
+//  val dataSource = new BasicDataSource
+//
+//  //Force a load of the DB Driver Class
+//  Class.forName(adapterConfig.dbDriver)
+//  LOG.debug("Loaded the DB Driver..."+adapterConfig.dbDriver)
+//
+//  dataSource.setDriverClassName(adapterConfig.dbDriver)
+//  if(adapterConfig.dbName!=null && !adapterConfig.dbName.isEmpty())
+//    dataSource.setUrl(adapterConfig.dbURL+"/"+adapterConfig.dbName)
+//  else
+//    dataSource.setUrl(adapterConfig.dbURL)
+//  dataSource.setUsername(adapterConfig.dbUser);
+//  dataSource.setPassword(adapterConfig.dbPwd);
+//
+//
+//  dataSource.setTestWhileIdle(false);
+//  dataSource.setTestOnBorrow(true);
+//  dataSource.setValidationQuery("Select 1");
+//  dataSource.setTestOnReturn(false);
+//
+//  dataSource.setMaxTotal(100);
+//  dataSource.setMaxIdle(5);
+//  dataSource.setMinIdle(0);
+//  dataSource.setInitialSize(5);
+//  dataSource.setMaxWaitMillis(5000);
 
-  //Force a load of the DB Driver Class
-  Class.forName(adapterConfig.dbDriver)
-  LOG.debug("Loaded the DB Driver..."+adapterConfig.dbDriver)
+  private val connector = new JDBCUtility
+  connector.createConnection(adapterConfig)
 
-  dataSource.setDriverClassName(adapterConfig.dbDriver)
-  if(adapterConfig.dbName!=null && !adapterConfig.dbName.isEmpty())
-    dataSource.setUrl(adapterConfig.dbURL+"/"+adapterConfig.dbName)
-  else
-    dataSource.setUrl(adapterConfig.dbURL)
-  dataSource.setUsername(adapterConfig.dbUser);
-  dataSource.setPassword(adapterConfig.dbPwd);
-
-
-  dataSource.setTestWhileIdle(false);
-  dataSource.setTestOnBorrow(true);
-  dataSource.setValidationQuery("Select 1");
-  dataSource.setTestOnReturn(false);
-
-  dataSource.setMaxTotal(100);
-  dataSource.setMaxIdle(5);
-  dataSource.setMinIdle(0);
-  dataSource.setInitialSize(5);
-  dataSource.setMaxWaitMillis(5000);
   override def send(messages: Array[Array[Byte]], partitionKeys: Array[Array[Byte]]): Unit = {
   } ///////not implemented yet
 
@@ -153,8 +157,8 @@ class HbaseProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
     }).filter(oneContainerData => oneContainerData._2.size > 0)
 
 
-//    if (putData.size > 0)
-//      dataStore.put(putData)  you should create put command
+   if (putData.size > 0)
+     connector.put(putData)  //you should create put command
   }
 
   override def getComponentStatusAndMetrics: MonitorComponentInfo = {
@@ -208,8 +212,8 @@ class HbaseProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       }
     }
 
-    if (dataSource != null)
-      dataSource.close()
+    if (connector != null)
+      connector.shutDown()
   }
 
   private def updateMetricValue(key: String, value: Any): Unit = {
@@ -250,161 +254,5 @@ class HbaseProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
         LOG.info(adapterConfig.Name + " Heartbeat is shutting down")
       }
     })
-  }
-
-  private def getPartition(key: Array[Byte], numPartitions: Int): Int = {
-    if (numPartitions == 0) return 0
-    if (key != null) {
-      try {
-        return (scala.math.abs(Arrays.hashCode(key)) % numPartitions)
-      } catch {
-        case e: Exception => {
-          externalizeExceptionEvent(e)
-          throw e
-        }
-        case e: Throwable => {
-          externalizeExceptionEvent(e)
-          throw e
-        }
-      }
-    }
-    return randomPartitionCntr.nextInt(numPartitions)
-  }
-
-  private def outstandingMsgCount: Int = {
-    var outstandingMsgs = 0
-    val allPartitions = partitionsMap.elements()
-    while (allPartitions.hasMoreElements()) {
-      val nxt = allPartitions.nextElement();
-      outstandingMsgs += nxt.size()
-    }
-    outstandingMsgs
-  }
-
-  private def addMsgsToMap(partId: Int, keyMessages: ArrayBuffer[MsgDataRecievedCnt]): Unit = {
-    var msgMap = partitionsMap.get(partId)
-    if (msgMap == null) {
-      partitionsMap.synchronized {
-        msgMap = partitionsMap.get(partId)
-        if (msgMap == null) {
-          val tmpMsgMap = new ConcurrentHashMap[Long, MsgDataRecievedCnt](1024);
-          partitionsMap.put(partId, tmpMsgMap)
-          msgMap = tmpMsgMap
-        }
-      }
-    }
-
-    if (msgMap != null) {
-      try {
-        val allKeys = new java.util.HashMap[Long, MsgDataRecievedCnt]()
-        keyMessages.foreach(m => {
-          allKeys.put(m.cntrToOrder, m)
-        })
-        msgMap.putAll(allKeys)
-      } catch {
-        case e: Exception => {
-          externalizeExceptionEvent(e)
-          // Failed to insert into Map
-          throw e
-        }
-      }
-    }
-  }
-
-  private def failedMsgCount: Int = {
-    var failedMsgs = 0
-
-    val allFailedPartitions = failedMsgsMap.elements()
-    while (allFailedPartitions.hasMoreElements()) {
-      val nxt = allFailedPartitions.nextElement();
-      failedMsgs += nxt.size()
-    }
-    failedMsgs
-  }
-
-  class RetryFailedMessages extends Runnable {
-    def run() {
-      val statusPrintTm = 60000 // for every 1 min
-      var nextPrintTimeCheck = System.currentTimeMillis + statusPrintTm
-      while (isShutdown == false) {
-        try {
-          Thread.sleep(5000) // Sleeping for 5Sec
-        } catch {
-          case e: Exception => {
-            externalizeExceptionEvent(e)
-            if (! isShutdown) LOG.warn("", e)
-          }
-          case e: Throwable => {
-            externalizeExceptionEvent(e)
-            if (! isShutdown) LOG.warn("", e)
-          }
-        }
-        if (isShutdown == false) {
-          var outstandingMsgs = outstandingMsgCount
-          var allFailedMsgs = failedMsgCount
-          if (outstandingMsgs > 0 || allFailedMsgs > 0 || nextPrintTimeCheck < System.currentTimeMillis) {
-            //     LOG.warn("KAFKA PRODUCER: Topic: %s - current outstanding messages:%d & failed messages:%d".format(adapterConfig.topic, outstandingMsgs, allFailedMsgs))
-            nextPrintTimeCheck = System.currentTimeMillis + statusPrintTm
-          }
-          // Get all failed records and resend for each partitions
-          val keysIt = failedMsgsMap.keySet().iterator()
-
-          while (keysIt.hasNext() && isShutdown == false) {
-            val partId = keysIt.next();
-
-            val failedMsgs = failedMsgsMap.get(partId)
-            val sz = failedMsgs.size()
-            if (sz > 0) {
-              val keyMessages = new ArrayBuffer[MsgDataRecievedCnt](sz)
-
-              val allmsgsit = failedMsgs.entrySet().iterator()
-              while (allmsgsit.hasNext() && isShutdown == false) {
-                val ent = allmsgsit.next();
-                keyMessages += ent.getValue
-              }
-              if (isShutdown == false) {
-                val km = keyMessages.sortWith(_.cntrToOrder < _.cntrToOrder) // Sending in the same order as inserted before.
-                sendInfinitely(km, true)
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  private def sendInfinitely(keyMessages: ArrayBuffer[MsgDataRecievedCnt], removeFromFailedMap: Boolean): Unit = {
-    var sendStatus = JDBCConstants.JDBC_NOT_SEND
-    var retryCount = 0
-    var waitTm = 15000
-
-    // We keep on retry until we succeed on this thread
-    while (sendStatus != JDBCConstants.JDBC_SEND_SUCCESS && isShutdown == false) {
-      try {
-        //     sendStatus = doSend(keyMessages, removeFromFailedMap)   //check this
-      } catch {
-        case e: Exception => {
-          externalizeExceptionEvent(e)
-          LOG.error(adapterConfig.Name + " Hbase PRODUCER: Error sending to kafka, Retrying after %dms. Retry count:%d".format(waitTm, retryCount), e)
-          try {
-            Thread.sleep(waitTm)
-          } catch {
-            case e: Exception =>  {
-              externalizeExceptionEvent(e)
-              throw e
-            }
-            case e: Throwable => {
-              externalizeExceptionEvent(e)
-              throw e
-            }
-          }
-          if (waitTm < 60000) {
-            waitTm = waitTm * 2
-            if (waitTm > 60000)
-              waitTm = 60000
-          }
-        }
-      }
-    }
   }
 }

@@ -30,26 +30,26 @@ class DbAdapterConfiguration extends AdapterConfiguration {
   var timeInterval : Long = 0 //0 or -1 means run once, any greater value, will run continuously
   var timeUnits : String = _ //Valid units are SECONDS, MINUTES, HOURS, DAYS, MONTHS, YEARS (values from java TimeUnit)
   var temporalColumn :String = _ //To track the CDC (typically a added_date_time type of a column)
-  var valueDelimiter: String =_ //delimiter between values
-  var keyAndValueDelimiter: String =_// delimiter between key and value
-  var fieldDelimiter: String =_//delimiter between fields
-  var formatOrInputAdapterName: String =_
+//  var valueDelimiter: String =_ //delimiter between values
+//  var keyAndValueDelimiter: String =_// delimiter between key and value
+//  var fieldDelimiter: String =_//delimiter between fields
+//  var formatOrInputAdapterName: String =_
 
   override def toString(): String = {
     var str:String = "(dbDriver " + dbDriver + "," + "dbName " + dbName +"," + "dbUser " + dbUser +"," +
       "dbName " + dbName +"," + "dbPwd " + dbPwd +"," + "dbURL " + dbURL +"," + "query " + query +"," +
       "table " + table +"," + "columns " + columns +"," + "where " + where +"," + "partitionColumn " + partitionColumn +"," +
       "numPartitions " + numPartitions +"," + "timeInterval " + timeInterval +"," + "timeUnits " + timeUnits +"," +
-      "temporalColumn " + temporalColumn + "," +"keyAndValueDelimiter " + keyAndValueDelimiter + "," +"fieldDelimiter " + fieldDelimiter + "," +
+      "temporalColumn " + temporalColumn + "," +/*"keyAndValueDelimiter " + keyAndValueDelimiter + "," +"fieldDelimiter " + fieldDelimiter + "," +
       "valueDelimiter " + valueDelimiter +"," + "dependencyJars " + dependencyJars +"," + "jarName " + jarName+ ","+
-      "formatName " + formatOrInputAdapterName +
+      "formatName " + formatOrInputAdapterName +*/
       ")";
       str
     }
          
 }
 
-object DbAdapterConfiguration {
+object DbAdapterConfiguration extends LogTrait{
   private[this] val LOG = LogManager.getLogger(getClass);
   
   def getAdapterConfig(inputConfig: AdapterConfiguration):DbAdapterConfiguration = {
@@ -64,6 +64,7 @@ object DbAdapterConfiguration {
     dbAdpt.className = inputConfig.className
     dbAdpt.jarName = inputConfig.jarName
     dbAdpt.dependencyJars = inputConfig.dependencyJars
+    dbAdpt.tenantId = inputConfig.tenantId
     /**
       * adapter config didn't include these fields: formatOrInputAdapterName, associatedMsg, keyAndValueDelimiter, fieldDelimiter, and valueDelimiter.
       */
@@ -122,10 +123,12 @@ object DbAdapterConfiguration {
         //Set 10 sec timeout for DriverManager to fetch connection
         DriverManager.setLoginTimeout(10)
         
-        if(dbAdpt.dbName != null && !dbAdpt.dbName.isEmpty())
-          connection = DriverManager.getConnection(dbAdpt.dbURL+"/"+dbAdpt.dbName, dbAdpt.dbUser, dbAdpt.dbPwd)
-        else
+        if(dbAdpt.dbName != null && !dbAdpt.dbName.isEmpty()) {
+          connection = DriverManager.getConnection(dbAdpt.dbURL + "/" + dbAdpt.dbName, dbAdpt.dbUser, dbAdpt.dbPwd)
+        }else {
+          logger.info("You are not pass Database name")
           connection = DriverManager.getConnection(dbAdpt.dbURL, dbAdpt.dbUser, dbAdpt.dbPwd)
+        }
         
         var statement:Statement = connection.createStatement()
         

@@ -115,10 +115,10 @@ class DbConsumer (val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCo
     if (partitionInfo == null || partitionInfo.size == 0)
       return
 
-    val delimiters = new DataDelimiters
-    delimiters.keyAndValueDelimiter = dcConf.keyAndValueDelimiter
-    delimiters.fieldDelimiter = dcConf.fieldDelimiter
-    delimiters.valueDelimiter = dcConf.valueDelimiter
+//    val delimiters = new DataDelimiters
+//    delimiters.keyAndValueDelimiter = dcConf.keyAndValueDelimiter
+//    delimiters.fieldDelimiter = dcConf.fieldDelimiter
+//    delimiters.valueDelimiter = dcConf.valueDelimiter
     
     // Get the data about the request and set the instancePartition list
     
@@ -255,49 +255,49 @@ class DbConsumer (val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCo
                  if(resultSetMetaData.getColumnName(cols).equalsIgnoreCase(dcConf.temporalColumn))
                    uniqueValue.AddedDate = resultset.getTimestamp(cols)
                  
-                 if(dcConf.formatOrInputAdapterName.equalsIgnoreCase("CSV")){
-                    listData.add(resultset.getObject(cols))
-                  }else if (dcConf.formatOrInputAdapterName.equalsIgnoreCase("JSON") || dcConf.formatOrInputAdapterName.equalsIgnoreCase("XML")){
-                    map + (resultSetMetaData.getColumnName(cols) ->  resultset.getObject(cols))
-                  }else{ //Handle other formats
-                    map + (resultSetMetaData.getColumnName(cols) ->  resultset.getObject(cols))
-                  } 
+//                 if(dcConf.formatOrInputAdapterName.equalsIgnoreCase("CSV")){
+//                    listData.add(resultset.getObject(cols))
+//                  }else if (dcConf.formatOrInputAdapterName.equalsIgnoreCase("JSON") || dcConf.formatOrInputAdapterName.equalsIgnoreCase("XML")){
+//                    map + (resultSetMetaData.getColumnName(cols) ->  resultset.getObject(cols))
+//                  }else{ //Handle other formats
+//                    map + (resultSetMetaData.getColumnName(cols) ->  resultset.getObject(cols))
+//                  }
               }
               
-              var sb = new StringBuilder;
+//              var sb = new StringBuilder;
+//
+//              if(dcConf.formatOrInputAdapterName.equalsIgnoreCase("CSV")){
+//                csvPrinter.printRecord(listData)
+//                sb.append(stringWriter.getBuffer.toString())
+//                LOG.debug("CSV Message - "+sb.toString())
+//                listData.clear()
+//                stringWriter.getBuffer.setLength(0)
+//              }else if(dcConf.formatOrInputAdapterName.equalsIgnoreCase("JSON")){
+//                sb.append(JSONValue.toJSONString(map))
+//                LOG.debug("JSON Message - "+sb.toString())
+//                map.empty
+//              }else if(dcConf.formatOrInputAdapterName.equalsIgnoreCase("XML")){
+//                sb.append(XML_HEADER + xStream.toXML(map))
+//                LOG.debug("XML Message - "+sb.toString())
+//                map.empty
+//              }else{ //Handle other types
+//                if (dcConf.formatOrInputAdapterName.equalsIgnoreCase("KV") || dcConf.formatOrInputAdapterName.equalsIgnoreCase("Delimited")) {
+//                  //Need to see if the same logic applies for both KV and Delimited
+//                  var i: Int = 0;
+//                  for ((k, v) <- map) {
+//                    sb.append(k)
+//                    sb.append(dcConf.keyAndValueDelimiter)
+//                    sb.append(v)
+//                    i += 1
+//                    if (i != map.size) {
+//                      sb.append(dcConf.fieldDelimiter)
+//                    }
+//                  }
+//                  LOG.debug("Delimited/KV Message - "+sb.toString())
+//                }
+//              }
               
-              if(dcConf.formatOrInputAdapterName.equalsIgnoreCase("CSV")){
-                csvPrinter.printRecord(listData)
-                sb.append(stringWriter.getBuffer.toString())
-                LOG.debug("CSV Message - "+sb.toString())
-                listData.clear()
-                stringWriter.getBuffer.setLength(0)
-              }else if(dcConf.formatOrInputAdapterName.equalsIgnoreCase("JSON")){
-                sb.append(JSONValue.toJSONString(map))
-                LOG.debug("JSON Message - "+sb.toString())
-                map.empty
-              }else if(dcConf.formatOrInputAdapterName.equalsIgnoreCase("XML")){
-                sb.append(XML_HEADER + xStream.toXML(map))
-                LOG.debug("XML Message - "+sb.toString())
-                map.empty
-              }else{ //Handle other types
-                if (dcConf.formatOrInputAdapterName.equalsIgnoreCase("KV") || dcConf.formatOrInputAdapterName.equalsIgnoreCase("Delimited")) {
-                  //Need to see if the same logic applies for both KV and Delimited
-                  var i: Int = 0;
-                  for ((k, v) <- map) {
-                    sb.append(k)
-                    sb.append(dcConf.keyAndValueDelimiter)
-                    sb.append(v)
-                    i += 1
-                    if (i != map.size) {
-                      sb.append(dcConf.fieldDelimiter)
-                    }
-                  }
-                  LOG.debug("Delimited/KV Message - "+sb.toString())
-                }
-              }
-              
-              execThread.execute(sb.toString().getBytes, /*dcConf.formatOrInputAdapterName,*/ uniqueKey, uniqueValue, /*readTmNs,*/ readTmMs/*, false, dcConf.associatedMsg, delimiters*/)
+//              execThread.execute(sb.toString().getBytes, /*dcConf.formatOrInputAdapterName,*/ uniqueKey, uniqueValue, /*readTmNs,*/ readTmMs/*, false, dcConf.associatedMsg, delimiters*/)
                           
               cntr += 1
               LOG.debug("Counter value "+cntr)
