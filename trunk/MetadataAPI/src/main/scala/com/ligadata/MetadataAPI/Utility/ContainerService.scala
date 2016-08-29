@@ -57,7 +57,8 @@ object ContainerService {
     if (input == "") {
       containerFileDir = metadataAPI.GetMetadataAPIConfig.getProperty("CONTAINER_FILES_DIR")
       if (containerFileDir == null) {
-        response = "CONTAINER_FILES_DIR property missing in the metadata API configuration"
+       // response = "CONTAINER_FILES_DIR property missing in the metadata API configuration"
+        response= (new ApiResult(ErrorCodeConstants.Failure, "addContainer",null,"CONTAINER_FILES_DIR property missing in the metadata API configuration")).toString
       } else {
         //verify the directory where messages can be present
         IsValidDir(containerFileDir) match {
@@ -66,7 +67,8 @@ object ContainerService {
             val containers: Array[File] = new java.io.File(containerFileDir).listFiles.filter(_.getName.endsWith(".json"))
             containers.length match {
               case 0 => {
-                response="Container not found at " + containerFileDir
+               // response="Container not found at " + containerFileDir
+                response= (new ApiResult(ErrorCodeConstants.Failure, "addContainer",null,"Container not found at " + containerFileDir)).toString
               }
               case option => {
                 val containerDefs = getUserInputFromMainMenu(containers)
@@ -78,7 +80,8 @@ object ContainerService {
           }
           case false => {
             //println("Message directory is invalid.")
-            response = "Message directory is invalid."
+            //response = "Message directory is invalid."
+            response= (new ApiResult(ErrorCodeConstants.Failure, "addContainer",null,"Message directory is invalid.")).toString
           }
         }
       }
@@ -89,7 +92,8 @@ object ContainerService {
         val containerDef = Source.fromFile(container).mkString
         response = metadataAPI.AddContainer(containerDef, "JSON", userid, finalTid, pStr)
       }else{
-        response = "Input container file does not exist"
+//        response = "Input container file does not exist"
+        response= (new ApiResult(ErrorCodeConstants.Failure, "addContainer",null,"Input container file does not exist")).toString
       }
     }
     //Got the container.
@@ -115,7 +119,8 @@ object ContainerService {
     if (input == "") {
       containerFileDir = metadataAPI.GetMetadataAPIConfig.getProperty("CONTAINER_FILES_DIR")
       if (containerFileDir == null) {
-        response = "CONTAINER_FILES_DIR property missing in the metadata API configuration"
+        //response = "CONTAINER_FILES_DIR property missing in the metadata API configuration"
+        response= (new ApiResult(ErrorCodeConstants.Failure, "updateContainer",null,"CONTAINER_FILES_DIR property missing in the metadata API configuration")).toString
       } else {
         //verify the directory where messages can be present
         IsValidDir(containerFileDir) match {
@@ -124,7 +129,8 @@ object ContainerService {
             val containers: Array[File] = new java.io.File(containerFileDir).listFiles.filter(_.getName.endsWith(".json"))
             containers.length match {
               case 0 => {
-                response="Container not found at " + containerFileDir
+                //response="Container not found at " + containerFileDir
+                response= (new ApiResult(ErrorCodeConstants.Failure, "updateContainer",null,"Container not found at " + containerFileDir)).toString
               }
               case option => {
                 val containerDefs = getUserInputFromMainMenu(containers)
@@ -136,7 +142,8 @@ object ContainerService {
           }
           case false => {
             //println("Message directory is invalid.")
-            response = "Message directory is invalid."
+            //response = "Message directory is invalid."
+            response= (new ApiResult(ErrorCodeConstants.Failure, "updateContainer",null, "Message directory is invalid.")).toString
           }
         }
       }
@@ -159,13 +166,16 @@ object ContainerService {
       try {
         return metadataAPI.GetContainerDefFromCache(ns, name,"JSON", ver, userid, tid)
       } catch {
-        case e: Exception => logger.error("", e)
+        case e: Exception =>
+          logger.error("", e)
+          (new ApiResult(ErrorCodeConstants.Failure, "getContainer",null, e.getStackTrace.toString)).toString
       }
     }
     val containerKeys = metadataAPI.GetAllContainersFromCache(true, None, tid)
 
     if (containerKeys.length == 0) {
-      response="Sorry, No containers available in the Metadata"
+      //response="Sorry, No containers available in the Metadata"
+      response= (new ApiResult(ErrorCodeConstants.Failure, "getContainer",null, "No containers available in the Metadata")).toString
     }else{
       println("\nPick the container from the list: ")
       var srNo = 0
@@ -177,7 +187,8 @@ object ContainerService {
       val choice: Int = readInt()
 
       if (choice < 1 || choice > containerKeys.length) {
-        response="Invalid choice " + choice + ",start with main menu..."
+        //response="Invalid choice " + choice + ",start with main menu..."
+        response= (new ApiResult(ErrorCodeConstants.Failure, "getContainer",null, "Invalid choice")).toString
       }else{
         val containerKey = containerKeys(choice - 1)
         /*val contKeyTokens = containerKey.split("\\.")
@@ -203,7 +214,6 @@ object ContainerService {
         var emptyAlert = "Sorry, No containers are available in the Metadata"
         response=(new ApiResult(ErrorCodeConstants.Success, "ContainerService",null, emptyAlert)).toString
       } else {
-
         response= (new ApiResult(ErrorCodeConstants.Success, "ContainerService", containerKeys.mkString(", "), "Successfully retrieved all the messages")).toString
 
       }
@@ -226,14 +236,17 @@ object ContainerService {
          try {
            return metadataAPI.RemoveContainer(ns, name, ver.toInt, userid)
          } catch {
-           case e: Exception => logger.error("", e)
+           case e: Exception =>
+             logger.error("", e)
+             (new ApiResult(ErrorCodeConstants.Failure, "removeContainer",null, e.getStackTrace.toString)).toString
          }
       }
 
       val contKeys = metadataAPI.GetAllContainersFromCache(true, None)
 
       if (contKeys.length == 0) {
-        response=("Sorry, No containers available in the Metadata")
+//        response=("Sorry, No containers available in the Metadata")
+        response=(new ApiResult(ErrorCodeConstants.Failure, "removeContainer",null, "No containers available in the Metadata")).toString
       }else{
         println("\nPick the container to be deleted from the following list: ")
         var seq = 0
@@ -243,7 +256,8 @@ object ContainerService {
         val choice: Int = readInt()
 
         if (choice < 1 || choice > contKeys.length) {
-          return ("Invalid choice " + choice + ",start with main menu...")
+          //return ("Invalid choice " + choice + ",start with main menu...")
+          (new ApiResult(ErrorCodeConstants.Failure, "removeContainer",null,"Invalid choice")).toString
         }else{
           val contKey = contKeys(choice - 1)
           val(contNameSpace, contName, contVersion) = com.ligadata.kamanja.metadata.Utils.parseNameToken(contKey)
@@ -252,11 +266,14 @@ object ContainerService {
       }
     } catch {
       case e: NumberFormatException => {
-        response=("\n Entry not in desired format. Please enter only one choice correctly")
+        logger.error("", e)
+        //response=("\n Entry not in desired format. Please enter only one choice correctly")
+        response = (new ApiResult(ErrorCodeConstants.Failure, "removeContainer",null,"Entry not in desired format. Please enter only one choice correctly")).toString
       }
       case e: Exception => {
-        logger.warn("", e)
-        response=(e.toString)
+        logger.error("", e)
+        //response=(e.toString)
+        response= (new ApiResult(ErrorCodeConstants.Failure, "removeContainer",null, e.getStackTrace.toString)).toString
       }
     }
     response
