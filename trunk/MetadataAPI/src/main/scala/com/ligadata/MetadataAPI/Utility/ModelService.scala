@@ -110,7 +110,8 @@ object ModelService {
                 modelDef = Source.fromFile(model).mkString
                 modelDefs=modelDefs:+modelDef
             } else {
-                response="File does not exist"
+               // response="File does not exist"
+                response = new ApiResult(ErrorCodeConstants.Failure, "addModelScala", null, "Model File does not exist").toString
             }
         }
         if (modelDefs.nonEmpty) {
@@ -122,7 +123,8 @@ object ModelService {
                     //before adding a model, add its config file.
                     var configKeys = getMetadataAPI.getModelConfigNames
                     if(configKeys.isEmpty){
-                        response="No model configuration loaded in the metadata!"
+                        //response="No model configuration loaded in the metadata!"
+                        response = new ApiResult(ErrorCodeConstants.Failure, "addModelScala", null, "No model configuration loaded in the metadata!").toString
                     }else{
                         var srNo = 0
                         println("\nPick a Model Definition file(s) from below choices\n")
@@ -141,8 +143,9 @@ object ModelService {
                             }
                             case _ => {
                                 val errorMsg = "Incorrect input " + userOption + ". Please enter the correct option."
-                                println(errorMsg)
-                                errorMsg
+                              //  println(errorMsg)
+                               // errorMsg
+                                response = new ApiResult(ErrorCodeConstants.Failure, "addModelScala", null, errorMsg).toString
                             }
                         }
                         response+= getMetadataAPI.AddModel(ModelType.SCALA, modelDef, userid,finalTid, Some(modelConfig), None, None, None, optMsgProduced, pStr)
@@ -219,7 +222,8 @@ object ModelService {
                 modelDef = Source.fromFile(model).mkString
                 modelDefs=modelDefs:+modelDef
             }else{
-                response="File does not exist"
+                //response="File does not exist"
+                response = new ApiResult(ErrorCodeConstants.Failure, "addModelJava", null, "Model File does not exist").toString
             }
         }
         if(modelDefs.nonEmpty) {
@@ -231,7 +235,8 @@ object ModelService {
                     var configKeys = getMetadataAPI.getModelConfigNames
                     println("--> got these many back "+configKeys.size)
                     if(configKeys.isEmpty){
-                        response="No model configuration loaded in the metadata!"
+                        //response="No model configuration loaded in the metadata!"
+                        response = new ApiResult(ErrorCodeConstants.Failure, "addModelJava", null, "No model configuration loaded in the metadata").toString
                     }else{
                         var srNo = 0
                         println("\nPick a Model Definition file(s) from below choices\n")
@@ -250,8 +255,9 @@ object ModelService {
                             }
                             case _ => {
                                 val errorMsg = "Incorrect input " + userOption + ". Please enter the correct option."
-                                println(errorMsg)
-                                errorMsg
+                                //println(errorMsg)
+                                //errorMsg
+                                response = new ApiResult(ErrorCodeConstants.Failure, "addModelJava", null, errorMsg).toString
                             }
                         }
                         response+= getMetadataAPI.AddModel(ModelType.JAVA, modelDef, userid, finalTid,Some(modelConfig), None,None,None,optMsgProduced,pStr)
