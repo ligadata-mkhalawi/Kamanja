@@ -57,7 +57,7 @@ case class MessageStruct(NameSpace: String, Name: String, FullName: String, Vers
 
 case class MessageDefinition(Message: MessageStruct)
 
-case class ScheduleInformation(Name: String, StartTime: String, EndTime: String, CronJobPattern: String, Payload: Array[String], NameSpace: String, Version: String)
+case class ScheduleInformation(Name: String, StartTime: String, EndTime: String, CronJobPattern: String, Payload: Array[String], NameSpace: String, Version: Long)
 
 case class Schedule(Schedule: ScheduleInformation)
 
