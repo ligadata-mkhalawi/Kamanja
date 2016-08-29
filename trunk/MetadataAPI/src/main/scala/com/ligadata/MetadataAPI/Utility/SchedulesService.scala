@@ -23,12 +23,12 @@ object SchedulesService {
 
     var chosen: String = ""
     var finalTid: Option[String] = None
-    if (tid == None) {
-      chosen = getTenantId
-      finalTid = Some(chosen)
-    } else {
-      finalTid = tid
-    }
+//    if (tid == None) {
+//      chosen = getTenantId
+//      finalTid = Some(chosen)
+//    } else {
+//      finalTid = tid
+//    }
 
 
     if (input == "") {
@@ -71,21 +71,21 @@ object SchedulesService {
     response
   }
 
-  private def getTenantId: String = {
-    var tenatns = getMetadataAPI.GetAllTenants(userid)
-    return getUserInputFromMainMenu(tenatns)
-  }
-
-  def getUserInputFromMainMenu(tenants: Array[String]): String = {
-    var srNo = 0
-    for (tenant <- tenants) {
-      srNo += 1
-      println("[" + srNo + "]" + tenant)
-    }
-    print("\nEnter your choice(If more than 1 choice, please use commas to seperate them): \n")
-    val userOption: Int = readLine().trim.toInt
-    return tenants(userOption - 1)
-  }
+//  private def getTenantId: String = {
+//    var tenatns = getMetadataAPI.GetAllTenants(userid)
+//    return getUserInputFromMainMenu(tenatns)
+//  }
+//
+//  def getUserInputFromMainMenu(tenants: Array[String]): String = {
+//    var srNo = 0
+//    for (tenant <- tenants) {
+//      srNo += 1
+//      println("[" + srNo + "]" + tenant)
+//    }
+//    print("\nEnter your choice(If more than 1 choice, please use commas to seperate them): \n")
+//    val userOption: Int = readLine().trim.toInt
+//    return tenants(userOption - 1)
+//  }
 
 
   def getUserInputFromMainMenu(schduales: Array[File]): Array[String] = {
