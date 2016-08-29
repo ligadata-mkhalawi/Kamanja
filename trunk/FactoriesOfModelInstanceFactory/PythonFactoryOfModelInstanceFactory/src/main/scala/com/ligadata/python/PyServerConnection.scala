@@ -79,7 +79,8 @@ class PyServerConnection(val host : String
   , val log4jConfigPath : String,
   val fileLogPath : String,
   val pyPath : String,
-  val pyBinPath : String
+  val pyBinPath : String,
+  val pKey : String
   ) extends LogTrait {
 
     private var _sock : Socket = null
@@ -173,7 +174,7 @@ class PyServerConnection(val host : String
     private def startServer : String = {
         val useSSH : Boolean = host != "localhost"
 
-      val pyProcess : PyProcess = new PyProcess(host, port, pyPath, pyBinPath)
+      val pyProcess : PyProcess = new PyProcess(host, port, pyPath, pyBinPath, pKey)
 //        val pythonCmdStr = s"python $pyPath/pythonserver.py --host $host --port ${port.toString} --pythonPath $pyPath --log4jConfig $log4jConfigPath --fileLogPath $fileLogPath"
       pyProcess.initPyProcess()
 
@@ -199,32 +200,40 @@ class PyServerConnection(val host : String
         val cmdLen: Int = cmdMsg.length
         out.write(cmdMsg, 0, cmdLen)
         out.flush()
-      logger.debug (" In Process Msg ----- port number ---------- " + port.toString)
+      logger.warn (" In Process Msg ----- port number ---------- " + port.toString)
         /** Contend with multiple messages results returned */
         val answeredBytes: ArrayBuffer[Byte] = ArrayBuffer[Byte]()
+	      logger.warn (" In Process Msg going to read " + port.toString) 
         var bytesReceived = in.read(buffer)
+	      logger.warn (" In Process Msg did i get here  " + port.toString) 
         var result : String = ""
         breakable {
             while (bytesReceived > 0) {
                 answeredBytes ++= buffer.slice(0, bytesReceived)
                 /** print one result each loop... and then the remaining (if any) after bytesReceived == 0) */
+		logger.warn ("The size of bytes received is " +  bytesReceived) 
+		logger.warn ("The content  of bytes received is " +  answeredBytes.toString) 
                 val endMarkerIdx: Int = answeredBytes.indexOfSlice(CmdConstants.endMarkerArray)
+		logger.warn ("The endMarkerIdx value is  " +  endMarkerIdx.toString) 
                 if (endMarkerIdx >= 0) {
                   val endMarkerIncludedIdx: Int = endMarkerIdx + CmdConstants.endMarkerArray.length
                   if (logger.isDebugEnabled()) {
                     logger.debug (" The value of endMarkerIncludedIdx is  " + endMarkerIncludedIdx.toString)
                   }
                     val responseBytes: Array[Byte] = answeredBytes.slice(0, endMarkerIncludedIdx).toArray
-                    result = _decoder.unpack(responseBytes)
+                    result =  _decoder.unpack(responseBytes)
                     logger.info(s"$cmd reply = \n$result")
                     answeredBytes.remove(0, endMarkerIncludedIdx)
-                    break
+		    break 
                 }
+		if (logger.isDebugEnabled()) {
+		logger.debug("bytes received = " + bytesReceived.toString) 
+		}
                 bytesReceived = in.read(buffer)
             }
         }
 
-      logger.debug (" In the end of Process Msg ----- port number ---------- " + port.toString + ", bytes left = " + answeredBytes.nonEmpty.toString)
+      logger.warn (" In the end of Process Msg ----- port number ---------- " + port.toString + ", bytes left = " + answeredBytes.nonEmpty.toString)
         if (answeredBytes.nonEmpty) {
             logger.error("*****************************************************************************************************************************")
           logger.error("... in processMsg, there are resisdual bytes remaining suggesting multiple commands were dispatched with no intervening receipt of response bytes... some component is sending multiple commands or commands are being sent to this connection from multiple threads... a violation of the supposed contract. ")
@@ -451,6 +460,9 @@ logger.debug("result of encode and process is  " + result)
         logger.warn(s"executeModel msg='$payloadStr'")
 
         val result : String = encodeAndProcess("executeModel", payloadStr)
+//	  val  result : String  = payloadStr 
+        logger.warn(s"executeModel result='$result'")
+
         result
     }
 

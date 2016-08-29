@@ -37,7 +37,8 @@ class PyProcess(host: String,
                 port: Int,
 //  PyPath: String)  {
   PyPath: String,
-  pyBinPath : String ) extends LogProcessTrait {
+  pyBinPath : String,
+  pKey : String ) extends LogProcessTrait {
 
   val HostText: String = "--host"
   val Host: String = "localhost"
@@ -55,6 +56,7 @@ class PyProcess(host: String,
   var processBuilder: ProcessBuilder = _
   var proc: Process = _
   var pid: Long = _
+  val partKey : String = pKey 
 
   private val caller = self
   private val WAIT_TIME = 100
@@ -128,7 +130,8 @@ class PyProcess(host: String,
       PortText + SingleSpace + cPort + SingleSpace +
       PyPathText + SingleSpace + cPyPath + SingleSpace +
       LogConfigText + SingleSpace + cPyPath + "/config/" + LogConfigFileName + SingleSpace +
-      LogFilePathText + SingleSpace + cPyPath + "/logs/" + LogFileName
+      LogFilePathText + SingleSpace + cPyPath + "/logs/" + LogFileName + SingleSpace + 
+      "--pkey " + partKey
     logger.warn("Scala process going to start python server using " + cmdString)
 
     run (cmdString)
