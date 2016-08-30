@@ -1,7 +1,7 @@
 {
   "Message": {
     "NameSpace": "org.kamanja.arithmetic",
-    "Name": "arithmeticOutMsg",
+    "Name": "simpleOutMsg",
     "Version": "00.01.01",
     "Description": "simple arithmetic output message",
     "Fixed": "true",
@@ -10,19 +10,19 @@
       {
         "Field": {
           "Name": "a",
-          "Type": "system.Int"
+          "Type": "system.Float"
         }
       },
       {
         "Field": {
           "Name": "b",
-          "Type": "system.Int"
+          "Type": "system.Float"
         }
       },
       {
         "Field": {
           "Name": "result",
-          "Type": "system.Int"
+          "Type": "system.Float"
         }
       }
     ]
