@@ -18,7 +18,7 @@ class AddTheanoTuple(ModelInstance):
                 c = a+ b
                 f = theano.function([a,b], c)
                 sumofTup = f(float(msg["a"]) , float(msg["b"]) )
-                outMsg = json.dumps({'a' : msg["a"], 'b' : msg["b"], 'result' : sumofTup})
+                outMsg = json.dumps({'a' : msg["a"], 'b' : msg["b"], 'result' : sumofTup.item(0)})
                 return outMsg
 
         def __init__(self, host, port, modelOptions, logger):
