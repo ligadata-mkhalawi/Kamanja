@@ -37,8 +37,8 @@ class executeModel(CommandBase):
 		modelValueView = modelDict.viewvalues()
 		modelInsts =  ["{}".format(str(v)) for v in modelValueView]
                 if self.logger.isEnabledFor(logging.DEBUG): 
-		   sys.stdout.write("{} models in modelDict = {}".format(len(modelNameView),modelNames))
-		   sys.stdout.write("{} instances in modelDict = {}".format(len(modelValueView),modelInsts))
+		   self.logger.debug("{} models in modelDict = {}".format(len(modelNameView),modelNames))
+		   self.stdout.write("{} instances in modelDict = {}".format(len(modelValueView),modelInsts))
 
 		if "ModelName" in cmdOptions:
 			modelName = str(cmdOptions["ModelName"])
@@ -56,8 +56,7 @@ class executeModel(CommandBase):
 				model = modelDict.get(modelName)
 				msg = cmdOptions["InputDictionary"]
                                 if self.logger.isEnabledFor(logging.DEBUG): 
-				   sys.stdout.write("model instance selected = {}".format(str(model)))
-                                   sys.stdout.flush() 
+				   self.logger.debug("model instance selected = {}".format(str(model)))
 				results = model.execute(msg)
 			except:
 				results = super(executeModel, self).exceptionMsg("The model '{}' is having a bad day...".format(modelName))

@@ -26,12 +26,12 @@ class addModel(CommandBase):
 			modelFileName = "noModuleNameWasGiven.py"
 		#
                 if self.logger.isEnabledFor(logging.DEBUG): 
-		   sys.stdout.write("Entered addModel... model to be added = {} ... file = {}".format(modelName,modelFileName))
+		   self.logger.debug("Entered addModel... model to be added = {} ... file = {}".format(modelName,modelFileName))
 		
 		pypath = modelDict["PythonInstallPath"]
 		modelSrcPath = "{}/models/{}".format(pypath,modelFileName)
                 if self.logger.isEnabledFor(logging.DEBUG): 
-		   sys.stdout.write("addModel.handler entered ... modelSrcPath = {}".format(modelSrcPath))
+		   self.logger.debug("addModel.handler entered ... modelSrcPath = {}".format(modelSrcPath))
 
 		result = ""
 		inputfields = ""
@@ -41,15 +41,15 @@ class addModel(CommandBase):
 			#(parentDir, file) = os.path.split(modelSrcPath)
 			moduleName = str.split(modelFileName,'.')[0]
                         if self.logger.isEnabledFor(logging.DEBUG): 
-			   sys.stdout.write("model to be added = {}.{}".format(moduleName, modelName))
+			   self.logger.debug("model to be added = {}.{}".format(moduleName, modelName))
 			#all models found in models subdir of the pypath
 			HandlerClass = self.importName("models." + moduleName, modelName)
 			handler = HandlerClass(str(host), str(port), cmdOptions, self.logger)
                         if self.logger.isEnabledFor(logging.DEBUG): 
-			   sys.stdout.write("handler produced")
+			   self.logger.debug("handler produced")
 			modelDict[str(modelName)] = handler
                         if self.logger.isEnabledFor(logging.DEBUG): 
-			   sys.stdout.write("model {}.{} added!".format(moduleName, modelName))
+			   self.logger.debug("model {}.{} added!".format(moduleName, modelName))
 			(inputfields, outputfields) = handler.getInputOutputFields()
 			modelAddMsg = "model {}.{} added".format(moduleName,modelName)
 			result = json.dumps({'Cmd' : 'addModel', 'Server' : host, 'Port' : str(port), 'Code' : 0, 'Result' : modelAddMsg, 'InputFields' : inputfields, 'OutputFields' : outputfields })
@@ -65,7 +65,6 @@ class addModel(CommandBase):
 
 		if self.logger.isEnabledFor(logging.INFO):
                    self.logger.info("AddModel results = {}".format(result))
-                sys.stdout.flush() 
 		return result
 
 	def importName(self, moduleName, name):
@@ -74,10 +73,10 @@ class addModel(CommandBase):
 		"""
 		try:
 			if self.logger.isEnabledFor(logging.DEBUG):
-                           sys.stdout.write("load model = " + moduleName)
+                           self.logger.debug("load model = " + moduleName)
 			module = __import__(moduleName, globals(), locals(), [name])
                         if self.logger.isEnabledFor(logging.DEBUG): 
-			   sys.stdout.write("module obtained")
+			   self.logger.debug("module obtained")
 		except ImportError:
 			return None
 		return getattr(module, name)

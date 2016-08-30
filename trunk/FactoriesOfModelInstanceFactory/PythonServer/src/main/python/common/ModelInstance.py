@@ -61,7 +61,7 @@ class ModelInstance(ModelBase):
         """
         prettycmd = json.dumps({'Server' : self.host, 'Port' : str(self.port), 'Result' : infoTag, 'Exception' : str(sys.exc_info()[0]), 'FailedClass' : str(sys.exc_info()[1])}, sort_keys=True, indent=4, separators=(',', ': '))
         if self.logger.isEnabledFor(logging.DEBUG): 
-           sys.stdout.write(prettycmd)
+           self.logger.debug(prettycmd)
         xeptMsg = json.dumps({'Server' : self.host, 'Port' : str(self.port), 'Result' : infoTag, 'Exception' : str(sys.exc_info()[0]), 'FailedClass' : str(sys.exc_info()[1])})
         return xeptMsg
 
