@@ -42,6 +42,7 @@ import scala.actors.threadpool.{ExecutorService}
 class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUniqueRecordKey, val nodeContext: NodeContext) extends ExecContext {
   private val LOG = LogManager.getLogger(getClass);
   private var eventsCntr: Long = 0
+  private var lastTimeCommitOffsets: Long = System.currentTimeMillis
   //  private var adapterChangedCntr: Long = -1
   //
   //  // Mapping Adapter to Msgs
@@ -210,8 +211,56 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
           val tenatId = if (containerAndData._2.size > 0) msg2TenantId.getOrElse(containerAndData._2(0).container.getFullTypeName.toLowerCase(), "") else ""
           val cData = containerAndData._2.filter(cInfo => (cInfo != null && cInfo.container.isInstanceOf[ContainerInterface])).map(cInfo => cInfo.container.asInstanceOf[ContainerInterface])
           if (cData.size > 0) {
+            val modData =
+              if (cData(0).hasPrimaryKey /* && cData(0).hasPartitionKey */) {
+                cData.map(d => {
+                  // Get RDD and replace the transactionId & rowNumber from old one
+                  val partKey = d.PartitionKeyData().toList
+                  val tmRange =
+                    if (d.hasTimePartitionInfo)
+                      com.ligadata.KvBase.TimeRange(d.getTimePartitionData, d.getTimePartitionData)
+                    else
+                      com.ligadata.KvBase.TimeRange(com.ligadata.KvBase.KvBaseDefalts.defaultTime, com.ligadata.KvBase.KvBaseDefalts.defaultTime)
+                  val tmpData = nodeContext.getEnvCtxt.getRDD(tenatId.toLowerCase(), containerAndData._1.toLowerCase(), partKey, tmRange, null)
+                  var oldData: ContainerInterface = null
+                  if (tmpData != null && tmpData.size > 0) {
+                    if (LOG.isTraceEnabled())
+                      LOG.trace("Got RDD for TxnId:%d, RowNumber:%d, PartitionKey:%s and PrimaryKey:%s.".format(d.getTransactionId, d.getRowNumber, d.PartitionKeyData().mkString(","), d.PrimaryKeyData().mkString(",")))
+                    val newPrimaryKey = d.getPrimaryKey
+                    var mIdx = 0
+
+                    while (oldData == null && newPrimaryKey.size > 0 && mIdx < tmpData.size) {
+                      val m = tmpData(mIdx)
+                      mIdx += 1
+                      val oldPrimaryKey = m.getPrimaryKey
+                      if (oldData == null && newPrimaryKey.size == oldPrimaryKey.size) {
+                        var idx = 0
+                        var cmp = 0
+                        while (cmp == 0 && idx < newPrimaryKey.size) {
+                          cmp = newPrimaryKey(idx).compareTo(oldPrimaryKey(idx))
+                          idx += 1
+                        }
+                        if (cmp == 0 && idx >= newPrimaryKey.size)
+                          oldData = m
+                      }
+                    }
+                  } else {
+                    if (LOG.isTraceEnabled())
+                      LOG.trace("Did not get RDD for TxnId:%d, RowNumber:%d, PartitionKey:%s and PrimaryKey:%s.".format(d.getTransactionId, d.getRowNumber, d.PartitionKeyData().mkString(","), d.PrimaryKeyData().mkString(",")))
+                  }
+                  if (oldData != null) {
+                    d.setRowNumber(oldData.getRowNumber)
+                    d.setTransactionId(oldData.getTransactionId)
+                    if (LOG.isTraceEnabled())
+                      LOG.trace("TxnId:%d, RowNumber:%d, PartitionKey:%s and PrimaryKey:%s found.".format(d.getTransactionId, d.getRowNumber, d.PartitionKeyData().mkString(","), d.PrimaryKeyData().mkString(",")))
+                  }
+                  d
+                })
+              } else {
+                cData
+              }
             val arrContainersData = validDataToCommit.getOrElse(tenatId.toLowerCase(), ArrayBuffer[(String, Array[ContainerInterface])]())
-            arrContainersData += ((containerAndData._1.toLowerCase(), cData))
+            arrContainersData += ((containerAndData._1.toLowerCase(), modData))
             validDataToCommit(tenatId.toLowerCase()) = arrContainersData
           }
         })
@@ -237,10 +286,13 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
         if (txnCtxt.origin.key != null && txnCtxt.origin.value != null && txnCtxt.origin.key.trim.size > 0 && txnCtxt.origin.value.trim.size > 0) {
           eventsCntr += 1
           if (forceCommitFlag ||
-            (nodeContext.getEnvCtxt().EnableEachTransactionCommit &&
-              (KamanjaConfiguration.commitOffsetsMsgCnt == 0 || (eventsCntr % KamanjaConfiguration.commitOffsetsMsgCnt) == 0))) {
+            (KamanjaConfiguration.commitOffsetsMsgCnt > 0 && eventsCntr >= KamanjaConfiguration.commitOffsetsMsgCnt) ||
+            (KamanjaConfiguration.commitOffsetsTimeInterval > 0 && ((lastTimeCommitOffsets + KamanjaConfiguration.commitOffsetsTimeInterval) <= System.currentTimeMillis)) ||
+            nodeContext.getEnvCtxt().EnableEachTransactionCommit) {
             try {
               nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(txnCtxt.origin.key, txnCtxt.origin.value)
+              eventsCntr = 0
+              lastTimeCommitOffsets = System.currentTimeMillis
             } catch {
               case e: Exception => {
                 LOG.error("Failed to setAdapterUniqueKeyValue", e)

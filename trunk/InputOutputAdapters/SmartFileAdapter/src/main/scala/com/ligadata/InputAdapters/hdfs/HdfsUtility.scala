@@ -26,4 +26,15 @@ object HdfsUtility{
     }
     hdfsConfig
   }
+
+  def getFilePathNoProtocol(path : String) : String = {
+    if(path.toLowerCase().startsWith("hdfs://")){
+      val part1 = path.substring(7)
+      val idx = part1.indexOf("/")
+      part1.substring(idx)
+    }
+    else{
+      path
+    }
+  }
 }

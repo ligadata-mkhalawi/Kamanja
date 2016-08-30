@@ -1,0 +1,4 @@
+[
+{"type": "com.ligadata.test.msg1", "flushBufferSize": "1024", "PartitionFormat": "country=${country}"},
+{"type": "com.ligadata.test.msg2", "flushBufferSize": "2048", "PartitionFormat": "region=${region}"}
+]
