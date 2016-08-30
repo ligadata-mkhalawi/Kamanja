@@ -31,11 +31,11 @@ manjaPythonLog-%d{yyyy-MM-dd-HH}-%i.log.gz">
     </Console>
   </Appenders>
   <Loggers>
-      <Logger name="PyProcess" level="DEBUG">
+      <Logger name="PyProcess" level="WARN">
           <AppenderRef ref="Console"/>>
           <AppenderRef ref="HourlyRollPython"/>
       </Logger>
-      <Root level="DEBUG">
+      <Root level="WARN">
           <AppenderRef ref="CONSOLE" />
           <AppenderRef ref="HourlyRoll" />
     </Root>
