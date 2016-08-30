@@ -1205,7 +1205,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           .setQuery(QueryBuilders
             .boolQuery()
             .must(QueryBuilders.termQuery("timePartition", key.timePartition))
-            .must(QueryBuilders.termQuery("bucketKey", key.bucketKey.mkString(",")))
+            .must(QueryBuilders.termQuery("bucketKey", key.bucketKey.mkString(",").toLowerCase()))
             .must(QueryBuilders.termQuery("transactionid", key.transactionId))
             .must(QueryBuilders.termQuery("rowId", key.rowId))
           )
@@ -1434,7 +1434,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             //                QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime),
             //                QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
             .setQuery(QueryBuilders.boolQuery()
-            .must(QueryBuilders.termQuery("bucketKey", bucketKey.mkString(",")))
+            .must(QueryBuilders.termQuery("bucketKey", bucketKey.mkString(",").toLowerCase))
             .must(QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime))
             .must(QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
             .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
@@ -1589,7 +1589,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           .setTypes("type1")
           .setQuery(QueryBuilders
             .boolQuery()
-            .must(QueryBuilders.termQuery("bucketKey", bucketKey.mkString(","))))
+            .must(QueryBuilders.termQuery("bucketKey", bucketKey.mkString(",").toLowerCase)))
           .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId", "schemaId", "serializerType", "serializedInfo"), null)
           .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
           .setScroll(timeToLive)
