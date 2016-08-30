@@ -1,0 +1,140 @@
+{
+  "Message": {
+    "NameSpace": "org.kamanja.arithmetic",
+    "Name": "loanMsg",
+    "Version": "00.01.01",
+    "Description": "loan message",
+    "Fixed": "true",
+    "Persist": "false",
+    "Elements": [
+      {
+        "Field": {
+          "Name": "rec_ID",
+          "Type": "system.Int"
+        }
+      },
+      {
+        "Field": {
+          "Name": "BAD",
+          "Type": "system.Int"
+        },
+      {
+        "Field": {
+          "Name": "TIN_IMOREASON_Debtcon",
+          "Type": "system.Int"
+        }
+      },
+      {
+        "Field": {
+          "Name": "TIN_IMO_REASON_HomeImp",
+          "Type": "system.Int"
+        },
+      {
+        "Field": {
+          "Name": "TIN_IZR_JOB_Mgr",
+          "Type": "system.Int"
+        }
+      },
+      {
+        "Field": {
+          "Name": "TIN_IZR_JOB_Office",
+          "Type": "system.Int"
+        },
+      {
+        "Field": {
+          "Name": "TIN_IZR_JOB_Other",
+          "Type": "system.Int"
+        }
+      },
+      {
+        "Field": {
+          "Name": "TIN_IZR_JOB_ProfExe",
+          "Type": "system.Int"
+        },
+      {
+        "Field": {
+          "Name": "TIN_IZR_JOB_Sales",
+          "Type": "system.Int"
+        }
+      },
+      {
+        "Field": {
+          "Name": "TIN_IZR_JOB_Self",
+          "Type": "system.Int"
+        },
+      {
+        "Field": {
+          "Name": "TIN_IZR_JOB_Missing",
+          "Type": "system.Int"
+        }
+      },
+      {
+        "Field": {
+          "Name": "R01_LOAN",
+          "Type": "system.Float"
+        },
+      {
+        "Field": {
+          "Name": "IMN_R01_MORTDUE",
+          "Type": "system.Float"
+        }
+      },
+      {
+        "Field": {
+          "Name": "IMN_R01_VALUE",
+          "Type": "system.Float"
+        },
+      {
+        "Field": {
+          "Name": "IMN_R01_YOJ",
+          "Type": "system.Float"
+        }
+      },
+      {
+        "Field": {
+          "Name": "IMN_R01_DEROG",
+          "Type": "system.Float"
+        },
+      {
+        "Field": {
+          "Name": "IMN_R01_DELINQ",
+          "Type": "system.Float"
+        }
+      },
+      {
+        "Field": {
+          "Name": "IMN_R01_CLAGE",
+          "Type": "system.Float"
+        },
+      {
+        "Field": {
+          "Name": "IMN_R01_NINQ",
+          "Type": "system.Float"
+        }
+      },
+      {
+        "Field": {
+          "Name": "IMN_R01_CLNO",
+          "Type": "system.Float"
+        },
+      {
+        "Field": {
+          "Name": "LOG6_DEROG",
+          "Type": "system.Float"
+        }
+      },
+      {
+        "Field": {
+          "Name": "LOG5_DELINQ",
+          "Type": "system.Float"
+        },
+      {
+        "Field": {
+          "Name": "LOG_VALUE",
+          "Type": "system.Float"
+        }
+      }
+    ]
+  }
+}
+
