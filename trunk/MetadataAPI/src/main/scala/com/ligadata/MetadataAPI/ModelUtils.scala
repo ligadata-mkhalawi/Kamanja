@@ -1757,7 +1757,7 @@ object ModelUtils {
         val currentModel: ModelDef = optCurrent.orNull
 
         // See if we get the same tenant Id
-        if (!tenantId.equalsIgnoreCase(currentModel.tenantId)) {
+        if (currentModel != null && !tenantId.equalsIgnoreCase(currentModel.tenantId)) {
           return (new ApiResult(ErrorCodeConstants.Failure, "UpdatePythonModel", null, s"Tenant ID is different from the one in the existing object.")).toString
         }
 
