@@ -579,8 +579,8 @@ class PythonAdapter(factory : PythonAdapterFactory
                 ,pyLogPath
               ,pyPath,
               pyBinPath,
-	      "1")
-//	      params("PartitionId").toString)
+//	      "1")
+	      params("PartitionId").toString)
 
           if (logger.isDebugEnabled()) {
             logger.debug("Creating connection ---- " + host + ", port = " + port.toString + ", logConfigPath = " + pyLogConfigPath +
