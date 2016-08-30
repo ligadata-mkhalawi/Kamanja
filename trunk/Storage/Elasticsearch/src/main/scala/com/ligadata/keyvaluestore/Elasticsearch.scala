@@ -505,7 +505,8 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       var id = ""
 
       hits.totalHits() match {
-        case 0 => println("NO RECORD FOUND, creating a new id for a new record")
+        //        case 0 => println("NO RECORD FOUND, creating a new id for a new record")
+        case 0 => id = tableName + System.currentTimeMillis() + System.nanoTime()
         case 1 => id = hits.getAt(0).id()
         case x => println(" found " + hits.totalHits() + " hits, NOT VALID")
       }
@@ -610,7 +611,8 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             var id = ""
 
             hits.totalHits() match {
-              case 0 => println("NO RECORD FOUND, creating a new id for a new record")
+              //              case 0 => println("NO RECORD FOUND, creating a new id for a new record")
+              case 0 => id = tableName + System.currentTimeMillis() + System.nanoTime()
               case 1 => id = hits.getAt(0).id()
               case x => println(" found " + hits.totalHits() + " hits, NOT VALID")
             }
@@ -650,8 +652,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             byteCount = byteCount + getKeySize(key) + getValueSize(value)
           })
           logger.debug("Executing bulk upsert...")
-          //          var updateCount: Array[Int] = null
-          //                    updateCount = pstmt.executeBatch();
           totalRowsUpdated = bulkRequest.numberOfActions()
           val bulkResponse = bulkRequest.execute().actionGet()
 
@@ -744,7 +744,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       client = getConnection
 
       keys.foreach(keyList => {
-        var keyStr = keyList.mkString(",")
+        var keyStr = keyList.mkString(",").toLowerCase
         val response = client
           .prepareSearch(tableName)
           .setTypes("type1")
