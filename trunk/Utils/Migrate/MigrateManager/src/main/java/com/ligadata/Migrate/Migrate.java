@@ -359,6 +359,7 @@ public class Migrate {
         boolean foundError = false;
         java.util.List<String> msgsAndContainers = null;
         java.util.List<String> catalogTables = new java.util.ArrayList<String>();
+	int tablesNotFound = 0;
 
         try {
             catalogTables.add("adapteruniqkvdata");
@@ -485,6 +486,12 @@ public class Migrate {
                     srcVer.equalsIgnoreCase("1.3")) &&
                     dstVer.equalsIgnoreCase("1.6.0"));
 
+	    boolean canUpgradeClusterConfig = 
+		((srcVer.substring(0,3).equalsIgnoreCase("1.4") ||
+		  srcVer.substring(0,3).equalsIgnoreCase("1.5") ||
+		  srcVer.substring(0,3).equalsIgnoreCase("1.6")) &&
+                    dstVer.substring(0,3).equalsIgnoreCase("1.6"));
+
             if (canUpgradeData && canUpgradeMetadata == false) {
                 sendStatus("We don't support upgrading only data without metadata at this moment", "ERROR");
                 logger.error("We don't support upgrading only data without metadata at this moment");
@@ -492,8 +499,13 @@ public class Migrate {
                 return retCode;
             }
 
+	    logger.debug("Metadata Upgrade      => " + canUpgradeMetadata);
+
             // Modify canUpgradeData depending on exclude flag
             canUpgradeData = (canUpgradeData && configuration.excludeData == false);
+
+	    logger.debug("Data Upgrade           => " + canUpgradeData);
+	    logger.debug("Cluster Config Upgrade => " + canUpgradeClusterConfig);
 
             int srcJarsCnt = configuration.migratingFrom.jars.size();
             URL[] srcLoaderUrls = new URL[srcJarsCnt];
@@ -664,36 +676,44 @@ public class Migrate {
                 String backupStatusStr = "";
                 try {
                     backupStatusStr = migrateTo.getStatusFromDataStore("BackupStatusFor" + backupTblSufix);
-                } catch (Exception e) {
-                } catch (Throwable t) {
+                } 
+		catch (Exception e) {
+                } 
+		catch (Throwable t) {
                 }
 
                 boolean havePreviousBackup = (backupStatusStr.startsWith("Done @20"));
 
                 sendStatus("Checking whether backup is already done or not", "INFO");
                 logger.info("Checking whether backup is already done or not");
-                for (TableName tblInfo : allMetadataTbls) {
-                    BackupTableInfo bkup = new BackupTableInfo(tblInfo.namespace,
-                            tblInfo.name, tblInfo.name + backupTblSufix);
 
-                    if (migrateTo.isMetadataTableExists(tblInfo)) {
-                        if (migrateTo.isMetadataTableExists(new TableName(
-                                tblInfo.namespace, bkup.dstTable)) == false) {
-                            allTblsBackedUp = false;
-                        }
-                        metadataBackupTbls.add(bkup);
-                        metadataDelTbls.add(tblInfo);
-                    } else {
-                        // If main table does not exists and backup table does not exists mean there is some issue with getting tables or something like that
-                        if (migrateTo.isMetadataTableExists(new TableName(
-                                tblInfo.namespace, bkup.dstTable))) {
-                            foundMdTablesWhichBackedUp += 1;
-                        } else {
-                            foundMdTablesWhichDidnotBackedUp += 1;
-                        }
-                    }
-                }
+		if( allMetadataTbls.length > 0 ){
+		    for (TableName tblInfo : allMetadataTbls) {
+			BackupTableInfo bkup = new BackupTableInfo(tblInfo.namespace,
+								   tblInfo.name, 
+								   tblInfo.name + backupTblSufix);
 
+			if (migrateTo.isMetadataTableExists(tblInfo)) {
+			    if (migrateTo.isMetadataTableExists(new TableName(tblInfo.namespace, bkup.dstTable)) == false) {
+				allTblsBackedUp = false;
+			    }
+			    metadataBackupTbls.add(bkup);
+			    metadataDelTbls.add(tblInfo);
+			} else {
+			    // If main table does not exists and backup table does not exists mean there is some issue with getting tables or something like that
+			    if (migrateTo.isMetadataTableExists(new TableName(tblInfo.namespace, bkup.dstTable))) {
+				foundMdTablesWhichBackedUp += 1;
+			    } else {
+				foundMdTablesWhichDidnotBackedUp += 1;
+			    }
+			}
+		    }
+		}
+		else{
+		    if( canUpgradeMetadata ){
+			logger.error("No metadata tables found, Possibly connecting to incorrect source database, Check ClusterCfgMetadataAPIConfig.properties");
+		    }
+		}
                 if (foundMdTablesWhichDidnotBackedUp > 0 && foundMdTablesWhichBackedUp == 0) {
                     // Not really found tables to backup
                     sendStatus("Did not find any metadata table and also not found any backed up tables.", "ERROR");
@@ -701,26 +721,33 @@ public class Migrate {
                 }
 
                 // Back up data tables
-                int tablesNotFound = 0;
-                for (TableName tblInfo : allDataTbls) {
-                    String fullTableName = tblInfo.namespace + "." + tblInfo.name;
-                    logger.info("Check the backup status for the table " + fullTableName);
-                    BackupTableInfo bkup = new BackupTableInfo(tblInfo.namespace,
-                            tblInfo.name, tblInfo.name + backupTblSufix);
-                    if (migrateTo.isDataTableExists(tblInfo)) {
-                        if (migrateTo.isDataTableExists(new TableName(
-                                tblInfo.namespace, bkup.dstTable)) == false) {
-                            allTblsBackedUp = false;
-                        }
-                        dataBackupTbls.add(bkup);
-                        dataDelTbls.add(tblInfo);
-                    } else {
-                        logger.info("The table " + fullTableName + " doesn't exist ");
-                        if (!srcVer.equalsIgnoreCase("1.1")) {
-                            tablesNotFound = tablesNotFound + 1;
-                        }
-                    }
-                }
+		if( allDataTbls.size() > 0 ){
+		    tablesNotFound = 0;
+		    for (TableName tblInfo : allDataTbls) {
+			String fullTableName = tblInfo.namespace + "." + tblInfo.name;
+			logger.info("Check the backup status for the table " + fullTableName);
+			BackupTableInfo bkup = new BackupTableInfo(tblInfo.namespace,
+								   tblInfo.name, tblInfo.name + backupTblSufix);
+			if (migrateTo.isDataTableExists(tblInfo)) {
+			    if (migrateTo.isDataTableExists(new TableName(
+									  tblInfo.namespace, bkup.dstTable)) == false) {
+				allTblsBackedUp = false;
+			    }
+			    dataBackupTbls.add(bkup);
+			    dataDelTbls.add(tblInfo);
+			} else {
+			    logger.info("The table " + fullTableName + " doesn't exist ");
+			    if (!srcVer.equalsIgnoreCase("1.1")) {
+				tablesNotFound = tablesNotFound + 1;
+			    }
+			}
+		    }
+		}
+		else{
+		    if( canUpgradeData ){
+			logger.error("No data tables found, Possibly connecting to incorrect source database, Check ClusterCfgMetadataAPIConfig.properties");
+		    }
+		}
 
                 // FIX: Revisit this about what do you do if one or more data tables do not exist
                 if (!srcVer.equalsIgnoreCase("1.1")) {
@@ -732,18 +759,23 @@ public class Migrate {
                     }
                 }
 
-                for (TableName tblInfo : allStatusTbls) {
-                    BackupTableInfo bkup = new BackupTableInfo(tblInfo.namespace,
-                            tblInfo.name, tblInfo.name + backupTblSufix);
-                    if (migrateTo.isStatusTableExists(tblInfo)) {
-                        if (migrateTo.isStatusTableExists(new TableName(
-                                tblInfo.namespace, bkup.dstTable)) == false) {
-                            allTblsBackedUp = false;
-                        }
-                        statusBackupTbls.add(bkup);
-                        statusDelTbls.add(tblInfo);
-                    }
-                }
+		if( allStatusTbls.length > 0 ){
+		    for (TableName tblInfo : allStatusTbls) {
+			BackupTableInfo bkup = new BackupTableInfo(tblInfo.namespace,
+								   tblInfo.name, tblInfo.name + backupTblSufix);
+			if (migrateTo.isStatusTableExists(tblInfo)) {
+			    if (migrateTo.isStatusTableExists(new TableName(
+									    tblInfo.namespace, bkup.dstTable)) == false) {
+				allTblsBackedUp = false;
+			    }
+			    statusBackupTbls.add(bkup);
+			    statusDelTbls.add(tblInfo);
+			}
+		    }
+		}
+		else{
+		    logger.info("No status tables found...");
+		}
 
                 String backupTblsString = "Backup tables:";
 
@@ -767,41 +799,41 @@ public class Migrate {
                     }
 
                     // Backup all the tables, if we did not done or finish before
-                    StringBuilder sb = new StringBuilder();
-                    sb.append(backupTblsString + "\n");
-                    sb.append("\tMetadata Tables:{");
-                    for (BackupTableInfo bTbl : metadataBackupTbls) {
-                        sb.append("\t\t(" + bTbl.namespace + "," + bTbl.srcTable + ") => (" + bTbl.namespace + "," + bTbl.dstTable + ")\n");
-                    }
-                    sb.append("}\n");
+		    if( canUpgradeMetadata || canUpgradeData ) {
+			StringBuilder sb = new StringBuilder();
+			sb.append(backupTblsString + "\n");
+			sb.append("\tMetadata Tables:{");
+			for (BackupTableInfo bTbl : metadataBackupTbls) {
+			    sb.append("\t\t(" + bTbl.namespace + "," + bTbl.srcTable + ") => (" + bTbl.namespace + "," + bTbl.dstTable + ")\n");
+			}
+			sb.append("}\n");
 
-                    sb.append("\tData Tables:{");
-                    for (BackupTableInfo bTbl : dataBackupTbls) {
-                        sb.append("\t\t(" + bTbl.namespace + "," + bTbl.srcTable + ") => (" + bTbl.namespace + "," + bTbl.dstTable + ")\n");
-                    }
-                    sb.append("}\n");
+			sb.append("\tData Tables:{");
+			for (BackupTableInfo bTbl : dataBackupTbls) {
+			    sb.append("\t\t(" + bTbl.namespace + "," + bTbl.srcTable + ") => (" + bTbl.namespace + "," + bTbl.dstTable + ")\n");
+			}
+			sb.append("}\n");
 
-                    sb.append("\tStatus Tables:{");
-                    for (BackupTableInfo bTbl : statusBackupTbls) {
-                        sb.append("\t\t(" + bTbl.namespace + "," + bTbl.srcTable + ") => (" + bTbl.namespace + "," + bTbl.dstTable + ")\n");
-                    }
-                    sb.append("}\n");
+			sb.append("\tStatus Tables:{");
+			for (BackupTableInfo bTbl : statusBackupTbls) {
+			    sb.append("\t\t(" + bTbl.namespace + "," + bTbl.srcTable + ") => (" + bTbl.namespace + "," + bTbl.dstTable + ")\n");
+			}
+			sb.append("}\n");
 
-                    String backupTblStr = sb.toString();
-                    sendStatus(backupTblStr, "INFO");
-                    logger.info(backupTblStr);
+			String backupTblStr = sb.toString();
+			sendStatus(backupTblStr, "INFO");
+			logger.info(backupTblStr);
 
-                    migrateTo.backupAllTables(metadataBackupTbls.toArray(new BackupTableInfo[metadataBackupTbls.size()]),
-                            dataBackupTbls.toArray(new BackupTableInfo[dataBackupTbls.size()]),
-                            statusBackupTbls.toArray(new BackupTableInfo[statusBackupTbls.size()]), true);
-                    String doneTm = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new java.util.Date(System.currentTimeMillis()));
+			migrateTo.backupAllTables(metadataBackupTbls.toArray(new BackupTableInfo[metadataBackupTbls.size()]),
+						  dataBackupTbls.toArray(new BackupTableInfo[dataBackupTbls.size()]),
+						  statusBackupTbls.toArray(new BackupTableInfo[statusBackupTbls.size()]), true);
+			String doneTm = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new java.util.Date(System.currentTimeMillis()));
 
-                    migrateTo.setStatusFromDataStore("BackupStatusFor" + backupTblSufix, "Done @" + doneTm + backupTblStr);
-                    sendStatus("Completed backing up. " + doneTm, "INFO");
-                    logger.info("Completed backing up. " + doneTm);
-                }
+			migrateTo.setStatusFromDataStore("BackupStatusFor" + backupTblSufix, "Done @" + doneTm + backupTblStr);
+			sendStatus("Completed backing up. " + doneTm, "INFO");
+			logger.info("Completed backing up. " + doneTm);
+		    }
 
-		{
 		    // If the source version is 1.4, we can make the necessary updates to
 		    // metadata objects  directly in the database. We let the migrateTo
 		    // handle those updates and return immediately. There is no need
@@ -811,174 +843,179 @@ public class Migrate {
 			    logger.debug("Ugrade models to new version");
 			    sendStatus("Upgrade models to new version", "DEBUG");
 			    MetadataFormat[] metadataArr = allMetadata
-                                .toArray(new MetadataFormat[allMetadata.size()]);
+				.toArray(new MetadataFormat[allMetadata.size()]);
 			    msgsAndContainers = migrateTo.addMetadata(metadataArr, true, excludeMetadata);
 			    logger.debug("Done adding metadata to new version");
 			    sendStatus("Done adding metadata to new version", "DEBUG");
 			}
 			return 0;
 		    }
-		}
 
+		    if(canUpgradeData || canUpgradeMetadata ){
+			StringBuilder sb = new StringBuilder();
+			sb.append("Dropping tables:\n");
+			sb.append("\tMetadata Tables:{");
+			for (TableName dTbl : metadataDelTbls) {
+			    sb.append("(" + dTbl.namespace + "," + dTbl.name + ")");
+			}
+			sb.append("}\n");
 
-                {
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("Dropping tables:\n");
-                    sb.append("\tMetadata Tables:{");
-                    for (TableName dTbl : metadataDelTbls) {
-                        sb.append("(" + dTbl.namespace + "," + dTbl.name + ")");
-                    }
-                    sb.append("}\n");
+			sb.append("\tData Tables:{");
+			for (TableName dTbl : dataDelTbls) {
+			    sb.append("(" + dTbl.namespace + "," + dTbl.name + ")");
+			}
+			sb.append("}\n");
 
-                    sb.append("\tData Tables:{");
-                    for (TableName dTbl : dataDelTbls) {
-                        sb.append("(" + dTbl.namespace + "," + dTbl.name + ")");
-                    }
-                    sb.append("}\n");
+			sb.append("\tStatus Tables:{");
+			for (TableName dTbl : statusDelTbls) {
+			    sb.append("(" + dTbl.namespace + "," + dTbl.name + ")");
+			}
+			sb.append("}\n");
 
-                    sb.append("\tStatus Tables:{");
-                    for (TableName dTbl : statusDelTbls) {
-                        sb.append("(" + dTbl.namespace + "," + dTbl.name + ")");
-                    }
-                    sb.append("}\n");
+			String delTblStr = sb.toString();
+			sendStatus(delTblStr, "INFO");
+			logger.info(delTblStr);
 
-                    String delTblStr = sb.toString();
-                    sendStatus(delTblStr, "INFO");
-                    logger.info(delTblStr);
-                }
+			// Drop all tables after backup
+			migrateTo.dropAllTables(metadataDelTbls.toArray(new TableName[metadataDelTbls.size()]), dataDelTbls.toArray(new TableName[dataDelTbls.size()]), statusDelTbls.toArray(new TableName[statusDelTbls.size()]));
+			sendStatus("Completed dropping tables", "INFO");
+			logger.info("Completed dropping tables");
+		    }
 
-                // Drop all tables after backup
-                migrateTo.dropAllTables(metadataDelTbls.toArray(new TableName[metadataDelTbls.size()]), dataDelTbls.toArray(new TableName[dataDelTbls.size()]), statusDelTbls.toArray(new TableName[statusDelTbls.size()]));
-                sendStatus("Completed dropping tables", "INFO");
-                logger.info("Completed dropping tables");
+		    // 1.4.0 change. Because of the way we save keys in metadata tables
+		    // is different from non-metadata tables, we need to create tabels
+		    // ahead.
+		    if (canUpgradeMetadata){
+			logger.info("Create metadata tables again");
+			migrateTo.createMetadataTables();
+		    }
 
-                // 1.4.0 change. Because of the way we save keys in metadata tables
-                // is different from non-metadata tables, we need to create tabels
-                // ahead.
-                logger.info("Create metadata tables again");
-                migrateTo.createMetadataTables();
+		    // For 1.2 and 1.3, clear allMetadata
+		    if (!srcVer.equalsIgnoreCase("1.1")) {
+			allMetadata.clear();
+		    }
 
-                // For 1.2 and 1.3, clear allMetadata
-                if (!srcVer.equalsIgnoreCase("1.1")) {
-                    allMetadata.clear();
-                }
+		    if (canUpgradeMetadata) {
+			logger.debug("Getting metadata from old version");
+			sendStatus("Getting metadata from old version", "DEBUG");
+			migrateFrom.getAllMetadataObjs(backupTblSufix,
+						       new MdCallback(), excludeMetadata);
+			logger.debug("Got all metadata");
+			sendStatus("Got all metadata", "DEBUG");
+		    }
 
-                if (canUpgradeMetadata) {
-                    logger.debug("Getting metadata from old version");
-                    sendStatus("Getting metadata from old version", "DEBUG");
-                    migrateFrom.getAllMetadataObjs(backupTblSufix,
-                            new MdCallback(), excludeMetadata);
-                    logger.debug("Got all metadata");
-                    sendStatus("Got all metadata", "DEBUG");
-                }
-
-                MetadataFormat[] metadataArr = allMetadata
+		    MetadataFormat[] metadataArr = allMetadata
                         .toArray(new MetadataFormat[allMetadata.size()]);
 
-                if (canUpgradeData) {
-                    logger.info("Dropping saved messages/container tables if there are any");
-                    sendStatus("Dropping saved messages/container tables if there are any", "DEBUG");
-                    migrateTo.dropMessageContainerTablesFromMetadata(metadataArr);
-                    logger.info("Dropped saved messages/container tables if there are any");
-                    sendStatus("Dropped saved messages/container tables if there are any", "DEBUG");
-                }
+		    if (canUpgradeData) {
+			logger.info("Dropping saved messages/container tables if there are any");
+			sendStatus("Dropping saved messages/container tables if there are any", "DEBUG");
+			migrateTo.dropMessageContainerTablesFromMetadata(metadataArr);
+			logger.info("Dropped saved messages/container tables if there are any");
+			sendStatus("Dropped saved messages/container tables if there are any", "DEBUG");
+		    }
 
-                msgsAndContainers = null;
-                if (canUpgradeMetadata) {
-                    logger.debug("Adding metadata to new version");
-                    sendStatus("Adding metadata to new version", "DEBUG");
-                    msgsAndContainers = migrateTo.addMetadata(metadataArr, true, excludeMetadata);
+		    msgsAndContainers = null;
+		    if (canUpgradeMetadata) {
+			logger.debug("Adding metadata to new version");
+			sendStatus("Adding metadata to new version", "DEBUG");
+			msgsAndContainers = migrateTo.addMetadata(metadataArr, true, excludeMetadata);
 
-                    FailedMetadataKey[] failedMetadataKeys = migrateTo.getFailedMetadataKeys();
-                    if (failedMetadataKeys != null && failedMetadataKeys.length > 0) {
-                        StringBuilder sb = new StringBuilder();
-                        sb.append("Failed Metadata Keys:{\n");
-                        for (int i = 0; i < failedMetadataKeys.length; i++) {
-                            FailedMetadataKey key = failedMetadataKeys[i];
-                            sb.append("\t(" + key.objType + "," + key.mdKey + "," + key.version + ")\n");
-                        }
-                        sb.append("}\n");
-                        String failedMdKeys = sb.toString();
-                        logger.error(failedMdKeys);
-                        sendStatus(failedMdKeys, "ERROR");
-                    }
-                    logger.debug("Done adding metadata to new version");
-                    sendStatus("Done adding metadata to new version", "DEBUG");
-                } else {
-                    logger.debug("No need to migrate metadatadata");
-                    sendStatus("No need to migrate metadatadata", "DEBUG");
-                }
+			FailedMetadataKey[] failedMetadataKeys = migrateTo.getFailedMetadataKeys();
+			if (failedMetadataKeys != null && failedMetadataKeys.length > 0) {
+			    StringBuilder sb = new StringBuilder();
+			    sb.append("Failed Metadata Keys:{\n");
+			    for (int i = 0; i < failedMetadataKeys.length; i++) {
+				FailedMetadataKey key = failedMetadataKeys[i];
+				sb.append("\t(" + key.objType + "," + key.mdKey + "," + key.version + ")\n");
+			    }
+			    sb.append("}\n");
+			    String failedMdKeys = sb.toString();
+			    logger.error(failedMdKeys);
+			    sendStatus(failedMdKeys, "ERROR");
+			}
+			logger.debug("Done adding metadata to new version");
+			sendStatus("Done adding metadata to new version", "DEBUG");
+		    } else {
+			logger.debug("No need to migrate metadatadata");
+			sendStatus("No need to migrate metadatadata", "DEBUG");
+		    }
 
-                if (canUpgradeData) {
+		    if (canUpgradeData) {
+			if (msgsAndContainers != null) {
+			    StringBuilder sb = new StringBuilder();
+			    sb.append("MessagesAndContainers To create Tables from Data Migration:{\n");
+			    for (String cName : msgsAndContainers) {
+				sb.append("\t" + cName + "\n");
+			    }
+			    sb.append("}\n");
 
-                    if (msgsAndContainers != null) {
-                        StringBuilder sb = new StringBuilder();
-                        sb.append("MessagesAndContainers To create Tables from Data Migration:{\n");
-                        for (String cName : msgsAndContainers) {
-                            sb.append("\t" + cName + "\n");
-                        }
-                        sb.append("}\n");
+			    String newTablesStr = sb.toString();
+			    sendStatus(newTablesStr, "INFO");
+			    logger.info(newTablesStr);
+			}
 
-                        String newTablesStr = sb.toString();
-                        sendStatus(newTablesStr, "INFO");
-                        logger.info(newTablesStr);
-                    }
+			int parallelDegree = 1;
+			if (configuration.parallelDegree > 1)
+			    parallelDegree = configuration.parallelDegree;
+			ExecutorService executor = Executors.newFixedThreadPool(parallelDegree);
 
-                    int parallelDegree = 1;
-                    if (configuration.parallelDegree > 1)
-                        parallelDegree = configuration.parallelDegree;
-                    ExecutorService executor = Executors.newFixedThreadPool(parallelDegree);
+			int kSaveThreshold = 1024;
 
-                    int kSaveThreshold = 1024;
+			if (configuration.dataSaveThreshold > 0)
+			    kSaveThreshold = configuration.dataSaveThreshold;
 
-                    if (configuration.dataSaveThreshold > 0)
-                        kSaveThreshold = configuration.dataSaveThreshold;
+			logger.debug("Migrating data from old version to new version. Each time we are writing minimum " + kSaveThreshold + " rows as a batch.");
+			sendStatus("Migrating data from old version to new version. Each time we are writing minimum " + kSaveThreshold + " rows as a batch.", "DEBUG");
+			List<DataFormat> collectedData = new ArrayList<DataFormat>();
 
-                    logger.debug("Migrating data from old version to new version. Each time we are writing minimum " + kSaveThreshold + " rows as a batch.");
-                    sendStatus("Migrating data from old version to new version. Each time we are writing minimum " + kSaveThreshold + " rows as a batch.", "DEBUG");
-                    List<DataFormat> collectedData = new ArrayList<DataFormat>();
+			DataCallback dataCallback = new DataCallback(migrateTo,
+								     collectedData, kSaveThreshold, srcVer, dstVer, executor);
 
-                    DataCallback dataCallback = new DataCallback(migrateTo,
-                            collectedData, kSaveThreshold, srcVer, dstVer, executor);
+			migrateFrom.getAllDataObjs(backupTblSufix, metadataArr, msgsAndContainers, catalogTables, dataCallback);
 
-                    migrateFrom.getAllDataObjs(backupTblSufix, metadataArr, msgsAndContainers, catalogTables, dataCallback);
+			if (collectedData.size() > 0) {
+			    String msg = String.format("Adding final batch of Migrated data with " + collectedData.size() + " rows to write");
+			    logger.debug(msg);
+			    sendStatus(msg, "DEBUG");
+			    SaveDataInBackground(executor, migrateTo, collectedData.toArray(new DataFormat[collectedData.size()]));
+			    collectedData.clear();
+			}
 
-                    if (collectedData.size() > 0) {
-                        String msg = String.format("Adding final batch of Migrated data with " + collectedData.size() + " rows to write");
-                        logger.debug(msg);
-                        sendStatus(msg, "DEBUG");
-                        SaveDataInBackground(executor, migrateTo, collectedData.toArray(new DataFormat[collectedData.size()]));
-                        collectedData.clear();
-                    }
+			logger.info("Waiting to flush all data");
+			sendStatus("Waiting to flush all data", "INFO");
+			executor.shutdown();
+			executor.awaitTermination(86400, TimeUnit.SECONDS); // 1 day waiting at the max
 
-                    logger.info("Waiting to flush all data");
-                    sendStatus("Waiting to flush all data", "INFO");
-                    executor.shutdown();
-                    executor.awaitTermination(86400, TimeUnit.SECONDS); // 1 day waiting at the max
+			if (writeFailedException != null) {
+			    if (sentFailedStatus == false) {
+				// logger.error("Data failed to migrate.", writeFailedException);
+				sendStatus("Data failed to migrate. Exception message:" + writeFailedException.getMessage(), "ERROR");
+			    }
+			    throw writeFailedException;
+			}
 
-                    if (writeFailedException != null) {
-                        if (sentFailedStatus == false) {
-                            // logger.error("Data failed to migrate.", writeFailedException);
-                            sendStatus("Data failed to migrate. Exception message:" + writeFailedException.getMessage(), "ERROR");
-                        }
-                        throw writeFailedException;
-                    }
+			logger.info("Completed migrating data");
+			sendStatus("Completed migrating data", "INFO");
+		    } else {
+			logger.debug("Skipping data migration. May not be required or turned off");
+			sendStatus("Skipping data migration. May not be required or turned off", "DEBUG");
+		    }
+		}
+		
+		// uploadClusterConfig for special scenarios
+		if( ! canUpgradeMetadata && canUpgradeClusterConfig ){
+		    migrateTo.uploadClusterConfig();
+		}
 
-                    logger.info("Completed migrating data");
-                    sendStatus("Completed migrating data", "INFO");
-                } else {
-                    logger.debug("Skipping data migration. May not be required or turned off");
-                    sendStatus("Skipping data migration. May not be required or turned off", "DEBUG");
-                }
-
-                logger.info("Migration is done. Failed summary is written to "
-                        + curMigrationSummary + " and failed to read data written to " + sourceReadFailuresFilePath);
-                if (logger.isInfoEnabled() == false)
-                    System.out.println("Migration is done. Failed summary is written to "
-                            + curMigrationSummary + " and failed to read data written to " + sourceReadFailuresFilePath);
-                sendStatus("Successfully migrated. Failed summary is written to " + curMigrationSummary + " and failed to read data written to " + sourceReadFailuresFilePath, "INFO");
-                retCode = 0;
-            }
+		logger.info("Migration is done. Failed summary is written to "
+			    + curMigrationSummary + " and failed to read data written to " + sourceReadFailuresFilePath);
+		if (logger.isInfoEnabled() == false)
+		    System.out.println("Migration is done. Failed summary is written to "
+				       + curMigrationSummary + " and failed to read data written to " + sourceReadFailuresFilePath);
+		sendStatus("Successfully migrated. Failed summary is written to " + curMigrationSummary + " and failed to read data written to " + sourceReadFailuresFilePath, "INFO");
+		retCode = 0;
+	    }
         } catch (Exception e) {
             logger.error("Failed to Migrate", e);
             sendStatus("Failed to migrate with exception message:" + e.getMessage(), "ERROR");

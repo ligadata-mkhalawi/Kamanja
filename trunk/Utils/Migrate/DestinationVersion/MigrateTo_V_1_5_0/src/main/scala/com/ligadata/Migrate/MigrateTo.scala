@@ -720,6 +720,9 @@ class MigrateTo_V_1_5 extends MigratableTo {
     _metaDataStoreDb.CreateMetadataContainer(metadataTables)
   }
 
+  override def uploadClusterConfig(): Unit = {
+    throw new Exception("Not applicable when migrating to 1.4")
+  }
 
   private def getUniqueId: Long = {
     _uniqueIdGenerator.incrementAndGet

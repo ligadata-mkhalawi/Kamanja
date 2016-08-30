@@ -720,6 +720,12 @@ class MigrateTo_V_1_6 extends MigratableTo {
     _metaDataStoreDb.CreateMetadataContainer(metadataTables)
   }
 
+  override def uploadClusterConfig(): Unit = {
+    getMetadataAPI.OpenDbStore(_jarPaths, _metaDataStoreInfo)
+    val cfgStr = Source.fromFile(_clusterConfigFile).mkString
+    logger.info("Uploading configuration:" + cfgStr)
+    getMetadataAPI.UploadConfig(cfgStr, defaultUserId, "ClusterConfig")
+  }
 
   private def getUniqueId: Long = {
     _uniqueIdGenerator.incrementAndGet
