@@ -1,5 +1,41 @@
 <div class="nodeDetails">
-  <div class="detailsHeader">
-    
+  <div class="headerDetails">
+    Application Name {{nodeDetails.applicationName}} <br/>
+    Application: Email Apps <br/>
+    Volume: 980
+  </div>
+  <div class="toolsCtrl contentRow">
+    <table width="100%">
+      <tr>
+        <td>
+          <i class="fa fa-eye-slash" aria-hidden="true"></i> <span>Hide from view</span>
+        </td>
+        <td>
+          <i class="fa fa-connectdevelop" aria-hidden="true"></i> <span>Group</span>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <div class="accordion-panel">
+    <div data-toggle="collapse" ng-click="nodeDetails.openDesc = !nodeDetails.openDesc" data-target="#nodeDesc"
+         class="accordion-heading">
+       <i class="fa" ng-class="{'fa-chevron-down': nodeDetails.openDesc, 'fa-chevron-right': !nodeDetails.openDesc}"></i> Description
+    </div>
+    <div id="nodeDesc" class="accordion-content collapse">
+      <p>
+        Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s,
+      </p>
+    </div>
+  </div>
+  <div class="accordion-panel">
+    <div data-toggle="collapse" ng-click="nodeDetails.openAlerts = !nodeDetails.openAlerts" data-target="#nodeAlerts"
+         class="accordion-heading">
+      <i class="fa" ng-class="{'fa-chevron-down': nodeDetails.openAlerts, 'fa-chevron-right': !nodeDetails.openAlerts}"></i> Alerts <i class="pull-right fa fa-exclamation-triangle alertIcon"></i>
+    </div>
+    <div id="nodeAlerts" class="accordion-content collapse">
+      <p>
+        Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s,
+      </p>
+    </div>
   </div>
 </div>

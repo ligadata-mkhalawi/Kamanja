@@ -1,3 +1,4 @@
+<node-details></node-details>
 <div class="row mainContainer">
   <div ng-class="{'col-md-10':main.showSideBar,'col-md-12':!main.showSideBar}">
     <div class="row">
@@ -11,7 +12,7 @@
     </div>
     <div class="row">
       <div class="col-md-12">
-        <vis></vis>
+        <vis node-click="main.nodeClicked"></vis>
       </div>
     </div>
   </div>

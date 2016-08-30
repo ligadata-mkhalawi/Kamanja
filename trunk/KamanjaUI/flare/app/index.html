@@ -11,6 +11,7 @@
 
     <!-- build:css styles/vendor.css -->
     <!-- bower:css -->
+    <link rel="stylesheet" href="/bower_components/vis/dist/vis.css" />
     <!-- endbower -->
     <!-- endbuild -->
 
@@ -42,7 +43,15 @@
 
     <!-- build:js scripts/vendor.js -->
     <!-- bower:js -->
+    <script src="/bower_components/modernizr/modernizr.js"></script>
     <script src="/bower_components/jquery/dist/jquery.js"></script>
+    <script src="/bower_components/angular/angular.js"></script>
+    <script src="/bower_components/angular-ui-router/release/angular-ui-router.js"></script>
+    <script src="/bower_components/underscore/underscore.js"></script>
+    <script src="/bower_components/vis/dist/vis.js"></script>
+    <script src="/bower_components/angular-bootstrap/ui-bootstrap-tpls.js"></script>
+    <script src="/bower_components/angular-animate/angular-animate.js"></script>
+    <script src="/bower_components/d3/d3.js"></script>
     <!-- endbower -->
     <!-- endbuild -->
 
@@ -51,6 +60,8 @@
     <script src="/bower_components/angular/angular.min.js"></script>
     <script src="/bower_components/angular-animate/angular-animate.min.js"></script>
     <script src="/bower_components/angular-ui-router/release/angular-ui-router.min.js"></script>
+    <script src="/bower_components/bootstrap-sass/assets/javascripts/bootstrap.min.js"></script>
+    <script src="/bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js"></script>
     <script src="/bower_components/underscore/underscore-min.js"></script>
     <script src="/bower_components/vis/dist/vis-network.min.js"></script>
     <script src="/bower_components/angular-bootstrap/ui-bootstrap.min.js"></script>
@@ -58,6 +69,7 @@
     <!-- endbuild -->
 
     <!-- build:js scripts/main.js -->
+    <script src="scripts/general/common.js"></script>
     <script src="scripts/flareApp.js"></script>
     <script src="scripts/controllers/mainCtrl.js"></script>
 
@@ -66,6 +78,7 @@
     <!-- directives -->
     <script src="scripts/directives/header.drv.js"></script>
     <script src="scripts/directives/vis.drv.js"></script>
+    <script src="scripts/directives/nodeDetails.drv.js"></script>
 
     <!-- endbuild -->
   </body>

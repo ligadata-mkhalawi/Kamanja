@@ -116,6 +116,7 @@ angular.module('flareApp')
     $rootScope.views = [$rootScope.currentView];
 
     $scope.$on('sideBarToggled', function () {
+
       main.showSideBar = !main.showSideBar;
     });
 
