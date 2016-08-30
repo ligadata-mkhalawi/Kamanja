@@ -18,6 +18,7 @@ import org.json4s.jackson.Serialization
 import scala.actors.threadpool.{ExecutorService, Executors}
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks._
+import java.util.concurrent.atomic.AtomicLong
 
 case class ExceptionInfo (Last_Failure: String, Last_Recovery: String)
 /**
@@ -50,7 +51,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   LOG.info("Staring Kafka Consumer (0.9+) with the following paramters:\n" + qc.toString)
   private var isShutdown = false
   private val lock = new Object()
-  private var msgCount: Long = 0
+  private var msgCount = new AtomicLong(0)
   private var sleepDuration = 500
   private var isQuiese = false
   private val kvs = scala.collection.mutable.Map[Int, (KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]()
@@ -374,7 +375,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
                       uniqueVal.Offset = record.offset
                       LOG.debug("MESSAGE-> at @partition " + record.partition + " @offset " + record.offset + " " + new String(message))
 
-                      msgCount += 1
+                      msgCount.incrementAndGet()
                       incrementCountForPartition(record.partition)
                       execContexts(record.partition).execute(message, uniqueVals(record.partition), uniqueVal, readTmMs)
                       localReadOffsets(record.partition) = (record.offset)
@@ -675,7 +676,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     * @return String - Simple Stats format TYPE/NAME/envCnt->COUNT
     */
   override def getComponentSimpleStats: String = {
-    return "Input/"+qc.topic+"/evtCnt" + "->" + msgCount
+    return "Input/"+qc.topic+"/evtCnt" + "->" + msgCount.get()
   }
 
   /**
