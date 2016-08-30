@@ -33,84 +33,91 @@ body {
 }
 
 p {
-  max-width:700px;
+  max-width: 700px;
 }
-.mainContainer{
-  $height : 750px;
-  padding-top:65px;
-  background-color: #333333;
+
+$sidebarBGColor: #1A1A1A;
+$sidebarBGDarkColor: #121212;
+$networkBGColor: #333333;
+$white: #fcfcfc;
+.mainContainer {
+  $height: 750px;
+  $sidebarColor: #949494;
+
+  padding-top: 50px;
+  background-color: $networkBGColor;
   .col-md-2.sideBar {
-    background-color: #1A1A1A;
+    background-color: $sidebarBGColor;
     height: $height;
     .listItem {
-      color: #949494;
+      color: $sidebarColor;
       padding: 10px 15px;
       cursor: pointer;
-      &.listParent{
-        background-color: #121212;
-        padding-left:0;
+      &.listParent {
+        background-color: $sidebarBGDarkColor;
+        padding-left: 0;
         .head {
-          padding-left:10px;
+          padding-left: 10px;
           padding-bottom: 6px;
         }
       }
-      .list-group{
-        background-color: #1A1A1A;
-        padding-left:10px;
-        margin-bottom : 0;
+      .list-group {
+        background-color: $sidebarBGColor;
+        padding-left: 10px;
+        margin-bottom: 0;
       }
-      .list-group-item{
+      .list-group-item {
         background-color: inherit;
-        border:0;
-        padding-left:0;
+        border: 0;
+        padding-left: 0;
       }
-      .glyphicon{
-        &.hideEye:after{
-          content:'-';
+      .glyphicon {
+        &.hideEye:after {
+          content: '-';
           position: absolute;
-          font-size:45px;
-          color:black;
-          line-height:0px;
+          font-size: 45px;
+          color: black;
+          line-height: 0px;
           left: -1px;
-          top:-5px;
+          top: -5px;
         }
       }
     }
 
-      /* The starting CSS styles for the enter animation */
+    /* The starting CSS styles for the enter animation */
     .list-group.ng-enter {
-      transition:0.5s linear all;
-      opacity:0;
+      transition: 0.5s linear all;
+      opacity: 0;
     }
 
     /* The finishing CSS styles for the enter animation */
     .list-group.ng-enter.ng-enter-active {
-      opacity:1;
+      opacity: 1;
     }
 
     .circle {
       position: relative;
-      top:2px;
-      display:inline-block;
+      top: 2px;
+      display: inline-block;
       border-radius: 50%;
       width: 14px;
       height: 14px;
-      &.green{
+      &.green {
         background-color: #099665;
       }
-      &.purple{
+      &.purple {
         background-color: #cc02c5;
       }
-      &.blue{
+      &.blue {
         background-color: #036b94;
       }
-      &.lightBlue{
+      &.lightBlue {
         background-color: #50cccc;
       }
       &.red {
         background-color: #f5474a;
       }
-      &.yellow{
+      &.yellow {
         background-color: #fac800;
       }
     }
@@ -127,34 +134,63 @@ div.vis-network {
     position: absolute;
     bottom: 15px;
     height: 100px;
-    width:37px;
+    width: 37px;
     right: 5px;
     background-image: url(../buttons.png);
     background-repeat: no-repeat;
     background-position: 0 0;
     z-index: 100000;
-    .vis-button.vis-up,.vis-button.vis-down,.vis-button.vis-right,.vis-button.vis-left {
+    .vis-button.vis-up, .vis-button.vis-down, .vis-button.vis-right, .vis-button.vis-left {
       display: none;
     }
-    div.vis-button.vis-zoomOut,div.vis-button.vis-zoomIn,div.vis-button.vis-zoomExtends{
+    div.vis-button.vis-zoomOut, div.vis-button.vis-zoomIn, div.vis-button.vis-zoomExtends {
       position: absolute;
       width: 25px;
       height: 25px;
       background-image: none !important;
-      border-radius:2px;
+      border-radius: 2px;
       right: 5px !important;
-      &:hover{
-        box-shadow:none;
+      &:hover {
+        box-shadow: none;
       }
     }
-    div.vis-button.vis-zoomExtends{
+    div.vis-button.vis-zoomExtends {
       bottom: 34px !important;
     }
-    div.vis-button.vis-zoomOut{
+    div.vis-button.vis-zoomOut {
       bottom: 3px !important;
     }
-    div.vis-button.vis-zoomIn{
+    div.vis-button.vis-zoomIn {
       bottom: 65px !important;
     }
+  }
+}
+
+.tabsBar {
+  background-color: $sidebarBGColor;
+  border-right: 2px solid $networkBGColor;
+  .view {
+    display: block;
+    width: 190px;
+    height: 30px;
+    float: left;
+    padding: 2px 0 0 10px;
+    color: $white;
+    position :relative;
+    background-color: $sidebarBGDarkColor;
+    &.active{
+      background-color: $networkBGColor;
+    }
+    .glyphicon {
+      position :absolute;
+      top: 6px;
+      right: 16px;
+    }
+  }
+  .glyphicon-plus {
+    float: left;
+    padding: 2px 4px 2px 8px;
+    font-size: 22px;
+    color: $white;
   }
 }

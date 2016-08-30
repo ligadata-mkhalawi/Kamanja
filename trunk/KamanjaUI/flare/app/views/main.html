@@ -1,8 +1,12 @@
 <div class="row mainContainer">
   <div ng-class="{'col-md-10':main.showSideBar,'col-md-12':!main.showSideBar}">
     <div class="row">
-      <div class="col-md-12">
-        <vis></vis>
+      <div class="col-md-12 tabsBar">
+        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+        <div ng-repeat="view in views" class="view" ng-class="{'active':view === currentView}">
+          {{view.title}}
+          <span class="glyphicon glyphicon-remove-sign" aria-hidden="true"></span>
+        </div>
       </div>
     </div>
     <div class="row">
@@ -13,60 +17,47 @@
   </div>
   <div class="col-md-2 sideBar" ng-if="main.showSideBar">
     <div class="row">
-      <div class="col-md-12 listItem" ng-click="main.toggleShowList('Labels')">
-        Labels <span class="glyphicon glyphicon-eye-open" aria-hidden="true" ng-class="{'hideEye':!main.getShowOption('Labels')}"></span>
+      <div class="col-md-12 listItem" ng-click="currentView.toggleOptions('Labels')">
+        Labels
+        <span class="glyphicon glyphicon-eye-open" aria-hidden="true"
+              ng-class="{'hideEye':!currentView.getOption('Labels')}"></span>
       </div>
     </div>
     <div class="row">
       <div class="col-md-12 listItem listParent">
         <div class="head">
-          <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> Entities (160)
+          <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>Entities (160)
         </div>
       </div>
     </div>
     <div class="row">
       <div class="col-md-12 listItem listParent">
-        <div class="head" ng-click="main.toggleShowList('Coloring by Cluster')">
+        <div class="head" ng-click="currentView.toggleOptions('Coloring by Cluster')">
           <span class="glyphicon "
-                ng-class="{'glyphicon-menu-right': !main.getShowOption('Coloring by Cluster'), 'glyphicon-menu-down': main.getShowOption('Coloring by Cluster')}"
-                aria-hidden="true"></span> Coloring by Cluster
+                ng-class="{'glyphicon-menu-right': !currentView.getOption('Coloring by Cluster'), 'glyphicon-menu-down': currentView.getOption('Coloring by Cluster')}"
+                aria-hidden="true"></span>Coloring by Cluster
         </div>
-        <ul class="list-group" ng-if="main.getShowOption('Coloring by Cluster')">
-          <li class="list-group-item" ng-click="main.toggleShowList('Applications')" >
-            <span class="glyphicon glyphicon-menu-right" aria-hidden="true" ></span> <span class="circle red"></span>
-            Applications (45) <span
-            class="glyphicon glyphicon-eye-open" aria-hidden="true"  ng-class="{'hideEye':!main.getShowOption('Applications')}"></span></li>
-          <li class="list-group-item"  ng-click="main.toggleShowList('Logs')" >
-            <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> <span
-            class="circle green"></span> Logs (60) <span
-            class="glyphicon glyphicon-eye-open" aria-hidden="true" ng-class="{'hideEye':!main.getShowOption('Logs')}"></span></li>
-          <li class="list-group-item" ng-click="main.toggleShowList('People')" >
-            <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> <span class="circle blue"></span>
-            People (30) <span
-            class="glyphicon glyphicon-eye-open" aria-hidden="true" ng-class="{'hideEye':!main.getShowOption('People')}"></span></li>
-          <li class="list-group-item" ng-click="main.toggleShowList('Countries')" >
-            <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> <span
-            class="circle lightBlue"></span> Countries (5) <span
-            class="glyphicon glyphicon-eye-open" aria-hidden="true" ng-class="{'hideEye':!main.getShowOption('Countries')}"></span></li>
-          <li class="list-group-item" ng-click="main.toggleShowList('Organizations')" >
-            <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> <span
-            class="circle purple"></span> Organizations (15) <span
-            class="glyphicon glyphicon-eye-open" aria-hidden="true"  ng-class="{'hideEye':!main.getShowOption('Organizations')}"></span></li>
-          <li class="list-group-item">
-            <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> <span
-            class="circle yellow"></span> Alerts (5) <span
-            class="glyphicon glyphicon-eye-open" aria-hidden="true" ng-class="{'hideEye':!main.getShowOption('Alerts')}"></span></li>
+        <ul class="list-group" ng-if="currentView.getOption('Coloring by Cluster')">
+          <li ng-repeat="(title , clusterOption) in currentView.getOptions('Coloring by Cluster')"
+              class="list-group-item"
+              ng-click="currentView.toggleOptions(title)">
+            <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> <span class="circle"
+                                                                                          ng-class="clusterOption.color"></span>
+            {{title}} (45) <span
+            class="glyphicon glyphicon-eye-open" aria-hidden="true"
+            ng-class="{'hideEye':!main.showOptions['Applications']}"></span>
+          </li>
         </ul>
       </div>
     </div>
     <div class="row">
       <div class="col-md-12 listItem listParent">
-        <div class="head" ng-click="main.toggleShowList('Relationships')">
+        <div class="head" ng-click="currentView.toggleOptions('Relationships')">
           <span class="glyphicon "
-                ng-class="{'glyphicon-menu-right': !main.getShowOption('Relationships'), 'glyphicon-menu-down': main.getShowOption('Relationships')}"
+                ng-class="{'glyphicon-menu-right': !currentView.getOption('Relationships'), 'glyphicon-menu-down': currentView.getOption('Relationships')}"
                 aria-hidden="true"></span> Relationships (800)
         </div>
-        <ul class="list-group" ng-if="main.getShowOption('Relationships')">
+        <ul class="list-group" ng-if="currentView.getOption('Relationships')">
           <li class="list-group-item">
             Accesses (100) <span
             class="glyphicon glyphicon-eye-open" aria-hidden="true"></span></li>

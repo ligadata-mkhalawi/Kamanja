@@ -13,64 +13,11 @@ angular
         link: function (scope, element) {
 
           var network;
-
-          var nodes = [
-
-            {id: 'AppAccessLog', _label: 'AppAccessLog', group: 'logsCluster', color: {border: ''}},
-            {id: 'URLAccessLog', _label: 'URLAccessLog', group: 'logsCluster'},
-            {id: 'RemoteAccessLog', _label: 'RemoteAccessLog', group: 'logsCluster'},
-            {id: 'RootLog', _label: 'RootLog', hidden: true, group: 'logsCluster'},
-
-            {id: 'Mozilla Browser', _label: 'Mozilla Browser', group: 'browsersCluster', color: {border: ''}},
-            {id: 'Chrome Browser', _label: 'Chrome Browser', group: 'browsersCluster'},
-            {id: 'RootBrowser', _label: 'RootBrowser', hidden: true, group: 'browsersCluster'},
-
-            {id: 'Jane', _label: 'Jane', group: 'userCluster'},
-            {id: 'John', _label: 'John', group: 'userCluster'},
-            {id: 'Jill', _label: 'Jill', group: 'userCluster'},
-            {id: 'RootUser', _label: 'RootUser', hidden: true, group: 'userCluster'},
-
-            {id: 'BadApp', _label: 'BadApp', group: 'BadAppsCluster'},
-            {id: 'RootBadApp', _label: 'RootBadApp', hidden: true, group: 'BadAppsCluster'},
-
-            {id: 'Outlook', _label: 'Outlook', group: 'EmailAppsCluster'},
-            {id: 'GMail', _label: 'GMail', group: 'EmailAppsCluster'},
-            {id: 'RootEmailApp', _label:'RootEmailApp', hidden: true, group: 'EmailAppsCluster'}
-
-          ];
-          var edges = [
-
-            // {from: 'Chrome Browser', to: 'RootBrowser', hidden: true, length: 150},
-            // {from: 'Mozilla Browser', to: 'RootBrowser', hidden: true, length: 150},
-            //
-            // {from: 'AppAccessLog', to: 'RootLog', hidden: true, length: 100},
-            // {from: 'RemoteAccessLog', to: 'RootLog', hidden: true, length: 100},
-            // {from: 'URLAccessLog', to: 'RootLog', hidden: true, length: 100},
-            //
-            // {from: 'John', to: 'RootUser', hidden: true, length: 100},
-            // {from: 'Jane', to: 'RootUser', hidden: true, length: 100},
-            // {from: 'Jill', to: 'RootUser', hidden: true, length: 100},
-            //
-            // {from: 'Outlook', to: 'RootEmailApp', hidden: true, length: 100},
-            // {from: 'GMail', to: 'RootEmailApp', hidden: true, length: 100},
-            //
-            // {from: 'BadApp', to: 'RootBadApp', hidden: true, length: 100},
-
-            //
-
-            {from: 'Chrome Browser', to: 'AppAccessLog', label: 'logsTo'},
-            {from: 'Chrome Browser', to: 'URLAccessLog', label: 'logsTo'},
-
-            {from: 'Jane', to: 'Chrome Browser', label: 'access'},
-            {from: 'John', to: 'Chrome Browser', label: 'access'},
-
-            {from: 'John', to: 'BadApp', label: 'downloads'},
-            {from: 'John', to: 'BadApp', label: 'installs'},
-
-            {from: 'BadApp', to: 'Outlook', label: 'access'},
-            {from: 'Jill', to: 'Outlook', label: 'access'},
-
-          ];
+          var showOptions = {
+            'Labels': true
+          };
+          var nodes = $rootScope.currentView.nodes;
+          var edges = $rootScope.currentView.edges;
           _.each(edges, function (edge){
             edge.color = edge.color || {};
             edge.color.opacity = 0.3 ;
@@ -134,34 +81,33 @@ angular
             },
 
             groups: {
-              'logsCluster': {
+              'Logs': {
                 color: {background: '#599465', border: '#599465'},
                 font: {color: '#fff'}
               },
-              'browsersCluster': {
+              'Organizations': {
                 color: {background: '#b000cf', border: '#b000cf'}
               },
-              'userCluster': {
+              'People': {
                 color: {background: '#3b6a94', border: '#3b6a94'},
                 font: {color: '#fff'}
               },
-              'BadAppsCluster': {
+              'Countries': {
                 color: {background: '#7fc9c9', border: '#7fc9c9'},
                 font: {color: '#fff'}
               },
-              'EmailAppsCluster': {
+              'Applications': {
                 color: {background: '#d44d48', border: '#d44d48'},
                 font: {color: '#fff'}
               }
             }
-
           };
 
           network = new vis.Network(container, data, options);
 
           network.on('afterDrawing', function (ctx) {
             nodes.forEach(function (d) {
-              if (d.hidden || !$rootScope.showOptions[$rootScope.currentView]['Labels']) {
+              if (d.hidden || !showOptions['Labels']) {
                 return;
               }
               if (options.groups[d.group].hidden){
@@ -175,16 +121,13 @@ angular
             });
           });
 
-          $rootScope.$on('labelsToggled', function () {
-            network.redraw();
-          });
+
           $rootScope.$on('showOptionsToggled', function () {
-            var showOptions = $rootScope.showOptions[$rootScope.currentView];
-            options.groups['EmailAppsCluster'].hidden = !showOptions['Applications'];
-            options.groups['logsCluster'].hidden = !showOptions['Logs'];
-            options.groups['userCluster'].hidden = !showOptions['People'];
-            options.groups['BadAppsCluster'].hidden = !showOptions['Countries'];
-            options.groups['browsersCluster'].hidden = !showOptions['Organizations'];
+            var view = $rootScope.currentView;
+            showOptions['Labels'] = view.getOption('Labels');
+            for (var key in options.groups) {
+              options.groups[key].hidden = !view.getOption(key);
+            }
             _.each(edges,function (edge) {
               var fromAndTo = _.filter(nodes, function(n){
                 return n.id === edge.from || n.id === edge.to
@@ -200,6 +143,7 @@ angular
             });
             network.setOptions(options);
             network.setData(data);
+            network.redraw();
           });
         }
       }
