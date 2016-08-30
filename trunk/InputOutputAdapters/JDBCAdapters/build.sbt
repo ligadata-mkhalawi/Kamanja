@@ -4,7 +4,7 @@ name := "JDBCAdapters"
 // orgnization name (e.g., the package name of the project)
 organization := "com.ligadata"
 
-version := "1.0-SNAPSHOT"
+version := "1.5.3"
 
 // project description
 description := "JDBC Adapters for creating data pipelines"

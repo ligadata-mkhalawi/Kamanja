@@ -23,8 +23,8 @@ import org.apache.commons.dbcp2.BasicDataSource
 /**
   * Created by Yousef on 8/28/2016.
   */
-object HbaseProducer extends OutputAdapterFactory {
-  def CreateOutputAdapter(inputConfig: AdapterConfiguration, nodeContext: NodeContext): OutputAdapter = new HbaseProducer(inputConfig, nodeContext)
+object HiveProducer extends OutputAdapterFactory {
+  def CreateOutputAdapter(inputConfig: AdapterConfiguration, nodeContext: NodeContext): OutputAdapter = new HiveProducer(inputConfig, nodeContext)
   val HB_PERIOD = 5000
 
   // Statistics Keys
@@ -35,7 +35,7 @@ object HbaseProducer extends OutputAdapterFactory {
   val LAST_RECOVERY_TIME = "Last_Recovery"
 }
 
-class HbaseProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeContext) extends OutputAdapter {
+class HiveProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeContext) extends OutputAdapter {
 
   private[this] val LOG = LogManager.getLogger(getClass);
 
@@ -163,7 +163,7 @@ class HbaseProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
 
   override def getComponentStatusAndMetrics: MonitorComponentInfo = {
     implicit val formats = org.json4s.DefaultFormats
-    return new MonitorComponentInfo( AdapterConfiguration.TYPE_OUTPUT, adapterConfig.Name, HbaseProducer.ADAPTER_DESCRIPTION, startTime, lastSeen,  Serialization.write(metrics).toString)
+    return new MonitorComponentInfo( AdapterConfiguration.TYPE_OUTPUT, adapterConfig.Name, HiveProducer.ADAPTER_DESCRIPTION, startTime, lastSeen,  Serialization.write(metrics).toString)
   }
   /**
     * this is a very simple string to be externalized on a Status timer for the adapter.
@@ -218,8 +218,8 @@ class HbaseProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
 
   private def updateMetricValue(key: String, value: Any): Unit = {
     counterLock.synchronized {
-      if (key.equalsIgnoreCase(HbaseProducer.LAST_FAILURE_TIME) ||
-        key.equalsIgnoreCase(HbaseProducer.LAST_RECOVERY_TIME)) {
+      if (key.equalsIgnoreCase(HiveProducer.LAST_FAILURE_TIME) ||
+        key.equalsIgnoreCase(HiveProducer.LAST_RECOVERY_TIME)) {
         metrics(key) = value.toString
       } else {
         // This is an aggregated Long value
@@ -239,7 +239,7 @@ class HbaseProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
             if (!isInError) {
               lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
             }
-            Thread.sleep(HbaseProducer.HB_PERIOD)
+            Thread.sleep(HiveProducer.HB_PERIOD)
           }
           isHeartBeating = false
         } catch {

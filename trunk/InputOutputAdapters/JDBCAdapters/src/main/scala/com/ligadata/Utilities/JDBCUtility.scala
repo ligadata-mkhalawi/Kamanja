@@ -13,8 +13,8 @@ class JDBCUtility extends LogTrait {
 
   private[this] val lock = new Object
   var connection: Connection = null
-  val statement: Statement = connection.createStatement()
-  var rs: ResultSet = null;
+ // var statement: Statement = null
+  var rs: ResultSet = null
   var schemaName: String = ""
   var _getOps:scala.collection.mutable.Map[String,Long] = new scala.collection.mutable.HashMap()
   var _getObjs:scala.collection.mutable.Map[String,Long] = new scala.collection.mutable.HashMap()
@@ -28,7 +28,6 @@ class JDBCUtility extends LogTrait {
       connection = DriverManager.getConnection(AdapterConfig.dbURL+"/"+AdapterConfig.dbName, AdapterConfig.dbUser, AdapterConfig.dbPwd)
     else
       connection = DriverManager.getConnection(AdapterConfig.dbURL, AdapterConfig.dbUser, AdapterConfig.dbPwd)
-
   }
 
   def createSchema(schemaName: String): Unit = {
@@ -36,10 +35,12 @@ class JDBCUtility extends LogTrait {
     println("Check if database/schema exists and create it if not..")
     val query: String = "create schame if not exists %s".format(schemaName)
     try {
+      val statement = connection.createStatement()
       statement.execute(query)
       rs = statement.getResultSet
       logger.info("Done from check database/schema exists..")
       println("Done from check database/schema exists..")
+      statement.close()
     } catch {
       case e: Exception => logger.error("Error while creating schema query results..".concat(e.getMessage))
     }
@@ -55,6 +56,7 @@ class JDBCUtility extends LogTrait {
       logger.info("Done from check table exists..")
       println("Done from check table exists..")
     } else{
+      val statement = connection.createStatement()
       val fullTableName = toFullTableName(tableName)
       val query = "create table " + fullTableName + "(timePartition bigint,bucketKey varchar(1024), transactionId bigint, rowId Int, schemaId Int, serializerType varchar(128), serializedInfo BINARY)"
       statement.executeUpdate(query)
@@ -64,7 +66,9 @@ class JDBCUtility extends LogTrait {
   }
 
   def executeQuery(query: String): Unit = {
+    val statement = connection.createStatement()
     statement.execute(query)
+    statement.close()
   }
 
   private def IsSingleRowPut(data_list: Array[(String, Array[(Key, Value)])]): Boolean = {
@@ -336,7 +340,7 @@ class JDBCUtility extends LogTrait {
 
   def shutDown(): Unit ={
     connection.close()
-    statement.close()
+    //statement.close()
     rs.close()
   }
 }

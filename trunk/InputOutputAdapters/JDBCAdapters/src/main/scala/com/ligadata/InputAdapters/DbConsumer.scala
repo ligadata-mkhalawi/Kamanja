@@ -72,7 +72,7 @@ class DbConsumer (val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCo
   uniqueKey.Columns = dcConf.columns
   uniqueKey.Query = dcConf.query
 
-  val cntrAdapter: CountersAdapter =_
+  val cntrAdapter: CountersAdapter = null
   //DataSource for the connection Pool
   private var dataSource: BasicDataSource = _
   var executor: ExecutorService = _
@@ -263,7 +263,7 @@ class DbConsumer (val inputConfig: AdapterConfiguration, val execCtxtObj: ExecCo
 //                    map + (resultSetMetaData.getColumnName(cols) ->  resultset.getObject(cols))
 //                  }
               }
-              
+//
 //              var sb = new StringBuilder;
 //
 //              if(dcConf.formatOrInputAdapterName.equalsIgnoreCase("CSV")){
