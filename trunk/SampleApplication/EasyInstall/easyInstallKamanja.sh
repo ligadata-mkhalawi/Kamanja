@@ -164,7 +164,7 @@ echo "clean, package and assemble $srcPath ..."
 
 cd $srcPath/
 
-sbt clean '++ 2.10.4 package' '++ 2.10.4 ExtDependencyLibs/assembly' '++ 2.10.4 ExtDependencyLibs2/assembly' '++ 2.10.4 KamanjaInternalDeps/assembly' 
+sbt clean '++ 2.10.4 package' '++ 2.10.4 ExtDependencyLibs/assembly' '++ 2.10.4 ExtDependencyLibs2/assembly' '++ 2.10.4 KamanjaInternalDeps/assembly'
 sbt '++ 2.10.4 ClusterInstallerDriver/assembly' '++ 2.10.4 GetComponent/assembly' '++ 2.10.4 InstallDriver/assembly'
 #   '++ 2.10.4 NodeInfoExtract/assembly' '++ 2.10.4 MigrateManager/assembly'
 
@@ -238,6 +238,9 @@ cp $ivyPath/cache/com.yammer.metrics/metrics-core/jars/metrics-core-2.2.0.jar  $
 ## -------------------- generated cp commands --------------------
 #
 cp $srcPath/FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory/target/scala-2.10/jarfactoryofmodelinstancefactory*.jar $systemlib
+#cp $srcPath/FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory/target/scala-2.10/jarfactoryofmodelinstancefactory*.jar $systemlib
+cp $srcPath/FactoriesOfModelInstanceFactory/JpmmlFactoryOfModelInstanceFactory/target/scala-2.10/jpmmlfactoryofmodelinstancefactory*jar $systemlib
+cp $srcPath/FactoriesOfModelInstanceFactory/PythonFactoryOfModelInstanceFactory/target/scala-2.10/pythonfactoryofmodelinstancefactory*jar $systemlib
 
 # -------------------- end of generated cp commands --------------------
 
@@ -334,10 +337,35 @@ fi
 cp $orientdb_jdbc_all $systemlib
 
 # *******************************
+# copy the python directory into $installPath/Kamanja-$ver210/
+# *******************************
+cp -rf $srcPath/FactoriesOfModelInstanceFactory/PythonServer/src/main/python $installPath/Kamanja-$ver210/
+
+# *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep
 # *******************************
 
 mkdir -p $installPath/Kamanja-$ver210/input/SampleApplications/template/script
+
+# python arithmetic "models"
+cd $srcPath/SampleApplication/python/data
+cp -rf * $installPath/Kamanja-$ver210/input/SampleApplications/data
+
+cd $srcPath/SampleApplication/python/message
+cp -rf * $installPath/Kamanja-$ver210/input/SampleApplications/metadata/message/
+
+cd $srcPath/SampleApplication/python/model
+cp -rf * $installPath/Kamanja-$ver210/input/SampleApplications/metadata/model/
+
+cd $srcPath/SampleApplication/python/template
+cp -rf conf* $installPath/Kamanja-$ver210/input/SampleApplications/template/
+
+cd $srcPath/SampleApplication/python/template/script/scala-2.10
+cp -rf * $installPath/Kamanja-$ver210/input/SampleApplications/template/script/
+
+cd $srcPath/SampleApplication/python/config
+cp -rf * $installPath/Kamanja-$ver210/config
+# python arithmetic "models"
 
 #HelloWorld
 cd $srcPath/SampleApplication/HelloWorld/data
@@ -485,14 +513,14 @@ if [ "$migration2_10libsCopiesFor2_11" == "false" ]; then
 fi
 
 #Now do full build of 2.11
-sbt clean '++ 2.11.7 package' '++ 2.11.7 ExtDependencyLibs/assembly' '++ 2.11.7 ExtDependencyLibs2/assembly' '++ 2.11.7 KamanjaInternalDeps/assembly' 
-sbt '++ 2.11.7 ClusterInstallerDriver/assembly' '++ 2.11.7 GetComponent/assembly' '++ 2.11.7 InstallDriver/assembly' 
+sbt clean '++ 2.11.7 package' '++ 2.11.7 ExtDependencyLibs/assembly' '++ 2.11.7 ExtDependencyLibs2/assembly' '++ 2.11.7 KamanjaInternalDeps/assembly'
+sbt '++ 2.11.7 ClusterInstallerDriver/assembly' '++ 2.11.7 GetComponent/assembly' '++ 2.11.7 InstallDriver/assembly'
 #'++ 2.11.7 NodeInfoExtract/assembly' '++ 2.11.7 MigrateManager/assembly'
 
 #sbt clean '++ 2.11.7 package' '++ 2.11.7 KamanjaManager/assembly' '++ 2.11.7 MetadataAPI/assembly' '++ 2.11.7 KVInit/assembly' '++ 2.11.7 SimpleKafkaProducer/assembly'
 #sbt '++ 2.11.7 NodeInfoExtract/assembly' '++ 2.11.7 MetadataAPIService/assembly' '++ 2.11.7 JdbcDataCollector/assembly'
 #sbt '++ 2.11.7 FileDataConsumer/assembly' '++ 2.11.7 CleanUtil/assembly' '++ 2.11.7 MigrateManager/assembly' '++ 2.11.7 ClusterInstallerDriver/assembly' '++ 2.11.7 InstallDriver/assembly' '++ 2.11.7 GetComponent/assembly' '++ 2.11.7 PmmlTestTool/assembly' '++ 2.11.7 ExtDependencyLibs/assembly' '++ 2.11.7 ExtDependencyLibs2/assembly' '++ 2.11.7 KamanjaInternalDeps/assembly'
-# sbt '++ 2.11.7 MethodExtractor/assembly' '++ 2.11.7 SaveContainerDataComponent/assembly' '++ 2.11.7 ExtractData/assembly' 
+# sbt '++ 2.11.7 MethodExtractor/assembly' '++ 2.11.7 SaveContainerDataComponent/assembly' '++ 2.11.7 ExtractData/assembly'
 
 # recreate eclipse projects
 #echo "refresh the eclipse projects ..."
@@ -552,6 +580,9 @@ echo "copy all Kamanja jars and the jars upon which they depend to the $systemli
 # -------------------- generated cp commands --------------------
 
 cp $srcPath/FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory/target/scala-2.11/jarfactoryofmodelinstancefactory*.jar $systemlib
+#cp $srcPath/FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory/target/scala-2.11/jarfactoryofmodelinstancefactory*.jar $systemlib
+cp $srcPath/FactoriesOfModelInstanceFactory/JpmmlFactoryOfModelInstanceFactory/target/scala-2.11/jpmmlfactoryofmodelinstancefactory*jar $systemlib
+cp $srcPath/FactoriesOfModelInstanceFactory/PythonFactoryOfModelInstanceFactory/target/scala-2.11/pythonfactoryofmodelinstancefactory*jar $systemlib
 # -------------------- end of generated cp commands --------------------
 
 
@@ -643,10 +674,35 @@ fi
 cp $orientdb_jdbc_all $systemlib
 
 # *******************************
+# copy the python directory into $installPath/Kamanja-$ver211/
+# *******************************
+cp -rf $srcPath/FactoriesOfModelInstanceFactory/PythonServer/src/main/python $installPath/Kamanja-$ver211/
+
+# *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep
 # *******************************
 
 mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications/template/script
+
+# python arithmetic "models"
+cd $srcPath/SampleApplication/python/data
+cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/data
+
+cd $srcPath/SampleApplication/python/message
+cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/message/
+
+cd $srcPath/SampleApplication/python/model
+cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/model/
+
+cd $srcPath/SampleApplication/python/template
+cp -rf conf* $installPath/Kamanja-$ver211/input/SampleApplications/template/
+
+cd $srcPath/SampleApplication/python/template/script/scala-2.11
+cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/template/script/
+
+cd $srcPath/SampleApplication/python/config
+cp -rf * $installPath/Kamanja-$ver211/config
+# python arithmetic "models"
 
 #HelloWorld
 cd $srcPath/SampleApplication/HelloWorld/data
@@ -729,7 +785,7 @@ cd $srcPath/SampleApplication/InterfacesSamples/src/main/resources/sample-app/me
 cp * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/message
 
 cd $srcPath/SampleApplication/InterfacesSamples/src/main/resources/sample-app/metadata/model
-cp *.* $installPath/Kamanja-$ver211/input/SampleApplications/metadata/model
+cp * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/model
 
 cd $srcPath/SampleApplication/InterfacesSamples/src/main/resources/sample-app/metadata/type
 cp * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/type

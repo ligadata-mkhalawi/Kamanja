@@ -5,7 +5,11 @@
       "SystemCatalog": {
         "StoreType": "{StoreType}",
         "SchemaName": "{SchemaName}",
-        "Location": "{SchemaLocation}"
+        "Location": "{SchemaLocation}",
+        "connectionMode": "embedded",
+        "portnumber": "9100",
+        "user": "test",
+        "password": "test"
       },
       "Tenants": [
         {
@@ -14,7 +18,11 @@
           "PrimaryDataStore": {
             "StoreType": "{StoreType}",
             "SchemaName": "{SchemaName}",
-            "Location": "{SchemaLocation}"
+            "Location": "{SchemaLocation}",
+            "connectionMode": "embedded",
+            "portnumber": "9100",
+            "user": "test",
+            "password": "test"
           },
           "CacheConfig": {
             "MaxSizeInMB": 256
@@ -67,7 +75,11 @@
           "TenantId": "tenant1",
           "StoreType": "{StoreType}",
           "SchemaName": "{SchemaName}",
-          "Location": "{SchemaLocation}"
+          "Location": "{SchemaLocation}",
+          "connectionMode": "embedded",
+          "portnumber": "9100",
+          "user": "test",
+          "password": "test"
         },
         {
           "Name": "HelloWorldInput",

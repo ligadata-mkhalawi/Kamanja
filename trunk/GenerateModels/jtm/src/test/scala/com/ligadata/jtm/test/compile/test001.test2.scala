@@ -21,7 +21,7 @@ import com.ligadata.runtime.Log
 import com.ligadata.Utils._
 import com.ligadata.runtime.Conversion
 class ModelFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
-  override def createModelInstance(): ModelInstance = return new Model(this)
+  override def createModelInstance(txnContext: TransactionContext): ModelInstance = return new Model(this)
   override def getModelName: String = "com.ligadata.jtm.test.filter2.Model"
   override def getVersion: String = "0.0.1"
   override def createResultObject(): ModelResultBase = new MappedModelResults()

@@ -277,6 +277,7 @@ trait EnvContext /* extends Monitorable */  {
   def getAdaptersAndEnvCtxtLoader: KamanjaLoaderInfo
 
   def setObjectResolver(objResolver: ObjectResolver): Unit
+  def getObjectResolver: ObjectResolver
 
   // Setting JarPaths
   def setJarPaths(jarPaths: collection.immutable.Set[String]): Unit
@@ -591,8 +592,10 @@ abstract class ModelInstance(val factory: ModelInstanceFactory) {
   def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
     // Default implementation to invoke old model
     if (execMsgsSet.size == 1 && triggerdSetIndex == 0 && factory.getModelDef().inputMsgSets.size == 1 && factory.getModelDef().inputMsgSets(0).size == 1 &&
-      factory.getModelDef().outputMsgs.size == 1 && execMsgsSet(0) != null && execMsgsSet(0).isInstanceOf[ContainerInterface]) {
-      // This could be calling old model
+        factory.getModelDef().outputMsgs.size >= 1 && execMsgsSet(0) != null && execMsgsSet(0).isInstanceOf[ContainerInterface]) {
+      // original line:  factory.getModelDef().outputMsgs.size == 1 && execMsgsSet(0) != null && execMsgsSet(0).isInstanceOf[ContainerInterface]) {
+
+        // This could be calling old model
       // Holding current transaction information original message and set the new information. Because the model will pull the message from transaction context
       val (origin, orgInputMsg) = txnCtxt.getInitialMessage
       var returnValues = Array[ContainerOrConcept]()
@@ -653,7 +656,7 @@ abstract class ModelInstanceFactory(val modelDef: ModelDef, val nodeContext: Nod
   }
 
   // Creating new model instance related to this ModelInstanceFactory.
-  def createModelInstance(): ModelInstance
+  def createModelInstance(txnCtxt: TransactionContext): ModelInstance
 
   // Creating ModelResultBase associated this model/modelfactory.
   def createResultObject(): ModelResultBase = {
@@ -1013,7 +1016,7 @@ class ModelBaseObjMdlInstanceFactory(modelDef: ModelDef, nodeContext: NodeContex
 
   override def isValidMessage(msg: MessageContainerBase): Boolean = mdlBaseObj.IsValidMessage(msg)
 
-  override def createModelInstance() = new ModelBaseMdlInstance(this)
+  override def createModelInstance(txnCtxt: TransactionContext) = new ModelBaseMdlInstance(this)
 
   override def createResultObject() = mdlBaseObj.CreateResultObject()
 
