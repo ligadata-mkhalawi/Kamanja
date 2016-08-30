@@ -4,13 +4,17 @@
     Application: Email Apps <br/>
     Volume: 980
   </div>
-  <div class="row">
-    <div class="col-md-8">
-      <i class="fa fa-eye-slash" aria-hidden="true"></i> <span>Hide from view</span>
-    </div>
-    <div class="col-md-4">
-      <i class="fa fa-connectdevelop" aria-hidden="true"></i> <span>Group</span>
-    </div>
+  <div class="toolsCtrl contentRow">
+    <table width="100%">
+      <tr>
+        <td>
+          <i class="fa fa-eye-slash" aria-hidden="true"></i> <span>Hide from view</span>
+        </td>
+        <td>
+          <i class="fa fa-connectdevelop" aria-hidden="true"></i> <span>Group</span>
+        </td>
+      </tr>
+    </table>
   </div>
   <div class="accordion-panel">
     <div data-toggle="collapse" ng-click="nodeDetails.openDesc = !nodeDetails.openDesc" data-target="#nodeDesc"
@@ -26,7 +30,7 @@
   <div class="accordion-panel">
     <div data-toggle="collapse" ng-click="nodeDetails.openAlerts = !nodeDetails.openAlerts" data-target="#nodeAlerts"
          class="accordion-heading">
-      <i class="fa" ng-class="{'fa-chevron-down': nodeDetails.openAlerts, 'fa-chevron-right': !nodeDetails.openAlerts}"></i> <Alerts></Alerts>
+      <i class="fa" ng-class="{'fa-chevron-down': nodeDetails.openAlerts, 'fa-chevron-right': !nodeDetails.openAlerts}"></i> Alerts <i class="pull-right fa fa-exclamation-triangle alertIcon"></i>
     </div>
     <div id="nodeAlerts" class="accordion-content collapse">
       <p>

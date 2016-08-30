@@ -2,11 +2,18 @@
   width: 259px;
   height: 100%;
   color: #808080;
-  background-color: #1a1a1a;
+  background-color: black;
   left: -1000px;
   position: absolute;
   z-index: 99999;
   top: 70px;
+  .contentRow {
+    background-color: #1a1a1a;
+  }
+  .toolsCtrl {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
   .headerDetails {
     padding: 10px 5px 10px 15px;
     height: 80px;

@@ -164,11 +164,18 @@ div.vis-network {
 }
 
 .accordion-panel {
+  padding-left: 10px;
 
   .accordion-heading {
     background-color: black;
+    padding-right: 10px;
   }
   .accordion-content {
     padding-left: 10px;
+    background-color: #1a1a1a;
   }
+}
+
+.alertIcon {
+  color: #f9ca0a;
 }
