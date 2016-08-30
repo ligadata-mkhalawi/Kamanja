@@ -510,8 +510,9 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
         case 1 => id = hits.getAt(0).id()
         case x => println(" found " + hits.totalHits() + " hits, NOT VALID")
       }
-      //      println(">>>>>>>>>>>>>>> tableName: " + tableName)
-      //      println(">>>>>>>>>>>>>>> KEy: " + id)
+      println(">>>>>>>>>>>>>>> tableName: " + tableName)
+      println(">>>>>>>>>>>>>>> KEY: " + id)
+      println(">>>>>>>>>>>>>>> numberOfHits: " + hits.totalHits)
 
       // index the data
       val builder: XContentBuilder =
@@ -527,13 +528,13 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
       //Base64.encodeBase64String( output.toByteArray()  )
 
-      //      logger.info(">>>>>>>>>> timePartition " + key.timePartition)
-      //      logger.info(">>>>>>>>>> bucketKey " + key.bucketKey.mkString(","))
-      //      logger.info(">>>>>>>>>> transactionId " + key.transactionId)
-      //      logger.info(">>>>>>>>>> rowId " + key.rowId)
-      //      logger.info(">>>>>>>>>> schemaId " + value.schemaId)
-      //      logger.info(">>>>>>>>>> serializerType " + value.serializerType)
-      //      logger.info(">>>>>>>>>> serializedInfo " + new String(newBuffer))
+      println(">>>>>>>>>> timePartition " + key.timePartition)
+      println(">>>>>>>>>> bucketKey " + key.bucketKey.mkString(","))
+      println(">>>>>>>>>> transactionId " + key.transactionId)
+      println(">>>>>>>>>> rowId " + key.rowId)
+      //      println(">>>>>>>>>> schemaId " + value.schemaId)
+      //      println(">>>>>>>>>> serializerType " + value.serializerType)
+      //      println(">>>>>>>>>> serializedInfo " + new String(newBuffer))
 
       if (hits.totalHits() == 1) {
         val indexResponse = client.prepareIndex(tableName, "type1", id).setSource(builder).get()
@@ -617,7 +618,8 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
               case x => println(" found " + hits.totalHits() + " hits, NOT VALID")
             }
             println(">>>>>>>>>>>>>>> tableName: " + tableName)
-            println(">>>>>>>>>>>>>>> KEy: " + id)
+            println(">>>>>>>>>>>>>>> KEY: " + id)
+            println(">>>>>>>>>>>>>>> numberOfHits: " + hits.totalHits)
 
             // index the data
             val newBuffer: Array[Byte] = new Array[Byte](value.serializedInfo.length)
@@ -635,13 +637,13 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
                 .field("serializedInfo", Base64.encodeBase64String(newBuffer))
                 .endObject()
 
-            //            logger.info(">>>>>>>>>> timePartition " + key.timePartition)
-            //            logger.info(">>>>>>>>>> bucketKey " + key.bucketKey.mkString(","))
-            //            logger.info(">>>>>>>>>> transactionId " + key.transactionId)
-            //            logger.info(">>>>>>>>>> rowId " + key.rowId)
-            //            logger.info(">>>>>>>>>> schemaId " + value.schemaId)
-            //            logger.info(">>>>>>>>>> serializerType " + value.serializerType)
-            //            logger.info(">>>>>>>>>> serializedInfo " + new String(newBuffer))
+            println(">>>>>>>>>> timePartition " + key.timePartition)
+            println(">>>>>>>>>> bucketKey " + key.bucketKey.mkString(","))
+            println(">>>>>>>>>> transactionId " + key.transactionId)
+            println(">>>>>>>>>> rowId " + key.rowId)
+            //            println(">>>>>>>>>> schemaId " + value.schemaId)
+            //            println(">>>>>>>>>> serializerType " + value.serializerType)
+            //            println(">>>>>>>>>> serializedInfo " + new String(newBuffer))
 
             if (hits.totalHits() == 1) {
               bulkRequest.add(client.prepareIndex(tableName, "type1", id).setSource(builder))
@@ -684,6 +686,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     val tableName = toFullTableName(containerName)
     var deleteCount = 0
     try {
+      println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DELETE Method 1 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
       CheckTableExists(containerName)
       client = getConnection
       var bulkRequest = client.prepareBulk()
@@ -707,7 +710,8 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           case x => System.err.println(" found " + hits.totalHits() + " hits, NOT VALID")
         }
         println(">>>>>>>>>>>>>>> tableName: " + tableName)
-        println(">>>>>>>>>>>>>>> KEy: " + id)
+        println(">>>>>>>>>>>>>>> KEY: " + id)
+        println(">>>>>>>>>>>>>>> NumberOfHits: " + hits.totalHits)
         // create and add delete statement to bulk
         bulkRequest.add(client.prepareDelete(tableName, "type1", id))
       })
@@ -737,6 +741,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     var deleteCount = 0
     var tableName = toFullTableName(containerName)
     try {
+      println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DELETE Method 2 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
       logger.info("begin time => " + dateFormat.format(time.beginTime))
       logger.info("end time => " + dateFormat.format(time.endTime))
       CheckTableExists(containerName)
@@ -768,7 +773,8 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           case x => System.err.println(" found " + hits.totalHits() + " hits, NOT VALID")
         }
         println(">>>>>>>>>>>>>>> tableName: " + tableName)
-        println(">>>>>>>>>>>>>>> KEy: " + id)
+        println(">>>>>>>>>>>>>>> KEY: " + id)
+        println(">>>>>>>>>>>>>>> numberOfRecords: " + hits.totalHits)
         // create and add delete statement to bulk
         bulkRequest.add(client.prepareDelete(tableName, "type1", id))
       })
