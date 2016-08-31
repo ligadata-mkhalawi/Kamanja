@@ -505,14 +505,11 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       var id = ""
 
       hits.totalHits() match {
-        //        case 0 => println("NO RECORD FOUND, creating a new id for a new record")
         case 0 => id = tableName + System.currentTimeMillis() + System.nanoTime()
         case 1 => id = hits.getAt(0).id()
-        case x => println(" found " + hits.totalHits() + " hits, NOT VALID")
+        case x => System.err.println(" found " + hits.totalHits() + " hits, NOT VALID")
       }
-      println(">>>>>>>>>>>>>>> tableName: " + tableName)
-      println(">>>>>>>>>>>>>>> KEY: " + id)
-      println(">>>>>>>>>>>>>>> numberOfHits: " + hits.totalHits)
+
 
       // index the data
       val builder: XContentBuilder =
@@ -526,28 +523,12 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
         .field("serializedInfo", Base64.encodeBase64String(newBuffer))
         .endObject()
 
-      //Base64.encodeBase64String( output.toByteArray()  )
-
-      println(">>>>>>>>>> timePartition " + key.timePartition)
-      println(">>>>>>>>>> bucketKey " + key.bucketKey.mkString(","))
-      println(">>>>>>>>>> transactionId " + key.transactionId)
-      println(">>>>>>>>>> rowId " + key.rowId)
-      //      println(">>>>>>>>>> schemaId " + value.schemaId)
-      //      println(">>>>>>>>>> serializerType " + value.serializerType)
-      //      println(">>>>>>>>>> serializedInfo " + new String(newBuffer))
-
-      //      if (hits.totalHits() == 1) {
-      //        val indexResponse = client.prepareIndex(tableName, "type1", id).setSource(builder).get()
-      //      } else {
-      //        val indexResponse = client.prepareIndex(tableName, "type1").setSource(builder).get()
-      //      }
-
       val indexResponse = client.prepareIndex(tableName, "type1", id)
         .setSource(builder).get()
 
       client.admin().indices().prepareRefresh(tableName).get()
 
-      System.out.println("data indexed into " + tableName)
+      logger.info("data indexed into " + tableName)
 
       updateOpStats("put", tableName, 1)
       updateObjStats("put", tableName, 1)
@@ -614,14 +595,10 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             var id = ""
 
             hits.totalHits() match {
-              //              case 0 => println("NO RECORD FOUND, creating a new id for a new record")
               case 0 => id = tableName + System.currentTimeMillis() + System.nanoTime()
               case 1 => id = hits.getAt(0).id()
-              case x => println(" found " + hits.totalHits() + " hits, NOT VALID")
+              case x => System.err.println(" found " + hits.totalHits() + " hits, NOT VALID")
             }
-            println(">>>>>>>>>>>>>>> tableName: " + tableName)
-            println(">>>>>>>>>>>>>>> KEY: " + id)
-            println(">>>>>>>>>>>>>>> numberOfHits: " + hits.totalHits)
 
             // index the data
             val newBuffer: Array[Byte] = new Array[Byte](value.serializedInfo.length)
@@ -639,19 +616,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
                 .field("serializedInfo", Base64.encodeBase64String(newBuffer))
                 .endObject()
 
-            println(">>>>>>>>>> timePartition " + key.timePartition)
-            println(">>>>>>>>>> bucketKey " + key.bucketKey.mkString(","))
-            println(">>>>>>>>>> transactionId " + key.transactionId)
-            println(">>>>>>>>>> rowId " + key.rowId)
-            //            println(">>>>>>>>>> schemaId " + value.schemaId)
-            //            println(">>>>>>>>>> serializerType " + value.serializerType)
-            //            println(">>>>>>>>>> serializedInfo " + new String(newBuffer))
-
-            //if (hits.totalHits() == 1) {
             bulkRequest.add(client.prepareIndex(tableName, "type1", id).setSource(builder))
-            // } else {
-            //  bulkRequest.add(client.prepareIndex(tableName, "type1").setSource(builder))
-            // }
 
             byteCount = byteCount + getKeySize(key) + getValueSize(value)
           })
@@ -689,7 +654,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     val tableName = toFullTableName(containerName)
     var deleteCount = 0
     try {
-      println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DELETE Method 1 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
       CheckTableExists(containerName)
       client = getConnection
       var bulkRequest = client.prepareBulk()
@@ -712,9 +676,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           case 1 => id = hits.getAt(0).id()
           case x => System.err.println(" found " + hits.totalHits() + " hits, NOT VALID")
         }
-        println(">>>>>>>>>>>>>>> tableName: " + tableName)
-        println(">>>>>>>>>>>>>>> KEY: " + id)
-        println(">>>>>>>>>>>>>>> NumberOfHits: " + hits.totalHits)
         // create and add delete statement to bulk
         bulkRequest.add(client.prepareDelete(tableName, "type1", id))
       })
@@ -744,7 +705,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     var deleteCount = 0
     var tableName = toFullTableName(containerName)
     try {
-      println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> DELETE Method 2 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
       logger.info("begin time => " + dateFormat.format(time.beginTime))
       logger.info("end time => " + dateFormat.format(time.endTime))
       CheckTableExists(containerName)
@@ -761,10 +721,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             .must(QueryBuilders.rangeQuery("timePartition").gte(time.beginTime))
             .must(QueryBuilders.rangeQuery("timePartition").lte(time.endTime))
           )
-          //          .setQuery(
-          //            QueryBuilders.andQuery(
-          //              QueryBuilders.rangeQuery("timePartition").gte(time.beginTime),
-          //              QueryBuilders.rangeQuery("timePartition").lte(time.endTime)))
+
           .execute().actionGet()
 
         var hits: SearchHits = response.getHits()
@@ -775,9 +732,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           case 1 => id = hits.getAt(0).id()
           case x => System.err.println(" found " + hits.totalHits() + " hits, NOT VALID")
         }
-        println(">>>>>>>>>>>>>>> tableName: " + tableName)
-        println(">>>>>>>>>>>>>>> KEY: " + id)
-        println(">>>>>>>>>>>>>>> numberOfRecords: " + hits.totalHits)
         // create and add delete statement to bulk
         bulkRequest.add(client.prepareDelete(tableName, "type1", id))
       })
@@ -837,8 +791,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
         case x => System.err.println(" found " + hits.totalHits() + " hits, NOT VALID")
       }
 
-      println(">>>>>>>>>>>>>>> tableName: " + tableName)
-      println(">>>>>>>>>>>>>>> KEy: " + id)
       bulkRequest.add(client.prepareDelete(tableName, "type1", id))
 
       deleteCount = bulkRequest.numberOfActions()
@@ -958,7 +910,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   override def get(containerName: String, callbackFunction: (Key, Value) => Unit): Unit = {
     var tableName = toFullTableName(containerName)
     var client = getConnection
-    //    println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> TABLENAME:" + tableName)
     try {
       CheckTableExists(containerName)
       var recCount = 0
@@ -996,18 +947,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             recCount = recCount + 1
             byteCount = byteCount + getKeySize(key) + getValueSize(value)
             if (callbackFunction != null) {
-              //              System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
-              //              System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
-              //              System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
-              //              System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
-              //              System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
-              //              System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
-              //              System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
-              //              System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
-              //              System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
-              //              System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
-              //              System.out.println(ba)
-              //              System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
               (callbackFunction) (key, value)
             }
           })
@@ -1201,7 +1140,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     var client: TransportClient = null
     var tableName = toFullTableName(containerName)
     val timeToLive = "1m"
-    //    println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> TABLENAME:" + tableName)
     try {
       CheckTableExists(containerName)
       client = getConnection
@@ -1240,13 +1178,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
               recCount = recCount + 1
               byteCount = byteCount + getKeySize(key) + getValueSize(value)
               if (callbackFunction != null) {
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
-                //                System.out.println(ba)
                 (callbackFunction) (key, value)
               }
             })
@@ -1279,7 +1210,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   override def get(containerName: String, time_ranges: Array[TimeRange], callbackFunction: (Key, Value) => Unit): Unit = {
     var client: TransportClient = null
     var tableName = toFullTableName(containerName)
-    //    println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> TABLENAME:" + tableName)
     try {
       var recCount = 0
       var byteCount = 0
@@ -1293,10 +1223,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           .setQuery(QueryBuilders.boolQuery()
             .must(QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime))
             .must(QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
-          //          .setQuery(
-          //          QueryBuilders.andQuery(
-          //            QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime),
-          //            QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
           .addSort(SortParseElement.DOC_FIELD_NAME, SortOrder.ASC)
           .setScroll(timeToLive)
           .setSize(5)
@@ -1324,18 +1250,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
               recCount = recCount + 1
               byteCount = byteCount + getKeySize(key) + getValueSize(value)
               if (callbackFunction != null) {
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
-                //                System.out.println(ba)
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
                 (callbackFunction) (key, value)
               }
             })
@@ -1424,7 +1338,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   override def get(containerName: String, time_ranges: Array[TimeRange], bucketKeys: Array[Array[String]], callbackFunction: (Key, Value) => Unit): Unit = {
     var client: TransportClient = null
     var tableName = toFullTableName(containerName)
-    //    println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> TABLENAME:" + tableName)
     try {
       CheckTableExists(containerName)
       //con = DriverManager.getConnection(jdbcUrl);
@@ -1471,18 +1384,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
                 recCount = recCount + 1
                 byteCount = byteCount + getKeySize(key) + getValueSize(value)
                 if (callbackFunction != null) {
-                  //                  System.out.println(">>>>>>>>>>>>>>>>>>> GET FROM " + tableName)
-                  //                  System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
-                  //                  System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
-                  //                  System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
-                  //                  System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
-                  //                  System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
-                  //                  System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
-                  //                  System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
-                  //                  System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
-                  //                  System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfo = ")
-                  //                  System.out.println(ba)
-                  //                  System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
                   (callbackFunction) (key, value)
                 }
               })
@@ -1584,7 +1485,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   override def get(containerName: String, bucketKeys: Array[Array[String]], callbackFunction: (Key, Value) => Unit): Unit = {
     var client: TransportClient = null
     var tableName = toFullTableName(containerName)
-    //    println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> TABLENAME:" + tableName)
     try {
       CheckTableExists(containerName)
       client = getConnection
@@ -1627,18 +1527,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
               recCount = recCount + 1
               byteCount = byteCount + getKeySize(key)
               if (callbackFunction != null) {
-                System.out.println(">>>>>>>>>>>>>>>>>>>>>>> Container GET FROM " + tableName)
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> TOTAL COUNT " + response.getHits.getTotalHits)
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> key = " + key)
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> timePartition = " + timePartition)
-                System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey = " + keyStr)
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> transactionId = " + tId)
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> rowId = " + rId)
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> schemaId = " + schemaId)
-                //                System.out.println(">>>>>>>>>>>>>>>>>>> serializerType = " + st)
-                System.out.println(">>>>>>>>>>>>>>>>>>> serializedInfoSize = " + ba.length)
-                //                System.out.println(ba)
-                //                                System.out.println(">>>>>>>>>>>>>>>>>>> bucketKey(if) = " + bucketKey.toString)
                 (callbackFunction) (key, value)
               }
             })
@@ -1831,13 +1719,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
         .actionGet().getState()
         .getMetaData().concreteAllIndices()
 
-      //      System.out.println("table to create: " +tableName)
-      //      System.out.println("List of existing tables: ")
-      //
-      //      indicies.foreach(str =>{
-      //
-      //        System.out.println(str)
-      //      })
 
       if (indicies.contains(tableName) == true) {
         logger.debug("The Index " + tableName + " already exists ")
@@ -1854,42 +1735,9 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           }
         }
 
-        //        // MAPPING GOES HERE
-        //        var createIndexRequestBuilder = client.admin().indices().prepareCreate(tableName);
-        //
-        //        val mappingBuilder = XContentFactory.jsonBuilder().field("serializedInfo").startObject()
-        //          .field("store", "true").field("type", "binary").endObject()
-        //          .endObject()
-        //        System.out.println(mappingBuilder.string());
-        //        createIndexRequestBuilder.addMapping("type1", mappingBuilder);
-        //
-        //        createIndexRequestBuilder.execute().actionGet();
-
-
-        //        val response = client
-        //          .admin()
-        //          .indices()
-        //          .prepareCreate(tableName)
-        //          .setSource(XContentFactory.jsonBuilder().startObject()
-        //            .startObject("settings").endObject()
-        //            .endObject()).execute().actionGet()
-
-        //        var mapping = XContentFactory.jsonBuilder()
-        //          .startObject()
-        //          .startObject("general")
-        //          .startObject("properties")
-        //          .startObject("serializedInfo")
-        //          .field("type", "binary")
-        //          .field("store", "true")
-        //          .endObject()
-        //          .endObject()
-        //          .endObject()
-        //          .endObject()
-
         var putMappingResponse = client.admin().indices().prepareCreate(tableName)
           //          .preparePutMapping(tableName)
           //          .setType("type1")
-//          .setSource("{\"mappings\": {\"type1\": {\"properties\": {\"serializedInfo\": {\"type\": \"binary\",\"store\":\"true\"}}}}}")
           .setSource("{\"mappings\": {\"type1\": {\"properties\": {\"serializedInfo\": {\"type\": \"binary\",\"store\": \"true\"},\"bucketKey\": {\"type\": \"string\",\"index\": \"not_analyzed\"}}}}}")
           .execute().actionGet()
 
