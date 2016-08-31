@@ -35,12 +35,22 @@ object JarService {
   // 646 - 676 Chagne ends
   val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
+
 def uploadJar(input: String): String ={
   var response = ""
   var jarFileDir: String = ""
 
   if (input == "") {
-    jarFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR")
+    try{
+      jarFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR")
+    }catch {
+      case e: Exception => {
+        // logger.info("", e)
+        //response=e.getStackTrace.toString
+        response = (new ApiResult(ErrorCodeConstants.Failure, "activateModel", null, e.getStackTrace.toString)).toString
+      }
+    }
+
     if (jarFileDir == null) {
       //response = "JAR_TARGET_DIR property missing in the metadata API configuration"
       response= (new ApiResult(ErrorCodeConstants.Failure, "uploadJar",null,"JAR_TARGET_DIR property missing in the metadata API configuration")).toString

@@ -22,7 +22,7 @@ import scala.io.Source
 
 import org.apache.logging.log4j._
 
-import com.ligadata.Exceptions.StackTrace
+import com.ligadata.Exceptions.{InvalidArgumentException, StackTrace}
 import com.ligadata.MetadataAPI.{MetadataAPIImpl,ApiResult,ErrorCodeConstants}
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType.ModelType
@@ -66,11 +66,18 @@ object ModelService {
         //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
         var chosen: String = ""
         var finalTid: Option[String] = None
-        if (tid == None) {
-            chosen = getTenantId
-            finalTid = Some(chosen)
-        } else {
-            finalTid = tid
+        try {
+            if (tid == None) {
+                chosen = getTenantId
+                finalTid = Some(chosen)
+            } else {
+                finalTid = tid
+            }
+        }catch {
+            case e: InvalidArgumentException => {
+                logger.error("Invalid choice")
+                return (new ApiResult(ErrorCodeConstants.Failure, "addModelScala",null, "Invalid choice")).toString
+            }
         }
 
 
@@ -169,20 +176,27 @@ object ModelService {
                      , userid: Option[String] = Some("kamanja")
 		                 , optMsgProduced: Option[String] = None
                      , tid: Option[String] = None, pStr : Option[String]): String = {
-        var modelDefs= Array[String]()
-        var modelConfig=""
-        var modelDef=""
+        var modelDefs = Array[String]()
+        var modelConfig = ""
+        var modelDef = ""
         var response: String = ""
         var modelFileDir: String = ""
 
         //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
         var chosen: String = ""
         var finalTid: Option[String] = None
+        try{
         if (tid == None) {
             chosen = getTenantId
             finalTid = Some(chosen)
         } else {
             finalTid = tid
+        }
+    }catch {
+            case e: InvalidArgumentException => {
+                logger.error("Invalid choice")
+                return (new ApiResult(ErrorCodeConstants.Failure, "addModelJava",null, "Invalid choice")).toString
+            }
         }
 
         if (input == "") {
@@ -302,12 +316,19 @@ object ModelService {
         //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
         var chosen: String = ""
         var finalTid: Option[String] = None
+        try{
         if (tid == None) {
             chosen = getTenantId
             finalTid = Some(chosen)
         } else {
             finalTid = tid
         }
+    }catch {
+        case e: InvalidArgumentException => {
+            logger.error("Invalid choice")
+            return (new ApiResult(ErrorCodeConstants.Failure, "addModelPmml",null, "Invalid choice")).toString
+        }
+    }
 
         val response : String = if (input == "") {
             val reply : String = "PMML models are only ingested with command line arguments.. default directory selection is deprecated"
@@ -346,21 +367,27 @@ object ModelService {
 		                 , optMsgProduced: Option[String] = None
                      , tid: Option[String] = None ,
                       pStr : Option[String]): String = {
-        var modelDef=""
-        var modelConfig=""
+        var modelDef = ""
+        var modelConfig = ""
         var response: String = ""
         var modelFileDir: String = ""
         //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
 
         var chosen: String = ""
         var finalTid: Option[String] = None
+        try{
         if (tid == None) {
             chosen = getTenantId
             finalTid = Some(chosen)
         } else {
             finalTid = tid
         }
-
+    }catch {
+        case e: InvalidArgumentException => {
+            logger.error("Invalid choice")
+            return (new ApiResult(ErrorCodeConstants.Failure, "addModelKPmml",null, "Invalid choice")).toString
+        }
+    }
         if (input == "") {
             //get the messages location from the config file. If error get the location from github
             modelFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
@@ -420,20 +447,26 @@ object ModelService {
                       , tid: Option[String] = None
                       , optModelName: Option[String] = None,
                     pStr : Option[String]): String = {
-        var modelDef=""
+        var modelDef = ""
         var response: String = ""
         var modelFileDir: String = ""
 
         //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
         var chosen: String = ""
         var finalTid: Option[String] = None
+        try{
         if (tid == None) {
             chosen = getTenantId
             finalTid = Some(chosen)
         } else {
             finalTid = tid
         }
-
+    }catch {
+        case e: InvalidArgumentException => {
+            logger.error("Invalid choice")
+            return (new ApiResult(ErrorCodeConstants.Failure, "addModelJTM",null, "Invalid choice")).toString
+        }
+    }
         if (input == "") {
             //get the messages location from the config file. If error get the location from github
             modelFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
@@ -492,18 +525,25 @@ object ModelService {
     def updateModelKPmml(input: String
                       , userid: Option[String] = Some("kamanja")
                       , tid: Option[String] = None, pStr : Option[String]): String = {
-      var modelDef = ""
-      var response: String = ""
-      var modelFileDir: String = ""
+        var modelDef = ""
+        var response: String = ""
+        var modelFileDir: String = ""
         //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
-      var chosen: String = ""
-      var finalTid: Option[String] = None
-      if (tid == None) {
-          chosen = getTenantId
-          finalTid = Some(chosen)
-      } else {
-          finalTid = tid
-      }
+        var chosen: String = ""
+        var finalTid: Option[String] = None
+        try{
+        if (tid == None) {
+            chosen = getTenantId
+            finalTid = Some(chosen)
+        } else {
+            finalTid = tid
+        }
+    }catch {
+        case e: InvalidArgumentException => {
+            logger.error("Invalid choice")
+            return (new ApiResult(ErrorCodeConstants.Failure, "updateModelKPmml",null, "Invalid choice")).toString
+        }
+    }
 
       if (input == "") {
         //get the messages location from the config file. If error get the location from github
@@ -574,11 +614,18 @@ object ModelService {
         var modelFileDir: String = ""
         var chosen: String = ""
         var finalTid: Option[String] = None
+        try{
         if (tid == None) {
             chosen = getTenantId
             finalTid = Some(chosen)
         } else {
             finalTid = tid
+        }
+    }catch {
+            case e: InvalidArgumentException => {
+                logger.error("Invalid choice")
+                return (new ApiResult(ErrorCodeConstants.Failure, "updateModelJTM",null, "Invalid choice")).toString
+            }
         }
         if (input == "") {
             //get the messages location from the config file. If error get the location from github
@@ -646,14 +693,21 @@ object ModelService {
                       ,newVersion : String
                       ,tid: Option[String] = None, pStr : Option[String] ) : String = {
 
-      var chosen: String = ""
-      var finalTid: Option[String] = None
-      if (tid == None) {
-          chosen = getTenantId
-          finalTid = Some(chosen)
-      } else {
-          finalTid = tid
-      }
+        var chosen: String = ""
+        var finalTid: Option[String] = None
+        try{
+        if (tid == None) {
+            chosen = getTenantId
+            finalTid = Some(chosen)
+        } else {
+            finalTid = tid
+        }
+    }catch {
+        case e: InvalidArgumentException => {
+            logger.error("Invalid choice")
+            return (new ApiResult(ErrorCodeConstants.Failure, "updateModelPmml",null, "Invalid choice")).toString
+        }
+    }
       if (pmmlPath == "") {
           val reply : String = "PMML models are only ingested with command line arguments.. default directory selection is deprecated"
           return reply
@@ -702,11 +756,18 @@ object ModelService {
 
         var chosen: String = ""
         var finalTid: Option[String] = None
-        if (tid == None) {
-            chosen = getTenantId
-            finalTid = Some(chosen)
-        } else {
-            finalTid = tid
+        try {
+            if (tid == None) {
+                chosen = getTenantId
+                finalTid = Some(chosen)
+            } else {
+                finalTid = tid
+            }
+        }catch {
+            case e: InvalidArgumentException => {
+                logger.error("Invalid choice")
+                return (new ApiResult(ErrorCodeConstants.Failure, "updateModeljava",null, "Invalid choice")).toString
+            }
         }
 
         var modelDefs= Array[String]()
@@ -815,11 +876,18 @@ object ModelService {
         var modelFileDir: String = ""
         var chosen: String = ""
         var finalTid: Option[String] = None
-        if (tid == None) {
-            chosen = getTenantId
-            finalTid = Some(chosen)
-        } else {
-            finalTid = tid
+        try {
+            if (tid == None) {
+                chosen = getTenantId
+                finalTid = Some(chosen)
+            } else {
+                finalTid = tid
+            }
+        }catch {
+            case e: InvalidArgumentException => {
+                logger.error("Invalid choice")
+                return (new ApiResult(ErrorCodeConstants.Failure, "updateModelscala",null, "Invalid choice")).toString
+            }
         }
         var modelDefs= Array[String]()
         if (input == "") {
@@ -1004,7 +1072,7 @@ object ModelService {
                   //val stackTrace = StackTrace.ThrowableTraceString(e)
                   //logger.info(stackTrace)
                   //stackTrace
-                  result= (new ApiResult(ErrorCodeConstants.Failure, "removeModel",null, e.getStackTrace.toString)).toString
+                 (new ApiResult(ErrorCodeConstants.Failure, "removeModel",null, e.getStackTrace.toString)).toString
               }
             }
             result
@@ -1041,7 +1109,7 @@ object ModelService {
                 //val stackTrace = StackTrace.ThrowableTraceString(e)
                // logger.info(stackTrace)
                 //stackTrace
-                response= (new ApiResult(ErrorCodeConstants.Failure, "removeModel",null, e.getStackTrace.toString)).toString
+                (new ApiResult(ErrorCodeConstants.Failure, "removeModel",null, e.getStackTrace.toString)).toString
             }
         }
         response
@@ -1098,12 +1166,12 @@ object ModelService {
             response=apiResult
           }
 
-        } catch {
-          case e: Exception => {
-            // logger.info("", e)
-            //response=e.getStackTrace.toString
-              response= (new ApiResult(ErrorCodeConstants.Failure, "activateModel",null, e.getStackTrace.toString)).toString
-          }
+            } catch {
+              case e: Exception => {
+                // logger.info("", e)
+                //response=e.getStackTrace.toString
+                  response= (new ApiResult(ErrorCodeConstants.Failure, "activateModel",null, e.getStackTrace.toString)).toString
+              }
         }
         response
   }
@@ -1209,7 +1277,14 @@ object ModelService {
         }
         print("\nEnter your choice(If more than 1 choice, please use commas to seperate them): \n")
         val userOption: Int = readLine().trim.toInt
-        return tenants(userOption - 1)
+        if(userOption<1 || userOption > srNo){
+            logger.debug("Invalid choice")
+            throw new InvalidArgumentException("Invalid choice",null)
+        }
+        else{
+            logger.debug("Invalid choice")
+            tenants(userOption - 1)
+        }
     }
     /**
      *

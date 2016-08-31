@@ -18,6 +18,7 @@ package com.ligadata.MetadataAPI.Utility
 
 import java.io.File
 
+import com.ligadata.Exceptions.InvalidArgumentException
 import com.ligadata.MetadataAPI.{MetadataAPIImpl,ApiResult,ErrorCodeConstants}
 
 import scala.collection.mutable.ArrayBuffer
@@ -29,6 +30,7 @@ import scala.io._
 /**
  * Created by dhaval on 8/7/15.
  */
+
 object MessageService {
   private val userid: Option[String] = Some("kamanja")
   val loggerName = this.getClass.getName
@@ -45,11 +47,18 @@ object MessageService {
     //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
     var chosen: String = ""
     var finalTid: Option[String] = None
+    try{
     if (tid == None) {
-      chosen = getTenantId
-      finalTid = Some(chosen)
+        chosen = getTenantId
+        finalTid = Some(chosen)
     } else {
       finalTid = tid
+    }
+    }catch {
+      case e: InvalidArgumentException => {
+        logger.error("Invalid choice")
+        return (new ApiResult(ErrorCodeConstants.Failure, "addMessage",null, "Invalid choice")).toString
+      }
     }
 
 
@@ -128,13 +137,19 @@ object MessageService {
     //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
     var chosen: String = ""
     var finalTid: Option[String] = None
-    if (tid == None) {
-      chosen = getTenantId
-      finalTid = Some(chosen)
-    } else {
-      finalTid = tid
+    try {
+      if (tid == None) {
+        chosen = getTenantId
+        finalTid = Some(chosen)
+      } else {
+        finalTid = tid
+      }
+    }catch {
+      case e: InvalidArgumentException => {
+        logger.error("Invalid choice")
+        return (new ApiResult(ErrorCodeConstants.Failure, "addMessage",null, "Invalid choice")).toString
+      }
     }
-
 
     if (input == "") {
       val msgFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MESSAGE_FILES_DIR")
@@ -308,12 +323,15 @@ object MessageService {
       true
   }
 
+  @throws(classOf[InvalidArgumentException])
   private def getTenantId: String = {
+    println("Select a tenant id:")
     var tenatns = getMetadataAPI.GetAllTenants(userid)
-    return getUserInputFromMainMenu(tenatns)
+     getUserInputFromMainMenu(tenatns)
   }
 
   def getUserInputFromMainMenu(tenants: Array[String]) : String = {
+    logger.debug("getUserInputFromMainMenu for tenant ids")
     var srNo = 0
     for(tenant <- tenants) {
       srNo += 1
@@ -321,7 +339,16 @@ object MessageService {
      }
      print("\nEnter your choice(If more than 1 choice, please use commas to seperate them): \n")
     val userOption: Int = readLine().trim.toInt
-    return tenants(userOption - 1)
+    if(userOption<1 || userOption > srNo){
+      //(new ApiResult(ErrorCodeConstants.Failure, "getUserInputFromMainMenu(tenantid)",null, "Invalid choice")).toString
+      logger.debug("Invalid choice")
+        throw new InvalidArgumentException("Invalid choice",null)
+    }
+    else{
+logger.debug("User option is: "+(userOption-1))
+      tenants(userOption - 1)
+
+    }
   }
 
   def   getUserInputFromMainMenu(messages: Array[File]): Array[String] = {
