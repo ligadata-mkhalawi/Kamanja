@@ -545,6 +545,8 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       val indexResponse = client.prepareIndex(tableName, "type1", id)
         .setSource(builder).get()
 
+      client.admin().indices().prepareRefresh(tableName).get()
+
       System.out.println("data indexed into " + tableName)
 
       updateOpStats("put", tableName, 1)
@@ -656,6 +658,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           logger.debug("Executing bulk upsert...")
           totalRowsUpdated = bulkRequest.numberOfActions()
           val bulkResponse = bulkRequest.execute().actionGet()
+          client.admin().indices().prepareRefresh(tableName).get()
 
 
           if (bulkResponse.hasFailures()) {
