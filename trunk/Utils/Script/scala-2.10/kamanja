@@ -16,6 +16,7 @@
 #  limitations under the License.
 ###################################################################
 
+
 SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
   DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
@@ -27,6 +28,7 @@ SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 KAMANJA_HOME="$(dirname "$SCRIPT_DIR")"
 export KAMANJA_HOME=$KAMANJA_HOME
 INPUT=$@
+echo "KAMANJA_HOME = $KAMANJA_HOME"
 
 if [ "$1" == "debug" ]; then
     attachDebugger="true"
@@ -79,44 +81,54 @@ fi
 if [ "$INPUT" = "start webservice" ]; then
 echo "Starting web service . . . ."
 
-#java -jar $KAMANJA_HOME/bin/MetadataAPIService-1.0
 java -Dlog4j.configurationFile=file:$KAMANJA_HOME/config/log4j2.xml -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.10-1.6.0.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.10-1.6.0.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.10-1.6.0.jar:$KAMANJA_HOME/lib/system/metadataapiservice_2.10-1.6.0.jar com.ligadata.metadataapiservice.APIService
-elif [ "$INPUT" = "start -v" ]; then
-   $KAMANJA_HOME/bin/StartEngine.sh
+elif [[ "$2" = "start" && "$3" = "-v" ]] || [[ "$INPUT" = "start -v" ]]; then
+ ENGINECONFIG=$KAMANJA_HOME/config/Engine1Config.properties
+ if [[ "$2" = "start" && "$3" = "-v" ]]; then
+     ENGINECONFIG=$1
+ fi
 
-elif [ "$INPUT" = "start" ]; then
+ echo "Engine Config is set to $ENGINECONFIG"
+ $KAMANJA_HOME/bin/StartEngine.sh $ENGINECONFIG
+
+elif [[ "$2" = "start" || "$INPUT" = "start" ]]; then
   if [ -f /tmp/kamanjastart.log ]; then
     rm /tmp/kamanjastart.log
     touch /tmp/kamanjastart.log
   fi
 
- nohup $KAMANJA_HOME/bin/StartEngine.sh >> $HOME/kamanjastart.log &
- echo "Kamanja engine started in background. Please check the engine log at /tmp/kamanjastart.log"
+  ENGINECONFIG=$KAMANJA_HOME/config/Engine1Config.properties
+  if [ "$2" = "start" ]; then
+     ENGINECONFIG=$1
+  fi
+  echo "Engine Config is set to $ENGINECONFIG"
+  nohup $KAMANJA_HOME/bin/StartEngine.sh $ENGINECONFIG >> $HOME/kamanjastart.log &
+  echo "Kamanja engine started in background. Please check the engine log at /tmp/kamanjastart.log"
 elif [ "$INPUT" = "stop" ]; then
     ID=`ps -ef | grep -i java | grep "com.ligadata.KamanjaManager.KamanjaManager" | tr -s " " | xargs | cut -d" " -f2`
     echo "Stopping Kamanja with process id: $ID"
     kill $ID
-    #  1063 Change begins - Ensure kamanja process killed
-    #    sleep 2
+#  1063 Change begins - Ensure kamanja process killed    
+#    sleep 2
     echo -n "Waiting Kamanja with process id: $ID to gracefully exit"
-    tries=0
+    tries=0 
     while sleep 5; do
-        echo -n "."
-        ID=`ps -ef | grep -i java | grep "com.ligadata.KamanjaManager.KamanjaManager" | tr -s " " | xargs | cut -d" " -f2`
-        if [ "$ID" = "" ]; then
-            echo "."
-            echo "Kamanja successfully stopped"
-            exit 0
+      echo -n "."
+      ID=`ps -ef | grep -i java | grep "com.ligadata.KamanjaManager.KamanjaManager" | tr -s " " | xargs | cut -d" " -f2`
+      if [ "$ID" = "" ]; then
+          echo "." 
+          echo "Kamanja successfully stopped"
+          exit 0
+       fi
+       tries=`expr $tries + 1`
+       if [ "$tries" -gt 11 ] ; then
+          kill -9 $ID
+          echo "Kamanja stopped"
+          exit 0
         fi
-        tries=`expr $tries + 1`
-        if [ "$tries" -gt 11 ] ; then
-            kill -9 $ID
-            echo "Kamanja stopped"
-            exit 0
-        fi
-    done
-    #  1063 Change ends
-    # The following code should never execute but let it be there for defensive reasons.
+     done
+#  1063 Change ends
+# The following code should never execute but let it be there for defensive reasons.
     ID=`ps -ef | grep -i java | grep "com.ligadata.KamanjaManager.KamanjaManager" | tr -s " " | xargs | cut -d" " -f2`
     if [ "$ID" != "" ]; then
         echo "Failed to stop Kamanja. Found process $ID"
