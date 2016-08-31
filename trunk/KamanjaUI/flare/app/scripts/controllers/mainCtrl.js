@@ -15,6 +15,10 @@ angular.module('flareApp')
       v.title = 'new view';
       $rootScope.views.push(v);
     };
+    main.nodeClicked = function(id){
+      $rootScope.$broadcast('nodeClicked', id);
+    };
+
     var createView = function () {
       function traverse(o, option, func) {
         for (var i in o) {

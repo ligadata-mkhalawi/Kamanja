@@ -200,15 +200,23 @@ div.vis-network {
   }
 }
 .accordion-panel {
-  padding-left: 10px;
 
   .accordion-heading {
     background-color: black;
     padding-right: 10px;
-  }
-  .accordion-content {
     padding-left: 10px;
+  }
+
+  .sub-accordion-heading {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .accordion-content {
+    padding-left: 25px;
+    padding-right: 25px;
     background-color: #1a1a1a;
+    text-align: justify;
   }
 }
 
