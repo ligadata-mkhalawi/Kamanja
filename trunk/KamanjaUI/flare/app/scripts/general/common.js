@@ -6,6 +6,6 @@ function toggleNodeDetails(show){
   if(show){
     $('.nodeDetails').animate({'left': '0px'}, 'slow').addClass('visible');
   }else{
-    $('.nodeDetails').animate({'left': '0px'}, 'slow').addClass('visible');
+    $('.nodeDetails').animate({'left': '-1000px'}, 'slow').removeClass('visible');
   }
 }

@@ -2,6 +2,11 @@ angular.module('flareApp')
   .controller('mainCtrl', ['$scope', '$rootScope', function ($scope, $rootScope) {
     var main = this;
     main.showSideBar = true;
+
+    main.nodeClicked = function(id){
+      $rootScope.$broadcast('nodeClicked', id);
+    };
+
     var createView = function () {
       function traverse(o, option, func) {
         for (var i in o) {
