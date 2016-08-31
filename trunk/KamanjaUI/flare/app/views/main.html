@@ -3,10 +3,10 @@
   <div ng-class="{'col-md-10':main.showSideBar,'col-md-12':!main.showSideBar}">
     <div class="row">
       <div class="col-md-12 tabsBar">
-        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
-        <div ng-repeat="view in views" class="view" ng-class="{'active':view === currentView}">
+        <span class="glyphicon glyphicon-plus" aria-hidden="true" ng-click="main.addNewView()"></span>
+        <div ng-repeat="view in views" class="view" ng-class="{'active':view === currentView}" ng-click="main.setView(view)">
           {{view.title}}
-          <span class="glyphicon glyphicon-remove-sign" aria-hidden="true"></span>
+          <span class="glyphicon glyphicon-remove-sign" aria-hidden="true" ng-click="main.removeView(view)" ng-if = "view !== currentView"></span>
         </div>
       </div>
     </div>
@@ -44,9 +44,9 @@
               ng-click="currentView.toggleOptions(title)">
             <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> <span class="circle"
                                                                                           ng-class="clusterOption.color"></span>
-            {{title}} (45) <span
+            {{title}} ({{currentView.nodeCount(title)}}) <span
             class="glyphicon glyphicon-eye-open" aria-hidden="true"
-            ng-class="{'hideEye':!main.showOptions['Applications']}"></span>
+            ng-class="{'hideEye':!currentView.getOption(title)}"></span>
           </li>
         </ul>
       </div>

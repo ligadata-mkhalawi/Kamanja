@@ -2,6 +2,19 @@ angular.module('flareApp')
   .controller('mainCtrl', ['$scope', '$rootScope', function ($scope, $rootScope) {
     var main = this;
     main.showSideBar = true;
+    main.removeView = function (view) {
+      var index = $rootScope.views.indexOf(view);
+      $rootScope.views.splice(index,1);
+    };
+    main.setView = function (view) {
+      $rootScope.currentView = view;
+      $rootScope.$broadcast('showOptionsToggled');
+    };
+    main.addNewView = function () {
+      var v = createView();
+      v.title = 'new view';
+      $rootScope.views.push(v);
+    };
     var createView = function () {
       function traverse(o, option, func) {
         for (var i in o) {
@@ -9,7 +22,7 @@ angular.module('flareApp')
             func.apply(this, [i, o[i]]);
             return;
           }
-          if (o[i] !== null && typeof(o[i]) == "object") {
+          if (o[i] !== null && typeof(o[i]) == 'object') {
             //going on step down in the object tree!!
             traverse(o[i], option, func);
           }
@@ -73,6 +86,11 @@ angular.module('flareApp')
           {from: 'Jill', to: 'Outlook', label: 'access'},
 
         ],
+        nodeCount: function (title) {
+            return _.filter(this.nodes, function (node) {
+              return node.group === title;
+            }).length;
+        },
         showOptions: {
           'Coloring by Cluster': {
             value: true,
@@ -114,7 +132,6 @@ angular.module('flareApp')
     $rootScope.currentView.id = 'firstView';
     $rootScope.currentView.title = 'Malware Investigation';
     $rootScope.views = [$rootScope.currentView];
-
     $scope.$on('sideBarToggled', function () {
 
       main.showSideBar = !main.showSideBar;
