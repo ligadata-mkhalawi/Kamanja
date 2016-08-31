@@ -26,7 +26,7 @@ class LoanTuple(ModelInstance):
                 pred += float (msg["IMN_R01_DELINQ"]) * 7.37620839328494
                 pred += float (msg["IMN_R01_CLAGE"]) * -6.85708989347486
                 pred += float (msg["IMN_R01_NINQ"]) * 2.89418521536115
-                pred += float (msg["MN_R01_CLNO"]) * -0.296037079316927
+                pred += float (msg["IMN_R01_CLNO"]) * -0.296037079316927
                 pred += float (msg["LOG6_DEROG"]) * 0.390988196099627
                 pred += float (msg["LOG5_DELINQ"]) * 1.8255237489947
                 pred += float (msg["LOG_VALUE"]) * -35.3593065292401
@@ -49,7 +49,7 @@ class LoanTuple(ModelInstance):
                                      'IMN_R01_DELINQ' : msg["IMN_R01_DELINQ"],
                                      'IMN_R01_CLAGE' : msg["IMN_R01_CLAGE"],
                                      'IMN_R01_NINQ' : msg["IMN_R01_NINQ"],
-                                     'MN_R01_CLNO' : msg["MN_R01_CLNO"],
+                                     'IMN_R01_CLNO' : msg["IMN_R01_CLNO"],
                                      'LOG6_DEROG' : msg["LOG6_DEROG"],
                                      'LOG5_DELINQ' : msg["LOG5_DELINQ"],
                                      'LOG_VALUE' : msg["LOG_VALUE"],
@@ -83,7 +83,7 @@ class LoanTuple(ModelInstance):
                         outputFields.update(modelOptions["OutputTypeInfo"])
                 else:
                         inputFields["rec_ID"] = "Int"
-                        inputFields["BAD"] = "Int"
+                        inputFields["BAD"] = "Float"
                         inputFields["TIN_IMO_REASON_DebtCon"] = "Float"
                         inputFields["TIN_IMO_REASON_HomeImp"] = "Float"
                         inputFields["TIN_IZR_JOB_Mgr"] = "Float"

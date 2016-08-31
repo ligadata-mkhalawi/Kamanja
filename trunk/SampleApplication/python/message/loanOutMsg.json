@@ -16,63 +16,69 @@
       {
         "Field": {
           "Name": "BAD",
-          "Type": "system.Int"
-        },
+          "Type": "system.Float"
+        }
+      },
       {
         "Field": {
           "Name": "TIN_IMOREASON_Debtcon",
-          "Type": "system.Int"
+          "Type": "system.Float"
         }
       },
       {
         "Field": {
           "Name": "TIN_IMO_REASON_HomeImp",
-          "Type": "system.Int"
-        },
+          "Type": "system.Float"
+        }
+      },
       {
         "Field": {
           "Name": "TIN_IZR_JOB_Mgr",
-          "Type": "system.Int"
+          "Type": "system.Float"
         }
       },
       {
         "Field": {
           "Name": "TIN_IZR_JOB_Office",
-          "Type": "system.Int"
-        },
+          "Type": "system.Float"
+        }
+      },
       {
         "Field": {
           "Name": "TIN_IZR_JOB_Other",
-          "Type": "system.Int"
+          "Type": "system.Float"
         }
       },
       {
         "Field": {
           "Name": "TIN_IZR_JOB_ProfExe",
-          "Type": "system.Int"
-        },
+          "Type": "system.Float"
+        }
+      },
       {
         "Field": {
           "Name": "TIN_IZR_JOB_Sales",
-          "Type": "system.Int"
+          "Type": "system.Float"
         }
       },
       {
         "Field": {
           "Name": "TIN_IZR_JOB_Self",
-          "Type": "system.Int"
-        },
+          "Type": "system.Float"
+        }
+      },
       {
         "Field": {
           "Name": "TIN_IZR_JOB_Missing",
-          "Type": "system.Int"
+          "Type": "system.Float"
         }
       },
       {
         "Field": {
           "Name": "R01_LOAN",
           "Type": "system.Float"
-        },
+        }
+      },
       {
         "Field": {
           "Name": "IMN_R01_MORTDUE",
@@ -83,7 +89,8 @@
         "Field": {
           "Name": "IMN_R01_VALUE",
           "Type": "system.Float"
-        },
+        }
+      },
       {
         "Field": {
           "Name": "IMN_R01_YOJ",
@@ -94,7 +101,8 @@
         "Field": {
           "Name": "IMN_R01_DEROG",
           "Type": "system.Float"
-        },
+        }
+      },
       {
         "Field": {
           "Name": "IMN_R01_DELINQ",
@@ -105,7 +113,8 @@
         "Field": {
           "Name": "IMN_R01_CLAGE",
           "Type": "system.Float"
-        },
+        }
+      },
       {
         "Field": {
           "Name": "IMN_R01_NINQ",
@@ -116,7 +125,8 @@
         "Field": {
           "Name": "IMN_R01_CLNO",
           "Type": "system.Float"
-        },
+        }
+      },
       {
         "Field": {
           "Name": "LOG6_DEROG",
@@ -127,12 +137,14 @@
         "Field": {
           "Name": "LOG5_DELINQ",
           "Type": "system.Float"
-        },
+        }
+      },
       {
         "Field": {
           "Name": "LOG_VALUE",
           "Type": "system.Float"
-        },
+        }
+      },
       {
         "Field": {
           "Name": "PYTHON_RISK_SCORE",
