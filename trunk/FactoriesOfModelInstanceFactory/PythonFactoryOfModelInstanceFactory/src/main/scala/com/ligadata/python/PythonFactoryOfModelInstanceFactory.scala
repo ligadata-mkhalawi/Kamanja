@@ -293,9 +293,11 @@ class PythonAdapter(factory : PythonAdapterFactory
             pySrvConn
         }
 
-        connectionMap foreach
+	if (logger.isDebugEnabled()) {
+	        connectionMap foreach
           ((conn) => logger.debug ("Connection map key values are " +
             conn._1.toString + " = " + conn._2.toString))
+	    }
 
         pyServerConnection
     }
@@ -602,7 +604,9 @@ class PythonAdapter(factory : PythonAdapterFactory
                 if (startRc == 0 && connRc == 0) {
                     connMap(partitionKey) = pyConn
                     nodeContext.putValue(CONNECTION_KEY, connMap)
+		    if (logger.isDebugEnabled()) {
                     logger.debug(s"node context's python connection map (key '$CONNECTION_KEY') updated with new server connection (host = $host, port = ${port.toString})... \nstart server result = $startServerResult, \nconnection to server result = $connResult")
+  	            }
                 } else {
                     logger.error(s"Problems starting py server on behalf of models running on thread with partition key = ${partitionKey}... in PythonAdapterFactory.init for ${modelDef.FullName}")
                     logger.error(s"startServer result = $startServerResult")

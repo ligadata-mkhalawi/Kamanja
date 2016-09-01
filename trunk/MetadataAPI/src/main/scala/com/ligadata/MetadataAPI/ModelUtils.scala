@@ -1740,6 +1740,10 @@ object ModelUtils {
 
     val modelName: String = optModelName.orNull
     val version: String = optModelVersion.getOrElse("-1")
+    if (logger.isDebugEnabled()) {
+        logger.debug ("In UpdatePython Model  " + modelName + ", version = " + version)
+    }
+		 
     val result: String = if (modelName != null && version != null) {
       try {
         val buffer: StringBuilder = new StringBuilder
@@ -1755,6 +1759,9 @@ object ModelUtils {
         /** allow active or inactive models to be updated */
         val optCurrent: Option[ModelDef] = mdMgr.Model(modelNmSpace, modelNm, currentVer, onlyActive)
         val currentModel: ModelDef = optCurrent.orNull
+        if (logger.isDebugEnabled()) {
+           logger.debug ("In UpdatePython Model  " + currentVer + ", modelNm = " + modelNm)
+	}
 
         // See if we get the same tenant Id
         if (currentModel != null && !tenantId.equalsIgnoreCase(currentModel.tenantId)) {

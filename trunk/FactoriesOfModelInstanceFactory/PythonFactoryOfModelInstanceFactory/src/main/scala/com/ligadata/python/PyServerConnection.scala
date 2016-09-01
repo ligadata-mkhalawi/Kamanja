@@ -98,16 +98,21 @@ class PyServerConnection(val host : String
 
         /** start the server */
       val startServerResult : String = startServer
-
+      if (logger.isDebugEnabled()) {
         logger.debug(s"PyServerConnection.initialize ... start server result = $startServerResult")
+     }
         implicit val formats = org.json4s.DefaultFormats
         val startResultsMap : Map[String,Any] = parse(startServerResult).values.asInstanceOf[Map[String,Any]]
         val pid : Int = startResultsMap.getOrElse("pid", -1).asInstanceOf[scala.math.BigInt].toInt
       var attempts : Int  = 0
-      logger.debug (" THe value of host is " + host + " in the initialize of PyServerConnection ")
+      if (logger.isDebugEnabled()) {
+         logger.debug (" THe value of host is " + host + " in the initialize of PyServerConnection ")
+	 }
         /** create a connection to the server on the port that it is listening. */
         val inetbyname = InetAddress.getByName(host)
-      logger.debug("PyServerConnection.initialize ... connecting to host known as '$inetbyname' " + inetbyname + " " + port.toString)
+      if (logger.isDebugEnabled()) {
+         logger.debug("PyServerConnection.initialize ... connecting to host known as '$inetbyname' " + inetbyname + " " + port.toString)
+       }
       var mSecsToSleep : Long = 500
       Thread.sleep(mSecsToSleep)
       _sock = new Socket(inetbyname, port)
@@ -138,7 +143,9 @@ class PyServerConnection(val host : String
           mSecsToSleep *= 2
           Thread.sleep(mSecsToSleep)
           attempts = attempts + 1
-          logger.debug ("Continuting to connect for attempt " + attempts.toString)
+	  if (logger.isDebugEnabled()) {
+            logger.debug ("Continuting to connect for attempt " + attempts.toString)
+          }
         }
         else {
           break
@@ -155,7 +162,9 @@ class PyServerConnection(val host : String
             (-1 ,"connection creation failed")
         }
       val connResult : String = s"{ ${'"'}code${'"'} : $rc,  ${'"'}result${'"'} : ${'"'}$result${'"'}}"
+      if (logger.isDebugEnabled()) {
         logger.debug(s"PyServerConnection.initialize ... conection result = $connResult")
+       }
         (startServerResult, connResult)
     }
 
@@ -322,19 +331,28 @@ class PyServerConnection(val host : String
         /** serialize the modelOptions */
         val modelOpts : String = Json(DefaultFormats).write(modelOptions)
         /** copy the file into a tmp file from string for either local copy to models or possibly remote copy to other server */
-      logger.debug("Before add model in PyServerConnection moduleName " + moduleName + " moduleSrc " + moduleSrc)
+      if (logger.isDebugEnabled()) {
+         logger.debug("Before add model in PyServerConnection moduleName " + moduleName + " moduleSrc " + moduleSrc)
+      }
         cpSrcFile(moduleName, moduleSrc)
-      logger.debug("After  add model in PyServerConnection moduleName " + moduleName + " moduleSrc " + moduleSrc)
+      if (logger.isDebugEnabled()) {
+         logger.debug("After  add model in PyServerConnection moduleName " + moduleName + " moduleSrc " + moduleSrc)
+      }
       val addMsg : String = s"{${'"'}Cmd${'"'}: ${'"'}addModel${'"'}, ${'"'}CmdVer${'"'}: 1, ${'"'}CmdOptions${'"'}: {${'"'}Module${'"'}: ${'"'}$moduleName${'"'}, ${'"'}ModelName${'"'}: ${'"'}$modelName${'"'} }, ${'"'}ModelOptions${'"'}: ${'"'}{OPTIONS_KEY}${'"'} }"
-
-logger.debug("The add msg is " + addMsg)
+         if (logger.isDebugEnabled()) {
+            logger.debug("The add msg is " + addMsg)
+	}
         val subMap : Map[String,String] = Map[String,String]("{OPTIONS_KEY}" -> modelOpts)
         val sub = new MapSubstitution(addMsg, subMap)
         val payloadStr : String = sub.makeSubstitutions
 
-logger.debug("payloadStr  is " + payloadStr)
+        if (logger.isDebugEnabled()) {
+	   logger.debug("payloadStr  is " + payloadStr)
+	}
         val result : String = encodeAndProcess("addModel", payloadStr)
-logger.debug("result of encode and process is  " + result)
+	if (logger.isDebugEnabled()) {
+	   logger.debug("result of encode and process is  " + result)
+	}
         result
     }
 
@@ -355,7 +373,9 @@ logger.debug("result of encode and process is  " + result)
             val userMachine : String = s"$user@$host"
             Seq[String]("scp", userMachine, fromCpArgsStr, toCpArgsStr)
         } else {
+	  if (logger.isDebugEnabled()) {
             logger.debug(s"copy model $srcTargetPath locally to $pyPath${slash}models/")
+	  }
             Seq[String]("cp", fromCpArgsStr, toCpArgsStr)
         }
         val (result, stdoutStr, stderrStr) : (Int, String, String) = PyServerHelpers.runCmdCollectOutput(cmdSeq)
