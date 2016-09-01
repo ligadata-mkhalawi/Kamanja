@@ -3063,7 +3063,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
           case _ => { logger.error("Unknown Operation " + zkMessage.Operation + " in zookeeper notification, notification is not processed ..") }
         }
       }
-      case "adapterDef" | "nodeDef" | "clusterInfoDef" | "clusterDef" | "upDef"=> {
+      case "adapterDef" | "nodeDef" | "clusterInfoDef" | "clusterDef" | "upDef" | "TenantDef" => {
           zkMessage.Operation match {
               case "Add" | "Update" | "Remove" => {
                 updateClusterConfigForKey(zkMessage.ObjectType, zkMessage.Name, zkMessage.NameSpace, zkMessage.Operation)
@@ -4130,6 +4130,25 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
         val storedInfo = MetadataAPISerialization.deserializeMetadata(new String(GetObject("userproperties."+key.toLowerCase, "config_objects")._2.asInstanceOf[Array[Byte]])).asInstanceOf[UserPropertiesInfo]
         MdMgr.GetMdMgr.AddUserProperty(storedInfo)
         MdMgr.GetMdMgr.addConfigChange((elemType + "." + "update" + "." + storedInfo.clusterId.toLowerCase, storedInfo))
+        return
+      }
+      if (operation.equalsIgnoreCase("Remove")) {
+        logger.warn("Remove User Properties - not supported")
+      }
+      return
+    }
+    if (elemType.equalsIgnoreCase("TenantDef")) {
+      //val obj = GetObject("userproperties."+key.toLowerCase, "config_objects")
+      if (operation.equalsIgnoreCase("add")) {
+        val storedInfo = MetadataAPISerialization.deserializeMetadata(new String(GetObject("tenantinfo."+key.toLowerCase, "config_objects")._2.asInstanceOf[Array[Byte]])).asInstanceOf[TenantInfo]
+        MdMgr.GetMdMgr.AddTenantInfo(storedInfo)
+        MdMgr.GetMdMgr.addConfigChange((elemType +"."+"add"+"."+storedInfo.tenantId.toLowerCase, storedInfo))
+        return
+      }
+      if (operation.equalsIgnoreCase("update")) {
+        val storedInfo = MetadataAPISerialization.deserializeMetadata(new String(GetObject("tenantinfo."+key.toLowerCase, "config_objects")._2.asInstanceOf[Array[Byte]])).asInstanceOf[TenantInfo]
+        MdMgr.GetMdMgr.AddTenantInfo(storedInfo)
+        MdMgr.GetMdMgr.addConfigChange((elemType + "." + "update" + "." + storedInfo.tenantId.toLowerCase, storedInfo))
         return
       }
       if (operation.equalsIgnoreCase("Remove")) {
