@@ -1003,178 +1003,235 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
           collectKeyAndValues(k, v, container)
         }
 
-        for (i <- 0 until tmRangeValues.size) {
-          val bk = partKeys(i)
-          val tr = tmRangeValues(i)
-          if (TxnContextCommonFunctions.IsEmptyKey(bk) == false) {
-            // println("1. containerName:" + containerName)
-            val bucketId = KeyWithBucketIdAndPrimaryKeyCompHelper.BucketIdForBucketKey(bk)
-            val tr1 = if (tr != null) tr else TimeRange(Long.MinValue, Long.MaxValue)
+        if (tmRangeValues != null && tmRangeValues.size > 0) {
+          for (i <- 0 until tmRangeValues.size) {
+            val bk = partKeys(i)
+            val tr = tmRangeValues(i)
+            if (TxnContextCommonFunctions.IsEmptyKey(bk) == false) {
+              // println("1. containerName:" + containerName)
+              val bucketId = KeyWithBucketIdAndPrimaryKeyCompHelper.BucketIdForBucketKey(bk)
+              val tr1 = if (tr != null) tr else TimeRange(Long.MinValue, Long.MaxValue)
 
-            val loadKey = LoadKeyWithBucketId(bucketId, tr1, bk)
+              val loadKey = LoadKeyWithBucketId(bucketId, tr1, bk)
 
-            if (container.loadedKeys.contains(loadKey) == false) {
-              try {
-                logger.debug("Table %s Key %s for timerange: (%d,%d)".format(containerName, loadKey.bucketKey.mkString(","), loadKey.tmRange.beginTime, loadKey.tmRange.endTime))
-                if (cacheContainer != null) {
-                  TxnContextCommonFunctions.ReadLockContainer(cacheContainer)
-                  try {
-                    logger.debug("Going to cached contaienr (%s) to get the data for bk".format(containerName))
-                    val fndValuesAndKeys = TxnContextCommonFunctions.getRddData(cacheContainer, bk.toList, tr, null, null)
-                    TxnContextCommonFunctions.WriteLockContainer(container)
+              if (container.loadedKeys.contains(loadKey) == false) {
+                try {
+                  logger.debug("Table %s Key %s for timerange: (%d,%d)".format(containerName, loadKey.bucketKey.mkString(","), loadKey.tmRange.beginTime, loadKey.tmRange.endTime))
+                  if (cacheContainer != null) {
+                    TxnContextCommonFunctions.ReadLockContainer(cacheContainer)
                     try {
-                      fndValuesAndKeys.map(kv => {
-                        val v1 = MessageContainerBaseWithModFlag(false, kv._2)
-                        container.dataByBucketKey.put(kv._1, v1)
-                        container.dataByTmPart.put(kv._1, v1)
-                      })
+                      logger.debug("Going to cached contaienr (%s) to get the data for bk".format(containerName))
+                      val fndValuesAndKeys = TxnContextCommonFunctions.getRddData(cacheContainer, bk.toList, tr, null, null)
+                      TxnContextCommonFunctions.WriteLockContainer(container)
+                      try {
+                        fndValuesAndKeys.map(kv => {
+                          val v1 = MessageContainerBaseWithModFlag(false, kv._2)
+                          container.dataByBucketKey.put(kv._1, v1)
+                          container.dataByTmPart.put(kv._1, v1)
+                        })
+                      } catch {
+                        case e: Exception => {
+                          throw e
+                        }
+                      } finally {
+                        TxnContextCommonFunctions.WriteUnlockContainer(container)
+                      }
                     } catch {
                       case e: Exception => {
                         throw e
                       }
                     } finally {
-                      TxnContextCommonFunctions.WriteUnlockContainer(container)
+                      TxnContextCommonFunctions.ReadUnlockContainer(cacheContainer)
                     }
+                  } else {
+                    if (tr != null)
+                      callGetData(_defaultDataStore, containerName, Array(tr), Array(bk), buildOne)
+                    else
+                      callGetData(_defaultDataStore, containerName, Array(bk), buildOne)
+                  }
+                  TxnContextCommonFunctions.WriteLockContainer(container)
+                  try {
+                    container.loadedKeys.add(loadKey)
                   } catch {
                     case e: Exception => {
                       throw e
                     }
                   } finally {
-                    TxnContextCommonFunctions.ReadUnlockContainer(cacheContainer)
+                    TxnContextCommonFunctions.WriteUnlockContainer(container)
                   }
-                } else {
-                  if (tr != null)
-                    callGetData(_defaultDataStore, containerName, Array(tr), Array(bk), buildOne)
-                  else
-                    callGetData(_defaultDataStore, containerName, Array(bk), buildOne)
-                }
-                TxnContextCommonFunctions.WriteLockContainer(container)
-                try {
-                  container.loadedKeys.add(loadKey)
                 } catch {
-                  case e: Exception => {
-                    throw e
+                  case e: ObjectNotFoundException => {
+                    logger.debug("Table %s Key %s Not found for timerange: (%d,%d)".format(containerName, loadKey.bucketKey.mkString(","), loadKey.tmRange.beginTime, loadKey.tmRange.endTime), e)
                   }
-                } finally {
-                  TxnContextCommonFunctions.WriteUnlockContainer(container)
+                  case e: Exception => {
+                    logger.error("Table %s Key %s Not found for timerange: (%d,%d)".format(containerName, loadKey.bucketKey.mkString(","), loadKey.tmRange.beginTime, loadKey.tmRange.endTime), e)
+                  }
                 }
-              } catch {
-                case e: ObjectNotFoundException => {
-                  logger.debug("Table %s Key %s Not found for timerange: (%d,%d)".format(containerName, loadKey.bucketKey.mkString(","), loadKey.tmRange.beginTime, loadKey.tmRange.endTime), e)
+              }
+            } else if (tr != null) {
+              // println("2. containerName:" + containerName)
+              val bucketId = KeyWithBucketIdAndPrimaryKeyCompHelper.BucketIdForBucketKey(Array[String]())
+              val loadKey = LoadKeyWithBucketId(bucketId, tr, Array[String]())
+              if (container.loadedKeys.contains(loadKey) == false) {
+                try {
+                  logger.debug("Table %s Key %s for timerange: (%d,%d)".format(containerName, loadKey.bucketKey.mkString(","), loadKey.tmRange.beginTime, loadKey.tmRange.endTime))
+                  if (cacheContainer != null) {
+                    TxnContextCommonFunctions.ReadLockContainer(cacheContainer)
+                    try {
+                      logger.debug("Going to cached contaienr (%s) to get the data for tr".format(containerName))
+                      val fndValuesAndKeys = TxnContextCommonFunctions.getRddData(cacheContainer, null, tr, null, null)
+                      TxnContextCommonFunctions.WriteLockContainer(container)
+                      try {
+                        fndValuesAndKeys.map(kv => {
+                          val v1 = MessageContainerBaseWithModFlag(false, kv._2)
+                          container.dataByBucketKey.put(kv._1, v1)
+                          container.dataByTmPart.put(kv._1, v1)
+                        })
+                      } catch {
+                        case e: Exception => {
+                          throw e
+                        }
+                      } finally {
+                        TxnContextCommonFunctions.WriteUnlockContainer(container)
+                      }
+                    } catch {
+                      case e: Exception => {
+                        throw e
+                      }
+                    } finally {
+                      TxnContextCommonFunctions.ReadUnlockContainer(cacheContainer)
+                    }
+                  } else {
+                    callGetData(_defaultDataStore, containerName, Array(tr), buildOne)
+                  }
+                  TxnContextCommonFunctions.WriteLockContainer(container)
+                  try {
+                    container.loadedKeys.add(loadKey)
+                  } catch {
+                    case e: Exception => {
+                      throw e
+                    }
+                  } finally {
+                    TxnContextCommonFunctions.WriteUnlockContainer(container)
+                  }
+                } catch {
+                  case e: ObjectNotFoundException => {
+                    logger.debug("Table %s Key %s Not found for timerange: (%d,%d)".format(containerName, loadKey.bucketKey.mkString(","), loadKey.tmRange.beginTime, loadKey.tmRange.endTime), e)
+                  }
+                  case e: Exception => {
+                    logger.error("Table %s Key %s Not found for timerange: (%d,%d)".format(containerName, loadKey.bucketKey.mkString(","), loadKey.tmRange.beginTime, loadKey.tmRange.endTime), e)
+                  }
                 }
-                case e: Exception => {
-                  logger.error("Table %s Key %s Not found for timerange: (%d,%d)".format(containerName, loadKey.bucketKey.mkString(","), loadKey.tmRange.beginTime, loadKey.tmRange.endTime), e)
+              }
+            } else {
+              // println("3. containerName:" + containerName)
+              val bucketId = KeyWithBucketIdAndPrimaryKeyCompHelper.BucketIdForBucketKey(Array[String]())
+              val loadKey = LoadKeyWithBucketId(bucketId, TimeRange(Long.MinValue, Long.MaxValue), Array[String]())
+              if (container.loadedKeys.contains(loadKey) == false) {
+                try {
+                  logger.debug("Table %s Key %s for timerange: (%d,%d)".format(containerName, loadKey.bucketKey.mkString(","), loadKey.tmRange.beginTime, loadKey.tmRange.endTime))
+                  if (cacheContainer != null) {
+                    TxnContextCommonFunctions.ReadLockContainer(cacheContainer)
+                    try {
+                      logger.debug("Going to cached contaienr (%s) to get the data".format(containerName))
+                      val fndValuesAndKeys = TxnContextCommonFunctions.getRddData(cacheContainer, null, tr, null, null)
+                      TxnContextCommonFunctions.WriteLockContainer(container)
+                      try {
+                        fndValuesAndKeys.map(kv => {
+                          val v1 = MessageContainerBaseWithModFlag(false, kv._2)
+                          container.dataByBucketKey.put(kv._1, v1)
+                          container.dataByTmPart.put(kv._1, v1)
+                        })
+                      } catch {
+                        case e: Exception => {
+                          throw e
+                        }
+                      } finally {
+                        TxnContextCommonFunctions.WriteUnlockContainer(container)
+                      }
+                    } catch {
+                      case e: Exception => {
+                        throw e
+                      }
+                    } finally {
+                      TxnContextCommonFunctions.ReadUnlockContainer(cacheContainer)
+                    }
+                  } else {
+                    callGetData(_defaultDataStore, containerName, buildOne)
+                  }
+                  TxnContextCommonFunctions.WriteLockContainer(container)
+                  try {
+                    container.loadedKeys.add(loadKey)
+                  } catch {
+                    case e: Exception => {
+                      throw e
+                    }
+                  } finally {
+                    TxnContextCommonFunctions.WriteUnlockContainer(container)
+                  }
+                } catch {
+                  case e: ObjectNotFoundException => {
+                    logger.debug("Table %s Key %s Not found for timerange: (%d,%d)".format(containerName, loadKey.bucketKey.mkString(","), loadKey.tmRange.beginTime, loadKey.tmRange.endTime), e)
+                  }
+                  case e: Exception => {
+                    logger.error("Table %s Key %s Not found for timerange: (%d,%d)".format(containerName, loadKey.bucketKey.mkString(","), loadKey.tmRange.beginTime, loadKey.tmRange.endTime), e)
+                  }
                 }
               }
             }
-          } else if (tr != null) {
-            // println("2. containerName:" + containerName)
-            val bucketId = KeyWithBucketIdAndPrimaryKeyCompHelper.BucketIdForBucketKey(Array[String]())
-            val loadKey = LoadKeyWithBucketId(bucketId, tr, Array[String]())
-            if (container.loadedKeys.contains(loadKey) == false) {
-              try {
-                logger.debug("Table %s Key %s for timerange: (%d,%d)".format(containerName, loadKey.bucketKey.mkString(","), loadKey.tmRange.beginTime, loadKey.tmRange.endTime))
-                if (cacheContainer != null) {
-                  TxnContextCommonFunctions.ReadLockContainer(cacheContainer)
+          }
+        } else {
+          // println(" containerName:" + containerName)
+          val bucketId = KeyWithBucketIdAndPrimaryKeyCompHelper.BucketIdForBucketKey(Array[String]())
+          val loadKey = LoadKeyWithBucketId(bucketId, TimeRange(Long.MinValue, Long.MaxValue), Array[String]())
+          if (container.loadedKeys.contains(loadKey) == false) {
+            try {
+              logger.debug("Table %s Key %s for timerange: (%d,%d)".format(containerName, loadKey.bucketKey.mkString(","), loadKey.tmRange.beginTime, loadKey.tmRange.endTime))
+              if (cacheContainer != null) {
+                TxnContextCommonFunctions.ReadLockContainer(cacheContainer)
+                try {
+                  logger.debug("Going to cached contaienr (%s) to get the data".format(containerName))
+                  val fndValuesAndKeys = TxnContextCommonFunctions.getRddData(cacheContainer, null, null, null, null)
+                  TxnContextCommonFunctions.WriteLockContainer(container)
                   try {
-                    logger.debug("Going to cached contaienr (%s) to get the data for tr".format(containerName))
-                    val fndValuesAndKeys = TxnContextCommonFunctions.getRddData(cacheContainer, bk.toList, tr, null, null)
-                    TxnContextCommonFunctions.WriteLockContainer(container)
-                    try {
-                      fndValuesAndKeys.map(kv => {
-                        val v1 = MessageContainerBaseWithModFlag(false, kv._2)
-                        container.dataByBucketKey.put(kv._1, v1)
-                        container.dataByTmPart.put(kv._1, v1)
-                      })
-                    } catch {
-                      case e: Exception => {
-                        throw e
-                      }
-                    } finally {
-                      TxnContextCommonFunctions.WriteUnlockContainer(container)
-                    }
+                    fndValuesAndKeys.map(kv => {
+                      val v1 = MessageContainerBaseWithModFlag(false, kv._2)
+                      container.dataByBucketKey.put(kv._1, v1)
+                      container.dataByTmPart.put(kv._1, v1)
+                    })
                   } catch {
                     case e: Exception => {
                       throw e
                     }
                   } finally {
-                    TxnContextCommonFunctions.ReadUnlockContainer(cacheContainer)
+                    TxnContextCommonFunctions.WriteUnlockContainer(container)
                   }
-                } else {
-                  callGetData(_defaultDataStore, containerName, Array(tr), buildOne)
-                }
-                TxnContextCommonFunctions.WriteLockContainer(container)
-                try {
-                  container.loadedKeys.add(loadKey)
                 } catch {
                   case e: Exception => {
                     throw e
                   }
                 } finally {
-                  TxnContextCommonFunctions.WriteUnlockContainer(container)
+                  TxnContextCommonFunctions.ReadUnlockContainer(cacheContainer)
                 }
-              } catch {
-                case e: ObjectNotFoundException => {
-                  logger.debug("Table %s Key %s Not found for timerange: (%d,%d)".format(containerName, loadKey.bucketKey.mkString(","), loadKey.tmRange.beginTime, loadKey.tmRange.endTime), e)
-                }
-                case e: Exception => {
-                  logger.error("Table %s Key %s Not found for timerange: (%d,%d)".format(containerName, loadKey.bucketKey.mkString(","), loadKey.tmRange.beginTime, loadKey.tmRange.endTime), e)
-                }
+              } else {
+                callGetData(_defaultDataStore, containerName, buildOne)
               }
-            }
-          } else {
-            // println("3. containerName:" + containerName)
-            val bucketId = KeyWithBucketIdAndPrimaryKeyCompHelper.BucketIdForBucketKey(Array[String]())
-            val loadKey = LoadKeyWithBucketId(bucketId, TimeRange(Long.MinValue, Long.MaxValue), Array[String]())
-            if (container.loadedKeys.contains(loadKey) == false) {
+              TxnContextCommonFunctions.WriteLockContainer(container)
               try {
-                logger.debug("Table %s Key %s for timerange: (%d,%d)".format(containerName, loadKey.bucketKey.mkString(","), loadKey.tmRange.beginTime, loadKey.tmRange.endTime))
-                if (cacheContainer != null) {
-                  TxnContextCommonFunctions.ReadLockContainer(cacheContainer)
-                  try {
-                    logger.debug("Going to cached contaienr (%s) to get the data".format(containerName))
-                    val fndValuesAndKeys = TxnContextCommonFunctions.getRddData(cacheContainer, bk.toList, tr, null, null)
-                    TxnContextCommonFunctions.WriteLockContainer(container)
-                    try {
-                      fndValuesAndKeys.map(kv => {
-                        val v1 = MessageContainerBaseWithModFlag(false, kv._2)
-                        container.dataByBucketKey.put(kv._1, v1)
-                        container.dataByTmPart.put(kv._1, v1)
-                      })
-                    } catch {
-                      case e: Exception => {
-                        throw e
-                      }
-                    } finally {
-                      TxnContextCommonFunctions.WriteUnlockContainer(container)
-                    }
-                  } catch {
-                    case e: Exception => {
-                      throw e
-                    }
-                  } finally {
-                    TxnContextCommonFunctions.ReadUnlockContainer(cacheContainer)
-                  }
-                } else {
-                  callGetData(_defaultDataStore, containerName, buildOne)
-                }
-                TxnContextCommonFunctions.WriteLockContainer(container)
-                try {
-                  container.loadedKeys.add(loadKey)
-                } catch {
-                  case e: Exception => {
-                    throw e
-                  }
-                } finally {
-                  TxnContextCommonFunctions.WriteUnlockContainer(container)
-                }
+                container.loadedKeys.add(loadKey)
               } catch {
-                case e: ObjectNotFoundException => {
-                  logger.debug("Table %s Key %s Not found for timerange: (%d,%d)".format(containerName, loadKey.bucketKey.mkString(","), loadKey.tmRange.beginTime, loadKey.tmRange.endTime), e)
-                }
                 case e: Exception => {
-                  logger.error("Table %s Key %s Not found for timerange: (%d,%d)".format(containerName, loadKey.bucketKey.mkString(","), loadKey.tmRange.beginTime, loadKey.tmRange.endTime), e)
+                  throw e
                 }
+              } finally {
+                TxnContextCommonFunctions.WriteUnlockContainer(container)
+              }
+            } catch {
+              case e: ObjectNotFoundException => {
+                logger.debug("Table %s Key %s Not found for timerange: (%d,%d)".format(containerName, loadKey.bucketKey.mkString(","), loadKey.tmRange.beginTime, loadKey.tmRange.endTime), e)
+              }
+              case e: Exception => {
+                logger.error("Table %s Key %s Not found for timerange: (%d,%d)".format(containerName, loadKey.bucketKey.mkString(","), loadKey.tmRange.beginTime, loadKey.tmRange.endTime), e)
               }
             }
           }
