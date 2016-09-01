@@ -4152,7 +4152,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
         return
       }
       if (operation.equalsIgnoreCase("Remove")) {
-        logger.warn("Remove User Properties - not supported")
+        logger.warn("Remove TenantDef - not supported")
       }
       return
     }
