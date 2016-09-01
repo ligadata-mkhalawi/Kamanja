@@ -129,7 +129,7 @@ Transformations
         
         Computes: map with computations
     
-        "grok matches": map with grok matches
+        "grok matches": map with grok matches, left side of a match has to valid according to https://github.com/aicer/grok. The syntax for a grok pattern is %{SYNTAX:SEMANTIC}. Everything with a sematic can be assigned to variable. 
 
 ```javascript
     "transformations": {
@@ -140,7 +140,7 @@ Transformations
           },
     
           "grok match": {
-            "in1": "{EMAIL: email} {DOMAIN: domain} {USER: user}"
+            "in1": "%{EMAIL:email} %{DOMAIN:domain} %{USER:user}"
           },
           
           "outputs": {

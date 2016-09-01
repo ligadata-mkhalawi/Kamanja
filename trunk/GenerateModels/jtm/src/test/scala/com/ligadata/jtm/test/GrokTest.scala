@@ -54,7 +54,34 @@ class GrokTest extends FunSuite with BeforeAndAfter {
 
     assert(actual == expected)
 
-    DeleteFile(fileOutput);
+    DeleteFile(fileOutput)
+  }
+
+  // Simple jtm
+  test("defect4016") {
+
+    val fileInput = getClass.getResource("/grok/defect1416.jtm").getPath
+    val fileOutput = getClass.getResource("/grok").getPath + "/defect1416.scala.actual"
+    val fileExpected = getClass.getResource("/grok/defect1416.scala.expected").getPath
+    val metadataLocation = getClass.getResource("/metadata").getPath
+
+    val compiler = CompilerBuilder.create().
+      setSuppressTimestamps().
+      setInputFile(fileInput).
+      setOutputFile(fileOutput).
+      setMetadataLocation(metadataLocation).
+      build()
+
+    compiler.Execute()
+
+    val expected = FileUtils.readFileToString(new File(fileExpected), null:String)
+    val actual = FileUtils.readFileToString(new File(fileOutput), null:String)
+    logger.info("actual path={}", fileOutput)
+    logger.info("expected path={}", fileExpected)
+
+    assert(actual == expected)
+
+    DeleteFile(fileOutput)
   }
 
 }

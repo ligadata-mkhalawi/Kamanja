@@ -453,9 +453,11 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
       expressionString -> ("grok_instance_1_%d".format(p._2), pattern, outputs)
     }).toMap
 
-    val defs = mapping.map( p=>
-      "lazy val %s = grok_instance_1.compileExpression(%s)".format(p._2._1, escape(p._2._2))
-    ).toArray
+    val defs = mapping.map( p=> {
+      val varName = p._2._1
+      val expr = escape(p._2._2)
+      "lazy val %s = grok_instance_1.compileExpression(%s)".format(varName, expr)
+    }).toArray
 
     (defs, mapping)
   }
@@ -591,6 +593,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
     logger.trace("Mapping: \n{}\n", innerMapping.mkString("\n"))
     logger.trace("Mapped Msg: \n{}\n", dictMessages.mkString("\n"))
     logger.trace("Tracked: \n{}\n\n", innerTracking.mkString("\n"))
+    logger.trace("Grocks Escaped: \n{}", groks.map(s => s._1 -> escape(s._2)).mkString("\n"))
     logger.trace("Grocks: \n{}", groks.mkString("\n"))
     logger.trace("Mapping: \n{}", mapping.mkString("\n"))
     logger.trace("Wheres: \n{}", wheres.mkString("\n"))
