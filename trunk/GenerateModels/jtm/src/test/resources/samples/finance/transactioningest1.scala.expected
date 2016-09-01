@@ -24,10 +24,11 @@ import com.ligadata.runtime.Conversion
 class TransactionIngestFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
   // Factory code start
   // Factory code end
-  override def createModelInstance(txnCtxt: com.ligadata.KamanjaBase.TransactionContext): ModelInstance = return new TransactionIngest(this)
+  override def createModelInstance(): ModelInstance = return new TransactionIngest(this)
   override def getModelName: String = "com.ligadata.models.samples.finance.TransactionIngest"
   override def getVersion: String = "0.0.1"
   override def createResultObject(): ModelResultBase = new MappedModelResults()
+  override def isModelInstanceReusable(): Boolean = true;
 }
 class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(factory) {
   val conversion = new com.ligadata.runtime.Conversion
@@ -37,6 +38,7 @@ class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(fac
   // Model code start
   // Model code end
   override def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
+    context.Reset(); // Resetting the JtmContext before executing the model
     if (isTraceEnabled)
     Trace(s"Model::execute transid=%d triggeredset=%d outputdefault=%s".format(txnCtxt.transId, triggerdSetIndex, outputDefault.toString))
     if(isDebugEnabled)
@@ -70,6 +72,7 @@ class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(fac
           result.accno = conversion.ToLong(arrayData(3))
           result.date = conversion.ToInteger(arrayData(6))
           result.time = conversion.ToInteger(arrayData(7))
+          if (result.hasTimePartitionInfo) result.setTimePartitionData ;
           if(context.CurrentErrors()==0) {
             Array(result)
           } else {

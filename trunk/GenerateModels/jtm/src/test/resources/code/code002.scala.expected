@@ -24,10 +24,11 @@ import com.ligadata.Utils._
 class ModelFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
   // Factory code start
   // Factory code end
-  override def createModelInstance(txnCtxt: com.ligadata.KamanjaBase.TransactionContext): ModelInstance = return new Model(this)
+  override def createModelInstance(): ModelInstance = return new Model(this)
   override def getModelName: String = "com.ligadata.jtm.test.code.Model"
   override def getVersion: String = "0.0.1"
   override def createResultObject(): ModelResultBase = new MappedModelResults()
+  override def isModelInstanceReusable(): Boolean = true;
 }
 class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
   val conversion = new com.ligadata.runtime.Conversion
@@ -40,6 +41,7 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
   }
   // Model code end
   override def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
+    context.Reset(); // Resetting the JtmContext before executing the model
     if (isTraceEnabled)
     Trace(s"Model::execute transid=%d triggeredset=%d outputdefault=%s".format(txnCtxt.transId, triggerdSetIndex, outputDefault.toString))
     if(isDebugEnabled)
@@ -65,6 +67,7 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
           val result = com.ligadata.kamanja.test.V1000000.arrout1.createInstance
           result.mydata = Array(elements(0) t1, elements(2), elements(3))
           result.out_ext_type_id = t2
+          if (result.hasTimePartitionInfo) result.setTimePartitionData ;
           Array(result)
         } catch {
           case e: AbortOutputException => {

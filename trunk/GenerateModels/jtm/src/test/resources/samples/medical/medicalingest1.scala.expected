@@ -24,10 +24,11 @@ import com.ligadata.runtime.Conversion
 class TransactionIngestFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
   // Factory code start
   // Factory code end
-  override def createModelInstance(txnCtxt: com.ligadata.KamanjaBase.TransactionContext): ModelInstance = return new TransactionIngest(this)
+  override def createModelInstance(): ModelInstance = return new TransactionIngest(this)
   override def getModelName: String = "com.ligadata.models.samples.medical1.TransactionIngest"
   override def getVersion: String = "0.0.1"
   override def createResultObject(): ModelResultBase = new MappedModelResults()
+  override def isModelInstanceReusable(): Boolean = true;
 }
 class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(factory) {
   val conversion = new com.ligadata.runtime.Conversion
@@ -37,6 +38,7 @@ class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(fac
   // Model code start
   // Model code end
   override def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
+    context.Reset(); // Resetting the JtmContext before executing the model
     if (isTraceEnabled)
     Trace(s"Model::execute transid=%d triggeredset=%d outputdefault=%s".format(txnCtxt.transId, triggerdSetIndex, outputDefault.toString))
     if(isDebugEnabled)
@@ -93,6 +95,7 @@ class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(fac
           result.sp_strketia = conversion.ToInteger(arraydata(23))
           result.medreimb_op = conversion.ToDouble(arraydata(27))
           result.benres_op = conversion.ToDouble(arraydata(28))
+          if (result.hasTimePartitionInfo) result.setTimePartitionData ;
           if(context.CurrentErrors()==0) {
             Array(result)
           } else {
@@ -204,6 +207,7 @@ class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(fac
           result.sp_strketia = conversion.ToInteger(arraydata(26))
           result.infarction = conversion.ToInteger(arraydata(48))
           result.diseases_circulatory_system = conversion.ToInteger(arraydata(34))
+          if (result.hasTimePartitionInfo) result.setTimePartitionData ;
           if(context.CurrentErrors()==0) {
             Array(result)
           } else {
@@ -252,6 +256,7 @@ class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(fac
           result.clm_id = conversion.ToLong(arraydata(2))
           result.nch_bene_pta_coinsrnc_lblty_am = conversion.ToDouble(arraydata(16))
           result.clm_utlztn_day_cnt = conversion.ToInteger(arraydata(18))
+          if (result.hasTimePartitionInfo) result.setTimePartitionData ;
           if(context.CurrentErrors()==0) {
             Array(result)
           } else {
@@ -295,6 +300,7 @@ class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(fac
           result.ot_physn_npi = conversion.ToLong(arraydata(11))
           result.clm_thru_dt = conversion.ToInteger(arraydata(5))
           result.clm_id = conversion.ToLong(arraydata(2))
+          if (result.hasTimePartitionInfo) result.setTimePartitionData ;
           if(context.CurrentErrors()==0) {
             Array(result)
           } else {
