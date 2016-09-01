@@ -74,7 +74,7 @@ class PythonMdlSupport(val mgr: MdMgr, val moduleName: String, val modelNamespac
       msgNamespace != null && msgNamespace.nonEmpty &&
       msgName != null && msgName.nonEmpty &&
       pythonMdlText != null && pythonMdlText.nonEmpty &&
-      modelOptions != null && modelOptions.nonEmpty &&
+//      modelOptions != null && modelOptions.nonEmpty &&
       metadataAPIConfig != null && metadataAPIConfig.size() > 0
     val modelDef: ModelDef = if (reasonable) {
       CreateModelDef(recompile, isPython)
