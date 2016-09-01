@@ -34,7 +34,8 @@ angular.module('flareApp')
       }
 
       return {
-
+        title : 'new view',
+        editTitle: true,
         nodes: [
           {id: 'AppAccessLog', _label: 'AppAccessLog', group: 'Logs', color: {border: ''}},
           {id: 'URLAccessLog', _label: 'URLAccessLog', group: 'Logs'},
@@ -133,6 +134,7 @@ angular.module('flareApp')
       };
     };
     $rootScope.currentView = createView();
+    $rootScope.currentView.editTitle = false;
     $rootScope.currentView.id = 'firstView';
     $rootScope.currentView.title = 'Malware Investigation';
     $rootScope.views = [$rootScope.currentView];
@@ -142,7 +144,7 @@ angular.module('flareApp')
     });
 
     var v = createView();
-    v.title = 'new view';
+    v.editTitle = false;
     $rootScope.views.push(v);
 
   }]);

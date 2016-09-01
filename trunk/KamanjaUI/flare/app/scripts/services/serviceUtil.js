@@ -10,7 +10,7 @@ angular.module('flareApp')
 
     service.httpRequest.get = function (Obj, callback) {
       _.each($http.defaults.headers.common, function (val, key, obj) {
-        if (key !== "Accept") {
+        if (key !== 'Accept') {
           delete $http.defaults.headers.common[key];
         }
       });
@@ -41,7 +41,7 @@ angular.module('flareApp')
 
     service.httpRequest.query = function (Obj, callback) {
       _.each($http.defaults.headers.common, function (val, key, obj) {
-        if (key !== "Accept") {
+        if (key !== 'Accept') {
           delete $http.defaults.headers.common[key];
         }
       });
@@ -74,7 +74,7 @@ angular.module('flareApp')
 
     service.httpRequest.put = function (Obj, callback) {
       _.each($http.defaults.headers.common, function (val, key, obj) {
-        if (key !== "Accept") {
+        if (key !== 'Accept') {
           delete $http.defaults.headers.common[key];
         }
       });
@@ -106,7 +106,7 @@ angular.module('flareApp')
 
     service.httpRequest.save = function (Obj, callback) {
       _.each($http.defaults.headers.common, function (val, key, obj) {
-        if (key !== "Accept") {
+        if (key !== 'Accept') {
           delete $http.defaults.headers.common[key];
         }
       });
@@ -141,7 +141,7 @@ angular.module('flareApp')
 
     service.httpRequest.delete = function (Obj, callback) {
       _.each($http.defaults.headers.common, function (val, key, obj) {
-        if (key !== "Accept") {
+        if (key !== 'Accept') {
           delete $http.defaults.headers.common[key];
         }
       });
