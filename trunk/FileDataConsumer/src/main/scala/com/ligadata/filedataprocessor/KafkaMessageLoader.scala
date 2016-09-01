@@ -517,7 +517,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
             val (rc, partitionId) = checkMessage(respFutures,i, sleepTmRemainingInMs)
             var tmElapsed = System.nanoTime - tmConsumed
             if (tmElapsed < 0) tmElapsed = 0
-            sleepTmRemainingInMs -= (tmElapsed / 1000000)
+            sleepTmRemainingInMs -= (tmElapsed / 1000000).toInt
             if (rc > 0) {
               isFullySent = false
               isRetry = true
