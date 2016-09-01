@@ -88,11 +88,13 @@ object TestExecutor {
       })
 
       println("[Kamanja Application Tester] -> Starting Embedded Services...")
-      if (!EmbeddedServicesManager.startServices(installDir)) {
+      EmbeddedServicesManager.init(installDir)
+      if (!EmbeddedServicesManager.startServices) {
         println(s"[Kamanja Application Tester] -> ***ERROR*** Failed to start embedded services")
         throw new Exception(s"[Kamanja Application Tester] -> ***ERROR*** Failed to start embedded services")
       }
       else {
+        /*
         var testResult = true
         appManager.kamanjaApplications.foreach(app => {
           println(s"[Kamanja Application Tester] -> Processing Data Sets...")
@@ -106,66 +108,9 @@ object TestExecutor {
           else
             println(s"[Kamanja Application Tester] -> Application '${app.name}' testing passed")
         })
+      */
       }
     }
-  }
-
-  private def processDataSet(dataSet: DataSet, kafkaAdapterConfig: KafkaAdapterConfig): Boolean = {
-    println("[Kamanja Application Tester] ---> Processing test data...")
-    // Determine number of messages in expected results file
-    var messageCount = 0
-    var expectedResults: List[String] = List()
-    var nonMatchingMessages: Map[String, Map[String, String]] = Map()
-    var actualResults: List[String] = List()
-
-    if(dataSet.expectedResultsFormat.toLowerCase == "csv") {
-      val source = scala.io.Source.fromFile(dataSet.expectedResultsFile)
-      expectedResults = source.getLines().toList
-      messageCount = expectedResults.length
-      source.close()
-    }
-    else if(dataSet.expectedResultsFormat.toLowerCase == "json") {
-      throw new NotImplementedError("JSON is not yet supported")
-    }
-
-    if(messageCount == 0) {
-      println(s"[Kamanja Application Tester] -----> ***ERROR*** No messages were found in expected results file '${dataSet.expectedResultsFile}'")
-      return false
-    }
-    println(s"[Kamanja Application Tester] -----> $messageCount expected results read in from '${dataSet.expectedResultsFile}'")
-
-    val producer = new TestKafkaProducer
-    println(s"[Kamanja Application Tester] -----> Pushing data from '${dataSet.inputDataFile}' to Kafka...")
-    try {
-      producer.inputMessages(kafkaAdapterConfig, dataSet.inputDataFile, dataSet.partitionKey.getOrElse("1"))
-      println(s"[Kamanja Application Tester] -----> Successfully pushed data")
-    }
-    catch {
-      case e: Exception => println(s"[Kamanja Application Tester] -----> ***ERROR*** Failed to push data from '${dataSet.inputDataFile}'")
-    }
-
-    actualResults = Globals.waitForOutputResults(kafkaAdapterConfig, 30, messageCount).getOrElse(null)
-    if(actualResults != null) {
-      var count = 0
-      expectedResults.foreach(expectedResult => {
-        if(expectedResult != actualResults(count)){
-          nonMatchingMessages += ("Message Number: " + count -> Map(expectedResult -> actualResults(count)))
-        }
-      })
-    }
-    else {
-      println("[Kamanja Application Tester] ---> ***ERROR*** Failed to retrieve results from Kafka")
-      return false
-    }
-    if(nonMatchingMessages.size > 0) {
-      println("[Kamanja Application Tester] ---> ***ERROR*** Some output messages did not match the expected output results")
-      nonMatchingMessages.foreach(messageMap => {
-        println(s"[Kamanja Application Tester] -----> Nonmatching result")
-        println(s"[Kamanja Application Tester] -------> $messageMap")
-      })
-      return false
-    }
-    else return true
   }
 
   private def nextOption(map: OptionMap, list: List[String]): OptionMap = {

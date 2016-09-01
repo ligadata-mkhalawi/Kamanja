@@ -5,7 +5,8 @@ import org.scalatest._
 class EmbeddedServicesManagerTests extends FlatSpec {
 
   "Embedded Services Manager" should "start zookeeper and kafka" in {
-    assert(EmbeddedServicesManager.startServices(TestSetup.kamanjaInstallDir))
+    EmbeddedServicesManager.init(TestSetup.kamanjaInstallDir)
+    assert(EmbeddedServicesManager.startServices)
   }
 
   it should "stop zookeeper and kafka" in {

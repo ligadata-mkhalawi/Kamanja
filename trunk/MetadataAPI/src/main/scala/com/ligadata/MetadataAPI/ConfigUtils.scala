@@ -1393,6 +1393,7 @@ object ConfigUtils {
       return false
     }
     val jarPaths = if (nd.JarPaths == null) Set[String]() else nd.JarPaths.map(str => str.replace("\"", "").trim).filter(str => str.size > 0).toSet
+      implicit val jsonFormats: Formats = DefaultFormats
     if (jarPaths.size == 0) {
       logger.error("Not found valid JarPaths.")
       return false
@@ -1408,7 +1409,6 @@ object ConfigUtils {
       logger.debug("Jar_target_dir Based on node(%s) => %s".format(nodeId, jarDir))
     }
 
-    implicit val jsonFormats: Formats = DefaultFormats
     val zKInfo = parse(zooKeeperInfo).extract[JZKInfo]
 
     val zkConnectString = zKInfo.ZooKeeperConnectString.replace("\"", "").trim
