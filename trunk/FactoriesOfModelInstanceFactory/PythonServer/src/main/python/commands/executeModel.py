@@ -36,9 +36,9 @@ class executeModel(CommandBase):
 		modelNames = ["{}".format(v) for v in modelNameView]
 		modelValueView = modelDict.viewvalues()
 		modelInsts =  ["{}".format(str(v)) for v in modelValueView]
-#                if self.logger.isEnabledFor(logging.DEBUG): 
-#		   self.logger.debug("{} models in modelDict = {}".format(len(modelNameView),modelNames))
-#		   self.logger.debug("{} instances in modelDict = {}".format(len(modelValueView),modelInsts))
+                if self.logger.isEnabledFor(logging.DEBUG): 
+		   self.logger.debug("{} models in modelDict = {}".format(len(modelNameView),modelNames))
+		   self.logger.debug("{} instances in modelDict = {}".format(len(modelValueView),modelInsts))
 
 		if "ModelName" in cmdOptions:
 			modelName = str(cmdOptions["ModelName"])
