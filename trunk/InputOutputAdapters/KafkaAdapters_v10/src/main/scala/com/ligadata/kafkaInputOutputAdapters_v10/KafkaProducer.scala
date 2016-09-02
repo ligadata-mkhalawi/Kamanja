@@ -66,17 +66,17 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   val default_value_serializer = "org.apache.kafka.common.serialization.ByteArraySerializer"
   val default_key_serializer = "org.apache.kafka.common.serialization.ByteArraySerializer"
   val default_batch_size = "1024"
-  val default_linger_ms = "50" // 50ms
-  val default_retries = "0"
+  val default_linger_ms = "100" // 100ms
+  val default_retries = "1"
   val default_block_on_buffer_full = "true" // true or false
-  val default_buffer_memory = "16777216" // 16MB
+  val default_buffer_memory = "16777216"  // 16MB
   val default_client_id = qc.Name + "_" + hashCode.toString
-  val default_request_timeout_ms = "10000"
-  val default_timeout_ms = "10000"
-  val default_metadata_fetch_timeout_ms = "10000"
-  val defrault_metadata_max_age_ms = "20000"
-  val default_max_block_ms = "20000"
-  val default_max_buffer_full_block_ms = "100"
+  val default_request_timeout_ms = "30000"
+  val default_timeout_ms = "30000"
+  val default_metadata_fetch_timeout_ms = "30000"
+  val defrault_metadata_max_age_ms = "300000"
+  val default_max_block_ms = "60000"
+  val default_max_buffer_full_block_ms = default_max_block_ms
   val default_network_request_timeout_ms = "20000"
   val default_outstanding_messages = "2048"
 
@@ -187,9 +187,12 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       if (qc.ssl_trust_manager_algorithm != null) props.put("ssl.trustmanager.algorithm", qc.ssl_trust_manager_algorithm)
     }
   }
+
+  val nonKafkaConfigs = Set[String]("max.outstanding.messages", "enable.adapter.retries")
+
   // Add the rest of the properties.  max.outstanding.messages is a special thing ????
   qc.otherconfigs.foreach(p => {
-    if (!props.containsKey(p._1) && !"max.outstanding.messages".equalsIgnoreCase(p._1)) {
+    if (!props.containsKey(p._1) && !nonKafkaConfigs.contains(p._1)) {
       props.put(p._1, p._2)
     }
   })
