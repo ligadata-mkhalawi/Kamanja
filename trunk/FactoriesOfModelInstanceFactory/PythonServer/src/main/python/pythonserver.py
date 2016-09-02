@@ -13,9 +13,6 @@ import logging.handlers
 import os
 import os.path
 import select
-import time
-import pyinotify
-import py_compile
 
 
 #
@@ -60,60 +57,6 @@ if fileLogPath != "":
 if logger.isEnabledFor(logging.INFO): 
    sys.stdout.write('starting pythonserver ...\nhost = ' + args['host'] + '\nport = ' + str(args['port']) + '\npythonPath = ' + args['pythonPath'] + '\nlog4jConfig = ' + args['log4jConfig'])
 #
-
-modelWatch = pyinotify.WatchManager()
-mask = pyinotify.IN_DELETE | pyinotify.IN_CREATE  | pyinotify.IN_MODIFY # watched events
-
-class EventHandler(pyinotify.ProcessEvent):
-    def process_IN_CREATE(self, event):
-        print( "Creating: ...... ", event.pathname)
-        modelfile=os.path.basename(event.pathname)
-        if (modelfile.find(".") != -1):
-           namesplit = modelfile.split(".")
-           count=len(namesplit)
-           if (count == 2):
-              if ((namesplit[1].find("py") != -1) and (namesplit[1].find("pyc") == -1)):
-#                  os.remove(event.pathname + "c")
-                  if (partitionkey.find("1")):
-                     py_compile.compile(event.pathname)
-                  else :
-                     time.sleep(1)
-                  print("importing module models." + namesplit[0])
-                  __import__ ("models." + namesplit[0])
-        sys.stdout.flush
-
-    def process_IN_DELETE(self, event):
-       print( "Removing: ..... ", event.pathname)
-       sys.stdout.flush
-
-    def process_IN_MODIFY(self, event):
-       print("Updating: .... ", event.pathname)
-       modelfile=os.path.basename(event.pathname)
-       if (modelfile.find(".") != -1):
-          namesplit = modelfile.split(".")
-          count=len(namesplit)
-          if (count == 2):
-             if ((namesplit[1].find("py") != -1) and (namesplit[1].find("pyc") == -1)):
-                 print("reloading module models." + namesplit[0])
-                 if (partitionkey.find("1")):
-                     os.remove(event.pathname + "c") 
-                     print("removing file ." + event.pathname + "c")
-#                 os.remove(event.pathname + "~") 
-                     py_compile.compile(event.pathname)
-                 else :
-                    time.sleep(1) 
-                 reload (sys.modules["models." + module])
-#                 __import__("models." + module, globals(), locals(), ["SubtractTuple"]) 
-       sys.stdout.flush
-
-# Model Watch Thread #1
-handler = EventHandler()
-modelNotify = pyinotify.ThreadedNotifier(modelWatch, handler)
-modelNotify.start()
-print("Going to to watch dir " + args['pythonPath'] + "/models")
-sys.stdout.flush
-modelWatch.add_watch(args['pythonPath'] + "/models", mask, rec=True) 
-
 
 
 CONNECTION_LIST = []    # list of socket clients
