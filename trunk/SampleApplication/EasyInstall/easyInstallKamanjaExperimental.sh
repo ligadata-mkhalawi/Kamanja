@@ -265,6 +265,8 @@ cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.10.0.0.jar
 cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.8.2.2.jar $systemlib
 cp $ivyPath/cache/com.yammer.metrics/metrics-core/jars/metrics-core-2.2.0.jar  $systemlib
 
+# Copy jars needed for Storage
+cp $ivyPath/cache/com.google.guava/guava/jars/guava-19.0.jar $systemlib
 
 # *******************************
 # Copy jars required for version-2.10 (more than required if the fat jars are used)
@@ -592,6 +594,8 @@ cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.8.2.2.jar 
 cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.10.0.0.jar $systemlib
 cp $ivyPath/cache/com.yammer.metrics/metrics-core/jars/metrics-core-2.2.0.jar  $systemlib
 
+# Copy jars needed for Storage
+cp $ivyPath/cache/com.google.guava/guava/jars/guava-19.0.jar $systemlib
 
 # *******************************
 # Copy jars required version-2.11 (more than required if the fat jars are used)
