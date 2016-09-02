@@ -356,13 +356,13 @@ class KamanjaManager extends Observer {
 
   def AddExecContext(execCtxt: ExecContextImpl): Unit = synchronized {
     if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
-      LOG.debug("Available execCtxt:" + execCtxt + " to commit offset after every " + KamanjaConfiguration.commitOffsetsTimeInterval + "ms")
+      if (LOG.isDebugEnabled()) LOG.debug("Adding execCtxt:" + execCtxt + " to commit offset after every " + KamanjaConfiguration.commitOffsetsTimeInterval + "ms")
       execCtxts += execCtxt
     }
   }
 
   def ClearExecContext(): Unit = synchronized {
-    LOG.debug("Called ClearExecContext")
+    if (LOG.isDebugEnabled()) LOG.debug("Called ClearExecContext")
     execCtxts.clear
   }
 
@@ -371,7 +371,7 @@ class KamanjaManager extends Observer {
   }
 
   def RecreateExecCtxtsCommitPartitionOffsetPool(): Unit = synchronized {
-    LOG.debug("Called RecreateExecCtxtsCommitPartitionOffsetPool")
+    if (LOG.isDebugEnabled()) LOG.debug("Called RecreateExecCtxtsCommitPartitionOffsetPool")
     if (execCtxtsCommitPartitionOffsetPool != null) {
       execCtxtsCommitPartitionOffsetPool.shutdownNow()
       // Not really waiting for termination
@@ -387,13 +387,13 @@ class KamanjaManager extends Observer {
           val commitOffsetsTimeInterval = KamanjaConfiguration.commitOffsetsTimeInterval
           while (! tp.isShutdown) {
             try {
-              Thread.sleep(commitOffsetsTimeInterval + 100) // Sleeping 100ms more than given interval
+              Thread.sleep(commitOffsetsTimeInterval + 1000) // Sleeping 1000ms more than given interval
             } catch {
               case e: Throwable => {}
             }
             if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
               val envCtxts = GetEnvCtxts
-              LOG.debug("Running CommitPartitionOffsetIfNeeded for " + envCtxts.length + " envCtxts")
+              if (LOG.isDebugEnabled()) LOG.debug("Running CommitPartitionOffsetIfNeeded for " + envCtxts.length + " envCtxts")
               var idx = 0
               while (idx < envCtxts.length && ! tp.isShutdown) {
                 try {
@@ -427,7 +427,8 @@ class KamanjaManager extends Observer {
     if (KamanjaMetadata.envCtxt != null)
       KamanjaMetadata.envCtxt.PersistRemainingStateEntriesOnLeader
 */
-    execCtxtsCommitPartitionOffsetPool.shutdownNow()
+    if (execCtxtsCommitPartitionOffsetPool != null)
+      execCtxtsCommitPartitionOffsetPool.shutdownNow()
     ClearExecContext
     KamanjaLeader.Shutdown
     KamanjaMetadata.Shutdown
