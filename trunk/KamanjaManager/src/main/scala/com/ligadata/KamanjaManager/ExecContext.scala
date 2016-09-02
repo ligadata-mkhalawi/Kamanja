@@ -20,18 +20,18 @@ package com.ligadata.KamanjaManager
 import com.ligadata.HeartBeat.MonitorComponentInfo
 import com.ligadata.KamanjaBase._
 import com.ligadata.InputOutputAdapterInfo._
-import com.ligadata.KvBase.{Key}
+import com.ligadata.KvBase.Key
 import com.ligadata.StorageBase.DataStore
-import com.ligadata.kamanja.metadata.{ContainerDef, MessageDef, AdapterMessageBinding}
+import com.ligadata.kamanja.metadata.{AdapterMessageBinding, ContainerDef, MessageDef}
 import com.ligadata.kamanja.metadata.MdMgr._
-
-import org.apache.logging.log4j.{Logger, LogManager}
+import org.apache.logging.log4j.{LogManager, Logger}
 
 //import org.json4s._
 //import org.json4s.JsonDSL._
 //import org.json4s.jackson.JsonMethods._
 import scala.collection.mutable.ArrayBuffer
 import com.ligadata.Exceptions.{FatalAdapterException, MessagePopulationException, StackTrace}
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import com.ligadata.transactions._
 
@@ -43,6 +43,60 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
   private val LOG = LogManager.getLogger(getClass);
   private var eventsCntr: Long = 0
   private var lastTimeCommitOffsets: Long = System.currentTimeMillis
+  private val nullEventOrigin = EventOriginInfo(null, null)
+  private var lastEventOrigin = nullEventOrigin
+  private val execCtxt_reent_lock = new ReentrantReadWriteLock(true)
+
+  if (KamanjaManager.instance != null)
+    KamanjaManager.instance.AddExecContext(this)
+
+  private def ReadLock(reent_lock: ReentrantReadWriteLock): Unit = {
+    if (reent_lock != null)
+      reent_lock.readLock().lock()
+  }
+
+  private def ReadUnlock(reent_lock: ReentrantReadWriteLock): Unit = {
+    if (reent_lock != null)
+      reent_lock.readLock().unlock()
+  }
+
+  private def WriteLock(reent_lock: ReentrantReadWriteLock): Unit = {
+    if (reent_lock != null)
+      reent_lock.writeLock().lock()
+  }
+
+  private def WriteUnlock(reent_lock: ReentrantReadWriteLock): Unit = {
+    if (reent_lock != null)
+      reent_lock.writeLock().unlock()
+  }
+
+  def CommitPartitionOffsetIfNeeded: Unit = {
+    if (lastEventOrigin.key != null && lastEventOrigin.value != null && lastEventOrigin.key.trim.size > 0 && lastEventOrigin.value.trim.size > 0 && !nodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0 && ((lastTimeCommitOffsets + KamanjaConfiguration.commitOffsetsTimeInterval) <= System.currentTimeMillis)) {
+      WriteLock(execCtxt_reent_lock)
+      try {
+        if (lastEventOrigin.key != null && lastEventOrigin.value != null && lastEventOrigin.key.trim.size > 0 && lastEventOrigin.value.trim.size > 0 && !nodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0 && ((lastTimeCommitOffsets + KamanjaConfiguration.commitOffsetsTimeInterval) <= System.currentTimeMillis)) {
+          val prevTimeCommitOffsets = lastTimeCommitOffsets
+          val prevEventsCntr = eventsCntr
+          val prevEventOrigin = lastEventOrigin
+          try {
+            lastEventOrigin = nullEventOrigin
+            lastTimeCommitOffsets = System.currentTimeMillis
+            eventsCntr = 0
+            nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(lastEventOrigin.key, lastEventOrigin.value)
+          } catch {
+            case e: Throwable => {
+              lastEventOrigin = lastEventOrigin
+              lastTimeCommitOffsets = prevTimeCommitOffsets
+              eventsCntr = prevEventsCntr
+            }
+          }
+        }
+     } finally {
+        WriteUnlock(execCtxt_reent_lock)
+      }
+    }
+  }
+
   //  private var adapterChangedCntr: Long = -1
   //
   //  // Mapping Adapter to Msgs
@@ -241,18 +295,57 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
             (KamanjaConfiguration.commitOffsetsMsgCnt > 0 && eventsCntr >= KamanjaConfiguration.commitOffsetsMsgCnt) ||
             (KamanjaConfiguration.commitOffsetsTimeInterval > 0 && ((lastTimeCommitOffsets + KamanjaConfiguration.commitOffsetsTimeInterval) <= System.currentTimeMillis)) ||
             nodeContext.getEnvCtxt().EnableEachTransactionCommit) {
+            var prevTimeCommitOffsets = lastTimeCommitOffsets
+            var prevEventsCntr = eventsCntr
+            var prevEventOrigin = lastEventOrigin
+
+            lastEventOrigin = nullEventOrigin
+            eventsCntr = 0
+            lastTimeCommitOffsets = System.currentTimeMillis
+
             try {
-              nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(txnCtxt.origin.key, txnCtxt.origin.value)
-              eventsCntr = 0
-              lastTimeCommitOffsets = System.currentTimeMillis
+              if (!nodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0 && ((prevTimeCommitOffsets + KamanjaConfiguration.commitOffsetsTimeInterval) <= System.currentTimeMillis)) {
+                // ReadLock
+                WriteLock(execCtxt_reent_lock)
+                try {
+                  lastEventOrigin = nullEventOrigin
+                  lastTimeCommitOffsets = System.currentTimeMillis
+                  eventsCntr = 0
+                  nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(txnCtxt.origin.key, txnCtxt.origin.value)
+                  prevTimeCommitOffsets = lastTimeCommitOffsets
+                  prevEventsCntr = eventsCntr
+                  prevEventOrigin = lastEventOrigin
+                } catch {
+                  case e: Throwable => {
+                    lastEventOrigin = prevEventOrigin
+                    lastTimeCommitOffsets = prevTimeCommitOffsets
+                    eventsCntr = prevEventsCntr
+                  }
+                } finally {
+                  WriteUnlock(execCtxt_reent_lock)
+                }
+              } else {
+                lastEventOrigin = nullEventOrigin
+                eventsCntr = 0
+                lastTimeCommitOffsets = System.currentTimeMillis
+                nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(txnCtxt.origin.key, txnCtxt.origin.value)
+              }
             } catch {
               case e: Exception => {
+                lastEventOrigin = prevEventOrigin
+                lastTimeCommitOffsets = prevTimeCommitOffsets
+                eventsCntr = prevEventsCntr
                 LOG.error("Failed to setAdapterUniqueKeyValue", e)
               }
               case e: Throwable => {
+                lastEventOrigin = prevEventOrigin
+                lastTimeCommitOffsets = prevTimeCommitOffsets
+                eventsCntr = prevEventsCntr
                 LOG.error("Failed to setAdapterUniqueKeyValue", e)
               }
             }
+          } else {
+            lastEventOrigin = txnCtxt.origin
           }
         }
       }

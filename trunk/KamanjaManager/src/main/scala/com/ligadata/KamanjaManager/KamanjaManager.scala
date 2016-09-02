@@ -351,6 +351,69 @@ class KamanjaManager extends Observer {
     (msg2TenantId, msg2TentIdResolvedCntr)
   }
 
+  private val execCtxts = ArrayBuffer[ExecContextImpl]()
+  private var execCtxtsCommitPartitionOffsetPool: ExecutorService = null
+
+  def AddExecContext(execCtxt: ExecContextImpl): Unit = synchronized {
+    if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
+      LOG.debug("Available execCtxt:" + execCtxt + " to commit offset after every " + KamanjaConfiguration.commitOffsetsTimeInterval + "ms")
+      execCtxts += execCtxt
+    }
+  }
+
+  def ClearExecContext(): Unit = synchronized {
+    LOG.debug("Called ClearExecContext")
+    execCtxts.clear
+  }
+
+  def GetEnvCtxts(): Array[ExecContextImpl] = {
+    execCtxts.toArray
+  }
+
+  def RecreateExecCtxtsCommitPartitionOffsetPool(): Unit = synchronized {
+    LOG.debug("Called RecreateExecCtxtsCommitPartitionOffsetPool")
+    if (execCtxtsCommitPartitionOffsetPool != null) {
+      execCtxtsCommitPartitionOffsetPool.shutdownNow()
+      // Not really waiting for termination
+    }
+
+    execCtxtsCommitPartitionOffsetPool = scala.actors.threadpool.Executors.newFixedThreadPool(1)
+
+    // We are checking for EnableEachTransactionCommit & KamanjaConfiguration.commitOffsetsTimeInterval to add thsi task
+    if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
+      execCtxtsCommitPartitionOffsetPool.execute(new Runnable() {
+        override def run() {
+          val tp = execCtxtsCommitPartitionOffsetPool
+          val commitOffsetsTimeInterval = KamanjaConfiguration.commitOffsetsTimeInterval
+          while (! tp.isShutdown) {
+            try {
+              Thread.sleep(commitOffsetsTimeInterval + 100) // Sleeping 100ms more than given interval
+            } catch {
+              case e: Throwable => {}
+            }
+            if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
+              val envCtxts = GetEnvCtxts
+              LOG.debug("Running CommitPartitionOffsetIfNeeded for " + envCtxts.length + " envCtxts")
+              var idx = 0
+              while (idx < envCtxts.length && ! tp.isShutdown) {
+                try {
+                  envCtxts(idx).CommitPartitionOffsetIfNeeded
+                } catch {
+                  case e: Throwable => {
+                    LOG.error("Failed to commit partitions offsets", e)
+                  }
+                }
+                idx += 1
+              }
+            }
+          }
+        }
+      })
+    }
+  }
+
+
+
   private def PrintUsage(): Unit = {
     LOG.warn("Available commands:")
     LOG.warn("    Quit")
@@ -364,6 +427,8 @@ class KamanjaManager extends Observer {
     if (KamanjaMetadata.envCtxt != null)
       KamanjaMetadata.envCtxt.PersistRemainingStateEntriesOnLeader
 */
+    execCtxtsCommitPartitionOffsetPool.shutdownNow()
+    ClearExecContext
     KamanjaLeader.Shutdown
     KamanjaMetadata.Shutdown
     ShutdownAdapters
@@ -737,6 +802,8 @@ class KamanjaManager extends Observer {
             retval = false
           }
         }
+        if (retval)
+          RecreateExecCtxtsCommitPartitionOffsetPool()
       }
     } catch {
       case e: Exception => {
