@@ -55,8 +55,8 @@ class executeModel(CommandBase):
 			try:
 				model = modelDict.get(modelName)
 				msg = cmdOptions["InputDictionary"]
-#                                if self.logger.isEnabledFor(logging.DEBUG): 
-#				   self.logger.debug("model instance selected = {}".format(str(model)))
+                                if self.logger.isEnabledFor(logging.DEBUG): 
+				   self.logger.debug("model instance selected = {}".format(str(model)))
 				results = model.execute(msg)
 			except:
 				results = super(executeModel, self).exceptionMsg("The model '{}' is having a bad day...".format(modelName))
