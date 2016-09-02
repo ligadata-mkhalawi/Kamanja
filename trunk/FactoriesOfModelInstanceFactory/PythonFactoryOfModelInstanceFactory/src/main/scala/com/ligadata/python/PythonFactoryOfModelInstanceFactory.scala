@@ -262,8 +262,8 @@ class PythonAdapter(factory : PythonAdapterFactory
         val port : String = pyServerConnection.port.toString
         val rc = resultMap.getOrElse("Code", -1)
         if (rc == 0) {
-            _inputFields = resultMap.getOrElse("InputFields", Map[String,Any]()).asInstanceOf[Map[String,Any]]
-          _outputFields = resultMap.getOrElse("OutputFields", Map[String,Any]()).asInstanceOf[Map[String,Any]]
+//            _inputFields = resultMap.getOrElse("InputFields", Map[String,Any]()).asInstanceOf[Map[String,Any]]
+//          _outputFields = resultMap.getOrElse("OutputFields", Map[String,Any]()).asInstanceOf[Map[String,Any]]
           if (logger.isDebugEnabled()) {
             logger.debug(s"Module '$moduleName.${modelDef.Name} successfully added to python server at $host($port")
           }
