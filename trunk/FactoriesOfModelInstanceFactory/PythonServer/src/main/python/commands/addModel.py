@@ -50,9 +50,10 @@ class addModel(CommandBase):
 			modelDict[str(modelName)] = handler
 #                        if self.logger.isEnabledFor(logging.DEBUG): 
 #			   self.logger.debug("model {}.{} added!".format(moduleName, modelName))
-			(inputfields, outputfields) = handler.getInputOutputFields()
+#			(inputfields, outputfields) = handler.getInputOutputFields()
 			modelAddMsg = "model {}.{} added".format(moduleName,modelName)
-			result = json.dumps({'Cmd' : 'addModel', 'Server' : host, 'Port' : str(port), 'Code' : 0, 'Result' : modelAddMsg, 'InputFields' : inputfields, 'OutputFields' : outputfields })
+#			result = json.dumps({'Cmd' : 'addModel', 'Server' : host, 'Port' : str(port), 'Code' : 0, 'Result' : modelAddMsg, 'InputFields' : inputfields, 'OutputFields' : outputfields })
+			result = json.dumps({'Cmd' : 'addModel', 'Server' : host, 'Port' : str(port), 'Code' : 0, 'Result' : modelAddMsg, 'InputFields' : [] , 'OutputFields' : [] })
 		else:
 			inputfields = []
 			outputfields = []
