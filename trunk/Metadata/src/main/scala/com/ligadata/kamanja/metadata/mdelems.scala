@@ -780,52 +780,54 @@ class MacroDef extends FunctionDef {
 
 object MiningModelType extends Enumeration {
   type MiningModelType = Value
-  val BASELINEMODEL, ASSOCIATIONMODEL, CLUSTERINGMODEL, GENERALREGRESSIONMODEL, MININGMODEL, NAIVEBAYESMODEL, NEARESTNEIGHBORMODEL, NEURALNETWORK, REGRESSIONMODEL, RULESETMODEL, SEQUENCEMODEL, SCORECARD, SUPPORTVECTORMACHINEMODEL, TEXTMODEL, TIMESERIESMODEL, TREEMODEL, SCALA, JAVA, BINARY, PYTHON, JTM, UNKNOWN = Value
+  val BASELINEMODEL,ASSOCIATIONMODEL,CLUSTERINGMODEL,GENERALREGRESSIONMODEL,MININGMODEL,NAIVEBAYESMODEL,NEARESTNEIGHBORMODEL,NEURALNETWORK,REGRESSIONMODEL,RULESETMODEL,SEQUENCEMODEL,SCORECARD,SUPPORTVECTORMACHINEMODEL,TEXTMODEL,TIMESERIESMODEL,TREEMODEL, SCALA, JAVA, BINARY, PYTHON, JYTHON, JTM, UNKNOWN = Value
 
-  def modelType(mdlType: String): MiningModelType = {
-    val typ: MiningModelType.MiningModelType = mdlType.trim.toLowerCase match {
-      case "customscala"               => SCALA
-      case "customjava"                => JAVA
-      case "rulesetmodel"              => RULESETMODEL
-      case "treemodel"                 => TREEMODEL
-      case "associationmodel"          => ASSOCIATIONMODEL
-      case "baselinemodel"             => BASELINEMODEL
-      case "clusteringmodel"           => CLUSTERINGMODEL
-      case "generalregressionmodel"    => GENERALREGRESSIONMODEL
-      case "miningmodel"               => MININGMODEL
-      case "naivebayesmodel"           => NAIVEBAYESMODEL
-      case "nearestneighbormodel"      => NEARESTNEIGHBORMODEL
-      case "neuralnetwork"             => NEURALNETWORK
-      case "regressionmodel"           => REGRESSIONMODEL
-      case "sequencemodel"             => SEQUENCEMODEL
-      case "scorecard"                 => SCORECARD
-      case "supportvectormachinemodel" => SUPPORTVECTORMACHINEMODEL
-      case "textmodel"                 => TEXTMODEL
-      case "timeseriesmodel"           => TIMESERIESMODEL
-      case "scala"                     => SCALA
-      case "java"                      => JAVA
-      case "binary"                    => BINARY
-      case "python"                    => PYTHON
-      case "jtm"                       => JTM
-      case _                           => UNKNOWN
+  def modelType(mdlType : String) : MiningModelType = {
+    val typ : MiningModelType.MiningModelType = mdlType.trim.toLowerCase match {
+        case "customscala" => SCALA
+        case "customjava" => JAVA
+        case "rulesetmodel" => RULESETMODEL
+        case "treemodel" => TREEMODEL
+        case "associationmodel" => ASSOCIATIONMODEL
+        case "baselinemodel" => BASELINEMODEL
+        case "clusteringmodel" => CLUSTERINGMODEL
+        case "generalregressionmodel" => GENERALREGRESSIONMODEL
+        case "miningmodel" => MININGMODEL
+        case "naivebayesmodel" => NAIVEBAYESMODEL
+        case "nearestneighbormodel" => NEARESTNEIGHBORMODEL
+        case "neuralnetwork" => NEURALNETWORK
+        case "regressionmodel" => REGRESSIONMODEL
+        case "sequencemodel" => SEQUENCEMODEL
+        case "scorecard" => SCORECARD
+        case "supportvectormachinemodel" => SUPPORTVECTORMACHINEMODEL
+        case "textmodel" => TEXTMODEL
+        case "timeseriesmodel" => TIMESERIESMODEL
+        case "scala" => SCALA
+        case "java" => JAVA
+        case "binary" => BINARY
+        case "python" => PYTHON
+        case "jython" => JYTHON
+        case "jtm" => JTM
+        case _ => UNKNOWN
     }
     typ
   }
 }
 
 object ModelRepresentation extends Enumeration {
-  type ModelRepresentation = Value
-  val JAR, PMML, PYTHON, JTM, UNKNOWN = Value
+    type ModelRepresentation = Value
+    val JAR, PMML, PYTHON, JYTHON, JTM, UNKNOWN = Value
 
   def modelRep(mdlRep: String): ModelRepresentation = {
-    val rep: ModelRepresentation = mdlRep.toUpperCase match {
-      case "JAR"    => JAR
-      case "PMML"   => PMML
-      case "PYTHON" => PYTHON
-      case "JTM"    => JTM
-      case _        => UNKNOWN
-    }
-    rep
+      val rep: ModelRepresentation = mdlRep.toUpperCase match {
+          case "JAR" => JAR
+          case "PMML" => PMML
+          case "PYTHON" => PYTHON
+          case "JYTHON" => JYTHON
+          case "JTM" => JTM
+          case _ => UNKNOWN
+      }
+      rep
   }
 }
 
@@ -838,27 +840,38 @@ class MessageAndAttributes {
 }
 
 /**
- * The ModelDef provides meta data for all models in the system.  The model's input type can currently be either a jar or
- * a pmml text string (used by PMML type models).  The mining model type is any of the dmg.org's model types as defined in their xsd or
- * one of our own special types (CustomScala, CustomJava, or Unknown when the caller does not supply one).
- *
- * Models, when marked with isReusable, can be cached (are considered idempotent)
- *
- * @param modelRepresentation The form of model to be cataloged - JAR, PMML etc.
- * @param miningModelType a MininingModelType default = "Unknown"
- * @param inputMsgSets Sets of Messages it depends on (attributes referred in this model). Each set must met (all messages should available) to trigger this model
- * @param outputMsgs All possible output messages produced by this model
- * @param isReusable Whether the model execution is referentially transparent
- * @param supportsInstanceSerialization when true, ModelDef instances are serialized and cached for retrieval by
- *                                      the engine and other consumers of ModelDefs.  This mechanism is useful
- *                                      for PMML and other models that are relatively expensive to initialize. The
- *                                      thinking here is that the ingestion will occur at 'add model' time just once
- *                                      and out of band from the cluster bootstrap.  FIXME: NOT IMPLEMENTED YET
- */
-class ModelDef(val modelRepresentation: ModelRepresentation = ModelRepresentation.JAR, val miningModelType: MiningModelType = MiningModelType.UNKNOWN, var inputMsgSets: Array[Array[MessageAndAttributes]] = Array[Array[MessageAndAttributes]](), var outputMsgs: Array[String] = Array[String](), var isReusable: Boolean = false, var supportsInstanceSerialization: Boolean = false, var modelConfig: String = "", var depContainers: Array[String] = Array[String]()) extends BaseElemDef {
-  override def MdElementCategory: String = "Model"
-  def typeString: String = PhysicalName
-  def SupportsInstanceSerialization: Boolean = supportsInstanceSerialization
+* The ModelDef provides meta data for all models in the system.  The model's input type can currently be either a jar or
+* a pmml text string (used by PMML type models).  The mining model type is any of the dmg.org's model types as defined in their xsd or
+* one of our own special types (CustomScala, CustomJava, or Unknown when the caller does not supply one).
+*
+* Models, when marked with isReusable, can be cached (are considered idempotent)
+*
+* @param modelRepresentation The form of model to be cataloged - JAR, PMML etc.
+* @param miningModelType a MininingModelType default = "Unknown"
+* @param inputMsgSets Sets of Messages it depends on (attributes referred in this model). Each set must met (all messages should available) to trigger this model
+* @param outputMsgs All possible output messages produced by this model
+* @param isReusable Whether the model execution is referentially transparent
+* @param supportsInstanceSerialization when true, ModelDef instances are serialized and cached for retrieval by
+*                                      the engine and other consumers of ModelDefs.  This mechanism is useful
+*                                      for PMML and other models that are relatively expensive to initialize. The
+*                                      thinking here is that the ingestion will occur at 'add model' time just once
+*                                      and out of band from the cluster bootstrap.  FIXME: NOT IMPLEMENTED YET
+* @param modelConfig A JSON string containing a dictionary of properties (config/init) useful for the model being cataloged
+* @param moduleName For Python and Jython representations, the name of the module in which the model behavior exists
+*/
+class ModelDef( val modelRepresentation: ModelRepresentation = ModelRepresentation.JAR
+                , val miningModelType : MiningModelType = MiningModelType.UNKNOWN
+                , var inputMsgSets : Array[Array[MessageAndAttributes]] = Array[Array[MessageAndAttributes]]()
+                , var outputMsgs: Array[String] = Array[String]()
+                , var isReusable: Boolean = false
+                , var supportsInstanceSerialization: Boolean = false
+                , var modelConfig: String = "{}"
+                , var moduleName: String = ""
+	            , var depContainers: Array[String] = Array[String]()
+              ) extends BaseElemDef {
+    override def MdElementCategory: String = "Model"
+    def typeString: String = PhysicalName
+    def SupportsInstanceSerialization : Boolean = supportsInstanceSerialization
 }
 
 class ConfigDef extends BaseElemDef {
