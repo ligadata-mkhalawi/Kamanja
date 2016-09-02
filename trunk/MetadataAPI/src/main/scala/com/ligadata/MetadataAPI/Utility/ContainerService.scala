@@ -18,6 +18,7 @@ package com.ligadata.MetadataAPI.Utility
 
 import java.io.File
 
+import com.ligadata.Exceptions.InvalidArgumentException
 import com.ligadata.MetadataAPI.{MetadataAPIImpl,ApiResult,ErrorCodeConstants}
 
 import scala.io.Source
@@ -45,11 +46,18 @@ object ContainerService {
     //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
     var chosen: String = ""
     var finalTid: Option[String] = None
+    try{
     if (tid == None) {
       chosen = getTenantId
       finalTid = Some(chosen)
     } else {
       finalTid = tid
+    }
+    }catch {
+      case e: InvalidArgumentException => {
+        logger.error("Invalid choice")
+        return (new ApiResult(ErrorCodeConstants.Failure, "addContainer",null, "Invalid choice")).toString
+      }
     }
 
 
@@ -107,13 +115,20 @@ object ContainerService {
     //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
     var chosen: String = ""
     var finalTid: Option[String] = None
+
+    try {
     if (tid == None) {
       chosen = getTenantId
       finalTid = Some(chosen)
     } else {
       finalTid = tid
     }
-
+  }catch {
+    case e: InvalidArgumentException => {
+      logger.error("Invalid choice")
+      return (new ApiResult(ErrorCodeConstants.Failure, "updateContainer",null, "Invalid choice")).toString
+    }
+  }
 
     //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
     if (input == "") {
@@ -292,7 +307,9 @@ object ContainerService {
       true
   }
 
+  @throws(classOf[InvalidArgumentException])
   private def getTenantId: String = {
+    println("Select a tenant id:")
     var tenatns = metadataAPI.GetAllTenants(userid)
     return getUserInputFromMainMenu(tenatns)
   }
@@ -305,7 +322,15 @@ object ContainerService {
     }
     print("\nEnter your choice(If more than 1 choice, please use commas to seperate them): \n")
     val userOption: Int = readLine().trim.toInt
-    return tenants(userOption - 1)
+    if(userOption<1 || userOption > srNo){
+      //(new ApiResult(ErrorCodeConstants.Failure, "getUserInputFromMainMenu(tenantid)",null, "Invalid choice")).toString
+      logger.debug("Invalid choice")
+      throw new InvalidArgumentException("Invalid choice",null)
+    }
+    else {
+      logger.debug("User option is: " + (userOption - 1))
+      return tenants(userOption - 1)
+    }
   }
 
   def getUserInputFromMainMenu(containers: Array[File]): Array[String] = {
