@@ -29,14 +29,24 @@ class ModelInstance(ModelBase):
     def execute(self, outputDefault):
         """if outputDefault is true we will output the default value if nothing matches, otherwise null."""
 
+    @abc.abstractmethod
+    def getInputFields(self):
+        """answer two dicts - one for input and output 
+            (inputdict, outputdict) 
+            each dict consists of fldName/fld type pairs
+            this is a portion of the AddModel command result,
+            effectively advertising which fields are needed by the 
+            model to process and what can be expected when output
+            sent.
+        """
+
     def isModelInstanceReusable(self):
         """Can the instance created for this model be reused on subsequent transactions?"""
         return super(ModelInstance,self).isModelInstanceReusable()
 
     def ModelOptions(self):
         #make the options dictionary available to the concrete implementors of ModelBase
-        return self.modelOptions
-
+        return self.modelOptions    
 
     def PartitionHash(self):
         #Answer which hash this model is dedicated to.

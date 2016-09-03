@@ -262,7 +262,7 @@ class PythonAdapter(factory : PythonAdapterFactory
         val port : String = pyServerConnection.port.toString
         val rc = resultMap.getOrElse("Code", -1)
         if (rc == 0) {
-//            _inputFields = resultMap.getOrElse("InputFields", Map[String,Any]()).asInstanceOf[Map[String,Any]]
+            _inputFields = resultMap.getOrElse("InputFields", Map[String,Any]()).asInstanceOf[Map[String,Any]]
 //          _outputFields = resultMap.getOrElse("OutputFields", Map[String,Any]()).asInstanceOf[Map[String,Any]]
           if (logger.isDebugEnabled()) {
             logger.debug(s"Module '$moduleName.${modelDef.Name} successfully added to python server at $host($port")
@@ -492,6 +492,7 @@ class PythonAdapter(factory : PythonAdapterFactory
         }
         msgReturned
     }
+
     /**
       * Send only those fields that are specified in the inputField state retrieved from the addModel result.
       *
@@ -506,12 +507,34 @@ class PythonAdapter(factory : PythonAdapterFactory
             })
         })
 
+     
       val msgDict : String = Json(DefaultFormats).write(inputDictionary)
       if (logger.isDebugEnabled()) {
         logger.debug(s"model ${factory.getModelDef().Name} msg = $msgDict")
       }
         inputDictionary
     }
+
+
+    /**
+      * Send only those fields that are specified in the inputField state retrieved from the addModel result.
+      *
+      * @param msg the incoming message instance
+      * @return a JSON map string suitable for submission to the server.
+      */
+//    private def prepareMsgFields(msg: ContainerInterface) : Map[String,Any] = {
+//        val inputDictionary : Map[String,Any] = msg.foldLeft(Map.empty[String, Any])((map, fld) => {
+//            val key = fld._1.toLowerCase
+//            map.updated(key, value)
+//        })
+
+     
+//      val msgDict : String = Json(DefaultFormats).write(inputDictionary)
+//      if (logger.isDebugEnabled()) {
+//        logger.debug(s"model ${factory.getModelDef().Name} msg = $msgDict")
+//      }
+//        inputDictionary
+//    }
 
     /**
       * It there is no python connection object available in the node context with this partition key, this function is called to establish a server and

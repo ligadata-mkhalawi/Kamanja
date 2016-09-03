@@ -56,3 +56,47 @@ class LoanTuple(ModelInstance):
                                      'PYTHON_RISK_SCORE' : pred})
                 return outMsg
 
+        def getInputFields(self):
+                """The field names and their types needed by the model are returned to """
+                """the python proxy (model stub communicating with this server). """
+                """Feel free to just hard code the type info if that is best. """
+                """The returned dictionaries are used by the python proxy to choose """
+                """which fields from the associated messages(s) to send to the python server """
+                """when the model is executed.  This is appropriate when the message contains"""
+                """a thousand fields, but the model only uses five of them. """
+
+                """As shown, conceivably the information could be configured in the model """
+                """options. """
+
+                self.logger.debug("Entered LoanTuple.getInputOutputFields")
+                modelOptions = super(LoanTuple, self).ModelOptions()
+                inputFields = dict()
+                if "InputTypeInfo" in modelOptions:
+                        inputFields.update(modelOptions["InputTypeInfo"])
+                else:
+                        inputFields["recid"] = "Int"
+                        inputFields["bad0"] = "Float"
+                        inputFields["p1"] = "Float"
+                        inputFields["p2"] = "Float"
+                        inputFields["p3"] = "Float"
+                        inputFields["p4"] = "Float"
+                        inputFields["p5"] = "Float"
+                        inputFields["p6"] = "Float"
+                        inputFields["p7"] = "Float"
+                        inputFields["p8"] = "Float"
+                        inputFields["p9"] = "Float"
+                        inputFields["p10"] = "Float"
+                        inputFields["p11"] = "Float"
+                        inputFields["p12"] = "Float"
+                        inputFields["p13"] = "Float"
+                        inputFields["p14"] = "Float"
+                        inputFields["p15"] = "Float"
+                        inputFields["p16"] = "Float"
+                        inputFields["p17"] = "Float"
+                        inputFields["p18"] = "Float"
+                        inputFields["p19"] = "Float"
+                        inputFields["p20"] = "Float"
+                        inputFields["p21"] = "Float"
+
+                return (inputFields)
+
