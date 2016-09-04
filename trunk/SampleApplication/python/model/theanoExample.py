@@ -33,7 +33,7 @@ class AddTheanoTuple(ModelInstance):
                 """As shown, conceivably the information could be configured in the model """
                 """options. """
 
-                self.logger.debug("Entered AddTheanoTuple.getInputOutputFields")
+                self.logger.debug("Entered AddTheanoTuple.getInputFields")
                 modelOptions = super(AddTheanoTuple, self).ModelOptions()
                 inputFields = dict()
                 if "InputTypeInfo" in modelOptions:

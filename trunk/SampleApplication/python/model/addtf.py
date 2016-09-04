@@ -34,7 +34,7 @@ class AddTupleTF(ModelInstance):
 		"""As shown, conceivably the information could be configured in the model """
 		"""options. """
 
-		self.logger.debug("Entered AddTupleTF.getInputOutputFields")
+		self.logger.debug("Entered AddTupleTF.getInputFields")
 		modelOptions = super(AddTupleTF, self).ModelOptions()
 		inputFields = dict()
 		if "InputTypeInfo" in modelOptions:

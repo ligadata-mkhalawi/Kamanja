@@ -27,7 +27,7 @@ class AddTuple(ModelInstance):
 		"""As shown, conceivably the information could be configured in the model """
 		"""options. """
 
-		self.logger.debug("Entered AddTuple.getInputOutputFields")
+		self.logger.debug("Entered AddTuple.getInputFields")
 		modelOptions = super(AddTuple, self).ModelOptions()
 		inputFields = dict()
 		if "InputTypeInfo" in modelOptions:

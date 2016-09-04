@@ -68,7 +68,7 @@ class LoanTuple(ModelInstance):
                 """As shown, conceivably the information could be configured in the model """
                 """options. """
 
-                self.logger.debug("Entered LoanTuple.getInputOutputFields")
+                self.logger.debug("Entered LoanTuple.getInputFields")
                 modelOptions = super(LoanTuple, self).ModelOptions()
                 inputFields = dict()
                 if "InputTypeInfo" in modelOptions:

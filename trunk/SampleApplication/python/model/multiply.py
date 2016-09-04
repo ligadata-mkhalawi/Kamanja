@@ -27,7 +27,7 @@ class MultiplyTuple(ModelInstance):
 		"""As shown, conceivably the information could be configured in the model """
 		"""options. """
 
-		self.logger.debug("Entered MultiplyTuple.getInputOutputFields")
+		self.logger.debug("Entered MultiplyTuple.getInputFields")
 		modelOptions = super(MultiplyTuple, self).ModelOptions()
 		inputFields = dict()
 		if "InputTypeInfo" in modelOptions:

@@ -28,7 +28,7 @@ class DivideTuple(ModelInstance):
 		"""As shown, conceivably the information could be configured in the model """
 		"""options. """
 
-		self.logger.debug("Entered DivideTuple.getInputOutputFields")
+		self.logger.debug("Entered DivideTuple.getInputFields")
 		modelOptions = super(DivideTuple, self).ModelOptions()
 		inputFields = dict()
 		if "InputTypeInfo" in modelOptions:
