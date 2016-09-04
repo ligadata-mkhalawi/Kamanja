@@ -59,7 +59,7 @@ class PyProcess(host: String,
   val partKey : String = pKey 
 
   private val caller = self
-  private val WAIT_TIME = 100
+  private val WAIT_TIME = 1
 
   private val reader = actor {
     logger.warn("created actor: " + Thread.currentThread)
