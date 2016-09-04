@@ -91,21 +91,26 @@ angular.module('flareApp')
           {from: 'Jill', to: 'Outlook', label: 'access'},
 
         ],
-        nodeCount: function (title) {
-            return _.filter(this.nodes, function (node) {
-              return node.group === title;
-            }).length;
+        getNodesCount: function (title) {
+          return _.filter(this.nodes, function (node) {
+            return node.group === title;
+          }).length;
+        },
+        getNodes: function (title) {
+          return _.filter(this.nodes, function (node) {
+            return node.group === title;
+          });
         },
         showOptions: {
           'Coloring by Cluster': {
             value: true,
             options: {
-              'Applications': {value: true, color:'red'},
-              'Logs': {value: true, color: 'green'},
-              'People': {value: true, color: 'blue'},
-              'Countries': {value: true, color: 'lightBlue'},
-              'Organizations': {value: true, color: 'purple'},
-              'Alerts': {value: true, color: 'yellow'}
+              'Applications': {value: true, color:'red',showMenu:false},
+              'Logs': {value: true, color: 'green',showMenu:false},
+              'People': {value: true, color: 'blue',showMenu:false},
+              'Countries': {value: true, color: 'lightBlue',showMenu:false},
+              'Organizations': {value: true, color: 'purple',showMenu:false},
+              'Alerts': {value: true, color: 'yellow',showMenu:false}
             }
           },
           'Relationships': {value: true},
@@ -130,6 +135,10 @@ angular.module('flareApp')
             obj.value = !obj.value;
             $rootScope.$broadcast('showOptionsToggled');
           });
+        },
+        toggleNode: function (node) {
+          node.hidden = !node.hidden;
+          $rootScope.$broadcast('showOptionsToggled');
         }
       };
     };

@@ -28,10 +28,7 @@ angular
 
           // create a network
           var container = document.getElementById('visJsDiv');
-          var data = {
-            nodes: nodes,
-            edges: edges
-          };
+          var data = {nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges)};
           var options = {
 
             layout: {
@@ -145,6 +142,11 @@ angular
                 hidden = true;
               }
               edge.hidden = hidden;
+            });
+            _.each(nodes,function (node) {
+              if (node.hidden !== undefined) {
+                data.nodes.update([{id: node.id, hidden: node.hidden}]);
+              }
             });
             network.setOptions(options);
             network.setData(data);
