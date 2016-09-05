@@ -334,7 +334,7 @@ class PyServerConnection(val host : String
       if (logger.isDebugEnabled()) {
          logger.debug("Before add model in PyServerConnection moduleName " + moduleName + " moduleSrc " + moduleSrc)
       }
-        cpSrcFile(moduleName, moduleSrc)
+      //  cpSrcFile(moduleName, moduleSrc)
       if (logger.isDebugEnabled()) {
          logger.debug("After  add model in PyServerConnection moduleName " + moduleName + " moduleSrc " + moduleSrc)
       }

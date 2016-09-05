@@ -500,6 +500,10 @@ class PythonAdapter(factory : PythonAdapterFactory
       * @return a JSON map string suitable for submission to the server.
       */
     private def prepareFields(msg: ContainerInterface) : Map[String,Any] = {
+
+        if (logger.isDebugEnabled()) {
+          logger.debug (" primary key names are " + msg.getPrimaryKeyNames().mkString )
+        }
         val inputDictionary : Map[String,Any] = _inputFields.foldLeft(Map.empty[String, Any])((map, fld) => {
             val key = fld._1.toLowerCase
             Option(msg.get(key)).fold(map)(value => {
