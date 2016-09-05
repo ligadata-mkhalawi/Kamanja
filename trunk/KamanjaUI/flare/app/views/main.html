@@ -5,12 +5,12 @@
       <div class="col-md-12 tabsBar">
         <span class="glyphicon glyphicon-plus" aria-hidden="true" ng-click="main.addNewView()"></span>
         <div ng-repeat="view in views" class="view" ng-class="{'active':view === currentView}"
-             ng-click="main.setView(view)">
-          <div ng-if="!view.editTitle" ng-dblclick="view.editTitle = true">
+             >
+          <div ng-if="!view.editTitle" ng-dblclick="view.editTitle = true" sglclick="main.setView(view)">
             {{view.title}}
           </div>
           <div ng-if="view.editTitle">
-            <input ng-model="view.title" ng-model-options="{ updateOn: 'blur' }" ng-keyup="cancel($event)" type="text"
+            <input ng-model="view.title" ng-model-options="{ updateOn: 'blur' }" ng-keyup="cancel($event)" click-outside="view.editTitle = false" type="text"
                    ng-change="view.editTitle = false">
           </div>
           <span class="glyphicon glyphicon-remove-sign" aria-hidden="true" ng-click="main.removeView(view)"

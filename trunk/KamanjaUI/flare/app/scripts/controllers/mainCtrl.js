@@ -131,9 +131,14 @@ angular.module('flareApp')
           return valObject.options;
         },
         toggleOptions: function (option) {
+          var v;
           traverse(this.showOptions, option, function process(key, obj) {
-            obj.value = !obj.value;
+            obj.value = v = !obj.value;
             $rootScope.$broadcast('showOptionsToggled');
+          });
+          var nodes = this.getNodes(option);
+          _.each(nodes, function (node) {
+            node.hidden = !v;
           });
         },
         toggleNode: function (node) {
