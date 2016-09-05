@@ -130,28 +130,30 @@ angular
             edges = view.edges;
 
             showOptions['Labels'] = view.getOption('Labels');
+
+
             for (var key in options.groups) {
               options.groups[key].hidden = !view.getOption(key);
             }
-            _.each(nodes, function (node) {
-              var h = node.hidden || false;
-              data.nodes.update([{id: node.id, hidden: h}]);
 
-            });
             _.each(edges, function (edge) {
               var fromAndTo = _.filter(nodes, function (n) {
                 return n.id === edge.from || n.id === edge.to
               });
               var hidden = false;
-              if (options.groups[fromAndTo[0].group].hidden) {
+              if (options.groups[fromAndTo[0].group].hidden ) {
                 hidden = true;
               }
               if (options.groups[fromAndTo[1].group].hidden) {
                 hidden = true;
               }
+              if (fromAndTo[0].hidden || fromAndTo[1].hidden) {
+                hidden = true;
+              }
               edge.hidden = hidden;
             });
             network.setOptions(options);
+            data = {nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges)};
             network.setData(data);
             network.redraw();
           });
