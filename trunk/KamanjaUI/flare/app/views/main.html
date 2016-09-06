@@ -32,13 +32,7 @@
               ng-class="{'hideEye':!currentView.getOption('Labels')}"></span>
       </div>
     </div>
-    <div class="row">
-      <div class="col-md-12 listItem listParent">
-        <div class="head">
-          <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>Entities (160)
-        </div>
-      </div>
-    </div>
+
     <div class="row">
       <div class="col-md-12 listItem listParent">
         <div class="head" ng-click="currentView.toggleOptions('Coloring by Cluster')">
@@ -67,50 +61,6 @@
             </ul>
           </li>
         </ul>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-md-12 listItem listParent">
-        <div class="head" ng-click="currentView.toggleOptions('Relationships')">
-          <span class="glyphicon "
-                ng-class="{'glyphicon-menu-right': !currentView.getOption('Relationships'), 'glyphicon-menu-down': currentView.getOption('Relationships')}"
-                aria-hidden="true"></span> Relationships (800)
-        </div>
-        <ul class="list-group" ng-if="currentView.getOption('Relationships')">
-          <li class="list-group-item">
-            Accesses (100) <span
-            class="glyphicon glyphicon-eye-open" aria-hidden="true"></span></li>
-          <li class="list-group-item">
-            Logs (100) <span
-            class="glyphicon glyphicon-eye-open" aria-hidden="true"></span></li>
-          <li class="list-group-item">
-            Saves (100) <span
-            class="glyphicon glyphicon-eye-open" aria-hidden="true"></span></li>
-          <li class="list-group-item">
-            Downloads (100) <span
-            class="glyphicon glyphicon-eye-open" aria-hidden="true"></span></li>
-          <li class="list-group-item">
-            Opens (100) <span
-            class="glyphicon glyphicon-eye-open" aria-hidden="true"></span></li>
-          <li class="list-group-item">
-            Triggers (100) <span
-            class="glyphicon glyphicon-eye-open" aria-hidden="true"></span></li>
-          <li class="list-group-item">
-            Sends (100) <span
-            class="glyphicon glyphicon-eye-open" aria-hidden="true"></span></li>
-          <li class="list-group-item">
-            Notifies (100) <span
-            class="glyphicon glyphicon-eye-open" aria-hidden="true"></span></li>
-        </ul>
-      </div>
-    </div>
-
-    <div class="row">
-      <div class="col-md-12 listItem listParent">
-        <div class="head">
-          <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> Groups (0) <span
-          class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
-        </div>
       </div>
     </div>
   </div>
