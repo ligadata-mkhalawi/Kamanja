@@ -32,7 +32,7 @@
     <div data-toggle="collapse" ng-click="nodeDetails.openAlerts = !nodeDetails.openAlerts" data-target="#nodeAlerts"
          class="accordion-heading">
       <i class="fa"
-         ng-class="{'fa-chevron-down': nodeDetails.openAlerts, 'fa-chevron-right': !nodeDetails.openAlerts}"></i> Alerts
+         ng-class="{'fa-chevron-down': nodeDetails.openAlerts, 'fa-chevron-right': !nodeDetails.openAlerts}"></i> Alerts ({{nodeDetails.result.alerts.length}})
       <i class="pull-right fa fa-exclamation-triangle alertIcon"></i>
     </div>
     <div id="nodeAlerts" class="accordion-content collapse">
