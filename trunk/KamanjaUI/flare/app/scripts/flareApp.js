@@ -67,7 +67,7 @@ function clickOutside($document, $parse, $timeout) {
             l;
 
           // check if our element already hidden and abort if so
-          if (angular.element(elem).hasClass("ng-hide")) {
+          if (angular.element(elem).hasClass('ng-hide')) {
             return;
           }
 

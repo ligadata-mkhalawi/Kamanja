@@ -3,8 +3,8 @@
   <div ng-class="{'col-md-10':main.showSideBar,'col-md-12':!main.showSideBar}">
     <div class="row">
       <div class="col-md-12 tabsBar">
-        <span class="glyphicon glyphicon-plus" aria-hidden="true" ng-click="main.addNewView()"></span>
-        <div ng-repeat="view in views" class="view" ng-class="{'active':view === currentView}"
+        <span class="glyphicon glyphicon-plus" aria-hidden="true" ></span>
+        <div ng-repeat="view in [views[0]]" class="view" ng-class="{'active':view === currentView}"
              >
           <div ng-if="!view.editTitle" ng-dblclick="view.editTitle = true" sglclick="main.setView(view)">
             {{view.title}}
