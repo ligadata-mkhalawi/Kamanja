@@ -48,12 +48,11 @@
          ng-class="{'fa-chevron-down': nodeDetails.openRules, 'fa-chevron-right': !nodeDetails.openRules}"></i> Rules
     </div>
     <div id="nodeRules" class="accordion-content collapse">
-      <br />
       <div class="accordion-panel">
         <div ng-repeat="rule in nodeDetails.result.rules">
-          <div data-toggle="collapse" ng-click="rule.isOpen != rule.isOpen"
-            data-target="#{{rule.id}}"
-            class="sub-accordion-heading">
+          <div data-toggle="collapse" ng-click="rule.isOpen = !rule.isOpen"
+               data-target="#{{rule.id}}"
+               class="sub-accordion-heading">
             <i class="fa" ng-class="{'fa-chevron-down': rule.isOpen, 'fa-chevron-right': !rule.isOpen}"></i>
             {{rule.title}}
           </div>
@@ -61,19 +60,21 @@
             <p>
               {{rule.content}}
             </p>
-            <span>Threshold A</span>
-            <div class="row">
-              <div class="col-md-6">
-                <div class="thresholdTime">
-                  {{rule.startTime}}
+            <div class="thresholdRules">
+              <span>Threshold A</span>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="thresholdTime">
+                    {{rule.startTime}}
+                  </div>
+                  Starts
                 </div>
-                Starts
-              </div>
-              <div class="col-md-6">
-                <div class="thresholdTime">
-                  {{rule.endTime}}
+                <div class="col-md-6">
+                  <div class="thresholdTime">
+                    {{rule.endTime}}
+                  </div>
+                  Ends
                 </div>
-                Ends
               </div>
             </div>
           </div>

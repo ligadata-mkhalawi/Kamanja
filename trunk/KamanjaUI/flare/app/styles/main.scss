@@ -210,6 +210,9 @@ div.vis-network {
 }
 .accordion-panel {
 
+  margin-top: 10px;
+  margin-bottom: 10px;
+
   .accordion-heading {
     background-color: black;
     padding-right: 10px;
@@ -222,10 +225,12 @@ div.vis-network {
   }
 
   .accordion-content {
-    padding-left: 25px;
-    padding-right: 15px;
     background-color: #1a1a1a;
     text-align: justify;
+    p, .thresholdRules {
+      padding-left: 25px;
+      padding-right: 15px;
+    }
   }
 }
 

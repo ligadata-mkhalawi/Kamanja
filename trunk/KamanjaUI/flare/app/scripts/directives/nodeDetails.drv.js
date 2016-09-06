@@ -13,11 +13,15 @@ angular.module('flareApp')
         var nodeDetails = this;
 
         $rootScope.$on('nodeClicked', function(event, data){
-          toggleNodeDetails(true);
-          nodeDetails.applicationName = data;
-          serviceData.getDummyData(data, function(result){
-            nodeDetails.result = result[0];
-          });
+          if(data) {
+            toggleNodeDetails(true);
+            nodeDetails.applicationName = data;
+            serviceData.getDummyData(data, function (result) {
+              nodeDetails.result = result[0];
+            });
+          }else{
+            toggleNodeDetails(false);
+          }
         });
 
       }
