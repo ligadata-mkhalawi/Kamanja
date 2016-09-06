@@ -1,6 +1,7 @@
 .nodeDetails {
   width: 259px;
-  height: 100%;
+  min-height: 700px;
+  overflow: auto;
   color: #808080;
   background-color: black;
   left: -1000px;
