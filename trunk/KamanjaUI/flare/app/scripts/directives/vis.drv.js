@@ -98,6 +98,10 @@ angular
               'EmailApps': {
                 color: {background: '#d44d48', border: '#d44d48'},
                 font: {color: '#fff'}
+              },
+              'None': {
+                color: {background: '#999999', border: '#999999'},
+                font: {color: '#fff'}
               }
             }
           };

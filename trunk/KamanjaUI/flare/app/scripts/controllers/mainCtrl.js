@@ -56,7 +56,13 @@ angular.module('flareApp')
 
           {id: 'Outlook', _label: 'Outlook', group: 'EmailApps'},
           {id: 'GMail', _label: 'GMail', group: 'EmailApps'},
-          {id: 'RootEmailApp', _label: 'RootEmailApp', hidden: true, group: 'EmailApps'}
+          {id: 'RootEmailApp', _label: 'RootEmailApp', hidden: true, group: 'EmailApps'},
+
+          {id: 'Email', _label: 'Email', group: 'None'},
+          {id: 'companyMachin', _label: 'companyMachin', group: 'None'},
+          {id: 'ContactList', _label: 'ContactList', group: 'None'},
+          {id: 'Website', _label: 'Website', group: 'None'},
+          {id: 'SuspiciousWebsiteList', _label: 'SuspiciousWebsiteList', group: 'None'}
         ],
         edges: [
 
@@ -90,6 +96,12 @@ angular.module('flareApp')
           {from: 'BadApp', to: 'Outlook', label: 'access'},
           {from: 'Jill', to: 'Outlook', label: 'access'},
 
+          {from: "Outlook", to: "Email", label: 'sends'},
+          {from: "Outlook", to: "ContactList", label: 'access'},
+          {from: "Website", to: "SuspiciousWebsiteList", label: 'belongsTo'},
+          {from: "BadApp", to: "companyMachin", label: 'savedTo'},
+          {from: "Website", to: "Chrome Browser", label: 'notifies'},
+          {from: "John", to: "Website", label: 'access'}
         ],
         getNodesCount: function (title) {
           return _.filter(this.nodes, function (node) {
@@ -110,7 +122,8 @@ angular.module('flareApp')
               'Browsers': {value: true, color: 'purple',showMenu:false},
               'Alerts': {value: true, color: 'yellow',showMenu:false},
               'EmailApps': {value: true, color:'red',showMenu:false},
-              'BadApps': {value: true, color: 'lightBlue',showMenu:false}
+              'BadApps': {value: true, color: 'lightBlue',showMenu:false},
+              'None': {value: true, color: 'grey',showMenu:false}
             }
           },
           'Relationships': {value: true},
