@@ -1,0 +1,19 @@
+[
+  {
+    "AdapterName": "LoanRiskInput",
+    "MessageName": "com.ligadata.kamanja.loanMsg",
+    "Serializer": "com.ligadata.kamanja.serializer.csvserdeser",
+    "Options": {
+      "alwaysQuoteFields": false,
+      "fieldDelimiter": ","
+    }
+  },
+  {
+    "AdapterName": "testout_1",
+    "MessageNames": [
+      "com.ligadata.kamanja.loanOutMsg"
+    ],
+      "Serializer": "com.ligadata.kamanja.serializer.JsonSerDeser"
+  }
+]
+
