@@ -423,6 +423,26 @@ cd $srcPath/SampleApplication/HelloWorld/config
 cp -rf * $installPath/Kamanja-$ver210/config
 #HelloWorld
 
+#LoanRisk
+cd $srcPath/SampleApplication/LoanRisk/data
+cp * $installPath/Kamanja-$ver210/input/SampleApplications/data
+
+cd $srcPath/SampleApplication/LoanRisk/message
+cp * $installPath/Kamanja-$ver210/input/SampleApplications/metadata/message
+
+cd $srcPath/SampleApplication/LoanRisk/model
+cp * $installPath/Kamanja-$ver210/input/SampleApplications/metadata/model
+
+cd $srcPath/SampleApplication/LoanRisk/template
+cp -rf conf* $installPath/Kamanja-$ver210/input/SampleApplications/template
+
+cd $srcPath/SampleApplication/LoanRisk/template/script/scala-2.10
+cp -rf * $installPath/Kamanja-$ver210/input/SampleApplications/template/script
+
+cd $srcPath/SampleApplication/LoanRisk/config
+cp -rf * $installPath/Kamanja-$ver210/config
+#LoanRisk
+
 #Medical
 cd $srcPath/SampleApplication/Medical/SampleData
 cp *.csv $installPath/Kamanja-$ver210/input/SampleApplications/data
@@ -768,6 +788,26 @@ cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/template/script
 cd $srcPath/SampleApplication/HelloWorld/config
 cp -rf * $installPath/Kamanja-$ver211/config
 #HelloWorld
+
+#LoanRisk
+cd $srcPath/SampleApplication/LoanRisk/data
+cp * $installPath/Kamanja-$ver211/input/SampleApplications/data
+
+cd $srcPath/SampleApplication/LoanRisk/message
+cp * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/message
+
+cd $srcPath/SampleApplication/LoanRisk/model
+cp * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/model
+
+cd $srcPath/SampleApplication/LoanRisk/template
+cp -rf conf* $installPath/Kamanja-$ver211/input/SampleApplications/template
+
+cd $srcPath/SampleApplication/LoanRisk/template/script/scala-2.11
+cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/template/script
+
+cd $srcPath/SampleApplication/LoanRisk/config
+cp -rf * $installPath/Kamanja-$ver211/config
+#LoanRisk
 
 #Medical
 cd $srcPath/SampleApplication/Medical/SampleData
