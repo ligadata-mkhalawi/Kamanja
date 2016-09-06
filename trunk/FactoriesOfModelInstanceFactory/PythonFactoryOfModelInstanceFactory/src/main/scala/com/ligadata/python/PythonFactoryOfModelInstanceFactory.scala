@@ -456,6 +456,14 @@ class PythonAdapter(factory : PythonAdapterFactory
                         logger.error(s"there are likely communication issues with the python server for the model '$modelName'.")
                         break
                     }
+	    	    if (_inputFields.size == 0) {
+		       val msgNames : Array[String] = msg.getAttributeNames
+		       for (x <- msgNames) {
+		         _inputFields += (x -> msg.getAttributeType(x).getName()) 
+		       }
+		       
+	    	    }
+		    
                     msgReturned = pyServerConnection.executeModel(modulelName, modelName, prepareFields(msg))
                   if (logger.isDebugEnabled()) {
                     logger.debug(s"In evaluateModel1 after executeModel for moduleName = $modulelName, modelName = $modelName")
