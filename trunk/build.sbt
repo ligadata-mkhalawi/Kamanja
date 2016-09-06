@@ -268,7 +268,8 @@ lazy val KamanjaAppTester = project.in(file("Utils/KamanjaAppTester"))
     testOnly <<= (testOnly in Test).dependsOn(assembleDependencies),
     test <<= (test in Test).dependsOn(assembleDependencies)
   )
-  .dependsOn(KamanjaManager % "compile->test", MetadataAPI % "compile->test", SimpleKafkaProducer % "compile->test", KamanjaTestUtils, KafkaAdapters_v10 % "compile->test", ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided")
+  .dependsOn(KamanjaManager % "compile->test", MetadataAPI % "compile->test", SimpleKafkaProducer % "compile->test",
+    KamanjaTestUtils, KafkaAdapters_v10 % "compile;compile->test", ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided")
 
 // TEST LIBRARIES ONLY TO BE INCLUDED AS PART OF TESTS
 

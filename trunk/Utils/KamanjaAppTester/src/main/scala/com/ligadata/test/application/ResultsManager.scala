@@ -39,7 +39,6 @@ class ResultsManager(cluster: Cluster) {
       }
     }
     else {
-      //throw new Exception("JSON is not yet supported")
       try {
         val sb = new StringBuilder
         source = Source.fromFile(dataSet.expectedResultsFile)
@@ -51,7 +50,6 @@ class ResultsManager(cluster: Cluster) {
 
         implicit val formats = org.json4s.DefaultFormats
         val expectedResultsList = json.extract[List[Map[String,Any]]]
-        println(expectedResultsList)
         var stringResultsList: List[String] = List()
         expectedResultsList.foreach(map => {
           stringResultsList :+= org.json4s.jackson.Serialization.write(map)

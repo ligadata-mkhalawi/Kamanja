@@ -87,7 +87,6 @@ class MetadataManager extends KamanjaTestLogger {
       //When restarting in-proc, MdMgr somehow causes a NullPointerException when InitMdMgr is called again. Creating a new MdMgr before initializing to avoid that.
       MdMgr.mdMgr = new MdMgr
       MetadataAPIImpl.InitMdMgr(MdMgr.mdMgr, MetadataAPIImpl.metadataAPIConfig.get("JAR_PATHS").toString, MetadataAPIImpl.metadataAPIConfig.get("METADATA_DATASTORE").toString)
-
     }
     catch {
       case e: AlreadyExistsException =>

@@ -22,6 +22,8 @@ import org.scalatest._
 import org.scalamock._
 import org.scalamock.scalatest.MockFactory
 
+import scala.collection.mutable.ArrayBuffer
+
 /**
   * Created by will on 2/9/16.
   */
@@ -32,17 +34,11 @@ private class MockOutputAdapterFactory extends OutputAdapterFactory {
 
 private class MockOutputAdapter extends OutputAdapter {
   var testMessages: Seq[String] = Seq()
+  var testPartitionKeys: Seq[String] = Seq()
 
   override val inputConfig: AdapterConfiguration = null
 
   override def Shutdown: Unit = ???
-
-  // To send an array of messages. messages.size should be same as partKeys.size
-  def send(messages: Array[Array[Byte]]): Unit = {
-    messages.foreach(msg => {
-      testMessages = testMessages :+ new String(msg)
-    })
-  }
 
   override def getComponentStatusAndMetrics: MonitorComponentInfo = null
 
@@ -51,13 +47,24 @@ private class MockOutputAdapter extends OutputAdapter {
   override val nodeContext: NodeContext = null
 
   // This is protected override method. After applying serialization, pass original messages, Serialized data & Serializer names
-  def send(tnxCtxt: TransactionContext, outputContainers: Array[ContainerInterface], serializedContainerData: Array[Array[Byte]], serializerNames: Array[String]): Unit = {
-    this.send(serializedContainerData)
-  }
+  //def send(tnxCtxt: TransactionContext, outputContainers: Array[ContainerInterface], serializedContainerData: Array[Array[Byte]], serializerNames: Array[String]): Unit = {
+  //  this.send(serializedContainerData)
+  //}
 
   override def send(tnxCtxt: TransactionContext, outputContainers: Array[ContainerInterface]): Unit = {
     val (containers, serBuf, serializers) = serialize(tnxCtxt, outputContainers)
-    send(serBuf)
+    val partitionKeys = ArrayBuffer[Array[Byte]]()
+
+    for (i <- 0 until containers.size) {
+      partitionKeys += containers(i).getPartitionKey.mkString(",").getBytes()
+    }
+    send(serBuf, partitionKeys.toArray)
+  }
+
+  override def send(message: Array[Array[Byte]], partitionKey: Array[Array[Byte]]): Unit = {
+    message.foreach(msg => {
+      testMessages = testMessages :+ new String(msg)
+    })
   }
 }
 
@@ -72,7 +79,8 @@ class OutputAdapterTests extends FlatSpec with BeforeAndAfter with Matchers with
 
   "OutputAdapter" should "send a single message and a single partition key" in {
     val messages = Array("This is a message".getBytes, "This is another message".getBytes)
-    outputAdapter.send(null, null, messages, null)
+    //outputAdapter.send(null, null, messages, null)
+    outputAdapter.send(messages, null)
     assert(new String(outputAdapter.testMessages(0)) == "This is a message")
     assert(new String(outputAdapter.testMessages(1)) == "This is another message")
   }
