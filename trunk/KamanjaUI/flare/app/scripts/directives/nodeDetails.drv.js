@@ -4,7 +4,7 @@
 
 'use strict';
 angular.module('flareApp')
-  .directive('nodeDetails', ['$rootScope', function($rootScope){
+  .directive('nodeDetails', ['$rootScope', 'serviceData', function($rootScope, serviceData){
     return {
       restrict: 'E',
       templateUrl: 'views/tpl/nodeDetails.html',
@@ -15,6 +15,9 @@ angular.module('flareApp')
         $rootScope.$on('nodeClicked', function(event, data){
           toggleNodeDetails(true);
           nodeDetails.applicationName = data;
+          serviceData.getDummyData(data, function(result){
+            nodeDetails.result = result[0];
+          });
         });
 
       }

@@ -2,7 +2,7 @@
  * Created by muhammad on 8/18/16.
  */
 'use strict'
-angular.module('flareApp', ['ngAnimate', 'ui.router', 'ui.bootstrap'])
+angular.module('flareApp', ['ngAnimate', 'ui.router', 'ui.bootstrap', 'ngResource'])
   .config(function ($stateProvider, $urlRouterProvider) {
     $urlRouterProvider.otherwise(function ($injector, $location) {
       var $state = $injector.get('$state');

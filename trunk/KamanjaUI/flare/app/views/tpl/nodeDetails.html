@@ -19,40 +19,64 @@
   <div class="accordion-panel">
     <div data-toggle="collapse" ng-click="nodeDetails.openDesc = !nodeDetails.openDesc" data-target="#nodeDesc"
          class="accordion-heading">
-       <i class="fa" ng-class="{'fa-chevron-down': nodeDetails.openDesc, 'fa-chevron-right': !nodeDetails.openDesc}"></i> Description
+      <i class="fa" ng-class="{'fa-chevron-down': nodeDetails.openDesc, 'fa-chevron-right': !nodeDetails.openDesc}"></i>
+      Description
     </div>
     <div id="nodeDesc" class="accordion-content collapse">
       <p>
-        Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s,
+        {{nodeDetails.result.description}}
       </p>
     </div>
   </div>
   <div class="accordion-panel">
     <div data-toggle="collapse" ng-click="nodeDetails.openAlerts = !nodeDetails.openAlerts" data-target="#nodeAlerts"
          class="accordion-heading">
-      <i class="fa" ng-class="{'fa-chevron-down': nodeDetails.openAlerts, 'fa-chevron-right': !nodeDetails.openAlerts}"></i> Alerts <i class="pull-right fa fa-exclamation-triangle alertIcon"></i>
+      <i class="fa"
+         ng-class="{'fa-chevron-down': nodeDetails.openAlerts, 'fa-chevron-right': !nodeDetails.openAlerts}"></i> Alerts
+      <i class="pull-right fa fa-exclamation-triangle alertIcon"></i>
     </div>
     <div id="nodeAlerts" class="accordion-content collapse">
-      <p>
-        Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s,
+      <p ng-repeat="item in nodeDetails.result.alerts">
+        {{item.type}}={{item.name}}
       </p>
     </div>
   </div>
   <div class="accordion-panel">
     <div data-toggle="collapse" ng-click="nodeDetails.openRules = !nodeDetails.openRules" data-target="#nodeRules"
          class="accordion-heading">
-      <i class="fa" ng-class="{'fa-chevron-down': nodeDetails.openRules, 'fa-chevron-right': !nodeDetails.openRules}"></i> Rules
+      <i class="fa"
+         ng-class="{'fa-chevron-down': nodeDetails.openRules, 'fa-chevron-right': !nodeDetails.openRules}"></i> Rules
     </div>
     <div id="nodeRules" class="accordion-content collapse">
+      <br />
       <div class="accordion-panel">
-        <div data-toggle="collapse" ng-click="nodeDetails.openAlerts = !nodeDetails.openAlerts" data-target="#nodeAlertss"
-             class="sub-accordion-heading">
-          <i class="fa" ng-class="{'fa-chevron-down': nodeDetails.openAlerts, 'fa-chevron-right': !nodeDetails.openAlerts}"></i> Alerts <i class="pull-right fa fa-exclamation-triangle alertIcon"></i>
-        </div>
-        <div id="nodeAlertss" class="accordion-content collapse">
-          <p>
-            Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s,
-          </p>
+        <div ng-repeat="rule in nodeDetails.result.rules">
+          <div data-toggle="collapse" ng-click="rule.isOpen != rule.isOpen"
+            data-target="#{{rule.id}}"
+            class="sub-accordion-heading">
+            <i class="fa" ng-class="{'fa-chevron-down': rule.isOpen, 'fa-chevron-right': !rule.isOpen}"></i>
+            {{rule.title}}
+          </div>
+          <div id="{{rule.id}}" class="accordion-content collapse">
+            <p>
+              {{rule.content}}
+            </p>
+            <span>Threshold A</span>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="thresholdTime">
+                  {{rule.startTime}}
+                </div>
+                Starts
+              </div>
+              <div class="col-md-6">
+                <div class="thresholdTime">
+                  {{rule.endTime}}
+                </div>
+                Ends
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

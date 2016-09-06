@@ -2,6 +2,134 @@
   {
     "id": "AppAccessLog",
     "description": "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s",
-
+    "alerts": [
+      {
+        "type": "email_ip",
+        "name": "China"
+      }
+    ],
+    "rules": [
+      {
+        "id": "RuleOne",
+        "title": "Rule One",
+        "content": "Lorem ipsum dolor sit amet, ut usu erant animal, ancillae consequat his et, at legere populo legendos vix. Eu eam blandit efficiendi. Ne adhuc dissentiunt vel, ludus persequeris eu nec. Vim at case homero possit, error saepe ut cum.",
+        "startTime": "8:45 am",
+        "endTime": "11:50 am"
+      }
+    ]
+  },
+  {
+    "id": "URLAccessLog",
+    "description": "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s",
+    "alerts": [
+      {
+        "type": "email_ip",
+        "name": "China"
+      }
+    ],
+    "rules": [
+      {
+        "id": "RuleOne",
+        "title": "Rule One",
+        "content": "Lorem ipsum dolor sit amet, ut usu erant animal, ancillae consequat his et, at legere populo legendos vix. Eu eam blandit efficiendi. Ne adhuc dissentiunt vel, ludus persequeris eu nec. Vim at case homero possit, error saepe ut cum.",
+        "startTime": "8:45 am",
+        "endTime": "11:50 am"
+      }
+    ]
+  },
+  {
+    "id": "RemoteAccessLog",
+    "description": "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s",
+    "alerts": [
+      {
+        "type": "email_ip",
+        "name": "China"
+      }
+    ],
+    "rules": [
+      {
+        "id": "RuleOne",
+        "title": "Rule One",
+        "content": "Lorem ipsum dolor sit amet, ut usu erant animal, ancillae consequat his et, at legere populo legendos vix. Eu eam blandit efficiendi. Ne adhuc dissentiunt vel, ludus persequeris eu nec. Vim at case homero possit, error saepe ut cum.",
+        "startTime": "8:45 am",
+        "endTime": "11:50 am"
+      }
+    ]
+  },
+  {
+    "id": "RootLog",
+    "description": "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s",
+    "alerts": [
+      {
+        "type": "email_ip",
+        "name": "China"
+      }
+    ],
+    "rules": [
+      {
+        "id": "RuleOne",
+        "title": "Rule One",
+        "content": "Lorem ipsum dolor sit amet, ut usu erant animal, ancillae consequat his et, at legere populo legendos vix. Eu eam blandit efficiendi. Ne adhuc dissentiunt vel, ludus persequeris eu nec. Vim at case homero possit, error saepe ut cum.",
+        "startTime": "8:45 am",
+        "endTime": "11:50 am"
+      }
+    ]
+  },
+  {
+    "id": "Mozilla Browser",
+    "description": "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s",
+    "alerts": [
+      {
+        "type": "email_ip",
+        "name": "China"
+      }
+    ],
+    "rules": [
+      {
+        "id": "RuleOne",
+        "title": "Rule One",
+        "content": "Lorem ipsum dolor sit amet, ut usu erant animal, ancillae consequat his et, at legere populo legendos vix. Eu eam blandit efficiendi. Ne adhuc dissentiunt vel, ludus persequeris eu nec. Vim at case homero possit, error saepe ut cum.",
+        "startTime": "8:45 am",
+        "endTime": "11:50 am"
+      }
+    ]
+  },
+  {
+    "id": "Chrome Browser",
+    "description": "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s",
+    "alerts": [
+      {
+        "type": "email_ip",
+        "name": "China"
+      }
+    ],
+    "rules": [
+      {
+        "id": "RuleOne",
+        "title": "Rule One",
+        "content": "Lorem ipsum dolor sit amet, ut usu erant animal, ancillae consequat his et, at legere populo legendos vix. Eu eam blandit efficiendi. Ne adhuc dissentiunt vel, ludus persequeris eu nec. Vim at case homero possit, error saepe ut cum.",
+        "startTime": "8:45 am",
+        "endTime": "11:50 am"
+      }
+    ]
+  },
+  {
+    "id": "RootBrowser",
+    "description": "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s",
+    "alerts": [
+      {
+        "type": "email_ip",
+        "name": "China"
+      }
+    ],
+    "rules": [
+      {
+        "id": "RuleOne",
+        "title": "Rule One",
+        "content": "Lorem ipsum dolor sit amet, ut usu erant animal, ancillae consequat his et, at legere populo legendos vix. Eu eam blandit efficiendi. Ne adhuc dissentiunt vel, ludus persequeris eu nec. Vim at case homero possit, error saepe ut cum.",
+        "startTime": "8:45 am",
+        "endTime": "11:50 am"
+      }
+    ]
   }
 ]

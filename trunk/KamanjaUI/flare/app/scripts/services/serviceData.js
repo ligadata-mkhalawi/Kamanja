@@ -6,5 +6,15 @@
 
 angular.module('flareApp')
   .factory('serviceData', function($rootScope, serviceUtil){
-
+    return {
+      getDummyData: function(id, callback){
+        serviceUtil.httpRequest.query({
+          url: './data/dummy.json',
+          data: {}
+        }, function(response){
+          var obj = _.where(response, {id: id});
+          callback(obj);
+        });
+      }
+    }
   });
