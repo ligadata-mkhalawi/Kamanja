@@ -131,13 +131,21 @@ angular.module('flareApp')
           return valObject.options;
         },
         toggleOptions: function (option) {
+          var v;
           traverse(this.showOptions, option, function process(key, obj) {
-            obj.value = !obj.value;
-            $rootScope.$broadcast('showOptionsToggled');
+            obj.value = v = !obj.value;
           });
+          var nodes = this.getNodes(option);
+          _.each(nodes, function (node) {
+            node.hidden = !v;
+          });
+          $rootScope.$broadcast('showOptionsToggled');
         },
         toggleNode: function (node) {
           node.hidden = !node.hidden;
+          traverse(this.showOptions, node.group, function process(key, obj) {
+            obj.value =  true;
+          });
           $rootScope.$broadcast('showOptionsToggled');
         }
       };

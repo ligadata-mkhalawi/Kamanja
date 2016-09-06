@@ -20,9 +20,9 @@ angular
           };
           var nodes = $rootScope.currentView.nodes;
           var edges = $rootScope.currentView.edges;
-          _.each(edges, function (edge){
+          _.each(edges, function (edge) {
             edge.color = edge.color || {};
-            edge.color.opacity = 0.3 ;
+            edge.color.opacity = 0.3;
             edge.label = '';
           });
 
@@ -52,7 +52,7 @@ angular
                 type: 'dynamic',
                 roundness: 0.55,
               },
-              arrows:'to',
+              arrows: 'to',
               font: {
                 size: 15,
                 background: '#ffffff'
@@ -104,7 +104,7 @@ angular
 
           network = new vis.Network(container, data, options);
 
-          network.on('click', function(param){
+          network.on('click', function (param) {
             scope.nodeClick(param.nodes[0]);
           });
           network.on('afterDrawing', function (ctx) {
@@ -112,7 +112,7 @@ angular
               if (d.hidden || !showOptions['Labels']) {
                 return;
               }
-              if (options.groups[d.group].hidden){
+              if (options.groups[d.group].hidden) {
                 return;
               }
               var position = network.getPositions(d.id)[d.id];
@@ -126,29 +126,34 @@ angular
 
           $rootScope.$on('showOptionsToggled', function () {
             var view = $rootScope.currentView;
+            nodes = view.nodes;
+            edges = view.edges;
+
             showOptions['Labels'] = view.getOption('Labels');
+
+
             for (var key in options.groups) {
               options.groups[key].hidden = !view.getOption(key);
             }
-            _.each(edges,function (edge) {
-              var fromAndTo = _.filter(nodes, function(n){
+
+            _.each(edges, function (edge) {
+              var fromAndTo = _.filter(nodes, function (n) {
                 return n.id === edge.from || n.id === edge.to
               });
               var hidden = false;
-              if (options.groups[fromAndTo[0].group].hidden) {
+              if (options.groups[fromAndTo[0].group].hidden ) {
                 hidden = true;
               }
               if (options.groups[fromAndTo[1].group].hidden) {
                 hidden = true;
               }
+              if (fromAndTo[0].hidden || fromAndTo[1].hidden) {
+                hidden = true;
+              }
               edge.hidden = hidden;
             });
-            _.each(nodes,function (node) {
-              if (node.hidden !== undefined) {
-                data.nodes.update([{id: node.id, hidden: node.hidden}]);
-              }
-            });
             network.setOptions(options);
+            data = {nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges)};
             network.setData(data);
             network.redraw();
           });
