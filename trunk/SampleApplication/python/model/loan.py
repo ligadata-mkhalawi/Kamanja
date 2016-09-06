@@ -31,28 +31,6 @@ class LoanTuple(ModelInstance):
                 pred += float (msg["LOG5_DELINQ"]) * 1.8255237489947
                 pred += float (msg["LOG_VALUE"]) * -35.3593065292401
                 outMsg = json.dumps({'rec_ID' : msg["rec_ID"],
-                                     'BAD' : msg["BAD"],
-                                     'TIN_IMO_REASON_DebtCon' : msg["TIN_IMO_REASON_DebtCon"],
-                                     'TIN_IMO_REASON_HomeImp' : msg["TIN_IMO_REASON_HomeImp"],
-                                     'TIN_IZR_JOB_Mgr' : msg["TIN_IZR_JOB_Mgr"],
-                                     'TIN_IZR_JOB_Office' : msg["TIN_IZR_JOB_Office"],
-                                     'TIN_IZR_JOB_Other' : msg["TIN_IZR_JOB_Other"],
-                                     'TIN_IZR_JOB_ProfExe' : msg["TIN_IZR_JOB_ProfExe"],
-                                     'TIN_IZR_JOB_Sales' : msg["TIN_IZR_JOB_Sales"],
-                                     'TIN_IZR_JOB_Self' : msg["TIN_IZR_JOB_Self"],
-                                     'TIN_IZR_JOB_Missing' : msg["TIN_IZR_JOB_Missing"],
-                                     'R01_LOAN' : msg["R01_LOAN"],
-                                     'IMN_R01_MORTDUE' : msg["IMN_R01_MORTDUE"],
-                                     'IMN_R01_VALUE' : msg["IMN_R01_VALUE"],
-                                     'IMN_R01_YOJ' : msg["IMN_R01_YOJ"],
-                                     'IMN_R01_DEROG' : msg["IMN_R01_DEROG"],
-                                     'IMN_R01_DELINQ' : msg["IMN_R01_DELINQ"],
-                                     'IMN_R01_CLAGE' : msg["IMN_R01_CLAGE"],
-                                     'IMN_R01_NINQ' : msg["IMN_R01_NINQ"],
-                                     'IMN_R01_CLNO' : msg["IMN_R01_CLNO"],
-                                     'LOG6_DEROG' : msg["LOG6_DEROG"],
-                                     'LOG5_DELINQ' : msg["LOG5_DELINQ"],
-                                     'LOG_VALUE' : msg["LOG_VALUE"],
                                      'PYTHON_RISK_SCORE' : pred})
                 return outMsg
 
@@ -76,27 +54,24 @@ class LoanTuple(ModelInstance):
                 else:
                         inputFields["recid"] = "Int"
                         inputFields["bad0"] = "Float"
-                        inputFields["p1"] = "Float"
-                        inputFields["p2"] = "Float"
-                        inputFields["p3"] = "Float"
-                        inputFields["p4"] = "Float"
-                        inputFields["p5"] = "Float"
-                        inputFields["p6"] = "Float"
-                        inputFields["p7"] = "Float"
-                        inputFields["p8"] = "Float"
-                        inputFields["p9"] = "Float"
-                        inputFields["p10"] = "Float"
-                        inputFields["p11"] = "Float"
-                        inputFields["p12"] = "Float"
-                        inputFields["p13"] = "Float"
-                        inputFields["p14"] = "Float"
-                        inputFields["p15"] = "Float"
-                        inputFields["p16"] = "Float"
-                        inputFields["p17"] = "Float"
-                        inputFields["p18"] = "Float"
-                        inputFields["p19"] = "Float"
-                        inputFields["p20"] = "Float"
-                        inputFields["p21"] = "Float"
+                        inputFields["TIN_IMO_REASON_Debtcon"] = "Float"
+                        inputFields["TIN_IZR_JOB_Mgr"] = "Float"
+                        inputFields["TIN_IZR_JOB_Office"] = "Float"
+                        inputFields["TIN_IZR_JOB_Other"] = "Float"
+                        inputFields["TIN_IZR_JOB_ProfExe"] = "Float"
+                        inputFields["TIN_IZR_JOB_Sales"] = "Float"
+                        inputFields["TIN_IZR_JOB_Self"] = "Float"
+                        inputFields["R01_LOAN"] = "Float"
+                        inputFields["IMN_R01_MORTDUE"] = "Float"
+                        inputFields["IMN_R01_YOJ"] = "Float"
+                        inputFields["IMN_R01_DEROG"] = "Float"
+                        inputFields["IMN_R01_DELINQ"] = "Float"
+                        inputFields["IMN_R01_CLAGE"] = "Float"
+                        inputFields["IMN_R01_NINQ"] = "Float"
+                        inputFields["IMN_R01_CLNO"] = "Float"
+                        inputFields["LOG6_DEROG"] = "Float"
+                        inputFields["LOG5_DELINQ"] = "Float"
+                        inputFields["LOG_VALUE"] = "Float"
 
                 return (inputFields)
 
