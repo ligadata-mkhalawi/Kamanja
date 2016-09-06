@@ -42,21 +42,21 @@ angular.module('flareApp')
           {id: 'RemoteAccessLog', _label: 'RemoteAccessLog', group: 'Logs'},
           {id: 'RootLog', _label: 'RootLog', hidden: true, group: 'Logs'},
 
-          {id: 'Mozilla Browser', _label: 'Mozilla Browser', group: 'Organizations', color: {border: ''}},
-          {id: 'Chrome Browser', _label: 'Chrome Browser', group: 'Organizations'},
-          {id: 'RootBrowser', _label: 'RootBrowser', hidden: true, group: 'Organizations'},
+          {id: 'Mozilla Browser', _label: 'Mozilla Browser', group: 'Browsers', color: {border: ''}},
+          {id: 'Chrome Browser', _label: 'Chrome Browser', group: 'Browsers'},
+          {id: 'RootBrowser', _label: 'RootBrowser', hidden: true, group: 'Browsers'},
 
-          {id: 'Jane', _label: 'Jane', group: 'People'},
-          {id: 'John', _label: 'John', group: 'People'},
-          {id: 'Jill', _label: 'Jill', group: 'People'},
-          {id: 'RootUser', _label: 'RootUser', hidden: true, group: 'People'},
+          {id: 'Jane', _label: 'Jane', group: 'Users'},
+          {id: 'John', _label: 'John', group: 'Users'},
+          {id: 'Jill', _label: 'Jill', group: 'Users'},
+          {id: 'RootUser', _label: 'RootUser', hidden: true, group: 'Users'},
 
-          {id: 'BadApp', _label: 'BadApp', group: 'Countries'},
-          {id: 'RootBadApp', _label: 'RootBadApp', hidden: true, group: 'Countries'},
+          {id: 'BadApp', _label: 'BadApp', group: 'BadApps'},
+          {id: 'RootBadApp', _label: 'RootBadApp', hidden: true, group: 'BadApps'},
 
-          {id: 'Outlook', _label: 'Outlook', group: 'Applications'},
-          {id: 'GMail', _label: 'GMail', group: 'Applications'},
-          {id: 'RootEmailApp', _label: 'RootEmailApp', hidden: true, group: 'Applications'}
+          {id: 'Outlook', _label: 'Outlook', group: 'EmailApps'},
+          {id: 'GMail', _label: 'GMail', group: 'EmailApps'},
+          {id: 'RootEmailApp', _label: 'RootEmailApp', hidden: true, group: 'EmailApps'}
         ],
         edges: [
 
@@ -105,12 +105,12 @@ angular.module('flareApp')
           'Coloring by Cluster': {
             value: true,
             options: {
-              'Applications': {value: true, color:'red',showMenu:false},
               'Logs': {value: true, color: 'green',showMenu:false},
-              'People': {value: true, color: 'blue',showMenu:false},
-              'Countries': {value: true, color: 'lightBlue',showMenu:false},
-              'Organizations': {value: true, color: 'purple',showMenu:false},
-              'Alerts': {value: true, color: 'yellow',showMenu:false}
+              'Users': {value: true, color: 'blue',showMenu:false},
+              'Browsers': {value: true, color: 'purple',showMenu:false},
+              'Alerts': {value: true, color: 'yellow',showMenu:false},
+              'EmailApps': {value: true, color:'red',showMenu:false},
+              'BadApps': {value: true, color: 'lightBlue',showMenu:false}
             }
           },
           'Relationships': {value: true},

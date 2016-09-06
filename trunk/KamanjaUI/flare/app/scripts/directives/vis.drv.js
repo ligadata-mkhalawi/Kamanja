@@ -84,18 +84,18 @@ angular
                 color: {background: '#599465', border: '#599465'},
                 font: {color: '#fff'}
               },
-              'Organizations': {
+              'Browsers': {
                 color: {background: '#b000cf', border: '#b000cf'}
               },
-              'People': {
+              'Users': {
                 color: {background: '#3b6a94', border: '#3b6a94'},
                 font: {color: '#fff'}
               },
-              'Countries': {
+              'BadApps': {
                 color: {background: '#7fc9c9', border: '#7fc9c9'},
                 font: {color: '#fff'}
               },
-              'Applications': {
+              'EmailApps': {
                 color: {background: '#d44d48', border: '#d44d48'},
                 font: {color: '#fff'}
               }
