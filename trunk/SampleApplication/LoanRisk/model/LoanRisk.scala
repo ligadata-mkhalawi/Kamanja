@@ -19,13 +19,13 @@ package com.ligadata.samples.models
 import com.ligadata.KamanjaBase._
 import com.ligadata.kamanja.metadata.ModelDef;
 
-class HelloWorldModelFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
-  override def createModelInstance(): ModelInstance = return new HelloWorldModel(this)
-  override def getModelName: String = "com.ligadata.kamanja.samples.models.HelloWorldModel" 
+class LoanRiskFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
+  override def createModelInstance(): ModelInstance = return new LoanRisk(this)
+  override def getModelName: String = "com.ligadata.kamanja.samples.models.LoanRisk" 
   override def getVersion: String = "0.0.1"
 }
 
-class HelloWorldModel(factory: ModelInstanceFactory) extends ModelInstance(factory) {
+class LoanRisk(factory: ModelInstanceFactory) extends ModelInstance(factory) {
    override def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
      var helloWorld : msg1 =  execMsgsSet(0).asInstanceOf[msg1] // This run should trigger when we have only msg1
         if(helloWorld.score!=1)

@@ -20,49 +20,22 @@ import com.google.common.base.Optional;
 import com.ligadata.KamanjaBase.*;
 import com.ligadata.kamanja.metadata.ModelDef;
 
-public class HelloWorldModel extends ModelInstance {
-	public HelloWorldModel(ModelInstanceFactory factory) {
+public class LoanRisk extends ModelInstance {
+
+	
+	public LoanRisk(ModelInstanceFactory factory) {
     	super(factory);
     }
 
 	public ContainerOrConcept[] execute(TransactionContext txnCtxt, ContainerOrConcept[] execMsgsSet, int matchedInputSetIndex, boolean outputDefault) {
-    	/*
-		System.out.println("inside model");
-    	GlobalPreferences gPref = GlobalPreferencesFactory.rddObject.getRecentOrNew(new String[]{"PrefType"});  //(new String[]{"Type1"});
-    	//System.out.println(gPref.);
-    	CustPreferences cPref = (CustPreferences) CustPreferences.getRecentOrNew();
-    	cPref.Save();
-    	//GlobalPreferences gPref = GlobalPreferences.toJavaRDDObject().getRecentOrNew(new String[]{"Type1"});
-    	//CustPreferences cPref = CustPreferences.toJavaRDDObject().getRecentOrNew();
-    	System.out.println("Can persist:"+cPref.CanPersist());
-
-    	if(cPref.minbalancealertoptout())
-    	{
-    		System.out.println("got minimum balance");
-    		System.out.println(cPref.minbalancealertoptout());
-    		return null;
-    	}
-
-    	RddDate curDtTmInMs = RddDate.currentGmtDateTime();
-    	CustAlertHistory alertHistory = CustAlertHistory.toJavaRDDObject().getRecentOrNew(new String[]{"custId"});
-
-
-    	if(curDtTmInMs.timeDiffInHrs(new RddDate(alertHistory.alertdttminms())) < gPref.minalertdurationinhrs())
-    	{
-    		return null;
-    	}
-
-    	TransactionMsg rcntTxn = (TransactionMsg) txnCtxt.getMessage();
-
-    	 if (rcntTxn.balance() >= gPref.minalertbalance())
-    	      return null;
-		*/
-		msg1 helloWorld = (msg1) execMsgsSet[0];  // This run should trigger when we have only msg1
-		if(helloWorld.score()!=1)
+		msg1 LoanRisk = (msg1) execMsgsSet[0];  // This run should trigger when we have only msg1
+		float TIN_IMOReason_Debtcon = LoanRisk.TIN_IMOREASON_Debtcon() ;
+		
+		if(LoanRisk.score()!=1)
 			return null;
 		outmsg1 output = (outmsg1) outmsg1.createInstance();
-		output.set(0, helloWorld.id());
-		output.set(1, helloWorld.name());
+		output.set(0, LoanRisk.id());
+		output.set(1, LoanRisk.name());
 		ContainerInterface[] returnArr = new ContainerInterface[1];
 		returnArr[0] = output;
         return returnArr;
@@ -72,17 +45,17 @@ public class HelloWorldModel extends ModelInstance {
      * @param inTxnContext
      */
 
-    public static class HelloWorldModelFactory extends ModelInstanceFactory {
-		public HelloWorldModelFactory(ModelDef modelDef, NodeContext nodeContext) {
+    public static class LoanRiskFactory extends ModelInstanceFactory {
+		public LoanRiskFactory(ModelDef modelDef, NodeContext nodeContext) {
 			super(modelDef, nodeContext);
 		}
 
 		public ModelInstance createModelInstance() {
-			return new HelloWorldModel(this);
+			return new LoanRisk(this);
 		}
 
 		public String getModelName() {
-			return "com.ligadata.kamanja.samples.models.HelloWorldModel";
+			return "com.ligadata.kamanja.samples.models.LoanRisk";
 		}
 
 		public String getVersion() {
