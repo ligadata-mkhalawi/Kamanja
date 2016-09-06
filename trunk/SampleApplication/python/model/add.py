@@ -12,7 +12,7 @@ class AddTuple(ModelInstance):
 		"""
 		sumofTup = int(msg["a"])
 		sumofTup += int(msg["b"])
-		outMsg = json.dumps({'a' : msg["a"], 'b' : msg["b"], 'result' : sumofTup})
+		outMsg = json.dumps({'a' : msg["a"], 'b' : msg["b"], 'operator' : "+", 'result' : sumofTup})
 		return outMsg
 
 	def getInputFields(self):

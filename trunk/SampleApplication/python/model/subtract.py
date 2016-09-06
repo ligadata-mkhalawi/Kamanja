@@ -12,7 +12,7 @@ class SubtractTuple(ModelInstance):
 		"""
 		diffofTups = int(msg["a"])
 		diffofTups -= int(msg["b"])
-		outMsg = json.dumps({'a' : msg["a"], 'b' : msg["b"], 'result' : diffofTups})
+		outMsg = json.dumps({'a' : msg["a"], 'b' : msg["b"], 'operator' : '-', 'result' : diffofTups})
 		return outMsg
 
 	def getInputFields(self):

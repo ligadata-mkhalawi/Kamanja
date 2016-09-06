@@ -18,7 +18,7 @@ class AddTupleTF(ModelInstance):
                 sess = tf.session()
                 sumofTup = sess.run (add, feed_dict={a: int(msg["a"]) ,b: int(msg["a"]) })
                 self.logger.debug("sumof Tup" + str(sumofTup))
-                outMsg = json.dumps({'a' : msg["a"], 'b' : msg["b"], 'result' : sumofTup})
+                outMsg = json.dumps({'a' : msg["a"], 'b' : msg["b"], 'operator' : '+', 'result' : sumofTup})
                 self.logger.debug("sumof Tup" + outMsg)
                 return outMsg
 

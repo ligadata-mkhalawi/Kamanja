@@ -21,6 +21,12 @@
       },
       {
         "Field": {
+          "Name": "operator",
+          "Type": "String"
+        }
+      },
+      {
+        "Field": {
           "Name": "result",
           "Type": "system.Float"
         }

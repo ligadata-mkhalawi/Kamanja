@@ -13,7 +13,7 @@ class DivideTuple(ModelInstance):
 		qutotientofTup = int(msg["a"])
 		qutotientofTup /= msg["b"]
 
-		outMsg = json.dumps({'a' : msg["a"], 'b' : msg["b"], 'result' : qutotientofTup})	
+		outMsg = json.dumps({'a' : msg["a"], 'b' : msg["b"], 'operator' : '/', 'result' : qutotientofTup})	
 		return outMsg
 
 	def getInputFields(self):

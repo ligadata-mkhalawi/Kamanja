@@ -12,7 +12,7 @@ class AddFTuple(ModelInstance):
                 """
                 sumofTup = float(msg["a"])
                 sumofTup += float(msg["b"])
-                outMsg = json.dumps({'a' : msg["a"], 'b' : msg["b"], 'result' : sumofTup})
+                outMsg = json.dumps({'a' : msg["a"], 'b' : msg["b"], 'operator' : '+', 'result' : sumofTup})
                 return outMsg
 
         def getInputFields(self):

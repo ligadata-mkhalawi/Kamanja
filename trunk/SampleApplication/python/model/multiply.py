@@ -12,7 +12,7 @@ class MultiplyTuple(ModelInstance):
 		"""
 		prodofTups = int(msg["a"])
 		prodofTups *= int(msg["b"])
-		outMsg = json.dumps({'a' : msg["a"], 'b' : msg["b"], 'result' : prodofTups})
+		outMsg = json.dumps({'a' : msg["a"], 'b' : msg["b"], 'operator' : '*', 'result' : prodofTups})
 		return outMsg
 
         def getInputFields(self):
