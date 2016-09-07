@@ -4,7 +4,7 @@
 # debugger.
 
 ipport="8998"
-currentKamanjaVersion=1.5.3
+currentKamanjaVersion=1.6.0
 
 if [ "$1" != "debug" ]; then
 	java -cp {InstallDirectory}/lib/system/jarfactoryofmodelinstancefactory_2.10-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/ExtDependencyLibs2_2.10-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/ExtDependencyLibs_2.10-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/KamanjaInternalDeps_2.10-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/metadataapi_2.10-${currentKamanjaVersion}.jar com.ligadata.MetadataAPI.StartMetadataAPI --config {InstallDirectory}/config/ClusterCfgMetadataAPIConfig.properties
