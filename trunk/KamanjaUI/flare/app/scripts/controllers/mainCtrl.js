@@ -58,11 +58,17 @@ angular.module('flareApp')
             });
           },
           getNodesCount: function (title) {
+            if (!title){
+              return this.nodes.length;
+            }
             return _.filter(this.nodes, function (node) {
               return node.group === title;
             }).length;
           },
           getNodes: function (title) {
+            if (!title){
+              return this.nodes;
+            }
             return _.filter(this.nodes, function (node) {
               return node.group === title;
             });
