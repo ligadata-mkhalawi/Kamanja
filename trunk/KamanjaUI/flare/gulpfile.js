@@ -162,7 +162,7 @@ gulp.task('wiredep', () => {
 
   gulp.src('app/*.html')
     .pipe(wiredep({
-      exclude: ['bootstrap-sass', 'font-awesome'],
+      exclude: ['bootstrap-sass', 'font-awesome', 'roboto-fontface'],
       ignorePath: /^(\.\.\/)*\.\./
     }))
     .pipe(gulp.dest('app'));

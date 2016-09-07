@@ -41,7 +41,7 @@ angular.module('flareApp')
 
         var contextOptions = [];
         var keys = _.filter(_.keys(_.countBy(graph.edges,'context')), function (k) {
-          return k !== "undefined";
+          return k !== 'undefined';
         });
 
         contextOptions = _.object(keys,_.map( keys, function (k) {

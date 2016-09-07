@@ -19,7 +19,7 @@
   <div class="accordion-panel">
     <div data-toggle="collapse" ng-click="nodeDetails.openDesc = !nodeDetails.openDesc" data-target="#nodeDesc"
          class="accordion-heading">
-      <i class="fa" ng-class="{'fa-chevron-down': nodeDetails.openDesc, 'fa-chevron-right': !nodeDetails.openDesc}"></i>
+      <i class="arrow-accordion fa" ng-class="{'fa-chevron-down': nodeDetails.openDesc, 'fa-chevron-right': !nodeDetails.openDesc}"></i>
       Description
     </div>
     <div id="nodeDesc" class="accordion-content collapse">
@@ -31,7 +31,7 @@
   <div class="accordion-panel">
     <div data-toggle="collapse" ng-click="nodeDetails.openAlerts = !nodeDetails.openAlerts" data-target="#nodeAlerts"
          class="accordion-heading">
-      <i class="fa"
+      <i class="arrow-accordion fa"
          ng-class="{'fa-chevron-down': nodeDetails.openAlerts, 'fa-chevron-right': !nodeDetails.openAlerts}"></i> Alerts ({{nodeDetails.result.alerts.length}})
       <i class="pull-right fa fa-exclamation-triangle alertIcon"></i>
     </div>
@@ -44,7 +44,7 @@
   <div class="accordion-panel">
     <div data-toggle="collapse" ng-click="nodeDetails.openRules = !nodeDetails.openRules" data-target="#nodeRules"
          class="accordion-heading">
-      <i class="fa"
+      <i class="arrow-accordion fa"
          ng-class="{'fa-chevron-down': nodeDetails.openRules, 'fa-chevron-right': !nodeDetails.openRules}"></i> Rules
     </div>
     <div id="nodeRules" class="accordion-content collapse">
@@ -53,7 +53,7 @@
           <div data-toggle="collapse" ng-click="rule.isOpen = !rule.isOpen"
                data-target="#{{rule.id}}"
                class="sub-accordion-heading">
-            <i class="fa" ng-class="{'fa-chevron-down': rule.isOpen, 'fa-chevron-right': !rule.isOpen}"></i>
+            <i class="arrow-accordion fa" ng-class="{'fa-chevron-down': rule.isOpen, 'fa-chevron-right': !rule.isOpen}"></i>
             {{rule.title}}
           </div>
           <div id="{{rule.id}}" class="accordion-content collapse">
@@ -85,7 +85,7 @@
   <div class="accordion-panel">
     <div data-toggle="collapse" ng-click="nodeDetails.openGroups = !nodeDetails.openGroups" data-target="#nodeGroups"
          class="accordion-heading">
-      <i class="fa" ng-class="{'fa-chevron-down': nodeDetails.openGroups, 'fa-chevron-right': !nodeDetails.openGroups}"></i>
+      <i class="arrow-accordion fa" ng-class="{'fa-chevron-down': nodeDetails.openGroups, 'fa-chevron-right': !nodeDetails.openGroups}"></i>
       Groups (0)
     </div>
     <div id="nodeGroups" class="accordion-content collapse">
@@ -97,37 +97,34 @@
   <div class="accordion-panel">
     <div data-toggle="collapse" ng-click="nodeDetails.openRelationships = !nodeDetails.openRelationships" data-target="#nodeRelationships"
          class="accordion-heading">
-      <i class="fa" ng-class="{'fa-chevron-down': nodeDetails.openRelationships, 'fa-chevron-right': !nodeDetails.openRelationships}"></i>
-      Groups (0)
+      <i class="arrow-accordion fa" ng-class="{'fa-chevron-down': nodeDetails.openRelationships, 'fa-chevron-right': !nodeDetails.openRelationships}"></i>
+      Relationships
     </div>
     <div id="nodeRelationships" class="accordion-content collapse">
-      <p>
-        ...
-      </p>
-    </div>
-  </div>
-  <div class="accordion-panel">
-    <div data-toggle="collapse" ng-click="nodeDetails.openPrimary = !nodeDetails.openPrimary" data-target="#nodePrimary"
-         class="accordion-heading">
-      <i class="fa" ng-class="{'fa-chevron-down': nodeDetails.openPrimary, 'fa-chevron-right': !nodeDetails.openPrimary}"></i>
-      Primary (1)
-    </div>
-    <div id="nodePrimary" class="accordion-content collapse">
-      <p>
-        Person XYZ
-      </p>
-    </div>
-  </div>
-  <div class="accordion-panel">
-    <div data-toggle="collapse" ng-click="nodeDetails.openSecondary = !nodeDetails.openSecondary" data-target="#nodeSecondary"
-         class="accordion-heading">
-      <i class="fa" ng-class="{'fa-chevron-down': nodeDetails.openSecondary, 'fa-chevron-right': !nodeDetails.openSecondary}"></i>
-      Secondary (1)
-    </div>
-    <div id="nodeSecondary" class="accordion-content collapse">
-      <p>
-        Log X2
-      </p>
+      <div class="accordion-panel">
+        <div data-toggle="collapse" ng-click="nodeDetails.openPrimary = !nodeDetails.openPrimary" data-target="#nodePrimary"
+             class="sub-accordion-heading">
+          <i class="arrow-accordion fa" ng-class="{'fa-chevron-down': nodeDetails.openPrimary, 'fa-chevron-right': !nodeDetails.openPrimary}"></i>
+          Primary (1)
+        </div>
+        <div id="nodePrimary" class="accordion-content collapse">
+          <p>
+            Person XYZ
+          </p>
+        </div>
+      </div>
+      <div class="accordion-panel">
+        <div data-toggle="collapse" ng-click="nodeDetails.openSecondary = !nodeDetails.openSecondary" data-target="#nodeSecondary"
+             class="sub-accordion-heading">
+          <i class="arrow-accordion fa" ng-class="{'fa-chevron-down': nodeDetails.openSecondary, 'fa-chevron-right': !nodeDetails.openSecondary}"></i>
+          Secondary (1)
+        </div>
+        <div id="nodeSecondary" class="accordion-content collapse">
+          <p>
+            Log X2
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 </div>
