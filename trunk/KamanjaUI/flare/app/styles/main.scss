@@ -4,8 +4,9 @@ $icon-font-path: '../fonts/';
 @import "bower_components/bootstrap-sass/assets/stylesheets/_bootstrap.scss";
 // endbower
 
-
 @import "bower_components/font-awesome/scss/font-awesome.scss";
+
+@import "bower_components/roboto-fontface/css/roboto/sass/roboto-fontface.scss";
 
 @import "header.scss";
 @import "nodeDetails.scss";
@@ -48,7 +49,7 @@ $white: #fcfcfc;
   $height: 750px;
   $sidebarColor: #949494;
 
-  padding-top: 50px;
+  padding-top: 51px;
   background-color: $networkBGColor;
   .col-md-2.sideBar {
     background-color: $sidebarBGColor;
@@ -231,7 +232,7 @@ div.vis-network {
     background-color: #1a1a1a;
     text-align: justify;
     p, .thresholdRules {
-      padding-left: 25px;
+      padding-left: 33px;
       padding-right: 15px;
     }
   }

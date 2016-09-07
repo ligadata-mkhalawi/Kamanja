@@ -12,7 +12,8 @@
     "angular-animate": "^1.5.8",
     "d3": "^4.2.2",
     "font-awesome": "font-awsome#^4.6.3",
-    "angular-resource": "^1.5.8"
+    "angular-resource": "^1.5.8",
+    "roboto-fontface": "^0.5.0"
   },
   "overrides": {
     "bootstrap-sass": {
@@ -25,7 +26,13 @@
     "font-awesome": {
       "main": [
         "scss/font-awesome.scss",
-        "fonts/*"
+        "fonts/roboto/*"
+      ]
+    },
+    "roboto-fontface": {
+      "main": [
+        "css/roboto/sass/roboto-fontface.scss",
+        "fonts/roboto/*"
       ]
     }
   },

@@ -2,30 +2,32 @@
   <div class="container-fluid">
     <div class="row">
       <div class="col-md-4 top leftToggleMenu">
-        <span class="title">MENU <i class="glyphicon glyphicon-menu-hamburger icon-bar"></i></span>
+        <div class="ic-menu text-center">
+          <span class="title">MENU <i class="glyphicon glyphicon-menu-hamburger icon-bar"></i></span>
+        </div>
       </div>
-      <div class="col-md-4 top">
-        <span class="logo">FLARE</span>
+      <div class="col-md-4 top text-center">
+       <img src="images/logo.svg" width="72" />
       </div>
       <div class="col-md-4 top text-right">
         <div class="btn-group snapshot" role="group" aria-label="...">
           <button type="button" class="btn btn-default btnIconWithLabel">
             <i class="fa fa-camera" aria-hidden="true"></i>
-            <div>Snapshot</div>
+            <p class="snapshot">Snapshot</p>
           </button>
         </div>
         <div class="btn-group" role="group" aria-label="...">
           <button type="button" class="btn btn-default btnIconWithLabel" ng-click="toggleSideBar()">
             <i class="fa fa-filter" aria-hidden="true"></i>
-            <div>Filter</div>
+            <p>Filter</p>
           </button>
           <button type="button" class="btn btn-default btnIconWithLabel">
             <i class="fa fa-question-circle-o" aria-hidden="true"></i>
-            <div>Query</div>
+            <p>Query</p>
           </button>
           <button type="button" class="btn btn-default btnIconWithLabel">
             <i class="fa fa-tag" aria-hidden="true"></i>
-            <div>Tag</div>
+            <p>Tag</p>
           </button>
         </div>
       </div>
