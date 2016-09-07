@@ -40,9 +40,6 @@ angular
               scaling: {
                 min: 100,
                 max: 300
-              },
-              font: {
-                size: 15
               }
             },
 
@@ -114,7 +111,7 @@ angular
               }
               var position = network.getPositions(d.id)[d.id];
               ctx.textAlign = 'left';
-              ctx.font = '9px arial';
+              ctx.font = '19px roboto';
               ctx.fillStyle = '#ffffff';
               ctx.fillText(d._label, (position.x + 30), (position.y + -2));
             });

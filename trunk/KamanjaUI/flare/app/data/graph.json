@@ -3,23 +3,18 @@
     {"id": "AppAccessLog", "_label": "AppAccessLog", "group": "Logs", "color": {"border": ""}},
     {"id": "URLAccessLog", "_label": "URLAccessLog", "group": "Logs"},
     {"id": "RemoteAccessLog", "_label": "RemoteAccessLog", "group": "Logs"},
-    {"id": "RootLog", "_label": "RootLog", "hidden": true, "group": "Logs"},
 
     {"id": "Mozilla Browser", "_label": "Mozilla Browser", "group": "Browsers", "color": {"border": ""}},
     {"id": "Chrome Browser", "_label": "Chrome Browser", "group": "Browsers"},
-    {"id": "RootBrowser", "_label": "RootBrowser", "hidden": true, "group": "Browsers"},
 
     {"id": "Jane", "_label": "Jane", "group": "Users"},
     {"id": "John", "_label": "John", "group": "Users"},
     {"id": "Jill", "_label": "Jill", "group": "Users"},
-    {"id": "RootUser", "_label": "RootUser", "hidden": true, "group": "Users"},
 
     {"id": "BadApp", "_label": "BadApp", "group": "BadApps"},
-    {"id": "RootBadApp", "_label": "RootBadApp", "hidden": true, "group": "BadApps"},
 
     {"id": "Outlook", "_label": "Outlook", "group": "EmailApps"},
     {"id": "GMail", "_label": "GMail", "group": "EmailApps"},
-    {"id": "RootEmailApp", "_label": "RootEmailApp", "hidden": true, "group": "EmailApps"},
 
     {"id": "Email", "_label": "Email", "group": "None"},
     {"id": "companyMachin", "_label": "companyMachin", "group": "None"},
