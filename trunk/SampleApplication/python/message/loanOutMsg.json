@@ -9,13 +9,13 @@
     "Elements": [
       {
         "Field": {
-          "Name": "rec_ID",
+          "Name": "rec_id",
           "Type": "system.Int"
         }
       },
       {
         "Field": {
-          "Name": "PYTHON_RISK_SCORE",
+          "Name": "python_risk_score",
           "Type": "system.Float"
         }
       }
