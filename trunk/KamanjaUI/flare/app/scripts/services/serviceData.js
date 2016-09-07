@@ -15,6 +15,14 @@ angular.module('flareApp')
           var obj = _.where(response, {id: id});
           callback(obj);
         });
+      },
+      getGraphData: function(callback){
+        serviceUtil.httpRequest.query({
+          url: './data/graph.json',
+          data: {}
+        }, function(response){
+          callback(response[0]);
+        });
       }
     }
   });

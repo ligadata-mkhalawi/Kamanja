@@ -1,0 +1,68 @@
+[{
+  "nodes": [
+    {"id": "AppAccessLog", "_label": "AppAccessLog", "group": "Logs", "color": {"border": ""}},
+    {"id": "URLAccessLog", "_label": "URLAccessLog", "group": "Logs"},
+    {"id": "RemoteAccessLog", "_label": "RemoteAccessLog", "group": "Logs"},
+    {"id": "RootLog", "_label": "RootLog", "hidden": true, "group": "Logs"},
+
+    {"id": "Mozilla Browser", "_label": "Mozilla Browser", "group": "Browsers", "color": {"border": ""}},
+    {"id": "Chrome Browser", "_label": "Chrome Browser", "group": "Browsers"},
+    {"id": "RootBrowser", "_label": "RootBrowser", "hidden": true, "group": "Browsers"},
+
+    {"id": "Jane", "_label": "Jane", "group": "Users"},
+    {"id": "John", "_label": "John", "group": "Users"},
+    {"id": "Jill", "_label": "Jill", "group": "Users"},
+    {"id": "RootUser", "_label": "RootUser", "hidden": true, "group": "Users"},
+
+    {"id": "BadApp", "_label": "BadApp", "group": "BadApps"},
+    {"id": "RootBadApp", "_label": "RootBadApp", "hidden": true, "group": "BadApps"},
+
+    {"id": "Outlook", "_label": "Outlook", "group": "EmailApps"},
+    {"id": "GMail", "_label": "GMail", "group": "EmailApps"},
+    {"id": "RootEmailApp", "_label": "RootEmailApp", "hidden": true, "group": "EmailApps"},
+
+    {"id": "Email", "_label": "Email", "group": "None"},
+    {"id": "companyMachin", "_label": "companyMachin", "group": "None"},
+    {"id": "ContactList", "_label": "ContactList", "group": "None"},
+    {"id": "Website", "_label": "Website", "group": "None"},
+    {"id": "SuspiciousWebsiteList", "_label": "SuspiciousWebsiteList", "group": "None"}
+  ],
+  "edges": [
+
+
+    {"from": "Chrome Browser", "to": "AppAccessLog", "_label": "logsTo"},
+    {"from": "Chrome Browser", "to": "URLAccessLog", "_label": "logsTo"},
+
+    {"from": "Jane", "to": "Chrome Browser", "_label": "access"},
+    {"from": "John", "to": "Chrome Browser", "_label": "access"},
+
+    {"from": "John", "to": "BadApp", "_label": "downloads"},
+    {"from": "John", "to": "BadApp", "_label": "installs"},
+
+    {"from": "BadApp", "to": "Outlook", "_label": "access"},
+    {"from": "Jill", "to": "Outlook", "_label": "access"},
+
+    {"from": "Outlook", "to": "Email", "_label": "sends"},
+    {"from": "Outlook", "to": "ContactList", "_label": "access"},
+    {"from": "Website", "to": "SuspiciousWebsiteList", "_label": "belongsTo"},
+    {"from": "BadApp", "to": "companyMachin", "_label": "savedTo"},
+    {"from": "Website", "to": "Chrome Browser", "_label": "notifies"},
+    {"from": "John", "to": "Website", "_label": "access"}
+  ],
+  "showOptions": {
+    "Coloring by Cluster": {
+      "value": true,
+      "options": {
+        "Logs": {"value": true, "color": "green", "showMenu": false},
+        "Users": {"value": true, "color": "blue", "showMenu": false},
+        "Browsers": {"value": true, "color": "purple", "showMenu": false},
+        "Alerts": {"value": true, "color": "yellow", "showMenu": false},
+        "EmailApps": {"value": true, "color": "red", "showMenu": false},
+        "BadApps": {"value": true, "color": "lightBlue", "showMenu": false},
+        "None": {"value": true, "color": "grey", "showMenu": false}
+      }
+    },
+    "Relationships": {"value": true},
+    "Labels": {"value": true}
+  }
+}]

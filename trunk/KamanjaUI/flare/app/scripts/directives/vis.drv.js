@@ -155,6 +155,9 @@ angular
                 hidden = true;
               }
               edge.hidden = hidden;
+              if (! view.showOptions['Relationships']['options'][edge._label].value) {
+                edge.hidden = true;
+              }
             });
             network.setOptions(options);
             data = {nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges)};

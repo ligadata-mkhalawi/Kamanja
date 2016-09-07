@@ -3,8 +3,8 @@
   <div ng-class="{'col-md-10':main.showSideBar,'col-md-12':!main.showSideBar}">
     <div class="row">
       <div class="col-md-12 tabsBar">
-        <span class="glyphicon glyphicon-plus" aria-hidden="true" ></span>
-        <div ng-repeat="view in [views[0]]" class="view" ng-class="{'active':view === currentView}"
+        <span class="glyphicon glyphicon-plus" aria-hidden="true" ng-click="main.addNewView()"></span>
+        <div ng-repeat="view in views" class="view" ng-class="{'active':view === currentView}"
              >
           <div ng-if="!view.editTitle" ng-dblclick="view.editTitle = true" sglclick="main.setView(view)">
             {{view.title}}
@@ -20,7 +20,7 @@
     </div>
     <div class="row">
       <div class="col-md-12">
-        <vis node-click="main.nodeClicked"></vis>
+        <vis ng-if="currentView" node-click="main.nodeClicked"></vis>
       </div>
     </div>
   </div>
@@ -32,7 +32,13 @@
               ng-class="{'hideEye':!currentView.getOption('Labels')}"></span>
       </div>
     </div>
-
+    <div class="row">
+      <div class="col-md-12 listItem listParent">
+        <div class="head">
+          <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span>Entities (160)
+        </div>
+      </div>
+    </div>
     <div class="row">
       <div class="col-md-12 listItem listParent">
         <div class="head" ng-click="currentView.toggleOptions('Coloring by Cluster')">
@@ -61,6 +67,35 @@
             </ul>
           </li>
         </ul>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12 listItem listParent">
+        <div class="head" ng-click="currentView.toggleOptions('Relationships')">
+          <span class="glyphicon "
+                ng-class="{'glyphicon-menu-right': !currentView.getOption('Relationships'), 'glyphicon-menu-down': currentView.getOption('Relationships')}"
+                aria-hidden="true"></span> Relationships ({{currentView.getEdgesCount()}})
+        </div>
+        <ul class="list-group" ng-if="currentView.getOption('Relationships')">
+          <li ng-repeat="(title , relationship) in currentView.getOptions('Relationships')"
+              class="list-group-item">
+            <div class="titleAndColor" ng-click="currentView.toggleOptions(title)">
+              {{title}} ({{currentView.getEdgesCount(title)}})
+              <span
+                class="glyphicon glyphicon-eye-open" aria-hidden="true"
+                ng-class="{'hideEye':!currentView.getOption(title)}"></span>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-md-12 listItem listParent">
+        <div class="head">
+          <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> Groups (0) <span
+          class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>
+        </div>
       </div>
     </div>
   </div>
