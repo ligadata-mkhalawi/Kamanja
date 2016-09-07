@@ -486,23 +486,26 @@ object MessageAndContainerUtils {
             }
 
             RemoveMessage(latestVersion.get.nameSpace, latestVersion.get.name, latestVersion.get.ver, None)
-            resultStr = AddMessageDef(msg)
-
+            //resultStr = AddMessageDef(msg)
+            AddMessageDef(msg)
             logger.debug("Check for dependent messages ...")
             val depMessages = GetDependentMessages.getDependentObjects(msg)
             if (depMessages.length > 0) {
               depMessages.foreach(msg => {
-                logger.debug("DependentMessage => " + msg)
-                resultStr = resultStr + RecompileMessage(msg)
+                logger.debug("  DependentMessage => " + msg)
+                //resultStr = resultStr + RecompileMessage(msg)
+                RecompileMessage(msg)
               })
             }
             val depModels = GetDependentModels(msg.NameSpace, msg.Name, msg.Version.toLong)
             if (depModels.length > 0) {
               depModels.foreach(mod => {
                 logger.debug("DependentModel => " + mod.FullNameWithVer)
-                resultStr = resultStr + getMetadataAPI.RecompileModel(mod, userid, Some(msg))
+                //resultStr = resultStr + getMetadataAPI.RecompileModel(mod, userid, Some(msg))
+                getMetadataAPI.RecompileModel(mod, userid, Some(msg))
               })
             }
+            val resultStr = new ApiResult(ErrorCodeConstants.Success, "UpdateMessage", messageText, ErrorCodeConstants.Update_Message_Successful).toString
             resultStr
           } else {
             // 1112 - Introduced to let user know higher version required - Change begins
