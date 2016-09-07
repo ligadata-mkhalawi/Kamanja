@@ -15,16 +15,11 @@
  */
 package com.ligadata.keyvaluestore
 
-import util.control.Breaks._
-import java.io.File
 import java.net.{InetAddress, URL, URLClassLoader}
-import java.sql.{CallableStatement, Connection, Driver, DriverManager, DriverPropertyInfo, PreparedStatement, ResultSet, Statement}
+import java.sql.{Connection, Driver, DriverPropertyInfo, ResultSet}
 import java.text.SimpleDateFormat
-import java.util
-import java.util.{Calendar, Properties, TimeZone}
-import javassist.bytecode.ByteArray
+import java.util.{Properties, TimeZone}
 
-import com.carrotsearch.hppc.cursors.ObjectObjectCursor
 import com.ligadata.Exceptions._
 import com.ligadata.KamanjaBase.NodeContext
 import com.ligadata.KvBase.{Key, TimeRange, Value}
@@ -32,31 +27,19 @@ import com.ligadata.StorageBase.{DataStore, StorageAdapterFactory, Transaction}
 import com.ligadata.Utils.KamanjaLoaderInfo
 import com.ligadata.kamanja.metadata.AdapterInfo
 import org.apache.commons.codec.binary.Base64
-import org.apache.commons.dbcp2.BasicDataSource
-import org.dmg.pmml
-import org.dmg.pmml.TimeValue
-import org.elasticsearch.action.admin.indices.alias.get.{GetAliasesRequest, GetAliasesResponse}
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
-import org.elasticsearch.action.admin.indices.mapping.put
-import org.elasticsearch.action.admin.indices.mapping.put.{PutMappingRequestBuilder, PutMappingResponse}
-import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse
-import org.elasticsearch.action.admin.indices.stats.IndexStats
-import org.elasticsearch.action.bulk.BulkResponse
-import org.elasticsearch.client.IndicesAdminClient
 import org.elasticsearch.client.transport.TransportClient
-import org.elasticsearch.cluster.ClusterState
-import org.elasticsearch.cluster.metadata.{AliasMetaData, IndexMetaData, MappingMetaData}
-import org.elasticsearch.common.collect.ImmutableOpenMap
+import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.common.transport.InetSocketTransportAddress
 import org.elasticsearch.common.xcontent.{XContentBuilder, XContentFactory}
 import org.elasticsearch.index.query.QueryBuilders
-import org.elasticsearch.index.query.SimpleQueryParser.Settings
 import org.elasticsearch.search.sort.{SortOrder, SortParseElement}
 import org.elasticsearch.search.{SearchHit, SearchHits}
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 
 import scala.collection.mutable.TreeSet
+import scala.util.control.Breaks._
 
 
 class JdbcClassLoader(urls: Array[URL], parent: ClassLoader) extends URLClassLoader(urls, parent) {
@@ -175,6 +158,14 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   } else {
     logger.info("The portnumber is not supplied in adapterConfig, defaults to " + "9300")
     portNumber = "9300"
+  }
+
+  var clusterName: String = null;
+  if (parsed_json.contains("clusterName")) {
+    SchemaName = parsed_json.get("clusterName").get.toString.trim
+  } else {
+    logger.info("The clusterName is not supplied in adapterConfig, defaults to " + "elasticsearch")
+    clusterName = "elasticsearch"
   }
 
   var SchemaName: String = null;
@@ -339,7 +330,8 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
   private def getConnection: TransportClient = {
     try {
-      var client = TransportClient.builder().build().addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(location), portNumber.toInt))
+      val settings = Settings.settingsBuilder().put("cluster.name", clusterName).build()
+      var client = TransportClient.builder().settings(settings).build().addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(location), portNumber.toInt))
       client
     } catch {
       case e: Exception => {
