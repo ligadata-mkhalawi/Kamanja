@@ -28,26 +28,24 @@
     {"id": "SuspiciousWebsiteList", "_label": "SuspiciousWebsiteList", "group": "None"}
   ],
   "edges": [
-
-
     {"from": "Chrome Browser", "to": "AppAccessLog", "_label": "logsTo"},
-    {"from": "Chrome Browser", "to": "URLAccessLog", "_label": "logsTo"},
+    {"from": "Chrome Browser", "to": "URLAccessLog", "_label": "logsTo", "context": "Restricted URL accessed"},
 
     {"from": "Jane", "to": "Chrome Browser", "_label": "access"},
     {"from": "John", "to": "Chrome Browser", "_label": "access"},
 
     {"from": "John", "to": "BadApp", "_label": "downloads"},
-    {"from": "John", "to": "BadApp", "_label": "installs"},
+    {"from": "John", "to": "BadApp", "_label": "installs", "context": "badApp.zip"},
 
     {"from": "BadApp", "to": "Outlook", "_label": "access"},
     {"from": "Jill", "to": "Outlook", "_label": "access"},
 
-    {"from": "Outlook", "to": "Email", "_label": "sends"},
+    {"from": "Outlook", "to": "Email", "_label": "sends", "context": "Checking in"},
     {"from": "Outlook", "to": "ContactList", "_label": "access"},
     {"from": "Website", "to": "SuspiciousWebsiteList", "_label": "belongsTo"},
     {"from": "BadApp", "to": "companyMachin", "_label": "savedTo"},
     {"from": "Website", "to": "Chrome Browser", "_label": "notifies"},
-    {"from": "John", "to": "Website", "_label": "access"}
+    {"from": "John", "to": "Website", "_label": "access", "context": "malwareURL.com"}
   ],
   "showOptions": {
     "Coloring by Cluster": {
@@ -63,7 +61,6 @@
       }
     },
     "Relationships": {"value": true},
-    "Labels": {"value": true},
-    "Entities": {"value": false}
+    "Labels": {"value": true}
   }
 }]

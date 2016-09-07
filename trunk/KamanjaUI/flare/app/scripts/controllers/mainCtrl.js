@@ -33,17 +33,33 @@ angular.module('flareApp')
           }
         }
         var relationshipsOptions = [];
-        var keys = _.keys(_.countBy(graph.edges,"_label"));
+        var keys = _.keys(_.countBy(graph.edges,'_label'));
         relationshipsOptions = _.object(keys,_.map( keys, function (k) {
           return {value:true, showMenu:false};
         }));
-        graph.showOptions["Relationships"].options = relationshipsOptions;
+        graph.showOptions['Relationships'].options = relationshipsOptions;
+
+        var contextOptions = [];
+        var keys = _.filter(_.keys(_.countBy(graph.edges,'context')), function (k) {
+          return k !== "undefined";
+        });
+
+        contextOptions = _.object(keys,_.map( keys, function (k) {
+          var edge = _.filter(graph.edges, {context: k})[0];
+          return {value:true, showMenu:false, edge: edge};
+        }));
+        graph.showOptions['Contexts'] = {options : contextOptions, value: false};
+
+        graph.showOptions['Entities'] = {'value': true};
         return {
           title: 'new view',
           editTitle: true,
           nodes: graph.nodes,
           edges: graph.edges,
           showOptions: graph.showOptions,
+          getContextsCount: function () {
+            return _.keys(graph.showOptions['Contexts'].options).length;
+          },
           getEdgesCount: function (title) {
             if (!title){
               return this.edges.length;
@@ -115,25 +131,15 @@ angular.module('flareApp')
           },
           toggleEdge: function (edge) {
             edge.hidden = !edge.hidden;
-            var hide = true;
-            var edges = this.getNodes(edge._label);
-            _.each(edges,function (e){
-              if (!e.hidden) {
-                hide = false;
-              }
-            });
-            traverse(this.showOptions, edge._label, function process(key, obj) {
-              obj.value = !hide;
-            });
             $rootScope.$broadcast('showOptionsToggled');
-          },
+          }
 
         };
       };
       $rootScope.currentView = createView();
       $rootScope.currentView.editTitle = false;
       $rootScope.currentView.id = 'firstView';
-      $rootScope.currentView.title = 'Malware Investigation';
+      $rootScope.currentView.title = 'view 1';
       $rootScope.views = [$rootScope.currentView];
       $scope.$on('sideBarToggled', function () {
 

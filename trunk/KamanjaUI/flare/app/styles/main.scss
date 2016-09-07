@@ -22,6 +22,7 @@ body {
   padding-top: 20px;
   padding-bottom: 20px;
   background: #202020;
+  overflow: hidden;
 }
 
 .container-narrow > hr {
@@ -47,13 +48,14 @@ $white: #fcfcfc;
 .mainContainer {
   $height: 750px;
   $sidebarColor: #949494;
-
   padding-top: 50px;
   background-color: $networkBGColor;
-  .col-md-2.sideBar {
+  .col-xs-2.sideBar {
     background-color: $sidebarBGColor;
-    height: $height;
+    height: calc(100vh - 70px);
+    overflow-y: scroll;
     .listItem {
+      background-color: $sidebarBGColor;
       color: $sidebarColor;
       padding: 10px 15px;
       cursor: pointer;
@@ -134,7 +136,7 @@ $white: #fcfcfc;
   }
   #visJsDiv {
     width: 100%;
-    height: $height;
+    height: calc(100vh - 90px);
   }
 
 }

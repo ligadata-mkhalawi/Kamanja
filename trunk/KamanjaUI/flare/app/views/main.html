@@ -1,16 +1,17 @@
 <node-details></node-details>
 <div class="row mainContainer">
-  <div ng-class="{'col-md-10':main.showSideBar,'col-md-12':!main.showSideBar}">
+  <div ng-class="{'col-xs-10':main.showSideBar,'col-xs-12':!main.showSideBar}">
     <div class="row">
-      <div class="col-md-12 tabsBar">
+      <div class="col-xs-12 tabsBar">
         <span class="glyphicon glyphicon-plus" aria-hidden="true" ng-click="main.addNewView()"></span>
         <div ng-repeat="view in views" class="view" ng-class="{'active':view === currentView}"
-             >
+        >
           <div ng-if="!view.editTitle" ng-dblclick="view.editTitle = true" sglclick="main.setView(view)">
             {{view.title}}
           </div>
           <div ng-if="view.editTitle">
-            <input ng-model="view.title" ng-model-options="{ updateOn: 'blur' }" ng-keyup="cancel($event)" click-outside="view.editTitle = false" type="text"
+            <input ng-model="view.title" ng-model-options="{ updateOn: 'blur' }" ng-keyup="cancel($event)"
+                   click-outside="view.editTitle = false" type="text"
                    ng-change="view.editTitle = false">
           </div>
           <span class="glyphicon glyphicon-remove-sign" aria-hidden="true" ng-click="main.removeView(view)"
@@ -19,71 +20,60 @@
       </div>
     </div>
     <div class="row">
-      <div class="col-md-12">
+      <div class="col-xs-12">
         <vis ng-if="currentView" node-click="main.nodeClicked"></vis>
       </div>
     </div>
   </div>
-  <div class="col-md-2 sideBar" ng-if="main.showSideBar">
+  <div class="col-xs-2 sideBar" ng-if="main.showSideBar">
     <div class="row">
-      <div class="col-md-12 listItem" ng-click="currentView.toggleOptions('Labels')">
+      <div class="col-xs-12 listItem" ng-click="currentView.toggleOptions('Labels')">
         Labels
         <span class="glyphicon glyphicon-eye-open" aria-hidden="true"
               ng-class="{'hideEye':!currentView.getOption('Labels')}"></span>
       </div>
     </div>
+
     <div class="row">
-      <div class="col-md-12 listItem listParent">
+      <div class="col-xs-12 listItem listParent">
         <div class="head" ng-click="currentView.toggleOptions('Entities')">
           <span class="glyphicon "
                 ng-class="{'glyphicon-menu-right': !currentView.getOption('Entities'), 'glyphicon-menu-down': currentView.getOption('Entities')}"
-                aria-hidden="true"></span> Entities ({{currentView.getNodesCount()}})
+                aria-hidden="true"></span> Entities
         </div>
-        <ul class="list-group" ng-if="currentView.getOption('Entities')">
-          <li ng-repeat="node in currentView.getNodes()"
-              class="list-group-item">
-            <div class="titleAndColor" ng-click="currentView.toggleNode(node)">
-              {{node._label}}
-              <span
-                class="glyphicon glyphicon-eye-open" aria-hidden="true"
-                ng-class="{'hideEye':node.hidden}"></span>
-            </div>
-          </li>
-        </ul>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-md-12 listItem listParent">
-        <div class="head" ng-click="currentView.toggleOptions('Coloring by Cluster')">
-          <span class="glyphicon "
-                ng-class="{'glyphicon-menu-right': !currentView.getOption('Coloring by Cluster'), 'glyphicon-menu-down': currentView.getOption('Coloring by Cluster')}"
-                aria-hidden="true"></span>Coloring by Cluster
-        </div>
-        <ul class="list-group" ng-if="currentView.getOption('Coloring by Cluster')">
-          <li ng-repeat="(title , clusterOption) in currentView.getOptions('Coloring by Cluster')"
-              class="list-group-item">
-            <span class="glyphicon glyphicon-menu-right" aria-hidden="true" ng-click="clusterOption.showMenu = !clusterOption.showMenu"></span>
-            <div class="titleAndColor" ng-click="currentView.toggleOptions(title)">
-              <span class="circle" ng-class="clusterOption.color"></span>
-              {{title}} ({{currentView.getNodesCount(title)}})
-              <span
-              class="glyphicon glyphicon-eye-open" aria-hidden="true"
-              ng-class="{'hideEye':!currentView.getOption(title)}"></span>
-            </div>
-            <ul ng-if="clusterOption.showMenu">
-              <li ng-repeat = "node in currentView.getNodes(title)" class="list-group-item" ng-click = "currentView.toggleNode(node)">
-                {{node._label}}
+        <div ng-if="currentView.getOption('Entities')">
+          <div class="listItem">
+            Coloring by Cluster
+          </div>
+
+          <ul class="list-group" >
+            <li ng-repeat="(title , clusterOption) in currentView.getOptions('Coloring by Cluster')"
+                class="list-group-item">
+              <span class="glyphicon glyphicon-menu-right" aria-hidden="true"
+                    ng-click="clusterOption.showMenu = !clusterOption.showMenu"></span>
+              <div class="titleAndColor" ng-click="currentView.toggleOptions(title)">
+                <span class="circle" ng-class="clusterOption.color"></span>
+                {{title}} ({{currentView.getNodesCount(title)}})
                 <span
                   class="glyphicon glyphicon-eye-open" aria-hidden="true"
-                  ng-class="{'hideEye':node.hidden}"></span>
-              </li>
-            </ul>
-          </li>
-        </ul>
+                  ng-class="{'hideEye':!currentView.getOption(title)}"></span>
+              </div>
+              <ul ng-if="clusterOption.showMenu">
+                <li ng-repeat="node in currentView.getNodes(title)" class="list-group-item"
+                    ng-click="currentView.toggleNode(node)">
+                  {{node._label}}
+                  <span
+                    class="glyphicon glyphicon-eye-open" aria-hidden="true"
+                    ng-class="{'hideEye':node.hidden}"></span>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
     <div class="row">
-      <div class="col-md-12 listItem listParent">
+      <div class="col-xs-12 listItem listParent">
         <div class="head" ng-click="currentView.toggleOptions('Relationships')">
           <span class="glyphicon "
                 ng-class="{'glyphicon-menu-right': !currentView.getOption('Relationships'), 'glyphicon-menu-down': currentView.getOption('Relationships')}"
@@ -104,7 +94,28 @@
     </div>
 
     <div class="row">
-      <div class="col-md-12 listItem listParent">
+      <div class="col-xs-12 listItem listParent">
+        <div class="head" ng-click="currentView.toggleOptions('Contexts')">
+          <span class="glyphicon "
+                ng-class="{'glyphicon-menu-right': !currentView.getOption('Contexts'), 'glyphicon-menu-down': currentView.getOption('Contexts')}"
+                aria-hidden="true"></span> Contexts ({{currentView.getContextsCount()}})
+        </div>
+        <ul class="list-group" ng-if="currentView.getOption('Contexts')">
+          <li ng-repeat="(title , context) in currentView.getOptions('Contexts')"
+              class="list-group-item">
+            <div class="titleAndColor" ng-click="currentView.toggleEdge(context.edge)">
+              {{title}}
+              <span
+                class="glyphicon glyphicon-eye-open" aria-hidden="true"
+                ng-class="{'hideEye':context.edge.hidden}"></span>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-xs-12 listItem listParent">
         <div class="head">
           <span class="glyphicon glyphicon-menu-right" aria-hidden="true"></span> Groups (0) <span
           class="glyphicon glyphicon-eye-open" aria-hidden="true"></span>

@@ -3,14 +3,14 @@
 
 angular
   .module('flareApp')
-  .directive('vis', ['$rootScope',
-    function ($rootScope) {
+  .directive('vis', ['$rootScope', '$window',
+    function ($rootScope, $window) {
       return {
         restrict: 'E',
         scope: {
           nodeClick: '<'
         },
-        template: '<div><div id="visJsDiv"></div>',
+        template: '<div id="visJsDiv">',
         replace: true,
         link: function (scope, element) {
 
@@ -23,7 +23,7 @@ angular
           _.each(edges, function (edge) {
             edge.color = edge.color || {};
             edge.color.opacity = 0.3;
-            edge.label = '';
+            edge.label = edge._label;
           });
 
           // create a network
@@ -42,8 +42,7 @@ angular
                 max: 300
               },
               font: {
-                size: 15,
-                // face: 'Tahoma'
+                size: 15
               }
             },
 
@@ -62,12 +61,6 @@ angular
             physics: {
               adaptiveTimestep: true,
               stabilization: false,
-              // barnesHut: {
-              //   gravitationalConstant: -2000,
-              //   centralGravity: 10,
-              //   springLength: 50,
-              //   avoidOverlap: 0,
-              // },
               timestep: 1,
               solver: 'repulsion'
             },
@@ -123,7 +116,7 @@ angular
               ctx.textAlign = 'left';
               ctx.font = '9px arial';
               ctx.fillStyle = '#ffffff';
-              ctx.fillText(d._label, (position.x + -10), (position.y + -2));
+              ctx.fillText(d._label, (position.x + 30), (position.y + -2));
             });
           });
 
@@ -144,7 +137,7 @@ angular
               var fromAndTo = _.filter(nodes, function (n) {
                 return n.id === edge.from || n.id === edge.to
               });
-              var hidden = false;
+              var hidden;
               if (options.groups[fromAndTo[0].group].hidden ) {
                 hidden = true;
               }
@@ -154,7 +147,9 @@ angular
               if (fromAndTo[0].hidden || fromAndTo[1].hidden) {
                 hidden = true;
               }
-              edge.hidden = hidden;
+              if (hidden !== undefined) {
+                edge.hidden = hidden;
+              }
               if (! view.showOptions['Relationships']['options'][edge._label].value) {
                 edge.hidden = true;
               }
@@ -164,6 +159,7 @@ angular
             network.setData(data);
             network.redraw();
           });
+
         }
       }
     }]);
