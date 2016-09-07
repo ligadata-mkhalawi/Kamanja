@@ -63,6 +63,7 @@
       }
     },
     "Relationships": {"value": true},
-    "Labels": {"value": true}
+    "Labels": {"value": true},
+    "Entities": {"value": false}
   }
 }]
