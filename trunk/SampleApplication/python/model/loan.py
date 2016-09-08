@@ -31,8 +31,7 @@ class LoanTuple(ModelInstance):
                 pred += float (msg["log6_derog"]) * 0.390988196099627
                 pred += float (msg["log5_delinq"]) * 1.8255237489947
                 pred += float (msg["log_value"]) * -35.3593065292401
-                pred = (pred / (1 - pred))
-                pred = math.log(pred) 
+                pred = (math.exp(pred) / (1 + math.exp(pred)))
                         
                 outMsg = json.dumps({'rec_id' : msg["rec_id"],
                                      'python_risk_score' : pred})
