@@ -344,12 +344,16 @@ class PythonAdapter(factory : PythonAdapterFactory
                          , outputDefault: Boolean): Array[ContainerOrConcept] = {
         // ... only one input message/one output message supported for now.
         // Holding current transaction information original message and set the new information. Because the model will pull the message from transaction context
+        val (moduleName, modelName) : (String,String) = ModuleNModelNames
         val (origin, orgInputMsg) = txnCtxt.getInitialMessage
         var returnValues : ArrayBuffer[ContainerOrConcept] = ArrayBuffer[ContainerOrConcept]()
         try {
             txnCtxt.setInitialMessage("", execMsgsSet(0).asInstanceOf[ContainerInterface], false)
             val msg = txnCtxt.getMessage()
             val jsonMdlResults : String = evaluateModel(msg)
+            if (logger.isDebugEnabled()){
+               logger.debug (s"Eexcute  Model --- for (moduleName = $moduleName, modelName = '$modelName', jsonResults = $jsonMdlResults)")
+             }
             if (jsonMdlResults != null) {
                 val outMsgName = factory.getModelDef().outputMsgs(0)
                 val deser : SerializeDeserialize = factory.serDeserializer

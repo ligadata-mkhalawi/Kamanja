@@ -21,7 +21,7 @@
       },
       {
         "Field": {
-          "Name": "tin_imoreason_debtcon",
+          "Name": "tin_imo_reason_debtcon",
           "Type": "system.Float"
         }
       },
