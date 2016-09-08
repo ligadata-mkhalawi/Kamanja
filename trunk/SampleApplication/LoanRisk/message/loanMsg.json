@@ -9,139 +9,139 @@
     "Elements": [
       {
         "Field": {
-          "Name": "rec_ID",
+          "Name": "rec_id",
           "Type": "system.Int"
         }
       },
       {
         "Field": {
-          "Name": "BAD",
+          "Name": "bad0",
           "Type": "system.Float"
         }
       },
       {
         "Field": {
-          "Name": "TIN_IMOREASON_Debtcon",
+          "Name": "tin_imo_reason_debtcon",
           "Type": "system.Float"
         }
       },
       {
         "Field": {
-          "Name": "TIN_IMO_REASON_HomeImp",
+          "Name": "tin_imo_reason_homeimp",
           "Type": "system.Float"
         }
       },
       {
         "Field": {
-          "Name": "TIN_IZR_JOB_Mgr",
+          "Name": "tin_izr_job_mgr",
           "Type": "system.Float"
         }
       },
       {
         "Field": {
-          "Name": "TIN_IZR_JOB_Office",
+          "Name": "tin_izr_job_office",
           "Type": "system.Float"
         }
       },
       {
         "Field": {
-          "Name": "TIN_IZR_JOB_Other",
+          "Name": "tin_izr_job_other",
           "Type": "system.Float"
         }
       },
       {
         "Field": {
-          "Name": "TIN_IZR_JOB_ProfExe",
+          "Name": "tin_izr_job_profexe",
           "Type": "system.Float"
         }
       },
       {
         "Field": {
-          "Name": "TIN_IZR_JOB_Sales",
+          "Name": "tin_izr_job_sales",
           "Type": "system.Float"
         }
       },
       {
         "Field": {
-          "Name": "TIN_IZR_JOB_Self",
+          "Name": "tin_izr_job_self",
           "Type": "system.Float"
         }
       },
       {
         "Field": {
-          "Name": "TIN_IZR_JOB_Missing",
+          "Name": "tin_izr_job_missing",
           "Type": "system.Float"
         }
       },
       {
         "Field": {
-          "Name": "R01_LOAN",
+          "Name": "r01_loan",
           "Type": "system.Float"
         }
       },
       {
         "Field": {
-          "Name": "IMN_R01_MORTDUE",
+          "Name": "imn_r01_mortdue",
           "Type": "system.Float"
         }
       },
       {
         "Field": {
-          "Name": "IMN_R01_VALUE",
+          "Name": "imn_r01_value",
           "Type": "system.Float"
         }
       },
       {
         "Field": {
-          "Name": "IMN_R01_YOJ",
+          "Name": "imn_r01_yoj",
           "Type": "system.Float"
         }
       },
       {
         "Field": {
-          "Name": "IMN_R01_DEROG",
+          "Name": "imn_r01_derog",
           "Type": "system.Float"
         }
       },
       {
         "Field": {
-          "Name": "IMN_R01_DELINQ",
+          "Name": "imn_r01_delinq",
           "Type": "system.Float"
         }
       },
       {
         "Field": {
-          "Name": "IMN_R01_CLAGE",
+          "Name": "imn_r01_clage",
           "Type": "system.Float"
         }
       },
       {
         "Field": {
-          "Name": "IMN_R01_NINQ",
+          "Name": "imn_r01_ninq",
           "Type": "system.Float"
         }
       },
       {
         "Field": {
-          "Name": "IMN_R01_CLNO",
+          "Name": "imn_r01_clno",
           "Type": "system.Float"
         }
       },
       {
         "Field": {
-          "Name": "LOG6_DEROG",
+          "Name": "log6_derog",
           "Type": "system.Float"
         }
       },
       {
         "Field": {
-          "Name": "LOG5_DELINQ",
+          "Name": "log5_delinq",
           "Type": "system.Float"
         }
       },
       {
         "Field": {
-          "Name": "LOG_VALUE",
+          "Name": "log_value",
           "Type": "system.Float"
         }
       }
