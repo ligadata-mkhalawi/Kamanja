@@ -15,8 +15,9 @@ angular.module('flareApp')
         $rootScope.$on('nodeClicked', function(event, data){
           if(data) {
             toggleNodeDetails(true);
-            nodeDetails.applicationName = data;
-            serviceData.getDummyData(data, function (result) {
+            nodeDetails.headerColor = data.group.color.background;
+            nodeDetails.applicationName = data.node.id;
+            serviceData.getDummyData(data.node.id, function (result) {
               nodeDetails.result = result[0];
             });
           }else{
