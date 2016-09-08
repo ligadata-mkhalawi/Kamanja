@@ -24,26 +24,26 @@
   ],
   "groups": {
     "Logs": {
-      "color": {"background": "#599465", "border": "#448051"},
+      "color": {"background": "#599465", "border": "#448051", "highlight": {"background": "#599465", "border": "#0000ff"},"hover": {"background": "#599465"}},
       "font": {"color": "#fff"}
     },
     "Browsers": {
-      "color": {"background": "#b000cf", "border": "#9000b0"}
+      "color": {"background": "#b000cf", "border": "#9000b0", "highlight": {"background": "#b000cf", "border": "#0000ff"},"hover": {"background": "#b000cf"}}
     },
     "Users": {
-      "color": {"background": "#3b6a94", "border": "#306080"},
+      "color": {"background": "#3b6a94", "border": "#306080", "highlight": {"background": "#3b6a94", "border": "#0000ff"},"hover": {"background": "#3b6a94"}},
       "font": {"color": "#fff"}
     },
     "BadApps": {
-      "color": {"background": "#7fc9c9", "border": "#07c5c5"},
+      "color": {"background": "#7fc9c9", "border": "#07c5c5", "highlight": {"background": "#7fc9c9", "border": "#0000ff"},"hover": {"background": "#7fc9c9"}},
       "font": {"color": "#fff"}
     },
     "EmailApps": {
-      "color": {"background": "#d44d48", "border": "#c03333"},
+      "color": {"background": "#d44d48", "border": "#c03333", "highlight": {"background": "#d44d48", "border": "#0000ff"},"hover": {"background": "#d44d48"}},
       "font": {"color": "#fff"}
     },
     "None": {
-      "color": {"background": "#999999", "border": "#848484"},
+      "color": {"background": "#999999", "border": "#848484", "highlight": {"background": "#999999", "border": "#0000ff"},"hover": {"background": "#999999"}},
       "font": {"color": "#fff"}
     }
   },

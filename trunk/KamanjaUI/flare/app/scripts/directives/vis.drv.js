@@ -58,6 +58,7 @@ angular
                 type: 'dynamic',
                 roundness: 0.55,
               },
+              arrows: 'to',
               font: {
                 size: 15,
                 background: '#ffffff'
@@ -97,7 +98,7 @@ angular
               }
               var position = network.getPositions(d.id)[d.id];
               ctx.textAlign = 'left';
-              ctx.font = '17px roboto-condensed';
+              ctx.font = '17px "Roboto-Medium"';
               ctx.fillStyle = '#cfcccd';
               ctx.fillText(d._label, (position.x + d.size + 5), (position.y + -5));
             });
