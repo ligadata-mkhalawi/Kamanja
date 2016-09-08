@@ -1,0 +1,39 @@
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 71.602 21.521">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: none;
+      }
+
+      .cls-2 {
+        clip-path: url(#clip-path);
+      }
+
+      .cls-3 {
+        clip-path: url(#clip-path-2);
+      }
+
+      .cls-4 {
+        fill: url(#linear-gradient);
+      }
+    </style>
+    <clipPath id="clip-path">
+      <rect class="cls-1" width="71.602" height="21.521"/>
+    </clipPath>
+    <clipPath id="clip-path-2">
+      <path class="cls-1" d="M35.67,5.806l0.608,7.662h-3.89Zm11.124,4.276,1.129-6.444L50.64,3.652q1.648,0.119,1.707,2.064a5.11,5.11,0,0,1-.876,3.17,2.95,2.95,0,0,1-2.435,1.225ZM44.285,0L41.006,18.968,38.521,0.047H34.616L26.037,17.942H19.066L22.185,0.047H3.742L0,21.521H4.262l1.529-8.649h6.579l0.638-3.579H6.415L7.38,3.626h9.913L14.181,21.521H28.943l1.886-4.474h5.747l0.371,4.474H44.8l1.366-7.754h2.168l3.87,7.754H67.875l0.639-3.579H60.7L61.7,12.275h6.593L68.914,8.7H62.306L63.2,3.626h7.766L71.6,0.047H59.56L56.1,20l-3.576-7.4A6.96,6.96,0,0,0,56.565,6.42,5.856,5.856,0,0,0,55.258,1.8,5.972,5.972,0,0,0,50.818.016Z"/>
+    </clipPath>
+    <linearGradient id="linear-gradient" x1="855.757" y1="405.247" x2="856.055" y2="405.247" gradientTransform="matrix(240.083, 0, 0, -240.083, -205452.231, 97303.461)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="red"/>
+      <stop offset="1" stop-color="#fbb03b"/>
+    </linearGradient>
+  </defs>
+  <title>1fdd2b0f-a297-4caf-99fd-e39516739e38</title>
+  <g id="flare_logo" data-name="flare logo">
+    <g class="cls-2">
+      <g class="cls-3">
+        <rect class="cls-4" width="71.602" height="21.52"/>
+      </g>
+    </g>
+  </g>
+</svg>
