@@ -16,7 +16,11 @@ angular.module('flareApp')
       $rootScope.views.push(v);
     };
     main.nodeClicked = function (id) {
+      if (!id){
+        return;
+      }
       var node = $rootScope.currentView.getNode(id);
+
       var group = $rootScope.currentView.getNodeGroup(node);
       $rootScope.$broadcast('nodeClicked', {node: node, group: group});
     };
