@@ -17,7 +17,8 @@ angular.module('flareApp')
     };
     main.nodeClicked = function (id) {
       var node = $rootScope.currentView.getNode(id);
-      $rootScope.$broadcast('nodeClicked', node);
+      var group = $rootScope.currentView.getNodeGroup(node);
+      $rootScope.$broadcast('nodeClicked', {node: node, group: group});
     };
     serviceData.getGraphData(function (graph) {
       var createView = function () {
@@ -93,9 +94,10 @@ angular.module('flareApp')
           },
           getNode: function (id) {
             var node = _.filter(this.nodes,{id:id})[0];
-            var group = graph.groups[node.id];
-            node.group = group;
             return node;
+          },
+          getNodeGroup: function (node) {
+            return graph.groups[node.group];
           },
           getOption: function (option) {
             var valObject;

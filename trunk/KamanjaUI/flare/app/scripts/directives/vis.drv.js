@@ -24,6 +24,9 @@ angular
             edge.color = edge.color || {};
             edge.color.opacity = 0.3;
             edge.label = edge._label;
+            if (edge.context) {
+              edge.label += '\n(' + edge.context + ')';
+            }
             edge.font = {color: '#cfcccd', background: 'transparent', strokeWidth:0,align: 'middle',face: 'Roboto-Medium'}
           });
           _.each(nodes, function (node) {
