@@ -398,21 +398,22 @@ object StartMetadataAPI {
         response = new ApiResult(-1, "StartMetadataAPI", null, e.getMessage).toString
         println("Result: " + response)
       }
-      case e: Throwable => {
+      /* case e: RuntimeException => {
         logger.error("Error, due to an unknown exception", e)
         response = new ApiResult(-1, "StartMetadataAPI", null, e.getMessage).toString
         println("Result: " + response)
-      }
+      } */
       case e: Exception => {
         logger.error("Error, due to an unknown exception", e)
         response = new ApiResult(-1, "StartMetadataAPI", null, e.getMessage).toString
         println("Result: " + response)
       }
-      case e: RuntimeException => {
-        logger.error("Error, due to an unknown exception", e)
-        response = new ApiResult(-1, "StartMetadataAPI", null, e.getMessage).toString
-        println("Result: " + response)
-      }
+      /*case e: Throwable => {
+      logger.error("Error, due to an unknown exception", e)
+      response = new ApiResult(-1, "StartMetadataAPI", null, e.getMessage).toString
+      println("Result: " + response)
+    }*/
+
     } finally {
       getMetadataAPI.shutdown
     }
