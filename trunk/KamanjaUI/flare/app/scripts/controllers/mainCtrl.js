@@ -16,7 +16,8 @@ angular.module('flareApp')
       $rootScope.views.push(v);
     };
     main.nodeClicked = function (id) {
-      $rootScope.$broadcast('nodeClicked', id);
+      var node = $rootScope.currentView.getNode(id);
+      $rootScope.$broadcast('nodeClicked', node);
     };
     serviceData.getGraphData(function (graph) {
       var createView = function () {
@@ -56,6 +57,7 @@ angular.module('flareApp')
           editTitle: true,
           nodes: graph.nodes,
           edges: graph.edges,
+          groups: graph.groups,
           showOptions: graph.showOptions,
           getContextsCount: function () {
             return _.keys(graph.showOptions['Contexts'].options).length;
@@ -89,7 +91,12 @@ angular.module('flareApp')
               return node.group === title;
             });
           },
-
+          getNode: function (id) {
+            var node = _.filter(this.nodes,{id:id})[0];
+            var group = graph.groups[node.id];
+            node.group = group;
+            return node;
+          },
           getOption: function (option) {
             var valObject;
             traverse(this.showOptions, option, function process(key, obj) {

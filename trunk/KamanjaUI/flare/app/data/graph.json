@@ -22,6 +22,31 @@
     {"id": "Website", "_label": "Website", "group": "None"},
     {"id": "SuspiciousWebsiteList", "_label": "SuspiciousWebsiteList", "group": "None"}
   ],
+  "groups": {
+    "Logs": {
+      "color": {"background": "#599465", "border": "#448051"},
+      "font": {"color": "#fff"}
+    },
+    "Browsers": {
+      "color": {"background": "#b000cf", "border": "#9000b0"}
+    },
+    "Users": {
+      "color": {"background": "#3b6a94", "border": "#306080"},
+      "font": {"color": "#fff"}
+    },
+    "BadApps": {
+      "color": {"background": "#7fc9c9", "border": "#07c5c5"},
+      "font": {"color": "#fff"}
+    },
+    "EmailApps": {
+      "color": {"background": "#d44d48", "border": "#c03333"},
+      "font": {"color": "#fff"}
+    },
+    "None": {
+      "color": {"background": "#999999", "border": "#848484"},
+      "font": {"color": "#fff"}
+    }
+  },
   "edges": [
     {"from": "Chrome Browser", "to": "AppAccessLog", "_label": "logsTo"},
     {"from": "Chrome Browser", "to": "URLAccessLog", "_label": "logsTo", "context": "Restricted URL accessed"},
