@@ -2,6 +2,7 @@ import abc
 from common.ModelInstance import ModelInstance
 import json
 import logging
+from  math  import log
 
 class LoanTuple(ModelInstance): 
         """ Model LoanTuple will sum msg["a"] and msg["b"] """
