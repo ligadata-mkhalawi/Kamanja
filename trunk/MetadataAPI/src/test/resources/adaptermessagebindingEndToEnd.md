@@ -1,5 +1,5 @@
-export KAMANJA_HOME=/tmp/drdigital/Kamanja-1.4.0_2.11
-export KAMANJA_SRCDIR=~/github/dev/1.4.0.Base/kamanja/trunk
+export KAMANJA_HOME=/tmp/drdigital/Kamanja-1.5.0_2.11
+export KAMANJA_SRCDIR=~/github/dev/1.5.0.Test/kamanja/trunk
 export TestBin=$KAMANJA_SRCDIR/MetadataAPI/src/test/resources/bin
 export MetadataDir=$KAMANJA_SRCDIR/MetadataAPI/src/test/resources/Metadata
 export apiConfigProperties=$KAMANJA_HOME/config/MetadataAPIConfig.properties

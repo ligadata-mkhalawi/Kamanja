@@ -17,27 +17,29 @@
 
 package com.ligadata.kafkaInputOutputAdapters_v9
 
-import java.util.{ Properties, Arrays }
+import java.util.{Properties, Arrays}
 import com.ligadata.KamanjaBase.{ContainerInterface, TransactionContext, NodeContext}
+
 //import kafka.common.{ QueueFullException, FailedToSendMessageException }
-import org.apache.logging.log4j.{ Logger, LogManager }
+import org.apache.logging.log4j.{Logger, LogManager}
 import com.ligadata.InputOutputAdapterInfo._
-import com.ligadata.AdaptersConfiguration.{ KafkaConstants, KafkaQueueAdapterConfiguration }
+import com.ligadata.AdaptersConfiguration.{KafkaConstants, KafkaQueueAdapterConfiguration}
 import com.ligadata.Exceptions.{KamanjaException, FatalAdapterException}
 import com.ligadata.HeartBeat.{Monitorable, MonitorComponentInfo}
 import org.json4s.jackson.Serialization
 import scala.collection.mutable.ArrayBuffer
-import org.apache.kafka.clients.producer.{ Callback, RecordMetadata, ProducerRecord }
-import org.apache.kafka.common.serialization.{ ByteArraySerializer /*, StringSerializer */ }
-import java.util.concurrent.{ TimeUnit, Future }
+import org.apache.kafka.clients.producer.{Callback, RecordMetadata, ProducerRecord}
+import org.apache.kafka.common.serialization.{ByteArraySerializer /*, StringSerializer */}
+import java.util.concurrent.{TimeUnit, Future}
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong
-import scala.actors.threadpool.{ TimeUnit, ExecutorService, Executors }
+import scala.actors.threadpool.{TimeUnit, ExecutorService, Executors}
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 object KafkaProducer extends OutputAdapterFactory {
   def CreateOutputAdapter(inputConfig: AdapterConfiguration, nodeContext: NodeContext): OutputAdapter = new KafkaProducer(inputConfig, nodeContext)
+
   val HB_PERIOD = 5000
 
   // Statistics Keys
@@ -57,7 +59,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
 
   //BUGBUG:: Not Checking whether inputConfig is really QueueAdapterConfiguration or not.
   private[this] var qc: com.ligadata.AdaptersConfiguration.KafkaQueueAdapterConfiguration = null
-  if(!inputConfig.isInstanceOf[com.ligadata.AdaptersConfiguration.KafkaQueueAdapterConfiguration])
+  if (!inputConfig.isInstanceOf[com.ligadata.AdaptersConfiguration.KafkaQueueAdapterConfiguration])
     qc = KafkaQueueAdapterConfiguration.GetAdapterConfig(inputConfig)
   else
     qc = inputConfig.asInstanceOf[com.ligadata.AdaptersConfiguration.KafkaQueueAdapterConfiguration]
@@ -66,27 +68,27 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   val default_value_serializer = "org.apache.kafka.common.serialization.ByteArraySerializer"
   val default_key_serializer = "org.apache.kafka.common.serialization.ByteArraySerializer"
   val default_batch_size = "1024"
-  val default_linger_ms = "50" // 50ms
-  // val default_retries = "0"
+  val default_linger_ms = "100" // 100ms
+  val default_retries = "1"
   val default_block_on_buffer_full = "true" // true or false
-  val default_buffer_memory = "16777216" // 16MB
+  val default_buffer_memory = "16777216"  // 16MB
   val default_client_id = qc.Name + "_" + hashCode.toString
-  val default_request_timeout_ms = "10000"
-  val default_timeout_ms = "10000"
-  val default_metadata_fetch_timeout_ms = "10000"
-  val defrault_metadata_max_age_ms = "20000"
-  val default_max_block_ms = "20000"
-  val default_max_buffer_full_block_ms = "100"
+  val default_request_timeout_ms = "30000"
+  val default_timeout_ms = "30000"
+  val default_metadata_fetch_timeout_ms = "30000"
+  val defrault_metadata_max_age_ms = "300000"
+  val default_max_block_ms = "60000"
+  val default_max_buffer_full_block_ms = default_max_block_ms
   val default_network_request_timeout_ms = "20000"
   val default_outstanding_messages = "2048"
 
   val linger_ms = qc.otherconfigs.getOrElse("linger.ms", default_linger_ms).toString.trim()
   val timeout_ms = qc.otherconfigs.getOrElse("timeout.ms", default_timeout_ms).toString.trim()
   val metadata_fetch_timeout_ms = qc.otherconfigs.getOrElse("metadata.fetch.timeout.ms", default_metadata_fetch_timeout_ms).toString.trim()
-  private var msgCount = 0
+  private var msgCount = new AtomicLong(0)
   val counterLock = new Object
 
-  private var metrics: collection.mutable.Map[String,Any] = collection.mutable.Map[String,Any]()
+  private var metrics: collection.mutable.Map[String, Any] = collection.mutable.Map[String, Any]()
   private var startTime: String = "n/a"
   private var lastSeen: String = "n/a"
 
@@ -98,7 +100,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   props.put("key.serializer", qc.otherconfigs.getOrElse("key.serializer", default_key_serializer).toString.trim()); // ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG
   props.put("batch.size", qc.otherconfigs.getOrElse("batch.size", default_batch_size).toString.trim()); // ProducerConfig.BATCH_SIZE_CONFIG
   props.put("linger.ms", linger_ms) // ProducerConfig.LINGER_MS_CONFIG
-  // props.put("retries", qc.otherconfigs.getOrElse("retries", default_retries).toString.trim()) // ProducerConfig.RETRIES_CONFIG
+  props.put("retries", qc.otherconfigs.getOrElse("retries", default_retries).toString.trim()) // ProducerConfig.RETRIES_CONFIG
   props.put("block.on.buffer.full", qc.otherconfigs.getOrElse("block.on.buffer.full", default_block_on_buffer_full).toString.trim()) // ProducerConfig.BLOCK_ON_BUFFER_FULL_CONFIG
   props.put("buffer.memory", qc.otherconfigs.getOrElse("buffer.memory", default_buffer_memory).toString.trim()) // ProducerConfig.BUFFER_MEMORY_CONFIG
   props.put("client.id", qc.otherconfigs.getOrElse("client.id", default_client_id).toString.trim()) // ProducerConfig.CLIENT_ID_CONFIG
@@ -155,7 +157,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       if (qc.ssl_key_password != null) props.put("ssl.key.password", qc.ssl_key_password)
       if (qc.ssl_keystore_location != null) props.put("ssl.keystore.location", qc.ssl_keystore_location)
       if (qc.ssl_keystore_password != null) props.put("ssl.keystore.password", qc.ssl_keystore_password)
-      if (qc.ssl_truststore_location != null) props.put("ssl.truststore.location",qc.ssl_truststore_location)
+      if (qc.ssl_truststore_location != null) props.put("ssl.truststore.location", qc.ssl_truststore_location)
       if (qc.ssl_truststore_password != null) props.put("ssl.truststore.password", qc.ssl_truststore_password)
       if (qc.ssl_enabled_protocols != null) props.put("ssl.enabled.protocols", qc.ssl_enabled_protocols)
       if (qc.ssl_keystore_type != null) props.put("ssl.keystore.type", qc.ssl_keystore_type)
@@ -174,7 +176,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       if (qc.ssl_key_password != null) props.put("ssl.key.password", qc.ssl_key_password)
       if (qc.ssl_keystore_location != null) props.put("ssl.keystore.location", qc.ssl_keystore_location)
       if (qc.ssl_keystore_password != null) props.put("ssl.keystore.password", qc.ssl_keystore_password)
-      if (qc.ssl_truststore_location != null) props.put("ssl.truststore.location",qc.ssl_truststore_location)
+      if (qc.ssl_truststore_location != null) props.put("ssl.truststore.location", qc.ssl_truststore_location)
       if (qc.ssl_truststore_password != null) props.put("ssl.truststore.password", qc.ssl_truststore_password)
       if (qc.ssl_enabled_protocols != null) props.put("ssl.enabled.protocols", qc.ssl_enabled_protocols)
       if (qc.ssl_keystore_type != null) props.put("ssl.keystore.type", qc.ssl_keystore_type)
@@ -188,14 +190,17 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
     }
   }
 
+  val nonKafkaConfigs = Set[String]("max.outstanding.messages", "enable.adapter.retries")
+
   // Add the rest of the properties.  max.outstanding.messages is a special thing ????
   qc.otherconfigs.foreach(p => {
-    if (!props.containsKey(p._1) && !"max.outstanding.messages".equalsIgnoreCase(p._1)) {
+    if (!props.containsKey(p._1) && !nonKafkaConfigs.contains(p._1)) {
       props.put(p._1, p._2)
     }
   })
 
   val max_outstanding_messages = qc.otherconfigs.getOrElse("max.outstanding.messages", default_outstanding_messages).toString.trim().toInt
+  val enable_adapter_retries = qc.otherconfigs.getOrElse("enable.adapter.retries", "true").toString.trim().toBoolean
 
   case class MsgDataRecievedCnt(cntrToOrder: Long, msg: ProducerRecord[Array[Byte], Array[Byte]])
 
@@ -233,12 +238,12 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
 
   LOG.info(qc.Name + " Initializing Statistics")
   startTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
-  metrics (KafkaProducer.SEND_CALL_COUNT_KEY) = 0
-  metrics (KafkaProducer.SEND_MESSAGE_COUNT_KEY) = 0
-  metrics (KafkaProducer.LAST_FAILURE_TIME) = "n/a"
-  metrics (KafkaProducer.LAST_RECOVERY_TIME) = "n/a"
+  metrics(KafkaProducer.SEND_CALL_COUNT_KEY) = 0
+  metrics(KafkaProducer.SEND_MESSAGE_COUNT_KEY) = 0
+  metrics(KafkaProducer.LAST_FAILURE_TIME) = "n/a"
+  metrics(KafkaProducer.LAST_RECOVERY_TIME) = "n/a"
 
-  retryExecutor.execute(new RetryFailedMessages())
+  if (enable_adapter_retries) retryExecutor.execute(new RetryFailedMessages())
 
   class RetryFailedMessages extends Runnable {
     def run() {
@@ -250,11 +255,11 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
         } catch {
           case e: Exception => {
             externalizeExceptionEvent(e)
-            if (! isShutdown) LOG.warn("", e)
+            if (!isShutdown) LOG.warn("", e)
           }
           case e: Throwable => {
             externalizeExceptionEvent(e)
-            if (! isShutdown) LOG.warn("", e)
+            if (!isShutdown) LOG.warn("", e)
           }
         }
         if (isShutdown == false) {
@@ -292,6 +297,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   }
 
   private def failedMsgCount: Int = {
+    if (!enable_adapter_retries) return 0
     var failedMsgs = 0
 
     val allFailedPartitions = failedMsgsMap.elements()
@@ -303,6 +309,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   }
 
   private def outstandingMsgCount: Int = {
+    if (!enable_adapter_retries) return 0
     var outstandingMsgs = 0
     val allPartitions = partitionsMap.elements()
     while (allPartitions.hasMoreElements()) {
@@ -464,89 +471,12 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
     */
   override def getComponentStatusAndMetrics: MonitorComponentInfo = {
     implicit val formats = org.json4s.DefaultFormats
-    return new MonitorComponentInfo( AdapterConfiguration.TYPE_OUTPUT, qc.Name, KafkaProducer.ADAPTER_DESCRIPTION, startTime, lastSeen,  Serialization.write(metrics).toString)
+    return new MonitorComponentInfo(AdapterConfiguration.TYPE_OUTPUT, qc.Name, KafkaProducer.ADAPTER_DESCRIPTION, startTime, lastSeen, Serialization.write(metrics).toString)
   }
 
   override def getComponentSimpleStats: String = {
-    return key + "->" + msgCount
+    return key + "->" + msgCount.get()
   }
-
-
-  override def send(messages: Array[Array[Byte]], partitionKeys: Array[Array[Byte]]): Unit = {
-
-    if (!isHeartBeating) runHeartBeat
-
-    // Refreshing Partitions for every refreshPartitionTime.
-    // BUGBUG:: This may execute multiple times from multiple threads. For now it does not hard too much.
-    if ((System.currentTimeMillis - partitionsGetTm) > refreshPartitionTime) {
-      topicPartitionsCount = producer.partitionsFor(qc.topic).size()
-      partitionsGetTm = System.currentTimeMillis
-    }
-
-    try {
-      var partitionsMsgMap = scala.collection.mutable.Map[Int, ArrayBuffer[MsgDataRecievedCnt]]()
-      var ab = new ArrayBuffer[MsgDataRecievedCnt](256)
-      var partId = 0
-
-      var keyIndex = 0
-      partitionsMsgMap(partId) = ab
-      messages.foreach(message => {
-        val pr = new ProducerRecord(qc.topic, partitionKeys(keyIndex), message)
-        ab += MsgDataRecievedCnt(msgInOrder.getAndIncrement, pr)
-        keyIndex += 1
-      })
-
-      var outstandingMsgs = outstandingMsgCount
-      // LOG.debug("KAFKA PRODUCER: current outstanding messages for topic %s are %d".format(qc.topic, outstandingMsgs))
-
-      var osRetryCount = 0
-      var osWaitTm = 5000
-      while (outstandingMsgs > max_outstanding_messages) {
-        LOG.warn(qc.Name + " KAFKA PRODUCER: %d outstanding messages in queue to write. Waiting for them to flush before we write new messages. Retrying after %dms. Retry count:%d".format(outstandingMsgs, osWaitTm, osRetryCount))
-        try {
-          Thread.sleep(osWaitTm)
-        } catch {
-          case e: Exception => {
-            externalizeExceptionEvent(e)
-            throw e
-          }
-          case e: Throwable => {
-            externalizeExceptionEvent(e)
-            throw e
-          }
-        }
-        outstandingMsgs = outstandingMsgCount
-      }
-
-      partitionsMsgMap.foreach(partIdAndRecs => {
-        val partId = partIdAndRecs._1
-        val keyMessages = partIdAndRecs._2
-
-        // first push all messages to partitionsMap before we really send. So that callback is guaranteed to find the message in partitionsMap
-        addMsgsToMap(partId, keyMessages)
-        sendInfinitely(keyMessages, false)
-      })
-
-    } catch {
-      case e: java.lang.InterruptedException => {
-        // Not doing anythign for now
-        LOG.warn(qc.Name + " KAFKA PRODUCER: Got java.lang.InterruptedException. isShutdown:" + isShutdown)
-      }
-      case fae: FatalAdapterException => {
-        externalizeExceptionEvent(fae)
-        throw fae
-      }
-      case e: Exception               => {
-        externalizeExceptionEvent(e)
-        throw FatalAdapterException("Unknown exception", e)
-      }
-      case e: Throwable               => {
-        externalizeExceptionEvent(e)
-        throw FatalAdapterException("Unknown exception", e)
-      }
-    }
-  }
-
 
 
   /**
@@ -574,6 +504,17 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
 
     if (serializedContainerData.size == 0) return
 
+    val partitionKeys = ArrayBuffer[Array[Byte]]()
+
+    for (i <- 0 until serializedContainerData.size) {
+      partitionKeys += outContainers(i).getPartitionKey.mkString(",").getBytes()
+    }
+
+    send(serializedContainerData, partitionKeys.toArray)
+  }
+
+
+  override def send(messages: Array[Array[Byte]], partitionKeys: Array[Array[Byte]]): Unit = {
     if (!isHeartBeating) runHeartBeat
 
     // Refreshing Partitions for every refreshPartitionTime.
@@ -586,14 +527,14 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
     try {
       var partitionsMsgMap = scala.collection.mutable.Map[Int, ArrayBuffer[MsgDataRecievedCnt]]();
 
-      for (i <- 0 until serializedContainerData.size) {
-        val partId = getPartition(outContainers(i).getPartitionKey.mkString(",").getBytes(), topicPartitionsCount)
+      for (i <- 0 until messages.size) {
+        val partId = getPartition(partitionKeys(i), topicPartitionsCount)
         var ab = partitionsMsgMap.getOrElse(partId, null)
         if (ab == null) {
           ab = new ArrayBuffer[MsgDataRecievedCnt](256)
           partitionsMsgMap(partId) = ab
         }
-        val pr = new ProducerRecord(qc.topic, partId, outContainers(i).getPartitionKey.mkString(",").getBytes(), serializedContainerData(i))
+        val pr = new ProducerRecord(qc.topic, partId, partitionKeys(i), messages(i))
         ab += MsgDataRecievedCnt(msgInOrder.getAndIncrement, pr)
       }
 
@@ -601,7 +542,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       // LOG.debug("KAFKA PRODUCER: current outstanding messages for topic %s are %d".format(qc.topic, outstandingMsgs))
 
       var osRetryCount = 0
-      var osWaitTm = 5000
+      var osWaitTm = 100
       while (outstandingMsgs > max_outstanding_messages) {
         LOG.warn(qc.Name + " KAFKA PRODUCER: %d outstanding messages in queue to write. Waiting for them to flush before we write new messages. Retrying after %dms. Retry count:%d".format(outstandingMsgs, osWaitTm, osRetryCount))
         try {
@@ -624,7 +565,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
         val keyMessages = partIdAndRecs._2
 
         // first push all messages to partitionsMap before we really send. So that callback is guaranteed to find the message in partitionsMap
-        addMsgsToMap(partId, keyMessages)
+        if (enable_adapter_retries) addMsgsToMap(partId, keyMessages)
         sendInfinitely(keyMessages, false)
       })
 
@@ -637,11 +578,11 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
         externalizeExceptionEvent(fae)
         throw fae
       }
-      case e: Exception               => {
+      case e: Exception => {
         externalizeExceptionEvent(e)
         throw FatalAdapterException("Unknown exception", e)
       }
-      case e: Throwable               => {
+      case e: Throwable => {
         externalizeExceptionEvent(e)
         throw FatalAdapterException("Unknown exception", e)
       }
@@ -664,7 +605,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
           try {
             Thread.sleep(waitTm)
           } catch {
-            case e: Exception =>  {
+            case e: Exception => {
               externalizeExceptionEvent(e)
               throw e
             }
@@ -684,7 +625,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   }
 
   private def addBackFailedToSendRec(lastAccessRec: MsgDataRecievedCnt): Unit = {
-    if (lastAccessRec != null)
+    if (enable_adapter_retries && lastAccessRec != null)
       addToFailedMap(lastAccessRec)
   }
 
@@ -692,40 +633,51 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
     var sentMsgsCntr = 0
     var lastAccessRec: MsgDataRecievedCnt = null
     try {
-      updateMetricValue(KafkaProducer.SEND_MESSAGE_COUNT_KEY,keyMessages.size)
-      updateMetricValue(KafkaProducer.SEND_CALL_COUNT_KEY,1)
+      if (enable_adapter_retries) {
+        updateMetricValue(KafkaProducer.SEND_MESSAGE_COUNT_KEY, keyMessages.size)
+        updateMetricValue(KafkaProducer.SEND_CALL_COUNT_KEY, 1)
+      }
 
       // We already populated partitionsMap before we really send. So that callback is guaranteed to find the message in partitionsMap
       keyMessages.map(msgAndCntr => {
         if (isShutdown)
           throw new Exception(qc.Name + " is shutting down")
         lastAccessRec = msgAndCntr
-        if (removeFromFailedMap)
+        if (enable_adapter_retries && removeFromFailedMap)
           removeMsgFromFailedMap(lastAccessRec)
         // Send the request to Kafka
-        producer.send(msgAndCntr.msg, new Callback {
-          override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
-            val localMsgAndCntr = msgAndCntr
-            msgCount += 1
-            if (exception != null) {
-              LOG.warn(qc.Name + " Failed to send message into " + localMsgAndCntr.msg.topic, exception)
-              addToFailedMap(localMsgAndCntr)
-              if (!isInError) updateMetricValue(KafkaProducer.LAST_FAILURE_TIME, new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis)))
-              isInError = true
-            } else {
-              // Succeed - also click the heartbeat here... just to be more accurate.
-              if (isInError) updateMetricValue(KafkaProducer.LAST_RECOVERY_TIME, new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis)))
-              lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
-              removeMsgFromMap(localMsgAndCntr)
-              isInError = false
 
+        val callback: Callback = if (enable_adapter_retries) {
+          new Callback {
+            override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
+              val localMsgAndCntr = msgAndCntr
+              msgCount.incrementAndGet()
+              if (exception != null) {
+                LOG.warn(qc.Name + " Failed to send message into " + localMsgAndCntr.msg.topic, exception)
+                addToFailedMap(localMsgAndCntr)
+                if (!isInError) updateMetricValue(KafkaProducer.LAST_FAILURE_TIME, new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis)))
+                isInError = true
+              } else {
+                // Succeed - also click the heartbeat here... just to be more accurate.
+                if (isInError) updateMetricValue(KafkaProducer.LAST_RECOVERY_TIME, new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis)))
+                lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
+                removeMsgFromMap(localMsgAndCntr)
+                isInError = false
+
+              }
             }
           }
-        })
+        } else {
+          null
+        }
+
+        producer.send(msgAndCntr.msg, callback)
         lastAccessRec = null
         sentMsgsCntr += 1
         // cntrAdapter.addCntr(key, 1)
       })
+
+      if (! enable_adapter_retries) msgCount.addAndGet(keyMessages.size);
 
       keyMessages.clear()
     } catch {
@@ -737,7 +689,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       //    externalizeExceptionEvent(qfe)
       //    if (sentMsgsCntr > 0) keyMessages.remove(0, sentMsgsCntr); addBackFailedToSendRec(lastAccessRec); throw new FatalAdapterException("Kafka queue full", qfe)
       //  }
-      case e: Exception  => {
+      case e: Exception => {
         externalizeExceptionEvent(e)
         if (sentMsgsCntr > 0) keyMessages.remove(0, sentMsgsCntr)
         addBackFailedToSendRec(lastAccessRec)
@@ -749,7 +701,8 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
         if (sentMsgsCntr > 0) keyMessages.remove(0, sentMsgsCntr)
         addBackFailedToSendRec(lastAccessRec)
         LOG.warn(qc.Name + " unknown exception encountered ", e)
-        throw new FatalAdapterException("Unknown exception", e) }
+        throw new FatalAdapterException("Unknown exception", e)
+      }
     }
     return KafkaConstants.KAFKA_SEND_SUCCESS
   }
@@ -805,7 +758,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
         metrics(key) = value.toString
       } else {
         // This is an aggregated Long value
-        val cur = metrics.getOrElse(key,"0").toString
+        val cur = metrics.getOrElse(key, "0").toString
         val longCur = cur.toLong
         metrics(key) = longCur + value.toString.toLong
       }

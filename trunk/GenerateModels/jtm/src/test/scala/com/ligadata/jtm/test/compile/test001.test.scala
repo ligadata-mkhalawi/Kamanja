@@ -13,63 +13,213 @@
 * See the License for the specific language governing permissions and
 * limitations under the License.
 */
-package com.ligadata.jtm.test.filter.V1
+package com.ligadata.jtm.test.filter1.V1
 import com.ligadata.KamanjaBase._
 import com.ligadata.KvBase.TimeRange
 import com.ligadata.kamanja.metadata.ModelDef
-import com.ligadata.runtime.Log
-import com.ligadata.Utils._
-import com.ligadata.runtime.Conversion
+import com.ligadata.runtime._
+// Package code start
+// Package code end
+// READ ME BEFORE YOU MAKE CHANGES TO THE INTERFACE
+//
+// If you adjust the interface here, you need to fix the code generation as well
+//
 class ModelFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
+  // Factory code start
+  // Factory code end
   override def createModelInstance(): ModelInstance = return new Model(this)
-  override def getModelName: String = "com.ligadata.jtm.test.filter.Model"
+  override def getModelName: String = "com.ligadata.jtm.test.filter1.Model"
   override def getVersion: String = "0.0.1"
   override def createResultObject(): ModelResultBase = new MappedModelResults()
 }
 class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
   val conversion = new com.ligadata.runtime.Conversion
   val log = new com.ligadata.runtime.Log(this.getClass.getName)
+  val context = new com.ligadata.runtime.JtmContext
   import log._
+  // Model code start
+  // Model code end
   override def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
-    Trace(s"Model::execute transid=%d triggeredset=%d outputdefault=%d".format(txnCtxt.transId, triggerdSetIndex, outputDefault))
+    if (isTraceEnabled)
+      Trace(s"Model::execute transid=%d triggeredset=%d outputdefault=%s".format(txnCtxt.transId, triggerdSetIndex, outputDefault.toString))
     if(isDebugEnabled)
     {
       execMsgsSet.foreach(m => Debug( s"Input: %s -> %s".format(m.getFullTypeName, m.toString())))
     }
-    //
-    //
+    // Grok parts
+    // Model methods
     def exeGenerated_test1_1(msg1: com.ligadata.kamanja.test.V1000000.msg1): Array[MessageInterface] = {
       Debug("exeGenerated_test1_1")
+      context.SetSection("test1")
       // in scala, type could be optional
       val out3: Int = msg1.in1 + 1000
       def process_o1(): Array[MessageInterface] = {
         Debug("exeGenerated_test1_1::process_o1")
-        if (!(!(msg1.in2 != -1 && msg1.in2 < 100))) {
-          Debug("Filtered: test1@o1")
+        context.SetScope("o1")
+        try {
+          if (!(!(msg1.in2 != -1 && msg1.in2 < 100))) {
+            Debug("Filtered: test1@o1")
+            return Array.empty[MessageInterface]
+          }
+          val t1: String = "s:" + msg1.in2.toString()
+          val result = com.ligadata.kamanja.test.V1000000.msg2.createInstance
+          result.out4 = msg1.in3
+          result.out3 = msg1.in3
+          result.out2 = t1
+          result.out1 = msg1.in1
+          if(context.CurrentErrors()==0) {
+            Array(result)
+          } else {
+            Array.empty[MessageInterface]
+          }
+        } catch {
+          case e: AbortOutputException => {
+            context.AddError(e.getMessage)
+            return Array.empty[MessageInterface]
+          }
+          case e: Exception => {
+            Debug("Exception: o1:" + e.getMessage)
+            throw e
+          }
+        }
+      }
+      def process_o2(): Array[MessageInterface] = {
+        Debug("exeGenerated_test1_1::process_o2")
+        context.SetScope("o2")
+        try {
+          if (!(!(msg1.in2 != -1 && msg1.in2 < 100))) {
+            Debug("Filtered: test1@o2")
+            return Array.empty[MessageInterface]
+          }
+          val t1: String = "s:" + msg1.in2.toString()
+          val result = com.ligadata.kamanja.test.V1000000.msg4.createInstance
+          result.out4 = msg1.in3
+          result.out3 = msg1.in3
+          result.out2 = t1
+          result.out1 = msg1.in1
+          if(context.CurrentErrors()==0) {
+            Array(result)
+          } else {
+            Array.empty[MessageInterface]
+          }
+        } catch {
+          case e: AbortOutputException => {
+            context.AddError(e.getMessage)
+            return Array.empty[MessageInterface]
+          }
+          case e: Exception => {
+            Debug("Exception: o2:" + e.getMessage)
+            throw e
+          }
+        }
+      }
+      try {
+        process_o1()++
+          process_o2()
+      } catch {
+        case e: AbortTransformationException => {
           return Array.empty[MessageInterface]
         }
-        val t1: String = "s:" + msg1.in2.toString()
-        val result = com.ligadata.kamanja.test.V1000000.msg2.createInstance
-        result.out4 = msg1.in3
-        result.out3 = msg1.in2
-        result.out2 = t1
-        result.out1 = msg1.in1
-        Array(result)
       }
-      process_o1()
+    }
+    def exeGenerated_test2_2(msg2: com.ligadata.kamanja.test.V1000000.msg3): Array[MessageInterface] = {
+      Debug("exeGenerated_test2_2")
+      context.SetSection("test2")
+      // in scala, type could be optional
+      val out3: Int = msg2.in1 + 1000
+      def process_o1(): Array[MessageInterface] = {
+        Debug("exeGenerated_test2_2::process_o1")
+        context.SetScope("o1")
+        try {
+          if (!(!(msg2.in2 != -1 && msg2.in2 < 100))) {
+            Debug("Filtered: test2@o1")
+            return Array.empty[MessageInterface]
+          }
+          val t1: String = "s:" + msg2.in2.toString()
+          val result = com.ligadata.kamanja.test.V1000000.msg2.createInstance
+          result.out4 = msg2.in3
+          result.out3 = msg2.in2
+          result.out2 = t1
+          result.out1 = msg2.in1
+          if(context.CurrentErrors()==0) {
+            Array(result)
+          } else {
+            Array.empty[MessageInterface]
+          }
+        } catch {
+          case e: AbortOutputException => {
+            context.AddError(e.getMessage)
+            return Array.empty[MessageInterface]
+          }
+          case e: Exception => {
+            Debug("Exception: o1:" + e.getMessage)
+            throw e
+          }
+        }
+      }
+      def process_o2(): Array[MessageInterface] = {
+        Debug("exeGenerated_test2_2::process_o2")
+        context.SetScope("o2")
+        try {
+          if (!(!(msg2.in2 != -1 && msg2.in2 < 100))) {
+            Debug("Filtered: test2@o2")
+            return Array.empty[MessageInterface]
+          }
+          val t1: String = "s:" + msg2.in2.toString()
+          val result = com.ligadata.kamanja.test.V1000000.msg4.createInstance
+          result.out4 = msg2.in3
+          result.out3 = msg2.in2
+          result.out2 = t1
+          result.out1 = msg2.in1
+          if(context.CurrentErrors()==0) {
+            Array(result)
+          } else {
+            Array.empty[MessageInterface]
+          }
+        } catch {
+          case e: AbortOutputException => {
+            context.AddError(e.getMessage)
+            return Array.empty[MessageInterface]
+          }
+          case e: Exception => {
+            Debug("Exception: o2:" + e.getMessage)
+            throw e
+          }
+        }
+      }
+      try {
+        process_o1()++
+          process_o2()
+      } catch {
+        case e: AbortTransformationException => {
+          return Array.empty[MessageInterface]
+        }
+      }
     }
     // Evaluate messages
     val msgs = execMsgsSet.map(m => m.getFullTypeName -> m).toMap
     val msg1 = msgs.getOrElse("com.ligadata.kamanja.test.msg1", null).asInstanceOf[com.ligadata.kamanja.test.V1000000.msg1]
+    val msg2 = msgs.getOrElse("com.ligadata.kamanja.test.msg3", null).asInstanceOf[com.ligadata.kamanja.test.V1000000.msg3]
     // Main dependency -> execution check
-    //
+    // Create result object
     val results: Array[MessageInterface] =
-      (if(msg1!=null) {
-        exeGenerated_test1_1(msg1)
-      } else {
-        Array.empty[MessageInterface]
-      }) ++
-        Array.empty[MessageInterface]
+      try {
+        (if(msg1!=null) {
+          exeGenerated_test1_1(msg1)
+        } else {
+          Array.empty[MessageInterface]
+        }) ++
+          (if(msg2!=null) {
+            exeGenerated_test2_2(msg2)
+          } else {
+            Array.empty[MessageInterface]
+          }) ++
+          Array.empty[MessageInterface]
+      } catch {
+        case e: AbortExecuteException => {
+          Array.empty[MessageInterface]
+        }
+      }
     if(isDebugEnabled)
     {
       results.foreach(m => Debug( s"Output: %s -> %s".format(m.getFullTypeName, m.toString())))

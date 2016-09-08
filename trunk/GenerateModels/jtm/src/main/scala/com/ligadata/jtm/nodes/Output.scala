@@ -44,4 +44,17 @@ class Output {
     *
     */
   val mapbyposition: scala.collection.Map[String, Array[String]] = scala.collection.Map.empty[String, Array[String]]
+
+  /** Define action what should happen when we detect an error
+    * abort
+    * ignore
+    * exception
+    */
+  val onerror: String = "abort"
+
+  /** Define action what should happen to exceptions
+    * catch
+    * abort
+    */
+  val exception: String = "abort"
 }

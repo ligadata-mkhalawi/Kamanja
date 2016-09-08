@@ -28,8 +28,8 @@ object UpdateExpects extends App with LogTrait {
 
   class ConfUpdateExpects (arguments: Seq[String] ) extends ScallopConf (arguments)  with LogTrait {
 
-    val src = opt[String] (required = false, descr = "", default = Option("/home/joerg/Kamanja/trunk/GenerateModels/jtm/target/scala-2.10/test-classes") )
-    val target = opt[String] (required = false, descr = "", default = Option("/home/joerg/Kamanja/trunk/GenerateModels/jtm/src/test/resources") )
+    val src = opt[String] (required = false, descr = "", default = Option("/home/joerg/Kamanja_Jtm/trunk/GenerateModels/jtm/target/scala-2.10/test-classes") )
+    val target = opt[String] (required = false, descr = "", default = Option("/home/joerg/Kamanja_Jtm/trunk/GenerateModels/jtm/src/test/resources") )
   }
 
   override def main(args: Array[String]) {
