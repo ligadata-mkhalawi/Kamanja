@@ -162,7 +162,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
   var clusterName: String = null;
   if (parsed_json.contains("clusterName")) {
-    SchemaName = parsed_json.get("clusterName").get.toString.trim
+    clusterName = parsed_json.get("clusterName").get.toString.trim
   } else {
     logger.info("The clusterName is not supplied in adapterConfig, defaults to " + "elasticsearch")
     clusterName = "elasticsearch"
