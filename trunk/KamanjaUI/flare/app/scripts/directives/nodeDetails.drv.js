@@ -18,7 +18,7 @@ angular.module('flareApp')
             nodeDetails.headerColor = data.group.color.background;
             nodeDetails.applicationName = data.node.id;
             serviceData.getDummyData(data.node.id, function (result) {
-              nodeDetails.result = result[0];
+              //nodeDetails.result = result[0];
             });
           }else{
             toggleNodeDetails(false);

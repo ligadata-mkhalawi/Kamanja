@@ -85,7 +85,10 @@ angular
           network = new vis.Network(container, data, options);
 
           network.on('click', function (param) {
-            scope.nodeClick(param.nodes[0]);
+            if(param.nodes.length == 0) {
+              toggleNodeDetails(false);
+            }else
+              scope.nodeClick(param.nodes[0]);
           });
           network.on('afterDrawing', function (ctx) {
             nodes.forEach(function (d) {
