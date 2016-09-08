@@ -53,6 +53,23 @@ class SmartFileProducerConfiguration extends AdapterConfiguration {
 
   var hadoopConfig  : List[(String,String)]=null
 
+  def isParquet = (compressionString != null && compressionString.toLowerCase.startsWith("parquet"))
+  def parquetCompression =
+    if(!isParquet) ""
+    else{
+      val tokens = compressionString.split("/")
+      if(tokens.length == 1) "UNCOMPRESSED"
+      else{
+        tokens(1).toLowerCase match{
+          case "snappy" => "SNAPPY"
+          case "gzip" => "GZIP"
+          case "lzo" => "LZO"
+          case "uncompressed" => "UNCOMPRESSED"
+          case _ => throw new Exception("Unsopported parquet compression " + tokens(1))
+        }
+      }
+    }
+
 }
 
 

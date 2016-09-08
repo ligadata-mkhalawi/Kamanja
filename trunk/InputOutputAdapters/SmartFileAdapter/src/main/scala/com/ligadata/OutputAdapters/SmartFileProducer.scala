@@ -38,7 +38,12 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.commons.compress.compressors.CompressorStreamFactory
 import org.apache.commons.compress.compressors.CompressorOutputStream
+import parquet.hadoop.metadata.CompressionCodecName
+import parquet.schema.MessageTypeParser
 import scala.collection.mutable.ArrayBuffer
+
+import parquet.hadoop._
+import parquet.hadoop.api.WriteSupport
 
 object SmartFileProducer extends OutputAdapterFactory {
   val ADAPTER_DESCRIPTION = "Smart File Output Adapter"
@@ -46,7 +51,7 @@ object SmartFileProducer extends OutputAdapterFactory {
   def CreateOutputAdapter(inputConfig: AdapterConfiguration, nodeContext: NodeContext): OutputAdapter = new SmartFileProducer(inputConfig, nodeContext)
 }
 
-case class PartitionFile(key: String, name: String, outStream: OutputStream, var records: Long, var size: Long, var buffer: ArrayBuffer[Byte], var recordsInBuffer: Long, var flushBufferSize: Long)
+case class PartitionFile(key: String, name: String, outStream: OutputStream, parquetWriter : ParquetWriter[Array[Any]], var records: Long, var size: Long, var buffer: ArrayBuffer[Any], var recordsInBuffer: Long, var flushBufferSize: Long)
 case class PartitionStream(val compressStream: OutputStream, val originalStream: Any) extends OutputStream {
   override def	close() = {
     compressStream.close();
@@ -56,7 +61,7 @@ case class PartitionStream(val compressStream: OutputStream, val originalStream:
     compressStream.flush();
     if(originalStream.isInstanceOf[FSDataOutputStream] ) {
       val hdfsOs = originalStream.asInstanceOf[FSDataOutputStream]
-      hdfsOs.getWrappedStream().asInstanceOf[DFSOutputStream].hsync(java.util.EnumSet.of(SyncFlag.UPDATE_LENGTH))
+      hdfsOs.getWrappedStream.asInstanceOf[DFSOutputStream].hsync(java.util.EnumSet.of(SyncFlag.UPDATE_LENGTH))
     }
   }
   
@@ -274,7 +279,20 @@ class OutputStreamWriter {
 
   final def removeFile(fc: SmartFileProducerConfiguration, fileName: String): Unit = if (fc.uri.startsWith("hdfs://")) removeHdfsFile(fc, fileName) else removeFsFile(fc, fileName)
 
-  final def write(fc: SmartFileProducerConfiguration, os: OutputStream, message: Array[Byte]): Unit = if (fc.uri.startsWith("hdfs://")) writeToHdfs(fc, os, message) else writeToFs(fc, os, message)
+  final def write(fc: SmartFileProducerConfiguration, pf : PartitionFile, messageData: Any, isParquet : Boolean): Unit = {
+
+    if(isParquet){
+      val messages = messageData.asInstanceOf[Array[Array[Any]]]
+      messages.foreach(message => {
+        pf.parquetWriter.write(message)
+      })
+    }
+    else {
+      val message = messageData.asInstanceOf[Array[Byte]]
+      val os: OutputStream = pf.outStream
+      if (fc.uri.startsWith("hdfs://")) writeToHdfs(fc, os, message) else writeToFs(fc, os, message)
+    }
+  }
 
   /*
     def hasCompressedFlag(fc: SmartFileProducerConfiguration): Boolean = {
@@ -363,14 +381,28 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   private var metrics: scala.collection.mutable.Map[String, Any] = scala.collection.mutable.Map[String, Any]()
   metrics("MessagesProcessed") = new AtomicLong(0)
 
+  private val parquetSchemasMap = collection.mutable.Map[String, String]() //message -> schema
+  private val writeSupportsMap = collection.mutable.Map[String, ParquetWriteSupport]() //message -> support
+
+
   if (fc.uri.startsWith("file://"))
     fc.uri = fc.uri.substring("file://".length() - 1)
 
-  val compress = (fc.compressionString != null)
+  val isParquet = fc.isParquet
+  val parquetCompression = CompressionCodecName.valueOf(fc.parquetCompression)
+  if(isParquet)
+    println(">>>>>>>>> using parquet with compression: "+ parquetCompression)
+  else println(">>>>>>>>> compression: " + fc.compressionString)
+
+  val defaultExtension = if(isParquet) "" else fc.compressionString
+
+  val compress = (fc.compressionString != null && !isParquet)
   if (compress) {
     if (CompressorStreamFactory.BZIP2.equalsIgnoreCase(fc.compressionString) ||
       CompressorStreamFactory.GZIP.equalsIgnoreCase(fc.compressionString) ||
-      CompressorStreamFactory.XZ.equalsIgnoreCase(fc.compressionString))
+      CompressorStreamFactory.XZ.equalsIgnoreCase(fc.compressionString) ||
+      isParquet
+    )
       LOG.debug("Smart File Producer " + fc.Name + " Using compression: " + fc.compressionString)
     else
       throw FatalAdapterException("Unsupported compression type " + fc.compressionString + " for Smart File Producer: " + fc.Name, new Exception("Invalid Parameters"))
@@ -451,7 +483,10 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           try {
             pf.synchronized {
               flushPartitionFile(pf)
-              pf.outStream.close
+              if(isParquet)
+                pf.parquetWriter.close()
+              else
+                pf.outStream.close
             }
           } catch {
             case e: Exception => LOG.debug("Smart File Producer " + fc.Name + ": Error closing file: ", e)
@@ -534,18 +569,39 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           // need to check again
           val dt = if (nextRolloverTime > 0) nextRolloverTime - (fc.rolloverInterval * 60 * 1000) else System.currentTimeMillis
           val ts = new java.text.SimpleDateFormat("yyyyMMdd'T'HHmm").format(new java.util.Date(dt))
-          val fileName = "%s/%s/%s%s-%d-%s.dat%s".format(fc.uri, path, fc.fileNamePrefix, nodeId, bucket, ts, extensions.getOrElse(fc.compressionString, ""))
+          val fileName = "%s/%s/%s%s-%d-%s.dat%s".format(fc.uri, path, fc.fileNamePrefix, nodeId, bucket, ts, extensions.getOrElse(defaultExtension, ""))
           LOG.info("Smart File Producer " + fc.Name + "(" + this + "): Opening file " + fileName)
-          var os = openFile(fc, fileName)
-          val originalStream = os
-          if (compress)
-            os = new CompressorStreamFactory().createCompressorOutputStream(fc.compressionString, os)
-
-          var buffer: ArrayBuffer[Byte] = null;
+          var os : OutputStream = null
+          var originalStream : OutputStream = null
+          if(!isParquet) {
+            os = openFile(fc, fileName)
+            originalStream = os
+            if (compress)
+              os = new CompressorStreamFactory().createCompressorOutputStream(fc.compressionString, os)
+          }
+          var buffer: ArrayBuffer[Any] = null
           if (fileBufferSize > 0)
-            buffer = new ArrayBuffer[Byte];
+            buffer = new ArrayBuffer[Any]
 
-          partKey = new PartitionFile(key, fileName, new PartitionStream(os, originalStream), 0, 0, buffer, 0, fileBufferSize)
+          if(isParquet){
+            if(!writeSupportsMap.contains(record.getFullTypeName)){
+              println(">>>>>>>>>>>>>>>>>> Avro schema : " + record.getAvroSchema)
+              val schema = MessageTypeParser.parseMessageType(record.getAvroSchema)//TODO : check the schema
+              val writeSupport = new ParquetWriteSupport(schema)
+              writeSupportsMap.put(record.getFullTypeName, writeSupport)
+            }
+            // TODO : using some default values for now
+            // TODO : assuming writing to local fs
+            val outputParquetFile = new File(fileName)
+            val outputParquetFilePath = new Path(outputParquetFile.toURI)
+            val parquetWriter = new ParquetWriter[Array[Any]](outputParquetFilePath, writeSupportsMap(record.getFullTypeName),
+              CompressionCodecName.UNCOMPRESSED,
+              ParquetWriter.DEFAULT_BLOCK_SIZE, ParquetWriter.DEFAULT_PAGE_SIZE)
+
+            partKey = new PartitionFile(key, fileName, new PartitionStream(os, originalStream), parquetWriter, 0, 0, buffer, 0, fileBufferSize)
+          }
+          else
+            partKey = new PartitionFile(key, fileName, new PartitionStream(os, originalStream), null, 0, 0, buffer, 0, fileBufferSize)
 
           LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile adding key - [" + key + "]")
           partitionStreams(key) = partKey
@@ -567,7 +623,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       try {
         pf.synchronized {
           if (pf.flushBufferSize > 0 && pf.buffer.size > 0) {
-            write(fc, pf.outStream, pf.buffer.toArray)
+            write(fc, pf, pf.buffer.toArray, isParquet)
             pf.size += pf.buffer.size
             pf.records += pf.recordsInBuffer
             pf.buffer.clear()
@@ -579,8 +635,10 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
         case fio: IOException => {
           LOG.warn("Smart File Producer " + fc.Name + ": Unable to flush buffer to file " + pf.name)
           if (numOfRetries == MAX_RETRIES) {
-            LOG.warn("Smart File Producer " + fc.Name + ": Unable to flush buffer to file destination after " + MAX_RETRIES + " tries.  Trying to reopen file " + pf.name, fio)
-            pf = reopenPartitionFile(pf)
+            if(!isParquet) {
+              LOG.warn("Smart File Producer " + fc.Name + ": Unable to flush buffer to file destination after " + MAX_RETRIES + " tries.  Trying to reopen file " + pf.name, fio)
+              pf = reopenPartitionFile(pf)
+            }
           } else if (numOfRetries > MAX_RETRIES) {
             LOG.error("Smart File Producer " + fc.Name + ": Unable to flush buffer to file destination after " + MAX_RETRIES + " tries.  Aborting.", fio)
             throw FatalAdapterException("Unable to flush buffer to specified file after " + MAX_RETRIES + " retries", fio)
@@ -607,7 +665,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       if (compress)
         os = new CompressorStreamFactory().createCompressorOutputStream(fc.compressionString, os)
 
-      partitionStreams(pf.key) = new PartitionFile(pf.key, pf.name, new PartitionStream(os, originalStream), pf.records, pf.size, pf.buffer, pf.recordsInBuffer, pf.flushBufferSize)
+      partitionStreams(pf.key) = new PartitionFile(pf.key, pf.name, new PartitionStream(os, originalStream), null, pf.records, pf.size, pf.buffer, pf.recordsInBuffer, pf.flushBufferSize)
 
       return partitionStreams(pf.key)
     } finally {
@@ -617,6 +675,18 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
 
   override def send(message: Array[Array[Byte]], partitionKey: Array[Array[Byte]]): Unit = {
     // Not implemented yet
+  }
+
+  def getUnserializedData(outputContainer : ContainerInterface) : Array[Any] = {
+    val data = ArrayBuffer[Any]()
+    val fields = outputContainer.getAllAttributeValues
+    fields.foreach(attr => {
+      val fldValue = attr.getValue
+      //val fldName = attr.getValueType.getName
+
+      data.append(fldValue)
+    })
+    data.toArray
   }
 
   // Locking before we write into file
@@ -643,7 +713,12 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
 
     try {
       // Op is not atomic
-      (serializedContainerData, outputContainers).zipped.foreach((message, record) => {
+      var idx = 0
+      outputContainers.foreach(record => {
+        val message = if(isParquet) null else serializedContainerData(idx)
+        val unserializedData = if(isParquet) getUnserializedData(record) else null
+        idx += 1
+
         var isSuccess = false
         var numOfRetries = 0
         var pf = getPartionFile(record);
@@ -652,12 +727,17 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
             pf.synchronized {
               if (pf.flushBufferSize > 0) {
                 LOG.info("Smart File Producer " + fc.Name + ": adding record to buffer for file " + pf.name)
-                pf.buffer ++= message
-                pf.buffer ++= fc.messageSeparator.getBytes
+                if(isParquet) {
+                  pf.buffer ++= unserializedData
+                }
+                else{
+                  pf.buffer ++= message
+                  pf.buffer ++= fc.messageSeparator.getBytes
+                }
                 pf.recordsInBuffer += 1
                 if (pf.buffer.size > pf.flushBufferSize) {
                   LOG.info("Smart File Producer " + fc.Name + ": buffer is full writing to file " + pf.name)
-                  write(fc, pf.outStream, pf.buffer.toArray)
+                  write(fc, pf, pf.buffer.toArray, isParquet)
                   pf.size += pf.buffer.size
                   pf.records += pf.recordsInBuffer
                   pf.buffer.clear()
@@ -665,8 +745,8 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
                 }
               } else {
                 LOG.info("Smart File Producer " + fc.Name + ": writing record to file " + pf.name)
-                val data = message ++ fc.messageSeparator.getBytes
-                write(fc, pf.outStream, data)
+                val data = if(isParquet) Array(message) else message ++ fc.messageSeparator.getBytes
+                write(fc, pf, data, isParquet)
                 pf.records += 1
                 pf.size += data.length
               }
