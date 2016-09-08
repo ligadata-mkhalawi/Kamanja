@@ -24,6 +24,11 @@ angular
             edge.color = edge.color || {};
             edge.color.opacity = 0.3;
             edge.label = edge._label;
+            edge.font = {color: '#cfcccd', background: "transparent", strokeWidth:0,align: 'middle',face: "Roboto-Medium"}
+          });
+          _.each(nodes, function (node) {
+            node.borderWidth = 3;
+            node.size = Math.round(Math.random() * 30) + 10;
           });
 
           // create a network
@@ -48,7 +53,6 @@ angular
                 type: 'dynamic',
                 roundness: 0.55,
               },
-              arrows: 'to',
               font: {
                 size: 15,
                 background: '#ffffff'
@@ -71,26 +75,26 @@ angular
 
             groups: {
               'Logs': {
-                color: {background: '#599465', border: '#599465'},
+                color: {background: '#599465', border: '#448051'},
                 font: {color: '#fff'}
               },
               'Browsers': {
-                color: {background: '#b000cf', border: '#b000cf'}
+                color: {background: '#b000cf', border: '#9000b0'}
               },
               'Users': {
-                color: {background: '#3b6a94', border: '#3b6a94'},
+                color: {background: '#3b6a94', border: '#306080'},
                 font: {color: '#fff'}
               },
               'BadApps': {
-                color: {background: '#7fc9c9', border: '#7fc9c9'},
+                color: {background: '#7fc9c9', border: '#07c5c5'},
                 font: {color: '#fff'}
               },
               'EmailApps': {
-                color: {background: '#d44d48', border: '#d44d48'},
+                color: {background: '#d44d48', border: '#c03333'},
                 font: {color: '#fff'}
               },
               'None': {
-                color: {background: '#999999', border: '#999999'},
+                color: {background: '#999999', border: '#848484'},
                 font: {color: '#fff'}
               }
             }
@@ -111,9 +115,9 @@ angular
               }
               var position = network.getPositions(d.id)[d.id];
               ctx.textAlign = 'left';
-              ctx.font = '19px roboto';
-              ctx.fillStyle = '#ffffff';
-              ctx.fillText(d._label, (position.x + 30), (position.y + -2));
+              ctx.font = '17px "Roboto-Medium"';
+              ctx.fillStyle = '#cfcccd';
+              ctx.fillText(d._label, (position.x + 30), (position.y + -5));
             });
           });
 
