@@ -68,6 +68,7 @@ class LoanTuple(ModelInstance):
                         inputFields["imn_r01_mortdue"] = "Float"
                         inputFields["imn_r01_yoj"] = "Float"
                         inputFields["imn_r01_derog"] = "Float"
+                        inputFields["imn_r01_value"] = "Float"
                         inputFields["imn_r01_delinq"] = "Float"
                         inputFields["imn_r01_clage"] = "Float"
                         inputFields["imn_r01_ninq"] = "Float"
