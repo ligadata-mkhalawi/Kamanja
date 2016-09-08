@@ -24,10 +24,12 @@ angular
             edge.color = edge.color || {};
             edge.color.opacity = 0.3;
             edge.label = edge._label;
+
+            edge.font = {color: '#cfcccd', background: 'transparent', strokeWidth:0,align: 'middle',face: 'Roboto-Medium'};
             if (edge.context) {
               edge.label += '\n(' + edge.context + ')';
+              edge.font.color = '#feb050';
             }
-            edge.font = {color: '#cfcccd', background: 'transparent', strokeWidth:0,align: 'middle',face: 'Roboto-Medium'}
           });
           _.each(nodes, function (node) {
             node.borderWidth = 3;
@@ -95,7 +97,7 @@ angular
               }
               var position = network.getPositions(d.id)[d.id];
               ctx.textAlign = 'left';
-              ctx.font = '17px "Roboto-Medium"';
+              ctx.font = '17px roboto-condensed';
               ctx.fillStyle = '#cfcccd';
               ctx.fillText(d._label, (position.x + d.size + 5), (position.y + -5));
             });

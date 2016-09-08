@@ -32,7 +32,9 @@
     "roboto-fontface": {
       "main": [
         "css/roboto/sass/roboto-fontface.scss",
-        "fonts/roboto/*"
+        "css/roboto-condensed/sass/roboto-condensed-fontface.scss",
+        "fonts/roboto/*",
+        "fonts/roboto-condensed/*"
       ]
     }
   },
