@@ -2,7 +2,7 @@ import abc
 from common.ModelInstance import ModelInstance
 import json
 import logging
-from  math  import log
+import  math 
 
 class LoanTuple(ModelInstance): 
         """ Model LoanTuple will sum msg["a"] and msg["b"] """
@@ -32,7 +32,7 @@ class LoanTuple(ModelInstance):
                 pred += float (msg["log5_delinq"]) * 1.8255237489947
                 pred += float (msg["log_value"]) * -35.3593065292401
                 pred = (pred / (1 - pred))
-                pred = log(pred) 
+                pred = math.log(pred) 
                         
                 outMsg = json.dumps({'rec_id' : msg["rec_id"],
                                      'python_risk_score' : pred})
