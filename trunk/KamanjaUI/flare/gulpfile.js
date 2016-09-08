@@ -57,7 +57,7 @@ gulp.task('lint:test', () => {
     .pipe(gulp.dest('test/spec/**/*.js'));
 });
 
-gulp.task('html', ['styles', 'scripts'], () => {
+gulp.task('html', ['styles', 'scripts','data'], () => {
   return gulp.src('app/**/*.html')
     .pipe($.useref({searchPath: ['.tmp', 'app', '.']}))
     // .pipe($.if('*.js', $.uglify()))
@@ -66,6 +66,10 @@ gulp.task('html', ['styles', 'scripts'], () => {
     .pipe(gulp.dest('dist'));
 });
 
+gulp.task('data', () => {
+  return gulp.src('app/data/**/*.json')
+        .pipe(gulp.dest('dist/data'));
+});
 gulp.task('images', () => {
   return gulp.src('app/images/**/*')
     .pipe($.cache($.imagemin({
@@ -77,7 +81,6 @@ gulp.task('images', () => {
     })))
     .pipe(gulp.dest('dist/images'));
 });
-
 gulp.task('fonts', () => {
   return gulp.src(require('main-bower-files')('**/*.{otf,eot,svg,ttf,woff,woff2}', function (err) {})
     .concat('app/fonts/**/*'))
