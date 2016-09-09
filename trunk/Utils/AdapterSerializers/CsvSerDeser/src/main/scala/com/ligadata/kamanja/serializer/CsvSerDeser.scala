@@ -72,6 +72,8 @@ class CsvSerDeser extends SerializeDeserialize {
     var _alwaysQuoteField = false
     var _escapeChar = "\\"
 
+    val _nullFlagsFieldName = "kamanja_system_null_flags"
+
     /**
       * Serialize the supplied container to a byte array using these CSV rules:
       *
@@ -100,24 +102,52 @@ class CsvSerDeser extends SerializeDeserialize {
             throw new ObjectNotFoundException(s"CsvSerDeser::serialize, The container $containerName surprisingly has no fields...serialize fails", null)
         }
 
+
+        //check if message has a field (kamanja_system_null_flags), any field whose corresponding flag value is true
+        //means it is null not 0
+        val nullFlagsAny = v.getOrElse(_nullFlagsFieldName, null)
+        val nullsFlagExists = nullFlagsAny != null
+        val nullFlags =
+            try {
+                if (nullFlagsAny == null) null
+                else nullFlagsAny.asInstanceOf[Array[Boolean]]
+            }
+            catch{
+                case ex : Exception => null
+            }
+
+        Debug("nullFlags array="+ (if(nullFlags == null) "null" else nullFlags.map(f => f.toString).mkString("~") ))
+
         var processCnt : Int = 0
         val fieldCnt = fields.size
+        //actual count: is field count after removing null flags field
+        val actualFieldCnt = if(nullsFlagExists) fieldCnt - 1 else fieldCnt
         val emitKeyName = false
+        var idx = 0
         fields.foreach(attr => {
             processCnt += 1
             val fld = attr.getValue
-            if (fld != null) {
-                val doTrailingComma : Boolean = processCnt < fieldCnt
-                emitField(sb, attr, doTrailingComma, emitKeyName)
-            } else {
-              // right thing to do is to emit NULL as special value - either as empty in output or some special indication such as -
-                throw new ObjectNotFoundException(s"CsvSerDeser::serialize, during serialize()...attribute ${attr.getValueType.getName} could not be found in the container... mismatch", null)
+            val fldName = attr.getValueType.getName
+            if(!fldName.equalsIgnoreCase(_nullFlagsFieldName)) {
+                val nullFlag = if(nullFlags == null || nullFlags.length <= idx ) false else nullFlags(idx)
+                if (fld != null) {
+                    val doTrailingComma: Boolean = processCnt < actualFieldCnt
+                    emitField(sb, attr, doTrailingComma, emitKeyName, nullFlag)
+                } else {
+                    // right thing to do is to emit NULL as special value - either as empty in output or some special indication such as -
+                    throw new ObjectNotFoundException(s"CsvSerDeser::serialize, during serialize()...attribute ${attr.getValueType.getName} could not be found in the container... mismatch", null)
+                }
             }
+
+            idx += 1
         })
         val strRep = sb.toString()
         if (isDebugEnabled) {
             Debug(s"Serialized as CSV, #flds: $fieldCnt, data: $strRep")
         }
+
+        Debug(s"Serialized as CSV, #flds: $actualFieldCnt , data: $strRep" +
+          (if(nullsFlagExists) " . after ignoring null flags field - " + _nullFlagsFieldName else ""))
         strRep.getBytes
     }
 
@@ -171,10 +201,10 @@ class CsvSerDeser extends SerializeDeserialize {
       * @param doTrailingComma when true follow data emission with comma; when false, emit the line delimiter configured
       */
     def emitField( sb: StringBuilder
-                          ,attr : com.ligadata.KamanjaBase.AttributeValue
-                          ,doTrailingComma : Boolean, emitKeyName: Boolean) = {
+                   ,attr : com.ligadata.KamanjaBase.AttributeValue
+                   ,doTrailingComma : Boolean, emitKeyName: Boolean, nullFlag : Boolean = false) = {
         val valueType  = attr.getValueType
-        val rawValue : Any = attr.getValue
+        val rawValue : Any = if(nullFlag) _nullValue else attr.getValue
         val typeName : String = valueType.getName
         Debug(s"emit field $typeName with original value = ${rawValue.toString}")
 
@@ -261,7 +291,7 @@ class CsvSerDeser extends SerializeDeserialize {
       * @param configProperties a map of options that might be used to configure the execution of the CsvSerDeser instance.
       */
     override def configure(objResolver: ObjectResolver
-                  , configProperties : java.util.Map[String,String]): Unit = {
+                           , configProperties : java.util.Map[String,String]): Unit = {
         _objResolver = objResolver
         _config = configProperties.asScala
         _fieldDelimiter = _config.getOrElse("fieldDelimiter", ",")
@@ -279,7 +309,7 @@ class CsvSerDeser extends SerializeDeserialize {
 
     def deserializeArray(fldStr: String, attr: AttributeTypeInfo): Any = {
         val rawValFields : Array[String] = if (fldStr != null) {
-            fldStr.split(_valDelimiter)
+            fldStr.split(_valDelimiter, -1)
         } else {
             Array[String]()
         }
@@ -287,12 +317,12 @@ class CsvSerDeser extends SerializeDeserialize {
         var retVal: Any = Array[Any]()
 
         val fld = itemType match {
-            case LONG =>    retVal = rawValFields.map(itm => if(itm != null && itm.length > 0) itm.toLong else 0).toArray
+            case LONG =>    retVal = rawValFields.map(itm => if(itm != null && itm.length > 0) itm.toLong else 0.toLong).toArray
             case INT =>     retVal = rawValFields.map(itm => if(itm != null && itm.length > 0) itm.toInt else 0).toArray
-            case BYTE =>    retVal = rawValFields.map(itm => if(itm != null && itm.length > 0) itm.toByte else 0).toArray
-            case BOOLEAN => retVal = rawValFields.map(itm => if(itm != null && itm.length > 0) itm.toBoolean else 0).toArray
-            case DOUBLE =>  retVal = rawValFields.map(itm => if(itm != null && itm.length > 0) itm.toDouble else 0).toArray
-            case FLOAT =>   retVal = rawValFields.map(itm => if(itm != null && itm.length > 0) itm.toFloat else 0).toArray
+            case BYTE =>    retVal = rawValFields.map(itm => if(itm != null && itm.length > 0) itm.toByte else 0.toByte).toArray
+            case BOOLEAN => retVal = rawValFields.map(itm => if(itm != null && itm.length > 0) itm.toBoolean else false).toArray
+            case DOUBLE =>  retVal = rawValFields.map(itm => if(itm != null && itm.length > 0) itm.toDouble else 0.toDouble).toArray
+            case FLOAT =>   retVal = rawValFields.map(itm => if(itm != null && itm.length > 0) itm.toFloat else 0.toFloat).toArray
             case STRING =>  retVal = rawValFields
             case CHAR =>    retVal = rawValFields.map(itm => if (itm != null && itm.length > 0) itm.charAt(0) else ' ').toArray
             case _ => throw new ObjectNotFoundException(s"CsvSerDeser::deserializeArray, invalid value type: ${itemType.getValue}, fldName: ${itemType.name} could not be resolved", null)
@@ -306,18 +336,18 @@ class CsvSerDeser extends SerializeDeserialize {
         val tc = attr.getTypeCategory
 
         tc match {
-            case CHAR =>   returnVal = if( fld.length > 0) fld(0) else null
+            case CHAR =>   returnVal = if( fld.length > 0) fld(0) else ' '
             case STRING => returnVal = fld
             case ARRAY =>  returnVal = deserializeArray(fldStr, attr)
             case _ => {
                 val f1 = fld.trim
                 tc match {
-                    case INT =>     returnVal = if (f1.length > 0) f1.toInt else null
-                    case FLOAT =>   returnVal = if (f1.length > 0) f1.toFloat else null
-                    case DOUBLE =>  returnVal = if (f1.length > 0) f1.toDouble else null
-                    case LONG =>    returnVal = if (f1.length > 0) f1.toLong else null
-                    case BYTE =>    returnVal = if (f1.length > 0) f1.toByte else null
-                    case BOOLEAN => returnVal = if (f1.length > 0) f1.toBoolean else null
+                    case INT =>     returnVal = if (f1.length > 0) f1.toInt else 0.toInt
+                    case FLOAT =>   returnVal = if (f1.length > 0) f1.toFloat else 0.toFloat
+                    case DOUBLE =>  returnVal = if (f1.length > 0) f1.toDouble else 0.toDouble
+                    case LONG =>    returnVal = if (f1.length > 0) f1.toLong else 0.toLong
+                    case BYTE =>    returnVal = if (f1.length > 0) f1.toByte else 0.toByte
+                    case BOOLEAN => returnVal = if (f1.length > 0) f1.toBoolean else false
                     case _ => {
                         // Unhandled type
                         try
@@ -354,13 +384,13 @@ class CsvSerDeser extends SerializeDeserialize {
         val rawCsvContainerStr : String = new String(b)
 
         val rawCsvFields : Array[String] = if (rawCsvContainerStr != null) {
-          rawCsvContainerStr.split(_fieldDelimiter)
+          rawCsvContainerStr.split(_fieldDelimiter, -1)
         } else {
-          Array[String]()
+            Array[String]()
         }
         if (rawCsvFields.isEmpty) {
-          Error("The supplied CSV record is empty...abandoning processing")
-          throw new ObjectNotFoundException("The supplied CSV record is empty...abandoning processing", null)
+            Error("The supplied CSV record is empty...abandoning processing")
+            throw new ObjectNotFoundException("The supplied CSV record is empty...abandoning processing", null)
         }
         /** get an empty ContainerInterface instance for this type name from the _objResolver */
         val ci : ContainerInterface = _objResolver.getInstance(containerName)
@@ -398,8 +428,8 @@ class CsvSerDeser extends SerializeDeserialize {
                 throw new UnsupportedObjectException(s"field type name ${attr.getName} is a container type... containers are not supported by the CSV deserializer at this time... deserialization fails.",null)
             }
             val fld = rawCsvFields(fldIdx)
-          // @TODO: need to handle failure condition for set - string is not in expected format?
-          // @TODO: is there any need to strip quotes? since serializer is putting escape information while serializing, this should be done. probably more configuration information is needed
+            // @TODO: need to handle failure condition for set - string is not in expected format?
+            // @TODO: is there any need to strip quotes? since serializer is putting escape information while serializing, this should be done. probably more configuration information is needed
             ci.set(fldIdx, resolveValue(fld, attr))
             fldIdx += 1
         })
@@ -478,7 +508,7 @@ class KVSerDeser extends CsvSerDeser {
         val rawCsvContainerStr : String = new String(b)
 
         val rawCsvFields : Array[String] = if (rawCsvContainerStr != null) {
-            rawCsvContainerStr.split(_fieldDelimiter)
+            rawCsvContainerStr.split(_fieldDelimiter, -1)
         } else {
             Array[String]()
         }
@@ -508,7 +538,7 @@ class KVSerDeser extends CsvSerDeser {
                 fldIdx += 2
             } else {
                 val kv = rawCsvFields(fldIdx)
-                val parts = kv.split(_keyDelimiter)
+                val parts = kv.split(_keyDelimiter, -1)
                 if(parts.length != 2) {
                     Error(s"The supplied KV record has field ($fldIdx) without key delimiter or more than one delimiter, record: $rawCsvContainerStr")
                     throw new ObjectNotFoundException("The supplied KV record format is not correct...abandoning processing", null)

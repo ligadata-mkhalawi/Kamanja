@@ -473,6 +473,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
         currentMessage += 1
       })
       var successVector = Array.fill[Boolean](messages.size)(false)  //Array[Boolean](messages.size)
+      var gotResponse = Array.fill[Boolean](messages.size)(false)  //Array[Boolean](messages.size)
       var isFullySent = false
       var isRetry = false
       var failedPush = 0
@@ -489,10 +490,16 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
             // Send the request to Kafka
             val response = FileProcessor.executeCallWithElapsed(producer.send(msg, new Callback {
               override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
+                val msgIdx = currentMessage
                 if (exception != null) {
+                  isFullySent = false
+                  isRetry = true
                   failedPush += 1
                   logger.warn("SMART FILE CONSUMER ("+partIdx+") has detected a problem with pushing a message into the " +msg.topic + " will retry " +exception.getMessage)
+                } else {
+                  successVector(msgIdx) = true
                 }
+                gotResponse(msgIdx) = true
               }
             }), " Sending data to kafka" )
             respFutures(currentMessage) = response
@@ -500,16 +507,20 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
           currentMessage += 1
         })
 
+        var sleepTmRemainingInMs = 30000
         // Make sure all messages have been successfuly sent, and resend them if we detected bad messages
         isFullySent = true
-        var numberOfFailuresThisTime = 0
-        for (i <- 0 until messages.size) {
-          if (!successVector(i)) {
-            val (rc, partitionId) = checkMessage(respFutures,i)
+        var i = messages.size - 1
+        while (i >= 0) {
+          if (!successVector(i) && !gotResponse(i)) {
+            val tmConsumed = System.nanoTime
+            val (rc, partitionId) = checkMessage(respFutures,i, sleepTmRemainingInMs)
+            var tmElapsed = System.nanoTime - tmConsumed
+            if (tmElapsed < 0) tmElapsed = 0
+            sleepTmRemainingInMs -= (tmElapsed / 1000000).toInt
             if (rc > 0) {
               isFullySent = false
               isRetry = true
-              numberOfFailuresThisTime += 1
             } else {
               if (partitionsStats.contains(partitionId)) {
                 partitionsStats(partitionId) = partitionsStats(partitionId) + 1
@@ -519,6 +530,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
               successVector(i) = true
             }
           }
+          i -= 1
         }
 
         // We can now fail for some messages, so, we need to update the recovery area in ZK, to make sure the retry does not
@@ -536,9 +548,9 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
     FileProcessor.KAFKA_SEND_SUCCESS
   }
 
-  private def checkMessage(mapF: scala.collection.mutable.Map[Int,Future[RecordMetadata]], i: Int): (Int,Int) = {
+  private def checkMessage(mapF: scala.collection.mutable.Map[Int,Future[RecordMetadata]], i: Int, sleepTmRemainingInMs: Int): (Int,Int) = {
     try {
-      val md = mapF(i).get(10, TimeUnit.SECONDS)
+      val md = mapF(i).get(if (sleepTmRemainingInMs <= 0) 1 else sleepTmRemainingInMs, TimeUnit.MILLISECONDS)
       mapF(i) = null
       return(FileProcessor.KAFKA_SEND_SUCCESS, md.partition)
     } catch {

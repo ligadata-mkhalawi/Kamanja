@@ -204,7 +204,8 @@ class KamanjaModelEvent(factory: ContainerFactoryInterface, other: KamanjaModelE
     } catch {
       case e: Exception => {
         log.debug("", e)
-        throw e
+        if(defaultVal == null) return null;
+        return defaultVal.asInstanceOf[AnyRef];
       }
     }
     return null;
@@ -242,7 +243,8 @@ class KamanjaModelEvent(factory: ContainerFactoryInterface, other: KamanjaModelE
     } catch {
       case e: Exception => {
         log.debug("", e)
-        throw e
+        if(defaultVal == null) return null;
+        return defaultVal.asInstanceOf[AnyRef];
       }
     }
     return null;
