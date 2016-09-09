@@ -179,8 +179,6 @@ libraryDependencies += "org.apache.commons" % "commons-vfs2" % "2.0"
 libraryDependencies += "org.apache.commons" % "commons-compress" % "1.5"
 libraryDependencies += "org.anarres.lzo" % "lzo-core" % "1.0.0"
 libraryDependencies += "com.jcraft" % "jsch" % "0.1.53"
-libraryDependencies += "com.twitter" % "parquet-hadoop" % "1.5.0"
-libraryDependencies += "com.twitter" % "parquet-avro" % "1.0.0"
 
 //////////////////////  Cache & CacheImp
 //libraryDependencies += "org.infinispan" % "infinispan-core" % "7.2.5.Final"

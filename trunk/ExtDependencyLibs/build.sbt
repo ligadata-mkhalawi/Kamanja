@@ -197,6 +197,10 @@ libraryDependencies ++= {
 }
 
 
+//smart file adapter
+libraryDependencies += "com.twitter" % "parquet-hadoop" % "1.5.0"
+//libraryDependencies += "com.twitter" % "parquet-avro" % "1.0.0"
+
 //////////////////////  InstallDriver
 //already available
 
