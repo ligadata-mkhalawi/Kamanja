@@ -2,15 +2,15 @@ package com.ligadata.cache.infinispan
 
 import java.util
 
-import com.ligadata.cache.{Config, CacheCustomConfig, CacheCallback, DataCache}
+import com.ligadata.cache.{ Config, CacheCustomConfig, CacheCallback, DataCache }
 import net.sf.ehcache.config.Configuration
-import org.infinispan.configuration.cache.{CacheMode, ConfigurationBuilder}
+import org.infinispan.configuration.cache.{ CacheMode, ConfigurationBuilder }
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.Cache;
 
 /**
-  * Created by Saleh on 6/9/2016.
-  */
+ * Created by Saleh on 6/9/2016.
+ */
 class MemoryDataCacheImp extends DataCache {
 
   var cacheManager: DefaultCacheManager = null
@@ -29,6 +29,8 @@ class MemoryDataCacheImp extends DataCache {
     if (listenCallback != null) {
       cache.addListener(new EventCacheListener(listenCallback))
     }
+    println("1====cacheManager.getMembers=======>" + cacheManager.getMembers)
+    println("2====cacheManager.getAddress===================>"+cacheManager.getAddress)
   }
 
   override def shutdown(): Unit = {
@@ -88,7 +90,7 @@ class MemoryDataCacheImp extends DataCache {
 
   override def get(containerName: String, map: java.util.Map[String, java.util.Map[String, AnyRef]]): Unit = {}
 
-  override def get(containerName: String, timestamp: String): util.Map[String, AnyRef] = {
+  override def get(containerName: String, timestamp: String): java.util.Map[String, AnyRef] = {
     null
   }
 
@@ -96,7 +98,12 @@ class MemoryDataCacheImp extends DataCache {
     null
   }
 
-  override def del(containerName: String): Unit = {}
+  override def del(key: String): Unit = {
+    if (cache.containsKey(key)) {
+      println("key exixst in cache" + key)
+      cache.remove(key)
+    }
+  }
 
   override def del(containerName: String, timestamp: String): Unit = {}
 

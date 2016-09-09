@@ -1,12 +1,12 @@
 package com.ligadata.cache.infinispan
 
 /**
-  * Created by Saleh on 6/9/2016.
-  */
+ * Created by Saleh on 6/9/2016.
+ */
 
-import com.ligadata.cache.{CacheCustomConfig, Config}
-import org.infinispan.configuration.cache.{CacheMode, ConfigurationBuilder}
-import org.infinispan.configuration.global.{GlobalConfigurationBuilder}
+import com.ligadata.cache.{ CacheCustomConfig, Config }
+import org.infinispan.configuration.cache.{ CacheMode, ConfigurationBuilder }
+import org.infinispan.configuration.global.{ GlobalConfigurationBuilder }
 import org.infinispan.eviction.EvictionStrategy
 import org.infinispan.manager.DefaultCacheManager
 
@@ -25,9 +25,11 @@ class CacheCustomConfigInfinispan(val jsonconfig: Config, var cacheManager: Defa
   def getcacheName(): String = cacheName;
 
   def getDefaultCacheManager(): DefaultCacheManager = {
+
     cacheManager = new DefaultCacheManager(GlobalConfigurationBuilder.defaultClusteredBuilder()
       .transport()
       .addProperty("configurationFile", values.getOrElse(CacheCustomConfig.PEERCONFIG, "jgroups_udp.xml"))
+      .globalJmxStatistics().allowDuplicateDomains(true).enable()
       .build(),
       null)
 
@@ -41,7 +43,6 @@ class CacheCustomConfigInfinispan(val jsonconfig: Config, var cacheManager: Defa
         .hash.numOwners(jsonconfig.getvalue(Config.NUMBEROFKETOWNERS).getOrElse("1").toInt)
         .invocationBatching().enable()
         .build);
-
     cacheManager
   }
 }
