@@ -21,7 +21,7 @@ import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import scala.io.Source
 import com.ligadata.Exceptions._
-import org.apache.logging.log4j.{Logger, LogManager}
+import org.apache.logging.log4j.{ Logger, LogManager }
 
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType
 import com.ligadata.MetadataAPI.Utility._
@@ -32,11 +32,11 @@ import scala.collection.mutable
 import scala.collection.immutable
 import com.ligadata.KamanjaVersion.KamanjaVersion
 import scala.io.Source
-import java.nio.file.{Files, FileSystems}
+import java.nio.file.{ Files, FileSystems }
 
 /**
-  * Created by dhaval Kolapkar on 7/24/15.
-  */
+ * Created by dhaval Kolapkar on 7/24/15.
+ */
 
 object StartMetadataAPI {
 
@@ -85,6 +85,7 @@ object StartMetadataAPI {
   val ADAPTERFILTER = "ADAPTERFILTER"
   val MESSAGEFILTER = "MESSAGEFILTER"
   val SERIALIZERFILTER = "SERIALIZERFILTER"
+  val MODELOPTIONS = "MODELOPTIONS"
 
   var expectModelName = false
   var expectModelVer = false
@@ -94,6 +95,7 @@ object StartMetadataAPI {
   var foundMessageName = false
   var expectBindingFromFile = false
   var expectBindingFromString = false
+  var expectModelOpts = false
   var removeCmdFound = false
   var expectRemoveBindingKey = false
   var expectListBindingFilter = false
@@ -139,8 +141,9 @@ object StartMetadataAPI {
           || arg.endsWith(".pmml")
           || arg.endsWith(".scala")
           || arg.endsWith(".java")
+          || arg.endsWith(".py")
           || arg.endsWith(".jar")) && (expectPropFile == false)) {
-          extraCmdArgs(INPUTLOC) = arg
+         extraCmdArgs(INPUTLOC) = arg
           if (expectBindingFromFile) {
             /** the json test above can prevent the ordinary catch of the name below */
             extraCmdArgs(FROMFILE) = extraCmdArgs.getOrElse(INPUTLOC, null)
@@ -171,7 +174,9 @@ object StartMetadataAPI {
             } else if (arg.equalsIgnoreCase(FROMFILE)) {
               expectBindingFromFile = true
             } else if (arg.equalsIgnoreCase(FROMSTRING)) {
-              expectBindingFromString = true
+                expectBindingFromString = true
+            } else if (arg.equalsIgnoreCase(MODELOPTIONS)) {
+                expectModelOpts = true
             } else if (arg.equalsIgnoreCase(ADAPTERFILTER)) {
               expectAdapterFilter = true
             } else if (arg.equalsIgnoreCase(MESSAGEFILTER)) {
@@ -189,7 +194,7 @@ object StartMetadataAPI {
               expectPropFile = true
             }
             else if (arg.equalsIgnoreCase(PROPERTY)) {
-              logger.warn("getting property " + arg)
+              logger.warn ("getting property " + arg)
               expectPropStr = true
             } else {
               var argVar = arg
@@ -231,6 +236,11 @@ object StartMetadataAPI {
               if (expectBindingFromString) {
                 extraCmdArgs(FROMSTRING) = arg
                 expectBindingFromString = false
+                argVar = "" // Make sure we don't add to the routing command
+              }
+              if (expectModelOpts) {
+                extraCmdArgs(MODELOPTIONS) = arg
+                expectModelOpts = false
                 argVar = "" // Make sure we don't add to the routing command
               }
               if (expectBindingFromFile) {
@@ -276,13 +286,13 @@ object StartMetadataAPI {
               }
 
               /**
-                * FIXME:
-                * FIXME: The removes have positional keys... right after the command.  Downside is that
-                * the tenant id collection uses a named style, which means that it MUST follow the
-                * object name to be removed.  When this thing gets reworked, the object key should also
-                * have a name like "key" as is used with the REMOVEADAPTERMESSAGEBINDING. The name/value pairs can
-                * then be expressed in any order to the liking of the user.
-                */
+               * FIXME:
+               * FIXME: The removes have positional keys... right after the command.  Downside is that
+               * the tenant id collection uses a named style, which means that it MUST follow the
+               * object name to be removed.  When this thing gets reworked, the object key should also
+               * have a name like "key" as is used with the REMOVEADAPTERMESSAGEBINDING. The name/value pairs can
+               * then be expressed in any order to the liking of the user.
+               */
               if (action.equalsIgnoreCase("getmodel") || action.equalsIgnoreCase("removemodel")) {
                 /** only take the first one */
                 if (!extraCmdArgs.contains(MODELNAME)) extraCmdArgs(MODELNAME) = arg
@@ -327,8 +337,8 @@ object StartMetadataAPI {
 
       // logger.warn(extraCmdArgs(PROPERTYFILE)  + " name of propertty file")
       //              var paramValues : scala.collection.mutable.Map [String, Any]
-      var paramJsonStr: String = extraCmdArgs(PROPERTY)
-      val paramConfig = scala.util.Properties.envOrElse("KAMANJA_HOME", scala.util.Properties.envOrElse("HOME", "~")) + "/config/" + (extraCmdArgs getOrElse(PROPERTYFILE, None))
+      var paramJsonStr : String =  extraCmdArgs(PROPERTY)
+      val paramConfig = scala.util.Properties.envOrElse("KAMANJA_HOME", scala.util.Properties.envOrElse("HOME", "~")) + "/config/" + (extraCmdArgs getOrElse (PROPERTYFILE, None))
 
 
       if (extraCmdArgs(PROPERTYFILE) != "") {
@@ -388,21 +398,22 @@ object StartMetadataAPI {
         response = new ApiResult(-1, "StartMetadataAPI", null, e.getMessage).toString
         println("Result: " + response)
       }
-      case e: Throwable => {
+      /* case e: RuntimeException => {
         logger.error("Error, due to an unknown exception", e)
         response = new ApiResult(-1, "StartMetadataAPI", null, e.getMessage).toString
         println("Result: " + response)
-      }
+      } */
       case e: Exception => {
         logger.error("Error, due to an unknown exception", e)
         response = new ApiResult(-1, "StartMetadataAPI", null, e.getMessage).toString
         println("Result: " + response)
       }
-      case e: RuntimeException => {
-        logger.error("Error, due to an unknown exception", e)
-        response = new ApiResult(-1, "StartMetadataAPI", null, e.getMessage).toString
-        println("Result: " + response)
-      }
+      /*case e: Throwable => {
+      logger.error("Error, due to an unknown exception", e)
+      response = new ApiResult(-1, "StartMetadataAPI", null, e.getMessage).toString
+      println("Result: " + response)
+    }*/
+
     } finally {
       getMetadataAPI.shutdown
     }
@@ -479,7 +490,7 @@ object StartMetadataAPI {
 
         //model management
         case Action.ADDMODELKPMML => response = ModelService.addModelKPmml(input, userId, optMsgProduced, tid, paramStr)
-        case Action.ADDMODELJTM => response = ModelService.addModelJTM(input, userId, tid, if (param == null || param.trim.size == 0) None else Some(param.trim), paramStr)
+        case Action.ADDMODELJTM   => response = ModelService.addModelJTM(input, userId, tid, if (param == null || param.trim.size == 0) None else Some(param.trim), paramStr)
         case Action.ADDMODELPMML => {
           val modelName: Option[String] = extraCmdArgs.get(MODELNAME)
           val modelVer = extraCmdArgs.getOrElse(MODELVERSION, null)
@@ -488,15 +499,43 @@ object StartMetadataAPI {
           val optModelVer = Option(validatedModelVersion)
           val optMsgVer = Option(null)
           response = ModelService.addModelPmml(ModelType.PMML
-            , input
-            , userId
-            , modelName
-            , optModelVer
-            , msgName
-            , optMsgVer
-            , tid
-            , paramStr
-            , optMsgProduced)
+                                            , input
+                                            , userId
+                                            , modelName
+                                            , optModelVer
+                                            , msgName
+                                            , optMsgVer
+                                            , tid
+                                            , paramStr
+					    , optMsgProduced)
+        }
+
+        case Action.ADDMODELPYTHON => {
+          val modelName : String = extraCmdArgs.getOrElse(MODELNAME,"there was no modelName supplied")
+          /** assumption here is that the file name endswith(".py")... we want the stem of the file name for moduleName */
+          val moduleName : String = input.split('.').dropRight(1).last
+          val pkgQualifiedName : Option[String] = Some(s"$moduleName.$modelName")
+          val modelVer = extraCmdArgs.getOrElse(MODELVERSION, null)
+          val modelOptions : String = extraCmdArgs.getOrElse(MODELOPTIONS, "{}")
+          val optMsgName: Option[String] = extraCmdArgs.get(MESSAGENAME)
+          val validatedModelVersion = if (modelVer != null) MdMgr.FormatVersion(modelVer) else MdMgr.FormatVersion("0.1.0")
+          val optModelVer = Option(validatedModelVersion)
+          val optMsgVer = Option(null)
+          response = ModelService.addModelPython(ModelType.PYTHON, input, userId, pkgQualifiedName, optModelVer, optMsgName, optMsgVer, optMsgProduced, tid, paramStr, Some(modelOptions))
+        }
+
+        case Action.ADDMODELJYTHON => {
+            val modelName : String = extraCmdArgs.getOrElse(MODELNAME,"there was no modelName supplied")
+            /** assumption here is that the file name endswith(".py")... we want the stem of the file name for moduleName */
+            val moduleName : String = input.split('.').dropRight(1).last
+            val pkgQualifiedName : Option[String] = Some(s"$moduleName.$modelName")
+            val modelVer = extraCmdArgs.getOrElse(MODELVERSION, null)
+            val modelOptions : String = extraCmdArgs.getOrElse(MODELOPTIONS, "{}")
+            val optMsgName: Option[String] = extraCmdArgs.get(MESSAGENAME)
+            val validatedModelVersion = if (modelVer != null) MdMgr.FormatVersion(modelVer) else MdMgr.FormatVersion("0.1.0")
+            val optModelVer = Option(validatedModelVersion)
+            val optMsgVer = Option(null)
+            response = ModelService.addModelJython(ModelType.JYTHON, input, userId, pkgQualifiedName, optModelVer, optMsgName, optMsgVer, optMsgProduced, tid, paramStr, Some(modelOptions))
         }
 
         case Action.ADDMODELSCALA => {
@@ -567,6 +606,27 @@ object StartMetadataAPI {
           response = ModelService.updateModelPmml(input, userId, modelName, validatedNewVersion, tid, paramStr)
         }
 
+        case Action.UPDATEMODELPYTHON => {
+            val modelName : String = extraCmdArgs.getOrElse(MODELNAME,"there was no modelName supplied")
+            /** assumption here is that the file name endswith(".py")... we want the stem of the file name for moduleName */
+            val moduleName : String = input.split('.').dropRight(1).last
+            val pkgQualifiedName : String = s"$moduleName.$modelName"
+            val modelOptions : String = extraCmdArgs.getOrElse(MODELOPTIONS, "{}")
+            val modelVer = extraCmdArgs.getOrElse(MODELVERSION, null)
+            var validatedNewVersion: String = if (modelVer != null) MdMgr.FormatVersion(modelVer) else null
+            response = ModelService.updateModelPython(input, userId, pkgQualifiedName, validatedNewVersion, tid, paramStr, Some(modelOptions))
+        }
+        case Action.UPDATEMODELJYTHON => {
+            val modelName : String = extraCmdArgs.getOrElse(MODELNAME,"there was no modelName supplied")
+            /** assumption here is that the file name endswith(".py")... we want the stem of the file name for moduleName */
+            val moduleName : String = input.split('.').dropRight(1).last
+            val pkgQualifiedName : String = s"$moduleName.$modelName"
+            val modelVer = extraCmdArgs.getOrElse(MODELVERSION, null)
+            val modelOptions : String = extraCmdArgs.getOrElse(MODELOPTIONS, "{}")
+            var validatedNewVersion: String = if (modelVer != null) MdMgr.FormatVersion(modelVer) else null
+            response = ModelService.updateModelJython(input, userId, pkgQualifiedName, validatedNewVersion, tid, paramStr, Some(modelOptions))
+        }
+
         case Action.UPDATEMODELSCALA => {
           if (param.length == 0)
             response = ModelService.updateModelscala(input, "", userId, tid, paramStr)
@@ -589,7 +649,6 @@ object StartMetadataAPI {
           else
             ModelService.getModel(modelName, userId, tid)
         }
-
 
         //container management
         case Action.ADDCONTAINER => response = ContainerService.addContainer(input, tid, paramStr)
@@ -711,6 +770,7 @@ object StartMetadataAPI {
             }
           }
         }
+
 
 
         case Action.LISTADAPTERMESSAGEBINDINGS => {

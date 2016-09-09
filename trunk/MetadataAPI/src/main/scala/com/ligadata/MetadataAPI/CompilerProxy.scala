@@ -58,9 +58,29 @@ class CompilerProxy {
   lazy val logger = LogManager.getLogger(loggerName)
   private var userId: Option[String] = _
   lazy val compiler_work_dir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("COMPILER_WORK_DIR")
+
+  // verify compiler_work_dir for existence
+  private def  verifyCompilerWorkDir(compiler_work_dir: String): Unit = {
+    val iFile = new File(compiler_work_dir)
+    if ( ! iFile.exists ){
+      logger.warn(s"COMPILER_PROXY: The path $compiler_work_dir specified as COMPILER_WORK_DIR doesn't exist, create it any way.")
+      // Doesn't exist, try Create a new clean directory
+      val compileWorkDir = s"mkdir -p $compiler_work_dir"
+      val tmpdirRc = Process(compileWorkDir).!
+      if (tmpdirRc != 0) {
+	throw new Exception(s"The MetadataAPI operation has failed because The path $compiler_work_dir  specified as COMPILER_WORK_DIR could not be created ... rc = $tmpdirRc")
+      }
+    }
+    else if ( ! iFile.isDirectory ){
+      throw new Exception(s"COMPILER_PROXY: The path $compiler_work_dir specified as COMPILER_WORK_DIR is not a directory. ")
+    }
+  }
+
   // 646 - 676 Change begins - replace MetadataAPIImpl
   val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
   // 646 - 676 Change ends
+
+  verifyCompilerWorkDir(compiler_work_dir)
 
   def setSessionUserId(id: Option[String]): Unit = {
     userId = id
@@ -801,7 +821,8 @@ class CompilerProxy {
       var depJars1 = deps.filter(x => ! jarsToBeExcludedRegEx.pattern.matcher(x).matches)
       logger.debug("deps => " + deps.toList)
       logger.debug("deps => " + depJars1.toList)
-      
+
+      val moduleName: String = "" /** This is a python/jython value ... of no importanance conjuring java/scala model defs*/
       val modDef: ModelDef = MdMgr.GetMdMgr.MakeModelDef(modelNamespace
         , modelName
         , pName
@@ -818,7 +839,8 @@ class CompilerProxy {
         , recompile
         , false
         , modCfgJson
-	, MessageAndContainerUtils.getContainersFromModelConfig(modCfgJson))
+        , moduleName
+	, MessageAndContainerUtils.getContainersFromModelConfig(None,modelConfigName))
 
       // Need to set some values by hand here.
       modDef.jarName = jarFileName
