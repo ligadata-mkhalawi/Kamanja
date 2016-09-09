@@ -21,8 +21,8 @@ import com.ligadata.kamanja.metadata.{BaseElem, MdMgr, ModelDef}
 import com.ligadata.KamanjaBase._
 import com.ligadata.Utils.{KamanjaLoaderInfo, Utils}
 import org.apache.logging.log4j.LogManager
-import java.io.{ByteArrayInputStream, InputStream, PushbackInputStream}
-import java.net.{SocketException, SocketTimeoutException, ConnectException}
+import java.io._
+import java.net.{ConnectException, SocketException, SocketTimeoutException}
 import java.nio.charset.StandardCharsets
 
 import scala.util.control.Breaks._
@@ -696,7 +696,37 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext, val ser
     * @param txnContext Transaction context to do get operations on this transactionid. But this transaction will be rolledback
     *                   once the initialization is done.
     */
-    override def init(txnContext: TransactionContext): Unit = {}
+    override def init(txnContext: TransactionContext): Unit = {
+        val pyPath : String = if (nodeContext.getValue("PYTHON_PATH") != null)
+	                         nodeContext.getValue("PYTHON_PATH").asInstanceOf[String]
+                              else
+  		                null
+	val (moduleName, modelName) : (String,String) = ModuleNModelNames
+	val srcTargetPath : String = s"$pyPath/models/$moduleName.py"
+	writeSrcFile(modelDef.objectDefinition, srcTargetPath) 
+	
+        
+    }
+
+    /** Write the source file string to the supplied target path.
+     *
+     * @param srcCode
+     * @param srcTargetPath
+     */
+    private def writeSrcFile(srcCode: String, srcTargetPath: String) {
+       val file = new File(srcTargetPath)
+       val bufferedWriter = new BufferedWriter(new FileWriter(file))
+       bufferedWriter.write(srcCode)
+       bufferedWriter.close
+   }
+
+   private def ModuleNModelNames : (String,String) = {
+        val moduleModelNms : Array[String] = modelDef.PhysicalName.split('.')
+        val moduleName : String = moduleModelNms.head
+   	val modelName : String = moduleModelNms.last
+       (moduleName,modelName)
+    }
+
 
     /**
       * Called when the system is being shutdown, do any needed cleanup ...
