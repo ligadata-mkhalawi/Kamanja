@@ -10,7 +10,7 @@ buildOption=$5
 cleanOption=$6
 ignoreMigrationLibsOption=$7
 
-currentKamanjaVersion=1.5.3
+currentKamanjaVersion=1.6.0
 
 ver210=${currentKamanjaVersion}_2.10
 ver211=${currentKamanjaVersion}_2.11
@@ -290,7 +290,8 @@ cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_2/target/scala-2.10/migr
 cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.10/migratefrom_v_1_3_2.10-${currentKamanjaVersion}.jar $systemlib
 cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4/target/scala-2.10/migratefrom_v_1_4_2.10-${currentKamanjaVersion}.jar $systemlib
 cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4_1/target/scala-2.10/migratefrom_v_1_4_1_2.10-${currentKamanjaVersion}.jar $systemlib
-cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_5_0/target/scala-2.10/migrateto_v_1_5_0_2.10-${currentKamanjaVersion}.jar $systemlib
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_5/target/scala-2.10/migratefrom_v_1_5_2.10-${currentKamanjaVersion}.jar $systemlib
+cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_6/target/scala-2.10/migrateto_v_1_6_2.10-${currentKamanjaVersion}.jar $systemlib
 cp $srcPath/Utils/Migrate/GenerateAdapterBindings/target/scala-2.10/generateadapterbindings_2.10-${currentKamanjaVersion}.jar $systemlib
 cp $srcPath/Utils/Migrate/MigrateManager/target/migratemanager-${currentKamanjaVersion}.jar $systemlib
 
@@ -301,7 +302,8 @@ cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_2/target/scala-2.10/migr
 cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.10/migratefrom_v_1_3_2.10-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver211/lib/system/
 cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4/target/scala-2.10/migratefrom_v_1_4_2.10-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver211/lib/system
 cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4_1/target/scala-2.10/migratefrom_v_1_4_1_2.10-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver211/lib/system
-cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_5_0/target/scala-2.10/migrateto_v_1_5_0_2.10-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver211/lib/system
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_5/target/scala-2.10/migratefrom_v_1_5_2.10-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver211/lib/system
+cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_6/target/scala-2.10/migrateto_v_1_6_2.10-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver211/lib/system
 cp $srcPath/Utils/Migrate/GenerateAdapterBindings/target/scala-2.10/generateadapterbindings_2.10-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver211/lib/system
 
 migration2_10libsCopiesFor2_11="true"
@@ -525,13 +527,14 @@ fi
 #Build and copy 2.10 for both MigrateFrom_V_1_1 & MigrateFrom_V_1_2, if they are not copied from 2.10.4 build
 if [ "$migration2_10libsCopiesFor2_11" == "false" ]; then
 if [ "$buildMigrationLibs" == "yes" ]; then
-	sbt '++ 2.10.4 MigrateFrom_V_1_1/package' '++ 2.10.4 MigrateFrom_V_1_2/package' '++ 2.10.4 MigrateFrom_V_1_3/package' '++ 2.10.4 MigrateFrom_V_1_4/package' '++ 2.10.4 MigrateFrom_V_1_4_1/package' '++ 2.10.4 MigrateTo_V_1_5_0/package'
+	sbt '++ 2.10.4 MigrateFrom_V_1_1/package' '++ 2.10.4 MigrateFrom_V_1_2/package' '++ 2.10.4 MigrateFrom_V_1_3/package' '++ 2.10.4 MigrateFrom_V_1_4/package' '++ 2.10.4 MigrateFrom_V_1_4_1/package' '++ 2.10.4 MigrateFrom_V_1_5/package' '++ 2.10.4 MigrateTo_V_1_6/package'
 	mv $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_1/target/scala-2.10/migratefrom_v_1_1_2.10-${currentKamanjaVersion}.jar $systemlib
 	mv $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_2/target/scala-2.10/migratefrom_v_1_2_2.10-${currentKamanjaVersion}.jar $systemlib
 	mv $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.10/migratefrom_v_1_3_2.10-${currentKamanjaVersion}.jar $systemlib
 	mv $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4/target/scala-2.10/migratefrom_v_1_4_2.10-${currentKamanjaVersion}.jar $systemlib
 	mv $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4_1/target/scala-2.10/migratefrom_v_1_4_1_2.10-${currentKamanjaVersion}.jar $systemlib
-	mv $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_5_0/target/scala-2.10/migrateto_v_1_5_0_2.10-${currentKamanjaVersion}.jar $systemlib
+	mv $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_5/target/scala-2.10/migratefrom_v_1_5_2.10-${currentKamanjaVersion}.jar $systemlib
+	mv $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_6/target/scala-2.10/migrateto_v_1_6_2.10-${currentKamanjaVersion}.jar $systemlib
 fi
 fi
 
@@ -613,7 +616,8 @@ cp $srcPath/Utils/Migrate/MigrateBase/target/migratebase-${currentKamanjaVersion
 cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.11/migratefrom_v_1_3_2.11-${currentKamanjaVersion}.jar $systemlib
 cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4/target/scala-2.11/migratefrom_v_1_4_2.11-${currentKamanjaVersion}.jar $systemlib
 cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4_1/target/scala-2.11/migratefrom_v_1_4_1_2.11-${currentKamanjaVersion}.jar $systemlib
-cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_5_0/target/scala-2.11/migrateto_v_1_5_0_2.11-${currentKamanjaVersion}.jar $systemlib
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_5/target/scala-2.11/migratefrom_v_1_5_2.11-${currentKamanjaVersion}.jar $systemlib
+cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_6/target/scala-2.11/migrateto_v_1_6_2.11-${currentKamanjaVersion}.jar $systemlib
 cp $srcPath/Utils/Migrate/GenerateAdapterBindings/target/scala-2.11/generateadapterbindings_2.11-${currentKamanjaVersion}.jar $systemlib
 cp $srcPath/Utils/Migrate/MigrateManager/target/migratemanager-${currentKamanjaVersion}.jar $systemlib
 
@@ -621,6 +625,7 @@ cp $srcPath/Utils/Migrate/MigrateManager/target/migratemanager-${currentKamanjaV
 cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.11/migratefrom_v_1_3_2.11-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver210/lib/system/
 cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4/target/scala-2.11/migratefrom_v_1_4_2.11-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver210/lib/system/
 cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4_1/target/scala-2.11/migratefrom_v_1_4_1_2.11-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver210/lib/system/
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_5/target/scala-2.11/migratefrom_v_1_5_2.11-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver210/lib/system/
 
 cp $srcPath/Utils/ClusterInstaller/ClusterInstallerDriver/target/*.jar $systemlib
 cp $srcPath/Utils/ClusterInstaller/InstallDriver/target/scala-2.11/*.jar $systemlib
