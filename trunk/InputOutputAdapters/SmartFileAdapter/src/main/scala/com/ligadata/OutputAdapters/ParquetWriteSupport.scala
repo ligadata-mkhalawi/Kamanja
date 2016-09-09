@@ -13,6 +13,8 @@ import parquet.schema.MessageType
 import parquet.schema.PrimitiveType.PrimitiveTypeName
 
 class ParquetWriteSupport extends WriteSupport[Array[Any]] {
+  val systemFields = Set("kamanja_system_null_flags")
+
   var schema: MessageType = null
   var recordConsumer: RecordConsumer = null
   var cols: Array[ColumnDescriptor] = null
@@ -50,34 +52,38 @@ class ParquetWriteSupport extends WriteSupport[Array[Any]] {
     recordConsumer.startMessage()
     for (i <- 0 to cols.length - 1) {
 
-      val value = values(i);
-      // val.length() == 0 indicates a NULL value.
-      if (value != null) {
-        recordConsumer.startField(cols(i).getPath()(0), i)
-        cols(i).getType() match {
-          case PrimitiveTypeName.BOOLEAN =>
-            recordConsumer.addBoolean(value.asInstanceOf[Boolean])
+      val colName = cols(i).getPath()(0)
+      if(!systemFields.contains(colName.toLowerCase)) {
 
-          case PrimitiveTypeName.FLOAT =>
-            recordConsumer.addFloat(value.asInstanceOf[Float])
+        val value = values(i);
+        // val.length() == 0 indicates a NULL value.
+        if (value != null) {
+          recordConsumer.startField(colName, i)
+          cols(i).getType() match {
+            case PrimitiveTypeName.BOOLEAN =>
+              recordConsumer.addBoolean(value.asInstanceOf[Boolean])
 
-          case PrimitiveTypeName.DOUBLE =>
-            recordConsumer.addDouble(value.asInstanceOf[Double])
+            case PrimitiveTypeName.FLOAT =>
+              recordConsumer.addFloat(value.asInstanceOf[Float])
 
-          case PrimitiveTypeName.INT32 =>
-            recordConsumer.addInteger(value.asInstanceOf[Int])
+            case PrimitiveTypeName.DOUBLE =>
+              recordConsumer.addDouble(value.asInstanceOf[Double])
 
-          case PrimitiveTypeName.INT64 =>
-            recordConsumer.addLong(value.asInstanceOf[Long])
+            case PrimitiveTypeName.INT32 =>
+              recordConsumer.addInteger(value.asInstanceOf[Int])
 
-          case PrimitiveTypeName.BINARY =>
-            recordConsumer.addBinary(stringToBinary(value))
+            case PrimitiveTypeName.INT64 =>
+              recordConsumer.addLong(value.asInstanceOf[Long])
 
-          case _ =>
-            throw new ParquetEncodingException("Unsupported column type: " + cols(i).getType)
+            case PrimitiveTypeName.BINARY =>
+              recordConsumer.addBinary(stringToBinary(value))
+
+            case _ =>
+              throw new ParquetEncodingException("Unsupported column type: " + cols(i).getType)
+          }
+
+          recordConsumer.endField(cols(i).getPath()(0), i)
         }
-
-        recordConsumer.endField(cols(i).getPath()(0), i)
       }
     }
     recordConsumer.endMessage()
