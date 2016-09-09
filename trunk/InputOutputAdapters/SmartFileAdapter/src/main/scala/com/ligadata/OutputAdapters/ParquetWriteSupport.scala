@@ -4,6 +4,7 @@ import java.util.HashMap
 
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
+import org.apache.logging.log4j.LogManager
 import parquet.column.ColumnDescriptor
 import parquet.hadoop.api.WriteSupport
 import parquet.hadoop.api.WriteSupport.WriteContext
@@ -13,6 +14,8 @@ import parquet.schema.MessageType
 import parquet.schema.PrimitiveType.PrimitiveTypeName
 
 class ParquetWriteSupport extends WriteSupport[Array[Any]] {
+  private[this] val logger = LogManager.getLogger(getClass);
+
   val systemFields = Set("kamanja_system_null_flags")
 
   var schema: MessageType = null
@@ -53,6 +56,7 @@ class ParquetWriteSupport extends WriteSupport[Array[Any]] {
     for (i <- 0 to cols.length - 1) {
 
       val colName = cols(i).getPath()(0)
+      logger.debug("parquet serializing. col name: %s, value: %s".format(colName, (if(values(i)==null) null else values(i).toString)))
       if(!systemFields.contains(colName.toLowerCase)) {
 
         val value = values(i);

@@ -810,7 +810,12 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
         if (pf != null) {
           LOG.info("Smart File Producer " + fc.Name + ": closing file at " + name)
           pf.synchronized {
-            pf.outStream.close
+            flushPartitionFile(pf)
+
+            if(isParquet)
+              pf.parquetWriter.close
+            else
+              pf.outStream.close
           }
         }
       }
