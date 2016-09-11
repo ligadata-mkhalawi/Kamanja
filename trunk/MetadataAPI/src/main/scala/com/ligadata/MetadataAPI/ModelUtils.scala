@@ -1277,6 +1277,7 @@ object ModelUtils {
             modDefTemp
           } else {
             val modelDef = parse(mod.modelConfig).values.asInstanceOf[Map[String, Any]]
+	    // model config name should be same as model name.
             val key = mod.ownerId + "." + mod.name
             val saveModelParms = modelDef.getOrElse(key, Map[String, Any]()).asInstanceOf[Map[String, Any]]
             val tmpInputMsgSets = saveModelParms.getOrElse(ModelCompilationConstants.INPUT_TYPES_SETS, null)
@@ -1315,7 +1316,7 @@ object ModelUtils {
               saveModelParms.getOrElse(ModelCompilationConstants.PHYSICALNAME, "").asInstanceOf[String],
               saveModelParms.getOrElse(ModelCompilationConstants.DEPENDENCIES, List[String]()).asInstanceOf[List[String]],
               saveModelParms.getOrElse(ModelCompilationConstants.TYPES_DEPENDENCIES, List[String]()).asInstanceOf[List[String]],
-              inputMsgSets, outputMsgs, ObjFormatType.asString(mod.objectFormat), userid, mod.TenantId, mod.modelConfig)
+              inputMsgSets, outputMsgs, ObjFormatType.asString(mod.objectFormat), userid, mod.TenantId, mod.modelConfig,key)
             custModDef
           }
         }
