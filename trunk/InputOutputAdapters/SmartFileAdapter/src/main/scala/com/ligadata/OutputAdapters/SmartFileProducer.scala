@@ -586,6 +586,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           if(isParquet){
             if(!writeSupportsMap.contains(record.getFullTypeName)){
               println(">>>>>>>>>>>>>>>>>> Avro schema : " + record.getAvroSchema)
+              //get avro schema from message then use it to get parquet schema
               val avroSchema = new org.apache.avro.Schema.Parser().parse(record.getAvroSchema)
               val avroSchemaConverter = new parquet.avro.AvroSchemaConverter()
               val parquetSchema = avroSchemaConverter.convert(avroSchema)
@@ -595,13 +596,11 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
               val writeSupport = new ParquetWriteSupport(parquetSchema)
               writeSupportsMap.put(record.getFullTypeName, writeSupport)
             }
-            // TODO : using some default values for now
-            // TODO : assuming writing to local fs
-            val outputParquetFile = new File(fileName)
-            val outputParquetFilePath = new Path(outputParquetFile.toURI)
-            val parquetWriter = new ParquetWriter[Array[Any]](outputParquetFilePath, writeSupportsMap(record.getFullTypeName),
+
+            val parquetWriter = Utils.createParquetWriter(fc, fileName, writeSupportsMap(record.getFullTypeName), parquetCompression)
+              /*new ParquetWriter[Array[Any]](outputParquetFilePath, writeSupportsMap(record.getFullTypeName),
               CompressionCodecName.UNCOMPRESSED,
-              ParquetWriter.DEFAULT_BLOCK_SIZE, ParquetWriter.DEFAULT_PAGE_SIZE)
+              ParquetWriter.DEFAULT_BLOCK_SIZE, ParquetWriter.DEFAULT_PAGE_SIZE)*/
 
             partKey = new PartitionFile(key, fileName, new PartitionStream(os, originalStream), parquetWriter, 0, 0, buffer, 0, fileBufferSize)
           }
