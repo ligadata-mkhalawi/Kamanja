@@ -55,36 +55,24 @@ class ParquetWriteSupport extends WriteSupport[Array[Any]] {
     recordConsumer.startMessage()
     for (i <- 0 to cols.length - 1) {
 
+
+
       val colName = cols(i).getPath()(0)
       logger.debug("parquet serializing. col name: %s, value: %s".format(colName, (if(values(i)==null) null else values(i).toString)))
       if(!systemFields.contains(colName.toLowerCase)) {
 
+        val colName = cols(i).getPath()(0)
         val value = values(i);
         // val.length() == 0 indicates a NULL value.
         if (value != null) {
           recordConsumer.startField(colName, i)
-          cols(i).getType() match {
-            case PrimitiveTypeName.BOOLEAN =>
-              recordConsumer.addBoolean(value.asInstanceOf[Boolean])
 
-            case PrimitiveTypeName.FLOAT =>
-              recordConsumer.addFloat(value.asInstanceOf[Float])
-
-            case PrimitiveTypeName.DOUBLE =>
-              recordConsumer.addDouble(value.asInstanceOf[Double])
-
-            case PrimitiveTypeName.INT32 =>
-              recordConsumer.addInteger(value.asInstanceOf[Int])
-
-            case PrimitiveTypeName.INT64 =>
-              recordConsumer.addLong(value.asInstanceOf[Long])
-
-            case PrimitiveTypeName.BINARY =>
-              recordConsumer.addBinary(stringToBinary(value))
-
-            case _ =>
-              throw new ParquetEncodingException("Unsupported column type: " + cols(i).getType)
-          }
+          if(cols(i).getPath().length == 1)
+            addSimpleValue(recordConsumer, value, cols(i).getType())
+          else if(cols(i).getPath()(1)=="array")
+            addArrayValue(recordConsumer, value, cols(i).getType(), cols(i).getPath())
+          else
+            throw new ParquetEncodingException("Unsupported complex column type: " + cols(i).getPath()(1))
 
           recordConsumer.endField(cols(i).getPath()(0), i)
         }
@@ -93,8 +81,99 @@ class ParquetWriteSupport extends WriteSupport[Array[Any]] {
     recordConsumer.endMessage()
   }
 
-  //TODO : consider complex types: need to convert into strings first
   private def stringToBinary(value: Any): Binary = {
     Binary.fromString(value.toString)
+  }
+
+  private def addSimpleValue(recordConsumer : RecordConsumer, value : Any, typeName : PrimitiveTypeName){
+    typeName match {
+      case PrimitiveTypeName.BOOLEAN =>
+        recordConsumer.addBoolean(value.asInstanceOf[Boolean])
+
+      case PrimitiveTypeName.FLOAT =>
+        recordConsumer.addFloat(value.asInstanceOf[Float])
+
+      case PrimitiveTypeName.DOUBLE =>
+        recordConsumer.addDouble(value.asInstanceOf[Double])
+
+      case PrimitiveTypeName.INT32 =>
+        recordConsumer.addInteger(value.asInstanceOf[Int])
+
+      case PrimitiveTypeName.INT64 =>
+        recordConsumer.addLong(value.asInstanceOf[Long])
+
+      case PrimitiveTypeName.BINARY =>
+        recordConsumer.addBinary(stringToBinary(value))
+      case _ =>
+        throw new ParquetEncodingException("Unsupported column type: " + typeName)
+    }
+  }
+
+  private def addArrayValue(recordConsumer : RecordConsumer, value : Any, typeName : PrimitiveTypeName, path : Array[String]){
+    typeName match {
+      case PrimitiveTypeName.BOOLEAN =>
+        val valueAr = value.asInstanceOf[Array[Boolean]]
+        if(valueAr != null){
+          recordConsumer.startGroup();
+          recordConsumer.startField(path(1), 0)
+          valueAr.foreach(v => if(v!=null) recordConsumer.addBoolean(v))
+          recordConsumer.endField(path(1), 0)
+          recordConsumer.endGroup()
+        }
+
+      case PrimitiveTypeName.FLOAT =>
+        val valueAr = value.asInstanceOf[Array[Float]]
+        if(valueAr != null){
+          recordConsumer.startGroup();
+          recordConsumer.startField(path(1), 0)
+          valueAr.foreach(v => if(v!=null) recordConsumer.addFloat(v))
+          recordConsumer.endField(path(1), 0)
+          recordConsumer.endGroup()
+        }
+
+
+      case PrimitiveTypeName.DOUBLE =>
+        val valueAr = value.asInstanceOf[Array[Double]]
+        if(valueAr != null){
+          recordConsumer.startGroup();
+          recordConsumer.startField(path(1), 0)
+          valueAr.foreach(v => if(v!=null) recordConsumer.addDouble(v))
+          recordConsumer.endField(path(1), 0)
+          recordConsumer.endGroup()
+        }
+
+
+      case PrimitiveTypeName.INT32 =>
+        val valueAr = value.asInstanceOf[Array[Int]]
+        if(valueAr != null){
+          recordConsumer.startGroup();
+          recordConsumer.startField(path(1), 0)
+          valueAr.foreach(v => if(v!=null) recordConsumer.addInteger(v))
+          recordConsumer.endField(path(1), 0)
+          recordConsumer.endGroup()
+        }
+
+      case PrimitiveTypeName.INT64 =>
+        val valueAr = value.asInstanceOf[Array[Long]]
+        if(valueAr != null){
+          recordConsumer.startGroup();
+          recordConsumer.startField(path(1), 0)
+          valueAr.foreach(v => if(v!=null) recordConsumer.addLong(v))
+          recordConsumer.endField(path(1), 0)
+          recordConsumer.endGroup()
+        }
+
+      case PrimitiveTypeName.BINARY =>
+        val valueAr = value.asInstanceOf[Array[String]]
+        if(valueAr != null){
+          recordConsumer.startGroup();
+          recordConsumer.startField(path(1), 0)
+          valueAr.foreach(v => if(v!=null) recordConsumer.addBinary(stringToBinary(v)))
+          recordConsumer.endField(path(1), 0)
+          recordConsumer.endGroup()
+        }
+      case _ =>
+        throw new ParquetEncodingException("Unsupported column type: " + typeName)
+    }
   }
 }
