@@ -33,6 +33,10 @@ References
     Mapper messages always need to be in the form of ${alias.element}
 
     References to messages must be lower case as names are
+    
+    System variables
+    
+    context as JtmContext - it gives access to the current error state during process. use $context to reference the variable. Context becomes a part of the input namespace and must be disambiguated if it occurs as part of a message
 
 ### The 5 main sections
 

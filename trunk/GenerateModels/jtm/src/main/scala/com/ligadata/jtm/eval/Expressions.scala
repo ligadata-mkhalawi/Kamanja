@@ -51,6 +51,13 @@ object Expressions {
     regex1.findFirstMatchIn(expr).isDefined || regex1.findFirstMatchIn(expr).isDefined
   }
 
+  def IsExpressionVariableOrAlias(expr: String): Boolean = {
+    val regex1 = """^\$([a-zA-Z0-9_]+)$""".r
+    val regex2 = """^\$\{([a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)\}$""".r
+    val regex3 = """\$\{([a-zA-Z0-9_]+)\}""".r
+    regex1.findFirstMatchIn(expr).isDefined || regex2.findFirstMatchIn(expr).isDefined || regex3.findFirstMatchIn(expr).isDefined
+  }
+
   /** Evaluates if a expression is a variable
     *
     * @param expr
@@ -74,8 +81,11 @@ object Expressions {
       val regex2 = s"$Begin$Marker$Element$Separator$Element$End".r
       val regex3 = s"$Begin$Marker$Open$Element$Separator$Element$Close$End".r
 
-      // name or ${name} -> points to a variable
+      // name -> points to a variable
       val regex1_1 = s"$Begin$Element$End".r
+      // ${name} -> points to a variable
+      // For mapper I am just changing the meaning, possible we have to fix up the code here
+      // to allow for a message alias
       val regex2_1 = s"$Begin$Marker$Open$Element$Close$End".r
 
       def processMatch1(m1: String): eval.Tracker = {
@@ -155,7 +165,7 @@ object Expressions {
   /** Find all logical column names that are encode in this expression $name
     *
     * $var
-    * $ns.$var
+    * ${ns.var}
     *
     * \$([a-zA-Z0-9_]+)
     * \$\{([a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)\}
@@ -173,6 +183,24 @@ object Expressions {
     m1.map(m => m.group(1)).toSet ++  m2.map(m => m.group(1)).toSet
   }
 
+  /** Find all alias that stand alone
+    *
+    * ${alias}
+    *
+    * \$\{([a-zA-Z0-9_]+)\}
+    *
+    * @param expression
+    * @return
+  */
+  def ExtractAliasNames(expression: String): Set[String] = {
+
+    // Extract single components names
+    val regex1 = """\$\{([a-zA-Z0-9_]+)\}""".r
+    val m1 = regex1.findAllMatchIn(expression).toArray
+    m1.map(m => m.group(1)).toSet
+  }
+
+
   /** Replace all logical column names with the variables
     *
     * @param expression expression to update
@@ -183,6 +211,7 @@ object Expressions {
 
     val regex1 = """\$([a-zA-Z0-9_]+)""".r
     val regex2 = """\$\{([a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)\}""".r
+    val regex3 = """\$\{([a-zA-Z0-9_]+)\}""".r
 
     def ReplaceWithResolve(regex: Regex, expression: String): String = {
       val m = regex.pattern.matcher(expression)
@@ -198,9 +227,24 @@ object Expressions {
       sb.toString
     }
 
+    def ReplaceWithResolveAlias(regex: Regex, expression: String): String = {
+      val m = regex.pattern.matcher(expression)
+      val sb = new StringBuffer
+      var i = 0
+      while (m.find) {
+        val name = m.group(1)
+        val resolvedName = ResolveAlias(name, aliaseMessages)
+        m.appendReplacement(sb, mapNameSource.get(resolvedName).get.getExpression)
+        i = i + 1
+      }
+      m.appendTail(sb)
+      sb.toString
+    }
+
     val expression1 = ReplaceWithResolve(regex1, expression)
     val expression2 = ReplaceWithResolve(regex2, expression1)
-    return expression2
+    val expression3 = ReplaceWithResolveAlias(regex3, expression2)
+    expression3
   }
 
   def ResolveNames(names: Set[String], aliaseMessages: Map[String, String] ) : Map[String, String] =  {

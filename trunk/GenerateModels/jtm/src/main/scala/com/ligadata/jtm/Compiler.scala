@@ -633,7 +633,10 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
 
       cnt2 = cnt1
 
-      logger.trace("Mappings left {}", mapping.mkString(", "))
+      if(mapping.size>0)
+        logger.trace("Mappings {} left: {}", mapping.size.toString(), mapping.mkString(", "))
+      else
+        logger.trace("No Mappings left")
 
       // Process mappings that are variables, those are stuffed in the tracker
       // so they can be assigned to outputs directly
@@ -653,7 +656,10 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
         mapping
       }
 
-      logger.trace("Mappings2 left {}", mapping2.mkString(", "))
+      if(mapping2.size>0)
+        logger.trace("Mappings2 {} left: {}", mapping2.size.toString(), mapping2.mkString(", "))
+      else
+        logger.trace("No Mappings2 left")
 
       // Check Mapping with expressions
       val mapping1 = if (mapping2.nonEmpty) {
@@ -662,16 +668,22 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
 
           // Try to extract variables, than it is an expression
           val list = Expressions.ExtractColumnNames(f._2)
+
           if (list.nonEmpty) {
+            logger.trace("Testing expression {} -> {}", f._2, list.mkString(", "))
             val rList = ResolveNames(list, aliaseMessages)
-            val open = rList.filter(f => !innerMapping.contains(f._2)).filter(f => {
-              val (c, v) = splitNamespaceClass(f._2)
+            val open = rList.filter(f => !innerMapping.contains(f._2)).filter(f_i => {
+              val (c, v) = splitNamespaceClass(f_i._2)
               if (dictMessages.contains(c)) {
                 val expression = "%s.get(\"%s\")".format(dictMessages.get(c).get, v)
                 val variableName = "%s.%s".format(dictMessages.get(c).get, v)
-                innerMapping ++= Map(f._2 -> eval.Tracker(variableName, c, "Any", true, v, expression))
+                innerMapping ++= Map(f_i._2 -> eval.Tracker(variableName, c, "Any", true, v, expression))
                 false
               } else {
+                logger.trace("Mapping with expressions (with references) {} -> {}, columns {}", f._1, f._2, list.mkString(", "))
+//                val expression = f._2
+//                innerMapping ++= Map(f._2 -> eval.Tracker("", c, "Any", false, v, expression))
+//                false
                 true
               }
             })
@@ -679,11 +691,11 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
             if (open.isEmpty)
               AmbiguousCheck(rList, f._2)
             else
-              logger.trace("{} not found {}", currentPath, open.mkString(", "))
+              logger.trace("Mapping2 {} not found {}", currentPath, open.mkString(", "))
 
             open.isEmpty
           } else {
-
+            logger.trace("Testing expression {} -> no column references", f._2)
             if (innerMapping.contains(f._2))
               true
             else {
@@ -694,24 +706,35 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
                 innerMapping ++= Map(f._2 -> eval.Tracker(variableName, c, "Any", true, v, expression))
                 true
               } else {
-                false
+                if(Expressions.IsExpressionVariableOrAlias(f._2)) {
+                  logger.trace("Mapping with expression {} -> {}", f._1, f._2)
+                  val expression = Expressions.FixupColumnNames(f._2, innerMapping, aliaseMessages)
+                  innerMapping ++= Map(f._2 -> eval.Tracker("", c, "Any", true, v, expression))
+                  true
+                } else {
+                  logger.trace("Mapping with variable {} -> {}", f._1, f._2)
+                  false
+                }
               }
             }
           }
         })
 
-        logger.trace("Mappings found {}", found.mkString(", "))
+        logger.trace("MAPPINGS FOUND {}", found.mkString(", "))
 
         found.foreach(f => {
           // Try to extract variables, than it is an expression
           val expression = f._2
-          val list = Expressions.ExtractColumnNames(expression)
+          val listColumns = Expressions.ExtractColumnNames(expression)
+          val listAlias = Expressions.ExtractAliasNames(expression)
 
-          val newExpression = if (list.nonEmpty) {
+          logger.trace("Target column {} -> {} columns: {} aliases: {}", f._1, expression, listColumns.mkString(", "), listAlias.mkString(", "))
+
+          val newExpression = if (listColumns.nonEmpty || listAlias.nonEmpty) {
             val newExpression = Expressions.FixupColumnNames(expression, innerMapping, aliaseMessages)
-            val rList = ResolveNames(list, aliaseMessages)
+            val rList = ResolveNames(listColumns, aliaseMessages)
             val open = rList.filter(f => !innerMapping.contains(f._2))
-            logger.trace("Matched mapping expression {} ({})-> {}", f._1, f._2, newExpression)
+            logger.trace("Matched colunmn {} with expression {} -> {}", f._1, f._2, newExpression)
             innerTracking ++= rList.map(m => innerMapping.get(m._2).get.variableName).toSet
             newExpression
           } else {
@@ -722,13 +745,17 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
           }
           outputSet --= Set(f._1)
           innerMapping ++= Map(f._1 -> eval.Tracker("", "", "", false, "", newExpression))
+          logger.trace("Current outputset (after) {} -> {} left: {}", f._1, expression, outputSet.mkString(", "))
         })
         mapping2.filterKeys(f => !found.contains(f))
       } else {
         mapping2
       }
 
-      logger.trace("Mappings1 left {}", mapping1.mkString(", "))
+      if(mapping1.size>0)
+        logger.trace("Mappings1 {} left: {}", mapping1.size.toString(), mapping1.mkString(", "))
+      else
+        logger.trace("No Mappings1 left")
 
       // Check grok matches
       //
@@ -751,8 +778,6 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
 
         // Input determined, emit as output expressions
         if(matched) {
-
-
           AmbiguousCheck(Map(nameColumn->nameColumn), g._2)
 
           var actVar = innerMapping.get(nameColumn).get.variableName
@@ -1117,7 +1142,8 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
         // Resolve inputs, either we have unique or qualified names
         //
         val uniqueInputs: Map[String, eval.Tracker] = {
-          val u = inputs.map( e => e.fieldName ).groupBy(identity).mapValues(_.length).filter( f => f._2==1).keys
+          val u = (inputs.map( e => e.fieldName ) ).groupBy(identity).mapValues(_.length).filter( f => f._2==1 ).keys
+          //val u = (inputs.map( e => e.fieldName ) ++ "context" ).groupBy(identity).mapValues(_.length).filter( f => f._2==1 && f._1!= "context").keys
           val u1 = u.map( e => inputs.find( c => c.fieldName == e).get)
           u1.map( p => {
             val variableName = "%s.%s".format(p.argName, p.fieldName)
@@ -1135,6 +1161,14 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
           classString -> eval.Tracker(variableName, p.className, p.fieldType, true, p.fieldName, "")
         }).toMap
 
+        val messageAccessors: Map[String, eval.Tracker]  = inputs.map( p => {
+          val variableName = "%s".format(p.argName)
+          val classString = "%s".format(p.className)
+          classString -> eval.Tracker(variableName, p.className, p.fieldType, true, "", "")
+        }).toMap
+
+        val systemVariables = Map("context" -> eval.Tracker("context", "com.ligadata.runtime.JtmContext", "com.ligadata.runtime.JtmContext", false, "", ""))
+
         // Find all dictionary messages
         val dictMessages =  deps.filter( f => {
           val classMd = md.Message(f, 0, true)
@@ -1150,7 +1184,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
             Array.empty[String],
             transformation.computes,
             "",
-            uniqueInputs ++ qualifiedInputs, // Mapping
+            uniqueInputs ++ qualifiedInputs ++ messageAccessors ++ systemVariables, // Mapping
             Set.empty[String], // Tracking
             aliaseMessages,
             grokExpressions,
