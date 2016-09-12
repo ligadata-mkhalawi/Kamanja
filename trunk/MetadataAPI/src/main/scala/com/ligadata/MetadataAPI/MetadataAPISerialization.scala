@@ -13,18 +13,15 @@ import org.json4s.JsonDSL._
 import org.json4s.jackson.Json
 import org.json4s.jackson.JsonMethods._
 
-
 /**
-  * Created by Ahmed-Work on 3/15/2016.
-  */
-
+ * Created by Ahmed-Work on 3/15/2016.
+ */
 
 object MetadataAPISerialization {
 
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
   implicit val jsonFormats: Formats = DefaultFormats
-
 
   def serializeObjectToJson(mdObj: Any): String = {
     var outputJson = ""
@@ -33,28 +30,27 @@ object MetadataAPISerialization {
         case o: ModelDef => {
           val json = "ModelNew" -> ("Model" ->
             ("Name" -> o.name) ~
-              ("PhysicalName" -> o.PhysicalName) ~
-              ("JarName" -> getEmptyIfNull(o.jarName)) ~
-              ("NameSpace" -> o.nameSpace) ~
-              ("ModelType" -> o.miningModelType.toString) ~
-              ("DependencyJars" -> o.CheckAndGetDependencyJarNames.toList) ~
-              ("ModelRep" -> o.modelRepresentation.toString) ~
-              ("OrigDef" -> o.OrigDef) ~
-              ("OwnerId" -> o.OwnerId) ~
-              ("TenantId" -> o.TenantId) ~
-              ("ObjectDefinition" -> o.ObjectDefinition) ~
-              ("ObjectFormat" -> ObjFormatType.asString(o.ObjectFormat)) ~
-              ("Description" -> o.Description) ~
-              ("ModelConfig" -> o.modelConfig) ~
-              ("Author" -> o.Author) ~
-              ("inputMsgSets" -> o.inputMsgSets.toList.map(m => m.toList.map(f => ("Origin" -> f.origin) ~ ("Message" -> f.message) ~ ("Attributes" -> f.attributes.toList)))) ~
-              ("OutputMsgs" -> getEmptyArrayIfNull(o.outputMsgs).toList) ~
-	      ("DepContainers" -> o.depContainers.toList) ~
-              ("NumericTypes" -> ("Version" -> o.Version) ~ ("TransId" -> o.TranId) ~ ("UniqId" -> o.UniqId) ~ ("CreationTime" -> o.CreationTime) ~ ("ModTime" -> o.ModTime) ~ ("MdElemStructVer" -> o.MdElemStructVer) ~ ("MdElementId" -> o.MdElementId)) ~
-              ("BooleanTypes" -> ("IsActive" -> o.IsActive) ~ ("IsReusable" -> o.isReusable) ~ ("IsDeleted" -> o.IsDeleted) ~ ("SupportsInstanceSerialization" -> o.SupportsInstanceSerialization)
-              )) ~
-          // 646 - 673 Meta data api changes included - Changes begin
-              ("ModelExInfo" -> ("Comment" -> o.Comment) ~ ("Tag" -> o.Tag) ~ ("Params" -> o.Params))
+            ("PhysicalName" -> o.PhysicalName) ~
+            ("JarName" -> getEmptyIfNull(o.jarName)) ~
+            ("NameSpace" -> o.nameSpace) ~
+            ("ModelType" -> o.miningModelType.toString) ~
+            ("DependencyJars" -> o.CheckAndGetDependencyJarNames.toList) ~
+            ("ModelRep" -> o.modelRepresentation.toString) ~
+            ("OrigDef" -> o.OrigDef) ~
+            ("OwnerId" -> o.OwnerId) ~
+            ("TenantId" -> o.TenantId) ~
+            ("ObjectDefinition" -> o.ObjectDefinition) ~
+            ("ObjectFormat" -> ObjFormatType.asString(o.ObjectFormat)) ~
+            ("Description" -> o.Description) ~
+            ("ModelConfig" -> o.modelConfig) ~
+            ("Author" -> o.Author) ~
+            ("inputMsgSets" -> o.inputMsgSets.toList.map(m => m.toList.map(f => ("Origin" -> f.origin) ~ ("Message" -> f.message) ~ ("Attributes" -> f.attributes.toList)))) ~
+            ("OutputMsgs" -> getEmptyArrayIfNull(o.outputMsgs).toList) ~
+            ("DepContainers" -> o.depContainers.toList) ~
+            ("NumericTypes" -> ("Version" -> o.Version) ~ ("TransId" -> o.TranId) ~ ("UniqId" -> o.UniqId) ~ ("CreationTime" -> o.CreationTime) ~ ("ModTime" -> o.ModTime) ~ ("MdElemStructVer" -> o.MdElemStructVer) ~ ("MdElementId" -> o.MdElementId)) ~
+            ("BooleanTypes" -> ("IsActive" -> o.IsActive) ~ ("IsReusable" -> o.isReusable) ~ ("IsDeleted" -> o.IsDeleted) ~ ("SupportsInstanceSerialization" -> o.SupportsInstanceSerialization))) ~
+            // 646 - 673 Meta data api changes included - Changes begin
+            ("ModelExInfo" -> ("Comment" -> o.Comment) ~ ("Tag" -> o.Tag) ~ ("Params" -> o.Params))
           // 646 - 673 Changes end
           outputJson = compact(render(json))
         }
@@ -65,10 +61,10 @@ object MetadataAPISerialization {
             o.cType.Keys.foreach(m => {
               if (m.KeyType == RelationKeyType.tPrimary) {
                 val pr = m.asInstanceOf[PrimaryKey]
-                primaryKeys ::=(pr.constraintName, pr.key.toList)
+                primaryKeys ::= (pr.constraintName, pr.key.toList)
               } else {
                 val fr = m.asInstanceOf[ForeignKey]
-                foreignKeys ::=(fr.constraintName, fr.key.toList, fr.forignContainerName, fr.forignKey.toList)
+                foreignKeys ::= (fr.constraintName, fr.key.toList, fr.forignContainerName, fr.forignKey.toList)
               }
             })
           }
@@ -82,41 +78,41 @@ object MetadataAPISerialization {
               containerDef.asInstanceOf[MappedMsgTypeDef].attrMap.map(kv => kv._2).toList
             }
 
-         val json = "MessageNew" -> ("MessageInfo" ->
+          val json = "MessageNew" -> ("MessageInfo" ->
             ("Name" -> o.Name) ~
-              ("PhysicalName" -> o.PhysicalName) ~
-              ("JarName" -> getEmptyIfNull(o.JarName)) ~
-              ("NameSpace" -> o.NameSpace) ~
-              ("DependencyJars" -> o.CheckAndGetDependencyJarNames.toList) ~
-              ("OrigDef" -> o.OrigDef) ~
-           ("ObjectDefinition" -> o.ObjectDefinition) ~
-              ("ObjectFormat" -> ObjFormatType.asString(o.ObjectFormat)) ~
-              ("CreationTime" -> o.CreationTime) ~
-              ("IsFixed" -> containerDef.IsFixed) ~
-              ("Author" -> o.Author) ~
-              ("OwnerId" -> o.OwnerId) ~
-              ("TenantId" -> o.TenantId) ~
-              ("SchemaId" -> o.cType.schemaId) ~
-              ("AvroSchema" -> o.cType.avroSchema) ~
-              ("PartitionKey" -> getEmptyArrayIfNull(o.cType.PartitionKey).toList) ~
-              ("IsActive" -> o.IsActive) ~
-              ("IsDeleted" -> o.IsDeleted) ~
-              ("Persist" -> o.cType.Persist) ~
-          // 646 - 673 Meta data api changes included - Changes begin
+            ("PhysicalName" -> o.PhysicalName) ~
+            ("JarName" -> getEmptyIfNull(o.JarName)) ~
+            ("NameSpace" -> o.NameSpace) ~
+            ("DependencyJars" -> o.CheckAndGetDependencyJarNames.toList) ~
+            ("OrigDef" -> o.OrigDef) ~
+            ("ObjectDefinition" -> o.ObjectDefinition) ~
+            ("ObjectFormat" -> ObjFormatType.asString(o.ObjectFormat)) ~
+            ("CreationTime" -> o.CreationTime) ~
+            ("IsFixed" -> containerDef.IsFixed) ~
+            ("Author" -> o.Author) ~
+            ("OwnerId" -> o.OwnerId) ~
+            ("TenantId" -> o.TenantId) ~
+            ("SchemaId" -> o.cType.schemaId) ~
+            ("AvroSchema" -> o.cType.avroSchema) ~
+            ("PartitionKey" -> getEmptyArrayIfNull(o.cType.PartitionKey).toList) ~
+            ("IsActive" -> o.IsActive) ~
+            ("IsDeleted" -> o.IsDeleted) ~
+            ("Persist" -> o.cType.Persist) ~
+            // 646 - 673 Meta data api changes included - Changes begin
             ("Description" -> o.Description) ~
-          ("UpdatedTime" -> o.ModTime) ~
-          // 646 - 673 Changes end
-              ("MsgAttributes" -> attribs.map(a =>
-                ("NameSpace" -> a.NameSpace) ~
-                  ("Name" -> a.Name) ~
-                  ("TypNameSpace" -> a.typeDef.NameSpace) ~
-                  ("TypName" -> a.typeDef.Name) ~
-                  ("Version" -> a.Version) ~
-                  ("CollectionType" -> ObjType.asString(a.CollectionType)))) ~
-              ("NumericTypes" -> ("Version" -> o.Version) ~ ("TransId" -> o.TranId) ~ ("UniqId" -> o.UniqId) ~ ("CreationTime" -> o.CreationTime) ~ ("ModTime" -> o.ModTime) ~ ("MdElemStructVer" -> o.MdElemStructVer) ~ ("MdElementId" -> o.MdElementId)) ~
-              ("PrimaryKeys" -> primaryKeys.map(m => ("constraintName" -> m._1) ~ ("key" -> m._2))) ~
-           ("ForeignKeys" -> foreignKeys.map(m => ("constraintName" -> m._1) ~ ("key" -> m._2) ~ ("forignContainerName" -> m._3) ~ ("forignKey" -> m._4)))) ~
-          ("MessageExInfo" ->  ("Author" -> o.Author) ~ ("Comment" -> o.Comment) ~ ("Tag" -> o.Tag) ~ ("Params" -> o.Params))
+            ("UpdatedTime" -> o.ModTime) ~
+            // 646 - 673 Changes end
+            ("MsgAttributes" -> attribs.map(a =>
+              ("NameSpace" -> a.NameSpace) ~
+                ("Name" -> a.Name) ~
+                ("TypNameSpace" -> a.typeDef.NameSpace) ~
+                ("TypName" -> a.typeDef.Name) ~
+                ("Version" -> a.Version) ~
+                ("CollectionType" -> ObjType.asString(a.CollectionType)))) ~
+            ("NumericTypes" -> ("Version" -> o.Version) ~ ("TransId" -> o.TranId) ~ ("UniqId" -> o.UniqId) ~ ("CreationTime" -> o.CreationTime) ~ ("ModTime" -> o.ModTime) ~ ("MdElemStructVer" -> o.MdElemStructVer) ~ ("MdElementId" -> o.MdElementId)) ~
+            ("PrimaryKeys" -> primaryKeys.map(m => ("constraintName" -> m._1) ~ ("key" -> m._2))) ~
+            ("ForeignKeys" -> foreignKeys.map(m => ("constraintName" -> m._1) ~ ("key" -> m._2) ~ ("forignContainerName" -> m._3) ~ ("forignKey" -> m._4)))) ~
+            ("MessageExInfo" -> ("Author" -> o.Author) ~ ("Comment" -> o.Comment) ~ ("Tag" -> o.Tag) ~ ("Params" -> o.Params))
           outputJson = compact(json)
         }
         case o: ContainerDef => {
@@ -126,10 +122,10 @@ object MetadataAPISerialization {
             o.cType.Keys.foreach(m => {
               if (m.KeyType == RelationKeyType.tPrimary) {
                 val pr = m.asInstanceOf[PrimaryKey]
-                primaryKeys ::=(pr.constraintName, pr.key.toList)
+                primaryKeys ::= (pr.constraintName, pr.key.toList)
               } else {
                 val fr = m.asInstanceOf[ForeignKey]
-                foreignKeys ::=(fr.constraintName, fr.key.toList, fr.forignContainerName, fr.forignKey.toList)
+                foreignKeys ::= (fr.constraintName, fr.key.toList, fr.forignContainerName, fr.forignKey.toList)
               }
             })
           }
@@ -145,62 +141,62 @@ object MetadataAPISerialization {
 
           val json = "ContainerNew" -> ("ContainerInfo" ->
             ("Name" -> o.name) ~
-              ("PhysicalName" -> o.physicalName) ~
-              ("JarName" -> getEmptyIfNull(o.jarName)) ~
-              ("NameSpace" -> o.nameSpace) ~
-              ("DependencyJars" -> o.CheckAndGetDependencyJarNames.toList) ~
-              ("OrigDef" -> o.OrigDef) ~
-              ("ObjectDefinition" -> o.ObjectDefinition) ~
-              ("ObjectFormat" -> ObjFormatType.asString(o.ObjectFormat)) ~
-              ("CreationTime" -> o.CreationTime) ~
-              ("IsFixed" -> containerDef.IsFixed) ~
-              ("Author" -> o.Author) ~
-              ("OwnerId" -> o.OwnerId) ~
-              ("TenantId" -> o.TenantId) ~
-              ("SchemaId" -> o.cType.schemaId) ~
-              ("AvroSchema" -> o.cType.avroSchema) ~
-              ("Persist" -> o.cType.Persist) ~
-              ("PartitionKey" -> getEmptyArrayIfNull(o.cType.PartitionKey).toList) ~
-              ("IsActive" -> o.IsActive) ~
-              ("IsDeleted" -> o.IsDeleted) ~
-          ("Description" -> o.Description) ~
-          ("UpdatedTime" -> o.ModTime) ~
-              ("MsgAttributes" -> attribs.map(a =>
-                ("NameSpace" -> a.NameSpace) ~
-                  ("Name" -> a.Name) ~
-                  ("TypNameSpace" -> a.typeDef.NameSpace) ~
-                  ("TypName" -> a.typeDef.Name) ~
-                  ("Version" -> a.Version) ~
-                  ("CollectionType" -> ObjType.asString(a.CollectionType)))) ~
-              ("NumericTypes" -> ("Version" -> o.Version) ~ ("TransId" -> o.TranId) ~ ("UniqId" -> o.UniqId) ~ ("CreationTime" -> o.CreationTime) ~ ("ModTime" -> o.ModTime) ~ ("MdElemStructVer" -> o.MdElemStructVer) ~ ("MdElementId" -> o.MdElementId)) ~
-              ("PrimaryKeys" -> primaryKeys.map(m => ("constraintName" -> m._1) ~ ("key" -> m._2))) ~
+            ("PhysicalName" -> o.physicalName) ~
+            ("JarName" -> getEmptyIfNull(o.jarName)) ~
+            ("NameSpace" -> o.nameSpace) ~
+            ("DependencyJars" -> o.CheckAndGetDependencyJarNames.toList) ~
+            ("OrigDef" -> o.OrigDef) ~
+            ("ObjectDefinition" -> o.ObjectDefinition) ~
+            ("ObjectFormat" -> ObjFormatType.asString(o.ObjectFormat)) ~
+            ("CreationTime" -> o.CreationTime) ~
+            ("IsFixed" -> containerDef.IsFixed) ~
+            ("Author" -> o.Author) ~
+            ("OwnerId" -> o.OwnerId) ~
+            ("TenantId" -> o.TenantId) ~
+            ("SchemaId" -> o.cType.schemaId) ~
+            ("AvroSchema" -> o.cType.avroSchema) ~
+            ("Persist" -> o.cType.Persist) ~
+            ("PartitionKey" -> getEmptyArrayIfNull(o.cType.PartitionKey).toList) ~
+            ("IsActive" -> o.IsActive) ~
+            ("IsDeleted" -> o.IsDeleted) ~
+            ("Description" -> o.Description) ~
+            ("UpdatedTime" -> o.ModTime) ~
+            ("MsgAttributes" -> attribs.map(a =>
+              ("NameSpace" -> a.NameSpace) ~
+                ("Name" -> a.Name) ~
+                ("TypNameSpace" -> a.typeDef.NameSpace) ~
+                ("TypName" -> a.typeDef.Name) ~
+                ("Version" -> a.Version) ~
+                ("CollectionType" -> ObjType.asString(a.CollectionType)))) ~
+            ("NumericTypes" -> ("Version" -> o.Version) ~ ("TransId" -> o.TranId) ~ ("UniqId" -> o.UniqId) ~ ("CreationTime" -> o.CreationTime) ~ ("ModTime" -> o.ModTime) ~ ("MdElemStructVer" -> o.MdElemStructVer) ~ ("MdElementId" -> o.MdElementId)) ~
+            ("PrimaryKeys" -> primaryKeys.map(m => ("constraintName" -> m._1) ~ ("key" -> m._2))) ~
             ("ForeignKeys" -> foreignKeys.map(m => ("constraintName" -> m._1) ~ ("key" -> m._2) ~ ("forignContainerName" -> m._3) ~ ("forignKey" -> m._4)))) ~
-          ("ContainerExInfo" -> ("Author" -> o.Author) ~ ("Comment" -> o.Comment) ~ ("Tag" -> o.Tag) ~ ("Params" -> o.Params))
+            ("ContainerExInfo" -> ("Author" -> o.Author) ~ ("Comment" -> o.Comment) ~ ("Tag" -> o.Tag) ~ ("Params" -> o.Params))
           outputJson = compact(render(json))
         }
         case o: FunctionDef => {
 
           val json = "Function" ->
             ("Name" -> o.name) ~
-              ("PhysicalName" -> o.physicalName) ~
-              ("JarName" -> getEmptyIfNull(o.jarName)) ~
-              ("NameSpace" -> o.nameSpace) ~
-              ("DependencyJars" -> o.CheckAndGetDependencyJarNames.toList) ~
-              ("OrigDef" -> o.OrigDef) ~
-              ("ObjectDefinition" -> o.ObjectDefinition) ~
-              ("ObjectFormat" -> ObjFormatType.asString(o.ObjectFormat)) ~
-              ("Author" -> o.Author) ~
-              ("OwnerId" -> o.OwnerId) ~
-              ("TenantId" -> o.TenantId) ~
-              ("Arguments" -> o.args.toList.map { arg => (("ArgName" -> arg.name) ~ ("ArgTypeNameSpace" -> arg.Type.nameSpace) ~ ("ArgTypeName" -> arg.Type.name)) }) ~
-              ("Features" -> o.features.toList.map(m => m.toString)) ~
-              ("ReturnTypeNameSpace" -> o.retType.nameSpace) ~
-              ("ReturnTypeName" -> o.retType.name) ~
-              ("ClassName" -> getEmptyIfNull(o.className)) ~
-              ("Description" -> getEmptyIfNull(o.Description)) ~
-              ("NumericTypes" -> ("Version" -> o.Version) ~ ("TransId" -> o.TranId) ~ ("UniqId" -> o.UniqId) ~ ("CreationTime" -> o.CreationTime) ~ ("ModTime" -> o.ModTime) ~ ("MdElemStructVer" -> o.MdElemStructVer) ~ ("MdElementId" -> o.MdElementId)) ~
-              ("IsActive" -> o.IsActive) ~
-              ("IsDeleted" -> o.IsDeleted)
+            ("PhysicalName" -> o.physicalName) ~
+            ("JarName" -> getEmptyIfNull(o.jarName)) ~
+            ("NameSpace" -> o.nameSpace) ~
+            ("DependencyJars" -> o.CheckAndGetDependencyJarNames.toList) ~
+            ("OrigDef" -> o.OrigDef) ~
+            ("ObjectDefinition" -> o.ObjectDefinition) ~
+            ("ObjectFormat" -> ObjFormatType.asString(o.ObjectFormat)) ~
+            ("Author" -> o.Author) ~
+            ("OwnerId" -> o.OwnerId) ~
+            ("TenantId" -> o.TenantId) ~
+            ("Arguments" -> o.args.toList.map { arg => (("ArgName" -> arg.name) ~ ("ArgTypeNameSpace" -> arg.Type.nameSpace) ~ ("ArgTypeName" -> arg.Type.name)) }) ~
+            ("Features" -> o.features.toList.map(m => m.toString)) ~
+            ("ReturnTypeNameSpace" -> o.retType.nameSpace) ~
+            ("ReturnTypeName" -> o.retType.name) ~
+            ("ClassName" -> getEmptyIfNull(o.className)) ~
+            ("Description" -> getEmptyIfNull(o.Description)) ~
+            ("NumericTypes" -> ("Version" -> o.Version) ~ ("TransId" -> o.TranId) ~ ("UniqId" -> o.UniqId) ~ ("CreationTime" -> o.CreationTime) ~ ("ModTime" -> o.ModTime) ~ ("MdElemStructVer" -> o.MdElemStructVer) ~ ("MdElementId" -> o.MdElementId)) ~
+            ("IsActive" -> o.IsActive) ~
+            ("IsDeleted" -> o.IsDeleted)
           outputJson = compact(render(json))
 
         }
@@ -208,57 +204,55 @@ object MetadataAPISerialization {
 
           val json = "MapType" ->
             ("Name" -> o.Name) ~
-              ("NameSpace" -> o.NameSpace) ~
-              ("PhysicalName" -> o.PhysicalName) ~
-              ("TypeTypeName" -> ObjTypeType.asString(o.tTypeType)) ~
-              ("JarName" -> getEmptyIfNull(o.JarName)) ~
-              ("ObjectFormat" -> ObjFormatType.asString(o.ObjectFormat)) ~
-              ("DependencyJars" -> o.CheckAndGetDependencyJarNames.toList) ~
-              ("Implementation" -> o.implementationName) ~
-              ("ValueTypeNameSpace" -> o.valDef.NameSpace) ~
-              ("ValueTypeName" -> o.valDef.Name) ~
-              ("ValueTypeTType" -> ObjType.asString(o.valDef.tType)) ~
-              ("ObjectDefinition" -> o.ObjectDefinition) ~
-              ("OrigDef" -> o.OrigDef) ~
-              ("Author" -> o.Author) ~
-              ("OwnerId" -> o.OwnerId) ~
-              ("TenantId" -> o.TenantId) ~
-              ("Description" -> getEmptyIfNull(o.Description)) ~
-              ("NumericTypes" -> ("Version" -> o.Version) ~ ("TransId" -> o.TranId) ~ ("UniqId" -> o.UniqId) ~ ("CreationTime" -> o.CreationTime) ~ ("ModTime" -> o.ModTime) ~ ("MdElemStructVer" -> o.MdElemStructVer) ~ ("MdElementId" -> o.MdElementId)) ~
-              ("IsActive" -> o.IsActive) ~
-              ("IsFixed" -> o.IsFixed) ~
-              ("IsDeleted" -> o.IsDeleted)
+            ("NameSpace" -> o.NameSpace) ~
+            ("PhysicalName" -> o.PhysicalName) ~
+            ("TypeTypeName" -> ObjTypeType.asString(o.tTypeType)) ~
+            ("JarName" -> getEmptyIfNull(o.JarName)) ~
+            ("ObjectFormat" -> ObjFormatType.asString(o.ObjectFormat)) ~
+            ("DependencyJars" -> o.CheckAndGetDependencyJarNames.toList) ~
+            ("Implementation" -> o.implementationName) ~
+            ("ValueTypeNameSpace" -> o.valDef.NameSpace) ~
+            ("ValueTypeName" -> o.valDef.Name) ~
+            ("ValueTypeTType" -> ObjType.asString(o.valDef.tType)) ~
+            ("ObjectDefinition" -> o.ObjectDefinition) ~
+            ("OrigDef" -> o.OrigDef) ~
+            ("Author" -> o.Author) ~
+            ("OwnerId" -> o.OwnerId) ~
+            ("TenantId" -> o.TenantId) ~
+            ("Description" -> getEmptyIfNull(o.Description)) ~
+            ("NumericTypes" -> ("Version" -> o.Version) ~ ("TransId" -> o.TranId) ~ ("UniqId" -> o.UniqId) ~ ("CreationTime" -> o.CreationTime) ~ ("ModTime" -> o.ModTime) ~ ("MdElemStructVer" -> o.MdElemStructVer) ~ ("MdElementId" -> o.MdElementId)) ~
+            ("IsActive" -> o.IsActive) ~
+            ("IsFixed" -> o.IsFixed) ~
+            ("IsDeleted" -> o.IsDeleted)
           outputJson = compact(render(json))
-
 
         }
         case o: ArrayTypeDef => {
 
           val json = "ArrayType" ->
             ("Name" -> o.Name) ~
-              ("NameSpace" -> o.NameSpace) ~
-              ("PhysicalName" -> o.PhysicalName) ~
-              ("TypeTypeName" -> ObjTypeType.asString(o.elemDef.tTypeType)) ~
-              ("TypeName" -> o.elemDef.Name) ~
-              ("TypeNameSpace" -> o.elemDef.NameSpace) ~
-              ("TypeTType" -> ObjType.asString(o.elemDef.tType)) ~
-              ("NumberOfDimensions" -> o.arrayDims) ~
-              ("JarName" -> getEmptyIfNull(o.JarName)) ~
-              ("ObjectFormat" -> ObjFormatType.asString(o.ObjectFormat)) ~
-              ("DependencyJars" -> o.CheckAndGetDependencyJarNames.toList) ~
-              ("Implementation" -> o.implementationName) ~
-              ("ObjectDefinition" -> o.ObjectDefinition) ~
-              ("OrigDef" -> o.OrigDef) ~
-              ("OwnerId" -> o.OwnerId) ~
-              ("TenantId" -> o.TenantId) ~
-              ("Author" -> o.Author) ~
-              ("Description" -> getEmptyIfNull(o.Description)) ~
-              ("NumericTypes" -> ("Version" -> o.Version) ~ ("TransId" -> o.TranId) ~ ("UniqId" -> o.UniqId) ~ ("CreationTime" -> o.CreationTime) ~ ("ModTime" -> o.ModTime) ~ ("MdElemStructVer" -> o.MdElemStructVer) ~ ("MdElementId" -> o.MdElementId)) ~
-              ("IsActive" -> o.IsActive) ~
-              ("IsFixed" -> o.IsFixed) ~
-              ("IsDeleted" -> o.IsDeleted)
+            ("NameSpace" -> o.NameSpace) ~
+            ("PhysicalName" -> o.PhysicalName) ~
+            ("TypeTypeName" -> ObjTypeType.asString(o.elemDef.tTypeType)) ~
+            ("TypeName" -> o.elemDef.Name) ~
+            ("TypeNameSpace" -> o.elemDef.NameSpace) ~
+            ("TypeTType" -> ObjType.asString(o.elemDef.tType)) ~
+            ("NumberOfDimensions" -> o.arrayDims) ~
+            ("JarName" -> getEmptyIfNull(o.JarName)) ~
+            ("ObjectFormat" -> ObjFormatType.asString(o.ObjectFormat)) ~
+            ("DependencyJars" -> o.CheckAndGetDependencyJarNames.toList) ~
+            ("Implementation" -> o.implementationName) ~
+            ("ObjectDefinition" -> o.ObjectDefinition) ~
+            ("OrigDef" -> o.OrigDef) ~
+            ("OwnerId" -> o.OwnerId) ~
+            ("TenantId" -> o.TenantId) ~
+            ("Author" -> o.Author) ~
+            ("Description" -> getEmptyIfNull(o.Description)) ~
+            ("NumericTypes" -> ("Version" -> o.Version) ~ ("TransId" -> o.TranId) ~ ("UniqId" -> o.UniqId) ~ ("CreationTime" -> o.CreationTime) ~ ("ModTime" -> o.ModTime) ~ ("MdElemStructVer" -> o.MdElemStructVer) ~ ("MdElementId" -> o.MdElementId)) ~
+            ("IsActive" -> o.IsActive) ~
+            ("IsFixed" -> o.IsFixed) ~
+            ("IsDeleted" -> o.IsDeleted)
           outputJson = compact(render(json))
-
 
         }
         /*  case o: ArrayBufTypeDef => {
@@ -527,124 +521,124 @@ object MetadataAPISerialization {
         case o: JarDef => {
           val json = "Jar" ->
             ("IsActive" -> o.IsActive) ~
-              ("IsDeleted" -> o.IsDeleted) ~
-              ("OrigDef" -> o.OrigDef) ~
-              ("ObjectDefinition" -> o.ObjectDefinition) ~
-              ("ObjectFormat" -> ObjFormatType.asString(o.ObjectFormat)) ~
-              ("NameSpace" -> o.NameSpace) ~
-              ("Name" -> o.Name) ~
-              ("Author" -> o.Author) ~
-              ("OwnerId" -> o.OwnerId) ~
-              ("TenantId" -> o.TenantId) ~
-              ("PhysicalName" -> o.PhysicalName) ~
-              ("JarName" -> getEmptyIfNull(o.jarName)) ~
-              ("DependencyJars" -> o.CheckAndGetDependencyJarNames.toList) ~
-              ("NumericTypes" -> ("Version" -> o.Version) ~ ("TransId" -> o.TranId) ~ ("UniqId" -> o.UniqId) ~ ("CreationTime" -> o.CreationTime) ~ ("ModTime" -> o.ModTime) ~ ("MdElemStructVer" -> o.MdElemStructVer) ~ ("MdElementId" -> o.MdElementId)) ~
-              ("Description" -> o.description)
+            ("IsDeleted" -> o.IsDeleted) ~
+            ("OrigDef" -> o.OrigDef) ~
+            ("ObjectDefinition" -> o.ObjectDefinition) ~
+            ("ObjectFormat" -> ObjFormatType.asString(o.ObjectFormat)) ~
+            ("NameSpace" -> o.NameSpace) ~
+            ("Name" -> o.Name) ~
+            ("Author" -> o.Author) ~
+            ("OwnerId" -> o.OwnerId) ~
+            ("TenantId" -> o.TenantId) ~
+            ("PhysicalName" -> o.PhysicalName) ~
+            ("JarName" -> getEmptyIfNull(o.jarName)) ~
+            ("DependencyJars" -> o.CheckAndGetDependencyJarNames.toList) ~
+            ("NumericTypes" -> ("Version" -> o.Version) ~ ("TransId" -> o.TranId) ~ ("UniqId" -> o.UniqId) ~ ("CreationTime" -> o.CreationTime) ~ ("ModTime" -> o.ModTime) ~ ("MdElemStructVer" -> o.MdElemStructVer) ~ ("MdElementId" -> o.MdElementId)) ~
+            ("Description" -> o.description)
           outputJson = compact(render(json))
 
         }
         case o: ConfigDef => {
           val json = "Config" ->
             ("IsActive" -> o.IsActive) ~
-              ("IsDeleted" -> o.IsDeleted) ~
-              ("OrigDef" -> o.OrigDef) ~
-              ("ObjectDefinition" -> o.ObjectDefinition) ~
-              ("ObjectFormat" -> ObjFormatType.asString(o.ObjectFormat)) ~
-              ("NameSpace" -> o.NameSpace) ~
-              ("Contents" -> o.contents) ~
-              ("OwnerId" -> o.OwnerId) ~
-              ("TenantId" -> o.TenantId) ~
-              ("Name" -> o.Name) ~
-              ("Author" -> o.Author) ~
-              ("PhysicalName" -> o.PhysicalName) ~
-              ("JarName" -> getEmptyIfNull(o.jarName)) ~
-              ("DependencyJars" -> o.CheckAndGetDependencyJarNames.toList) ~
-              ("NumericTypes" -> ("Version" -> o.Version) ~ ("TransId" -> o.TranId) ~ ("UniqId" -> o.UniqId) ~ ("CreationTime" -> o.CreationTime) ~ ("ModTime" -> o.ModTime) ~ ("MdElemStructVer" -> o.MdElemStructVer) ~ ("MdElementId" -> o.MdElementId)) ~
-              ("Description" -> o.description)
+            ("IsDeleted" -> o.IsDeleted) ~
+            ("OrigDef" -> o.OrigDef) ~
+            ("ObjectDefinition" -> o.ObjectDefinition) ~
+            ("ObjectFormat" -> ObjFormatType.asString(o.ObjectFormat)) ~
+            ("NameSpace" -> o.NameSpace) ~
+            ("Contents" -> o.contents) ~
+            ("OwnerId" -> o.OwnerId) ~
+            ("TenantId" -> o.TenantId) ~
+            ("Name" -> o.Name) ~
+            ("Author" -> o.Author) ~
+            ("PhysicalName" -> o.PhysicalName) ~
+            ("JarName" -> getEmptyIfNull(o.jarName)) ~
+            ("DependencyJars" -> o.CheckAndGetDependencyJarNames.toList) ~
+            ("NumericTypes" -> ("Version" -> o.Version) ~ ("TransId" -> o.TranId) ~ ("UniqId" -> o.UniqId) ~ ("CreationTime" -> o.CreationTime) ~ ("ModTime" -> o.ModTime) ~ ("MdElemStructVer" -> o.MdElemStructVer) ~ ("MdElementId" -> o.MdElementId)) ~
+            ("Description" -> o.description)
           outputJson = compact(render(json))
 
         }
         case o: NodeInfo => {
           val json = "Node" ->
             ("NodeId" -> getEmptyIfNull(o.NodeId)) ~
-              ("NodePort" -> o.NodePort) ~
-              ("NodeIpAddr" -> getEmptyIfNull(o.NodeIpAddr)) ~
-              ("JarPaths" -> getEmptyArrayIfNull(o.JarPaths).toList) ~
-              ("Scala_home" -> getEmptyIfNull(o.Scala_home)) ~
-              ("Java_home" -> getEmptyIfNull(o.Java_home)) ~
-              ("Classpath" -> getEmptyIfNull(o.Classpath)) ~
-              ("ClusterId" -> getEmptyIfNull(o.ClusterId)) ~
-              ("Power" -> o.Power) ~
-              ("Roles" -> getEmptyArrayIfNull(o.Roles).toList) ~
-              ("Description" -> getEmptyIfNull(o.Description)) ~
-              ("ReadCores" -> o.ReadCores) ~
-              ("ProcessingCores" -> o.ProcessingCores) ~
-              ("LogicalPartitions" -> o.LogicalPartitions)
+            ("NodePort" -> o.NodePort) ~
+            ("NodeIpAddr" -> getEmptyIfNull(o.NodeIpAddr)) ~
+            ("JarPaths" -> getEmptyArrayIfNull(o.JarPaths).toList) ~
+            ("Scala_home" -> getEmptyIfNull(o.Scala_home)) ~
+            ("Java_home" -> getEmptyIfNull(o.Java_home)) ~
+            ("Classpath" -> getEmptyIfNull(o.Classpath)) ~
+            ("ClusterId" -> getEmptyIfNull(o.ClusterId)) ~
+            ("Power" -> o.Power) ~
+            ("Roles" -> getEmptyArrayIfNull(o.Roles).toList) ~
+            ("Description" -> getEmptyIfNull(o.Description)) ~
+            ("ReadCores" -> o.ReaderThreads) ~
+            ("ProcessingCores" -> o.ProcessThreads) ~
+            ("LogicalPartitions" -> o.LogicalPartitions)
           outputJson = compact(render(json))
 
         }
         case o: ClusterInfo => {
           val json = "Cluster" ->
             ("ClusterId" -> getEmptyIfNull(o.ClusterId)) ~
-              ("Description" -> getEmptyIfNull(o.Description)) ~
-              ("Privileges" -> getEmptyIfNull(o.Privileges)) ~
-              ("ReadCores" -> o.ReadCores) ~
-              ("ProcessingCores" -> o.ProcessingCores) ~
-              ("LogicalPartitions" -> o.LogicalPartitions)              
+            ("Description" -> getEmptyIfNull(o.Description)) ~
+            ("Privileges" -> getEmptyIfNull(o.Privileges)) ~
+            ("ReadCores" -> o.ReadCores) ~
+            ("ProcessingCores" -> o.ProcessingCores) ~
+            ("LogicalPartitions" -> o.LogicalPartitions)
           outputJson = compact(render(json))
 
         }
         case o: ClusterCfgInfo => {
           val json = "ClusterCfg" ->
             ("ClusterId" -> getEmptyIfNull(o.ClusterId)) ~
-              ("CfgMap" -> getEmptyHashMapIfNull(o.CfgMap).toList.map(m => ("Key" -> m._1) ~ ("Value" -> m._2))) ~
-              ("ModifiedTime" -> getZeroIfDateIsNull((o.ModifiedTime))) ~
-              ("CreatedTime" -> getZeroIfDateIsNull(o.CreatedTime)) ~
-              ("UsrConfigs" -> getEmptyHashMapIfNull(o.getUsrConfigs).toList.map(m => ("Key" -> m._1) ~ ("Value" -> m._2)))
+            ("CfgMap" -> getEmptyHashMapIfNull(o.CfgMap).toList.map(m => ("Key" -> m._1) ~ ("Value" -> m._2))) ~
+            ("ModifiedTime" -> getZeroIfDateIsNull((o.ModifiedTime))) ~
+            ("CreatedTime" -> getZeroIfDateIsNull(o.CreatedTime)) ~
+            ("UsrConfigs" -> getEmptyHashMapIfNull(o.getUsrConfigs).toList.map(m => ("Key" -> m._1) ~ ("Value" -> m._2)))
           outputJson = compact(render(json))
 
         }
         case o: AdapterInfo => {
           val json = "Adapter" ->
             ("Name" -> getEmptyIfNull(o.Name)) ~
-              ("TypeString" -> getEmptyIfNull(o.TypeString)) ~
-              ("ClassName" -> getEmptyIfNull(o.ClassName)) ~
-              ("JarName" -> getEmptyIfNull(o.JarName)) ~
-              ("DependencyJars" -> getEmptyArrayIfNull(o.DependencyJars).toList) ~
-              ("AdapterSpecificCfg" -> getEmptyIfNull(o.AdapterSpecificCfg)) ~
-              ("TenantId" -> o.TenantId) ~
-              ("FullAdapterConfig" -> getEmptyIfNull(o.FullAdapterConfig))
+            ("TypeString" -> getEmptyIfNull(o.TypeString)) ~
+            ("ClassName" -> getEmptyIfNull(o.ClassName)) ~
+            ("JarName" -> getEmptyIfNull(o.JarName)) ~
+            ("DependencyJars" -> getEmptyArrayIfNull(o.DependencyJars).toList) ~
+            ("AdapterSpecificCfg" -> getEmptyIfNull(o.AdapterSpecificCfg)) ~
+            ("TenantId" -> o.TenantId) ~
+            ("FullAdapterConfig" -> getEmptyIfNull(o.FullAdapterConfig))
           outputJson = compact(render(json))
 
         }
         case o: TenantInfo => {
-            val primaryDataStore = if (o.primaryDataStore == null) "" else o.primaryDataStore
-            val cacheConfig = if (o.cacheConfig == null) "" else o.cacheConfig
-            val json = "Tenant" ->
-                ("TenantId" -> o.tenantId) ~
-                    ("Description" -> getEmptyIfNull(o.description)) ~
-                    ("PrimaryDataStore" -> primaryDataStore) ~
-                    ("CacheConfig" -> cacheConfig)
-            outputJson = compact(render(json))
+          val primaryDataStore = if (o.primaryDataStore == null) "" else o.primaryDataStore
+          val cacheConfig = if (o.cacheConfig == null) "" else o.cacheConfig
+          val json = "Tenant" ->
+            ("TenantId" -> o.tenantId) ~
+            ("Description" -> getEmptyIfNull(o.description)) ~
+            ("PrimaryDataStore" -> primaryDataStore) ~
+            ("CacheConfig" -> cacheConfig)
+          outputJson = compact(render(json))
 
         }
 
         case o: AdapterMessageBinding => {
-            val optionsMapStr : String = SerializeMapToJsonString(o.options) // in com.ligadata.Serialize.JsonSerializer.
-            val json = "AdapterMsgBinding" ->
-                    ("AdapterName" -> o.adapterName) ~
-                    ("MessageName" -> o.messageName) ~
-                    ("Serializer" -> o.serializer) ~
-                    ("Options" -> optionsMapStr)
+          val optionsMapStr: String = SerializeMapToJsonString(o.options) // in com.ligadata.Serialize.JsonSerializer.
+          val json = "AdapterMsgBinding" ->
+            ("AdapterName" -> o.adapterName) ~
+            ("MessageName" -> o.messageName) ~
+            ("Serializer" -> o.serializer) ~
+            ("Options" -> optionsMapStr)
 
-            outputJson = compact(render(json))
+          outputJson = compact(render(json))
 
         }
         case o: UserPropertiesInfo => {
           val json = "UserProperties" ->
             ("ClusterId" -> o.ClusterId) ~
-              ("Props" -> getEmptyHashMapIfNull(o.Props).toList.map(m => ("Key" -> m._1) ~ ("Value" -> m._2)))
+            ("Props" -> getEmptyHashMapIfNull(o.Props).toList.map(m => ("Key" -> m._1) ~ ("Value" -> m._2)))
           outputJson = compact(render(json))
 
         }
@@ -676,16 +670,16 @@ object MetadataAPISerialization {
 
     try {
       key match {
-        case "Model" => parseModelDef(json)
-        case "ModelNew" => parseModelNewDef(json)
-        case "Message" => parseMessageDef(json)
-        case "MessageNew" => parseMessageNewDef(json)
-        case "Container" => parseContainerDef(json)
-        case "ContainerNew" => parseContainerNewDef(json)
-        case "Function" => parseFunctionDef(json)
-        case "MapType" => parseMapTypeDef(json)
-        case "ArrayType" => parseArrayTypeDef(json)
-       /* case "ArrayBufType" => parseArrayBufTypeDef(json)
+        case "Model"             => parseModelDef(json)
+        case "ModelNew"          => parseModelNewDef(json)
+        case "Message"           => parseMessageDef(json)
+        case "MessageNew"        => parseMessageNewDef(json)
+        case "Container"         => parseContainerDef(json)
+        case "ContainerNew"      => parseContainerNewDef(json)
+        case "Function"          => parseFunctionDef(json)
+        case "MapType"           => parseMapTypeDef(json)
+        case "ArrayType"         => parseArrayTypeDef(json)
+        /* case "ArrayBufType" => parseArrayBufTypeDef(json)
         case "SetType" => parseSetTypeDef(json)
         case "ImmutableSetType" => parseImmutableSetTypeDef(json)
         case "TreeSetType" => parseTreeSetTypeDef(json)
@@ -695,16 +689,16 @@ object MetadataAPISerialization {
         case "ListType" => parseListTypeDef(json)
         case "QueueType" => parseQueueTypeDef(json)
         case "TupleType" => parseTupleTypeDef(json)*/
-        case "Jar" => parseJarDef(json)
-        case "Config" => parseConfigDef(json)
-        case "Node" => parseNodeInfo(json)
-        case "Cluster" => parseClusterInfo(json)
-        case "ClusterCfg" => parseClusterCfgInfo(json)
-        case "Adapter" => parseAdapterInfo(json)
-        case "Tenant" => parseTenantInfo(json)
+        case "Jar"               => parseJarDef(json)
+        case "Config"            => parseConfigDef(json)
+        case "Node"              => parseNodeInfo(json)
+        case "Cluster"           => parseClusterInfo(json)
+        case "ClusterCfg"        => parseClusterCfgInfo(json)
+        case "Adapter"           => parseAdapterInfo(json)
+        case "Tenant"            => parseTenantInfo(json)
         case "AdapterMsgBinding" => parseAdapterMessageBinding(json)
-        case "UserProperties" => parseUserPropertiesInfo(json)
-        case _ => throw new Exception("deserializeMetadata doesn't support the objects of type objectType of " + key + " yet.")
+        case "UserProperties"    => parseUserPropertiesInfo(json)
+        case _                   => throw new Exception("deserializeMetadata doesn't support the objects of type objectType of " + key + " yet.")
       }
     } catch {
       case e: Exception => {
@@ -714,7 +708,7 @@ object MetadataAPISerialization {
     }
   }
 
-private def parseModelDef(modDefJson: JValue): ModelDef = {
+  private def parseModelDef(modDefJson: JValue): ModelDef = {
     try {
 
       logger.debug("Parsed the json : " + modDefJson)
@@ -729,27 +723,8 @@ private def parseModelDef(modDefJson: JValue): ModelDef = {
         msgAndAttrib
       }).toArray).toArray
 
-
-      val modDef = MdMgr.GetMdMgr.MakeModelDef(ModDefInst.Model.NameSpace
-        , ModDefInst.Model.Name
-        , ModDefInst.Model.PhysicalName
-        , ModDefInst.Model.OwnerId
-        , ModDefInst.Model.TenantId
-        , ModDefInst.Model.NumericTypes.UniqId
-        , ModDefInst.Model.NumericTypes.MdElementId
-        , ModelRepresentation.modelRep(ModDefInst.Model.ModelRep)
-        , inputMsgSets
-        , ModDefInst.Model.OutputMsgs.toArray
-        , ModDefInst.Model.BooleanTypes.IsReusable
-        , ModDefInst.Model.ObjectDefinition
-        , MiningModelType.modelType(ModDefInst.Model.ModelType)
-        , ModDefInst.Model.NumericTypes.Version
-        , ModDefInst.Model.JarName
-        , ModDefInst.Model.DependencyJars.toArray
-        , false
-        , ModDefInst.Model.BooleanTypes.SupportsInstanceSerialization,
+      val modDef = MdMgr.GetMdMgr.MakeModelDef(ModDefInst.Model.NameSpace, ModDefInst.Model.Name, ModDefInst.Model.PhysicalName, ModDefInst.Model.OwnerId, ModDefInst.Model.TenantId, ModDefInst.Model.NumericTypes.UniqId, ModDefInst.Model.NumericTypes.MdElementId, ModelRepresentation.modelRep(ModDefInst.Model.ModelRep), inputMsgSets, ModDefInst.Model.OutputMsgs.toArray, ModDefInst.Model.BooleanTypes.IsReusable, ModDefInst.Model.ObjectDefinition, MiningModelType.modelType(ModDefInst.Model.ModelType), ModDefInst.Model.NumericTypes.Version, ModDefInst.Model.JarName, ModDefInst.Model.DependencyJars.toArray, false, ModDefInst.Model.BooleanTypes.SupportsInstanceSerialization,
         ModDefInst.Model.ModelConfig)
-
 
       val objFmt: ObjFormatType.FormatType = ObjFormatType.fromString(ModDefInst.Model.ObjectFormat)
       modDef.ObjectFormat(objFmt)
@@ -758,19 +733,18 @@ private def parseModelDef(modDefJson: JValue): ModelDef = {
       modDef.creationTime = ModDefInst.Model.NumericTypes.CreationTime
       modDef.modTime = ModDefInst.Model.NumericTypes.ModTime
 
-       modDef.description = ModDefInst.Model.Description
-       modDef.author = ModDefInst.Model.Author
+      modDef.description = ModDefInst.Model.Description
+      modDef.author = ModDefInst.Model.Author
       modDef.mdElemStructVer = ModDefInst.Model.NumericTypes.MdElemStructVer
       modDef.active = ModDefInst.Model.BooleanTypes.IsActive
       modDef.deleted = ModDefInst.Model.BooleanTypes.IsDeleted
 
       modDef.depContainers = Array[String]()
-      if( ModDefInst.Model.DepContainers != None ){
-	logger.debug("DepContainers => " + ModDefInst.Model.DepContainers.get)
-	modDef.depContainers = ModDefInst.Model.DepContainers.get.toArray
-      }
-      else{
-	logger.debug("DepContainers is => None")
+      if (ModDefInst.Model.DepContainers != None) {
+        logger.debug("DepContainers => " + ModDefInst.Model.DepContainers.get)
+        modDef.depContainers = ModDefInst.Model.DepContainers.get.toArray
+      } else {
+        logger.debug("DepContainers is => None")
       }
 
       modDef
@@ -803,27 +777,8 @@ private def parseModelDef(modDefJson: JValue): ModelDef = {
         msgAndAttrib
       }).toArray).toArray
 
-
-      val modDef = MdMgr.GetMdMgr.MakeModelDef(ModDefInst.ModelNew.Model.NameSpace
-        , ModDefInst.ModelNew.Model.Name
-        , ModDefInst.ModelNew.Model.PhysicalName
-        , ModDefInst.ModelNew.Model.OwnerId
-        , ModDefInst.ModelNew.Model.TenantId
-        , ModDefInst.ModelNew.Model.NumericTypes.UniqId
-        , ModDefInst.ModelNew.Model.NumericTypes.MdElementId
-        , ModelRepresentation.modelRep(ModDefInst.ModelNew.Model.ModelRep)
-        , inputMsgSets
-        , ModDefInst.ModelNew.Model.OutputMsgs.toArray
-        , ModDefInst.ModelNew.Model.BooleanTypes.IsReusable
-        , ModDefInst.ModelNew.Model.ObjectDefinition
-        , MiningModelType.modelType(ModDefInst.ModelNew.Model.ModelType)
-        , ModDefInst.ModelNew.Model.NumericTypes.Version
-        , ModDefInst.ModelNew.Model.JarName
-        , ModDefInst.ModelNew.Model.DependencyJars.toArray
-        , false
-        , ModDefInst.ModelNew.Model.BooleanTypes.SupportsInstanceSerialization,
+      val modDef = MdMgr.GetMdMgr.MakeModelDef(ModDefInst.ModelNew.Model.NameSpace, ModDefInst.ModelNew.Model.Name, ModDefInst.ModelNew.Model.PhysicalName, ModDefInst.ModelNew.Model.OwnerId, ModDefInst.ModelNew.Model.TenantId, ModDefInst.ModelNew.Model.NumericTypes.UniqId, ModDefInst.ModelNew.Model.NumericTypes.MdElementId, ModelRepresentation.modelRep(ModDefInst.ModelNew.Model.ModelRep), inputMsgSets, ModDefInst.ModelNew.Model.OutputMsgs.toArray, ModDefInst.ModelNew.Model.BooleanTypes.IsReusable, ModDefInst.ModelNew.Model.ObjectDefinition, MiningModelType.modelType(ModDefInst.ModelNew.Model.ModelType), ModDefInst.ModelNew.Model.NumericTypes.Version, ModDefInst.ModelNew.Model.JarName, ModDefInst.ModelNew.Model.DependencyJars.toArray, false, ModDefInst.ModelNew.Model.BooleanTypes.SupportsInstanceSerialization,
         ModDefInst.ModelNew.Model.ModelConfig)
-
 
       val objFmt: ObjFormatType.FormatType = ObjFormatType.fromString(ModDefInst.ModelNew.Model.ObjectFormat)
       modDef.ObjectFormat(objFmt)
@@ -834,7 +789,7 @@ private def parseModelDef(modDefJson: JValue): ModelDef = {
 
       // 646 - 673 Changes begin - MetadataAPI Changes
       modDef.description = ModDefInst.ModelNew.Model.Description
-      modDef.comment =  ModDefInst.ModelNew.ModelExInfo.Comment
+      modDef.comment = ModDefInst.ModelNew.ModelExInfo.Comment
       modDef.tag = ModDefInst.ModelNew.ModelExInfo.Tag
       modDef.params = ModDefInst.ModelNew.ModelExInfo.Params
       // 646 - 673 Changes end
@@ -844,12 +799,11 @@ private def parseModelDef(modDefJson: JValue): ModelDef = {
       modDef.deleted = ModDefInst.ModelNew.Model.BooleanTypes.IsDeleted
 
       modDef.depContainers = Array[String]()
-      if( ModDefInst.ModelNew.Model.DepContainers != None ){
-	logger.debug("DepContainers => " + ModDefInst.ModelNew.Model.DepContainers.get)
-	modDef.depContainers = ModDefInst.ModelNew.Model.DepContainers.get.toArray
-      }
-      else{
-	logger.debug("DepContainers is => None")
+      if (ModDefInst.ModelNew.Model.DepContainers != None) {
+        logger.debug("DepContainers => " + ModDefInst.ModelNew.Model.DepContainers.get)
+        modDef.depContainers = ModDefInst.ModelNew.Model.DepContainers.get.toArray
+      } else {
+        logger.debug("DepContainers is => None")
       }
 
       modDef
@@ -873,21 +827,21 @@ private def parseModelDef(modDefJson: JValue): ModelDef = {
       val attrList = MsgDefInst.Message.MsgAttributes
       var attrList1 = List[(String, String, String, String, Boolean, String)]()
       for (attr <- attrList) {
-        attrList1 ::=(attr.NameSpace, attr.Name, attr.TypNameSpace, attr.TypName, false, attr.CollectionType)
+        attrList1 ::= (attr.NameSpace, attr.Name, attr.TypNameSpace, attr.TypName, false, attr.CollectionType)
       }
 
       var primaryKeys = List[(String, List[String])]()
       val pr = MsgDefInst.Message.PrimaryKeys
 
       pr.foreach(f => {
-        primaryKeys ::=(f.constraintName, f.key)
+        primaryKeys ::= (f.constraintName, f.key)
       })
 
       var foreignKeys = List[(String, List[String], String, List[String])]()
       val fr = MsgDefInst.Message.ForeignKeys
 
       fr.foreach(f => {
-        foreignKeys ::=(f.constraintName, f.key, f.forignContainerName, f.forignKey)
+        foreignKeys ::= (f.constraintName, f.key, f.forignContainerName, f.forignKey)
       })
 
       val msgDef =
@@ -909,8 +863,7 @@ private def parseModelDef(modDefJson: JValue): ModelDef = {
             primaryKeys,
             foreignKeys,
             MsgDefInst.Message.PartitionKey.toArray,
-            false, MsgDefInst.Message.Persist
-          )
+            false, MsgDefInst.Message.Persist)
         } else {
           MdMgr.GetMdMgr.MakeMappedMsg(
             MsgDefInst.Message.NameSpace,
@@ -966,21 +919,21 @@ private def parseModelDef(modDefJson: JValue): ModelDef = {
       val attrList = MsgDefInst.MessageNew.MessageInfo.MsgAttributes
       var attrList1 = List[(String, String, String, String, Boolean, String)]()
       for (attr <- attrList) {
-        attrList1 ::=(attr.NameSpace, attr.Name, attr.TypNameSpace, attr.TypName, false, attr.CollectionType)
+        attrList1 ::= (attr.NameSpace, attr.Name, attr.TypNameSpace, attr.TypName, false, attr.CollectionType)
       }
 
       var primaryKeys = List[(String, List[String])]()
       val pr = MsgDefInst.MessageNew.MessageInfo.PrimaryKeys
 
       pr.foreach(f => {
-        primaryKeys ::=(f.constraintName, f.key)
+        primaryKeys ::= (f.constraintName, f.key)
       })
 
       var foreignKeys = List[(String, List[String], String, List[String])]()
       val fr = MsgDefInst.MessageNew.MessageInfo.ForeignKeys
 
       fr.foreach(f => {
-        foreignKeys ::=(f.constraintName, f.key, f.forignContainerName, f.forignKey)
+        foreignKeys ::= (f.constraintName, f.key, f.forignContainerName, f.forignKey)
       })
 
       val msgDef =
@@ -1002,8 +955,7 @@ private def parseModelDef(modDefJson: JValue): ModelDef = {
             primaryKeys,
             foreignKeys,
             MsgDefInst.MessageNew.MessageInfo.PartitionKey.toArray,
-            false, MsgDefInst.MessageNew.MessageInfo.Persist
-          )
+            false, MsgDefInst.MessageNew.MessageInfo.Persist)
         } else {
           MdMgr.GetMdMgr.MakeMappedMsg(
             MsgDefInst.MessageNew.MessageInfo.NameSpace,
@@ -1037,7 +989,7 @@ private def parseModelDef(modDefJson: JValue): ModelDef = {
       msgDef.comment = MsgDefInst.MessageNew.MessageExInfo.Comment
       msgDef.tag = MsgDefInst.MessageNew.MessageExInfo.Tag
       msgDef.params = MsgDefInst.MessageNew.MessageExInfo.Params
-      msgDef.author =  MsgDefInst.MessageNew.MessageExInfo.Author
+      msgDef.author = MsgDefInst.MessageNew.MessageExInfo.Author
       // 646 - 673 Changes end
       msgDef.mdElemStructVer = MsgDefInst.MessageNew.MessageInfo.NumericTypes.MdElemStructVer
       msgDef.cType.persist = MsgDefInst.MessageNew.MessageInfo.Persist
@@ -1056,7 +1008,7 @@ private def parseModelDef(modDefJson: JValue): ModelDef = {
     }
   }
 
-private def parseContainerNewDef(contDefJson: JValue): ContainerDef = {
+  private def parseContainerNewDef(contDefJson: JValue): ContainerDef = {
     try {
 
       logger.debug("Parsed the json : " + contDefJson)
@@ -1065,22 +1017,21 @@ private def parseContainerNewDef(contDefJson: JValue): ContainerDef = {
       val attrList = ContDefInst.ContainerNew.ContainerInfo.MsgAttributes
       var attrList1 = List[(String, String, String, String, Boolean, String)]()
       for (attr <- attrList) {
-        attrList1 ::=(attr.NameSpace, attr.Name, attr.TypNameSpace, attr.TypName, false, attr.CollectionType)
+        attrList1 ::= (attr.NameSpace, attr.Name, attr.TypNameSpace, attr.TypName, false, attr.CollectionType)
       }
 
       var primaryKeys = List[(String, List[String])]()
       val pr = ContDefInst.ContainerNew.ContainerInfo.PrimaryKeys
 
       pr.foreach(m => {
-        primaryKeys ::=(m.constraintName, m.key)
+        primaryKeys ::= (m.constraintName, m.key)
       })
       var foreignKeys = List[(String, List[String], String, List[String])]()
       val fr = ContDefInst.ContainerNew.ContainerInfo.ForeignKeys
 
       fr.foreach(f => {
-        foreignKeys ::=(f.constraintName, f.key, f.forignContainerName, f.forignKey)
+        foreignKeys ::= (f.constraintName, f.key, f.forignContainerName, f.forignKey)
       })
-
 
       val contDef =
         if (ContDefInst.ContainerNew.ContainerInfo.IsFixed) {
@@ -1101,8 +1052,7 @@ private def parseContainerNewDef(contDefJson: JValue): ContainerDef = {
             primaryKeys,
             foreignKeys,
             ContDefInst.ContainerNew.ContainerInfo.PartitionKey.toArray,
-            false, ContDefInst.ContainerNew.ContainerInfo.Persist
-          )
+            false, ContDefInst.ContainerNew.ContainerInfo.Persist)
         } else {
           MdMgr.GetMdMgr.MakeMappedContainer(
             ContDefInst.ContainerNew.ContainerInfo.NameSpace,
@@ -1121,8 +1071,7 @@ private def parseContainerNewDef(contDefJson: JValue): ContainerDef = {
             ContDefInst.ContainerNew.ContainerInfo.NumericTypes.MdElementId,
             ContDefInst.ContainerNew.ContainerInfo.SchemaId,
             ContDefInst.ContainerNew.ContainerInfo.AvroSchema,
-            false, ContDefInst.ContainerNew.ContainerInfo.Persist
-          )
+            false, ContDefInst.ContainerNew.ContainerInfo.Persist)
         }
 
       contDef.tranId = ContDefInst.ContainerNew.ContainerInfo.NumericTypes.TransId
@@ -1161,7 +1110,7 @@ private def parseContainerNewDef(contDefJson: JValue): ContainerDef = {
   // 646 - 673 Changes end
 
   // 646 - 673 The following module can be retired after moving to higher versions
-private def parseContainerDef(contDefJson: JValue): ContainerDef = {
+  private def parseContainerDef(contDefJson: JValue): ContainerDef = {
     try {
 
       logger.debug("Parsed the json : " + contDefJson)
@@ -1170,22 +1119,21 @@ private def parseContainerDef(contDefJson: JValue): ContainerDef = {
       val attrList = ContDefInst.Container.MsgAttributes
       var attrList1 = List[(String, String, String, String, Boolean, String)]()
       for (attr <- attrList) {
-        attrList1 ::=(attr.NameSpace, attr.Name, attr.TypNameSpace, attr.TypName, false, attr.CollectionType)
+        attrList1 ::= (attr.NameSpace, attr.Name, attr.TypNameSpace, attr.TypName, false, attr.CollectionType)
       }
 
       var primaryKeys = List[(String, List[String])]()
       val pr = ContDefInst.Container.PrimaryKeys
 
       pr.foreach(m => {
-        primaryKeys ::=(m.constraintName, m.key)
+        primaryKeys ::= (m.constraintName, m.key)
       })
       var foreignKeys = List[(String, List[String], String, List[String])]()
       val fr = ContDefInst.Container.ForeignKeys
 
       fr.foreach(f => {
-        foreignKeys ::=(f.constraintName, f.key, f.forignContainerName, f.forignKey)
+        foreignKeys ::= (f.constraintName, f.key, f.forignContainerName, f.forignKey)
       })
-
 
       val contDef =
         if (ContDefInst.Container.IsFixed) {
@@ -1206,8 +1154,7 @@ private def parseContainerDef(contDefJson: JValue): ContainerDef = {
             primaryKeys,
             foreignKeys,
             ContDefInst.Container.PartitionKey.toArray,
-            false, ContDefInst.Container.Persist
-          )
+            false, ContDefInst.Container.Persist)
         } else {
           MdMgr.GetMdMgr.MakeMappedContainer(
             ContDefInst.Container.NameSpace,
@@ -1226,8 +1173,7 @@ private def parseContainerDef(contDefJson: JValue): ContainerDef = {
             ContDefInst.Container.NumericTypes.MdElementId,
             ContDefInst.Container.SchemaId,
             ContDefInst.Container.AvroSchema,
-            false, ContDefInst.Container.Persist
-          )
+            false, ContDefInst.Container.Persist)
         }
 
       contDef.tranId = ContDefInst.Container.NumericTypes.TransId
@@ -1323,8 +1269,7 @@ private def parseContainerDef(contDefJson: JValue): ContainerDef = {
         mapTypeInst.MapType.TenantId,
         mapTypeInst.MapType.NumericTypes.UniqId,
         mapTypeInst.MapType.NumericTypes.MdElementId,
-        false
-      )
+        false)
 
       mapTypeDef.origDef = mapTypeInst.MapType.OrigDef
       val objFmt: ObjFormatType.FormatType = ObjFormatType.fromString(mapTypeInst.MapType.ObjectFormat)
@@ -1374,8 +1319,7 @@ private def parseContainerDef(contDefJson: JValue): ContainerDef = {
         arrayTypeInst.ArrayType.NumericTypes.UniqId,
         arrayTypeInst.ArrayType.NumericTypes.MdElementId,
         arrayTypeInst.ArrayType.NumericTypes.Version,
-        false
-      )
+        false)
 
       arrayTypeDef.origDef = arrayTypeInst.ArrayType.OrigDef
       val objFmt: ObjFormatType.FormatType = ObjFormatType.fromString(arrayTypeInst.ArrayType.ObjectFormat)
@@ -1407,7 +1351,7 @@ private def parseContainerDef(contDefJson: JValue): ContainerDef = {
       }
     }
   }
-/*
+  /*
   private def parseArrayBufTypeDef(arrayTypeDefJson: JValue): ArrayBufTypeDef = {
     try {
 
@@ -1923,8 +1867,7 @@ private def parseContainerDef(contDefJson: JValue): ContainerDef = {
         jarInst.Jar.OwnerId,
         jarInst.Jar.TenantId,
         jarInst.Jar.NumericTypes.UniqId,
-        jarInst.Jar.NumericTypes.MdElementId
-      )
+        jarInst.Jar.NumericTypes.MdElementId)
 
       jarDef.origDef = jarInst.Jar.OrigDef
       val objFmt: ObjFormatType.FormatType = ObjFormatType.fromString(jarInst.Jar.ObjectFormat)
@@ -2019,10 +1962,9 @@ private def parseContainerDef(contDefJson: JValue): ContainerDef = {
         nodeInst.Node.Power,
         nodeInst.Node.Roles.toArray,
         nodeInst.Node.Description,
-        nodeInst.Node.ReadCores,
-        nodeInst.Node.ProcessingCores,
-        nodeInst.Node.LogicalPartitions
-        )
+        nodeInst.Node.ReaderThreads,
+        nodeInst.Node.ProcessThreads,
+        nodeInst.Node.LogicalPartitions)
 
       nodeInfo
 
@@ -2048,10 +1990,9 @@ private def parseContainerDef(contDefJson: JValue): ContainerDef = {
         clusterInst.Cluster.ClusterId,
         clusterInst.Cluster.Description,
         clusterInst.Cluster.Privileges,
-        clusterInst.Cluster.ReadCores,
-        clusterInst.Cluster.ProcessingCores,
-        clusterInst.Cluster.LogicalPartitions
-      )
+        clusterInst.Cluster.ReaderThreads,
+        clusterInst.Cluster.ProcessThreads,
+        clusterInst.Cluster.LogicalPartitions)
       clusterInfo
 
     } catch {
@@ -2081,8 +2022,7 @@ private def parseContainerDef(contDefJson: JValue): ContainerDef = {
         clusterCfgInst.ClusterCfg.ClusterId,
         cfgMap,
         new Date(clusterCfgInst.ClusterCfg.ModifiedTime),
-        new Date(clusterCfgInst.ClusterCfg.CreatedTime)
-      )
+        new Date(clusterCfgInst.ClusterCfg.CreatedTime))
       val usrConfigs = new scala.collection.mutable.HashMap[String, String]
 
       for (m <- clusterCfgInst.ClusterCfg.UsrConfigs) {
@@ -2105,62 +2045,58 @@ private def parseContainerDef(contDefJson: JValue): ContainerDef = {
     }
   }
 
-    private def parseTenantInfo(tenantInfoJson: JValue): TenantInfo = {
-        try {
-            logger.debug("Parsed the json : " + tenantInfoJson)
+  private def parseTenantInfo(tenantInfoJson: JValue): TenantInfo = {
+    try {
+      logger.debug("Parsed the json : " + tenantInfoJson)
 
-            val tenantInst = tenantInfoJson.extract[Tenant]
+      val tenantInst = tenantInfoJson.extract[Tenant]
 
-            val tenantInfo = MdMgr.GetMdMgr.MakeTenantInfo(
-                tenantInst.Tenant.TenantId,
-                tenantInst.Tenant.Description,
-                tenantInst.Tenant.PrimaryDataStore,
-                tenantInst.Tenant.CacheConfig
-            )
-            tenantInfo
-        } catch {
-            case e: MappingException => {
-                logger.debug("", e)
-                throw Json4sParsingException(e.getMessage(), e)
-            }
-            case e: Exception => {
-                logger.error("Failed to parse JSON" + tenantInfoJson, e)
-                throw e
-            }
-        }
+      val tenantInfo = MdMgr.GetMdMgr.MakeTenantInfo(
+        tenantInst.Tenant.TenantId,
+        tenantInst.Tenant.Description,
+        tenantInst.Tenant.PrimaryDataStore,
+        tenantInst.Tenant.CacheConfig)
+      tenantInfo
+    } catch {
+      case e: MappingException => {
+        logger.debug("", e)
+        throw Json4sParsingException(e.getMessage(), e)
+      }
+      case e: Exception => {
+        logger.error("Failed to parse JSON" + tenantInfoJson, e)
+        throw e
+      }
     }
+  }
 
-    /**
-      * Resurrect the AdapterMessageBinding instance from the supplied JValue.
-      *
-      * @param bindingJson the json4s JValue containing the AdapterMessageBinding content
-      * @return an AdapterMessageBinding instance
-      *
-      */
-    private def parseAdapterMessageBinding(bindingJson: JValue): AdapterMessageBinding = {
-        try {
-            logger.debug(s"Parsing this JSON string : \n$bindingJson")
+  /**
+   * Resurrect the AdapterMessageBinding instance from the supplied JValue.
+   *
+   * @param bindingJson the json4s JValue containing the AdapterMessageBinding content
+   * @return an AdapterMessageBinding instance
+   *
+   */
+  private def parseAdapterMessageBinding(bindingJson: JValue): AdapterMessageBinding = {
+    try {
+      logger.debug(s"Parsing this JSON string : \n$bindingJson")
 
-            val rawBinding = bindingJson.extract[AdapterMsgBinding]
-            val optionsStr : String = rawBinding.AdapterMsgBinding.Options
-            val options : Map[String,Any] = jsonStringAsColl(optionsStr).asInstanceOf[Map[String,Any]]
-            val bindingInfo : AdapterMessageBinding =
-                MdMgr.GetMdMgr.MakeAdapterMessageBinding(rawBinding.AdapterMsgBinding.AdapterName
-                                                        ,rawBinding.AdapterMsgBinding.MessageName
-                                                        ,rawBinding.AdapterMsgBinding.Serializer
-                                                        ,options)
-            bindingInfo
-        } catch {
-            case e: MappingException => {
-                logger.debug("", e)
-                throw Json4sParsingException(e.getMessage(), e)
-            }
-            case e: Exception => {
-                logger.error("Failed to parse JSON" + bindingJson, e)
-                throw e
-            }
-        }
+      val rawBinding = bindingJson.extract[AdapterMsgBinding]
+      val optionsStr: String = rawBinding.AdapterMsgBinding.Options
+      val options: Map[String, Any] = jsonStringAsColl(optionsStr).asInstanceOf[Map[String, Any]]
+      val bindingInfo: AdapterMessageBinding =
+        MdMgr.GetMdMgr.MakeAdapterMessageBinding(rawBinding.AdapterMsgBinding.AdapterName, rawBinding.AdapterMsgBinding.MessageName, rawBinding.AdapterMsgBinding.Serializer, options)
+      bindingInfo
+    } catch {
+      case e: MappingException => {
+        logger.debug("", e)
+        throw Json4sParsingException(e.getMessage(), e)
+      }
+      case e: Exception => {
+        logger.error("Failed to parse JSON" + bindingJson, e)
+        throw e
+      }
     }
+  }
 
   private def parseAdapterInfo(adapterInfoJson: JValue): AdapterInfo = {
     try {
@@ -2176,8 +2112,7 @@ private def parseContainerDef(contDefJson: JValue): ContainerDef = {
         adapterInst.Adapter.DependencyJars,
         adapterInst.Adapter.AdapterSpecificCfg,
         adapterInst.Adapter.TenantId,
-        adapterInst.Adapter.FullAdapterConfig
-      )
+        adapterInst.Adapter.FullAdapterConfig)
       adapterInfo
 
     } catch {
@@ -2260,10 +2195,7 @@ case class TenantInformation(TenantId: String, Description: String, PrimaryDataS
 
 case class Tenant(Tenant: TenantInformation)
 
-case class AdapterMsgBindingInfo(AdapterName: String
-                             , MessageName : String
-                             , Serializer: String
-                             , Options : String)
+case class AdapterMsgBindingInfo(AdapterName: String, MessageName: String, Serializer: String, Options: String)
 
 case class AdapterMsgBinding(AdapterMsgBinding: AdapterMsgBindingInfo)
 
@@ -2273,11 +2205,11 @@ case class ClusterCfgInformation(ClusterId: String, CfgMap: List[KeyVale], Modif
 
 case class ClusterCfg(ClusterCfg: ClusterCfgInformation)
 
-case class ClusterInformation(ClusterId: String, Description: String, Privileges: String, ReadCores: Int, ProcessingCores: Int, LogicalPartitions: Int)
+case class ClusterInformation(ClusterId: String, Description: String, Privileges: String, ReaderThreads: Int, ProcessThreads: Int, LogicalPartitions: Int)
 
 case class Cluster(Cluster: ClusterInformation)
 
-case class NodeInformation(NodeId: String, NodePort: Int, NodeIpAddr: String, JarPaths: List[String], Scala_home: String, Java_home: String, Classpath: String, ClusterId: String, Power: Int, Roles: List[String], Description: String, ReadCores: Int, ProcessingCores: Int, LogicalPartitions: Int)
+case class NodeInformation(NodeId: String, NodePort: Int, NodeIpAddr: String, JarPaths: List[String], Scala_home: String, Java_home: String, Classpath: String, ClusterId: String, Power: Int, Roles: List[String], Description: String, ReaderThreads: Int, ProcessThreads: Int, LogicalPartitions: Int)
 
 case class Node(Node: NodeInformation)
 
@@ -2334,77 +2266,76 @@ case class Attr(NameSpace: String, Name: String, Version: Long, CollectionType: 
 case class MsgAttr(NameSpace: String, Name: String, TypNameSpace: String, TypName: String, Version: Long, CollectionType: String)
 
 case class MessageInfo(NameSpace: String,
-  Name: String,
-  JarName: String,
-  PhysicalName: String,
-  DependencyJars: List[String],
-  MsgAttributes: List[MsgAttr],
-  OrigDef: String,
-  ObjectDefinition: String,
-  ObjectFormat: String,
-  Description: String,
-  OwnerId: String,
-  PartitionKey: List[String],
-  Persist: Boolean,
-  IsActive: Boolean,
-  IsDeleted: Boolean,
-  SchemaId: Int,
-  AvroSchema: String,
-  PrimaryKeys: List[PrimaryKeys],
-  ForeignKeys: List[ForeignKeys],
-  NumericTypes: NumericTypes,
-  TenantId: String,
-  IsFixed: Boolean)
+                       Name: String,
+                       JarName: String,
+                       PhysicalName: String,
+                       DependencyJars: List[String],
+                       MsgAttributes: List[MsgAttr],
+                       OrigDef: String,
+                       ObjectDefinition: String,
+                       ObjectFormat: String,
+                       Description: String,
+                       OwnerId: String,
+                       PartitionKey: List[String],
+                       Persist: Boolean,
+                       IsActive: Boolean,
+                       IsDeleted: Boolean,
+                       SchemaId: Int,
+                       AvroSchema: String,
+                       PrimaryKeys: List[PrimaryKeys],
+                       ForeignKeys: List[ForeignKeys],
+                       NumericTypes: NumericTypes,
+                       TenantId: String,
+                       IsFixed: Boolean)
 
 case class PrimaryKeys(constraintName: String, key: List[String])
 
 case class ForeignKeys(constraintName: String, key: List[String], forignContainerName: String, forignKey: List[String])
 
-case class MessageExtInfo (Author : String, Comment : String, Tag: String, Params : Map[String, String])
+case class MessageExtInfo(Author: String, Comment: String, Tag: String, Params: Map[String, String])
 
 case class MessageDefin(Message: MessageInfo)
 
-case class MessageFull(MessageInfo : MessageInfo,  MessageExInfo : MessageExtInfo)
+case class MessageFull(MessageInfo: MessageInfo, MessageExInfo: MessageExtInfo)
 
-case class MessageNew (MessageNew : MessageFull)
+case class MessageNew(MessageNew: MessageFull)
 
 case class ContainerDefin(Container: MessageInfo)
 
-case class ContainerFull(ContainerInfo: MessageInfo, ContainerExInfo : MessageExtInfo)
+case class ContainerFull(ContainerInfo: MessageInfo, ContainerExInfo: MessageExtInfo)
 
-case class ContainerNew(ContainerNew : ContainerFull)
+case class ContainerNew(ContainerNew: ContainerFull)
 
 case class ModelDefinition(Model: ModelInfo)
 
-case class ModelFullDefinition(Model: ModelInfo, ModelExInfo : ModelExtInfo)
+case class ModelFullDefinition(Model: ModelInfo, ModelExInfo: ModelExtInfo)
 
-case class ModelNew (ModelNew : ModelFullDefinition)
+case class ModelNew(ModelNew: ModelFullDefinition)
 
 case class MsgAndAttrib(Origin: String, Message: String, Attributes: List[String])
 
-case class ModelExtInfo(Comment : String, Tag : String, Params : Map[String, String])
+case class ModelExtInfo(Comment: String, Tag: String, Params: Map[String, String])
 
 case class ModelInfo(Name: String,
-  PhysicalName: String,
-  JarName: String,
-  NameSpace: String,
-  ObjectFormat: String,
-  BooleanTypes: BooleanTypes,
-  OwnerId: String,
-  OutputMsgs: List[String],
-  ModelType: String,
-  DependencyJars: List[String],
-  ModelRep: String,
-  OrigDef: String,
-  ObjectDefinition: String,
-  NumericTypes: NumericTypes,
-  Description: String,
-  Author: String,
-  ModelConfig: String,
-  inputMsgSets: List[List[MsgAndAttrib]],
-  TenantId: String,
-  DepContainers: Option[List[String]])
-
+                     PhysicalName: String,
+                     JarName: String,
+                     NameSpace: String,
+                     ObjectFormat: String,
+                     BooleanTypes: BooleanTypes,
+                     OwnerId: String,
+                     OutputMsgs: List[String],
+                     ModelType: String,
+                     DependencyJars: List[String],
+                     ModelRep: String,
+                     OrigDef: String,
+                     ObjectDefinition: String,
+                     NumericTypes: NumericTypes,
+                     Description: String,
+                     Author: String,
+                     ModelConfig: String,
+                     inputMsgSets: List[List[MsgAndAttrib]],
+                     TenantId: String,
+                     DepContainers: Option[List[String]])
 
 case class NumericTypes(Version: Long, TransId: Long, UniqId: Long, CreationTime: Long, ModTime: Long, MdElemStructVer: Int, MdElementId: Long)
 

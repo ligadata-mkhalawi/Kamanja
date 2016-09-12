@@ -121,11 +121,11 @@ object ConfigUtils {
               jarPaths: List[String], scala_home: String,
               java_home: String, classpath: String,
               clusterId: String, power: Int,
-              roles: Array[String], description: String, readCores: Int, processingCores: Int, logicalPartitions: Int): String = {
+              roles: Array[String], description: String, readerThreads: Int, processThreads: Int, logicalPartitions: Int): String = {
     try {
       // save in memory
       val ni = MdMgr.GetMdMgr.MakeNode(nodeId, nodePort, nodeIpAddr, jarPaths, scala_home,
-        java_home, classpath, clusterId, power, roles, description, readCores, processingCores, logicalPartitions)
+        java_home, classpath, clusterId, power, roles, description, readerThreads, processThreads, logicalPartitions)
       MdMgr.GetMdMgr.AddNode(ni)
       // save in database
       val key = "NodeInfo." + nodeId
@@ -163,10 +163,10 @@ object ConfigUtils {
                  jarPaths: List[String], scala_home: String,
                  java_home: String, classpath: String,
                  clusterId: String, power: Int,
-                 roles: Array[String], description: String, readCores: Int, processingCores: Int, logicalPartitions: Int): String = {
+                 roles: Array[String], description: String, readerThreads: Int, processThreads: Int, logicalPartitions: Int): String = {
     AddNode(nodeId, nodePort, nodeIpAddr, jarPaths, scala_home,
       java_home, classpath,
-      clusterId, power, roles, description, readCores: Int, processingCores: Int, logicalPartitions: Int)
+      clusterId, power, roles, description, readerThreads: Int, processThreads: Int, logicalPartitions: Int)
   }
 
   /**
@@ -320,10 +320,10 @@ object ConfigUtils {
    * @param privileges
    * @return
    */
-  def AddCluster(clusterId: String, description: String, privileges: String, readCores: Int, processingCores: Int, logicalPartitions: Int): String = {
+  def AddCluster(clusterId: String, description: String, privileges: String, readerThreads: Int, processThreads: Int, logicalPartitions: Int): String = {
     try {
       // save in memory
-      val ci = MdMgr.GetMdMgr.MakeCluster(clusterId, description, privileges, readCores, processingCores, logicalPartitions)
+      val ci = MdMgr.GetMdMgr.MakeCluster(clusterId, description, privileges, readerThreads, processThreads, logicalPartitions)
       MdMgr.GetMdMgr.AddCluster(ci)
       // save in database
       val key = "ClusterInfo." + clusterId
@@ -349,8 +349,8 @@ object ConfigUtils {
    * @param privileges
    * @return
    */
-  def UpdateCluster(clusterId: String, description: String, privileges: String, readCores: Int, processingCores: Int, logicalPartitions: Int): String = {
-    AddCluster(clusterId, description, privileges, readCores, processingCores, logicalPartitions)
+  def UpdateCluster(clusterId: String, description: String, privileges: String, readerThreads: Int, processThreads: Int, logicalPartitions: Int): String = {
+    AddCluster(clusterId, description, privileges, readerThreads, processThreads, logicalPartitions)
   }
 
   /**
@@ -757,8 +757,8 @@ object ConfigUtils {
             if (addCluserReuslt != None) {
               var clusterDef: ClusterConfigDef = new ClusterConfigDef
               clusterDef.clusterId = ci.clusterId
-              clusterDef.readCores = ci.readCores
-              clusterDef.processingCores = ci.processingCores
+              clusterDef.readerThreads = ci.readerThreads
+              clusterDef.processThreads = ci.processThreads
               clusterDef.logicalPartitions = ci.logicalPartitions
               clusterDef.elementType = "clusterDef"
               clusterDef.nameSpace = "cluster"

@@ -882,8 +882,8 @@ class ConfigDef extends BaseElemDef {
 class ClusterConfigDef extends BaseElemDef {
   var clusterId: String = _
   var elementType: String = _
-  var readCores: Int = _
-  var processingCores: Int = _
+  var readerThreads: Int = _
+  var processThreads: Int = _
   var logicalPartitions: Int = _
 }
 
@@ -911,8 +911,8 @@ class NodeInfo {
   var power: Int = _
   var roles: Array[String] = new Array[String](0)
   var description: String = _
-  var readCores: Int = _
-  var processingCores: Int = _
+  var readerThreads: Int = _
+  var processThreads: Int = _
   var logicalPartitions: Int = _
 
   def NodeId: String = nodeId
@@ -927,8 +927,8 @@ class NodeInfo {
   def Roles: Array[String] = roles
   def Description: String = description
   def NodeAddr: String = nodeIpAddr + ":" + nodePort.toString
-  def ReadCores: Int = readCores
-  def ProcessingCores: Int = processingCores
+  def ReaderThreads: Int = readerThreads
+  def ProcessThreads: Int = processThreads
   def LogicalPartitions: Int = logicalPartitions
 
   def equals(in: NodeInfo): Boolean = {
@@ -1014,15 +1014,15 @@ class ClusterInfo {
   var clusterId: String = _
   var description: String = _
   var privileges: String = _
-  var readCores: Int = _
-  var processingCores: Int = _
+  var readerThreads: Int = _
+  var processThreads: Int = _
   var logicalPartitions: Int = _
 
   def ClusterId: String = clusterId
   def Description: String = description
   def Privileges: String = privileges
-  def ReadCores: Int = readCores
-  def ProcessingCores: Int = processingCores
+  def ReadCores: Int = readerThreads
+  def ProcessingCores: Int = processThreads
   def LogicalPartitions: Int = logicalPartitions
 
   def equals(in: ClusterInfo): Boolean = {

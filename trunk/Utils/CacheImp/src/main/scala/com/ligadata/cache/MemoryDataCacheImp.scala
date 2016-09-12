@@ -96,8 +96,9 @@ class MemoryDataCacheImp extends DataCache {
   }
 
   override def del(key: String): Unit = {
-	 if (cache.containsKey(key))     
-       cache.remove(key)
+    if (cache.isKeyInCache(key)) {
+      cache.remove(key)
+    }
   }
 
   override def del(containerName: String, timestamp: String): Unit = {}
