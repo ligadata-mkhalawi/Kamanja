@@ -1,7 +1,6 @@
 package com.ligadata.OutputAdapters
 
 import com.ligadata.AdaptersConfiguration.SmartFileProducerConfiguration
-import com.ligadata.OutputAdapters.ParquetWriteSupport
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.security.UserGroupInformation
 import parquet.hadoop.ParquetWriter
@@ -33,21 +32,22 @@ object Utils {
                           filePath : String, writeSupport : ParquetWriteSupport,
                           compression : CompressionCodecName) : ParquetWriter[Array[Any]] = {
 
-    //TODO : get page size and block size from config
-
     val writeToHdfs = fc.uri.startsWith("hdfs://")
     val path =
       if (writeToHdfs) new Path(filePath)
       else {
         val outputParquetFile = new java.io.File(filePath)
-        new Path(outputParquetFile.toURI())
+        new Path(outputParquetFile.toURI)
       }
+
+    val parquetBlockSize = if(fc.parquetBlockSize > 0) fc.parquetBlockSize else  ParquetWriter.DEFAULT_BLOCK_SIZE
+    val parquetPageSize = if(fc.parquetPageSize > 0) fc.parquetPageSize else  ParquetWriter.DEFAULT_PAGE_SIZE
 
     val parquetWriter =
       if (writeToHdfs){
         val hadoopConf = createHdfsConfig(fc)
         new ParquetWriter[Array[Any]](path, writeSupport, compression,
-          ParquetWriter.DEFAULT_BLOCK_SIZE, ParquetWriter.DEFAULT_PAGE_SIZE, ParquetWriter.DEFAULT_PAGE_SIZE,
+          parquetBlockSize, parquetPageSize, parquetPageSize,  // third one is dictionaryPageSize
           ParquetWriter.DEFAULT_IS_DICTIONARY_ENABLED,
           ParquetWriter.DEFAULT_IS_VALIDATING_ENABLED,
           ParquetWriter.DEFAULT_WRITER_VERSION,
@@ -55,7 +55,7 @@ object Utils {
       }
       else
         new ParquetWriter[Array[Any]](path, writeSupport, compression,
-          ParquetWriter.DEFAULT_BLOCK_SIZE, ParquetWriter.DEFAULT_PAGE_SIZE)
+          parquetBlockSize, parquetPageSize)
 
     parquetWriter
   }
