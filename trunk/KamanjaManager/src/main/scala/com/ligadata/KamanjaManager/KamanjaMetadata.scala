@@ -42,9 +42,9 @@ import com.ligadata.MetadataAPI.MetadataAPIImpl
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import com.ligadata.Utils.{KamanjaClassLoader, KamanjaLoaderInfo, Utils}
+import com.ligadata.python.PyServerConnection
 import org.json4s._
 import org.json4s.native.JsonMethods._
-
 
 import scala.actors.threadpool.{ExecutorService, Executors}
 import scala.collection.immutable.Map
@@ -1165,7 +1165,27 @@ object KamanjaMetadata extends ObjectResolver {
                 try {
                   val mdl = mdMgr.Model(zkMessage.NameSpace, zkMessage.Name, zkMessage.Version.toLong, true)
                   if (mdl != None) {
-                    allJarsToBeValidated ++= GetAllJarsFromElem(mdl.get)
+		     val model : ModelDef = mdl.get
+		     if (model.miningModelType == MiningModelType.PYTHON) {
+		        LOG.debug("Something is happening to the model here blah blah blah ------" + model.objectDefinition)
+  	             	val connectionMap : scala.collection.mutable.HashMap[String,Any] =
+                        txnCtxt.nodeCtxt.getValue("PYTHON_CONNECTIONS").asInstanceOf[scala.collection.mutable.HashMap[String,Any]]
+			LOG.debug("Something is happening to the model here Haha Haha Haha ------" + connectionMap.size)
+	             	val modelOptStr : String = model.modelConfig
+                        val trimmedOptionStr : String = modelOptStr.trim
+                        val modelOptions : Map[String,Any] = parse(trimmedOptionStr).values.asInstanceOf[Map[String,Any]]
+		        val moduleModelNms : Array[String] = model.PhysicalName.split('.')
+		        val moduleName : String = moduleModelNms.head
+		        val modelName : String = moduleModelNms.last
+			for ((partitionKey, connection) <- connectionMap) {
+			  val pySrvConn : PyServerConnection = connectionMap.getOrElse(partitionKey, null).asInstanceOf[PyServerConnection]
+			   if (pySrvConn != null) {
+			      val resultStr : String = pySrvConn.addModel(moduleName, modelName, model.objectDefinition, modelOptions)
+			   }
+			}
+			
+			}
+  		     allJarsToBeValidated ++= GetAllJarsFromElem(mdl.get)
                   }
                 } catch {
                   case e: Exception => {
