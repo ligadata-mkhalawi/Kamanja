@@ -706,7 +706,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
                 innerMapping ++= Map(f._2 -> eval.Tracker(variableName, c, "Any", true, v, expression))
                 true
               } else {
-                if(Expressions.IsExpressionVariableOrAlias(f._2)) {
+                if(Expressions.HasExpressionVariableOrAlias(f._2)) {
                   logger.trace("Mapping with expression {} -> {}", f._1, f._2)
                   val expression = Expressions.FixupColumnNames(f._2, innerMapping, aliaseMessages)
                   innerMapping ++= Map(f._2 -> eval.Tracker("", c, "Any", true, v, expression))
@@ -909,11 +909,12 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
           collect :+= c._2.Comment
           if (c._2.typename.length > 0) {
 
-            // Check if we track the type or need a type coersion
+            // Check if we track the type or need a type coercion
             val isVariable = Expressions.IsExpressionVariable(expression, innerMapping)
             if(isVariable) {
               val cols = Expressions.ExtractColumnNames(expression)
-              val rt = innerMapping.get(cols.head).get
+              val cols1 = Expressions.ResolveName(cols.head, aliaseMessages)
+              val rt = innerMapping.get(cols1).get
               if(rt.typeName!=c._2.typename && rt.typeName.nonEmpty) {
                 // Find the conversion and wrap the call
                 if(Conversion.builtin.contains(rt.typeName) && Conversion.builtin.get(rt.typeName).get.contains(c._2.typename))

@@ -48,12 +48,12 @@ object Expressions {
   def IsExpressionVariable(expr: String, mapNameSource: Map[String, Tracker]): Boolean = {
     val regex1 = """^\$([a-zA-Z0-9_]+)$""".r
     val regex2 = """^\$\{([a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)\}$""".r
-    regex1.findFirstMatchIn(expr).isDefined || regex1.findFirstMatchIn(expr).isDefined
+    regex1.findFirstMatchIn(expr).isDefined || regex2.findFirstMatchIn(expr).isDefined
   }
 
-  def IsExpressionVariableOrAlias(expr: String): Boolean = {
-    val regex1 = """^\$([a-zA-Z0-9_]+)$""".r
-    val regex2 = """^\$\{([a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)\}$""".r
+  def HasExpressionVariableOrAlias(expr: String): Boolean = {
+    val regex1 = """\$([a-zA-Z0-9_]+)""".r
+    val regex2 = """\$\{([a-zA-Z0-9_]+\.[a-zA-Z0-9_]+)\}""".r
     val regex3 = """\$\{([a-zA-Z0-9_]+)\}""".r
     regex1.findFirstMatchIn(expr).isDefined || regex2.findFirstMatchIn(expr).isDefined || regex3.findFirstMatchIn(expr).isDefined
   }
