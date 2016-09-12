@@ -1,6 +1,8 @@
 package com.ligadata.throttler
 
 import org.scalatest._
+
+import com.ligadata.throttler.ThrottleController;
 import com.ligadata.cache.DataCache
 import com.ligadata.cache.{ CacheCallbackData, CacheCallback, DataCache }
 
