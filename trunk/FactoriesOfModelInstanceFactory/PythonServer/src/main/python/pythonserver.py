@@ -47,8 +47,8 @@ logger = logging.getLogger('pythonserver')
 fileLogPath = args['fileLogPath']
 fileLogPath += str(os.getpid())
 if fileLogPath != "":
-#	fileHandler = logging.handlers.RotatingFileHandler(fileLogPath, mode='a', maxBytes=500000, backupCount=3)
-        fileHandler = logging.StreamHandler()
+	fileHandler = logging.handlers.RotatingFileHandler(fileLogPath, mode='a', maxBytes=500000, backupCount=3)
+#        fileHandler = logging.StreamHandler()
 	formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 	fileHandler.setFormatter(formatter)
 	logger.addHandler(fileHandler)
