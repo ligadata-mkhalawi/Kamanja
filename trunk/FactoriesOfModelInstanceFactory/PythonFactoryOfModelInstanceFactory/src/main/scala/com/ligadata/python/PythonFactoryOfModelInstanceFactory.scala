@@ -697,12 +697,16 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext, val ser
     *                   once the initialization is done.
     */
     override def init(txnContext: TransactionContext): Unit = {
+
         val pyPath : String = if (nodeContext.getValue("PYTHON_PATH") != null)
 	                         nodeContext.getValue("PYTHON_PATH").asInstanceOf[String]
                               else
   		                null
 	val (moduleName, modelName) : (String,String) = ModuleNModelNames
 	val srcTargetPath : String = s"$pyPath/models/$moduleName.py"
+	if (logger.isDebugEnabled()) {
+	   logger.debug ("PythonAdapterFactor.init : Writing the  model file to the target mode dir --------") 
+        }
 	writeSrcFile(modelDef.objectDefinition, srcTargetPath) 
 	
         
