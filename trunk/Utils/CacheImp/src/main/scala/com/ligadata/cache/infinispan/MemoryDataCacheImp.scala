@@ -2,10 +2,10 @@ package com.ligadata.cache.infinispan
 
 import java.util
 
-import com.ligadata.cache.{Config, CacheCustomConfig, CacheCallback, DataCache}
+import com.ligadata.cache._
 import net.sf.ehcache.config.Configuration
 import org.infinispan.configuration.cache.{CacheMode, ConfigurationBuilder}
-import org.infinispan.manager.DefaultCacheManager;
+import org.infinispan.manager.DefaultCacheManager
 import org.infinispan.Cache;
 
 /**
@@ -106,5 +106,22 @@ class MemoryDataCacheImp extends DataCache {
 
   override def getFromRoot(rootNode: String, key: String): java.util.Map[String, AnyRef] = {
     null
+  }
+
+  override def beginTx(): Transaction = {
+    throw new NotImplementedError("beginTx is not yet implemented")
+    return null;
+  }
+
+  override def endTx(tx: Transaction): Unit = {
+    throw new NotImplementedError("endTx is not yet implemented")
+  }
+
+  override def commitTx(tx: Transaction): Unit = {
+    throw new NotImplementedError("commitTx is not yet implemented")
+  }
+
+  override def rollbackTx(tx: Transaction): Unit = {
+    throw new NotImplementedError("rollbackTx is not yet implemented")
   }
 }

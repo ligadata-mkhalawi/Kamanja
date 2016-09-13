@@ -131,6 +131,10 @@ object KamanjaConfiguration {
 
   var shutdown = false
   var participentsChangedCntr: Long = 0
+
+  // Stop processing should reset this to 1. So that way only one thread will be processed all system msgs at this moment.
+  var totalQueueCount: Int = 1
+
   var baseLoader = new KamanjaLoaderInfo
   //  var adaptersAndEnvCtxtLoader = new KamanjaLoaderInfo(baseLoader, true, true)
   //  var metadataLoader = new KamanjaLoaderInfo(baseLoader, true, true)
@@ -161,6 +165,8 @@ object KamanjaConfiguration {
 
     shutdown = false
     participentsChangedCntr = 0
+
+    totalQueueCount = 1
   }
 }
 
