@@ -286,6 +286,7 @@ trait ExecContext {
         LOG.error("Failed to execute message : " + msg.getFullTypeName, e)
       }
     } finally {
+/*
       try {
         commitData(txnCtxt);
       } catch {
@@ -295,6 +296,8 @@ trait ExecContext {
       } finally {
         ThreadLocalStorage.txnContextInfo.remove
       }
+*/
+      ThreadLocalStorage.txnContextInfo.remove
     }
   }
 

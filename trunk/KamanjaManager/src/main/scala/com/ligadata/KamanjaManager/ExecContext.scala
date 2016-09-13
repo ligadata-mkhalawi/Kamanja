@@ -178,6 +178,11 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
   }
 
   protected override def commitData(txnCtxt: TransactionContext): Unit = {
+    throw new Exception("Not implemented")
+  }
+
+/*
+  protected override def commitData(txnCtxt: TransactionContext): Unit = {
     try {
       //      val adapterChngCntr = KamanjaManager.instance.getAdapterChangedCntr
       //      if (adapterChngCntr != adapterChangedCntr) {
@@ -398,16 +403,17 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
         }
       }
       else {
-        if (logger.isDebugEnabled) {
+        if (LOG.isDebugEnabled) {
           val key = if (txnCtxt != null && txnCtxt.origin != null && txnCtxt.origin.key != null) txnCtxt.origin.key else ""
           val value = if (txnCtxt != null && txnCtxt.origin != null && txnCtxt.origin.value != null) txnCtxt.origin.value  else ""
-          logger.debug(s"Not Saving AdapterUniqKvData key:${key}, value:${value}. txnCtxt: ${txnCtxt}, nodeContext: ${nodeContext}")
+          LOG.debug(s"Not Saving AdapterUniqKvData key:${key}, value:${value}. txnCtxt: ${txnCtxt}, nodeContext: ${nodeContext}")
         }
       }
     } catch {
       case e: Throwable => throw e
     }
   }
+*/
 
   //    def executeMessage(txnCtxt: TransactionContext, deserializerName: String): Unit = {
   //    try {
