@@ -75,10 +75,19 @@ class addModel(CommandBase):
 		try:
 			if self.logger.isEnabledFor(logging.DEBUG):
                            self.logger.debug("load model = " + moduleName)
-			module = __import__(moduleName, globals(), locals(), [name])
+                        if self.logger.isEnabledFor(logging.DEBUG):
+                           self.logger.debug("again ------ load model = " + moduleName)
+                        if ( moduleName in sys.modules):
+                           self.logger.debug("model already loaded unload first = " + moduleName)
+                           del sys.modules[moduleName]
+                           self.logger.debug("again ------ loading model = " + moduleName)
+                           if ( moduleName not in sys.modules):
+                              self.logger.debug("model unloaded = " + moduleName)
+                        else:
+                           self.logger.debug("load model = " + moduleName)
+                        module = __import__(moduleName, globals(), locals(), [name])
                         if self.logger.isEnabledFor(logging.DEBUG): 
 			   self.logger.debug("module obtained")
 		except ImportError:
 			return None
 		return getattr(module, name)
-
