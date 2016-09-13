@@ -800,8 +800,8 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
     assert(expected.ClusterId === actual.ClusterId)
     assert(expected.Description === actual.Description)
     assert(expected.Privileges === actual.Privileges)
-    assert(expected.ReadCores === actual.ReadCores)
-    assert(expected.ProcessingCores === actual.ProcessingCores)
+    assert(expected.ReaderThreads === actual.ReaderThreads)
+    assert(expected.ProcessThreads === actual.ProcessThreads)
     assert(expected.LogicalPartitions === actual.LogicalPartitions)
   }
 
