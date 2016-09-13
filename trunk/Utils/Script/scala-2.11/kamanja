@@ -77,6 +77,16 @@ if [ "${array[0] }" = "edit" ]; then
   exit 0
 fi
 
+if [ ! -d "$KAMANJA_HOME/python/logs" ]; then
+    mkdir -p $KAMANJA_HOME/python/logs
+else
+    now=$(date +"%m_%d_%Y")
+    if [ ! -d $KAMANJA_HOME/python/logs/now ]; then
+	mkdir -p $KAMANJA_HOME/python/logs/now
+    fi
+    mv -f $KAMANJA_HOME/python/logs/pythonserver.*  $KAMANJA_HOME/python/logs/now
+fi
+
 if [ "$INPUT" = "start webservice" ]; then
 echo "Starting web service . . . ."
 

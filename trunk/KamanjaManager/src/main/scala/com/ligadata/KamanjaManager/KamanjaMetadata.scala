@@ -17,8 +17,7 @@
 
 package com.ligadata.KamanjaManager
 
-import java.io.File
-
+import java.io._
 import com.ligadata.Exceptions.KamanjaException
 import com.ligadata.InputOutputAdapterInfo.{InputAdapter, OutputAdapter}
 import com.ligadata.StorageBase.DataStore
@@ -1177,6 +1176,8 @@ object KamanjaMetadata extends ObjectResolver {
 		        val moduleModelNms : Array[String] = model.PhysicalName.split('.')
 		        val moduleName : String = moduleModelNms.head
 		        val modelName : String = moduleModelNms.last
+			val modelPath : String = txnCtxt.nodeCtxt.getValue("PYTHON_PATH") + "/models/" + moduleName + ".py"
+			writeSrcFile( model.objectDefinition, modelPath) 
 			for ((partitionKey, connection) <- connectionMap) {
 			  val pySrvConn : PyServerConnection = connectionMap.getOrElse(partitionKey, null).asInstanceOf[PyServerConnection]
 			   if (pySrvConn != null) {
@@ -1469,6 +1470,18 @@ object KamanjaMetadata extends ObjectResolver {
         UpdateKamanjaMdObjects(obj.messageObjects, obj.containerObjects, obj.modelObjsMap, removedModels, removedMessages, removedContainers)
     }
   }
+
+   /** Write the source file string to the supplied target path.
+    *
+    * @param srcCode
+    * @param srcTargetPath
+   */
+   private def writeSrcFile(srcCode: String, srcTargetPath: String) {
+      val file = new File(srcTargetPath)
+      val bufferedWriter = new BufferedWriter(new FileWriter(file))
+      bufferedWriter.write(srcCode)
+      bufferedWriter.close
+   }
 
   override def getInstance(MsgContainerType: String): ContainerInterface = {
     var v: MsgContainerObjAndTransformInfo = null
