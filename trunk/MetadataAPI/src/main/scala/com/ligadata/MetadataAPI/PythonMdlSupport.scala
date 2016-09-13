@@ -217,6 +217,7 @@ class PythonMdlSupport(val mgr: MdMgr, val moduleName: String, val modelNamespac
           val withDots: Boolean = true
           val msgVersionFormatted: String = MdMgr.ConvertLongVersionToString(inputMsg.Version, !withDots)
           val outMsg: String = optMsgProduced.orNull
+	  logger.debug("The value of outMsg is ---------------- " + outMsg) ;
           val outMsgs: Array[String] = if (outMsg != null) Array[String](outMsg) else Array[String]()
           val mdl: ModelDef = mgr.MakeModelDef(modelNamespace, modelName, phyName, ownerId, tenantId, 0, 0, ModelRepresentation.PYTHON, Array(inpMsgs), outMsgs, isReusable, pythonMdlText, MiningModelType.PYTHON, MdMgr.ConvertVersionToLong(version), jarName, jarDeps, recompile, supportsInstanceSerialization, modelOptions, moduleName)
 
