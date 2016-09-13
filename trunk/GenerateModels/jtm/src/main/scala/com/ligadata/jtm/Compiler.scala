@@ -156,7 +156,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
       root.imports.packages
     }
 
-    val imports1 = imports :+ "com.ligadata.runtime.Conversion"
+    val imports1 = imports
 
     imports1.distinct
   }
@@ -326,7 +326,9 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
 
       val r1 = t._2.computes.foldLeft(r._1 + t._1 + "/", Map.empty[String, String])( (r, c) => {
         if(c._2.expression.length > 0 && c._2.expressions.length > 0) {
-          ("", r._2 ++ Map(r._1 + c._1 -> "Vals and val attribute are set, please choose one.") )
+          ("", r._2 ++ Map(r._1 + c._1 -> "vals and val attribute are set, please choose one.") )
+        } else if(c._2.expression.length == 0 && c._2.expressions.length == 0) {
+          ("", r._2 ++ Map(r._1 + c._1 -> "neither vals or val attribute is set, please choose one.") )
         } else {
           r
         }
@@ -335,14 +337,34 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
       val r2 = t._2.outputs.foldLeft(r._1 + t._1 + "/", Map.empty[String, String])( (r, o) => {
         o._2.computes.foldLeft( r._1 + o._1 + "/", r._2 )((r, c) => {
           if(c._2.expression.length > 0 && c._2.expressions.length > 0) {
-            ("", r._2 ++ Map(r._1 + c._1 -> "Vals and val attribute are set, please choose one.") )
+            ("", r._2 ++ Map(r._1 + c._1 -> "vals and val attribute are set, please choose one.") )
+          } else if(c._2.expression.length == 0 && c._2.expressions.length == 0) {
+            ("", r._2 ++ Map(r._1 + c._1 -> "Neither vals or val attribute is set, please choose one.") )
           } else {
             r
           }
         })
       })._2
 
-      ("", r1 ++ r2)
+      val onErrorConstants = Array("abort", "ignore", "exception")
+      val r3 = t._2.outputs.foldLeft(r._1 + t._1, Map.empty[String, String])( (r, o) => {
+        if(!onErrorConstants.find(_ == o._2.onerror).isDefined) {
+          ("", r._2 ++ Map(r._1 -> "onerror can only contain %s".format(onErrorConstants.mkString("\n"))) )
+        } else {
+          r
+        }
+      })._2
+
+      val onExceptionConstants = Array("catch", "abort")
+      val r4 = t._2.outputs.foldLeft(r._1 + t._1, Map.empty[String, String])( (r, o) => {
+        if(!onExceptionConstants.find(_ == o._2.exception).isDefined) {
+          ("", r._2 ++ Map(r._1 -> "exception can only contain %s".format(onExceptionConstants.mkString("\n"))) )
+        } else {
+          r
+        }
+      })._2
+
+      ("", r1 ++ r2 ++ r3 ++ r4)
     })._2
 
     if(computeConstraint.nonEmpty) {
@@ -818,12 +840,12 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
             val rList = ResolveNames(list, aliaseMessages)
             val open = rList.filter(f => !innerMapping.contains(f._2)).filter(f => {
               val (c, v) = splitNamespaceClass(f._2)
-              if(dictMessages.contains(c)) {
+              if (dictMessages.contains(c)) {
                 val expression = "%s.get(\"%s\")".format(dictMessages.get(c).get, v)
                 val variableName = "%s.%s".format(dictMessages.get(c).get, v)
                 innerMapping ++= Map(f._2 -> eval.Tracker(variableName, c, "Any", true, v, expression))
                 false
-              } else  {
+              } else {
                 true
               }
             })
@@ -955,7 +977,6 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
     subtitutions.Add("model.version", root.header.version)
     subtitutions.Add("factoryclass.name", FactoryName)
     subtitutions.Add("modelclass.name", ModelName)
-
     result :+= subtitutions.Run(Parts.imports)
 
     // Process additional imports like grok
@@ -1026,6 +1047,8 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
       "msg.isInstanceOf[%s]".format(verMsg)
     }).mkString("||") )
 
+    subtitutions.Add("external.packagecode", root.imports.packagecode.mkString("\n"))
+    subtitutions.Add("external.factorycode", root.imports.factorycode.mkString("\n"))
     val factory = subtitutions.Run(Parts.factory)
     result :+= factory
 
@@ -1051,8 +1074,15 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
          |}) ++
          |""".stripMargin('|').format(check, calls)
     })
-    exechandler :+=  handler.mkString("\n")
-    exechandler :+=  "Array.empty[MessageInterface]"
+
+    exechandler :+= """
+      |try {
+      |%s
+      |} catch {
+      |  case e: AbortExecuteException => {
+      |    Array.empty[MessageInterface]
+      |  }
+      |}""".stripMargin.format(handler.mkString("\n") + "Array.empty[MessageInterface]")
 
     // Actual function to be called
     //
@@ -1069,6 +1099,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
         methods :+= transformation.Comment
         methods :+= "def exeGenerated_%s_%d(%s): Array[MessageInterface] = {".format(t, depId, names)
         methods :+= "Debug(\"exeGenerated_%s_%d\")".format(t, depId)
+        methods :+= "context.SetSection(%s)".format(escape(t))
 
         // Collect form metadata
         val inputs: Array[Element] = ColumnNames(md, deps).map( e => {
@@ -1160,6 +1191,8 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
           var collect = Array.empty[String]
           collect :+= "\ndef process_%s(): Array[MessageInterface] = {\n".format(o._1)
           collect :+= "Debug(\"exeGenerated_%s_%d::process_%s\")".format(t, depId, o._1)
+          collect :+= "context.SetScope(%s)".format(escape(o._1))
+          collect :+= "try {"
           collect ++= collectInner
 
           {
@@ -1182,7 +1215,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
 
               // Coerce type
               val newExpression = Expressions.Coerce(e._2, m.get.typeName, m.get.getExpression())
-              if(ismappedMessage) {
+              if (ismappedMessage) {
                 "result.set(\"%s\", %s)".format(e._1, m.get.getExpression())
               } else {
                 "result.%s = %s".format(e._1, newExpression)
@@ -1191,7 +1224,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
 
             // If output is a dictionary, collect all mappings
             //
-            val outputElements1 = if(ismappedMessage) {
+            val outputElements1 = if (ismappedMessage) {
 
               // Unsatisfied mappings
               val m1 = o._2.mapping.filter(f => !outputSet.contains(f._1)).toArray.map(e => {
@@ -1203,14 +1236,13 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
               })
 
               // Unsatisfied mappings by positions
-              val m2 = o._2.mapbyposition.foldLeft(Array.empty[String]) ((m, s) => {
-                m ++ s._2.filter( f=> (f!="-") && !outputSet.contains(f) ).toArray.map( e=> {
+              val m2 = o._2.mapbyposition.foldLeft(Array.empty[String])((m, s) => {
+                m ++ s._2.filter(f => (f != "-") && !outputSet.contains(f)).toArray.map(e => {
                   val m = innerMapping.get(e)
                   if (m.isEmpty) {
                     throw new Exception("Output %s not found".format(e))
                   }
-                  ("resu" +
-                    "lt.set(\"%s\", %s)").format(e, m.get.getExpression())
+                  ("result.set(\"%s\", %s)").format(e, m.get.getExpression())
                 })
               })
 
@@ -1219,15 +1251,62 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
               Array.empty[String]
             }
 
+            val setTimePartitionIfNeeded = "if (result.hasTimePartitionInfo) result.setTimePartitionData ;"
 
             // To Construct the final output
-            val outputResult = "val result = %s.createInstance\n%s\n%s\nArray(result)".format(
-                                    outputType,
-                                    outputElements.mkString("\n"), outputElements1.mkString("\n"))
+            val outputResult = "val result = %s.createInstance\n%s\n%s\n%s".format(
+              outputType,
+              outputElements.mkString("\n"), outputElements1.mkString("\n"), setTimePartitionIfNeeded)
             collect ++= Array(outputResult)
-            collect ++= Array("}\n")
-          }
 
+            collect :+= {if (o._2.onerror == "exception") {
+                          """if(context.CurrentErrors()==0) {
+                          |    Array(result)
+                          |  } else {
+                          |    throw new AbortOutputException(context.CurrentErrorList().toString)
+                          |  }
+                          """.stripMargin
+                        } else if(o._2.onerror == "ignore") {
+                          "Array(result)"
+                        } else if(o._2.onerror == "abort") {
+                          """if(context.CurrentErrors()==0) {
+                          |    Array(result)
+                          |  } else {
+                          |    Array.empty[MessageInterface]
+                          |  }
+                          """.stripMargin
+                        } else {
+                          ""
+                        }}
+
+            collect :+= {if(o._2.exception == "catch") {
+                          """|} catch {
+                             |  case e: AbortOutputException => {
+                             |   context.AddError(e.getMessage)
+                             |   return Array.empty[MessageInterface]
+                             |  }
+                             |  case e: Exception => {
+                             |   context.AddError(e.getMessage)
+                             |   return Array.empty[MessageInterface]
+                             |  }
+                             |}""".stripMargin
+                        } else if(o._2.exception == "abort") {
+                          """|} catch {
+                             |  case e: AbortOutputException => {
+                             |   context.AddError(e.getMessage)
+                             |   return Array.empty[MessageInterface]
+                             |  }
+                             |  case e: Exception => {
+                             |    Debug("Exception: %s:" + e.getMessage)
+                             |    throw e
+                             |  }
+                             |}""".stripMargin.format(o._1)
+                        } else {
+                          ""
+                        }}
+
+            collect :+= "}\n"
+          }
           // Collect all input messages attribute used
           logger.trace("Final map: transformation %s output %s used %s".format(t, o._1, innerTracking.mkString(", ")))
 
@@ -1256,10 +1335,20 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
 
         methods ++= inner
 
-        // Output the function calls
-        methods :+= transformation.outputs.map( o => {
-          "process_%s()".format(o._1)
-        }).mkString("++\n")
+        methods :+= """
+          |try {
+          |%s
+          |} catch {
+          |  case e: AbortTransformationException => {
+          |   return Array.empty[MessageInterface]
+          |  }
+          |}
+        """.stripMargin.format(
+          // Output the function calls
+          transformation.outputs.map( o => {
+            "process_%s()".format(o._1)
+          }).mkString("++\n")
+        )
 
         methods :+= "}"
 
@@ -1270,6 +1359,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
     subtitutions.Add("model.message", messages.mkString("\n"))
     subtitutions.Add("model.methods", methods.mkString("\n"))
     subtitutions.Add("model.code", exechandler.mkString("\n"))
+    subtitutions.Add("external.modelcode", root.imports.modelcode.mkString("\n"))
     val model = subtitutions.Run(Parts.model)
     result :+= model
 

@@ -16,7 +16,7 @@ exec scala "$0" "$@"
  *
  * Example:
  *
- *  setPathsFor.scala --installDir /tmp/drdigital/KamanjaInstall-1.4.0_2.11 --templateFile ClusterConfig.1.4.0.json --scalaHome `which scala` --javaHome `which java` >/tmp/clusterconfig.json 
+ *  setPathsFor.scala --installDir /tmp/drdigital/KamanjaInstall-2.11 --templateFile ClusterConfig.json --scalaHome `which scala` --javaHome `which java` >/tmp/clusterconfig.json 
  *
  * The captured file then can be used for metadata ingestion (e.g., kamanja command ).
  *

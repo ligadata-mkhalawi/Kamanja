@@ -7,6 +7,7 @@
 				"TypeName" : "String",
 				"Version"  : 100,
 				"OwnerId" : "test_spec",
+				"TenantId" : "testTenantId",
 				"UniqueId" : 1,
 				"MdElementId" : 1
 
@@ -18,6 +19,7 @@
 				"TypeName" : "String",
 				"Version"  : 100,
 				"OwnerId" : "test_spec",
+				"TenantId" : "testTenantId",
 				"UniqueId" : 1,
 				"MdElementId" : 1
 			}

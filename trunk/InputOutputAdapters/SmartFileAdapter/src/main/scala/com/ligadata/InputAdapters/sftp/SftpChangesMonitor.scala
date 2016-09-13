@@ -50,6 +50,8 @@ class SftpFileHandler extends SmartFileHandler{
   private var jsch : JSch = null
   def getNewSession = jsch.getSession(connectionConfig.userId, host, port)
 
+  private var isBinary: Boolean = false
+
   def this(path : String, config : FileAdapterConnectionConfig){
     this()
     this.remoteFullPath = path
@@ -68,11 +70,21 @@ class SftpFileHandler extends SmartFileHandler{
     }
   }
 
+  def this(fullPath : String, config : FileAdapterConnectionConfig, isBin: Boolean) {
+    this(fullPath, config)
+    isBinary = isBin
+  }
+
+  def getParentDir : String = {
+    val filePath = getPathOnly(getFullPath)
+    val idx = filePath.lastIndexOf("/")
+    MonitorUtils.simpleDirPath(filePath.substring(0, idx))
+  }
+
   def getFullPath = remoteFullPath
 
   //gets the input stream according to file system type - SFTP here
   def getDefaultInputStream : InputStream = {
-
     val ui=new SftpUserInfo(connectionConfig.password, passphrase)
 
     session = getNewSession
@@ -82,9 +94,9 @@ class SftpFileHandler extends SmartFileHandler{
     channel.connect()
     channelSftp = channel.asInstanceOf[ChannelSftp]
 
+    logger.info("Sftp File Handler - opening file " + getFullPath)
     val inputStream : InputStream =
       try {
-
         channelSftp.get(remoteFullPath)
       }
       catch {
@@ -112,8 +124,13 @@ class SftpFileHandler extends SmartFileHandler{
       /*manager = new StandardFileSystemManager()
       manager.init()*/
 
-      val compressionType = CompressionUtil.getFileType(this, null)
-      in = CompressionUtil.getProperInputStream(getDefaultInputStream(), compressionType)
+      val is = getDefaultInputStream()
+      if (!isBinary) {
+        val compressionType = CompressionUtil.getFileType(this, null)
+        in = CompressionUtil.getProperInputStream(is, compressionType)
+      } else {
+        in = is
+      }
       in
     }
     catch{
@@ -146,13 +163,14 @@ class SftpFileHandler extends SmartFileHandler{
   @throws(classOf[Exception])
   def moveTo(remoteNewFilePath : String) : Boolean = {
 
+    logger.info(s"Sftp File Handler - moving file (${hashPath(getFullPath)}) to (${hashPath(remoteNewFilePath)}")
+
     if(getFullPath.equals(remoteNewFilePath)){
       logger.warn(s"Trying to move file ($getFullPath) but source and destination are the same")
       return false
     }
 
     val ui = new SftpUserInfo(connectionConfig.password, passphrase)
-    logger.debug("Moving file {} to {}", getFullPath, remoteNewFilePath)
     try {
       session = getNewSession
       session.setUserInfo(ui)
@@ -199,6 +217,8 @@ class SftpFileHandler extends SmartFileHandler{
 
   @throws(classOf[Exception])
   def delete() : Boolean = {
+    logger.info(s"Sftp File Handler - Deleting file (${hashPath(getFullPath)}")
+
     val ui = new SftpUserInfo(connectionConfig.password, passphrase)
 
     try {
@@ -232,8 +252,44 @@ class SftpFileHandler extends SmartFileHandler{
   }
 
   @throws(classOf[Exception])
-  def close(): Unit = {
+  override def deleteFile(fileName: String) : Boolean = {
+    logger.info(s"Sftp File Handler - Deleting file (${hashPath(fileName)}")
 
+    val ui = new SftpUserInfo(connectionConfig.password, passphrase)
+
+    try {
+      session = getNewSession
+      session.setUserInfo(ui)
+      session.connect()
+      val channel = session.openChannel("sftp")
+      channel.connect()
+      channelSftp = channel.asInstanceOf[ChannelSftp]
+      channelSftp.rm(fileName)
+
+      channelSftp.exit()
+      session.disconnect()
+
+      true
+    }
+    catch {
+      case ex: Exception =>
+        logger.error("Sftp File Handler - Error while trying to delete sftp file " + fileName, ex)
+        false
+
+      case ex: Throwable =>
+        logger.error("Sftp File Handler - Error while trying to delete sftp file " + fileName, ex)
+        false
+
+    }
+    finally{
+      if(channelSftp != null) channelSftp.exit()
+      if(session != null) session.disconnect()
+    }
+  }
+
+  @throws(classOf[Exception])
+  def close(): Unit = {
+    logger.info("Sftp File Handler - Closing file " + hashPath(getFullPath))
     /*if(bufferedReader != null)
       bufferedReader.close()*/
     if(in != null) {
@@ -253,23 +309,27 @@ class SftpFileHandler extends SmartFileHandler{
 
   @throws(classOf[Exception])
   def length : Long = {
+    logger.info("Sftp File Handler - checking length for file " + hashPath(getFullPath))
     val attrs = getRemoteFileAttrs
     if (attrs == null) 0 else attrs.getSize
   }
 
   @throws(classOf[Exception])
   def lastModified : Long = {
+    logger.info("Sftp File Handler - checking modification time for file " + hashPath(getFullPath))
     val attrs = getRemoteFileAttrs
     if (attrs == null) 0 else attrs.getMTime
   }
 
   @throws(classOf[Exception])
   def exists(): Boolean = {
+    logger.info("Sftp File Handler - checking existence for file " + hashPath(getFullPath))
     val att = getRemoteFileAttrs
     att != null
   }
 
   private def fileExists(channel : ChannelSftp, file : String) : Boolean = {
+    logger.info("Sftp File Handler - checking length for file " + file)
       try{
         channelSftp.lstat(file)
          true
@@ -287,12 +347,14 @@ class SftpFileHandler extends SmartFileHandler{
 
   @throws(classOf[Exception])
   override def isFile: Boolean = {
+    logger.info("Sftp File Handler - checking (isFile) for file " + hashPath(getFullPath))
     val attrs = getRemoteFileAttrs
     if (attrs == null) false else !attrs.isDir
   }
 
   @throws(classOf[Exception])
   override def isDirectory: Boolean = {
+    logger.info("Sftp File Handler - checking (isDir) for file " + hashPath(getFullPath))
     val attrs = getRemoteFileAttrs
     if (attrs == null) false else attrs.isDir
   }
@@ -330,9 +392,11 @@ class SftpFileHandler extends SmartFileHandler{
   override def isAccessible : Boolean = exists()
 }
 
-class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileHandler) => Unit) extends SmartFileMonitor{
+class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileHandler, Boolean) => Unit) extends SmartFileMonitor{
 
   private var isMonitoring = false
+  private var checkFolders = true
+
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
 
@@ -344,8 +408,12 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
   private var host : String = _
   private var port : Int = _
 
+  private val filesStatusMap = Map[String, SftpFileEntry]()
+
+  private val processedFilesMap : scala.collection.mutable.LinkedHashMap[String, Long] = scala.collection.mutable.LinkedHashMap[String, Long]()
+
   def init(adapterSpecificCfgJson: String): Unit ={
-    val(_, c, m) =  SmartFileAdapterConfiguration.parseSmartFileAdapterSpecificConfig(adapterName, adapterSpecificCfgJson)
+    val(_, c, m, a) =  SmartFileAdapterConfiguration.parseSmartFileAdapterSpecificConfig(adapterName, adapterSpecificCfgJson)
     connectionConf = c
     monitoringConf = m
 
@@ -359,77 +427,121 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
     port = if(hostTokens(1) != null && hostTokens(1).length >0 ) hostTokens(1).toInt else 22 //default
   }
 
-  def monitor(): Unit ={
+  def markFileAsProcessed(filePath : String) : Unit = {
+    logger.info("Smart File Consumer (SFTP Monitor) - removing file {} from map {} as it is processed", filePath, filesStatusMap)
+    filesStatusMap.remove(filePath)
 
-    val manager : StandardFileSystemManager  = new StandardFileSystemManager()
+    //MonitorUtils.addProcessedFileToMap(filePath, processedFilesMap) //TODO : uncomment later
+  }
+
+  def setMonitoringStatus(status : Boolean): Unit ={
+    checkFolders = status
+  }
+
+  def monitor(): Unit = {
+    val validModifiedFiles = ArrayBuffer[(SmartFileHandler, FileChangeType)]()
+    val manager: StandardFileSystemManager = new StandardFileSystemManager()
 
     isMonitoring = true
     //Initializes the file manager
     manager.init()
 
-    monitorsExecutorService = Executors.newFixedThreadPool(monitoringConf.locations.length)
+    val maxThreadCount = Math.min(monitoringConf.monitoringThreadsCount, monitoringConf.detailedLocations.length)
+    monitorsExecutorService = Executors.newFixedThreadPool(maxThreadCount)
+    logger.info("Smart File Monitor - running {} threads to monitor {} dirs",
+      monitoringConf.monitoringThreadsCount.toString, monitoringConf.detailedLocations.length.toString)
 
-    monitoringConf.locations.foreach(folderToWatch => {
+    val monitoredDirsQueue = new MonitoredDirsQueue()
+    monitoredDirsQueue.init(monitoringConf.detailedLocations, monitoringConf.waitingTimeMS)
+
+    for (currentThreadId <- 1 to maxThreadCount) {
+
       val dirMonitorthread = new Runnable() {
-        private var targetRemoteFolder: String = _
-        def init(dir: String) = targetRemoteFolder = dir
 
         override def run() = {
           try {
 
-            val sftpEncodedUri = createConnectionString(connectionConf, targetRemoteFolder)
-
-            val filesStatusMap = Map[String, SftpFileEntry]()
             var firstCheck = true
 
             while (isMonitoring) {
 
-              try {
-                logger.info(s"Checking configured SFTP directory ($targetRemoteFolder)...")
+              if (checkFolders) {
 
-                val modifiedDirs = new ArrayBuffer[String]()
-                modifiedDirs += sftpEncodedUri
-                while (modifiedDirs.nonEmpty) {
-                  //each time checking only updated folders: first find direct children of target folder that were modified
-                  // then for each folder of these search for modified files and folders, repeat for the modified folders
+                val dirQueuedInfo = monitoredDirsQueue.getNextDir()
+                if (dirQueuedInfo != null) {
+                  val location = dirQueuedInfo._1
+                  val isFirstScan = dirQueuedInfo._3
+                  val targetRemoteFolder = location.srcDir
+                  try {
+                    val sftpEncodedUri = createConnectionString(connectionConf, targetRemoteFolder)
+                    logger.info(s"Checking configured SFTP directory ($targetRemoteFolder)...")
 
-                  val aFolder = modifiedDirs.head
-                  val modifiedFiles = Map[SmartFileHandler, FileChangeType]() // these are the modified files found in folder $aFolder
+                    val modifiedDirs = new ArrayBuffer[String]()
+                    modifiedDirs += sftpEncodedUri
+                    while (modifiedDirs.nonEmpty) {
+                      //each time checking only updated folders: first find direct children of target folder that were modified
+                      // then for each folder of these search for modified files and folders, repeat for the modified folders
 
-                  modifiedDirs.remove(0)
-                  findDirModifiedDirectChilds(aFolder, manager, filesStatusMap, modifiedDirs, modifiedFiles, firstCheck)
-                  logger.debug("modifiedFiles map is {}", modifiedFiles)
+                      val aFolder = modifiedDirs.head
+                      val modifiedFiles = Map[SmartFileHandler, FileChangeType]() // these are the modified files found in folder $aFolder
 
-                  if (modifiedFiles.nonEmpty)
-                    modifiedFiles.foreach(tuple => {
+                      modifiedDirs.remove(0)
+                      findDirModifiedDirectChilds(aFolder, manager, modifiedDirs, modifiedFiles, firstCheck)
+                      logger.debug("modifiedFiles map is {}", modifiedFiles)
 
-                      /*val handler = new MofifiedFileCallbackHandler(tuple._1, tuple._2, modifiedFileCallback)
-                   // run the callback in a different thread
-                  //new Thread(handler).start()
-                  globalFileMonitorCallbackService.execute(handler)*/
-                      logger.debug("calling sftp monitor is calling file callback for MonitorController for file {}", tuple._1.getFullPath)
-                      try {
-                        modifiedFileCallback(tuple._1)
+                      //check for file names pattern
+                      validModifiedFiles.clear()
+                      if (location.fileComponents != null) {
+                        modifiedFiles.foreach(tuple => {
+                          if (MonitorUtils.isPatternMatch(MonitorUtils.getFileName(tuple._1.getFullPath), location.fileComponents.regex))
+                            validModifiedFiles.append(tuple)
+                          else
+                            logger.info("Smart File Consumer (SFTP) : File {}, does not follow configured name pattern ({}), so it will be ignored - Adapter {}",
+                              tuple._1.getFullPath, location.fileComponents.regex, adapterName)
+                        })
                       }
-                      catch{
-                        case e : Throwable =>
-                          logger.error("Smart File Consumer (Sftp) : Error while notifying Monitor about new file", e)
-                      }
+                      else
+                        validModifiedFiles.appendAll(modifiedFiles)
 
+                      val orderedModifiedFiles = validModifiedFiles.map(tuple => (tuple._1, tuple._2)).toList.
+                        sortWith((tuple1, tuple2) => MonitorUtils.compareFiles(tuple1._1, tuple2._1, location) < 0)
+
+                      if (orderedModifiedFiles.nonEmpty)
+                        orderedModifiedFiles.foreach(tuple => {
+
+                          logger.debug("calling sftp monitor is calling file callback for MonitorController for file {}, initial = {}",
+                            tuple._1.getFullPath, (tuple._2 == AlreadyExisting).toString)
+                          try {
+                            modifiedFileCallback(tuple._1, tuple._2 == AlreadyExisting)
+                          }
+                          catch {
+                            case e: Throwable =>
+                              logger.error("Smart File Consumer (Sftp) : Error while notifying Monitor about new file", e)
+                          }
+
+                        }
+                        )
                     }
-                    )
+
+                  }
+                  catch {
+                    case ex: Exception => logger.error("Smart File Consumer (sftp Monitor) - Error while checking folder " + targetRemoteFolder, ex)
+                    case ex: Throwable => logger.error("Smart File Consumer (sftp Monitor) - Error while checking folder " + targetRemoteFolder, ex)
+                  }
+
+                  monitoredDirsQueue.reEnqueue(dirQueuedInfo) // so the folder gets monitored again
+                }
+                else {
+                  //happens if last time queue head dir was monitored was less than waiting time
+                  logger.info("Smart File Monitor - no folders to monitor for now. Thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
+                  Thread.sleep(monitoringConf.waitingTimeMS)
                 }
 
               }
-              catch {
-                case ex: Exception => logger.error("Smart File Consumer (sftp Monitor) - Error while checking folder " + targetRemoteFolder, ex)
-                case ex: Throwable => logger.error("Smart File Consumer (sftp Monitor) - Error while checking folder " + targetRemoteFolder, ex)
+              else {
+                logger.info("Smart File Monitor - too many files already in process queue. monitoring thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
+                Thread.sleep(monitoringConf.waitingTimeMS)
               }
-
-              firstCheck = false
-
-              logger.info(s"Sleepng for ${monitoringConf.waitingTimeMS} milliseconds...............................")
-              Thread.sleep(monitoringConf.waitingTimeMS)
             }
 
             //if(!isMonitoring)
@@ -437,10 +549,10 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
           }
           catch {
             case ex: Exception =>
-              logger.error("Error while monitoring folder " + targetRemoteFolder, ex)
+              logger.error("Smart File Monitor - Error", ex)
 
             case ex: Throwable =>
-              logger.error("Error while monitoring folder " + targetRemoteFolder, ex)
+              logger.error("Smart File Monitor - Error", ex)
 
           }
           finally {
@@ -448,23 +560,23 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
           }
         }
       }
-      dirMonitorthread.init(folderToWatch)
       monitorsExecutorService.execute(dirMonitorthread)
-    })
+    }
 
   }
 
   def shutdown(): Unit ={
     isMonitoring = false
+    processedFilesMap.clear()
     monitorsExecutorService.shutdown()
   }
 
 
-  private def findDirModifiedDirectChilds(parentfolder : String, manager : StandardFileSystemManager, filesStatusMap : Map[String, SftpFileEntry],
+  private def findDirModifiedDirectChilds(parentfolder : String, manager : StandardFileSystemManager,
                                           modifiedDirs : ArrayBuffer[String], modifiedFiles : Map[SmartFileHandler, FileChangeType], isFirstCheck : Boolean){
     val parentfolderHashed = hashPath(parentfolder)//used for logging since path contains user and password
-    logger.info("checking folder with full path: " + parentfolderHashed)
 
+    logger.info("SFTP Changes Monitor - listing dir " + parentfolderHashed)
     val directChildren = getRemoteFolderContents(parentfolder, manager).sortWith(_.getContent.getLastModifiedTime < _.getContent.getLastModifiedTime)
     logger.debug("SftpChangesMonitor - Found following children " + directChildren.map(c=>c.getURL.toString).mkString(","))
 
@@ -477,44 +589,49 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
       var isChanged = false
       val uniquePath = child.getURL.toString
 
-      if(!filesStatusMap.contains(uniquePath)){
-        //path is new
-        isChanged = true
-        changeType = if(isFirstCheck) AlreadyExisting else New
-
-        logger.debug("SftpChangesMonitor - file {} is {}", uniquePath, changeType.toString)
-
-        filesStatusMap.put(uniquePath, currentChildEntry)
-        if(currentChildEntry.isDirectory)
-          modifiedDirs += uniquePath
-      }
-      else{
-        logger.debug("SftpChangesMonitor - file {} is already in monitors filesStatusMap", uniquePath)
-
-        val storedEntry = filesStatusMap.get(uniquePath).get
-        if(currentChildEntry.lastModificationTime >  storedEntry.lastModificationTime){//file has been modified
-          storedEntry.lastModificationTime = currentChildEntry.lastModificationTime
+      if (processedFilesMap.contains(uniquePath))//TODO what if file was moved then copied again?
+        logger.info("Smart File Consumer (Sftp) - File {} already processed, ignoring - Adapter {}", uniquePath, adapterName)
+      else {
+        if (!filesStatusMap.contains(uniquePath)) {
+          //path is new
           isChanged = true
+          changeType = if (isFirstCheck) AlreadyExisting else New
 
-          changeType = Modified
+          logger.debug("SftpChangesMonitor - file {} is {}", uniquePath, changeType.toString)
+
+          filesStatusMap.put(uniquePath, currentChildEntry)
+          if (currentChildEntry.isDirectory)
+            modifiedDirs += uniquePath
         }
-      }
+        else {
+          logger.debug("SftpChangesMonitor - file {} is already in monitors filesStatusMap", uniquePath)
 
-      //TODO : this method to find changed folders is not working as expected. so for now check all dirs
-      if(currentChildEntry.isDirectory) {
-        logger.debug("SftpChangesMonitor - file {} is directory", uniquePath)
-        modifiedDirs += uniquePath
-      }
+          val storedEntry = filesStatusMap.get(uniquePath).get
+          if (currentChildEntry.lastModificationTime > storedEntry.lastModificationTime) {
+            //file has been modified
+            storedEntry.lastModificationTime = currentChildEntry.lastModificationTime
+            isChanged = true
 
-      if(isChanged){
-        if(currentChildEntry.isDirectory){
-          //logger.debug("file {} is directory", uniquePath)
+            changeType = Modified
+          }
         }
-        else{
-          if(changeType == New || changeType == AlreadyExisting) {
-            logger.debug("file {} will be added to modifiedFiles map", uniquePath)
-            val fileHandler = new SftpFileHandler(getPathOnly(uniquePath), connectionConf)
-            modifiedFiles.put(fileHandler, changeType)
+
+        //TODO : this method to find changed folders is not working as expected. so for now check all dirs
+        if (currentChildEntry.isDirectory) {
+          logger.debug("SftpChangesMonitor - file {} is directory", uniquePath)
+          modifiedDirs += uniquePath
+        }
+
+        if (isChanged) {
+          if (currentChildEntry.isDirectory) {
+            //logger.debug("file {} is directory", uniquePath)
+          }
+          else {
+            if (changeType == New || changeType == AlreadyExisting) {
+              logger.debug("file {} will be added to modifiedFiles map", uniquePath)
+              val fileHandler = new SftpFileHandler(getPathOnly(uniquePath), connectionConf)
+              modifiedFiles.put(fileHandler, changeType)
+            }
           }
         }
       }
@@ -577,4 +694,11 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
     afterHostUrl.substring(afterHostUrl.indexOf("/"))
   }
 
+  override def listFiles(path: String): Array[String] ={
+    val sftpEncodedUri = createConnectionString(connectionConf, path)
+    val manager : StandardFileSystemManager  = new StandardFileSystemManager()
+    manager.init()
+    val remoteDir : FileObject = manager.resolveFile(sftpEncodedUri)
+    remoteDir.getChildren.filter(x => x.getType.getName.equalsIgnoreCase("folder") == false).map(x => x.getName.getBaseName)
+  }
 }

@@ -21,6 +21,7 @@ object KamanjaStatisticsEvent extends RDDObject[KamanjaStatisticsEvent] with Mes
   override def getTenantId: String = "System";
   override def createInstance: KamanjaStatisticsEvent = new KamanjaStatisticsEvent(KamanjaStatisticsEvent);
   override def isFixed: Boolean = true;
+  def isCaseSensitive(): Boolean = false;
   override def getContainerType: ContainerTypes.ContainerType = ContainerTypes.ContainerType.MESSAGE
   override def getFullName = getFullTypeName;
   override def getRddTenantId = getTenantId;
@@ -94,6 +95,7 @@ object KamanjaStatisticsEvent extends RDDObject[KamanjaStatisticsEvent] with Mes
 }
 
 class KamanjaStatisticsEvent(factory: MessageFactoryInterface, other: KamanjaStatisticsEvent) extends MessageInterface(factory) {
+  def isCaseSensitive(): Boolean = KamanjaStatisticsEvent.isCaseSensitive();
 
   val log = KamanjaStatisticsEvent.log
 
@@ -179,7 +181,8 @@ class KamanjaStatisticsEvent(factory: MessageFactoryInterface, other: KamanjaSta
     } catch {
       case e: Exception => {
         log.debug("", e)
-        throw e
+        if(defaultVal == null) return null;
+        return defaultVal.asInstanceOf[AnyRef];
       }
     }
     return null;
@@ -208,7 +211,8 @@ class KamanjaStatisticsEvent(factory: MessageFactoryInterface, other: KamanjaSta
     } catch {
       case e: Exception => {
         log.debug("", e)
-        throw e
+        if(defaultVal == null) return null;
+        return defaultVal.asInstanceOf[AnyRef];
       }
     }
     return null;

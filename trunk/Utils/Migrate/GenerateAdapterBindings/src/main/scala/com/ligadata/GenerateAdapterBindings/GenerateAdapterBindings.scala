@@ -95,17 +95,19 @@ class GenerateAdapterBindings {
 	      adapter(k).asInstanceOf[String].toUpperCase match {
 		case "CSV" => am.Serializer = "com.ligadata.kamanja.serializer.CsvSerDeser"
 		case "JSON" => am.Serializer = "com.ligadata.kamanja.serializer.JsonSerDeser"
+		case "KV" => am.Serializer = "com.ligadata.kamanja.serializer.kvserdeser"
 		case _ => am.Serializer = "com.ligadata.kamanja.serializer.JsonSerDeser"
 	      }
 	    }
 	    case "FIELDDELIMITER" => am.Options = am.Options + ("fieldDelimiter" -> adapter(k).asInstanceOf[String])
 	    case "LINEDELIMITER" => am.Options = am.Options + ("lineDelimiter" -> adapter(k).asInstanceOf[String])
+	    case "VALUEDELIMITER" => am.Options = am.Options + ("valDelimiter" -> adapter(k).asInstanceOf[String])
+	    case "VALDELIMITER" => am.Options = am.Options + ("valDelimiter" -> adapter(k).asInstanceOf[String])
 	    case _ => logger.info("Ignore the key " + k)
 	  }
 	})
 	// add default options if none exist
 	if( am.Options.size == 0 ){
-	  am.Options = am.Options + ("produceHeader" -> "true")
 	  am.Options = am.Options + ("alwaysQuotedFields" -> "false")
 	}
 	if( typeString != null ){
@@ -125,7 +127,9 @@ class GenerateAdapterBindings {
 	      }
 	      else{
 		if( am.MessageNames != null && am.MessageNames.length > 0 ){
-		  am.Serializer = "com.ligadata.kamanja.serializer.CsvSerDeser"
+		  if( am.Serializer == null ){
+		    am.Serializer = "com.ligadata.kamanja.serializer.CsvSerDeser"
+		  }
 		  if( ! am.Options.contains("fieldDelimiter") ){
 		    am.Options = am.Options + ("fieldDelimiter" -> ",")
 		  }

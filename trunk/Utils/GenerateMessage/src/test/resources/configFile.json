@@ -1,0 +1,14 @@
+{
+  "delimiter": ",",
+  "outputPath": "/usr",
+  "saveMessage": "false",
+  "nameSpace": "com.ligadata.kamanja",
+  "partitionKey": "id",
+  "primaryKey": "id,name",
+  "timePartition": "id",
+  "messageType": "input",
+  "messageName": "testmessage",
+  "createMessageFrom": "header",
+  "messageStructure": "fixed",
+  "detectDatatypeFrom": "3"
+}

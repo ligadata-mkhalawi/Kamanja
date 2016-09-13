@@ -9,6 +9,7 @@ Usage()
     echo "Usage:"
     echo "      StatusKamanjaCluster.sh --ClusterId <cluster name identifer> "
     echo "                           --MetadataAPIConfig  <metadataAPICfgPath>  "
+    echo "                           [--NodeIds  <nodeIds>] "
     echo 
     echo "  NOTES: Get status on the cluster specified by the cluster identifier parameter.  Use the metadata api configuration to "
     echo "         locate the appropriate metadata store.   "
@@ -16,10 +17,11 @@ Usage()
 }
 
 
-scalaversion="2.11"
+scalaVersion="2.10"
 name1=$1
+currentKamanjaVersion=1.6.0
 
-if [ "$#" -eq 4 ]; then
+if [[ "$#" -eq 4 || "$#" -eq 6 ]]; then
 	echo
 else 
     echo "Problem: Incorrect number of arguments"
@@ -28,7 +30,7 @@ else
     exit 1
 fi
 
-if [[ "$name1" != "--MetadataAPIConfig" && "$name1" != "--ClusterId" ]]; then
+if [[ "$name1" != "--MetadataAPIConfig" && "$name1" != "--ClusterId" && "$name1" != "--NodeIds" ]]; then
 	echo "Problem: Bad arguments"
 	echo 
 	Usage
@@ -38,6 +40,8 @@ fi
 # Collect the named parameters 
 metadataAPIConfig=""
 clusterId=""
+nodeIds=""
+valid_nodeIds=();
 
 while [ "$1" != "" ]; do
     echo "parameter is $1"
@@ -47,6 +51,9 @@ while [ "$1" != "" ]; do
                                 ;;
         --MetadataAPIConfig )   shift
                                 metadataAPIConfig=$1
+                                ;;
+        --NodeIds )             shift
+                                nodeIds=$1
                                 ;;
         * )                     echo "Problem: Argument $1 is invalid named parameter."
                                 Usage
@@ -66,13 +73,27 @@ installDir=`cat $metadataAPIConfig | grep '[Rr][Oo][Oo][Tt]_[Dd][Ii][Rr]' | sed 
 echo "...extract node information for the cluster to be started from the Metadata configuration information supplied"
 
 # info is assumed to be present in the supplied metadata store... see trunk/utils/NodeInfoExtract for details 
-echo "...Command = java -cp $installDir/lib/system/ExtDependencyLibs2_2.10-1.4.0.jar:$installDir/lib/system/ExtDependencyLibs_2.10-1.4.0.jar:$installDir/lib/system/KamanjaInternalDeps_2.10-1.4.0.jar:$installDir/lib/system/nodeinfoextract_2.10-1.4.0.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig \"$metadataAPIConfig\" --workDir \"$workDir\" --ipFileName \"$ipFile\" --ipPathPairFileName \"$ipPathPairFile\" --ipIdCfgTargPathQuartetFileName \"$ipIdCfgTargPathQuartetFileName\" --installDir \"$installDir\" --clusterId \"$clusterId\""
-java -cp $installDir/lib/system/ExtDependencyLibs2_2.10-1.4.0.jar:$installDir/lib/system/ExtDependencyLibs_2.10-1.4.0.jar:$installDir/lib/system/KamanjaInternalDeps_2.10-1.4.0.jar:$installDir/lib/system/nodeinfoextract_2.10-1.4.0.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig $metadataAPIConfig --workDir "$workDir" --ipFileName "$ipFile" --ipPathPairFileName "$ipPathPairFile" --ipIdCfgTargPathQuartetFileName "$ipIdCfgTargPathQuartetFileName" --installDir "$installDir" --clusterId "$clusterId"
+echo "...Command = java -cp $installDir/lib/system/ExtDependencyLibs2_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/KamanjaInternalDeps_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/nodeinfoextract_${scalaVersion}-${currentKamanjaVersion}.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig \"$metadataAPIConfig\" --workDir \"$workDir\" --ipFileName \"$ipFile\" --ipPathPairFileName \"$ipPathPairFile\" --ipIdCfgTargPathQuartetFileName \"$ipIdCfgTargPathQuartetFileName\" --installDir \"$installDir\" --clusterId \"$clusterId\""
+java -cp $installDir/lib/system/ExtDependencyLibs2_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/KamanjaInternalDeps_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/nodeinfoextract_${scalaVersion}-${currentKamanjaVersion}.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig $metadataAPIConfig --workDir "$workDir" --ipFileName "$ipFile" --ipPathPairFileName "$ipPathPairFile" --ipIdCfgTargPathQuartetFileName "$ipIdCfgTargPathQuartetFileName" --installDir "$installDir" --clusterId "$clusterId"
 if [ "$?" -ne 0 ]; then
     echo
     echo "Problem: Invalid arguments supplied to the NodeInfoExtract-1.0 application... unable to obtain node configuration... exiting."
     Usage
     exit 1
+fi
+
+if [[ $nodeIds != "" ]]; then
+    OIFS=$IFS;
+    IFS=",";
+    nodeIdsArray=($nodeIds);
+    IFS=$OIFS;
+
+    for ((i=0; i<${#nodeIdsArray[@]}; ++i)); do 
+        tmp_str="$(echo -e "${nodeIdsArray[$i]}" | xargs)"
+        if [[ "$tmp_str" != "" ]]; then
+            valid_nodeIds+=($tmp_str)
+        fi
+    done
 fi
 
 # Start the cluster nodes using the information extracted from the metadata and supplied config.  Remember the jvm's pid in the $installDir/run
@@ -94,6 +115,21 @@ while read LINE; do
     roles_lc=`echo $roles | tr '[:upper:]' '[:lower:]'`
     restapi_cnt=`echo $roles_lc | grep "restapi" | grep -v "grep" | wc -l`
     processingengine_cnt=`echo $roles_lc | grep "processingengine" | grep -v "grep" | wc -l`
+
+    if [[ ${#valid_nodeIds[@]} > 0 ]]; then
+        currentNodeId=""
+        for ((j=0; j<${#valid_nodeIds[@]}; ++j)); do 
+            if [[ ${valid_nodeIds[$j]} != $id ]]; then
+              continue
+            else
+                currentNodeId=$id
+            fi
+        done
+        if [[ $currentNodeId != $id ]]; then
+          continue
+        fi
+    fi
+
     echo "NodeInfo = $machine, $id, $cfgFile, $targetPath, $roles"
     #scp -o StrictHostKeyChecking=no "$cfgFile" "$machine:$targetPath/"
     # 
@@ -118,7 +154,7 @@ while read LINE; do
              if [ ! -d "$installDir/run" ]; then
                 mkdir "$installDir/run"
              fi
-             ps u -p $pidvals | grep "kamanjamanager_2.10-1.4.0.jar" | grep -v "grep" | wc -l > "$installDir/run/$statusfile"
+             ps u -p $pidvals | grep "kamanjamanager_${scalaVersion}-${currentKamanjaVersion}.jar" | grep -v "grep" | wc -l > "$installDir/run/$statusfile"
              ps u -p $pidvals | grep "MetadataAPIService-1.0" | grep -v "grep" | wc -l >> "$installDir/run/$statusfile"
 
 EOF

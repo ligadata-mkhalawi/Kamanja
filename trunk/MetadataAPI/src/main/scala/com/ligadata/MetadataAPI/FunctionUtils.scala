@@ -78,9 +78,12 @@ object FunctionUtils {
   lazy val sysNS = "System"
   // system name space
   lazy val loggerName = this.getClass.getName
-  lazy val logger = LogManager.getLogger(loggerName)
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
+lazy val logger = LogManager.getLogger(loggerName)
   //lazy val serializer = SerializerManager.GetSerializer("kryo")
-  
+
   def AddFunction(functionDef: FunctionDef): String = {
     val key = functionDef.FullNameWithVer
     val dispkey = functionDef.FullName + "." + MdMgr.Pad0s2Version(functionDef.Version)
@@ -88,7 +91,7 @@ object FunctionUtils {
       val value = JsonSerializer.SerializeObjectToJson(functionDef)
 
       logger.debug("key => " + key + ",value =>" + value);
-      MetadataAPIImpl.SaveObject(functionDef, MdMgr.GetMdMgr)
+      getMetadataAPI.SaveObject(functionDef, MdMgr.GetMdMgr)
       logger.debug("Added function " + key + " successfully ")
       val apiResult = new ApiResult(ErrorCodeConstants.Success, "AddFunction", null, ErrorCodeConstants.Add_Function_Successful + ":" + dispkey)
       apiResult.toString()
@@ -104,8 +107,8 @@ object FunctionUtils {
   def RemoveFunction(nameSpace: String, functionName: String, version: Long, userid: Option[String]): String = {
     var key = nameSpace + "." + functionName + "." + version
     val dispkey =  nameSpace + "." + functionName + "." + MdMgr.Pad0s2Version(version)
-    var newTranId = MetadataAPIImpl.GetNewTranId
-    if (userid != None) MetadataAPIImpl.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.DELETEOBJECT,AuditConstants.FUNCTION,AuditConstants.SUCCESS,"",nameSpace+"."+key)
+    var newTranId = getMetadataAPI.GetNewTranId
+    if (userid != None) getMetadataAPI.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.DELETEOBJECT,AuditConstants.FUNCTION,AuditConstants.SUCCESS,"",nameSpace+"."+key)
     try {
       val o = MdMgr.GetMdMgr.Functions(nameSpace.toLowerCase, functionName.toLowerCase, true, true)
       o match {
@@ -121,12 +124,12 @@ object FunctionUtils {
 
           // Mark the transactionId for this transaction and delete object
           fDef.tranId = newTranId
-          MetadataAPIImpl.DeleteObject(fDef)
+          getMetadataAPI.DeleteObject(fDef)
 
           // Notify everyone who cares about this change.
           var allObjectsArray =  Array[BaseElemDef](fDef)
           val operations = for (op <- allObjectsArray) yield "Remove"
-          MetadataAPIImpl.NotifyEngine(allObjectsArray, operations)
+          getMetadataAPI.NotifyEngine(allObjectsArray, operations)
 
           // 'Saul Good'man
           var apiResult = new ApiResult(ErrorCodeConstants.Success, "RemoveFunction", null, ErrorCodeConstants.Remove_Function_Successfully + ":" + dispkey)
@@ -203,9 +206,9 @@ object FunctionUtils {
   private def CheckForMissingJar(obj: BaseElemDef): Array[String] = {
     val missingJars = scala.collection.mutable.Set[String]()
 
-    var allJars = MetadataAPIImpl.GetDependantJars(obj)
+    var allJars = getMetadataAPI.GetDependantJars(obj)
     if (allJars.length > 0) {
-      val tmpJarPaths = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS")
+      val tmpJarPaths = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS")
       val jarPaths = if (tmpJarPaths != null) tmpJarPaths.split(",").toSet else scala.collection.immutable.Set[String]()
       jarPaths.foreach(jardir => {
         val dir = new File(jardir)
@@ -215,7 +218,7 @@ object FunctionUtils {
         }
       })
 
-      val dirPath = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR")
+      val dirPath = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR")
       val dir = new File(dirPath)
       if (!dir.exists()) {
         // attempt to create the missing directory
@@ -227,7 +230,7 @@ object FunctionUtils {
         val f = new File(jarName)
         if (!f.exists()) {
           try {
-            val mObj = MetadataAPIImpl.GetObject(jar, "jar_store")
+            val mObj = getMetadataAPI.GetObject(jar, "jar_store")
             // Nothing to do after getting the object.
           } catch {
             case e: Exception => {
@@ -252,14 +255,14 @@ object FunctionUtils {
         apiResult.toString()
       } else {
         val ownerId: String = if (userid == None) "kamanja" else userid.get
-        val uniqueId = MetadataAPIImpl.GetUniqueId
+        val uniqueId = getMetadataAPI.GetUniqueId
         val mdElementId = 0L //FIXME:- Not yet handled this
         var funcList= JsonSerializer.parseFunctionList(functionsText, "JSON", ownerId, tenantId, uniqueId, mdElementId)
         // Check for the Jars
         val missingJars = scala.collection.mutable.Set[String]()
         funcList.foreach(func => {
-          MetadataAPIImpl.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.INSERTOBJECT,functionsText,AuditConstants.SUCCESS,"",func.FullNameWithVer)
-          if (MetadataAPIImpl.SaveObject(func, MdMgr.GetMdMgr))
+          getMetadataAPI.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.INSERTOBJECT,functionsText,AuditConstants.SUCCESS,"",func.FullNameWithVer)
+          if (getMetadataAPI.SaveObject(func, MdMgr.GetMdMgr))
             missingJars ++= CheckForMissingJar(func)
           else {
             if (!aggFailures.equalsIgnoreCase("")) aggFailures = aggFailures + ","
@@ -273,10 +276,10 @@ object FunctionUtils {
         }
 
         val alreadyCheckedJars = scala.collection.mutable.Set[String]()
-        funcList.foreach(func => { MetadataAPIImpl.UploadJarsToDB(func, false, alreadyCheckedJars) })
+        funcList.foreach(func => { getMetadataAPI.UploadJarsToDB(func, false, alreadyCheckedJars) })
 
         if (funcList.size > 0)
-          MetadataAPIImpl.PutTranId(funcList(0).tranId)
+          getMetadataAPI.PutTranId(funcList(0).tranId)
         if (!aggFailures.equalsIgnoreCase("")) {
           (new ApiResult(ErrorCodeConstants.Warning, "AddFunctions", aggFailures, ErrorCodeConstants.Add_Function_Warning)).toString()
         } else {
@@ -301,7 +304,7 @@ object FunctionUtils {
         apiResult.toString()
       } else {
         val ownerId: String = if (userid == None) "kamanja" else userid.get
-        val uniqueId = MetadataAPIImpl.GetUniqueId
+        val uniqueId = getMetadataAPI.GetUniqueId
         val mdElementId = 0L //FIXME:- Not yet handled this
         var funcList = JsonSerializer.parseFunctionList(functionsText, "JSON", ownerId, tenantId, uniqueId, mdElementId)
         // Check for the Jars
@@ -315,12 +318,12 @@ object FunctionUtils {
         }
         val alreadyCheckedJars = scala.collection.mutable.Set[String]()
         funcList.foreach(func => {
-          MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.UPDATEOBJECT, functionsText, AuditConstants.SUCCESS, "", func.FullNameWithVer)
-          MetadataAPIImpl.UploadJarsToDB(func, false, alreadyCheckedJars)
+          getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.UPDATEOBJECT, functionsText, AuditConstants.SUCCESS, "", func.FullNameWithVer)
+          getMetadataAPI.UploadJarsToDB(func, false, alreadyCheckedJars)
           UpdateFunction(func)
         })
         if (funcList.size > 0)
-          MetadataAPIImpl.PutTranId(funcList(0).tranId)
+          getMetadataAPI.PutTranId(funcList(0).tranId)
         var apiResult = new ApiResult(ErrorCodeConstants.Success, "UpdateFunctions", null, ErrorCodeConstants.Update_Function_Successful + ":" + functionsText)
         apiResult.toString()
       }
@@ -345,9 +348,9 @@ object FunctionUtils {
 
   def LoadFunctionIntoCache(key: String) {
     try {
-      val obj = MetadataAPIImpl.GetObject(key.toLowerCase, "functions")
+      val obj = getMetadataAPI.GetObject(key.toLowerCase, "functions")
       val cont: FunctionDef = MetadataAPISerialization.deserializeMetadata(new String(obj._2.asInstanceOf[Array[Byte]])).asInstanceOf[FunctionDef]//serializer.DeserializeObjectFromByteArray(obj._2.asInstanceOf[Array[Byte]]).asInstanceOf[FunctionDef]
-      MetadataAPIImpl.AddObjectToCache(cont.asInstanceOf[FunctionDef], MdMgr.GetMdMgr)
+      getMetadataAPI.AddObjectToCache(cont.asInstanceOf[FunctionDef], MdMgr.GetMdMgr)
     } catch {
       case e: Exception => {
         logger.debug("", e)
@@ -357,7 +360,7 @@ object FunctionUtils {
 
   def GetFunctionDef(nameSpace: String, objectName: String, formatType: String, userid: Option[String]): String = {
     try {
-      if (userid != None) MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, AuditConstants.FUNCTION, AuditConstants.SUCCESS, "", nameSpace + "." + objectName + "LATEST")
+      if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, AuditConstants.FUNCTION, AuditConstants.SUCCESS, "", nameSpace + "." + objectName + "LATEST")
       val funcDefs = MdMgr.GetMdMgr.FunctionsWithName(nameSpace, objectName)
       if (funcDefs == null) {
         logger.debug("No Functions found ")
@@ -378,7 +381,7 @@ object FunctionUtils {
   }
 
   def GetFunctionDef(nameSpace: String, objectName: String, formatType: String, version: String, userid: Option[String]): String = {
-    MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, AuditConstants.FUNCTION, AuditConstants.SUCCESS, "", nameSpace + "." + objectName + "." + version)
+    getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, AuditConstants.FUNCTION, AuditConstants.SUCCESS, "", nameSpace + "." + objectName + "." + version)
     GetFunctionDef(nameSpace, objectName, formatType, None)
   }
 
@@ -397,7 +400,7 @@ object FunctionUtils {
      */
   def GetAllFunctionsFromCache(active: Boolean, userid: Option[String] = None): Array[String] = {
     var functionList: Array[String] = new Array[String](0)
-    MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETKEYS, AuditConstants.FUNCTION, AuditConstants.SUCCESS, "", AuditConstants.FUNCTION)
+    getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETKEYS, AuditConstants.FUNCTION, AuditConstants.SUCCESS, "", AuditConstants.FUNCTION)
     try {
       val contDefs = MdMgr.GetMdMgr.Functions(active, true)
       contDefs match {
@@ -416,7 +419,7 @@ object FunctionUtils {
       }
     } catch {
       case e: Exception => {
-        
+
         logger.debug("", e)
         throw UnexpectedMetadataAPIException("Failed to fetch all the functions:" + e.toString, e)
       }
@@ -449,7 +452,7 @@ object FunctionUtils {
       }
     } catch {
       case e: Exception => {
-        
+
         logger.debug("", e)
         throw UnexpectedMetadataAPIException(e.getMessage(), e)
       }
@@ -460,7 +463,7 @@ object FunctionUtils {
   def GetAllFunctionDefs(formatType: String, userid: Option[String]): (Int, String) = {
     try {
       val funcDefs = MdMgr.GetMdMgr.Functions(true, true)
-      if (userid != None) MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, AuditConstants.FUNCTION, AuditConstants.SUCCESS, "", "ALL")
+      if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, AuditConstants.FUNCTION, AuditConstants.SUCCESS, "", "ALL")
       funcDefs match {
         case None =>
           None

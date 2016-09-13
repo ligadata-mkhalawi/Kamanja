@@ -114,9 +114,13 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
   private var cacheOfOwnChanges: scala.collection.mutable.Set[String] = scala.collection.mutable.Set[String]()
   private var currentTranLevel: Long = _
   private var passwd: String = null
+  private var sslEnabled: Boolean = true
   private var compileCfg: String = ""
   private var heartBeat: HeartBeatUtil = null
   var zkHeartBeatNodePath = ""
+
+  // 646 - 676 Change begins - to replace MatadataAPIImpl call with direct calls
+  def getMetadataAPI : MetadataAPI = this
 
   def getCurrentTranLevel = currentTranLevel
   def setCurrentTranLevel(tranLevel: Long) = {
@@ -164,6 +168,11 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
       var apiResult = new ApiResultComplex(ErrorCodeConstants.Success, "GetHeartbeat", MonitorAPIImpl.getHeartbeatInfo(ids), ErrorCodeConstants.GetHeartbeat_Success)
       apiResult.toString
     } catch {
+      case jex: com.fasterxml.jackson.databind.JsonMappingException => {
+        logger.warn("Failure processing GET_HEALTH_CHECK - body is empty.", jex)
+        val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetHealthCheck", "No data available", ErrorCodeConstants.GetHeartbeat_Failed + " Error:body is empty")
+        return apiResult.toString
+      }
       case cce: java.lang.ClassCastException => {
         logger.warn("Failure processing GET_HEALTH_CHECK - cannot parse the list of desired nodes.", cce)
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetHealthCheck", "No data available", ErrorCodeConstants.GetHeartbeat_Failed + " Error:Parsing Error")
@@ -387,15 +396,15 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     }
   }
 
-    /**
-     * checkAuth
-      *
-      * @param usrid a
-     * @param password a
-     * @param role a
-     * @param privilige a
-     * @return <description please>
-     */
+  /**
+    * checkAuth
+    *
+    * @param usrid a
+    * @param password a
+    * @param role a
+    * @param privilige a
+    * @return <description please>
+    */
   def checkAuth(usrid: Option[String], password: Option[String], role: Option[String], privilige: String): Boolean = {
 
     var authParms: java.util.Properties = new Properties
@@ -419,13 +428,13 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     return authObj.performAuth(authParms)
   }
 
-    /**
-     * getPrivilegeName
-      *
-      * @param op <description please>
-     * @param objName <description please>
-     * @return <description please>
-     */
+  /**
+    * getPrivilegeName
+    *
+    * @param op <description please>
+    * @param objName <description please>
+    * @return <description please>
+    */
   def getPrivilegeName(op: String, objName: String): String = {
     // check if the Auth object exists
     logger.debug("op => " + op)
@@ -435,29 +444,46 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
   }
 
   /**
-   * getSSLCertificatePath
-   */
+    * getSSLCertificatePath
+    */
   def getSSLCertificatePath: String = {
+
     val certPath = metadataAPIConfig.getProperty("SSL_CERTIFICATE")
     if (certPath != null) return certPath
     ""
   }
 
   /**
-   * getSSLCertificatePasswd
-   */
+    * getSSLCertificatePasswd
+    */
   def getSSLCertificatePasswd: String = {
-    if (passwd != null) return passwd
-    ""
+    passwd
   }
 
-    /**
-     * setSSLCertificatePasswd
-      *
-      * @param pw <description please>
-     */
+  /**
+    * setSSLCertificatePasswd
+    *
+    * @param pw <description please>
+    */
   def setSSLCertificatePasswd(pw: String) = {
     passwd = pw
+  }
+
+
+  /**
+    * isSslEnabled
+    */
+  def isSslEnabled: Boolean = {
+    sslEnabled
+  }
+
+  /**
+    * setSSLCertificatePasswd
+    *
+    * @param enable
+    */
+  def setSslEnabled(enable: Boolean) = {
+    sslEnabled = enable
   }
 
   /**
@@ -467,19 +493,19 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     new Date().getTime().toString()
   }
 
-    /**
-     * logAuditRec - Record an Audit event using the audit adapter
-      *
-      * @param userOrRole the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
-     *               Supply one.
-     * @param userPrivilege <description please>
-     * @param action <description please>
-     * @param objectText <description please>
-     * @param success <description please>
-     * @param transactionId <description please>
-     * @param objName <description please>
-     */
+  /**
+    * logAuditRec - Record an Audit event using the audit adapter
+    *
+    * @param userOrRole the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
+    *               Supply one.
+    * @param userPrivilege <description please>
+    * @param action <description please>
+    * @param objectText <description please>
+    * @param success <description please>
+    * @param transactionId <description please>
+    * @param objName <description please>
+    */
   def logAuditRec(userOrRole: Option[String], userPrivilege: Option[String], action: String, objectText: String, success: String, transactionId: String, objName: String) = {
     if (auditObj != null) {
       val aRec = new AuditRecord
@@ -515,17 +541,17 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     }
   }
 
-    /**
-     * Get an audit record from the audit adapter.
-      *
-      * @param startTime <description please>
-     * @param endTime <description please>
-      * @param userOrRole the identity to be used by the security adapter to ascertain if this user has access permissions for this
-      *               method. If Security and/or Audit are configured, this value should be supplied.
-     * @param action <description please>
-     * @param objectAccessed <description please>
-     * @return <description please>
-     */
+  /**
+    * Get an audit record from the audit adapter.
+    *
+    * @param startTime <description please>
+    * @param endTime <description please>
+    * @param userOrRole the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value should be supplied.
+    * @param action <description please>
+    * @param objectAccessed <description please>
+    * @return <description please>
+    */
   def getAuditRec(startTime: Date, endTime: Date, userOrRole: String, action: String, objectAccessed: String): String = {
     var apiResultStr = ""
     if (auditObj == null) {
@@ -571,12 +597,12 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     }
   }
 
-    /**
-     * getLeaderHost
-      *
-      * @param leaderNode <description please>
-     * @return <description please>
-     */
+  /**
+    * getLeaderHost
+    *
+    * @param leaderNode <description please>
+    * @return <description please>
+    */
   def getLeaderHost(leaderNode: String): String = {
     val nodes = MdMgr.GetMdMgr.Nodes.values.toArray
     if (nodes.length == 0) {
@@ -596,12 +622,12 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     }
   }
 
-    /**
-     * getAuditRec
-      *
-      * @param filterParameters <description please>
-     * @return <description please>
-     */
+  /**
+    * getAuditRec
+    *
+    * @param filterParameters <description please>
+    * @return <description please>
+    */
   def getAuditRec(filterParameters: Array[String]): String = {
     var apiResultStr = ""
     if (auditObj == null) {
@@ -706,36 +732,36 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     metadataAPIConfig
   }
 
-    /**
-     * GetObject
-      *
-      * @param bucketKeyStr
-     * @param typeName
-     */
+  /**
+    * GetObject
+    *
+    * @param bucketKeyStr
+    * @param typeName
+    */
   def GetObject(bucketKeyStr: String, typeName: String): (String, Any) = {
     PersistenceUtils.GetObject(bucketKeyStr,typeName)
   }
 
-    /**
-     * SaveObject
-      *
-      * @param bucketKeyStr
-     * @param value
-     * @param typeName
-     * @param serializerTyp
-     */
+  /**
+    * SaveObject
+    *
+    * @param bucketKeyStr
+    * @param value
+    * @param typeName
+    * @param serializerTyp
+    */
   def SaveObject(bucketKeyStr: String, value: Array[Byte], typeName: String, serializerTyp: String) {
     PersistenceUtils.SaveObject(bucketKeyStr,value,typeName,serializerTyp)
   }
 
-    /**
-     * SaveObjectList
-      *
-      * @param keyList
-     * @param valueList
-     * @param typeName
-     * @param serializerTyp
-     */
+  /**
+    * SaveObjectList
+    *
+    * @param keyList
+    * @param valueList
+    * @param typeName
+    * @param serializerTyp
+    */
   def SaveObjectList(keyList: Array[String], valueList: Array[Array[Byte]], typeName: String, serializerTyp: String) {
     PersistenceUtils.SaveObjectList(keyList,valueList,typeName,serializerTyp)
   }
@@ -760,27 +786,27 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     PersistenceUtils.getMdElemTypeName(obj)
   }
 
-    /**
-     * getObjectType
-      *
-      * @param obj <description please>
-     * @return <description please>
-     */
+  /**
+    * getObjectType
+    *
+    * @param obj <description please>
+    * @return <description please>
+    */
   def getObjectType(obj: BaseElemDef): String = {
     PersistenceUtils.getObjectType(obj)
   }
 
-    /**
-     * SaveObjectList
-     *
-     * The following batch function is useful when we store data in single table
-     * If we use Storage component library, note that table itself is associated with a single
-     * database connection( which itself can be mean different things depending on the type
-     * of datastore, such as cassandra, hbase, etc..)
-     *
-     * @param objList
-     * @param typeName
-     */
+  /**
+    * SaveObjectList
+    *
+    * The following batch function is useful when we store data in single table
+    * If we use Storage component library, note that table itself is associated with a single
+    * database connection( which itself can be mean different things depending on the type
+    * of datastore, such as cassandra, hbase, etc..)
+    *
+    * @param objList
+    * @param typeName
+    */
   def SaveObjectList(objList: Array[BaseElemDef], typeName: String) {
     PersistenceUtils.SaveObjectList(objList,typeName)
   }
@@ -807,16 +833,16 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     PersistenceUtils.SaveObjectList(objList, "outputmsgs")
   }
 
-    /**
-     * UpdateObject
-      *
-      * @param key
-     * @param value
-     * @param typeName
-     * @param serializerTyp
-     */
+  /**
+    * UpdateObject
+    *
+    * @param key
+    * @param value
+    * @param typeName
+    * @param serializerTyp
+    */
   def UpdateObject(key: String, value: Array[Byte], typeName: String, serializerTyp: String) {
-     PersistenceUtils.SaveObject(key, value, typeName, serializerTyp)
+    PersistenceUtils.SaveObject(key, value, typeName, serializerTyp)
   }
 
     /**
@@ -849,16 +875,16 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     }
   }
 
-   def UpdateTranId (objList:Array[BaseElemDef] ): Unit ={
+  def UpdateTranId (objList:Array[BaseElemDef] ): Unit ={
      PersistenceUtils.UpdateTranId(objList)
    }
 
-    /**
-     * NotifyEngine
-      *
-      * @param objList <description please>
-     * @param operations <description please>
-     */
+  /**
+    * NotifyEngine
+    *
+    * @param objList <description please>
+    * @param operations <description please>
+    */
   def NotifyEngine(objList: Array[BaseElemDef], operations: Array[String]) {
     try {
       val notifyEngine = GetMetadataAPIConfig.getProperty("NOTIFY_ENGINE")
@@ -911,11 +937,11 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     PersistenceUtils.PutMetadataId(key, id)
   }
 
-    /**
-     * GetNewTranId
-      *
-      * @return <description please>
-     */
+  /**
+    * GetNewTranId
+    *
+    * @return <description please>
+    */
   def GetNewTranId: Long = {
     PersistenceUtils.GetNewTranId
   }
@@ -929,22 +955,22 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     PersistenceUtils.GetTranId
   }
 
-    /**
-     * PutTranId
-      *
-      * @param tId <description please>
-     */
+  /**
+    * PutTranId
+    *
+    * @param tId <description please>
+    */
   def PutTranId(tId: Long) = {
     PersistenceUtils.PutTranId(tId)
   }
 
-    /**
-     * SaveObject
-      *
-      * @param obj <description please>
-     * @param mdMgr the metadata manager receiver
-     * @return <description please>
-     */
+  /**
+    * SaveObject
+    *
+    * @param obj <description please>
+    * @param mdMgr the metadata manager receiver
+    * @return <description please>
+    */
   def SaveObject(obj: BaseElemDef, mdMgr: MdMgr): Boolean = {
     try {
       val key = (getObjectType(obj) + "." + obj.FullNameWithVer).toLowerCase
@@ -1023,11 +1049,11 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     }
   }
 
-    /**
-     * UpdateObjectInDB
-      *
-      * @param obj <description please>
-     */
+  /**
+    * UpdateObjectInDB
+    *
+    * @param obj <description please>
+    */
   def UpdateObjectInDB(obj: BaseElemDef) {
     try {
       val key = (getObjectType(obj) + "." + obj.FullNameWithVer).toLowerCase
@@ -1092,12 +1118,12 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     }
   }
 
-    /**
-     * GetJarAsArrayOfBytes
-      *
-      * @param jarName <description please>
-     * @return <description please>
-     */
+  /**
+    * GetJarAsArrayOfBytes
+    *
+    * @param jarName <description please>
+    * @return <description please>
+    */
   def GetJarAsArrayOfBytes(jarName: String): Array[Byte] = {
     try {
       val iFile = new File(jarName)
@@ -1127,12 +1153,12 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     }
   }
 
-    /**
-     * PutArrayOfBytesToJar
-      *
-      * @param ba <description please>
-     * @param jarName <description please>
-     */
+  /**
+    * PutArrayOfBytesToJar
+    *
+    * @param ba <description please>
+    * @param jarName <description please>
+    */
   def PutArrayOfBytesToJar(ba: Array[Byte], jarName: String) = {
     logger.info("Downloading the jar contents into the file " + jarName)
     try {
@@ -1147,45 +1173,45 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     }
   }
 
-    /**
-     * UploadJarsToDB
-      *
-      * @param obj <description please>
-     * @param forceUploadMainJar <description please>
-     * @param alreadyCheckedJars <description please>
+  /**
+    * UploadJarsToDB
+    *
+    * @param obj <description please>
+    * @param forceUploadMainJar <description please>
+    * @param alreadyCheckedJars <description please>
     */
   def UploadJarsToDB(obj: BaseElemDef, forceUploadMainJar: Boolean = true, alreadyCheckedJars: scala.collection.mutable.Set[String] = null): Unit = {
     PersistenceUtils.UploadJarsToDB(obj,forceUploadMainJar,alreadyCheckedJars)
   }
 
-    /**
-     * UploadJarToDB
-      *
-      * @param jarName <description please>
-     */
+  /**
+    * UploadJarToDB
+    *
+    * @param jarName <description please>
+    */
   def UploadJarToDB(jarName: String) {
     PersistenceUtils.UploadJarToDB(jarName)
   }
 
-    /**
-     * UploadJarToDB
-      *
-      * @param jarName <description please>
-     * @param byteArray <description please>
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return <description please>
-     */
+  /**
+    * UploadJarToDB
+    *
+    * @param jarName <description please>
+    * @param byteArray <description please>
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return <description please>
+    */
   def UploadJarToDB(jarName: String, byteArray: Array[Byte], userid: Option[String] = None): String = {
     PersistenceUtils.UploadJarToDB(jarName,byteArray,userid)
   }
 
-    /**
-     * GetDependantJars of some base element (e.g., model, type, message, container, etc)
-      *
-      * @param obj <description please>
-     * @return <description please>
-     */
+  /**
+    * GetDependantJars of some base element (e.g., model, type, message, container, etc)
+    *
+    * @param obj <description please>
+    * @return <description please>
+    */
   def GetDependantJars(obj: BaseElemDef): Array[String] = {
     try {
       var allJars = new Array[String](0)
@@ -1207,13 +1233,13 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     }
   }
 
-    /**
-     * IsDownloadNeeded
-      *
-      * @param jar <description please>
-     * @param obj <description please>
-     * @return <description please>
-     */
+  /**
+    * IsDownloadNeeded
+    *
+    * @param jar <description please>
+    * @param obj <description please>
+    * @return <description please>
+    */
   def IsDownloadNeeded(jar: String, obj: BaseElemDef): Boolean = {
     try {
       if (jar == null) {
@@ -1253,11 +1279,11 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
       }
     }
   }
-    /**
-     * DownloadJarFromDB
-      *
-      * @param obj <description please>
-     */
+  /**
+    * DownloadJarFromDB
+    *
+    * @param obj <description please>
+    */
   def DownloadJarFromDB(obj: BaseElemDef) {
     var curJar: String = ""
     try {
@@ -1380,14 +1406,14 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
   }
 
   // For now only handle the Model COnfig... Engine Configs will come later
-    /**
-     * AddConfigObjToCache
-      *
-      * @param tid <description please>
-     * @param key <description please>
-     * @param mdlConfig <description please>
-     *  @param mdMgr the metadata manager receiver
-     */
+  /**
+    * AddConfigObjToCache
+    *
+    * @param tid <description please>
+    * @param key <description please>
+    * @param mdlConfig <description please>
+    *  @param mdMgr the metadata manager receiver
+    */
   def AddConfigObjToCache(tid: Long, key: String, mdlConfig: Map[String, List[String]], mdMgr: MdMgr) {
     // Update the current transaction level with this object  ???? What if an exception occurs ????
     if (currentTranLevel < tid) currentTranLevel = tid
@@ -1403,12 +1429,12 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     }
   }
 
-    /**
-     * AddObjectToCache
-      *
-      * @param o <description please>
-     *  @param mdMgr the metadata manager receiver
-     */
+  /**
+    * AddObjectToCache
+    *
+    * @param o <description please>
+    *  @param mdMgr the metadata manager receiver
+    */
   def AddObjectToCache(o: Object, mdMgr: MdMgr, ignoreExistingObjectsOnStartup: Boolean = false) {
     // If the object's Delete flag is set, this is a noop.
     val obj = o.asInstanceOf[BaseElemDef]
@@ -1478,7 +1504,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     /**
      * ModifyObject
       *
-      * @param objDeleteObject
+      * @param obj
      * @param operation
      */
   def ModifyObject(obj: BaseElemDef, operation: String) {
@@ -1496,21 +1522,21 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     }
   }
 
-    /**
-     * DeleteObject
-     *
-     * @param bucketKeyStr
-     * @param typeName
-     */
+  /**
+    * DeleteObject
+    *
+    * @param bucketKeyStr
+    * @param typeName
+    */
   def DeleteObject(bucketKeyStr: String, typeName: String) {
     PersistenceUtils.DeleteObject(bucketKeyStr,typeName)
   }
 
-    /**
-     * DeleteObject
-      *
-      * @param obj
-     */
+  /**
+    * DeleteObject
+    *
+    * @param obj
+    */
   def DeleteObject(obj: BaseElemDef) {
     try {
       ModifyObject(obj, "Remove")
@@ -1525,11 +1551,11 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     }
   }
 
-    /**
-     * ActivateObject
-      *
-      * @param obj
-     */
+  /**
+    * ActivateObject
+    *
+    * @param obj
+    */
   def ActivateObject(obj: BaseElemDef) {
     try {
       ModifyObject(obj, "Activate")
@@ -1544,11 +1570,11 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     }
   }
 
-    /**
-     * DeactivateObject
-      *
-      * @param obj
-     */
+  /**
+    * DeactivateObject
+    *
+    * @param obj
+    */
   def DeactivateObject(obj: BaseElemDef) {
     try {
       ModifyObject(obj, "Deactivate")
@@ -1592,11 +1618,11 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
   }
 
   /**
-     * OpenDbStore
-      *
-      * @param jarPaths Set of paths where jars are located
-     * @param dataStoreInfo information needed to access the data store (kv store dependent)
-     */
+    * OpenDbStore
+    *
+    * @param jarPaths Set of paths where jars are located
+    * @param dataStoreInfo information needed to access the data store (kv store dependent)
+    */
   def OpenDbStore(jarPaths: collection.immutable.Set[String], dataStoreInfo: String) {
     PersistenceUtils.OpenDbStore(jarPaths,dataStoreInfo)
   }
@@ -1609,9 +1635,9 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     PersistenceUtils.CreateMetadataTables
   }
 
-    /**
-     * CloseDbStore
-     */
+  /**
+    * CloseDbStore
+    */
   def CloseDbStore: Unit = lock.synchronized {
     PersistenceUtils.CloseDbStore
   }
@@ -1651,15 +1677,15 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     TypeUtils.AddType(typeDef)
   }
 
-    /**
-     * AddTypes
-      *
-      * @param typesText
-     * @param format
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
-     */
+  /**
+    * AddTypes
+    *
+    * @param typesText
+    * @param format
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
   def AddTypes(typesText: String, format: String, userid: Option[String] = None): String = {
     TypeUtils.AddTypes(typesText,format,userid)
   }
@@ -1849,28 +1875,28 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     ConceptUtils.UpdateConcepts(conceptsText,format,userid)
   }
 
-    /**
-     * RemoveConcept
-      *
-      * @param key
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
-     */
+  /**
+    * RemoveConcept
+    *
+    * @param key
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
   def RemoveConcept(key: String, userid: Option[String] = None): String = {
     ConceptUtils.RemoveConcept(key,userid)
   }
 
-    /**
-     * RemoveConcept
-      *
-      * @param nameSpace namespace of the object
-     * @param name
-     * @param version  Version of the object
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
-     */
+  /**
+    * RemoveConcept
+    *
+    * @param nameSpace namespace of the object
+    * @param name
+    * @param version  Version of the object
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
   def RemoveConcept(nameSpace: String, name: String, version: Long, userid: Option[String]): String = {
     ConceptUtils.RemoveConcept(nameSpace, name, version, userid)
   }
@@ -1905,7 +1931,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
      * @param recompile
      * @return
      */
-  def AddContainerDef(contDef: ContainerDef, recompile: Boolean = false): String = {
+   def AddContainerDef(contDef: ContainerDef, recompile: Boolean = false): String = {
     MessageAndContainerUtils.AddContainerDef(contDef,recompile)
   }
 
@@ -1916,7 +1942,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
      * @param recompile
      * @return
      */
-  def AddMessageDef(msgDef: MessageDef, recompile: Boolean = false): String = {
+   def AddMessageDef(msgDef: MessageDef, recompile: Boolean = false): String = {
     MessageAndContainerUtils.AddMessageDef(msgDef,recompile)
   }
 
@@ -1942,8 +1968,8 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
      * @param recompile a
      * @return <description please>
      */
-  private def AddContainerOrMessage(contOrMsgText: String, format: String, userid: Option[String], tenantId: Option[String] = None, recompile: Boolean = false): String = {
-    MessageAndContainerUtils.AddContainerOrMessage(contOrMsgText,format,userid, tenantId, recompile)
+  private def AddContainerOrMessage(contOrMsgText: String, format: String, userid: Option[String], tenantId: Option[String] = None, pStr: Option[String], recompile: Boolean = false): String = {
+    MessageAndContainerUtils.AddContainerOrMessage(contOrMsgText,format,userid, tenantId, pStr, recompile)
   }
 
     /**
@@ -1965,8 +1991,8 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
      *          println("Result as Json String => \n" + result._2)
      *          }}}
      */
-  override def AddMessage(messageText: String, format: String, userid: Option[String] = None, tid: Option[String] = None): String = {
-    AddContainerOrMessage(messageText, format, userid, tid)
+  override def AddMessage(messageText: String, format: String, userid: Option[String] = None, tid: Option[String] = None, pStr: Option[String]): String = {
+    AddContainerOrMessage(messageText, format, userid, tid, pStr)
   }
 
     /**
@@ -1976,6 +2002,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param format
     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
     *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @param pStr  json string that contains extra parameters to be added to BaseElem (description, comment, tag)
     * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
     *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
     *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
@@ -1988,17 +2015,17 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     *          println("Result as Json String => \n" + result._2)
     *          }}}
     */
-  override def AddContainer(containerText: String, format: String, userid: Option[String] = None, tenantId: Option[String] = None): String = {
-    AddContainerOrMessage(containerText, format, userid, tenantId)
+  override def AddContainer(containerText: String, format: String, userid: Option[String] = None, tenantId: Option[String] = None, pStr: Option[String]): String = {
+    AddContainerOrMessage(containerText, format, userid, tenantId, pStr)
   }
 
     /**
      * AddContainer
       *
-      * @param containerText
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+      * param containerText
+     * param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
      *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
+     * return
      */
  // def AddContainer(containerText: String, userid: Option[String], tenantId: Option[String] = None): String = {
  //   AddContainer(containerText, "JSON", userid, tenantId)
@@ -2021,12 +2048,14 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
      * @param format
      * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
      *               method. If Security and/or Audit are configured, this value must be a value other than None.
+     * @param pStr  json string that contains extra parameters to be added to BaseElem (description, comment, tag)
      * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
      *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
      *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
      */
-  override def UpdateMessage(messageText: String, format: String, userid: Option[String] = None, tid: Option[String] = None): String = {
-    MessageAndContainerUtils.UpdateMessage(messageText,format,userid, tid)
+  override  def UpdateMessage
+    (messageText: String, format: String, userid: Option[String] = None, tid: Option[String] = None, pStr : Option[String]): String = {
+    MessageAndContainerUtils.UpdateMessage(messageText,format,userid, tid, pStr)
   }
 
     /**
@@ -2036,21 +2065,22 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
      * @param format
      * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
      *               method. If Security and/or Audit are configured, this value must be a value other than None.
+      * @param pStr  json string that contains extra parameters to be added to BaseElem (description, comment, tag)
      * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
      *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
      *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
      */
-  override def UpdateContainer(messageText: String, format: String, userid: Option[String] = None, tid: Option[String] = None): String = {
-    UpdateMessage(messageText, format, userid, tid)
+  override  def  UpdateContainer(messageText: String, format: String, userid: Option[String] = None, tid: Option[String] = None, pStr : Option[String]): String = {
+    UpdateMessage(messageText, format, userid, tid, pStr)
   }
 
     /**
      * UpdateContainer
       *
-      * @param messageText
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+      * param messageText
+     * param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
      *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
+     * return
      */
  // def UpdateContainer(messageText: String, userid: Option[String]): String = {
  //   UpdateMessage(messageText, "JSON", userid)
@@ -2059,42 +2089,43 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     /**
      * UpdateMessage
       *
-      * @param messageText
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+      * param messageText
+     * param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
      *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
+     * return
      */
   //def UpdateMessage(messageText: String, userid: Option[String]): String = {
   //  UpdateMessage(messageText, "JSON", userid)
  // }
 
-    /**
-     * Remove container with Container Name and Version Number
-      *
-      * @param nameSpace namespace of the object
-     * @param name
-     * @param version  Version of the object
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @param zkNotify
-     * @return
-     */
-  def RemoveContainer(nameSpace: String, name: String, version: Long, userid: Option[String], zkNotify: Boolean = true): String = {
+  /**
+    * Remove container with Container Name and Version Number
+    *
+    * @param nameSpace namespace of the object
+    * @param name
+    * @param version  Version of the object
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @param zkNotify
+    * @return
+    */
+   def RemoveContainer(nameSpace: String, name: String, version: Long, userid: Option[String], zkNotify: Boolean = true): String = {
     MessageAndContainerUtils.RemoveContainer(nameSpace,name,version,userid,zkNotify)
   }
 
-    /**
-     * Remove message with Message Name and Version Number
-      *
-      * @param nameSpace namespace of the object
-     * @param name
-     * @param version  Version of the object
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @param zkNotify
-     * @return
-     */
-  def  RemoveMessage(nameSpace: String, name: String, version: Long, userid: Option[String], zkNotify: Boolean = true): String = {
+  /**
+    * Remove message with Message Name and Version Number
+    *
+    * @param nameSpace namespace of the object
+    * @param name
+    * @param version  Version of the object
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @param zkNotify
+    * @return
+    */
+  def  RemoveMessage(nameSpace: String, name: String, version: Long, userid: Option[String], zkNotify: Boolean = true): String =
+  {
     MessageAndContainerUtils.RemoveMessage(nameSpace,name,version,userid,zkNotify)
   }
 
@@ -2130,24 +2161,24 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
       * @param zkMessage
      * @return
      */
-  def RemoveMessageFromCache(zkMessage: ZooKeeperNotification) = {
+   def RemoveMessageFromCache(zkMessage: ZooKeeperNotification) = {
     MessageAndContainerUtils.RemoveMessageFromCache(zkMessage)
   }
 
-    /**
-     * RemoveContainerFromCache
-      *
-      * @param zkMessage
-     * @return
-     */
-  def RemoveContainerFromCache(zkMessage: ZooKeeperNotification) = {
+  /**
+    * RemoveContainerFromCache
+    *
+    * @param zkMessage
+    * @return
+    */
+   def RemoveContainerFromCache(zkMessage: ZooKeeperNotification) = {
     MessageAndContainerUtils.RemoveContainerFromCache(zkMessage)
   }
 
     /**
      * Remove message with Message Name and Version Number
-      *
-      * @param messageName Name of the given message
+     *
+     * @param messageName Name of the given message
      * @param version  Version of the given message
      * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
      *               method. If Security and/or Audit are configured, this value should be other than None
@@ -2155,14 +2186,14 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
      *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
      *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
      */
-  def RemoveMessage(messageName: String, version: Long, userid: Option[String]): String = {
+   def RemoveMessage(messageName: String, version: Long, userid: Option[String]): String = {
     RemoveMessage(sysNS, messageName, version, userid)
   }
 
-   /**
+  /**
     * Remove container with Container Name and Version Number
-     *
-     * @param containerName Name of the given container
+    *
+    * @param containerName Name of the given container
     * @param version  Version of the object   Version of the given container
     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
     *               method. If Security and/or Audit are configured, this value must be a value other than None.
@@ -2170,34 +2201,34 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
     *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
     */
-  def RemoveContainer(containerName: String, version: Long, userid: Option[String]): String = {
+   def RemoveContainer(containerName: String, version: Long, userid: Option[String]): String = {
     RemoveContainer(sysNS, containerName, version, userid)
   }
 
-    /**
-     * Deactivate the model that presumably is active and waiting for input in the working set of the cluster engines.
-      *
-      * @param nameSpace namespace of the object
-     * @param name
-     * @param version  Version of the object
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
-     */
+  /**
+    * Deactivate the model that presumably is active and waiting for input in the working set of the cluster engines.
+    *
+    * @param nameSpace namespace of the object
+    * @param name
+    * @param version  Version of the object
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
   def DeactivateModel(nameSpace: String, name: String, version: Long, userid: Option[String] = None): String = {
     ModelUtils.DeactivateModel(nameSpace,name,version,userid)
   }
 
-    /**
-     * Activate the model with the supplied keys. The engine is notified and the model factory is loaded.
-      *
-      * @param nameSpace namespace of the object
-     * @param name
-     * @param version  Version of the object
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
-     */
+  /**
+    * Activate the model with the supplied keys. The engine is notified and the model factory is loaded.
+    *
+    * @param nameSpace namespace of the object
+    * @param name
+    * @param version  Version of the object
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
   def ActivateModel(nameSpace: String, name: String, version: Long, userid: Option[String] = None): String = {
     ModelUtils.ActivateModel(nameSpace,name,version,userid)
   }
@@ -2230,7 +2261,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
      *               method. If Security and/or Audit are configured,supply something other than None
      * @return
      */
-  def AddModel(model: ModelDef, userid : Option[String]): String = {
+  def AddModel(model: ModelDef, userid : Option[String], pStr : Option[String]): String = {
     ModelUtils.AddModel(model,userid)
   }
 
@@ -2259,6 +2290,9 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
       * @param optVersion the model version to be used to describe this PMML model
       * @param optMsgConsumed the namespace.name of the message to be consumed by a PMML model
       * @param optMsgVersion the version of the message to be consumed. By default Some(-1)
+      * @param optMsgProduced the output message to be created when a model result is produced
+      * @param pStr Json string containing global information
+      * @param modelOptions model specific options used by model instance initialization
       * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
       * indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
       * ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
@@ -2271,22 +2305,24 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
                            , optVersion: Option[String] = None
                            , optMsgConsumed: Option[String] = None
                            , optMsgVersion: Option[String] = Some("-1")
-			                     , optMsgProduced: Option[String] = None
+                           , optMsgProduced: Option[String] = None
+                           , pStr : Option[String]
+                           , modelOptions : Option[String]
 		       ): String  = {
-    ModelUtils.AddModel(modelType, input, optUserid, optTenantid, optModelName, optVersion, optMsgConsumed, optMsgVersion, optMsgProduced)
+    ModelUtils.AddModel(modelType, input, optUserid, optTenantid, optModelName, optVersion, optMsgConsumed, optMsgVersion, optMsgProduced, pStr, modelOptions)
   }
 
-    /**
-     * Recompile the supplied model. Optionally the message definition is supplied that was just built.
-     *
-     * @param mod the model definition that possibly needs to be reconstructed.
-     * @param userid the user id that has invoked this command
-     * @param optMsgDef the MessageDef constructed, assuming it was a message def. If a container def has been rebuilt,
-     *               this field will have a value of None.  This is only meaningful at this point when the model to
-     *               be rebuilt is a PMML model.
-     * @return the result string reflecting what happened with this operation.
-     */
-    def RecompileModel(mod: ModelDef, userid : Option[String], optMsgDef : Option[MessageDef]): String = {
+  /**
+    * Recompile the supplied model. Optionally the message definition is supplied that was just built.
+    *
+    * @param mod the model definition that possibly needs to be reconstructed.
+    * @param userid the user id that has invoked this command
+    * @param optMsgDef the MessageDef constructed, assuming it was a message def. If a container def has been rebuilt,
+    *               this field will have a value of None.  This is only meaningful at this point when the model to
+    *               be rebuilt is a PMML model.
+    * @return the result string reflecting what happened with this operation.
+    */
+  def RecompileModel(mod: ModelDef, userid : Option[String], optMsgDef : Option[MessageDef]): String = {
       ModelUtils.RecompileModel(mod,userid, optMsgDef)
     }
 
@@ -2317,17 +2353,22 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
      * @param optVersion the model version to be used to describe this PMML model (for KPMML types this value is obtained from the source file)
      * @param optVersionBeingUpdated not used .. reserved for future release where explicit modelnamespace.modelname.modelversion
      *                               can be updated (not just the latest version)
+     * @param optMsgProduced the output message to be created when a model result is produced
+     * @param pStr Json string containing global information
+     * @param modelOptions model specific options used by model instance initialization
      * @return  result string indicating success or failure of operation
      */
-    override def UpdateModel(modelType: ModelType.ModelType
+    def UpdateModel(modelType: ModelType.ModelType
                             , input: String
                             , optUserid: Option[String] = None
                             , tenantid:  Option[String] = None
                             , optModelName: Option[String] = None
                             , optVersion: Option[String] = None
                             , optVersionBeingUpdated : Option[String] = None
-			                      , optMsgProduced: Option[String] = None): String = {
-      ModelUtils.UpdateModel(modelType, input, optUserid, tenantid, optModelName, optVersion, optVersionBeingUpdated, optMsgProduced)
+                            , optMsgProduced: Option[String] = None
+                            , pStr: Option[String]
+                            , modelOptions : Option[String]): String = {
+      ModelUtils.UpdateModel(modelType, input, optUserid, tenantid, optModelName, optVersion, optVersionBeingUpdated, optMsgProduced, pStr, modelOptions)
     }
 
     /**
@@ -2342,8 +2383,8 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     MessageAndContainerUtils.GetDependentModels(msgNameSpace,msgName,msgVer)
   }
 
-  def GetContainerDefFromCache(nameSpace: String, name: String, formatType: String, version: String, userid: Option[String]): String = {
-    MessageAndContainerUtils.GetContainerDefFromCache(nameSpace,name,formatType,version,userid)
+   def GetContainerDefFromCache(nameSpace: String, name: String, formatType: String, version: String, userid: Option[String], tid: Option[String]): String = {
+    MessageAndContainerUtils.GetContainerDefFromCache(nameSpace,name,formatType,version,userid, tid)
   }
     /**
      * Get all available models (format JSON or XML) as string.
@@ -2382,90 +2423,93 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     MessageAndContainerUtils.GetAllContainerDefs(formatType,userid)
   }
 
-    /**
-     * GetAllModelsFromCache
-      *
-      * @param active
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
-     */
-  def GetAllModelsFromCache(active: Boolean, userid: Option[String] = None): Array[String] = {
-    ModelUtils.GetAllModelsFromCache(active,userid)
+  /**
+    * GetAllModelsFromCache
+    *
+    * @param active
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
+  def GetAllModelsFromCache(active: Boolean, userid: Option[String] = None, tid: Option[String] = None): Array[String] = {
+    ModelUtils.GetAllModelsFromCache(active,userid, tid)
   }
 
-    /**
-     * GetAllMessagesFromCache
-      *
-      * @param active
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
-     */
-  def GetAllMessagesFromCache(active: Boolean, userid: Option[String] = None): Array[String] = {
-    MessageAndContainerUtils.GetAllMessagesFromCache(active,userid)
+  /**
+    * GetAllMessagesFromCache
+    *
+    * @param active
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
+   def GetAllMessagesFromCache(active: Boolean, userid: Option[String] = None, tid: Option[String] = None): Array[String] = {
+    MessageAndContainerUtils.GetAllMessagesFromCache(active,userid, tid)
   }
 
-    /**
-     * GetAllContainersFromCache
-      *
-      * @param active
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
-     */
-  def GetAllContainersFromCache(active: Boolean, userid: Option[String] = None): Array[String] = {
-    MessageAndContainerUtils.GetAllContainersFromCache(active,userid)
+  /**
+    * GetAllContainersFromCache
+    *
+    * @param active
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @param tid helps to filter by tenantId
+    * @return
+    */
+  // 646 - 672 Changes begin - filter by tenantId
+   def GetAllContainersFromCache(active: Boolean, userid: Option[String] = None, tid: Option[String] = None): Array[String] = {
+     MessageAndContainerUtils.GetAllContainersFromCache(active,userid, tid)
   }
+  // 646 - 672 Changes end
 
-    /**
-     * GetAllFunctionsFromCache
-      *
-      * @param active
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
-     */
+  /**
+    * GetAllFunctionsFromCache
+    *
+    * @param active
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
   def GetAllFunctionsFromCache(active: Boolean, userid: Option[String] = None): Array[String] = {
     FunctionUtils.GetAllFunctionsFromCache(active,userid)
   }
 
-    /**
-     * GetAllConceptsFromCache
-      *
-      * @param active
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
-     */
+  /**
+    * GetAllConceptsFromCache
+    *
+    * @param active
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
   def GetAllConceptsFromCache(active: Boolean, userid: Option[String] = None): Array[String] = {
     ConceptUtils.GetAllConceptsFromCache(active,userid)
   }
 
-    /**
-     * GetAllTypesFromCache
-      *
-      * @param active <description please>
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return <description please>
-     */
+  /**
+    * GetAllTypesFromCache
+    *
+    * @param active <description please>
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return <description please>
+    */
   def GetAllTypesFromCache(active: Boolean, userid: Option[String] = None): Array[String] = {
     TypeUtils.GetAllTypesFromCache(active,userid)
   }
 
   // Specific models (format JSON or XML) as an array of strings using modelName(without version) as the key
-    /**
-     *
-     * @param nameSpace namespace of the object
-     * @param objectName name of the desired object, possibly namespace qualified
-     * @param formatType format of the return value, either JSON or XML
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
-     */
+  /**
+    *
+    * @param nameSpace namespace of the object
+    * @param objectName name of the desired object, possibly namespace qualified
+    * @param formatType format of the return value, either JSON or XML
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
   def GetModelDef(nameSpace: String, objectName: String, formatType: String, userid : Option[String]): String = {
-    ModelUtils.GetModelDef(nameSpace,objectName,formatType,userid)
+   ModelUtils.GetModelDef(nameSpace,objectName,formatType,userid)
   }
 
     /**
@@ -2479,32 +2523,32 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     GetModelDef(sysNS, objectName, formatType, userid)
   }
 
-    /**
-     * Get a specific model (format JSON or XML) as a String using modelName(with version) as the key
-      *
-      * @param nameSpace namespace of the object
-     * @param name
-     * @param formatType format of the return value, either JSON or XML
-     * @param version  Version of the object
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
-     */
-  def GetModelDefFromCache(nameSpace: String, name: String, formatType: String, version: String, userid: Option[String] = None): String = {
-    ModelUtils.GetModelDefFromCache(nameSpace,name,formatType,version,userid)
+  /**
+    * Get a specific model (format JSON or XML) as a String using modelName(with version) as the key
+    *
+    * @param nameSpace namespace of the object
+    * @param name
+    * @param formatType format of the return value, either JSON or XML
+    * @param version  Version of the object
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
+  def GetModelDefFromCache(nameSpace: String, name: String, formatType: String, version: String, userid: Option[String] = None, tid : Option[String] = None): String = {
+    ModelUtils.GetModelDefFromCache(nameSpace,name,formatType,version,userid, tid)
   }
 
   // Specific models (format JSON or XML) as an array of strings using modelName(without version) as the key
-    /**
-     *
-     * @param nameSpace namespace of the object
-     * @param objectName name of the desired object, possibly namespace qualified
-     * @param formatType format of the return value, either JSON or XML
-     * @param version  Version of the object
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
-     */
+  /**
+    *
+    * @param nameSpace namespace of the object
+    * @param objectName name of the desired object, possibly namespace qualified
+    * @param formatType format of the return value, either JSON or XML
+    * @param version  Version of the object
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
   def GetModelDef(nameSpace: String, objectName: String, formatType: String, version: String, userid: Option[String]): String = {
     logAuditRec(userid
         , Some(AuditConstants.READ)
@@ -2609,14 +2653,14 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     MessageAndContainerUtils.GetLatestContainer(contDef)
   }
 
-    /**
-     * IsValidVersion
-      *
-      * @param oldObj
-     * @param newObj
-     * @return
-     */
-    def IsValidVersion(oldObj: BaseElemDef, newObj: BaseElemDef): Boolean = {
+  /**
+    * IsValidVersion
+    *
+    * @param oldObj
+    * @param newObj
+    * @return
+    */
+  def IsValidVersion(oldObj: BaseElemDef, newObj: BaseElemDef): Boolean = {
       if (newObj.ver > oldObj.ver) {
         return true
       } else {
@@ -2723,14 +2767,14 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     }
   }
 
-    /**
-     * GetAllKeys
-      *
-      * @param objectType
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
-     */
+  /**
+    * GetAllKeys
+    *
+    * @param objectType
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
   def GetAllKeys(objectType: String, userid: Option[String] = None): Array[String] = {
     try {
       var keys = scala.collection.mutable.Set[String]()
@@ -3027,7 +3071,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
           case _ => { logger.error("Unknown Operation " + zkMessage.Operation + " in zookeeper notification, notification is not processed ..") }
         }
       }
-      case "adapterDef" | "nodeDef" | "clusterInfoDef" | "clusterDef" | "upDef"=> {
+      case "adapterDef" | "nodeDef" | "clusterInfoDef" | "clusterDef" | "upDef" | "TenantDef" => {
           zkMessage.Operation match {
               case "Add" | "Update" | "Remove" => {
                 updateClusterConfigForKey(zkMessage.ObjectType, zkMessage.Name, zkMessage.NameSpace, zkMessage.Operation)
@@ -3229,8 +3273,8 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     *               method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return
     */
-  def GetMessageDef(objectName: String, formatType: String, userid: Option[String] = None): String = {
-      MessageAndContainerUtils.GetMessageDef(objectName,formatType,userid)
+  def GetMessageDef(objectName: String, formatType: String, userid: Option[String] = None, tid : Option[String] = None): String = {
+      MessageAndContainerUtils.GetMessageDef(objectName,formatType,userid, tid)
   }
 
     /**
@@ -3244,8 +3288,8 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
      * @return the result as a JSON String of object ApiResult where ApiResult.resultData contains
      *         the MessageDef either as a JSON or XML string depending on the parameter formatType
      */
-    def GetMessageDef(objectName: String, version: String, formatType: String, userid: Option[String]): String = {
-      MessageAndContainerUtils.GetMessageDef(objectName,version,formatType,userid)
+    def GetMessageDef(objectName: String, version: String, formatType: String, userid: Option[String], tid : Option[String]): String = {
+      MessageAndContainerUtils.GetMessageDef(objectName,version,formatType,userid, tid)
     }
 
     /**
@@ -3260,8 +3304,8 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
      * @return the result as a JSON String of object ApiResult where ApiResult.resultData contains
      *         the MessageDef either as a JSON or XML string depending on the parameter formatType
      */
-    def GetMessageDef(nameSpace: String, objectName: String, formatType: String, version: String, userid: Option[String]): String = {
-      MessageAndContainerUtils.GetMessageDef(nameSpace,objectName,formatType,version,userid)
+    def GetMessageDef(nameSpace: String, objectName: String, formatType: String, version: String, userid: Option[String], tid : Option[String]): String = {
+      MessageAndContainerUtils.GetMessageDef(nameSpace,objectName,formatType,version,userid, tid)
     }
     /**
      * Get a specific container (format JSON or XML) as a String using containerName(without version) as the key
@@ -3273,7 +3317,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
      * @return the result as a JSON String of object ApiResult where ApiResult.resultData contains
      *         the ContainerDef either as a JSON or XML string depending on the parameter formatType
      */
-  def GetContainerDef(objectName: String, formatType: String, userid: Option[String] = None): String = {
+  def GetContainerDef(objectName: String, formatType: String, userid: Option[String] = None, tid: Option[String] = None): String = {
       MessageAndContainerUtils.GetContainerDef(objectName,formatType,userid)
   }
 
@@ -3293,8 +3337,8 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
                       , objectName: String
                       , formatType: String
                       , version: String
-                      , userid: Option[String]): String = {
-      MessageAndContainerUtils.GetContainerDef(nameSpace,objectName,formatType,version,userid)
+                      , userid: Option[String], tid : Option[String]): String = {
+      MessageAndContainerUtils.GetContainerDef(nameSpace,objectName,formatType,version,userid,tid)
   }
 
     /**
@@ -3308,8 +3352,9 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
      * @return the result as a JSON String of object ApiResult where ApiResult.resultData contains
      *         the ContainerDef either as a JSON or XML string depending on the parameter formatType
      */
-  def GetContainerDef(objectName: String, version: String, formatType: String, userid: Option[String]): String = {
-    MessageAndContainerUtils.GetContainerDef(objectName,version,formatType,userid)
+  def GetContainerDef(objectName: String, version: String, formatType: String, userid: Option[String], tid : Option[String] ): String = {
+
+    MessageAndContainerUtils.GetContainerDef(objectName,version,formatType,userid,tid)
   }
 
     /**
@@ -3451,16 +3496,16 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
   }
 
   /**
-     * GetFunctionDef
+    * GetFunctionDef
     *
     * @param nameSpace namespace of the object
-     * @param objectName name of the desired object, possibly namespace qualified
-     * @param formatType format of the return value, either JSON or XML
-     * @param version  Version of the object
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
-     */
+    * @param objectName name of the desired object, possibly namespace qualified
+    * @param formatType format of the return value, either JSON or XML
+    * @param version  Version of the object
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
   def GetFunctionDef(nameSpace: String, objectName: String, formatType: String, version: String, userid: Option[String]): String = {
     FunctionUtils.GetFunctionDef(nameSpace, objectName, formatType, version, userid)
   }
@@ -3520,19 +3565,19 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
   }
 
 
-    /**
-     * Get a single concept as a string using name and version as the key
-      *
-      * @param nameSpace namespace of the object
-     * @param objectName name of the desired object, possibly namespace qualified
-     * @param formatType format of the return value, either JSON or XML
-     * @param version  Version of the object
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
-     */
+  /**
+    * Get a single concept as a string using name and version as the key
+    *
+    * @param nameSpace namespace of the object
+    * @param objectName name of the desired object, possibly namespace qualified
+    * @param formatType format of the return value, either JSON or XML
+    * @param version  Version of the object
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
   def GetConceptDef(nameSpace: String, objectName: String, formatType: String,
-                    version: String, userid: Option[String]): String = {
+    version: String, userid: Option[String]): String = {
     ConceptUtils.GetConceptDef(nameSpace, objectName, formatType, version, userid)
   }
 
@@ -3600,15 +3645,15 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     TypeUtils.GetAllTypes(formatType,userid)
   }
 
-    /**
-     * GetAllTypesByObjType - All available types(format JSON or XML) as a String
-      *
-      * @param formatType format of the return value, either JSON or XML
-     * @param objType
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
-     */
+  /**
+    * GetAllTypesByObjType - All available types(format JSON or XML) as a String
+    *
+    * @param formatType format of the return value, either JSON or XML
+    * @param objType
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
   def GetAllTypesByObjType(formatType: String, objType: String, userid: Option[String] = None): String = {
     TypeUtils.GetAllTypesByObjType(formatType,objType)
   }
@@ -3627,17 +3672,17 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     TypeUtils.GetType(objectName,formatType)
   }
 
-    /**
-     * GetTypeDef
-      *
-      * @param nameSpace namespace of the object
-     * @param objectName name of the desired object, possibly namespace qualified
-     * @param formatType format of the return value, either JSON or XML
-     * @param version  Version of the object
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
-     */
+  /**
+    * GetTypeDef
+    *
+    * @param nameSpace namespace of the object
+    * @param objectName name of the desired object, possibly namespace qualified
+    * @param formatType format of the return value, either JSON or XML
+    * @param version  Version of the object
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
   def GetTypeDef(nameSpace: String, objectName: String, formatType: String, version: String, userid: Option[String] = None): String = {
     TypeUtils.GetTypeDef(nameSpace,objectName,formatType,version,userid)
   }
@@ -3855,27 +3900,27 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
   }
 
   /**
-     * Remove a cluster configuration
+    * Remove a cluster configuration
     *
     * @param cfgStr
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @param cobjects
-     * @return results string
-     */
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @param cobjects
+    * @return results string
+    */
   def RemoveConfig(cfgStr: String, userid: Option[String], cobjects: String): String = {
     ConfigUtils.RemoveConfig(cfgStr,userid,cobjects)
   }
 
-   /**
-     * Answer the model compilation dependencies
-     * FIXME: Which ones? input or output?
-     *
-     * @param modelConfigName
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
-     */
+  /**
+    * Answer the model compilation dependencies
+    * FIXME: Which ones? input or output?
+    *
+    * @param modelConfigName
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
   def getModelDependencies(modelConfigName: String, userid: Option[String] = None): List[String] = {
       var config = MdMgr.GetMdMgr.GetModelConfig(modelConfigName.toLowerCase)
       val typDeps = config.getOrElse(ModelCompilationConstants.DEPENDENCIES, null)
@@ -3888,14 +3933,14 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
       List[String]()
   }
 
-    /**
-     * getModelMessagesContainers
-      *
-      * @param modelConfigName
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @return
-     */
+  /**
+    * getModelMessagesContainers
+    *
+    * @param modelConfigName
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return
+    */
   def getModelMessagesContainers(modelConfigName: String, userid: Option[String] = None): List[String] = {
     MessageAndContainerUtils.getModelMessagesContainers(modelConfigName,userid)
   }
@@ -3909,10 +3954,10 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
   }
 
   /**
-     * Get the model config keys
-      *
-      * @return
-     */
+    * Get the model config keys
+    *
+    * @return
+    */
   def getModelConfigNames(): Array[String] = {
     MdMgr.GetMdMgr.GetModelConfigKeys
   }
@@ -3922,29 +3967,29 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
    */
   private var cfgmap: Map[String, Any] = null
 
-    /**
-     * Upload a model config.  These are for native models written in Scala or Java
-      *
-      * @param cfgStr
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @param objectList
-     * @param isFromNotify
-     * @return
-     */
+  /**
+    * Upload a model config.  These are for native models written in Scala or Java
+    *
+    * @param cfgStr
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @param objectList
+    * @param isFromNotify
+    * @return
+    */
   def UploadModelsConfig(cfgStr: String, userid: Option[String], objectList: String, isFromNotify: Boolean = false): String = {
     ConfigUtils.UploadModelsConfig(cfgStr,userid,objectList,isFromNotify)
   }
 
-    /**
-     * Accept a config specification (a JSON str)
-      *
-      * @param cfgStr the json file to be interpted
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. If Security and/or Audit are configured, this value must be a value other than None.
-     * @param objectList note on the objects in the configuration to be logged to audit adapter
-     * @return
-     */
+  /**
+    * Accept a config specification (a JSON str)
+    *
+    * @param cfgStr the json file to be interpted
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @param objectList note on the objects in the configuration to be logged to audit adapter
+    * @return
+    */
   def UploadConfig(cfgStr: String, userid: Option[String], objectList: String): String = {
     ConfigUtils.UploadConfig(cfgStr,userid,objectList)
   }
@@ -3969,28 +4014,28 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     ConfigUtils.getNodeList1
   }
   // All available nodes(format JSON) as a String
-    /**
-     * Get the nodes as json.
-      *
-      * @param formatType format of the return value, either JSON or XML
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
-     *               Supply one.
-     * @return
-     */
+  /**
+    * Get the nodes as json.
+    *
+    * @param formatType format of the return value, either JSON or XML
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
+    *               Supply one.
+    * @return
+    */
   def GetAllNodes(formatType: String, userid: Option[String] = None): String = {
     ConfigUtils.GetAllNodes(formatType,userid)
   }
 
-    /**
-     * All available adapters(format JSON) as a String
-      *
-      * @param formatType format of the return value, either JSON or XML
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
-     *               Supply one.
-     * @return
-     */
+  /**
+    * All available adapters(format JSON) as a String
+    *
+    * @param formatType format of the return value, either JSON or XML
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
+    *               Supply one.
+    * @return
+    */
   def GetAllAdapters(formatType: String, userid: Option[String] = None): String = {
     ConfigUtils.GetAllAdapters(formatType,userid)
   }
@@ -4100,42 +4145,61 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
       }
       return
     }
+    if (elemType.equalsIgnoreCase("TenantDef")) {
+      //val obj = GetObject("userproperties."+key.toLowerCase, "config_objects")
+      if (operation.equalsIgnoreCase("add")) {
+        val storedInfo = MetadataAPISerialization.deserializeMetadata(new String(GetObject("tenantinfo."+key.toLowerCase, "config_objects")._2.asInstanceOf[Array[Byte]])).asInstanceOf[TenantInfo]
+        MdMgr.GetMdMgr.AddTenantInfo(storedInfo)
+        MdMgr.GetMdMgr.addConfigChange((elemType +"."+"add"+"."+storedInfo.tenantId.toLowerCase, storedInfo))
+        return
+      }
+      if (operation.equalsIgnoreCase("update")) {
+        val storedInfo = MetadataAPISerialization.deserializeMetadata(new String(GetObject("tenantinfo."+key.toLowerCase, "config_objects")._2.asInstanceOf[Array[Byte]])).asInstanceOf[TenantInfo]
+        MdMgr.GetMdMgr.AddTenantInfo(storedInfo)
+        MdMgr.GetMdMgr.addConfigChange((elemType + "." + "update" + "." + storedInfo.tenantId.toLowerCase, storedInfo))
+        return
+      }
+      if (operation.equalsIgnoreCase("Remove")) {
+        logger.warn("Remove TenantDef - not supported")
+      }
+      return
+    }
   }
-    /**
-     * All available clusters(format JSON) as a String
-      *
-      * @param formatType format of the return value, either JSON or XML
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
-     *               Supply one.
-     * @return
-     */
+  /**
+    * All available clusters(format JSON) as a String
+    *
+    * @param formatType format of the return value, either JSON or XML
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
+    *               Supply one.
+    * @return
+    */
   def GetAllClusters(formatType: String, userid: Option[String] = None): String = {
     ConfigUtils.GetAllClusters(formatType,userid)
   }
 
   // All available clusterCfgs(format JSON) as a String
-    /**
-     *
-     * @param formatType format of the return value, either JSON or XML
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
-     *               Supply one.
-     * @return
-     */
+  /**
+    *
+    * @param formatType format of the return value, either JSON or XML
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
+    *               Supply one.
+    * @return
+    */
   def GetAllClusterCfgs(formatType: String, userid: Option[String] = None): String = {
     ConfigUtils.GetAllClusterCfgs(formatType,userid)
   }
 
-    /**
-     * All available config objects(format JSON) as a String
-      *
-      * @param formatType format of the return value, either JSON or XML
-     * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-     *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
-     *               Supply one.
-     * @return
-     */
+  /**
+    * All available config objects(format JSON) as a String
+    *
+    * @param formatType format of the return value, either JSON or XML
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
+    *               Supply one.
+    * @return
+    */
   def GetAllCfgObjects(formatType: String, userid: Option[String] = None): String = {
     ConfigUtils.GetAllCfgObjects(formatType,userid)
   }
@@ -4319,9 +4383,9 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
   }
 
   /**
-   * Release various resources including heartbeat, dbstore, zk listener, and audit adapter
-   * FIXME: What about Security adapter? Should there be a 'release' call on the SecurityAdapter trait?
-   */
+    * Release various resources including heartbeat, dbstore, zk listener, and audit adapter
+    * FIXME: What about Security adapter? Should there be a 'release' call on the SecurityAdapter trait?
+    */
   def shutdown: Unit = {
     shutdownHeartbeat
     CloseDbStore
@@ -4347,13 +4411,13 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     MetadataAPIImpl.UpdateMdMgr(zkTransaction)
   }
 
-    /**
-     * InitMdMgr
-     *
-     * @param mgr the metadata manager instance
-     * @param jarPathsInfo
-     * @param databaseInfo
-     */
+  /**
+    * InitMdMgr
+    *
+    * @param mgr the metadata manager instance
+    * @param jarPathsInfo
+    * @param databaseInfo
+    */
   def InitMdMgr(mgr: MdMgr, jarPathsInfo: String, databaseInfo: String) {
 
     val mdLoader = new MetadataLoad(mgr, "", "", "", "")
@@ -4368,4 +4432,34 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     MetadataAPIImpl.CreateMetadataTables
     MetadataAPIImpl.LoadAllObjectsIntoCache()
   }
+
+
+  /**
+    * Get a specific messsage/container using schemaId as the key
+    *
+    * @param schemaId
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *        method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return the result as a JSON String of object ApiResult where ApiResult.resultData contains
+    *        the Message/Container either as a JSON or XML string depending on the parameter formatType
+    */
+  def GetTypeBySchemaId(schemaId: Int, userid: Option[String]): String = {
+    MessageAndContainerUtils.GetTypeBySchemaId(schemaId, userid)
+  }
+
+  /**
+    * Get a specific messsage/container/model using elementId as the key
+    *
+    * @param elementId
+    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    *        method. If Security and/or Audit are configured, this value must be a value other than None.
+    * @return the result as a JSON String of object ApiResult where ApiResult.resultData contains
+    *      the ContainerDef/MessageDef/ModelDef either as a JSON or XML string depending on the parameter formatType
+    */
+  def GetTypeByElementId(elementId: Long, userid: Option[String]): String = {
+
+    MessageAndContainerUtils.GetTypeByElementId(elementId, userid)
+  }
+
+
 }

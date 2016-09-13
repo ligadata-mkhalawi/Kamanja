@@ -9,8 +9,11 @@ KafkaRootDir=$4
 buildOption=$5
 cleanOption=$6
 ignoreMigrationLibsOption=$7
-ver210=1.4.0_2.10
-ver211=1.4.0_2.11
+
+currentKamanjaVersion=1.6.0
+
+ver210=${currentKamanjaVersion}_2.10
+ver211=${currentKamanjaVersion}_2.11
 
 if [ ! -d "$installPath" ]; then
         echo "Not valid install path supplied.  It should be a directory that can be written to and whose current content is of no value (will be overwritten) "
@@ -95,6 +98,7 @@ mkdir -p $installPath/Kamanja-$ver210/template/config
 mkdir -p $installPath/Kamanja-$ver210/template/script
 #mkdir -p $installPath/Kamanja-$ver210/input/
 mkdir -p $installPath/Kamanja-$ver210/ClusterInstall
+mkdir -p $installPath/Kamanja-$ver210/KamanjaUI
 #new one
 #mkdir -p $installPath/Kamanja-$ver210/input/SampleApplications
 mkdir -p $installPath/Kamanja-$ver210/input/SampleApplications/bin
@@ -130,6 +134,7 @@ mkdir -p $installPath/Kamanja-$ver211/template/config
 mkdir -p $installPath/Kamanja-$ver211/template/script
 #mkdir -p $installPath/Kamanja-$ver211/input
 mkdir -p $installPath/Kamanja-$ver211/ClusterInstall
+mkdir -p $installPath/Kamanja-$ver211/KamanjaUI
 #new one
 #mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications
 mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications/bin
@@ -171,12 +176,8 @@ mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications/template
 #mkdir -p $installPath/KamanjaInstall-$ver211/template/config
 #mkdir -p $installPath/KamanjaInstall-$ver211/template/script
 
-
+kamanjaui=$installPath/Kamanja-$ver210/KamanjaUI
 kamanjainstallbin=$installPath/Kamanja-$ver210/ClusterInstall
-#kamanjainstallbin=$installPath/KamanjaInstall-$ver210/bin
-#kamanjainstallsystemlib=$installPath/KamanjaInstall-$ver210/lib/system
-#kamanjainstallapplib=$installPath/KamanjaInstall-$ver210/lib/application
-#kamanjainstallconfig=$installPath/KamanjaInstall-$ver210/config
 kamanjainstallconfig=$installPath/Kamanja-$ver210/ClusterInstall
 if [ "$build210" == "1" ]; then #beginning of the 2.10 build
 
@@ -224,8 +225,16 @@ cp Utils/KVInit/target/scala-2.10/kvinit* $systemlib
 cp Utils/ContainersUtility/target/scala-2.10/containersutility* $systemlib
 cp MetadataAPI/target/scala-2.10/metadataapi* $systemlib
 cp KamanjaManager/target/scala-2.10/kamanjamanager* $systemlib
+cp Utils/SaveContainerDataComponent/target/scala-2.10/savecontainerdatacomponent_2.10* $systemlib
+
+
 # cp Pmml/MethodExtractor/target/scala-2.10/methodextractor* $bin
+
 cp Utils/SimpleKafkaProducer/target/scala-2.10/simplekafkaproducer* $systemlib
+cp InputOutputAdapters/KafkaAdapters_v8/target/scala-2.10/kamanjakafkaadapters* $systemlib
+cp InputOutputAdapters/KafkaAdapters_v9/target/scala-2.10/kamanjakafkaadapters* $systemlib
+cp InputOutputAdapters/KafkaAdapters_v10/target/scala-2.10/kamanjakafkaadapters* $systemlib
+
 cp Utils/ExtractData/target/scala-2.10/extractdata* $systemlib
 cp Utils/JdbcDataCollector/target/scala-2.10/jdbcdatacollector* $systemlib
 cp MetadataAPIService/target/scala-2.10/metadataapiservice* $systemlib
@@ -236,21 +245,26 @@ cp Utils/ClusterInstaller/InstallDriver/target/scala-2.10/InstallDriver* $kamanj
 cp Utils/ClusterInstaller/GetComponent/target/scala-2.10/GetComponent* $kamanjainstallbin
 cp Utils/ClusterInstaller/InstallDriver/src/main/resources/GetComponentsVersions.sh $kamanjainstallbin
 cp Utils/PmmlTestTool/target/pmmltesttool* $systemlib
-#cp Utils/Migrate/MigrateManager/target/MigrateManager* $bin
 cp Utils/JsonChecker/target/scala-2.10/jsonchecker* $systemlib
+cp Utils/QueryGenerator/target/scala-2.10/querygenerator* $systemlib
+cp Utils/GenerateMessage/target/scala-2.10/generatemessage* $systemlib
+cp $ivyPath/cache/org.apache.commons/commons-pool2/jars/commons-pool2-2.4.2.jar $systemlib
 
 # copy fat jars to KamanjaInstall
-#cp Utils/Migrate/MigrateManager/target/MigrateManager* $kamanjainstallbin
-#cp $srcPath/Utils/NodeInfoExtract/target/scala-2.10/nodeinfoextract* $kamanjainstallsystemlib
 cp $srcPath/Utils/NodeInfoExtract/target/scala-2.10/nodeinfoextract* $systemlib
-#cp ExtDependencyLibs/target/scala-2.10/ExtDependencyLibs_2.10-1.4.0.jar $kamanjainstallsystemlib
-#cp ExtDependencyLibs2/target/scala-2.10/ExtDependencyLibs2_2.10-1.4.0.jar $kamanjainstallsystemlib
-#cp KamanjaInternalDeps/target/scala-2.10/KamanjaInternalDeps_2.10-1.4.0.jar $kamanjainstallsystemlib
 
 # copy jars used to reduce package size
-cp ExtDependencyLibs/target/scala-2.10/ExtDependencyLibs_2.10-1.4.0.jar $systemlib
-cp ExtDependencyLibs2/target/scala-2.10/ExtDependencyLibs2_2.10-1.4.0.jar $systemlib
-cp KamanjaInternalDeps/target/scala-2.10/KamanjaInternalDeps_2.10-1.4.0.jar $systemlib
+cp ExtDependencyLibs/target/scala-2.10/ExtDependencyLibs_2.10-${currentKamanjaVersion}.jar $systemlib
+cp ExtDependencyLibs2/target/scala-2.10/ExtDependencyLibs2_2.10-${currentKamanjaVersion}.jar $systemlib
+cp KamanjaInternalDeps/target/scala-2.10/KamanjaInternalDeps_2.10-${currentKamanjaVersion}.jar $systemlib
+
+# Copy jars needed for Kafka
+cp $ivyPath/cache/org.apache.kafka/kafka_2.10/jars/kafka_2.10-0.8.2.2.jar $systemlib
+cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.9.0.1.jar $systemlib
+cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.10.0.0.jar $systemlib
+cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.8.2.2.jar $systemlib
+cp $ivyPath/cache/com.yammer.metrics/metrics-core/jars/metrics-core-2.2.0.jar  $systemlib
+
 
 # *******************************
 # Copy jars required for version-2.10 (more than required if the fat jars are used)
@@ -263,7 +277,6 @@ cp KamanjaInternalDeps/target/scala-2.10/KamanjaInternalDeps_2.10-1.4.0.jar $sys
 ## -------------------- generated cp commands --------------------
 #
 cp $srcPath/FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory/target/scala-2.10/jarfactoryofmodelinstancefactory*.jar $systemlib
-#cp $srcPath/FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory/target/scala-2.10/jarfactoryofmodelinstancefactory*.jar $kamanjainstallsystemlib
 
 # -------------------- end of generated cp commands --------------------
 
@@ -271,38 +284,34 @@ cp $srcPath/FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory/tar
 ###### For Version-2.10 ######
 #
 
-cp $srcPath/Utils/Migrate/MigrateBase/target/migratebase-1.4.0.jar $systemlib
-cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_1/target/scala-2.10/migratefrom_v_1_1_2.10-1.4.0.jar $systemlib
-cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_2/target/scala-2.10/migratefrom_v_1_2_2.10-1.4.0.jar $systemlib
-cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.10/migratefrom_v_1_3_2.10-1.4.0.jar $systemlib
-# cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_3/target/scala-2.10/migrateto_v_1_3_2.10-1.0.jar $systemlib
-cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_4/target/scala-2.10/migrateto_v_1_4_2.10-1.4.0.jar $systemlib
-cp $srcPath/Utils/Migrate/GenerateAdapterBindings/target/scala-2.10/generateadapterbindings_2.10-1.4.0.jar $systemlib
+cp $srcPath/Utils/Migrate/MigrateBase/target/migratebase-${currentKamanjaVersion}.jar $systemlib
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_1/target/scala-2.10/migratefrom_v_1_1_2.10-${currentKamanjaVersion}.jar $systemlib
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_2/target/scala-2.10/migratefrom_v_1_2_2.10-${currentKamanjaVersion}.jar $systemlib
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.10/migratefrom_v_1_3_2.10-${currentKamanjaVersion}.jar $systemlib
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4/target/scala-2.10/migratefrom_v_1_4_2.10-${currentKamanjaVersion}.jar $systemlib
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4_1/target/scala-2.10/migratefrom_v_1_4_1_2.10-${currentKamanjaVersion}.jar $systemlib
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_5/target/scala-2.10/migratefrom_v_1_5_2.10-${currentKamanjaVersion}.jar $systemlib
+cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_6/target/scala-2.10/migrateto_v_1_6_2.10-${currentKamanjaVersion}.jar $systemlib
+cp $srcPath/Utils/Migrate/GenerateAdapterBindings/target/scala-2.10/generateadapterbindings_2.10-${currentKamanjaVersion}.jar $systemlib
+cp $srcPath/Utils/Migrate/MigrateManager/target/migratemanager-${currentKamanjaVersion}.jar $systemlib
+
 
 #copy jars for kamanjainstallapplib
-cp $srcPath/Utils/Migrate/MigrateBase/target/migratebase-1.4.0.jar $systemlib
-cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_1/target/scala-2.10/migratefrom_v_1_1_2.10-1.4.0.jar $systemlib
-cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_2/target/scala-2.10/migratefrom_v_1_2_2.10-1.4.0.jar $systemlib
-cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.10/migratefrom_v_1_3_2.10-1.4.0.jar $systemlib
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_1/target/scala-2.10/migratefrom_v_1_1_2.10-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver211/lib/system/
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_2/target/scala-2.10/migratefrom_v_1_2_2.10-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver211/lib/system/
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.10/migratefrom_v_1_3_2.10-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver211/lib/system/
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4/target/scala-2.10/migratefrom_v_1_4_2.10-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver211/lib/system
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4_1/target/scala-2.10/migratefrom_v_1_4_1_2.10-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver211/lib/system
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_5/target/scala-2.10/migratefrom_v_1_5_2.10-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver211/lib/system
+cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_6/target/scala-2.10/migrateto_v_1_6_2.10-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver211/lib/system
+cp $srcPath/Utils/Migrate/GenerateAdapterBindings/target/scala-2.10/generateadapterbindings_2.10-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver211/lib/system
 
-cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_1/target/scala-2.10/migratefrom_v_1_1_2.10-1.4.0.jar $installPath/Kamanja-$ver211/lib/system/
-cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_2/target/scala-2.10/migratefrom_v_1_2_2.10-1.4.0.jar $installPath/Kamanja-$ver211/lib/system/
-cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.10/migratefrom_v_1_3_2.10-1.4.0.jar $installPath/Kamanja-$ver211/lib/system/
-#cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_1/target/scala-2.10/migratefrom_v_1_1_2.10-1.4.0.jar $installPath/KamanjaInstall-$ver211/lib/system/
-#cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_2/target/scala-2.10/migratefrom_v_1_2_2.10-1.4.0.jar $installPath/KamanjaInstall-$ver211/lib/system/
-#cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.10/migratefrom_v_1_3_2.10-1.4.0.jar $installPath/KamanjaInstall-$ver211/lib/system/
 migration2_10libsCopiesFor2_11="true"
-
-
-# this should be changed?
-# cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_3/target/scala-2.10/migrateto_v_1_3_2.10-1.0.jar $systemlib
-cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_4/target/scala-2.10/migrateto_v_1_4_2.10-1.4.0.jar $systemlib
-
 
 
 # sample configs
 #echo "copy sample configs..."
-cp $srcPath/Utils/KVInit/src/main/resources/*cfg $systemlib
+# cp $srcPath/Utils/KVInit/src/main/resources/*cfg $systemlib
 
 # Generate keystore file
 #echo "generating keystore..."
@@ -332,10 +341,38 @@ cp -rf * $installPath/Kamanja-$ver210/documentation
 # cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.10/* $installPath/Kamanja-$ver210/ClusterInstall/
 # cp $srcPath/Utils/NodeInfoExtract/target/scala-2.10/NodeInfoExtract* $installPath/Kamanja-$ver210/ClusterInstall/
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.10/*.sh $kamanjainstallbin
+
+#Moving StartKamanjaCluster.sh, StatusKamanjaCluster.sh & StopKamanjaCluster.sh to bin
+mv $kamanjainstallbin/StartKamanjaCluster.sh $bin
+mv $kamanjainstallbin/StatusKamanjaCluster.sh $bin
+mv $kamanjainstallbin/StopKamanjaCluster.sh $bin
+
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.10/*log4*.xml $kamanjainstallconfig
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.10/*.json $kamanjainstallconfig
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.10/*.properties $kamanjainstallconfig
 cp $srcPath/Utils/ClusterInstaller/ClusterInstallerDriver/src/main/resources/log4j2.xml $kamanjainstallconfig
+
+# *******************************
+# copy Kamanja UI stuff
+# *******************************
+
+cp $srcPath/KamanjaUI/Rest/KamanjaUIRest/target/kamanjauirest-${currentKamanjaVersion}.war $kamanjaui/kamanjauirest.war
+cp $srcPath/KamanjaUI/UI/distro/kamanja.war $kamanjaui/
+cp $srcPath/KamanjaUI/Scripts/* $kamanjaui/
+chmod 0700 $kamanjaui/*.sh
+
+
+# *******************************
+# copy OrientDB JDBC jar into system
+# *******************************
+# Download only once and copy
+orientdb_jdbc_all_path="$ivyPath/cache/com.orientechnologies/orientdb-jdbc/jars"
+orientdb_jdbc_all="$orientdb_jdbc_all_path/orientdb-jdbc-2.1.19-all.jar"
+if [ ! -f "$orientdb_jdbc_all" ]; then
+	mkdir -p $orientdb_jdbc_all_path
+	wget -O $orientdb_jdbc_all --no-cookies --no-check-certificate "http://orientdb.com/download.php?file=orientdb-jdbc-2.1.19-all.jar"
+fi
+cp $orientdb_jdbc_all $systemlib
 
 # *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep
@@ -468,12 +505,8 @@ bin=$installPath/Kamanja-$ver211/bin
 systemlib=$installPath/Kamanja-$ver211/lib/system
 applib=$installPath/Kamanja-$ver211/lib/application
 
-
+kamanjaui=$installPath/Kamanja-$ver211/KamanjaUI
 kamanjainstallbin=$installPath/Kamanja-$ver211/ClusterInstall
-#kamanjainstallbin=$installPath/KamanjaInstall-$ver211/bin
-#kamanjainstallsystemlib=$installPath/KamanjaInstall-$ver211/lib/system
-#kamanjainstallapplib=$installPath/KamanjaInstall-$ver211/lib/application
-#kamanjainstallconfig=$installPath/KamanjaInstall-$ver211/config
 kamanjainstallconfig=$installPath/Kamanja-$ver211/ClusterInstall
 
 
@@ -494,16 +527,14 @@ fi
 #Build and copy 2.10 for both MigrateFrom_V_1_1 & MigrateFrom_V_1_2, if they are not copied from 2.10.4 build
 if [ "$migration2_10libsCopiesFor2_11" == "false" ]; then
 if [ "$buildMigrationLibs" == "yes" ]; then
-	sbt '++ 2.10.4 MigrateFrom_V_1_1/package' '++ 2.10.4 MigrateFrom_V_1_2/package' '++ 2.10.4 MigrateFrom_V_1_3/package' '++ 2.10.4 MigrateTo_V_1_4/package'
-	mv $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_1/target/scala-2.10/migratefrom_v_1_1_2.10-1.4.0.jar $systemlib
-	mv $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_2/target/scala-2.10/migratefrom_v_1_2_2.10-1.4.0.jar $systemlib
-	mv $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.10/migratefrom_v_1_3_2.10-1.4.0.jar $systemlib
-	mv $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_4/target/scala-2.10/migrateto_v_1_4_2.10-1.4.0.jar $systemlib
-#	mv $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_1/target/scala-2.10/migratefrom_v_1_1_2.10-1.4.0.jar $kamanjainstallsystemlib
-#	mv $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_2/target/scala-2.10/migratefrom_v_1_2_2.10-1.4.0.jar $kamanjainstallsystemlib
-#	mv $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.10/migratefrom_v_1_3_2.10-1.4.0.jar $kamanjainstallsystemlib
-#	mv $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_4/target/scala-2.10/migrateto_v_1_4_2.10-1.4.0.jar $kamanjainstallsystemlib
-
+	sbt '++ 2.10.4 MigrateFrom_V_1_1/package' '++ 2.10.4 MigrateFrom_V_1_2/package' '++ 2.10.4 MigrateFrom_V_1_3/package' '++ 2.10.4 MigrateFrom_V_1_4/package' '++ 2.10.4 MigrateFrom_V_1_4_1/package' '++ 2.10.4 MigrateFrom_V_1_5/package' '++ 2.10.4 MigrateTo_V_1_6/package'
+	mv $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_1/target/scala-2.10/migratefrom_v_1_1_2.10-${currentKamanjaVersion}.jar $systemlib
+	mv $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_2/target/scala-2.10/migratefrom_v_1_2_2.10-${currentKamanjaVersion}.jar $systemlib
+	mv $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.10/migratefrom_v_1_3_2.10-${currentKamanjaVersion}.jar $systemlib
+	mv $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4/target/scala-2.10/migratefrom_v_1_4_2.10-${currentKamanjaVersion}.jar $systemlib
+	mv $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4_1/target/scala-2.10/migratefrom_v_1_4_1_2.10-${currentKamanjaVersion}.jar $systemlib
+	mv $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_5/target/scala-2.10/migratefrom_v_1_5_2.10-${currentKamanjaVersion}.jar $systemlib
+	mv $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_6/target/scala-2.10/migrateto_v_1_6_2.10-${currentKamanjaVersion}.jar $systemlib
 fi
 fi
 
@@ -530,31 +561,40 @@ cp Utils/KVInit/target/scala-2.11/kvinit* $systemlib
 cp Utils/ContainersUtility/target/scala-2.11/containersutility* $systemlib
 cp MetadataAPI/target/scala-2.11/metadataapi* $systemlib
 cp KamanjaManager/target/scala-2.11/kamanjamanager* $systemlib
-# cp Pmml/MethodExtractor/target/scala-2.11/methodextractor* $bin
+cp Utils/SaveContainerDataComponent/target/scala-2.11/savecontainerdatacomponent_2.11* $systemlib
+
 cp Utils/SimpleKafkaProducer/target/scala-2.11/simplekafkaproducer* $systemlib
+cp InputOutputAdapters/KafkaAdapters_v8/target/scala-2.11/kamanjakafkaadapters* $systemlib
+cp InputOutputAdapters/KafkaAdapters_v9/target/scala-2.11/kamanjakafkaadapters* $systemlib
+cp InputOutputAdapters/KafkaAdapters_v10/target/scala-2.11/kamanjakafkaadapters* $systemlib
+
 cp Utils/ExtractData/target/scala-2.11/extractdata* $systemlib
 cp Utils/JdbcDataCollector/target/scala-2.11/jdbcdatacollector* $systemlib
 cp MetadataAPIService/target/scala-2.11/metadataapiservice* $systemlib
 cp FileDataConsumer/target/scala-2.11/filedataconsumer* $systemlib
 cp Utils/CleanUtil/target/scala-2.11/cleanutil* $systemlib
-#cp Utils/Migrate/MigrateManager/target/MigrateManager* $bin
 cp Utils/ClusterInstaller/ClusterInstallerDriver/target/ClusterInstallerDriver* $kamanjainstallbin
 cp Utils/ClusterInstaller/InstallDriver/target/scala-2.11/InstallDriver* $kamanjainstallbin
 cp Utils/ClusterInstaller/GetComponent/target/scala-2.11/GetComponent* $kamanjainstallbin
 cp Utils/ClusterInstaller/InstallDriver/src/main/resources/GetComponentsVersions.sh $kamanjainstallbin
-#cp Utils/Migrate/MigrateManager/target/MigrateManager* $kamanjainstallbin
 cp $srcPath/Utils/NodeInfoExtract/target/scala-2.11/nodeinfoextract* $systemlib
-#cp $srcPath/Utils/NodeInfoExtract/target/scala-2.11/nodeinfoextract* $kamanjainstallsystemlib
-#cp ExtDependencyLibs/target/scala-2.11/ExtDependencyLibs_2.11-1.4.0.jar $kamanjainstallsystemlib
-#cp ExtDependencyLibs2/target/scala-2.11/ExtDependencyLibs2_2.11-1.4.0.jar $kamanjainstallsystemlib
-#cp KamanjaInternalDeps/target/scala-2.11/KamanjaInternalDeps_2.11-1.4.0.jar $kamanjainstallsystemlib
 cp Utils/PmmlTestTool/target/pmmltesttool* $systemlib
 cp Utils/JsonChecker/target/scala-2.11/jsonchecker* $systemlib
+cp Utils/QueryGenerator/target/scala-2.11/querygenerator* $systemlib
+cp Utils/GenerateMessage/target/scala-2.11/generatemessage* $systemlib
+cp $ivyPath/cache/org.apache.commons/commons-pool2/jars/commons-pool2-2.4.2.jar $systemlib
 
 # copy jars used to reduce package size
-cp ExtDependencyLibs/target/scala-2.11/ExtDependencyLibs_2.11-1.4.0.jar $systemlib
-cp ExtDependencyLibs2/target/scala-2.11/ExtDependencyLibs2_2.11-1.4.0.jar $systemlib
-cp KamanjaInternalDeps/target/scala-2.11/KamanjaInternalDeps_2.11-1.4.0.jar $systemlib
+cp ExtDependencyLibs/target/scala-2.11/ExtDependencyLibs_2.11-${currentKamanjaVersion}.jar $systemlib
+cp ExtDependencyLibs2/target/scala-2.11/ExtDependencyLibs2_2.11-${currentKamanjaVersion}.jar $systemlib
+cp KamanjaInternalDeps/target/scala-2.11/KamanjaInternalDeps_2.11-${currentKamanjaVersion}.jar $systemlib
+
+cp $ivyPath/cache/org.apache.kafka/kafka_2.11/jars/kafka_2.11-0.8.2.2.jar $systemlib
+cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.9.0.1.jar $systemlib
+cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.8.2.2.jar $systemlib
+cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.10.0.0.jar $systemlib
+cp $ivyPath/cache/com.yammer.metrics/metrics-core/jars/metrics-core-2.2.0.jar  $systemlib
+
 
 # *******************************
 # Copy jars required version-2.11 (more than required if the fat jars are used)
@@ -566,43 +606,27 @@ echo "copy all Kamanja jars and the jars upon which they depend to the $systemli
 # -------------------- generated cp commands --------------------
 
 cp $srcPath/FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory/target/scala-2.11/jarfactoryofmodelinstancefactory*.jar $systemlib
-#cp $srcPath/FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory/target/scala-2.11/jarfactoryofmodelinstancefactory*.jar $kamanjainstallsystemlib
 # -------------------- end of generated cp commands --------------------
 
 
 ###### For Version-2.11 ######
 #
 
-cp $srcPath/Utils/Migrate/MigrateBase/target/migratebase-1.4.0.jar $systemlib
-# cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_3/target/scala-2.11/migrateto_v_1_3_2.11-1.0.jar $systemlib
-cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_4/target/scala-2.11/migrateto_v_1_4_2.11-1.4.0.jar $systemlib
-cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.11/migratefrom_v_1_3_2.11-1.4.0.jar $systemlib
-cp $srcPath/Utils/Migrate/GenerateAdapterBindings/target/scala-2.11/generateadapterbindings_2.11-1.4.0.jar $systemlib
-
-#copy jars for kamanjainstallapplib
-cp $srcPath/Utils/Migrate/MigrateBase/target/migratebase-1.4.0.jar $systemlib
-#cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_1/target/scala-2.11/migratefrom_v_1_1_2.10-1.0.jar $kamanjainstallsystemlib
-#cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_2/target/scala-2.11/migratefrom_v_1_2_2.10-1.0.jar $kamanjainstallsystemlib
-
-cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.11/migratefrom_v_1_3_2.11-1.4.0.jar $systemlib
-# cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_3/target/scala-2.11/migrateto_v_1_3_2.11-1.0.jar $kamanjainstallsystemlib
-cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_4/target/scala-2.11/migrateto_v_1_4_2.11-1.4.0.jar $systemlib
+cp $srcPath/Utils/Migrate/MigrateBase/target/migratebase-${currentKamanjaVersion}.jar $systemlib
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.11/migratefrom_v_1_3_2.11-${currentKamanjaVersion}.jar $systemlib
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4/target/scala-2.11/migratefrom_v_1_4_2.11-${currentKamanjaVersion}.jar $systemlib
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4_1/target/scala-2.11/migratefrom_v_1_4_1_2.11-${currentKamanjaVersion}.jar $systemlib
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_5/target/scala-2.11/migratefrom_v_1_5_2.11-${currentKamanjaVersion}.jar $systemlib
+cp $srcPath/Utils/Migrate/DestinationVersion/MigrateTo_V_1_6/target/scala-2.11/migrateto_v_1_6_2.11-${currentKamanjaVersion}.jar $systemlib
+cp $srcPath/Utils/Migrate/GenerateAdapterBindings/target/scala-2.11/generateadapterbindings_2.11-${currentKamanjaVersion}.jar $systemlib
+cp $srcPath/Utils/Migrate/MigrateManager/target/migratemanager-${currentKamanjaVersion}.jar $systemlib
 
 # copy 2.11 migrate libraries into 2.10 install directories, useful just in case of reverse migration
-cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.11/migratefrom_v_1_3_2.11-1.4.0.jar $installPath/Kamanja-$ver210/lib/system/
-#cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.11/migratefrom_v_1_3_2.11-1.4.0.jar $installPath/KamanjaInstall-$ver210/lib/system/
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_3/target/scala-2.11/migratefrom_v_1_3_2.11-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver210/lib/system/
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4/target/scala-2.11/migratefrom_v_1_4_2.11-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver210/lib/system/
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_4_1/target/scala-2.11/migratefrom_v_1_4_1_2.11-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver210/lib/system/
+cp $srcPath/Utils/Migrate/SourceVersion/MigrateFrom_V_1_5/target/scala-2.11/migratefrom_v_1_5_2.11-${currentKamanjaVersion}.jar $installPath/Kamanja-$ver210/lib/system/
 
-#cp $srcPath/Storage/Cassandra/target/scala-2.11/*.jar $systemlib
-#cp $srcPath/Storage/HashMap/target/scala-2.11/*.jar $systemlib
-#cp $srcPath/Storage/HBase/target/scala-2.11/*.jar $systemlib
-##cp $srcPath/Storage/Redis/target/scala-2.11/*.jar $systemlib
-#cp $srcPath/Storage/StorageBase/target/scala-2.11/storagebase_2.11-1.0.jar $systemlib
-#cp $srcPath/Storage/StorageManager/target/scala-2.11/*.jar $systemlib
-#cp $srcPath/Storage/TreeMap/target/scala-2.11/*.jar $systemlib
-##cp $srcPath/Storage/Voldemort/target/scala-2.11/*.jar $systemlib
-#cp $srcPath/InputOutputAdapters/InputOutputAdapterBase/target/scala-2.11/*.jar $systemlib
-#cp $srcPath/KamanjaUtils/target/scala-2.11/kamanjautils_2.11-1.0.jar $systemlib
-#cp $srcPath/SecurityAdapters/SecurityAdapterBase/target/scala-2.11/*.jar $systemlib
 cp $srcPath/Utils/ClusterInstaller/ClusterInstallerDriver/target/*.jar $systemlib
 cp $srcPath/Utils/ClusterInstaller/InstallDriver/target/scala-2.11/*.jar $systemlib
 cp $srcPath/Utils/ClusterInstaller/InstallDriverBase/target/*.jar $systemlib
@@ -613,7 +637,7 @@ cp $srcPath/Utils/ClusterInstaller/GetComponent/target/scala-2.11/*.jar $systeml
 
 # sample configs
 #echo "copy sample configs..."
-cp $srcPath/Utils/KVInit/src/main/resources/*cfg $systemlib
+# cp $srcPath/Utils/KVInit/src/main/resources/*cfg $systemlib
 
 # Generate keystore file
 #echo "generating keystore..."
@@ -621,7 +645,6 @@ cp $srcPath/Utils/KVInit/src/main/resources/*cfg $systemlib
 
 #copy kamanja to bin directory
 cp $srcPath/Utils/Script/scala-2.11/kamanja $bin
-#cp $srcPath/Utils/Script/MedicalApp.sh $bin
 cp $srcPath/MetadataAPI/target/scala-2.11/classes/HelpMenu.txt $installPath/Kamanja-$ver211/input
 # *******************************
 # COPD messages data prep
@@ -643,10 +666,37 @@ cp -rf * $installPath/Kamanja-$ver211/documentation
 # cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.11/* $installPath/Kamanja-$ver211/ClusterInstall/
 # cp $srcPath/Utils/NodeInfoExtract/target/scala-2.11/NodeInfoExtract* $installPath/Kamanja-$ver211/ClusterInstall/
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.11/*.sh $kamanjainstallbin
+
+#Moving StartKamanjaCluster.sh, StatusKamanjaCluster.sh & StopKamanjaCluster.sh to bin
+mv $kamanjainstallbin/StartKamanjaCluster.sh $bin
+mv $kamanjainstallbin/StatusKamanjaCluster.sh $bin
+mv $kamanjainstallbin/StopKamanjaCluster.sh $bin
+
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.11/*log4*.xml $kamanjainstallconfig
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.11/*.json $kamanjainstallconfig
 cp -rf $srcPath/SampleApplication/ClusterInstall/scala-2.11/*.properties $kamanjainstallconfig
 cp $srcPath/Utils/ClusterInstaller/ClusterInstallerDriver/src/main/resources/log4j2.xml $kamanjainstallconfig
+
+# *******************************
+# copy Kamanja UI stuff
+# *******************************
+
+cp $srcPath/KamanjaUI/Rest/KamanjaUIRest/target/kamanjauirest-${currentKamanjaVersion}.war $kamanjaui/kamanjauirest.war
+cp $srcPath/KamanjaUI/UI/distro/kamanja.war $kamanjaui/
+cp $srcPath/KamanjaUI/Scripts/* $kamanjaui/
+chmod 0700 $kamanjaui/*.sh
+
+# *******************************
+# copy OrientDB JDBC jar into system
+# *******************************
+# Download only once and copy
+orientdb_jdbc_all_path="$ivyPath/cache/com.orientechnologies/orientdb-jdbc/jars"
+orientdb_jdbc_all="$orientdb_jdbc_all_path/orientdb-jdbc-2.1.19-all.jar"
+if [ ! -f "$orientdb_jdbc_all" ]; then
+	mkdir -p $orientdb_jdbc_all_path
+	wget -O $orientdb_jdbc_all --no-cookies --no-check-certificate "http://orientdb.com/download.php?file=orientdb-jdbc-2.1.19-all.jar"
+fi
+cp $orientdb_jdbc_all $systemlib
 
 # *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep

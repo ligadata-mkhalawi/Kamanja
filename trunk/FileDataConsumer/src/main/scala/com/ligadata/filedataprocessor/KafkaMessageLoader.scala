@@ -53,6 +53,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
   val MAX_RETRY = 1
   val INIT_KAFKA_UNAVAILABLE_WAIT_VALUE = 1000
   val MAX_WAIT = 60000
+  val allowedSize: Int = inConfiguration.getOrElse(SmartFileAdapterConstants.MAX_MESSAGE_SIZE, "65536").toInt
 
   var currentSleepValue = INIT_KAFKA_UNAVAILABLE_WAIT_VALUE
 
@@ -69,6 +70,117 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
   props.put(org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.ByteArraySerializer")
   props.put(org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,"org.apache.kafka.common.serialization.ByteArraySerializer")
   props.put("request.required.acks",inConfiguration.getOrElse(SmartFileAdapterConstants.KAFKA_ACK, "0"))
+
+  // Add all the new security paramterst
+  val secProt = inConfiguration.getOrElse(SmartFileAdapterConstants.SEC_PROTOCOL, "plaintext").toString
+  if (secProt.length > 0 &&
+    !secProt.equalsIgnoreCase("plaintext")) {
+
+    props.put(SmartFileAdapterConstants.SEC_PROTOCOL, secProt)
+
+    // SSL_KEY_PASSWORD
+    val sslkeypassword = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_KEY_PASSWORD, "").toString
+    if (sslkeypassword.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_KEY_PASSWORD, sslkeypassword)
+
+    // SSL_KEYSTORE_PASSWORD
+    val sslkeystorepassword = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_KEYSTORE_PASSWORD, "").toString
+    if (sslkeystorepassword.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_KEYSTORE_PASSWORD, sslkeystorepassword)
+
+    // SSL_KEYSTORE_LOCATION
+    val sslkeystorelocation = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_KEYSTORE_LOCATION, "").toString
+    if (sslkeystorelocation.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_KEYSTORE_LOCATION, sslkeystorelocation)
+
+    // SSL_KEYSTORE_TYPE
+    val sslkeystoretype = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_KEYSTORE_TYPE, "").toString
+    if (sslkeystoretype.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_KEYSTORE_TYPE, sslkeystoretype)
+
+    //SSL_TRUSTSTORE_PASSWORD
+    val ssltruststorepassword = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_TRUSTSTORE_PASSWORD, "").toString
+    if (ssltruststorepassword.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_TRUSTSTORE_PASSWORD, ssltruststorepassword)
+
+    //SSL_TRUSTSTORE_LOCATION
+    val ssltruststorelocation = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_TRUSTSTORE_LOCATION, "").toString
+    if (ssltruststorelocation.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_TRUSTSTORE_LOCATION, ssltruststorelocation)
+
+    //SSL_TRUSTSTORE_TYPE
+    val ssltruststoretype  = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_TRUSTSTORE_TYPE, "").toString
+    if (ssltruststoretype.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_TRUSTSTORE_TYPE, ssltruststoretype)
+
+    //SSL_ENABLED_PROTOCOLS
+    val sslenabledprotocols = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_ENABLED_PROTOCOLS, "").toString
+    if (sslenabledprotocols.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_ENABLED_PROTOCOLS, sslenabledprotocols)
+
+    //SSL_PROTOCOL
+    val sslprotocol = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_PROTOCOL, "").toString
+    if (sslprotocol.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_PROTOCOL, sslprotocol)
+
+    // SSL_PROVIDER
+    val sslprovider = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_PROVIDER, "").toString
+    if (sslprovider.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_PROVIDER, sslprovider)
+
+    // SSL_CIPHER_SUITES
+    val sslciphersuites = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_CIPHER_SUITES, "").toString
+    if (sslciphersuites.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_CIPHER_SUITES, sslciphersuites)
+
+    //SSL_ENDPOINT_IDENTIFICATION_ALGORITHM
+    val sslendpointidentificationalgorithm = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM, "").toString
+    if (sslendpointidentificationalgorithm.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM, sslendpointidentificationalgorithm)
+
+    // SSL_KEYMANAGER_ALGORITHM
+    val sslkeymanageralgorithm = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_KEYMANAGER_ALGORITHM, "").toString
+    if (sslkeymanageralgorithm.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_KEYMANAGER_ALGORITHM, sslkeymanageralgorithm)
+
+    // SSL_TRUSTMANAGER_ALGORITHM
+    val ssltrustmanageralgorithm = inConfiguration.getOrElse(SmartFileAdapterConstants.SSL_TRUSTMANAGER_ALGORITHM, "").toString
+    if (ssltrustmanageralgorithm.length > 0)
+      props.put(SmartFileAdapterConstants.SSL_TRUSTMANAGER_ALGORITHM, ssltrustmanageralgorithm)
+
+    //SASL_KERBEROS_SERVICE_NAME
+    val saslkerberosservicename = inConfiguration.getOrElse(SmartFileAdapterConstants.SASL_KERBEROS_SERVICE_NAME, "").toString
+    if (saslkerberosservicename.length > 0)
+      props.put(SmartFileAdapterConstants.SASL_KERBEROS_SERVICE_NAME, saslkerberosservicename)
+
+    //SASL_KERBEROS_KINIT_CMD
+    val saslkerberoskinitcmd = inConfiguration.getOrElse(SmartFileAdapterConstants.SASL_KERBEROS_KINIT_CMD, "").toString
+    if (saslkerberoskinitcmd.length > 0)
+      props.put(SmartFileAdapterConstants.SASL_KERBEROS_KINIT_CMD, saslkerberoskinitcmd)
+
+    // SASL_MIN_TIME_BEFORE_RELOGIN
+    val saslmintimebeforerelogic = inConfiguration.getOrElse(SmartFileAdapterConstants.SASL_MIN_TIME_BEFORE_RELOGIN, "").toString
+    if (saslmintimebeforerelogic.length > 0)
+      props.put(SmartFileAdapterConstants.SASL_MIN_TIME_BEFORE_RELOGIN, saslmintimebeforerelogic)
+
+    // SASL_MECHANISM
+    val saslmechanism = inConfiguration.getOrElse(SmartFileAdapterConstants.SASL_MECHANISM, "").toString
+    if (saslmechanism.length > 0)
+      props.put(SmartFileAdapterConstants.SASL_MECHANISM, saslmechanism)
+
+    // SASL_KERBEROS_TICKET_RENEW_JITER
+    val saslkerberosticketrenewjiter = inConfiguration.getOrElse(SmartFileAdapterConstants.SASL_KERBEROS_TICKET_RENEW_JITER, "").toString
+    if (saslkerberosticketrenewjiter.length > 0)
+      props.put(SmartFileAdapterConstants.SASL_KERBEROS_TICKET_RENEW_JITER, saslkerberosticketrenewjiter)
+
+    //SASL_KERBEROS_TICKET_RENEW_WINDOW_FACTOR
+    val saslkerberosticketrenewwindowfactor = inConfiguration.getOrElse(SmartFileAdapterConstants.SASL_KERBEROS_TICKET_RENEW_WINDOW_FACTOR, "").toString
+    if (saslkerberosticketrenewwindowfactor.length > 0)
+      props.put(SmartFileAdapterConstants.SASL_KERBEROS_TICKET_RENEW_WINDOW_FACTOR, saslkerberosticketrenewwindowfactor)
+  }
+
+
+
 
   // create the producer object
  // val producer = new KafkaProducer[Array[Byte], Array[Byte]](new ProducerConfig(props))
@@ -124,6 +236,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
     // Simply creating new object and returning. Not checking for MsgContainerType. This is issue if the child level messages ask for the type
     return objInst.createInstance
   }
+
 
   override def getInstance(schemaId: Long): ContainerInterface = {
     //BUGBUG:: For now we are getting latest class. But we need to get the old one too.
@@ -243,6 +356,9 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
           //Pass in the complete message instead of just the message string
 //          inputData = CreateKafkaInput(msg, SmartFileAdapterConstants.MESSAGE_NAME, delimiters)
           msgStr = new String(msg.msg)
+
+          if (msgStr.size > allowedSize ) throw new KVMessageFormatingException("Message size exceeds the maximum alloweable size ", null)
+
           if(message_metadata && !msgStr.startsWith("fileId")){
             msgStr = "fileId" + keyAndValueDelimiter + FileProcessor.getIDFromFileCache(msg.relatedFileName) +
               fieldDelimiter +
@@ -357,6 +473,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
         currentMessage += 1
       })
       var successVector = Array.fill[Boolean](messages.size)(false)  //Array[Boolean](messages.size)
+      var gotResponse = Array.fill[Boolean](messages.size)(false)  //Array[Boolean](messages.size)
       var isFullySent = false
       var isRetry = false
       var failedPush = 0
@@ -371,29 +488,39 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
           if (//respFutures.contains(currentMessage) &&
               !successVector(currentMessage)) {
             // Send the request to Kafka
-            val response = producer.send(msg, new Callback {
+            val response = FileProcessor.executeCallWithElapsed(producer.send(msg, new Callback {
               override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
+                val msgIdx = currentMessage
                 if (exception != null) {
+                  isFullySent = false
+                  isRetry = true
                   failedPush += 1
                   logger.warn("SMART FILE CONSUMER ("+partIdx+") has detected a problem with pushing a message into the " +msg.topic + " will retry " +exception.getMessage)
+                } else {
+                  successVector(msgIdx) = true
                 }
+                gotResponse(msgIdx) = true
               }
-            })
+            }), " Sending data to kafka" )
             respFutures(currentMessage) = response
           }
           currentMessage += 1
         })
 
+        var sleepTmRemainingInMs = 30000
         // Make sure all messages have been successfuly sent, and resend them if we detected bad messages
         isFullySent = true
-        var numberOfFailuresThisTime = 0
-        for (i <- 0 until messages.size) {
-          if (!successVector(i)) {
-            val (rc, partitionId) = checkMessage(respFutures,i)
+        var i = messages.size - 1
+        while (i >= 0) {
+          if (!successVector(i) && !gotResponse(i)) {
+            val tmConsumed = System.nanoTime
+            val (rc, partitionId) = checkMessage(respFutures,i, sleepTmRemainingInMs)
+            var tmElapsed = System.nanoTime - tmConsumed
+            if (tmElapsed < 0) tmElapsed = 0
+            sleepTmRemainingInMs -= (tmElapsed / 1000000).toInt
             if (rc > 0) {
               isFullySent = false
               isRetry = true
-              numberOfFailuresThisTime += 1
             } else {
               if (partitionsStats.contains(partitionId)) {
                 partitionsStats(partitionId) = partitionsStats(partitionId) + 1
@@ -403,6 +530,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
               successVector(i) = true
             }
           }
+          i -= 1
         }
 
         // We can now fail for some messages, so, we need to update the recovery area in ZK, to make sure the retry does not
@@ -420,9 +548,9 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
     FileProcessor.KAFKA_SEND_SUCCESS
   }
 
-  private def checkMessage(mapF: scala.collection.mutable.Map[Int,Future[RecordMetadata]], i: Int): (Int,Int) = {
+  private def checkMessage(mapF: scala.collection.mutable.Map[Int,Future[RecordMetadata]], i: Int, sleepTmRemainingInMs: Int): (Int,Int) = {
     try {
-      val md = mapF(i).get(10, TimeUnit.SECONDS)
+      val md = mapF(i).get(if (sleepTmRemainingInMs <= 0) 1 else sleepTmRemainingInMs, TimeUnit.MILLISECONDS)
       mapF(i) = null
       return(FileProcessor.KAFKA_SEND_SUCCESS, md.partition)
     } catch {
@@ -466,12 +594,12 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
 
       //Take care of multiple directories
       logger.info("SMART FILE CONSUMER ("+partIdx+") Moving File" + fileName + " to " + inConfiguration(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO))
-      Files.move(Paths.get(fileName), Paths.get( inConfiguration(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO) + "/" + fileStruct(fileStruct.size - 1)),REPLACE_EXISTING)
+      FileProcessor.executeCallWithElapsed(Files.move(Paths.get(fileName), Paths.get( inConfiguration(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO) + "/" + fileStruct(fileStruct.size - 1)),REPLACE_EXISTING),"Moving file " + fileName)
       
-      //Use the full filename 
+      //Use the full filename
+      FileProcessor.removeFromZK(fileName)
       FileProcessor.markFileProcessingEnd(fileName)
       FileProcessor.fileCacheRemove(fileName)
-      FileProcessor.removeFromZK(fileName)
        
     } catch {
       case ioe: IOException => {
@@ -552,28 +680,35 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
     if (errorTopic == null) return
 
     val cdate: Date = new Date
-    
-    val errorMsg1 = dateFormat.format(cdate) + "," + msg.relatedFileName + "," + (new String(msg.msg))
-    
-    //Add message offset 
-    val errorMsg2 = dateFormat.format(cdate) + "," + msg.relatedFileName + "," +  msg.msgOffset + "," + (new String(msg.msg))
-    
+
+    // if the message is corrupted and results in a message larger then kafka can accept trucate it to a reasonable size\
+    val org_error_msg: String = new String(msg.msg)
+    var error_msg = org_error_msg
+    if (error_msg.size > allowedSize) {
+      error_msg = error_msg.substring(0,allowedSize - 1)
+    }
+
     logger.warn(" SMART FILE CONSUMER ("+partIdx+"): invalid message in file " + msg.relatedFileName)
-    
+
     val keyMessages = new ArrayBuffer[ProducerRecord[Array[Byte], Array[Byte]]](1)
-    
+
     if(exception_metadata){
-      logger.warn(errorMsg2)
-      keyMessages += new ProducerRecord(inConfiguration(SmartFileAdapterConstants.KAFKA_ERROR_TOPIC), 
+      //Add message offset
+      val org_errorMsg2 = dateFormat.format(cdate) + "," + msg.relatedFileName + "," +  msg.msgOffset + "," + org_error_msg
+      logger.warn(org_errorMsg2)
+      val errorMsg2 = dateFormat.format(cdate) + "," + msg.relatedFileName + "," +  msg.msgOffset + "," + error_msg
+      keyMessages += new ProducerRecord(inConfiguration(SmartFileAdapterConstants.KAFKA_ERROR_TOPIC),
         "rare event".getBytes("UTF8"), errorMsg2.getBytes("UTF8"))
     }else{
-      logger.warn(errorMsg1)
-      keyMessages += new ProducerRecord(inConfiguration(SmartFileAdapterConstants.KAFKA_ERROR_TOPIC), 
+      val org_errorMsg1 = dateFormat.format(cdate) + "," + msg.relatedFileName + "," + org_error_msg
+      logger.warn(org_errorMsg1)
+      val errorMsg1 = dateFormat.format(cdate) + "," + msg.relatedFileName + "," + error_msg
+      keyMessages += new ProducerRecord(inConfiguration(SmartFileAdapterConstants.KAFKA_ERROR_TOPIC),
         "rare event".getBytes("UTF8"), errorMsg1.getBytes("UTF8"))
     }
     // Write a Error Message
     sendToKafka(keyMessages, "Error")
- }
+  }
 
   private def writeGenericMsg(msg: String, fileName: String, topicName: String): Unit = {
 

@@ -1,0 +1,43 @@
+<div class="topHeader" ng-click="header.hideSideMenu()">
+  <div class="row headerBar">
+    <div class="col-sm-6 col-xs-6 col-md-6">
+      <img class="logo" id="imgLogo" src="./images/logo.svg" width="168"
+           height="47" alt="" data-mu-svgfallback="./images/logo.png">
+      <span class="version">beta v0.1</span>
+    </div>
+    <div class="col-sm-6 col-xs-6 col-md-6">
+      <div class="row">
+        <div class="col-md-12 rightSection">
+          <ul class="list-inline rightItems">
+            <li>
+              <div ng-hide="false" class="checkbox">
+                <input type="checkbox" ng-click="header.toggleShowStatus()" ng-checked="header.getShowStatus()" id="chkShowStatus">
+                <label for="chkShowStatus">Show status</label>
+              </div>
+            </li>
+            <li ng-show="false">
+              <span class="version">{{header.currentDate | date:'medium'}}</span>
+            </li>
+            <li>
+              <div class="view">VIEW</div>
+            </li>
+            <li>
+              <div class="dropdown">
+                <div class="dropdown-toggle" data-toggle="dropdown" role="button"
+                     aria-haspopup="true" aria-expanded="false">
+                  <span>{{header.selectedView}} <span class="caret"></span></span>
+                </div>
+                <ul class="dropdown-menu">
+                  <li ng-repeat-start="view in header.listViews">
+                    <a ng-click="header.setView(view)" href="javascript:void(0)">{{view[view.MainQuery_parameters.ViewName]}}</a>
+                  </li>
+                  <li ng-repeat-end="" role="separator" class="separator"></li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

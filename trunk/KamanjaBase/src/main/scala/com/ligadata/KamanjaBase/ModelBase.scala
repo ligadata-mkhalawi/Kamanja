@@ -55,7 +55,7 @@ case class Result(val name: String, val result: Any)
 object ModelsResults {
   def ValueString(v: Any): String = {
     if (v == null) {
-      return "null"
+      return ""
     }
     if (v.isInstanceOf[Set[_]]) {
       return v.asInstanceOf[Set[_]].mkString(",")
@@ -338,7 +338,7 @@ trait EnvContext /* extends Monitorable */  {
 
   // Final Commit for the given transaction
   // outputResults has AdapterName, PartitionKey & Message
-  def commitData(tenantId: String, txnCtxt: TransactionContext, data: Array[(String, Array[ContainerInterface])]): Unit
+  def commitData(tenantId: String, txnCtxt: TransactionContext, data: Array[(String, Array[ContainerInterface])], forceCommit: Boolean): Unit
 
   def rollbackData(): Unit
 
@@ -355,7 +355,7 @@ trait EnvContext /* extends Monitorable */  {
   // Changed Data & Reloading data are Time in MS, Bucket Key & TransactionId
   //  def getChangedData(tempTransId: Long, includeMessages: Boolean, includeContainers: Boolean): scala.collection.immutable.Map[String, List[Key]]
 
-  //  def ReloadKeys(tempTransId: Long, containerName: String, keys: List[Key]): Unit
+    def ReloadKeys(tempTransId: Long, tenatId: String, containerName: String, keys: List[Key]): Unit
 
   // Set Reload Flag
   //  def setReloadFlag(containerName: String): Unit
@@ -378,7 +378,7 @@ trait EnvContext /* extends Monitorable */  {
   // Just get the cached container key and see what are the containers we need to cache
   def cacheContainers(clusterId: String): Unit
 
-  //  def EnableEachTransactionCommit: Boolean
+  def EnableEachTransactionCommit: Boolean
 
   // Lock functions
 //  def lockKeyInCluster(key: String): Unit
@@ -944,7 +944,7 @@ class TransactionContext(val transId: Long, val nodeCtxt: NodeContext, val msgDa
         //BUGBUG:: Yet to fix -- Same timeRange, Partition Key & PrimaryKeys need to be updated with new ones
         //FIXME:- Fix this -- Same timeRange, Partition Key & PrimaryKeys need to be updated with new ones
         // May be we can create the map of current list and loop thru the list we got tmpList
-        tmpList ++ tmpList
+        tmpList ++ currentList.map(m => m._2)
       } else if (currentList.size > 0) {
         currentList.map(m => m._2)
       } else {

@@ -4,13 +4,15 @@ package com.ligadata.InputAdapters
 import java.io._
 import java.nio.file.Path
 import java.nio.file._
+import java.util
 import java.util.zip.GZIPInputStream
 import com.ligadata.Exceptions.{KamanjaException}
+import com.ligadata.InputOutputAdapterInfo.AdapterConfiguration
 
 import org.apache.logging.log4j.{ Logger, LogManager }
 
 import scala.actors.threadpool.{Executors, ExecutorService}
-import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.collection.mutable.{MultiMap, ArrayBuffer, HashMap}
 import scala.util.control.Breaks._
 import com.ligadata.AdaptersConfiguration._
 import CompressionUtil._
@@ -36,14 +38,23 @@ class PosixFileHandler extends SmartFileHandler{
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
 
+  private var isBinary: Boolean = false
+
   def this(fullPath : String){
     this()
-
     fileFullPath = fullPath
   }
 
+  def this(fullPath : String, isBin: Boolean) {
+    this(fullPath)
+    isBinary = isBin
+  }
+
+  def getParentDir : String = MonitorUtils.simpleDirPath(fileObject.getParent.trim)
+
   //gets the input stream according to file system type - POSIX here
   def getDefaultInputStream() : InputStream = {
+    logger.info("Posix File Handler - opening file " + getFullPath)
     val inputStream : InputStream =
       try {
         new FileInputStream(fileFullPath)
@@ -62,9 +73,14 @@ class PosixFileHandler extends SmartFileHandler{
   @throws(classOf[KamanjaException])
   def openForRead(): InputStream = {
     try {
-      val fileType = CompressionUtil.getFileType(this, null)
-      in = CompressionUtil.getProperInputStream(getDefaultInputStream, fileType)
-      //bufferedReader = new BufferedReader(in)
+      val is = getDefaultInputStream()
+      if (!isBinary) {
+        val fileType = CompressionUtil.getFileType(this, null)
+        in = CompressionUtil.getProperInputStream(is, fileType)
+        //bufferedReader = new BufferedReader(in)
+      } else {
+        in = is
+      }
       in
     }
     catch{
@@ -95,17 +111,18 @@ class PosixFileHandler extends SmartFileHandler{
 
   @throws(classOf[KamanjaException])
   def moveTo(newFilePath : String) : Boolean = {
+
     if(getFullPath.equals(newFilePath)){
       logger.warn(s"Trying to move file ($getFullPath) but source and destination are the same")
       return false
     }
     try {
-      logger.debug(s"PosixFileHandler - Moving file ${fileObject.toString} to ${newFilePath}")
+      logger.debug(s"Posix File Handler - Moving file ${fileObject.toString} to ${newFilePath}")
       val destFileObj = new File(newFilePath)
 
       if (fileObject.exists()) {
         fileObject.renameTo(destFileObj)
-        logger.debug("Moved remote file success")
+        logger.debug("Moved file success")
         fileFullPath = newFilePath
         return true
       }
@@ -128,7 +145,7 @@ class PosixFileHandler extends SmartFileHandler{
 
   @throws(classOf[KamanjaException])
   def delete() : Boolean = {
-    logger.debug(s"Deleting file ($getFullPath)")
+    logger.info(s"Posix File Handler - Deleting file ($getFullPath)")
     try {
       fileObject.delete
       logger.debug("Successfully deleted")
@@ -148,12 +165,29 @@ class PosixFileHandler extends SmartFileHandler{
   }
 
   @throws(classOf[KamanjaException])
-  def length : Long = fileObject.length
-
-  def lastModified : Long = fileObject.lastModified
+  override def deleteFile(fileName: String) : Boolean = {
+    logger.info(s"Posix File Handler - Deleting file ($fileName)")
+    try {
+      val flObj = new File(fileName)
+      flObj.delete
+      logger.debug("Successfully deleted")
+      return true
+    }
+    catch {
+      case ex : Exception => {
+        logger.error("", ex)
+        return false
+      }
+      case ex : Throwable => {
+        logger.error("", ex)
+        return false
+      }
+    }
+  }
 
   @throws(classOf[KamanjaException])
   def close(): Unit = {
+    logger.info("Posix File Handler - Closing file " + getFullPath)
     try {
       if (in != null)
         in.close()
@@ -164,11 +198,31 @@ class PosixFileHandler extends SmartFileHandler{
     }
   }
 
-  override def exists(): Boolean = new File(fileFullPath).exists
+  @throws(classOf[KamanjaException])
+  def length : Long = {
+    logger.info("Posix File Handler - checking length for file " + getFullPath)
+    fileObject.length
+  }
 
-  override def isFile: Boolean = new File(fileFullPath).isFile
+  def lastModified : Long = {
+    logger.info("Posix File Handler - checking modification time for file " + getFullPath)
+    fileObject.lastModified
+  }
 
-  override def isDirectory: Boolean = new File(fileFullPath).isDirectory
+  override def exists(): Boolean = {
+    logger.info("Posix File Handler - checking existence for file " + getFullPath)
+    new File(fileFullPath).exists
+  }
+
+  override def isFile: Boolean = {
+    logger.info("Posix File Handler - checking (isFile) for file " + getFullPath)
+    new File(fileFullPath).isFile
+  }
+
+  override def isDirectory: Boolean = {
+    logger.info("Posix File Handler - checking (isDir) for file " + getFullPath)
+    new File(fileFullPath).isDirectory
+  }
 
   override def isAccessible : Boolean = {
     val file = new File(fileFullPath)
@@ -179,10 +233,11 @@ class PosixFileHandler extends SmartFileHandler{
 
 /**
   *  adapterName might be used for error messages
+  *
   * @param adapterName
   * @param modifiedFileCallback
   */
-class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileHandler) => Unit) extends SmartFileMonitor {
+class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileHandler, Boolean) => Unit) extends SmartFileMonitor {
 
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
@@ -202,107 +257,177 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
   private var monitorsExecutorService: ExecutorService = null
 
   private var isMonitoring = false
+  private var checkFolders = true
+
+  private val processedFilesMap : scala.collection.mutable.LinkedHashMap[String, Long] = scala.collection.mutable.LinkedHashMap[String, Long]()
 
   def init(adapterSpecificCfgJson: String): Unit ={
     logger.debug("PosixChangesMonitor (init)- adapterSpecificCfgJson==null is "+
       (adapterSpecificCfgJson == null))
 
-    val(_type, c, m) =  SmartFileAdapterConfiguration.parseSmartFileAdapterSpecificConfig(adapterName, adapterSpecificCfgJson)
+    val(_type, c, m, a) =  SmartFileAdapterConfiguration.parseSmartFileAdapterSpecificConfig(adapterName, adapterSpecificCfgJson)
     connectionConf = c
     monitoringConf = m
   }
 
+  def markFileAsProcessed(filePath : String) : Unit = {
+    fileCacheLock.synchronized {
+      logger.info("Smart File Consumer (Posix Monitor) - removing file {} from map {} as it is processed", filePath, fileCache)
+      fileCache -= filePath
+
+      //MonitorUtils.addProcessedFileToMap(filePath, processedFilesMap) //TODO : uncomment later
+    }
+  }
+
+  def setMonitoringStatus(status : Boolean): Unit ={
+    checkFolders = status
+  }
+
   def monitor: Unit ={
 
+    logger.info("Posix Changes Monitor - start monitoring")
     //TODO : consider running each folder monitoring in a separate thread
     isMonitoring = true
 
-    monitorsExecutorService = Executors.newFixedThreadPool(monitoringConf.locations.length)
+    val maxThreadCount = Math.min(monitoringConf.monitoringThreadsCount, monitoringConf.detailedLocations.length)
+    monitorsExecutorService = Executors.newFixedThreadPool(maxThreadCount)
+    logger.info("Smart File Monitor - running {} threads to monitor {} dirs",
+      monitoringConf.monitoringThreadsCount.toString, monitoringConf.detailedLocations.length.toString)
 
-    monitoringConf.locations.foreach(folderToWatch => {
+    val monitoredDirsQueue = new MonitoredDirsQueue()
+    monitoredDirsQueue.init(monitoringConf.detailedLocations, monitoringConf.waitingTimeMS)
+
+    for( currentThreadId <- 1 to maxThreadCount) {
+
       val dirMonitorthread = new Runnable() {
-        private var targetFolder: String = _
-        def init(dir: String) = targetFolder = dir
+        //private var locaions: Array[LocationInfo] = _
+        //def init(locs: Array[LocationInfo]) = locaions = locs
 
         override def run() = {
-          try{
+          try {
             breakable {
+
+              //var isFirstScan = true
+
               while (isMonitoring) {
-                try {
-                  logger.info(s"Watching directory $targetFolder")
+
+                if (checkFolders) {
+                  val dirQueuedInfo = monitoredDirsQueue.getNextDir()
+                  if (dirQueuedInfo != null) {
+                    val location = dirQueuedInfo._1
+                    val isFirstScan = dirQueuedInfo._3
+                    val targetFolder = location.srcDir
+
+                    logger.info("Smart File Monitor - Monitoring folder {} on thread {}", targetFolder, currentThreadId.toString)
+
+                    try {
+
+                      val dirsToCheck = new ArrayBuffer[String]()
+                      dirsToCheck += targetFolder
+
+                      while (dirsToCheck.nonEmpty) {
+                        val dirToCheck = dirsToCheck.head
+                        dirsToCheck.remove(0)
+
+                        val dir = new File(dirToCheck)
+                        checkExistingFiles(dir, isFirstScan, location)
+                        //dir.listFiles.filter(_.isDirectory).foreach(d => dirsToCheck += d.toString)
+
+                        errorWaitTime = 1000
+                      }
 
 
-                  val dirsToCheck = new ArrayBuffer[String]()
-                  dirsToCheck += targetFolder
+                    } catch {
+                      case e: Exception => {
+                        logger.warn("Unable to access Directory, Retrying after " + errorWaitTime + " seconds", e)
+                        errorWaitTime = scala.math.min((errorWaitTime * 2), MAX_WAIT_TIME)
+                      }
+                      case e: Throwable => {
+                        logger.warn("Unable to access Directory, Retrying after " + errorWaitTime + " seconds", e)
+                        errorWaitTime = scala.math.min((errorWaitTime * 2), MAX_WAIT_TIME)
+                      }
+                    }
 
-
-                  while(dirsToCheck.nonEmpty ) {
-                    val dirToCheck = dirsToCheck.head
-                    dirsToCheck.remove(0)
-
-                    val dir = new File(dirToCheck)
-                    checkExistingFiles(dir)
-                    dir.listFiles.filter(_.isDirectory).foreach(d => dirsToCheck += d.toString)
-
-                    errorWaitTime = 1000
+                    monitoredDirsQueue.reEnqueue(dirQueuedInfo) // so the folder gets monitored again
                   }
-                } catch {
-                  case e: Exception => {
-                    logger.warn("Unable to access Directory, Retrying after " + errorWaitTime + " seconds", e)
-                    errorWaitTime = scala.math.min((errorWaitTime * 2), MAX_WAIT_TIME)
-                  }
-                  case e: Throwable => {
-                    logger.warn("Unable to access Directory, Retrying after " + errorWaitTime + " seconds", e)
-                    errorWaitTime = scala.math.min((errorWaitTime * 2), MAX_WAIT_TIME)
+                  else {
+                    //happens if last time queue head dir was monitored was less than waiting time
+                    logger.info("Smart File Monitor - no folders to monitor for now. Thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
+                    Thread.sleep(monitoringConf.waitingTimeMS)
                   }
                 }
-                Thread.sleep(monitoringConf.waitingTimeMS)
+                else {
+                  logger.info("Smart File Monitor - too many files already in process queue. monitoring thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
+                  Thread.sleep(monitoringConf.waitingTimeMS)
+                }
+              } ///while isMonitoring
 
-              }
             }
-          }  catch {
+          } catch {
             case ie: InterruptedException => logger.error("InterruptedException: ", ie)
-            case ioe: IOException         => logger.error("Unable to find the directory to watch, Shutting down File Consumer", ioe)
-            case e: Exception             => logger.error("Exception: ", e)
-            case e: Throwable             => logger.error("Throwable: ", e)
+            case ioe: IOException => logger.error("Unable to find the directory to watch", ioe)
+            case e: Exception => logger.error("Exception: ", e)
+            case e: Throwable => logger.error("Throwable: ", e)
           }
         }
       }
 
-      dirMonitorthread.init(folderToWatch)
+      //dirMonitorthread.init(currentThreadLocations.toArray)
       monitorsExecutorService.execute(dirMonitorthread)
 
-    })
+    }
 
   }
 
   def shutdown: Unit ={
-    //TODO : use an executor object to run the monitoring and stop here
+    logger.debug("Shutting down PosixChangesMonitor")
+    processedFilesMap.clear()
     isMonitoring = false
 
     monitorsExecutorService.shutdown()
   }
 
+  val validModifiedFiles = ArrayBuffer[String]()
 
-  private def checkExistingFiles(parentDir: File): Unit = {
+  private def checkExistingFiles(parentDir: File, isFirstScan : Boolean, locationInfo: LocationInfo): Unit = {
     // Process all the existing files in the directory that are not marked complete.
     if (parentDir.exists && parentDir.isDirectory) {
+      logger.info("Posix Changes Monitor - listing dir " + parentDir.toString)
       val files = parentDir.listFiles.filter(_.isFile).sortWith(_.lastModified < _.lastModified).toList
+
+      val newFiles = ArrayBuffer[String]()
       files.foreach(file => {
         val tokenName = file.toString.split("/")
         if (!checkIfFileHandled(file.toString)) {
-          //logger.info("SMART FILE CONSUMER (global)  Processing " + file.toString)
-          //FileProcessor.enQBufferedFile(file.toString)
-          val fileHandler = new PosixFileHandler(file.toString)
-          //call the callback for new files
-          logger.info(s"A new file found ${fileHandler.getFullPath}")
-          try {
-            modifiedFileCallback(fileHandler)
-          }
-          catch{
-            case e : Throwable =>
-              logger.error("Smart File Consumer (Sftp) : Error while notifying Monitor about new file", e)
-          }
+          newFiles.append(file.toString)
+        }
+      })
+
+      //check for file names pattern
+      validModifiedFiles.clear()
+      if(locationInfo.fileComponents != null){
+        newFiles.foreach(file => {
+          if(MonitorUtils.isPatternMatch(MonitorUtils.getFileName(file), locationInfo.fileComponents.regex))
+            validModifiedFiles.append(file)
+          else
+            logger.warn("Smart File Consumer (DAS/NAS) : File {}, does not follow configured name pattern ({}), so it will be ignored - Adapter {}",
+              file, locationInfo.fileComponents.regex, adapterName)
+        })
+      }
+      else
+        validModifiedFiles.appendAll(newFiles)
+
+      val newFileHandlers = validModifiedFiles.map(file => new PosixFileHandler(file.toString)).
+        sortWith(MonitorUtils.compareFiles(_,_,locationInfo) < 0).toArray
+      newFileHandlers.foreach(fileHandler =>{
+        //call the callback for new files
+        logger.info(s"Posix Changes Monitor - A new file found ${fileHandler.getFullPath}. initial = $isFirstScan")
+        try {
+          modifiedFileCallback(fileHandler, isFirstScan)
+        }
+        catch{
+          case e : Throwable =>
+            logger.error("Smart File Consumer (Sftp) : Error while notifying Monitor about new file", e)
         }
       })
 
@@ -310,12 +435,13 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
       val deletedFiles = new ArrayBuffer[String]()
       fileCacheLock.synchronized {
         fileCache.foreach(fileCacheEntry => {
-          //logger.debug("file in map is {}, its parent is {}, the folder beind checked is {}",
+          //logger.debug("file in map is {}, its parent is {}, the folder being checked is {}",
             //fileCacheEntry._1,  new File(fileCacheEntry._1).getParent, parentDir.toString.trim)
 
           if (new File(fileCacheEntry._1).getParent.trim.equals(parentDir.toString.trim)) {
             //logger.debug("file in map is direct child of checked folder")
-            if (!files.exists(fileName => fileName.equals(fileCacheEntry._1))) {
+            //logger.debug("checked folder's children are {}", files)
+            if (!files.exists(file => file.toString.equals(fileCacheEntry._1))) {
               //key that is no more in the folder => file/folder deleted
               //logger.debug("file in map is not currenlty in children list of the folder, adding it to deleted files list")
               deletedFiles += fileCacheEntry._1
@@ -324,7 +450,10 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
         })
 
         //logger.debug("deleted files list is {}", deletedFiles)
-        deletedFiles.foreach(f => fileCache -= f)//remove from file cache
+        deletedFiles.foreach(f => {
+          logger.debug("checkExistingFiles - removing file {} from map {}", f, fileCache)
+          fileCache -= f
+        })//remove from file cache
       }
 
 
@@ -336,21 +465,35 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
 
   /**
     * checkIfFileHandled: previously checkIfFileBeingProcessed - if for some reason a file name is queued twice... this will prevent it
+    *
     * @param file
     * @return
     */
   def checkIfFileHandled(file: String): Boolean = {
     fileCacheLock.synchronized {
-      if (fileCache.contains(file)) {
+      if (processedFilesMap.contains(file)) {
+        //logger.warn("looking for file {}, in map {}", file, processedFilesMap)
+        logger.info("Smart File Consumer (das/nas) - File {} already processed, ignoring - Adapter {}", file, adapterName)
+        true
+      }
+      else if (fileCache.contains(file)) {
         return true
       }
       else {
-        fileCache(file) = scala.compat.Platform.currentTime
+        fileCache.put(file, scala.compat.Platform.currentTime)
         return false
       }
     }
   }
 
+  override def listFiles(path: String): Array[String] ={
+    val dir = new File(path)
+    if (dir.exists && dir.isDirectory) {
+      dir.listFiles.filter(_.isFile).map(f => f.getName).toArray
+    } else {
+      Array[String]()
+    }
+  }
 }
 
 

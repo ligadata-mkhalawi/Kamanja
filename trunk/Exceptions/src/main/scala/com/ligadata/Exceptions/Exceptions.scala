@@ -84,3 +84,6 @@ case class MessagePopulationException(msg: String, cause: Throwable) extends Kam
 case class NotImplementedFunctionException(msg: String, cause: Throwable) extends KamanjaException(msg, cause)
 
 case class DeprecatedException(msg: String, cause: Throwable) extends KamanjaException(msg, cause)
+// 646 - Change begins
+case class TenantIdNotFoundException(msg: String, cause: Throwable) extends KamanjaException(msg, cause)
+// 646 Change ends

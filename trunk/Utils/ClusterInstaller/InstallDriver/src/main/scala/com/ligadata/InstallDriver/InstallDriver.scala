@@ -48,6 +48,7 @@ import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization
 import com.ligadata.KamanjaVersion.KamanjaVersion
 
+
 /**
   * This application installs and upgrades Kamanaja.  It does these essential things:
 
@@ -130,7 +131,7 @@ class InstallDriver extends InstallDriverBase {
   def usage: String = {
     """
 Usage:
-    java -Dlog4j.configurationFile=file:./log4j2.xml -jar <some path> ClusterInstallerDriver-1.4.0
+    java -Dlog4j.configurationFile=file:./log4j2.xml -jar <some path> ClusterInstallerDriver-1.6.0
             /** Mandatory parameters (always) */
             --{upgrade|install}
             --apiConfig <MetadataAPIConfig.properties file>
@@ -138,7 +139,7 @@ Usage:
             --tarballPath <tarball path>
             --toScala <"2.11" or "2.10">
             /** Mandatory parameters iff --upgrade chosen */
-            [--fromKamanja "1.1"]
+            [--fromKamanja "1.4"]
             [--fromScala "2.10"]
             /** Optional parameters */
             [--workingDir <workingdirectory>]
@@ -168,7 +169,7 @@ Usage:
             building their respective objects. If the requested version has not been installed on the cluster nodes in question,
             the installation will fail.
 
-        [--fromKamanja] optional for install but required for upgrade..."N.N" where "N.N" can be either "1.1" or "1.2" or "1.3"
+        [--fromKamanja] optional for install but required for upgrade..."N.N" where "N.N" can be either "1.1" or "1.2" or "1.3" or "1.4" or "1.4.1" or "1.4.3"  "1.5.0"
         [--fromScala "2.10"] an optional parameter that, for the 1.3 InstallDriver, simply documents the version of Scala that
             the current 1.1. or 1.2 is using.  The value "2.10" is the only possible value for this release.
 
@@ -193,7 +194,7 @@ Usage:
         --tenantId <Tenant Id to be applied to all the meta data objects being migrated.
         --adapterMessageBindings <a json file that contains the adapter-message-binding definitions.
 
-    The ClusterInstallerDriver-1.4.0 is the cluster installer driver for Kamanja 1.3.  It is capable of installing a new version of 1.3
+    The ClusterInstallerDriver-1.6.0 is the cluster installer driver for Kamanja 1.3.  It is capable of installing a new version of 1.3
     or given the appropriate arguments, installing a new version of Kamanja 1.3 *and* upgrading a 1.1 or 1.2 installation to the 1.3 version.
 
     A log of the installation and optional upgrade is collected in a log file.  This log file is automatically generated and will be found in the
@@ -266,6 +267,79 @@ Usage:
       log.emit(msg, "ERROR")
   }
 
+  private def CheckVerDigits(value: Int, orgVerInfo: String): Unit = {
+    if (value < 0 || value > 999999)
+      throw new Exception("Expecting only 0 to 999999 in major, minor & micro versions, but got %d from %s".format(value, orgVerInfo))
+  }
+
+  // Make sure the version is in the format of "%06d.%06d.%06d"
+  private def FormatVersion(verInfo: String): String = {
+    /*
+	    //BUGBUG:: This is returning non found matches, may be better to go with split
+		val numPattern = "[0-9]+".r
+		val verParts = numPattern.findAllIn(verInfo).toList
+	*/
+    val verParts = verInfo.split('.')
+    val major = (if (verParts.size > 0) verParts(0).toInt else 0)
+    val mini = (if (verParts.size > 1) verParts(1).toInt else 0)
+    val micro = (if (verParts.size > 2) verParts(2).toInt else 0)
+
+    CheckVerDigits(major, verInfo)
+    CheckVerDigits(mini, verInfo)
+    CheckVerDigits(micro, verInfo)
+
+    val retVerInfo = "%06d.%06d.%06d".format(major, mini, micro)
+    retVerInfo
+  }
+
+  /** Answer if the string contains only decimal digits
+    *
+    */
+  private def IsNumeric(str: String): Boolean = {
+    (str != null && str.filter(c => c >= '0' && c <= '9').length == str.length)
+  }
+
+  /**
+    * Convert the supplied version string to a Long.  Should it have '.' in it, they are squeezed out.
+    *
+    * @param verInfo a version string (possibly with '.' ... e.g., 000000.000001.000001 -> 1000001)
+    * @return long formed from decimal digits in the string
+    */
+  private def ConvertVersionToLong(verInfo: String): Long = {
+    val hasDots: Boolean = (verInfo != null && verInfo.contains('.'))
+    val longVer: Long = if (hasDots) {
+      FormatVersion(verInfo).replaceAll("[.]", "").toLong
+    } else {
+      if (IsNumeric(verInfo)) {
+        verInfo.toLong
+      } else {
+        // oh oh
+        0
+      }
+    }
+    longVer
+  }
+
+
+  // Versions are assumed to have a format x.x.x
+  private def IsVersionSame(fromVersion: String,toVersion: String): Boolean = {
+    val fromVer = ConvertVersionToLong(fromVersion.substring(0,3))
+    val toVer = ConvertVersionToLong(toVersion.substring(0,3))
+    fromVer == toVer
+  }
+
+  private def IsVersionGreaterOrEqual(fromVersion: String,toVersion: String): Boolean = {
+    val fromVer = ConvertVersionToLong(fromVersion)
+    val toVer = ConvertVersionToLong(toVersion)
+    fromVer >= toVer
+  }
+
+  private def IsVersionLessThan(fromVersion: String,toVersion: String): Boolean = {
+    val fromVer = ConvertVersionToLong(fromVersion)
+    val toVer = ConvertVersionToLong(toVersion)
+    fromVer < toVer
+  }
+
   override def run(args: Array[String]): Unit = {
     if (args.length == 0) {
       printAndLogError("No arguments provided", log);
@@ -275,7 +349,7 @@ Usage:
     }
 
     // locate the clusterInstallerDriver app ... need its working directory to refer to others... this function
-    // returns this form:  file:/tmp/drdigital/KamanjaInstall-1.3.3_2.11/bin/clusterInstallerDriver-1.4.0
+    // returns this form:  file:/tmp/drdigital/KamanjaInstall-1.3.3_2.11/bin/clusterInstallerDriver-1.6.0
 
     /** Obtain location of the clusterInstallerDriver fat jar.  Its directory contains the scripts we use to
       * obtain component info for the env check and the lower level cluster install script that actually does the
@@ -383,7 +457,7 @@ Usage:
     val tenantId_opt: String = if (options.contains('tenantId)) options.apply('tenantId) else null
     val adapterMessageBindings_opt: String = if (options.contains('adapterMessageBindings)) options.apply('adapterMessageBindings) else null
 
-    val toKamanja: String = "1.4"
+    val toKamanja: String = "1.6.0"
 
     // Check whether logDir is valid or not
     if (!isFileExists(logDir, false, true)) {
@@ -438,7 +512,7 @@ Try again.
     val apiConfigPathOk: Boolean = apiConfigPath != null && apiConfigPath.nonEmpty
     val nodeConfigPathOk: Boolean = apiConfigPath != null && apiConfigPath.nonEmpty
     val tarballPathOk: Boolean = tarballPath != null && tarballPath.nonEmpty
-    val fromKamanjaOk: Boolean = install || (upgrade && fromKamanja != null && fromKamanja.nonEmpty && (fromKamanja == "1.1" || fromKamanja == "1.2") || fromKamanja == "1.3" )
+    val fromKamanjaOk: Boolean = install || (upgrade && fromKamanja != null && fromKamanja.nonEmpty && (fromKamanja == "1.1" || fromKamanja == "1.2") || fromKamanja == "1.3" || fromKamanja.substring(0,3) == "1.4" || fromKamanja.substring(0,3) == "1.5" )
     val fromScalaOk: Boolean = install || (upgrade && fromScala != null && fromScala.nonEmpty && (fromScala == "2.10" || fromScala == "2.11"))
     val toScalaOk: Boolean = (toScala != null && toScala.nonEmpty && (toScala == "2.10" || toScala == "2.11"))
     val workingDirOk: Boolean = workingDir != null && workingDir.nonEmpty
@@ -468,7 +542,7 @@ Try again.
       if (!apiConfigPathOk) printAndLogError("\tapiConfigPath", log)
       if (!nodeConfigPathOk) printAndLogError("\t--apiConfigPath <path to the metadata api properties file that contains the ROOT_DIR property location>", log)
       if (!tarballPathOk) printAndLogError("\t--tarballPath <location of the prepared 1.3 installation tarball to be installed>", log)
-      if (upgrade && !fromKamanjaOk) printAndLogError("\t--fromKamanja <the prior installation version being upgraded... either '1.1' or '1.2'>", log)
+      if (upgrade && !fromKamanjaOk) printAndLogError("\t--fromKamanja <the prior installation version being upgraded... either '1.1' or '1.2' or '1.3' or '1.4' or '1.4.1' or '1.4.3' or '1.5.0'>", log)
       if (upgrade && !fromScalaOk) printAndLogError("\t--fromScala <either scala version '2.10' or '2.11'", log)
       if (!logDirOk) printAndLogError("\t--logDir <the directory path where the Cluster logs (InstallDriver.yyyyMMdd_HHmmss.log) is to be written ", log)
       printAndLogDebug(usage, log)
@@ -495,7 +569,7 @@ Try again.
     }
 
     if (!isFileExists(componentVersionJarAbsolutePath, true)) {
-      printAndLogError("GetComponent_2.11-1.4.0.jar is not installed in path " + clusterInstallerDriversLocation, log)
+      printAndLogError("GetComponent_2.11-1.6.0.jar is not installed in path " + clusterInstallerDriversLocation, log)
       cnt += 1
     }
 
@@ -536,7 +610,12 @@ Try again.
         givenTemplate = true
         migrateTemplate_opt.trim
       } else {
-        s"$clusterInstallerDriversLocation/MigrateConfig_template.json"
+	if( IsVersionGreaterOrEqual(fromKamanja,"1.4") ){
+          s"$clusterInstallerDriversLocation/MigrateConfig_template14.json"
+	}
+	else{
+          s"$clusterInstallerDriversLocation/MigrateConfig_template.json"
+	}
       }
 
       if (!isFileExists(migrateTemplate, true)) {
@@ -549,9 +628,16 @@ Try again.
 
       // Validate all arguments
       var validMigrationPaths : scala.collection.mutable.Set[String] = scala.collection.mutable.Set[String]()
-      validMigrationPaths.add("1.1 => 1.4") 
-      validMigrationPaths.add("1.2 => 1.4") 
-      validMigrationPaths.add("1.3 => 1.4") 
+      validMigrationPaths.add("1.1 => 1.6.0") 
+      validMigrationPaths.add("1.2 => 1.6.0") 
+      validMigrationPaths.add("1.3 => 1.6.0") 
+      validMigrationPaths.add("1.4 => 1.6.0") 
+      validMigrationPaths.add("1.4.1 => 1.6.0") 
+      validMigrationPaths.add("1.4.3 => 1.6.0") 
+      validMigrationPaths.add("1.5.0 => 1.6.0") 
+      validMigrationPaths.add("1.5.1 => 1.6.0") 
+      validMigrationPaths.add("1.5.2 => 1.6.0") 
+      validMigrationPaths.add("1.5.3 => 1.6.0") 
 
       if ( ! validMigrationPaths.contains(fromKamanja + " => " + toKamanja) ) {
         printAndLogError(s"The upgrade path ($fromKamanja => $toKamanja) is not valid with this release... ", log)
@@ -732,7 +818,9 @@ Try again.
         }
 
         if (upgrade && (adapterMessageBindings_opt == null || adapterMessageBindings_opt.trim.size == 0)) {
-          printAndLogError("For upgrade, adapterMessageBindings empty/null does not import any bindings. Make sure you import them after installation.", log)
+	  if( IsVersionLessThan(fromKamanja,"1.4") ){
+            printAndLogError("For upgrade, adapterMessageBindings empty/null does not import any bindings. Make sure you import them after installation.", log)
+	  }
         }
 
         val tenantId = if (tenantId_opt == null) {""} else{ tenantId_opt }
@@ -790,6 +878,12 @@ Try again.
               closeLog
               sys.exit(1)
             }
+	    if( IsVersionSame(fromKamanja,toKamanja)){
+              printAndLogDebug("Migration not required... patch upgrade was selected", log)
+              printAndLogDebug("Processing is Complete!", log)
+              closeLog
+              sys.exit(0)
+	    }
           } else {
             printAndLogDebug("Migration not required... new installation was selected", log)
           }
@@ -869,7 +963,7 @@ Try again.
 
     val (proposedClusterEnvironmentIsSuitable): Boolean = try {
       val hbaseConnections: String = clusterConfigMap.DataStoreConnections.trim //
-      val kafkaConnections: String = clusterConfigMap.KafkaConnections.trim
+      val kafkaConnections: scala.collection.mutable.ListBuffer[Map[String,Any]] = clusterConfigMap.KafkaConnections
       val zkConnections: String = clusterConfigMap.ZooKeeperConnectionString.trim
 
       var skipComponents =
@@ -891,9 +985,12 @@ Try again.
             addedComp += 1
           }
           if (!skipComponents.contains("kafka") && kafkaConnections.nonEmpty) {
+            implicit val formats = Serialization.formats(NoTypeHints)
             if (addedComp > 0)
               sb.append(",")
-            sb.append("""{ "component" : "kafka", "hostslist" : "%s" }""".stripMargin.format(kafkaConnections))
+            import org.json4s.native.Serialization._
+            var adapterConfigs = write(kafkaConnections) //.replace('[','{').replace(']','}')
+            sb.append("""{ "component" : "kafka", "hostslist" : %s }""".stripMargin.format(adapterConfigs))
             addedComp += 1
           }
           if ((!skipComponents.contains("hbase")) && (!skipComponents.contains("storage")) && hbaseConnections.nonEmpty) {
@@ -1567,14 +1664,14 @@ Try again.
 			  , tenantId: String
 			  , adapterMessageBindings: String): Boolean = {
 
-    val migrationToBeDone: String = if (fromKamanja == "1.1") "1.1=>1.4" else if (fromKamanja == "1.2") "1.2=>1.4" else if (fromKamanja == "1.3") "1.3=>1.4" else "hmmm"
+    val migrationToBeDone: String = if (fromKamanja == "1.1") "1.1=>1.6.0" else if (fromKamanja == "1.2") "1.2=>1.6.0" else if (fromKamanja == "1.3") "1.3=>1.6.0" else if (fromKamanja.substring(0,3) == "1.4") "1.4=>1.6.0" else if (fromKamanja.substring(0,3) == "1.5") "1.5=>1.6.0"  else "unknownMigrationPath"
 
     // We should use these insted of below ones
     // val kamanjaFromVersion: String = fromKamanja
     // val kamanjaFromVersionWithUnderscore: String = fromKamanja.replace('.', '_')
 
     val migratePreparationOk: Boolean = migrationToBeDone match {
-      case "1.1=>1.4" => {
+      case "1.1=>1.6.0" => {
         val kamanjaFromVersion: String = "1.1"
         val kamanjaFromVersionWithUnderscore: String = "1_1"
         val migrateConfigJSON: String = createMigrationConfig(log
@@ -1597,17 +1694,9 @@ Try again.
         migratePending = true
         migrateConfig = migrateConfigJSON
         printAndLogDebug("Pending migrate %s with config %s".format(migrationToBeDone, migrateConfigJSON))
-
-
-        /*
-                val migrateObj: Migrate = new Migrate()
-                migrateObj.registerStatusCallback(log)
-                val rc: Int = migrateObj.runFromJsonConfigString(migrateConfigJSON)
-                (rc == 0)
-        */
         true
       }
-      case "1.2=>1.4" => {
+      case "1.2=>1.6.0" => {
         val kamanjaFromVersion: String = "1.2"
         val kamanjaFromVersionWithUnderscore: String = "1_2"
         val migrateConfigJSON: String = createMigrationConfig(log
@@ -1632,7 +1721,7 @@ Try again.
         printAndLogDebug("Pending migrate %s with config %s".format(migrationToBeDone, migrateConfigJSON))
         true
       }
-      case "1.3=>1.4" => {
+      case "1.3=>1.6.0" => {
         val kamanjaFromVersion: String = "1.3"
         val kamanjaFromVersionWithUnderscore: String = "1_3"
         val migrateConfigJSON: String = createMigrationConfig(log
@@ -1657,8 +1746,58 @@ Try again.
         printAndLogDebug("Pending migrate %s with config %s".format(migrationToBeDone, migrateConfigJSON))
         true
       }
+      case "1.4=>1.6.0" => {
+        val kamanjaFromVersion: String = fromKamanja
+        val kamanjaFromVersionWithUnderscore: String = "1_4"
+        val migrateConfigJSON: String = createMigrationConfig(log
+          , migrateConfigFilePath
+          , nodeConfigPath
+          , apiConfigFile
+          , kamanjaFromVersion
+          , kamanjaFromVersionWithUnderscore
+          , newInstallDirName
+          , priorInstallDirName
+          , fromScala
+          , toScala
+          , unhandledMetadataDumpDir
+          , parentPath
+          , physicalRootDir
+          , rootDirPath
+          , tenantId
+          , adapterMessageBindings
+        )
+        migratePending = true
+        migrateConfig = migrateConfigJSON
+        printAndLogDebug("Pending migrate %s with config %s".format(migrationToBeDone, migrateConfigJSON))
+        true
+      }
+      case "1.5=>1.6.0" => {
+        val kamanjaFromVersion: String = fromKamanja
+        val kamanjaFromVersionWithUnderscore: String = "1_5"
+        val migrateConfigJSON: String = createMigrationConfig(log
+          , migrateConfigFilePath
+          , nodeConfigPath
+          , apiConfigFile
+          , kamanjaFromVersion
+          , kamanjaFromVersionWithUnderscore
+          , newInstallDirName
+          , priorInstallDirName
+          , fromScala
+          , toScala
+          , unhandledMetadataDumpDir
+          , parentPath
+          , physicalRootDir
+          , rootDirPath
+          , tenantId
+          , adapterMessageBindings
+        )
+        migratePending = true
+        migrateConfig = migrateConfigJSON
+        printAndLogDebug("Pending migrate %s with config %s".format(migrationToBeDone, migrateConfigJSON))
+        true
+      }
       case _ => {
-        printAndLogError("The 'fromKamanja' parameter is incorrect... this needs to be fixed.  The value can only be '1.1' or '1.2' or '1.3' for the '1.4' upgrade", log)
+        printAndLogError("The 'fromKamanja' parameter is incorrect... this needs to be fixed.  The value can only be '1.1' or '1.2' or '1.3' or '1.4' or '1.4.1' or '1.4.3' or 1.5.0 for the '1.6.0' upgrade", log)
         false
       }
     }
@@ -1814,20 +1953,33 @@ class ClusterConfigMap(cfgStr: String, var clusterIdOfInterest: String) {
     zooKeeperInfo.getOrElse("ZooKeeperConnectString", "").asInstanceOf[String]
   }
 
-  def KafkaConnections: String = {
+  def KafkaConnections: scala.collection.mutable.ListBuffer[Map[String,Any]] = {
     val kafkaAdapters: List[Map[String, Any]] = adapters.filter(adapterMap => {
       val clsName = adapterMap.getOrElse("ClassName", "").asInstanceOf[String].trim
-      val hasKafka: Boolean = (clsName.startsWith("com.ligadata.OutputAdapters.KafkaProducer") || clsName.startsWith("com.ligadata.InputAdapters.KafkaSimpleConsumer"))
+      val hasKafka: Boolean = (clsName.startsWith("com.ligadata.OutputAdapters.KafkaProducer") ||
+                               clsName.startsWith("com.ligadata.InputAdapters.KafkaSimpleConsumer") ||
+                               clsName.startsWith("com.ligadata.InputAdapters.KamanjaKafkaConsumer"))
       hasKafka
     })
-    val hostConnections: List[String] = kafkaAdapters.map(adapter => {
-      val adapterSpecificCfg: Map[String, Any] = adapter.getOrElse("AdapterSpecificCfg", Map[String, Any]()).asInstanceOf[Map[String, Any]]
-      val conn: String = adapterSpecificCfg.getOrElse("HostList", "").asInstanceOf[String]
-      conn
+
+    val hostConnections: scala.collection.mutable.ListBuffer[Map[String,Any]] =   scala.collection.mutable.ListBuffer[Map[String,Any]]()
+    kafkaAdapters.foreach( adapter => {
+      var thisSpecConfig = adapter.getOrElse("AdapterSpecificCfg", Map[String, Any]()).asInstanceOf[Map[String, Any]]
+      if (thisSpecConfig.size > 0) {
+        hostConnections.append(thisSpecConfig)
+      }
     })
 
-    if (hostConnections.isEmpty) return ""
-    hostConnections.toSet.mkString(",")
+    //val hostConnections: List[Map[String,Any]] = kafkaAdapters.map(adapter => {
+    //  val adapterSpecificCfg: Map[String, Any] = adapter.getOrElse("AdapterSpecificCfg", Map[String, Any]()).asInstanceOf[Map[String, Any]]
+
+      //val conn: String = adapterSpecificCfg.getOrElse("HostList", "").asInstanceOf[String]
+      //conn
+    //})
+
+    //if (hostConnections.isEmpty) return ""
+    //hostConnections.toSet.mkString(",")
+    return hostConnections
   }
 
   /**

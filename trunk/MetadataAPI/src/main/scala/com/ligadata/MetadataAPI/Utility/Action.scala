@@ -41,6 +41,8 @@ object Action extends Enumeration {
   val ADDMODELKPMML=Value("addmodelkpmml")
   val ADDMODELJTM=Value("addmodeljtm")
   val ADDMODELPMML=Value("addmodelpmml")
+  val ADDMODELPYTHON=Value("addmodelpython")
+  val ADDMODELJYTHON=Value("addmodeljython")
   val ADDMODELSCALA=Value("addmodelscala")
   val ADDMODELJAVA=Value("addmodeljava")
   val REMOVEMODEL=Value("removemodel")
@@ -49,6 +51,8 @@ object Action extends Enumeration {
   val UPDATEMODELKPMML=Value("updatemodelkpmml")
   val UPDATEMODELJTM=Value("updatemodeljtm")
   val UPDATEMODELPMML=Value("updatemodelpmml")
+  val UPDATEMODELPYTHON=Value("updatemodelpython")
+  val UPDATEMODELJYTHON=Value("updatemodeljython")
   val UPDATEMODELSCALA=Value("updatemodelscala")
   val UPDATEMODELJAVA=Value("updatemodeljava")
   val GETALLMODELS=Value("getallmodels")
@@ -91,4 +95,8 @@ object Action extends Enumeration {
   val DUMPALLCLUSTERS=Value("dumpallclusters")
   val DUMPALLCLUSTERCFGS=Value("dumpallclustercfgs")
   val DUMPALLADAPTERS=Value("dumpalladapters")
+  
+  val GETTYPEBYSCHEMAID = Value("gettypebyschemaid")
+  val GETTYPEBYELEMENTID = Value("gettypebyelementid")
+   
 }

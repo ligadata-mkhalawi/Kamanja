@@ -319,7 +319,7 @@ Sample uses:
           }
         }
       }
-      MetadataAPIImpl.CloseDbStore
+      MetadataAPIImpl.getMetadataAPI.CloseDbStore
 
     } else {
       logger.error("Illegal and/or missing arguments")

@@ -55,8 +55,6 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
 
 name := "NodeInfoExtract"
 
-version := "1.4.0"
-
 scalacOptions += "-deprecation"
 
 //libraryDependencies += "org.json4s" %% "json4s-native" % "3.2.9"

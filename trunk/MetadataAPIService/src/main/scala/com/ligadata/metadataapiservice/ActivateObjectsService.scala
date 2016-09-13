@@ -38,15 +38,18 @@ object ActivateObjectsService {
 class ActivateObjectsService(requestContext: RequestContext, userid:Option[String], password:Option[String], cert:Option[String]) extends Actor {
 
   import ActivateObjectsService._
-  
+
   implicit val system = context.system
   import system.dispatcher
   val log = Logging(system, getClass)
-  
-  
+
+
   val loggerName = this.getClass.getName
   val logger = LogManager.getLogger(loggerName)
  // logger.setLevel(Level.TRACE);
+ // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   val APIName = "ActivateObjects"
 
@@ -62,10 +65,10 @@ class ActivateObjectsService(requestContext: RequestContext, userid:Option[Strin
 
     objectType match {
       case "model" => {
-	      MetadataAPIImpl.ActivateModel(nameSpace,name,version.toLong,userid).toString
+	      getMetadataAPI.ActivateModel(nameSpace,name,version.toLong,userid).toString
       }
       case _ => {
-	      new ApiResult(ErrorCodeConstants.Failure, APIName, null,  "Deactivate/Activate on " + objectType + " is not supported yet").toString 
+	      new ApiResult(ErrorCodeConstants.Failure, APIName, null,  "Deactivate/Activate on " + objectType + " is not supported yet").toString
       }
     }
   }
@@ -74,23 +77,23 @@ class ActivateObjectsService(requestContext: RequestContext, userid:Option[Strin
    * process - perform the activation process on the list of objects in the parameter var.
    */
   def process(apiArgListJson: String):Unit = {
-    
+
     val apiArgList = JsonSerializer.parseApiArgList(apiArgListJson)
     val arguments = apiArgList.ArgList
     var nameSpace = "str"
     var version = "-1"
     var name = ""
     var authDone = false
-    
+
     logger.debug(APIName + ":" + apiArgListJson)
-    
+
     var resultStr:String = ""
 
     if ( arguments.length > 0 ){
       var loop = new Breaks
       loop.breakable{
 	      arguments.foreach(arg => {
-          
+
           // Extract the object name from the ARGS
           if( arg.NameSpace != null ){
             nameSpace = arg.NameSpace
@@ -101,23 +104,23 @@ class ActivateObjectsService(requestContext: RequestContext, userid:Option[Strin
           if( arg.Name != null ){
             name = arg.Name
           }
-          
+
           // Do it here so that we know which OBJECT is being activated for the Audit purposes.
-          if ((!MetadataAPIImpl.checkAuth(userid, password, cert, MetadataAPIImpl.getPrivilegeName("activate","model"))) && !authDone) {
-            MetadataAPIImpl.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.ACTIVATEOBJECT,AuditConstants.MODEL,AuditConstants.FAIL,"",nameSpace+"."+name+"."+version)
+          if ((!getMetadataAPI.checkAuth(userid, password, cert, getMetadataAPI.getPrivilegeName("activate","model"))) && !authDone) {
+            getMetadataAPI.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.ACTIVATEOBJECT,AuditConstants.MODEL,AuditConstants.FAIL,"",nameSpace+"."+name+"."+version)
             requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null,  "Error:UPDATE not allowed for this user").toString )
             return
           }
-          
+
           // Make sure that we do not perform another AUTH check, and add this object name to the list of objects processed in this call.
           authDone = true
-    
+
 	        if(arg.ObjectType == null ){
 	          resultStr =  new ApiResult(ErrorCodeConstants.Failure, APIName, null,"Error: The value of object type can't be null").toString
 	          loop.break
 	        }
 	        if(arg.Name == null ){
-	          resultStr = new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error: The value of object name can't be null").toString 
+	          resultStr = new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error: The value of object name can't be null").toString
 	          loop.break
 	        }
 	        else {
@@ -127,7 +130,7 @@ class ActivateObjectsService(requestContext: RequestContext, userid:Option[Strin
       }
     }
     else{
-      resultStr = new ApiResult(ErrorCodeConstants.Failure, APIName, null,"No arguments passed to the API, nothing much to do").toString 
+      resultStr = new ApiResult(ErrorCodeConstants.Failure, APIName, null,"No arguments passed to the API, nothing much to do").toString
     }
     requestContext.complete(resultStr)
   }

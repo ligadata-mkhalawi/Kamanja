@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2015 ligaDATA
  *
@@ -44,7 +43,9 @@ object KamanjaMdCfg {
   def InitConfigInfo: InitConfigs = {
     val nd = mdMgr.Nodes.getOrElse(KamanjaConfiguration.nodeId.toString, null)
     if (nd == null) {
-      LOG.error("Node %d not found in metadata".format(KamanjaConfiguration.nodeId))
+      // 660 Change begins - bug fix for proper cluster config upload message
+      LOG.error("Node %d not found in metadata. Please ensure cluster configuration has been uploaded.".format(KamanjaConfiguration.nodeId))
+      // 660 Change ends
       throw new KamanjaException("Node %d not found in metadata".format(KamanjaConfiguration.nodeId), null)
     }
 
@@ -196,7 +197,7 @@ object KamanjaMdCfg {
     implicit val jsonFormats: Formats = DefaultFormats
     val evnCtxtJson = parse(envCtxtStr).extract[JEnvCtxtJsonStr]
 
-    //BUGBUG:: Not yet validating required fields 
+    //BUGBUG:: Not yet validating required fields
     val className = evnCtxtJson.classname.replace("\"", "").trim
     val jarName = evnCtxtJson.jarname.replace("\"", "").trim
     val dependencyJars = if (evnCtxtJson.dependencyjars == None || evnCtxtJson.dependencyjars == null) null else evnCtxtJson.dependencyjars.get.map(str => str.replace("\"", "").trim).filter(str => str.size > 0).toSet
@@ -233,7 +234,7 @@ object KamanjaMdCfg {
     var isEntCtxt = false
     var curClz = clz
 
-    while (clz != null && isEntCtxt == false) {
+    while (curClz != null && isEntCtxt == false) {
       isEntCtxt = Utils.isDerivedFrom(curClz, "com.ligadata.KamanjaBase.EnvContext")
       if (isEntCtxt == false)
         curClz = curClz.getSuperclass()
@@ -555,7 +556,7 @@ object KamanjaMdCfg {
     var isOutputAdapter = false
     var curClz = clz
 
-    while (clz != null && isOutputAdapter == false) {
+    while (curClz != null && isOutputAdapter == false) {
       isOutputAdapter = Utils.isDerivedFrom(curClz, "com.ligadata.InputOutputAdapterInfo.OutputAdapterFactory")
       if (isOutputAdapter == false)
         curClz = curClz.getSuperclass()
@@ -592,7 +593,7 @@ object KamanjaMdCfg {
   private def LoadOutputAdapsForCfg(adaps: scala.collection.mutable.Map[String, AdapterInfo], outputAdapters: ArrayBuffer[OutputAdapter], nodeContext: NodeContext): Boolean = {
     // ConfigurationName
     adaps.foreach(ac => {
-      //BUGBUG:: Not yet validating required fields 
+      //BUGBUG:: Not yet validating required fields
       val conf = new AdapterConfiguration
 
       val adap = ac._2
@@ -670,7 +671,7 @@ object KamanjaMdCfg {
     var isInputAdapter = false
     var curClz = clz
 
-    while (clz != null && isInputAdapter == false) {
+    while (curClz != null && isInputAdapter == false) {
       isInputAdapter = Utils.isDerivedFrom(curClz, "com.ligadata.InputOutputAdapterInfo.InputAdapterFactory")
       if (isInputAdapter == false)
         curClz = curClz.getSuperclass()
@@ -773,4 +774,3 @@ object KamanjaMdCfg {
   }
 */
 }
-

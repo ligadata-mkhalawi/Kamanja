@@ -12,10 +12,8 @@ assemblyOption in assembly ~= {
   _.copy(prependShellScript = Some(defaultShellScript))
 }
 
-val kamanjaVersion = "1.4.0"
-
 assemblyJarName in assembly := {
-  s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"
+  s"${name.value}_${scalaBinaryVersion.value}-${version.value}.jar"
 }
 
 // for some reason the merge strategy for non ligadata classes are not working and thus added those conflicting jars in exclusions
@@ -65,8 +63,6 @@ test in assembly := {}
 
 name := "MetadataAPI"
 
-version := "1.4.0"
-
 //libraryDependencies += "org.joda" % "joda-convert" % "1.6"
 //
 //libraryDependencies += "joda-time" % "joda-time" % "2.8.2"
@@ -87,7 +83,7 @@ version := "1.4.0"
 //
 //libraryDependencies += "org.apache.curator" % "apache-curator" % "2.0.0-incubating"
 //
-//libraryDependencies += "com.google.guava" % "guava" % "14.0.1"
+//libraryDependencies += "com.google.guava" % "guava" % "16.0.1"
 //
 //libraryDependencies += "org.jpmml" % "pmml-evaluator" % "1.2.4"
 //
@@ -95,7 +91,7 @@ version := "1.4.0"
 //
 //libraryDependencies += "org.jpmml" % "pmml-schema" % "1.2.5"
 //
-//dependencyOverrides += "com.google.guava" % "guava" % "14.0.1"
+//dependencyOverrides += "com.google.guava" % "guava" % "16.0.1"
 //
 //libraryDependencies += "commons-codec" % "commons-codec" % "1.10"
 //

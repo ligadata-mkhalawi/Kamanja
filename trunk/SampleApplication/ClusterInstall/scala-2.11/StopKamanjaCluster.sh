@@ -10,6 +10,7 @@ Usage()
     echo "Usage:"
     echo "      StopKamanjaCluster.sh --ClusterId <cluster name identifer> "
     echo "                           --MetadataAPIConfig  <metadataAPICfgPath>  "
+    echo "                           [--NodeIds  <nodeIds>] "
     echo 
     echo "  NOTES: Stop the cluster specified by the cluster identifier parameter.  Use the metadata api configuration to locate"
     echo "         the appropriate metadata store.  "
@@ -17,11 +18,13 @@ Usage()
 }
 
 
-scalaversion="2.11"
+scalaVersion="2.11"
 name1=$1
+currentKamanjaVersion=1.6.0
 
-if [ "$#" -eq 4 ]; then
-	echo
+
+if [[ "$#" -eq 4 || "$#" -eq 6 ]]; then
+    echo
 else 
     echo "Problem: Incorrect number of arguments"
     echo 
@@ -29,16 +32,18 @@ else
     exit 1
 fi
 
-if [[ "$name1" != "--MetadataAPIConfig" && "$name1" != "--ClusterId" ]]; then
-	echo "Problem: Bad arguments"
-	echo 
-	Usage
-	exit 1
+if [[ "$name1" != "--MetadataAPIConfig" && "$name1" != "--ClusterId" && "$name1" != "--NodeIds" ]]; then
+    echo "Problem: Bad arguments"
+    echo 
+    Usage
+    exit 1
 fi
 
 # Collect the named parameters 
 metadataAPIConfig=""
 clusterId=""
+nodeIds=""
+valid_nodeIds=();
 
 while [ "$1" != "" ]; do
     echo "parameter is $1"
@@ -48,6 +53,9 @@ while [ "$1" != "" ]; do
                                 ;;
         --MetadataAPIConfig )   shift
                                 metadataAPIConfig=$1
+                                ;;
+        --NodeIds )             shift
+                                nodeIds=$1
                                 ;;
         * )                     echo "Problem: Argument $1 is invalid named parameter."
                                 Usage
@@ -67,13 +75,27 @@ installDir=`cat $metadataAPIConfig | grep '[Rr][Oo][Oo][Tt]_[Dd][Ii][Rr]' | sed 
 echo "...extract node information for the cluster to be started from the Metadata configuration information supplied"
 
 # info is assumed to be present in the supplied metadata store... see trunk/utils/NodeInfoExtract for details 
-echo "...Command = java -cp $installDir/lib/system/ExtDependencyLibs2_2.11-1.4.0.jar:$installDir/lib/system/ExtDependencyLibs_2.11-1.4.0.jar:$installDir/lib/system/KamanjaInternalDeps_2.11-1.4.0.jar:$installDir/lib/system/nodeinfoextract_2.11-1.4.0.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig \"$metadataAPIConfig\" --workDir \"$workDir\" --ipFileName \"$ipFile\" --ipPathPairFileName \"$ipPathPairFile\" --ipIdCfgTargPathQuartetFileName \"$ipIdCfgTargPathQuartetFileName\" --installDir \"$installDir\" --clusterId \"$clusterId\""
-java -cp $installDir/lib/system/ExtDependencyLibs2_2.11-1.4.0.jar:$installDir/lib/system/ExtDependencyLibs_2.11-1.4.0.jar:$installDir/lib/system/KamanjaInternalDeps_2.11-1.4.0.jar:$installDir/lib/system/nodeinfoextract_2.11-1.4.0.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig $metadataAPIConfig --workDir "$workDir" --ipFileName "$ipFile" --ipPathPairFileName "$ipPathPairFile" --ipIdCfgTargPathQuartetFileName "$ipIdCfgTargPathQuartetFileName" --installDir "$installDir" --clusterId "$clusterId"
+echo "...Command = java -cp $installDir/lib/system/ExtDependencyLibs2_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/KamanjaInternalDeps_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/nodeinfoextract_${scalaVersion}-${currentKamanjaVersion}.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig \"$metadataAPIConfig\" --workDir \"$workDir\" --ipFileName \"$ipFile\" --ipPathPairFileName \"$ipPathPairFile\" --ipIdCfgTargPathQuartetFileName \"$ipIdCfgTargPathQuartetFileName\" --installDir \"$installDir\" --clusterId \"$clusterId\""
+java -cp $installDir/lib/system/ExtDependencyLibs2_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/KamanjaInternalDeps_${scalaVersion}-${currentKamanjaVersion}.jar:$installDir/lib/system/nodeinfoextract_${scalaVersion}-${currentKamanjaVersion}.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig $metadataAPIConfig --workDir "$workDir" --ipFileName "$ipFile" --ipPathPairFileName "$ipPathPairFile" --ipIdCfgTargPathQuartetFileName "$ipIdCfgTargPathQuartetFileName" --installDir "$installDir" --clusterId "$clusterId"
 if [ "$?" -ne 0 ]; then
     echo
     echo "Problem: Invalid arguments supplied to the NodeInfoExtract-1.0 application... unable to obtain node configuration... exiting."
     Usage
     exit 1
+fi
+
+if [[ $nodeIds != "" ]]; then
+    OIFS=$IFS;
+    IFS=",";
+    nodeIdsArray=($nodeIds);
+    IFS=$OIFS;
+
+    for ((i=0; i<${#nodeIdsArray[@]}; ++i)); do 
+        tmp_str="$(echo -e "${nodeIdsArray[$i]}" | xargs)"
+        if [[ "$tmp_str" != "" ]]; then
+            valid_nodeIds+=($tmp_str)
+        fi
+    done
 fi
 
 # Start the cluster nodes using the information extracted from the metadata and supplied config.  Remember the jvm's pid in the $installDir/run
@@ -92,6 +114,21 @@ while read LINE; do
     targetPath=$LINE
     read LINE
     roles=$LINE
+    
+    if [[ ${#valid_nodeIds[@]} > 0 ]]; then
+        currentNodeId=""
+        for ((j=0; j<${#valid_nodeIds[@]}; ++j)); do 
+            if [[ ${valid_nodeIds[$j]} != $id ]]; then
+              continue
+            else
+                currentNodeId=$id
+            fi
+        done
+        if [[ $currentNodeId != $id ]]; then
+          continue
+        fi
+    fi    
+
     echo "NodeInfo = $machine, $id, $cfgFile, $targetPath, $roles"
     echo "...On machine $machine, stopping Kamanja node with configuration $cfgFile for nodeId $id to $machine:$targetPath"
     #scp -o StrictHostKeyChecking=no "$cfgFile" "$machine:$targetPath/"

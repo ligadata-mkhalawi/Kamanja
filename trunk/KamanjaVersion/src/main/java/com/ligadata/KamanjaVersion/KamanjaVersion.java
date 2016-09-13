@@ -18,7 +18,7 @@ package com.ligadata.KamanjaVersion;
 
 public class KamanjaVersion {
     static private int majorVersion = 1;
-    static private int minorVersion = 4;
+    static private int minorVersion = 6;
     static private int microVersion = 0;
     static private int buildNumber = 0;
 

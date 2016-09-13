@@ -33,6 +33,7 @@ import com.ligadata.keyvaluestore.HBaseAdapter
 
 import com.ligadata.Exceptions._
 
+@Ignore
 class HBaseTestMetadataContainersSpec extends FunSpec with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
   var adapter: DataStore = null
   var serializer: Serializer = null

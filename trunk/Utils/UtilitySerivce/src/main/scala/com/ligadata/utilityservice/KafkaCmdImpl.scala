@@ -1,7 +1,7 @@
 package com.ligadata.utilityservice
 
-import kafka.producer.{ ProducerConfig, Producer, KeyedMessage, Partitioner }
-import kafka.utils.VerifiableProperties
+//import kafka.producer.{ ProducerConfig, Producer, KeyedMessage, Partitioner }
+//import kafka.utils.VerifiableProperties
 import org.apache.logging.log4j._
 
 
@@ -25,30 +25,30 @@ object KafkaCmdImpl {
     val props = new Properties()
     props.put("metadata.broker.list", broker);
     props.put("request.required.acks", "1")
- 
+    ""
     // create the producer object
-    val producer = new Producer[AnyRef, AnyRef](new ProducerConfig(props))
-    if (send(producer, topic, msg.getBytes("UTF8"), partIdx.toString.getBytes("UTF8"))) {
-      partIdx = partIdx + 1 
-      return "SUCCESS: Added message to Topic:"+topic
-    } else {
-      return "FAILURE: Failed to add message to Topic:"+topic
-    } 
+   // val producer = new Producer[AnyRef, AnyRef](new ProducerConfig(props))
+  //  if (send(producer, topic, msg.getBytes("UTF8"), partIdx.toString.getBytes("UTF8"))) {
+   //   partIdx = partIdx + 1
+   //   return "SUCCESS: Added message to Topic:"+topic
+   // } else {
+    //  return "FAILURE: Failed to add message to Topic:"+topic
+    //}
   }
   
   /**
    * send message
    */
-  private def send(producer: Producer[AnyRef, AnyRef], topic: String, message: Array[Byte], partIdx: Array[Byte]): Boolean = {
-    try {
-      producer.send(new KeyedMessage(topic, partIdx, message))
-      return true
-    } catch {
-      case e: Exception =>
-        logger.error("Could not add to the queue due to an Exception", e)
-        return false
-    }
-  }
+ // private def send(producer: Producer[AnyRef, AnyRef], topic: String, message: Array[Byte], partIdx: Array[Byte]): Boolean = {
+ //   try {
+  //    producer.send(new KeyedMessage(topic, partIdx, message))
+  //    return true
+  //  } catch {
+  //    case e: Exception =>
+  //      logger.error("Could not add to the queue due to an Exception", e)
+  //      return false
+  //  }
+ // }
   
 }
 
