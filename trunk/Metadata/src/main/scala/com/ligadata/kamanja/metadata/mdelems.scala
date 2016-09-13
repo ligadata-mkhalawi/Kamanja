@@ -1021,8 +1021,8 @@ class ClusterInfo {
   def ClusterId: String = clusterId
   def Description: String = description
   def Privileges: String = privileges
-  def ReadCores: Int = readerThreads
-  def ProcessingCores: Int = processThreads
+  def ReaderThreads: Int = readerThreads
+  def ProcessThreads: Int = processThreads
   def LogicalPartitions: Int = logicalPartitions
 
   def equals(in: ClusterInfo): Boolean = {

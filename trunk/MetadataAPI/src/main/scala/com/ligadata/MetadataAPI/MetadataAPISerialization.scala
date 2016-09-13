@@ -572,8 +572,8 @@ object MetadataAPISerialization {
             ("Power" -> o.Power) ~
             ("Roles" -> getEmptyArrayIfNull(o.Roles).toList) ~
             ("Description" -> getEmptyIfNull(o.Description)) ~
-            ("ReadCores" -> o.ReaderThreads) ~
-            ("ProcessingCores" -> o.ProcessThreads) ~
+            ("ReaderThreads" -> o.ReaderThreads) ~
+            ("ProcessThreads" -> o.ProcessThreads) ~
             ("LogicalPartitions" -> o.LogicalPartitions)
           outputJson = compact(render(json))
 
@@ -583,8 +583,8 @@ object MetadataAPISerialization {
             ("ClusterId" -> getEmptyIfNull(o.ClusterId)) ~
             ("Description" -> getEmptyIfNull(o.Description)) ~
             ("Privileges" -> getEmptyIfNull(o.Privileges)) ~
-            ("ReadCores" -> o.ReadCores) ~
-            ("ProcessingCores" -> o.ProcessingCores) ~
+            ("ReaderThreads" -> o.ReaderThreads) ~
+            ("ProcessThreads" -> o.ProcessThreads) ~
             ("LogicalPartitions" -> o.LogicalPartitions)
           outputJson = compact(render(json))
 

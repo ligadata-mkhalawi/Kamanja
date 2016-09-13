@@ -734,14 +734,14 @@ object ConfigUtils {
               val apiResult = new ApiResult(ErrorCodeConstants.Failure, "UploadConfig", cfgStr, "Error : ClusterId Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
               return apiResult.toString()
             }
-            val ReadCores = cluster.getOrElse("ReadCores", "0").toString.trim.toInt
-            if (ReadCores == 0) {
-              val apiResult = new ApiResult(ErrorCodeConstants.Failure, "ReadCores", cfgStr, "Error : ReadCores Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
+            val ReaderThreads = cluster.getOrElse("ReaderThreads", "0").toString.trim.toInt
+            if (ReaderThreads == 0) {
+              val apiResult = new ApiResult(ErrorCodeConstants.Failure, "ReaderThreads", cfgStr, "Error : ReaderThreads Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
               return apiResult.toString()
             }
-            val ProcessingCores = cluster.getOrElse("ProcessingCores", "0").toString.trim.toInt
-            if (ProcessingCores == 0) {
-              val apiResult = new ApiResult(ErrorCodeConstants.Failure, "ProcessingCores", cfgStr, "Error : ProcessingCores Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
+            val ProcessThreads = cluster.getOrElse("ProcessThreads", "0").toString.trim.toInt
+            if (ProcessThreads == 0) {
+              val apiResult = new ApiResult(ErrorCodeConstants.Failure, "ProcessThreads", cfgStr, "Error : ProcessThreads Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
               return apiResult.toString()
             }
             val LogicalPartitions = cluster.getOrElse("LogicalPartitions", "0").toString.trim.toInt
@@ -751,7 +751,7 @@ object ConfigUtils {
             }
             logger.debug("Processing the cluster => " + ClusterId)
             // save in memory
-            val ci = MdMgr.GetMdMgr.MakeCluster(ClusterId, "", "", ReadCores, ProcessingCores, LogicalPartitions)
+            val ci = MdMgr.GetMdMgr.MakeCluster(ClusterId, "", "", ProcessThreads, ProcessThreads, LogicalPartitions)
             val addCluserReuslt = MdMgr.GetMdMgr.AddCluster(ci)
 
             if (addCluserReuslt != None) {
@@ -842,11 +842,11 @@ object ConfigUtils {
                 val classpath = node.getOrElse("Classpath", "").toString.trim
                 val jarPaths = if (node.contains("JarPaths")) node.get("JarPaths").get.asInstanceOf[List[String]] else List[String]()
                 val roles = if (node.contains("Roles")) node.get("Roles").get.asInstanceOf[List[String]] else List[String]()
-                var readCores: Int = node.getOrElse("ReadCores", "0").toString.trim.toInt
-                if (readCores == 0) readCores = ReadCores
+                var readerThreads: Int = node.getOrElse("ReaderThreads", "0").toString.trim.toInt
+                if (readerThreads == 0) readerThreads = ReaderThreads
 
-                var processingCores = node.getOrElse("ProcessingCores", "0").toString.trim.toInt
-                if (processingCores == 0) processingCores = ProcessingCores
+                var processThreads = node.getOrElse("ProcessThreads", "0").toString.trim.toInt
+                if (processThreads == 0) processThreads = ProcessThreads
                 var logicalPartitions = node.getOrElse("LogicalPartitions", "0").toString.trim.toInt
                 if (logicalPartitions == 0) logicalPartitions = LogicalPartitions
 
@@ -867,7 +867,7 @@ object ConfigUtils {
                 }
 
                 val ni = MdMgr.GetMdMgr.MakeNode(nodeId, nodePort, nodeIpAddr, jarPaths,
-                  scala_home, java_home, classpath, ClusterId, 0, foundRoles.toArray, "", readCores, processingCores, logicalPartitions)
+                  scala_home, java_home, classpath, ClusterId, 0, foundRoles.toArray, "", readerThreads, processThreads, logicalPartitions)
 
                 val addNodeResult = MdMgr.GetMdMgr.AddNode(ni)
                 if (addNodeResult != None) {
