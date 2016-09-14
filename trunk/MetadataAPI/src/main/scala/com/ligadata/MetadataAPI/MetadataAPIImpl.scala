@@ -254,7 +254,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     *
     * @param componentNames names of components required
     * @param userid         the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                       method. If Security and/or Audit are configured, this value must be a value other than None.
     */
   def getHealthCheckComponentDetailsByNames(componentNames: String = "", userid: Option[String] = None): String = {
     try {
@@ -279,7 +279,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
   /**
     * InitSecImpl  - 1. Create the Security Adapter class.  The class name and jar name containing
     * the implementation of that class are specified in the CONFIG FILE.
-    *                2. Create the Audit Adapter class, The class name and jar name containing
+    * 2. Create the Audit Adapter class, The class name and jar name containing
     * the implementation of that class are specified in the CONFIG FILE.
     */
   def InitSecImpl: Unit = {
@@ -506,7 +506,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * logAuditRec - Record an Audit event using the audit adapter
     *
     * @param userOrRole    the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
+    *                      method. The default is None, but if Security and/or Audit are configured, this value is of little practical use.
     *                      Supply one.
     * @param userPrivilege <description please>
     * @param action        <description please>
@@ -556,7 +556,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param startTime      <description please>
     * @param endTime        <description please>
     * @param userOrRole     the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value should be supplied.
+    *                       method. If Security and/or Audit are configured, this value should be supplied.
     * @param action         <description please>
     * @param objectAccessed <description please>
     * @return <description please>
@@ -1208,7 +1208,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param jarName   <description please>
     * @param byteArray <description please>
     * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                  method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return <description please>
     */
   def UploadJarToDB(jarName: String, byteArray: Array[Byte], userid: Option[String] = None): String = {
@@ -1515,7 +1515,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
   /**
     * ModifyObject
     *
-    * @param objDeleteObject
+    * @param obj
     * @param operation
     */
   def ModifyObject(obj: BaseElemDef, operation: String) {
@@ -1708,7 +1708,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param typeName name of the Type
     * @param version  Version of the object
     * @param userid   the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                 method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
     *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
     *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
@@ -1716,9 +1716,9 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     *         Example:
     *
     *         {{{
-    *                   val apiResult = MetadataAPIImpl.RemoveType(MdMgr.sysNS,"my_char",100)
-    *                   val (statusCode,resultData) = MetadataAPIImpl.getApiResult(apiResult)
-    *                   println("Result as Json String => \n" + resultData)
+    *                            val apiResult = MetadataAPIImpl.RemoveType(MdMgr.sysNS,"my_char",100)
+    *                            val (statusCode,resultData) = MetadataAPIImpl.getApiResult(apiResult)
+    *                            println("Result as Json String => \n" + resultData)
     *         }}}
     *
     */
@@ -1740,24 +1740,24 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     *         Example:
     *
     *         {{{
-    *                   val sampleScalarTypeStr = """
-    *                   {
-    *          "MetadataType" : "ScalarTypeDef",
-    *          "NameSpace" : "system",
-    *          "Name" : "my_char",
-    *          "TypeTypeName" : "tScalar",
-    *          "TypeNameSpace" : "System",
-    *          "TypeName" : "Char",
-    *          "PhysicalName" : "Char",
-    *          "Version" : 101,
-    *          "JarName" : "basetypes_2.10-0.1.0.jar",
-    *          "DependencyJars" : [ "metadata_2.10-1.0.jar" ],
-    *          "Implementation" : "com.ligadata.BaseTypes.CharImpl"
-    *          }
-    *          """
-    *          var apiResult = MetadataAPIImpl.UpdateType(sampleScalarTypeStr,"JSON")
-    *          var result = MetadataAPIImpl.getApiResult(apiResult)
-    *          println("Result as Json String => \n" + result._2)
+    *                            val sampleScalarTypeStr = """
+    *                            {
+    *                   "MetadataType" : "ScalarTypeDef",
+    *                   "NameSpace" : "system",
+    *                   "Name" : "my_char",
+    *                   "TypeTypeName" : "tScalar",
+    *                   "TypeNameSpace" : "System",
+    *                   "TypeName" : "Char",
+    *                   "PhysicalName" : "Char",
+    *                   "Version" : 101,
+    *                   "JarName" : "basetypes_2.10-0.1.0.jar",
+    *                   "DependencyJars" : [ "metadata_2.10-1.0.jar" ],
+    *                   "Implementation" : "com.ligadata.BaseTypes.CharImpl"
+    *                   }
+    *                   """
+    *                   var apiResult = MetadataAPIImpl.UpdateType(sampleScalarTypeStr,"JSON")
+    *                   var result = MetadataAPIImpl.getApiResult(apiResult)
+    *                   println("Result as Json String => \n" + result._2)
     *         }}}
     *
     */
@@ -1825,7 +1825,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param conceptsText an input String of concepts in a format defined by the next parameter formatType
     * @param format
     * @param userid       the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                     method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
     *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
     *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
@@ -1833,18 +1833,18 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     *         Example:
     *
     *         {{{
-    *                     val sampleConceptStr = """
-    *                    {"Concepts" : [
-    *           "NameSpace":"Ligadata",
-    *           "Name":"ProviderId",
-    *           "TypeNameSpace":"System",
-    *           "TypeName" : "String",
-    *           "Version"  : 100 ]
-    *           }
-    *         """
-    *             var apiResult = MetadataAPIImpl.AddConcepts(sampleConceptStr,"JSON")
-    *             var result = MetadataAPIImpl.getApiResult(apiResult)
-    *             println("Result as Json String => \n" + result._2)
+    *                              val sampleConceptStr = """
+    *                             {"Concepts" : [
+    *                    "NameSpace":"Ligadata",
+    *                    "Name":"ProviderId",
+    *                    "TypeNameSpace":"System",
+    *                    "TypeName" : "String",
+    *                    "Version"  : 100 ]
+    *                    }
+    *                  """
+    *                      var apiResult = MetadataAPIImpl.AddConcepts(sampleConceptStr,"JSON")
+    *                      var result = MetadataAPIImpl.getApiResult(apiResult)
+    *                      println("Result as Json String => \n" + result._2)
     *         }}}
     *
     */
@@ -1858,7 +1858,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param conceptsText an input String of concepts in a format defined by the next parameter formatType
     * @param format
     * @param userid       the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                     method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
     *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
     *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
@@ -1866,18 +1866,18 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     *         Example:
     *
     *         {{{
-    *                     val sampleConceptStr = """
-    *                    {"Concepts" : [
-    *           "NameSpace":"Ligadata",
-    *           "Name":"ProviderId",
-    *           "TypeNameSpace":"System",
-    *           "TypeName" : "String",
-    *           "Version"  : 101 ]
-    *           }
-    *         """
-    *             var apiResult = MetadataAPIImpl.UpdateConcepts(sampleConceptStr,"JSON")
-    *             var result = MetadataAPIImpl.getApiResult(apiResult)
-    *             println("Result as Json String => \n" + result._2)
+    *                              val sampleConceptStr = """
+    *                             {"Concepts" : [
+    *                    "NameSpace":"Ligadata",
+    *                    "Name":"ProviderId",
+    *                    "TypeNameSpace":"System",
+    *                    "TypeName" : "String",
+    *                    "Version"  : 101 ]
+    *                    }
+    *                  """
+    *                      var apiResult = MetadataAPIImpl.UpdateConcepts(sampleConceptStr,"JSON")
+    *                      var result = MetadataAPIImpl.getApiResult(apiResult)
+    *                      println("Result as Json String => \n" + result._2)
     *
     *         }}}
     *
@@ -1905,7 +1905,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param name
     * @param version   Version of the object
     * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                  method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return
     */
   def RemoveConcept(nameSpace: String, name: String, version: Long, userid: Option[String]): String = {
@@ -1917,16 +1917,16 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     *
     * @param concepts array of Strings where each string is name of the concept
     * @param userid   the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                 method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
     *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
     *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
     *
     *         Example:
     *         {{{
-    *                   val apiResult = MetadataAPIImpl.RemoveConcepts(Array("Ligadata.ProviderId.100"))
-    *                   val (statusCode,resultData) = MetadataAPIImpl.getApiResult(apiResult)
-    *                   println("Result as Json String => \n" + resultData)
+    *                            val apiResult = MetadataAPIImpl.RemoveConcepts(Array("Ligadata.ProviderId.100"))
+    *                            val (statusCode,resultData) = MetadataAPIImpl.getApiResult(apiResult)
+    *                            println("Result as Json String => \n" + resultData)
     *         }}}
     *
     */
@@ -1975,7 +1975,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param contOrMsgText message
     * @param format        its format
     * @param userid        the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                      method. If Security and/or Audit are configured, this value must be a value other than None.
     * @param recompile     a
     * @return <description please>
     */
@@ -1989,7 +1989,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param messageText text of the message (as JSON/XML string as defined by next parameter formatType)
     * @param format
     * @param userid      the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                    method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
     *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
     *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
@@ -1997,9 +1997,9 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     *         Example
     *
     *         {{{
-    *                   var apiResult = MetadataAPIImpl.AddMessage(msgStr,"JSON")
-    *                   var result = MetadataAPIImpl.getApiResult(apiResult)
-    *                   println("Result as Json String => \n" + result._2)
+    *                            var apiResult = MetadataAPIImpl.AddMessage(msgStr,"JSON")
+    *                            var result = MetadataAPIImpl.getApiResult(apiResult)
+    *                            println("Result as Json String => \n" + result._2)
     *         }}}
     */
   override def AddMessage(messageText: String, format: String, userid: Option[String] = None, tid: Option[String] = None, pStr: Option[String]): String = {
@@ -2012,7 +2012,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param containerText text of the container (as JSON/XML string as defined by next parameter formatType)
     * @param format
     * @param userid        the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                      method. If Security and/or Audit are configured, this value must be a value other than None.
     * @param pStr          json string that contains extra parameters to be added to BaseElem (description, comment, tag)
     * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
     *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
@@ -2021,9 +2021,9 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     *         Example
     *
     *         {{{
-    *                   var apiResult = MetadataAPIImpl.AddContainer(msgStr,"JSON")
-    *                   var result = MetadataAPIImpl.getApiResult(apiResult)
-    *                   println("Result as Json String => \n" + result._2)
+    *                            var apiResult = MetadataAPIImpl.AddContainer(msgStr,"JSON")
+    *                            var result = MetadataAPIImpl.getApiResult(apiResult)
+    *                            println("Result as Json String => \n" + result._2)
     *         }}}
     */
   override def AddContainer(containerText: String, format: String, userid: Option[String] = None, tenantId: Option[String] = None, pStr: Option[String]): String = {
@@ -2031,26 +2031,16 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
   }
 
   /**
-    * AddContainer
-    *
-    * @param containerText
-    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
-    * @return
-    */
-  // def AddContainer(containerText: String, userid: Option[String], tenantId: Option[String] = None): String = {
-  //   AddContainer(containerText, "JSON", userid, tenantId)
-  // }
-
-  /**
     * RecompileMessage
     *
     * @param msgFullName
     * @return
     */
+
   def RecompileMessage(msgFullName: String): String = {
     MessageAndContainerUtils.RecompileMessage(msgFullName)
   }
+
 
   /**
     * UpdateMessage
@@ -2058,7 +2048,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param messageText text of the message (as JSON/XML string as defined by next parameter formatType)
     * @param format
     * @param userid      the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                    method. If Security and/or Audit are configured, this value must be a value other than None.
     * @param pStr        json string that contains extra parameters to be added to BaseElem (description, comment, tag)
     * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
     *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
@@ -2088,10 +2078,10 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
   /**
     * UpdateContainer
     *
-    * @param messageText
-    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
-    * @return
+    * param messageText
+    * param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    * method. If Security and/or Audit are configured, this value must be a value other than None.
+    * return
     */
   // def UpdateContainer(messageText: String, userid: Option[String]): String = {
   //   UpdateMessage(messageText, "JSON", userid)
@@ -2100,10 +2090,10 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
   /**
     * UpdateMessage
     *
-    * @param messageText
-    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
-    * @return
+    * param messageText
+    * param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+    * method. If Security and/or Audit are configured, this value must be a value other than None.
+    * return
     */
   //def UpdateMessage(messageText: String, userid: Option[String]): String = {
   //  UpdateMessage(messageText, "JSON", userid)
@@ -2116,7 +2106,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param name
     * @param version   Version of the object
     * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                  method. If Security and/or Audit are configured, this value must be a value other than None.
     * @param zkNotify
     * @return
     */
@@ -2131,7 +2121,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param name
     * @param version   Version of the object
     * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                  method. If Security and/or Audit are configured, this value must be a value other than None.
     * @param zkNotify
     * @return
     */
@@ -2191,7 +2181,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param messageName Name of the given message
     * @param version     Version of the given message
     * @param userid      the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value should be other than None
+    *                    method. If Security and/or Audit are configured, this value should be other than None
     * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
     *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
     *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
@@ -2206,7 +2196,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param containerName Name of the given container
     * @param version       Version of the object   Version of the given container
     * @param userid        the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                      method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
     *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
     *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
@@ -2222,7 +2212,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param name
     * @param version   Version of the object
     * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                  method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return
     */
   def DeactivateModel(nameSpace: String, name: String, version: Long, userid: Option[String] = None): String = {
@@ -2236,7 +2226,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param name
     * @param version   Version of the object
     * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                  method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return
     */
   def ActivateModel(nameSpace: String, name: String, version: Long, userid: Option[String] = None): String = {
@@ -2253,7 +2243,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     *                  elper functions are available in MdMgr object for converting to/from strings and 0 padding the
     *                  version sections if desirable.
     * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                  method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
     *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
     *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
@@ -2261,7 +2251,6 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
   override def RemoveModel(modelName: String, version: String, userid: Option[String] = None): String = {
     ModelUtils.RemoveModel(modelName, version, userid)
   }
-
 
   /**
     * The ModelDef returned by the compilers is added to the metadata.
@@ -2277,12 +2266,12 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
 
   /** Add model. Several model types are currently supported.  They describe the content of the ''input'' argument:
     *
-    *   - SCALA - a Scala source string
-    *   - JAVA - a Java source string
-    *   - PMML - a PMML source string
-    *   - KPMML - a Kamanja Pmml source string
-    *   - JTM - a JSON string for a Jason Transformation Model
-    *   - BINARY - the path to a jar containing the model
+    * - SCALA - a Scala source string
+    * - JAVA - a Java source string
+    * - PMML - a PMML source string
+    * - KPMML - a Kamanja Pmml source string
+    * - JTM - a JSON string for a Jason Transformation Model
+    * - BINARY - the path to a jar containing the model
     *
     * The remaining arguments, while noted as optional, are required for some model types.  In particular,
     * the ''modelName'', ''version'', and ''msgConsumed'' must be specified for the PMML model type.  The ''userid'' is
@@ -2300,9 +2289,12 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param optVersion     the model version to be used to describe this PMML model
     * @param optMsgConsumed the namespace.name of the message to be consumed by a PMML model
     * @param optMsgVersion  the version of the message to be consumed. By default Some(-1)
+    * @param optMsgProduced the output message to be created when a model result is produced
+    * @param pStr           Json string containing global information
+    * @param modelOptions   model specific options used by model instance initialization
     * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
     *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
-    * ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
+    *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
     */
   override def AddModel(modelType: ModelType.ModelType
                         , input: String
@@ -2312,10 +2304,11 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
                         , optVersion: Option[String] = None
                         , optMsgConsumed: Option[String] = None
                         , optMsgVersion: Option[String] = Some("-1")
-                        , optMsgProduced: Option[String] = None,
-                        pStr: Option[String]
+                        , optMsgProduced: Option[String] = None
+                        , pStr: Option[String]
+                        , modelOptions: Option[String]
                        ): String = {
-    ModelUtils.AddModel(modelType, input, optUserid, optTenantid, optModelName, optVersion, optMsgConsumed, optMsgVersion, optMsgProduced, pStr)
+    ModelUtils.AddModel(modelType, input, optUserid, optTenantid, optModelName, optVersion, optMsgConsumed, optMsgVersion, optMsgProduced, pStr, modelOptions)
   }
 
   /**
@@ -2346,7 +2339,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     *
     *      Currently only the most recent model cataloged with the name noted in the source file can be "updated".  It is not
     *      possible to have a number of models with the same name differing only by version and be able to update one of them
-    * explicitly.  This is a feature that is to be implemented.
+    *      explicitly.  This is a feature that is to be implemented.
     *
     *      If both the model and the message are changing, consider using AddModel to create a new PMML model and then remove the older
     *      version if appropriate.
@@ -2359,18 +2352,22 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param optVersion             the model version to be used to describe this PMML model (for KPMML types this value is obtained from the source file)
     * @param optVersionBeingUpdated not used .. reserved for future release where explicit modelnamespace.modelname.modelversion
     *                               can be updated (not just the latest version)
+    * @param optMsgProduced         the output message to be created when a model result is produced
+    * @param pStr                   Json string containing global information
+    * @param modelOptions           model specific options used by model instance initialization
     * @return result string indicating success or failure of operation
     */
-  override def UpdateModel(modelType: ModelType.ModelType
-                           , input: String
-                           , optUserid: Option[String] = None
-                           , tenantid: Option[String] = None
-                           , optModelName: Option[String] = None
-                           , optVersion: Option[String] = None
-                           , optVersionBeingUpdated: Option[String] = None
-                           , optMsgProduced: Option[String] = None,
-                           pStr: Option[String]): String = {
-    ModelUtils.UpdateModel(modelType, input, optUserid, tenantid, optModelName, optVersion, optVersionBeingUpdated, optMsgProduced, pStr)
+  def UpdateModel(modelType: ModelType.ModelType
+                  , input: String
+                  , optUserid: Option[String] = None
+                  , tenantid: Option[String] = None
+                  , optModelName: Option[String] = None
+                  , optVersion: Option[String] = None
+                  , optVersionBeingUpdated: Option[String] = None
+                  , optMsgProduced: Option[String] = None
+                  , pStr: Option[String]
+                  , modelOptions: Option[String]): String = {
+    ModelUtils.UpdateModel(modelType, input, optUserid, tenantid, optModelName, optVersion, optVersionBeingUpdated, optMsgProduced, pStr, modelOptions)
   }
 
   /**
@@ -2394,7 +2391,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     *
     * @param formatType format of the return value, either JSON or XML
     * @param userid     the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None
+    *                   method. If Security and/or Audit are configured, this value must be a value other than None
     * @return string representation in specified format.
     */
   def GetAllModelDefs(formatType: String, userid: Option[String] = None): String = {
@@ -2406,7 +2403,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     *
     * @param formatType format of the return value, either JSON or XML
     * @param userid     the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                   method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return
     */
   def GetAllMessageDefs(formatType: String, userid: Option[String] = None): String = {
@@ -2419,7 +2416,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     *
     * @param formatType format of the return value, either JSON or XML
     * @param userid     the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                   method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return result as string
     */
   def GetAllContainerDefs(formatType: String, userid: Option[String] = None): String = {
@@ -2509,7 +2506,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param objectName name of the desired object, possibly namespace qualified
     * @param formatType format of the return value, either JSON or XML
     * @param userid     the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                   method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return
     */
   def GetModelDef(nameSpace: String, objectName: String, formatType: String, userid: Option[String]): String = {
@@ -2535,7 +2532,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param formatType format of the return value, either JSON or XML
     * @param version    Version of the object
     * @param userid     the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                   method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return
     */
   def GetModelDefFromCache(nameSpace: String, name: String, formatType: String, version: String, userid: Option[String] = None, tid: Option[String] = None): String = {
@@ -2550,7 +2547,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param formatType format of the return value, either JSON or XML
     * @param version    Version of the object
     * @param userid     the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                   method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return
     */
   def GetModelDef(nameSpace: String, objectName: String, formatType: String, version: String, userid: Option[String]): String = {
@@ -2572,7 +2569,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param formatType format of the return value, either JSON or XML
     * @param version    Version of the object
     * @param userid     the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                   method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return
     */
   def GetMessageDefFromCache(nameSpace: String, name: String, formatType: String, version: String, userid: Option[String] = None): String = {
@@ -2747,7 +2744,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param formatType format of the return value, either JSON or XML
     * @param version    Version of the object
     * @param userid     the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
+    *                   method. If Security and/or Audit are configured, this value must be a value other than None.
     * @return
     */
   def GetModelDefFromDB(nameSpace: String, objectName: String, formatType: String, version: String, userid: Option[String] = None): String = {
@@ -3075,7 +3072,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
           }
         }
       }
-      case "adapterDef" | "nodeDef" | "clusterInfoDef" | "clusterDef" | "upDef" => {
+      case "adapterDef" | "nodeDef" | "clusterInfoDef" | "clusterDef" | "upDef" | "TenantDef" => {
         zkMessage.Operation match {
           case "Add" | "Update" | "Remove" => {
             updateClusterConfigForKey(zkMessage.ObjectType, zkMessage.Name, zkMessage.NameSpace, zkMessage.Operation)
@@ -4172,6 +4169,25 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
       }
       return
     }
+    if (elemType.equalsIgnoreCase("TenantDef")) {
+      //val obj = GetObject("userproperties."+key.toLowerCase, "config_objects")
+      if (operation.equalsIgnoreCase("add")) {
+        val storedInfo = MetadataAPISerialization.deserializeMetadata(new String(GetObject("tenantinfo."+key.toLowerCase, "config_objects")._2.asInstanceOf[Array[Byte]])).asInstanceOf[TenantInfo]
+        MdMgr.GetMdMgr.AddTenantInfo(storedInfo)
+        MdMgr.GetMdMgr.addConfigChange((elemType +"."+"add"+"."+storedInfo.tenantId.toLowerCase, storedInfo))
+        return
+      }
+      if (operation.equalsIgnoreCase("update")) {
+        val storedInfo = MetadataAPISerialization.deserializeMetadata(new String(GetObject("tenantinfo."+key.toLowerCase, "config_objects")._2.asInstanceOf[Array[Byte]])).asInstanceOf[TenantInfo]
+        MdMgr.GetMdMgr.AddTenantInfo(storedInfo)
+        MdMgr.GetMdMgr.addConfigChange((elemType + "." + "update" + "." + storedInfo.tenantId.toLowerCase, storedInfo))
+        return
+      }
+      if (operation.equalsIgnoreCase("Remove")) {
+        logger.warn("Remove TenantDef - not supported")
+      }
+      return
+    }
   }
 
   /**
@@ -4467,8 +4483,9 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     */
   def GetTypeByElementId(elementId: Long, userid: Option[String]): String = {
 
-    MessageAndContainerUtils.GetTypeByElementId(elementId, userid)
-  }
-
-
+  MessageAndContainerUtils.GetTypeByElementId (elementId, userid)
 }
+}
+
+
+

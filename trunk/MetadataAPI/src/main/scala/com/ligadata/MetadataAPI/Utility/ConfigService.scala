@@ -18,7 +18,7 @@ package com.ligadata.MetadataAPI.Utility
 
 import java.io.File
 
-import com.ligadata.MetadataAPI.MetadataAPIImpl
+import com.ligadata.MetadataAPI.{ApiResult, ErrorCodeConstants, MetadataAPIImpl}
 
 import scala.io.Source
 import org.apache.logging.log4j._
@@ -43,7 +43,8 @@ object ConfigService {
    if (input == "") {
      configFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONFIG_FILES_DIR")
      if (configFileDir == null) {
-       response = "CONFIG_FILES_DIR property missing in the metadata API configuration"
+      // response = "CONFIG_FILES_DIR property missing in the metadata API configuration"
+       response= (new ApiResult(ErrorCodeConstants.Failure, "uploadClusterConfig",null, "CONFIG_FILES_DIR property missing in the metadata API configuration")).toString
      } else {
        //verify the directory where messages can be present
        IsValidDir(configFileDir) match {
@@ -52,8 +53,9 @@ object ConfigService {
            val types: Array[File] = new java.io.File(configFileDir).listFiles.filter(_.getName.endsWith(".json"))
            types.length match {
              case 0 => {
-               println("Configs not found at " + configFileDir)
-               response="Configs not found at " + configFileDir
+               //println("Configs not found at " + configFileDir)
+              // response="Configs not found at " + configFileDir
+               response= (new ApiResult(ErrorCodeConstants.Failure, "uploadClusterConfig",null, "Configs not found at "+configFileDir)).toString
              }
              case option => {
                val configDefs = getUserInputFromMainMenu(types)
@@ -65,7 +67,8 @@ object ConfigService {
          }
          case false => {
            //println("Message directory is invalid.")
-           response = "Config directory is invalid."
+           //response = "Config directory is invalid."
+           response= (new ApiResult(ErrorCodeConstants.Failure, "uploadClusterConfig",null, "Config directory is invalid")).toString
          }
        }
      }
@@ -85,7 +88,8 @@ object ConfigService {
     if (input == "") {
       configFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONFIG_FILES_DIR")
       if (configFileDir == null) {
-        response = "CONFIG_FILES_DIR property missing in the metadata API configuration"
+       // response = "CONFIG_FILES_DIR property missing in the metadata API configuration"
+        response= (new ApiResult(ErrorCodeConstants.Failure, "uploadCompileConfig",null, "CONFIG_FILES_DIR property missing in the metadata API configuration")).toString
       } else {
         //verify the directory where messages can be present
         IsValidDir(configFileDir) match {
@@ -94,8 +98,9 @@ object ConfigService {
             val types: Array[File] = new java.io.File(configFileDir).listFiles.filter(_.getName.endsWith(".json"))
             types.length match {
               case 0 => {
-                println("Configs not found at " + configFileDir)
-                response="Configs not found at " + configFileDir
+                //println("Configs not found at " + configFileDir)
+                //response="Configs not found at " + configFileDir
+                response= (new ApiResult(ErrorCodeConstants.Failure, "uploadCompileConfig",null, "Configs not found at "+configFileDir)).toString
               }
               case option => {
                 val configDefs = getUserInputFromMainMenu(types)
@@ -107,7 +112,8 @@ object ConfigService {
           }
           case false => {
             //println("Message directory is invalid.")
-            response = "Config directory is invalid."
+           // response = "Config directory is invalid."
+            response= (new ApiResult(ErrorCodeConstants.Failure, "uploadCompileConfig",null, "Config directory is invalid")).toString
           }
         }
       }
@@ -119,6 +125,7 @@ object ConfigService {
     }
     response
   }
+
   def dumpAllCfgObjects: String ={
     var response=""
     try{
@@ -126,13 +133,15 @@ object ConfigService {
     }
     catch {
       case e: Exception => {
-        logger.warn("", e)
-        response=e.getStackTrace.toString
+        logger.error("", e)
+        //response=e.getStackTrace.toString
+        response= (new ApiResult(ErrorCodeConstants.Failure, "dumpAllCfgObjects",null, e.getStackTrace.toString)).toString
       }
     }
     response
 
   }
+
   def removeEngineConfig(input: String): String ={
     var response = ""
     var configFileDir: String = ""
@@ -140,7 +149,8 @@ object ConfigService {
     if (input == "") {
       configFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONFIG_FILES_DIR")
       if (configFileDir == null) {
-        response = "CONFIG_FILES_DIR property missing in the metadata API configuration"
+        //response = "CONFIG_FILES_DIR property missing in the metadata API configuration"
+        response= (new ApiResult(ErrorCodeConstants.Failure, "removeEngineConfig",null, "CONFIG_FILES_DIR property missing in the metadata API configuration")).toString
       } else {
         //verify the directory where messages can be present
         IsValidDir(configFileDir) match {
@@ -149,8 +159,9 @@ object ConfigService {
             val types: Array[File] = new java.io.File(configFileDir).listFiles.filter(_.getName.endsWith(".json"))
             types.length match {
               case 0 => {
-                println("Configs not found at " + configFileDir)
-                response="Configs not found at " + configFileDir
+                //println("Configs not found at " + configFileDir)
+                //response="Configs not found at " + configFileDir
+                response= (new ApiResult(ErrorCodeConstants.Failure, "removeEngineConfig",null, "Configs not found at " + configFileDir)).toString
               }
               case option => {
                 val configDefs = getUserInputFromMainMenu(types)
@@ -162,7 +173,8 @@ object ConfigService {
           }
           case false => {
             //println("Message directory is invalid.")
-            response = "Config directory is invalid."
+            //response = "Config directory is invalid."
+            response= (new ApiResult(ErrorCodeConstants.Failure, "removeEngineConfig",null, "Configs not found at " + configFileDir)).toString
           }
         }
       }
@@ -171,7 +183,6 @@ object ConfigService {
       var message = new File(input.toString)
       val configDef = Source.fromFile(message).mkString
       response = getMetadataAPI.RemoveConfig (configDef.toString, userid, "adapter")
-      
     }
     response
   }

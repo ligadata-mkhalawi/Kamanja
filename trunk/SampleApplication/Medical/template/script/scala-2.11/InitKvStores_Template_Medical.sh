@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 KAMANJA_HOME={InstallDirectory}
 
-currentKamanjaVersion=1.5.3
+currentKamanjaVersion=1.6.0
 
 java -Dlog4j.configurationFile=file:$KAMANJA_HOME/config/log4j2.xml -cp $KAMANJA_HOME/lib/system/guava-19.0.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-${currentKamanjaVersion}.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-${currentKamanjaVersion}.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-${currentKamanjaVersion}.jar:$KAMANJA_HOME/lib/system/kvinit_2.11-${currentKamanjaVersion}.jar com.ligadata.tools.kvinit.KVInit --typename com.ligadata.kamanja.samples.containers.SputumCodes        --config $KAMANJA_HOME/config/Engine1Config.properties --datafiles $KAMANJA_HOME/input/SampleApplications/data/sputumCodes_Medical.csv       --ignorerecords 1 --deserializer "com.ligadata.kamanja.serializer.csvserdeser" --optionsjson '{"alwaysQuoteFields":false,"fieldDelimiter":",","valDelimiter":"~"}'
 java -Dlog4j.configurationFile=file:$KAMANJA_HOME/config/log4j2.xml -cp $KAMANJA_HOME/lib/system/guava-19.0.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-${currentKamanjaVersion}.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-${currentKamanjaVersion}.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-${currentKamanjaVersion}.jar:$KAMANJA_HOME/lib/system/kvinit_2.11-${currentKamanjaVersion}.jar com.ligadata.tools.kvinit.KVInit --typename com.ligadata.kamanja.samples.containers.SmokeCodes         --config $KAMANJA_HOME/config/Engine1Config.properties --datafiles $KAMANJA_HOME/input/SampleApplications/data/smokingCodes_Medical.csv      --ignorerecords 1 --deserializer "com.ligadata.kamanja.serializer.csvserdeser" --optionsjson '{"alwaysQuoteFields":false,"fieldDelimiter":",","valDelimiter":"~"}'

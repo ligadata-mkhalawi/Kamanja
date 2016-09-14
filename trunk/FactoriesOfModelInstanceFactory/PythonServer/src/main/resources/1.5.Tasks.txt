@@ -1,0 +1,94 @@
+ 
+Here are the list of tasks for Python. Forgot to send them since after noon.
+
+Advanced stuff we will handle in next version.
+
+I.  Connection
+
+    1.  Only one connection per thread and hold the process object
+    2.  Each partition should have its own state (if we have any)
+    3.  Starting Py server using below arguments
+
+        i.  Host
+        ii. Port
+        iii.PythonPath
+        iv. UniqStringForEachProcess -- Should be associated to thread & PORT
+
+    4. Invoke .Py server Script instead of Shell Script?
+     
+    5. Reconnect if old connection is bad. If the Py server goes down, restart it and then establish new connection.
+
+    6. While shutting down Kamanja, we need to close all Py connections & servers
+
+ 
+II. Protocol
+
+    1. We should have some protocol in communicating between Kamanja Scala model & Py connection. The following is the protocol. We always use JSON data transfer.
+
+        a. The message byte array passed to and fro has these segments: 
+            i.    <StartMarker> 
+            ii.   <DataLen>
+            iii.  <JsonData>
+            iv.   <EndMarker>
+
+        b.  The markers are currently md5 hashes based upon the <JsonData> string (i.e., sans <DataLen>).
+        c.  The <DataLen> is a 4 byte representation of the length of the
+        <JsonData> string.
+        d.  The <StartMarker> and <EndMarker> should have the same value.  The
+        python server will compute its own md5 hash and compare with the markers.  If they do not match an error message is both logged and returned as the result.
+        e.  The <JsonData> itself is a map.  In addition to the message integrity checks, to be successfully processed, a key must be found in the map == 'cmd' whose value is the command that will interpret the remaining key/value pairs in the dictionary. Should the 'cmd' key value not refer to a legitimate command,  an error is logged and returned.
+        f.  Kamanja uses ByteBuffer to encode the data for transmission to the PythonServer.  As used all numerical data is encoded in Big Endian order, the conventional network order.
+
+    2. If we pass big data, it will be written into local file in kamanaja scala model and then read data in Py server from file
+
+    3.  Serialization & Deserialization
+
+        i.  From Scala to Py => Serialize Message to Dictionary json at Scala model and Deserialize it into Map in Py model.
+
+        ii. From Py to Scala => Serialize Map into Json and deseirialize it into Msg from JSON in scala.
+
+
+III. Metadata Commands
+
+    1.  Add Model
+        a.  Kamanja scala model writes in PythonPath (when Model Factory is initialized) and give that file path to add command argument (Assuming same path can be shared between all instances)
+        b.  Load model into Py server.
+
+    2.  Remove Model 
+        a.  Pass model name to remvoe to Py server
+        b.  Unload Py model from Py server
+
+    3.  Update Model.  For now either we support update model or we support remove & add.
+
+    4.  Model Runtime commands:
+        a. Init (Advanced)
+
+            i.       Initialize model with Model metadata (Ex: Training Output - Model). This data can be written into local file and send the file to Py to load the data.
+            ii.      Parameters required here are Model Name & Data File
+        b. Execute
+            i.       Executing Model with the given message (only one message) and also returns a message. Need to have some special communication if model does not return anything.
+            ii.      Parameters required here are Model Name & Message Dictionary. And return value is Dictionary of output Message, which will be deserialized into
+
+    5.Communication From Py Model (server) to Kamanja (Advanced):
+        a. Need to add some communication from Py model to Kamanja for the following:
+          - Models can request additional data when needed
+          - Models can cache state if needed.
+        b. Implement shared cache between Py & Kamanja.
+
+ 
+{
+  "Cmd": "Add Model",
+  "CmdOptions": {
+    "ModelFile": "a.py"
+  },
+  "ModelOptions": {}
+}
+ 
+
+ 1) annotate tasks/ break apart into finer portions if possible, 
+ 2) fix loop on server, 
+ 3) add exception handling to server, 
+ 4) fix message sent ... begin marker, protocol version, checksum, cmd payload length, cmd payload, end marker, 
+ 5) fix sample models to consume dictionary values passed at model instantiation, 
+ 6) fix msg at execute to be dictionary as well (this will be created or extracted from scala msg instance on the proxy side and made into json dict for now)
+[
