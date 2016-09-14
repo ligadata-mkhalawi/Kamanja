@@ -28,6 +28,19 @@ object Utils {
     hdfsConf
   }
 
+  def getParquetSchema(avroSchemaStr : String): parquet.schema.MessageType ={
+
+    //replace basic types with Union type to allow nulls => optional in parquet,
+    // otherwise generated parquet fields will be required
+    val regex = "\"type\"\\s*:\\s*\"(int|double|float|boolean|long|string)\"".r
+    val modifiedAvroSchemaStr = regex.replaceAllIn(avroSchemaStr, "\"type\" : [\"$1\",\"null\"]")
+
+    val avroSchema = new org.apache.avro.Schema.Parser().parse(modifiedAvroSchemaStr)
+    val avroSchemaConverter = new parquet.avro.AvroSchemaConverter()
+    val parquetSchema = avroSchemaConverter.convert(avroSchema)
+    parquetSchema
+  }
+
   def createParquetWriter(fc: SmartFileProducerConfiguration,
                           filePath : String, writeSupport : ParquetWriteSupport,
                           compression : CompressionCodecName) : ParquetWriter[Array[Any]] = {

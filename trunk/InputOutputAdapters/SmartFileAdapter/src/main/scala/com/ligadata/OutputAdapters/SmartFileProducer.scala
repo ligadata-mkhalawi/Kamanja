@@ -585,9 +585,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
             if(!writeSupportsMap.contains(record.getFullTypeName)){
               println(">>>>>>>>>>>>>>>>>> Avro schema : " + record.getAvroSchema)
               //get avro schema from message then use it to get parquet schema
-              val avroSchema = new org.apache.avro.Schema.Parser().parse(record.getAvroSchema)
-              val avroSchemaConverter = new parquet.avro.AvroSchemaConverter()
-              val parquetSchema = avroSchemaConverter.convert(avroSchema)
+              val parquetSchema = Utils.getParquetSchema(record.getAvroSchema)
               //val schema = MessageTypeParser.parseMessageType(parquetSchema)
               println(">>>>>>>>>>>>>>>>>> parquet schema : " + parquetSchema.toString)
 
