@@ -22,7 +22,7 @@ import scala.io.Source
 
 import org.apache.logging.log4j._
 
-import com.ligadata.Exceptions.StackTrace
+import com.ligadata.Exceptions.{InvalidArgumentException, StackTrace}
 import com.ligadata.MetadataAPI.{MetadataAPIImpl,ApiResult,ErrorCodeConstants}
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType.ModelType
@@ -30,8 +30,8 @@ import com.ligadata.MetadataAPI.MetadataAPIImpl
 import scala.io._
 
 /**
-  * Created by dhaval on 8/7/15.
-  */
+ * Created by dhaval on 8/7/15.
+ */
 
 object ModelService {
     private val userid: Option[String] = Some("kamanja")
@@ -44,13 +44,13 @@ object ModelService {
       **********************************************************************************************/
 
     /**
-      * Add the supplied model to the metadata.
-      *
-      * @param input the path of the model to be ingested
-      * @param dep model configuration indicator
-      * @param userid the optional userId. If security and auditing in place this parameter is required.
-      * @return the result of the operation
-      */
+     * Add the supplied model to the metadata.
+     *
+     * @param input the path of the model to be ingested
+     * @param dep model configuration indicator
+     * @param userid the optional userId. If security and auditing in place this parameter is required.
+     * @return the result of the operation
+     */
     def addModelScala(input: String
                       , dep: String = ""
                       , userid: Option[String] = Some("kamanja")
@@ -66,11 +66,18 @@ object ModelService {
         //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
         var chosen: String = ""
         var finalTid: Option[String] = None
-        if (tid == None) {
-            chosen = getTenantId
-            finalTid = Some(chosen)
-        } else {
-            finalTid = tid
+        try {
+            if (tid == None) {
+                chosen = getTenantId
+                finalTid = Some(chosen)
+            } else {
+                finalTid = tid
+            }
+        }catch {
+            case e: InvalidArgumentException => {
+                logger.error("Invalid choice")
+                return (new ApiResult(ErrorCodeConstants.Failure, "addModelScala",null, "Invalid choice")).toString
+            }
         }
 
 
@@ -78,7 +85,8 @@ object ModelService {
             //get the messages location from the config file. If error get the location from github
             modelFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
             if (modelFileDir == null) {
-                response = "MODEL_FILES_DIR property missing in the metadata API configuration"
+                //  response = "MODEL_FILES_DIR property missing in the metadata API configuration"
+                response = new ApiResult(ErrorCodeConstants.Failure, "addModelScala", null, "MODEL_FILES_DIR property missing in the metadata API configuration").toString
             } else {
                 //verify the directory where messages can be present
                 IsValidDir(modelFileDir) match {
@@ -87,8 +95,9 @@ object ModelService {
                         val models: Array[File] = new java.io.File(modelFileDir).listFiles.filter(_.getName.endsWith(".scala"))
                         models.length match {
                             case 0 => {
-                                val errorMsg = "Models not found at " + modelFileDir
-                                response = errorMsg
+                                //                                val errorMsg = "Models not found at " + modelFileDir
+                                //                              response = errorMsg
+                                response = new ApiResult(ErrorCodeConstants.Failure, "addModelScala", null, "Models not found at "+modelFileDir).toString
                             }
                             case option => {
                                 modelDefs=getUserInputFromMainMenu(models)
@@ -97,7 +106,8 @@ object ModelService {
                     }
                     case false => {
                         //println("Message directory is invalid.")
-                        response = "Model directory is invalid."
+                        //                        response = "Model directory is invalid."
+                        response = new ApiResult(ErrorCodeConstants.Failure, "addModelScala", null, "Model directory is invalid").toString
                     }
                 }
             }
@@ -107,7 +117,8 @@ object ModelService {
                 modelDef = Source.fromFile(model).mkString
                 modelDefs=modelDefs:+modelDef
             } else {
-                response="File does not exist"
+                // response="File does not exist"
+                response = new ApiResult(ErrorCodeConstants.Failure, "addModelScala", null, "Model File does not exist").toString
             }
         }
         if (modelDefs.nonEmpty) {
@@ -119,7 +130,8 @@ object ModelService {
                     //before adding a model, add its config file.
                     var configKeys = getMetadataAPI.getModelConfigNames
                     if(configKeys.isEmpty){
-                        response="No model configuration loaded in the metadata!"
+                        //response="No model configuration loaded in the metadata!"
+                        response = new ApiResult(ErrorCodeConstants.Failure, "addModelScala", null, "No model configuration loaded in the metadata!").toString
                     }else{
                         var srNo = 0
                         println("\nPick a Model Definition file(s) from below choices\n")
@@ -138,8 +150,9 @@ object ModelService {
                             }
                             case _ => {
                                 val errorMsg = "Incorrect input " + userOption + ". Please enter the correct option."
-                                println(errorMsg)
-                                errorMsg
+                                //  println(errorMsg)
+                                // errorMsg
+                                response = new ApiResult(ErrorCodeConstants.Failure, "addModelScala", null, errorMsg).toString
                             }
                         }
                         response+= getMetadataAPI.AddModel(ModelType.SCALA, modelDef, userid,finalTid, Some(modelConfig), None, None, None, optMsgProduced, pStr)
@@ -152,13 +165,13 @@ object ModelService {
     }
 
     /**
-      * Add the supplied model to the metadata.
-      *
-      * @param input The input path of the model to be ingested
-      * @param dep model configuration
-      * @param userid the optional userId. If security and auditing in place this parameter is required.
-      * @return the result of the operation
-      */
+     * Add the supplied model to the metadata.
+     *
+     * @param input The input path of the model to be ingested
+     * @param dep model configuration
+     * @param userid the optional userId. If security and auditing in place this parameter is required.
+     * @return the result of the operation
+     */
     def addModelJava(input: String, dep: String = ""
                      , userid: Option[String] = Some("kamanja")
                      , optMsgProduced: Option[String] = None
@@ -172,18 +185,26 @@ object ModelService {
         //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
         var chosen: String = ""
         var finalTid: Option[String] = None
-        if (tid == None) {
-            chosen = getTenantId
-            finalTid = Some(chosen)
-        } else {
-            finalTid = tid
+        try{
+            if (tid == None) {
+                chosen = getTenantId
+                finalTid = Some(chosen)
+            } else {
+                finalTid = tid
+            }
+        }catch {
+            case e: InvalidArgumentException => {
+                logger.error("Invalid choice")
+                return (new ApiResult(ErrorCodeConstants.Failure, "addModelJava",null, "Invalid choice")).toString
+            }
         }
 
         if (input == "") {
             //get the messages location from the config file. If error get the location from github
             modelFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
             if (modelFileDir == null) {
-                response = "MODEL_FILES_DIR property missing in the metadata API configuration"
+                //response = "MODEL_FILES_DIR property missing in the metadata API configuration"
+                response = new ApiResult(ErrorCodeConstants.Failure, "addModelJava", null, "MODEL_FILES_DIR property missing in the metadata API configuration").toString
             } else {
                 //verify the directory where messages can be present
                 IsValidDir(modelFileDir) match {
@@ -192,8 +213,9 @@ object ModelService {
                         val models: Array[File] = new java.io.File(modelFileDir).listFiles.filter(_.getName.endsWith(".java"))
                         models.length match {
                             case 0 => {
-                                val errorMsg = "Models not found at " + modelFileDir
-                                response = errorMsg
+                                //                              val errorMsg = "Models not found at " + modelFileDir
+                                //                                response = errorMsg
+                                response = new ApiResult(ErrorCodeConstants.Failure, "addModelJava", null, "Models not found at "+modelFileDir).toString
                             }
                             case option => {
 
@@ -203,7 +225,8 @@ object ModelService {
                     }
                     case false => {
                         //println("Message directory is invalid.")
-                        response = "Model directory is invalid."
+                        //response = "Model directory is invalid."
+                        response = new ApiResult(ErrorCodeConstants.Failure, "addModelJava", null, "Model directory is invalid").toString
                     }
                 }
             }
@@ -213,7 +236,8 @@ object ModelService {
                 modelDef = Source.fromFile(model).mkString
                 modelDefs=modelDefs:+modelDef
             }else{
-                response="File does not exist"
+                //response="File does not exist"
+                response = new ApiResult(ErrorCodeConstants.Failure, "addModelJava", null, "Model File does not exist").toString
             }
         }
         if(modelDefs.nonEmpty) {
@@ -225,7 +249,8 @@ object ModelService {
                     var configKeys = getMetadataAPI.getModelConfigNames
                     println("--> got these many back "+configKeys.size)
                     if(configKeys.isEmpty){
-                        response="No model configuration loaded in the metadata!"
+                        //response="No model configuration loaded in the metadata!"
+                        response = new ApiResult(ErrorCodeConstants.Failure, "addModelJava", null, "No model configuration loaded in the metadata").toString
                     }else{
                         var srNo = 0
                         println("\nPick a Model Definition file(s) from below choices\n")
@@ -244,8 +269,9 @@ object ModelService {
                             }
                             case _ => {
                                 val errorMsg = "Incorrect input " + userOption + ". Please enter the correct option."
-                                println(errorMsg)
-                                errorMsg
+                                //println(errorMsg)
+                                //errorMsg
+                                response = new ApiResult(ErrorCodeConstants.Failure, "addModelJava", null, errorMsg).toString
                             }
                         }
                         response+= getMetadataAPI.AddModel(ModelType.JAVA, modelDef, userid, finalTid,Some(modelConfig), None,None,None,optMsgProduced,pStr)
@@ -257,25 +283,25 @@ object ModelService {
     }
 
     /**
-      * addModelPmml ingests a PMML model. Pmml model ingestion requires the pmml source file, the model name to be associated
-      * with this model, the model's version, and the message consumed by the supplied model.  If the userId is specified and
-      * a SecurityAdapter is installed in the MetadataAPI (recommended for production uses), the command will only be
-      * attempted if the SecurityAdapter instance deems the user worthy. Similarly if the AuditAdapter is supplied,
-      * the userid will be logged there (recommended for production use).
-      *
-      * NOTE: Pmml models are distinct from the Kamanja Pmml model. At runtime, they use a PMML evaluator to interpret
-      * the runtime representation of the PMML model. Kamanja models are compiled to Scala and then to Jars and executed
-      * like the custom byte code models based upon Java or Scala.
-      *
-      * @param modelType the type of model this is (PMML in this case)
-      * @param input the pmml source file too ingest
-      * @param optUserid the user id attempting to execute this command
-      * @param optModelName the full namespace qualified model name
-      * @param optVersion the version to associate with this model (in form 999999.999999.999999)
-      * @param optMsgConsumed the full namespace qualified message name this model will consume
-      * @param optMsgVersion the version of the message ... by default it is Some(-1) to get the most recent message of this name.
-      * @return result string from engine describing success or failure
-      */
+     * addModelPmml ingests a PMML model. Pmml model ingestion requires the pmml source file, the model name to be associated
+     * with this model, the model's version, and the message consumed by the supplied model.  If the userId is specified and
+     * a SecurityAdapter is installed in the MetadataAPI (recommended for production uses), the command will only be
+     * attempted if the SecurityAdapter instance deems the user worthy. Similarly if the AuditAdapter is supplied,
+     * the userid will be logged there (recommended for production use).
+     *
+     * NOTE: Pmml models are distinct from the Kamanja Pmml model. At runtime, they use a PMML evaluator to interpret
+     * the runtime representation of the PMML model. Kamanja models are compiled to Scala and then to Jars and executed
+     * like the custom byte code models based upon Java or Scala.
+     *
+     * @param modelType the type of model this is (PMML in this case)
+     * @param input the pmml source file too ingest
+     * @param optUserid the user id attempting to execute this command
+     * @param optModelName the full namespace qualified model name
+     * @param optVersion the version to associate with this model (in form 999999.999999.999999)
+     * @param optMsgConsumed the full namespace qualified message name this model will consume
+     * @param optMsgVersion the version of the message ... by default it is Some(-1) to get the most recent message of this name.
+     * @return result string from engine describing success or failure
+     */
     def addModelPmml(modelType: ModelType.ModelType
                      , input: String
                      , optUserid: Option[String] = Some("kamanja")
@@ -290,11 +316,18 @@ object ModelService {
         //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
         var chosen: String = ""
         var finalTid: Option[String] = None
-        if (tid == None) {
-            chosen = getTenantId
-            finalTid = Some(chosen)
-        } else {
-            finalTid = tid
+        try{
+            if (tid == None) {
+                chosen = getTenantId
+                finalTid = Some(chosen)
+            } else {
+                finalTid = tid
+            }
+        }catch {
+            case e: InvalidArgumentException => {
+                logger.error("Invalid choice")
+                return (new ApiResult(ErrorCodeConstants.Failure, "addModelPmml",null, "Invalid choice")).toString
+            }
         }
 
         val response : String = if (input == "") {
@@ -332,12 +365,12 @@ object ModelService {
     }
 
     /**
-      * Add a new Kamanja Pmml model to the metadata.
-      *
-      * @param input the path of the pmml to be added as a new model
-      * @param userid the optional userId. If security and auditing in place this parameter is required.
-      * @return the result of the operation
-      */
+     * Add a new Kamanja Pmml model to the metadata.
+     *
+     * @param input the path of the pmml to be added as a new model
+     * @param userid the optional userId. If security and auditing in place this parameter is required.
+     * @return the result of the operation
+     */
     def addModelKPmml(input: String
                       , userid: Option[String] = Some("kamanja")
                       , optMsgProduced: Option[String] = None
@@ -351,18 +384,25 @@ object ModelService {
 
         var chosen: String = ""
         var finalTid: Option[String] = None
-        if (tid == None) {
-            chosen = getTenantId
-            finalTid = Some(chosen)
-        } else {
-            finalTid = tid
+        try{
+            if (tid == None) {
+                chosen = getTenantId
+                finalTid = Some(chosen)
+            } else {
+                finalTid = tid
+            }
+        }catch {
+            case e: InvalidArgumentException => {
+                logger.error("Invalid choice")
+                return (new ApiResult(ErrorCodeConstants.Failure, "addModelKPmml",null, "Invalid choice")).toString
+            }
         }
-
         if (input == "") {
             //get the messages location from the config file. If error get the location from github
             modelFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
             if (modelFileDir == null) {
-                response = "MODEL_FILES_DIR property missing in the metadata API configuration"
+                //response = "MODEL_FILES_DIR property missing in the metadata API configuration"
+                response=new ApiResult(ErrorCodeConstants.Failure, "addModelKPmml", null,"MODEL_FILES_DIR property missing in the metadata API configuration").toString
             } else {
                 //verify the directory where messages can be present
                 IsValidDir(modelFileDir) match {
@@ -371,9 +411,10 @@ object ModelService {
                         val models: Array[File] = new java.io.File(modelFileDir).listFiles.filter(_.getName.endsWith(".xml"))
                         models.length match {
                             case 0 => {
-                                val errorMsg = "Models not found at " + modelFileDir
-                                println(errorMsg)
-                                response = errorMsg
+                                //val errorMsg = "Models not found at " + modelFileDir
+                                //println(errorMsg)
+                                //response = errorMsg
+                                response=new ApiResult(ErrorCodeConstants.Failure, "addModelKPmml", null,"Models not found at "+modelFileDir).toString
                             }
                             case option => {
                                 var  modelDefs=getUserInputFromMainMenu(models)
@@ -383,7 +424,8 @@ object ModelService {
                         }
                     }
                     case false => {
-                        response = "Model directory is invalid."
+                        //response = "Model directory is invalid."
+                        response=new ApiResult(ErrorCodeConstants.Failure, "addModelKPmml", null,"Model directory is invalid").toString
                     }
                 }
             }
@@ -395,19 +437,20 @@ object ModelService {
                 modelDef= Source.fromFile(model).mkString
                 response = getMetadataAPI.AddModel(ModelType.KPMML, modelDef.toString, userid, finalTid, None,None,None,None,optMsgProduced, pStr)
             }else{
-                response="Model definition file does not exist"
+                //response="Model definition file does not exist"
+                response=new ApiResult(ErrorCodeConstants.Failure, "addModelKPmml", null,"Model definition file does not exist").toString
             }
         }
         response
     }
 
     /**
-      * Add a new JTM (Json Transformation Model) model to the metadata.
-      *
-      * @param input the path of the jtm file to be added as a new model
-      * @param userid the optional userId. If security and auditing in place this parameter is required.
-      * @return the result of the operation
-      */
+     * Add a new JTM (Json Transformation Model) model to the metadata.
+     *
+     * @param input the path of the jtm file to be added as a new model
+     * @param userid the optional userId. If security and auditing in place this parameter is required.
+     * @return the result of the operation
+     */
     def addModelJTM(input: String
                     , userid: Option[String] = Some("kamanja")
                     , tid: Option[String] = None
@@ -420,18 +463,25 @@ object ModelService {
         //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
         var chosen: String = ""
         var finalTid: Option[String] = None
-        if (tid == None) {
-            chosen = getTenantId
-            finalTid = Some(chosen)
-        } else {
-            finalTid = tid
+        try{
+            if (tid == None) {
+                chosen = getTenantId
+                finalTid = Some(chosen)
+            } else {
+                finalTid = tid
+            }
+        }catch {
+            case e: InvalidArgumentException => {
+                logger.error("Invalid choice")
+                return (new ApiResult(ErrorCodeConstants.Failure, "addModelJTM",null, "Invalid choice")).toString
+            }
         }
-
         if (input == "") {
             //get the messages location from the config file. If error get the location from github
             modelFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
             if (modelFileDir == null) {
-                response = "MODEL_FILES_DIR property missing in the metadata API configuration"
+                // response = "MODEL_FILES_DIR property missing in the metadata API configuration"
+                response = new ApiResult(ErrorCodeConstants.Failure, "addModelJTM", null, "MODEL_FILES_DIR property missing in the metadata API configuration").toString
             } else {
                 //verify the directory where messages can be present
                 IsValidDir(modelFileDir) match {
@@ -440,9 +490,10 @@ object ModelService {
                         val models: Array[File] = new java.io.File(modelFileDir).listFiles.filter(f => f.getName.endsWith(".jtm") || f.getName.endsWith(".json"))
                         models.length match {
                             case 0 => {
-                                val errorMsg = "Models not found at " + modelFileDir
-                                println(errorMsg)
-                                response = errorMsg
+                                //    val errorMsg = "Models not found at " + modelFileDir
+                                //  println(errorMsg)
+                                //response = errorMsg
+                                response = new ApiResult(ErrorCodeConstants.Failure, "addModelJTM", null, "Models not found at "+modelFileDir).toString
                             }
                             case option => {
                                 var  modelDefs=getUserInputFromMainMenu(models)
@@ -452,7 +503,8 @@ object ModelService {
                         }
                     }
                     case false => {
-                        response = "Model directory is invalid."
+                        // response = "Model directory is invalid."
+                        response = new ApiResult(ErrorCodeConstants.Failure, "addModelJTM", null, "Model directory is invalid").toString
                     }
                 }
             }
@@ -464,32 +516,33 @@ object ModelService {
                 modelDef= Source.fromFile(model).mkString
                 response = getMetadataAPI.AddModel(ModelType.JTM, modelDef.toString, userid, finalTid, optModelName, None, None, None, None, pStr)
             }else{
-                response="Model definition file does not exist"
+                //response="Model definition file does not exist"
+                response= (new ApiResult(ErrorCodeConstants.Failure, "addModelJTM",null, "Model definition file does not exist")).toString
             }
         }
         response
     }
 
     /**
-      * addModelPython ingests a Python model. Python model ingestion requires the python source file, the model name to be associated
-      * with this model, the model's version, and the message consumed by the supplied model.  If the userId is specified and
-      * a SecurityAdapter is installed in the MetadataAPI (recommended for production uses), the command will only be
-      * attempted if the SecurityAdapter instance deems the user worthy. Similarly if the AuditAdapter is supplied,
-      * the userid will be logged there (recommended for production use).
-      *
-      * @param modelType the type of model this is (Python in this case)
-      * @param input the pmml source file too ingest
-      * @param optUserid the user id attempting to execute this command
-      * @param optModelName the full namespace qualified model name
-      * @param optVersion the version to associate with this model (in form 999999.999999.999999)
-      * @param optMsgConsumed the full namespace qualified message name this model will consume
-      * @param optMsgVersion the version of the message ... by default it is Some(-1) to get the most recent message of this name.
-      * @param optMsgProduced the message produced if specified
-      * @param tid tenant/owner id
-      * @param pStr global JSON properties
-      * @param modelOptions model specifics option map supplied as JSON String
-      * @return result string from engine describing success or failure
-      */
+     * addModelPython ingests a Python model. Python model ingestion requires the python source file, the model name to be associated
+     * with this model, the model's version, and the message consumed by the supplied model.  If the userId is specified and
+     * a SecurityAdapter is installed in the MetadataAPI (recommended for production uses), the command will only be
+     * attempted if the SecurityAdapter instance deems the user worthy. Similarly if the AuditAdapter is supplied,
+     * the userid will be logged there (recommended for production use).
+     *
+     * @param modelType the type of model this is (Python in this case)
+     * @param input the pmml source file too ingest
+     * @param optUserid the user id attempting to execute this command
+     * @param optModelName the full namespace qualified model name
+     * @param optVersion the version to associate with this model (in form 999999.999999.999999)
+     * @param optMsgConsumed the full namespace qualified message name this model will consume
+     * @param optMsgVersion the version of the message ... by default it is Some(-1) to get the most recent message of this name.
+     * @param optMsgProduced the message produced if specified
+     * @param tid tenant/owner id
+     * @param pStr global JSON properties
+     * @param modelOptions model specifics option map supplied as JSON String
+     * @return result string from engine describing success or failure
+     */
     def addModelPython(modelType: ModelType.ModelType
                        , input: String
                        , optUserid: Option[String] = Some("kamanja")
@@ -549,25 +602,25 @@ object ModelService {
     }
 
     /**
-      * addModelJython ingests a Jython model. Jython model ingestion requires the jython source file, the model name to be associated
-      * with this model, the model's version, and the message consumed by the supplied model.  If the userId is specified and
-      * a SecurityAdapter is installed in the MetadataAPI (recommended for production uses), the command will only be
-      * attempted if the SecurityAdapter instance deems the user worthy. Similarly if the AuditAdapter is supplied,
-      * the userid will be logged there (recommended for production use).
-      *
-      * @param modelType the type of model this is (Python in this case)
-      * @param input the pmml source file too ingest
-      * @param optUserid the user id attempting to execute this command
-      * @param optModelName the full namespace qualified model name
-      * @param optVersion the version to associate with this model (in form 999999.999999.999999)
-      * @param optMsgConsumed the full namespace qualified message name this model will consume
-      * @param optMsgVersion the version of the message ... by default it is Some(-1) to get the most recent message of this name.
-      * @param modelOptions model specifics option map supplied as JSON String
-      * @param optMsgProduced the message produced if specified
-      * @param tid tenant/owner id
-      * @param pStr a parameter string (JSON) that is given to the model.
-      * @return result string from engine describing success or failure
-      */
+     * addModelJython ingests a Jython model. Jython model ingestion requires the jython source file, the model name to be associated
+     * with this model, the model's version, and the message consumed by the supplied model.  If the userId is specified and
+     * a SecurityAdapter is installed in the MetadataAPI (recommended for production uses), the command will only be
+     * attempted if the SecurityAdapter instance deems the user worthy. Similarly if the AuditAdapter is supplied,
+     * the userid will be logged there (recommended for production use).
+     *
+     * @param modelType the type of model this is (Python in this case)
+     * @param input the pmml source file too ingest
+     * @param optUserid the user id attempting to execute this command
+     * @param optModelName the full namespace qualified model name
+     * @param optVersion the version to associate with this model (in form 999999.999999.999999)
+     * @param optMsgConsumed the full namespace qualified message name this model will consume
+     * @param optMsgVersion the version of the message ... by default it is Some(-1) to get the most recent message of this name.
+     * @param modelOptions model specifics option map supplied as JSON String
+     * @param optMsgProduced the message produced if specified
+     * @param tid tenant/owner id
+     * @param pStr a parameter string (JSON) that is given to the model.
+     * @return result string from engine describing success or failure
+     */
     def addModelJython(modelType: ModelType.ModelType
                        , input: String
                        , optUserid: Option[String] = Some("kamanja")
@@ -626,12 +679,12 @@ object ModelService {
     }
 
     /**
-      * Update a Kamanja Pmml model in the metadata with new pmml
-      *
-      * @param input the path of the Kamanja pmml model to be used for the update
-      * @param userid the optional userId. If security and auditing in place this parameter is required.
-      * @return the result of the operation
-      */
+     * Update a Kamanja Pmml model in the metadata with new pmml
+     *
+     * @param input the path of the Kamanja pmml model to be used for the update
+     * @param userid the optional userId. If security and auditing in place this parameter is required.
+     * @return the result of the operation
+     */
 
     def updateModelKPmml(input: String
                          , userid: Option[String] = Some("kamanja")
@@ -642,18 +695,26 @@ object ModelService {
         //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
         var chosen: String = ""
         var finalTid: Option[String] = None
-        if (tid == None) {
-            chosen = getTenantId
-            finalTid = Some(chosen)
-        } else {
-            finalTid = tid
+        try{
+            if (tid == None) {
+                chosen = getTenantId
+                finalTid = Some(chosen)
+            } else {
+                finalTid = tid
+            }
+        }catch {
+            case e: InvalidArgumentException => {
+                logger.error("Invalid choice")
+                return (new ApiResult(ErrorCodeConstants.Failure, "updateModelKPmml",null, "Invalid choice")).toString
+            }
         }
 
         if (input == "") {
             //get the messages location from the config file. If error get the location from github
             modelFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
             if (modelFileDir == null) {
-                response = "MODEL_FILES_DIR property missing in the metadata API configuration"
+                //response = "MODEL_FILES_DIR property missing in the metadata API configuration"
+                response= (new ApiResult(ErrorCodeConstants.Failure, "updateModelKPmml",null, "MODEL_FILES_DIR property missing in the metadata API configuration")).toString
             } else {
                 //verify the directory where messages can be present
                 IsValidDir(modelFileDir) match {
@@ -663,8 +724,9 @@ object ModelService {
                         models.length match {
                             case 0 => {
                                 val errorMsg = "Models not found at " + modelFileDir
-                                println(errorMsg)
-                                response = errorMsg
+                                //println(errorMsg)
+                                //response = errorMsg
+                                response= (new ApiResult(ErrorCodeConstants.Failure, "updateModelKPmml",null, "Models not found at " + modelFileDir)).toString
                             }
                             case option => {
                                 var modelDefs = getUserInputFromMainMenu(models)
@@ -676,7 +738,8 @@ object ModelService {
                     }
                     case false => {
                         //println("Message directory is invalid.")
-                        response = "Model directory is invalid."
+                        //response = "Model directory is invalid."
+                        response= (new ApiResult(ErrorCodeConstants.Failure, "updateModelKPmml",null,"Model directory is invalid.")).toString
                     }
                 }
             }
@@ -688,7 +751,8 @@ object ModelService {
                 modelDef = Source.fromFile(model).mkString
                 response = getMetadataAPI.UpdateModel(ModelType.KPMML, modelDef, userid, finalTid, None, None, None, None, pStr, Some("{}"))
             } else {
-                response = "File does not exist"
+                //response = "File does not exist"
+                response= (new ApiResult(ErrorCodeConstants.Failure, "getAllMessages",null,"File does not exist")).toString
             }
             //println("Response: " + response)
         }
@@ -697,12 +761,12 @@ object ModelService {
     }
 
     /**
-      * Update a JTM (Json Transformation Model) model in the metadata with new transformation specification file
-      *
-      * @param input the path of the JTM model spec file to be used for the update
-      * @param userid the optional userId. If security and auditing in place this parameter is required.
-      * @return the result of the operation
-      */
+     * Update a JTM (Json Transformation Model) model in the metadata with new transformation specification file
+     *
+     * @param input the path of the JTM model spec file to be used for the update
+     * @param userid the optional userId. If security and auditing in place this parameter is required.
+     * @return the result of the operation
+     */
 
     def updateModelJTM(input: String
                        , userid: Option[String] = Some("kamanja")
@@ -713,17 +777,25 @@ object ModelService {
         var modelFileDir: String = ""
         var chosen: String = ""
         var finalTid: Option[String] = None
-        if (tid == None) {
-            chosen = getTenantId
-            finalTid = Some(chosen)
-        } else {
-            finalTid = tid
+        try{
+            if (tid == None) {
+                chosen = getTenantId
+                finalTid = Some(chosen)
+            } else {
+                finalTid = tid
+            }
+        }catch {
+            case e: InvalidArgumentException => {
+                logger.error("Invalid choice")
+                return (new ApiResult(ErrorCodeConstants.Failure, "updateModelJTM",null, "Invalid choice")).toString
+            }
         }
         if (input == "") {
             //get the messages location from the config file. If error get the location from github
             modelFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
             if (modelFileDir == null) {
-                response = "MODEL_FILES_DIR property missing in the metadata API configuration"
+                // response = "MODEL_FILES_DIR property missing in the metadata API configuration"
+                response= (new ApiResult(ErrorCodeConstants.Failure, "updateModelJTM",null,"MODEL_FILES_DIR property missing in the metadata API configuration")).toString
             } else {
                 //verify the directory where messages can be present
                 IsValidDir(modelFileDir) match {
@@ -733,8 +805,9 @@ object ModelService {
                         models.length match {
                             case 0 => {
                                 val errorMsg = "Models not found at " + modelFileDir
-                                println(errorMsg)
-                                response = errorMsg
+                                //println(errorMsg)
+                                //response = errorMsg
+                                response= (new ApiResult(ErrorCodeConstants.Failure, "updateModelJTM",null,errorMsg)).toString
                             }
                             case option => {
                                 var modelDefs = getUserInputFromMainMenu(models)
@@ -745,7 +818,8 @@ object ModelService {
 
                     }
                     case false => {
-                        response = "Model directory is invalid."
+                        //  response = "Model directory is invalid."
+                        response= (new ApiResult(ErrorCodeConstants.Failure, "updateModelJTM",null,"Model directory is invalid.")).toString
                     }
                 }
             }
@@ -757,7 +831,8 @@ object ModelService {
                 modelDef = Source.fromFile(model).mkString
                 response = getMetadataAPI.UpdateModel(ModelType.JTM, modelDef, userid, finalTid, optModelName, None, None, None, pStr, Some("{}"))
             } else {
-                response = "File does not exist"
+                //response ="File does not exist"
+                response= (new ApiResult(ErrorCodeConstants.Failure, "updateModelJTM",null,"File does not exist")).toString
             }
         }
 
@@ -765,16 +840,16 @@ object ModelService {
     }
 
     /**
-      * Update a Pmml model with the pmml text model found at ''pmmlPath''.  The model namespace, name and version
-      * are required.  The userid should have a valid value when authentication and auditing has been enabled on
-      * the cluster.
-      *
-      * @param pmmlPath
-      * @param userid
-      * @param modelNamespaceName
-      * @param newVersion
-      * @return result string
-      */
+     * Update a Pmml model with the pmml text model found at ''pmmlPath''.  The model namespace, name and version
+     * are required.  The userid should have a valid value when authentication and auditing has been enabled on
+     * the cluster.
+     *
+     * @param pmmlPath
+     * @param userid
+     * @param modelNamespaceName
+     * @param newVersion
+     * @return result string
+     */
     def updateModelPmml(pmmlPath : String
                         ,userid : Option[String]
                         ,modelNamespaceName : String
@@ -783,11 +858,18 @@ object ModelService {
 
         var chosen: String = ""
         var finalTid: Option[String] = None
-        if (tid == None) {
-            chosen = getTenantId
-            finalTid = Some(chosen)
-        } else {
-            finalTid = tid
+        try{
+            if (tid == None) {
+                chosen = getTenantId
+                finalTid = Some(chosen)
+            } else {
+                finalTid = tid
+            }
+        }catch {
+            case e: InvalidArgumentException => {
+                logger.error("Invalid choice")
+                return (new ApiResult(ErrorCodeConstants.Failure, "updateModelPmml",null, "Invalid choice")).toString
+            }
         }
         if (pmmlPath == "") {
             val reply : String = "PMML models are only ingested with command line arguments.. default directory selection is deprecated"
@@ -820,13 +902,13 @@ object ModelService {
     }
 
     /**
-      * Update a model in the metadata with the supplied Java model
-      *
-      * @param input the path of the model to be used in the model update
-      * @param dep the model compile config indication
-      * @param userid the optional userId. If security and auditing in place this parameter is required.
-      * @return the result of the operation
-      */
+     * Update a model in the metadata with the supplied Java model
+     *
+     * @param input the path of the model to be used in the model update
+     * @param dep the model compile config indication
+     * @param userid the optional userId. If security and auditing in place this parameter is required.
+     * @return the result of the operation
+     */
     def updateModeljava(input: String, dep: String = ""
                         , userid: Option[String] = Some("kamanja")
                         ,tid: Option[String] = None, pStr : Option[String]): String = {
@@ -837,11 +919,18 @@ object ModelService {
 
         var chosen: String = ""
         var finalTid: Option[String] = None
-        if (tid == None) {
-            chosen = getTenantId
-            finalTid = Some(chosen)
-        } else {
-            finalTid = tid
+        try {
+            if (tid == None) {
+                chosen = getTenantId
+                finalTid = Some(chosen)
+            } else {
+                finalTid = tid
+            }
+        }catch {
+            case e: InvalidArgumentException => {
+                logger.error("Invalid choice")
+                return (new ApiResult(ErrorCodeConstants.Failure, "updateModeljava",null, "Invalid choice")).toString
+            }
         }
 
         var modelDefs= Array[String]()
@@ -849,7 +938,8 @@ object ModelService {
             //get the messages location from the config file. If error get the location from github
             modelFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
             if (modelFileDir == null) {
-                response = "MODEL_FILES_DIR property missing in the metadata API configuration"
+                //response = "MODEL_FILES_DIR property missing in the metadata API configuration"
+                response= (new ApiResult(ErrorCodeConstants.Failure, "updateModelJava",null,"MODEL_FILES_DIR property missing in the metadata API configuration")).toString
             } else {
                 //verify the directory where messages can be present
                 IsValidDir(modelFileDir) match {
@@ -859,8 +949,9 @@ object ModelService {
                         models.length match {
                             case 0 => {
                                 val errorMsg = "Models not found at " + modelFileDir
-                                println(errorMsg)
-                                response = errorMsg
+                                //println(errorMsg)
+                                //response = errorMsg
+                                response= (new ApiResult(ErrorCodeConstants.Failure, "updateModelJava",null,errorMsg)).toString
                             }
                             case option => {
                                 modelDefs=getUserInputFromMainMenu(models)
@@ -869,7 +960,8 @@ object ModelService {
                     }
                     case false => {
                         //println("Message directory is invalid.")
-                        response = "Model directory is invalid."
+                        //response = "Model directory is invalid."
+                        response= (new ApiResult(ErrorCodeConstants.Failure, "updateModelJava",null, "Model directory is invalid")).toString
                     }
                 }
             }
@@ -882,7 +974,8 @@ object ModelService {
                 modelDef = Source.fromFile(model).mkString
                 modelDefs=modelDefs:+modelDef
             } else {
-                response = "File does not exist"
+                // response = "File does not exist"
+                response= (new ApiResult(ErrorCodeConstants.Failure, "updateModelJava",null, "File does not exist")).toString
             }
         }
         if(modelDefs.nonEmpty) {
@@ -894,7 +987,8 @@ object ModelService {
                     //before adding a model, add its config file.
                     var configKeys = getMetadataAPI.getModelConfigNames
                     if(configKeys.isEmpty){
-                        response="No model configuration loaded in the metadata!"
+                        //response="No model configuration loaded in the metadata!"
+                        response= (new ApiResult(ErrorCodeConstants.Failure, "updateModelJava",null, "No model configuration loaded in the metadata")).toString
                     }else{
                         var srNo = 0
                         println("\nPick a Model Definition file(s) from below choices\n")
@@ -914,8 +1008,9 @@ object ModelService {
                             }
                             case _ => {
                                 val errorMsg = "Incorrect input " + userOption + ". Please enter the correct option."
-                                println(errorMsg)
-                                errorMsg
+                                //println(errorMsg)
+                                //errorMsg
+                                (new ApiResult(ErrorCodeConstants.Failure, "updateModelJava",null, errorMsg)).toString
                             }
                         }
                         response+= getMetadataAPI.UpdateModel(ModelType.JAVA, modelDef, userid, finalTid, Some(modelConfig), None, None, None, pStr, Some("{}"))
@@ -929,13 +1024,13 @@ object ModelService {
     }
 
     /**
-      * Update a model in the metadata with the supplied Scala model
-      *
-      * @param input the path of the model to be updated
-      * @param dep the compile config indication
-      * @param userid the optional userId. If security and auditing in place this parameter is required.
-      * @return the result of the operation
-      */
+     * Update a model in the metadata with the supplied Scala model
+     *
+     * @param input the path of the model to be updated
+     * @param dep the compile config indication
+     * @param userid the optional userId. If security and auditing in place this parameter is required.
+     * @return the result of the operation
+     */
     def updateModelscala(input: String, dep: String = ""
                          , userid: Option[String] = Some("kamanja")
                          , tid: Option[String] = None, pStr : Option[String]): String = {
@@ -945,18 +1040,26 @@ object ModelService {
         var modelFileDir: String = ""
         var chosen: String = ""
         var finalTid: Option[String] = None
-        if (tid == None) {
-            chosen = getTenantId
-            finalTid = Some(chosen)
-        } else {
-            finalTid = tid
+        try {
+            if (tid == None) {
+                chosen = getTenantId
+                finalTid = Some(chosen)
+            } else {
+                finalTid = tid
+            }
+        }catch {
+            case e: InvalidArgumentException => {
+                logger.error("Invalid choice")
+                return (new ApiResult(ErrorCodeConstants.Failure, "updateModelscala",null, "Invalid choice")).toString
+            }
         }
         var modelDefs= Array[String]()
         if (input == "") {
             //get the messages location from the config file. If error get the location from github
             modelFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
             if (modelFileDir == null) {
-                response = "MODEL_FILES_DIR property missing in the metadata API configuration"
+                //response = "MODEL_FILES_DIR property missing in the metadata API configuration"
+                response= (new ApiResult(ErrorCodeConstants.Failure, "updateModelScala",null,"MODEL_FILES_DIR property missing in the metadata API configuration")).toString
             } else {
                 //verify the directory where messages can be present
                 IsValidDir(modelFileDir) match {
@@ -966,8 +1069,9 @@ object ModelService {
                         models.length match {
                             case 0 => {
                                 val errorMsg = "Models not found at " + modelFileDir
-                                println(errorMsg)
-                                response = errorMsg
+                                // println(errorMsg)
+                                // response = errorMsg
+                                response= (new ApiResult(ErrorCodeConstants.Failure, "updateModelScala",null,errorMsg)).toString
                             }
                             case option => {
                                 modelDefs=getUserInputFromMainMenu(models)
@@ -976,7 +1080,8 @@ object ModelService {
                     }
                     case false => {
                         //println("Message directory is invalid.")
-                        response = "Model directory is invalid."
+                        //response = "Model directory is invalid."
+                        response= (new ApiResult(ErrorCodeConstants.Failure, "updateModelScala",null,"Model directory is invalid.")).toString
                     }
                 }
             }
@@ -988,7 +1093,8 @@ object ModelService {
                 modelDef = Source.fromFile(model).mkString
                 modelDefs=modelDefs:+modelDef
             } else {
-                response = "File does not exist"
+                //response = "File does not exist"
+                response= (new ApiResult(ErrorCodeConstants.Failure, "updateModelScala",null,"File does not exist")).toString
             }
         }
         if(modelDefs.nonEmpty) {
@@ -1000,7 +1106,8 @@ object ModelService {
                     //before adding a model, add its config file.
                     var configKeys = getMetadataAPI.getModelConfigNames
                     if(configKeys.isEmpty){
-                        response="No model configuration loaded in the metadata!"
+                        //response="No model configuration loaded in the metadata!"
+                        response= (new ApiResult(ErrorCodeConstants.Failure, "updateModelScala",null,"No model configuration loaded in the metadata")).toString
                     }else{
                         var srNo = 0
                         println("\nPick a Model Definition file(s) from below choices\n")
@@ -1019,8 +1126,9 @@ object ModelService {
                             }
                             case _ => {
                                 val errorMsg = "Incorrect input " + userOption + ". Please enter the correct option."
-                                println(errorMsg)
-                                errorMsg
+                                /// println(errorMsg)
+                                // errorMsg
+                                (new ApiResult(ErrorCodeConstants.Failure, "updateModelScala",null, errorMsg)).toString
                             }
                         }
                         response+= getMetadataAPI.UpdateModel(ModelType.SCALA, modelDef, userid, finalTid, Some(modelConfig), None, None, None, pStr, Some("{}"))
@@ -1032,19 +1140,19 @@ object ModelService {
     }
 
     /**
-      * Update a Python model with the pmml text model found at ''pythonModelPath''.  The model namespace, name and version
-      * are required.  The userid should have a valid value when authentication and auditing has been enabled on
-      * the cluster.
-      *
-      * @param pythonModelPath
-      * @param userid
-      * @param modelNamespaceName
-      * @param newVersion
-      * @param tid the tenant id (or owner) of this model
-      * @param pStr global json properties
-      * @param modelOptions model specific options supplied to the model when it is instantiated
-      * @return result string
-      */
+     * Update a Python model with the pmml text model found at ''pythonModelPath''.  The model namespace, name and version
+     * are required.  The userid should have a valid value when authentication and auditing has been enabled on
+     * the cluster.
+     *
+     * @param pythonModelPath
+     * @param userid
+     * @param modelNamespaceName
+     * @param newVersion
+     * @param tid the tenant id (or owner) of this model
+     * @param pStr global json properties
+     * @param modelOptions model specific options supplied to the model when it is instantiated
+     * @return result string
+     */
     def updateModelPython(pythonModelPath: String
                           , userid: Option[String]
                           , modelNamespaceName: String
@@ -1087,19 +1195,19 @@ object ModelService {
     }
 
     /**
-      * Update a Jython model with the jython text model found at ''jythonModelPath''.  The model namespace, name and version
-      * are required.  The userid should have a valid value when authentication and auditing has been enabled on
-      * the cluster.
-      *
-      * @param jythonModelPath
-      * @param userid
-      * @param modelNamespaceName
-      * @param newVersion
-      * @param tid the tenant id (or owner) of this model
-      * @param pStr global json properties
-      * @param modelOptions model specific options supplied to the model when it is instantiated
-      * @return result string
-      */
+     * Update a Jython model with the jython text model found at ''jythonModelPath''.  The model namespace, name and version
+     * are required.  The userid should have a valid value when authentication and auditing has been enabled on
+     * the cluster.
+     *
+     * @param jythonModelPath
+     * @param userid
+     * @param modelNamespaceName
+     * @param newVersion
+     * @param tid the tenant id (or owner) of this model
+     * @param pStr global json properties
+     * @param modelOptions model specific options supplied to the model when it is instantiated
+     * @return result string
+     */
     def updateModelJython(jythonModelPath: String
                           , userid: Option[String]
                           , modelNamespaceName: String
@@ -1141,16 +1249,16 @@ object ModelService {
     }
 
     /**
-      * Get the supplied model key from the metadata.
-      *
-      * @param param the namespace.name.version of the model definition to be fetched
-      * @param userid the optional userId. If security and auditing in place this parameter is required.
-      * @return the result of the operation - a JSON string representation of the ModelDef
-      */
+     * Get the supplied model key from the metadata.
+     *
+     * @param param the namespace.name.version of the model definition to be fetched
+     * @param userid the optional userId. If security and auditing in place this parameter is required.
+     * @return the result of the operation - a JSON string representation of the ModelDef
+     */
     def getModel(param: String = ""
                  , userid: Option[String] = Some("kamanja"),
                  tid : Option[String] = None
-                ): String ={
+                  ): String ={
         var response=""
         try {
             if (param.length > 0) {
@@ -1163,8 +1271,9 @@ object ModelService {
             }
             val modelKeys = getMetadataAPI.GetAllModelsFromCache(true, None, tid)
             if (modelKeys.length == 0) {
-                val errorMsg="Sorry, No models available, in the Metadata, to display!"
-                response=errorMsg
+                //val errorMsg="Sorry, No models available, in the Metadata, to display!"
+                //response=errorMsg
+                response = new ApiResult(ErrorCodeConstants.Failure, "getModel", null, "No models available, in the Metadata, to display").toString
             }
             else{
                 println("\nPick the model to be displayed from the following list: ")
@@ -1176,8 +1285,9 @@ object ModelService {
                 println("Enter your choice: ")
                 val choice: Int = readInt()
                 if (choice < 1 || choice > modelKeys.length) {
-                    val errormsg="Invalid choice " + choice + ". Start with the main menu."
-                    response=errormsg
+                    /// val errormsg="Invalid choice " + choice + ". Start with the main menu."
+                    //response=errormsg
+                    response = new ApiResult(ErrorCodeConstants.Failure, "getModel", null, "Invalid choice").toString
                 }
                 val modelKey = modelKeys(choice - 1)
                 val(ns, name, ver) = com.ligadata.kamanja.metadata.Utils.parseNameToken(modelKey)
@@ -1188,40 +1298,42 @@ object ModelService {
         } catch {
             case e: Exception => {
                 logger.info("", e)
-                response=e.getStackTrace.toString
+                //response=e.getStackTrace.toString
+                response= (new ApiResult(ErrorCodeConstants.Failure, "getModel",null, e.getStackTrace.toString)).toString
             }
         }
         response
     }
 
     /**
-      *
-      * @param userid the optional userId. If security and auditing in place this parameter is required.
-      * @return
-      */
+     *
+     * @param userid the optional userId. If security and auditing in place this parameter is required.
+     * @return
+     */
     def getAllModels(userid: Option[String] = Some("kamanja"), tid: Option[String] = None) : String ={
         var response=""
         val modelKeys = getMetadataAPI.GetAllModelsFromCache(true, userid, tid)
         if (modelKeys.length == 0) {
-            response="Sorry, No models available in the Metadata"
+            //response="Sorry, No models available in the Metadata"
+            response = new ApiResult(ErrorCodeConstants.Failure, "getAllModels", null, "No models available, in the Metadata, to display").toString
         }else{
             // 1165 Change begins - replaced with API return json string
-            response= (new ApiResult(ErrorCodeConstants.Success, "ModelService", modelKeys.mkString(", ") , "Successfully retrieved all the models")).toString
+            response= (new ApiResult(ErrorCodeConstants.Success, "getAllModels", modelKeys.mkString(", ") , "Successfully retrieved all the models")).toString
             // 1165 Change ends
         }
         response
     }
 
     /**
-      * Remove the model with the supplied namespace.name.ver from the metadata.
-      *
-      * @param modelId the namespace.name.version of the model to remove. If an empty string present list to choose from
-      * @param userid the optional userId. If security and auditing in place this parameter is required.
-      * @return the result of the operation
-      */
+     * Remove the model with the supplied namespace.name.ver from the metadata.
+     *
+     * @param modelId the namespace.name.version of the model to remove. If an empty string present list to choose from
+     * @param userid the optional userId. If security and auditing in place this parameter is required.
+     * @return the result of the operation
+     */
     def removeModel(modelId: String = ""
                     , userid: Option[String] = Some("kamanja")
-                   ): String ={
+                     ): String ={
         val response : String = try {
             //  logger.setLevel(Level.TRACE); //check again
             if (modelId.length > 0) {
@@ -1230,9 +1342,10 @@ object ModelService {
                     getMetadataAPI.RemoveModel(s"$ns.$name", ver, userid)
                 } catch {
                     case e: Exception => {
-                        val stackTrace = StackTrace.ThrowableTraceString(e)
-                        logger.info(stackTrace)
-                        stackTrace
+                        //val stackTrace = StackTrace.ThrowableTraceString(e)
+                        //logger.info(stackTrace)
+                        //stackTrace
+                        (new ApiResult(ErrorCodeConstants.Failure, "removeModel",null, e.getStackTrace.toString)).toString
                     }
                 }
                 result
@@ -1241,7 +1354,8 @@ object ModelService {
                 val modelKeys = getMetadataAPI.GetAllModelsFromCache(true, None)
 
                 if (modelKeys.length == 0) {
-                    "Sorry, No models available, in the Metadata, to delete!"
+                    // "Sorry, No models available, in the Metadata, to delete!"
+                    new ApiResult(ErrorCodeConstants.Failure, "removeModel", null, "No models available, in the Metadata, to delete").toString
                 } else {
                     println("\nPick the model to be deleted from the following list: ")
                     var srno = 0
@@ -1253,7 +1367,8 @@ object ModelService {
                     val choice: Int = readInt()
 
                     if (choice < 1 || choice > modelKeys.length) {
-                        "Invalid choice " + choice + ". Start with the main menu."
+                        //   "Invalid choice " + choice + ". Start with the main menu."
+                        new ApiResult(ErrorCodeConstants.Failure, "removeModel", null, "Invalid choice").toString
                     } else {
                         val modelKey = modelKeys(choice - 1)
                         val (ns, name, ver) = com.ligadata.kamanja.metadata.Utils.parseNameToken(modelKey)
@@ -1263,24 +1378,25 @@ object ModelService {
             }
         } catch {
             case e: Exception => {
-                val stackTrace = StackTrace.ThrowableTraceString(e)
-                logger.info(stackTrace)
-                stackTrace
+                //val stackTrace = StackTrace.ThrowableTraceString(e)
+                // logger.info(stackTrace)
+                //stackTrace
+                (new ApiResult(ErrorCodeConstants.Failure, "removeModel",null, e.getStackTrace.toString)).toString
             }
         }
         response
     }
 
     /**
-      * Activate the model supplied
-      *
-      * @param modelId the namespace.name.version of the model to activate. If an empty string present list to choose from
-      * @param userid the optional userId. If security and auditing in place this parameter is required.
-      * @return the result of the operation
-      */
+     * Activate the model supplied
+     *
+     * @param modelId the namespace.name.version of the model to activate. If an empty string present list to choose from
+     * @param userid the optional userId. If security and auditing in place this parameter is required.
+     * @return the result of the operation
+     */
     def activateModel(modelId: String = ""
                       , userid: Option[String] = Some("kamanja")
-                     ): String ={
+                       ): String ={
         var response=""
         try {
             if (modelId.length > 0) {
@@ -1288,13 +1404,16 @@ object ModelService {
                 try {
                     return getMetadataAPI.ActivateModel(ns, name, ver.toInt, userid)
                 } catch {
-                    case e: Exception => logger.error("", e)
+                    case e: Exception =>
+                        //logger.error("", e)
+                        (new ApiResult(ErrorCodeConstants.Failure, "activateModel ",null, e.getStackTrace.toString)).toString
                 }
             }
             val modelKeys = getMetadataAPI.GetAllModelsFromCache(false, None)
             if (modelKeys.length == 0) {
-                val errorMsg="Sorry, No models available, in the Metadata, to activate!"
-                response=errorMsg
+                //    val errorMsg="Sorry, No models available, in the Metadata, to activate!"
+                //  response=errorMsg
+                response= new ApiResult(ErrorCodeConstants.Failure, "activateModel", null, "No models available, in the Metadata, to activate").toString
             }
             else{
                 println("\nPick the model to be activated from the following list: ")
@@ -1307,8 +1426,9 @@ object ModelService {
                 val choice: Int = readInt()
 
                 if (choice < 1 || choice > modelKeys.length) {
-                    val errormsg="Invalid choice " + choice + ". Start with the main menu."
-                    response=errormsg
+                    //  val errormsg="Invalid choice " + choice + ". Start with the main menu."
+                    // response=errormsg
+                    response= new ApiResult(ErrorCodeConstants.Failure, "activateModel", null, "Invalid choice").toString
                 }
                 val modelKey = modelKeys(choice - 1)
                 val modelKeyTokens = modelKey.split("\\.")
@@ -1319,23 +1439,24 @@ object ModelService {
 
         } catch {
             case e: Exception => {
-                logger.info("", e)
-                response=e.getStackTrace.toString
+                // logger.info("", e)
+                //response=e.getStackTrace.toString
+                response= (new ApiResult(ErrorCodeConstants.Failure, "activateModel",null, e.getStackTrace.toString)).toString
             }
         }
         response
     }
 
     /**
-      * Deactivate the supplied model if given.  If not given present a menu of the active models from which to choose.
-      *
-      * @param modelId the namespace.name.version of the model to deactivate. If an empty string present list to choose from
-      * @param userid the optional userId. If security and auditing in place this parameter is required. the optional userId. If security and auditing in place this parameter is required.
-      * @return the result of the operation
-      */
+     * Deactivate the supplied model if given.  If not given present a menu of the active models from which to choose.
+     *
+     * @param modelId the namespace.name.version of the model to deactivate. If an empty string present list to choose from
+     * @param userid the optional userId. If security and auditing in place this parameter is required. the optional userId. If security and auditing in place this parameter is required.
+     * @return the result of the operation
+     */
     def deactivateModel(modelId: String = ""
                         , userid: Option[String] = Some("kamanja")
-                       ):String={
+                         ):String={
         var response=""
         var progressReport: Int = 0
         try {
@@ -1344,16 +1465,19 @@ object ModelService {
                 try {
                     return getMetadataAPI.DeactivateModel(ns, name, ver.toInt, userid)
                 } catch {
-                    case e: Exception => logger.error("", e)
+                    case e: Exception =>
+                        // logger.error("", e)
+                        (new ApiResult(ErrorCodeConstants.Failure, "activateModel ",null, e.getStackTrace.toString)).toString
                 }
             }
             progressReport = 1
             val modelKeys = getMetadataAPI.GetAllModelsFromCache(true, None)
 
             if (modelKeys.length == 0) {
-                val errorMsg="Sorry, No models available, in the Metadata, to deactivate!"
+                //val errorMsg="Sorry, No models available, in the Metadata, to deactivate!"
                 //println(errorMsg)
-                response=errorMsg
+                //response=errorMsg
+                response= new ApiResult(ErrorCodeConstants.Failure, "deActivateModel", null, "No models available, in the Metadata, to deactivate").toString
             }
             else{
                 println("\nPick the model to be de-activated from the following list: ")
@@ -1367,8 +1491,9 @@ object ModelService {
 
 
                 if (choice < 1 || choice > modelKeys.length) {
-                    val errormsg="Invalid choice " + choice + ". Start with the main menu."
-                    response=errormsg
+                    //val errormsg="Invalid choice " + choice + ". Start with the main menu."
+                    //response=errormsg
+                    response= new ApiResult(ErrorCodeConstants.Failure, "deActivateModel", null, "Invalid choice").toString
                 }
                 val modelKey = modelKeys(choice - 1)
                 val modelKeyTokens = modelKey.split("\\.")
@@ -1392,11 +1517,11 @@ object ModelService {
     }
 
     /**
-      * Is the supplied directory path valid?
-      *
-      * @param dirName directory path
-      * @return true if it is
-      */
+     * Is the supplied directory path valid?
+     *
+     * @param dirName directory path
+     * @return true if it is
+     */
     def IsValidDir(dirName: String): Boolean = {
         val iFile = new File(dirName)
         if (!iFile.exists) {
@@ -1422,13 +1547,20 @@ object ModelService {
         }
         print("\nEnter your choice(If more than 1 choice, please use commas to seperate them): \n")
         val userOption: Int = readLine().trim.toInt
-        return tenants(userOption - 1)
+        if(userOption<1 || userOption > srNo){
+            logger.debug("Invalid choice")
+            throw new InvalidArgumentException("Invalid choice",null)
+        }
+        else{
+            logger.debug("Invalid choice")
+            tenants(userOption - 1)
+        }
     }
     /**
-      *
-      * @param models and array of directory file specs
-      * @return a list of model defs
-      */
+     *
+     * @param models and array of directory file specs
+     * @return a list of model defs
+     */
     def getUserInputFromMainMenu(models: Array[File]): Array[String] = {
         var listOfModelDef: Array[String]=Array[String]()
         var srNo = 0

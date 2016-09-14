@@ -1350,6 +1350,7 @@ object KamanjaMetadata extends ObjectResolver {
           case "clusterInfoDef" => {}
           case "clusterDef" => {}
           case "upDef" => {}
+          case "TenantDef" => {}
 
           case "AdapterMessageBinding" => {
             logger.debug("Got adapter change")

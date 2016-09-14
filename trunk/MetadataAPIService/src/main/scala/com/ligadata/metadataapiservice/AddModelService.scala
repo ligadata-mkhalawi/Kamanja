@@ -75,22 +75,47 @@ class AddModelService(requestContext: RequestContext, userid: Option[String], pa
         val apiResult = getMetadataAPI.AddModel(ModelType.KPMML, pmmlStr, userid, tenantId, None, None, None, None, None, None)
         requestContext.complete(apiResult)
       } else {
-        if (modelType != ModelType.KPMML) {
-          val cInfo = modelCompileInfo.getOrElse("")
-          // Error if nothing specified in the modelCompileInfo
-          if (cInfo.equalsIgnoreCase(""))
-            requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error: modelconfig is not specified, PMML model is required to have Model Compilation Information.").toString)
+        val cInfo = modelCompileInfo.getOrElse("")
 
-          val compileConfigTokens = cInfo.split(",")
+        // Error if nothing specified in the modelCompileInfo
+        if (cInfo.equalsIgnoreCase(""))
+          requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error: modelconfig is not specified, PMML model is required to have Model Compilation Information.").toString)
 
-          if (compileConfigTokens.size < 3 ||
-            compileConfigTokens.size > 4)
-            requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error: Invalid compile config paramters specified for PMML, Needs at least ModelName, ModelVersion, MessageConsumed.").toString)
-          if (compileConfigTokens.size == 3) {
-            val apiResult = MetadataAPIImpl.AddModel(modelType, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), None, None, None)
+        val compileConfigTokens = cInfo.split(",")
+        if (compileConfigTokens.size < 3 ||
+          compileConfigTokens.size > 5)
+          requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error: Invalid compile config paramters specified for PMML, Needs at least ModelName, ModelVersion, MessageConsumed.").toString)
+
+        if (compileConfigTokens.size == 3) {
+          if (!compileConfigTokens(0).equalsIgnoreCase("python") && !compileConfigTokens(0).equalsIgnoreCase("jython")) {
+            val apiResult = MetadataAPIImpl.AddModel(ModelType.PMML, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), None, None, None)
+            requestContext.complete(apiResult)
+          }
+        } else if (compileConfigTokens.size == 4) {
+
+          if (compileConfigTokens(0).equalsIgnoreCase("python")) {
+            val apiResult = MetadataAPIImpl.AddModel(ModelType.PYTHON, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), None, None, None)
+            requestContext.complete(apiResult)
+
+          } else if (compileConfigTokens(0).equalsIgnoreCase("jython")) {
+            val apiResult = MetadataAPIImpl.AddModel(ModelType.JYTHON, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), None, None, None)
+            requestContext.complete(apiResult)
+
+          } else if (compileConfigTokens(0).equalsIgnoreCase("pmml")) {
+            val apiResult = MetadataAPIImpl.AddModel(ModelType.PMML, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), None, None, None)
             requestContext.complete(apiResult)
           } else {
-            val apiResult = MetadataAPIImpl.AddModel(modelType, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), Some(compileConfigTokens(3)), None, None)
+            val apiResult = MetadataAPIImpl.AddModel(ModelType.PMML, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), Some(compileConfigTokens(3)), None, None)
+            requestContext.complete(apiResult)
+          }
+        } else if (compileConfigTokens.size == 5) {
+
+          if (compileConfigTokens(0).equalsIgnoreCase("python")) {
+            val apiResult = MetadataAPIImpl.AddModel(ModelType.PYTHON, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), Some(compileConfigTokens(3)), None, None)
+            requestContext.complete(apiResult)
+
+          } else if (compileConfigTokens(0).equalsIgnoreCase("jython")) {
+            val apiResult = MetadataAPIImpl.AddModel(ModelType.JYTHON, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), Some(compileConfigTokens(3)), None, None)
             requestContext.complete(apiResult)
           }
         }

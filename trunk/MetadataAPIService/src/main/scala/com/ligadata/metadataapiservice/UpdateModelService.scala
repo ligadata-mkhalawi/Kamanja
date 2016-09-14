@@ -84,19 +84,42 @@ class UpdateModelService(requestContext: RequestContext, userid: Option[String],
 
           val compileConfigTokens = cInfo.split(",")
 
-          if (compileConfigTokens.size < 2 ||
-            compileConfigTokens.size > 3)
-            requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error: Invalid compile config paramters specified for PMML, Needs  ModelName, ModelVersion, Optional[UpdateModelVersion].").toString)
-
-          // if an optional parm is passed, pass it, else only pass in 2 parms
-          if (compileConfigTokens.size == 2) {
-            val apiResult = MetadataAPIImpl.UpdateModel(modelType, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), None, None, None, Some("{}"))
-            requestContext.complete(apiResult)
-          } else {
-            val apiResult = MetadataAPIImpl.UpdateModel(modelType, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), None, None, Some("{}"))
+        if (compileConfigTokens.size == 2) {
+          if (!compileConfigTokens(0).equalsIgnoreCase("python") && !compileConfigTokens(0).equalsIgnoreCase("jython")) {
+            val apiResult = MetadataAPIImpl.UpdateModel(ModelType.PMML, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), None, None, None, None)
             requestContext.complete(apiResult)
           }
-        } 
+        } else if (compileConfigTokens.size == 3) {
+
+          if (compileConfigTokens(0).equalsIgnoreCase("python")) {
+            val apiResult = MetadataAPIImpl.UpdateModel(ModelType.PYTHON, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), None, None, None, None)
+            requestContext.complete(apiResult)
+
+          } else if (compileConfigTokens(0).equalsIgnoreCase("jython")) {
+            val apiResult = MetadataAPIImpl.UpdateModel(ModelType.JYTHON, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), None, None, None, None)
+            requestContext.complete(apiResult)
+
+          } else if (compileConfigTokens(0).equalsIgnoreCase("pmml")) {
+            val apiResult = MetadataAPIImpl.UpdateModel(ModelType.PMML, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), None, None, None, None)
+            requestContext.complete(apiResult)
+
+          } else {
+            val apiResult = MetadataAPIImpl.UpdateModel(ModelType.PMML, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), None, None, None)
+            requestContext.complete(apiResult)
+          }
+        } else if (compileConfigTokens.size == 4) {
+
+          if (compileConfigTokens(0).equalsIgnoreCase("python")) {
+            val apiResult = MetadataAPIImpl.UpdateModel(ModelType.PYTHON, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), None, None, None)
+            requestContext.complete(apiResult)
+
+          } else if (compileConfigTokens(0).equalsIgnoreCase("jython")) {
+            val apiResult = MetadataAPIImpl.UpdateModel(ModelType.JYTHON, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), None, None, None)
+            requestContext.complete(apiResult)
+
+          }
+        }
+
       }
     }
   }

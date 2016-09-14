@@ -58,9 +58,29 @@ class CompilerProxy {
   lazy val logger = LogManager.getLogger(loggerName)
   private var userId: Option[String] = _
   lazy val compiler_work_dir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("COMPILER_WORK_DIR")
+
+  // verify compiler_work_dir for existence
+  private def  verifyCompilerWorkDir(compiler_work_dir: String): Unit = {
+    val iFile = new File(compiler_work_dir)
+    if ( ! iFile.exists ){
+      logger.warn(s"COMPILER_PROXY: The path $compiler_work_dir specified as COMPILER_WORK_DIR doesn't exist, create it any way.")
+      // Doesn't exist, try Create a new clean directory
+      val compileWorkDir = s"mkdir -p $compiler_work_dir"
+      val tmpdirRc = Process(compileWorkDir).!
+      if (tmpdirRc != 0) {
+	throw new Exception(s"The MetadataAPI operation has failed because The path $compiler_work_dir  specified as COMPILER_WORK_DIR could not be created ... rc = $tmpdirRc")
+      }
+    }
+    else if ( ! iFile.isDirectory ){
+      throw new Exception(s"COMPILER_PROXY: The path $compiler_work_dir specified as COMPILER_WORK_DIR is not a directory. ")
+    }
+  }
+
   // 646 - 676 Change begins - replace MetadataAPIImpl
   val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
   // 646 - 676 Change ends
+
+  verifyCompilerWorkDir(compiler_work_dir)
 
   def setSessionUserId(id: Option[String]): Unit = {
     userId = id
@@ -116,11 +136,11 @@ class CompilerProxy {
     * is available.. so just generate the new ModelDef
     *
     */
-  def recompileModelFromSource(sourceCode: String, pName: String, deps: List[String], typeDeps: List[String], inMsgSets: List[List[String]], outputMsgs: List[String], sourceLang: String, userid: Option[String], tenantId: String, modCfgJson: String): ModelDef = {
+  def recompileModelFromSource(sourceCode: String, pName: String, deps: List[String], typeDeps: List[String], inMsgSets: List[List[String]], outputMsgs: List[String], sourceLang: String, userid: Option[String], tenantId: String, modCfgJson: String, modCfgName: String): ModelDef = {
     try {
       val (classPath, elements, totalDeps, nonTypeDeps) = buildClassPath(deps, typeDeps, null, inMsgSets, outputMsgs)
       val msgDefClassFilePath = compiler_work_dir + "/tempCode." + sourceLang
-      val ((modelNamespace, modelName, modelVersion, pname, mdlFactory, loaderInfo, modConfigName), repackagedCode, tempPackage) = parseSourceForMetadata(sourceCode, "tempCode", sourceLang, msgDefClassFilePath, classPath, elements, userid)
+      val ((modelNamespace, modelName, modelVersion, pname, mdlFactory, loaderInfo, modConfigName), repackagedCode, tempPackage) = parseSourceForMetadata(sourceCode, modCfgName, sourceLang, msgDefClassFilePath, classPath, elements, userid)
       var inputMsgSets =
         if (inMsgSets == null) {
           val defaultInputMsgSets = getDefaultInputMsgSets(mdlFactory, loaderInfo, modConfigName, modCfgJson)
@@ -134,9 +154,10 @@ class CompilerProxy {
       val existingModel = MdMgr.GetMdMgr.Model(modelNamespace, modelName, -1, false) // Any version is fine. No need of active
       val uniqueId = getMetadataAPI.GetUniqueId
       val mdElementId = if (existingModel == None) getMetadataAPI.GetMdElementId else existingModel.get.MdElementId
-
+      // use the model Config Name passed by the caller of this function
+      logger.debug("recompileModelFromSource: Model Config Name => " + modCfgName)
       return generateModelDef(repackagedCode, sourceLang, pname, classPath, tempPackage, modelName,
-        modelVersion, msgDefClassFilePath, elements, sourceCode, totalDeps, typeDeps, nonTypeDeps, true, inputMsgSets, outputMsgs, userid, tenantId, null, uniqueId, mdElementId, modCfgJson)
+        modelVersion, msgDefClassFilePath, elements, sourceCode, totalDeps, typeDeps, nonTypeDeps, true, inputMsgSets, outputMsgs, userid, tenantId, modCfgName, uniqueId, mdElementId, modCfgJson)
     } catch {
       case e: Exception => {
         logger.error("COMPILER_PROXY: unable to determine model metadata information during recompile.", e)
