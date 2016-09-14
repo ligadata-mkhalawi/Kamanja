@@ -75,7 +75,6 @@ class UpdateModelService(requestContext: RequestContext, userid: Option[String],
         requestContext.complete(apiResult)
       } else {
 
-        if (modelType != ModelType.KPMML) {
           val cInfo = modelCompileInfo.getOrElse("")
 
           // Error if nothing specified in the modelCompileInfo
