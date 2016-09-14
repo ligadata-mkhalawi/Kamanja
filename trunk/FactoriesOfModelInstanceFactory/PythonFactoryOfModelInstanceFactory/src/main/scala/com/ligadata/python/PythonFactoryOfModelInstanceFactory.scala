@@ -708,8 +708,25 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext, val ser
 	   logger.debug ("PythonAdapterFactor.init : Writing the  model file to the target mode dir --------") 
         }
 	writeSrcFile(modelDef.objectDefinition, srcTargetPath) 
-	
-        
+        val model : ModelDef = modelDef
+	if (logger.isDebugEnabled()) {
+	   logger.debug("Something is happening to the model here blah blah blah ------" + model.objectDefinition)
+        }
+       	val connectionMap : scala.collection.mutable.HashMap[String,Any] =
+        txnContext.nodeCtxt.getValue("PYTHON_CONNECTIONS").asInstanceOf[scala.collection.mutable.HashMap[String,Any]]
+	if (logger.isDebugEnabled()) {
+	   logger.debug("Something is happening to the model here Haha Haha Haha ------" + connectionMap.size)
+        }
+       	val modelOptStr : String = model.modelConfig
+        val trimmedOptionStr : String = modelOptStr.trim
+        val modelOptions : Map[String,Any] = parse(trimmedOptionStr).values.asInstanceOf[Map[String,Any]]
+	for ((partitionKey, connection) <- connectionMap) {
+	  val pySrvConn : PyServerConnection = connectionMap.getOrElse(partitionKey, null).asInstanceOf[PyServerConnection]
+	   if (pySrvConn != null) {
+	      val resultStr : String = pySrvConn.addModel(moduleName, modelName, model.objectDefinition, modelOptions)
+	   }
+	}
+			
     }
 
     /** Write the source file string to the supplied target path.

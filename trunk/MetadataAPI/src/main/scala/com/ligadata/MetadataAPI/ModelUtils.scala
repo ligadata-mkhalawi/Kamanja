@@ -1664,6 +1664,25 @@ object ModelUtils {
           null
         }
 
+        val currentOutputMsg : Option[String ] = if (currentModel != null) {
+          //FIXME: Getting only the first one for now
+          var msgProduced: Option[String] = None
+          if (currentModel.outputMsgs != null && currentModel.outputMsgs.size > 0) {
+            if (msgProduced == None) {
+
+             if (logger.isDebugEnabled()) {
+	     	logger.debug ("The size of output msg queue is give here " + currentModel.outputMsgs.size)
+	     }
+              msgProduced = Some(currentModel.outputMsgs.head)
+            }
+          }
+          msgProduced
+        } else {
+          None
+        }
+
+
+
         /** look up the message referred to by the inputMsgSets first element... the message only has namespace and name*/
         val nameparts: Array[String] = if (currentMsg.contains(".")) currentMsg.split('.') else Array[String]("system", currentMsg)
         val msgnamespace: String = nameparts.dropRight(1).mkString(".")
@@ -1675,13 +1694,13 @@ object ModelUtils {
         val ownerId: String = if (optUserid == None) "kamanja" else optUserid.get
         val modelOptions: String = someModelOptions.getOrElse("{}")
        
-        val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, moduleName, modelNmSpace, modelNm, version, currMsgNmSp, currMsgNm, currMsgVer, input, ownerId, tenantId, optMsgProduced, pStr, modelOptions, getMetadataAPI.GetMetadataAPIConfig)
+        val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, moduleName, modelNmSpace, modelNm, version, currMsgNmSp, currMsgNm, currMsgVer, input, ownerId, tenantId, currentOutputMsg, pStr, modelOptions, getMetadataAPI.GetMetadataAPIConfig)
         val isPython: Boolean = true // when false JYTHON
         val modDef: ModelDef = pythonMdlSupport.UpdateModel(true)
 
         // copy optMsgProduced to outputMsgs
-        if (optMsgProduced != None) {
-          modDef.outputMsgs = modDef.outputMsgs :+ optMsgProduced.get.toLowerCase
+        if (currentOutputMsg != None) {
+          modDef.outputMsgs = modDef.outputMsgs :+ currentOutputMsg.get.toLowerCase
         }
 
         /**
