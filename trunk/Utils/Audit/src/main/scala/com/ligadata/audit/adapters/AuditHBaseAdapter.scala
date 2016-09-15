@@ -309,6 +309,27 @@ class AuditHBaseAdapter extends AuditAdapter
     getAllKeys({ (key: Array[Byte]) => del(key) })
   }
 
+  override def dropStore: Unit = {
+    var fullTableName = table
+    if( keyspace != null ){
+      fullTableName = keyspace + ":" + table
+    }
+    try {
+      val tblNm = TableName.valueOf(fullTableName)
+      val  admin = new HBaseAdmin(config);
+      if (admin.tableExists(tblNm)) {
+        if (admin.isTableEnabled(tblNm)) {
+          admin.disableTable(tblNm)
+        }
+        admin.deleteTable(tblNm)
+      }
+    } catch {
+      case e: Exception => {
+        throw new Exception("Failed to drop table " + fullTableName, e)
+      }
+    }
+  }
+
   private def initPropertiesFromFile(parmFile: String): Unit = {  
     try {
        scala.io.Source.fromFile(parmFile).getLines.foreach(line => {

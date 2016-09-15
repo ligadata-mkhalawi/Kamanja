@@ -123,6 +123,9 @@ trait AuditAdapter {
 
   // truncate audit store
   def TruncateStore(): Unit
+
+  // drop audit store
+  def dropStore(): Unit
 }
 
 object AuditConstants {

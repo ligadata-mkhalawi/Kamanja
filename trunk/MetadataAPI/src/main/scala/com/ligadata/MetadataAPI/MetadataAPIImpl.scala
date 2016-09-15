@@ -342,7 +342,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     // Load the location and name of the implementing class froms the
     val implJarName = if (metadataAPIConfig.getProperty("AUDIT_IMPL_JAR") == null) "" else metadataAPIConfig.getProperty("AUDIT_IMPL_JAR").trim
     val implClassName = if (metadataAPIConfig.getProperty("AUDIT_IMPL_CLASS") == null) "" else metadataAPIConfig.getProperty("AUDIT_IMPL_CLASS").trim
-    logger.debug("Using " + implClassName + ", from the " + implJarName + " jar file")
+    logger.info("Using " + implClassName + ", from the " + implJarName + " jar file")
     if (implClassName == null) {
       logger.error("Audit Adapter Class is not specified")
       return
@@ -367,6 +367,10 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
   }
 
   def GetAuditObj: AuditAdapter = auditObj
+  def SetAuditObj(ao:AuditAdapter) : Unit = {
+    auditObj = ao
+  }
+
     /**
      * loadJar- load the specified jar into the classLoader
       *
