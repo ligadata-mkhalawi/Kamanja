@@ -814,10 +814,8 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext, val ser
       * @return - a ModelInstance that can process the message found in the TransactionContext supplied at execution time
       */
     override def createModelInstance(): ModelInstance = {
-      throw new Exception("Unhandled Python createModelInstance")
-/*
         val useThisModel : ModelInstance = if (modelDef != null) {
-            val partitionKey : String = txnContext.getPartitionKey()
+//            val partitionKey : String = txnContext.getPartitionKey()
             val isInstanceReusable : Boolean = true
             val builtModel : ModelInstance = new PythonAdapter(this, nodeContext)
             builtModel
@@ -826,7 +824,6 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext, val ser
             null
         }
         useThisModel
-*/
     }
 
     /**
