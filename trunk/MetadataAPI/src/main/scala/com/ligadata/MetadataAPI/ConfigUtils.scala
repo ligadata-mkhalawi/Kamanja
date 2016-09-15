@@ -121,11 +121,11 @@ object ConfigUtils {
               jarPaths: List[String], scala_home: String,
               java_home: String, classpath: String,
               clusterId: String, power: Int,
-              roles: Array[String], description: String, readerThreads: Int, processThreads: Int, logicalPartitions: Int): String = {
+              roles: Array[String], description: String, readerThreads: Int, processThreads: Int): String = {
     try {
       // save in memory
       val ni = MdMgr.GetMdMgr.MakeNode(nodeId, nodePort, nodeIpAddr, jarPaths, scala_home,
-        java_home, classpath, clusterId, power, roles, description, readerThreads, processThreads, logicalPartitions)
+        java_home, classpath, clusterId, power, roles, description, readerThreads, processThreads)
       MdMgr.GetMdMgr.AddNode(ni)
       // save in database
       val key = "NodeInfo." + nodeId
@@ -163,10 +163,10 @@ object ConfigUtils {
                  jarPaths: List[String], scala_home: String,
                  java_home: String, classpath: String,
                  clusterId: String, power: Int,
-                 roles: Array[String], description: String, readerThreads: Int, processThreads: Int, logicalPartitions: Int): String = {
+                 roles: Array[String], description: String, readerThreads: Int, processThreads: Int): String = {
     AddNode(nodeId, nodePort, nodeIpAddr, jarPaths, scala_home,
       java_home, classpath,
-      clusterId, power, roles, description, readerThreads: Int, processThreads: Int, logicalPartitions: Int)
+      clusterId, power, roles, description, readerThreads: Int, processThreads: Int)
   }
 
   /**
@@ -320,10 +320,10 @@ object ConfigUtils {
    * @param privileges
    * @return
    */
-  def AddCluster(clusterId: String, description: String, privileges: String, readerThreads: Int, processThreads: Int, logicalPartitions: Int): String = {
+  def AddCluster(clusterId: String, description: String, privileges: String, globalReaderThreads: Int, globalProcessThreads: Int, logicalPartitions: Int): String = {
     try {
       // save in memory
-      val ci = MdMgr.GetMdMgr.MakeCluster(clusterId, description, privileges, readerThreads, processThreads, logicalPartitions)
+      val ci = MdMgr.GetMdMgr.MakeCluster(clusterId, description, privileges, globalReaderThreads, globalProcessThreads, logicalPartitions)
       MdMgr.GetMdMgr.AddCluster(ci)
       // save in database
       val key = "ClusterInfo." + clusterId
@@ -349,8 +349,8 @@ object ConfigUtils {
    * @param privileges
    * @return
    */
-  def UpdateCluster(clusterId: String, description: String, privileges: String, readerThreads: Int, processThreads: Int, logicalPartitions: Int): String = {
-    AddCluster(clusterId, description, privileges, readerThreads, processThreads, logicalPartitions)
+  def UpdateCluster(clusterId: String, description: String, privileges: String, globalReaderThreads: Int, globalProcessThreads: Int, logicalPartitions: Int): String = {
+    AddCluster(clusterId, description, privileges, globalReaderThreads, globalProcessThreads, logicalPartitions)
   }
 
   /**
@@ -734,14 +734,14 @@ object ConfigUtils {
               val apiResult = new ApiResult(ErrorCodeConstants.Failure, "UploadConfig", cfgStr, "Error : ClusterId Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
               return apiResult.toString()
             }
-            val ReaderThreads = cluster.getOrElse("ReaderThreads", "0").toString.trim.toInt
-            if (ReaderThreads == 0) {
-              val apiResult = new ApiResult(ErrorCodeConstants.Failure, "ReaderThreads", cfgStr, "Error : ReaderThreads Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
+            val GlobalReaderThreads = cluster.getOrElse("GlobalReaderThreads", "0").toString.trim.toInt
+            if (GlobalReaderThreads == 0) {
+              val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GlobalReaderThreads", cfgStr, "Error : GlobalReaderThreads Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
               return apiResult.toString()
             }
-            val ProcessThreads = cluster.getOrElse("ProcessThreads", "0").toString.trim.toInt
-            if (ProcessThreads == 0) {
-              val apiResult = new ApiResult(ErrorCodeConstants.Failure, "ProcessThreads", cfgStr, "Error : ProcessThreads Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
+            val GlobalProcessThreads = cluster.getOrElse("GlobalProcessThreads", "0").toString.trim.toInt
+            if (GlobalProcessThreads == 0) {
+              val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GlobalProcessThreads", cfgStr, "Error : GlobalProcessThreads Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
               return apiResult.toString()
             }
             val LogicalPartitions = cluster.getOrElse("LogicalPartitions", "0").toString.trim.toInt
@@ -751,14 +751,14 @@ object ConfigUtils {
             }
             logger.debug("Processing the cluster => " + ClusterId)
             // save in memory
-            val ci = MdMgr.GetMdMgr.MakeCluster(ClusterId, "", "", ProcessThreads, ProcessThreads, LogicalPartitions)
+            val ci = MdMgr.GetMdMgr.MakeCluster(ClusterId, "", "", GlobalReaderThreads, GlobalProcessThreads, LogicalPartitions)
             val addCluserReuslt = MdMgr.GetMdMgr.AddCluster(ci)
 
             if (addCluserReuslt != None) {
               var clusterDef: ClusterConfigDef = new ClusterConfigDef
               clusterDef.clusterId = ci.clusterId
-              clusterDef.readerThreads = ci.readerThreads
-              clusterDef.processThreads = ci.processThreads
+              clusterDef.globalReaderThreads = ci.globalReaderThreads
+              clusterDef.globalProcessThreads = ci.globalProcessThreads
               clusterDef.logicalPartitions = ci.logicalPartitions
               clusterDef.elementType = "clusterDef"
               clusterDef.nameSpace = "cluster"
@@ -843,13 +843,8 @@ object ConfigUtils {
                 val jarPaths = if (node.contains("JarPaths")) node.get("JarPaths").get.asInstanceOf[List[String]] else List[String]()
                 val roles = if (node.contains("Roles")) node.get("Roles").get.asInstanceOf[List[String]] else List[String]()
                 var readerThreads: Int = node.getOrElse("ReaderThreads", "0").toString.trim.toInt
-                if (readerThreads == 0) readerThreads = ReaderThreads
-
                 var processThreads = node.getOrElse("ProcessThreads", "0").toString.trim.toInt
-                if (processThreads == 0) processThreads = ProcessThreads
-                var logicalPartitions = node.getOrElse("LogicalPartitions", "0").toString.trim.toInt
-                if (logicalPartitions == 0) logicalPartitions = LogicalPartitions
-
+                
                 val validRoles = NodeRole.ValidRoles.map(r => r.toLowerCase).toSet
                 val givenRoles = roles
                 var foundRoles = ArrayBuffer[String]()
@@ -867,7 +862,7 @@ object ConfigUtils {
                 }
 
                 val ni = MdMgr.GetMdMgr.MakeNode(nodeId, nodePort, nodeIpAddr, jarPaths,
-                  scala_home, java_home, classpath, ClusterId, 0, foundRoles.toArray, "", readerThreads, processThreads, logicalPartitions)
+                  scala_home, java_home, classpath, ClusterId, 0, foundRoles.toArray, "", readerThreads, processThreads)
 
                 val addNodeResult = MdMgr.GetMdMgr.AddNode(ni)
                 if (addNodeResult != None) {

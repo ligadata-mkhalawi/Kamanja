@@ -573,8 +573,7 @@ object MetadataAPISerialization {
             ("Roles" -> getEmptyArrayIfNull(o.Roles).toList) ~
             ("Description" -> getEmptyIfNull(o.Description)) ~
             ("ReaderThreads" -> o.ReaderThreads) ~
-            ("ProcessThreads" -> o.ProcessThreads) ~
-            ("LogicalPartitions" -> o.LogicalPartitions)
+            ("ProcessThreads" -> o.ProcessThreads) 
           outputJson = compact(render(json))
 
         }
@@ -583,8 +582,8 @@ object MetadataAPISerialization {
             ("ClusterId" -> getEmptyIfNull(o.ClusterId)) ~
             ("Description" -> getEmptyIfNull(o.Description)) ~
             ("Privileges" -> getEmptyIfNull(o.Privileges)) ~
-            ("ReaderThreads" -> o.ReaderThreads) ~
-            ("ProcessThreads" -> o.ProcessThreads) ~
+            ("GlobalReaderThreads" -> o.GlobalReaderThreads) ~
+            ("GlobalProcessThreads" -> o.GlobalProcessThreads) ~
             ("LogicalPartitions" -> o.LogicalPartitions)
           outputJson = compact(render(json))
 
@@ -1963,8 +1962,7 @@ object MetadataAPISerialization {
         nodeInst.Node.Roles.toArray,
         nodeInst.Node.Description,
         nodeInst.Node.ReaderThreads,
-        nodeInst.Node.ProcessThreads,
-        nodeInst.Node.LogicalPartitions)
+        nodeInst.Node.ProcessThreads)
 
       nodeInfo
 
@@ -1990,8 +1988,8 @@ object MetadataAPISerialization {
         clusterInst.Cluster.ClusterId,
         clusterInst.Cluster.Description,
         clusterInst.Cluster.Privileges,
-        clusterInst.Cluster.ReaderThreads,
-        clusterInst.Cluster.ProcessThreads,
+        clusterInst.Cluster.GlobalReaderThreads,
+        clusterInst.Cluster.GlobalProcessThreads,
         clusterInst.Cluster.LogicalPartitions)
       clusterInfo
 
@@ -2205,11 +2203,11 @@ case class ClusterCfgInformation(ClusterId: String, CfgMap: List[KeyVale], Modif
 
 case class ClusterCfg(ClusterCfg: ClusterCfgInformation)
 
-case class ClusterInformation(ClusterId: String, Description: String, Privileges: String, ReaderThreads: Int, ProcessThreads: Int, LogicalPartitions: Int)
+case class ClusterInformation(ClusterId: String, Description: String, Privileges: String, GlobalReaderThreads: Int, GlobalProcessThreads: Int, LogicalPartitions: Int)
 
 case class Cluster(Cluster: ClusterInformation)
 
-case class NodeInformation(NodeId: String, NodePort: Int, NodeIpAddr: String, JarPaths: List[String], Scala_home: String, Java_home: String, Classpath: String, ClusterId: String, Power: Int, Roles: List[String], Description: String, ReaderThreads: Int, ProcessThreads: Int, LogicalPartitions: Int)
+case class NodeInformation(NodeId: String, NodePort: Int, NodeIpAddr: String, JarPaths: List[String], Scala_home: String, Java_home: String, Classpath: String, ClusterId: String, Power: Int, Roles: List[String], Description: String, ReaderThreads: Int, ProcessThreads: Int)
 
 case class Node(Node: NodeInformation)
 

@@ -4,15 +4,14 @@ import java.util
 
 import com.ligadata.cache._
 import net.sf.ehcache.config.Configuration
-import org.infinispan.configuration.cache.{CacheMode, ConfigurationBuilder}
+import org.infinispan.configuration.cache.{ CacheMode, ConfigurationBuilder }
 import org.infinispan.manager.DefaultCacheManager;
 import org.infinispan.Cache
-import org.infinispan.tree.{Node, Fqn, TreeCacheFactory, TreeCache}
-;
+import org.infinispan.tree.{ Node, Fqn, TreeCacheFactory, TreeCache };
 
 /**
-  * Created by Saleh on 6/9/2016.
-  */
+ * Created by Saleh on 6/9/2016.
+ */
 class MemoryDataTreeCacheImp extends DataCache {
 
   var cacheManager: DefaultCacheManager = null
@@ -191,6 +190,18 @@ class MemoryDataTreeCacheImp extends DataCache {
 
       }
     }
+  }
+
+  override def remove(key: String): Unit = {
+    if (cache.containsKey(key)) {
+      println("key exixst in cache" + key)
+      cache.remove(key)
+    }
+  }
+
+  override def beginTransaction(): Transaction = {
+    throw new NotImplementedError("beginTransaction is not yet implemented")
+    return null;
   }
 
   override def beginTx(): Transaction = {

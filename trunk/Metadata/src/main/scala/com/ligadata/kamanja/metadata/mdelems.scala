@@ -882,8 +882,8 @@ class ConfigDef extends BaseElemDef {
 class ClusterConfigDef extends BaseElemDef {
   var clusterId: String = _
   var elementType: String = _
-  var readerThreads: Int = _
-  var processThreads: Int = _
+  var globalReaderThreads: Int = _
+  var globalProcessThreads: Int = _
   var logicalPartitions: Int = _
 }
 
@@ -913,8 +913,7 @@ class NodeInfo {
   var description: String = _
   var readerThreads: Int = _
   var processThreads: Int = _
-  var logicalPartitions: Int = _
-
+  
   def NodeId: String = nodeId
   def NodePort: Int = nodePort
   def NodeIpAddr: String = nodeIpAddr
@@ -928,8 +927,7 @@ class NodeInfo {
   def Description: String = description
   def NodeAddr: String = nodeIpAddr + ":" + nodePort.toString
   def ReaderThreads: Int = readerThreads
-  def ProcessThreads: Int = processThreads
-  def LogicalPartitions: Int = logicalPartitions
+  def ProcessThreads: Int = processThreads  
 
   def equals(in: NodeInfo): Boolean = {
 
@@ -1014,15 +1012,15 @@ class ClusterInfo {
   var clusterId: String = _
   var description: String = _
   var privileges: String = _
-  var readerThreads: Int = _
-  var processThreads: Int = _
+  var globalReaderThreads: Int = _
+  var globalProcessThreads: Int = _
   var logicalPartitions: Int = _
 
   def ClusterId: String = clusterId
   def Description: String = description
   def Privileges: String = privileges
-  def ReaderThreads: Int = readerThreads
-  def ProcessThreads: Int = processThreads
+  def GlobalReaderThreads: Int = globalReaderThreads
+  def GlobalProcessThreads: Int = globalProcessThreads
   def LogicalPartitions: Int = logicalPartitions
 
   def equals(in: ClusterInfo): Boolean = {

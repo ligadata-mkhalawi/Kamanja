@@ -101,6 +101,13 @@ class MemoryDataCacheImp extends DataCache {
     }
   }
 
+  override def remove(key: String): Unit = {
+    if (cache.isKeyInCache(key)) {
+      println("key exixst in cache" + key)
+      cache.remove(key)
+    }
+  }
+
   override def del(containerName: String, timestamp: String): Unit = {}
 
   override def del(containerName: String, timestamp: String, key: String): Unit = {}
@@ -109,6 +116,11 @@ class MemoryDataCacheImp extends DataCache {
 
   override def getFromRoot(rootNode: String, key: String): java.util.Map[String, AnyRef] = {
     null
+  }
+
+  override def beginTransaction(): Transaction = {
+    throw new NotImplementedError("beginTransaction is not yet implemented")
+    return null;
   }
 
   override def beginTx(): Transaction = {

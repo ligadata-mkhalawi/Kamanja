@@ -6,34 +6,43 @@ import org.json4s.JsonDSL._
 import org.json4s.jackson.Json
 import org.json4s.jackson.JsonMethods._
 import org.apache.logging.log4j.{ LogManager, Logger }
+import com.ligadata.KamanjaManager.NodeDistInfo
+import com.ligadata.KamanjaManager.ClusterDistributionInfo
 
 case class Node(var Name: String, var ProcessThreads: Int, var ReaderThreads: Int)
 case class NodeDistributionMap(Node: String, PhysicalPartitions: ArrayBuffer[PhysicalPartitionsDist], LogicalPartitionsDist: ArrayBuffer[LogicalPartitionsDist])
 case class PhysicalPartitionsDist(var ThreadId: String, AdapterPartitions: scala.collection.mutable.Map[String, ArrayBuffer[String]])
 case class LogicalPartitionsDist(var ThreadId: String, var LowerRange: Int, var UpperRange: Int)
 case class AdapterDist(var Name: String, var ReaderPatitions: ArrayBuffer[String])
-//case class DistributeMap(var Action: String, var LogicalPartitions: Int, var GlobalProcessingThreads: Int, var GlobalReaderThreads: Int, var TotalReaderThreads: Int, var TotalProcessThreads: Int, var NodeDistributionMap: ArrayBuffer[NodeDistributionMap])
+case class ClusterDistributionMap(var Action: String, var LogicalPartitions: Int, var GlobalProcessThreads: Int, var GlobalReaderThreads: Int, var TotalReaderThreads: Int, var TotalProcessThreads: Int, var NodeDistributionMap: ArrayBuffer[NodeDistributionMap])
 
-class Distribution {
+object Distribution {
   private val LOG = LogManager.getLogger(getClass);
 
-  def createDistribution(participantsNodes: ArrayBuffer[(String, Int, Int)], allPartitionUniqueRecordKeys: Array[(String, String)], logicalPartitions: Int, globalProcessingThreads: Int, globalReaderThreads: Int): (ArrayBuffer[NodeDistributionMap], String) = {
+  def createDistribution(clusterDistInfo: ClusterDistributionInfo, allPartitionUniqueRecordKeys: Array[(String, String)]): ClusterDistributionMap = {
+
+    var logicalPartitions: Int = clusterDistInfo.LogicalPartitions
+    var globalProcessingThreads: Int = clusterDistInfo.GlobalProcessThreads
+    var globalReaderThreads: Int = clusterDistInfo.GlobalReaderThreads
+
+    val participantsNodes = clusterDistInfo.NodesDist
 
     if (participantsNodes == null) throw new Exception("Participant Nodes is Null")
     if (allPartitionUniqueRecordKeys == null) throw new Exception("Partition Unique Record Keys is Null")
     if (logicalPartitions == 0) throw new Exception("The Logical Partitions given is 0")
     var nodesArray = ArrayBuffer[Node]()
+
     participantsNodes.foreach(n => {
-      if (n._1 == null || n._1.trim() == "") throw new Exception("Node Name should be provided")
-      if ((n._2 == null || n._2 == 0) && (globalProcessingThreads == null || globalProcessingThreads == 0)) throw new Exception("Global Processing Threads or Node Process Threads should be provided")
-      if ((n._3 == null || n._3 == 0) && (globalReaderThreads == null || globalReaderThreads == 0)) throw new Exception("Global Reader Threads or Node Reader Threads should be provided")
+      if (n.Nodeid == null || n.Nodeid.trim() == "") throw new Exception("Node Name should be provided")
+      if ((n.ProcessThreads == null || n.ProcessThreads == 0) && (globalProcessingThreads == null || globalProcessingThreads == 0)) throw new Exception("Global Processing Threads or Node Process Threads should be provided")
+      if ((n.ReaderThreads == null || n.ReaderThreads == 0) && (globalReaderThreads == null || globalReaderThreads == 0)) throw new Exception("Global Reader Threads or Node Reader Threads should be provided")
 
       var processThreads: Int = 0
       var readerThreads: Int = 0
 
-      if (n._2 == null || n._2 == 0) processThreads = globalProcessingThreads else processThreads = n._2
-      if (n._3 == null || n._3 == 0) readerThreads = globalReaderThreads else readerThreads = n._3
-      var node = new Node(n._1, processThreads, readerThreads)
+      if (n.ProcessThreads == null || n.ProcessThreads == 0) processThreads = globalProcessingThreads else processThreads = n.ProcessThreads
+      if (n.ReaderThreads == null || n.ReaderThreads == 0) readerThreads = globalReaderThreads else readerThreads = n.ReaderThreads
+      var node = new Node(n.Nodeid, processThreads, readerThreads)
       nodesArray += node
     })
 
@@ -41,9 +50,23 @@ class Distribution {
     var totalProcessingThreads = computeTotalProcessThreads(nodesArray)
 
     val nodedist = processDistribution(nodesArray, allPartitionUniqueRecordKeys, logicalPartitions, totalReaderThreads, totalProcessingThreads)
-    val distributeJson = createDistributionJson(allPartitionUniqueRecordKeys, nodedist, logicalPartitions, globalProcessingThreads, globalReaderThreads, totalProcessingThreads, totalReaderThreads)
 
-    (nodedist, distributeJson)
+    val clusterDistributionMap = new ClusterDistributionMap("distribute", logicalPartitions, globalProcessingThreads, globalReaderThreads, totalReaderThreads, totalProcessingThreads, nodedist)
+
+    /* val allPartsToValidate = scala.collection.mutable.Map[String, Set[String]]()
+    allPartitionUniqueRecordKeys.foreach(key => {
+      LOG.info(key._1)
+      if (!allPartsToValidate.contains(key._1))
+        allPartsToValidate(key._1) = Set(key._2)
+      else {
+        allPartsToValidate(key._1) = allPartsToValidate(key._1) + key._2
+      }
+    })
+    var adapterMaxPartitions = scala.collection.mutable.Map[String, Int]()
+    allPartsToValidate.foreach(p => { adapterMaxPartitions(p._1) = p._2.size })
+    val distributeJson = createDistributionJson(adapterMaxPartitions, clusterDistributionMap)
+*/
+    clusterDistributionMap
   }
 
   private def processDistribution(participantsNodes: ArrayBuffer[Node], allPartitionUniqueRecordKeys: Array[(String, String)], logicalPartitions: Int, totalReaderThreads: Int, totalProcessingThreads: Int): ArrayBuffer[NodeDistributionMap] = { //scala.collection.mutable.Map[String, (ArrayBuffer[(String, scala.collection.mutable.Map[String, ArrayBuffer[String]])], scala.collection.mutable.Map[String, (Int, Int)])] = {
@@ -277,27 +300,18 @@ class Distribution {
     PartsToThreads
   }
 
-  private def createDistributionJson(allPartitionUniqueRecordKeys: Array[(String, String)], distributionMap: ArrayBuffer[NodeDistributionMap], logicalPartitions: Int, globalProcessingThreads: Int, globalReaderThreads: Int, totalProcessingThreads: Int, totalReaderThreads: Int): String = {
+  def createDistributionJson(adapterMaxPartitions: scala.collection.mutable.Map[String, Int], clusterDistributionMap: ClusterDistributionMap): String = {
+    if (clusterDistributionMap == null) throw new Exception("The Cluster Distribution Map is null")
+
+    val distributionMap: ArrayBuffer[NodeDistributionMap] = clusterDistributionMap.NodeDistributionMap
     if (distributionMap == null) throw new Exception("The Node Distribution Map ArrayBuffer is null")
 
-    val allPartsToValidate = scala.collection.mutable.Map[String, Set[String]]()
-    allPartitionUniqueRecordKeys.foreach(key => {
-      LOG.info(key._1)
-      if (!allPartsToValidate.contains(key._1))
-        allPartsToValidate(key._1) = Set(key._2)
-      else {
-        allPartsToValidate(key._1) = allPartsToValidate(key._1) + key._2
-      }
-    })
-    var adapterMaxPartitions = scala.collection.mutable.Map[String, Int]()
-    allPartsToValidate.foreach(p => { adapterMaxPartitions(p._1) = p._2.size })
-
-    val json = ("action" -> "distribute") ~
-      ("LogicalPartitions" -> logicalPartitions) ~
-      ("GlobalProcessingThreads" -> globalProcessingThreads) ~
-      ("GlobalReaderThreads" -> globalReaderThreads) ~
-      ("TotalProcessThreads" -> totalProcessingThreads) ~
-      ("TotalReadThreads" -> totalReaderThreads) ~
+    val json = ("action" -> clusterDistributionMap.Action) ~
+      ("LogicalPartitions" -> clusterDistributionMap.LogicalPartitions) ~
+      ("GlobalProcessingThreads" -> clusterDistributionMap.GlobalProcessThreads) ~
+      ("GlobalReaderThreads" -> clusterDistributionMap.GlobalReaderThreads) ~
+      ("TotalProcessThreads" -> clusterDistributionMap.TotalProcessThreads) ~
+      ("TotalReadThreads" -> clusterDistributionMap.TotalReaderThreads) ~
       ("adaptermaxpartitions" -> adapterMaxPartitions.map(kv =>
         ("Adap" -> kv._1) ~
           ("MaxParts" -> kv._2))) ~

@@ -30,7 +30,7 @@ class MemoryDataCacheImp extends DataCache {
       cache.addListener(new EventCacheListener(listenCallback))
     }
     println("1====cacheManager.getMembers=======>" + cacheManager.getMembers)
-    println("2====cacheManager.getAddress===================>"+cacheManager.getAddress)
+    println("2====cacheManager.getAddress===================>" + cacheManager.getAddress)
   }
 
   override def shutdown(): Unit = {
@@ -104,6 +104,12 @@ class MemoryDataCacheImp extends DataCache {
       cache.remove(key)
     }
   }
+  override def remove(key: String): Unit = {
+    if (cache.containsKey(key)) {
+      println("key exixst in cache" + key)
+      cache.remove(key)
+    }
+  }
 
   override def del(containerName: String, timestamp: String): Unit = {}
 
@@ -115,6 +121,11 @@ class MemoryDataCacheImp extends DataCache {
     null
   }
 
+  override def beginTransaction(): Transaction = {
+    throw new NotImplementedError("beginTransaction is not yet implemented")
+    return null;
+  }
+  
   override def beginTx(): Transaction = {
     throw new NotImplementedError("beginTx is not yet implemented")
     return null;

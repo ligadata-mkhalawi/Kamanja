@@ -17,11 +17,7 @@
 
 package com.ligadata.KamanjaManager
 
-import java.util.concurrent.locks.ReentrantReadWriteLock
-
 import com.ligadata.KamanjaBase._
-
-import scala.actors.threadpool.ExecutorService
 
 // import com.ligadata.Utils.Utils
 // import java.util.Map
@@ -41,488 +37,24 @@ import com.ligadata.Exceptions.{KamanjaException, StackTrace, MessagePopulationE
 
 object LeanringEngine {
   // There are 3 types of error that we can create an ExceptionMessage for
-  //  val invalidMessage: String = "Invalid_message"
-  //  val invalidResult: String = "Invalid_result"
+//  val invalidMessage: String = "Invalid_message"
+//  val invalidResult: String = "Invalid_result"
   val modelExecutionException: String = "Model_Excecution_Exception"
 
   val engineComponent: String = "Kamanja_Manager"
 }
 
-case class KamanjaCacheQueueEntry(val exeQueue: ArrayBuffer[ReadyNode], var execPos: Int, val dagRuntime: DagRuntime, val txnCtxt: TransactionContext, val thisMsgEvent: KamanjaMessageEvent, val modelsForMessage: ArrayBuffer[KamanjaModelEvent], val msgProcessingStartTime: Int);
-
-object KamanjaCacheQueueEntry {
-  final def serialize(cacheEntry: KamanjaCacheQueueEntry): Array[Byte] = {
-    throw new NotImplementedError("KamanjaCacheQueueEntry.serialize is not yet implemented")
-  }
-
-  final def deserialize(buf: Array[Byte]): KamanjaCacheQueueEntry = {
-    throw new NotImplementedError("KamanjaCacheQueueEntry.deserialize is not yet implemented")
-  }
-}
-
-// case class CacheQueueElement[T](val key: T, val value: Array[Byte], var nextKey: T);
-// class KamanjaModelsCacheQueueElement(key: Long, value: Array[Byte], nextKey: Long) extends CacheQueueElement[Long](key, value, nextKey);
-
-// BUGBUG:: Do we need to get nodeIdModlsObj from KamanjaCacheQueueEntry?????
-class LeanringEngineRemoteExecution extends Runnable {
-  private var waitTimeForNoMdlsExecInMs = 100
-  private val LOG = LogManager.getLogger(getClass);
-  private var mdlsChangedCntr: Long = -1
-  private var nodeIdModlsObj = scala.collection.mutable.Map[Long, (MdlInfo, ModelInstance)]()
-
-  private def executeModels(): Unit = {
-    while (KamanjaConfiguration.shutdown == false && KamanjaManager.instance != null && KamanjaManager.instance.GetEnvCtxts.length > 0) {
-      val dqKamanjaCacheQueueEntry: KamanjaCacheQueueEntry = null
-      if (dqKamanjaCacheQueueEntry == null) {
-        // Sleep some time or until we get listener for this queue
-        try {
-          Thread.sleep(waitTimeForNoMdlsExecInMs)
-        } catch {
-          case e: InterruptedException => {
-            // Interrupted exception
-          }
-          case e: Throwable => {
-            LOG.error("Failed to sleep", e)
-          }
-        }
-      }
-
-      if (dqKamanjaCacheQueueEntry != null) {
-        val mdlChngCntr = KamanjaMetadata.GetModelsChangedCounter
-        if (mdlChngCntr != mdlsChangedCntr) {
-          val (newDag, tmpNodeIdModlsObj, tMdlsChangedCntr) = KamanjaMetadata.getExecutionDag
-          mdlsChangedCntr = tMdlsChangedCntr
-          val newNodeIdModlsObj = scala.collection.mutable.Map[Long, (MdlInfo, ModelInstance)]()
-          tmpNodeIdModlsObj.foreach(info => {
-            val oldMdlInfo = nodeIdModlsObj.getOrElse(info._1, null)
-            if (oldMdlInfo != null && info._2.mdl.getModelDef().UniqId == oldMdlInfo._1.mdl.getModelDef().UniqId) {
-              // If it is same version and same factory
-              newNodeIdModlsObj(info._1) = (info._2, oldMdlInfo._2)
-            } else {
-              newNodeIdModlsObj(info._1) = (info._2, null)
-            }
-          })
-          nodeIdModlsObj = newNodeIdModlsObj
-        }
-
-        val execNode = dqKamanjaCacheQueueEntry.exeQueue(dqKamanjaCacheQueueEntry.execPos)
-        dqKamanjaCacheQueueEntry.execPos += 1
-
-        val execMdl = nodeIdModlsObj.getOrElse(execNode.nodeId, null)
-        if (execMdl != null) {
-          if (LOG.isDebugEnabled)
-            LOG.debug("LearningEngine:Executing Model:%s,NodeId:%d, iesPos:%d".format(execMdl._1.mdl.getModelName(), execNode.nodeId, execNode.iesPos))
-          val curMd =
-            if (execMdl._1.mdl.isModelInstanceReusable()) {
-              if (execMdl._2 == null) {
-                // First time initialize this
-                val tInst = execMdl._1.mdl.createModelInstance()
-                tInst.init(dqKamanjaCacheQueueEntry.txnCtxt.origin.key)
-                nodeIdModlsObj(execNode.nodeId) = (execMdl._1, tInst)
-                tInst
-              } else {
-                execMdl._2
-              }
-            } else {
-              // Not reusable instance. So, create it every time
-              val tInst = execMdl._1.mdl.createModelInstance()
-              tInst.init(dqKamanjaCacheQueueEntry.txnCtxt.origin.key)
-              tInst
-            }
-
-          if (curMd != null) {
-            var modelEvent: KamanjaModelEvent = if (dqKamanjaCacheQueueEntry.thisMsgEvent != null) {
-              val tmpMdlEvent: KamanjaModelEvent = dqKamanjaCacheQueueEntry.txnCtxt.getNodeCtxt.getEnvCtxt.getContainerInstance("com.ligadata.KamanjaBase.KamanjaModelEvent").asInstanceOf[KamanjaModelEvent]
-              if (tmpMdlEvent == null) {
-                LOG.warn("Not able to get com.ligadata.KamanjaBase.KamanjaModelEvent")
-              }
-              tmpMdlEvent
-            } else {
-              val tmpMdlEvent: KamanjaModelEvent = null
-              tmpMdlEvent
-            }
-            if (modelEvent != null) {
-              modelEvent.isresultproduced = false
-              modelEvent.error = ""
-              modelEvent.producedmessages = Array[Long]()
-            }
-            val modelStartTime = System.nanoTime
-
-            try {
-              "msgProcessingStartTime"
-              val execMsgsSet: Array[ContainerOrConcept] = execMdl._1.inputs(execNode.iesPos).map(eid => {
-                if (LOG.isDebugEnabled)
-                  LOG.debug("MsgInfo: nodeId:" + eid.nodeId + ", edgeTypeId:" + eid.edgeTypeId)
-                val tmpElem = KamanjaMetadata.getMdMgr.ElementForElementId(eid.edgeTypeId)
-
-                val finalEntry =
-                  if (tmpElem != None) {
-                    val lst =
-                      if (eid.nodeId > 0) {
-                        val origin =
-                          if (eid.nodeId > 0) {
-                            val mdlObj = nodeIdModlsObj.getOrElse(eid.nodeId, null)
-                            if (mdlObj != null) {
-                              mdlObj._1.mdl.getModelName()
-                            } else {
-                              LOG.debug("Not found any node for eid.nodeId:" + eid.nodeId)
-                              ""
-                            }
-                          } else {
-                            LOG.debug("Origin nodeid is not valid")
-                            ""
-                          }
-                        LOG.debug("Input message:" + tmpElem.get.FullName)
-                        dqKamanjaCacheQueueEntry.txnCtxt.getContainersOrConcepts(origin, tmpElem.get.FullName)
-                      } else {
-                        LOG.debug("Input message:" + tmpElem.get.FullName)
-                        dqKamanjaCacheQueueEntry.txnCtxt.getContainersOrConcepts(tmpElem.get.FullName)
-                      }
-
-                    if (lst != null && lst.size > 0) {
-                      lst(0)._2
-                    } else {
-                      LOG.warn("Not found any message for Msg:" + tmpElem.get.FullName)
-                      null
-                    }
-                  } else {
-                    LOG.warn("Not found any message for EdgeTypeId:" + eid.edgeTypeId)
-                    null
-                  }
-                finalEntry
-              })
-
-              val outputDefault: Boolean = false;
-              val res = curMd.execute(dqKamanjaCacheQueueEntry.txnCtxt, execMsgsSet, execNode.iesPos, outputDefault)
-              if (modelEvent != null)
-                modelEvent.consumedmessages = execMsgsSet.map(msg => KamanjaMetadata.getMdMgr.ElementIdForSchemaId(msg.asInstanceOf[ContainerInterface].getSchemaId))
-              if (res != null && res.size > 0) {
-                if (modelEvent != null) {
-                  modelEvent.isresultproduced = true
-                  modelEvent.producedmessages = res.map(msg => KamanjaMetadata.getMdMgr.ElementIdForSchemaId(msg.asInstanceOf[ContainerInterface].getSchemaId))
-                }
-                dqKamanjaCacheQueueEntry.txnCtxt.addContainerOrConcepts(execMdl._1.mdl.getModelName(), res)
-                val newEges = res.map(msg => EdgeId(execMdl._1.nodeId, KamanjaMetadata.getMdMgr.ElementIdForSchemaId(msg.asInstanceOf[ContainerInterface].getSchemaId)))
-                val readyNodes = dqKamanjaCacheQueueEntry.dagRuntime.FireEdges(newEges)
-                dqKamanjaCacheQueueEntry.exeQueue ++= readyNodes
-
-                if (LOG.isDebugEnabled) {
-                  val inputMsgs = execMsgsSet.map(msg => msg.getFullTypeName).mkString(",")
-                  val outputMsgs = res.map(msg => msg.getFullTypeName).mkString(",")
-                  val inputEges = newEges.map(edge => "(NodeId:%d,edgeTypeId:%d)".format(edge.nodeId, edge.edgeTypeId)).mkString(",")
-                  val producedNodeIds = if (readyNodes != null) readyNodes.map(nd => "(NodeId:%d,iesPos:%d)".format(nd.nodeId, nd.iesPos)).mkString(",") else ""
-                  val msg = "LearningEngine:Executed Model:%s with NodeId:%d Using messages:%s, which produced %s (with Edges:%s). Adding those message into DAG produced:%s".format(execMdl._1.mdl.getModelName(), execNode.nodeId, inputMsgs, outputMsgs, inputEges, producedNodeIds)
-                  LOG.debug(msg)
-                }
-              } else {
-                if (LOG.isDebugEnabled) {
-                  val inputMsgs = execMsgsSet.map(msg => msg.getFullTypeName).mkString(",")
-                  val msg = "LearningEngine:Executed Model:%s with NodeId:%d Using messages:%s, which did not produce any result".format(execMdl._1.mdl.getModelName(), execNode.nodeId, inputMsgs)
-                  LOG.debug(msg)
-                }
-              }
-            } catch {
-              case e: Throwable => {
-                if (modelEvent != null) {
-                  modelEvent.error = StackTrace.ThrowableTraceString(e)
-                }
-                LOG.error("Failed to execute model:" + execMdl._1.mdl.getModelName(), e)
-              }
-            }
-
-            if (modelEvent != null) {
-              // Model finished executing, add the stats to the modeleventmsg
-              //var mdlDefs = KamanjaMetadata.getMdMgr.Models(md.mdl.getModelDef().FullName,true, false).getOrElse(null)
-              modelEvent.modelid = execNode.nodeId
-              modelEvent.eventepochtime = System.currentTimeMillis()
-              modelEvent.elapsedtimeinms = ((System.nanoTime - modelStartTime) / 1000000.0).toFloat
-              dqKamanjaCacheQueueEntry.modelsForMessage.append(modelEvent)
-            }
-          } else {
-            val errorTxt = "Failed to create model " + execMdl._1.mdl.getModelName()
-            LOG.error(errorTxt)
-            if (dqKamanjaCacheQueueEntry.thisMsgEvent != null) {
-              dqKamanjaCacheQueueEntry.thisMsgEvent.eventepochtime = System.currentTimeMillis()
-              dqKamanjaCacheQueueEntry.thisMsgEvent.error = "Failed to create model " + execMdl._1.mdl.getModelName()
-              dqKamanjaCacheQueueEntry.thisMsgEvent.elapsedtimeinms = ((System.nanoTime - dqKamanjaCacheQueueEntry.msgProcessingStartTime) / 1000000.0).toFloat
-              dqKamanjaCacheQueueEntry.thisMsgEvent.modelinfo = dqKamanjaCacheQueueEntry.modelsForMessage.toArray[KamanjaModelEvent]
-            }
-          }
-        }
-
-        if (dqKamanjaCacheQueueEntry.execPos >= dqKamanjaCacheQueueEntry.exeQueue.size) {
-          try {
-            CommitDataComponent.commitData(dqKamanjaCacheQueueEntry.txnCtxt)
-          } catch {
-            case e: Throwable => {
-              LOG.error("Failed to commit data for transactionId:" + dqKamanjaCacheQueueEntry.txnCtxt.getTransactionId(), e)
-            }
-          }
-        }
-      }
-    }
-  }
-
-  override def run(): Unit = {
-    executeModels
-  }
-}
-
-object CommitDataComponent {
-  private val LOG = LogManager.getLogger(getClass);
-  private var eventsCntr: Long = 0
-  private var lastTimeCommitOffsets: Long = System.currentTimeMillis
-  private val nullEventOrigin = EventOriginInfo(null, null)
-  private var lastEventOrigin = nullEventOrigin
-  private val execCtxt_reent_lock = new ReentrantReadWriteLock(true)
-
-  private def ReadLock(reent_lock: ReentrantReadWriteLock): Unit = {
-    if (reent_lock != null)
-      reent_lock.readLock().lock()
-  }
-
-  private def ReadUnlock(reent_lock: ReentrantReadWriteLock): Unit = {
-    if (reent_lock != null)
-      reent_lock.readLock().unlock()
-  }
-
-  private def WriteLock(reent_lock: ReentrantReadWriteLock): Unit = {
-    if (reent_lock != null)
-      reent_lock.writeLock().lock()
-  }
-
-  private def WriteUnlock(reent_lock: ReentrantReadWriteLock): Unit = {
-    if (reent_lock != null)
-      reent_lock.writeLock().unlock()
-  }
-
-  def commitData(txnCtxt: TransactionContext): Unit = {
-    try {
-      val (outputAdapters, storageAdapters, cntr) = KamanjaManager.instance.resolveAdapterBindins
-
-      outputAdapters.foreach(adap => {
-        try {
-          val sendContainers = ArrayBuffer[ContainerInterface]();
-          adap._2.foreach(bind => (bind, txnCtxt.getContainersOrConcepts(bind.messageName).foreach(orginAndmsg => {
-            sendContainers += orginAndmsg._2.asInstanceOf[ContainerInterface];
-          })))
-          adap._1.send(txnCtxt, sendContainers.toArray)
-        } catch {
-          case e: Exception => {
-            LOG.error("Failed to save data in output adapter:" + adap._1.getAdapterName, e)
-          }
-          case e: Throwable => {
-            LOG.error("Failed to save data in output adapter:" + adap._1.getAdapterName, e)
-          }
-        }
-      })
-
-      storageAdapters.foreach(adap => {
-        try {
-          val sendContainers = ArrayBuffer[ContainerInterface]();
-          adap._2.foreach(bind => (bind, txnCtxt.getContainersOrConcepts(bind.messageName).foreach(orginAndmsg => {
-            sendContainers += orginAndmsg._2.asInstanceOf[ContainerInterface];
-          })))
-          adap._1.putContainers(txnCtxt, sendContainers.toArray)
-        } catch {
-          case e: Exception => {
-            LOG.error("Failed to save data in storage adapter:" + adap._1.getAdapterName, e)
-          }
-          case e: Throwable => {
-            LOG.error("Failed to save data in storage adapter:" + adap._1.getAdapterName, e)
-          }
-        }
-      })
-
-      val allData = txnCtxt.getAllContainersOrConcepts()
-
-      val (msg2TenantId, cntr1) = KamanjaManager.instance.resolveMsg2TenantId
-
-      val forceCommitVal = txnCtxt.getValue("forcecommit")
-      val forceCommitFlag = forceCommitVal != null
-
-      val nodeContext = if (txnCtxt != null) txnCtxt.getNodeCtxt() else null
-
-      if (allData != null && nodeContext != null && nodeContext.getEnvCtxt() != null) {
-
-        if (LOG.isDebugEnabled) {
-          allData.foreach(containerAndData => {
-            val nm = if (containerAndData != null && containerAndData._1 != null) containerAndData._1.toLowerCase() else ""
-            var tenatId = if (containerAndData != null && containerAndData._2 != null && containerAndData._2.size > 0) msg2TenantId.getOrElse(containerAndData._2(0).container.getFullTypeName.toLowerCase(), "tenant1") else "tenant1"
-            val sz = if (containerAndData != null && containerAndData._2 != null) containerAndData._2.size else 0
-            val canPersist = if (containerAndData != null && containerAndData._2 != null && containerAndData._2.size > 0) containerAndData._2(0).container.asInstanceOf[ContainerInterface].CanPersist().toString else "false"
-            LOG.debug("Save Data Before Filter: Container:%s with TenatId %s has %d values. canPersist:%s".format(nm, tenatId, sz, canPersist))
-          })
-        }
-
-        // All containers data for Tenant
-        val validDataToCommit = scala.collection.mutable.Map[String, ArrayBuffer[(String, Array[ContainerInterface])]]()
-        allData.filter(containerAndData => (containerAndData != null && containerAndData._2 != null && containerAndData._2.size > 0 &&
-          containerAndData._2(0).container.isInstanceOf[ContainerInterface] && containerAndData._2(0).container.asInstanceOf[ContainerInterface].CanPersist())).foreach(containerAndData => {
-          val tenatId = if (containerAndData._2.size > 0) msg2TenantId.getOrElse(containerAndData._2(0).container.getFullTypeName.toLowerCase(), "") else ""
-          val cData = containerAndData._2.filter(cInfo => (cInfo != null && cInfo.container.isInstanceOf[ContainerInterface])).map(cInfo => cInfo.container.asInstanceOf[ContainerInterface])
-          if (cData.size > 0) {
-            val modData =
-              if (cData(0).hasPrimaryKey /* && cData(0).hasPartitionKey */ ) {
-                cData.map(d => {
-                  // Get RDD and replace the transactionId & rowNumber from old one
-                  val partKey = d.PartitionKeyData().toList
-                  val tmRange =
-                    if (d.hasTimePartitionInfo)
-                      com.ligadata.KvBase.TimeRange(d.getTimePartitionData, d.getTimePartitionData)
-                    else
-                      com.ligadata.KvBase.TimeRange(com.ligadata.KvBase.KvBaseDefalts.defaultTime, com.ligadata.KvBase.KvBaseDefalts.defaultTime)
-                  val tmpData = nodeContext.getEnvCtxt.getRDD(tenatId.toLowerCase(), containerAndData._1.toLowerCase(), partKey, tmRange, null)
-                  var oldData: ContainerInterface = null
-                  if (tmpData != null && tmpData.size > 0) {
-                    if (LOG.isTraceEnabled())
-                      LOG.trace("Got RDD for TxnId:%d, RowNumber:%d, PartitionKey:%s and PrimaryKey:%s.".format(d.getTransactionId, d.getRowNumber, d.PartitionKeyData().mkString(","), d.PrimaryKeyData().mkString(",")))
-                    val newPrimaryKey = d.getPrimaryKey
-                    var mIdx = 0
-
-                    while (oldData == null && newPrimaryKey.size > 0 && mIdx < tmpData.size) {
-                      val m = tmpData(mIdx)
-                      mIdx += 1
-                      val oldPrimaryKey = m.getPrimaryKey
-                      if (oldData == null && newPrimaryKey.size == oldPrimaryKey.size) {
-                        var idx = 0
-                        var cmp = 0
-                        while (cmp == 0 && idx < newPrimaryKey.size) {
-                          cmp = newPrimaryKey(idx).compareTo(oldPrimaryKey(idx))
-                          idx += 1
-                        }
-                        if (cmp == 0 && idx >= newPrimaryKey.size)
-                          oldData = m
-                      }
-                    }
-                  } else {
-                    if (LOG.isTraceEnabled())
-                      LOG.trace("Did not get RDD for TxnId:%d, RowNumber:%d, PartitionKey:%s and PrimaryKey:%s.".format(d.getTransactionId, d.getRowNumber, d.PartitionKeyData().mkString(","), d.PrimaryKeyData().mkString(",")))
-                  }
-                  if (oldData != null) {
-                    d.setRowNumber(oldData.getRowNumber)
-                    d.setTransactionId(oldData.getTransactionId)
-                    if (LOG.isTraceEnabled())
-                      LOG.trace("TxnId:%d, RowNumber:%d, PartitionKey:%s and PrimaryKey:%s found.".format(d.getTransactionId, d.getRowNumber, d.PartitionKeyData().mkString(","), d.PrimaryKeyData().mkString(",")))
-                  }
-                  d
-                })
-              } else {
-                cData
-              }
-            val arrContainersData = validDataToCommit.getOrElse(tenatId.toLowerCase(), ArrayBuffer[(String, Array[ContainerInterface])]())
-            arrContainersData += ((containerAndData._1.toLowerCase(), modData))
-            validDataToCommit(tenatId.toLowerCase()) = arrContainersData
-          }
-        })
-
-        validDataToCommit.foreach(kv => {
-          if (LOG.isDebugEnabled) {
-            LOG.debug("Save Data AfterFilter: Tenant:%s has %d values.".format(kv._1, kv._2.size))
-          }
-          try {
-            nodeContext.getEnvCtxt().commitData(kv._1, txnCtxt, kv._2.toArray, forceCommitFlag)
-          } catch {
-            case e: Exception => {
-              LOG.error("Failed to commit data into primary datastore for tenantid:" + kv._1, e)
-            }
-            case e: Throwable => {
-              LOG.error("Failed to commit data into primary datastore for tenantid:" + kv._1, e)
-            }
-          }
-        })
-      }
-
-      if (txnCtxt != null && nodeContext != null && nodeContext.getEnvCtxt() != null) {
-        if (txnCtxt.origin.key != null && txnCtxt.origin.value != null && txnCtxt.origin.key.trim.size > 0 && txnCtxt.origin.value.trim.size > 0) {
-          eventsCntr += 1
-          if (forceCommitFlag ||
-            (KamanjaConfiguration.commitOffsetsMsgCnt > 0 && eventsCntr >= KamanjaConfiguration.commitOffsetsMsgCnt) ||
-            (KamanjaConfiguration.commitOffsetsTimeInterval > 0 && ((lastTimeCommitOffsets + KamanjaConfiguration.commitOffsetsTimeInterval) <= System.currentTimeMillis)) ||
-            nodeContext.getEnvCtxt().EnableEachTransactionCommit) {
-            var prevTimeCommitOffsets = lastTimeCommitOffsets
-            var prevEventsCntr = eventsCntr
-            var prevEventOrigin = lastEventOrigin
-
-            lastEventOrigin = nullEventOrigin
-            eventsCntr = 0
-            lastTimeCommitOffsets = System.currentTimeMillis
-
-            try {
-              if (!nodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0 && ((prevTimeCommitOffsets + KamanjaConfiguration.commitOffsetsTimeInterval) <= System.currentTimeMillis)) {
-                // ReadLock
-                WriteLock(execCtxt_reent_lock)
-                try {
-                  lastEventOrigin = nullEventOrigin
-                  lastTimeCommitOffsets = System.currentTimeMillis
-                  eventsCntr = 0
-                  nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(txnCtxt.origin.key, txnCtxt.origin.value)
-                  prevTimeCommitOffsets = lastTimeCommitOffsets
-                  prevEventsCntr = eventsCntr
-                  prevEventOrigin = lastEventOrigin
-                } catch {
-                  case e: Throwable => {
-                    lastEventOrigin = prevEventOrigin
-                    lastTimeCommitOffsets = prevTimeCommitOffsets
-                    eventsCntr = prevEventsCntr
-                  }
-                } finally {
-                  WriteUnlock(execCtxt_reent_lock)
-                }
-              } else {
-                lastEventOrigin = nullEventOrigin
-                eventsCntr = 0
-                lastTimeCommitOffsets = System.currentTimeMillis
-                nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(txnCtxt.origin.key, txnCtxt.origin.value)
-              }
-            } catch {
-              case e: Exception => {
-                lastEventOrigin = prevEventOrigin
-                lastTimeCommitOffsets = prevTimeCommitOffsets
-                eventsCntr = prevEventsCntr
-                LOG.error("Failed to setAdapterUniqueKeyValue", e)
-              }
-              case e: Throwable => {
-                lastEventOrigin = prevEventOrigin
-                lastTimeCommitOffsets = prevTimeCommitOffsets
-                eventsCntr = prevEventsCntr
-                LOG.error("Failed to setAdapterUniqueKeyValue", e)
-              }
-            }
-          } else {
-            lastEventOrigin = txnCtxt.origin
-          }
-        }
-      }
-      else {
-        if (LOG.isDebugEnabled) {
-          val key = if (txnCtxt != null && txnCtxt.origin != null && txnCtxt.origin.key != null) txnCtxt.origin.key else ""
-          val value = if (txnCtxt != null && txnCtxt.origin != null && txnCtxt.origin.value != null) txnCtxt.origin.value else ""
-          LOG.debug(s"Not Saving AdapterUniqKvData key:${key}, value:${value}. txnCtxt: ${txnCtxt}, nodeContext: ${nodeContext}")
-        }
-      }
-    } catch {
-      case e: Throwable => throw e
-    }
-  }
-}
-
-
 class LearningEngine {
-  private val LOG = LogManager.getLogger(getClass);
-  private var cntr: Long = 0
-  private var mdlsChangedCntr: Long = -1
-  private var nodeIdModlsObj = scala.collection.mutable.Map[Long, (MdlInfo, ModelInstance)]()
+  val LOG = LogManager.getLogger(getClass);
+  var cntr: Long = 0
+  var mdlsChangedCntr: Long = -1
+  var nodeIdModlsObj = scala.collection.mutable.Map[Long, (MdlInfo, ModelInstance)]()
   // Key is Nodeid (Model ElementId), Value is ModelInfo & Previously Initialized model instance in case of Reuse instances
   // ModelName, ModelInfo, IsModelInstanceReusable, Global ModelInstance if the model is IsModelInstanceReusable == true. The last boolean is to check whether we tested message type or not (thi is to check Reusable flag)
   // var models = Array[(String, MdlInfo, Boolean, ModelInstance, Boolean)]()
   // var validateMsgsForMdls = scala.collection.mutable.Set[String]() // Message Names for creating models inst val results = RunAllModels(transId, iances
 
-  private var dagRuntime = new DagRuntime()
-
-  private var remoteExecPool: ExecutorService = scala.actors.threadpool.Executors.newFixedThreadPool(1)
-
-  remoteExecPool.execute(new LeanringEngineRemoteExecution)
+  var dagRuntime = new DagRuntime()
 
   def execute(txnCtxt: TransactionContext): Unit = {
 
@@ -574,72 +106,145 @@ class LearningEngine {
 
       exeQueue ++= readyNodes
 
-      if (exeQueue.size > execPos) {
-        // Push the following into Cache as one object for TransactionId as Key
+      while (execPos < exeQueue.size) {
         val execNode = exeQueue(execPos)
-
+        execPos += 1
 
         val execMdl = nodeIdModlsObj.getOrElse(execNode.nodeId, null)
         if (execMdl != null) {
           if (LOG.isDebugEnabled)
             LOG.debug("LearningEngine:Executing Model:%s,NodeId:%d, iesPos:%d".format(execMdl._1.mdl.getModelName(), execNode.nodeId, execNode.iesPos))
-
-          val allPartitionKeysWithDelim = ArrayBuffer[String]()
-
-          execMdl._1.inputs(execNode.iesPos).foreach(eid => {
-            val tmpElem = KamanjaMetadata.getMdMgr.ElementForElementId(eid.edgeTypeId)
-            var partKeyStr = ""
-
-            if (tmpElem != None) {
-              val lst =
-                if (eid.nodeId > 0) {
-                  val origin =
-                    if (eid.nodeId > 0) {
-                      val mdlObj = nodeIdModlsObj.getOrElse(eid.nodeId, null)
-                      if (mdlObj != null) {
-                        mdlObj._1.mdl.getModelName()
-                      } else {
-                        LOG.debug("Not found any node for eid.nodeId:" + eid.nodeId)
-                        ""
-                      }
-                    } else {
-                      LOG.debug("Origin nodeid is not valid")
-                      ""
-                    }
-                  LOG.debug("Input message:" + tmpElem.get.FullName)
-                  txnCtxt.getContainersOrConcepts(origin, tmpElem.get.FullName)
-                } else {
-                  LOG.debug("Input message:" + tmpElem.get.FullName)
-                  txnCtxt.getContainersOrConcepts(tmpElem.get.FullName)
-                }
-
-              if (lst != null && lst.size > 0) {
-                partKeyStr = lst(0)._2.asInstanceOf[MessageContainerBase].getPartitionKey.mkString(",")
-                lst(0)._2
+          val curMd =
+            if (execMdl._1.mdl.isModelInstanceReusable()) {
+              if (execMdl._2 == null) { // First time initialize this
+                val tInst = execMdl._1.mdl.createModelInstance()
+                tInst.init(txnCtxt.origin.key)
+                nodeIdModlsObj(execNode.nodeId) = (execMdl._1, tInst)
+                tInst
               } else {
-                LOG.warn("Not found any message for Msg:" + tmpElem.get.FullName)
-                null
+                execMdl._2
+              }
+            } else { // Not reusable instance. So, create it every time
+              val tInst = execMdl._1.mdl.createModelInstance()
+              tInst.init(txnCtxt.origin.key)
+              tInst
+            }
+
+          if (curMd != null) {
+            var modelEvent: KamanjaModelEvent = if (thisMsgEvent != null) {
+              val tmpMdlEvent: KamanjaModelEvent = txnCtxt.getNodeCtxt.getEnvCtxt.getContainerInstance("com.ligadata.KamanjaBase.KamanjaModelEvent").asInstanceOf[KamanjaModelEvent]
+              if (tmpMdlEvent == null) {
+                LOG.warn("Not able to get com.ligadata.KamanjaBase.KamanjaModelEvent")
+              }
+              tmpMdlEvent
+            } else {
+              val tmpMdlEvent: KamanjaModelEvent = null
+              tmpMdlEvent
+            }
+            if (modelEvent != null) {
+              modelEvent.isresultproduced = false
+              modelEvent.error = ""
+              modelEvent.producedmessages = Array[Long]()
+            }
+            val modelStartTime = System.nanoTime
+
+            try {
+              val execMsgsSet: Array[ContainerOrConcept] = execMdl._1.inputs(execNode.iesPos).map(eid => {
+                if (LOG.isDebugEnabled)
+                  LOG.debug("MsgInfo: nodeId:" + eid.nodeId + ", edgeTypeId:" + eid.edgeTypeId)
+                val tmpElem = KamanjaMetadata.getMdMgr.ElementForElementId(eid.edgeTypeId)
+
+                val finalEntry =
+                  if (tmpElem != None) {
+                    val lst =
+                      if (eid.nodeId > 0) {
+                        val origin =
+                          if (eid.nodeId > 0) {
+                            val mdlObj = nodeIdModlsObj.getOrElse(eid.nodeId, null)
+                            if (mdlObj != null) {
+                              mdlObj._1.mdl.getModelName()
+                            } else {
+                              LOG.debug("Not found any node for eid.nodeId:" + eid.nodeId)
+                              ""
+                            }
+                          } else {
+                            LOG.debug("Origin nodeid is not valid")
+                            ""
+                          }
+                        LOG.debug("Input message:" + tmpElem.get.FullName)
+                        txnCtxt.getContainersOrConcepts(origin, tmpElem.get.FullName)
+                      } else {
+                        LOG.debug("Input message:" + tmpElem.get.FullName)
+                        txnCtxt.getContainersOrConcepts(tmpElem.get.FullName)
+                      }
+
+                    if (lst != null && lst.size > 0) {
+                      lst(0)._2
+                    } else {
+                      LOG.warn("Not found any message for Msg:" + tmpElem.get.FullName)
+                      null
+                    }
+                  } else {
+                    LOG.warn("Not found any message for EdgeTypeId:" + eid.edgeTypeId)
+                    null
+                  }
+                finalEntry
+              })
+
+              val res = curMd.execute(txnCtxt, execMsgsSet, execNode.iesPos, outputDefault)
+              if (modelEvent != null)
+                modelEvent.consumedmessages = execMsgsSet.map(msg => KamanjaMetadata.getMdMgr.ElementIdForSchemaId(msg.asInstanceOf[ContainerInterface].getSchemaId) )
+              if (res != null && res.size > 0) {
+                if (modelEvent != null) {
+                  modelEvent.isresultproduced = true
+                  modelEvent.producedmessages = res.map(msg => KamanjaMetadata.getMdMgr.ElementIdForSchemaId(msg.asInstanceOf[ContainerInterface].getSchemaId))
+                }
+                txnCtxt.addContainerOrConcepts(execMdl._1.mdl.getModelName(), res)
+                val newEges = res.map(msg => EdgeId(execMdl._1.nodeId, KamanjaMetadata.getMdMgr.ElementIdForSchemaId(msg.asInstanceOf[ContainerInterface].getSchemaId)))
+                val readyNodes = dagRuntime.FireEdges(newEges)
+                exeQueue ++= readyNodes
+
+                if (LOG.isDebugEnabled) {
+                  val inputMsgs = execMsgsSet.map(msg => msg.getFullTypeName).mkString(",")
+                  val outputMsgs = res.map(msg => msg.getFullTypeName).mkString(",")
+                  val inputEges = newEges.map(edge => "(NodeId:%d,edgeTypeId:%d)".format(edge.nodeId, edge.edgeTypeId)).mkString(",")
+                  val producedNodeIds = if (readyNodes != null) readyNodes.map(nd => "(NodeId:%d,iesPos:%d)".format(nd.nodeId, nd.iesPos)).mkString(",") else ""
+                  val msg = "LearningEngine:Executed Model:%s with NodeId:%d Using messages:%s, which produced %s (with Edges:%s). Adding those message into DAG produced:%s".format(execMdl._1.mdl.getModelName(), execNode.nodeId, inputMsgs, outputMsgs, inputEges, producedNodeIds)
+                  LOG.debug(msg)
+                }
+              } else {
+                if (LOG.isDebugEnabled) {
+                  val inputMsgs = execMsgsSet.map(msg => msg.getFullTypeName).mkString(",")
+                  val msg = "LearningEngine:Executed Model:%s with NodeId:%d Using messages:%s, which did not produce any result".format(execMdl._1.mdl.getModelName(), execNode.nodeId, inputMsgs)
+                  LOG.debug(msg)
+                }
+              }
+            } catch {
+              case e: Throwable => {
+                if (modelEvent != null) {
+                  modelEvent.error = StackTrace.ThrowableTraceString(e)
+                }
+                LOG.error("Failed to execute model:" + execMdl._1.mdl.getModelName(), e)
               }
             }
-            allPartitionKeysWithDelim += partKeyStr
-          })
 
-          // Decide the Queue bucket number  .here after collecting partition keys
-          val qPartKeyStr = allPartitionKeysWithDelim.mkString("-")
-          val qBucketNumber = Math.abs(qPartKeyStr.hashCode % KamanjaConfiguration.totalQueueCount)
-
-          //BUGBUG:: Send the current msg to qBucketNumber
-
-        }
-
-
-      } else {
-        // No models found to execute. Send output
-        try {
-          CommitDataComponent.commitData(txnCtxt)
-        } catch {
-          case e: Throwable => {
-            LOG.error("Failed to commit data for transactionId:" + txnCtxt.getTransactionId(), e)
+            if (modelEvent != null) {
+              // Model finished executing, add the stats to the modeleventmsg
+              //var mdlDefs = KamanjaMetadata.getMdMgr.Models(md.mdl.getModelDef().FullName,true, false).getOrElse(null)
+              modelEvent.modelid = execNode.nodeId
+              modelEvent.eventepochtime = System.currentTimeMillis()
+              modelEvent.elapsedtimeinms = ((System.nanoTime - modelStartTime) / 1000000.0).toFloat
+              modelsForMessage.append(modelEvent)
+            }
+          } else {
+            val errorTxt = "Failed to create model " + execMdl._1.mdl.getModelName()
+            LOG.error(errorTxt)
+            if (thisMsgEvent != null) {
+              thisMsgEvent.eventepochtime = System.currentTimeMillis()
+              thisMsgEvent.error = "Failed to create model " + execMdl._1.mdl.getModelName()
+              thisMsgEvent.elapsedtimeinms = ((System.nanoTime - msgProcessingStartTime) / 1000000.0).toFloat
+              thisMsgEvent.modelinfo = modelsForMessage.toArray[KamanjaModelEvent]
+            }
           }
         }
       }

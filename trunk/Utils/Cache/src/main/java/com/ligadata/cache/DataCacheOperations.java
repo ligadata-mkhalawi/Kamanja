@@ -28,4 +28,8 @@ public interface DataCacheOperations {
     public void del(String containerName, String timestamp, String key);
 
     public Transaction beginTransaction();
+    public Transaction beginTx();
+    public void endTx(Transaction tx);
+    public void commitTx(Transaction tx);    
+    public void rollbackTx(Transaction tx);
 }
