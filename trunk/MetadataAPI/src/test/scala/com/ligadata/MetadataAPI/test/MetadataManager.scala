@@ -265,7 +265,7 @@ class MetadataManager extends KamanjaTestLogger {
           case None =>
             throw new MetadataManagerException("[Metadata Manager]: Adding a model requires the model type to be specified")
           case Some(_) =>
-            result = parseApiResult(MetadataAPIImpl.UpdateModel(modelType.get, mdString, Some(userId), tenantId, modelName, modelVersion, modelVersionBeingUpdated, msgProduced, None))
+            result = parseApiResult(MetadataAPIImpl.UpdateModel(modelType.get, mdString, Some(userId), tenantId, modelName, modelVersion, modelVersionBeingUpdated, msgProduced, None, None))
         }
       }
       case "function" => result = parseApiResult(MetadataAPIImpl.UpdateFunctions(mdString, "JSON", Some(userId)))
