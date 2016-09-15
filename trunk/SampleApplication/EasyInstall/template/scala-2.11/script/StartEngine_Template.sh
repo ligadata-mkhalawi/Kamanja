@@ -3,7 +3,6 @@ KAMANJA_HOME={InstallDirectory}
 DEBUG=false
 for var in "$@"
 do
-    echo "$var"
     if [ $var == "debug" ]; then
          DEBUG=true
     elif [[ $var == *.properties ]]; then

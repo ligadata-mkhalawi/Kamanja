@@ -81,10 +81,10 @@ if [ "${array[0] }" = "edit" ]; then
   exit 0
 fi
 
-grep -i "jvm" MetadataAPIConfig.properties >> /dev/null
+grep -i "jvm" $KAMANJA_HOME/config/MetadataAPIConfig.properties >> /dev/null
 ISJVM=$?
 if [ $ISJVM = 0 ]; then
-  JVMOPTIONS=`grep -i "jvm" MetadataAPIConfig.properties | cut -d"=" -f2`
+  JVMOPTIONS=`grep -i "jvm" $KAMANJA_HOME/config/MetadataAPIConfig.properties | cut -d"=" -f2`
 fi
 
 if [ "$INPUT" = "start webservice" ]; then

@@ -4,7 +4,6 @@ KAMANJA_HOME={InstallDirectory}
 KAMANJA_HOME={InstallDirectory}
 for var in "$@"
 do
-    echo "$var"
     if [ $var == "debug" ]; then
          DEBUG=$var
     elif [[ $var == *.properties ]]; then
