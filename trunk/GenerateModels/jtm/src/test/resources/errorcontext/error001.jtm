@@ -1,0 +1,56 @@
+{
+  "header": {
+    "namespace": "com.ligadata.jtm.test.error001",
+    "version": "0.0.1",
+    "language" : "scala",
+    "minVersion" : "2.11"
+  },
+
+  "imports": {
+    "packages": [ "com.ligadata.Utils._" ],
+
+    "code": [
+      "def ValidateNumber(value: String): Boolean = {",
+      "  true",
+      "}"
+    ]
+
+  },
+
+  "aliases": {
+    "messages": {
+      "m1": "com.ligadata.kamanja.test.arrin1",
+      "o1": "com.ligadata.kamanja.test.arrout1",
+      "oo": "com.ligadata.gen.RejectedDataMsg"
+    }
+  },
+
+  "transformations": {
+    "test1": {
+      "dependsOn": [ ["m1"] ],
+      "computes": {
+        "elements" : {"type": "Array[String]", "val": "${m1.mydata}"}
+      },
+      "outputs": {
+        "o1": {
+          "where": "!(${m1.ext_type_id} != \"j10\")",
+          "computes": {
+            "t1": { "type": "String", "val": "\"s:\" + $elements(1).toString()" },
+            "t2": { "type": "String", "val": "\"arryout\"" }
+          },
+          "mapping": {
+            "out_ext_type_id": "t2",
+            "mydata": "Array($elements(0) t1, $elements(2), $elements(3))"
+          }
+        },
+        "oo": {
+          "where": "context.CurrentErrors()==0",
+          "mapping":{
+            "origMsg": "$m1", /* will this work? */
+            "reasons": "context.Errors(true)"
+          }
+        }
+      }
+    }
+  }
+}

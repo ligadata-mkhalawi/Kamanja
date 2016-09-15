@@ -27,35 +27,30 @@ kamanja update container input(optional) TENANTID <tenantId> Properties/Properti
 kamanja get container input(optional) TENANTID(optional) <tenantId>
 kamanja get all containers TENANTID(optional) <tenantId>
 kamanja remove container input(optional)
-IV. Function operations
-kamanja add function input(optional)
-kamanja get function input(optional)
-kamanja remove function input(optional)
-kamanja update function input(optional)
-kamanja dump all functions
-V. Congurations operations
+
+IV. Congurations operations
 kamanja upload cluster config input(optional)
 kamanja upload compile config input(optional)
 kamanja dump all cfg objects
 kamanja remove engine config
-VI. Jar operations
+V. Jar operations
 kamanja upload jar
-VII. Cluster, metadata and adapter operations
+VI. Cluster, metadata and adapter operations
 kamanja dump metadata
 kamanja dump all nodes
 kamanja dump all clusters
 kamanja dump all cluster cfgs
 kamanja dump all adapters
-VIII. Kamanja engine operations
+VII. Kamanja engine operations
 kamanja start
 kamanja start -v (for verbose)
-IX. Topic operations
+VIII. Topic operations
 kamanja watch status queue
 kamanja push data
 kamanja create queues
-X. Web service
+IX. Web service
 kamanja start webservice
-XI. Adapter Message Bindings
+X. Adapter Message Bindings
 kamanja add adaptermessagebinding FROMFILE input
 kamanja add adaptermessagebinding FROMSTRING input
 kamanja remove adaptermessagebinding KEY '<adapter name>,<namespace.msgname>,<namespace.serializername>'
@@ -65,5 +60,5 @@ kamanja list adaptermessagebindings MESSAGEFILTER <namespace.msgname>
 kamanja list adaptermessagebindings SERIALIZERFILTER <namespace.serializername>
 kamanja get typebyschemaid SCHEMAID <schemaid>
 kamanja get typebyelementid ELEMENTID <elementid>
-XII. General operations
+XI. General operations
 kamanja --version

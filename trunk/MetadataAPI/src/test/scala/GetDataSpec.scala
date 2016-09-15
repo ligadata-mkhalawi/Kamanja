@@ -289,8 +289,8 @@ class GetDataSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter wit
               MdMgr.GetMdMgr.AddUserProperty(up)
             }
             case "tenantinfo" => {
-                val up = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[TenantInfo]
-                MdMgr.GetMdMgr.AddTenantInfo(up)
+                val ti = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[TenantInfo]
+                MdMgr.GetMdMgr.AddTenantInfo(ti)
             }
             case "adaptermessagebinding" => {
                 val binding = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[AdapterMessageBinding]
