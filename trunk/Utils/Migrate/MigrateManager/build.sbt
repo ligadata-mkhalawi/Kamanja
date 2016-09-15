@@ -80,3 +80,8 @@ coverageMinimum := 80
 coverageFailOnMinimum := false
 
 coverageExcludedPackages := "com.ligadata.Migrate.*"
+
+assemblyMergeStrategy in assembly := {
+    case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+    case x => MergeStrategy.first
+}
