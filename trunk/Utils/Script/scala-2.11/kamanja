@@ -76,14 +76,20 @@ if [ "${array[0] }" = "edit" ]; then
   fi
   done < ~/MetadataAPIConfig.properties
   echo "${array[2]}=${array[3]}" >> ~/MetadataAPIConfig.temp
-  mv ~/MetadataAPIConfig.temp ~/MetadataAPIConfig.properties
+  mv ~/MetadataAPIConfig.temp ~/MetadataAPIConfig.prope rties
   echo "MetadataAPIConfig.properties update complete!"
   exit 0
 fi
 
+grep -i "jvm" MetadataAPIConfig.properties >> /dev/null
+ISJVM=$?
+if [ $ISJVM = 0 ]; then
+  JVMOPTIONS=`grep -i "jvm" MetadataAPIConfig.properties | cut -d"=" -f2`
+fi
+
 if [ "$INPUT" = "start webservice" ]; then
   echo "Starting web service . . . ."
-  java -Dlog4j.configurationFile=file:$KAMANJA_HOME/config/log4j2.xml -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-1.6.0.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-1.6.0.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-1.6.0.jar:$KAMANJA_HOME/lib/system/metadataapiservice_2.11-1.6.0.jar com.ligadata.metadataapiservice.APIService
+  java $JVMOPTIONS -Dlog4j.configurationFile=file:$KAMANJA_HOME/config/log4j2.xml -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-1.6.0.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-1.6.0.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-1.6.0.jar:$KAMANJA_HOME/lib/system/metadataapiservice_2.11-1.6.0.jar com.ligadata.metadataapiservice.APIService
 
 elif [ "$IS_START" == "start" ] && [ "$IS_VERBOSE" == true ]; then
    $KAMANJA_HOME/bin/StartEngine.sh "$3"
@@ -165,9 +171,9 @@ else
     if [ -n "$attachDebugger" ]; then
         ipport="8998"
 
-        java -Xdebug -Xrunjdwp:transport=dt_socket,address="$ipport",server=y -Dlog4j.configurationFile=file:$KAMANJA_HOME/config/log4j2.xml -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-1.6.0.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-1.6.0.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-1.6.0.jar:$KAMANJA_HOME/lib/system/metadataapi_2.11-1.6.0.jar com.ligadata.MetadataAPI.StartMetadataAPI "$@"
+        java $JVMOPTIONS -Xdebug -Xrunjdwp:transport=dt_socket,address="$ipport",server=y -Dlog4j.configurationFile=file:$KAMANJA_HOME/config/log4j2.xml -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-1.6.0.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-1.6.0.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-1.6.0.jar:$KAMANJA_HOME/lib/system/metadataapi_2.11-1.6.0.jar com.ligadata.MetadataAPI.StartMetadataAPI "$@"
     else
-        java -Dlog4j.configurationFile=file:$KAMANJA_HOME/config/log4j2.xml -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-1.6.0.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-1.6.0.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-1.6.0.jar:$KAMANJA_HOME/lib/system/metadataapi_2.11-1.6.0.jar com.ligadata.MetadataAPI.StartMetadataAPI "$@"
+        java $JVMOPTIONS -Dlog4j.configurationFile=file:$KAMANJA_HOME/config/log4j2.xml -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-1.6.0.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-1.6.0.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-1.6.0.jar:$KAMANJA_HOME/lib/system/metadataapi_2.11-1.6.0.jar com.ligadata.MetadataAPI.StartMetadataAPI "$@"
 
     fi
 fi
