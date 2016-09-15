@@ -1,8 +1,36 @@
 #!/bin/sh
 KAMANJA_HOME={InstallDirectory}
-PROP_FILE=$1
-# Start the engine with hashdb backed metadata configuration.  The zookeeper and your queue software should be running
-# Start the engine with hashdb backed metadata configuration.  The zookeeper and your queue software should be running
+
+KAMANJA_HOME={InstallDirectory}
+for var in "$@"
+do
+    echo "$var"
+    if [ $var == "debug" ]; then
+         DEBUG=$var
+    elif [[ $var == *.properties ]]; then
+        PROP_FILE=$var
+    elif [[ $var == *.properties ]]; then
+        PROP_FILE=$var
+    else
+        JVMOPTIONS=$var
+    fi
+done
+
+if [ -z $PROP_FILE ]; then
+   PROP_FILE={InstallDirectory}/config/Engine1Config.properties
+    echo "Using the default properties file"
+fi
+
+
+if [ -z $JVMOPTIONS ]; then
+    echo "Using default JVM options Engine1Config.properties"
+    JVMOPTIONS=`grep -i "JVM" $PROP_FILE | cut -d"=" -f2`
+fi
+
+echo "PROP_FILE: $PROP_FILE"
+echo "DEBUG: $DEBUG"
+echo "JVMOPTIONS: $JVMOPTIONS"
+
 ipport="8998"
 
 #-Djava.security.auth.login.config=/tmp/kerberos/jaas-client.conf
@@ -18,8 +46,8 @@ fi
 
 currentKamanjaVersion=1.6.0
 
-if [ "$1" != "debug" ]; then
-    java  $JAAS_CONFIG_OPT $KERBEROS_CONFIG_OPT -Dlog4j.configurationFile=file:{InstallDirectory}/config/log4j2.xml -cp {InstallDirectory}/lib/system/ExtDependencyLibs2_2.10-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/ExtDependencyLibs_2.10-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/KamanjaInternalDeps_2.10-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/kamanjamanager_2.10-${currentKamanjaVersion}.jar com.ligadata.KamanjaManager.KamanjaManager --config $PROP_FILE
+if [ "$DEBUG" != "debug" ]; then
+    java $JVMOPTIONS  $JAAS_CONFIG_OPT $KERBEROS_CONFIG_OPT -Dlog4j.configurationFile=file:{InstallDirectory}/config/log4j2.xml -cp {InstallDirectory}/lib/system/ExtDependencyLibs2_2.10-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/ExtDependencyLibs_2.10-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/KamanjaInternalDeps_2.10-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/kamanjamanager_2.10-${currentKamanjaVersion}.jar com.ligadata.KamanjaManager.KamanjaManager --config $PROP_FILE
 else
-	java  $JAAS_CONFIG_OPT $KERBEROS_CONFIG_OPT -Xdebug -Xrunjdwp:transport=dt_socket,address="$ipport",server=y -Dlog4j.configurationFile=file:{InstallDirectory}/config/log4j2.xml -cp {InstallDirectory}/lib/system/ExtDependencyLibs2_2.10-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/ExtDependencyLibs_2.10-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/KamanjaInternalDeps_2.10-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/kamanjamanager_2.10-${currentKamanjaVersion}.jar com.ligadata.KamanjaManager.KamanjaManager --config $PROP_FILE
+	java $JVMOPTIONS  $JAAS_CONFIG_OPT $KERBEROS_CONFIG_OPT -Xdebug -Xrunjdwp:transport=dt_socket,address="$ipport",server=y -Dlog4j.configurationFile=file:{InstallDirectory}/config/log4j2.xml -cp {InstallDirectory}/lib/system/ExtDependencyLibs2_2.10-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/ExtDependencyLibs_2.10-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/KamanjaInternalDeps_2.10-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/kamanjamanager_2.10-${currentKamanjaVersion}.jar com.ligadata.KamanjaManager.KamanjaManager --config $PROP_FILE
 fi
