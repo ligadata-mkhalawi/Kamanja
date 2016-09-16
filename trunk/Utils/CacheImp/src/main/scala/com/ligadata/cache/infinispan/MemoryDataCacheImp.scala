@@ -50,6 +50,10 @@ class MemoryDataCacheImp extends DataCache {
     }
   }
 
+  override def remove(key: String): Unit = {
+    throw new NotImplementedError("remove is not yet implemented")
+  }
+
   override def isKeyInCache(key: String): Boolean = (cache != null && cache.containsKey(key))
 
   override def get(keys: Array[String]): java.util.Map[String, AnyRef] = {

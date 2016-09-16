@@ -57,6 +57,10 @@ class MemoryDataTreeCacheImp extends DataCache {
     }
   }
 
+  override def remove(key: String): Unit = {
+    throw new NotImplementedError("remove is not yet implemented")
+  }
+
   override def getFromRoot(rootNode: String, key: String): java.util.Map[String, AnyRef] = {
     val map = new java.util.HashMap[String, AnyRef]
     val fqn: Fqn = Fqn.fromString(rootNode)
