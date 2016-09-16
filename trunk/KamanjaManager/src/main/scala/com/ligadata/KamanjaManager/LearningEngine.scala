@@ -149,7 +149,7 @@ class LeanringEngineRemoteExecution extends Runnable {
             val modelStartTime = System.nanoTime
 
             try {
-              "msgProcessingStartTime"
+              // "msgProcessingStartTime"
               val execMsgsSet: Array[ContainerOrConcept] = execMdl._1.inputs(execNode.iesPos).map(eid => {
                 if (LOG.isDebugEnabled)
                   LOG.debug("MsgInfo: nodeId:" + eid.nodeId + ", edgeTypeId:" + eid.edgeTypeId)

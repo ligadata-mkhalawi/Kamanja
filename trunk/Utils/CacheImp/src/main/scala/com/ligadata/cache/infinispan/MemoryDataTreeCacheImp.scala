@@ -193,11 +193,12 @@ class MemoryDataTreeCacheImp extends DataCache {
     }
   }
 
-  override def beginTx(): Transaction = {
-    throw new NotImplementedError("beginTx is not yet implemented")
+  override def beginTransaction(): Transaction = {
+    throw new NotImplementedError("beginTransaction is not yet implemented")
     return null;
   }
 
+/*
   override def endTx(tx: Transaction): Unit = {
     throw new NotImplementedError("endTx is not yet implemented")
   }
@@ -209,5 +210,6 @@ class MemoryDataTreeCacheImp extends DataCache {
   override def rollbackTx(tx: Transaction): Unit = {
     throw new NotImplementedError("rollbackTx is not yet implemented")
   }
+*/
 }
 
