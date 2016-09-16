@@ -23,4 +23,8 @@ public interface DataCacheOperations {
     public void del(String containerName) throws Exception, Throwable;
     public void del(String containerName, String timestamp) throws Exception, Throwable;
     public void del(String containerName, String timestamp, String key) throws Exception, Throwable;
+    public Transaction beginTx();
+    public void endTx(Transaction tx);
+    public void commitTx(Transaction tx);    
+    public void rollbackTx(Transaction tx);
 }

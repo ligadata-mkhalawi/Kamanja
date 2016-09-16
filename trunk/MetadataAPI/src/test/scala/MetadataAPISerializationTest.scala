@@ -782,10 +782,9 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
     assert(expected.ClusterId === actual.ClusterId)
     assert(expected.Power === actual.Power)
     assert(expected.Description === actual.Description)
-    assert(expected.ReadCores === actual.ReadCores)
-    assert(expected.ProcessingCores === actual.ProcessingCores)
-    assert(expected.LogicalPartitions === actual.LogicalPartitions)
-
+    assert(expected.ReaderThreads === actual.ReaderThreads)
+    assert(expected.ProcessThreads === actual.ProcessThreads)
+    
   }
 
   it should "return serialized ClusterInfo" in {
@@ -800,8 +799,8 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
     assert(expected.ClusterId === actual.ClusterId)
     assert(expected.Description === actual.Description)
     assert(expected.Privileges === actual.Privileges)
-    assert(expected.ReadCores === actual.ReadCores)
-    assert(expected.ProcessingCores === actual.ProcessingCores)
+    assert(expected.GlobalReaderThreads === actual.GlobalReaderThreads)
+    assert(expected.GlobalProcessThreads === actual.GlobalProcessThreads)
     assert(expected.LogicalPartitions === actual.LogicalPartitions)
   }
 
@@ -1419,10 +1418,9 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
     roles(0) = "role1"
     roles(1) = "role2"
     val description = "description"
-    val readCores = 1
-    val processingCores = 1
-    val logicalPartitions = 8192
-
+    val readerThreads = 1
+    val processThreads = 1
+    
     val nodeInfo = MdMgr.GetMdMgr.MakeNode(
       nodeId,
       nodePort,
@@ -1435,10 +1433,10 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
       power,
       roles,
       description,
-      readCores,
-      processingCores,
-      logicalPartitions)
-    nodeInfo
+      readerThreads,
+      processThreads)
+    
+      nodeInfo
   }
 
   private def getClusterInfo: ClusterInfo = {
@@ -1446,16 +1444,16 @@ class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
     val clusterId = "1"
     val description = "description"
     val privilges = "privilges"
-    val readCores = 1
-    val processingCores = 1
+    val globalreaderThreads = 1
+    val globalprocessThreads = 1
     val logicalPartitions = 8192
 
     val clusterInfo = MdMgr.GetMdMgr.MakeCluster(
       clusterId,
       description,
       privilges,
-      readCores,
-      processingCores,
+      globalreaderThreads,
+      globalprocessThreads,
       logicalPartitions)
     clusterInfo
   }

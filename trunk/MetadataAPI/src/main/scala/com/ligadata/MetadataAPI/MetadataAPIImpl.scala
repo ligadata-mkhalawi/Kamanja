@@ -3722,9 +3722,9 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     jarPaths: List[String], scala_home: String,
     java_home: String, classpath: String,
     clusterId: String, power: Int,
-    roles: Array[String], description: String, readCores: Int, processingCores: Int, logicalPartitions: Int): String = {
+    roles: Array[String], description: String, readerThreads: Int, processThreads: Int): String = {
     ConfigUtils.AddNode(nodeId, nodePort, nodeIpAddr, jarPaths, scala_home,
-        java_home, classpath, clusterId, power, roles, description, readCores, processingCores, logicalPartitions)
+        java_home, classpath, clusterId, power, roles, description, readerThreads, processThreads)
   }
 
     /**
@@ -3747,10 +3747,10 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     jarPaths: List[String], scala_home: String,
     java_home: String, classpath: String,
     clusterId: String, power: Int,
-    roles: Array[String], description: String, readCores: Int, processingCores: Int, logicalPartitions: Int): String = {
+    roles: Array[String], description: String, readerThreads: Int, processThreads: Int): String = {
     ConfigUtils.AddNode(nodeId, nodePort, nodeIpAddr, jarPaths, scala_home,
       java_home, classpath,
-      clusterId, power, roles, description, readCores, processingCores, logicalPartitions)
+      clusterId, power, roles, description, readerThreads, processThreads)
   }
 
     /**
@@ -3833,8 +3833,8 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
      * @param privileges
      * @return
      */
-  def AddCluster(clusterId: String, description: String, privileges: String, readCores: Int, processingCores: Int, logicalPartitions: Int): String = {
-    ConfigUtils.AddCluster(clusterId,description,privileges, readCores, processingCores, logicalPartitions)
+  def AddCluster(clusterId: String, description: String, privileges: String, globalReaderThreads: Int, globalProcessThreads: Int, logicalPartitions: Int): String = {
+    ConfigUtils.AddCluster(clusterId,description,privileges, globalReaderThreads, globalProcessThreads, logicalPartitions)
   }
 
     /**
@@ -3845,8 +3845,8 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
      * @param privileges
      * @return
      */
-  def UpdateCluster(clusterId: String, description: String, privileges: String, readCores: Int, processingCores: Int, logicalPartitions: Int): String = {
-    ConfigUtils.AddCluster(clusterId, description, privileges, readCores, processingCores, logicalPartitions)
+  def UpdateCluster(clusterId: String, description: String, privileges: String, globalReaderThreads: Int, globalProcessThreads: Int, logicalPartitions: Int): String = {
+    ConfigUtils.AddCluster(clusterId, description, privileges, globalReaderThreads, globalProcessThreads, logicalPartitions)
   }
 
     /**

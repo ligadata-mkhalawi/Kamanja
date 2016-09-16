@@ -1,184 +1,272 @@
 package com.ligadata.Distribution
 
 import scala.collection.mutable.ArrayBuffer
-import scala.util.control.Breaks._
 import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.Json
 import org.json4s.jackson.JsonMethods._
+import org.apache.logging.log4j.{ LogManager, Logger }
+import com.ligadata.KamanjaManager.NodeDistInfo
+import com.ligadata.KamanjaManager.ClusterDistributionInfo
 
-case class Node(var Name: String, var Adapter: AdapterMap)
-case class DistributionMap(Node: String, Adaps: List[AdapterMap])
-case class AdapterMap(var Name: String, var ProcessThreads: Int, var ReadThreads: Int, var LogicalPartitions: Int, var PhysicalThreads: ArrayBuffer[PhysicalPartitions], var LogicalThreads: ArrayBuffer[LogicalPartitions], var limitReached: Boolean, var ReaderThreadsStrList: scala.collection.mutable.Map[String, ArrayBuffer[String]])
-case class PhysicalPartitions(var ThreadId: String, ReadPartitions: Array[String])
-case class LogicalPartitions(var ThreadId: String, var LowerRange: Int, var UpperRange: Int)
-case class Distribute(var LogicalPartitions: Int, var GlobalProcessThreadsPerNode: Int, var GlobalReadThreadsPerNode: Int, var TotalProcessThreads: Int, var TotalReadThreads: Int)
+case class Node(var Name: String, var ProcessThreads: Int, var ReaderThreads: Int)
+case class NodeDistributionMap(Node: String, PhysicalPartitions: ArrayBuffer[PhysicalPartitionsDist], LogicalPartitionsDist: ArrayBuffer[LogicalPartitionsDist])
+case class PhysicalPartitionsDist(var ThreadId: String, AdapterPartitions: scala.collection.mutable.Map[String, ArrayBuffer[String]])
+case class LogicalPartitionsDist(var ThreadId: String, var LowerRange: Int, var UpperRange: Int)
+case class AdapterDist(var Name: String, var ReaderPatitions: ArrayBuffer[String])
+case class ClusterDistributionMap(var Action: String, var LogicalPartitions: Int, var GlobalProcessThreads: Int, var GlobalReaderThreads: Int, var TotalReaderThreads: Int, var TotalProcessThreads: Int, var NodeDistributionMap: ArrayBuffer[NodeDistributionMap])
 
-class Distribution {
+object Distribution {
+  private val LOG = LogManager.getLogger(getClass);
 
-  private def AdapterMapDistribution(nodes: Array[String], adapters: Array[AdapterMap], adapterMaxPartitions: scala.collection.mutable.Map[String, Int]): scala.collection.mutable.Map[String, AdapterMap] = {
-    var distibutionMap = scala.collection.mutable.Map[String, AdapterMap]()
-    var adapterList = List[AdapterMap]()
-    val totalPartitions = computeMaxPhysicalPartitions(adapterMaxPartitions)
-    //println("1 totalPartitions " + totalPartitions)
-    val totalProcessingThreads = TotalProcessingThreads(adapters, nodes.size)
-    //println("2 totalProcessingThreads " + totalProcessingThreads)
-    var adapinfo = scala.collection.mutable.Map[String, AdapterMap]()
-    for (i <- 0 until adapters.length) {
-      var amap: scala.collection.mutable.Map[String, AdapterMap] = ComputePhysicalPartitions(nodes, adapters(i), totalPartitions)
+  def createDistribution(clusterDistInfo: ClusterDistributionInfo, allPartitionUniqueRecordKeys: Array[(String, String)]): ClusterDistributionMap = {
 
-      amap.foreach(f => {
-        var readThreadMap = scala.collection.mutable.Map[String, ArrayBuffer[String]]()
-        if (readThreadMap != null) readThreadMap.clear()
-        for (i <- 0 until f._2.PhysicalThreads.length) {
-          var readThrdBuf = ArrayBuffer[String]()
-          val pt = f._2.PhysicalThreads(i).ReadPartitions
-          for (j <- 0 until pt.length) {
-            var str = "{\"Version\":1,\"Type\":\"Kafka\",\"Name\":\"%s\",\"TopicName\":\"%s\",\"PartitionId\":%s}".format(f._2.Name, f._2.Name, pt(j))
-            readThrdBuf += str
-          }
-          readThreadMap(f._2.PhysicalThreads(i).ThreadId) = readThrdBuf
-        }
-        f._2.ReaderThreadsStrList = readThreadMap
+    var logicalPartitions: Int = clusterDistInfo.LogicalPartitions
+    var globalProcessingThreads: Int = clusterDistInfo.GlobalProcessThreads
+    var globalReaderThreads: Int = clusterDistInfo.GlobalReaderThreads
+
+    val participantsNodes = clusterDistInfo.NodesDist
+
+    if (participantsNodes == null) throw new Exception("Participant Nodes is Null")
+    if (allPartitionUniqueRecordKeys == null) throw new Exception("Partition Unique Record Keys is Null")
+    if (logicalPartitions == 0) throw new Exception("The Logical Partitions given is 0")
+    var nodesArray = ArrayBuffer[Node]()
+
+    participantsNodes.foreach(n => {
+      if (n.Nodeid == null || n.Nodeid.trim() == "") throw new Exception("Node Name should be provided")
+      if ((n.ProcessThreads == null || n.ProcessThreads == 0) && (globalProcessingThreads == null || globalProcessingThreads == 0)) throw new Exception("Global Processing Threads or Node Process Threads should be provided")
+      if ((n.ReaderThreads == null || n.ReaderThreads == 0) && (globalReaderThreads == null || globalReaderThreads == 0)) throw new Exception("Global Reader Threads or Node Reader Threads should be provided")
+
+      var processThreads: Int = 0
+      var readerThreads: Int = 0
+
+      if (n.ProcessThreads == null || n.ProcessThreads == 0) processThreads = globalProcessingThreads else processThreads = n.ProcessThreads
+      if (n.ReaderThreads == null || n.ReaderThreads == 0) readerThreads = globalReaderThreads else readerThreads = n.ReaderThreads
+      var node = new Node(n.Nodeid, processThreads, readerThreads)
+      nodesArray += node
+    })
+
+    val totalReaderThreads = computeTotalReaderThreads(nodesArray)
+    var totalProcessingThreads = computeTotalProcessThreads(nodesArray)
+
+    val nodedist = processDistribution(nodesArray, allPartitionUniqueRecordKeys, logicalPartitions, totalReaderThreads, totalProcessingThreads)
+
+    val clusterDistributionMap = new ClusterDistributionMap("distribute", logicalPartitions, globalProcessingThreads, globalReaderThreads, totalReaderThreads, totalProcessingThreads, nodedist)
+
+    /* val allPartsToValidate = scala.collection.mutable.Map[String, Set[String]]()
+    allPartitionUniqueRecordKeys.foreach(key => {
+      LOG.info(key._1)
+      if (!allPartsToValidate.contains(key._1))
+        allPartsToValidate(key._1) = Set(key._2)
+      else {
+        allPartsToValidate(key._1) = allPartsToValidate(key._1) + key._2
+      }
+    })
+    var adapterMaxPartitions = scala.collection.mutable.Map[String, Int]()
+    allPartsToValidate.foreach(p => { adapterMaxPartitions(p._1) = p._2.size })
+    val distributeJson = createDistributionJson(adapterMaxPartitions, clusterDistributionMap)
+*/
+    clusterDistributionMap
+  }
+
+  private def processDistribution(participantsNodes: ArrayBuffer[Node], allPartitionUniqueRecordKeys: Array[(String, String)], logicalPartitions: Int, totalReaderThreads: Int, totalProcessingThreads: Int): ArrayBuffer[NodeDistributionMap] = { //scala.collection.mutable.Map[String, (ArrayBuffer[(String, scala.collection.mutable.Map[String, ArrayBuffer[String]])], scala.collection.mutable.Map[String, (Int, Int)])] = {
+
+    LOG.info("totalReaderThreads" + totalReaderThreads)
+
+    val nodePPartsDist = ComputePhysicalPartitions(allPartitionUniqueRecordKeys, participantsNodes, totalReaderThreads)
+    nodePPartsDist.foreach(n => { LOG.info(n._1 + " " + n._2) })
+
+    val nodeLogicalPartDist = ComputeLogicalPartitions(participantsNodes, logicalPartitions, totalProcessingThreads)
+
+    LOG.info(nodeLogicalPartDist)
+
+    val nodeDistMap = NodePhysicalLogicalDist(nodeLogicalPartDist, nodePPartsDist)
+    LOG.info(nodeDistMap)
+    return nodeDistMap
+  }
+
+  private def NodePhysicalLogicalDist(nodeLogicalPartDist: scala.collection.mutable.Map[String, scala.collection.mutable.Map[String, (Int, Int)]], nodePPartsDist: scala.collection.mutable.Map[String, ArrayBuffer[(String, scala.collection.mutable.Map[String, ArrayBuffer[String]])]]): ArrayBuffer[NodeDistributionMap] = { //scala.collection.mutable.Map[String, (ArrayBuffer[(String, scala.collection.mutable.Map[String, ArrayBuffer[String]])], scala.collection.mutable.Map[String, (Int, Int)])] = {
+
+    var nodeDist = ArrayBuffer[NodeDistributionMap]()
+    var nodeDistMap = scala.collection.mutable.Map[String, (ArrayBuffer[(String, scala.collection.mutable.Map[String, ArrayBuffer[String]])], scala.collection.mutable.Map[String, (Int, Int)])]()
+    nodeLogicalPartDist.foreach(node => {
+      nodeDistMap(node._1) = (nodePPartsDist(node._1), node._2)
+    })
+
+    nodeDistMap.foreach(nDist => {
+      var ppartDist = ArrayBuffer[PhysicalPartitionsDist]()
+
+      nDist._2._1.foreach(physicalParts => {
+        var pp = new PhysicalPartitionsDist(physicalParts._1, physicalParts._2)
+        ppartDist += pp
       })
-      //println("amap1 " + amap)
+      var lpartDist = ArrayBuffer[LogicalPartitionsDist]()
 
-      adapinfo = ComputeLogicalPartitionRanges(totalProcessingThreads, adapters(i).LogicalPartitions, nodes, adapters(i), amap)
+      nDist._2._2.foreach(logicalParts => {
+        var lp = new LogicalPartitionsDist(logicalParts._1, logicalParts._2._1, logicalParts._2._2)
+        lpartDist += lp
+      })
 
-      /* println("adapterInfo  " + adapinfo.size)
-      adapinfo.foreach(f => {
-         for (i <- 0 until f._2.PhysicalThreads.length) {
-         val pt = f._2.PhysicalThreads(i).ReadPartitions
-          for (j <- 0 until pt.length)
-            print(" " + pt(j))
-          println()
-        }
-        println("===LP====")
-        for (j <- 0 until f._2.LogicalThreads.length) {
-          println("  " + f._2.LogicalThreads(j).ThreadId + " " + f._2.LogicalThreads(j).LowerRange + " " + f._2.LogicalThreads(j).UpperRange)
-        }
-      })*/
+      var nd = new NodeDistributionMap(nDist._1, ppartDist, lpartDist)
+      nodeDist += nd
 
-    }
-    adapinfo
+    })
+
+    nodeDist
+
   }
 
-  private def TotalProcessingThreads(adapters: Array[AdapterMap], nodeSize: Int): Int = {
-    var totalProcessingThreads: Int = 0
-    if (adapters == null) throw new Exception("Nodes is null");
-    for (i <- 0 until adapters.length) {
-      totalProcessingThreads = totalProcessingThreads + adapters(i).ProcessThreads
+  private def ComputePhysicalPartitions(allPartitionUniqueRecordKeys: Array[(String, String)], participantsNodes: ArrayBuffer[Node], totalReaderThreads: Int): scala.collection.mutable.Map[String, ArrayBuffer[(String, scala.collection.mutable.Map[String, ArrayBuffer[String]])]] = {
+    var distributionMap = scala.collection.mutable.Map[String, scala.collection.mutable.Map[String, ArrayBuffer[String]]]()
+    var nodePPartsDist = scala.collection.mutable.Map[String, ArrayBuffer[(String, scala.collection.mutable.Map[String, ArrayBuffer[String]])]]()
+    var tmpDistMap = ArrayBuffer[(String, scala.collection.mutable.Map[String, ArrayBuffer[String]])]()
+    for (i <- 0 until totalReaderThreads) {
+      tmpDistMap += ((i.toString(), scala.collection.mutable.Map[String, ArrayBuffer[String]]()))
     }
-    return totalProcessingThreads * nodeSize;
+
+    val totalParticipents: Int = totalReaderThreads
+    if (allPartitionUniqueRecordKeys != null && allPartitionUniqueRecordKeys.size > 0) {
+      //  LOG.debug("allPartitionUniqueRecordKeys: %d".format(allPartitionUniqueRecordKeys.size))
+      var cntr: Int = 0
+      allPartitionUniqueRecordKeys.foreach(k => {
+        val af = tmpDistMap(cntr % totalParticipents)._2.getOrElse(k._1, null)
+        if (af == null) {
+          val af1 = new ArrayBuffer[String]
+          af1 += (k._2)
+          tmpDistMap(cntr % totalParticipents)._2(k._1) = af1
+        } else {
+          af += (k._2)
+        }
+        cntr += 1
+      })
+    }
+
+    LOG.info(tmpDistMap.toList)
+    tmpDistMap.foreach(tup => {
+      distributionMap(tup._1) = tup._2
+    })
+    val nodeThreadMap = NodeThreadDistribution(participantsNodes, totalReaderThreads)
+    nodePPartsDist = NodePhysicalPartsMap(nodeThreadMap, distributionMap)
+    nodePPartsDist
   }
 
-  private def ComputeLogicalPartitionRanges(totalProcessingThreads: Int, logicalPartitions: Int, nodes: Array[String], adapterMap: AdapterMap, logicalparts: scala.collection.mutable.Map[String, AdapterMap]): scala.collection.mutable.Map[String, AdapterMap] = {
-
-    if (totalProcessingThreads.equals(null) || totalProcessingThreads == 0 || logicalPartitions.equals(null) || logicalPartitions == 0) throw new Exception("Check either totalProcessingthreads or logical patitions")
-
-    val logicalPartRange = logicalPartitions / totalProcessingThreads
-    //println("logicalPartRange  " + logicalPartRange)
-    val extraLogicalParts: Int = logicalPartitions - (logicalPartRange * totalProcessingThreads)
-    //println("extraLogicalParts  " + extraLogicalParts)
-    var extra: Int = extraLogicalParts
-    var j = 0
-    var logicalthreads: ArrayBuffer[LogicalPartitions] = ArrayBuffer[LogicalPartitions]()
+  private def NodeThreadDistribution(participantsNodes: ArrayBuffer[Node], totalReaderThreads: Int): ArrayBuffer[(String, ArrayBuffer[String])] = {
+    var nodeThreadMap = ArrayBuffer[(String, ArrayBuffer[String])]()
     var limitreachedcount: Int = 0
-    var lowerlimit: Int = 0
-    var upperlimit: Int = 0
 
-    for (t <- 0 until totalProcessingThreads) {
-      if (t == 0)
-        lowerlimit = 0
-      else lowerlimit = upperlimit + 1
-
-      if (extra == 0) {
-        upperlimit = lowerlimit + logicalPartRange - 1
-      } else if (extra > 0) {
-
-        upperlimit = lowerlimit + logicalPartRange
-        extra = extra - 1
-      }
-
-      //println("lowLimit:" + lowerlimit + " upperLimit:" + upperlimit)
-      val lthread = new LogicalPartitions(t.toString(), lowerlimit, upperlimit)
-      logicalthreads += lthread
-    }
-    //println("logicalthreads " + logicalthreads.size)
-    //println("logicalthreads" + logicalthreads.toList)
-    var indexcount: Array[Int] = Array.fill[Int](nodes.size)(0) //Array[Int](nodes.size)
-    //println("size" + indexcount.length)
-    for (t <- 0 until logicalthreads.size) {
-      //println("thread value: " + t)
-      breakable {
-        var nodeNum: Int = (t + nodes.size) % nodes.size + limitreachedcount
-        if (nodeNum >= nodes.size)
-          nodeNum = nodeNum % nodes.size
-        //println("nodeNum: " + nodeNum)
-
-        for (n <- 0 until nodes.size) {
-          //println("node value: " + n)
-          if (nodeNum == n) {
-            if (logicalparts(nodes(n)).LogicalThreads.size == null) logicalparts(nodes(n)).LogicalThreads = ArrayBuffer[LogicalPartitions]()
-            if (logicalparts(nodes(n)).limitReached == false) {
-              //println("Node" + n + "  " + logicalthreads(t).ThreadId + "  " + logicalthreads(t).LowerRange + " " + logicalthreads(t).UpperRange + "   " + indexcount(n) + "   " + logicalparts(nodes(n)).LogicalThreads.size)
-
-              if (indexcount(n) >= logicalparts(nodes(n)).LogicalThreads.size) { //if (indexcount(n) >= nodes(n).LogicalThreads.size) {
-                logicalparts(nodes(n)).LogicalThreads = logicalparts(nodes(n)).LogicalThreads :+ logicalthreads(t)
-
-                if (logicalparts(nodes(n)).LogicalThreads.size == logicalparts(nodes(n)).ProcessThreads)
-                  logicalparts(nodes(n)).limitReached = true
-                indexcount(n) = indexcount(n) + 1
-                break;
-              } else break;
-
-            } else {
-              if (n + 1 < nodes.size) {
-                var it = n + 1
-                if (logicalparts(nodes(it)).LogicalThreads.size == null) logicalparts(nodes(n)).LogicalThreads = ArrayBuffer[LogicalPartitions]()
-                do {
-                  if (it > nodes.size) it = it - nodes.size
-                  if (logicalparts(nodes(it)).limitReached == true) { it = it + 1; limitreachedcount = limitreachedcount + 1; }
-
-                } while (logicalparts(nodes(it)).limitReached == false)
-
-                if ((logicalparts(nodes(it)).limitReached == false)) {
-                  //println("*Node" + it + "  " + logicalthreads(t).ThreadId + "  " + logicalthreads(t).LowerRange + " " + logicalthreads(t).UpperRange + "   " + indexcount(it) + "   " + logicalparts(nodes(it)).LogicalThreads.size)
-                  logicalparts(nodes(it)).LogicalThreads = logicalparts(nodes(it)).LogicalThreads :+ logicalthreads(t)
-                  indexcount(it) = indexcount(it) + 1
-                  limitreachedcount = limitreachedcount + 1
-                  if (logicalparts(nodes(it)).LogicalThreads.size == logicalparts(nodes(it)).ProcessThreads)
-                    logicalparts(nodes(it)).limitReached = true
-                  break
-                }
-              } else {
-                val it = n + 1 - nodes.size
-                if (logicalparts(nodes(it)).LogicalThreads.size == null) logicalparts(nodes(n)).LogicalThreads = ArrayBuffer[LogicalPartitions]()
-
-                //println("^Node" + it + "  " + logicalthreads(t).ThreadId + "  " + logicalthreads(t).LowerRange + " " + logicalthreads(t).UpperRange + "   " + indexcount(it) + "   " + logicalparts(nodes(it)).LogicalThreads.size)
-                logicalparts(nodes(it)).LogicalThreads = logicalparts(nodes(it)).LogicalThreads :+ logicalthreads(t)
-                limitreachedcount = 1
-                indexcount(it) = indexcount(it) + 1
-                if (logicalparts(nodes(it)).LogicalThreads.size == logicalparts(nodes(it)).ProcessThreads)
-                  logicalparts(nodes(it)).limitReached = true
-                break
-              }
-            }
-          }
-        }
-      }
+    for (i <- 0 until participantsNodes.size) {
+      val value = (participantsNodes(i).Name, ArrayBuffer[String]())
+      nodeThreadMap += value
     }
 
-    logicalparts
+    nodeThreadMap.foreach(f => LOG.info(f._1))
+
+    for (t <- 0 until totalReaderThreads) {
+      var nodeNum: Int = (t + limitreachedcount) % participantsNodes.size
+      while (participantsNodes(nodeNum).ReaderThreads == nodeThreadMap(nodeNum)._2.size) {
+        // if (participantsNodes(nodeNum)._3 == nodeThreadMap(nodeNum)._2.size)
+        limitreachedcount = limitreachedcount + 1
+        nodeNum = nodeNum + 1
+        if (nodeNum >= participantsNodes.size) nodeNum = nodeNum - participantsNodes.size
+      }
+      var abuf = nodeThreadMap(nodeNum)._2
+      abuf += t.toString
+      nodeThreadMap(nodeNum) = (nodeThreadMap(nodeNum)._1, abuf)
+    }
+    nodeThreadMap.foreach(f => { LOG.info(f._1 + "  " + f._2) })
+    nodeThreadMap
   }
 
-  private def computeTotalReadThreads(nodes: Array[String], adapterMap: AdapterMap): Int = {
-    var totalReadThreads: Int = 0
-    //  for (n <- 0 until nodes.size) {
-    totalReadThreads = totalReadThreads + adapterMap.ReadThreads
+  private def NodePhysicalPartsMap(nodeThreadMap: ArrayBuffer[(String, ArrayBuffer[String])], tmpDistMap: scala.collection.mutable.Map[String, scala.collection.mutable.Map[String, ArrayBuffer[String]]]): scala.collection.mutable.Map[String, ArrayBuffer[(String, scala.collection.mutable.Map[String, ArrayBuffer[String]])]] = {
+    var nodePPartsDist = scala.collection.mutable.Map[String, ArrayBuffer[(String, scala.collection.mutable.Map[String, ArrayBuffer[String]])]]()
 
-    // }
-    return totalReadThreads * nodes.size
+    nodeThreadMap.foreach(node => {
+      val nodemap = (node._1, ArrayBuffer[(String, scala.collection.mutable.Map[String, ArrayBuffer[String]])]())
+      nodePPartsDist += nodemap
+    })
+
+    nodeThreadMap.foreach(node => {
+      var tmp = ArrayBuffer[(String, scala.collection.mutable.Map[String, ArrayBuffer[String]])]()
+      node._2.foreach { t =>
+        {
+          val tmap = (t, tmpDistMap.getOrElse(t, null))
+          tmp += tmap
+        }
+        nodePPartsDist(node._1) = tmp
+      }
+    })
+
+    nodePPartsDist
+  }
+
+  private def ComputeLogicalPartitions(participantsNodes: ArrayBuffer[Node], logicalPartitions: Int, totalProcessingThreads: Int): scala.collection.mutable.Map[String, scala.collection.mutable.Map[String, (Int, Int)]] = {
+    val logicalthreads = ThreadLogicalPartsDist(totalProcessingThreads, logicalPartitions)
+    logicalthreads.foreach(f => LOG.info(f._1 + " " + f._2._1 + " " + f._2._2))
+
+    val nodeThreadMap = NodeLogicalThreadDistribution(participantsNodes, totalProcessingThreads)
+    nodeThreadMap.foreach(f => { LOG.info(f._1 + "  " + f._2) })
+    val nodeLogicalPartDist = NodeLogicalPartsMap(nodeThreadMap, logicalthreads)
+    nodeLogicalPartDist
+  }
+
+  private def NodeLogicalPartsMap(nodeThreadMap: ArrayBuffer[(String, ArrayBuffer[String])], logicalthreads: scala.collection.mutable.Map[String, (Int, Int)]): scala.collection.mutable.Map[String, scala.collection.mutable.Map[String, (Int, Int)]] = {
+    var nodeLogicalPartMap = scala.collection.mutable.Map[String, scala.collection.mutable.Map[String, (Int, Int)]]()
+    nodeThreadMap.foreach(n => {
+      val nmap = (n._1, scala.collection.mutable.Map[String, (Int, Int)]())
+      nodeLogicalPartMap += nmap
+    })
+    nodeThreadMap.foreach(node => {
+      var tmp = scala.collection.mutable.Map[String, (Int, Int)]()
+      node._2.foreach { thread =>
+        {
+          val tmap = logicalthreads.getOrElse(thread, null)
+          tmp(thread) = tmap
+        }
+      }
+      nodeLogicalPartMap(node._1) = tmp
+    })
+    nodeLogicalPartMap
+
+  }
+
+  private def NodeLogicalThreadDistribution(participantsNodes: ArrayBuffer[Node], totalReaderThreads: Int): ArrayBuffer[(String, ArrayBuffer[String])] = {
+    var nodeThreadMap = ArrayBuffer[(String, ArrayBuffer[String])]()
+    var limitreachedcount: Int = 0
+
+    for (i <- 0 until participantsNodes.size) {
+      val value = (participantsNodes(i).Name, ArrayBuffer[String]())
+      nodeThreadMap += value
+    }
+
+    nodeThreadMap.foreach(f => LOG.info(f._1))
+
+    for (t <- 0 until totalReaderThreads) {
+      var nodeNum: Int = (t + limitreachedcount) % participantsNodes.size
+      if (nodeNum >= participantsNodes.size) nodeNum = nodeNum - participantsNodes.size
+      while (participantsNodes(nodeNum).ProcessThreads == nodeThreadMap(nodeNum)._2.size) {
+        nodeNum = nodeNum + 1
+        limitreachedcount = limitreachedcount + 1
+        if (nodeNum >= participantsNodes.size) nodeNum = nodeNum - participantsNodes.size
+      }
+      var abuf = nodeThreadMap(nodeNum)._2
+      abuf += t.toString
+      nodeThreadMap(nodeNum) = (nodeThreadMap(nodeNum)._1, abuf)
+    }
+    nodeThreadMap
+  }
+
+  private def computeTotalReaderThreads(nodes: ArrayBuffer[Node]): Int = {
+    var totalReadThreads: Int = 0
+    nodes.foreach { node => totalReadThreads = totalReadThreads + node.ReaderThreads }
+    return totalReadThreads
+  }
+
+  private def computeTotalProcessThreads(participantsNodes: ArrayBuffer[Node]): Int = {
+    var totalProcessThreads: Int = 0
+    participantsNodes.foreach(node => {
+      totalProcessThreads = totalProcessThreads + node.ProcessThreads
+    })
+    return totalProcessThreads;
   }
 
   private def computeMaxPhysicalPartitions(adapterMaxPartitions: scala.collection.mutable.Map[String, Int]): Int = {
@@ -187,20 +275,14 @@ class Distribution {
     adapterMaxPartitions.foreach(a => { if (a._2 >= 0) totalPartitions = totalPartitions + a._2 })
     return totalPartitions;
   }
-  //
 
-  private def ComputePhysicalPartitions(nodes: Array[String], adapterMap: AdapterMap, totalPartitions: Int): scala.collection.mutable.Map[String, AdapterMap] = {
-    val totalReadThreads = computeTotalReadThreads(nodes, adapterMap)
-    //val totalReadThreads = adapterMap.ReadThreads
-    //println("1 totalReadThreads " + totalReadThreads)
-    // println("totalPartitions " + totalPartitions)
-    if (totalReadThreads == 0) throw new Exception("Check Read Threads in adapters")
-    if (totalPartitions == 0) throw new Exception("Check max Partitions in adapters")
-    val PartsToThreads = allocatePartsToThreads(totalReadThreads, totalPartitions)
-    //PartsToThreads.foreach(p => { println("^^^" + p._1 + "  " + p._2.toList) })
-    val ThreadsToNodes = allocateThreadsToNodes(nodes, adapterMap, PartsToThreads)
-    ThreadsToNodes
+  private def computeMaxProcessThreads(adapterMaxPartitions: scala.collection.mutable.Map[String, Int]): Int = {
+    var totalPartitions: Int = 0
+    if ((adapterMaxPartitions == null) || (adapterMaxPartitions.empty == true)) throw new Exception("Adapter details do not exist to compute max read parittions");
+    adapterMaxPartitions.foreach(a => { if (a._2 >= 0) totalPartitions = totalPartitions + a._2 })
+    return totalPartitions;
   }
+  //
 
   private def allocatePartsToThreads(totalThreads: Int, totalPartitions: Int): scala.collection.mutable.Map[String, ArrayBuffer[String]] = {
     var PartsToThreads = scala.collection.mutable.Map[String, ArrayBuffer[String]]()
@@ -209,9 +291,7 @@ class Distribution {
       for (p <- 0 until totalPartitions) {
         val parts = (p + totalThreads) % totalThreads
         if (t == parts) {
-          //  println("=========" + parts)
           partitions += p.toString().trim()
-          //   println("******************" + partitions.toList)
         }
       }
       PartsToThreads(t.toString()) = partitions
@@ -220,122 +300,64 @@ class Distribution {
     PartsToThreads
   }
 
-  private def allocateThreadsToNodes(nodes: Array[String], adapterMap: AdapterMap, partsToThreads: scala.collection.mutable.Map[String, ArrayBuffer[String]]): scala.collection.mutable.Map[String, AdapterMap] = {
-    // var physicalPartitions = scala.collection.mutable.Map[String, scala.collection.mutable.Map[String, ArrayBuffer[Int]]]()
-    var physicalPartitions = scala.collection.mutable.Map[String, AdapterMap]()
-    //println(" nodes.size " + nodes.size);
-    //println(" partsToThreads.size " + partsToThreads.size);
-    for (n <- 0 until nodes.size) {
-      val pparraybuf = ArrayBuffer[PhysicalPartitions]()
-      for (t <- 0 until partsToThreads.size) {
-        val nodeNum = (t + nodes.size) % nodes.size
-        //println("nodeNum " + nodeNum + "- n   " + n + "- T   " + t);
-        if (nodeNum == n) {
-          //println(" n " + n);
-          pparraybuf += new PhysicalPartitions(t.toString(), partsToThreads(t.toString()).toArray)
-        }
-      }
-      //println("nodes(n)" + nodes(n))
-      physicalPartitions(nodes(n)) = new AdapterMap(adapterMap.Name, adapterMap.ProcessThreads, adapterMap.ReadThreads, adapterMap.LogicalPartitions, pparraybuf, adapterMap.LogicalThreads, adapterMap.limitReached, null)
-    }
-    //physicalPartitions.foreach(f => { print("Node!!!:  " + f._1 + " " + f._2.PhysicalThreads.size); f._2.PhysicalThreads.foreach(p => { println("Thread" + p.ThreadId + " : " + p.ReadPartitions.toList) }) })
-    physicalPartitions
-  }
+  def createDistributionJson(adapterMaxPartitions: scala.collection.mutable.Map[String, Int], clusterDistributionMap: ClusterDistributionMap): String = {
+    if (clusterDistributionMap == null) throw new Exception("The Cluster Distribution Map is null")
 
-  private def createDistributionJson(adapterMaxPartitions: scala.collection.mutable.Map[String, Int], distributionMap: scala.collection.mutable.Map[String, AdapterMap], dist: Distribute): Unit = {
+    val distributionMap: ArrayBuffer[NodeDistributionMap] = clusterDistributionMap.NodeDistributionMap
+    if (distributionMap == null) throw new Exception("The Node Distribution Map ArrayBuffer is null")
 
-    val json = ("action" -> "distribute") ~
-      ("LogicalPartitions" -> dist.LogicalPartitions) ~
-      ("GlobalProcessingThreads" -> dist.GlobalProcessThreadsPerNode.toString()) ~
-      ("TotalProcessThreads" -> dist.TotalProcessThreads.toString()) ~
-      ("TotalReadThreads" -> dist.TotalReadThreads.toString()) ~
+    val json = ("action" -> clusterDistributionMap.Action) ~
+      ("LogicalPartitions" -> clusterDistributionMap.LogicalPartitions) ~
+      ("GlobalProcessingThreads" -> clusterDistributionMap.GlobalProcessThreads) ~
+      ("GlobalReaderThreads" -> clusterDistributionMap.GlobalReaderThreads) ~
+      ("TotalProcessThreads" -> clusterDistributionMap.TotalProcessThreads) ~
+      ("TotalReadThreads" -> clusterDistributionMap.TotalReaderThreads) ~
       ("adaptermaxpartitions" -> adapterMaxPartitions.map(kv =>
         ("Adap" -> kv._1) ~
           ("MaxParts" -> kv._2))) ~
       ("distributionmap" -> distributionMap.map(kv =>
-        ("Node" -> kv._1) ~
-          //("Adaps" -> kv._2.map(kv1 => ("Adap" -> kv1.Name) ~
-          ("Adaps" -> ("Adap" -> kv._2.Name) ~
-            ("ReadThreads" -> kv._2.ReadThreads) ~
-            ("ProcessThreads" -> kv._2.ProcessThreads) ~
-            ("Parts" ->
-              ("PhysicalPartitions" -> kv._2.ReaderThreadsStrList.map(pp => { ("ThreadId" -> pp._1) ~ ("ReadPartitions" -> pp._2) })) ~
-              ("LogicalPartitions" -> kv._2.LogicalThreads.toList.map(lp => { ("ThreadId" -> lp.ThreadId) ~ ("Range" -> (lp.LowerRange.toString() + "," + lp.UpperRange.toString())) }))))))
+        ("Node" -> kv.Node) ~
+          ("PhysicalPartitions" -> kv.PhysicalPartitions.map(t =>
+            ("ThreadId" -> t.ThreadId) ~
+              ("Adaps" -> t.AdapterPartitions.map(a =>
+                ("Adap" -> a._1) ~
+                  ("ReadPartitions" -> a._2.toList))))) ~
+          ("LogicalPartitions" -> kv.LogicalPartitionsDist.map(lp =>
+            ("ThreadId" -> lp.ThreadId) ~
+              ("Range" -> (lp.LowerRange + "," + lp.UpperRange))))))
 
-    var outputJson = compact(render(json))
-    println(outputJson)
-  }
-}
-
-object Distribution {
-
-  def main(args: Array[String]) = {
-
-    val nodesCount = 2
-    val globarProcessThreads = 10
-    val GlobalReadThreads = 2
-    val processThreads = 10
-    val readThreads = 2
-
-    var adapter1: AdapterMap = AdapterMap("testing_1", 8, 2, 8192, null, ArrayBuffer[LogicalPartitions](), false, null)
-    //  var adapter2: AdapterMap = AdapterMap("finance", 8, 2, 8192, null, ArrayBuffer[LogicalPartitions](), false)
-    //  var adapter3: AdapterMap = AdapterMap("medical", 10, 1, 8192, null, ArrayBuffer[LogicalPartitions](), false)
-
-    var distribution = new Distribution
-    //computelogical threads 
-    var nodes = Array[String]("1", "2")
-    var adapters: Array[AdapterMap] = Array[AdapterMap](adapter1)
-
-    var adapterMaxPartitions = scala.collection.mutable.Map[String, Int](("{\"Name\" : \"testin_1\"}", 10))
-    var distributionMap = distribution.AdapterMapDistribution(nodes, adapters, adapterMaxPartitions)
-    var dist = new Distribute(8192, 8, 2, 10, 10)
-    distribution.createDistributionJson(adapterMaxPartitions, distributionMap, dist)
-
+    var outputJson: String = compact(render(json))
+    LOG.info(outputJson)
+    outputJson
   }
 
-  /*for (n <- 0 until nodes.size) {
-          println("node value: " + n)
-          if (nodeNum == n) {
-            //if ((nodes(n).limitReached == false)) {
-             if (adapterMap.LogicalThreads.size == adapterMap.ProcessThreads)
-              println("Node" + n + "  " + logicalthreads(t).ThreadId + "  " + logicalthreads(t).LowerRange + " " + logicalthreads(t).UpperRange + "   " + indexcount(n) + "   " + nodes(n).LogicalThreads.size)
-              if (indexcount(n) >= nodes(n).LogicalThreads.size) {
-                nodes(n).LogicalThreads = nodes(n).LogicalThreads :+ logicalthreads(t)
-                if (nodes(n).LogicalThreads.size == nodes(n).ProcessThreads)
-                  nodes(n).limitReached = true
-                indexcount(n) = indexcount(n) + 1
-                break;
-              } else break;
+  private def ThreadLogicalPartsDist(totalProcessingThreads: Int, logicalPartitions: Int): scala.collection.mutable.Map[String, (Int, Int)] = {
+    var lowerlimit: Int = 0
+    var upperlimit: Int = 0
+    var logicalthreads = scala.collection.mutable.Map[String, (Int, Int)]()
+    val logicalPartRange = logicalPartitions / totalProcessingThreads
+    val extraLogicalParts: Int = logicalPartitions - (logicalPartRange * totalProcessingThreads)
+    var extra: Int = extraLogicalParts
 
-            } else {
-              if (n + 1 < nodes.size) {
-                var it = n + 1
-                if (nodes(it).limitReached == true) { it = it + 1; limitreachedcount = limitreachedcount + 1; }
-                if ((nodes(it).limitReached == false)) {
-                  println("*Node" + it + "  " + logicalthreads(t).ThreadId + "  " + logicalthreads(t).LowerRange + " " + logicalthreads(t).UpperRange + "   " + indexcount(it) + "   " + nodes(n).LogicalThreads.size)
-                  nodes(it).LogicalThreads = nodes(it).LogicalThreads :+ logicalthreads(t)
-                  indexcount(it) = indexcount(it) + 1
-                  limitreachedcount = limitreachedcount + 1
-                  if (nodes(it).LogicalThreads.size == nodes(it).ProcessThreads)
-                    nodes(it).limitReached = true
-                  break
-                }
-              } else {
-                val it = n + 1 - nodes.size
-                println("^Node" + it + "  " + logicalthreads(t).ThreadId + "  " + logicalthreads(t).LowerRange + " " + logicalthreads(t).UpperRange + "   " + indexcount(it) + "   " + nodes(n).LogicalThreads.size)
-                nodes(it).LogicalThreads = nodes(it).LogicalThreads :+ logicalthreads(t)
-                limitreachedcount = 1
-                indexcount(it) = indexcount(it) + 1
-                if (nodes(it).LogicalThreads.size == nodes(it).ProcessThreads)
-                  nodes(it).limitReached = true
-                break
-              }
-            }
-          }
-        }
-*/
+    for (t <- 0 until totalProcessingThreads) {
+      if (t == 0)
+        lowerlimit = 0
+      else lowerlimit = upperlimit + 1
+      if (extra == 0) {
+        upperlimit = lowerlimit + logicalPartRange - 1
+      } else if (extra > 0) {
+        upperlimit = lowerlimit + logicalPartRange
+        extra = extra - 1
+      }
+      val lt = (lowerlimit, upperlimit)
+      logicalthreads(t.toString()) = lt
+    }
+
+    logicalthreads
+  }
 
 }
+
 
 
 
