@@ -124,7 +124,7 @@ class MemoryDataCacheImp extends DataCache {
 }
 
 class MemoryDataCacheTxnImp(cache: DataCache) extends Transaction(cache) {
-  var tm = cache.asInstanceOf[MemoryDataCacheImp].getCache().asInstanceOf[CacheImpl].getAdvancedCache.getTransactionManager
+  var tm = cache.asInstanceOf[MemoryDataCacheImp].getCache().asInstanceOf[CacheImpl[String, Any]].getAdvancedCache.getTransactionManager
   tm.begin()
 
   private def CheckForValidTxn: Unit = {

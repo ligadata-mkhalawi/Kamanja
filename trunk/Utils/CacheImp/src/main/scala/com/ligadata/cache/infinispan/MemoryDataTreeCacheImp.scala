@@ -9,7 +9,6 @@ import org.infinispan.manager.DefaultCacheManager
 import org.infinispan.Cache
 import org.infinispan.cache.impl.CacheImpl
 import org.infinispan.tree.{Fqn, Node, TreeCache, TreeCacheFactory}
-;
 
 /**
   * Created by Saleh on 6/9/2016.
@@ -210,7 +209,7 @@ class MemoryDataTreeCacheImp extends DataCache {
 }
 
 class MemoryDataTreeCacheTxnImp(cache: DataCache) extends Transaction(cache) {
-  var tm = cache.asInstanceOf[MemoryDataTreeCacheImp].getCache().asInstanceOf[CacheImpl].getAdvancedCache.getTransactionManager
+  var tm = cache.asInstanceOf[MemoryDataTreeCacheImp].getCache().asInstanceOf[CacheImpl[String, Any]].getAdvancedCache.getTransactionManager
   tm.begin()
 
   private def CheckForValidTxn: Unit = {
