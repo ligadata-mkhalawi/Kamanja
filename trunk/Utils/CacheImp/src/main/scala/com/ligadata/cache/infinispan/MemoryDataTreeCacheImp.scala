@@ -5,9 +5,10 @@ import java.util
 import com.ligadata.cache._
 import net.sf.ehcache.config.Configuration
 import org.infinispan.configuration.cache.{CacheMode, ConfigurationBuilder}
-import org.infinispan.manager.DefaultCacheManager;
+import org.infinispan.manager.DefaultCacheManager
 import org.infinispan.Cache
-import org.infinispan.tree.{Node, Fqn, TreeCacheFactory, TreeCache}
+import org.infinispan.cache.impl.CacheImpl
+import org.infinispan.tree.{Fqn, Node, TreeCache, TreeCacheFactory}
 ;
 
 /**
@@ -21,6 +22,12 @@ class MemoryDataTreeCacheImp extends DataCache {
   var listenCallback: CacheCallback = null
   var treeCache: TreeCache[String, Any] = null
   val root: Fqn = Fqn.fromString("/")
+
+  final def getCache(): Cache[String, Any] = cache
+
+  final def getCacheManager(): DefaultCacheManager = cacheManager
+
+  final def getCacheConfig(): CacheCustomConfigInfinispan = config
 
   override def init(jsonString: String, listenCallback: CacheCallback): Unit = {
     config = new CacheCustomConfigInfinispan(new Config(jsonString), cacheManager)
@@ -198,22 +205,36 @@ class MemoryDataTreeCacheImp extends DataCache {
   }
 
   override def beginTransaction(): Transaction = {
-    throw new NotImplementedError("beginTransaction is not yet implemented")
-    return null;
+    new MemoryDataTreeCacheTxnImp(this)
   }
-
-/*
-  override def endTx(tx: Transaction): Unit = {
-    throw new NotImplementedError("endTx is not yet implemented")
-  }
-
-  override def commitTx(tx: Transaction): Unit = {
-    throw new NotImplementedError("commitTx is not yet implemented")
-  }
-
-  override def rollbackTx(tx: Transaction): Unit = {
-    throw new NotImplementedError("rollbackTx is not yet implemented")
-  }
-*/
 }
 
+class MemoryDataTreeCacheTxnImp(cache: DataCache) extends Transaction(cache) {
+  var tm = cache.asInstanceOf[MemoryDataTreeCacheImp].getCache().asInstanceOf[CacheImpl].getAdvancedCache.getTransactionManager
+  tm.begin()
+
+  private def CheckForValidTxn: Unit = {
+    if (getDataCache == null)
+      throw new Exception("Not found valid DataCache in transaction")
+  }
+
+  // Exceptions are thrown to caller
+  @throws(classOf[Exception])
+  @throws(classOf[Throwable])
+  override def commit(): Unit = {
+    CheckForValidTxn
+    tm.commit()
+    resetDataCache
+    tm = null
+  }
+
+  // Exceptions are thrown to caller
+  @throws(classOf[Exception])
+  @throws(classOf[Throwable])
+  override def rollback(): Unit = {
+    CheckForValidTxn
+    tm.rollback()
+    resetDataCache
+    tm = null
+  }
+}

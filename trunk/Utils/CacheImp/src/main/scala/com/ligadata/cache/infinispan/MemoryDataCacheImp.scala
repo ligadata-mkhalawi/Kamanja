@@ -6,17 +6,23 @@ import com.ligadata.cache._
 import net.sf.ehcache.config.Configuration
 import org.infinispan.configuration.cache.{CacheMode, ConfigurationBuilder}
 import org.infinispan.manager.DefaultCacheManager
-import org.infinispan.Cache;
+import org.infinispan.Cache
+import org.infinispan.cache.impl.CacheImpl;
 
 /**
   * Created by Saleh on 6/9/2016.
   */
 class MemoryDataCacheImp extends DataCache {
+  private var cacheManager: DefaultCacheManager = null
+  private var config: CacheCustomConfigInfinispan = null
+  private var cache: Cache[String, Any] = null
+  private var listenCallback: CacheCallback = null
 
-  var cacheManager: DefaultCacheManager = null
-  var config: CacheCustomConfigInfinispan = null
-  var cache: Cache[String, Any] = null
-  var listenCallback: CacheCallback = null
+  final def getCache(): Cache[String, Any] = cache
+
+  final def getCacheManager(): DefaultCacheManager = cacheManager
+
+  final def getCacheConfig(): CacheCustomConfigInfinispan = config
 
   override def init(jsonString: String, listenCallback: CacheCallback): Unit = {
     config = new CacheCustomConfigInfinispan(new Config(jsonString), cacheManager)
@@ -113,21 +119,36 @@ class MemoryDataCacheImp extends DataCache {
   }
 
   override def beginTransaction(): Transaction = {
-    throw new NotImplementedError("beginTransaction is not yet implemented")
-    return null;
+    new MemoryDataCacheTxnImp(this)
+  }
+}
+
+class MemoryDataCacheTxnImp(cache: DataCache) extends Transaction(cache) {
+  var tm = cache.asInstanceOf[MemoryDataCacheImp].getCache().asInstanceOf[CacheImpl].getAdvancedCache.getTransactionManager
+  tm.begin()
+
+  private def CheckForValidTxn: Unit = {
+    if (getDataCache == null)
+      throw new Exception("Not found valid DataCache in transaction")
   }
 
-/*
-  override def endTx(tx: Transaction): Unit = {
-    throw new NotImplementedError("endTx is not yet implemented")
+  // Exceptions are thrown to caller
+  @throws(classOf[Exception])
+  @throws(classOf[Throwable])
+  override def commit(): Unit = {
+    CheckForValidTxn
+    tm.commit()
+    resetDataCache
+    tm = null
   }
 
-  override def commitTx(tx: Transaction): Unit = {
-    throw new NotImplementedError("commitTx is not yet implemented")
+  // Exceptions are thrown to caller
+  @throws(classOf[Exception])
+  @throws(classOf[Throwable])
+  override def rollback(): Unit = {
+    CheckForValidTxn
+    tm.rollback()
+    resetDataCache
+    tm = null
   }
-
-  override def rollbackTx(tx: Transaction): Unit = {
-    throw new NotImplementedError("rollbackTx is not yet implemented")
-  }
-*/
 }

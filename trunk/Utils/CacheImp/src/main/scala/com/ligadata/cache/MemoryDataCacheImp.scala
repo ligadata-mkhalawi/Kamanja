@@ -15,13 +15,16 @@ import scala.collection.JavaConverters._
   * Created by Saleh on 3/15/2016.
   */
 
-class MemoryDataCacheImp extends DataCache{
+class MemoryDataCacheImp extends DataCache {
+  private var cm: CacheManager = null
+  private var cache: Cache = null
+  private var cacheConfig: CacheCustomConfig = null
 
-  var cm:CacheManager = null
-  var cache:Cache = null
-  var cacheConfig:CacheCustomConfig = null
+  final def getCache(): Cache = cache
+  final def getCacheManager(): CacheManager = cm
+  final def getCacheConfig(): CacheCustomConfig = cacheConfig
 
-  override def init(jsonString:String, listenCallback: CacheCallback): Unit = {
+  override def init(jsonString: String, listenCallback: CacheCallback): Unit = {
     cacheConfig = new CacheCustomConfig(new Config(jsonString), listenCallback)
     cm = CacheManager.create(cacheConfig.getConfiguration())
     val cache = new Cache(cacheConfig)
@@ -39,17 +42,17 @@ class MemoryDataCacheImp extends DataCache{
   }
 
   override def put(key: String, value: scala.Any): Unit = {
-    cache.put(new Element(key,value))
+    cache.put(new Element(key, value))
   }
 
   override def get(key: String): AnyRef = {
-    if(cache.isKeyInCache(key)){
+    if (cache.isKeyInCache(key)) {
 
-      val ele:Element = cache.get(key)
+      val ele: Element = cache.get(key)
       //val obj:Object = ele.getValue
 
       return ele.getObjectValue
-    }else{
+    } else {
       System.out.println("get data from SSD");
       cache.load(key)
 
@@ -65,21 +68,21 @@ class MemoryDataCacheImp extends DataCache{
 
   override def get(keys: Array[String]): java.util.Map[String, AnyRef] = {
     val map = new java.util.HashMap[String, AnyRef]
-    keys.foreach(str => map.put(str,get(str)))
+    keys.foreach(str => map.put(str, get(str)))
 
     map
   }
 
   override def put(map: java.util.Map[_, _]): Unit = {
     val scalaMap = map.asScala
-    scalaMap.foreach {keyVal => cache.put(new Element(keyVal._1,keyVal._2))}
+    scalaMap.foreach { keyVal => cache.put(new Element(keyVal._1, keyVal._2)) }
   }
 
   override def getAll(): java.util.Map[String, AnyRef] = {
     val map = new java.util.HashMap[String, AnyRef]
     val keys = getKeys()
-    if (keys != null){
-      keys.foreach(str => map.put(str,get(str)))
+    if (keys != null) {
+      keys.foreach(str => map.put(str, get(str)))
     }
     map
   }
@@ -90,7 +93,7 @@ class MemoryDataCacheImp extends DataCache{
 
   override def put(containerName: String, timestamp: String, key: String, value: scala.Any): Unit = {}
 
-  override def get(containerName: String, map : java.util.Map[String, java.util.Map[String, AnyRef]]): Unit = {}
+  override def get(containerName: String, map: java.util.Map[String, java.util.Map[String, AnyRef]]): Unit = {}
 
   override def get(containerName: String, timestamp: String): util.Map[String, AnyRef] = {
     null
@@ -113,21 +116,27 @@ class MemoryDataCacheImp extends DataCache{
   }
 
   override def beginTransaction(): Transaction = {
-    throw new NotImplementedError("beginTransaction is not yet implemented")
-    return null;
+    new MemoryDataCacheTxnImp(this)
+  }
+}
+
+class MemoryDataCacheTxnImp(cache: DataCache) extends Transaction(cache) {
+  private def CheckForValidTxn: Unit = {
+    if (getDataCache == null)
+      throw new Exception("Not found valid DataCache in transaction")
   }
 
-/*
-  override def endTx(tx: Transaction): Unit = {
-    throw new NotImplementedError("endTx is not yet implemented")
+  override def commit(): Unit = {
+    CheckForValidTxn
+
+    throw new NotImplementedError("commit is not yet implemented")
   }
 
-  override def commitTx(tx: Transaction): Unit = {
-    throw new NotImplementedError("commitTx is not yet implemented")
-  }
+  override def rollback(): Unit = {
+    CheckForValidTxn
 
-  override def rollbackTx(tx: Transaction): Unit = {
-    throw new NotImplementedError("rollbackTx is not yet implemented")
+    throw new NotImplementedError("rollback is not yet implemented")
+
+    resetDataCache
   }
-*/
 }

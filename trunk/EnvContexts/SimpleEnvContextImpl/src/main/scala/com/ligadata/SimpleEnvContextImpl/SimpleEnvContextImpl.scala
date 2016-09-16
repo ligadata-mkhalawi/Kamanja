@@ -1201,7 +1201,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     val contName = containerName.toLowerCase
 
     val tenantInfo: TenantEnvCtxtInfo = _tenantIdMap.getOrElse(tenatId.toLowerCase(), null)
-    if (tenantInfo == null) return None
+    if (tenantInfo == null) return;
 
     if (tenantInfo.cachedContainers != null) {
       var cacheContainer = tenantInfo.cachedContainers.getOrElse(containerName, null)
