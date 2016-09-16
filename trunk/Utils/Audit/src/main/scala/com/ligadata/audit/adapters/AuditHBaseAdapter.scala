@@ -312,7 +312,9 @@ class AuditHBaseAdapter extends AuditAdapter
   override def dropStore: Unit = {
     var fullTableName = table
     if( keyspace != null ){
-      fullTableName = keyspace + ":" + table
+      //fullTableName = keyspace + ":" + table
+      //BUG: keyspace is always system, input parameter for keyspace is not being used
+      fullTableName = table
     }
     try {
       val tblNm = TableName.valueOf(fullTableName)
