@@ -696,7 +696,7 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext, val ser
     * @param txnContext Transaction context to do get operations on this transactionid. But this transaction will be rolledback
     *                   once the initialization is done.
     */
-    override def init(txnContext: TransactionContext): Unit = {
+    override def init(instanceMetadata: String): Unit = {
 
         val pyPath : String = if (nodeContext.getValue("PYTHON_PATH") != null)
 	                         nodeContext.getValue("PYTHON_PATH").asInstanceOf[String]
@@ -714,7 +714,7 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext, val ser
 	   logger.debug("Something is happening to the model here blah blah blah ------" + model.objectDefinition)
         }
        	val connectionMap : scala.collection.mutable.HashMap[String,Any] =
-        txnContext.nodeCtxt.getValue("PYTHON_CONNECTIONS").asInstanceOf[scala.collection.mutable.HashMap[String,Any]]
+        nodeContext.getValue("PYTHON_CONNECTIONS").asInstanceOf[scala.collection.mutable.HashMap[String,Any]]
 	if (logger.isDebugEnabled()) {
 	   logger.debug("Something is happening to the model here Haha Haha Haha ------" + connectionMap.size)
         }
