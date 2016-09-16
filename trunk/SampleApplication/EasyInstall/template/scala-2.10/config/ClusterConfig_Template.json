@@ -35,6 +35,15 @@
         "ZooKeeperSessionTimeoutMs": "30000",
         "ZooKeeperConnectionTimeoutMs": "30000"
       },
+      "PYTHON_CONFIG" : {
+	    "PYTHON_PATH": "{InstallDirectory}/python",
+            "SERVER_BASE_PORT": 8100,
+	    "SERVER_PORT_LIMIT": 40,
+	    "SERVER_HOST": "localhost",
+	    "PYTHON_LOG_CONFIG_PATH": "{InstallDirectory}/python/bin/pythonlog4j.cfg",
+	    "PYTHON_LOG_PATH": "{InstallDirectory}/python/logs/pythonserver.log",
+	    "PYTHON_BIN_DIR" : "/usr/bin/"
+	},
       "EnvironmentContext": {
         "classname": "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$",
         "jarname": "KamanjaInternalDeps_2.10-1.6.0.jar",
