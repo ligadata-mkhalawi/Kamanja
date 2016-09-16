@@ -1392,6 +1392,11 @@ object ConfigUtils {
       logger.error("ZooKeeperInfo not found for Node %s  & ClusterId : %s".format(nodeId, nd.ClusterId))
       return false
     }
+    val pythonConfigs = mdMgr.GetUserProperty(clusterId, "PYTHON_CONFIG")
+    if (pythonConfigs != null && pythonConfigs.isInstanceOf[String]
+      && pythonConfigs.asInstanceOf[String].trim().size > 0) {
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_CONFIG", pythonConfigs.asInstanceOf[String])
+    }
     val jarPaths = if (nd.JarPaths == null) Set[String]() else nd.JarPaths.map(str => str.replace("\"", "").trim).filter(str => str.size > 0).toSet
     if (jarPaths.size == 0) {
       logger.error("Not found valid JarPaths.")

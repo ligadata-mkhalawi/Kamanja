@@ -480,8 +480,9 @@ class KamanjaMetadata(var envCtxt: EnvContext) {
     val PYTHON_CONFIG : String = "python_config"
     val ROOT_DIR : String = "root_dir"
     private def PreparePythonConfiguration(): Unit = {
-        val properties: java.util.Properties = KamanjaConfiguration.allConfigs
-        val pythonPropertiesStr : String = properties.getProperty(PYTHON_CONFIG)
+        // val properties: java.util.Properties = KamanjaConfiguration.allConfigs
+        // val pythonPropertiesStr : String = properties.getProperty(PYTHON_CONFIG)
+        val pythonPropertiesStr : String = mdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "PYTHON_CONFIG")
         if (pythonPropertiesStr != null) {
             implicit val formats = org.json4s.DefaultFormats
             //val pyPropertyMap : Map[String, Any] = parse(pythonPropertiesStr).extract[Map[String, Any]]

@@ -702,6 +702,7 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext, val ser
 	                         nodeContext.getValue("PYTHON_PATH").asInstanceOf[String]
                               else
   		                null
+	
 	val (moduleName, modelName) : (String,String) = ModuleNModelNames
 	val srcTargetPath : String = s"$pyPath/models/$moduleName.py"
 	if (logger.isDebugEnabled()) {
@@ -752,7 +753,11 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext, val ser
     /**
       * Called when the system is being shutdown, do any needed cleanup ...
       */
-    override def shutdown(): Unit = {}
+    override def shutdown(): Unit = {
+       if (logger.isDebugEnabled()) {
+          logger.debug ("Remove model calls this functon ---------") ;
+       }
+    }
 
     /**
       * Answer the model name.
