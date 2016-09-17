@@ -3151,7 +3151,7 @@ class MdMgr {
   def GetUserProperty(clusterId: String, key: String): String = {
     if (configurations.contains(clusterId)) {
       val upi: scala.collection.mutable.HashMap[String, String] = configurations(clusterId).Props
-      return upi.get(key).getOrElse("")
+      return (upi.get(key).getOrElse("")).asInstanceOf[String]
     }
     return ""
   }

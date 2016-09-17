@@ -75,6 +75,7 @@ class KamanjaMetadata(var envCtxt: EnvContext) {
   val containerObjects = new HashMap[String, MsgContainerObjAndTransformInfo]
   val modelObjsMap = new HashMap[String, MdlInfo]
   val modelRepFactoryOfFactoryMap: HashMap[String, FactoryOfModelInstanceFactory] = HashMap[String, FactoryOfModelInstanceFactory]()
+   val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
 
   def LoadMdMgrElems(tmpMsgDefs: Option[scala.collection.immutable.Set[MessageDef]], tmpContainerDefs: Option[scala.collection.immutable.Set[ContainerDef]],
                      tmpModelDefs: Option[scala.collection.immutable.Set[ModelDef]]): Unit = {
@@ -477,12 +478,16 @@ class KamanjaMetadata(var envCtxt: EnvContext) {
       * import org.json4s._
       * import org.json4s.native.JsonMethods._
       */
-    val PYTHON_CONFIG : String = "python_config"
+    val PYTHON_CONFIG : String = "PYTHON_CONFIG"
     val ROOT_DIR : String = "root_dir"
     private def PreparePythonConfiguration(): Unit = {
         val properties: java.util.Properties = KamanjaConfiguration.allConfigs
         // val pythonPropertiesStr : String = properties.getProperty(PYTHON_CONFIG)
-        val pythonPropertiesStr : String = mdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "PYTHON_CONFIG")
+	//        val pythonPropertiesStr : String = mdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "PYTHON_CONFIG")
+	        val pythonPropertiesStr : String = getMetadataAPI.GetMetadataAPIConfig.getProperty("PYTHON_CONFIG")
+	if (logger.isDebugEnabled()) {
+	   logger.debug ("The value of pythonPropertiesStr is in Prepare Python Configuration "  + pythonPropertiesStr ) ;
+	}
         if (pythonPropertiesStr != null) {
             implicit val formats = org.json4s.DefaultFormats
             //val pyPropertyMap : Map[String, Any] = parse(pythonPropertiesStr).extract[Map[String, Any]]

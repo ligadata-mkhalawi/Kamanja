@@ -780,6 +780,8 @@ object ConfigUtils {
               cfgMap("EnvironmentContext") = getStringFromJsonNode(cluster.getOrElse("EnvironmentContext", null))
             if (cluster.contains("Cache"))
               cfgMap("Cache") = getStringFromJsonNode(cluster.getOrElse("Cache", null))
+           if (cluster.contains("PYTHON_CONFIG"))
+                cfgMap("PYTHON_CONFIG") = getStringFromJsonNode(cluster.get("PYTHON_CONFIG"))
             if (cluster.contains("Config")) {
               val config = cluster.get("Config").get.asInstanceOf[Map[String, Any]] //BUGBUG:: Do we need to check the type before converting
               if (config.contains("SystemCatalog"))
@@ -790,6 +792,15 @@ object ConfigUtils {
                 cfgMap("EnvironmentContext") = getStringFromJsonNode(config.get("EnvironmentContext"))
             }
 
+	    if (logger.isDebugEnabled()) {
+	       logger.debug( "The value of python config while uploading is  " + cfgMap.getOrElse("PYTHON_CONFIG", "") ) 
+	    }
+
+	    getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_CONFIG", cfgMap.getOrElse("PYTHON_CONFIG", "")) 
+
+	    if (logger.isDebugEnabled()) {
+	       logger.debug( "The value of python config from meta config while uploading is  " + getMetadataAPI.GetMetadataAPIConfig.getProperty("PYTHON_CONFIG") ) 
+	    }
             // save in memory
             val cic = MdMgr.GetMdMgr.MakeClusterCfg(ClusterId, cfgMap, null, null)
             val addClusterResult = MdMgr.GetMdMgr.AddClusterCfg(cic)
@@ -1370,7 +1381,7 @@ object ConfigUtils {
 
     val nd = mdMgr.Nodes.getOrElse(nodeId, null)
     if (nd == null) {
-      logger.error("Node %s not found in metadata".format(nodeId))
+      logger.error("In Refresh API Config - Node %s not found in metadata".format(nodeId))
       return false
     }
 
@@ -1392,11 +1403,45 @@ object ConfigUtils {
       logger.error("ZooKeeperInfo not found for Node %s  & ClusterId : %s".format(nodeId, nd.ClusterId))
       return false
     }
-    val pythonConfigs = mdMgr.GetUserProperty(clusterId, "PYTHON_CONFIG")
+    val pythonConfigs = cluster.cfgMap.getOrElse("PYTHON_CONFIG", null)
+    
+    getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_CONFIG", pythonConfigs) 
+
     if (pythonConfigs != null && pythonConfigs.isInstanceOf[String]
       && pythonConfigs.asInstanceOf[String].trim().size > 0) {
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_CONFIG", pythonConfigs.asInstanceOf[String])
+      if (logger.isDebugEnabled()) {
+      	 logger.debug(" The value of Pythonconfigs are " + pythonConfigs) ;
+      }
     }
+    implicit val jsonFormats: Formats = DefaultFormats
+
+    val pyInfo = parse(pythonConfigs).extract[PythonInfo]
+
+    val pythonPath  = pyInfo.PYTHON_PATH.replace("\"", "").trim
+    getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_PATH", pythonPath)
+    val pythonBinDir  = pyInfo.PYTHON_BIN_DIR.replace("\"", "").trim
+    getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_BIN_DIR", pythonBinDir)
+    val pythonLogConfigPath  = pyInfo.PYTHON_LOG_CONFIG_PATH.replace("\"", "").trim
+    getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_LOG_CONFIG_PATH", pythonLogConfigPath)
+    val pythonLogPath  = pyInfo.PYTHON_LOG_PATH.replace("\"", "").trim
+    getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_LOG_PATH", pythonLogPath)
+    val serverBasePort  = pyInfo.SERVER_BASE_PORT.replace("\"", "").trim
+    getMetadataAPI.GetMetadataAPIConfig.setProperty("SERVER_BASE_PORT", serverBasePort)
+    val serverPortLimit  = pyInfo.SERVER_PORT_LIMIT.replace("\"", "").trim
+    getMetadataAPI.GetMetadataAPIConfig.setProperty("SERVER_PORT_LIMIT", serverPortLimit)
+    val serverHost  = pyInfo.SERVER_HOST.replace("\"", "").trim
+    getMetadataAPI.GetMetadataAPIConfig.setProperty("SERVER_HOST", serverHost)
+
+    if (logger.isDebugEnabled()) {
+       logger.debug("PYTHON_PATH(based on PYTHON_CONFIG) => " + pythonPath)
+       logger.debug("PYTHON_BIN_DIR(based on PYTHON_CONFIG) => " + pythonBinDir)
+       logger.debug("PYTHON_LOG_CONFIG_PATH(based on PYTHON_CONFIG) => " + pythonLogConfigPath)
+       logger.debug("PYTHON_LOG_PATH(based on PYTHON_CONFIG) => " + pythonLogPath)
+       logger.debug("SERVER_BASE_PORT(based on PYTHON_CONFIG) => " + serverBasePort)
+       logger.debug("SERVER_PORT_LIMIT(based on PYTHON_CONFIG) => " + serverPortLimit)
+       logger.debug("SERVER_HOST(based on PYTHON_CONFIG) => " + serverHost)
+     }
+
     val jarPaths = if (nd.JarPaths == null) Set[String]() else nd.JarPaths.map(str => str.replace("\"", "").trim).filter(str => str.size > 0).toSet
     if (jarPaths.size == 0) {
       logger.error("Not found valid JarPaths.")
@@ -1413,7 +1458,6 @@ object ConfigUtils {
       logger.debug("Jar_target_dir Based on node(%s) => %s".format(nodeId, jarDir))
     }
 
-    implicit val jsonFormats: Formats = DefaultFormats
     val zKInfo = parse(zooKeeperInfo).extract[JZKInfo]
 
     val zkConnectString = zKInfo.ZooKeeperConnectString.replace("\"", "").trim

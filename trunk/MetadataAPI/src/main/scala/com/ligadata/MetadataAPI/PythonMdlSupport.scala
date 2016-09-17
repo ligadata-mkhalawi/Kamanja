@@ -48,7 +48,7 @@ class PythonMdlSupport(val mgr: MdMgr, val moduleName: String, val modelNamespac
   val PYTHON_BIN_DIR: String = "PYTHON_BIN_DIR"
   val PYTHON_CONFIG: String = "PYTHON_CONFIG"
   val ROOT_DIR: String = "ROOT_DIR"
-
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
   /** generate a random string for portion of python compile file name */
   val random: Random = new Random(java.lang.System.currentTimeMillis())
   val randomFileNameStemSuffix: String = Random.alphanumeric.take(8).mkString
@@ -92,8 +92,11 @@ class PythonMdlSupport(val mgr: MdMgr, val moduleName: String, val modelNamespac
   private def CreateModelDef(recompile: Boolean, isPython: Boolean): ModelDef = {
 
     /** if properties have been supplied, then give them to the to the model def makers */
-    val pythonPropertiesStr: String = metadataAPIConfig.getProperty(PYTHON_CONFIG)
-    implicit val formats = org.json4s.DefaultFormats
+    val pythonPropertiesStr: String = getMetadataAPI.GetMetadataAPIConfig.getProperty("PYTHON_CONFIG")
+    if (logger.isDebugEnabled()) {
+       logger.debug ("python properties str in Create Model Def " + pythonPropertiesStr) 
+    }
+//    implicit val formats = org.json4s.DefaultFormats
     val pyPropertyMap: Map[String, Any] = parse(pythonPropertiesStr).values.asInstanceOf[Map[String, Any]]
     val modelDef: ModelDef = if (isPython) {
       val pypathExists: Boolean = pyPropertyMap != null && pyPropertyMap.contains(PYTHON_PATH)

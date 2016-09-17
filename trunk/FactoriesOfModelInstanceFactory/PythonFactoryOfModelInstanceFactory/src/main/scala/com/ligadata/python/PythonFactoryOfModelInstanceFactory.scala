@@ -696,7 +696,7 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext, val ser
     * @param txnContext Transaction context to do get operations on this transactionid. But this transaction will be rolledback
     *                   once the initialization is done.
     */
-    override def init(instanceMetadata: String): Unit = {
+    override def init(txnContext: TransactionContext): Unit = {
 
         val pyPath : String = if (nodeContext.getValue("PYTHON_PATH") != null)
 	                         nodeContext.getValue("PYTHON_PATH").asInstanceOf[String]

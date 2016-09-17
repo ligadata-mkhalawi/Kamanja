@@ -638,7 +638,7 @@ abstract class ModelInstanceFactory(val modelDef: ModelDef, val nodeContext: Nod
   // Common initialization for all Model Instances. This gets called once per node during the metadata load or corresponding model def change.
   //	Intput:
   //		txnCtxt: Transaction context to do get operations on this transactionid. But this transaction will be rolledback once the initialization is done.
-  def init(instanceMetadata: String): Unit = {}
+  def init(txnContext: TransactionContext): Unit = {}
 
   // This calls when the factory is shutting down. There is no guarantee.
   def shutdown(): Unit = {} // Shutting down this factory. 
