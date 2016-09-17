@@ -757,6 +757,19 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext, val ser
        if (logger.isDebugEnabled()) {
           logger.debug ("Remove model calls this functon ---------") ;
        }
+	
+	val (moduleName, modelName) : (String,String) = ModuleNModelNames
+       	val connectionMap : scala.collection.mutable.HashMap[String,Any] =
+        nodeContext.getValue("PYTHON_CONNECTIONS").asInstanceOf[scala.collection.mutable.HashMap[String,Any]]
+	if (logger.isDebugEnabled()) {
+	   logger.debug("The size of connectionMap  ------" + connectionMap.size)
+        }
+	for ((partitionKey, connection) <- connectionMap) {
+	  val pySrvConn : PyServerConnection = connectionMap.getOrElse(partitionKey, null).asInstanceOf[PyServerConnection]
+	   if (pySrvConn != null) {
+	      val resultStr : String = pySrvConn.removeModel(moduleName, modelName)
+	   }
+	}
     }
 
     /**
@@ -820,7 +833,6 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext, val ser
       */
     override def createModelInstance(): ModelInstance = {
         val useThisModel : ModelInstance = if (modelDef != null) {
-//            val partitionKey : String = txnContext.getPartitionKey()
             val isInstanceReusable : Boolean = true
             val builtModel : ModelInstance = new PythonAdapter(this, nodeContext)
             builtModel
