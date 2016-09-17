@@ -8,7 +8,9 @@ import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import org.json4s._
 
-case class DistributionMap(var action: String, var globalprocessthreads: Int, var globalreaderthreads: Int, var logicalpartitions: Int, var totalreaderthreads: Int, var totalprocessthreads: Int, adaptermaxpartitions: Option[List[AdapMaxPartitions1]], var distributionmap: List[NodeDistMap])
+//case class DistributionMap(var action: String, var globalprocessthreads: Int, var globalreaderthreads: Int, var logicalpartitions: Int, var totalreaderthreads: Int, var totalprocessthreads: Int, adaptermaxpartitions: Option[List[AdapMaxPartitions1]], var distributionmap: List[NodeDistMap])
+case class DistributionMap(var action: String, adaptermaxpartitions: Option[List[AdapMaxPartitions1]], var distributionmap: List[NodeDistMap])
+
 case class AdapMaxPartitions1(Adap: String, MaxParts: Int)
 case class NodeDistMap(Node: String, PhysicalPartitions: List[PhysicalPartitions], LogicalPartitions: List[LogicalPartitions])
 case class PhysicalPartitions(var ThreadId: String, Adaps: List[Adaps])
@@ -81,7 +83,8 @@ object DistributionTest {
     var adapterMaxPartitions = scala.collection.mutable.Map[String, Int]()
     allPartsToValidate.foreach(p => { adapterMaxPartitions(p._1) = p._2.size })
 
-    val distributeJson = Distribution.createDistributionJson(nodeDist)
+    //val distributeJson = Distribution.createDistributionJson(nodeDist)
+    val distributeJson = "{\"action\":\"stop\"}"
     println("distJson " + distributeJson)
     val json = parse(distributeJson)
     if (json == null || json.values == null) { // Not doing any action if not found valid json

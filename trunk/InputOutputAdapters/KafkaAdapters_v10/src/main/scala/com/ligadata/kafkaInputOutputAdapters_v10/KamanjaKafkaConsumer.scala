@@ -240,12 +240,24 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
       }
       partitionGroups(tp.threadId) = threadPartSet
     })
+
     var instancePartitions = Set[Int]()
     partitionGroups.foreach(t => {
       t._2.foreach(tp => { instancePartitions += tp._1.PartitionId })
     })
 
     qc.instancePartitions = instancePartitions
+    LOG.debug(" qc.instancePartitions " + qc.instancePartitions)
+
+    partitionGroups.foreach(group => {
+      LOG.debug("group 1 " + group._1)
+      group._2.foreach(g => { LOG.debug("group 2 " + g._1 + " " + g._2 + " " + g._3) })
+    })
+
+    qc.instancePartitions.foreach(partitionId => {
+      maxPartNumber = scala.math.max(partitionId, maxPartNumber)
+    })
+
     // So, now that we have our partition buckets, we start a thread for each buckets.  This involves seeking to the desired location for each partition
     // in the bucket, then starting to POLL.
     partitionGroups.foreach(group => {

@@ -52,7 +52,7 @@ case class ActionOnAdaptersMap(action: String, adaptermaxpartitions: Option[List
 case class ClusterDistributionInfo(ClusterId: String, GlobalProcessThreads: Int, GlobalReaderThreads: Int, LogicalPartitions: Int, NodesDist: ArrayBuffer[NodeDistInfo])
 case class NodeDistInfo(Nodeid: String, ProcessThreads: Int, ReaderThreads: Int)
 
-case class DistributionMap(var action: String, var globalprocessthreads: Int, var globalreaderthreads: Int, var logicalpartitions: Int, var totalreaderthreads: Int, var totalprocessthreads: Int, adaptermaxpartitions: Option[List[AdapMaxPartitions]], var distributionmap: List[NodeDistMap])
+case class DistributionMap(var action: String, adaptermaxpartitions: Option[List[AdapMaxPartitions]], var distributionmap: List[NodeDistMap])
 case class NodeDistMap(Node: String, PhysicalPartitions: List[PhysicalPartitions], LogicalPartitions: List[LogicalPartitions])
 case class PhysicalPartitions(var ThreadId: String, Adaps: List[Adaps])
 case class Adaps(var Adap: String, var ReadPartitions: List[String])
@@ -595,6 +595,7 @@ object KamanjaLeader {
               if (tUAK != null) {
                 val uAK = tUAK._2
                 if (uAK != null) {
+                  uAK.foreach { u => { LOG.debug(" GetUniqueKeyValue(uk)  "+ GetUniqueKeyValue(u))}}
                   val uKV = uAK.map(uk => { GetUniqueKeyValue(uk) })
                   val maxParts = adapMaxPartsMap.getOrElse(name, 0)
                   LOG.info("DistributionCheck:On Node %s for Adapter %s with Max Partitions %d UniqueKeys %s, UniqueValues %s".format(nodeId, name, maxParts, uAK.mkString(","), uKV.mkString(",")))
@@ -623,7 +624,7 @@ object KamanjaLeader {
                 }
               }
             })
-            // LOG.info(ia.UniqueName + " ==> Processing Keys & values: " + quads.map(q => { (q._key.Serialize, q._val.Serialize, q._validateInfoVal.Serialize) }).mkString(","))
+             LOG.info(ia.UniqueName + " ==> Processing Keys & values: " + threadPartitions.map(qt => { qt.threadPartitions.map(q => {(q._key.Serialize, q._val.Serialize, q._validateInfoVal.Serialize) })}).mkString(","))
             ia.StartProcessing(threadPartitions.toArray, true)
           }
 

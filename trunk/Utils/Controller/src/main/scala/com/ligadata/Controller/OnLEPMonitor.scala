@@ -112,7 +112,8 @@ class KamanjaMonitor {
    * @param receivedString String
    */
   private def ActionOnActionChange(receivedString: String): Unit = {
-    if (receivedString.size == 1 && receivedString.toInt == 1) {
+    throw new Exception("Not implemented - during Logical Partitions")
+    /*if (receivedString.size == 1 && receivedString.toInt == 1) {
       LOG.debug("Monitoring turned ON")
       if (isStarted) {
         return
@@ -191,7 +192,7 @@ class KamanjaMonitor {
       }
 
       SampleAggregator.reset
-    }
+    }*/
   }
 
   /**
