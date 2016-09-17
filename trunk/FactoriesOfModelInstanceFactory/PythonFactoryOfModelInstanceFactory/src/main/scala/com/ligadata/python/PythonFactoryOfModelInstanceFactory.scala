@@ -16,6 +16,7 @@
 
 package com.ligadata.python
 
+import scala.sys.process._
 import scala.collection.mutable.{ArrayBuffer, Map => MutableMap}
 import com.ligadata.kamanja.metadata.{BaseElem, MdMgr, ModelDef}
 import com.ligadata.KamanjaBase._
@@ -758,7 +759,22 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext, val ser
           logger.debug ("Remove model calls this functon ---------") ;
        }
 	
+        val pyPath : String = if (nodeContext.getValue("PYTHON_PATH") != null)
+	                         nodeContext.getValue("PYTHON_PATH").asInstanceOf[String]
+                              else
+  		                null
+	
 	val (moduleName, modelName) : (String,String) = ModuleNModelNames
+	val targetFile : String = s"$pyPath/models/$moduleName.py"
+	if (logger.isDebugEnabled()) {
+	   logger.debug ("PythonAdapterFactor.init : removing  model file to the target mode dir --------") 
+        }
+        val rmModelCmdSeq: Seq[String] = Seq[String]("rm -f ", targetFile)
+        val (result, stdoutStr, stderrStr): (Int, String, String) = runCmdCollectOutput(rmModelCmdSeq)
+        if (result != 0) {
+           logger.error(s"Remove Model failed...  $targetFile")
+        }
+
        	val connectionMap : scala.collection.mutable.HashMap[String,Any] =
         nodeContext.getValue("PYTHON_CONNECTIONS").asInstanceOf[scala.collection.mutable.HashMap[String,Any]]
 	if (logger.isDebugEnabled()) {
@@ -771,6 +787,29 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext, val ser
 	   }
 	}
     }
+
+  /**
+   * Execute the supplied command sequence. Answer with the rc, the stdOut, and stdErr outputs from
+   * the external command represented in the sequence.
+   *
+   * Warning: This function will wait for the process to end.  It is **_not_** to be used to launch a daemon. Use
+   * cmd.run instead. If this application is itself a server, you can run it with the ProcessLogger as done
+   * here ... possibly with a different kind of underlying stream that writes to a log file or in some fashion
+   * consumable with the program.
+   *
+   * @param cmd external command sequence
+   * @return (rc, stdout, stderr)
+   */
+  private def runCmdCollectOutput(cmd: Seq[String]): (Int, String, String) = {
+    val stdoutStream = new ByteArrayOutputStream
+    val stderrStream = new ByteArrayOutputStream
+    val stdoutWriter = new PrintWriter(stdoutStream)
+    val stderrWriter = new PrintWriter(stderrStream)
+    val exitValue = cmd.!(ProcessLogger(stdoutWriter.println, stderrWriter.println))
+    stdoutWriter.close()
+    stderrWriter.close()
+    (exitValue, stdoutStream.toString, stderrStream.toString)
+  }
 
     /**
       * Answer the model name.
