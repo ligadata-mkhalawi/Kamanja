@@ -37,45 +37,4 @@ class LoanTuple(ModelInstance):
                                      'python_risk_score' : pred})
                 return outMsg
 
-        def getInputFields(self):
-                """The field names and their types needed by the model are returned to """
-                """the python proxy (model stub communicating with this server). """
-                """Feel free to just hard code the type info if that is best. """
-                """The returned dictionaries are used by the python proxy to choose """
-                """which fields from the associated messages(s) to send to the python server """
-                """when the model is executed.  This is appropriate when the message contains"""
-                """a thousand fields, but the model only uses five of them. """
-
-                """As shown, conceivably the information could be configured in the model """
-                """options. """
-
-                self.logger.debug("Entered LoanTuple.getInputFields")
-                modelOptions = super(LoanTuple, self).ModelOptions()
-                inputFields = dict()
-                if "InputTypeInfo" in modelOptions:
-                        inputFields.update(modelOptions["InputTypeInfo"])
-                else:
-                        inputFields["rec_id"] = "Int"
-                        inputFields["bad0"] = "Float"
-                        inputFields["tin_imo_reason_debtcon"] = "Float"
-                        inputFields["tin_izr_job_mgr"] = "Float"
-                        inputFields["tin_izr_job_office"] = "Float"
-                        inputFields["tin_izr_job_other"] = "Float"
-                        inputFields["tin_izr_job_profexe"] = "Float"
-                        inputFields["tin_izr_job_sales"] = "Float"
-                        inputFields["tin_izr_job_self"] = "Float"
-                        inputFields["r01_loan"] = "Float"
-                        inputFields["imn_r01_mortdue"] = "Float"
-                        inputFields["imn_r01_yoj"] = "Float"
-                        inputFields["imn_r01_derog"] = "Float"
-                        inputFields["imn_r01_value"] = "Float"
-                        inputFields["imn_r01_delinq"] = "Float"
-                        inputFields["imn_r01_clage"] = "Float"
-                        inputFields["imn_r01_ninq"] = "Float"
-                        inputFields["imn_r01_clno"] = "Float"
-                        inputFields["log6_derog"] = "Float"
-                        inputFields["log5_delinq"] = "Float"
-                        inputFields["log_value"] = "Float"
-
-                return (inputFields)
 

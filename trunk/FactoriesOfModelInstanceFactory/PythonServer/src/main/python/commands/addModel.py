@@ -52,7 +52,10 @@ class addModel(CommandBase):
                         if self.logger.isEnabledFor(logging.DEBUG): 
 			   self.logger.debug("model {}.{} added!".format(moduleName, modelName))
 			modelAddMsg = "model {}.{} added".format(moduleName,modelName)
-                        (inputfields) = handler.getInputFields()
+#                        (inputfields) = handler.getInputFields()
+                        inputfields = dict()
+                        if ("InputTypeInfo" in modelOptions):
+                           inputFields.update(modelOptions["InputTypeInfo"])
 			result = json.dumps({'Cmd' : 'addModel', 'Server' : host, 'Port' : str(port), 'Code' : 0, 'Result' : modelAddMsg, 'InputFields' : inputfields, 'OutputFields' : outputfields })
 #			result = json.dumps({'Cmd' : 'addModel', 'Server' : host, 'Port' : str(port), 'Code' : 0, 'Result' : modelAddMsg, 'InputFields' : [] , 'OutputFields' : [] })
 		else:
