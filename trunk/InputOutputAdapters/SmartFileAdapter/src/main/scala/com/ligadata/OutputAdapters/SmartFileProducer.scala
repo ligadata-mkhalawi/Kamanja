@@ -16,6 +16,7 @@
 
 package com.ligadata.OutputAdapters
 
+import org.apache.avro.generic.GenericRecord
 import org.apache.logging.log4j.{Logger, LogManager}
 import java.io._
 import java.text.SimpleDateFormat
@@ -38,6 +39,8 @@ import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.commons.compress.compressors.CompressorStreamFactory
 import org.apache.commons.compress.compressors.CompressorOutputStream
+import parquet.avro.AvroParquetWriter
+import org.apache.avro.generic.GenericRecordBuilder
 import parquet.hadoop.metadata.CompressionCodecName
 import parquet.schema.MessageTypeParser
 import scala.collection.mutable.ArrayBuffer
@@ -51,8 +54,8 @@ object SmartFileProducer extends OutputAdapterFactory {
   def CreateOutputAdapter(inputConfig: AdapterConfiguration, nodeContext: NodeContext): OutputAdapter = new SmartFileProducer(inputConfig, nodeContext)
 }
 
-case class PartitionFile(key: String, name: String, outStream: OutputStream, parquetWriter : ParquetWriter[Array[Any]],
-                         var records: Long, var size: Long, var streamBuffer: ArrayBuffer[Byte], var parquetBuffer: ArrayBuffer[Array[Any]],
+case class PartitionFile(key: String, name: String, outStream: OutputStream, parquetWriter : AvroParquetWriter[GenericRecord],
+                         var records: Long, var size: Long, var streamBuffer: ArrayBuffer[Byte], var parquetBuffer: ArrayBuffer[ContainerInterface],
                          var recordsInBuffer: Long, var flushBufferSize: Long)
 
 case class PartitionStream(val compressStream: OutputStream, val originalStream: Any) extends OutputStream {
@@ -288,10 +291,17 @@ class OutputStreamWriter {
     if (fc.uri.startsWith("hdfs://")) writeToHdfs(fc, os, message) else writeToFs(fc, os, message)
   }
 
-  final def writeParquet(fc: SmartFileProducerConfiguration, pf : PartitionFile, messages: Array[Array[Any]]): Unit = {
+  final def writeParquet(fc: SmartFileProducerConfiguration, pf : PartitionFile, messages: Array[ContainerInterface],
+                         schema : org.apache.avro.Schema): Unit = {
+
 
     messages.foreach(message => {
-      pf.parquetWriter.write(message)
+      val builder = message.getAllAttributeValues.foldLeft(new GenericRecordBuilder(schema)) ((recordBuilder, attr) => {
+        recordBuilder.set(attr.getValueType.getName,attr.getValue)
+      })
+      val record = builder.build()
+
+      pf.parquetWriter.write(record)
     })
   }
 
@@ -382,8 +392,8 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   private var metrics: scala.collection.mutable.Map[String, Any] = scala.collection.mutable.Map[String, Any]()
   metrics("MessagesProcessed") = new AtomicLong(0)
 
-  private val parquetSchemasMap = collection.mutable.Map[String, String]() //message -> schema
-  private val writeSupportsMap = collection.mutable.Map[String, ParquetWriteSupport]() //message -> support
+  private val avroSchemasMap = collection.mutable.Map[String, org.apache.avro.Schema]() //message -> schema
+  //private val writeSupportsMap = collection.mutable.Map[String, ParquetWriteSupport]() //message -> support
 
 
   if (fc.uri.startsWith("file://"))
@@ -582,25 +592,15 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           }
 
           if(isParquet){
-            if(!writeSupportsMap.contains(record.getFullTypeName)){
-              println(">>>>>>>>>>>>>>>>>> Avro schema : " + record.getAvroSchema)
-              //get avro schema from message then use it to get parquet schema
-              val parquetSchema = Utils.getParquetSchema(record.getAvroSchema)
-              //val schema = MessageTypeParser.parseMessageType(parquetSchema)
-              println(">>>>>>>>>>>>>>>>>> parquet schema : " + parquetSchema.toString)
 
-              val writeSupport = new ParquetWriteSupport(parquetSchema)
-              writeSupportsMap.put(record.getFullTypeName, writeSupport)
-            }
+            if(!avroSchemasMap.contains(typeName))
+              avroSchemasMap.put(typeName, Utils.getAvroSchema(record))
 
-            val parquetWriter = Utils.createParquetWriter(fc, fileName, writeSupportsMap(record.getFullTypeName), parquetCompression)
-              /*new ParquetWriter[Array[Any]](outputParquetFilePath, writeSupportsMap(record.getFullTypeName),
-              CompressionCodecName.UNCOMPRESSED,
-              ParquetWriter.DEFAULT_BLOCK_SIZE, ParquetWriter.DEFAULT_PAGE_SIZE)*/
+            val parquetWriter = Utils.createAvroParquetWriter(fc, avroSchemasMap(typeName), fileName, parquetCompression)
 
-            var buffer: ArrayBuffer[Array[Any]] = null
+            var buffer: ArrayBuffer[ContainerInterface] = null
             if (fileBufferSize > 0)
-              buffer = new ArrayBuffer[Array[Any]]
+              buffer = new ArrayBuffer[ContainerInterface]
             partKey = new PartitionFile(key, fileName, new PartitionStream(os, originalStream), parquetWriter, 0, 0, null, buffer, 0, fileBufferSize)
           }
           else {
@@ -631,7 +631,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
         pf.synchronized {
           if(isParquet){
             if (pf.flushBufferSize > 0 && pf.parquetBuffer.size > 0) {
-              writeParquet(fc, pf, pf.parquetBuffer.toArray)
+              writeParquet(fc, pf, pf.parquetBuffer.toArray, avroSchemasMap(pf.parquetBuffer(0).getFullTypeName))
               pf.size += pf.parquetBuffer.size
               pf.records += pf.recordsInBuffer
               pf.parquetBuffer.clear()
@@ -696,7 +696,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   }
 
   def getUnserializedData(outputContainer : ContainerInterface) : Array[Any] = {
-    val data = ArrayBuffer[Any]()
+    /*val data = ArrayBuffer[Any]()
     val fields = outputContainer.getAllAttributeValues
     fields.foreach(attr => {
       val fldValue = attr.getValue
@@ -704,7 +704,10 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
 
       data.append(fldValue)
     })
-    data.toArray
+    data.toArray*/
+
+    outputContainer.getAllAttributeValues.map(attr => attr.getValue)
+
   }
 
   // Locking before we write into file
@@ -734,7 +737,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       var idx = 0
       outputContainers.foreach(record => {
         val message = if(isParquet) null else serializedContainerData(idx)
-        val unserializedData = if(isParquet) getUnserializedData(record) else null
+
         idx += 1
 
         var isSuccess = false
@@ -746,12 +749,12 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
               if (pf.flushBufferSize > 0) {
                 LOG.info("Smart File Producer " + fc.Name + ": adding record to buffer for file " + pf.name)
                 if(isParquet) {
-                  pf.parquetBuffer.append(unserializedData)
+                  pf.parquetBuffer.append(record)
 
                   pf.recordsInBuffer += 1
                   if (pf.parquetBuffer.size > pf.flushBufferSize) {
                     LOG.info("Smart File Producer " + fc.Name + ": buffer is full writing to file " + pf.name)
-                    writeParquet(fc, pf, pf.parquetBuffer.toArray)
+                    writeParquet(fc, pf, pf.parquetBuffer.toArray, avroSchemasMap(pf.parquetBuffer(0).getFullTypeName))
                     pf.size += pf.parquetBuffer.size
                     pf.records += pf.recordsInBuffer
                     pf.parquetBuffer.clear()
@@ -776,8 +779,8 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
               } else {
                 LOG.info("Smart File Producer " + fc.Name + ": writing record to file " + pf.name)
                 if(isParquet) {
-                  val data = Array(unserializedData)
-                  writeParquet(fc, pf, data)
+                  val data = Array(record)
+                  writeParquet(fc, pf, data, avroSchemasMap(record.getFullTypeName))
                   pf.size += data.length
                 }
                 else {
@@ -810,8 +813,8 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
 
               if(isParquet) {
                 val messageStr =
-                  if(unserializedData == null) "null"
-                  else unserializedData.map(f => if(f==null) "null" else f.toString).mkString(fc.messageSeparator)
+                  if(record == null) "null"
+                  else record.getAllAttributeValues.map(attr => if(attr==null || attr.getValue == null) "null" else attr.getValue.toString).mkString(fc.messageSeparator)
                 LOG.error("Smart File Producer " + fc.Name + ": Unable to write output message: " + messageStr, e)
               }
               else

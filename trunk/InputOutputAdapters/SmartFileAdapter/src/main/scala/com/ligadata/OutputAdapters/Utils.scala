@@ -1,11 +1,16 @@
 package com.ligadata.OutputAdapters
 
 import com.ligadata.AdaptersConfiguration.SmartFileProducerConfiguration
+import com.ligadata.KamanjaBase.ContainerInterface
+import org.apache.avro.Schema
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.security.UserGroupInformation
 import parquet.hadoop.ParquetWriter
 import parquet.hadoop.metadata.CompressionCodecName
 import org.apache.hadoop.fs.Path
+import org.apache.avro.generic.GenericRecord;
+import org.apache.avro.file.DataFileWriter;
+import parquet.avro.AvroParquetWriter;
 
 /**
   * Created by Yasser on 9/11/2016.
@@ -13,7 +18,7 @@ import org.apache.hadoop.fs.Path
 object Utils {
 
   def createHdfsConfig(fc: SmartFileProducerConfiguration) : Configuration = {
-    var hdfsConf: Configuration = new Configuration();
+    val hdfsConf: Configuration = new Configuration()
     if (fc.kerberos != null) {
       hdfsConf.set("hadoop.security.authentication", "kerberos")
       UserGroupInformation.setConfiguration(hdfsConf)
@@ -27,23 +32,20 @@ object Utils {
     }
     hdfsConf
   }
-
-  def getParquetSchema(avroSchemaStr : String): parquet.schema.MessageType ={
+  
+  def getAvroSchema(record: ContainerInterface): org.apache.avro.Schema ={
 
     //replace basic types with Union type to allow nulls => optional in parquet,
     // otherwise generated parquet fields will be required
     val regex = "\"type\"\\s*:\\s*\"(int|double|float|boolean|long|string)\"".r
-    val modifiedAvroSchemaStr = regex.replaceAllIn(avroSchemaStr, "\"type\" : [\"$1\",\"null\"]")
+    val modifiedAvroSchemaStr = regex.replaceAllIn(record.getAvroSchema, "\"type\" : [\"$1\",\"null\"]")
 
     val avroSchema = new org.apache.avro.Schema.Parser().parse(modifiedAvroSchemaStr)
-    val avroSchemaConverter = new parquet.avro.AvroSchemaConverter()
-    val parquetSchema = avroSchemaConverter.convert(avroSchema)
-    parquetSchema
+    avroSchema
   }
 
-  def createParquetWriter(fc: SmartFileProducerConfiguration,
-                          filePath : String, writeSupport : ParquetWriteSupport,
-                          compression : CompressionCodecName) : ParquetWriter[Array[Any]] = {
+  def createAvroParquetWriter(fc: SmartFileProducerConfiguration, schema : Schema,
+                          filePath : String, compression : CompressionCodecName) : AvroParquetWriter[GenericRecord] = {
 
     val writeToHdfs = fc.uri.startsWith("hdfs://")
     val path =
@@ -59,15 +61,13 @@ object Utils {
     val parquetWriter =
       if (writeToHdfs){
         val hadoopConf = createHdfsConfig(fc)
-        new ParquetWriter[Array[Any]](path, writeSupport, compression,
-          parquetBlockSize, parquetPageSize, parquetPageSize,  // third one is dictionaryPageSize
+        new AvroParquetWriter[GenericRecord](path, schema, compression,
+          parquetBlockSize, parquetPageSize,
           ParquetWriter.DEFAULT_IS_DICTIONARY_ENABLED,
-          ParquetWriter.DEFAULT_IS_VALIDATING_ENABLED,
-          ParquetWriter.DEFAULT_WRITER_VERSION,
           hadoopConf)
       }
       else
-        new ParquetWriter[Array[Any]](path, writeSupport, compression,
+        new AvroParquetWriter[GenericRecord](path, schema, compression,
           parquetBlockSize, parquetPageSize)
 
     parquetWriter
