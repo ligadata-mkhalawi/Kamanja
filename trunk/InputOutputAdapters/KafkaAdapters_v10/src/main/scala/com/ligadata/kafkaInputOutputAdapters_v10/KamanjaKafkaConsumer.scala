@@ -230,14 +230,27 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
       bCount = (bCount + 1) % numberOfThreads
     })*/
     /** Commenting below code for LogicalParitions updates - End **/
+    LOG.debug("threadPartitionIds.size " + threadPartitionIds.size)
+    for (i <- 0 until threadPartitionIds.length) {
+      LOG.debug("threadPartitionIds 1 " + threadPartitionIds(i).threadId)
+      val tp = threadPartitionIds(i).threadPartitions
+      for (j <- 0 until tp.length) {
+        LOG.debug("threadPartitionIds 2:  " + tp(j)._key.asInstanceOf[KafkaPartitionUniqueRecordKey].PartitionId)
+      }
+    }
 
     val partitionGroups: scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]] = scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]]()
-    val threadPartSet = scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]()
     threadPartitionIds.foreach(tp => {
+      var threadPartSet = scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]()
+
       for (i <- 0 until tp.threadPartitions.size) {
         val threadPart = (tp.threadPartitions(i)._key.asInstanceOf[KafkaPartitionUniqueRecordKey], tp.threadPartitions(i)._val.asInstanceOf[KafkaPartitionUniqueRecordValue], tp.threadPartitions(i)._validateInfoVal.asInstanceOf[KafkaPartitionUniqueRecordValue])
         threadPartSet += threadPart
       }
+      LOG.debug("tp.threadId " + tp.threadId)
+      threadPartSet.foreach(t => {
+        LOG.debug("threadPartSet " + t._1.PartitionId)
+      })
       partitionGroups(tp.threadId) = threadPartSet
     })
 
@@ -251,7 +264,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
 
     partitionGroups.foreach(group => {
       LOG.debug("group 1 " + group._1)
-      group._2.foreach(g => { LOG.debug("group 2 " + g._1 + " " + g._2 + " " + g._3) })
+      group._2.foreach(g => { LOG.debug("group 2 " + g._1.asInstanceOf[KafkaPartitionUniqueRecordKey].PartitionId + " " + g._2 + " " + g._3) })
     })
 
     qc.instancePartitions.foreach(partitionId => {

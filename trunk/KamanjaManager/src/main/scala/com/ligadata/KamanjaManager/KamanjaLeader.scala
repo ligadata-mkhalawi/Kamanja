@@ -575,8 +575,6 @@ object KamanjaLeader {
     if (nodeKeysMap == null || nodeKeysMap.size == 0) {
       return true
     }
-    var threadPartitions = ArrayBuffer[ThreadPartitions]()
-
     var remainingInpAdapters = inputAdapters.toArray
     var failedWaitTime = 15000 // Wait time starts at 15 secs
     val maxFailedWaitTime = 60000 // Max Wait time 60 secs
@@ -585,6 +583,7 @@ object KamanjaLeader {
     while (remainingInpAdapters.size > 0) {
       var failedInpAdapters = ArrayBuffer[InputAdapter]()
       remainingInpAdapters.foreach(ia => {
+        var threadPartitions = ArrayBuffer[ThreadPartitions]()
         val name = ia.UniqueName
         try {
           //val uAK = nodeKeysMap.getOrElse(name, null) ///** Commenting - LogicalParitions updates  **/
@@ -595,7 +594,7 @@ object KamanjaLeader {
               if (tUAK != null) {
                 val uAK = tUAK._2
                 if (uAK != null) {
-                  uAK.foreach { u => { LOG.debug(" GetUniqueKeyValue(uk)  "+ GetUniqueKeyValue(u))}}
+                  uAK.foreach { u => { LOG.debug(" GetUniqueKeyValue(uk)  " + GetUniqueKeyValue(u)) } }
                   val uKV = uAK.map(uk => { GetUniqueKeyValue(uk) })
                   val maxParts = adapMaxPartsMap.getOrElse(name, 0)
                   LOG.info("DistributionCheck:On Node %s for Adapter %s with Max Partitions %d UniqueKeys %s, UniqueValues %s".format(nodeId, name, maxParts, uAK.mkString(","), uKV.mkString(",")))
@@ -617,14 +616,14 @@ object KamanjaLeader {
                     info._validateInfoVal = vals(i)
                     quads += info
                   }
-                  val threadPartInfo = new ThreadPartitions
+                  var threadPartInfo = new ThreadPartitions
                   threadPartInfo.threadId = tUAK._1.toInt
                   threadPartInfo.threadPartitions = quads.toArray
                   threadPartitions += threadPartInfo
                 }
               }
             })
-             LOG.info(ia.UniqueName + " ==> Processing Keys & values: " + threadPartitions.map(qt => { qt.threadPartitions.map(q => {(q._key.Serialize, q._val.Serialize, q._validateInfoVal.Serialize) })}).mkString(","))
+            LOG.info(ia.UniqueName + " ==> Processing Keys & values: " + threadPartitions.map(qt => { qt.threadPartitions.map(q => { (q._key.Serialize, q._val.Serialize, q._validateInfoVal.Serialize) }) }).mkString(","))
             ia.StartProcessing(threadPartitions.toArray, true)
           }
 
@@ -656,7 +655,7 @@ object KamanjaLeader {
             ia.StartProcessing(quads.toArray, true)
           }*/
           /** Commenting below code for LogicalParitions updates - End **/
-          
+
         } catch {
           case fae: FatalAdapterException => {
             LOG.error("Failed to start processing input adapter:" + name, fae)
