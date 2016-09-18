@@ -40,7 +40,13 @@ object Utils {
     val regex = "\"type\"\\s*:\\s*\"(int|double|float|boolean|long|string)\"".r
     val modifiedAvroSchemaStr = regex.replaceAllIn(record.getAvroSchema, "\"type\" : [\"$1\",\"null\"]")
 
-    val avroSchema = new org.apache.avro.Schema.Parser().parse(modifiedAvroSchemaStr)
+    val arrayRegex = "\\{\"type\"\\s*:\\s*\"array\"(.)*\"\\}".r
+    val finalAvroSchemaStr = arrayRegex.replaceAllIn(modifiedAvroSchemaStr, "[$0,\"null\"]")
+
+    println("final avro schema: \n" + finalAvroSchemaStr)
+
+    val avroSchema = new org.apache.avro.Schema.Parser().parse(finalAvroSchemaStr)
+
     avroSchema
   }
 

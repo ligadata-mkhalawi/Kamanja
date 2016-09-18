@@ -51,6 +51,9 @@ import parquet.hadoop.api.WriteSupport
 object SmartFileProducer extends OutputAdapterFactory {
   val ADAPTER_DESCRIPTION = "Smart File Output Adapter"
 
+  val nullFlagsFieldName = "kamanja_system_null_flags"
+  val systemFields = Set(nullFlagsFieldName)
+
   def CreateOutputAdapter(inputConfig: AdapterConfiguration, nodeContext: NodeContext): OutputAdapter = new SmartFileProducer(inputConfig, nodeContext)
 }
 
@@ -296,8 +299,28 @@ class OutputStreamWriter {
 
 
     messages.foreach(message => {
+
+      val nullFlags = {
+        val nullFlagsAny = message.getOrElse(SmartFileProducer.nullFlagsFieldName, null)
+        try {
+          if (nullFlagsAny == null) null
+          else nullFlagsAny.asInstanceOf[Array[Boolean]]
+        }
+        catch {
+          case ex: Exception => null
+        }
+      }
+
       val builder = message.getAllAttributeValues.foldLeft(new GenericRecordBuilder(schema)) ((recordBuilder, attr) => {
-        recordBuilder.set(attr.getValueType.getName,attr.getValue)
+
+        if(SmartFileProducer.systemFields.contains(attr.getValueType.getName.toLowerCase))
+          recordBuilder.set(attr.getValueType.getName, null)
+        else {
+          if (nullFlags != null && nullFlags.length > attr.getValueType.getIndex && nullFlags(attr.getValueType.getIndex))
+            recordBuilder.set(attr.getValueType.getName, null)
+          else
+            recordBuilder.set(attr.getValueType.getName, attr.getValue)
+        }
       })
       val record = builder.build()
 
