@@ -311,8 +311,9 @@ class OutputStreamWriter {
         }
       }
 
-      val builder = message.getAllAttributeValues.foldLeft(new GenericRecordBuilder(schema)) ((recordBuilder, attr) => {
 
+      val builder = message.getAllAttributeValues.foldLeft(new GenericRecordBuilder(schema)) ((recordBuilder, attr) => {
+        
         if(SmartFileProducer.systemFields.contains(attr.getValueType.getName.toLowerCase))
           recordBuilder.set(attr.getValueType.getName, null)
         else {
@@ -400,8 +401,8 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   }
 
   private[this] val fc = SmartFileProducerConfiguration.getAdapterConfig(nodeContext, inputConfig)
-  private var partitionStreams: collection.mutable.Map[String, PartitionFile] = collection.mutable.Map[String, PartitionFile]()
-  private var extensions: scala.collection.immutable.Map[String, String] = Map(
+  private val partitionStreams: collection.mutable.Map[String, PartitionFile] = collection.mutable.Map[String, PartitionFile]()
+  private val extensions: scala.collection.immutable.Map[String, String] = Map(
     (CompressorStreamFactory.BZIP2, ".bz2"),
     (CompressorStreamFactory.GZIP, ".gz"),
     (CompressorStreamFactory.XZ, ".xz"))
@@ -603,7 +604,16 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           // need to check again
           val dt = if (nextRolloverTime > 0) nextRolloverTime - (fc.rolloverInterval * 60 * 1000) else System.currentTimeMillis
           val ts = new java.text.SimpleDateFormat("yyyyMMdd'T'HHmm").format(new java.util.Date(dt))
-          val fileName = "%s/%s/%s%s-%d-%s.dat%s".format(fc.uri, path, fc.fileNamePrefix, nodeId, bucket, ts, extensions.getOrElse(defaultExtension, ""))
+          val initialFileName = "%s/%s/%s%s-%d-%s.dat%s".format(fc.uri, path, fc.fileNamePrefix, nodeId, bucket, ts, extensions.getOrElse(defaultExtension, ""))
+          val fileName =
+            if(isParquet && isFileExists(fc, initialFileName)){//cannot use already existing parquet file
+              val newDt = System.currentTimeMillis
+              nextRolloverTime = newDt + (fc.rolloverInterval * 60 * 1000)
+              val newTs = new java.text.SimpleDateFormat("yyyyMMdd'T'HHmm").format(new java.util.Date(newDt))
+              "%s/%s/%s%s-%d-%s.dat%s".format(fc.uri, path, fc.fileNamePrefix, nodeId, bucket, newTs, extensions.getOrElse(defaultExtension, ""))
+            }
+            else initialFileName
+
           LOG.info("Smart File Producer " + fc.Name + "(" + this + "): Opening file " + fileName)
           var os : OutputStream = null
           var originalStream : OutputStream = null
