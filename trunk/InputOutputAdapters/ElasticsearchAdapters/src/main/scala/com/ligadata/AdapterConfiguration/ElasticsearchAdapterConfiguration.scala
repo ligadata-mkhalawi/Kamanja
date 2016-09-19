@@ -1,6 +1,5 @@
 package com.ligadata.AdapterConfiguration
 
-
 import com.ligadata.Exceptions.KamanjaException
 import com.ligadata.InputOutputAdapterInfo.{AdapterConfiguration, PartitionUniqueRecordKey, PartitionUniqueRecordValue}
 import com.ligadata.kamanja.metadata.LogTrait
@@ -8,9 +7,7 @@ import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.JsonMethods._
 
-/**
-  * Created by Yousef on 8/13/2016.
-  */
+
 class ElasticsearchAdapterConfiguration extends AdapterConfiguration{
   var hostList: String = null //folder to write files
   var scehmaName: String = "" // prefix for the file names

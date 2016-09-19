@@ -10,11 +10,6 @@ import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.security.UserGroupInformation
 
 
-//trait LogTrait {
-//  val loggerName = this.getClass.getName()
-//  val logger = LogManager.getLogger(loggerName)
-//}
-
 class ElasticsearchUtility /*extends LogTrait*/ {
   var dataDataStoreInfo: String = null
   private val kvManagerLoader = new KamanjaLoaderInfo

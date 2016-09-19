@@ -1,11 +1,10 @@
-package ligadata.ElasticsearchInputOutputAdapters
+package com.ligadata.ElasticsearchInputOutputAdapters
 
 import java.util.Arrays
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 
 import com.ligadata.AdapterConfiguration.{ElasticsearchAdapterConfiguration, ElasticsearchConstants}
-import com.ligadata.ElasticsearchInputOutputAdapters.ElasticsearchUtility
 import com.ligadata.Exceptions.InvalidArgumentException
 import com.ligadata.HeartBeat.MonitorComponentInfo
 import com.ligadata.InputOutputAdapterInfo._
