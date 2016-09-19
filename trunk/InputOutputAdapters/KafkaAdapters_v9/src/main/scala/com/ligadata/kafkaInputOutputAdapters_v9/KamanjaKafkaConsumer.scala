@@ -232,22 +232,26 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     /** Commenting below code for LogicalParitions updates - End **/
 
     val partitionGroups: scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]] = scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]]()
-    val threadPartSet = scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]()
     threadPartitionIds.foreach(tp => {
+      var threadPartSet = scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]()
+
       for (i <- 0 until tp.threadPartitions.size) {
         val threadPart = (tp.threadPartitions(i)._key.asInstanceOf[KafkaPartitionUniqueRecordKey], tp.threadPartitions(i)._val.asInstanceOf[KafkaPartitionUniqueRecordValue], tp.threadPartitions(i)._validateInfoVal.asInstanceOf[KafkaPartitionUniqueRecordValue])
         threadPartSet += threadPart
       }
       partitionGroups(tp.threadId) = threadPartSet
     })
-      var instancePartitions = Set[Int]()
+
+    var instancePartitions = Set[Int]()
     partitionGroups.foreach(t => {
       t._2.foreach(tp => { instancePartitions += tp._1.PartitionId })
     })
 
     qc.instancePartitions = instancePartitions
-  
 
+    qc.instancePartitions.foreach(partitionId => {
+      maxPartNumber = scala.math.max(partitionId, maxPartNumber)
+    })
     // So, now that we have our partition buckets, we start a thread for each buckets.  This involves seeking to the desired location for each partition
     // in the bucket, then starting to POLL.
     partitionGroups.foreach(group => {

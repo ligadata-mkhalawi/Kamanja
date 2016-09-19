@@ -707,9 +707,9 @@ object SimpleKafkaProducer {
                 producer3 = com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer.CreateOutputAdapter(confProps,null)
               } else if (brokerVersion.equalsIgnoreCase("9")) {
                 producer3 = com.ligadata.kafkaInputOutputAdapters_v9.KafkaProducer.CreateOutputAdapter(confProps,null)
-              }/* else if (brokerVersion.equalsIgnoreCase("8")) {
+              } else if (brokerVersion.equalsIgnoreCase("8")) {
                 producer3 = com.ligadata.kafkaInputOutputAdapters_v8.KafkaProducer.CreateOutputAdapter(confProps,null)
-              }*/
+              }
 
               //var producer2: KafkaProducer[Array[Byte],Array[Byte]] = new KafkaProducer[Array[Byte],Array[Byte]](props);
               var tm: Long = 0
