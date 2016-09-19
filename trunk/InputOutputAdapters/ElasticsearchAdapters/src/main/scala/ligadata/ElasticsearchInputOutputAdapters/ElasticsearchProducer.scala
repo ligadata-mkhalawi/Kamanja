@@ -1,27 +1,22 @@
 package ligadata.ElasticsearchInputOutputAdapters
 
 import java.util.Arrays
-
-import com.ligadata.KamanjaBase.{ContainerInterface, NodeContext, TransactionContext}
-import org.apache.logging.log4j.{LogManager, Logger}
-import com.ligadata.InputOutputAdapterInfo._
-import com.ligadata.Exceptions.{FatalAdapterException, InvalidArgumentException, KamanjaException}
-import com.ligadata.HeartBeat.{MonitorComponentInfo, Monitorable}
-import org.json4s.jackson.Serialization
-
-import scala.collection.mutable.ArrayBuffer
-import java.util.concurrent.{Future, TimeUnit}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 
-import scala.actors.threadpool.{ExecutorService, Executors, TimeUnit}
-import java.util.concurrent.locks.ReentrantReadWriteLock
-
-import com.ligadata.KvBase.{Key, Value}
-import com.ligadata.Utils.KamanjaLoaderInfo
 import com.ligadata.AdapterConfiguration.{ElasticsearchAdapterConfiguration, ElasticsearchConstants}
 import com.ligadata.ElasticsearchInputOutputAdapters.ElasticsearchUtility
-import org.apache.hadoop.hbase.client.Connection
+import com.ligadata.Exceptions.InvalidArgumentException
+import com.ligadata.HeartBeat.MonitorComponentInfo
+import com.ligadata.InputOutputAdapterInfo._
+import com.ligadata.KamanjaBase.{ContainerInterface, NodeContext, TransactionContext}
+import com.ligadata.KvBase.{Key, Value}
+import com.ligadata.Utils.KamanjaLoaderInfo
+import org.apache.logging.log4j.LogManager
+import org.json4s.jackson.Serialization
+
+import scala.actors.threadpool.{ExecutorService, Executors}
+import scala.collection.mutable.ArrayBuffer
 
 
 object ElasticsearchProducer extends OutputAdapterFactory {
@@ -462,18 +457,18 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   }
 
   private def sendInfinitely(keyMessages: ArrayBuffer[MsgDataRecievedCnt], removeFromFailedMap: Boolean): Unit = {
-    var sendStatus = ElasticsearchConstants.HBASE_NOT_SEND
+    var sendStatus = ElasticsearchConstants.ELASTICSEARCH_NOT_SEND
     var retryCount = 0
     var waitTm = 15000
 
     // We keep on retry until we succeed on this thread
-    while (sendStatus != ElasticsearchConstants.HBASE_SEND_SUCCESS && isShutdown == false) {
+    while (sendStatus != ElasticsearchConstants.ELASTICSEARCH_SEND_SUCCESS && isShutdown == false) {
       try {
         //     sendStatus = doSend(keyMessages, removeFromFailedMap)   //check this
       } catch {
         case e: Exception => {
           externalizeExceptionEvent(e)
-          LOG.error(adapterConfig.Name + " Hbase PRODUCER: Error sending to kafka, Retrying after %dms. Retry count:%d".format(waitTm, retryCount), e)
+          LOG.error(adapterConfig.Name + " Elasticsearch PRODUCER: Error sending to kafka, Retrying after %dms. Retry count:%d".format(waitTm, retryCount), e)
           try {
             Thread.sleep(waitTm)
           } catch {

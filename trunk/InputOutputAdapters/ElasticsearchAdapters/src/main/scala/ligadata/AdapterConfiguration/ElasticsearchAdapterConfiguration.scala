@@ -195,8 +195,8 @@ object KamanjaElasticsearchAdapterConstants {
 }
 
 object ElasticsearchConstants {
-  val Elasticsearch_SEND_SUCCESS = 0
-  val Elasticsearch_SEND_Q_FULL = 1
-  val Elasticsearch_SEND_DEAD_PRODUCER = 2
-  val Elasticsearch_NOT_SEND = 3
+  val ELASTICSEARCH_SEND_SUCCESS = 0
+  val ELASTICSEARCH_SEND_Q_FULL = 1
+  val ELASTICSEARCH_SEND_DEAD_PRODUCER = 2
+  val ELASTICSEARCH_NOT_SEND = 3
 }
