@@ -16,16 +16,16 @@
 
 package com.ligadata.InputOutputAdapterInfo
 
-import com.ligadata.Exceptions.{KamanjaException, StackTrace}
+import com.ligadata.Exceptions.{ KamanjaException, StackTrace }
 import com.ligadata.KamanjaBase._
 import com.ligadata.HeartBeat._
 import com.ligadata.kamanja.metadata.MdMgr
-import com.ligadata.transactions.{NodeLevelTransService, SimpleTransService}
+import com.ligadata.transactions.{ NodeLevelTransService, SimpleTransService }
 
 //import org.json4s._
 //import org.json4s.JsonDSL._
 //import org.json4s.jackson.JsonMethods._
-import org.apache.logging.log4j.{Logger, LogManager}
+import org.apache.logging.log4j.{ Logger, LogManager }
 
 //import scala.collection.mutable.ArrayBuffer
 
@@ -60,6 +60,11 @@ class StartProcPartInfo {
   var _validateInfoVal: PartitionUniqueRecordValue = null
 }
 
+class ThreadPartitions {
+  var threadId: Int = -1
+  var threadPartitions: Array[StartProcPartInfo] = null
+}
+
 // Input Adapter
 trait InputAdapter extends AdaptersSerializeDeserializers with Monitorable {
   val nodeContext: NodeContext
@@ -79,7 +84,9 @@ trait InputAdapter extends AdaptersSerializeDeserializers with Monitorable {
 
   def StopProcessing: Unit
 
-  def StartProcessing(partitionInfo: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit
+  //def StartProcessing(partitionInfo: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit  
+  
+  def StartProcessing(partitionInfo: Array[ThreadPartitions], ignoreFirstMsg: Boolean): Unit
 
   // each value in partitionInfo is (PartitionUniqueRecordKey, PartitionUniqueRecordValue, Long, PartitionUniqueRecordValue). // key, processed value, Start transactionid, Ignore Output Till given Value (Which is written into Output Adapter) & processing Transformed messages (processing & total)
   def GetAllPartitionUniqueRecordKey: Array[PartitionUniqueRecordKey]
@@ -92,7 +99,7 @@ trait InputAdapter extends AdaptersSerializeDeserializers with Monitorable {
 
   def getAllPartitionEndValues: Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)]
 
-  def externalizeExceptionEvent (cause: Throwable): Unit = {
+  def externalizeExceptionEvent(cause: Throwable): Unit = {
     try {
       val exceptionEvent = nodeContext.getEnvCtxt.getContainerInstance("com.ligadata.KamanjaBase.KamanjaExceptionEvent").asInstanceOf[com.ligadata.KamanjaBase.KamanjaExceptionEvent]
       exceptionEvent.timeoferrorepochms = System.currentTimeMillis()
@@ -101,7 +108,7 @@ trait InputAdapter extends AdaptersSerializeDeserializers with Monitorable {
       exceptionEvent.errorstring = StackTrace.ThrowableTraceString(cause)
       nodeContext.getEnvCtxt.postMessages(Array[ContainerInterface](exceptionEvent))
     } catch {
-      case t:Throwable => {return}
+      case t: Throwable => { return }
     }
   }
 }
@@ -128,7 +135,7 @@ trait OutputAdapter extends AdaptersSerializeDeserializers with Monitorable {
 
   def Category = "Output"
 
-  def externalizeExceptionEvent (cause: Throwable): Unit = {
+  def externalizeExceptionEvent(cause: Throwable): Unit = {
     try {
       val exceptionEvent = nodeContext.getEnvCtxt.getContainerInstance("com.ligadata.KamanjaBase.KamanjaExceptionEvent").asInstanceOf[com.ligadata.KamanjaBase.KamanjaExceptionEvent]
       exceptionEvent.timeoferrorepochms = System.currentTimeMillis()
@@ -205,7 +212,7 @@ trait ExecContext {
 
           try {
             if (omsg != null)
-              msg.msgid =  MdMgr.GetMdMgr.ElementIdForSchemaId(omsg.asInstanceOf[ContainerInterface].getSchemaId)
+              msg.msgid = MdMgr.GetMdMgr.ElementIdForSchemaId(omsg.asInstanceOf[ContainerInterface].getSchemaId)
             else
               msg.msgid = -1
 
@@ -220,7 +227,7 @@ trait ExecContext {
             nodeContext.getEnvCtxt().postMessages(Array(msg))
           } catch {
             case e: Throwable => {
-              LOG.error("Failed to post message of type:%s, UK:%s, UV:%s".format(omsg.Name, uk, uv) , e)
+              LOG.error("Failed to post message of type:%s, UK:%s, UV:%s".format(omsg.Name, uk, uv), e)
             }
           }
         } else {
@@ -228,7 +235,7 @@ trait ExecContext {
         }
       } catch {
         case e: Throwable => {
-          LOG.error("Failed to create message for type:" +  omsg.Name, e)
+          LOG.error("Failed to create message for type:" + omsg.Name, e)
         }
       }
     } else {
@@ -261,7 +268,7 @@ trait ExecContext {
         LOG.trace("CurrentMsg:%s, KamanjaMessageEvent excluded Messages:%s".format(msg.getFullTypeName.toLowerCase(), excludedMsgs.mkString(",")))
       }
       val msgEvent: KamanjaMessageEvent =
-        if (excludedMsgs.contains(msg.getFullTypeName.toLowerCase())){
+        if (excludedMsgs.contains(msg.getFullTypeName.toLowerCase())) {
           val tmpMsgEvent: KamanjaMessageEvent = null
           tmpMsgEvent
         } else {
@@ -286,7 +293,7 @@ trait ExecContext {
         LOG.error("Failed to execute message : " + msg.getFullTypeName, e)
       }
     } finally {
-/*
+      /*
       try {
         commitData(txnCtxt);
       } catch {
@@ -329,8 +336,7 @@ trait ExecContext {
       val failedMsg = if (msgName != null) msgName else ""
       if (tMsg != null) {
         execute(tMsg, data, uniqueKey, uniqueVal, readTmMilliSecs)
-      }
-      else {
+      } else {
         if (LOG.isDebugEnabled) {
           LOG.debug("Not able to deserialize data:%s at UK:%s, UV:%s".format((if (data != null) new String(data) else ""), uk, uv))
         }

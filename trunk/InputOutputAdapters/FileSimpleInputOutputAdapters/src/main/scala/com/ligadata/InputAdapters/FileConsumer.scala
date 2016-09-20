@@ -221,7 +221,9 @@ class FileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecC
   }
 
   // Each value in partitionInfo is (PartitionUniqueRecordKey, PartitionUniqueRecordValue, Long, PartitionUniqueRecordValue) key, processed value, Start transactionid, Ignore Output Till given Value (Which is written into Output Adapter)
-  override def StartProcessing(partitionInfo: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = lock.synchronized {
+  //override def StartProcessing(partitionInfo: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = lock.synchronized {
+  override def StartProcessing(partitionInfo: Array[ThreadPartitions], ignoreFirstMsg: Boolean): Unit = lock.synchronized {
+  
     if (partitionInfo == null || partitionInfo.size == 0)
       return
 

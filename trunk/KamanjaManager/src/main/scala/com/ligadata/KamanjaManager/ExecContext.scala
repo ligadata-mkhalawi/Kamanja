@@ -819,7 +819,9 @@ object PostMessageExecutionQueue {
 
     def StopProcessing: Unit = {}
 
-    def StartProcessing(partitionInfo: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = {}
+    //def StartProcessing(partitionInfo: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = {}
+    
+    def StartProcessing(partitionInfo: Array[ThreadPartitions], ignoreFirstMsg: Boolean): Unit = {}
 
     def GetAllPartitionUniqueRecordKey: Array[PartitionUniqueRecordKey] = Array[PartitionUniqueRecordKey]()
 
