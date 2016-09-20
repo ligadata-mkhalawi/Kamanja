@@ -469,12 +469,12 @@ while True:
 		if exceptionOccurred == False and closedConnection == False:
 			try:
 				result = dispatcher(cmdMsgDict) # json string answers except stopServer
-                                if (logger.isEnabledFor(logging.DEBUG):
+                                if (logger.isEnabledFor(logging.DEBUG)):
                                    logger.debug ("This is the first place for dispatcher command " + result) 
 			except:
 				wireMsg = exceptionMsg("dispatched cmd exception...")
-                                if (logger.isEnabledFor(logging.DEBUG):
-                                    logger.debug ("This is place exception occurs  " + exceptionMsg) ) 
+                                if (logger.isEnabledFor(logging.DEBUG)):
+                                    logger.debug ("This is place exception occurs  " + exceptionMsg) 
 				sock.sendall(wireMsg)
 				sys.exc_clear()
 				exceptionOccurred = True
@@ -486,14 +486,14 @@ while True:
 				try:
 				    if result != 'kill-9': # stop command will return 'kill-9' as value
 						wireMsg = formatWireMsg(result)
-                                                if (logger.isEnabledFor(logging.DEBUG):
+                                                if (logger.isEnabledFor(logging.DEBUG)):
                                                       logger.debug ("This is the where result sent  " + result) 
 						sock.sendall(wireMsg)
 				    else:
 						wireMsg =  goingDownMsg()
 					        sock.sendall(wireMsg)
 				except:
-                                        if (logger.isEnabledFor(logging.DEBUG):
+                                        if (logger.isEnabledFor(logging.DEBUG)):
                                            logger.debug ("This is the exception place second  " + result) 
 					sys.stderr.write("the connection has been broken...closing connection")
 					sock.close()
