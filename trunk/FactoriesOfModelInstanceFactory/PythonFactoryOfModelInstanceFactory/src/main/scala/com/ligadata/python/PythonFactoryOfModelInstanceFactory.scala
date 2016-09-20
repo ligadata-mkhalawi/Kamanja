@@ -361,7 +361,7 @@ class PythonAdapter(factory : PythonAdapterFactory
                 if (status   == 0)  {
 		   val outMsgName = factory.getModelDef().outputMsgs(0)
                    val deser : SerializeDeserialize = factory.serDeserializer
-                   val outMsg : ContainerInterface = deser.deserialize(resultMap("Result").getBytes, outMsgName)
+                   val outMsg : ContainerInterface = deser.deserialize(resultMap("Result").toString.getBytes, outMsgName)
                    returnValues += outMsg
 		}
                 if (status < 0) {
