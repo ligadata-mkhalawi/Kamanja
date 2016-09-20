@@ -298,35 +298,7 @@ class OutputStreamWriter {
                          schema : org.apache.avro.Schema): Unit = {
 
 
-    messages.foreach(message => {
-
-      val nullFlags = {
-        val nullFlagsAny = message.getOrElse(SmartFileProducer.nullFlagsFieldName, null)
-        try {
-          if (nullFlagsAny == null) null
-          else nullFlagsAny.asInstanceOf[Array[Boolean]]
-        }
-        catch {
-          case ex: Exception => null
-        }
-      }
-
-
-      val builder = message.getAllAttributeValues.foldLeft(new GenericRecordBuilder(schema)) ((recordBuilder, attr) => {
-        
-        if(SmartFileProducer.systemFields.contains(attr.getValueType.getName.toLowerCase))
-          recordBuilder.set(attr.getValueType.getName, null)
-        else {
-          if (nullFlags != null && nullFlags.length > attr.getValueType.getIndex && nullFlags(attr.getValueType.getIndex))
-            recordBuilder.set(attr.getValueType.getName, null)
-          else
-            recordBuilder.set(attr.getValueType.getName, attr.getValue)
-        }
-      })
-      val record = builder.build()
-
-      pf.parquetWriter.write(record)
-    })
+    Utils.writeParquet(fc, pf, messages, schema)
   }
 
   /*
