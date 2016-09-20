@@ -214,8 +214,8 @@ def startMsg(conn, startMarker, msgBytes):
 	try:
 		startMarkerBase = rawmsg.index(startMarker)
 	except ValueError:
-		sys.stderr.write('from connection bytes "{}", start marker "{}" was not found'.format(rawmsg, startMarker))
-		sys.stderr.write('giving up... something is fouled')
+		logger.error('from connection bytes "{}", start marker "{}" was not found'.format(rawmsg, startMarker))
+		logger.error('giving up... something is fouled')
 		raise
 	if startMarkerBase != 0: #this is not good... there should be no
 		# slack bytes between cmdMsgs in received bytes.
@@ -302,8 +302,8 @@ def completeMsg(conn, endMarkerValue, cmdLen, residualBytesLastRead):
 	try:
 		endMarkerBase = rawmsg.index(endMarkerValue)
 	except ValueError:
-		sys.stderr.write('completeMsg()...from connection bytes ({}) received that are of sufficient size to contain the cmdMsg and end marker, end marker "{}" was not found'.format(rawmsg, endMarkerValue))
-		sys.stderr.write('giving up... something is fouled')
+		logger.error('completeMsg()...from connection bytes ({}) received that are of sufficient size to contain the cmdMsg and end marker, end marker "{}" was not found'.format(rawmsg, endMarkerValue))
+		logger.error('giving up... something is fouled')
 		raise
 	#
 	# get the cmdMsg bytes and end marker value from the enclosed bytes, leaving residual
@@ -495,7 +495,7 @@ while True:
 				except:
                                         if (logger.isEnabledFor(logging.DEBUG)):
                                            logger.debug ("This is the exception place second  " + result) 
-					sys.stderr.write("the connection has been broken...closing connection")
+					logger.error("the connection has been broken...closing connection")
 					sock.close()
                                         CONNECTION_LIST.remove(sock)
 					closedConnection = True

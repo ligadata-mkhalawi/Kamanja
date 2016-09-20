@@ -356,10 +356,26 @@ class PythonAdapter(factory : PythonAdapterFactory
                logger.debug (s"Eexcute  Model --- for (moduleName = $moduleName, modelName = '$modelName', jsonResults = $jsonMdlResults)")
              }
             if (jsonMdlResults != null) {
-                val outMsgName = factory.getModelDef().outputMsgs(0)
-                val deser : SerializeDeserialize = factory.serDeserializer
-                val outMsg : ContainerInterface = deser.deserialize(jsonMdlResults.getBytes, outMsgName)
-                returnValues += outMsg
+                val resultMap: Map[String, Any] = parse(jsonMdlResults).values.asInstanceOf[Map[String, Any]]
+                val status : Int = resultMap("Status").asInstanceOf[String].toInt
+                if (status   == 0)  {
+		   val outMsgName = factory.getModelDef().outputMsgs(0)
+                   val deser : SerializeDeserialize = factory.serDeserializer
+                   val outMsg : ContainerInterface = deser.deserialize(jsonMdlResults.getBytes, outMsgName)
+                   returnValues += outMsg
+		}
+                if (status < 0) {
+                   logger.error ("The model has exceptions with status " + status.toString + " " + resultMap("Exception").toString)
+		   null
+                }
+                if (status > 0) {
+		   if (logger.isDebugEnabled()) {
+                      logger.debug ("The model exited without any output and status " + status.toString)
+		   }
+		   null
+                }
+		
+								   
             } else {
                 null
             }

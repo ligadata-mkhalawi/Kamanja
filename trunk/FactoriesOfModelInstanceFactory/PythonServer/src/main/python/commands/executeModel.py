@@ -58,8 +58,13 @@ class executeModel(CommandBase):
                                 if self.logger.isEnabledFor(logging.DEBUG): 
 				   self.logger.debug("model instance selected = {}".format(str(model)))
 				results = model.execute(msg)
-			except:
-				results = super(executeModel, self).exceptionMsg("The model '{}' is having a bad day...".format(modelName))
+  			        if (results and results.strip()) :
+                                   results = json.dumps({"Status" : "0", "Exception" : "", "Result" : results})
+                                else :
+                                   results = json.dumps({"Status" : "1", "Exception" : "", "Result" : results})
+                        except:
+				results = super(executeModel, self).exceptionMsg("The model '{}' is having problems...".format(modelName))
+                                results =  json.dumps({"Status" : "-1", "Exception" : results, "Result" : ""})
 		return results
 
 
