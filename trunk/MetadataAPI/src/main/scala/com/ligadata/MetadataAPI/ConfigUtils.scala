@@ -673,7 +673,6 @@ object ConfigUtils {
     if (v == null) return ""
 
     if (v.isInstanceOf[String]) return v.asInstanceOf[String]
-
     implicit val jsonFormats: Formats = DefaultFormats
     val lst = List(v)
     val str = Serialization.write(lst)
@@ -997,7 +996,7 @@ object ConfigUtils {
             if (userDefinedProps.size > 0) {
               val upProps: UserPropertiesInfo = MdMgr.GetMdMgr.MakeUPProps(ClusterId)
               userDefinedProps.keys.foreach(key => {
-                upProps.Props(key) = userDefinedProps(key).toString
+                upProps.Props(key) = getStringFromJsonNode(userDefinedProps(key))
               })
 
               val upAddResults = MdMgr.GetMdMgr.AddUserProperty(upProps)
