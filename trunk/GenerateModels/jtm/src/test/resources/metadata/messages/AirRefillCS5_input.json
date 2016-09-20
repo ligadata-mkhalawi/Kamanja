@@ -1,0 +1,13 @@
+{
+  "Message":{
+    "NameSpace":"com.ligadata.messages",
+    "Name":"AirRefillCS5_input",
+    "Version":"00.01.00",
+    "Description":"Generic Input Msg",
+    "Fixed":"true",
+    "Fields":[{
+      "Name":"Msg",
+      "Type":"String"
+    }]
+  }
+}

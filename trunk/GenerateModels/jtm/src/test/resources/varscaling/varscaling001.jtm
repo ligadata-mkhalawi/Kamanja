@@ -1,0 +1,2337 @@
+{
+  "header":{
+    "namespace":"phoenix.tests",
+    "name":"test_jtm",
+    "version":"0.0.1",
+    "language":"scala",
+    "minVersion":"2.11",
+    "description":"generated at 2016:08:05 14:21:13.389, based on msg defs: (com.ligadata.messages.AirRefillCS5)"
+  },
+  "imports":{
+    "packages":["com.ligadata.runtime.Conversion","com.ligadata.runtime.Validation._","com.ligadata.Utils._"],
+    "packagecode":["object MsgConstants{","  val conversion = new com.ligadata.runtime.Conversion","}","import MsgConstants._"],
+    "modelcode":["def HandleError(fieldName : String, checkName : String) : Unit = {","  val err = fieldName + \" - check (\" + checkName + \") violated \"","  context.AddError(err)","}"]
+  },
+  "aliases":{
+    "messages":{
+      "m1":"com.ligadata.messages.AirRefillCS5_input",
+      "o1":"com.ligadata.messages.AirRefillCS5",
+      "oo":"com.ligadata.gen.RejectedDataMsg"
+    }
+  },
+  "transformations":{
+    "AirRefillCS5_1":{
+      "dependsOn":[["m1"]],
+      "computes":{
+        "inpData":{
+          "type":"Array[String]",
+          "val":"$msg.split(\",\", -1)",
+          "comment":"Split the incoming data"
+        },
+        "localsequencenumber___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(7), \"localsequencenumber\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(7));fieldVal}",
+          "comment":"value for field (localsequencenumber) after checking for its constraitns : type"
+        },
+        "currentserviceclass___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(9), \"currentserviceclass\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(9));fieldVal}",
+          "comment":"value for field (currentserviceclass) after checking for its constraitns : type"
+        },
+        "transactionamount___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(13), \"transactionamount\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(13));fieldVal}",
+          "comment":"value for field (transactionamount) after checking for its constraitns : type"
+        },
+        "refillamountconverted___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(15), \"refillamountconverted\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(15));fieldVal}",
+          "comment":"value for field (refillamountconverted) after checking for its constraitns : type"
+        },
+        "refilldivisionamount___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(16), \"refilldivisionamount\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(16));fieldVal}",
+          "comment":"value for field (refilldivisionamount) after checking for its constraitns : type"
+        },
+        "refilltype___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(17), \"refilltype\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(17));fieldVal}",
+          "comment":"value for field (refilltype) after checking for its constraitns : type"
+        },
+        "accountbalancebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(27), \"accountbalancebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(27));fieldVal}",
+          "comment":"value for field (accountbalancebef) after checking for its constraitns : type"
+        },
+        "accumulatedrefillvaluebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(28), \"accumulatedrefillvaluebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(28));fieldVal}",
+          "comment":"value for field (accumulatedrefillvaluebef) after checking for its constraitns : type"
+        },
+        "accumulatedrefillcounterbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(29), \"accumulatedrefillcounterbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(29));fieldVal}",
+          "comment":"value for field (accumulatedrefillcounterbef) after checking for its constraitns : type"
+        },
+        "accumulatedprogressionvaluebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(30), \"accumulatedprogressionvaluebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(30));fieldVal}",
+          "comment":"value for field (accumulatedprogressionvaluebef) after checking for its constraitns : type"
+        },
+        "accumulatedprogrcounterbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(31), \"accumulatedprogrcounterbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(31));fieldVal}",
+          "comment":"value for field (accumulatedprogrcounterbef) after checking for its constraitns : type"
+        },
+        "creditclearanceperiodbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(32), \"creditclearanceperiodbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(32));fieldVal}",
+          "comment":"value for field (creditclearanceperiodbef) after checking for its constraitns : type"
+        },
+        "dedicatedaccount1stidbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(33), \"dedicatedaccount1stidbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(33));fieldVal}",
+          "comment":"value for field (dedicatedaccount1stidbef) after checking for its constraitns : type"
+        },
+        "account1stcampaignidentbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(34), \"account1stcampaignidentbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(34));fieldVal}",
+          "comment":"value for field (account1stcampaignidentbef) after checking for its constraitns : type"
+        },
+        "account1strefilldivamountbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(35), \"account1strefilldivamountbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(35));fieldVal}",
+          "comment":"value for field (account1strefilldivamountbef) after checking for its constraitns : type"
+        },
+        "account1strefillpromdivamntbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(36), \"account1strefillpromdivamntbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(36));fieldVal}",
+          "comment":"value for field (account1strefillpromdivamntbef) after checking for its constraitns : type"
+        },
+        "account1stbalancebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(37), \"account1stbalancebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(37));fieldVal}",
+          "comment":"value for field (account1stbalancebef) after checking for its constraitns : type"
+        },
+        "clearedaccount1stvaluebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(38), \"clearedaccount1stvaluebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(38));fieldVal}",
+          "comment":"value for field (clearedaccount1stvaluebef) after checking for its constraitns : type"
+        },
+        "dedicatedaccount2ndidbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(39), \"dedicatedaccount2ndidbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(39));fieldVal}",
+          "comment":"value for field (dedicatedaccount2ndidbef) after checking for its constraitns : type"
+        },
+        "account2ndcampaignidentifbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(40), \"account2ndcampaignidentifbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(40));fieldVal}",
+          "comment":"value for field (account2ndcampaignidentifbef) after checking for its constraitns : type"
+        },
+        "account2ndrefilldivamountbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(41), \"account2ndrefilldivamountbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(41));fieldVal}",
+          "comment":"value for field (account2ndrefilldivamountbef) after checking for its constraitns : type"
+        },
+        "account2ndrefilpromodivamntbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(42), \"account2ndrefilpromodivamntbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(42));fieldVal}",
+          "comment":"value for field (account2ndrefilpromodivamntbef) after checking for its constraitns : type"
+        },
+        "account2ndbalancebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(43), \"account2ndbalancebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(43));fieldVal}",
+          "comment":"value for field (account2ndbalancebef) after checking for its constraitns : type"
+        },
+        "clearedaccount2ndvaluebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(44), \"clearedaccount2ndvaluebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(44));fieldVal}",
+          "comment":"value for field (clearedaccount2ndvaluebef) after checking for its constraitns : type"
+        },
+        "dedicatedaccount3rdidbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(45), \"dedicatedaccount3rdidbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(45));fieldVal}",
+          "comment":"value for field (dedicatedaccount3rdidbef) after checking for its constraitns : type"
+        },
+        "account3rdcampaignidentbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(46), \"account3rdcampaignidentbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(46));fieldVal}",
+          "comment":"value for field (account3rdcampaignidentbef) after checking for its constraitns : type"
+        },
+        "account3rdrefilldivamountbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(47), \"account3rdrefilldivamountbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(47));fieldVal}",
+          "comment":"value for field (account3rdrefilldivamountbef) after checking for its constraitns : type"
+        },
+        "account3rdrefilpromodivamntbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(48), \"account3rdrefilpromodivamntbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(48));fieldVal}",
+          "comment":"value for field (account3rdrefilpromodivamntbef) after checking for its constraitns : type"
+        },
+        "account3rdbalancebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(49), \"account3rdbalancebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(49));fieldVal}",
+          "comment":"value for field (account3rdbalancebef) after checking for its constraitns : type"
+        },
+        "clearedaccount3rdvaluebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(50), \"clearedaccount3rdvaluebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(50));fieldVal}",
+          "comment":"value for field (clearedaccount3rdvaluebef) after checking for its constraitns : type"
+        },
+        "dedicatedaccount4thidbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(51), \"dedicatedaccount4thidbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(51));fieldVal}",
+          "comment":"value for field (dedicatedaccount4thidbef) after checking for its constraitns : type"
+        },
+        "account4thcampaignidentbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(52), \"account4thcampaignidentbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(52));fieldVal}",
+          "comment":"value for field (account4thcampaignidentbef) after checking for its constraitns : type"
+        },
+        "account4threfilldivamountbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(53), \"account4threfilldivamountbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(53));fieldVal}",
+          "comment":"value for field (account4threfilldivamountbef) after checking for its constraitns : type"
+        },
+        "account4threfilpromodivamntbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(54), \"account4threfilpromodivamntbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(54));fieldVal}",
+          "comment":"value for field (account4threfilpromodivamntbef) after checking for its constraitns : type"
+        },
+        "account4thbalancebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(55), \"account4thbalancebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(55));fieldVal}",
+          "comment":"value for field (account4thbalancebef) after checking for its constraitns : type"
+        },
+        "clearedaccount4thvaluebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(56), \"clearedaccount4thvaluebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(56));fieldVal}",
+          "comment":"value for field (clearedaccount4thvaluebef) after checking for its constraitns : type"
+        },
+        "dedicatedaccount5thidbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(57), \"dedicatedaccount5thidbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(57));fieldVal}",
+          "comment":"value for field (dedicatedaccount5thidbef) after checking for its constraitns : type"
+        },
+        "account5thcampaignidentbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(58), \"account5thcampaignidentbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(58));fieldVal}",
+          "comment":"value for field (account5thcampaignidentbef) after checking for its constraitns : type"
+        },
+        "account5threfilldivamountbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(59), \"account5threfilldivamountbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(59));fieldVal}",
+          "comment":"value for field (account5threfilldivamountbef) after checking for its constraitns : type"
+        },
+        "account5threfilpromodivamntbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(60), \"account5threfilpromodivamntbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(60));fieldVal}",
+          "comment":"value for field (account5threfilpromodivamntbef) after checking for its constraitns : type"
+        },
+        "account5thbalancebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(61), \"account5thbalancebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(61));fieldVal}",
+          "comment":"value for field (account5thbalancebef) after checking for its constraitns : type"
+        },
+        "clearedaccount5thvaluebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(62), \"clearedaccount5thvaluebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(62));fieldVal}",
+          "comment":"value for field (clearedaccount5thvaluebef) after checking for its constraitns : type"
+        },
+        "dedicatedaccount6thidbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(63), \"dedicatedaccount6thidbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(63));fieldVal}",
+          "comment":"value for field (dedicatedaccount6thidbef) after checking for its constraitns : type"
+        },
+        "account6thcampaignidentbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(64), \"account6thcampaignidentbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(64));fieldVal}",
+          "comment":"value for field (account6thcampaignidentbef) after checking for its constraitns : type"
+        },
+        "account6threfilldivamountbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(65), \"account6threfilldivamountbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(65));fieldVal}",
+          "comment":"value for field (account6threfilldivamountbef) after checking for its constraitns : type"
+        },
+        "account6threfilpromodivamntbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(66), \"account6threfilpromodivamntbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(66));fieldVal}",
+          "comment":"value for field (account6threfilpromodivamntbef) after checking for its constraitns : type"
+        },
+        "account6thbalancebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(67), \"account6thbalancebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(67));fieldVal}",
+          "comment":"value for field (account6thbalancebef) after checking for its constraitns : type"
+        },
+        "clearedaccount6thvaluebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(68), \"clearedaccount6thvaluebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(68));fieldVal}",
+          "comment":"value for field (clearedaccount6thvaluebef) after checking for its constraitns : type"
+        },
+        "dedicatedaccount7thidbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(69), \"dedicatedaccount7thidbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(69));fieldVal}",
+          "comment":"value for field (dedicatedaccount7thidbef) after checking for its constraitns : type"
+        },
+        "account7thcampaignidentbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(70), \"account7thcampaignidentbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(70));fieldVal}",
+          "comment":"value for field (account7thcampaignidentbef) after checking for its constraitns : type"
+        },
+        "account7threfilldivamountbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(71), \"account7threfilldivamountbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(71));fieldVal}",
+          "comment":"value for field (account7threfilldivamountbef) after checking for its constraitns : type"
+        },
+        "account7threfilpromodivamntbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(72), \"account7threfilpromodivamntbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(72));fieldVal}",
+          "comment":"value for field (account7threfilpromodivamntbef) after checking for its constraitns : type"
+        },
+        "account7thbalancebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(73), \"account7thbalancebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(73));fieldVal}",
+          "comment":"value for field (account7thbalancebef) after checking for its constraitns : type"
+        },
+        "clearedaccount7thvaluebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(74), \"clearedaccount7thvaluebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(74));fieldVal}",
+          "comment":"value for field (clearedaccount7thvaluebef) after checking for its constraitns : type"
+        },
+        "dedicatedaccount8thidbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(75), \"dedicatedaccount8thidbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(75));fieldVal}",
+          "comment":"value for field (dedicatedaccount8thidbef) after checking for its constraitns : type"
+        },
+        "account8thcampaignidentbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(76), \"account8thcampaignidentbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(76));fieldVal}",
+          "comment":"value for field (account8thcampaignidentbef) after checking for its constraitns : type"
+        },
+        "account8threfilldivamountbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(77), \"account8threfilldivamountbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(77));fieldVal}",
+          "comment":"value for field (account8threfilldivamountbef) after checking for its constraitns : type"
+        },
+        "account8threfilpromodivamntbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(78), \"account8threfilpromodivamntbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(78));fieldVal}",
+          "comment":"value for field (account8threfilpromodivamntbef) after checking for its constraitns : type"
+        },
+        "account8thbalancebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(79), \"account8thbalancebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(79));fieldVal}",
+          "comment":"value for field (account8thbalancebef) after checking for its constraitns : type"
+        },
+        "clearedaccount8thvaluebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(80), \"clearedaccount8thvaluebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(80));fieldVal}",
+          "comment":"value for field (clearedaccount8thvaluebef) after checking for its constraitns : type"
+        },
+        "dedicatedaccount9thidbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(81), \"dedicatedaccount9thidbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(81));fieldVal}",
+          "comment":"value for field (dedicatedaccount9thidbef) after checking for its constraitns : type"
+        },
+        "account9thcampaignidentbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(82), \"account9thcampaignidentbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(82));fieldVal}",
+          "comment":"value for field (account9thcampaignidentbef) after checking for its constraitns : type"
+        },
+        "account9threfilldivamountbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(83), \"account9threfilldivamountbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(83));fieldVal}",
+          "comment":"value for field (account9threfilldivamountbef) after checking for its constraitns : type"
+        },
+        "account9threfilpromodivamntbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(84), \"account9threfilpromodivamntbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(84));fieldVal}",
+          "comment":"value for field (account9threfilpromodivamntbef) after checking for its constraitns : type"
+        },
+        "account9thbalancebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(85), \"account9thbalancebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(85));fieldVal}",
+          "comment":"value for field (account9thbalancebef) after checking for its constraitns : type"
+        },
+        "clearedaccount9thvaluebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(86), \"clearedaccount9thvaluebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(86));fieldVal}",
+          "comment":"value for field (clearedaccount9thvaluebef) after checking for its constraitns : type"
+        },
+        "dedicatedaccount10thidbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(87), \"dedicatedaccount10thidbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(87));fieldVal}",
+          "comment":"value for field (dedicatedaccount10thidbef) after checking for its constraitns : type"
+        },
+        "account10thcampaignidentbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(88), \"account10thcampaignidentbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(88));fieldVal}",
+          "comment":"value for field (account10thcampaignidentbef) after checking for its constraitns : type"
+        },
+        "account10threfilldivamountbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(89), \"account10threfilldivamountbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(89));fieldVal}",
+          "comment":"value for field (account10threfilldivamountbef) after checking for its constraitns : type"
+        },
+        "account10threfilpromdivamntbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(90), \"account10threfilpromdivamntbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(90));fieldVal}",
+          "comment":"value for field (account10threfilpromdivamntbef) after checking for its constraitns : type"
+        },
+        "account10thbalancebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(91), \"account10thbalancebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(91));fieldVal}",
+          "comment":"value for field (account10thbalancebef) after checking for its constraitns : type"
+        },
+        "clearedaccount10thvaluebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(92), \"clearedaccount10thvaluebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(92));fieldVal}",
+          "comment":"value for field (clearedaccount10thvaluebef) after checking for its constraitns : type"
+        },
+        "permanentserviceclassbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(94), \"permanentserviceclassbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(94));fieldVal}",
+          "comment":"value for field (permanentserviceclassbef) after checking for its constraitns : type"
+        },
+        "temporaryserviceclassbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(95), \"temporaryserviceclassbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(95));fieldVal}",
+          "comment":"value for field (temporaryserviceclassbef) after checking for its constraitns : type"
+        },
+        "serviceremovalgraceperiodbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(99), \"serviceremovalgraceperiodbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(99));fieldVal}",
+          "comment":"value for field (serviceremovalgraceperiodbef) after checking for its constraitns : type"
+        },
+        "usageaccumulator1stidbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(102), \"usageaccumulator1stidbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(102));fieldVal}",
+          "comment":"value for field (usageaccumulator1stidbef) after checking for its constraitns : type"
+        },
+        "usageaccumulator1stvaluebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(103), \"usageaccumulator1stvaluebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(103));fieldVal}",
+          "comment":"value for field (usageaccumulator1stvaluebef) after checking for its constraitns : type"
+        },
+        "usageaccumulator2ndidbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(104), \"usageaccumulator2ndidbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(104));fieldVal}",
+          "comment":"value for field (usageaccumulator2ndidbef) after checking for its constraitns : type"
+        },
+        "usageaccumulator2ndvaluebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(105), \"usageaccumulator2ndvaluebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(105));fieldVal}",
+          "comment":"value for field (usageaccumulator2ndvaluebef) after checking for its constraitns : type"
+        },
+        "usageaccumulator3rdidbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(106), \"usageaccumulator3rdidbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(106));fieldVal}",
+          "comment":"value for field (usageaccumulator3rdidbef) after checking for its constraitns : type"
+        },
+        "usageaccumulator3rdvaluebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(107), \"usageaccumulator3rdvaluebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(107));fieldVal}",
+          "comment":"value for field (usageaccumulator3rdvaluebef) after checking for its constraitns : type"
+        },
+        "usageaccumulator4thidbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(108), \"usageaccumulator4thidbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(108));fieldVal}",
+          "comment":"value for field (usageaccumulator4thidbef) after checking for its constraitns : type"
+        },
+        "usageaccumulator4thvaluebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(109), \"usageaccumulator4thvaluebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(109));fieldVal}",
+          "comment":"value for field (usageaccumulator4thvaluebef) after checking for its constraitns : type"
+        },
+        "usageaccumulator5thidbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(110), \"usageaccumulator5thidbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(110));fieldVal}",
+          "comment":"value for field (usageaccumulator5thidbef) after checking for its constraitns : type"
+        },
+        "usageaccumulator5thvaluebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(111), \"usageaccumulator5thvaluebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(111));fieldVal}",
+          "comment":"value for field (usageaccumulator5thvaluebef) after checking for its constraitns : type"
+        },
+        "usageaccumulator6thidbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(112), \"usageaccumulator6thidbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(112));fieldVal}",
+          "comment":"value for field (usageaccumulator6thidbef) after checking for its constraitns : type"
+        },
+        "usageaccumulator6thvaluebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(113), \"usageaccumulator6thvaluebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(113));fieldVal}",
+          "comment":"value for field (usageaccumulator6thvaluebef) after checking for its constraitns : type"
+        },
+        "usageaccumulator7thidbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(114), \"usageaccumulator7thidbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(114));fieldVal}",
+          "comment":"value for field (usageaccumulator7thidbef) after checking for its constraitns : type"
+        },
+        "usageaccumulator7thvaluebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(115), \"usageaccumulator7thvaluebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(115));fieldVal}",
+          "comment":"value for field (usageaccumulator7thvaluebef) after checking for its constraitns : type"
+        },
+        "usageaccumulator8thidbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(116), \"usageaccumulator8thidbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(116));fieldVal}",
+          "comment":"value for field (usageaccumulator8thidbef) after checking for its constraitns : type"
+        },
+        "usageaccumulator8thvaluebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(117), \"usageaccumulator8thvaluebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(117));fieldVal}",
+          "comment":"value for field (usageaccumulator8thvaluebef) after checking for its constraitns : type"
+        },
+        "usageaccumulator9thidbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(118), \"usageaccumulator9thidbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(118));fieldVal}",
+          "comment":"value for field (usageaccumulator9thidbef) after checking for its constraitns : type"
+        },
+        "usageaccumulator9thvaluebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(119), \"usageaccumulator9thvaluebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(119));fieldVal}",
+          "comment":"value for field (usageaccumulator9thvaluebef) after checking for its constraitns : type"
+        },
+        "usageaccumulator10thidbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(120), \"usageaccumulator10thidbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(120));fieldVal}",
+          "comment":"value for field (usageaccumulator10thidbef) after checking for its constraitns : type"
+        },
+        "usageaccumulator10thvaluebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(121), \"usageaccumulator10thvaluebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(121));fieldVal}",
+          "comment":"value for field (usageaccumulator10thvaluebef) after checking for its constraitns : type"
+        },
+        "accountbalanceaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(126), \"accountbalanceaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(126));fieldVal}",
+          "comment":"value for field (accountbalanceaft) after checking for its constraitns : type"
+        },
+        "accumulatedrefillvalueaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(127), \"accumulatedrefillvalueaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(127));fieldVal}",
+          "comment":"value for field (accumulatedrefillvalueaft) after checking for its constraitns : type"
+        },
+        "accumulatedrefillcounteraft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(128), \"accumulatedrefillcounteraft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(128));fieldVal}",
+          "comment":"value for field (accumulatedrefillcounteraft) after checking for its constraitns : type"
+        },
+        "accumulatedprogressionvalueaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(129), \"accumulatedprogressionvalueaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(129));fieldVal}",
+          "comment":"value for field (accumulatedprogressionvalueaft) after checking for its constraitns : type"
+        },
+        "accumulatedprogconteraft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(130), \"accumulatedprogconteraft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(130));fieldVal}",
+          "comment":"value for field (accumulatedprogconteraft) after checking for its constraitns : type"
+        },
+        "creditclearanceperiodaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(131), \"creditclearanceperiodaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(131));fieldVal}",
+          "comment":"value for field (creditclearanceperiodaft) after checking for its constraitns : type"
+        },
+        "dedicatedaccount1stidaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(132), \"dedicatedaccount1stidaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(132));fieldVal}",
+          "comment":"value for field (dedicatedaccount1stidaft) after checking for its constraitns : type"
+        },
+        "account1stcampaignidentaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(133), \"account1stcampaignidentaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(133));fieldVal}",
+          "comment":"value for field (account1stcampaignidentaft) after checking for its constraitns : type"
+        },
+        "account1strefilldivamountaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(134), \"account1strefilldivamountaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(134));fieldVal}",
+          "comment":"value for field (account1strefilldivamountaft) after checking for its constraitns : type"
+        },
+        "account1strefilpromodivamntaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(135), \"account1strefilpromodivamntaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(135));fieldVal}",
+          "comment":"value for field (account1strefilpromodivamntaft) after checking for its constraitns : type"
+        },
+        "account1stbalanceaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(136), \"account1stbalanceaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(136));fieldVal}",
+          "comment":"value for field (account1stbalanceaft) after checking for its constraitns : type"
+        },
+        "clearedaccount1stvalueaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(137), \"clearedaccount1stvalueaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(137));fieldVal}",
+          "comment":"value for field (clearedaccount1stvalueaft) after checking for its constraitns : type"
+        },
+        "dedicatedaccount2ndidaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(138), \"dedicatedaccount2ndidaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(138));fieldVal}",
+          "comment":"value for field (dedicatedaccount2ndidaft) after checking for its constraitns : type"
+        },
+        "account2ndcampaignidentaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(139), \"account2ndcampaignidentaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(139));fieldVal}",
+          "comment":"value for field (account2ndcampaignidentaft) after checking for its constraitns : type"
+        },
+        "account2ndrefilldivamountaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(140), \"account2ndrefilldivamountaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(140));fieldVal}",
+          "comment":"value for field (account2ndrefilldivamountaft) after checking for its constraitns : type"
+        },
+        "account2ndrefilpromodivamntaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(141), \"account2ndrefilpromodivamntaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(141));fieldVal}",
+          "comment":"value for field (account2ndrefilpromodivamntaft) after checking for its constraitns : type"
+        },
+        "account2ndbalanceaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(142), \"account2ndbalanceaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(142));fieldVal}",
+          "comment":"value for field (account2ndbalanceaft) after checking for its constraitns : type"
+        },
+        "clearedaccount2ndvalueaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(143), \"clearedaccount2ndvalueaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(143));fieldVal}",
+          "comment":"value for field (clearedaccount2ndvalueaft) after checking for its constraitns : type"
+        },
+        "dedicatedaccount3rdidaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(144), \"dedicatedaccount3rdidaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(144));fieldVal}",
+          "comment":"value for field (dedicatedaccount3rdidaft) after checking for its constraitns : type"
+        },
+        "account3rdcampaignidentaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(145), \"account3rdcampaignidentaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(145));fieldVal}",
+          "comment":"value for field (account3rdcampaignidentaft) after checking for its constraitns : type"
+        },
+        "account3rdrefilldivamountaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(146), \"account3rdrefilldivamountaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(146));fieldVal}",
+          "comment":"value for field (account3rdrefilldivamountaft) after checking for its constraitns : type"
+        },
+        "account3rdrefilpromodivamntaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(147), \"account3rdrefilpromodivamntaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(147));fieldVal}",
+          "comment":"value for field (account3rdrefilpromodivamntaft) after checking for its constraitns : type"
+        },
+        "account3rdbalanceaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(148), \"account3rdbalanceaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(148));fieldVal}",
+          "comment":"value for field (account3rdbalanceaft) after checking for its constraitns : type"
+        },
+        "clearedaccount3rdvalueaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(149), \"clearedaccount3rdvalueaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(149));fieldVal}",
+          "comment":"value for field (clearedaccount3rdvalueaft) after checking for its constraitns : type"
+        },
+        "dedicatedaccount4thidaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(150), \"dedicatedaccount4thidaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(150));fieldVal}",
+          "comment":"value for field (dedicatedaccount4thidaft) after checking for its constraitns : type"
+        },
+        "account4thcampaignidentaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(151), \"account4thcampaignidentaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(151));fieldVal}",
+          "comment":"value for field (account4thcampaignidentaft) after checking for its constraitns : type"
+        },
+        "account4threfilldivamountaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(152), \"account4threfilldivamountaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(152));fieldVal}",
+          "comment":"value for field (account4threfilldivamountaft) after checking for its constraitns : type"
+        },
+        "account4threfilpromodivamntaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(153), \"account4threfilpromodivamntaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(153));fieldVal}",
+          "comment":"value for field (account4threfilpromodivamntaft) after checking for its constraitns : type"
+        },
+        "account4thbalanceaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(154), \"account4thbalanceaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(154));fieldVal}",
+          "comment":"value for field (account4thbalanceaft) after checking for its constraitns : type"
+        },
+        "clearedaccount4thvalueaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(155), \"clearedaccount4thvalueaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(155));fieldVal}",
+          "comment":"value for field (clearedaccount4thvalueaft) after checking for its constraitns : type"
+        },
+        "dedicatedaccount5thidaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(156), \"dedicatedaccount5thidaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(156));fieldVal}",
+          "comment":"value for field (dedicatedaccount5thidaft) after checking for its constraitns : type"
+        },
+        "account5thcampaignidentaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(157), \"account5thcampaignidentaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(157));fieldVal}",
+          "comment":"value for field (account5thcampaignidentaft) after checking for its constraitns : type"
+        },
+        "account5threfilldivamountaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(158), \"account5threfilldivamountaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(158));fieldVal}",
+          "comment":"value for field (account5threfilldivamountaft) after checking for its constraitns : type"
+        },
+        "account5threfilpromodivamntaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(159), \"account5threfilpromodivamntaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(159));fieldVal}",
+          "comment":"value for field (account5threfilpromodivamntaft) after checking for its constraitns : type"
+        },
+        "account5thbalanceaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(160), \"account5thbalanceaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(160));fieldVal}",
+          "comment":"value for field (account5thbalanceaft) after checking for its constraitns : type"
+        },
+        "clearedaccount5thvalueaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(161), \"clearedaccount5thvalueaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(161));fieldVal}",
+          "comment":"value for field (clearedaccount5thvalueaft) after checking for its constraitns : type"
+        },
+        "dedicatedaccount6thidaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(162), \"dedicatedaccount6thidaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(162));fieldVal}",
+          "comment":"value for field (dedicatedaccount6thidaft) after checking for its constraitns : type"
+        },
+        "account6thcampaignidentaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(163), \"account6thcampaignidentaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(163));fieldVal}",
+          "comment":"value for field (account6thcampaignidentaft) after checking for its constraitns : type"
+        },
+        "account6threfilldivamountaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(164), \"account6threfilldivamountaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(164));fieldVal}",
+          "comment":"value for field (account6threfilldivamountaft) after checking for its constraitns : type"
+        },
+        "account6threfilpromodivamntaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(165), \"account6threfilpromodivamntaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(165));fieldVal}",
+          "comment":"value for field (account6threfilpromodivamntaft) after checking for its constraitns : type"
+        },
+        "account6thbalanceaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(166), \"account6thbalanceaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(166));fieldVal}",
+          "comment":"value for field (account6thbalanceaft) after checking for its constraitns : type"
+        },
+        "clearedaccount6thvalueaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(167), \"clearedaccount6thvalueaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(167));fieldVal}",
+          "comment":"value for field (clearedaccount6thvalueaft) after checking for its constraitns : type"
+        },
+        "dedicatedaccount7thidaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(168), \"dedicatedaccount7thidaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(168));fieldVal}",
+          "comment":"value for field (dedicatedaccount7thidaft) after checking for its constraitns : type"
+        },
+        "account7thcampaignidentaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(169), \"account7thcampaignidentaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(169));fieldVal}",
+          "comment":"value for field (account7thcampaignidentaft) after checking for its constraitns : type"
+        },
+        "account7threfilldivamountaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(170), \"account7threfilldivamountaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(170));fieldVal}",
+          "comment":"value for field (account7threfilldivamountaft) after checking for its constraitns : type"
+        },
+        "account7threfilpromodivamntaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(171), \"account7threfilpromodivamntaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(171));fieldVal}",
+          "comment":"value for field (account7threfilpromodivamntaft) after checking for its constraitns : type"
+        },
+        "account7thbalanceaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(172), \"account7thbalanceaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(172));fieldVal}",
+          "comment":"value for field (account7thbalanceaft) after checking for its constraitns : type"
+        },
+        "clearedaccount7thvalueaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(173), \"clearedaccount7thvalueaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(173));fieldVal}",
+          "comment":"value for field (clearedaccount7thvalueaft) after checking for its constraitns : type"
+        },
+        "dedicatedaccount8thidaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(174), \"dedicatedaccount8thidaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(174));fieldVal}",
+          "comment":"value for field (dedicatedaccount8thidaft) after checking for its constraitns : type"
+        },
+        "account8thcampaignidentaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(175), \"account8thcampaignidentaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(175));fieldVal}",
+          "comment":"value for field (account8thcampaignidentaft) after checking for its constraitns : type"
+        },
+        "account8threfilldivamountaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(176), \"account8threfilldivamountaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(176));fieldVal}",
+          "comment":"value for field (account8threfilldivamountaft) after checking for its constraitns : type"
+        },
+        "account8threfilpromodivamntaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(177), \"account8threfilpromodivamntaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(177));fieldVal}",
+          "comment":"value for field (account8threfilpromodivamntaft) after checking for its constraitns : type"
+        },
+        "account8thbalanceaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(178), \"account8thbalanceaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(178));fieldVal}",
+          "comment":"value for field (account8thbalanceaft) after checking for its constraitns : type"
+        },
+        "clearedaccount8thvalueaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(179), \"clearedaccount8thvalueaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(179));fieldVal}",
+          "comment":"value for field (clearedaccount8thvalueaft) after checking for its constraitns : type"
+        },
+        "dedicatedaccount9thidaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(180), \"dedicatedaccount9thidaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(180));fieldVal}",
+          "comment":"value for field (dedicatedaccount9thidaft) after checking for its constraitns : type"
+        },
+        "account9thcampaignidentaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(181), \"account9thcampaignidentaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(181));fieldVal}",
+          "comment":"value for field (account9thcampaignidentaft) after checking for its constraitns : type"
+        },
+        "account9threfilldivamountaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(182), \"account9threfilldivamountaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(182));fieldVal}",
+          "comment":"value for field (account9threfilldivamountaft) after checking for its constraitns : type"
+        },
+        "account9threfilpromodivamntaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(183), \"account9threfilpromodivamntaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(183));fieldVal}",
+          "comment":"value for field (account9threfilpromodivamntaft) after checking for its constraitns : type"
+        },
+        "account9thbalanceaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(184), \"account9thbalanceaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(184));fieldVal}",
+          "comment":"value for field (account9thbalanceaft) after checking for its constraitns : type"
+        },
+        "clearedaccount9thvalueaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(185), \"clearedaccount9thvalueaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(185));fieldVal}",
+          "comment":"value for field (clearedaccount9thvalueaft) after checking for its constraitns : type"
+        },
+        "dedicatedaccount10thidaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(186), \"dedicatedaccount10thidaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(186));fieldVal}",
+          "comment":"value for field (dedicatedaccount10thidaft) after checking for its constraitns : type"
+        },
+        "account10thcampaignidentaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(187), \"account10thcampaignidentaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(187));fieldVal}",
+          "comment":"value for field (account10thcampaignidentaft) after checking for its constraitns : type"
+        },
+        "account10threfilldivamountaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(188), \"account10threfilldivamountaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(188));fieldVal}",
+          "comment":"value for field (account10threfilldivamountaft) after checking for its constraitns : type"
+        },
+        "account10threfilpromdivamntaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(189), \"account10threfilpromdivamntaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(189));fieldVal}",
+          "comment":"value for field (account10threfilpromdivamntaft) after checking for its constraitns : type"
+        },
+        "account10thbalanceaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(190), \"account10thbalanceaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(190));fieldVal}",
+          "comment":"value for field (account10thbalanceaft) after checking for its constraitns : type"
+        },
+        "clearedaccount10thvalueaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(191), \"clearedaccount10thvalueaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(191));fieldVal}",
+          "comment":"value for field (clearedaccount10thvalueaft) after checking for its constraitns : type"
+        },
+        "permanentserviceclassaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(193), \"permanentserviceclassaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(193));fieldVal}",
+          "comment":"value for field (permanentserviceclassaft) after checking for its constraitns : type"
+        },
+        "temporaryserviceclassaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(194), \"temporaryserviceclassaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(194));fieldVal}",
+          "comment":"value for field (temporaryserviceclassaft) after checking for its constraitns : type"
+        },
+        "temporaryservclasexpirydateaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(195), \"temporaryservclasexpirydateaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(195));fieldVal}",
+          "comment":"value for field (temporaryservclasexpirydateaft) after checking for its constraitns : type"
+        },
+        "serviceremovalgraceperiodaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(198), \"serviceremovalgraceperiodaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(198));fieldVal}",
+          "comment":"value for field (serviceremovalgraceperiodaft) after checking for its constraitns : type"
+        },
+        "usageaccumulator1stidaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(201), \"usageaccumulator1stidaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(201));fieldVal}",
+          "comment":"value for field (usageaccumulator1stidaft) after checking for its constraitns : type"
+        },
+        "usageaccumulator1stvalueaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(202), \"usageaccumulator1stvalueaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(202));fieldVal}",
+          "comment":"value for field (usageaccumulator1stvalueaft) after checking for its constraitns : type"
+        },
+        "usageaccumulator2ndidaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(203), \"usageaccumulator2ndidaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(203));fieldVal}",
+          "comment":"value for field (usageaccumulator2ndidaft) after checking for its constraitns : type"
+        },
+        "usageaccumulator2ndvalueaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(204), \"usageaccumulator2ndvalueaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(204));fieldVal}",
+          "comment":"value for field (usageaccumulator2ndvalueaft) after checking for its constraitns : type"
+        },
+        "usageaccumulator3rdidaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(205), \"usageaccumulator3rdidaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(205));fieldVal}",
+          "comment":"value for field (usageaccumulator3rdidaft) after checking for its constraitns : type"
+        },
+        "usageaccumulator3rdvalueaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(206), \"usageaccumulator3rdvalueaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(206));fieldVal}",
+          "comment":"value for field (usageaccumulator3rdvalueaft) after checking for its constraitns : type"
+        },
+        "usageaccumulator4thidaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(207), \"usageaccumulator4thidaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(207));fieldVal}",
+          "comment":"value for field (usageaccumulator4thidaft) after checking for its constraitns : type"
+        },
+        "usageaccumulator4thvalueaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(208), \"usageaccumulator4thvalueaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(208));fieldVal}",
+          "comment":"value for field (usageaccumulator4thvalueaft) after checking for its constraitns : type"
+        },
+        "usageaccumulator5thidaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(209), \"usageaccumulator5thidaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(209));fieldVal}",
+          "comment":"value for field (usageaccumulator5thidaft) after checking for its constraitns : type"
+        },
+        "usageaccumulator5thvalueaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(210), \"usageaccumulator5thvalueaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(210));fieldVal}",
+          "comment":"value for field (usageaccumulator5thvalueaft) after checking for its constraitns : type"
+        },
+        "usageaccumulator6thidaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(211), \"usageaccumulator6thidaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(211));fieldVal}",
+          "comment":"value for field (usageaccumulator6thidaft) after checking for its constraitns : type"
+        },
+        "usageaccumulator6thvalueaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(212), \"usageaccumulator6thvalueaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(212));fieldVal}",
+          "comment":"value for field (usageaccumulator6thvalueaft) after checking for its constraitns : type"
+        },
+        "usageaccumulator7thidaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(213), \"usageaccumulator7thidaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(213));fieldVal}",
+          "comment":"value for field (usageaccumulator7thidaft) after checking for its constraitns : type"
+        },
+        "usageaccumulator7thvalueaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(214), \"usageaccumulator7thvalueaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(214));fieldVal}",
+          "comment":"value for field (usageaccumulator7thvalueaft) after checking for its constraitns : type"
+        },
+        "usageaccumulator8thidaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(215), \"usageaccumulator8thidaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(215));fieldVal}",
+          "comment":"value for field (usageaccumulator8thidaft) after checking for its constraitns : type"
+        },
+        "usageaccumulator8thvalueaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(216), \"usageaccumulator8thvalueaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(216));fieldVal}",
+          "comment":"value for field (usageaccumulator8thvalueaft) after checking for its constraitns : type"
+        },
+        "usageaccumulator9thidaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(217), \"usageaccumulator9thidaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(217));fieldVal}",
+          "comment":"value for field (usageaccumulator9thidaft) after checking for its constraitns : type"
+        },
+        "usageaccumulator9thvalueaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(218), \"usageaccumulator9thvalueaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(218));fieldVal}",
+          "comment":"value for field (usageaccumulator9thvalueaft) after checking for its constraitns : type"
+        },
+        "usageaccumulator10thidaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(219), \"usageaccumulator10thidaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(219));fieldVal}",
+          "comment":"value for field (usageaccumulator10thidaft) after checking for its constraitns : type"
+        },
+        "usageaccumulator10thvalueaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(220), \"usageaccumulator10thvalueaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(220));fieldVal}",
+          "comment":"value for field (usageaccumulator10thvalueaft) after checking for its constraitns : type"
+        },
+        "refillpromodivisionamount___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(224), \"refillpromodivisionamount\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(224));fieldVal}",
+          "comment":"value for field (refillpromodivisionamount) after checking for its constraitns : type"
+        },
+        "supervisiondayspromopart___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(225), \"supervisiondayspromopart\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(225));fieldVal}",
+          "comment":"value for field (supervisiondayspromopart) after checking for its constraitns : type"
+        },
+        "supervisiondayssurplus___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(226), \"supervisiondayssurplus\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(226));fieldVal}",
+          "comment":"value for field (supervisiondayssurplus) after checking for its constraitns : type"
+        },
+        "servicefeedayspromopart___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(227), \"servicefeedayspromopart\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(227));fieldVal}",
+          "comment":"value for field (servicefeedayspromopart) after checking for its constraitns : type"
+        },
+        "servicefeedayssurplus___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(228), \"servicefeedayssurplus\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(228));fieldVal}",
+          "comment":"value for field (servicefeedayssurplus) after checking for its constraitns : type"
+        },
+        "maximumservicefeeperiod___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(229), \"maximumservicefeeperiod\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(229));fieldVal}",
+          "comment":"value for field (maximumservicefeeperiod) after checking for its constraitns : type"
+        },
+        "maximumsupervisionperiod___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(230), \"maximumsupervisionperiod\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(230));fieldVal}",
+          "comment":"value for field (maximumsupervisionperiod) after checking for its constraitns : type"
+        },
+        "welcomestatus___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(232), \"welcomestatus\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(232));fieldVal}",
+          "comment":"value for field (welcomestatus) after checking for its constraitns : type"
+        },
+        "rechargedivpartmain___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(269), \"rechargedivpartmain\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(269));fieldVal}",
+          "comment":"value for field (rechargedivpartmain) after checking for its constraitns : type"
+        },
+        "rechargedivpartda1st___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(270), \"rechargedivpartda1st\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(270));fieldVal}",
+          "comment":"value for field (rechargedivpartda1st) after checking for its constraitns : type"
+        },
+        "rechargedivpartda2nd___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(271), \"rechargedivpartda2nd\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(271));fieldVal}",
+          "comment":"value for field (rechargedivpartda2nd) after checking for its constraitns : type"
+        },
+        "rechargedivpartda3rd___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(272), \"rechargedivpartda3rd\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(272));fieldVal}",
+          "comment":"value for field (rechargedivpartda3rd) after checking for its constraitns : type"
+        },
+        "rechargedivpartda4th___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(273), \"rechargedivpartda4th\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(273));fieldVal}",
+          "comment":"value for field (rechargedivpartda4th) after checking for its constraitns : type"
+        },
+        "rechargedivpartda5th___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(274), \"rechargedivpartda5th\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(274));fieldVal}",
+          "comment":"value for field (rechargedivpartda5th) after checking for its constraitns : type"
+        },
+        "accumulatedprogressionvalueres___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(275), \"accumulatedprogressionvalueres\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(275));fieldVal}",
+          "comment":"value for field (accumulatedprogressionvalueres) after checking for its constraitns : type"
+        },
+        "rechargedivpartpmain___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(276), \"rechargedivpartpmain\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(276));fieldVal}",
+          "comment":"value for field (rechargedivpartpmain) after checking for its constraitns : type"
+        },
+        "rechargedivpartpda1st___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(277), \"rechargedivpartpda1st\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(277));fieldVal}",
+          "comment":"value for field (rechargedivpartpda1st) after checking for its constraitns : type"
+        },
+        "rechargedivpartpda2nd___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(278), \"rechargedivpartpda2nd\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(278));fieldVal}",
+          "comment":"value for field (rechargedivpartpda2nd) after checking for its constraitns : type"
+        },
+        "rechargedivpartpda3rd___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(279), \"rechargedivpartpda3rd\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(279));fieldVal}",
+          "comment":"value for field (rechargedivpartpda3rd) after checking for its constraitns : type"
+        },
+        "rechargedivpartpda4th___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(280), \"rechargedivpartpda4th\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(280));fieldVal}",
+          "comment":"value for field (rechargedivpartpda4th) after checking for its constraitns : type"
+        },
+        "rechargedivpartpda5th___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(281), \"rechargedivpartpda5th\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(281));fieldVal}",
+          "comment":"value for field (rechargedivpartpda5th) after checking for its constraitns : type"
+        },
+        "rechargedivpartda6th___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(282), \"rechargedivpartda6th\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(282));fieldVal}",
+          "comment":"value for field (rechargedivpartda6th) after checking for its constraitns : type"
+        },
+        "rechargedivpartda7th___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(283), \"rechargedivpartda7th\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(283));fieldVal}",
+          "comment":"value for field (rechargedivpartda7th) after checking for its constraitns : type"
+        },
+        "rechargedivpartda8th___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(284), \"rechargedivpartda8th\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(284));fieldVal}",
+          "comment":"value for field (rechargedivpartda8th) after checking for its constraitns : type"
+        },
+        "rechargedivpartda9th___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(285), \"rechargedivpartda9th\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(285));fieldVal}",
+          "comment":"value for field (rechargedivpartda9th) after checking for its constraitns : type"
+        },
+        "rechargedivpartda10th___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(286), \"rechargedivpartda10th\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(286));fieldVal}",
+          "comment":"value for field (rechargedivpartda10th) after checking for its constraitns : type"
+        },
+        "rechargedivpartpda6th___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(287), \"rechargedivpartpda6th\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(287));fieldVal}",
+          "comment":"value for field (rechargedivpartpda6th) after checking for its constraitns : type"
+        },
+        "rechargedivpartpda7th___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(288), \"rechargedivpartpda7th\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(288));fieldVal}",
+          "comment":"value for field (rechargedivpartpda7th) after checking for its constraitns : type"
+        },
+        "rechargedivpartpda8th___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(289), \"rechargedivpartpda8th\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(289));fieldVal}",
+          "comment":"value for field (rechargedivpartpda8th) after checking for its constraitns : type"
+        },
+        "rechargedivpartpda9th___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(290), \"rechargedivpartpda9th\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(290));fieldVal}",
+          "comment":"value for field (rechargedivpartpda9th) after checking for its constraitns : type"
+        },
+        "rechargedivpartpda10th___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(291), \"rechargedivpartpda10th\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(291));fieldVal}",
+          "comment":"value for field (rechargedivpartpda10th) after checking for its constraitns : type"
+        },
+        "dedicatedaccountunit1stbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(292), \"dedicatedaccountunit1stbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(292));fieldVal}",
+          "comment":"value for field (dedicatedaccountunit1stbef) after checking for its constraitns : type"
+        },
+        "refilldivunits1stbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(294), \"refilldivunits1stbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(294));fieldVal}",
+          "comment":"value for field (refilldivunits1stbef) after checking for its constraitns : type"
+        },
+        "refillpromodivunits1stbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(295), \"refillpromodivunits1stbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(295));fieldVal}",
+          "comment":"value for field (refillpromodivunits1stbef) after checking for its constraitns : type"
+        },
+        "unitbalance1stbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(296), \"unitbalance1stbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(296));fieldVal}",
+          "comment":"value for field (unitbalance1stbef) after checking for its constraitns : type"
+        },
+        "clearedunits1stbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(297), \"clearedunits1stbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(297));fieldVal}",
+          "comment":"value for field (clearedunits1stbef) after checking for its constraitns : type"
+        },
+        "realmoneyflag1stbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(298), \"realmoneyflag1stbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(298));fieldVal}",
+          "comment":"value for field (realmoneyflag1stbef) after checking for its constraitns : type"
+        },
+        "dedicatedaccountunit2ndbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(299), \"dedicatedaccountunit2ndbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(299));fieldVal}",
+          "comment":"value for field (dedicatedaccountunit2ndbef) after checking for its constraitns : type"
+        },
+        "refilldivunits2ndbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(301), \"refilldivunits2ndbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(301));fieldVal}",
+          "comment":"value for field (refilldivunits2ndbef) after checking for its constraitns : type"
+        },
+        "refillpromodivunits2ndbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(302), \"refillpromodivunits2ndbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(302));fieldVal}",
+          "comment":"value for field (refillpromodivunits2ndbef) after checking for its constraitns : type"
+        },
+        "unitbalance2ndbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(303), \"unitbalance2ndbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(303));fieldVal}",
+          "comment":"value for field (unitbalance2ndbef) after checking for its constraitns : type"
+        },
+        "clearedunits2ndbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(304), \"clearedunits2ndbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(304));fieldVal}",
+          "comment":"value for field (clearedunits2ndbef) after checking for its constraitns : type"
+        },
+        "realmoneyflag2ndbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(305), \"realmoneyflag2ndbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(305));fieldVal}",
+          "comment":"value for field (realmoneyflag2ndbef) after checking for its constraitns : type"
+        },
+        "dedicatedaccountunit3rdbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(306), \"dedicatedaccountunit3rdbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(306));fieldVal}",
+          "comment":"value for field (dedicatedaccountunit3rdbef) after checking for its constraitns : type"
+        },
+        "refilldivunits3rdbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(308), \"refilldivunits3rdbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(308));fieldVal}",
+          "comment":"value for field (refilldivunits3rdbef) after checking for its constraitns : type"
+        },
+        "refillpromodivunits3rdbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(309), \"refillpromodivunits3rdbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(309));fieldVal}",
+          "comment":"value for field (refillpromodivunits3rdbef) after checking for its constraitns : type"
+        },
+        "unitbalance3rdbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(310), \"unitbalance3rdbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(310));fieldVal}",
+          "comment":"value for field (unitbalance3rdbef) after checking for its constraitns : type"
+        },
+        "clearedunits3rdbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(311), \"clearedunits3rdbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(311));fieldVal}",
+          "comment":"value for field (clearedunits3rdbef) after checking for its constraitns : type"
+        },
+        "realmoneyflag3rdbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(312), \"realmoneyflag3rdbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(312));fieldVal}",
+          "comment":"value for field (realmoneyflag3rdbef) after checking for its constraitns : type"
+        },
+        "dedicatedaccountunit4thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(313), \"dedicatedaccountunit4thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(313));fieldVal}",
+          "comment":"value for field (dedicatedaccountunit4thbef) after checking for its constraitns : type"
+        },
+        "refilldivunits4thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(315), \"refilldivunits4thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(315));fieldVal}",
+          "comment":"value for field (refilldivunits4thbef) after checking for its constraitns : type"
+        },
+        "refillpromodivunits4thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(316), \"refillpromodivunits4thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(316));fieldVal}",
+          "comment":"value for field (refillpromodivunits4thbef) after checking for its constraitns : type"
+        },
+        "unitbalance4thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(317), \"unitbalance4thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(317));fieldVal}",
+          "comment":"value for field (unitbalance4thbef) after checking for its constraitns : type"
+        },
+        "clearedunits4thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(318), \"clearedunits4thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(318));fieldVal}",
+          "comment":"value for field (clearedunits4thbef) after checking for its constraitns : type"
+        },
+        "realmoneyflag4thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(319), \"realmoneyflag4thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(319));fieldVal}",
+          "comment":"value for field (realmoneyflag4thbef) after checking for its constraitns : type"
+        },
+        "dedicatedaccountunit5thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(320), \"dedicatedaccountunit5thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(320));fieldVal}",
+          "comment":"value for field (dedicatedaccountunit5thbef) after checking for its constraitns : type"
+        },
+        "refilldivunits5thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(322), \"refilldivunits5thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(322));fieldVal}",
+          "comment":"value for field (refilldivunits5thbef) after checking for its constraitns : type"
+        },
+        "refillpromodivunits5thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(323), \"refillpromodivunits5thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(323));fieldVal}",
+          "comment":"value for field (refillpromodivunits5thbef) after checking for its constraitns : type"
+        },
+        "unitbalance5thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(324), \"unitbalance5thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(324));fieldVal}",
+          "comment":"value for field (unitbalance5thbef) after checking for its constraitns : type"
+        },
+        "clearedunits5thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(325), \"clearedunits5thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(325));fieldVal}",
+          "comment":"value for field (clearedunits5thbef) after checking for its constraitns : type"
+        },
+        "realmoneyflag5thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(326), \"realmoneyflag5thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(326));fieldVal}",
+          "comment":"value for field (realmoneyflag5thbef) after checking for its constraitns : type"
+        },
+        "dedicatedaccountunit6thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(327), \"dedicatedaccountunit6thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(327));fieldVal}",
+          "comment":"value for field (dedicatedaccountunit6thbef) after checking for its constraitns : type"
+        },
+        "refilldivunits6thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(329), \"refilldivunits6thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(329));fieldVal}",
+          "comment":"value for field (refilldivunits6thbef) after checking for its constraitns : type"
+        },
+        "refillpromodivunits6thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(330), \"refillpromodivunits6thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(330));fieldVal}",
+          "comment":"value for field (refillpromodivunits6thbef) after checking for its constraitns : type"
+        },
+        "unitbalance6thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(331), \"unitbalance6thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(331));fieldVal}",
+          "comment":"value for field (unitbalance6thbef) after checking for its constraitns : type"
+        },
+        "clearedunits6thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(332), \"clearedunits6thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(332));fieldVal}",
+          "comment":"value for field (clearedunits6thbef) after checking for its constraitns : type"
+        },
+        "realmoneyflag6thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(333), \"realmoneyflag6thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(333));fieldVal}",
+          "comment":"value for field (realmoneyflag6thbef) after checking for its constraitns : type"
+        },
+        "dedicatedaccountunit7thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(334), \"dedicatedaccountunit7thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(334));fieldVal}",
+          "comment":"value for field (dedicatedaccountunit7thbef) after checking for its constraitns : type"
+        },
+        "refilldivunits7thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(336), \"refilldivunits7thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(336));fieldVal}",
+          "comment":"value for field (refilldivunits7thbef) after checking for its constraitns : type"
+        },
+        "refillpromodivunits7thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(337), \"refillpromodivunits7thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(337));fieldVal}",
+          "comment":"value for field (refillpromodivunits7thbef) after checking for its constraitns : type"
+        },
+        "unitbalance7thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(338), \"unitbalance7thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(338));fieldVal}",
+          "comment":"value for field (unitbalance7thbef) after checking for its constraitns : type"
+        },
+        "clearedunits7thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(339), \"clearedunits7thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(339));fieldVal}",
+          "comment":"value for field (clearedunits7thbef) after checking for its constraitns : type"
+        },
+        "realmoneyflag7thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(340), \"realmoneyflag7thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(340));fieldVal}",
+          "comment":"value for field (realmoneyflag7thbef) after checking for its constraitns : type"
+        },
+        "dedicatedaccountunit8thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(341), \"dedicatedaccountunit8thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(341));fieldVal}",
+          "comment":"value for field (dedicatedaccountunit8thbef) after checking for its constraitns : type"
+        },
+        "refilldivunits8thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(343), \"refilldivunits8thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(343));fieldVal}",
+          "comment":"value for field (refilldivunits8thbef) after checking for its constraitns : type"
+        },
+        "refillpromodivunits8thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(344), \"refillpromodivunits8thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(344));fieldVal}",
+          "comment":"value for field (refillpromodivunits8thbef) after checking for its constraitns : type"
+        },
+        "unitbalance8thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(345), \"unitbalance8thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(345));fieldVal}",
+          "comment":"value for field (unitbalance8thbef) after checking for its constraitns : type"
+        },
+        "clearedunits8thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(346), \"clearedunits8thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(346));fieldVal}",
+          "comment":"value for field (clearedunits8thbef) after checking for its constraitns : type"
+        },
+        "realmoneyflag8thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(347), \"realmoneyflag8thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(347));fieldVal}",
+          "comment":"value for field (realmoneyflag8thbef) after checking for its constraitns : type"
+        },
+        "dedicatedaccountunit9thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(348), \"dedicatedaccountunit9thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(348));fieldVal}",
+          "comment":"value for field (dedicatedaccountunit9thbef) after checking for its constraitns : type"
+        },
+        "refilldivunits9thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(350), \"refilldivunits9thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(350));fieldVal}",
+          "comment":"value for field (refilldivunits9thbef) after checking for its constraitns : type"
+        },
+        "refillpromodivunits9thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(351), \"refillpromodivunits9thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(351));fieldVal}",
+          "comment":"value for field (refillpromodivunits9thbef) after checking for its constraitns : type"
+        },
+        "unitbalance9thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(352), \"unitbalance9thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(352));fieldVal}",
+          "comment":"value for field (unitbalance9thbef) after checking for its constraitns : type"
+        },
+        "clearedunits9thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(353), \"clearedunits9thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(353));fieldVal}",
+          "comment":"value for field (clearedunits9thbef) after checking for its constraitns : type"
+        },
+        "realmoneyflag9thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(354), \"realmoneyflag9thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(354));fieldVal}",
+          "comment":"value for field (realmoneyflag9thbef) after checking for its constraitns : type"
+        },
+        "dedicatedaccountunit10thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(355), \"dedicatedaccountunit10thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(355));fieldVal}",
+          "comment":"value for field (dedicatedaccountunit10thbef) after checking for its constraitns : type"
+        },
+        "refilldivunits10thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(357), \"refilldivunits10thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(357));fieldVal}",
+          "comment":"value for field (refilldivunits10thbef) after checking for its constraitns : type"
+        },
+        "refillpromodivunits10thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(358), \"refillpromodivunits10thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(358));fieldVal}",
+          "comment":"value for field (refillpromodivunits10thbef) after checking for its constraitns : type"
+        },
+        "unitbalance10thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(359), \"unitbalance10thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(359));fieldVal}",
+          "comment":"value for field (unitbalance10thbef) after checking for its constraitns : type"
+        },
+        "clearedunits10thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(360), \"clearedunits10thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(360));fieldVal}",
+          "comment":"value for field (clearedunits10thbef) after checking for its constraitns : type"
+        },
+        "realmoneyflag10thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(361), \"realmoneyflag10thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(361));fieldVal}",
+          "comment":"value for field (realmoneyflag10thbef) after checking for its constraitns : type"
+        },
+        "offer1stidentifierbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(362), \"offer1stidentifierbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(362));fieldVal}",
+          "comment":"value for field (offer1stidentifierbef) after checking for its constraitns : type"
+        },
+        "offerproductidentifier1stbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(366), \"offerproductidentifier1stbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(366));fieldVal}",
+          "comment":"value for field (offerproductidentifier1stbef) after checking for its constraitns : type"
+        },
+        "offer2ndidentifierbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(369), \"offer2ndidentifierbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(369));fieldVal}",
+          "comment":"value for field (offer2ndidentifierbef) after checking for its constraitns : type"
+        },
+        "offerproductidentifier2ndbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(373), \"offerproductidentifier2ndbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(373));fieldVal}",
+          "comment":"value for field (offerproductidentifier2ndbef) after checking for its constraitns : type"
+        },
+        "offer3rdidentifierbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(376), \"offer3rdidentifierbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(376));fieldVal}",
+          "comment":"value for field (offer3rdidentifierbef) after checking for its constraitns : type"
+        },
+        "offerproductidentifier3rdbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(380), \"offerproductidentifier3rdbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(380));fieldVal}",
+          "comment":"value for field (offerproductidentifier3rdbef) after checking for its constraitns : type"
+        },
+        "offer4thidentifierbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(383), \"offer4thidentifierbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(383));fieldVal}",
+          "comment":"value for field (offer4thidentifierbef) after checking for its constraitns : type"
+        },
+        "offerproductidentifier4thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(387), \"offerproductidentifier4thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(387));fieldVal}",
+          "comment":"value for field (offerproductidentifier4thbef) after checking for its constraitns : type"
+        },
+        "offer5thidentifierbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(390), \"offer5thidentifierbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(390));fieldVal}",
+          "comment":"value for field (offer5thidentifierbef) after checking for its constraitns : type"
+        },
+        "offerproductidentifier5thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(394), \"offerproductidentifier5thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(394));fieldVal}",
+          "comment":"value for field (offerproductidentifier5thbef) after checking for its constraitns : type"
+        },
+        "offer6thidentifierbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(397), \"offer6thidentifierbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(397));fieldVal}",
+          "comment":"value for field (offer6thidentifierbef) after checking for its constraitns : type"
+        },
+        "offerproductidentifier6thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(401), \"offerproductidentifier6thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(401));fieldVal}",
+          "comment":"value for field (offerproductidentifier6thbef) after checking for its constraitns : type"
+        },
+        "offer7thidentifierbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(404), \"offer7thidentifierbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(404));fieldVal}",
+          "comment":"value for field (offer7thidentifierbef) after checking for its constraitns : type"
+        },
+        "offerproductidentifier7thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(408), \"offerproductidentifier7thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(408));fieldVal}",
+          "comment":"value for field (offerproductidentifier7thbef) after checking for its constraitns : type"
+        },
+        "offer8thidentifierbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(411), \"offer8thidentifierbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(411));fieldVal}",
+          "comment":"value for field (offer8thidentifierbef) after checking for its constraitns : type"
+        },
+        "offerproductidentifier8thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(415), \"offerproductidentifier8thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(415));fieldVal}",
+          "comment":"value for field (offerproductidentifier8thbef) after checking for its constraitns : type"
+        },
+        "offer9thidentifierbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(418), \"offer9thidentifierbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(418));fieldVal}",
+          "comment":"value for field (offer9thidentifierbef) after checking for its constraitns : type"
+        },
+        "offerproductidentifier9thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(422), \"offerproductidentifier9thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(422));fieldVal}",
+          "comment":"value for field (offerproductidentifier9thbef) after checking for its constraitns : type"
+        },
+        "offer10thidentifierbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(425), \"offer10thidentifierbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(425));fieldVal}",
+          "comment":"value for field (offer10thidentifierbef) after checking for its constraitns : type"
+        },
+        "offerproductidentifier10thbef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(429), \"offerproductidentifier10thbef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(429));fieldVal}",
+          "comment":"value for field (offerproductidentifier10thbef) after checking for its constraitns : type"
+        },
+        "aggregatedbalancebef___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(432), \"aggregatedbalancebef\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(432));fieldVal}",
+          "comment":"value for field (aggregatedbalancebef) after checking for its constraitns : type"
+        },
+        "dedicatedaccountunit1staft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(433), \"dedicatedaccountunit1staft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(433));fieldVal}",
+          "comment":"value for field (dedicatedaccountunit1staft) after checking for its constraitns : type"
+        },
+        "refilldivunits1staft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(435), \"refilldivunits1staft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(435));fieldVal}",
+          "comment":"value for field (refilldivunits1staft) after checking for its constraitns : type"
+        },
+        "refillpromodivunits1staft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(436), \"refillpromodivunits1staft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(436));fieldVal}",
+          "comment":"value for field (refillpromodivunits1staft) after checking for its constraitns : type"
+        },
+        "unitbalance1staft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(437), \"unitbalance1staft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(437));fieldVal}",
+          "comment":"value for field (unitbalance1staft) after checking for its constraitns : type"
+        },
+        "clearedunits1staft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(438), \"clearedunits1staft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(438));fieldVal}",
+          "comment":"value for field (clearedunits1staft) after checking for its constraitns : type"
+        },
+        "realmoneyflag1staft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(439), \"realmoneyflag1staft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(439));fieldVal}",
+          "comment":"value for field (realmoneyflag1staft) after checking for its constraitns : type"
+        },
+        "dedicatedaccountunit2ndaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(440), \"dedicatedaccountunit2ndaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(440));fieldVal}",
+          "comment":"value for field (dedicatedaccountunit2ndaft) after checking for its constraitns : type"
+        },
+        "refilldivunits2ndaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(442), \"refilldivunits2ndaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(442));fieldVal}",
+          "comment":"value for field (refilldivunits2ndaft) after checking for its constraitns : type"
+        },
+        "refillpromodivunits2ndaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(443), \"refillpromodivunits2ndaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(443));fieldVal}",
+          "comment":"value for field (refillpromodivunits2ndaft) after checking for its constraitns : type"
+        },
+        "unitbalance2ndaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(444), \"unitbalance2ndaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(444));fieldVal}",
+          "comment":"value for field (unitbalance2ndaft) after checking for its constraitns : type"
+        },
+        "clearedunits2ndaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(445), \"clearedunits2ndaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(445));fieldVal}",
+          "comment":"value for field (clearedunits2ndaft) after checking for its constraitns : type"
+        },
+        "realmoneyflag2ndaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(446), \"realmoneyflag2ndaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(446));fieldVal}",
+          "comment":"value for field (realmoneyflag2ndaft) after checking for its constraitns : type"
+        },
+        "dedicatedaccountunit3rdaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(447), \"dedicatedaccountunit3rdaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(447));fieldVal}",
+          "comment":"value for field (dedicatedaccountunit3rdaft) after checking for its constraitns : type"
+        },
+        "refilldivunits3rdaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(449), \"refilldivunits3rdaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(449));fieldVal}",
+          "comment":"value for field (refilldivunits3rdaft) after checking for its constraitns : type"
+        },
+        "refillpromodivunits3rdaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(450), \"refillpromodivunits3rdaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(450));fieldVal}",
+          "comment":"value for field (refillpromodivunits3rdaft) after checking for its constraitns : type"
+        },
+        "unitbalance3rdaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(451), \"unitbalance3rdaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(451));fieldVal}",
+          "comment":"value for field (unitbalance3rdaft) after checking for its constraitns : type"
+        },
+        "clearedunits3rdaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(452), \"clearedunits3rdaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(452));fieldVal}",
+          "comment":"value for field (clearedunits3rdaft) after checking for its constraitns : type"
+        },
+        "realmoneyflag3rdaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(453), \"realmoneyflag3rdaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(453));fieldVal}",
+          "comment":"value for field (realmoneyflag3rdaft) after checking for its constraitns : type"
+        },
+        "dedicatedaccountunit4thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(454), \"dedicatedaccountunit4thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(454));fieldVal}",
+          "comment":"value for field (dedicatedaccountunit4thaft) after checking for its constraitns : type"
+        },
+        "refilldivunits4thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(456), \"refilldivunits4thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(456));fieldVal}",
+          "comment":"value for field (refilldivunits4thaft) after checking for its constraitns : type"
+        },
+        "refillpromodivunits4thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(457), \"refillpromodivunits4thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(457));fieldVal}",
+          "comment":"value for field (refillpromodivunits4thaft) after checking for its constraitns : type"
+        },
+        "unitbalance4thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(458), \"unitbalance4thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(458));fieldVal}",
+          "comment":"value for field (unitbalance4thaft) after checking for its constraitns : type"
+        },
+        "clearedunits4thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(459), \"clearedunits4thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(459));fieldVal}",
+          "comment":"value for field (clearedunits4thaft) after checking for its constraitns : type"
+        },
+        "realmoneyflag4thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(460), \"realmoneyflag4thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(460));fieldVal}",
+          "comment":"value for field (realmoneyflag4thaft) after checking for its constraitns : type"
+        },
+        "dedicatedaccountunit5thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(461), \"dedicatedaccountunit5thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(461));fieldVal}",
+          "comment":"value for field (dedicatedaccountunit5thaft) after checking for its constraitns : type"
+        },
+        "refilldivunits5thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(463), \"refilldivunits5thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(463));fieldVal}",
+          "comment":"value for field (refilldivunits5thaft) after checking for its constraitns : type"
+        },
+        "refillpromodivunits5thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(464), \"refillpromodivunits5thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(464));fieldVal}",
+          "comment":"value for field (refillpromodivunits5thaft) after checking for its constraitns : type"
+        },
+        "unitbalance5thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(465), \"unitbalance5thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(465));fieldVal}",
+          "comment":"value for field (unitbalance5thaft) after checking for its constraitns : type"
+        },
+        "clearedunits5thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(466), \"clearedunits5thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(466));fieldVal}",
+          "comment":"value for field (clearedunits5thaft) after checking for its constraitns : type"
+        },
+        "realmoneyflag5thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(467), \"realmoneyflag5thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(467));fieldVal}",
+          "comment":"value for field (realmoneyflag5thaft) after checking for its constraitns : type"
+        },
+        "dedicatedaccountunit6thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(468), \"dedicatedaccountunit6thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(468));fieldVal}",
+          "comment":"value for field (dedicatedaccountunit6thaft) after checking for its constraitns : type"
+        },
+        "refilldivunits6thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(470), \"refilldivunits6thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(470));fieldVal}",
+          "comment":"value for field (refilldivunits6thaft) after checking for its constraitns : type"
+        },
+        "refillpromodivunits6thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(471), \"refillpromodivunits6thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(471));fieldVal}",
+          "comment":"value for field (refillpromodivunits6thaft) after checking for its constraitns : type"
+        },
+        "unitbalance6thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(472), \"unitbalance6thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(472));fieldVal}",
+          "comment":"value for field (unitbalance6thaft) after checking for its constraitns : type"
+        },
+        "clearedunits6thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(473), \"clearedunits6thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(473));fieldVal}",
+          "comment":"value for field (clearedunits6thaft) after checking for its constraitns : type"
+        },
+        "realmoneyflag6thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(474), \"realmoneyflag6thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(474));fieldVal}",
+          "comment":"value for field (realmoneyflag6thaft) after checking for its constraitns : type"
+        },
+        "dedicatedaccountunit7thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(475), \"dedicatedaccountunit7thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(475));fieldVal}",
+          "comment":"value for field (dedicatedaccountunit7thaft) after checking for its constraitns : type"
+        },
+        "refilldivunits7thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(477), \"refilldivunits7thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(477));fieldVal}",
+          "comment":"value for field (refilldivunits7thaft) after checking for its constraitns : type"
+        },
+        "refillpromodivunits7thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(478), \"refillpromodivunits7thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(478));fieldVal}",
+          "comment":"value for field (refillpromodivunits7thaft) after checking for its constraitns : type"
+        },
+        "unitbalance7thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(479), \"unitbalance7thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(479));fieldVal}",
+          "comment":"value for field (unitbalance7thaft) after checking for its constraitns : type"
+        },
+        "clearedunits7thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(480), \"clearedunits7thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(480));fieldVal}",
+          "comment":"value for field (clearedunits7thaft) after checking for its constraitns : type"
+        },
+        "realmoneyflag7thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(481), \"realmoneyflag7thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(481));fieldVal}",
+          "comment":"value for field (realmoneyflag7thaft) after checking for its constraitns : type"
+        },
+        "dedicatedaccountunit8thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(482), \"dedicatedaccountunit8thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(482));fieldVal}",
+          "comment":"value for field (dedicatedaccountunit8thaft) after checking for its constraitns : type"
+        },
+        "refilldivunits8thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(484), \"refilldivunits8thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(484));fieldVal}",
+          "comment":"value for field (refilldivunits8thaft) after checking for its constraitns : type"
+        },
+        "refillpromodivunits8thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(485), \"refillpromodivunits8thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(485));fieldVal}",
+          "comment":"value for field (refillpromodivunits8thaft) after checking for its constraitns : type"
+        },
+        "unitbalance8thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(486), \"unitbalance8thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(486));fieldVal}",
+          "comment":"value for field (unitbalance8thaft) after checking for its constraitns : type"
+        },
+        "clearedunits8thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(487), \"clearedunits8thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(487));fieldVal}",
+          "comment":"value for field (clearedunits8thaft) after checking for its constraitns : type"
+        },
+        "realmoneyflag8thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(488), \"realmoneyflag8thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(488));fieldVal}",
+          "comment":"value for field (realmoneyflag8thaft) after checking for its constraitns : type"
+        },
+        "dedicatedaccountunit9thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(489), \"dedicatedaccountunit9thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(489));fieldVal}",
+          "comment":"value for field (dedicatedaccountunit9thaft) after checking for its constraitns : type"
+        },
+        "refilldivunits9thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(491), \"refilldivunits9thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(491));fieldVal}",
+          "comment":"value for field (refilldivunits9thaft) after checking for its constraitns : type"
+        },
+        "refillpromodivunits9thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(492), \"refillpromodivunits9thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(492));fieldVal}",
+          "comment":"value for field (refillpromodivunits9thaft) after checking for its constraitns : type"
+        },
+        "unitbalance9thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(493), \"unitbalance9thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(493));fieldVal}",
+          "comment":"value for field (unitbalance9thaft) after checking for its constraitns : type"
+        },
+        "clearedunits9thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(494), \"clearedunits9thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(494));fieldVal}",
+          "comment":"value for field (clearedunits9thaft) after checking for its constraitns : type"
+        },
+        "realmoneyflag9thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(495), \"realmoneyflag9thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(495));fieldVal}",
+          "comment":"value for field (realmoneyflag9thaft) after checking for its constraitns : type"
+        },
+        "dedicatedaccountunit10thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(496), \"dedicatedaccountunit10thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(496));fieldVal}",
+          "comment":"value for field (dedicatedaccountunit10thaft) after checking for its constraitns : type"
+        },
+        "refilldivunits10thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(498), \"refilldivunits10thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(498));fieldVal}",
+          "comment":"value for field (refilldivunits10thaft) after checking for its constraitns : type"
+        },
+        "refillpromodivunits10thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(499), \"refillpromodivunits10thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(499));fieldVal}",
+          "comment":"value for field (refillpromodivunits10thaft) after checking for its constraitns : type"
+        },
+        "unitbalance10thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(500), \"unitbalance10thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(500));fieldVal}",
+          "comment":"value for field (unitbalance10thaft) after checking for its constraitns : type"
+        },
+        "clearedunits10thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(501), \"clearedunits10thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(501));fieldVal}",
+          "comment":"value for field (clearedunits10thaft) after checking for its constraitns : type"
+        },
+        "realmoneyflag10thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(502), \"realmoneyflag10thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(502));fieldVal}",
+          "comment":"value for field (realmoneyflag10thaft) after checking for its constraitns : type"
+        },
+        "offer1stidentifieraft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(503), \"offer1stidentifieraft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(503));fieldVal}",
+          "comment":"value for field (offer1stidentifieraft) after checking for its constraitns : type"
+        },
+        "offerproductidentifier1staft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(507), \"offerproductidentifier1staft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(507));fieldVal}",
+          "comment":"value for field (offerproductidentifier1staft) after checking for its constraitns : type"
+        },
+        "offer2ndidentifieraft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(510), \"offer2ndidentifieraft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(510));fieldVal}",
+          "comment":"value for field (offer2ndidentifieraft) after checking for its constraitns : type"
+        },
+        "offerproductidentifier2ndaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(514), \"offerproductidentifier2ndaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(514));fieldVal}",
+          "comment":"value for field (offerproductidentifier2ndaft) after checking for its constraitns : type"
+        },
+        "offer3rdidentifieraft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(517), \"offer3rdidentifieraft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(517));fieldVal}",
+          "comment":"value for field (offer3rdidentifieraft) after checking for its constraitns : type"
+        },
+        "offerproductidentifier3rdaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(521), \"offerproductidentifier3rdaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(521));fieldVal}",
+          "comment":"value for field (offerproductidentifier3rdaft) after checking for its constraitns : type"
+        },
+        "offer4thidentifieraft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(524), \"offer4thidentifieraft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(524));fieldVal}",
+          "comment":"value for field (offer4thidentifieraft) after checking for its constraitns : type"
+        },
+        "offerproductidentifier4thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(528), \"offerproductidentifier4thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(528));fieldVal}",
+          "comment":"value for field (offerproductidentifier4thaft) after checking for its constraitns : type"
+        },
+        "offer5thidentifieraft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(531), \"offer5thidentifieraft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(531));fieldVal}",
+          "comment":"value for field (offer5thidentifieraft) after checking for its constraitns : type"
+        },
+        "offerproductidentifier5thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(535), \"offerproductidentifier5thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(535));fieldVal}",
+          "comment":"value for field (offerproductidentifier5thaft) after checking for its constraitns : type"
+        },
+        "offer6thidentifieraft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(538), \"offer6thidentifieraft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(538));fieldVal}",
+          "comment":"value for field (offer6thidentifieraft) after checking for its constraitns : type"
+        },
+        "offerproductidentifier6thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(542), \"offerproductidentifier6thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(542));fieldVal}",
+          "comment":"value for field (offerproductidentifier6thaft) after checking for its constraitns : type"
+        },
+        "offer7thidentifieraft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(545), \"offer7thidentifieraft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(545));fieldVal}",
+          "comment":"value for field (offer7thidentifieraft) after checking for its constraitns : type"
+        },
+        "offerproductidentifier7thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(549), \"offerproductidentifier7thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(549));fieldVal}",
+          "comment":"value for field (offerproductidentifier7thaft) after checking for its constraitns : type"
+        },
+        "offer8thidentifieraft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(552), \"offer8thidentifieraft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(552));fieldVal}",
+          "comment":"value for field (offer8thidentifieraft) after checking for its constraitns : type"
+        },
+        "offerproductidentifier8thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(556), \"offerproductidentifier8thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(556));fieldVal}",
+          "comment":"value for field (offerproductidentifier8thaft) after checking for its constraitns : type"
+        },
+        "offer9thidentifieraft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(559), \"offer9thidentifieraft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(559));fieldVal}",
+          "comment":"value for field (offer9thidentifieraft) after checking for its constraitns : type"
+        },
+        "offerproductidentifier9thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(563), \"offerproductidentifier9thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(563));fieldVal}",
+          "comment":"value for field (offerproductidentifier9thaft) after checking for its constraitns : type"
+        },
+        "offer10thidentifieraft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(566), \"offer10thidentifieraft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(566));fieldVal}",
+          "comment":"value for field (offer10thidentifieraft) after checking for its constraitns : type"
+        },
+        "offerproductidentifier10thaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(570), \"offerproductidentifier10thaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(570));fieldVal}",
+          "comment":"value for field (offerproductidentifier10thaft) after checking for its constraitns : type"
+        },
+        "aggregatedbalanceaft___val":{
+          "type":"Double",
+          "val":"if(!isDouble($inpData(573), \"aggregatedbalanceaft\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(573));fieldVal}",
+          "comment":"value for field (aggregatedbalanceaft) after checking for its constraitns : type"
+        },
+        "market_id___val":{
+          "type":"Int",
+          "val":"if(!isInt($inpData(575), \"market_id\", HandleError )) 0  else { val fieldVal = conversion.ToInteger($inpData(575));fieldVal}",
+          "comment":"value for field (market_id) after checking for its constraitns : type"
+        },
+        "hub_id___val":{
+          "type":"Int",
+          "val":"if(!isInt($inpData(576), \"hub_id\", HandleError )) 0  else { val fieldVal = conversion.ToInteger($inpData(576));fieldVal}",
+          "comment":"value for field (hub_id) after checking for its constraitns : type"
+        },
+        "empty_str":{
+          "type":"String",
+          "val":"\"\"",
+          "comment":"dummy"
+        }
+      },
+      "outputs":{
+        "o1":{
+          "mapbyposition":{
+            "inpData":["originnodetype","originhostname","originfileid","origintransactionid","originoperatorid","origintimestamp","hostname","-","timestamp","-","voucherbasedrefill","transactiontype","transactioncode","-","transactioncurrency","-","-","-","refillprofileid","segmentationid","voucherserialnumber","vouchergroupid","accountnumber","accountcurrency","subscribernumber","promotionannouncementcode","accountflagsbef","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","promotionplan","-","-","temporaryservclassexpdatebef","refilloptionbef","servicefeeexpirydatebef","-","serviceofferingbef","supervisionexpirydatebef","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","communityidbef1","communityidbef2","communityidbef3","accountflagsaft","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","promotionplanaft","-","-","-","refilloptionaft","servicefeeexpirydateaft","-","serviceofferingaft","supervisionexpirydateaft","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","communityidaft1","communityidaft2","communityidaft3","-","-","-","-","-","-","-","activationdate","-","voucheragent","promotionplanallocstartdate","accountgroupid","externaldata1","externaldata2","externaldata3","externaldata4","locationnumber","voucheractivationcode","accountcurrencycleared","ignoreserviceclasshierarchy","accounthomeregion","subscriberregion","voucherregion","promotionplanallocenddate","requestedrefilltype","accountexpiry1stdatebef","accountexpiry1stdateaft","accountexpiry2nddatebef","accountexpiry2nddateaft","accountexpiry3rddatebef","accountexpiry3rddateaft","accountexpiry4thdatebef","accountexpiry4thdateaft","accountexpiry5thdatebef","accountexpiry5thdateaft","accountexpiry6thdatebef","accountexpiry6thdateaft","accountexpiry7thdatebef","accountexpiry7thdateaft","accountexpiry8thdatebef","accountexpiry8thdateaft","accountexpiry9thdatebef","accountexpiry9thdateaft","accountexpiry10thdatebef","accountexpiry10thdateaft","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","-","accountstartdate1stbef","-","-","-","-","-","-","accountstartdate2ndbef","-","-","-","-","-","-","accountstartdate3rdbef","-","-","-","-","-","-","accountstartdate4thbef","-","-","-","-","-","-","accountstartdate5thbef","-","-","-","-","-","-","accountstartdate6thbef","-","-","-","-","-","-","accountstartdate7thbef","-","-","-","-","-","-","accountstartdate8thbef","-","-","-","-","-","-","accountstartdate9thbef","-","-","-","-","-","-","accountstartdate10thbef","-","-","-","-","-","-","offerstartdate1stbef","offerexpirydate1stbef","offertype1stbef","-","offerstartdatetime1stbef","offerexpirydatetime1stbef","-","offerstartdate2ndbef","offerexpirydate2ndbef","offertype2ndbef","-","offerstartdatetime2ndbef","offerexpirydatetime2ndbef","-","offerstartdate3rdbef","offerexpirydate3rdbef","offertype3rdbef","-","offerstartdatetime3rdbef","offerexpirydatetime3rdbef","-","offerstartdate4thbef","offerexpirydate4thbef","offertype4thbef","-","offerstartdatetime4thbef","offerexpirydatetime4thbef","-","offerstartdate5thbef","offerexpirydate5thbef","offertype5thbef","-","offerstartdatetime5thbef","offerexpirydatetime5thbef","-","offerstartdate6thbef","offerexpirydate6thbef","offertype6thbef","-","offerstartdatetime6thbef","offerexpirydatetime6thbef","-","offerstartdate7thbef","offerexpirydate7thbef","offertype7thbef","-","offerstartdatetime7thbef","offerexpirydatetime7thbef","-","offerstartdate8thbef","offerexpirydate8thbef","offertype8thbef","-","offerstartdatetime8thbef","offerexpirydatetime8thbef","-","offerstartdate9thbef","offerexpirydate9thbef","offertype9thbef","-","offerstartdatetime9thbef","offerexpirydatetime9thbef","-","offerstartdate10thbef","offerexpirydate10thbef","offertype10thbef","-","offerstartdatetime10thbef","offerexpirydatetime10thbef","-","-","accountstartdate1staft","-","-","-","-","-","-","accountstartdate2ndaft","-","-","-","-","-","-","accountstartdate3rdaft","-","-","-","-","-","-","accountstartdate4thaft","-","-","-","-","-","-","accountstartdate5thaft","-","-","-","-","-","-","accountstartdate6thaft","-","-","-","-","-","-","accountstartdate7thaft","-","-","-","-","-","-","accountstartdate8thaft","-","-","-","-","-","-","accountstartdate9thaft","-","-","-","-","-","-","accountstartdate10thaft","-","-","-","-","-","-","offerstartdate1staft","offerexpirydate1staft","offertype1staft","-","offerstartdatetime1staft","offerexpirydatetime1staft","-","offerstartdate2ndaft","offerexpirydate2ndaft","offertype2ndaft","-","offerstartdatetime2ndaft","offerexpirydatetime2ndaft","-","offerstartdate3rdaft","offerexpirydate3rdaft","offertype3rdaft","-","offerstartdatetime3rdaft","offerexpirydatetime3rdaft","-","offerstartdate4thaft","offerexpirydate4thaft","offertype4thaft","-","offerstartdatetime4thaft","offerexpirydatetime4thaft","-","offerstartdate5thaft","offerexpirydate5thaft","offertype5thaft","-","offerstartdatetime5thaft","offerexpirydatetime5thaft","-","offerstartdate6thaft","offerexpirydate6thaft","offertype6thaft","-","offerstartdatetime6thaft","offerexpirydatetime6thaft","-","offerstartdate7thaft","offerexpirydate7thaft","offertype7thaft","-","offerstartdatetime7thaft","offerexpirydatetime7thaft","-","offerstartdate8thaft","offerexpirydate8thaft","offertype8thaft","-","offerstartdatetime8thaft","offerexpirydatetime8thaft","-","offerstartdate9thaft","offerexpirydate9thaft","offertype9thaft","-","offerstartdatetime9thaft","offerexpirydatetime9thaft","-","offerstartdate10thaft","offerexpirydate10thaft","offertype10thaft","-","offerstartdatetime10thaft","offerexpirydatetime10thaft","-","cellidentifier","-","-","filename"]
+          },
+          "mapping":{
+            "account7thcampaignidentbef":"$account7thcampaignidentbef___val",
+            "offerproductidentifier10thbef":"$offerproductidentifier10thbef___val",
+            "unitbalance7thaft":"$unitbalance7thaft___val",
+            "account10threfilldivamountbef":"$account10threfilldivamountbef___val",
+            "unitbalance7thbef":"$unitbalance7thbef___val",
+            "rechargedivpartda2nd":"$rechargedivpartda2nd___val",
+            "dedicatedaccount5thidbef":"$dedicatedaccount5thidbef___val",
+            "maximumservicefeeperiod":"$maximumservicefeeperiod___val",
+            "accumulatedrefillcounteraft":"$accumulatedrefillcounteraft___val",
+            "offer3rdidentifieraft":"$offer3rdidentifieraft___val",
+            "rechargedivpartda4th":"$rechargedivpartda4th___val",
+            "clearedunits7thbef":"$clearedunits7thbef___val",
+            "account5thbalancebef":"$account5thbalancebef___val",
+            "offer6thidentifierbef":"$offer6thidentifierbef___val",
+            "refillpromodivisionamount":"$refillpromodivisionamount___val",
+            "accumulatedrefillcounterbef":"$accumulatedrefillcounterbef___val",
+            "dedicatedaccount6thidaft":"$dedicatedaccount6thidaft___val",
+            "dedicatedaccount9thidaft":"$dedicatedaccount9thidaft___val",
+            "refillpromodivunits1stbef":"$refillpromodivunits1stbef___val",
+            "account6threfilldivamountaft":"$account6threfilldivamountaft___val",
+            "offer6thidentifieraft":"$offer6thidentifieraft___val",
+            "usageaccumulator8thidaft":"$usageaccumulator8thidaft___val",
+            "refillpromodivunits6thbef":"$refillpromodivunits6thbef___val",
+            "rechargedivpartpda9th":"$rechargedivpartpda9th___val",
+            "refillpromodivunits9thbef":"$refillpromodivunits9thbef___val",
+            "clearedunits8thaft":"$clearedunits8thaft___val",
+            "dedicatedaccount1stidbef":"$dedicatedaccount1stidbef___val",
+            "accumulatedprogressionvalueaft":"$accumulatedprogressionvalueaft___val",
+            "rechargedivpartmain":"$rechargedivpartmain___val",
+            "account1stcampaignidentbef":"$account1stcampaignidentbef___val",
+            "usageaccumulator8thidbef":"$usageaccumulator8thidbef___val",
+            "usageaccumulator9thvaluebef":"$usageaccumulator9thvaluebef___val",
+            "clearedunits9thbef":"$clearedunits9thbef___val",
+            "account9thbalancebef":"$account9thbalancebef___val",
+            "usageaccumulator3rdvalueaft":"$usageaccumulator3rdvalueaft___val",
+            "realmoneyflag7thaft":"$realmoneyflag7thaft___val",
+            "realmoneyflag1staft":"$realmoneyflag1staft___val",
+            "account7threfilldivamountbef":"$account7threfilldivamountbef___val",
+            "account8threfilldivamountbef":"$account8threfilldivamountbef___val",
+            "account4thbalanceaft":"$account4thbalanceaft___val",
+            "realmoneyflag2ndbef":"$realmoneyflag2ndbef___val",
+            "account5threfilldivamountaft":"$account5threfilldivamountaft___val",
+            "dedicatedaccount9thidbef":"$dedicatedaccount9thidbef___val",
+            "account8threfilldivamountaft":"$account8threfilldivamountaft___val",
+            "refillpromodivunits4thbef":"$refillpromodivunits4thbef___val",
+            "clearedunits5thbef":"$clearedunits5thbef___val",
+            "unitbalance2ndbef":"$unitbalance2ndbef___val",
+            "refillpromodivunits3rdbef":"$refillpromodivunits3rdbef___val",
+            "clearedunits3rdaft":"$clearedunits3rdaft___val",
+            "refillpromodivunits5thbef":"$refillpromodivunits5thbef___val",
+            "clearedunits8thbef":"$clearedunits8thbef___val",
+            "usageaccumulator5thvalueaft":"$usageaccumulator5thvalueaft___val",
+            "dedicatedaccountunit4thbef":"$dedicatedaccountunit4thbef___val",
+            "clearedaccount6thvaluebef":"$clearedaccount6thvaluebef___val",
+            "transactionamount":"$transactionamount___val",
+            "usageaccumulator2ndvalueaft":"$usageaccumulator2ndvalueaft___val",
+            "unitbalance1staft":"$unitbalance1staft___val",
+            "usageaccumulator8thvalueaft":"$usageaccumulator8thvalueaft___val",
+            "offerproductidentifier6thbef":"$offerproductidentifier6thbef___val",
+            "offer10thidentifierbef":"$offer10thidentifierbef___val",
+            "dedicatedaccountunit3rdbef":"$dedicatedaccountunit3rdbef___val",
+            "dedicatedaccount7thidbef":"$dedicatedaccount7thidbef___val",
+            "realmoneyflag7thbef":"$realmoneyflag7thbef___val",
+            "offer2ndidentifierbef":"$offer2ndidentifierbef___val",
+            "clearedaccount3rdvalueaft":"$clearedaccount3rdvalueaft___val",
+            "dedicatedaccountunit4thaft":"$dedicatedaccountunit4thaft___val",
+            "refilldivunits6thbef":"$refilldivunits6thbef___val",
+            "unitbalance10thaft":"$unitbalance10thaft___val",
+            "account4threfilpromodivamntbef":"$account4threfilpromodivamntbef___val",
+            "unitbalance9thbef":"$unitbalance9thbef___val",
+            "account2ndbalancebef":"$account2ndbalancebef___val",
+            "account5thbalanceaft":"$account5thbalanceaft___val",
+            "clearedunits10thaft":"$clearedunits10thaft___val",
+            "temporaryservclasexpirydateaft":"$temporaryservclasexpirydateaft___val",
+            "refillpromodivunits3rdaft":"$refillpromodivunits3rdaft___val",
+            "account3rdrefilldivamountaft":"$account3rdrefilldivamountaft___val",
+            "account10thbalancebef":"$account10thbalancebef___val",
+            "serviceremovalgraceperiodbef":"$serviceremovalgraceperiodbef___val",
+            "creditclearanceperiodbef":"$creditclearanceperiodbef___val",
+            "dedicatedaccount7thidaft":"$dedicatedaccount7thidaft___val",
+            "refilldivunits10thbef":"$refilldivunits10thbef___val",
+            "refilldivunits1staft":"$refilldivunits1staft___val",
+            "refillpromodivunits8thaft":"$refillpromodivunits8thaft___val",
+            "refilldivunits5thaft":"$refilldivunits5thaft___val",
+            "unitbalance5thbef":"$unitbalance5thbef___val",
+            "dedicatedaccountunit9thaft":"$dedicatedaccountunit9thaft___val",
+            "usageaccumulator10thvaluebef":"$usageaccumulator10thvaluebef___val",
+            "account10threfilpromdivamntaft":"$account10threfilpromdivamntaft___val",
+            "clearedaccount6thvalueaft":"$clearedaccount6thvalueaft___val",
+            "clearedaccount8thvaluebef":"$clearedaccount8thvaluebef___val",
+            "refilldivunits7thaft":"$refilldivunits7thaft___val",
+            "account9thcampaignidentaft":"$account9thcampaignidentaft___val",
+            "clearedaccount9thvaluebef":"$clearedaccount9thvaluebef___val",
+            "offerproductidentifier2ndbef":"$offerproductidentifier2ndbef___val",
+            "refilldivunits3rdaft":"$refilldivunits3rdaft___val",
+            "account1stbalanceaft":"$account1stbalanceaft___val",
+            "usageaccumulator4thidaft":"$usageaccumulator4thidaft___val",
+            "account8thcampaignidentaft":"$account8thcampaignidentaft___val",
+            "dedicatedaccountunit8thaft":"$dedicatedaccountunit8thaft___val",
+            "usageaccumulator10thidbef":"$usageaccumulator10thidbef___val",
+            "offer10thidentifieraft":"$offer10thidentifieraft___val",
+            "clearedunits5thaft":"$clearedunits5thaft___val",
+            "offerproductidentifier4thaft":"$offerproductidentifier4thaft___val",
+            "offerproductidentifier4thbef":"$offerproductidentifier4thbef___val",
+            "account7threfilpromodivamntaft":"$account7threfilpromodivamntaft___val",
+            "usageaccumulator9thidaft":"$usageaccumulator9thidaft___val",
+            "dedicatedaccountunit5thbef":"$dedicatedaccountunit5thbef___val",
+            "account9thbalanceaft":"$account9thbalanceaft___val",
+            "account4threfilldivamountbef":"$account4threfilldivamountbef___val",
+            "realmoneyflag3rdaft":"$realmoneyflag3rdaft___val",
+            "dedicatedaccount4thidaft":"$dedicatedaccount4thidaft___val",
+            "refilldivunits9thbef":"$refilldivunits9thbef___val",
+            "refillpromodivunits9thaft":"$refillpromodivunits9thaft___val",
+            "offer8thidentifieraft":"$offer8thidentifieraft___val",
+            "account5threfilpromodivamntbef":"$account5threfilpromodivamntbef___val",
+            "unitbalance6thbef":"$unitbalance6thbef___val",
+            "offer2ndidentifieraft":"$offer2ndidentifieraft___val",
+            "usageaccumulator2ndidbef":"$usageaccumulator2ndidbef___val",
+            "unitbalance10thbef":"$unitbalance10thbef___val",
+            "account2ndbalanceaft":"$account2ndbalanceaft___val",
+            "account6thcampaignidentbef":"$account6thcampaignidentbef___val",
+            "account2ndrefilpromodivamntaft":"$account2ndrefilpromodivamntaft___val",
+            "realmoneyflag4thbef":"$realmoneyflag4thbef___val",
+            "unitbalance9thaft":"$unitbalance9thaft___val",
+            "usageaccumulator7thvaluebef":"$usageaccumulator7thvaluebef___val",
+            "account9threfilpromodivamntaft":"$account9threfilpromodivamntaft___val",
+            "realmoneyflag5thaft":"$realmoneyflag5thaft___val",
+            "rechargedivpartda7th":"$rechargedivpartda7th___val",
+            "offerproductidentifier9thbef":"$offerproductidentifier9thbef___val",
+            "offerproductidentifier3rdaft":"$offerproductidentifier3rdaft___val",
+            "serviceremovalgraceperiodaft":"$serviceremovalgraceperiodaft___val",
+            "account6threfilldivamountbef":"$account6threfilldivamountbef___val",
+            "usageaccumulator1stidbef":"$usageaccumulator1stidbef___val",
+            "clearedunits6thaft":"$clearedunits6thaft___val",
+            "rechargedivpartpda8th":"$rechargedivpartpda8th___val",
+            "clearedaccount1stvalueaft":"$clearedaccount1stvalueaft___val",
+            "dedicatedaccountunit10thbef":"$dedicatedaccountunit10thbef___val",
+            "dedicatedaccountunit9thbef":"$dedicatedaccountunit9thbef___val",
+            "refilldivunits6thaft":"$refilldivunits6thaft___val",
+            "offer8thidentifierbef":"$offer8thidentifierbef___val",
+            "usageaccumulator1stidaft":"$usageaccumulator1stidaft___val",
+            "dedicatedaccountunit8thbef":"$dedicatedaccountunit8thbef___val",
+            "servicefeedayssurplus":"$servicefeedayssurplus___val",
+            "clearedunits7thaft":"$clearedunits7thaft___val",
+            "usageaccumulator7thvalueaft":"$usageaccumulator7thvalueaft___val",
+            "usageaccumulator8thvaluebef":"$usageaccumulator8thvaluebef___val",
+            "clearedaccount2ndvaluebef":"$clearedaccount2ndvaluebef___val",
+            "usageaccumulator3rdidaft":"$usageaccumulator3rdidaft___val",
+            "market_id":"$market_id___val",
+            "offerproductidentifier1staft":"$offerproductidentifier1staft___val",
+            "account9threfilldivamountaft":"$account9threfilldivamountaft___val",
+            "account7threfilldivamountaft":"$account7threfilldivamountaft___val",
+            "offer4thidentifieraft":"$offer4thidentifieraft___val",
+            "offerproductidentifier7thbef":"$offerproductidentifier7thbef___val",
+            "clearedaccount8thvalueaft":"$clearedaccount8thvalueaft___val",
+            "accumulatedprogconteraft":"$accumulatedprogconteraft___val",
+            "offerproductidentifier5thbef":"$offerproductidentifier5thbef___val",
+            "account3rdrefilpromodivamntaft":"$account3rdrefilpromodivamntaft___val",
+            "dedicatedaccountunit6thaft":"$dedicatedaccountunit6thaft___val",
+            "clearedaccount1stvaluebef":"$clearedaccount1stvaluebef___val",
+            "offerproductidentifier8thaft":"$offerproductidentifier8thaft___val",
+            "usageaccumulator6thidaft":"$usageaccumulator6thidaft___val",
+            "clearedunits4thbef":"$clearedunits4thbef___val",
+            "temporaryserviceclassaft":"$temporaryserviceclassaft___val",
+            "refillpromodivunits1staft":"$refillpromodivunits1staft___val",
+            "dedicatedaccountunit1staft":"$dedicatedaccountunit1staft___val",
+            "clearedaccount2ndvalueaft":"$clearedaccount2ndvalueaft___val",
+            "clearedunits1staft":"$clearedunits1staft___val",
+            "usageaccumulator9thvalueaft":"$usageaccumulator9thvalueaft___val",
+            "refillpromodivunits4thaft":"$refillpromodivunits4thaft___val",
+            "refilldivunits5thbef":"$refilldivunits5thbef___val",
+            "accumulatedprogressionvalueres":"$accumulatedprogressionvalueres___val",
+            "account9thcampaignidentbef":"$account9thcampaignidentbef___val",
+            "usageaccumulator4thidbef":"$usageaccumulator4thidbef___val",
+            "account2ndrefilpromodivamntbef":"$account2ndrefilpromodivamntbef___val",
+            "account4threfilpromodivamntaft":"$account4threfilpromodivamntaft___val",
+            "usageaccumulator9thidbef":"$usageaccumulator9thidbef___val",
+            "dedicatedaccountunit6thbef":"$dedicatedaccountunit6thbef___val",
+            "offer1stidentifierbef":"$offer1stidentifierbef___val",
+            "currentserviceclass":"$currentserviceclass___val",
+            "localsequencenumber":"$localsequencenumber___val",
+            "account1strefillpromdivamntbef":"$account1strefillpromdivamntbef___val",
+            "refillamountconverted":"$refillamountconverted___val",
+            "dedicatedaccountunit2ndaft":"$dedicatedaccountunit2ndaft___val",
+            "clearedaccount3rdvaluebef":"$clearedaccount3rdvaluebef___val",
+            "dedicatedaccount3rdidaft":"$dedicatedaccount3rdidaft___val",
+            "account10threfilldivamountaft":"$account10threfilldivamountaft___val",
+            "dedicatedaccountunit7thbef":"$dedicatedaccountunit7thbef___val",
+            "refillpromodivunits10thbef":"$refillpromodivunits10thbef___val",
+            "account2ndcampaignidentaft":"$account2ndcampaignidentaft___val",
+            "usageaccumulator4thvaluebef":"$usageaccumulator4thvaluebef___val",
+            "clearedaccount5thvalueaft":"$clearedaccount5thvalueaft___val",
+            "account9threfilpromodivamntbef":"$account9threfilpromodivamntbef___val",
+            "account9threfilldivamountbef":"$account9threfilldivamountbef___val",
+            "refillpromodivunits2ndbef":"$refillpromodivunits2ndbef___val",
+            "clearedaccount7thvalueaft":"$clearedaccount7thvalueaft___val",
+            "realmoneyflag6thbef":"$realmoneyflag6thbef___val",
+            "account2ndrefilldivamountaft":"$account2ndrefilldivamountaft___val",
+            "account4thbalancebef":"$account4thbalancebef___val",
+            "unitbalance2ndaft":"$unitbalance2ndaft___val",
+            "usageaccumulator7thidaft":"$usageaccumulator7thidaft___val",
+            "clearedaccount9thvalueaft":"$clearedaccount9thvalueaft___val",
+            "offerproductidentifier8thbef":"$offerproductidentifier8thbef___val",
+            "account8thcampaignidentbef":"$account8thcampaignidentbef___val",
+            "account5thcampaignidentaft":"$account5thcampaignidentaft___val",
+            "unitbalance8thaft":"$unitbalance8thaft___val",
+            "dedicatedaccount8thidbef":"$dedicatedaccount8thidbef___val",
+            "usageaccumulator10thvalueaft":"$usageaccumulator10thvalueaft___val",
+            "account4threfilldivamountaft":"$account4threfilldivamountaft___val",
+            "aggregatedbalanceaft":"$aggregatedbalanceaft___val",
+            "unitbalance1stbef":"$unitbalance1stbef___val",
+            "account8thbalanceaft":"$account8thbalanceaft___val",
+            "rechargedivpartda1st":"$rechargedivpartda1st___val",
+            "dedicatedaccountunit7thaft":"$dedicatedaccountunit7thaft___val",
+            "offerproductidentifier1stbef":"$offerproductidentifier1stbef___val",
+            "usageaccumulator6thvalueaft":"$usageaccumulator6thvalueaft___val",
+            "offer3rdidentifierbef":"$offer3rdidentifierbef___val",
+            "rechargedivpartpda5th":"$rechargedivpartpda5th___val",
+            "rechargedivpartpda6th":"$rechargedivpartpda6th___val",
+            "account10threfilpromdivamntbef":"$account10threfilpromdivamntbef___val",
+            "rechargedivpartpda7th":"$rechargedivpartpda7th___val",
+            "usageaccumulator1stvalueaft":"$usageaccumulator1stvalueaft___val",
+            "clearedunits4thaft":"$clearedunits4thaft___val",
+            "rechargedivpartda8th":"$rechargedivpartda8th___val",
+            "rechargedivpartda6th":"$rechargedivpartda6th___val",
+            "offerproductidentifier6thaft":"$offerproductidentifier6thaft___val",
+            "account3rdcampaignidentbef":"$account3rdcampaignidentbef___val",
+            "refilldivunits8thaft":"$refilldivunits8thaft___val",
+            "realmoneyflag10thbef":"$realmoneyflag10thbef___val",
+            "refillpromodivunits2ndaft":"$refillpromodivunits2ndaft___val",
+            "refilldivunits2ndaft":"$refilldivunits2ndaft___val",
+            "dedicatedaccountunit3rdaft":"$dedicatedaccountunit3rdaft___val",
+            "creditclearanceperiodaft":"$creditclearanceperiodaft___val",
+            "account5thcampaignidentbef":"$account5thcampaignidentbef___val",
+            "offerproductidentifier2ndaft":"$offerproductidentifier2ndaft___val",
+            "accumulatedprogressionvaluebef":"$accumulatedprogressionvaluebef___val",
+            "realmoneyflag9thaft":"$realmoneyflag9thaft___val",
+            "accumulatedprogrcounterbef":"$accumulatedprogrcounterbef___val",
+            "dedicatedaccount6thidbef":"$dedicatedaccount6thidbef___val",
+            "account8threfilpromodivamntbef":"$account8threfilpromodivamntbef___val",
+            "offer5thidentifierbef":"$offer5thidentifierbef___val",
+            "realmoneyflag2ndaft":"$realmoneyflag2ndaft___val",
+            "clearedunits1stbef":"$clearedunits1stbef___val",
+            "realmoneyflag8thbef":"$realmoneyflag8thbef___val",
+            "account4thcampaignidentaft":"$account4thcampaignidentaft___val",
+            "offer1stidentifieraft":"$offer1stidentifieraft___val",
+            "refillpromodivunits6thaft":"$refillpromodivunits6thaft___val",
+            "account10thbalanceaft":"$account10thbalanceaft___val",
+            "permanentserviceclassbef":"$permanentserviceclassbef___val",
+            "rechargedivpartpmain":"$rechargedivpartpmain___val",
+            "offerproductidentifier5thaft":"$offerproductidentifier5thaft___val",
+            "rechargedivpartpda2nd":"$rechargedivpartpda2nd___val",
+            "accountbalanceaft":"$accountbalanceaft___val",
+            "offer9thidentifieraft":"$offer9thidentifieraft___val",
+            "account1strefilldivamountaft":"$account1strefilldivamountaft___val",
+            "account10thcampaignidentaft":"$account10thcampaignidentaft___val",
+            "clearedunits3rdbef":"$clearedunits3rdbef___val",
+            "rechargedivpartpda4th":"$rechargedivpartpda4th___val",
+            "offerproductidentifier7thaft":"$offerproductidentifier7thaft___val",
+            "usageaccumulator5thvaluebef":"$usageaccumulator5thvaluebef___val",
+            "refilldivunits10thaft":"$refilldivunits10thaft___val",
+            "account2ndrefilldivamountbef":"$account2ndrefilldivamountbef___val",
+            "permanentserviceclassaft":"$permanentserviceclassaft___val",
+            "realmoneyflag10thaft":"$realmoneyflag10thaft___val",
+            "account3rdbalanceaft":"$account3rdbalanceaft___val",
+            "account2ndcampaignidentifbef":"$account2ndcampaignidentifbef___val",
+            "unitbalance4thaft":"$unitbalance4thaft___val",
+            "usageaccumulator3rdidbef":"$usageaccumulator3rdidbef___val",
+            "account3rdcampaignidentaft":"$account3rdcampaignidentaft___val",
+            "unitbalance4thbef":"$unitbalance4thbef___val",
+            "welcomestatus":"$welcomestatus___val",
+            "dedicatedaccountunit5thaft":"$dedicatedaccountunit5thaft___val",
+            "offerproductidentifier3rdbef":"$offerproductidentifier3rdbef___val",
+            "account5threfilpromodivamntaft":"$account5threfilpromodivamntaft___val",
+            "dedicatedaccount5thidaft":"$dedicatedaccount5thidaft___val",
+            "account1stcampaignidentaft":"$account1stcampaignidentaft___val",
+            "dedicatedaccount4thidbef":"$dedicatedaccount4thidbef___val",
+            "refillpromodivunits7thbef":"$refillpromodivunits7thbef___val",
+            "offerproductidentifier9thaft":"$offerproductidentifier9thaft___val",
+            "usageaccumulator4thvalueaft":"$usageaccumulator4thvalueaft___val",
+            "usageaccumulator10thidaft":"$usageaccumulator10thidaft___val",
+            "usageaccumulator1stvaluebef":"$usageaccumulator1stvaluebef___val",
+            "refilldivisionamount":"$refilldivisionamount___val",
+            "account4thcampaignidentbef":"$account4thcampaignidentbef___val",
+            "offer7thidentifierbef":"$offer7thidentifierbef___val",
+            "refillpromodivunits10thaft":"$refillpromodivunits10thaft___val",
+            "rechargedivpartda10th":"$rechargedivpartda10th___val",
+            "account3rdrefilldivamountbef":"$account3rdrefilldivamountbef___val",
+            "refilldivunits4thbef":"$refilldivunits4thbef___val",
+            "hub_id":"$hub_id___val",
+            "refilldivunits4thaft":"$refilldivunits4thaft___val",
+            "usageaccumulator2ndvaluebef":"$usageaccumulator2ndvaluebef___val",
+            "realmoneyflag5thbef":"$realmoneyflag5thbef___val",
+            "refilltype":"$refilltype___val",
+            "refilldivunits1stbef":"$refilldivunits1stbef___val",
+            "refillpromodivunits7thaft":"$refillpromodivunits7thaft___val",
+            "accountbalancebef":"$accountbalancebef___val",
+            "clearedunits10thbef":"$clearedunits10thbef___val",
+            "unitbalance8thbef":"$unitbalance8thbef___val",
+            "account1strefilpromodivamntaft":"$account1strefilpromodivamntaft___val",
+            "account6thcampaignidentaft":"$account6thcampaignidentaft___val",
+            "refilldivunits3rdbef":"$refilldivunits3rdbef___val",
+            "dedicatedaccount2ndidaft":"$dedicatedaccount2ndidaft___val",
+            "unitbalance5thaft":"$unitbalance5thaft___val",
+            "accumulatedrefillvalueaft":"$accumulatedrefillvalueaft___val",
+            "account6threfilpromodivamntaft":"$account6threfilpromodivamntaft___val",
+            "rechargedivpartda5th":"$rechargedivpartda5th___val",
+            "account7thbalancebef":"$account7thbalancebef___val",
+            "refilldivunits8thbef":"$refilldivunits8thbef___val",
+            "usageaccumulator6thvaluebef":"$usageaccumulator6thvaluebef___val",
+            "offerproductidentifier10thaft":"$offerproductidentifier10thaft___val",
+            "account8threfilpromodivamntaft":"$account8threfilpromodivamntaft___val",
+            "account7thcampaignidentaft":"$account7thcampaignidentaft___val",
+            "unitbalance3rdbef":"$unitbalance3rdbef___val",
+            "account10thcampaignidentbef":"$account10thcampaignidentbef___val",
+            "account6thbalancebef":"$account6thbalancebef___val",
+            "clearedaccount5thvaluebef":"$clearedaccount5thvaluebef___val",
+            "account3rdrefilpromodivamntbef":"$account3rdrefilpromodivamntbef___val",
+            "account6threfilpromodivamntbef":"$account6threfilpromodivamntbef___val",
+            "rechargedivpartpda1st":"$rechargedivpartpda1st___val",
+            "account7thbalanceaft":"$account7thbalanceaft___val",
+            "dedicatedaccount1stidaft":"$dedicatedaccount1stidaft___val",
+            "usageaccumulator5thidbef":"$usageaccumulator5thidbef___val",
+            "unitbalance3rdaft":"$unitbalance3rdaft___val",
+            "dedicatedaccount8thidaft":"$dedicatedaccount8thidaft___val",
+            "account1strefilldivamountbef":"$account1strefilldivamountbef___val",
+            "usageaccumulator7thidbef":"$usageaccumulator7thidbef___val",
+            "refilldivunits7thbef":"$refilldivunits7thbef___val",
+            "clearedunits6thbef":"$clearedunits6thbef___val",
+            "usageaccumulator3rdvaluebef":"$usageaccumulator3rdvaluebef___val",
+            "accumulatedrefillvaluebef":"$accumulatedrefillvaluebef___val",
+            "supervisiondayssurplus":"$supervisiondayssurplus___val",
+            "clearedunits9thaft":"$clearedunits9thaft___val",
+            "dedicatedaccount10thidbef":"$dedicatedaccount10thidbef___val",
+            "unitbalance6thaft":"$unitbalance6thaft___val",
+            "realmoneyflag6thaft":"$realmoneyflag6thaft___val",
+            "servicefeedayspromopart":"$servicefeedayspromopart___val",
+            "dedicatedaccountunit10thaft":"$dedicatedaccountunit10thaft___val",
+            "account1stbalancebef":"$account1stbalancebef___val",
+            "refillpromodivunits8thbef":"$refillpromodivunits8thbef___val",
+            "account5threfilldivamountbef":"$account5threfilldivamountbef___val",
+            "usageaccumulator6thidbef":"$usageaccumulator6thidbef___val",
+            "clearedunits2ndaft":"$clearedunits2ndaft___val",
+            "dedicatedaccount2ndidbef":"$dedicatedaccount2ndidbef___val",
+            "temporaryserviceclassbef":"$temporaryserviceclassbef___val",
+            "aggregatedbalancebef":"$aggregatedbalancebef___val",
+            "realmoneyflag9thbef":"$realmoneyflag9thbef___val",
+            "offer4thidentifierbef":"$offer4thidentifierbef___val",
+            "account8thbalancebef":"$account8thbalancebef___val",
+            "clearedaccount7thvaluebef":"$clearedaccount7thvaluebef___val",
+            "clearedaccount10thvaluebef":"$clearedaccount10thvaluebef___val",
+            "usageaccumulator2ndidaft":"$usageaccumulator2ndidaft___val",
+            "rechargedivpartda3rd":"$rechargedivpartda3rd___val",
+            "dedicatedaccount10thidaft":"$dedicatedaccount10thidaft___val",
+            "realmoneyflag4thaft":"$realmoneyflag4thaft___val",
+            "rechargedivpartda9th":"$rechargedivpartda9th___val",
+            "supervisiondayspromopart":"$supervisiondayspromopart___val",
+            "refillpromodivunits5thaft":"$refillpromodivunits5thaft___val",
+            "maximumsupervisionperiod":"$maximumsupervisionperiod___val",
+            "account7threfilpromodivamntbef":"$account7threfilpromodivamntbef___val",
+            "refilldivunits9thaft":"$refilldivunits9thaft___val",
+            "clearedaccount10thvalueaft":"$clearedaccount10thvalueaft___val",
+            "realmoneyflag8thaft":"$realmoneyflag8thaft___val",
+            "offer9thidentifierbef":"$offer9thidentifierbef___val",
+            "clearedaccount4thvaluebef":"$clearedaccount4thvaluebef___val",
+            "dedicatedaccountunit2ndbef":"$dedicatedaccountunit2ndbef___val",
+            "offer7thidentifieraft":"$offer7thidentifieraft___val",
+            "realmoneyflag1stbef":"$realmoneyflag1stbef___val",
+            "clearedunits2ndbef":"$clearedunits2ndbef___val",
+            "refilldivunits2ndbef":"$refilldivunits2ndbef___val",
+            "dedicatedaccountunit1stbef":"$dedicatedaccountunit1stbef___val",
+            "rechargedivpartpda3rd":"$rechargedivpartpda3rd___val",
+            "account3rdbalancebef":"$account3rdbalancebef___val",
+            "clearedaccount4thvalueaft":"$clearedaccount4thvalueaft___val",
+            "usageaccumulator5thidaft":"$usageaccumulator5thidaft___val",
+            "dedicatedaccount3rdidbef":"$dedicatedaccount3rdidbef___val",
+            "account6thbalanceaft":"$account6thbalanceaft___val",
+            "offer5thidentifieraft":"$offer5thidentifieraft___val",
+            "rechargedivpartpda10th":"$rechargedivpartpda10th___val",
+            "realmoneyflag3rdbef":"$realmoneyflag3rdbef___val"
+          },
+          "where":"(context.CurrentErrors()==0)"
+        },
+        "oo":{
+          "onerror":"ignore",
+          "mapping":{
+            "origmsg":"$msg",
+            "reasons":"context.CurrentErrorList() :+ $empty_str"
+          },
+          "where":"(context.CurrentErrors() > 0)"
+        }
+      }
+    }
+  }
+}
