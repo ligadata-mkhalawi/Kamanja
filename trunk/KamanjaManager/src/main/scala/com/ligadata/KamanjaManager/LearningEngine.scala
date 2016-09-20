@@ -46,6 +46,71 @@ object LeanringEngine {
   val modelExecutionException: String = "Model_Excecution_Exception"
 
   val engineComponent: String = "Kamanja_Manager"
+
+  private val LOG = LogManager.getLogger(getClass);
+
+  // This returns Partition Key String & BucketId
+  def GetQueuePartitionInfo(nodeIdModlsObj: scala.collection.mutable.Map[Long, (MdlInfo, ModelInstance)],
+                            execNode: ReadyNode, txnCtxt: TransactionContext, partitionIdForNoKey: Int): (String, Int) = {
+
+    val execMdl = nodeIdModlsObj.getOrElse(execNode.nodeId, null)
+    if (execMdl != null) {
+      if (LOG.isDebugEnabled)
+        LOG.debug("LearningEngine:Executing Model:%s,NodeId:%d, iesPos:%d".format(execMdl._1.mdl.getModelName(), execNode.nodeId, execNode.iesPos))
+
+      val allPartitionKeysWithDelim = ArrayBuffer[String]()
+      var foundPartitionKey = false
+
+      execMdl._1.inputs(execNode.iesPos).foreach(eid => {
+        val tmpElem = KamanjaMetadata.getMdMgr.ElementForElementId(eid.edgeTypeId)
+        var partKeyStr = ""
+
+        if (tmpElem != None) {
+          val lst =
+            if (eid.nodeId > 0) {
+              val origin =
+                if (eid.nodeId > 0) {
+                  val mdlObj = nodeIdModlsObj.getOrElse(eid.nodeId, null)
+                  if (mdlObj != null) {
+                    mdlObj._1.mdl.getModelName()
+                  } else {
+                    LOG.debug("Not found any node for eid.nodeId:" + eid.nodeId)
+                    ""
+                  }
+                } else {
+                  LOG.debug("Origin nodeid is not valid")
+                  ""
+                }
+              LOG.debug("Input message:" + tmpElem.get.FullName)
+              txnCtxt.getContainersOrConcepts(origin, tmpElem.get.FullName)
+            } else {
+              LOG.debug("Input message:" + tmpElem.get.FullName)
+              txnCtxt.getContainersOrConcepts(tmpElem.get.FullName)
+            }
+
+          if (lst != null && lst.size > 0) {
+            partKeyStr = lst(0)._2.asInstanceOf[MessageContainerBase].getPartitionKey.mkString(",")
+            lst(0)._2
+          } else {
+            LOG.warn("Not found any message for Msg:" + tmpElem.get.FullName)
+            null
+          }
+        }
+        if (partKeyStr.length > 0)
+          foundPartitionKey = true
+        allPartitionKeysWithDelim += partKeyStr
+      })
+
+      if (!foundPartitionKey) return ("", partitionIdForNoKey)
+
+      // Decide the Queue bucket number  .here after collecting partition keys
+      val qPartKeyStr = allPartitionKeysWithDelim.mkString("-")
+      val qBucketNumber = Math.abs(qPartKeyStr.hashCode % KamanjaConfiguration.totalQueueCount)
+
+      return (qPartKeyStr, qBucketNumber)
+    }
+    return ("", partitionIdForNoKey)
+  }
 }
 
 case class KamanjaCacheQueueEntry(val exeQueue: ArrayBuffer[ReadyNode], var execPos: Int, val dagRuntime: DagRuntime, val txnCtxt: TransactionContext, val thisMsgEvent: KamanjaMessageEvent, val modelsForMessage: ArrayBuffer[KamanjaModelEvent], val msgProcessingStartTime: Long);
@@ -64,7 +129,7 @@ object KamanjaCacheQueueEntry {
 // class KamanjaModelsCacheQueueElement(key: Long, value: Array[Byte], nextKey: Long) extends CacheQueueElement[Long](key, value, nextKey);
 
 // BUGBUG:: Do we need to get nodeIdModlsObj from KamanjaCacheQueueEntry?????
-class LeanringEngineRemoteExecution extends Runnable {
+class LeanringEngineRemoteExecution(val partitionId: Int) extends Runnable {
   private var waitTimeForNoMdlsExecInMs = 1
   private val LOG = LogManager.getLogger(getClass);
   private var mdlsChangedCntr: Long = -1
@@ -233,20 +298,15 @@ class LeanringEngineRemoteExecution extends Runnable {
         }
       }
     }
+  }
 
-    if (dqKamanjaCacheQueueEntry.execPos >= dqKamanjaCacheQueueEntry.exeQueue.size) {
-      try {
-        CommitDataComponent.commitData(dqKamanjaCacheQueueEntry.txnCtxt)
-      } catch {
-        case e: Throwable => {
-          LOG.error("Failed to commit data for transactionId:" + dqKamanjaCacheQueueEntry.txnCtxt.getTransactionId(), e)
-        }
-      }
-    }
+  private def isNotShuttingDown: Boolean = {
+    (KamanjaConfiguration.shutdown == false && KamanjaManager.instance != null && KamanjaManager.instance.GetEnvCtxts.length > 0)
   }
 
   private def executeModels(): Unit = {
-    while (KamanjaConfiguration.shutdown == false && KamanjaManager.instance != null && KamanjaManager.instance.GetEnvCtxts.length > 0) {
+
+    while (isNotShuttingDown) {
       val dqKamanjaCacheQueueEntry: KamanjaCacheQueueEntry = null
       if (dqKamanjaCacheQueueEntry == null) {
         // Sleep some time or until we get listener for this queue
@@ -262,8 +322,31 @@ class LeanringEngineRemoteExecution extends Runnable {
         }
       }
 
-      if (dqKamanjaCacheQueueEntry != null)
-        executeModel(dqKamanjaCacheQueueEntry)
+      if (dqKamanjaCacheQueueEntry != null) {
+        var execNextMdl = true
+        while (execNextMdl && isNotShuttingDown) {
+          execNextMdl = false
+          executeModel(dqKamanjaCacheQueueEntry)
+          if (dqKamanjaCacheQueueEntry.execPos >= dqKamanjaCacheQueueEntry.exeQueue.size) {
+            try {
+              CommitDataComponent.commitData(dqKamanjaCacheQueueEntry.txnCtxt)
+            } catch {
+              case e: Throwable => {
+                LOG.error("Failed to commit data for transactionId:" + dqKamanjaCacheQueueEntry.txnCtxt.getTransactionId(), e)
+              }
+            }
+          } else {
+            val execNode = dqKamanjaCacheQueueEntry.exeQueue(dqKamanjaCacheQueueEntry.execPos)
+            val (qPartKeyStr, qBucketNumber) = LeanringEngine.GetQueuePartitionInfo(nodeIdModlsObj, execNode, dqKamanjaCacheQueueEntry.txnCtxt, partitionId)
+
+            if (partitionId != qBucketNumber) {
+              //BUGBUG:: Send the current msg to qBucketNumber
+            } else {
+              execNextMdl = true
+            }
+          }
+        }
+      }
     }
   }
 
@@ -310,7 +393,9 @@ object CommitDataComponent {
           adap._2.foreach(bind => (bind, txnCtxt.getContainersOrConcepts(bind.messageName).foreach(orginAndmsg => {
             sendContainers += orginAndmsg._2.asInstanceOf[ContainerInterface];
           })))
-          adap._1.send(txnCtxt, sendContainers.toArray)
+          if (sendContainers.size > 0) {
+            adap._1.send(txnCtxt, sendContainers.toArray)
+          }
         } catch {
           case e: Exception => {
             LOG.error("Failed to save data in output adapter:" + adap._1.getAdapterName, e)
@@ -511,14 +596,13 @@ object CommitDataComponent {
   }
 }
 
-
 class LearningEngine {
   private val LOG = LogManager.getLogger(getClass);
   private var cntr: Long = 0
   private var mdlsChangedCntr: Long = -1
   private val isLocalInlineExecution = true
   // If it is local inline execution we set leExecution
-  private var leExecution: LeanringEngineRemoteExecution = if (isLocalInlineExecution) new LeanringEngineRemoteExecution else null
+  private var leExecution: LeanringEngineRemoteExecution = if (isLocalInlineExecution) new LeanringEngineRemoteExecution(0) else null
   private var nodeIdModlsObj = scala.collection.mutable.Map[Long, (MdlInfo, ModelInstance)]()
   // Key is Nodeid (Model ElementId), Value is ModelInfo & Previously Initialized model instance in case of Reuse instances
   // ModelName, ModelInfo, IsModelInstanceReusable, Global ModelInstance if the model is IsModelInstanceReusable == true. The last boolean is to check whether we tested message type or not (thi is to check Reusable flag)
@@ -527,12 +611,7 @@ class LearningEngine {
 
   private var dagRuntime = new DagRuntime()
 
-  private var remoteExecPool: ExecutorService = scala.actors.threadpool.Executors.newFixedThreadPool(1)
-
-  remoteExecPool.execute(new LeanringEngineRemoteExecution)
-
   def execute(txnCtxt: TransactionContext): Unit = {
-
     // List of ModelIds that we ran.
     var outMsgIds: ArrayBuffer[Long] = new ArrayBuffer[Long]()
     var modelsForMessage: ArrayBuffer[KamanjaModelEvent] = new ArrayBuffer[KamanjaModelEvent]()
@@ -600,58 +679,12 @@ class LearningEngine {
           // Push the following into Cache as one object for TransactionId as Key
           val execNode = exeQueue(execPos)
 
-          val execMdl = nodeIdModlsObj.getOrElse(execNode.nodeId, null)
-          if (execMdl != null) {
-            if (LOG.isDebugEnabled)
-              LOG.debug("LearningEngine:Executing Model:%s,NodeId:%d, iesPos:%d".format(execMdl._1.mdl.getModelName(), execNode.nodeId, execNode.iesPos))
+          val partitionIdForNoKey = 0 // BUGBUG:: Collect this value
 
-            val allPartitionKeysWithDelim = ArrayBuffer[String]()
+          val (qPartKeyStr, qBucketNumber) = LeanringEngine.GetQueuePartitionInfo(nodeIdModlsObj, execNode, txnCtxt, partitionIdForNoKey)
 
-            execMdl._1.inputs(execNode.iesPos).foreach(eid => {
-              val tmpElem = KamanjaMetadata.getMdMgr.ElementForElementId(eid.edgeTypeId)
-              var partKeyStr = ""
+          //BUGBUG:: Send the current msg to qBucketNumber
 
-              if (tmpElem != None) {
-                val lst =
-                  if (eid.nodeId > 0) {
-                    val origin =
-                      if (eid.nodeId > 0) {
-                        val mdlObj = nodeIdModlsObj.getOrElse(eid.nodeId, null)
-                        if (mdlObj != null) {
-                          mdlObj._1.mdl.getModelName()
-                        } else {
-                          LOG.debug("Not found any node for eid.nodeId:" + eid.nodeId)
-                          ""
-                        }
-                      } else {
-                        LOG.debug("Origin nodeid is not valid")
-                        ""
-                      }
-                    LOG.debug("Input message:" + tmpElem.get.FullName)
-                    txnCtxt.getContainersOrConcepts(origin, tmpElem.get.FullName)
-                  } else {
-                    LOG.debug("Input message:" + tmpElem.get.FullName)
-                    txnCtxt.getContainersOrConcepts(tmpElem.get.FullName)
-                  }
-
-                if (lst != null && lst.size > 0) {
-                  partKeyStr = lst(0)._2.asInstanceOf[MessageContainerBase].getPartitionKey.mkString(",")
-                  lst(0)._2
-                } else {
-                  LOG.warn("Not found any message for Msg:" + tmpElem.get.FullName)
-                  null
-                }
-              }
-              allPartitionKeysWithDelim += partKeyStr
-            })
-
-            // Decide the Queue bucket number  .here after collecting partition keys
-            val qPartKeyStr = allPartitionKeysWithDelim.mkString("-")
-            val qBucketNumber = Math.abs(qPartKeyStr.hashCode % KamanjaConfiguration.totalQueueCount)
-
-            //BUGBUG:: Send the current msg to qBucketNumber
-
-          }
         }
       } else {
         // No models found to execute. Send output
