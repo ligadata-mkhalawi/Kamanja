@@ -2,8 +2,8 @@
   "Clusters": [
     {
       "ClusterId": "ligadata1",
-	  "GlobalReaderThreads":2,
-	  "GlobalProcessThreads":8,
+      "GlobalReaderThreads":2,
+      "GlobalProcessThreads":8,
       "LogicalPartitions":8192,
       "SystemCatalog": {
         "StoreType": "h2db",
