@@ -2,7 +2,7 @@
   "Clusters": [
     {
       "ClusterId": "ligadata1",
-	  "GlobalReaderThreads":2,
+      "GlobalReaderThreads":2,
       "GlobalProcessThreads":8,
       "LogicalPartitions":8192,
       "SystemCatalog": {
@@ -56,7 +56,7 @@
       "Nodes": [
         {
           "NodeId": "1",
-		  "ReaderThreads":2,
+          "ReaderThreads":2,
           "ProcessThreads":8,
           "NodePort": 6541,
           "NodeIpAddr": "localhost",
