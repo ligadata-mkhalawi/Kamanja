@@ -585,8 +585,8 @@ class LearningEngine {
         if (leExecution != null) {
           while (execPos < exeQueue.size) {
             val execNode = exeQueue(execPos)
-            execPos += 1
             leExecution.executeModel(KamanjaCacheQueueEntry(exeQueue, execPos, dagRuntime, txnCtxt, thisMsgEvent, modelsForMessage, msgProcessingStartTime))
+            execPos += 1
           }
           // all models executed. Send output
           try {
