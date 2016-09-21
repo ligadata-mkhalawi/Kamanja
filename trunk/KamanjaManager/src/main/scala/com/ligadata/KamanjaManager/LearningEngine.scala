@@ -20,8 +20,7 @@ package com.ligadata.KamanjaManager
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import com.ligadata.KamanjaBase._
-import com.ligadata.cache.CacheQueueElement._
-import com.ligadata.cache.CacheQueueElement
+import com.ligadata.cache.{ CacheQueueElement, CacheQueue }
 
 import scala.actors.threadpool.ExecutorService
 
