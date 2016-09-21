@@ -21,15 +21,17 @@ import com.ligadata.KamanjaBase._
 import com.ligadata.InputOutputAdapterInfo.{InputAdapter, OutputAdapter, PartitionUniqueRecordKey, PartitionUniqueRecordValue, StartProcPartInfo, ThreadPartitions}
 import com.ligadata.StorageBase.DataStore
 import com.ligadata.Utils.ClusterStatus
-import com.ligadata.kamanja.metadata.{BaseElem, MappedMsgTypeDef, BaseAttributeDef, StructTypeDef, EntityType, AttributeDef, MessageDef, ContainerDef, ModelDef}
+import com.ligadata.kamanja.metadata.{AttributeDef, BaseAttributeDef, BaseElem, ContainerDef, EntityType, MappedMsgTypeDef, MessageDef, ModelDef, StructTypeDef}
 import com.ligadata.kamanja.metadata._
 import com.ligadata.kamanja.metadata.MdMgr._
-
 import com.ligadata.kamanja.metadataload.MetadataLoad
+
 import scala.collection.mutable.TreeSet
-import com.ligadata.KamanjaBase.{ContainerFactoryInterface, MessageFactoryInterface, ContainerInterface, EnvContext}
+import com.ligadata.KamanjaBase.{ContainerFactoryInterface, ContainerInterface, EnvContext, MessageFactoryInterface}
+
 import scala.collection.mutable.HashMap
-import org.apache.logging.log4j.{Logger, LogManager}
+import org.apache.logging.log4j.{LogManager, Logger}
+
 import scala.collection.mutable.ArrayBuffer
 import com.ligadata.Serialize._
 import com.ligadata.ZooKeeper._
@@ -38,11 +40,14 @@ import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import org.apache.curator.utils.ZKPaths
-import scala.actors.threadpool.{Executors, ExecutorService}
-import com.ligadata.Exceptions.{KamanjaException, FatalAdapterException}
+
+import scala.actors.threadpool.{ExecutorService, Executors}
+import com.ligadata.Exceptions.{FatalAdapterException, KamanjaException}
+
 import scala.collection.JavaConversions._
-import com.ligadata.KvBase.{Key}
+import com.ligadata.KvBase.Key
 import com.ligadata.Distribution._
+import com.ligadata.cache.{CacheCallback, CacheCallbackData, CacheQueueElement}
 
 case class AdapMaxPartitions(Adap: String, MaxParts: Int)
 
@@ -109,13 +114,14 @@ object KamanjaLeader {
   private[this] var isLocallyExecuting = true
   private[this] var remoteExecPool: ExecutorService = scala.actors.threadpool.Executors.newFixedThreadPool(1)
   private[this] var globalLogicalPartitionsToThreadId = Array[Short]()
+  private[this] var isLogicalThreadProcessingOnLocalNode = Array[Boolean]()
+  private[this] var logicalPartitionQueues = Array[LogicalPartitionQueue]()
   private[this] var globalThreadIdToLogicalPartitions = scala.collection.mutable.Map[Short, (Int, Int)]()
 
   private val MAX_ZK_RETRIES = 1
 
   def Reset: Unit = {
     clusterStatus = ClusterStatus("", false, "", null)
-    //    zkLeaderLatch = null
     nodeId = null
     zkConnectString = null
     engineLeaderZkNodePath = null
@@ -124,13 +130,9 @@ object KamanjaLeader {
     adaptersStatusPath = null
     zkSessionTimeoutMs = 0
     zkConnectionTimeoutMs = 0
-    //    zkEngineDistributionNodeListener = null
-    //    zkAdapterStatusNodeListener = null
-    //    zkDataChangeNodeListener = null
     zkcForSetData = null
     distributionMap = scala.collection.mutable.Map[String, scala.collection.mutable.Map[String, ArrayBuffer[String]]]() // Nodeid & Unique Keys (adapter unique name & unique key)
     clusterDistributionMap = null
-    //    foundKeysInValidation = null
     adapterMaxPartitions = scala.collection.mutable.Map[String, Int]() // Adapters & Max Partitions
     allPartitionsToValidate = scala.collection.mutable.Map[String, Set[String]]()
     nodesStatus = scala.collection.mutable.Set[String]() // NodeId
@@ -785,7 +787,7 @@ object KamanjaLeader {
   }*/
   /** Commenting below code for LogicalParitions updates - End **/
 
-  // Using canRedistribute as startup mechanism here, because until we do bootstap ignore all the messages from this 
+  // Using canRedistribute as startup mechanism here, because until we do bootstap ignore all the messages from this
   private def ActionOnAdaptersDistImpl(receivedJsonStr: String): Unit = lock.synchronized {
     if (LOG.isDebugEnabled)
       LOG.debug("ActionOnAdaptersDistImpl => receivedJsonStr: " + receivedJsonStr)
@@ -881,9 +883,11 @@ object KamanjaLeader {
             remoteExecPool.shutdownNow()
             globalThreadIdToLogicalPartitions.clear
             globalLogicalPartitionsToThreadId = Array[Short](1)
+            isLogicalThreadProcessingOnLocalNode = Array[Boolean](false)
+            ClearAllLogicalPartitionQueues
 
             tryNo = 0
-            while (! remoteExecPool.isTerminated && tryNo < maxTries) {
+            while (!remoteExecPool.isTerminated && tryNo < maxTries) {
               // Sleep for a 1000ms
               try {
                 Thread.sleep(1000)
@@ -983,20 +987,50 @@ object KamanjaLeader {
               val logicalPartsForNode = GetLogicalPartitionsForNodeId(actionOnAdaptersMap.distributionmap, nodeId)
 
               remoteExecPool.shutdownNow()
+              ClearAllLogicalPartitionQueues
               globalThreadIdToLogicalPartitions.clear
               globalLogicalPartitionsToThreadId = new Array[Short](KamanjaConfiguration.totalPartitionCount)
 
+              // BUGBUG:: This has to be create for Number of threads instead of number of partitions.
+              val totalThreads = KamanjaConfiguration.totalPartitionCount
+
+              isLogicalThreadProcessingOnLocalNode = new Array[Boolean](totalThreads)
+
               // Preparing global mapping between startPartRange, endPartitionRange to threadId
               actionOnAdaptersMap.distributionmap.foreach(nodedist => {
+                val isLocalThread = nodedist.Node == nodeId
                 nodedist.LogicalPartitions.foreach(lp => {
                   val (threadId, startPartRange, endPartitionRange) = getLogicalPartitionInfo(lp)
                   for (i <- startPartRange to endPartitionRange)
                     globalLogicalPartitionsToThreadId(i) = threadId
                   globalThreadIdToLogicalPartitions(threadId) = (startPartRange, endPartitionRange)
+                  isLogicalThreadProcessingOnLocalNode(threadId) = isLocalThread
                 })
               })
 
-              if (! KamanjaConfiguration.locallyExecFlag) {
+              if (!KamanjaConfiguration.locallyExecFlag) {
+                logicalPartitionQueues = new Array[LogicalPartitionQueue](totalThreads)
+                // BUGBUG get this cache basename from distribution
+                val cacheBaseName: String = "Dist_" + com.ligadata.Utils.Utils.GetCurDtTmStr
+                val logicalPartitionPort = 7700
+                val hosts = mdMgr.Nodes.values.map(nd => {
+                  "%s[%d]".format(nd.nodeIpAddr, logicalPartitionPort)
+                }).mkString(",")
+
+                globalThreadIdToLogicalPartitions.foreach(kv => {
+                  // Create Cache Queues here
+                  var lpCallback: CacheCallback = null
+                  /*
+                  // If we need to alert from input, we need to fix both LogicalPartitionCallback & creating it for local node
+                  if (isLogicalThreadProcessingOnLocalNode(kv._1)) {
+
+                  } else {
+
+                  }
+                  */
+                  logicalPartitionQueues(kv._1) = new LogicalPartitionQueue(cacheBaseName, kv._1, hosts, logicalPartitionPort, lpCallback, KamanjaCacheQueueEntry.deserialize)
+                })
+
                 remoteExecPool = scala.actors.threadpool.Executors.newFixedThreadPool(logicalPartsForNode.length)
 
                 logicalPartsForNode.foreach(lp => {
@@ -1008,13 +1042,6 @@ object KamanjaLeader {
               isLocallyExecuting = KamanjaConfiguration.locallyExecFlag
 
               var foundKeysInVald = scala.collection.mutable.Map[String, (String, Int, Int, Long)]()
-
-              //              if (actionOnAdaptersMap.foundKeysInValidation != None && actionOnAdaptersMap.foundKeysInValidation != null) {
-              //                actionOnAdaptersMap.foundKeysInValidation.get.foreach(ks => {
-              //                  foundKeysInVald(ks.K.toLowerCase) = (ks.V1, ks.V2, ks.V3, ks.V4)
-              //                })
-              //
-              //              }
 
               LOG.debug("adapMaxPartsMap: " + adapMaxPartsMap)
               nodeDistMap.foreach(n => {
@@ -1075,6 +1102,12 @@ object KamanjaLeader {
       LOG.debug("ActionOnAdaptersDistImpl => Exit. receivedJsonStr: " + receivedJsonStr)
   }
 
+  class LogicalPartitionCallback(threadId: Int) extends CacheCallback {
+    @throws(classOf[Exception])
+    override def call(callbackData: CacheCallbackData): Unit = {
+      //BUGBUG:: make sure this trigger LeanringEngineRemoteExecution.executeModels for execution
+    }
+  }
   private def getLogicalPartitionInfo(logicalPart: LogicalPartitions): (Short, Int, Int) = {
     var threadId: Short = 0
     var startPartRange = 0
@@ -1831,7 +1864,25 @@ object KamanjaLeader {
   def isLocalExecution: Boolean = (isLocallyExecuting || remoteExecPool == null || remoteExecPool.isShutdown || globalThreadIdToLogicalPartitions.size == 0)
 
   def AddToRemoteProcessingBucket(partitionIdx: Int, cacheQueueEntry: KamanjaCacheQueueEntry): Unit = {
-    // BUGBUG:: Add to Queue to process in Remote
-
+    // Add to Queue to process in Remote
+    val threadId = globalLogicalPartitionsToThreadId(partitionIdx)
+    if (threadId >= 0 && threadId < logicalPartitionQueues.size) {
+      logicalPartitionQueues(threadId).enQ(cacheQueueEntry.txnCtxt.getTransactionId().toString, cacheQueueEntry)
+    } else {
+      throw new Exception("Not found proper threadId to add CacheEntry")
+    }
   }
+
+  def ClearAllLogicalPartitionQueues: Unit = {
+    // Shutdown every queue from logicalPartitionQueues
+    val tmp = logicalPartitionQueues
+    logicalPartitionQueues = Array[LogicalPartitionQueue]()
+    tmp.foreach(lp => if (lp != null) lp.shutDown)
+  }
+
+  def isLocalThread(threadId: Int): Boolean = isLogicalThreadProcessingOnLocalNode(threadId)
+
+  def isLocalThreadForPartitionId(partitionId: Int): Boolean = isLogicalThreadProcessingOnLocalNode(globalLogicalPartitionsToThreadId(partitionId))
+
+  def threadIdForPartitionId(partitionId: Int): Short = globalLogicalPartitionsToThreadId(partitionId)
 }

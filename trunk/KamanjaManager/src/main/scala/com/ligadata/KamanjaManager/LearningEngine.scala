@@ -116,17 +116,23 @@ object LeanringEngine {
 
 class KamanjaCacheQueueEntry(val exeQueue: ArrayBuffer[ReadyNode], var execPos: Int, val dagRuntime: DagRuntime, val txnCtxt: TransactionContext, val thisMsgEvent: KamanjaMessageEvent, val modelsForMessage: ArrayBuffer[KamanjaModelEvent], val msgProcessingStartTime: Long) extends CacheQueueElement {
   override def serialize(): Array[Byte] = {
-    CacheQueue.linkValueToSerializeCacheQueueElementInfo(link)
+    KamanjaCacheQueueEntry.serialize(this)
   }
 }
 
 object KamanjaCacheQueueEntry {
   final def serialize(cacheEntry: KamanjaCacheQueueEntry): Array[Byte] = {
-    throw new NotImplementedError("KamanjaCacheQueueEntry.serialize is not yet implemented")
+    // BUGBUG:: Finish rest of the serialization
+    // throw new NotImplementedError("KamanjaCacheQueueEntry.serialize is not yet implemented")
+    CacheQueue.linkValueToSerializeCacheQueueElementInfo(cacheEntry.link)
   }
 
   final def deserialize(buf: Array[Byte]): KamanjaCacheQueueEntry = {
-    throw new NotImplementedError("KamanjaCacheQueueEntry.deserialize is not yet implemented")
+    // BUGBUG:: Finish rest of the deserialization
+    // throw new NotImplementedError("KamanjaCacheQueueEntry.deserialize is not yet implemented")
+    val ent = new KamanjaCacheQueueEntry(null, 0, null, null, null, null, 0)
+    ent.link = CacheQueue.extractLinkValueFromSerializedCacheQueueElementInfo(buf);
+    ent
   }
 }
 
@@ -307,11 +313,10 @@ class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: I
   }
 
   private def executeModels(): Unit = {
-
     while (isNotShuttingDown) {
       val dqKamanjaCacheQueueEntry: KamanjaCacheQueueEntry = null
       if (dqKamanjaCacheQueueEntry == null) {
-        // Sleep some time or until we get listener for this queue
+        // Sleep some time or until we get listener or sleep done for this queue
         try {
           Thread.sleep(waitTimeForNoMdlsExecInMs)
         } catch {
@@ -322,9 +327,7 @@ class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: I
             LOG.error("Failed to sleep", e)
           }
         }
-      }
-
-      if (dqKamanjaCacheQueueEntry != null) {
+      } else /* if (dqKamanjaCacheQueueEntry != null) */ {
         var execNextMdl = true
         while (execNextMdl && isNotShuttingDown) {
           execNextMdl = false
