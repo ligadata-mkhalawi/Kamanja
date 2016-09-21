@@ -95,6 +95,21 @@
           }
         },
         {
+          "Name": "LoanInput",
+          "TypeString": "Input",
+          "TenantId": "tenant1",
+          "ClassName": "com.ligadata.InputAdapters.KamanjaKafkaConsumer$",
+          "JarName": "KamanjaInternalDeps_2.11-1.6.0.jar",
+          "DependencyJars": [
+            "ExtDependencyLibs_2.11-1.6.0.jar",
+            "ExtDependencyLibs2_2.11-1.6.0.jar"
+          ],
+          "AdapterSpecificCfg": {
+            "HostList": "localhost:9092",
+            "TopicName": "loaninput"
+          }
+        },
+        {
           "Name": "MedicalInput",
           "TypeString": "Input",
           "TenantId": "tenant1",
