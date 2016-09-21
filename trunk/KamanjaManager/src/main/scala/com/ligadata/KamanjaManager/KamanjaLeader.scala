@@ -54,9 +54,9 @@ case class NodeDistInfo(Nodeid: String, ProcessThreads: Int, ReaderThreads: Int)
 
 case class DistributionMap(var action: String, adaptermaxpartitions: Option[List[AdapMaxPartitions]], var distributionmap: List[NodeDistMap])
 case class NodeDistMap(Node: String, PhysicalPartitions: List[PhysicalPartitions], LogicalPartitions: List[LogicalPartitions])
-case class PhysicalPartitions(var ThreadId: String, Adaps: List[Adaps])
+case class PhysicalPartitions(var ThreadId: Short, Adaps: List[Adaps])
 case class Adaps(var Adap: String, var ReadPartitions: List[String])
-case class LogicalPartitions(var ThreadId: String, var Range: String)
+case class LogicalPartitions(var ThreadId: Short, var SRange: Int, var ERange: Int)
 
 object KamanjaLeader {
   private[this] val LOG = LogManager.getLogger(getClass);
@@ -570,7 +570,7 @@ object KamanjaLeader {
   }
 
   // private def StartNodeKeysMap(nodeKeysMap: scala.collection.immutable.Map[String, Array[String]], receivedJsonStr: String, adapMaxPartsMap: Map[String, Int], foundKeysInVald: Map[String, (String, Int, Int, Long)]): Boolean = {   /** Commenting - LogicalParitions updates  **/
-  private def StartNodeKeysMap(nodeKeysMap: scala.collection.mutable.Map[String, ArrayBuffer[(String, List[String])]], receivedJsonStr: String, adapMaxPartsMap: Map[String, Int], foundKeysInVald: Map[String, (String, Int, Int, Long)]): Boolean = {
+  private def StartNodeKeysMap(nodeKeysMap: scala.collection.mutable.Map[String, ArrayBuffer[(Short, List[String])]], receivedJsonStr: String, adapMaxPartsMap: Map[String, Int], foundKeysInVald: Map[String, (String, Int, Int, Long)]): Boolean = {
 
     if (nodeKeysMap == null || nodeKeysMap.size == 0) {
       return true
@@ -704,11 +704,12 @@ object KamanjaLeader {
     adapterMax.toMap
   }
 
-  private def GetNodeDistMapForNodeId(distributionmap: List[NodeDistMap], nodeId: String): scala.collection.mutable.Map[String, ArrayBuffer[(String, List[String])]] = {
-    var threadsPartitionMap = scala.collection.mutable.Map[String, ArrayBuffer[(String, List[String])]]()
+  private def GetNodeDistMapForNodeId(distributionmap: List[NodeDistMap], nodeId: String): scala.collection.mutable.Map[String, ArrayBuffer[(Short, List[String])]] = {
+    var threadsPartitionMap = scala.collection.mutable.Map[String, ArrayBuffer[(Short, List[String])]]()
     distributionmap.foreach { nodedist =>
       {
         if (nodedist.Node == nodeId) {
+          if(nodedist.PhysicalPartitions == null || (nodedist.PhysicalPartitions != null && nodedist.PhysicalPartitions.size == 0)) throw new Exception("PhysicalPartitions in distribution map is null")
           nodedist.PhysicalPartitions.foreach { physicalPart =>
             {
               physicalPart.Adaps.foreach { adap =>
@@ -728,6 +729,34 @@ object KamanjaLeader {
     }
     threadsPartitionMap
   }
+
+  private def GetNodeDistLogicalPartsMapForNodeId(distributionmap: List[NodeDistMap], nodeId: String): scala.collection.mutable.Map[Int, (Int, Int)] = {
+    var threadsPartitionMap = scala.collection.mutable.Map[Int, (Int, Int)]()
+    distributionmap.foreach { nodedist =>
+      {
+        if (nodedist.Node == nodeId) {
+          if(nodedist.LogicalPartitions == null || (nodedist.LogicalPartitions != null && nodedist.LogicalPartitions.size == 0)) throw new Exception("LogicalPartitions in distribution map is null")
+          if (nodedist.LogicalPartitions != null && nodedist.LogicalPartitions.size > 0) {
+            nodedist.LogicalPartitions.foreach { logicalPart =>
+              {
+                var low: Int = 0
+                var high: Int = 0
+                if (logicalPart != null) {
+                  low = logicalPart.SRange
+                  high = logicalPart.ERange
+                  val range = (low.toInt, high.toInt)
+                  threadsPartitionMap(logicalPart.ThreadId.toInt) = range
+                }
+              }
+            }
+          }
+          LOG.debug("Logical APrts " + threadsPartitionMap)
+        }
+      }
+    }
+    threadsPartitionMap
+  }
+
   /** Commenting below code for LogicalParitions updates - Start **/
 
   /*  private def GetDistMapForNodeId(distributionmap: Option[List[DistributionMap]], nodeId: String): scala.collection.immutable.Map[String, Array[String]] = {

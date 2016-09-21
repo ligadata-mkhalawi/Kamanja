@@ -194,6 +194,11 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   override def StartProcessing(threadPartitionIds: Array[ThreadPartitions], ignoreFirstMsg: Boolean): Unit = lock.synchronized {
 
     LOG.info("Start processing called on KamanjaKafkaAdapter for topic " + qc.topic)
+    
+     if (threadPartitionIds == null || (threadPartitionIds != null && threadPartitionIds.size == 0)) {
+      LOG.error("KAFKA-ADAPTER: Cannot process the kafka queue request, invalid parameters - number")
+      return
+    }
     // This is the number of executors we will run - Heuristic, but will go with it
     // var numberOfThreads = availableThreads
     var maxPartNumber = -1
@@ -242,7 +247,11 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     val partitionGroups: scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]] = scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]]()
     threadPartitionIds.foreach(tp => {
       var threadPartSet = scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]()
-
+      
+      if (tp.threadPartitions == null || (tp.threadPartitions != null && tp.threadPartitions.size == 0)) {
+        LOG.error("KAFKA-ADAPTER: Cannot process the kafka queue request, invalid parameters - threadPartitions")
+        return
+      }
       for (i <- 0 until tp.threadPartitions.size) {
         val threadPart = (tp.threadPartitions(i)._key.asInstanceOf[KafkaPartitionUniqueRecordKey], tp.threadPartitions(i)._val.asInstanceOf[KafkaPartitionUniqueRecordValue], tp.threadPartitions(i)._validateInfoVal.asInstanceOf[KafkaPartitionUniqueRecordValue])
         threadPartSet += threadPart

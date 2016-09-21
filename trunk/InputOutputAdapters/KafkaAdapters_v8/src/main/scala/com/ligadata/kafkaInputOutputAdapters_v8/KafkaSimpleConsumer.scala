@@ -188,6 +188,10 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
     var lastHb: Long = 0
     startHeartBeat = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
 
+    if (threadPartitionIds == null || (threadPartitionIds != null && threadPartitionIds.size == 0)) {
+      LOG.error("KAFKA-ADAPTER: Cannot process the kafka queue request, invalid parameters - threadPartitionIds")
+      return
+    }
     LOG.info("START_PROCESSING CALLED")
     // Check to see if this already started
     if (startTime > 0) {
@@ -201,7 +205,7 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
       return
     }*/
 
-    if (threadPartitionIds == null || threadPartitionIds.size == 0) {
+    if (threadPartitionIds == null || (threadPartitionIds != null && threadPartitionIds.size == 0)) {
       LOG.error("KAFKA-ADAPTER: Cannot process the kafka queue request, invalid parameters - number")
       return
     }
@@ -218,8 +222,12 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
     val partitionGroups: scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]] = scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]]()
     threadPartitionIds.foreach(tp => {
       var threadPartSet = scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]()
-
+      if (tp.threadPartitions == null || (tp.threadPartitions != null && tp.threadPartitions.size == 0)) {
+        LOG.error("KAFKA-ADAPTER: Cannot process the kafka queue request, invalid parameters - threadPartitions")
+        return
+      }
       for (i <- 0 until tp.threadPartitions.size) {
+
         val threadPart = (tp.threadPartitions(i)._key.asInstanceOf[KafkaPartitionUniqueRecordKey], tp.threadPartitions(i)._val.asInstanceOf[KafkaPartitionUniqueRecordValue], tp.threadPartitions(i)._validateInfoVal.asInstanceOf[KafkaPartitionUniqueRecordValue])
         threadPartSet += threadPart
       }
