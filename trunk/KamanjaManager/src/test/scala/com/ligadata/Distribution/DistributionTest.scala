@@ -9,13 +9,13 @@ import org.json4s.jackson.JsonMethods._
 import org.json4s._
 
 //case class DistributionMap(var action: String, var globalprocessthreads: Int, var globalreaderthreads: Int, var logicalpartitions: Int, var totalreaderthreads: Int, var totalprocessthreads: Int, adaptermaxpartitions: Option[List[AdapMaxPartitions1]], var distributionmap: List[NodeDistMap])
-case class DistributionMap(var action: String, adaptermaxpartitions: Option[List[AdapMaxPartitions1]], var distributionmap: List[NodeDistMap])
+case class DistributionMap(var action: String, var totalreaderthreads: Option[Int], var totalprocessthreads: Option[Int], adaptermaxpartitions: Option[List[AdapMaxPartitions1]], var distributionmap: List[NodeDistMap])
 
 case class AdapMaxPartitions1(Adap: String, MaxParts: Int)
 case class NodeDistMap(Node: String, PhysicalPartitions: List[PhysicalPartitions], LogicalPartitions: List[LogicalPartitions])
 case class PhysicalPartitions(var ThreadId: String, Adaps: List[Adaps])
 case class Adaps(var Adap: String, var ReadPartitions: List[String])
-case class LogicalPartitions(var ThreadId: String, var Range: String)
+case class LogicalPartitions(var ThreadId: Short, var SRange: Int, var ERange: Int)
 
 object DistributionTest {
 
@@ -66,7 +66,7 @@ object DistributionTest {
     //   case class ClusterDistributionInfo(ClusterId: String, GlobalProcessThreads: Int, GlobalReaderThreads: Int, LogicalPartitions: Int, NodesDist: ArrayBuffer[NodeDistInfo])
     //case class NodeDistInfo(Nodeid: String, ProcessThreads: Int, ReaderThreads: Int)
 
-    var nodeDistInfo = ArrayBuffer[NodeDistInfo]((new NodeDistInfo("node1", 8, 2))) //, (new NodeDistInfo("node2", 8, 2)))
+    var nodeDistInfo = ArrayBuffer[NodeDistInfo]((new NodeDistInfo("node1", 8, 2)), (new NodeDistInfo("node2", 8, 2)))
     var clusterDistInfo = new ClusterDistributionInfo("cluster1", 8, 2, 8192, nodeDistInfo)
 
     val nodeDist = Distribution.createDistribution(clusterDistInfo, allPartitionUniqueRecordKeys)
@@ -83,9 +83,10 @@ object DistributionTest {
     var adapterMaxPartitions = scala.collection.mutable.Map[String, Int]()
     allPartsToValidate.foreach(p => { adapterMaxPartitions(p._1) = p._2.size })
 
-    //val distributeJson = Distribution.createDistributionJson(nodeDist)
-    val distributeJson = "{\"action\":\"stop\"}"
+    val distributeJson = Distribution.createDistributionJson(nodeDist)
+    //val distributeJson = "{\"action\":\"stop\"}"
     println("distJson " + distributeJson)
+    // println("distJson 1 " + distributeJson)
     val json = parse(distributeJson)
     if (json == null || json.values == null) { // Not doing any action if not found valid json
       println("ActionOnAdaptersDistImpl => Exit. receivedJsonStr: " + distributeJson)
@@ -93,11 +94,15 @@ object DistributionTest {
 
     implicit val jsonFormats: Formats = DefaultFormats
     val actionOnAdaptersMap = json.extract[DistributionMap]
+    println("totalprocessthreads====> " + actionOnAdaptersMap.totalprocessthreads)
+    println("totalreaderthreads====> " + actionOnAdaptersMap.totalreaderthreads)
     println(actionOnAdaptersMap.adaptermaxpartitions)
 
     println(actionOnAdaptersMap.distributionmap)
     val nodeId = "node1"
     val nodeDistMap = GetNodeDistMapForNodeId(actionOnAdaptersMap.distributionmap, nodeId)
+
+    GetNodeDistLogicalPartsMapForNodeId(actionOnAdaptersMap.distributionmap, nodeId)
 
   }
 
@@ -119,7 +124,33 @@ object DistributionTest {
               }
             }
           }
-          println(threadsPartitionMap)
+        }
+      }
+    }
+    println(threadsPartitionMap)
+    threadsPartitionMap
+  }
+
+  private def GetNodeDistLogicalPartsMapForNodeId(distributionmap: List[NodeDistMap], nodeId: String): scala.collection.mutable.Map[Int, (Int, Int)] = {
+    var threadsPartitionMap = scala.collection.mutable.Map[Int, (Int, Int)]()
+    distributionmap.foreach { nodedist =>
+      {
+        if (nodedist.Node == nodeId) {
+          if (nodedist.LogicalPartitions != null && nodedist.LogicalPartitions.size > 0) {
+            nodedist.LogicalPartitions.foreach { logicalPart =>
+              {
+                var low: Int = 0
+                var high: Int = 0
+                if (logicalPart != null) {
+                  low = logicalPart.SRange
+                  high = logicalPart.ERange
+                  val range = (low.toInt, high.toInt)
+                  threadsPartitionMap(logicalPart.ThreadId.toInt) = range
+                }
+              }
+            }
+          }
+          println("Logical APrts " + threadsPartitionMap)
         }
       }
     }
