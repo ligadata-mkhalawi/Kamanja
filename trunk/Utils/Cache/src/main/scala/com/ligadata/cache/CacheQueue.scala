@@ -81,7 +81,7 @@ retVal = head -------> next
 // NOTENOTE: Must to serialize link value at the begining either using base trait serialize or CacheQueue.linkValueToSerializeCacheQueueElementInfo(link)
 trait CacheQueueElement {
   def serialize(): Array[Byte] = CacheQueue.linkValueToSerializeCacheQueueElementInfo(link)
-  var link: String
+  var link: String = _
 }
 
 object CacheQueue {
