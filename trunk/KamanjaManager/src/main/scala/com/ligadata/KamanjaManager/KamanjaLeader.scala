@@ -928,6 +928,7 @@ object KamanjaLeader {
 
             // BUGBUG:: Need to save the state in case if we shutdown
             isLocallyExecuting = true
+            KamanjaConfiguration.totalProcessingThreadCount = 1
             remoteExecPool.shutdownNow()
             globalThreadIdToLogicalPartitions.clear
             globalLogicalPartitionsToThreadId = Array[Short](1)
@@ -1034,15 +1035,14 @@ object KamanjaLeader {
               val nodeDistMap = GetNodeDistMapForNodeId(actionOnAdaptersMap.distributionmap, nodeId)
               val logicalPartsForNode = GetLogicalPartitionsForNodeId(actionOnAdaptersMap.distributionmap, nodeId)
 
+              KamanjaConfiguration.totalProcessingThreadCount = 1
               remoteExecPool.shutdownNow()
               ClearAllLogicalPartitionQueues
               globalThreadIdToLogicalPartitions.clear
               globalLogicalPartitionsToThreadId = new Array[Short](KamanjaConfiguration.totalPartitionCount)
 
-              // BUGBUG:: This has to be create for Number of threads instead of number of partitions.
-              val totalThreads = KamanjaConfiguration.totalPartitionCount
-
-              isLogicalThreadProcessingOnLocalNode = new Array[Boolean](totalThreads)
+              KamanjaConfiguration.totalProcessingThreadCount = if (actionOnAdaptersMap.totalprocessthreads != None) actionOnAdaptersMap.totalprocessthreads.get else 1
+              isLogicalThreadProcessingOnLocalNode = new Array[Boolean](KamanjaConfiguration.totalProcessingThreadCount)
 
               // Preparing global mapping between startPartRange, endPartitionRange to threadId
               actionOnAdaptersMap.distributionmap.foreach(nodedist => {
@@ -1057,7 +1057,7 @@ object KamanjaLeader {
               })
 
               if (!KamanjaConfiguration.locallyExecFlag) {
-                logicalPartitionQueues = new Array[LogicalPartitionQueue](totalThreads)
+                logicalPartitionQueues = new Array[LogicalPartitionQueue](KamanjaConfiguration.totalProcessingThreadCount)
                 // BUGBUG get this cache basename from distribution
                 val cacheBaseName: String = "Dist_" + com.ligadata.Utils.Utils.GetCurDtTmStr
                 val logicalPartitionPort = 7700
