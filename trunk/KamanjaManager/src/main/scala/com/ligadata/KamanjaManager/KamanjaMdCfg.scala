@@ -57,6 +57,8 @@ object KamanjaMdCfg {
       throw new KamanjaException("Cluster not found for Node %d  & ClusterId : %s".format(KamanjaConfiguration.nodeId, nd.ClusterId), null)
     }
 
+    KamanjaConfiguration.totalPartitionCount = if (cluster.LogicalPartitions > 0) cluster.LogicalPartitions else 1
+
     val dataStore = cluster.cfgMap.getOrElse("SystemCatalog", null)
     if (dataStore == null) {
       LOG.error("DataStore not found for Node %d  & ClusterId : %s".format(KamanjaConfiguration.nodeId, nd.ClusterId))

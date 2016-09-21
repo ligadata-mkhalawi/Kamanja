@@ -4,10 +4,10 @@ package com.ligadata.KamanjaManager
 import com.ligadata.HeartBeat.MonitoringContext
 import com.ligadata.KamanjaBase._
 import com.ligadata.InputOutputAdapterInfo.{ExecContext, InputAdapter, OutputAdapter, ExecContextFactory, PartitionUniqueRecordKey, PartitionUniqueRecordValue}
-import com.ligadata.StorageBase.{ DataStore }
+import com.ligadata.StorageBase.{DataStore}
 import com.ligadata.ZooKeeper.CreateClient
 import com.ligadata.kamanja.metadata.MdMgr._
-import com.ligadata.kamanja.metadata.{ ContainerDef, MessageDef, AdapterMessageBinding, AdapterInfo }
+import com.ligadata.kamanja.metadata.{ContainerDef, MessageDef, AdapterMessageBinding, AdapterInfo}
 import org.json4s.jackson.JsonMethods._
 
 import scala.reflect.runtime.{universe => ru}
@@ -107,20 +107,9 @@ case class InitConfigs(val dataDataStoreInfo: String, val jarPaths: collection.i
 object KamanjaConfiguration {
   var configFile: String = _
   var allConfigs: Properties = _
-  //  var metadataDataStoreInfo: String = _
-  //  var dataDataStoreInfo: String = _
-  //  var jarPaths: collection.immutable.Set[String] = _
   var nodeId: Int = _
   var clusterId: String = _
   var nodePort: Int = _
-  //  var zkConnectString: String = _
-  //  var zkNodeBasePath: String = _
-  //  var zkSessionTimeoutMs: Int = _
-  //  var zkConnectionTimeoutMs: Int = _
-
-  //  var txnIdsRangeForNode: Int = 100000 // Each time get txnIdsRange of transaction ids for each Node
-  //  var txnIdsRangeForPartition: Int = 10000 // Each time get txnIdsRange of transaction ids for each partition
-
   // Debugging info configs -- Begin
   var waitProcessingSteps = collection.immutable.Set[Int]()
   var waitProcessingTime = 0
@@ -133,27 +122,18 @@ object KamanjaConfiguration {
   var participentsChangedCntr: Long = 0
 
   // Stop processing should reset this to 1. So that way only one thread will be processed all system msgs at this moment.
-  var totalQueueCount: Int = 1
+  var totalPartitionCount: Int = 1
+
+  var locallyExecFlag = false
 
   var baseLoader = new KamanjaLoaderInfo
-  //  var adaptersAndEnvCtxtLoader = new KamanjaLoaderInfo(baseLoader, true, true)
-  //  var metadataLoader = new KamanjaLoaderInfo(baseLoader, true, true)
-
-  //  var adapterInfoCommitTime = 5000 // Default 5 secs
 
   def Reset: Unit = {
     configFile = null
     allConfigs = null
-    //    metadataDataStoreInfo = null
-    //    dataDataStoreInfo = null
-    //    jarPaths = null
     nodeId = 0
     clusterId = null
     nodePort = 0
-    //    zkConnectString = null
-    //    zkNodeBasePath = null
-    //    zkSessionTimeoutMs = 0
-    //    zkConnectionTimeoutMs = 0
 
     // Debugging info configs -- Begin
     waitProcessingSteps = collection.immutable.Set[Int]()
@@ -166,7 +146,8 @@ object KamanjaConfiguration {
     shutdown = false
     participentsChangedCntr = 0
 
-    totalQueueCount = 1
+    totalPartitionCount = 1
+    locallyExecFlag = false
   }
 }
 
@@ -391,7 +372,7 @@ class KamanjaManager extends Observer {
         override def run() {
           val tp = execCtxtsCommitPartitionOffsetPool
           val commitOffsetsTimeInterval = KamanjaConfiguration.commitOffsetsTimeInterval
-          while (! tp.isShutdown) {
+          while (!tp.isShutdown) {
             try {
               Thread.sleep(commitOffsetsTimeInterval + 1000) // Sleeping 1000ms more than given interval
             } catch {
@@ -401,7 +382,7 @@ class KamanjaManager extends Observer {
               val envCtxts = GetEnvCtxts
               if (LOG.isDebugEnabled()) LOG.debug("Running CommitPartitionOffsetIfNeeded for " + envCtxts.length + " envCtxts")
               var idx = 0
-              while (idx < envCtxts.length && ! tp.isShutdown) {
+              while (idx < envCtxts.length && !tp.isShutdown) {
                 try {
                   envCtxts(idx).CommitPartitionOffsetIfNeeded
                 } catch {
@@ -417,7 +398,6 @@ class KamanjaManager extends Observer {
       })
     }
   }
-
 
 
   private def PrintUsage(): Unit = {
@@ -672,7 +652,7 @@ class KamanjaManager extends Observer {
       if (KamanjaConfiguration.commitOffsetsMsgCnt == 0) {
         try {
           val commitOffsetsMsgCntStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsMsgCnt").replace("\"", "").trim
-          if (! commitOffsetsMsgCntStr.isEmpty) {
+          if (!commitOffsetsMsgCntStr.isEmpty) {
             val commitOffsetsMsgCnt = commitOffsetsMsgCntStr.toInt
             if (commitOffsetsMsgCnt > 0)
               KamanjaConfiguration.commitOffsetsMsgCnt = commitOffsetsMsgCnt
@@ -687,7 +667,7 @@ class KamanjaManager extends Observer {
       if (KamanjaConfiguration.commitOffsetsMsgCnt == 0) {
         try {
           val commitOffsetsMsgCntStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsMsgCnt".toLowerCase).replace("\"", "").trim
-          if (! commitOffsetsMsgCntStr.isEmpty) {
+          if (!commitOffsetsMsgCntStr.isEmpty) {
             val commitOffsetsMsgCnt = commitOffsetsMsgCntStr.toInt
             if (commitOffsetsMsgCnt > 0)
               KamanjaConfiguration.commitOffsetsMsgCnt = commitOffsetsMsgCnt
@@ -699,11 +679,36 @@ class KamanjaManager extends Observer {
         }
       }
 
+      var foundLocallyExecFlagSetting = false
+      try {
+        val flagStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "LocallyExecFlag").toString.replace("\"", "").trim
+        if (!flagStr.isEmpty) {
+          KamanjaConfiguration.locallyExecFlag = flagStr.toBoolean
+          foundLocallyExecFlagSetting = true
+        }
+      } catch {
+        case e: Exception => {
+          LOG.warn("", e)
+        }
+      }
+
+      if (!foundLocallyExecFlagSetting) {
+        try {
+          val flagStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "LocallyExecFlag".toLowerCase).toString.replace("\"", "").trim
+          if (!flagStr.isEmpty) {
+            KamanjaConfiguration.locallyExecFlag = flagStr.toBoolean
+          }
+        } catch {
+          case e: Exception => {
+            LOG.warn("", e)
+          }
+        }
+      }
 
       if (KamanjaConfiguration.commitOffsetsTimeInterval == 0) {
         try {
           val commitOffsetsTimeIntervalStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsTimeInterval").replace("\"", "").trim
-          if (! commitOffsetsTimeIntervalStr.isEmpty) {
+          if (!commitOffsetsTimeIntervalStr.isEmpty) {
             val commitOffsetsTimeInterval = commitOffsetsTimeIntervalStr.toInt
             if (commitOffsetsTimeInterval > 0)
               KamanjaConfiguration.commitOffsetsTimeInterval = commitOffsetsTimeInterval
@@ -718,7 +723,7 @@ class KamanjaManager extends Observer {
       if (KamanjaConfiguration.commitOffsetsTimeInterval == 0) {
         try {
           val commitOffsetsTimeIntervalStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "CommitOffsetsTimeInterval".toLowerCase).replace("\"", "").trim
-          if (! commitOffsetsTimeIntervalStr.isEmpty) {
+          if (!commitOffsetsTimeIntervalStr.isEmpty) {
             val commitOffsetsTimeInterval = commitOffsetsTimeIntervalStr.toInt
             if (commitOffsetsTimeInterval > 0)
               KamanjaConfiguration.commitOffsetsTimeInterval = commitOffsetsTimeInterval
@@ -991,16 +996,16 @@ class KamanjaManager extends Observer {
     scheduledThreadPool.scheduleWithFixedDelay(statusPrint_PD, 0, 1000, TimeUnit.MILLISECONDS);
 
     /**
-     * print("=> ")
-     * breakable {
-     * for (ln <- io.Source.stdin.getLines) {
-     * val rv = execCmd(ln)
-     * if (rv)
-     * break;
-     * print("=> ")
-     * }
-     * }
-     */
+      * print("=> ")
+      * breakable {
+      * for (ln <- io.Source.stdin.getLines) {
+      * val rv = execCmd(ln)
+      * if (rv)
+      * break;
+      * print("=> ")
+      * }
+      * }
+      */
 
     var timeOutEndTime: Long = 0
     var participentsChangedCntr: Long = 0
@@ -1103,8 +1108,8 @@ class KamanjaManager extends Observer {
   }
 
   /**
-   *
-   */
+    *
+    */
   private def validateAndExternalizeMetrics: Unit = {
     val (zkConnectString, zkNodeBasePath, zkSessionTimeoutMs, zkConnectionTimeoutMs) = KamanjaMetadata.envCtxt.getZookeeperInfo
     val zkHeartBeatNodePath = zkNodeBasePath + "/monitor/engine/" + KamanjaConfiguration.nodeId.toString
@@ -1272,6 +1277,7 @@ class KamanjaManager extends Observer {
     if (mem == null) return "{\"UsedMemory\":\"0 MB\",\"FreeMomory\":\"0 MB\",\"TotalMemory\":\"0 MB\",\"MaxMemory\":\"0 MB\"}\", "
     return "{\"UsedMemory\":\"" + mem.usedMemory + " MB\",\"FreeMomory\":\"" + mem.freeMemory + " MB\",\"TotalMemory\":\"" + mem.totalMemory + " MB\",\"MaxMemory\":\"" + mem.maxMemory + " MB\"}\", "
   }
+
   private class SignalHandler extends Observable with sun.misc.SignalHandler {
     def handleSignal(signalName: String) {
       sun.misc.Signal.handle(new sun.misc.Signal(signalName), this)

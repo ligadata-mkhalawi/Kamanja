@@ -104,10 +104,10 @@ object LeanringEngine {
       if (!foundPartitionKey) return ("", partitionIdForNoKey)
 
       // Decide the Queue bucket number  .here after collecting partition keys
-      val qPartKeyStr = allPartitionKeysWithDelim.mkString("-")
-      val qBucketNumber = Math.abs(qPartKeyStr.hashCode % KamanjaConfiguration.totalQueueCount)
+      val partKeyStr = allPartitionKeysWithDelim.mkString("-")
+      val partitionIdx = Math.abs(partKeyStr.hashCode % KamanjaConfiguration.totalPartitionCount)
 
-      return (qPartKeyStr, qBucketNumber)
+      return (partKeyStr, partitionIdx)
     }
     return ("", partitionIdForNoKey)
   }
@@ -129,7 +129,7 @@ object KamanjaCacheQueueEntry {
 // class KamanjaModelsCacheQueueElement(key: Long, value: Array[Byte], nextKey: Long) extends CacheQueueElement[Long](key, value, nextKey);
 
 // BUGBUG:: Do we need to get nodeIdModlsObj from KamanjaCacheQueueEntry?????
-class LeanringEngineRemoteExecution(val partitionId: Int) extends Runnable {
+class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: Int, val endPartitionId: Int) extends Runnable {
   private var waitTimeForNoMdlsExecInMs = 1
   private val LOG = LogManager.getLogger(getClass);
   private var mdlsChangedCntr: Long = -1
@@ -337,10 +337,10 @@ class LeanringEngineRemoteExecution(val partitionId: Int) extends Runnable {
             }
           } else {
             val execNode = dqKamanjaCacheQueueEntry.exeQueue(dqKamanjaCacheQueueEntry.execPos)
-            val (qPartKeyStr, qBucketNumber) = LeanringEngine.GetQueuePartitionInfo(nodeIdModlsObj, execNode, dqKamanjaCacheQueueEntry.txnCtxt, partitionId)
+            val (partKeyStr, partitionIdx) = LeanringEngine.GetQueuePartitionInfo(nodeIdModlsObj, execNode, dqKamanjaCacheQueueEntry.txnCtxt, startPartitionId)
 
-            if (partitionId != qBucketNumber) {
-              //BUGBUG:: Send the current msg to qBucketNumber
+            if (partitionIdx < startPartitionId || partitionIdx > endPartitionId) {
+              KamanjaLeader.AddToRemoteProcessingBucket(partitionIdx, dqKamanjaCacheQueueEntry)
             } else {
               execNextMdl = true
             }
@@ -601,8 +601,8 @@ class LearningEngine {
   private var cntr: Long = 0
   private var mdlsChangedCntr: Long = -1
   private val isLocalInlineExecution = true
-  // If it is local inline execution we set leExecution
-  private var leExecution: LeanringEngineRemoteExecution = if (isLocalInlineExecution) new LeanringEngineRemoteExecution(0) else null
+  // inlineExecution is used for local inline execution
+  private var inlineExecution: LeanringEngineRemoteExecution = new LeanringEngineRemoteExecution(0, 0, 0)
   private var nodeIdModlsObj = scala.collection.mutable.Map[Long, (MdlInfo, ModelInstance)]()
   // Key is Nodeid (Model ElementId), Value is ModelInfo & Previously Initialized model instance in case of Reuse instances
   // ModelName, ModelInfo, IsModelInstanceReusable, Global ModelInstance if the model is IsModelInstanceReusable == true. The last boolean is to check whether we tested message type or not (thi is to check Reusable flag)
@@ -661,10 +661,10 @@ class LearningEngine {
       exeQueue ++= readyNodes
 
       if (exeQueue.size > execPos) {
-        if (leExecution != null) {
+        if (inlineExecution != null && KamanjaLeader.isLocalExecution) {
           while (execPos < exeQueue.size) {
             val execNode = exeQueue(execPos)
-            leExecution.executeModel(KamanjaCacheQueueEntry(exeQueue, execPos, dagRuntime, txnCtxt, thisMsgEvent, modelsForMessage, msgProcessingStartTime))
+            inlineExecution.executeModel(KamanjaCacheQueueEntry(exeQueue, execPos, dagRuntime, txnCtxt, thisMsgEvent, modelsForMessage, msgProcessingStartTime))
             execPos += 1
           }
           // all models executed. Send output
@@ -681,10 +681,8 @@ class LearningEngine {
 
           val partitionIdForNoKey = 0 // BUGBUG:: Collect this value
 
-          val (qPartKeyStr, qBucketNumber) = LeanringEngine.GetQueuePartitionInfo(nodeIdModlsObj, execNode, txnCtxt, partitionIdForNoKey)
-
-          //BUGBUG:: Send the current msg to qBucketNumber
-
+          val (partKeyStr, partitionIdx) = LeanringEngine.GetQueuePartitionInfo(nodeIdModlsObj, execNode, txnCtxt, partitionIdForNoKey)
+          KamanjaLeader.AddToRemoteProcessingBucket(partitionIdx, KamanjaCacheQueueEntry(exeQueue, execPos, dagRuntime, txnCtxt, thisMsgEvent, modelsForMessage, msgProcessingStartTime))
         }
       } else {
         // No models found to execute. Send output
