@@ -20,6 +20,8 @@ package com.ligadata.KamanjaManager
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import com.ligadata.KamanjaBase._
+import com.ligadata.cache.CacheQueueElement._
+import com.ligadata.cache.CacheQueueElement
 
 import scala.actors.threadpool.ExecutorService
 
@@ -113,7 +115,11 @@ object LeanringEngine {
   }
 }
 
-case class KamanjaCacheQueueEntry(val exeQueue: ArrayBuffer[ReadyNode], var execPos: Int, val dagRuntime: DagRuntime, val txnCtxt: TransactionContext, val thisMsgEvent: KamanjaMessageEvent, val modelsForMessage: ArrayBuffer[KamanjaModelEvent], val msgProcessingStartTime: Long);
+class KamanjaCacheQueueEntry(val exeQueue: ArrayBuffer[ReadyNode], var execPos: Int, val dagRuntime: DagRuntime, val txnCtxt: TransactionContext, val thisMsgEvent: KamanjaMessageEvent, val modelsForMessage: ArrayBuffer[KamanjaModelEvent], val msgProcessingStartTime: Long) extends CacheQueueElement {
+  override def serialize(): Array[Byte] = {
+    CacheQueue.linkValueToSerializeCacheQueueElementInfo(link)
+  }
+}
 
 object KamanjaCacheQueueEntry {
   final def serialize(cacheEntry: KamanjaCacheQueueEntry): Array[Byte] = {
@@ -124,9 +130,6 @@ object KamanjaCacheQueueEntry {
     throw new NotImplementedError("KamanjaCacheQueueEntry.deserialize is not yet implemented")
   }
 }
-
-// case class CacheQueueElement[T](val key: T, val value: Array[Byte], var nextKey: T);
-// class KamanjaModelsCacheQueueElement(key: Long, value: Array[Byte], nextKey: Long) extends CacheQueueElement[Long](key, value, nextKey);
 
 // BUGBUG:: Do we need to get nodeIdModlsObj from KamanjaCacheQueueEntry?????
 class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: Int, val endPartitionId: Int) extends Runnable {
@@ -664,7 +667,7 @@ class LearningEngine {
         if (inlineExecution != null && KamanjaLeader.isLocalExecution) {
           while (execPos < exeQueue.size) {
             val execNode = exeQueue(execPos)
-            inlineExecution.executeModel(KamanjaCacheQueueEntry(exeQueue, execPos, dagRuntime, txnCtxt, thisMsgEvent, modelsForMessage, msgProcessingStartTime))
+            inlineExecution.executeModel(new KamanjaCacheQueueEntry(exeQueue, execPos, dagRuntime, txnCtxt, thisMsgEvent, modelsForMessage, msgProcessingStartTime))
             execPos += 1
           }
           // all models executed. Send output
@@ -682,7 +685,7 @@ class LearningEngine {
           val partitionIdForNoKey = 0 // BUGBUG:: Collect this value
 
           val (partKeyStr, partitionIdx) = LeanringEngine.GetQueuePartitionInfo(nodeIdModlsObj, execNode, txnCtxt, partitionIdForNoKey)
-          KamanjaLeader.AddToRemoteProcessingBucket(partitionIdx, KamanjaCacheQueueEntry(exeQueue, execPos, dagRuntime, txnCtxt, thisMsgEvent, modelsForMessage, msgProcessingStartTime))
+          KamanjaLeader.AddToRemoteProcessingBucket(partitionIdx, new KamanjaCacheQueueEntry(exeQueue, execPos, dagRuntime, txnCtxt, thisMsgEvent, modelsForMessage, msgProcessingStartTime))
         }
       } else {
         // No models found to execute. Send output

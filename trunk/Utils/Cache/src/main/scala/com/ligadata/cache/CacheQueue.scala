@@ -1,5 +1,6 @@
 package com.ligadata.cache
 
+import org.apache.hadoop.hbase.protobuf.generated.MasterProtos.ExecProcedureRequest
 import org.apache.logging.log4j.LogManager
 
 /*
@@ -72,21 +73,67 @@ retVal = head -------> next
 
 ==========================
 
-
+// BUGBUG:: We can optimize this with one look ahead extra item. That way we don't need to replace the key in enQueue.  Which saves one put operation & manupulating data
 
 */
 
 
+// NOTENOTE: Must to serialize link value at the begining either using base trait serialize or CacheQueue.linkValueToSerializeCacheQueueElementInfo(link)
 trait CacheQueueElement {
-  def serialize(): Array[Byte]
-
-  def deserialize(data: Array[Byte]): Unit
-
+  def serialize(): Array[Byte] = CacheQueue.linkValueToSerializeCacheQueueElementInfo(link)
   var link: String
 }
 
+object CacheQueue {
+  final def extractLinkValueLengthFromSerializedCacheQueueElementInfo(buf: Array[Byte]): Int = {
+    if (buf.length < 2)
+      throw new Exception("Not enough lenght to get key from Serialized buffer")
+    val byte0 = buf(0).toInt
+    val byte1 = buf(1).toInt
+    val len = (((byte0 & 0xFF) << 8) + ((byte1 & 0xFF) << 0))
 
-class CacheQueue(val cache: DataCache, val kQueueHead: String, val kQueueTail: String, val createCacheQueueElement: CacheQueueElement) {
+    len
+  }
+
+  final def extractLinkValueFromSerializedCacheQueueElementInfo(buf: Array[Byte]): String = {
+    val len = extractLinkValueLengthFromSerializedCacheQueueElementInfo(buf)
+    new String(buf, 2, len)
+  }
+
+  final def linkValueToSerializeCacheQueueElementInfo(linkVal: String): Array[Byte] = {
+    val bytes = linkVal.getBytes("UTF-8")
+    val len = bytes.length.toShort
+
+    val lenArrBuf = Array[Byte](0, 0)
+
+    lenArrBuf(0) = ((len >>> 8) & 0xFF).toByte
+    lenArrBuf(1) = ((len >>> 0) & 0xFF).toByte
+
+    (lenArrBuf ++ bytes)
+  }
+
+  final def replaceLinkValueInSerializeCacheQueueElementInfo(newLinkVal: String, serInfo: Array[Byte]): Array[Byte] = {
+    val prevLinkValLen = extractLinkValueLengthFromSerializedCacheQueueElementInfo(serInfo)
+
+    val newBytes = newLinkVal.getBytes("UTF-8")
+    val curLinkValLen = newBytes.length
+
+    if (prevLinkValLen == curLinkValLen) {
+      var i = 2
+      newBytes.foreach(b => {
+        serInfo(i) = b
+      })
+      serInfo
+    } else {
+      linkValueToSerializeCacheQueueElementInfo(newLinkVal) ++ serInfo.takeRight(serInfo.size - prevLinkValLen - 2)
+    }
+  }
+}
+
+class CacheQueue(val cache: DataCache, val kQueueHead: String, val kQueueTail: String, val deserializeCacheQueueElement: (Array[Byte]) => CacheQueueElement) {
+  if (deserializeCacheQueueElement == null)
+    throw new Exception("Required deserializeCacheQueueElement")
+
   private val LOG = LogManager.getLogger(getClass);
 
   // For tail we are setting predecessor key
@@ -105,13 +152,15 @@ class CacheQueue(val cache: DataCache, val kQueueHead: String, val kQueueTail: S
 
       if (tailPred.equals(kQueueHead)) {
         cache.put(kQueueHead, key)
-        cache.put(key, element)
+        val v = element.serialize()
+        cache.put(key, v)
         cache.put(kQueueTail, key)
       } else {
-        val pred = cache.get(tailPred).asInstanceOf[CacheQueueElement]
-        pred.link = key
-        cache.put(tailPred, pred)
-        cache.put(key, element)
+        val pred = cache.get(tailPred).asInstanceOf[Array[Byte]]
+        // Replacing link with key
+        cache.put(tailPred, CacheQueue.replaceLinkValueInSerializeCacheQueueElementInfo(key, pred))
+        val v = element.serialize()
+        cache.put(key, v)
         cache.put(kQueueTail, key)
       }
       tm.commit()
@@ -145,7 +194,7 @@ class CacheQueue(val cache: DataCache, val kQueueHead: String, val kQueueTail: S
       val key = cache.get(kQueueHead).asInstanceOf[String]
       if (key.equals(kQueueTail))
         return null
-      returnElmt = cache.get(key).asInstanceOf[CacheQueueElement]
+      returnElmt = deserializeCacheQueueElement(cache.get(key).asInstanceOf[Array[Byte]])
       cache.put(kQueueHead, returnElmt.link)
       cache.remove(key)
       tm.commit()
@@ -176,7 +225,7 @@ class CacheQueue(val cache: DataCache, val kQueueHead: String, val kQueueTail: S
       val key = cache.get(kQueueHead).asInstanceOf[String]
       if (key.equals(kQueueTail))
         return null
-      returnElmt = cache.get(key).asInstanceOf[CacheQueueElement]
+      returnElmt = deserializeCacheQueueElement(cache.get(key).asInstanceOf[Array[Byte]])
       tm.commit()
     } catch {
       case e: Throwable => {
