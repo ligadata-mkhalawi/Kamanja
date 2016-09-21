@@ -52,7 +52,7 @@ case class ActionOnAdaptersMap(action: String, adaptermaxpartitions: Option[List
 case class ClusterDistributionInfo(ClusterId: String, GlobalProcessThreads: Int, GlobalReaderThreads: Int, LogicalPartitions: Int, NodesDist: ArrayBuffer[NodeDistInfo])
 case class NodeDistInfo(Nodeid: String, ProcessThreads: Int, ReaderThreads: Int)
 
-case class DistributionMap(var action: String, adaptermaxpartitions: Option[List[AdapMaxPartitions]], var distributionmap: List[NodeDistMap])
+case class DistributionMap(var action: String, var totalreaderthreads: Option[Int], var totalprocessthreads: Option[Int], adaptermaxpartitions: Option[List[AdapMaxPartitions]], var distributionmap: List[NodeDistMap])
 case class NodeDistMap(Node: String, PhysicalPartitions: List[PhysicalPartitions], LogicalPartitions: List[LogicalPartitions])
 case class PhysicalPartitions(var ThreadId: Short, Adaps: List[Adaps])
 case class Adaps(var Adap: String, var ReadPartitions: List[String])
@@ -709,7 +709,7 @@ object KamanjaLeader {
     distributionmap.foreach { nodedist =>
       {
         if (nodedist.Node == nodeId) {
-          if(nodedist.PhysicalPartitions == null || (nodedist.PhysicalPartitions != null && nodedist.PhysicalPartitions.size == 0)) throw new Exception("PhysicalPartitions in distribution map is null")
+          if (nodedist.PhysicalPartitions == null || (nodedist.PhysicalPartitions != null && nodedist.PhysicalPartitions.size == 0)) throw new Exception("PhysicalPartitions in distribution map is null")
           nodedist.PhysicalPartitions.foreach { physicalPart =>
             {
               physicalPart.Adaps.foreach { adap =>
@@ -735,7 +735,7 @@ object KamanjaLeader {
     distributionmap.foreach { nodedist =>
       {
         if (nodedist.Node == nodeId) {
-          if(nodedist.LogicalPartitions == null || (nodedist.LogicalPartitions != null && nodedist.LogicalPartitions.size == 0)) throw new Exception("LogicalPartitions in distribution map is null")
+          if (nodedist.LogicalPartitions == null || (nodedist.LogicalPartitions != null && nodedist.LogicalPartitions.size == 0)) throw new Exception("LogicalPartitions in distribution map is null")
           if (nodedist.LogicalPartitions != null && nodedist.LogicalPartitions.size > 0) {
             nodedist.LogicalPartitions.foreach { logicalPart =>
               {
@@ -812,6 +812,8 @@ object KamanjaLeader {
       // val actionOnAdaptersMap = json.extract[ActionOnAdaptersMap]   /** Commenting - LogicalParitions updates  **/
       val actionOnAdaptersMap = json.extract[DistributionMap]
       LOG.debug("actionOnAdaptersMap.action " + actionOnAdaptersMap.action)
+      LOG.debug("totalprocessthreads " + actionOnAdaptersMap.totalprocessthreads)
+      LOG.debug("totalreaderthreads " + actionOnAdaptersMap.totalreaderthreads)
       actionOnAdaptersMap.action match {
         case "stop" => {
           try {
