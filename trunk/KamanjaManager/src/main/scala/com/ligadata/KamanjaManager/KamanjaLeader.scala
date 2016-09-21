@@ -64,9 +64,11 @@ case class NodeDistInfo(Nodeid: String, ProcessThreads: Int, ReaderThreads: Int)
 case class DistributionMap(var action: String, var totalreaderthreads: Option[Int], var totalprocessthreads: Option[Int], adaptermaxpartitions: Option[List[AdapMaxPartitions]], var distributionmap: List[NodeDistMap])
 
 case class NodeDistMap(Node: String, PhysicalPartitions: List[PhysicalPartitions], LogicalPartitions: List[LogicalPartitions])
+
 case class PhysicalPartitions(var ThreadId: Short, Adaps: List[Adaps])
 
 case class Adaps(var Adap: String, var ReadPartitions: List[String])
+
 case class LogicalPartitions(var ThreadId: Short, var SRange: Int, var ERange: Int)
 
 object KamanjaLeader {
@@ -741,72 +743,50 @@ object KamanjaLeader {
     nodeLogicalParts
   }
 
-
   private def GetNodeDistMapForNodeId(distributionmap: List[NodeDistMap], nodeId: String): scala.collection.mutable.Map[String, ArrayBuffer[(Short, List[String])]] = {
     var threadsPartitionMap = scala.collection.mutable.Map[String, ArrayBuffer[(Short, List[String])]]()
-
-
-
-
-
-
-
-
-
-
-    distributionmap.foreach { nodedist =>
-      {
-        if (nodedist.Node == nodeId) {
-          nodedist.PhysicalPartitions.foreach { physicalPart =>
-            {
-              physicalPart.Adaps.foreach { adap =>
-                {
-          if (nodedist.PhysicalPartitions == null || (nodedist.PhysicalPartitions != null && nodedist.PhysicalPartitions.size == 0)) throw new Exception("PhysicalPartitions in distribution map is null")
-          nodedist.PhysicalPartitions.foreach { physicalPart =>
-            {
-              physicalPart.Adaps.foreach { adap =>
-                {
-                  val threadPartsMap = (physicalPart.ThreadId, adap.ReadPartitions)
-                  println(physicalPart.ThreadId + "  " + adap.ReadPartitions)
-                  if (threadsPartitionMap.contains(adap.Adap))
-                    threadsPartitionMap(adap.Adap) += threadPartsMap
-                  else threadsPartitionMap(adap.Adap) = ArrayBuffer(threadPartsMap)
-                }
-              }
-            }
+    distributionmap.foreach { nodedist => {
+      if (nodedist.Node == nodeId) {
+        if (nodedist.PhysicalPartitions == null || (nodedist.PhysicalPartitions != null && nodedist.PhysicalPartitions.size == 0)) throw new Exception("PhysicalPartitions in distribution map is null")
+        nodedist.PhysicalPartitions.foreach { physicalPart => {
+          physicalPart.Adaps.foreach { adap => {
+            val threadPartsMap = (physicalPart.ThreadId, adap.ReadPartitions)
+            println(physicalPart.ThreadId + "  " + adap.ReadPartitions)
+            if (threadsPartitionMap.contains(adap.Adap))
+              threadsPartitionMap(adap.Adap) += threadPartsMap
+            else threadsPartitionMap(adap.Adap) = ArrayBuffer(threadPartsMap)
           }
-          LOG.debug(threadsPartitionMap)
+          }
         }
+        }
+        LOG.debug(threadsPartitionMap)
       }
+    }
     }
     threadsPartitionMap
   }
 
-
-
   private def GetNodeDistLogicalPartsMapForNodeId(distributionmap: List[NodeDistMap], nodeId: String): scala.collection.mutable.Map[Int, (Int, Int)] = {
     var threadsPartitionMap = scala.collection.mutable.Map[Int, (Int, Int)]()
-    distributionmap.foreach { nodedist =>
-      {
-        if (nodedist.Node == nodeId) {
-          if (nodedist.LogicalPartitions == null || (nodedist.LogicalPartitions != null && nodedist.LogicalPartitions.size == 0)) throw new Exception("LogicalPartitions in distribution map is null")
-          if (nodedist.LogicalPartitions != null && nodedist.LogicalPartitions.size > 0) {
-            nodedist.LogicalPartitions.foreach { logicalPart =>
-              {
-                var low: Int = 0
-                var high: Int = 0
-                if (logicalPart != null) {
-                  low = logicalPart.SRange
-                  high = logicalPart.ERange
-                  val range = (low.toInt, high.toInt)
-                  threadsPartitionMap(logicalPart.ThreadId.toInt) = range
-                }
-              }
+    distributionmap.foreach { nodedist => {
+      if (nodedist.Node == nodeId) {
+        if (nodedist.LogicalPartitions == null || (nodedist.LogicalPartitions != null && nodedist.LogicalPartitions.size == 0)) throw new Exception("LogicalPartitions in distribution map is null")
+        if (nodedist.LogicalPartitions != null && nodedist.LogicalPartitions.size > 0) {
+          nodedist.LogicalPartitions.foreach { logicalPart => {
+            var low: Int = 0
+            var high: Int = 0
+            if (logicalPart != null) {
+              low = logicalPart.SRange
+              high = logicalPart.ERange
+              val range = (low.toInt, high.toInt)
+              threadsPartitionMap(logicalPart.ThreadId.toInt) = range
             }
           }
-          LOG.debug("Logical APrts " + threadsPartitionMap)
+          }
         }
+        LOG.debug("Logical APrts " + threadsPartitionMap)
       }
+    }
     }
     threadsPartitionMap
   }
@@ -1048,7 +1028,7 @@ object KamanjaLeader {
               actionOnAdaptersMap.distributionmap.foreach(nodedist => {
                 val isLocalThread = nodedist.Node == nodeId
                 nodedist.LogicalPartitions.foreach(lp => {
-                  val (threadId, startPartRange, endPartitionRange) = getLogicalPartitionInfo(lp)
+                  val (threadId, startPartRange, endPartitionRange) = (lp.ThreadId, lp.SRange, lp.ERange)
                   for (i <- startPartRange to endPartitionRange)
                     globalLogicalPartitionsToThreadId(i) = threadId
                   globalThreadIdToLogicalPartitions(threadId) = (startPartRange, endPartitionRange)
@@ -1082,7 +1062,7 @@ object KamanjaLeader {
                 remoteExecPool = scala.actors.threadpool.Executors.newFixedThreadPool(logicalPartsForNode.length)
 
                 logicalPartsForNode.foreach(lp => {
-                  val (threadId, startPartRange, endPartitionRange) = getLogicalPartitionInfo(lp)
+                  val (threadId, startPartRange, endPartitionRange) = (lp.ThreadId, lp.SRange, lp.ERange)
                   remoteExecPool.execute(new LeanringEngineRemoteExecution(threadId, startPartRange, endPartitionRange))
                 })
               }
@@ -1156,24 +1136,6 @@ object KamanjaLeader {
       //BUGBUG:: make sure this trigger LeanringEngineRemoteExecution.executeModels for execution
     }
   }
-  private def getLogicalPartitionInfo(logicalPart: LogicalPartitions): (Short, Int, Int) = {
-    var threadId: Short = 0
-    var startPartRange = 0
-    var endPartitionRange = 0
-    if (logicalPart.Range != null && logicalPart.Range.trim() != "") {
-      val splitRange = logicalPart.Range.split(",")
-      if (splitRange.length == 2) {
-        val low = splitRange(0)
-        val high = splitRange(1)
-        startPartRange = if (low != null && low.trim.size > 0) low.toInt else 0
-        endPartitionRange = if (high != null && high.trim.size > 0) high.toInt else 0
-      }
-    }
-
-    threadId = if (logicalPart.ThreadId != null && logicalPart.ThreadId.trim.size > 0) logicalPart.ThreadId.toShort else 0
-
-    (threadId, startPartRange, endPartitionRange)
-  }
 
   private def ActionOnAdaptersDistribution(receivedJsonStr: String): Unit = {
     ActionOnAdaptersDistImpl(receivedJsonStr)
@@ -1202,28 +1164,6 @@ object KamanjaLeader {
       //      val changedMsgsContainers = values.getOrElse("changeddata", null)
       val tmpChngdContainersAndKeys = values.getOrElse("changeddatakeys", null)
 
-      //      if (changedMsgsContainers != null) {
-      //        // Expecting List/Array of String here
-      //        var changedVals: Array[String] = null
-      //        if (changedMsgsContainers.isInstanceOf[List[_]]) {
-      //          try {
-      //            changedVals = changedMsgsContainers.asInstanceOf[List[String]].toArray
-      //          } catch {
-      //            case e: Exception => { LOG.warn("", e) }
-      //          }
-      //        } else if (changedMsgsContainers.isInstanceOf[Array[_]]) {
-      //          try {
-      //            changedVals = changedMsgsContainers.asInstanceOf[Array[String]]
-      //          } catch {
-      //            case e: Exception => { LOG.warn("", e) }
-      //          }
-      //        }
-      //
-      //        if (changedVals != null) {
-      //          envCtxt.clearIntermediateResults(changedVals)
-      //        }
-      //      }
-      //
       if (tmpChngdContainersAndKeys != null) {
         val changedContainersAndKeys = if (tmpChngdContainersAndKeys.isInstanceOf[List[_]]) tmpChngdContainersAndKeys.asInstanceOf[List[_]] else if (tmpChngdContainersAndKeys.isInstanceOf[Array[_]]) tmpChngdContainersAndKeys.asInstanceOf[Array[_]].toList else null
         if (changedContainersAndKeys != null && changedContainersAndKeys.size > 0) {
@@ -1853,18 +1793,6 @@ object KamanjaLeader {
 
   def Shutdown: Unit = {
     distributionExecutor.shutdown
-    //    if (zkLeaderLatch != null)
-    //      zkLeaderLatch.Shutdown
-    //    zkLeaderLatch = null
-    //    if (zkEngineDistributionNodeListener != null)
-    //      zkEngineDistributionNodeListener.Shutdown
-    //    zkEngineDistributionNodeListener = null
-    //    if (zkDataChangeNodeListener != null)
-    //      zkDataChangeNodeListener.Shutdown
-    //    zkDataChangeNodeListener = null
-    //    if (zkAdapterStatusNodeListener != null)
-    //      zkAdapterStatusNodeListener.Shutdown
-    //    zkAdapterStatusNodeListener = null
     CloseSetDataZkc
   }
 
