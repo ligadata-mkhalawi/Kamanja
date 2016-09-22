@@ -9,7 +9,7 @@ import org.json4s.jackson.JsonMethods._
 import org.json4s._
 
 //case class DistributionMap(var action: String, var globalprocessthreads: Int, var globalreaderthreads: Int, var logicalpartitions: Int, var totalreaderthreads: Int, var totalprocessthreads: Int, adaptermaxpartitions: Option[List[AdapMaxPartitions1]], var distributionmap: List[NodeDistMap])
-case class DistributionMap(var action: String, var totalreaderthreads: Option[Int], var totalprocessthreads: Option[Int], adaptermaxpartitions: Option[List[AdapMaxPartitions1]], var distributionmap: List[NodeDistMap])
+case class DistributionMap(var action: String, var distributionname: Option[String], var totalreaderthreads: Option[Int], var totalprocessthreads: Option[Int], adaptermaxpartitions: Option[List[AdapMaxPartitions1]], var distributionmap: List[NodeDistMap])
 
 case class AdapMaxPartitions1(Adap: String, MaxParts: Int)
 case class NodeDistMap(Node: String, PhysicalPartitions: List[PhysicalPartitions], LogicalPartitions: List[LogicalPartitions])
@@ -18,6 +18,12 @@ case class Adaps(var Adap: String, var ReadPartitions: List[String])
 case class LogicalPartitions(var ThreadId: Short, var SRange: Int, var ERange: Int)
 
 object DistributionTest {
+
+  private var counter = 0
+  private def increment = {
+    counter += 1;
+    counter
+  }
 
   def test = {
 
@@ -68,8 +74,8 @@ object DistributionTest {
 
     var nodeDistInfo = ArrayBuffer[NodeDistInfo]((new NodeDistInfo("node1", 8, 2)), (new NodeDistInfo("node2", 8, 2)))
     var clusterDistInfo = new ClusterDistributionInfo("cluster1", 8, 2, 8192, nodeDistInfo)
-
-    val nodeDist = Distribution.createDistribution(clusterDistInfo, allPartitionUniqueRecordKeys)
+    val leaderNodeId: String = "node1"
+    val nodeDist = Distribution.createDistribution(clusterDistInfo, allPartitionUniqueRecordKeys, leaderNodeId)
     println("nodeDist " + nodeDist)
 
     val allPartsToValidate = scala.collection.mutable.Map[String, Set[String]]()
@@ -84,7 +90,6 @@ object DistributionTest {
     allPartsToValidate.foreach(p => { adapterMaxPartitions(p._1) = p._2.size })
 
     val distributeJson = Distribution.createDistributionJson(nodeDist)
-    //val distributeJson = "{\"action\":\"stop\"}"
     println("distJson " + distributeJson)
     // println("distJson 1 " + distributeJson)
     val json = parse(distributeJson)
@@ -94,7 +99,8 @@ object DistributionTest {
 
     implicit val jsonFormats: Formats = DefaultFormats
     val actionOnAdaptersMap = json.extract[DistributionMap]
-    println("totalprocessthreads====> " + actionOnAdaptersMap.totalprocessthreads)
+    println("dist unique id====> " + actionOnAdaptersMap.distributionname)
+    /* println("totalprocessthreads====> " + actionOnAdaptersMap.totalprocessthreads)
     println("totalreaderthreads====> " + actionOnAdaptersMap.totalreaderthreads)
     println(actionOnAdaptersMap.adaptermaxpartitions)
 
@@ -104,6 +110,25 @@ object DistributionTest {
 
     GetNodeDistLogicalPartsMapForNodeId(actionOnAdaptersMap.distributionmap, nodeId)
 
+    val distributeJson1 = "{\"action\":\"stop\"}"
+    println("distJson1 " + distributeJson1)
+    // println("distJson 1 " + distributeJson)
+    val json1 = parse(distributeJson1)
+    if (json1 == null || json1.values == null) { // Not doing any action if not found valid json
+      println("ActionOnAdaptersDistImpl => Exit. receivedJsonStr: " + distributeJson1)
+    }
+
+    val actionOnAdaptersMap1 = json1.extract[DistributionMap]
+    println("totalprocessthreads====>1 " + actionOnAdaptersMap1.totalprocessthreads)
+    println("totalreaderthreads====>1 " + actionOnAdaptersMap1.totalreaderthreads)
+    println(actionOnAdaptersMap1.adaptermaxpartitions)
+
+    println(actionOnAdaptersMap1.distributionmap)*/
+    //val nodeId = "node1"
+    // val nodeDistMap = GetNodeDistMapForNodeId(actionOnAdaptersMap.distributionmap, nodeId)
+
+    // GetNodeDistLogicalPartsMapForNodeId(actionOnAdaptersMap.distributionmap, nodeId)*/
+    //
   }
 
   private def GetNodeDistMapForNodeId(distributionmap: List[NodeDistMap], nodeId: String): scala.collection.mutable.Map[String, ArrayBuffer[(String, List[String])]] = {
@@ -159,5 +184,30 @@ object DistributionTest {
 
   def main(args: Array[String]): Unit = {
     DistributionTest.test
+    DistributionTest.test
+    DistributionTest.test
+    DistributionTest.test
+    DistributionTest.test
+
+    var d = new DistributionTest
+    println("============== " + d.counter)
+
+    var d1 = new DistributionTest
+    println("============== " + d1.counter)
+    var d2 = new DistributionTest
+    println("============== " + d2.counter)
+    var d3 = new DistributionTest
+    println("============== " + d3.counter)
+    var d4 = new DistributionTest
+    println("============== " + d4.counter)
+
+    var sdf = new java.text.SimpleDateFormat("yyyyMMdd_HH:mm:ss");
+    var date = new java.util.Date();
+    println(sdf.format(date));
   }
+}
+
+class DistributionTest {
+  val counter = DistributionTest.increment
+  println("counter " + counter)
 }

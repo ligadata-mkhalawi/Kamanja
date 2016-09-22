@@ -3062,7 +3062,8 @@ class MdMgr {
                roles: Array[String],
                description: String, 
                readerThreads:Int,
-               processThreads: Int): NodeInfo = {
+               processThreads: Int,
+               logicalPartitionCachePort: Int): NodeInfo = {
     val ni = new NodeInfo
     ni.nodeId = nodeId
     ni.nodePort = nodePort
@@ -3078,7 +3079,8 @@ class MdMgr {
     ni.roles = roles
     ni.description = description
     ni.readerThreads = readerThreads
-    ni.processThreads = processThreads    
+    ni.processThreads = processThreads 
+    ni.logicalPartitionCachePort = logicalPartitionCachePort
     ni
   }
 
@@ -3482,7 +3484,7 @@ class MdMgr {
     upi
   }
 
-  def MakeCluster(clusterId: String, description: String, privileges: String, globalReaderThreads: Int,  globalProcessThreads: Int,  logicalPartitions: Int): ClusterInfo = {
+  def MakeCluster(clusterId: String, description: String, privileges: String, globalReaderThreads: Int,  globalProcessThreads: Int,  logicalPartitions: Int, globalLogicalPartitionCachePort: Int): ClusterInfo = {
     val ci = new ClusterInfo
     ci.clusterId = clusterId
     ci.description = description
@@ -3490,6 +3492,7 @@ class MdMgr {
     ci.globalReaderThreads = globalReaderThreads
     ci.globalProcessThreads = globalProcessThreads
     ci.logicalPartitions = logicalPartitions
+    ci.globalLogicalPartitionCachePort = globalLogicalPartitionCachePort
     ci
   }
 

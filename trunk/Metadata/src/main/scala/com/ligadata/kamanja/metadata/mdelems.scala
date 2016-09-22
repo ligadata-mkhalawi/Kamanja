@@ -885,6 +885,7 @@ class ClusterConfigDef extends BaseElemDef {
   var globalReaderThreads: Int = _
   var globalProcessThreads: Int = _
   var logicalPartitions: Int = _
+  var globalLogicalPartitionCachePort: Int = _
 }
 
 class JarDef extends BaseElemDef {
@@ -913,6 +914,7 @@ class NodeInfo {
   var description: String = _
   var readerThreads: Int = _
   var processThreads: Int = _
+  var logicalPartitionCachePort: Int = _
   
   def NodeId: String = nodeId
   def NodePort: Int = nodePort
@@ -928,6 +930,7 @@ class NodeInfo {
   def NodeAddr: String = nodeIpAddr + ":" + nodePort.toString
   def ReaderThreads: Int = readerThreads
   def ProcessThreads: Int = processThreads  
+  def LogicalPartitionCachePort = logicalPartitionCachePort
 
   def equals(in: NodeInfo): Boolean = {
 
@@ -1015,6 +1018,7 @@ class ClusterInfo {
   var globalReaderThreads: Int = _
   var globalProcessThreads: Int = _
   var logicalPartitions: Int = _
+  var globalLogicalPartitionCachePort: Int = _
 
   def ClusterId: String = clusterId
   def Description: String = description
@@ -1022,6 +1026,7 @@ class ClusterInfo {
   def GlobalReaderThreads: Int = globalReaderThreads
   def GlobalProcessThreads: Int = globalProcessThreads
   def LogicalPartitions: Int = logicalPartitions
+  def GlobalLogicalPartitionCachePort = globalLogicalPartitionCachePort
 
   def equals(in: ClusterInfo): Boolean = {
     // Check description

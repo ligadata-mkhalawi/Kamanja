@@ -83,7 +83,7 @@ object ConfigUtils {
   // 646 - 676 Change begins - replace MetadataAPIImpl
   val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
   // 646 - 676 Change ends
-
+  val LOGICAL_PARTITION_LIMIT : Int = 16000
   //lazy val serializer = SerializerManager.GetSerializer(serializerType)
   /**
    *
@@ -121,11 +121,11 @@ object ConfigUtils {
               jarPaths: List[String], scala_home: String,
               java_home: String, classpath: String,
               clusterId: String, power: Int,
-              roles: Array[String], description: String, readerThreads: Int, processThreads: Int): String = {
+              roles: Array[String], description: String, readerThreads: Int, processThreads: Int, logicalPartitionCachePort: Int): String = {
     try {
       // save in memory
       val ni = MdMgr.GetMdMgr.MakeNode(nodeId, nodePort, nodeIpAddr, jarPaths, scala_home,
-        java_home, classpath, clusterId, power, roles, description, readerThreads, processThreads)
+        java_home, classpath, clusterId, power, roles, description, readerThreads, processThreads, logicalPartitionCachePort)
       MdMgr.GetMdMgr.AddNode(ni)
       // save in database
       val key = "NodeInfo." + nodeId
@@ -163,10 +163,10 @@ object ConfigUtils {
                  jarPaths: List[String], scala_home: String,
                  java_home: String, classpath: String,
                  clusterId: String, power: Int,
-                 roles: Array[String], description: String, readerThreads: Int, processThreads: Int): String = {
+                 roles: Array[String], description: String, readerThreads: Int, processThreads: Int, logicalPartitionCachePort: Int): String = {
     AddNode(nodeId, nodePort, nodeIpAddr, jarPaths, scala_home,
       java_home, classpath,
-      clusterId, power, roles, description, readerThreads: Int, processThreads: Int)
+      clusterId, power, roles, description, readerThreads, processThreads, logicalPartitionCachePort)
   }
 
   /**
@@ -320,10 +320,10 @@ object ConfigUtils {
    * @param privileges
    * @return
    */
-  def AddCluster(clusterId: String, description: String, privileges: String, globalReaderThreads: Int, globalProcessThreads: Int, logicalPartitions: Int): String = {
+  def AddCluster(clusterId: String, description: String, privileges: String, globalReaderThreads: Int, globalProcessThreads: Int, logicalPartitions: Int, globalLogicalPartitionCachePort: Int): String = {
     try {
       // save in memory
-      val ci = MdMgr.GetMdMgr.MakeCluster(clusterId, description, privileges, globalReaderThreads, globalProcessThreads, logicalPartitions)
+      val ci = MdMgr.GetMdMgr.MakeCluster(clusterId, description, privileges, globalReaderThreads, globalProcessThreads, logicalPartitions, globalLogicalPartitionCachePort)
       MdMgr.GetMdMgr.AddCluster(ci)
       // save in database
       val key = "ClusterInfo." + clusterId
@@ -349,8 +349,8 @@ object ConfigUtils {
    * @param privileges
    * @return
    */
-  def UpdateCluster(clusterId: String, description: String, privileges: String, globalReaderThreads: Int, globalProcessThreads: Int, logicalPartitions: Int): String = {
-    AddCluster(clusterId, description, privileges, globalReaderThreads, globalProcessThreads, logicalPartitions)
+  def UpdateCluster(clusterId: String, description: String, privileges: String, globalReaderThreads: Int, globalProcessThreads: Int, logicalPartitions: Int, globalLogicalPartitionCachePort: Int): String = {
+    AddCluster(clusterId, description, privileges, globalReaderThreads, globalProcessThreads, logicalPartitions, globalLogicalPartitionCachePort)
   }
 
   /**
@@ -749,9 +749,18 @@ object ConfigUtils {
               val apiResult = new ApiResult(ErrorCodeConstants.Failure, "LogicalPartitions", cfgStr, "Error : LogicalPartitions Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
               return apiResult.toString()
             }
+            if (LogicalPartitions > LOGICAL_PARTITION_LIMIT) {
+              val apiResult = new ApiResult(ErrorCodeConstants.Failure, "LogicalPartitions", cfgStr, "Error : LogicalPartitions should not be greater that 16000 to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
+              return apiResult.toString()
+            }
+            val GlobalLogicalPartitionCachePort = cluster.getOrElse("GlobalLogicalPartitionCachePort", "0").toString.trim.toInt
+            if (GlobalLogicalPartitionCachePort == 0) {
+              val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GlobalLogicalPartitionCachePort", cfgStr, "Error : GlobalLogicalPartitionCachePort Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
+              return apiResult.toString()
+            }
             logger.debug("Processing the cluster => " + ClusterId)
             // save in memory
-            val ci = MdMgr.GetMdMgr.MakeCluster(ClusterId, "", "", GlobalReaderThreads, GlobalProcessThreads, LogicalPartitions)
+            val ci = MdMgr.GetMdMgr.MakeCluster(ClusterId, "", "", GlobalReaderThreads, GlobalProcessThreads, LogicalPartitions, GlobalLogicalPartitionCachePort)
             val addCluserReuslt = MdMgr.GetMdMgr.AddCluster(ci)
 
             if (addCluserReuslt != None) {
@@ -760,6 +769,7 @@ object ConfigUtils {
               clusterDef.globalReaderThreads = ci.globalReaderThreads
               clusterDef.globalProcessThreads = ci.globalProcessThreads
               clusterDef.logicalPartitions = ci.logicalPartitions
+              clusterDef.globallogicalpartitioncacheport = ci.globalLogicalPartitionCachePort
               clusterDef.elementType = "clusterDef"
               clusterDef.nameSpace = "cluster"
               clusterDef.name = ci.clusterId
@@ -844,7 +854,8 @@ object ConfigUtils {
                 val roles = if (node.contains("Roles")) node.get("Roles").get.asInstanceOf[List[String]] else List[String]()
                 var readerThreads: Int = node.getOrElse("ReaderThreads", "0").toString.trim.toInt
                 var processThreads = node.getOrElse("ProcessThreads", "0").toString.trim.toInt
-                
+                var logicalPartitionCachePort = node.getOrElse("LogicalPartitionCachePort", "0").toString.trim.toInt
+
                 val validRoles = NodeRole.ValidRoles.map(r => r.toLowerCase).toSet
                 val givenRoles = roles
                 var foundRoles = ArrayBuffer[String]()
@@ -862,7 +873,7 @@ object ConfigUtils {
                 }
 
                 val ni = MdMgr.GetMdMgr.MakeNode(nodeId, nodePort, nodeIpAddr, jarPaths,
-                  scala_home, java_home, classpath, ClusterId, 0, foundRoles.toArray, "", readerThreads, processThreads)
+                  scala_home, java_home, classpath, ClusterId, 0, foundRoles.toArray, "", readerThreads, processThreads, logicalPartitionCachePort)
 
                 val addNodeResult = MdMgr.GetMdMgr.AddNode(ni)
                 if (addNodeResult != None) {
