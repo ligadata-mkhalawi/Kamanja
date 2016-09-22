@@ -75,6 +75,18 @@ abstract public class Transaction implements DataCacheOperations {
         _cache.remove(key);
     }
 
+    @Override
+    public void clear() throws Exception, Throwable {
+        CheckForValidTxn();
+        _cache.clear();
+    }
+
+    @Override
+    public int size() throws Exception, Throwable {
+        CheckForValidTxn();
+        return _cache.size();
+    }
+
     //tree cache
     @Override
     public void put(String containerName, String timestamp, String key, Object value) throws Exception, Throwable {
