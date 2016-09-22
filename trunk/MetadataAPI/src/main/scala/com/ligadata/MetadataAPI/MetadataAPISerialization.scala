@@ -574,7 +574,7 @@ object MetadataAPISerialization {
             ("Description" -> getEmptyIfNull(o.Description)) ~
             ("ReaderThreads" -> o.ReaderThreads) ~
             ("ProcessThreads" -> o.ProcessThreads) ~
-            (LogicalPartitionCachePort -> o.LogicalPartitionCachePort)
+            ("LogicalPartitionCachePort" -> o.LogicalPartitionCachePort)
           outputJson = compact(render(json))
 
         }
