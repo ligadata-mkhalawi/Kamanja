@@ -4,11 +4,11 @@ import com.ligadata.Exceptions.KamanjaException
 import com.ligadata.InputAdapters.MonitorUtils
 import com.ligadata.InputOutputAdapterInfo._
 import org.apache.logging.log4j.LogManager
-import org.json4s._
 import org.json4s.JsonDSL._
+import org.json4s._
 import org.json4s.native.JsonMethods._
 
-import scala.collection.mutable.{ArrayBuffer, MutableList}
+import scala.collection.mutable.ArrayBuffer
 
 class ArchiveConfig {
   var archiveSleepTimeInMs: Int = 10
@@ -245,7 +245,7 @@ object SmartFileAdapterConfiguration {
         monitoringConfig.messageSeparator = kv._2.asInstanceOf[String].trim.toInt.toChar
       }
       else if (kv._1.compareToIgnoreCase("EntireFileAsOneMessage") == 0) {
-        monitoringConfig.entireFileAsOneMessage = kv._2.asInstanceOf[String].trim.toInt.toChar
+        monitoringConfig.entireFileAsOneMessage = kv._2.asInstanceOf[String].trim.toBoolean
       }
       else if (kv._1.compareToIgnoreCase("OrderBy") == 0) {
         monitoringConfig.orderBy = kv._2.asInstanceOf[List[String]].toArray
