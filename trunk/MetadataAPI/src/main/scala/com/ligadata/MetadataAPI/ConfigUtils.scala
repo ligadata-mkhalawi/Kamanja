@@ -1403,44 +1403,46 @@ object ConfigUtils {
       logger.error("ZooKeeperInfo not found for Node %s  & ClusterId : %s".format(nodeId, nd.ClusterId))
       return false
     }
+
     val pythonConfigs = cluster.cfgMap.getOrElse("PYTHON_CONFIG", null)
     
-    getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_CONFIG", pythonConfigs) 
-
     if (pythonConfigs != null && pythonConfigs.isInstanceOf[String]
       && pythonConfigs.asInstanceOf[String].trim().size > 0) {
       if (logger.isDebugEnabled()) {
       	 logger.debug(" The value of Pythonconfigs are " + pythonConfigs) ;
       }
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_CONFIG", pythonConfigs) 
+
+      implicit val jsonFormats: Formats = DefaultFormats
+
+      val pyInfo = parse(pythonConfigs).extract[PythonInfo]
+
+      val pythonPath  = pyInfo.PYTHON_PATH.replace("\"", "").trim
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_PATH", pythonPath)
+      val pythonBinDir  = pyInfo.PYTHON_BIN_DIR.replace("\"", "").trim
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_BIN_DIR", pythonBinDir)
+      val pythonLogConfigPath  = pyInfo.PYTHON_LOG_CONFIG_PATH.replace("\"", "").trim
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_LOG_CONFIG_PATH", pythonLogConfigPath)
+      val pythonLogPath  = pyInfo.PYTHON_LOG_PATH.replace("\"", "").trim
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_LOG_PATH", pythonLogPath)
+      val serverBasePort  = pyInfo.SERVER_BASE_PORT.replace("\"", "").trim
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("SERVER_BASE_PORT", serverBasePort)
+      val serverPortLimit  = pyInfo.SERVER_PORT_LIMIT.replace("\"", "").trim
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("SERVER_PORT_LIMIT", serverPortLimit)
+      val serverHost  = pyInfo.SERVER_HOST.replace("\"", "").trim
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("SERVER_HOST", serverHost)
+      if (logger.isDebugEnabled()) {
+         logger.debug("PYTHON_PATH(based on PYTHON_CONFIG) => " + pythonPath)
+         logger.debug("PYTHON_BIN_DIR(based on PYTHON_CONFIG) => " + pythonBinDir)
+         logger.debug("PYTHON_LOG_CONFIG_PATH(based on PYTHON_CONFIG) => " + pythonLogConfigPath)
+         logger.debug("PYTHON_LOG_PATH(based on PYTHON_CONFIG) => " + pythonLogPath)
+         logger.debug("SERVER_BASE_PORT(based on PYTHON_CONFIG) => " + serverBasePort)
+         logger.debug("SERVER_PORT_LIMIT(based on PYTHON_CONFIG) => " + serverPortLimit)
+          logger.debug("SERVER_HOST(based on PYTHON_CONFIG) => " + serverHost)
+      }
+
     }
-    implicit val jsonFormats: Formats = DefaultFormats
 
-    val pyInfo = parse(pythonConfigs).extract[PythonInfo]
-
-    val pythonPath  = pyInfo.PYTHON_PATH.replace("\"", "").trim
-    getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_PATH", pythonPath)
-    val pythonBinDir  = pyInfo.PYTHON_BIN_DIR.replace("\"", "").trim
-    getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_BIN_DIR", pythonBinDir)
-    val pythonLogConfigPath  = pyInfo.PYTHON_LOG_CONFIG_PATH.replace("\"", "").trim
-    getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_LOG_CONFIG_PATH", pythonLogConfigPath)
-    val pythonLogPath  = pyInfo.PYTHON_LOG_PATH.replace("\"", "").trim
-    getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_LOG_PATH", pythonLogPath)
-    val serverBasePort  = pyInfo.SERVER_BASE_PORT.replace("\"", "").trim
-    getMetadataAPI.GetMetadataAPIConfig.setProperty("SERVER_BASE_PORT", serverBasePort)
-    val serverPortLimit  = pyInfo.SERVER_PORT_LIMIT.replace("\"", "").trim
-    getMetadataAPI.GetMetadataAPIConfig.setProperty("SERVER_PORT_LIMIT", serverPortLimit)
-    val serverHost  = pyInfo.SERVER_HOST.replace("\"", "").trim
-    getMetadataAPI.GetMetadataAPIConfig.setProperty("SERVER_HOST", serverHost)
-
-    if (logger.isDebugEnabled()) {
-       logger.debug("PYTHON_PATH(based on PYTHON_CONFIG) => " + pythonPath)
-       logger.debug("PYTHON_BIN_DIR(based on PYTHON_CONFIG) => " + pythonBinDir)
-       logger.debug("PYTHON_LOG_CONFIG_PATH(based on PYTHON_CONFIG) => " + pythonLogConfigPath)
-       logger.debug("PYTHON_LOG_PATH(based on PYTHON_CONFIG) => " + pythonLogPath)
-       logger.debug("SERVER_BASE_PORT(based on PYTHON_CONFIG) => " + serverBasePort)
-       logger.debug("SERVER_PORT_LIMIT(based on PYTHON_CONFIG) => " + serverPortLimit)
-       logger.debug("SERVER_HOST(based on PYTHON_CONFIG) => " + serverHost)
-     }
 
     val jarPaths = if (nd.JarPaths == null) Set[String]() else nd.JarPaths.map(str => str.replace("\"", "").trim).filter(str => str.size > 0).toSet
     if (jarPaths.size == 0) {
@@ -1458,6 +1460,7 @@ object ConfigUtils {
       logger.debug("Jar_target_dir Based on node(%s) => %s".format(nodeId, jarDir))
     }
 
+    implicit val jsonFormats: Formats = DefaultFormats
     val zKInfo = parse(zooKeeperInfo).extract[JZKInfo]
 
     val zkConnectString = zKInfo.ZooKeeperConnectString.replace("\"", "").trim
