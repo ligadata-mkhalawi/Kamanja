@@ -93,7 +93,7 @@ class MemoryDataTreeCacheImp extends DataCache {
     map
   }
 
-  override def put(map: java.util.Map[_, _]): Unit = {
+  override def put(map: java.util.Map[String, AnyRef]): Unit = {
     val map = new java.util.HashMap[String, AnyRef]
     val keys = getKeys()
     if (keys != null) {
@@ -118,6 +118,10 @@ class MemoryDataTreeCacheImp extends DataCache {
     array
   }
 
+  override def size: Int = {
+    // This may include expried elements also
+    cache.size
+  }
   override def put(containerName: String, timestamp: String, key: String, value: scala.Any): Unit = {
     if (!containerName.equals(null) && !"".equals(containerName)) {
       if (!timestamp.equals(null) && !"".equals(timestamp)) {
