@@ -62,6 +62,7 @@ class FileAdapterMonitoringConfig {
 
   var messageSeparator: Char = 10
   var orderBy: Array[String] = Array.empty[String]
+  var entireFileAsOneMessage = false
 
   var enableMoving: String = "on"  //on, off - public
   def isMovingEnabled: Boolean = enableMoving == null || enableMoving.length == 0 || enableMoving.equalsIgnoreCase("on")
@@ -242,6 +243,9 @@ object SmartFileAdapterConfiguration {
       }
       else if (kv._1.compareToIgnoreCase("MessageSeparator") == 0) {
         monitoringConfig.messageSeparator = kv._2.asInstanceOf[String].trim.toInt.toChar
+      }
+      else if (kv._1.compareToIgnoreCase("EntireFileAsOneMessage") == 0) {
+        monitoringConfig.entireFileAsOneMessage = kv._2.asInstanceOf[String].trim.toInt.toChar
       }
       else if (kv._1.compareToIgnoreCase("OrderBy") == 0) {
         monitoringConfig.orderBy = kv._2.asInstanceOf[List[String]].toArray
