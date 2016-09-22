@@ -62,7 +62,7 @@ case class ClusterDistributionInfo(ClusterId: String, GlobalProcessThreads: Int,
 
 case class NodeDistInfo(Nodeid: String, ProcessThreads: Int, ReaderThreads: Int)
 
-case class DistributionMap(var action: String, var totalreaderthreads: Option[Int], var totalprocessthreads: Option[Int], adaptermaxpartitions: Option[List[AdapMaxPartitions]], var distributionmap: List[NodeDistMap])
+case class DistributionMap(var action: String, var distributionname: Option[String], var totalreaderthreads: Option[Int], var totalprocessthreads: Option[Int], adaptermaxpartitions: Option[List[AdapMaxPartitions]], var distributionmap: List[NodeDistMap])
 
 case class NodeDistMap(Node: String, PhysicalPartitions: List[PhysicalPartitions], LogicalPartitions: List[LogicalPartitions])
 
@@ -511,7 +511,7 @@ object KamanjaLeader {
           LOG.debug("nodeId : " + node.Nodeid + " node.ProcessThreads:  " + node.ProcessThreads + " node.ReaderThreads: " + node.ReaderThreads)
         }
         }
-        clusterDistributionMap = Distribution.createDistribution(clusterDistInfo, allPartitionUniqueRecordKeys)
+        clusterDistributionMap = Distribution.createDistribution(clusterDistInfo, allPartitionUniqueRecordKeys, cs.leaderNodeId)
 
       }
 

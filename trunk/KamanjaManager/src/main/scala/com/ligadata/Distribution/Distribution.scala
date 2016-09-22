@@ -16,13 +16,23 @@ case class NodeDistributionMap(Node: String, PhysicalPartitions: List[PhysicalPa
 case class PhysicalPartitionsDist(var ThreadId: Short, Adaps: scala.collection.mutable.Map[String, ArrayBuffer[String]])
 case class LogicalPartitionsDist(var ThreadId: Short, var LowerRange: Int, var UpperRange: Int)
 case class AdapterDist(var Name: String, var ReaderPatitions: ArrayBuffer[String])
-case class ClusterDistributionMap(var action: String, var GlobalProcessThreads: Int, var GlobalReaderThreads: Int, var LogicalPartitions: Int, var TotalReaderThreads: Int, var TotalProcessThreads: Int, AdapterMaxPartitions: Option[List[AdapMaxPartitions]], var DistributionMap: List[NodeDistributionMap])
+case class ClusterDistributionMap(var action: String, var DistributionName: String, var GlobalProcessThreads: Int, var GlobalReaderThreads: Int, var LogicalPartitions: Int, var TotalReaderThreads: Int, var TotalProcessThreads: Int, AdapterMaxPartitions: Option[List[AdapMaxPartitions]], var DistributionMap: List[NodeDistributionMap])
 
 object Distribution {
   private val LOG = LogManager.getLogger(getClass);
 
-  def createDistribution(clusterDistInfo: ClusterDistributionInfo, allPartitionUniqueRecordKeys: Array[(String, String)]): ClusterDistributionMap = {
+  private val DIST = "DIST"
+  private val USCORE = "_"
+
+  private var counter = 0
+  private def increment = {
+    counter = counter + 1;
+    counter
+  }
+
+  def createDistribution(clusterDistInfo: ClusterDistributionInfo, allPartitionUniqueRecordKeys: Array[(String, String)], leaderNodeId: String): ClusterDistributionMap = {
     var clusterDistributionMap: ClusterDistributionMap = null
+    if (leaderNodeId == null || leaderNodeId.trim() == "") throw new Exception("Leader NodeId is null or empty String")
 
     if (clusterDistInfo == null) throw new Exception("ClusterDistributionInfo is null")
     if (clusterDistInfo.LogicalPartitions == 0 || clusterDistInfo.GlobalProcessThreads == 0 || clusterDistInfo.GlobalReaderThreads == 0) throw new Exception("ClusterDistributionInfo LogicalPartitions or GlobalProcessThreads or GlobalReaderThreads is 0")
@@ -61,7 +71,8 @@ object Distribution {
       val nodedist = processDistribution(nodesArray, allPartitionUniqueRecordKeys, logicalPartitions, totalReaderThreads, totalProcessingThreads)
       val adapterMaxPartitions = getAadapterMaxPartitions(allPartitionUniqueRecordKeys)
 
-      clusterDistributionMap = new ClusterDistributionMap("distribute", globalProcessingThreads, globalReaderThreads, logicalPartitions, totalReaderThreads, totalProcessingThreads, adapterMaxPartitions, nodedist.toList)
+      val distributionName = getDistributionName(leaderNodeId)
+      clusterDistributionMap = new ClusterDistributionMap("distribute", distributionName, globalProcessingThreads, globalReaderThreads, logicalPartitions, totalReaderThreads, totalProcessingThreads, adapterMaxPartitions, nodedist.toList)
 
     } catch {
       case e: Exception => {
@@ -69,6 +80,15 @@ object Distribution {
       }
     }
     clusterDistributionMap
+  }
+
+  private def getDistributionName(leaderNodeId: String): String = {
+    //var dist = new Distribution
+    var distUniqueId: String = ""
+    var sdf = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss");
+    var date = new java.util.Date();
+    distUniqueId = DIST + USCORE + leaderNodeId + USCORE+ increment + USCORE + sdf.format(date)
+    distUniqueId
   }
 
   private def processDistribution(participantsNodes: ArrayBuffer[Node], allPartitionUniqueRecordKeys: Array[(String, String)], logicalPartitions: Int, totalReaderThreads: Int, totalProcessingThreads: Int): ArrayBuffer[NodeDistributionMap] = { //scala.collection.mutable.Map[String, (ArrayBuffer[(String, scala.collection.mutable.Map[String, ArrayBuffer[String]])], scala.collection.mutable.Map[String, (Int, Int)])] = {
@@ -83,7 +103,7 @@ object Distribution {
     LOG.debug("nodeLogicalPartDist " + nodeLogicalPartDist)
 
     val nodeDistMap = NodePhysicalLogicalDist(nodeLogicalPartDist, nodePPartsDist)
-    LOG.debug("nodeDistMap "+nodeDistMap)
+    LOG.debug("nodeDistMap " + nodeDistMap)
     return nodeDistMap
   }
 
@@ -385,6 +405,7 @@ object Distribution {
     if (DistributionMap == null) throw new Exception("The Node Distribution Map ArrayBuffer is null")
 
     val json = ("action" -> clusterDistributionMap.action) ~
+      ("distributionname" -> clusterDistributionMap.DistributionName) ~
       ("globalprocessthreads" -> clusterDistributionMap.GlobalProcessThreads) ~
       ("globalreaderthreads" -> clusterDistributionMap.GlobalReaderThreads) ~
       ("logicalpartitions" -> clusterDistributionMap.LogicalPartitions) ~

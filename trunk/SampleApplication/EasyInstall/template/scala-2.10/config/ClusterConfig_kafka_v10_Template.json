@@ -5,6 +5,7 @@
       "GlobalReaderThreads":2,
       "GlobalProcessThreads":8,
       "LogicalPartitions":8192,
+      "GlobalLogicalPartitionCachePort":7700,
       "SystemCatalog": {
         "StoreType": "h2db",
         "connectionMode": "embedded",
@@ -57,7 +58,8 @@
         {
           "NodeId": "1",
           "ReaderThreads":2,
-          "ProcessThreads":8,
+          "ProcessThreads":8,		  
+          "LogicalPartitionCachePort":7700,
           "NodePort": 6541,
           "NodeIpAddr": "localhost",
           "JarPaths": [
