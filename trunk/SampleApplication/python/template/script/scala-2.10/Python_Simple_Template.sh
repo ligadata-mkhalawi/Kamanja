@@ -22,15 +22,15 @@ $KAMANJA_HOME/bin/kamanja $KAMANJA_HOME/config/MetadataAPIConfig.properties add 
 
 # models
 
-$KAMANJA_HOME/bin/kamanja  add model python $KAMANJA_HOME/input/SampleApplications/metadata/model/add.py MODELNAME add.AddTuple MESSAGENAME org.kamanja.arithmetic.arithmeticMsg OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"} }' TENANTID tenant1
+$KAMANJA_HOME/bin/kamanja  add model python $KAMANJA_HOME/input/SampleApplications/metadata/model/add.py MODELNAME add.AddTuple MESSAGENAME org.kamanja.arithmetic.arithmeticMsg OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"} }' TENANTID tenant1 MODELVERSION 0.00001
 
-$KAMANJA_HOME/bin/kamanja  add model python $KAMANJA_HOME/input/SampleApplications/metadata/model/mutliply.py MODELNAME multiply.MultiplyTuple MESSAGENAME org.kamanja.arithmetic.arithmeticMsg OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"} }' TENANTID tenant1
+$KAMANJA_HOME/bin/kamanja add model python $KAMANJA_HOME/input/SampleApplications/metadata/model/multiply.py MODELNAME multiply.MultiplyTuple MESSAGENAME org.kamanja.arithmetic.arithmeticMsg OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg MODELOPTIONS '{"InputTypeInfo": {"a" : "Float", "b" : " Float"}}' TENANTID tenant1 MODELVERSION 0.00001 
 
-$KAMANJA_HOME/bin/kamanja  add model python $KAMANJA_HOME/input/SampleApplications/metadata/model/subtract.py MODELNAME subtract.SubtractTuple MESSAGENAME org.kamanja.arithmetic.arithmeticMsg OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}}' TENANTID tenant1
+$KAMANJA_HOME/bin/kamanja  add model python $KAMANJA_HOME/input/SampleApplications/metadata/model/subtract.py MODELNAME subtract.SubtractTuple MESSAGENAME org.kamanja.arithmetic.arithmeticMsg OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}}' TENANTID tenant1 MODELVERSION 0.00001
 
-$KAMANJA_HOME/bin/kamanja  add model python $KAMANJA_HOME/input/SampleApplications/metadata/model/divide.py MODELNAME divide.DivideTuple MESSAGENAME org.kamanja.arithmetic.arithmeticMsg OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}}' TENANTID tenant1
+$KAMANJA_HOME/bin/kamanja  add model python $KAMANJA_HOME/input/SampleApplications/metadata/model/divide.py MODELNAME divide.DivideTuple MESSAGENAME org.kamanja.arithmetic.arithmeticMsg OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}}' TENANTID tenant1 MODELVERSION 0.00001
 
-$KAMANJA_HOME/bin/kamanja  add model python $KAMANJA_HOME/input/SampleApplications/metadata/model/addF.py MODELNAME addF.AddFTuple MESSAGENAME org.kamanja.arithmetic.arithmeticMsg OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}}' TENANTID tenant1
+$KAMANJA_HOME/bin/kamanja  add model python $KAMANJA_HOME/input/SampleApplications/metadata/model/addF.py MODELNAME addF.AddFTuple MESSAGENAME org.kamanja.arithmetic.arithmeticMsg OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}}' TENANTID tenant1 MODELVERSION 0.00001
 
 
 # Add the input adapter (CSV) binding
