@@ -27,11 +27,11 @@ $KAMANJA_HOME/bin/kamanja  add model python $KAMANJA_HOME/input/SampleApplicatio
 
 # Add the input adapter (CSV) binding
 
-$KAMANJA_HOME/bin/kamanja $apiConfigProperties add adaptermessagebinding FROMSTRING '{"AdapterName": "LoanInput", "MessageName": "org.kamanja.arithmetic.arithmeticMsg", "Serializer": "com.ligadata.kamanja.serializer.csvserdeser", "Options": {"alwaysQuoteFields": false, "fieldDelimiter": ","} }'
+$KAMANJA_HOME/bin/kamanja $apiConfigProperties add adaptermessagebinding FROMSTRING '{"AdapterName": "LoanInput", "MessageName": "org.kamanja.arithmetic.loanMsg", "Serializer": "com.ligadata.kamanja.serializer.csvserdeser", "Options": {"alwaysQuoteFields": false, "fieldDelimiter": ","} }'
 
 # Add the output adapter (JSON) binding
 
-$KAMANJA_HOME/bin/kamanja $apiConfigProperties add adaptermessagebinding FROMSTRING '{"AdapterName": "TestOut_1", "MessageNames": ["org.kamanja.arithmetic.arithmeticOutMsg"], "Serializer": " com.ligadata.kamanja.serializer.JsonSerDeser"}'
+$KAMANJA_HOME/bin/kamanja $apiConfigProperties add adaptermessagebinding FROMSTRING '{"AdapterName": "TestOut_1", "MessageNames": ["org.kamanja.arithmetic.loanOutMsg"], "Serializer": " com.ligadata.kamanja.serializer.JsonSerDeser"}'
 
 # system adapter message binding
 
