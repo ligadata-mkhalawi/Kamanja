@@ -1,18 +1,17 @@
 package com.ligadata.throttler
 
 import com.ligadata.cache.DataCache
-import com.ligadata.cache.{ CacheCallbackData, CacheCallback, DataCache }
+import com.ligadata.cache.{CacheCallbackData, CacheCallback, DataCache}
 
-class ThrottleController(finalhostsstr: String, port: String, enableListener: Boolean) {
-
-  var Node: DataCache = null;
+class ThrottleControllerCache(finalhostsstr: String, port: Int, enableListener: Boolean) {
+  private var Node: DataCache = null;
   private val eh_cache_ConfigTemplate =
     """
       |
       |{
       |  "name": "%s",
       |  "diskSpoolBufferSizeMB": "20",
-      |  "jgroups.tcpping.initial_hosts": "%s[%d]",
+      |  "jgroups.tcpping.initial_hosts": "%s",
       |  "jgroups.port": "%d",
       |  "replicatePuts": "true",
       |  "replicateUpdates": "true",
@@ -39,33 +38,57 @@ class ThrottleController(finalhostsstr: String, port: String, enableListener: Bo
   def Init() = {
     val cacheClass = "com.ligadata.cache.MemoryDataCacheImp";
     println(this.finalhostsstr + " " + this.port + "  " + this.enableListener)
-    val cacheCfg = this.eh_cache_ConfigTemplate.format("name", this.finalhostsstr, this.port.toInt, this.port.toInt, this.enableListener);
+    val cacheCfg = this.eh_cache_ConfigTemplate.format("NodeThrottleControllerCache", this.finalhostsstr, this.port, this.enableListener);
     println("cacheCfg  " + cacheCfg)
     val aclass = Class.forName(cacheClass).newInstance;
     this.Node = aclass.asInstanceOf[DataCache];
-    this.Node.init(cacheCfg, new CacheCallback {
-      override def call(callbackData: CacheCallbackData): Unit = {} //println("EventType:" + callbackData.eventType + ", Key:" + callbackData.key + ", Value:" + callbackData.value)
-    })
+    this.Node.init(cacheCfg, null)
     this.Node.start()
   }
 
-  def AddKey(key: String, value: Any) = {
+  def put(key: String, value: Any) = {
     if (this.Node == null) throw new Exception("Start the Cache by calling Init()");
     if (key == null || key.trim() == "") throw new Exception("Please provide a proper Key");
     this.Node.put(key, value)
   }
 
-  def RemoveKey(key: String) = {
+  def put(map: java.util.HashMap[String, AnyRef]) = {
     if (this.Node == null) throw new Exception("Start the Cache by calling Init()");
-    if (key == null || key.trim() == "") throw new Exception("Please provide a proper Key");
-    if (!this.Node.isKeyInCache(key)) throw new Exception("Key does not exists in Cache");
-   this.Node.del(key);
+    if (map.size() > 0)
+      this.Node.put(map)
   }
 
-  def Size(): Int = {
+  def remove(key: String) = {
     if (this.Node == null) throw new Exception("Start the Cache by calling Init()");
-    return this.Node.getKeys.size;
+    if (key == null || key.trim() == "") throw new Exception("Please provide a proper Key");
+    this.Node.remove(key);
   }
+
+  def get(key: String): AnyRef = {
+    if (this.Node == null) throw new Exception("Start the Cache by calling Init()");
+    return this.Node.get(key);
+  }
+
+  def getKeys(): AnyRef = {
+    if (this.Node == null) throw new Exception("Start the Cache by calling Init()");
+    return this.Node.getKeys;
+  }
+
+  def getAll(): java.util.Map[String, AnyRef] = {
+    if (this.Node == null) throw new Exception("Start the Cache by calling Init()");
+    return this.Node.getAll;
+  }
+
+  def size(): Int = {
+    if (this.Node == null) throw new Exception("Start the Cache by calling Init()");
+    return this.Node.size;
+  }
+
+  def clear(): Unit = {
+    if (this.Node == null) throw new Exception("Start the Cache by calling Init()");
+    return this.Node.clear();
+  }
+
 }
 
 

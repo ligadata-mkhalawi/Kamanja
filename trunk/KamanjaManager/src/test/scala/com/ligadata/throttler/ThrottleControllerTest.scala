@@ -7,7 +7,7 @@ import com.ligadata.cache.DataCache
 import com.ligadata.cache.{ CacheCallbackData, CacheCallback, DataCache }
 
 class ThrottleControllerTest extends FlatSpec with BeforeAndAfter with Matchers {
-  var tc = new ThrottleController("10.0.0.83", "7800", true)
+  var tc = new ThrottleControllerCache("10.0.0.83", "7800", true)
 
   tc.Init();
 

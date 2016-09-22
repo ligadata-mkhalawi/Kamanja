@@ -48,6 +48,7 @@ import scala.collection.JavaConversions._
 import com.ligadata.KvBase.Key
 import com.ligadata.Distribution._
 import com.ligadata.cache.{CacheCallback, CacheCallbackData, CacheQueueElement}
+import com.ligadata.throttler.ThrottleControllerCache
 
 case class AdapMaxPartitions(Adap: String, MaxParts: Int)
 
@@ -117,6 +118,7 @@ object KamanjaLeader {
   private[this] var isLogicalThreadProcessingOnLocalNode = Array[Boolean]()
   private[this] var logicalPartitionQueues = Array[LogicalPartitionQueue]()
   private[this] var globalThreadIdToLogicalPartitions = scala.collection.mutable.Map[Short, (Int, Int)]()
+  private[this] var throttleControllerCache: ThrottleControllerCache = null
 
   private val MAX_ZK_RETRIES = 1
 
@@ -267,6 +269,7 @@ object KamanjaLeader {
                 val sendJson = compact(render(distribute))*/
                 /** Commenting below code for LogicalParitions updates - End **/
 
+                SaveProcessingOffsetsAndClearEntries(inputAdapters.filter(a => (a.getAdapterName != null && a.getAdapterName.trim.length > 0)).map(a => a.getAdapterName.trim.toLowerCase).toSet, true)
                 LOG.warn("Partition Distribution: " + sendJson)
                 nodesActionIssuedTime = System.currentTimeMillis
                 SetNewDataToZkc(engineDistributionZkNodePath, sendJson.getBytes("UTF8"))
@@ -813,6 +816,19 @@ object KamanjaLeader {
   }*/
   /** Commenting below code for LogicalParitions updates - End **/
 
+  private def SaveProcessingOffsetsAndClearEntries(adapterNames: Set[String], clearCache: Boolean): Unit = {
+    if (! IsLeaderNode)
+      return
+
+    val allValues = getThrottleControllerCache.getAll()
+
+    //BUGBUG:: Save all data for keys
+
+    if (clearCache) {
+      getThrottleControllerCache.clear()
+    }
+  }
+
   // Using canRedistribute as startup mechanism here, because until we do bootstap ignore all the messages from this
   private def ActionOnAdaptersDistImpl(receivedJsonStr: String): Unit = lock.synchronized {
     if (LOG.isDebugEnabled)
@@ -884,7 +900,6 @@ object KamanjaLeader {
                   }
                 }
               })
-
               remInputAdaps = failedInputAdaps.toArray
               if (remInputAdaps.size > 0 && distributionExecutor.isShutdown == false) {
                 try {
@@ -914,6 +929,7 @@ object KamanjaLeader {
             globalLogicalPartitionsToThreadId = Array[Short](1)
             isLogicalThreadProcessingOnLocalNode = Array[Boolean](false)
             ClearAllLogicalPartitionQueues
+            SaveProcessingOffsetsAndClearEntries(inputAdapters.filter(a => (a.getAdapterName != null && a.getAdapterName.trim.length > 0)).map(a => a.getAdapterName.trim.toLowerCase).toSet, false)
 
             tryNo = 0
             while (!remoteExecPool.isTerminated && tryNo < maxTries) {
@@ -1130,12 +1146,14 @@ object KamanjaLeader {
       LOG.debug("ActionOnAdaptersDistImpl => Exit. receivedJsonStr: " + receivedJsonStr)
   }
 
+/*
   class LogicalPartitionCallback(threadId: Int) extends CacheCallback {
     @throws(classOf[Exception])
     override def call(callbackData: CacheCallbackData): Unit = {
       //BUGBUG:: make sure this trigger LeanringEngineRemoteExecution.executeModels for execution
     }
   }
+*/
 
   private def ActionOnAdaptersDistribution(receivedJsonStr: String): Unit = {
     ActionOnAdaptersDistImpl(receivedJsonStr)
@@ -1626,6 +1644,28 @@ object KamanjaLeader {
         envCtxt.registerNodesChangeNotification(EventChangeCallback)
         logger.warn("DistributionCheck:Done registerNodesChangeNotification in KamanjaLeader")
 
+        val clusterConfigInfo = mdMgr.ClusterCfgs.getOrElse(KamanjaConfiguration.clusterId, null)
+
+        val cacheInfo = clusterConfigInfo.cfgMap.getOrElse("Cache", null)
+        if (cacheInfo != null && cacheInfo.trim.size > 0) {
+          try {
+            implicit val jsonFormats: Formats = DefaultFormats
+            val cacheConfigParseInfo = parse(cacheInfo).extract[JCacheConfig]
+            val hosts = mdMgr.Nodes.values.map(nd => {
+              "%s[%d]".format(nd.nodeIpAddr, cacheConfigParseInfo.CacheStartPort)
+            }).mkString(",")
+            val tmpThrottleControllerCache = new ThrottleControllerCache(hosts, cacheConfigParseInfo.CacheStartPort, true)
+            tmpThrottleControllerCache .Init();
+            throttleControllerCache = tmpThrottleControllerCache
+          } catch {
+            case e: Throwable => {
+              throw new Exception("Not found valid Cache config to start logical partitions ThrottleControllerCache", e)
+            }
+          }
+        } else {
+          throw new Exception("Not found valid Cache config to start logical partitions ThrottleControllerCache")
+        }
+
         // Forcing to distribute
         // SetUpdatePartitionsFlag
 
@@ -1861,4 +1901,6 @@ object KamanjaLeader {
   def isLocalThreadForPartitionId(partitionId: Int): Boolean = isLogicalThreadProcessingOnLocalNode(globalLogicalPartitionsToThreadId(partitionId))
 
   def threadIdForPartitionId(partitionId: Int): Short = globalLogicalPartitionsToThreadId(partitionId)
+
+  final def getThrottleControllerCache: ThrottleControllerCache = throttleControllerCache
 }

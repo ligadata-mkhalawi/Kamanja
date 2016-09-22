@@ -136,10 +136,15 @@ class CacheQueue(val cache: DataCache, val kQueueHead: String, val kQueueTail: S
 
   private val LOG = LogManager.getLogger(getClass);
 
-  // For tail we are setting predecessor key
-  cache.put(kQueueTail, kQueueHead)
-  // For head we are setting successor key
-  cache.put(kQueueHead, kQueueTail)
+  {
+    val map = new java.util.HashMap[String, AnyRef]
+    // For tail we are setting predecessor key
+    map.put(kQueueTail, kQueueHead)
+    // For head we are setting successor key
+    map.put(kQueueHead, kQueueTail)
+
+    cache.put(map)
+  }
 
   def enQ(key: String, element: CacheQueueElement): Unit = {
     element.link = kQueueTail
@@ -151,17 +156,23 @@ class CacheQueue(val cache: DataCache, val kQueueHead: String, val kQueueTail: S
       val tailPred = cache.get(kQueueTail).asInstanceOf[String]
 
       if (tailPred.equals(kQueueHead)) {
-        cache.put(kQueueHead, key)
         val v = element.serialize()
-        cache.put(key, v)
-        cache.put(kQueueTail, key)
+        val map = new java.util.HashMap[String, AnyRef]
+        map.put(kQueueHead, key)
+        map.put(key, v)
+        map.put(kQueueTail, key)
+
+        cache.put(map)
       } else {
         val pred = cache.get(tailPred).asInstanceOf[Array[Byte]]
         // Replacing link with key
-        cache.put(tailPred, CacheQueue.replaceLinkValueInSerializeCacheQueueElementInfo(key, pred))
+        val map = new java.util.HashMap[String, AnyRef]
+        map.put(tailPred, CacheQueue.replaceLinkValueInSerializeCacheQueueElementInfo(key, pred))
         val v = element.serialize()
-        cache.put(key, v)
-        cache.put(kQueueTail, key)
+        map.put(key, v)
+        map.put(kQueueTail, key)
+
+        cache.put(map)
       }
       tm.commit()
     } catch {

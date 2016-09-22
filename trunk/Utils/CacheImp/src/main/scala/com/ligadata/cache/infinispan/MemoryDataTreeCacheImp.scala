@@ -64,7 +64,11 @@ class MemoryDataTreeCacheImp extends DataCache {
   }
 
   override def remove(key: String): Unit = {
-    throw new NotImplementedError("remove is not yet implemented")
+    treeCache.remove(root, key)
+  }
+
+  override def clear(): Unit = {
+    cache.clear()
   }
 
   override def getFromRoot(rootNode: String, key: String): java.util.Map[String, AnyRef] = {

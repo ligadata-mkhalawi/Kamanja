@@ -76,11 +76,12 @@ class LogicalPartitionQueue(val cacheBaseName: String, val threadId: Int, val ho
   }
 
   final def enQ(uniqKey: String, cacheQueueEntry: KamanjaCacheQueueEntry): Unit = {
-    if (logicalPartQueue != null)
-      logicalPartQueue.enQ(uniqKey, cacheQueueEntry)
+    if (logicalPartQueue == null) throw new Exception("Queue is not initialized properly");
+    logicalPartQueue.enQ(uniqKey, cacheQueueEntry)
   }
 
   final def deQ(): KamanjaCacheQueueEntry = {
+    if (logicalPartQueue == null) throw new Exception("Queue is not initialized properly");
     var entry: KamanjaCacheQueueEntry = null
     if (logicalPartQueue != null) {
       val tmpEntry = logicalPartQueue.deQ()
@@ -91,6 +92,7 @@ class LogicalPartitionQueue(val cacheBaseName: String, val threadId: Int, val ho
   }
 
   final def lookAheadQ(): KamanjaCacheQueueEntry = {
+    if (logicalPartQueue == null) throw new Exception("Queue is not initialized properly");
     var entry: KamanjaCacheQueueEntry = null
     if (logicalPartQueue != null) {
       val tmpEntry = logicalPartQueue.lookAheadQ()

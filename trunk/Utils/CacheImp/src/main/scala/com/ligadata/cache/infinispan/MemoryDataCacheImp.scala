@@ -1,6 +1,7 @@
 package com.ligadata.cache.infinispan
 
 import java.util
+import java.util.concurrent.TimeUnit
 
 import com.ligadata.cache._
 import net.sf.ehcache.config.Configuration
@@ -46,18 +47,21 @@ class MemoryDataCacheImp extends DataCache {
   }
 
   override def get(key: String): AnyRef = {
-    if (cache.containsKey(key)) {
-
-      val obj = cache.get(key).asInstanceOf[AnyRef]
-
-      return obj
-    } else {
-      return ""
-    }
+    val obj = cache.get(key).asInstanceOf[AnyRef]
+    return if (obj != null) obj else ""
   }
 
   override def remove(key: String): Unit = {
-    throw new NotImplementedError("remove is not yet implemented")
+    cache.remove(key)
+/*
+    if (cache.containsKey(key)) {
+      cache.remove(key)
+    }
+*/
+  }
+
+  override def clear(): Unit = {
+    cache.clear()
   }
 
   override def isKeyInCache(key: String): Boolean = (cache != null && cache.containsKey(key))
@@ -69,29 +73,27 @@ class MemoryDataCacheImp extends DataCache {
     map
   }
 
-  override def put(map: java.util.Map[_, _]): Unit = {
-    val map = new java.util.HashMap[String, AnyRef]
-    val keys = getKeys()
-    if (keys != null) {
-      keys.foreach(str => map.put(str, get(str)))
-    }
+  override def put(map: java.util.Map[String, AnyRef]): Unit = {
+    cache.putAll(map, -1, TimeUnit.HOURS)
   }
 
   override def getAll(): java.util.Map[String, AnyRef] = {
     val map = new java.util.HashMap[String, AnyRef]
-    val keys = getKeys()
-    if (keys != null) {
-      keys.foreach(str => map.put(str, get(str)))
+    var it = cache.entrySet.iterator()
+    while (it.hasNext) {
+      val thisEntry = it.next()
+      map.put(thisEntry.getKey, thisEntry.getValue().asInstanceOf[AnyRef])
     }
     map
   }
 
   override def getKeys(): Array[String] = {
-    val size: Int = cache.keySet().size()
-    val array = new Array[String](size)
-    cache.keySet().toArray[String](array)
+    cache.keySet().toArray.map(k => k.asInstanceOf[String])
+  }
 
-    array
+  override def size: Int = {
+    // This may include expried elements also
+    cache.size
   }
 
   override def put(containerName: String, timestamp: String, key: String, value: scala.Any): Unit = {}

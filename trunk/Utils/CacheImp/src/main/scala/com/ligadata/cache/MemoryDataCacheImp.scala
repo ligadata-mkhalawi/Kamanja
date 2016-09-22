@@ -7,7 +7,7 @@ import net.sf.ehcache.bootstrap.{BootstrapCacheLoader, BootstrapCacheLoaderFacto
 import net.sf.ehcache.distribution.jgroups.{JGroupsBootstrapCacheLoaderFactory, JGroupsCacheReplicatorFactory}
 import net.sf.ehcache.event.CacheEventListener
 import net.sf.ehcache.{Element, Cache, CacheManager}
-
+import collection.JavaConverters._
 
 import scala.collection.JavaConverters._
 
@@ -21,7 +21,9 @@ class MemoryDataCacheImp extends DataCache {
   private var cacheConfig: CacheCustomConfig = null
 
   final def getCache(): Cache = cache
+
   final def getCacheManager(): CacheManager = cm
+
   final def getCacheConfig(): CacheCustomConfig = cacheConfig
 
   override def init(jsonString: String, listenCallback: CacheCallback): Unit = {
@@ -46,49 +48,45 @@ class MemoryDataCacheImp extends DataCache {
   }
 
   override def get(key: String): AnyRef = {
-    if (cache.isKeyInCache(key)) {
-
-      val ele: Element = cache.get(key)
-      //val obj:Object = ele.getValue
-
-      return ele.getObjectValue
-    } else {
-      System.out.println("get data from SSD");
-      cache.load(key)
-
-      return ""
-    }
+    val ele: Element = cache.get(key)
+    if (ele != null) ele.getObjectValue else ""
   }
 
   override def remove(key: String): Unit = {
-    throw new NotImplementedError("remove is not yet implemented")
+    cache.remove(key)
+  }
+
+  override def clear(): Unit = {
+    cache.removeAll()
   }
 
   override def isKeyInCache(key: String): Boolean = (cache != null && cache.isKeyInCache(key))
 
   override def get(keys: Array[String]): java.util.Map[String, AnyRef] = {
+    val allVals = cache.getAll(keys.toList.asJava)
     val map = new java.util.HashMap[String, AnyRef]
-    keys.foreach(str => map.put(str, get(str)))
-
+    allVals.asScala.foreach(kv => {
+      map.put(kv._2.getObjectKey.asInstanceOf[String], kv._2.getObjectValue)
+    })
     map
   }
 
-  override def put(map: java.util.Map[_, _]): Unit = {
-    val scalaMap = map.asScala
-    scalaMap.foreach { keyVal => cache.put(new Element(keyVal._1, keyVal._2)) }
+  override def put(map: java.util.Map[String, AnyRef]): Unit = {
+    val scalaValues = map.asScala.map(keyVal => (new Element(keyVal._1, keyVal._2))).toList
+    cache.putAll(scalaValues.asJava)
   }
 
   override def getAll(): java.util.Map[String, AnyRef] = {
-    val map = new java.util.HashMap[String, AnyRef]
-    val keys = getKeys()
-    if (keys != null) {
-      keys.foreach(str => map.put(str, get(str)))
-    }
-    map
+    get(getKeys())
   }
 
   override def getKeys(): Array[String] = {
     cache.getKeys().asScala.map(k => k.toString).toArray
+  }
+
+  override def size: Int = {
+    // This may include expried elements also
+    cache.getSize
   }
 
   override def put(containerName: String, timestamp: String, key: String, value: scala.Any): Unit = {}

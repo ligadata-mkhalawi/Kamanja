@@ -17,10 +17,15 @@
 
 package com.ligadata.KamanjaManager
 
+import java.io.{ByteArrayOutputStream, DataOutputStream}
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import com.ligadata.KamanjaBase._
-import com.ligadata.cache.{ CacheQueueElement, CacheQueue }
+import com.ligadata.cache.{CacheQueue, CacheQueueElement}
+import org.json4s._
+import org.json4s.JsonDSL._
+import org.json4s.jackson.Json
+import org.json4s.jackson.JsonMethods._
 
 import scala.actors.threadpool.ExecutorService
 
@@ -49,6 +54,10 @@ object LeanringEngine {
   val engineComponent: String = "Kamanja_Manager"
 
   private val LOG = LogManager.getLogger(getClass);
+
+  def hasValidOrigin(txnCtxt: TransactionContext): Boolean = {
+    return (txnCtxt.origin != null && txnCtxt.origin.key != null && txnCtxt.origin.value != null && txnCtxt.origin.key.length > 0 && txnCtxt.origin.value.length > 0)
+  }
 
   // This returns Partition Key String & BucketId
   def GetQueuePartitionInfo(nodeIdModlsObj: scala.collection.mutable.Map[Long, (MdlInfo, ModelInstance)],
@@ -124,7 +133,40 @@ object KamanjaCacheQueueEntry {
   final def serialize(cacheEntry: KamanjaCacheQueueEntry): Array[Byte] = {
     // BUGBUG:: Finish rest of the serialization
     // throw new NotImplementedError("KamanjaCacheQueueEntry.serialize is not yet implemented")
-    CacheQueue.linkValueToSerializeCacheQueueElementInfo(cacheEntry.link)
+    val linkBuf = CacheQueue.linkValueToSerializeCacheQueueElementInfo(cacheEntry.link)
+/*
+    val bos: ByteArrayOutputStream = new ByteArrayOutputStream(1024 * 1024)
+    val dos = new DataOutputStream(bos)
+    try {
+      dos.writeInt(cacheEntry.exeQueue.size)
+      cacheEntry.exeQueue.foreach(rn => {
+        dos.writeInt(rn.iesPos)
+        dos.writeLong(rn.nodeId)
+      })
+      dos.writeInt(cacheEntry.execPos)
+
+      val dagRuntime: DagRuntime, val txnCtxt: TransactionContext, val thisMsgEvent: KamanjaMessageEvent, val modelsForMessage: ArrayBuffer[KamanjaModelEvent], val msgProcessingStartTime: Long
+
+      dos.writeUTF(inst.Version)
+      dos.writeUTF(inst.getClass.getName)
+      inst.Serialize(dos)
+      val arr = bos.toByteArray
+      dos.close
+      bos.close
+      return arr
+
+    } catch {
+      case e: Exception => {
+        //LOG.error("Failed to get classname :" + clsName, e)
+        logger.debug("Failed to Serialize", e)
+        dos.close
+        bos.close
+        throw e
+      }
+    }
+    null
+*/
+    linkBuf
   }
 
   final def deserialize(buf: Array[Byte]): KamanjaCacheQueueEntry = {
@@ -335,6 +377,9 @@ class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: I
           if (dqKamanjaCacheQueueEntry.execPos >= dqKamanjaCacheQueueEntry.exeQueue.size) {
             try {
               CommitDataComponent.commitData(dqKamanjaCacheQueueEntry.txnCtxt)
+              if (LeanringEngine.hasValidOrigin(dqKamanjaCacheQueueEntry.txnCtxt)) {
+                KamanjaLeader.getThrottleControllerCache.remove("TXN-" + dqKamanjaCacheQueueEntry.txnCtxt.getTransactionId())
+              }
             } catch {
               case e: Throwable => {
                 LOG.error("Failed to commit data for transactionId:" + dqKamanjaCacheQueueEntry.txnCtxt.getTransactionId(), e)
@@ -675,6 +720,9 @@ class LearningEngine {
           // all models executed. Send output
           try {
             CommitDataComponent.commitData(txnCtxt)
+            if (LeanringEngine.hasValidOrigin(txnCtxt)) {
+              KamanjaLeader.getThrottleControllerCache.put("ADAP-KEY-COMPLETED-MAX-" + txnCtxt.origin.key, txnCtxt.origin.value)
+            }
           } catch {
             case e: Throwable => {
               LOG.error("Failed to commit data for transactionId:" + txnCtxt.getTransactionId(), e)
@@ -687,12 +735,28 @@ class LearningEngine {
           val partitionIdForNoKey = 0 // BUGBUG:: Collect this value
 
           val (partKeyStr, partitionIdx) = LeanringEngine.GetQueuePartitionInfo(nodeIdModlsObj, execNode, txnCtxt, partitionIdForNoKey)
+          if (LeanringEngine.hasValidOrigin(txnCtxt)) {
+            val map = new java.util.HashMap[String, AnyRef]
+            map.put("ADAP-KEY-MAX-" + txnCtxt.origin.key, txnCtxt.origin.value)
+
+            val json = "Jar" ->
+              ("K" -> txnCtxt.origin.key) ~
+                ("V" -> txnCtxt.origin.value)
+            val outputJson = compact(render(json))
+
+            map.put("TXN-" + txnCtxt.getTransactionId(), outputJson)
+
+            KamanjaLeader.getThrottleControllerCache.put(map)
+          }
           KamanjaLeader.AddToRemoteProcessingBucket(partitionIdx, new KamanjaCacheQueueEntry(exeQueue, execPos, dagRuntime, txnCtxt, thisMsgEvent, modelsForMessage, msgProcessingStartTime))
         }
       } else {
         // No models found to execute. Send output
         try {
           CommitDataComponent.commitData(txnCtxt)
+          if (LeanringEngine.hasValidOrigin(txnCtxt)) {
+            KamanjaLeader.getThrottleControllerCache.put("ADAP-KEY-COMPLETED-MAX-" + txnCtxt.origin.key, txnCtxt.origin.value)
+          }
         } catch {
           case e: Throwable => {
             LOG.error("Failed to commit data for transactionId:" + txnCtxt.getTransactionId(), e)

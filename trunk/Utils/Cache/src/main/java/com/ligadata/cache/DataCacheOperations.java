@@ -6,12 +6,14 @@ import java.util.List;
 public interface DataCacheOperations {
     public boolean isKeyInCache(String key) throws Exception, Throwable;
     public void put(String key, Object value) throws Exception, Throwable;
-    public void put(Map map) throws Exception, Throwable;
+    public void put(Map<String, Object> map) throws Exception, Throwable;
     public Object get(String key) throws Exception, Throwable;
     public Map<String, Object> get(String[] keys) throws Exception, Throwable;
     public String[] getKeys() throws Exception, Throwable;
     public Map<String, Object> getAll() throws Exception, Throwable;
     public void remove(String key) throws Exception, Throwable;
+    public void clear() throws Exception, Throwable;
+    public int size() throws Exception, Throwable;
 
     //tree cache
     public void put(String containerName, String timestamp, String key, Object value) throws Exception, Throwable;
