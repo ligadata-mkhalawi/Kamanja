@@ -3,11 +3,9 @@ package com.ligadata.AdaptersConfiguration
 import com.ligadata.Exceptions.KamanjaException
 import com.ligadata.InputOutputAdapterInfo._
 import org.apache.logging.log4j.LogManager
-import org.json4s._
 import org.json4s.JsonDSL._
+import org.json4s._
 import org.json4s.native.JsonMethods._
-
-import scala.collection.mutable.MutableList
 
 /**
   * Created by Yasser on 3/10/2016.
@@ -15,8 +13,8 @@ import scala.collection.mutable.MutableList
 class SmartFileAdapterConfiguration extends AdapterConfiguration {
   var _type: String = _ // FileSystem, hdfs, sftp
 
-  var connectionConfig : FileAdapterConnectionConfig = null
-  var monitoringConfig : FileAdapterMonitoringConfig = null
+  var connectionConfig: FileAdapterConnectionConfig = null
+  var monitoringConfig: FileAdapterMonitoringConfig = null
 }
 
 class FileAdapterConnectionConfig {
@@ -29,21 +27,24 @@ class FileAdapterConnectionConfig {
   var passphrase: String = _
   var keyFile: String = _
 
-  var hadoopConfig  : List[(String,String)]=null
+  var hadoopConfig: List[(String, String)] = null
 }
 
 class FileAdapterMonitoringConfig {
-  var waitingTimeMS : Int = _
-  var locations : Array[String] = Array.empty[String] //folders to monitor
+  var waitingTimeMS: Int = _
+  var locations: Array[String] = Array.empty[String] //folders to monitor
 
-  var fileBufferingTimeout = 300 // in seconds
+  var fileBufferingTimeout = 300
+  // in seconds
   var targetMoveDir = ""
-  var consumersCount : Int = _
-  var workerBufferSize : Int = 4 //buffer size in MB to read messages from files
-  var messageSeparator : Char = 10
+  var consumersCount: Int = _
+  var workerBufferSize: Int = 4
+  //buffer size in MB to read messages from files
+  var messageSeparator: Char = 10
+  var EntireFileAsOneMessage = false
 }
 
-object SmartFileAdapterConfiguration{
+object SmartFileAdapterConfiguration {
 
   val defaultWaitingTimeMS = 1000
   val defaultConsumerCount = 2
@@ -60,20 +61,20 @@ object SmartFileAdapterConfiguration{
 
     val adapterConfig = new SmartFileAdapterConfiguration()
     adapterConfig.Name = inputConfig.Name
-//    adapterConfig.formatName = inputConfig.formatName
-//    adapterConfig.validateAdapterName = inputConfig.validateAdapterName
-//    adapterConfig.failedEventsAdapterName = inputConfig.failedEventsAdapterName
+    //    adapterConfig.formatName = inputConfig.formatName
+    //    adapterConfig.validateAdapterName = inputConfig.validateAdapterName
+    //    adapterConfig.failedEventsAdapterName = inputConfig.failedEventsAdapterName
     adapterConfig.className = inputConfig.className
     adapterConfig.jarName = inputConfig.jarName
     adapterConfig.dependencyJars = inputConfig.dependencyJars
-//    adapterConfig.associatedMsg = if (inputConfig.associatedMsg == null) null else inputConfig.associatedMsg.trim
-//    adapterConfig.keyAndValueDelimiter = if (inputConfig.keyAndValueDelimiter == null) null else inputConfig.keyAndValueDelimiter.trim
-//    adapterConfig.fieldDelimiter = if (inputConfig.fieldDelimiter == null) null else inputConfig.fieldDelimiter.trim
-//    adapterConfig.valueDelimiter = if (inputConfig.valueDelimiter == null) null else inputConfig.valueDelimiter.trim
+    //    adapterConfig.associatedMsg = if (inputConfig.associatedMsg == null) null else inputConfig.associatedMsg.trim
+    //    adapterConfig.keyAndValueDelimiter = if (inputConfig.keyAndValueDelimiter == null) null else inputConfig.keyAndValueDelimiter.trim
+    //    adapterConfig.fieldDelimiter = if (inputConfig.fieldDelimiter == null) null else inputConfig.fieldDelimiter.trim
+    //    adapterConfig.valueDelimiter = if (inputConfig.valueDelimiter == null) null else inputConfig.valueDelimiter.trim
 
     adapterConfig.adapterSpecificCfg = inputConfig.adapterSpecificCfg
 
-    logger.debug("SmartFileAdapterConfiguration (getAdapterConfig)- inputConfig.adapterSpecificCfg==null is "+
+    logger.debug("SmartFileAdapterConfiguration (getAdapterConfig)- inputConfig.adapterSpecificCfg==null is " +
       (inputConfig.adapterSpecificCfg == null))
     val (_type, connectionConfig, monitoringConfig) = parseSmartFileAdapterSpecificConfig(inputConfig.Name, inputConfig.adapterSpecificCfg)
     adapterConfig._type = _type
@@ -83,7 +84,7 @@ object SmartFileAdapterConfiguration{
     adapterConfig
   }
 
-  def parseSmartFileAdapterSpecificConfig(adapterName : String, adapterSpecificCfgJson : String) : (String, FileAdapterConnectionConfig, FileAdapterMonitoringConfig) = {
+  def parseSmartFileAdapterSpecificConfig(adapterName: String, adapterSpecificCfgJson: String): (String, FileAdapterConnectionConfig, FileAdapterMonitoringConfig) = {
 
     val adapCfg = parse(adapterSpecificCfgJson)
 
@@ -94,7 +95,7 @@ object SmartFileAdapterConfiguration{
 
     val adapCfgValues = adapCfg.values.asInstanceOf[Map[String, Any]]
 
-    if(adapCfgValues.getOrElse("Type", null) == null) {
+    if (adapCfgValues.getOrElse("Type", null) == null) {
       val err = "Not found Type for Smart File Adapter Config:" + adapterName
       throw new KamanjaException(err, null)
     }
@@ -103,7 +104,7 @@ object SmartFileAdapterConfiguration{
     val connectionConfig = new FileAdapterConnectionConfig()
     val monitoringConfig = new FileAdapterMonitoringConfig()
 
-    if(adapCfgValues.getOrElse("ConnectionConfig", null) == null){
+    if (adapCfgValues.getOrElse("ConnectionConfig", null) == null) {
       val err = "Not found ConnectionConfig for Smart File Adapter Config:" + adapterName
       throw new KamanjaException(err, null)
     }
@@ -118,35 +119,39 @@ object SmartFileAdapterConfiguration{
         val userID = kv._2.asInstanceOf[String]
         connectionConfig.userId = userID.trim
       } else if (kv._1.compareToIgnoreCase("Password") == 0) {
-        val password  = kv._2.asInstanceOf[String]
+        val password = kv._2.asInstanceOf[String]
         connectionConfig.password = password.trim
       } else if (kv._1.compareToIgnoreCase("Authentication") == 0) {
         val authentication = kv._2.asInstanceOf[String]
         connectionConfig.authentication = authentication.trim
-      } else if (kv._1.compareToIgnoreCase("Principal") == 0) {//kerberos
+      } else if (kv._1.compareToIgnoreCase("Principal") == 0) {
+        //kerberos
         val principal = kv._2.asInstanceOf[String]
         connectionConfig.principal = principal.trim
-      } else if (kv._1.compareToIgnoreCase("Keytab") == 0) {//kerberos
+      } else if (kv._1.compareToIgnoreCase("Keytab") == 0) {
+        //kerberos
         val keyTab = kv._2.asInstanceOf[String]
         connectionConfig.keytab = keyTab.trim
-      } else if (kv._1.compareToIgnoreCase("Passphrase") == 0) {//ssh
-        val passPhrase =kv._2.asInstanceOf[String]
+      } else if (kv._1.compareToIgnoreCase("Passphrase") == 0) {
+        //ssh
+        val passPhrase = kv._2.asInstanceOf[String]
         connectionConfig.passphrase = passPhrase.trim
-      } else if (kv._1.compareToIgnoreCase("KeyFile") == 0) {//ssh
+      } else if (kv._1.compareToIgnoreCase("KeyFile") == 0) {
+        //ssh
         val keyFile = kv._2.asInstanceOf[String]
         connectionConfig.keyFile = keyFile.trim
-      }else if (kv._1.compareToIgnoreCase("hadoopConfig")==0){
-        val hadoopConfig = kv._2.asInstanceOf[Map[String,String]]
-        connectionConfig.hadoopConfig= List[(String,String)]()
-        hadoopConfig.foreach(hconf =>{
-          connectionConfig.hadoopConfig ::=(hconf._1, hconf._2)
+      } else if (kv._1.compareToIgnoreCase("hadoopConfig") == 0) {
+        val hadoopConfig = kv._2.asInstanceOf[Map[String, String]]
+        connectionConfig.hadoopConfig = List[(String, String)]()
+        hadoopConfig.foreach(hconf => {
+          connectionConfig.hadoopConfig ::= (hconf._1, hconf._2)
         })
       }
     })
-    if(connectionConfig.authentication == null || connectionConfig.authentication == "")
-      connectionConfig.authentication = "simple"//default
+    if (connectionConfig.authentication == null || connectionConfig.authentication == "")
+      connectionConfig.authentication = "simple" //default
 
-    if(adapCfgValues.getOrElse("MonitoringConfig", null) == null){
+    if (adapCfgValues.getOrElse("MonitoringConfig", null) == null) {
       val err = "Not found MonitoringConfig for Smart File Adapter Config:" + adapterName
       throw new KamanjaException(err, null)
     }
@@ -162,10 +167,10 @@ object SmartFileAdapterConfiguration{
         if (monitoringConfig.consumersCount < 0)
           monitoringConfig.consumersCount = defaultConsumerCount
       }
-      else  if (kv._1.compareToIgnoreCase("Locations") == 0) {
+      else if (kv._1.compareToIgnoreCase("Locations") == 0) {
         monitoringConfig.locations = kv._2.split(",").map(str => str.trim).filter(str => str.size > 0)
       }
-      else  if (kv._1.compareToIgnoreCase("TargetMoveDir") == 0) {
+      else if (kv._1.compareToIgnoreCase("TargetMoveDir") == 0) {
         monitoringConfig.targetMoveDir = kv._2.trim
       }
       else if (kv._1.compareToIgnoreCase("WorkerBufferSize") == 0) {
@@ -174,14 +179,17 @@ object SmartFileAdapterConfiguration{
       else if (kv._1.compareToIgnoreCase("MessageSeparator") == 0) {
         monitoringConfig.messageSeparator = kv._2.trim.toInt.toChar
       }
+      else if (kv._1.compareToIgnoreCase("EntireFileAsOneMessage") == 0) {
+        monitoringConfig.EntireFileAsOneMessage = kv._2.trim.toBoolean
+      }
     })
 
-    if(monitoringConfig.locations == null || monitoringConfig.locations.length == 0) {
+    if (monitoringConfig.locations == null || monitoringConfig.locations.length == 0) {
       val err = "Not found Locations for Smart File Adapter Config:" + adapterName
       throw new KamanjaException(err, null)
     }
 
-    if(monitoringConfig.targetMoveDir == null || monitoringConfig.targetMoveDir.length == 0) {
+    if (monitoringConfig.targetMoveDir == null || monitoringConfig.targetMoveDir.length == 0) {
       val err = "Not found targetMoveDir for Smart File Adapter Config:" + adapterName
       throw new KamanjaException(err, null)
     }
@@ -194,12 +202,14 @@ case class SmartFileKeyData(Version: Int, Type: String, Name: String, PartitionI
 
 class SmartFilePartitionUniqueRecordKey extends PartitionUniqueRecordKey {
   val Version: Int = 1
-  var Name: String = _ // Name
+  var Name: String = _
+  // Name
   val Type: String = "SmartFile"
   var PartitionId: Int = _ // Partition Id
 
-  override def Serialize: String = { // Making String from key
-  val json =
+  override def Serialize: String = {
+    // Making String from key
+    val json =
     ("Version" -> Version) ~
       ("Type" -> Type) ~
       ("Name" -> Name) ~
@@ -207,8 +217,9 @@ class SmartFilePartitionUniqueRecordKey extends PartitionUniqueRecordKey {
     compact(render(json))
   }
 
-  override def Deserialize(key: String): Unit = { // Making Key from Serialized String
-  implicit val jsonFormats: Formats = DefaultFormats
+  override def Deserialize(key: String): Unit = {
+    // Making Key from Serialized String
+    implicit val jsonFormats: Formats = DefaultFormats
     val keyData = parse(key).extract[SmartFileKeyData]
     if (keyData.Version == Version && keyData.Type.compareTo(Type) == 0) {
       Name = keyData.Name
@@ -218,19 +229,19 @@ class SmartFilePartitionUniqueRecordKey extends PartitionUniqueRecordKey {
   }
 }
 
-case class SmartFileRecData(Version: Int, FileName : String, Offset: Option[Long])
+case class SmartFileRecData(Version: Int, FileName: String, Offset: Option[Long])
 
 class SmartFilePartitionUniqueRecordValue extends PartitionUniqueRecordValue {
   val Version: Int = 1
-  var FileName : String = _
+  var FileName: String = _
   var Offset: Long = -1 // Offset of next message in the file
 
   override def Serialize: String = {
     // Making String from Value
     val json =
-      ("Version" -> Version) ~
-        ("Offset" -> Offset) ~
-        ("FileName" -> FileName)
+    ("Version" -> Version) ~
+      ("Offset" -> Offset) ~
+      ("FileName" -> FileName)
     compact(render(json))
   }
 
