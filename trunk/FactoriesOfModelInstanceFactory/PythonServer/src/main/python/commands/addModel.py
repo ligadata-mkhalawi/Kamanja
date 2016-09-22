@@ -55,7 +55,7 @@ class addModel(CommandBase):
 #                        (inputfields) = handler.getInputFields()
                         inputfields = dict()
                         if ("InputTypeInfo" in modelOptions):
-                           inputFields.update(modelOptions["InputTypeInfo"])
+                           inputfields.update(modelOptions["InputTypeInfo"])
 			result = json.dumps({'Cmd' : 'addModel', 'Server' : host, 'Port' : str(port), 'Code' : 0, 'Result' : modelAddMsg, 'InputFields' : inputfields, 'OutputFields' : outputfields })
 #			result = json.dumps({'Cmd' : 'addModel', 'Server' : host, 'Port' : str(port), 'Code' : 0, 'Result' : modelAddMsg, 'InputFields' : [] , 'OutputFields' : [] })
 		else:
