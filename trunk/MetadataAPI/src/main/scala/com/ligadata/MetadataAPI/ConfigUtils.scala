@@ -769,7 +769,7 @@ object ConfigUtils {
               clusterDef.globalReaderThreads = ci.globalReaderThreads
               clusterDef.globalProcessThreads = ci.globalProcessThreads
               clusterDef.logicalPartitions = ci.logicalPartitions
-              clusterDef.globallogicalpartitioncacheport = ci.globalLogicalPartitionCachePort
+              clusterDef.globalLogicalPartitionCachePort = ci.globalLogicalPartitionCachePort
               clusterDef.elementType = "clusterDef"
               clusterDef.nameSpace = "cluster"
               clusterDef.name = ci.clusterId
