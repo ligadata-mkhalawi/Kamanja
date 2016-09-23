@@ -685,7 +685,7 @@ class KamanjaManager extends Observer {
 
       var foundLocallyExecFlagSetting = false
       try {
-        val flagStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "LocallyExecFlag").toString.replace("\"", "").trim
+        val flagStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "DisableLogicalPartitioning").toString.replace("\"", "").trim
         if (!flagStr.isEmpty) {
           KamanjaConfiguration.locallyExecFlag = flagStr.toBoolean
           foundLocallyExecFlagSetting = true
@@ -698,7 +698,7 @@ class KamanjaManager extends Observer {
 
       if (!foundLocallyExecFlagSetting) {
         try {
-          val flagStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "LocallyExecFlag".toLowerCase).toString.replace("\"", "").trim
+          val flagStr = GetMdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "DisableLogicalPartitioning".toLowerCase).toString.replace("\"", "").trim
           if (!flagStr.isEmpty) {
             KamanjaConfiguration.locallyExecFlag = flagStr.toBoolean
           }
