@@ -212,18 +212,26 @@ class PyServerConnection(val host : String
       logger.warn (" In Process Msg ----- port number ---------- " + port.toString)
         /** Contend with multiple messages results returned */
         val answeredBytes: ArrayBuffer[Byte] = ArrayBuffer[Byte]()
-	      logger.warn (" In Process Msg going to read " + port.toString) 
+	if (logger.isDebugEnabled()) {
+	   logger.debug (" In Process Msg going to read " + port.toString)
+	}
         var bytesReceived = in.read(buffer)
-	      logger.warn (" In Process Msg did i get here  " + port.toString) 
+	if (logger.isDebugEnabled()) {
+           logger.debug (" In Process Msg did i get here  " + port.toString)
+	}
         var result : String = ""
         breakable {
             while (bytesReceived > 0) {
                 answeredBytes ++= buffer.slice(0, bytesReceived)
                 /** print one result each loop... and then the remaining (if any) after bytesReceived == 0) */
-		logger.warn ("The size of bytes received is " +  bytesReceived) 
-		logger.warn ("The content  of bytes received is " +  answeredBytes.toString) 
+		if (logger.isDebugEnabled()) {
+		   logger.debug ("The size of bytes received is " +  bytesReceived) 
+		   logger.debug ("The content  of bytes received is " +  answeredBytes.toString)
+		}
                 val endMarkerIdx: Int = answeredBytes.indexOfSlice(CmdConstants.endMarkerArray)
-		logger.warn ("The endMarkerIdx value is  " +  endMarkerIdx.toString) 
+		if (logger.isDebugEnabled()) {
+		   logger.debug ("The endMarkerIdx value is  " +  endMarkerIdx.toString)
+		}
                 if (endMarkerIdx >= 0) {
                   val endMarkerIncludedIdx: Int = endMarkerIdx + CmdConstants.endMarkerArray.length
                   if (logger.isDebugEnabled()) {
@@ -231,7 +239,9 @@ class PyServerConnection(val host : String
                   }
                     val responseBytes: Array[Byte] = answeredBytes.slice(0, endMarkerIncludedIdx).toArray
                     result =  _decoder.unpack(responseBytes)
-                    logger.info(s"$cmd reply = \n$result")
+		    if (logger.isDebugEnabled()) {
+                       logger.debug(s"$cmd reply = \n$result")
+		    }
                     answeredBytes.remove(0, endMarkerIncludedIdx)
 		    break 
                 }
@@ -241,8 +251,9 @@ class PyServerConnection(val host : String
                 bytesReceived = in.read(buffer)
             }
         }
-
-      logger.warn (" In the end of Process Msg ----- port number ---------- " + port.toString + ", bytes left = " + answeredBytes.nonEmpty.toString)
+	if (logger.isDebugEnabled()) {
+           logger.debug (" In the end of Process Msg ----- port number ---------- " + port.toString + ", bytes left = " + answeredBytes.nonEmpty.toString)
+	}
         if (answeredBytes.nonEmpty) {
             logger.error("*****************************************************************************************************************************")
           logger.error("... in processMsg, there are resisdual bytes remaining suggesting multiple commands were dispatched with no intervening receipt of response bytes... some component is sending multiple commands or commands are being sent to this connection from multiple threads... a violation of the supposed contract. ")
@@ -476,12 +487,15 @@ class PyServerConnection(val host : String
         val subMap : Map[String,String] = Map[String,String]("{DATA.KEY}" -> msgFieldMap)
         val sub = new MapSubstitution(jsonCmdTemplate, subMap)
         val payloadStr : String = sub.makeSubstitutions
-
-        logger.warn(s"executeModel msg='$payloadStr'")
+	if (logger.isDebugEnabled()) {
+           logger.debug(s"executeModel msg='$payloadStr'")
+	}
 
         val result : String = encodeAndProcess("executeModel", payloadStr)
-//	  val  result : String  = payloadStr 
-        logger.warn(s"executeModel result='$result'")
+//	  val  result : String  = payloadStr
+	if (logger.isDebugEnabled()) {
+           logger.debug(s"executeModel result='$result'")
+	}
 
         result
     }
