@@ -35,7 +35,7 @@ class ThrottleControllerCache(finalhostsstr: String, port: Int, enableListener: 
       |
       | """.stripMargin
 
-  def Init() = {
+  def Init(): Unit = {
     val cacheClass = "com.ligadata.cache.MemoryDataCacheImp";
     println(this.finalhostsstr + " " + this.port + "  " + this.enableListener)
     val cacheCfg = this.eh_cache_ConfigTemplate.format("NodeThrottleControllerCache", this.finalhostsstr, this.port, this.enableListener);
@@ -46,19 +46,19 @@ class ThrottleControllerCache(finalhostsstr: String, port: Int, enableListener: 
     this.Node.start()
   }
 
-  def put(key: String, value: Any) = {
+  def put(key: String, value: Any): Unit = {
     if (this.Node == null) throw new Exception("Start the Cache by calling Init()");
     if (key == null || key.trim() == "") throw new Exception("Please provide a proper Key");
     this.Node.put(key, value)
   }
 
-  def put(map: java.util.HashMap[String, AnyRef]) = {
+  def put(map: java.util.HashMap[String, AnyRef]): Unit = {
     if (this.Node == null) throw new Exception("Start the Cache by calling Init()");
     if (map.size() > 0)
       this.Node.put(map)
   }
 
-  def remove(key: String) = {
+  def remove(key: String): Unit = {
     if (this.Node == null) throw new Exception("Start the Cache by calling Init()");
     if (key == null || key.trim() == "") throw new Exception("Please provide a proper Key");
     this.Node.remove(key);
@@ -69,7 +69,7 @@ class ThrottleControllerCache(finalhostsstr: String, port: Int, enableListener: 
     return this.Node.get(key);
   }
 
-  def getKeys(): AnyRef = {
+  def getKeys(): Array[String] = {
     if (this.Node == null) throw new Exception("Start the Cache by calling Init()");
     return this.Node.getKeys;
   }
@@ -88,7 +88,6 @@ class ThrottleControllerCache(finalhostsstr: String, port: Int, enableListener: 
     if (this.Node == null) throw new Exception("Start the Cache by calling Init()");
     return this.Node.clear();
   }
-
 }
 
 

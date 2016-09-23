@@ -124,6 +124,7 @@ object KamanjaConfiguration {
   // Stop processing should reset this to 1. So that way only one thread will be processed all system msgs at this moment.
   var totalPartitionCount: Int = 1
   var totalProcessingThreadCount: Int = 1
+  var totalReadThreadCount: Int = 1
 
   var locallyExecFlag = false
 
@@ -149,6 +150,7 @@ object KamanjaConfiguration {
 
     totalPartitionCount = 1
     totalProcessingThreadCount = 1
+    totalReadThreadCount = 1
     locallyExecFlag = false
   }
 }
