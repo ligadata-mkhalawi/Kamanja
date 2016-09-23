@@ -27,7 +27,7 @@ class MemoryDataCacheImp extends DataCache {
 
   override def init(jsonString: String, listenCallback: CacheCallback): Unit = {
     config = new CacheCustomConfigInfinispan(new Config(jsonString))
-    cacheManager = config.getDefaultCacheManager()
+    cacheManager = config.defineConfiguration()
     this.listenCallback = listenCallback
   }
 
