@@ -10,9 +10,13 @@ class DivideTuple(ModelInstance):
 		A real implementation would use the output fields to 
 		determine what should be returned. 
 		"""
-		qutotientofTup = int(msg["a"])
-		qutotientofTup /= msg["b"]
+                a = int(msg["a"])
+                b = int(msg["b"])
+                if ( a > b ) :
+                   quotientofTup = a / b
+		   outMsg = json.dumps({'a' : msg["a"], 'b' : msg["b"], 'operator' : '/', 'result' : quotientofTup})	
+                else
+                   outMsg = ""
 
-		outMsg = json.dumps({'a' : msg["a"], 'b' : msg["b"], 'operator' : '/', 'result' : qutotientofTup})	
 		return outMsg
 
