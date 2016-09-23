@@ -584,8 +584,7 @@ object ModelService {
                 val modelName: String = optModelName.getOrElse("no model name supplied")
                 val version: String = optVersion.getOrElse("no version supplied")
                 val msgConsumed: String = optMsgConsumed.getOrElse("no message supplied")
-
-                val reply: String = s"PMML model definition ingestion has failed for model $modelName, version = $version, consumes msg = $msgConsumed user=$userId"
+                val reply: String = s"PYTHON model definition ingestion has failed for model $modelName, version = $version, consumes msg = $msgConsumed user=$userId"
                 logger.error(reply)
                // null /// FIXME : we will return null for now and complain with first failure/
                 (new ApiResult(ErrorCodeConstants.Failure, "addModelPython",null, reply)).toString
@@ -664,7 +663,7 @@ object ModelService {
                 val version: String = optVersion.getOrElse("no version supplied")
                 val msgConsumed: String = optMsgConsumed.getOrElse("no message supplied")
 
-                val reply: String = s"PMML model definition ingestion has failed for model $modelName, version = $version, consumes msg = $msgConsumed user=$userId"
+                val reply: String = s"JYTHON model definition ingestion has failed for model $modelName, version = $version, consumes msg = $msgConsumed user=$userId"
                 logger.error(reply)
                 //null /// FIXME : we will return null for now and complain with first failure/
                 (new ApiResult(ErrorCodeConstants.Failure, "addModelJython",null, reply)).toString
