@@ -29,8 +29,8 @@ class MemoryDataTreeCacheImp extends DataCache {
   final def getCacheConfig(): CacheCustomConfigInfinispan = config
 
   override def init(jsonString: String, listenCallback: CacheCallback): Unit = {
-    config = new CacheCustomConfigInfinispan(new Config(jsonString), cacheManager)
-    cacheManager = config.getDefaultCacheManager()
+    config = new CacheCustomConfigInfinispan(new Config(jsonString))
+    cacheManager = config.defineConfiguration()
     this.listenCallback = listenCallback
   }
 
