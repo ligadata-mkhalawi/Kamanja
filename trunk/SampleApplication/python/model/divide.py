@@ -15,7 +15,7 @@ class DivideTuple(ModelInstance):
                 if ( a > b ) :
                    quotientofTup = a / b
 		   outMsg = json.dumps({'a' : msg["a"], 'b' : msg["b"], 'operator' : '/', 'result' : quotientofTup})	
-                else
+                else :
                    outMsg = ""
 
 		return outMsg
