@@ -151,9 +151,11 @@ public class Migrate {
                     }
                 }
 
-                _limiter.incrementAndGet();
-                SaveDataInBackground(executor, migrateTo, collectedData.toArray(new DataFormat[collectedData.size()]), _limiter);
-                collectedData.clear();
+                synchronized (migrateTo) {
+                    _limiter.incrementAndGet();
+                    SaveDataInBackground(executor, migrateTo, collectedData.toArray(new DataFormat[collectedData.size()]), _limiter);
+                    collectedData.clear();
+                }
             }
             return (writeFailedException == null); // Stop if we already got some issue to write.
         }
@@ -972,9 +974,12 @@ public class Migrate {
                         String msg = String.format("Adding final batch of Migrated data with " + collectedData.size() + " rows to write");
                         logger.debug(msg);
                         sendStatus(msg, "DEBUG");
-                        limiter.incrementAndGet();
-                        SaveDataInBackground(executor, migrateTo, collectedData.toArray(new DataFormat[collectedData.size()]), limiter);
-                        collectedData.clear();
+
+                        synchronized (migrateTo) {
+                            limiter.incrementAndGet();
+                            SaveDataInBackground(executor, migrateTo, collectedData.toArray(new DataFormat[collectedData.size()]), limiter);
+                            collectedData.clear();
+                        }
                     }
 
                     logger.info("Waiting to flush all data");
