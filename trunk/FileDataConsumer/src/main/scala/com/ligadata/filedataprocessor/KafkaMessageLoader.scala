@@ -53,6 +53,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
   val MAX_RETRY = 1
   val INIT_KAFKA_UNAVAILABLE_WAIT_VALUE = 1000
   val MAX_WAIT = 60000
+  val allowedSize: Int = inConfiguration.getOrElse(SmartFileAdapterConstants.MAX_MESSAGE_SIZE, "65536").toInt
 
   var currentSleepValue = INIT_KAFKA_UNAVAILABLE_WAIT_VALUE
 
@@ -355,6 +356,9 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
           //Pass in the complete message instead of just the message string
 //          inputData = CreateKafkaInput(msg, SmartFileAdapterConstants.MESSAGE_NAME, delimiters)
           msgStr = new String(msg.msg)
+
+          if (msgStr.size > allowedSize ) throw new KVMessageFormatingException("Message size exceeds the maximum alloweable size ", null)
+
           if(message_metadata && !msgStr.startsWith("fileId")){
             msgStr = "fileId" + keyAndValueDelimiter + FileProcessor.getIDFromFileCache(msg.relatedFileName) +
               fieldDelimiter +
@@ -469,6 +473,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
         currentMessage += 1
       })
       var successVector = Array.fill[Boolean](messages.size)(false)  //Array[Boolean](messages.size)
+      var gotResponse = Array.fill[Boolean](messages.size)(false)  //Array[Boolean](messages.size)
       var isFullySent = false
       var isRetry = false
       var failedPush = 0
@@ -485,10 +490,16 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
             // Send the request to Kafka
             val response = FileProcessor.executeCallWithElapsed(producer.send(msg, new Callback {
               override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
+                val msgIdx = currentMessage
                 if (exception != null) {
+                  isFullySent = false
+                  isRetry = true
                   failedPush += 1
                   logger.warn("SMART FILE CONSUMER ("+partIdx+") has detected a problem with pushing a message into the " +msg.topic + " will retry " +exception.getMessage)
+                } else {
+                  successVector(msgIdx) = true
                 }
+                gotResponse(msgIdx) = true
               }
             }), " Sending data to kafka" )
             respFutures(currentMessage) = response
@@ -496,16 +507,20 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
           currentMessage += 1
         })
 
+        var sleepTmRemainingInMs = 30000
         // Make sure all messages have been successfuly sent, and resend them if we detected bad messages
         isFullySent = true
-        var numberOfFailuresThisTime = 0
-        for (i <- 0 until messages.size) {
-          if (!successVector(i)) {
-            val (rc, partitionId) = checkMessage(respFutures,i)
+        var i = messages.size - 1
+        while (i >= 0) {
+          if (!successVector(i) && !gotResponse(i)) {
+            val tmConsumed = System.nanoTime
+            val (rc, partitionId) = checkMessage(respFutures,i, sleepTmRemainingInMs)
+            var tmElapsed = System.nanoTime - tmConsumed
+            if (tmElapsed < 0) tmElapsed = 0
+            sleepTmRemainingInMs -= (tmElapsed / 1000000).toInt
             if (rc > 0) {
               isFullySent = false
               isRetry = true
-              numberOfFailuresThisTime += 1
             } else {
               if (partitionsStats.contains(partitionId)) {
                 partitionsStats(partitionId) = partitionsStats(partitionId) + 1
@@ -515,6 +530,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
               successVector(i) = true
             }
           }
+          i -= 1
         }
 
         // We can now fail for some messages, so, we need to update the recovery area in ZK, to make sure the retry does not
@@ -532,9 +548,9 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
     FileProcessor.KAFKA_SEND_SUCCESS
   }
 
-  private def checkMessage(mapF: scala.collection.mutable.Map[Int,Future[RecordMetadata]], i: Int): (Int,Int) = {
+  private def checkMessage(mapF: scala.collection.mutable.Map[Int,Future[RecordMetadata]], i: Int, sleepTmRemainingInMs: Int): (Int,Int) = {
     try {
-      val md = mapF(i).get(10, TimeUnit.SECONDS)
+      val md = mapF(i).get(if (sleepTmRemainingInMs <= 0) 1 else sleepTmRemainingInMs, TimeUnit.MILLISECONDS)
       mapF(i) = null
       return(FileProcessor.KAFKA_SEND_SUCCESS, md.partition)
     } catch {
@@ -664,28 +680,35 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
     if (errorTopic == null) return
 
     val cdate: Date = new Date
-    
-    val errorMsg1 = dateFormat.format(cdate) + "," + msg.relatedFileName + "," + (new String(msg.msg))
-    
-    //Add message offset 
-    val errorMsg2 = dateFormat.format(cdate) + "," + msg.relatedFileName + "," +  msg.msgOffset + "," + (new String(msg.msg))
-    
+
+    // if the message is corrupted and results in a message larger then kafka can accept trucate it to a reasonable size\
+    val org_error_msg: String = new String(msg.msg)
+    var error_msg = org_error_msg
+    if (error_msg.size > allowedSize) {
+      error_msg = error_msg.substring(0,allowedSize - 1)
+    }
+
     logger.warn(" SMART FILE CONSUMER ("+partIdx+"): invalid message in file " + msg.relatedFileName)
-    
+
     val keyMessages = new ArrayBuffer[ProducerRecord[Array[Byte], Array[Byte]]](1)
-    
+
     if(exception_metadata){
-      logger.warn(errorMsg2)
-      keyMessages += new ProducerRecord(inConfiguration(SmartFileAdapterConstants.KAFKA_ERROR_TOPIC), 
+      //Add message offset
+      val org_errorMsg2 = dateFormat.format(cdate) + "," + msg.relatedFileName + "," +  msg.msgOffset + "," + org_error_msg
+      logger.warn(org_errorMsg2)
+      val errorMsg2 = dateFormat.format(cdate) + "," + msg.relatedFileName + "," +  msg.msgOffset + "," + error_msg
+      keyMessages += new ProducerRecord(inConfiguration(SmartFileAdapterConstants.KAFKA_ERROR_TOPIC),
         "rare event".getBytes("UTF8"), errorMsg2.getBytes("UTF8"))
     }else{
-      logger.warn(errorMsg1)
-      keyMessages += new ProducerRecord(inConfiguration(SmartFileAdapterConstants.KAFKA_ERROR_TOPIC), 
+      val org_errorMsg1 = dateFormat.format(cdate) + "," + msg.relatedFileName + "," + org_error_msg
+      logger.warn(org_errorMsg1)
+      val errorMsg1 = dateFormat.format(cdate) + "," + msg.relatedFileName + "," + error_msg
+      keyMessages += new ProducerRecord(inConfiguration(SmartFileAdapterConstants.KAFKA_ERROR_TOPIC),
         "rare event".getBytes("UTF8"), errorMsg1.getBytes("UTF8"))
     }
     // Write a Error Message
     sendToKafka(keyMessages, "Error")
- }
+  }
 
   private def writeGenericMsg(msg: String, fileName: String, topicName: String): Unit = {
 

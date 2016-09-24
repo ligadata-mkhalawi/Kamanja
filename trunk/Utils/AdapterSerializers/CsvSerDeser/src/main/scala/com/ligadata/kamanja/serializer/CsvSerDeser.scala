@@ -279,7 +279,7 @@ class CsvSerDeser extends SerializeDeserialize {
 
     def deserializeArray(fldStr: String, attr: AttributeTypeInfo): Any = {
         val rawValFields : Array[String] = if (fldStr != null) {
-            fldStr.split(_valDelimiter)
+            fldStr.split(_valDelimiter, -1)
         } else {
             Array[String]()
         }
@@ -287,12 +287,12 @@ class CsvSerDeser extends SerializeDeserialize {
         var retVal: Any = Array[Any]()
 
         val fld = itemType match {
-            case LONG =>    retVal = rawValFields.map(itm => if(itm != null && itm.length > 0) itm.toLong else 0).toArray
+            case LONG =>    retVal = rawValFields.map(itm => if(itm != null && itm.length > 0) itm.toLong else 0.toLong).toArray
             case INT =>     retVal = rawValFields.map(itm => if(itm != null && itm.length > 0) itm.toInt else 0).toArray
-            case BYTE =>    retVal = rawValFields.map(itm => if(itm != null && itm.length > 0) itm.toByte else 0).toArray
-            case BOOLEAN => retVal = rawValFields.map(itm => if(itm != null && itm.length > 0) itm.toBoolean else 0).toArray
-            case DOUBLE =>  retVal = rawValFields.map(itm => if(itm != null && itm.length > 0) itm.toDouble else 0).toArray
-            case FLOAT =>   retVal = rawValFields.map(itm => if(itm != null && itm.length > 0) itm.toFloat else 0).toArray
+            case BYTE =>    retVal = rawValFields.map(itm => if(itm != null && itm.length > 0) itm.toByte else 0.toByte).toArray
+            case BOOLEAN => retVal = rawValFields.map(itm => if(itm != null && itm.length > 0) itm.toBoolean else false).toArray
+            case DOUBLE =>  retVal = rawValFields.map(itm => if(itm != null && itm.length > 0) itm.toDouble else 0.toDouble).toArray
+            case FLOAT =>   retVal = rawValFields.map(itm => if(itm != null && itm.length > 0) itm.toFloat else 0.toFloat).toArray
             case STRING =>  retVal = rawValFields
             case CHAR =>    retVal = rawValFields.map(itm => if (itm != null && itm.length > 0) itm.charAt(0) else ' ').toArray
             case _ => throw new ObjectNotFoundException(s"CsvSerDeser::deserializeArray, invalid value type: ${itemType.getValue}, fldName: ${itemType.name} could not be resolved", null)
@@ -306,18 +306,18 @@ class CsvSerDeser extends SerializeDeserialize {
         val tc = attr.getTypeCategory
 
         tc match {
-            case CHAR =>   returnVal = if( fld.length > 0) fld(0) else null
+            case CHAR =>   returnVal = if( fld.length > 0) fld(0) else ' '
             case STRING => returnVal = fld
             case ARRAY =>  returnVal = deserializeArray(fldStr, attr)
             case _ => {
                 val f1 = fld.trim
                 tc match {
-                    case INT =>     returnVal = if (f1.length > 0) f1.toInt else null
-                    case FLOAT =>   returnVal = if (f1.length > 0) f1.toFloat else null
-                    case DOUBLE =>  returnVal = if (f1.length > 0) f1.toDouble else null
-                    case LONG =>    returnVal = if (f1.length > 0) f1.toLong else null
-                    case BYTE =>    returnVal = if (f1.length > 0) f1.toByte else null
-                    case BOOLEAN => returnVal = if (f1.length > 0) f1.toBoolean else null
+                    case INT =>     returnVal = if (f1.length > 0) f1.toInt else 0.toInt
+                    case FLOAT =>   returnVal = if (f1.length > 0) f1.toFloat else 0.toFloat
+                    case DOUBLE =>  returnVal = if (f1.length > 0) f1.toDouble else 0.toDouble
+                    case LONG =>    returnVal = if (f1.length > 0) f1.toLong else 0.toLong
+                    case BYTE =>    returnVal = if (f1.length > 0) f1.toByte else 0.toByte
+                    case BOOLEAN => returnVal = if (f1.length > 0) f1.toBoolean else false
                     case _ => {
                         // Unhandled type
                         try
@@ -354,7 +354,7 @@ class CsvSerDeser extends SerializeDeserialize {
         val rawCsvContainerStr : String = new String(b)
 
         val rawCsvFields : Array[String] = if (rawCsvContainerStr != null) {
-          rawCsvContainerStr.split(_fieldDelimiter)
+          rawCsvContainerStr.split(_fieldDelimiter, -1)
         } else {
           Array[String]()
         }
@@ -478,7 +478,7 @@ class KVSerDeser extends CsvSerDeser {
         val rawCsvContainerStr : String = new String(b)
 
         val rawCsvFields : Array[String] = if (rawCsvContainerStr != null) {
-            rawCsvContainerStr.split(_fieldDelimiter)
+            rawCsvContainerStr.split(_fieldDelimiter, -1)
         } else {
             Array[String]()
         }
@@ -508,7 +508,7 @@ class KVSerDeser extends CsvSerDeser {
                 fldIdx += 2
             } else {
                 val kv = rawCsvFields(fldIdx)
-                val parts = kv.split(_keyDelimiter)
+                val parts = kv.split(_keyDelimiter, -1)
                 if(parts.length != 2) {
                     Error(s"The supplied KV record has field ($fldIdx) without key delimiter or more than one delimiter, record: $rawCsvContainerStr")
                     throw new ObjectNotFoundException("The supplied KV record format is not correct...abandoning processing", null)
