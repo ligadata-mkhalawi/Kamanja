@@ -570,6 +570,7 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       con = getConnection
       // put is sematically an upsert. An upsert is being implemented using a transact-sql update 
       // statement in sqlserver
+/*
       sql = "if ( not exists(select 1 from " + tableName +
         " where timePartition = ? and bucketKey = ?  and transactionId = ?  and rowId = ? ) ) " +
         " begin " +
@@ -580,26 +581,21 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
         " begin " +
         " update " + tableName + " set schemaId = ?,serializerType = ?, serializedInfo = ? where timePartition = ? and bucketKey = ?  and transactionId = ?  and rowId = ?  " +
         " end ";
+*/
+
+      sql =
+        " insert into " + tableName + "(timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo)" +
+        " values(?,?,?,?,?,?,?)"
+
       logger.debug("sql => " + sql)
       pstmt = con.prepareStatement(sql)
       pstmt.setLong(1, key.timePartition)
       pstmt.setString(2, key.bucketKey.mkString(","))
       pstmt.setLong(3, key.transactionId)
       pstmt.setInt(4, key.rowId)
-      pstmt.setLong(5, key.timePartition)
-      pstmt.setString(6, key.bucketKey.mkString(","))
-      pstmt.setLong(7, key.transactionId)
-      pstmt.setInt(8, key.rowId)
-      pstmt.setInt(9, value.schemaId)
-      pstmt.setString(10, value.serializerType)
-      pstmt.setBinaryStream(11, new java.io.ByteArrayInputStream(value.serializedInfo), value.serializedInfo.length)
-      pstmt.setInt(12, value.schemaId)
-      pstmt.setString(13, value.serializerType)
-      pstmt.setBinaryStream(14, new java.io.ByteArrayInputStream(value.serializedInfo), value.serializedInfo.length)
-      pstmt.setLong(15, key.timePartition)
-      pstmt.setString(16, key.bucketKey.mkString(","))
-      pstmt.setLong(17, key.transactionId)
-      pstmt.setInt(18, key.rowId)
+      pstmt.setInt(5, value.schemaId)
+      pstmt.setString(6, value.serializerType)
+      pstmt.setBinaryStream(7, new java.io.ByteArrayInputStream(value.serializedInfo), value.serializedInfo.length)
       pstmt.executeUpdate();
       updateOpStats("put",tableName,1)
       updateObjStats("put",tableName,1)
@@ -664,6 +660,7 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
           var tableName = toFullTableName(containerName)
           var keyValuePairs = li._2
           logger.info("Input row count for the table " + tableName + " => " + keyValuePairs.length)
+/*
           sql = "if ( not exists(select 1 from " + tableName +
             " where timePartition = ? and bucketKey = ?  and transactionId = ?  and rowId = ? ) ) " +
             " begin " +
@@ -674,6 +671,12 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
             " begin " +
             " update " + tableName + " set schemaId = ?,serializerType = ?, serializedInfo = ? where timePartition = ? and bucketKey = ?  and transactionId = ?  and rowId = ?  " +
             " end ";
+*/
+
+          sql =
+            " insert into " + tableName + "(timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo)" +
+            " values(?,?,?,?,?,?,?)";
+
           logger.debug("sql => " + sql)
           pstmt = con.prepareStatement(sql)
           keyValuePairs.foreach(keyValuePair => {
@@ -683,20 +686,9 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
             pstmt.setString(2, key.bucketKey.mkString(","))
             pstmt.setLong(3, key.transactionId)
             pstmt.setInt(4, key.rowId)
-            pstmt.setLong(5, key.timePartition)
-            pstmt.setString(6, key.bucketKey.mkString(","))
-            pstmt.setLong(7, key.transactionId)
-            pstmt.setInt(8, key.rowId)
-            pstmt.setInt(9, value.schemaId)
-            pstmt.setString(10, value.serializerType)
-            pstmt.setBinaryStream(11, new java.io.ByteArrayInputStream(value.serializedInfo), value.serializedInfo.length)
-            pstmt.setInt(12, value.schemaId)
-            pstmt.setString(13, value.serializerType)
-            pstmt.setBinaryStream(14, new java.io.ByteArrayInputStream(value.serializedInfo), value.serializedInfo.length)
-            pstmt.setLong(15, key.timePartition)
-            pstmt.setString(16, key.bucketKey.mkString(","))
-            pstmt.setLong(17, key.transactionId)
-            pstmt.setInt(18, key.rowId)
+            pstmt.setInt(5, value.schemaId)
+            pstmt.setString(6, value.serializerType)
+            pstmt.setBinaryStream(7, new java.io.ByteArrayInputStream(value.serializedInfo), value.serializedInfo.length)
             pstmt.addBatch()
 	    byteCount = byteCount + getKeySize(key)+getValueSize(value)
           })
