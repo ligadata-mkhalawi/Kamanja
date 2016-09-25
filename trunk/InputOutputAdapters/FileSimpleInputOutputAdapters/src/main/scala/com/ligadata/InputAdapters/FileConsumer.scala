@@ -50,7 +50,7 @@ class FileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecC
 
   val input = this
 
-  val execThread = execCtxtObj.CreateExecContext(input, uniqueKey, nodeContext)
+  val execThread = execCtxtObj.CreateExecContext(input, nodeContext)
 
   class Stats {
     var totalLines: Long = 0;

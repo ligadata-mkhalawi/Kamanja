@@ -1559,7 +1559,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
     // Create a new EngineMessage and call the engine.
     if (smartFileConsumerContext.execThread == null) {
-      smartFileConsumerContext.execThread = execCtxtObj.CreateExecContext(input, uniqueKey, nodeContext)
+      smartFileConsumerContext.execThread = execCtxtObj.CreateExecContext(input, nodeContext)
     }
 
     incrementCountForPartition(partitionId)

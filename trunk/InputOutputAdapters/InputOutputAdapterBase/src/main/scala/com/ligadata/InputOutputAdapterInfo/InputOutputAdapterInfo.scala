@@ -153,7 +153,6 @@ trait OutputAdapter extends AdaptersSerializeDeserializers with Monitorable {
 
 trait ExecContext {
   val input: InputAdapter
-  val curPartitionKey: PartitionUniqueRecordKey
   val nodeContext: NodeContext
 
   private val LOG = LogManager.getLogger(getClass);
@@ -357,7 +356,7 @@ trait ExecContext {
 }
 
 trait ExecContextFactory {
-  def CreateExecContext(input: InputAdapter, curPartitionKey: PartitionUniqueRecordKey, nodeContext: NodeContext): ExecContext
+  def CreateExecContext(input: InputAdapter, nodeContext: NodeContext): ExecContext
 }
 
 trait PartitionUniqueRecordKey {

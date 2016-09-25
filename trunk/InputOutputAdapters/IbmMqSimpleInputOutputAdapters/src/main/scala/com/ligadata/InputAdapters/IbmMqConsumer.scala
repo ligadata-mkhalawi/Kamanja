@@ -239,7 +239,7 @@ class IbmMqConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: Exec
 
                     if (checkForPartition) {
                       checkForPartition = false
-                      execThread = execCtxtObj.CreateExecContext(input, uniqueKey, nodeContext)
+                      execThread = execCtxtObj.CreateExecContext(input, nodeContext)
                     }
 
                     if (executeCurMsg) {

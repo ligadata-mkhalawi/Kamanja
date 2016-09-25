@@ -461,7 +461,7 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
 
                     // Create a new EngineMessage and call the engine.
                     if (execThread == null) {
-                      execThread = execCtxtObj.CreateExecContext(input, uniqueKey, nodeContext)
+                      execThread = execCtxtObj.CreateExecContext(input, nodeContext)
                     }
 
                     incrementCountForPartition(partitionId)
