@@ -294,10 +294,9 @@ class OutputStreamWriter {
     if (fc.uri.startsWith("hdfs://")) writeToHdfs(fc, os, message) else writeToFs(fc, os, message)
   }
 
-  final def writeParquet(fc: SmartFileProducerConfiguration, pf : PartitionFile, messages: Array[ContainerInterface],
-                         schema : org.apache.avro.Schema): Unit = {
+  final def writeParquet(fc: SmartFileProducerConfiguration, pf : PartitionFile, messages: Array[ContainerInterface]): Unit = {
 
-    Utils.writeParquet(fc, pf, messages, schema)
+    Utils.writeParquet(fc, pf, messages)
   }
 
   /*
@@ -387,7 +386,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   private var metrics: scala.collection.mutable.Map[String, Any] = scala.collection.mutable.Map[String, Any]()
   metrics("MessagesProcessed") = new AtomicLong(0)
 
-  private val avroSchemasMap = collection.mutable.Map[String, org.apache.avro.Schema]() //message -> schema
+  //private val avroSchemasMap = collection.mutable.Map[String, org.apache.avro.Schema]() //message -> schema
   private val writeSupportsMap = collection.mutable.Map[String, ParquetWriteSupport]() //message -> support
 
 
@@ -644,7 +643,8 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
         pf.synchronized {
           if(isParquet){
             if (pf.flushBufferSize > 0 && pf.parquetBuffer.size > 0) {
-              writeParquet(fc, pf, pf.parquetBuffer.toArray, avroSchemasMap(pf.parquetBuffer(0).getFullTypeName))
+              //avroSchemasMap(pf.parquetBuffer(0).getFullTypeName)
+              writeParquet(fc, pf, pf.parquetBuffer.toArray)
               pf.size += pf.parquetBuffer.size
               pf.records += pf.recordsInBuffer
               pf.parquetBuffer.clear()
@@ -767,7 +767,8 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
                   pf.recordsInBuffer += 1
                   if (pf.parquetBuffer.size > pf.flushBufferSize) {
                     LOG.info("Smart File Producer " + fc.Name + ": buffer is full writing to file " + pf.name)
-                    writeParquet(fc, pf, pf.parquetBuffer.toArray, avroSchemasMap(pf.parquetBuffer(0).getFullTypeName))
+                    //avroSchemasMap(pf.parquetBuffer(0).getFullTypeName)
+                    writeParquet(fc, pf, pf.parquetBuffer.toArray)
                     pf.size += pf.parquetBuffer.size
                     pf.records += pf.recordsInBuffer
                     pf.parquetBuffer.clear()
@@ -793,7 +794,8 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
                 LOG.info("Smart File Producer " + fc.Name + ": writing record to file " + pf.name)
                 if(isParquet) {
                   val data = Array(record)
-                  writeParquet(fc, pf, data, avroSchemasMap(record.getFullTypeName))
+                  //avroSchemasMap(record.getFullTypeName)
+                  writeParquet(fc, pf, data)
                   pf.size += data.length
                 }
                 else {

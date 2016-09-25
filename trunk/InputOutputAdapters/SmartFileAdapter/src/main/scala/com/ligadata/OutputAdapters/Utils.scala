@@ -204,8 +204,7 @@ object Utils {
     parquetWriter
   }
 
-  def writeParquet(fc: SmartFileProducerConfiguration, pf : PartitionFile, messages: Array[ContainerInterface],
-                       schema : org.apache.avro.Schema): Unit = {
+  def writeParquet(fc: SmartFileProducerConfiguration, pf : PartitionFile, messages: Array[ContainerInterface]): Unit = {
     messages.foreach(message => {
       val msgData : Array[Any] = message.getAllAttributeValues.map(attr => attr.getValue)
       pf.parquetWriter.write(msgData)
