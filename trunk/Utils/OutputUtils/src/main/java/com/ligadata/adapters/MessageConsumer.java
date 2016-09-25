@@ -3,16 +3,52 @@ package com.ligadata.adapters;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.WakeupException;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
 public class MessageConsumer implements Runnable {
+	// Implement Kafka heart beat to get around session timeout that causes rebalance
+	// see issue: https://issues.apache.org/jira/browse/KAFKA-2985
+	class SimpleKafkaPoll implements Runnable {
+		private AtomicInteger _breaker;
+		private KafkaConsumer<String, String> _consumer;
+
+		public SimpleKafkaPoll(KafkaConsumer<String, String> consumer, AtomicInteger breaker) {
+			_consumer = consumer;
+			_breaker = breaker;
+		}
+
+		public void run() {
+			try {
+				while (_breaker.get() == 0) {
+					try {
+						Thread.sleep(50);
+					} catch (Exception e) {
+						//
+					} catch (Throwable t) {
+						//
+					}
+					_consumer.poll(0);
+				}
+			} catch (Exception e) {
+				//
+			} catch (Throwable t) {
+				//
+			}
+		}
+	}
+	   
 	static Logger logger = LogManager.getLogger(MessageConsumer.class);
 	private volatile boolean stop = false;
 
@@ -137,6 +173,9 @@ public class MessageConsumer implements Runnable {
 		long messageCount = 0;
 		long nextSyncTime = System.currentTimeMillis() + syncInterval;
 		long start = System.currentTimeMillis();
+		
+		TopicPartition[] partitions = consumer.assignment().toArray(new TopicPartition[0]);
+
 		while (!stop) {
 			try {
 				ConsumerRecords<String, String> records = consumer.poll(pollInterval);
@@ -156,12 +195,29 @@ public class MessageConsumer implements Runnable {
 			} catch (Exception e) {
 				logger.error("Error reading from kafka: " + e.getMessage(), e);
 				createKafkaConsumerRetry();
+				partitions = consumer.assignment().toArray(new TopicPartition[0]);
 			}
 			
 			if (messageCount > 0 && (messageCount >= syncMessageCount || System.currentTimeMillis() >= nextSyncTime)) {
 				long endRead = System.currentTimeMillis();
 				logger.info("Saving " + messageCount + " messages. Read time " + (endRead - start) + " msecs.");
+
+				AtomicInteger breaker = new AtomicInteger(0);
+				ExecutorService executor = Executors.newFixedThreadPool(1);
+
+				consumer.pause(partitions);
+				executor.execute(new SimpleKafkaPoll(consumer, breaker));
+
+				// Save data here
 				processWithRetry();
+
+				breaker.incrementAndGet();
+				executor.shutdown();
+				try {
+					executor.awaitTermination(86400, TimeUnit.SECONDS);
+				} catch (InterruptedException e) {}
+				consumer.resume(partitions);
+
 				processor.clearAll();
 				long endWrite = System.currentTimeMillis();
 				consumer.commitSync();
