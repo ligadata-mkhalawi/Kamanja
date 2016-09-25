@@ -51,6 +51,8 @@ object Utils {
     avroSchema
   }
 
+  /****************************************************************/
+  /********Avro Parquet Writer*********/
   def createAvroParquetWriter(fc: SmartFileProducerConfiguration, schema : Schema,
                           filePath : String, compression : CompressionCodecName) : AvroParquetWriter[GenericRecord] = {
 
@@ -80,9 +82,8 @@ object Utils {
     parquetWriter
   }
 
-  def writeParquet(fc: SmartFileProducerConfiguration, pf : PartitionFile, messages: Array[ContainerInterface],
+  /*def writeAvroParquet(fc: SmartFileProducerConfiguration, pf : PartitionFile, messages: Array[ContainerInterface],
                          schema : org.apache.avro.Schema): Unit = {
-
 
     messages.foreach(message => {
 
@@ -113,7 +114,7 @@ object Utils {
 
       pf.parquetWriter.write(record)
     })
-  }
+  }*/
 
   def setRecordValue(attr : AttributeValue, recordBuilder : GenericRecordBuilder,
                      schema : org.apache.avro.Schema, actualValue : Any): GenericRecordBuilder ={
@@ -140,10 +141,6 @@ object Utils {
     else recordBuilder.set(attr.getValueType.getName, actualValue)
   }
 
-
-
-
-
   def toList[T] (ar : Array[T]) : java.util.List[T] = {
     val list = new java.util.ArrayList[T]()
     ar.foreach(item => list.add(item))
@@ -161,6 +158,58 @@ object Utils {
       case "string"  => toList[String](arAny.asInstanceOf[Array[String]])
       case _ => throw new Exception("Unsopported type: Array  of " + typ)
     }
+
+  }
+
+
+  /***************************************************************/
+  /********Parquet Writer*********/
+
+  def getParquetSchema(record: ContainerInterface): parquet.schema.MessageType ={
+    val avroSchema :  org.apache.avro.Schema = getAvroSchema(record)
+    val avroSchemaConverter = new parquet.avro.AvroSchemaConverter()
+    val parquetSchema = avroSchemaConverter.convert(avroSchema)
+    parquetSchema
+  }
+
+  def createParquetWriter(fc: SmartFileProducerConfiguration,
+                          filePath : String, writeSupport : ParquetWriteSupport,
+                          compression : CompressionCodecName) : ParquetWriter[Array[Any]] = {
+
+    val writeToHdfs = fc.uri.startsWith("hdfs://")
+    val path =
+      if (writeToHdfs) new Path(filePath)
+      else {
+        val outputParquetFile = new java.io.File(filePath)
+        new Path(outputParquetFile.toURI)
+      }
+
+    val parquetBlockSize = if(fc.parquetBlockSize > 0) fc.parquetBlockSize else  ParquetWriter.DEFAULT_BLOCK_SIZE
+    val parquetPageSize = if(fc.parquetPageSize > 0) fc.parquetPageSize else  ParquetWriter.DEFAULT_PAGE_SIZE
+
+    val parquetWriter =
+      if (writeToHdfs){
+        val hadoopConf = createHdfsConfig(fc)
+        new ParquetWriter[Array[Any]](path, writeSupport, compression,
+          parquetBlockSize, parquetPageSize, parquetPageSize,  // third one is dictionaryPageSize
+          ParquetWriter.DEFAULT_IS_DICTIONARY_ENABLED,
+          ParquetWriter.DEFAULT_IS_VALIDATING_ENABLED,
+          ParquetWriter.DEFAULT_WRITER_VERSION,
+          hadoopConf)
+      }
+      else
+        new ParquetWriter[Array[Any]](path, writeSupport, compression,
+          parquetBlockSize, parquetPageSize)
+
+    parquetWriter
+  }
+
+  def writeParquet(fc: SmartFileProducerConfiguration, pf : PartitionFile, messages: Array[ContainerInterface],
+                       schema : org.apache.avro.Schema): Unit = {
+    messages.foreach(message => {
+      val msgData : Array[Any] = message.getAllAttributeValues.map(attr => attr.getValue)
+      pf.parquetWriter.write(msgData)
+    })
 
   }
 }

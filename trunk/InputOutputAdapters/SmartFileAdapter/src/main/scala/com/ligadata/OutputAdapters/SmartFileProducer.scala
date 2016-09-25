@@ -57,7 +57,7 @@ object SmartFileProducer extends OutputAdapterFactory {
   def CreateOutputAdapter(inputConfig: AdapterConfiguration, nodeContext: NodeContext): OutputAdapter = new SmartFileProducer(inputConfig, nodeContext)
 }
 
-case class PartitionFile(key: String, name: String, outStream: OutputStream, parquetWriter : AvroParquetWriter[GenericRecord],
+case class PartitionFile(key: String, name: String, outStream: OutputStream, parquetWriter : ParquetWriter[Array[Any]],
                          var records: Long, var size: Long, var streamBuffer: ArrayBuffer[Byte], var parquetBuffer: ArrayBuffer[ContainerInterface],
                          var recordsInBuffer: Long, var flushBufferSize: Long)
 
@@ -297,7 +297,6 @@ class OutputStreamWriter {
   final def writeParquet(fc: SmartFileProducerConfiguration, pf : PartitionFile, messages: Array[ContainerInterface],
                          schema : org.apache.avro.Schema): Unit = {
 
-
     Utils.writeParquet(fc, pf, messages, schema)
   }
 
@@ -389,7 +388,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   metrics("MessagesProcessed") = new AtomicLong(0)
 
   private val avroSchemasMap = collection.mutable.Map[String, org.apache.avro.Schema]() //message -> schema
-  //private val writeSupportsMap = collection.mutable.Map[String, ParquetWriteSupport]() //message -> support
+  private val writeSupportsMap = collection.mutable.Map[String, ParquetWriteSupport]() //message -> support
 
 
   if (fc.uri.startsWith("file://"))
@@ -598,10 +597,19 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
 
           if(isParquet){
 
-            if(!avroSchemasMap.contains(typeName))
+            /*if(!avroSchemasMap.contains(typeName))
               avroSchemasMap.put(typeName, Utils.getAvroSchema(record))
+            val parquetWriter = Utils.createAvroParquetWriter(fc, avroSchemasMap(typeName), fileName, parquetCompression)*/
 
-            val parquetWriter = Utils.createAvroParquetWriter(fc, avroSchemasMap(typeName), fileName, parquetCompression)
+            if(!writeSupportsMap.contains(record.getFullTypeName)){
+              println(">>>>>>>>>>>>>>>>>> Avro schema : " + record.getAvroSchema)
+              val parquetSchema = Utils.getParquetSchema(record)
+              println(">>>>>>>>>>>>>>>>>> parquet schema : " + parquetSchema.toString)
+
+              val writeSupport = new ParquetWriteSupport(parquetSchema)
+              writeSupportsMap.put(record.getFullTypeName, writeSupport)
+            }
+            val parquetWriter = Utils.createParquetWriter(fc, fileName, writeSupportsMap(record.getFullTypeName), parquetCompression)
 
             var buffer: ArrayBuffer[ContainerInterface] = null
             if (fileBufferSize > 0)
