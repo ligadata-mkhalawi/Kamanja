@@ -42,7 +42,7 @@ object ExecContextFactoryImpl extends ExecContextFactory {
 }
 
 // There are no locks at this moment. Make sure we don't call this with multiple threads for same object
-class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUniqueRecordKey, val nodeContext: NodeContext) extends ExecContext {
+class ExecContextImpl(val input: InputAdapter, val nodeContext: NodeContext) extends ExecContext {
   val agg = SampleAggregator.getNewSampleAggregator
   initializeModelsToMonitor(KamanjaMonitorConfig.modelsData, agg)
   agg.setIsLookingForSeed(true)
