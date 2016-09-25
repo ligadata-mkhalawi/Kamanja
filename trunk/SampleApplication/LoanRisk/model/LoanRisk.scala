@@ -17,7 +17,10 @@
 package com.ligadata.samples.models
 
 import com.ligadata.KamanjaBase._
-import com.ligadata.kamanja.metadata.ModelDef;
+import com.ligadata.kamanja.metadata.ModelDef
+
+import scala.math
+
 
 class LoanRiskFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
   override def createModelInstance(): ModelInstance = return new LoanRisk(this)
@@ -48,6 +51,7 @@ class LoanRisk(factory: ModelInstanceFactory) extends ModelInstance(factory) {
        pred += loanRisk.LOG6_DEROG * 0.390988196099627
        pred += loanRisk.LOG5_DELINQ * 1.8255237489947
        pred += loanRisk.LOG_VALUE * -35.3593065292401
+       pred = (math.exp(pred) / (1 + math.exp(pred)) 
        output.PYTHON_RISK_SCORE = pred
        output.rec_id  = loanRisk.rec_id 
        return Array(output);
