@@ -36,8 +36,8 @@ object KamanjaMonitorConfig {
 }
 
 object ExecContextFactoryImpl extends ExecContextFactory {
-  def CreateExecContext(input: InputAdapter, curPartitionKey: PartitionUniqueRecordKey, nodeContext: NodeContext): ExecContext = {
-    new ExecContextImpl(input, curPartitionKey, nodeContext)
+  def CreateExecContext(input: InputAdapter, nodeContext: NodeContext): ExecContext = {
+    new ExecContextImpl(input, nodeContext)
   }
 }
 
