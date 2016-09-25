@@ -1087,6 +1087,8 @@ object KamanjaLeader {
               })
 
               if (!KamanjaConfiguration.locallyExecFlag) {
+                if (LOG.isInfoEnabled())
+                  LOG.info("Creating %d logical partition queues".format(KamanjaConfiguration.totalProcessingThreadCount))
                 logicalPartitionQueues = new Array[LogicalPartitionQueue](KamanjaConfiguration.totalProcessingThreadCount)
                 // BUGBUG get this cache basename from distribution
                 val cacheBaseName: String = if (actionOnAdaptersMap.distributionname != None) actionOnAdaptersMap.distributionname.get else "Dist_" + com.ligadata.Utils.Utils.GetCurDtTmStr
@@ -1111,6 +1113,8 @@ object KamanjaLeader {
 
                   }
                   */
+                  if (LOG.isDebugEnabled())
+                    LOG.debug("Creating %d logical partition queue".format(kv._1))
                   logicalPartitionQueues(kv._1) = new LogicalPartitionQueue(cacheBaseName, kv._1, hosts, localNodeLogicalPartsPort, lpCallback, KamanjaCacheQueueEntry.deserialize)
                 })
 
@@ -1118,6 +1122,8 @@ object KamanjaLeader {
 
                 logicalPartsForNode.foreach(lp => {
                   val (threadId, startPartRange, endPartitionRange) = (lp.ThreadId, lp.SRange, lp.ERange)
+                  if (LOG.isInfoEnabled())
+                    LOG.info("Creating logical partition executor for threadid:" + threadId)
                   remoteExecPool.execute(new LeanringEngineRemoteExecution(threadId, startPartRange, endPartitionRange))
                 })
               }
@@ -1924,6 +1930,8 @@ object KamanjaLeader {
     if (threadId >= 0 && threadId < logicalPartitionQueues.size) {
       if (cacheQueueEntry.fromLocalThread)
         AddToLocalCacheQueueEntriesForCache(cacheQueueEntry)
+      if (LOG.isDebugEnabled())
+        LOG.debug("Adding KamanjaCacheQueueEntry for transactionid:%d to remote logical partitions".format(cacheQueueEntry.txnCtxt.getTransactionId()))
       logicalPartitionQueues(threadId).enQ(cacheQueueEntry.txnCtxt.getTransactionId().toString, cacheQueueEntry)
     } else {
       throw new Exception("Not found proper threadId to add CacheEntry")
@@ -1931,17 +1939,23 @@ object KamanjaLeader {
   }
 
   def AddToLocalCacheQueueEntriesForCache(cacheQueueEntry: KamanjaCacheQueueEntry): Unit = {
-    if (cacheQueueEntry.fromLocalThread)
+    if (cacheQueueEntry.fromLocalThread) {
+      if (LOG.isDebugEnabled())
+        LOG.debug("Adding KamanjaCacheQueueEntry for transactionid:%d to local logical partitions".format(cacheQueueEntry.txnCtxt.getTransactionId()))
       localCacheQueueEntriesForCache.put(cacheQueueEntry.txnCtxt.getTransactionId(), cacheQueueEntry)
+    }
   }
 
   // Removing and getting what ever is removed for this id
   def GetFromLocalCacheQueueEntriesForCache(id: Long): KamanjaCacheQueueEntry = {
+    if (LOG.isDebugEnabled())
+      LOG.debug("Getting KamanjaCacheQueueEntry for transactionid:%d from local logical partitions".format(id))
     localCacheQueueEntriesForCache.remove(id)
   }
 
   def ClearAllLogicalPartitionQueues: Unit = {
     // Shutdown every queue from logicalPartitionQueues
+    LOG.info("Cleaning logical partition queues")
     val tmp = logicalPartitionQueues
     logicalPartitionQueues = Array[LogicalPartitionQueue]()
     tmp.foreach(lp => if (lp != null) lp.shutDown)

@@ -231,7 +231,7 @@ class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: I
     val execMdl = nodeIdModlsObj.getOrElse(execNode.nodeId, null)
     if (execMdl != null) {
       if (LOG.isDebugEnabled)
-        LOG.debug("LearningEngine:Executing Model:%s,NodeId:%d, iesPos:%d".format(execMdl._1.mdl.getModelName(), execNode.nodeId, execNode.iesPos))
+        LOG.debug("LearningEngine:Executing Model:%s,NodeId:%d, iesPos:%d for Transactionid:%d".format(execMdl._1.mdl.getModelName(), execNode.nodeId, execNode.iesPos, dqKamanjaCacheQueueEntry.txnCtxt.getTransactionId()))
       val curMd =
         if (execMdl._1.mdl.isModelInstanceReusable()) {
           if (execMdl._2 == null) {
@@ -396,6 +396,8 @@ class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: I
           executeModel(dqKamanjaCacheQueueEntry)
           if (dqKamanjaCacheQueueEntry.execPos >= dqKamanjaCacheQueueEntry.exeQueue.size) {
             try {
+              if (LOG.isDebugEnabled())
+                LOG.debug("Commiting data for transactionid:" + dqKamanjaCacheQueueEntry.txnCtxt.getTransactionId())
               CommitDataComponent.commitData(dqKamanjaCacheQueueEntry.txnCtxt)
               if (LeanringEngine.hasValidOrigin(dqKamanjaCacheQueueEntry.txnCtxt)) {
                 KamanjaLeader.getThrottleControllerCache.remove("TXN-" + dqKamanjaCacheQueueEntry.txnCtxt.getTransactionId())
@@ -406,6 +408,8 @@ class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: I
               }
             }
           } else {
+            if (LOG.isDebugEnabled())
+              LOG.debug("Executing KamanjaCacheQueueEntry for transactionid:" + dqKamanjaCacheQueueEntry.txnCtxt.getTransactionId())
             val execNode = dqKamanjaCacheQueueEntry.exeQueue(dqKamanjaCacheQueueEntry.execPos)
             val (partKeyStr, partitionIdx) = LeanringEngine.GetQueuePartitionInfo(nodeIdModlsObj, execNode, dqKamanjaCacheQueueEntry.txnCtxt, startPartitionId)
 
@@ -750,6 +754,8 @@ class LearningEngine {
             }
           }
         } else {
+          if (LOG.isDebugEnabled())
+            LOG.debug("Executing logical partition for transactionid:" + txnCtxt.getTransactionId())
           var runningTxns = KamanjaLeader.getThrottleControllerCache.size
 
           while (KamanjaConfiguration.shutdown == false && runningTxns >= KamanjaConfiguration.totalReadThreadCount * 5) {
@@ -793,6 +799,8 @@ class LearningEngine {
       } else {
         // No models found to execute. Send output
         try {
+          if (LOG.isDebugEnabled())
+            LOG.debug("Committing data for transactionid:" + txnCtxt.getTransactionId())
           CommitDataComponent.commitData(txnCtxt)
           if (LeanringEngine.hasValidOrigin(txnCtxt)) {
             KamanjaLeader.getThrottleControllerCache.put("ADAP-KEY-COMPLETED-MAX-" + txnCtxt.origin.key, txnCtxt.origin.value)
