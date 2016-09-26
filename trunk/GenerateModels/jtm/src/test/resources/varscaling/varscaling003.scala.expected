@@ -41,20 +41,10 @@ class common_exeGenerated_AirRefillCS5_1_1(val conversion: com.ligadata.runtime.
   val log : com.ligadata.runtime.Log,
   val context com.ligadata.runtime.JtmContext,
   msg1: com.ligadata.messages.V1000000.AirRefillCS5_input) {
-
-  val inpData: Array[String]
-  val f1___val: Double
-  val f2___val: Double
-  val f3___val: Double
-
-  def process() = {
-    val inpData: Array[String] = msg1.msg.split(",", -1)
-    f1___val = if(!isDouble(inpData(1), "f1_fv", HandleError )) 0  else { val fieldVal = conversion.ToDouble(inpData(1));fieldVal}
-    f2___val = if(!isDouble(inpData(2), "f2_fv", HandleError )) 0  else { val fieldVal = conversion.ToDouble(inpData(2));fieldVal}
-    f3___val = f2___val + 1
-  }
-
-  process()
+  val inpData: Array[String] = msg1.msg.split(",", -1)
+  val f1___val = if(!isDouble(inpData(1), "f1_fv", HandleError )) 0  else { val fieldVal = conversion.ToDouble(inpData(1));fieldVal}
+  val f2___val = if(!isDouble(inpData(2), "f2_fv", HandleError )) 0  else { val fieldVal = conversion.ToDouble(inpData(2));fieldVal}
+  val f3___val = f2___val + 1
 }
 
 class common_exeGenerated_AirRefillCS5_1_1_process_o1(val conversion: com.ligadata.runtime.Conversion,
@@ -63,33 +53,31 @@ class common_exeGenerated_AirRefillCS5_1_1_process_o1(val conversion: com.ligada
   msg1: com.ligadata.messages.V1000000.AirRefillCS5_input
   common: common_exeGenerated_AirRefillCS5_1_1) {
 
-  def process(): Array[MessageInterface]= {
-    try {
-      if (!((context.CurrentErrors()==0))) {
-        Debug("Filtered: AirRefillCS5_1@o1")
-        return Array.empty[MessageInterface]
-      }
+  val result: Array[MessageInterface] = try {
+    if (!((context.CurrentErrors()==0))) {
+      Debug("Filtered: AirRefillCS5_1@o1")
+      return Array.empty[MessageInterface]
+    }
 
-      val result = com.ligadata.messages.V1000000.AirRefillCS5s.createInstance
-      result.originhostname = inpData(1)
-      result.originnodetype = inpData(0)
-      result.f2 = f2___val
-      result.f1 = f1___val - f3___val
-      if (result.hasTimePartitionInfo) result.setTimePartitionData
-      if(context.CurrentErrors()==0) {
-        Array(result)
-      } else {
-        Array.empty[MessageInterface]
-      }
-    } catch {
-      case e: AbortOutputException => {
-        context.AddError(e.getMessage)
-        return Array.empty[MessageInterface]
-      }
-      case e: Exception => {
-        Debug("Exception: o1:" + e.getMessage)
-        throw e
-      }
+    val result = com.ligadata.messages.V1000000.AirRefillCS5s.createInstance
+    result.originhostname = inpData(1)
+    result.originnodetype = inpData(0)
+    result.f2 = f2___val
+    result.f1 = f1___val - f3___val
+    if (result.hasTimePartitionInfo) result.setTimePartitionData
+    if(context.CurrentErrors()==0) {
+      Array(result)
+    } else {
+      Array.empty[MessageInterface]
+    }
+  } catch {
+    case e: AbortOutputException => {
+      context.AddError(e.getMessage)
+      Array.empty[MessageInterface]
+    }
+    case e: Exception => {
+      Debug("Exception: o1:" + e.getMessage)
+      throw e
     }
   }
 }
@@ -100,7 +88,7 @@ class common_exeGenerated_AirRefillCS5_1_1_process_o1(val conversion: com.ligada
   msg1: com.ligadata.messages.V1000000.AirRefillCS5_input
   common: common_exeGenerated_AirRefillCS5_1_1) {
 
-  def process(): Array[MessageInterface]= {
+  val result: Array[MessageInterface]= {
     try {
       if (!((context.CurrentErrors() > 0))) {
         Debug("Filtered: AirRefillCS5_1@oo")
@@ -114,7 +102,7 @@ class common_exeGenerated_AirRefillCS5_1_1_process_o1(val conversion: com.ligada
     } catch {
       case e: AbortOutputException => {
         context.AddError(e.getMessage)
-        return Array.empty[MessageInterface]
+        Array.empty[MessageInterface]
       }
       case e: Exception => {
         Debug("Exception: oo:" + e.getMessage)
@@ -154,13 +142,13 @@ class test_jtm(factory: ModelInstanceFactory) extends ModelInstance(factory) {
         Debug("exeGenerated_AirRefillCS5_1_1::process_o1")
         context.SetScope("o1")
         val result = new common_exeGenerated_AirRefillCS5_1_1_process_o1(conversion, long, context, common, msg1)
-        result.process
+        result.result;
       }
       def process_oo(): Array[MessageInterface] = {
         Debug("exeGenerated_AirRefillCS5_1_1::process_oo")
         context.SetScope("oo")
         val result = new common_exeGenerated_AirRefillCS5_1_1_process_oo(conversion, long, context, common, msg1)
-        result.process
+        result.result
       }
       try {
         process_o1()++
