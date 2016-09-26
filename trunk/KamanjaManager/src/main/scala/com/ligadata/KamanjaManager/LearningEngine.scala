@@ -793,7 +793,7 @@ class LearningEngine {
 
               KamanjaLeader.getThrottleControllerCache.put(map)
             }
-            KamanjaLeader.AddToRemoteProcessingBucket(partitionIdx, new KamanjaCacheQueueEntry(exeQueue, execPos, dagRuntime, txnCtxt, thisMsgEvent, modelsForMessage, msgProcessingStartTime, false))
+            KamanjaLeader.AddToRemoteProcessingBucket(partitionIdx, new KamanjaCacheQueueEntry(exeQueue, execPos, dagRuntime, txnCtxt, thisMsgEvent, modelsForMessage, msgProcessingStartTime, KamanjaLeader.isLocalThreadForPartitionId(partitionIdx)))
           }
         }
       } else {

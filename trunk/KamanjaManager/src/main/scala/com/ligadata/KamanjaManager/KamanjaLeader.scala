@@ -1928,11 +1928,15 @@ object KamanjaLeader {
     // Add to Queue to process in Remote
     val threadId = globalLogicalPartitionsToThreadId(partitionIdx)
     if (threadId >= 0 && threadId < logicalPartitionQueues.size) {
-      if (cacheQueueEntry.fromLocalThread)
-        AddToLocalCacheQueueEntriesForCache(cacheQueueEntry)
       if (LOG.isDebugEnabled())
-        LOG.debug("Adding KamanjaCacheQueueEntry for transactionid:%d to remote logical partitions".format(cacheQueueEntry.txnCtxt.getTransactionId()))
-      logicalPartitionQueues(threadId).enQ(cacheQueueEntry.txnCtxt.getTransactionId().toString, cacheQueueEntry)
+        LOG.debug("Adding KamanjaCacheQueueEntry for transactionid:%d to threadId:%d, fromLocalThread:%s".format(cacheQueueEntry.txnCtxt.getTransactionId(), threadId, cacheQueueEntry.fromLocalThread.toString))
+      if (cacheQueueEntry.fromLocalThread) {
+        AddToLocalCacheQueueEntriesForCache(cacheQueueEntry)
+      } else {
+        if (LOG.isDebugEnabled())
+          LOG.debug("Adding KamanjaCacheQueueEntry for transactionid:%d to remote logical partitions".format(cacheQueueEntry.txnCtxt.getTransactionId()))
+        logicalPartitionQueues(threadId).enQ(cacheQueueEntry.txnCtxt.getTransactionId().toString, cacheQueueEntry)
+      }
     } else {
       throw new Exception("Not found proper threadId to add CacheEntry")
     }
