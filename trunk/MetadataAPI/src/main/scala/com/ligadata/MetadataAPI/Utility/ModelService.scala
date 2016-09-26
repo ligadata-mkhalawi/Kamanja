@@ -338,7 +338,16 @@ object ModelService {
             val model = new File(input.toString)
             val resp : String = if(model.exists()){
                 val modelDef= Source.fromFile(model).mkString
-                MetadataAPIImpl.AddModel(ModelType.PMML, modelDef, optUserid, finalTid,  optModelName, optVersion, optMsgConsumed,optMsgVersion, optMsgProduced,pStr)
+              MetadataAPIImpl.AddModel(ModelType.PMML,
+                modelDef,
+                optUserid,
+                finalTid,
+                optModelName,
+                optVersion,
+                optMsgConsumed,
+                optMsgVersion,
+                optMsgProduced,
+                pStr)
             }else{
                 val userId : String = optUserid.getOrElse("no user id supplied")
                 val modelName : String = optModelName.getOrElse("no model name supplied")

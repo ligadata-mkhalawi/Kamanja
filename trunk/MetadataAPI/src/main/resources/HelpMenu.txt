@@ -10,6 +10,7 @@ kamanja add model kpmml input(optional) TENANTID <tenantId>  Properties/Properti
 kamanja add model pmml input MODELNAME namespace.name MODELVERSION nn.nn.nn MESSAGENAME namespace.name TENANTID <tenantId> Properties/PropertiesFile(optional) <Json String/Filename>
 kamanja add model java input(optional)  TENANTID <tenantId> Properties/PropertiesFile(optional) <Json String/Filename>
 kamanja add model scala input(optional) TENANTID <tenantId> Properties/PropertiesFile(optional) <Json String/Filename>
+kamanja add model python <python file> MODELNAME <modelpath.modulename>  TENANTID <tenantId> MESSAGENAME <message>  OUTMESSAGE <message> MODELOPTIONS(optional) '{"InputTypeInfo": <input fields in json format>}' MODELVERSION <version number>
 kamanja add model jtm input(optional) TENANTID <tenantId> Properties/PropertiesFile(optional) <Json String/Filename>
 kamanja get model input(optional) TENANTID(optional) <tenantId>
 kamanja get all models TENANTID(optional) <tenantId>
@@ -17,6 +18,7 @@ kamanja remove model input(optional)
 kamanja update model kpmml input(optional) TENANTID <tenantId> Properties/PropertiesFile(optional) <Json String/Filename>
 kamanja update model pmml input MODELNAME namespace.name MODELVERSION nn.nn.nn TENANTID <tenantId> Properties/PropertiesFile(optional) <Json String/Filename>
 kamanja update model scala input(optional) TENANTID <tenantId> Properties/PropertiesFile(optional) <Json String/Filename>
+kamanja update  model python <python file> MODELNAME <modelpath.modulename>  TENANTID <tenantId> MESSAGENAME <message>  OUTMESSAGE <message> MODELOPTIONS(optional) '{"InputTypeInfo": <input fields in json format>}' MODELVERSION <version number>
 kamanja update model java input(optional) TENANTID <tenantId> Properties/PropertiesFile(optional) <Json String/Filename>
 kamanja update model jtm input(optional) TENANTID <tenantId> Properties/PropertiesFile(optional) <Json String/Filename>
 kamanja deactivate model input(optional)

@@ -237,7 +237,7 @@ cp InputOutputAdapters/KafkaAdapters_v10/target/scala-2.10/kamanjakafkaadapters*
 
 cp Utils/ExtractData/target/scala-2.10/extractdata* $systemlib
 cp Utils/JdbcDataCollector/target/scala-2.10/jdbcdatacollector* $systemlib
-cp MetadataAPIService/target/scala-2.10/metadataapiservice* $systemlib
+#cp MetadataAPIService/target/scala-2.10/metadataapiservice* $systemlib
 cp FileDataConsumer/target/scala-2.10/filedataconsumer* $systemlib
 cp Utils/CleanUtil/target/scala-2.10/cleanutil* $systemlib
 cp Utils/ClusterInstaller/ClusterInstallerDriver/target/ClusterInstallerDriver* $kamanjainstallbin
@@ -277,7 +277,6 @@ cp $ivyPath/cache/com.yammer.metrics/metrics-core/jars/metrics-core-2.2.0.jar  $
 ## -------------------- generated cp commands --------------------
 #
 cp $srcPath/FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory/target/scala-2.10/jarfactoryofmodelinstancefactory*.jar $systemlib
-
 # -------------------- end of generated cp commands --------------------
 
 
@@ -375,10 +374,36 @@ fi
 cp $orientdb_jdbc_all $systemlib
 
 # *******************************
+# copy the python directory into $installPath/Kamanja-$ver210/
+# *******************************
+cp -rf $srcPath/FactoriesOfModelInstanceFactory/PythonServer/src/main/python $installPath/Kamanja-$ver210/
+
+# *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep
 # *******************************
 
 mkdir -p $installPath/Kamanja-$ver210/input/SampleApplications/template/script
+
+# python arithmetic "models"
+cd $srcPath/SampleApplication/python/data
+cp -rf * $installPath/Kamanja-$ver210/input/SampleApplications/data
+
+cd $srcPath/SampleApplication/python/message
+cp -rf * $installPath/Kamanja-$ver210/input/SampleApplications/metadata/message/
+
+cd $srcPath/SampleApplication/python/model
+cp -rf * $installPath/Kamanja-$ver210/input/SampleApplications/metadata/model/
+
+cd $srcPath/SampleApplication/python/template
+cp -rf conf* $installPath/Kamanja-$ver210/input/SampleApplications/template/
+
+cd $srcPath/SampleApplication/python/template/script/scala-2.10
+cp -rf * $installPath/Kamanja-$ver210/input/SampleApplications/template/script/
+
+cd $srcPath/SampleApplication/python/config
+cp -rf * $installPath/Kamanja-$ver210/config
+# python arithmetic "models"
+
 
 #HelloWorld
 cd $srcPath/SampleApplication/HelloWorld/data
@@ -399,6 +424,26 @@ cp -rf * $installPath/Kamanja-$ver210/input/SampleApplications/template/script
 cd $srcPath/SampleApplication/HelloWorld/config
 cp -rf * $installPath/Kamanja-$ver210/config
 #HelloWorld
+
+#LoanRisk
+cd $srcPath/SampleApplication/LoanRisk/data
+cp * $installPath/Kamanja-$ver210/input/SampleApplications/data
+
+cd $srcPath/SampleApplication/LoanRisk/message
+cp * $installPath/Kamanja-$ver210/input/SampleApplications/metadata/message
+
+cd $srcPath/SampleApplication/LoanRisk/model
+cp * $installPath/Kamanja-$ver210/input/SampleApplications/metadata/model
+
+cd $srcPath/SampleApplication/LoanRisk/template
+cp -rf conf* $installPath/Kamanja-$ver210/input/SampleApplications/template
+
+cd $srcPath/SampleApplication/LoanRisk/template/script/scala-2.10
+cp -rf * $installPath/Kamanja-$ver210/input/SampleApplications/template/script
+
+cd $srcPath/SampleApplication/LoanRisk/config
+cp -rf * $installPath/Kamanja-$ver210/config
+#LoanRisk
 
 #Medical
 cd $srcPath/SampleApplication/Medical/SampleData
@@ -546,7 +591,7 @@ sbt '++ 2.11.7 package' '++ 2.11.7 ExtDependencyLibs/assembly' '++ 2.11.7 ExtDep
 #sbt clean '++ 2.11.7 package' '++ 2.11.7 KamanjaManager/assembly' '++ 2.11.7 MetadataAPI/assembly' '++ 2.11.7 KVInit/assembly' '++ 2.11.7 SimpleKafkaProducer/assembly'
 #sbt '++ 2.11.7 NodeInfoExtract/assembly' '++ 2.11.7 MetadataAPIService/assembly' '++ 2.11.7 JdbcDataCollector/assembly'
 #sbt '++ 2.11.7 FileDataConsumer/assembly' '++ 2.11.7 CleanUtil/assembly' '++ 2.11.7 MigrateManager/assembly' '++ 2.11.7 ClusterInstallerDriver/assembly' '++ 2.11.7 InstallDriver/assembly' '++ 2.11.7 GetComponent/assembly' '++ 2.11.7 PmmlTestTool/assembly' '++ 2.11.7 ExtDependencyLibs/assembly' '++ 2.11.7 ExtDependencyLibs2/assembly' '++ 2.11.7 KamanjaInternalDeps/assembly'
-# sbt '++ 2.11.7 MethodExtractor/assembly' '++ 2.11.7 SaveContainerDataComponent/assembly' '++ 2.11.7 ExtractData/assembly' 
+# sbt '++ 2.11.7 MethodExtractor/assembly' '++ 2.11.7 SaveContainerDataComponent/assembly' '++ 2.11.7 ExtractData/assembly'
 
 # recreate eclipse projects
 #echo "refresh the eclipse projects ..."
@@ -570,7 +615,7 @@ cp InputOutputAdapters/KafkaAdapters_v10/target/scala-2.11/kamanjakafkaadapters*
 
 cp Utils/ExtractData/target/scala-2.11/extractdata* $systemlib
 cp Utils/JdbcDataCollector/target/scala-2.11/jdbcdatacollector* $systemlib
-cp MetadataAPIService/target/scala-2.11/metadataapiservice* $systemlib
+#cp MetadataAPIService/target/scala-2.11/metadataapiservice* $systemlib
 cp FileDataConsumer/target/scala-2.11/filedataconsumer* $systemlib
 cp Utils/CleanUtil/target/scala-2.11/cleanutil* $systemlib
 cp Utils/ClusterInstaller/ClusterInstallerDriver/target/ClusterInstallerDriver* $kamanjainstallbin
@@ -699,10 +744,35 @@ fi
 cp $orientdb_jdbc_all $systemlib
 
 # *******************************
+# copy the python directory into $installPath/Kamanja-$ver211/
+# *******************************
+cp -rf $srcPath/FactoriesOfModelInstanceFactory/PythonServer/src/main/python $installPath/Kamanja-$ver211/
+
+# *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep
 # *******************************
 
 mkdir -p $installPath/Kamanja-$ver211/input/SampleApplications/template/script
+
+# python arithmetic "models"
+cd $srcPath/SampleApplication/python/data
+cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/data
+
+cd $srcPath/SampleApplication/python/message
+cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/message/
+
+cd $srcPath/SampleApplication/python/model
+cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/model/
+
+cd $srcPath/SampleApplication/python/template
+cp -rf conf* $installPath/Kamanja-$ver211/input/SampleApplications/template/
+
+cd $srcPath/SampleApplication/python/template/script/scala-2.11
+cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/template/script/
+
+cd $srcPath/SampleApplication/python/config
+cp -rf * $installPath/Kamanja-$ver211/config
+# python arithmetic "models"
 
 #HelloWorld
 cd $srcPath/SampleApplication/HelloWorld/data
@@ -724,6 +794,26 @@ cd $srcPath/SampleApplication/HelloWorld/config
 cp -rf * $installPath/Kamanja-$ver211/config
 #HelloWorld
 
+#LoanRisk
+cd $srcPath/SampleApplication/LoanRisk/data
+cp * $installPath/Kamanja-$ver211/input/SampleApplications/data
+
+cd $srcPath/SampleApplication/LoanRisk/message
+cp * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/message
+
+cd $srcPath/SampleApplication/LoanRisk/model
+cp * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/model
+
+cd $srcPath/SampleApplication/LoanRisk/template
+cp -rf conf* $installPath/Kamanja-$ver211/input/SampleApplications/template
+
+cd $srcPath/SampleApplication/LoanRisk/template/script/scala-2.11
+cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/template/script
+
+cd $srcPath/SampleApplication/LoanRisk/config
+cp -rf * $installPath/Kamanja-$ver211/config
+#LoanRisk
+
 #Medical
 cd $srcPath/SampleApplication/Medical/SampleData
 cp *.csv $installPath/Kamanja-$ver211/input/SampleApplications/data
@@ -744,7 +834,7 @@ cp *.* $installPath/Kamanja-$ver211/input/SampleApplications/metadata/model
 cd $srcPath/SampleApplication/Medical/Types
 cp * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/type
 
-cd $srcPath/SampleApplication/Medical/template/script/scala-2.11
+cd $srcPath/SampleApplication/Medical/template/script/scala-2.10
 cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/template/script
 
 cd $srcPath/SampleApplication/Medical/Configs
@@ -776,19 +866,19 @@ cp -rf * $installPath/Kamanja-$ver211/config
 
 #Finance
 cd $srcPath/SampleApplication/InterfacesSamples/src/main/resources/sample-app/data
-cp * $installPath/Kamanja-$ver211/input/SampleApplications/data
+cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/data
 
 cd $srcPath/SampleApplication/InterfacesSamples/src/main/resources/sample-app/metadata/container
-cp * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/container
+cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/container
 
 cd $srcPath/SampleApplication/InterfacesSamples/src/main/resources/sample-app/metadata/message
-cp * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/message
+cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/message
 
 cd $srcPath/SampleApplication/InterfacesSamples/src/main/resources/sample-app/metadata/model
-cp *.* $installPath/Kamanja-$ver211/input/SampleApplications/metadata/model
+cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/model
 
 cd $srcPath/SampleApplication/InterfacesSamples/src/main/resources/sample-app/metadata/type
-cp * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/type
+cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/metadata/type
 
 cd $srcPath/SampleApplication/InterfacesSamples/src/main/resources/sample-app/metadata/template
 cp -rf * $installPath/Kamanja-$ver211/input/SampleApplications/template
@@ -829,4 +919,3 @@ if [ "$build211" == "1" ]; then #beginning of the 2.11 build
 fi
 
 echo "Kamanja install complete..."
-
