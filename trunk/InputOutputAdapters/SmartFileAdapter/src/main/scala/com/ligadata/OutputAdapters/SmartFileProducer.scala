@@ -396,8 +396,8 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   val isParquet = fc.isParquet
   val parquetCompression = if(fc.parquetCompression == null || fc.parquetCompression.length == 0) null else CompressionCodecName.valueOf(fc.parquetCompression)
   if(isParquet)
-    println(">>>>>>>>> using parquet with compression: "+ parquetCompression)
-  else println(">>>>>>>>> compression: " + fc.compressionString)
+    LOG.info(">>>>>>>>> using parquet with compression: "+ parquetCompression)
+  else LOG.info(">>>>>>>>> compression: " + fc.compressionString)
 
   val defaultExtension = if(isParquet) "" else fc.compressionString
 
@@ -601,9 +601,9 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
             val parquetWriter = Utils.createAvroParquetWriter(fc, avroSchemasMap(typeName), fileName, parquetCompression)*/
 
             if(!writeSupportsMap.contains(record.getFullTypeName)){
-              println(">>>>>>>>>>>>>>>>>> Avro schema : " + record.getAvroSchema)
+              LOG.info(">>>>>>>>>>>>>>>>>> Avro schema : " + record.getAvroSchema)
               val parquetSchema = Utils.getParquetSchema(record)
-              println(">>>>>>>>>>>>>>>>>> parquet schema : " + parquetSchema.toString)
+              LOG.info(">>>>>>>>>>>>>>>>>> parquet schema : " + parquetSchema.toString)
 
               val writeSupport = new ParquetWriteSupport(parquetSchema)
               writeSupportsMap.put(record.getFullTypeName, writeSupport)
@@ -708,20 +708,6 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     // Not implemented yet
   }
 
-  def getUnserializedData(outputContainer : ContainerInterface) : Array[Any] = {
-    /*val data = ArrayBuffer[Any]()
-    val fields = outputContainer.getAllAttributeValues
-    fields.foreach(attr => {
-      val fldValue = attr.getValue
-      //val fldName = attr.getValueType.getName
-
-      data.append(fldValue)
-    })
-    data.toArray*/
-
-    outputContainer.getAllAttributeValues.map(attr => attr.getValue)
-
-  }
 
   // Locking before we write into file
   // To send an array of messages. messages.size should be same as partKeys.size

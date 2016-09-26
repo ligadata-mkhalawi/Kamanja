@@ -25,6 +25,7 @@ class ParquetWriteSupport extends WriteSupport[Array[Any]] {
 
   private var nullFlagsFieldIdx = -1
 
+  private val writeLock = new Object
 
   def this(schema: MessageType) {
     this()
@@ -55,53 +56,55 @@ class ParquetWriteSupport extends WriteSupport[Array[Any]] {
 
   @Override
   def write(values: Array[Any]): Unit = {
+    writeLock.synchronized {
 
-    if (values.length != cols.length) {
-      throw new ParquetEncodingException("Invalid input data. Expecting " +
-        cols.length + " columns. Input had " + values.length + " columns (" + cols + ") : " + values);
-    }
-
-    val nullFlags =
-      if(nullFlagsFieldIdx >= 0) {
-        val nullFlagsAny = values(nullFlagsFieldIdx)
-        try {
-          if (nullFlagsAny == null) null
-          else nullFlagsAny.asInstanceOf[Array[Boolean]]
-        }
-        catch{
-          case ex : Exception => null
-        }
+      if (values.length != cols.length) {
+        throw new ParquetEncodingException("Invalid input data. Expecting " +
+          cols.length + " columns. Input had " + values.length + " columns (" + cols + ") : " + values);
       }
-      else null
 
-    recordConsumer.startMessage()
-    for (i <- 0 to cols.length - 1) {
+      val nullFlags =
+        if (nullFlagsFieldIdx >= 0) {
+          val nullFlagsAny = values(nullFlagsFieldIdx)
+          try {
+            if (nullFlagsAny == null) null
+            else nullFlagsAny.asInstanceOf[Array[Boolean]]
+          }
+          catch {
+            case ex: Exception => null
+          }
+        }
+        else null
 
-      val colName = cols(i).getPath()(0)
-      logger.debug("parquet serializing. col name: %s, value: %s".format(colName, (if(values(i)==null) null else values(i).toString)))
-      if(!systemFields.contains(colName.toLowerCase)) {
+      recordConsumer.startMessage()
+      for (i <- 0 to cols.length - 1) {
 
         val colName = cols(i).getPath()(0)
-        val value = values(i)
-        // val.length() == 0 indicates a NULL value.
+        logger.debug("parquet serializing. col name: %s, value: %s".format(colName, (if (values(i) == null) null else values(i).toString)))
+        if (!systemFields.contains(colName.toLowerCase)) {
 
-        if (value != null) {
-          if ((nullFlags == null || nullFlags.length <= i || !nullFlags(i))) {
-            recordConsumer.startField(colName, i)
+          val colName = cols(i).getPath()(0)
+          val value = values(i)
+          // val.length() == 0 indicates a NULL value.
 
-            if (cols(i).getPath().length == 1)
-              addSimpleValue(recordConsumer, value, cols(i).getType())
-            else if (cols(i).getPath()(1) == "array")
-              addArrayValue(recordConsumer, value, cols(i).getType(), cols(i).getPath())
-            else
-              throw new ParquetEncodingException("Unsupported complex column type: " + cols(i).getPath()(1))
+          if (value != null) {
+            if ((nullFlags == null || nullFlags.length <= i || !nullFlags(i))) {
+              recordConsumer.startField(colName, i)
 
-            recordConsumer.endField(cols(i).getPath()(0), i)
+              if (cols(i).getPath().length == 1)
+                addSimpleValue(recordConsumer, value, cols(i).getType())
+              else if (cols(i).getPath()(1) == "array")
+                addArrayValue(recordConsumer, value, cols(i).getType(), cols(i).getPath())
+              else
+                throw new ParquetEncodingException("Unsupported complex column type: " + cols(i).getPath()(1))
+
+              recordConsumer.endField(cols(i).getPath()(0), i)
+            }
           }
         }
       }
+      recordConsumer.endMessage()
     }
-    recordConsumer.endMessage()
   }
 
   private def stringToBinary(value: Any): Binary = {
