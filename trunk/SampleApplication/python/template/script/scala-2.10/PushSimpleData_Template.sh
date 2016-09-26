@@ -9,10 +9,15 @@ gzcompressed=false
 KAMANJA_HOME={InstallDirectory}
 
 kafkahostname="localhost:9092"
+kafkaversion="0.10"
+
 while [ $# -gt 0 ]
 do
     if [ "$1" == "--kafkahosts" ]; then
     	kafkahostname="$2"
+    fi
+    if [ "$1" == "--kafkaversion" ]; then
+        kafkaversion="$2"
     fi
     shift
 done
