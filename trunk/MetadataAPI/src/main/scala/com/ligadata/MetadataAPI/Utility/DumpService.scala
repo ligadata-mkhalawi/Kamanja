@@ -16,7 +16,7 @@
 
 package com.ligadata.MetadataAPI.Utility
 
-import com.ligadata.MetadataAPI.MetadataAPIImpl
+import com.ligadata.MetadataAPI.{ApiResult, ErrorCodeConstants, MetadataAPIImpl}
 import org.apache.logging.log4j._
 import com.ligadata.kamanja.metadata.MdMgr
 /**
@@ -34,11 +34,13 @@ object DumpService {
     var response=""
     try{
       MdMgr.GetMdMgr.dump
-      response="Metadata dumped in DEBUG mode"
+      //response="Metadata dumped in DEBUG mode"
+      response= (new ApiResult(ErrorCodeConstants.Failure, "getAllMessages",null, "Metadata dumped in DEBUG mode")).toString
     }catch{
       case e: Exception => {
-        logger.warn("", e)
-        response=e.getStackTrace.toString
+        logger.error("", e)
+        //response=e.getStackTrace.toString
+        response= (new ApiResult(ErrorCodeConstants.Failure, "dumpMetadata",null, e.getStackTrace.toString)).toString
       }
     }
     response
@@ -50,8 +52,9 @@ object DumpService {
     }
     catch {
       case e: Exception => {
-        logger.warn("", e)
-        response=e.getStackTrace.toString
+        logger.error("", e)
+        //response=e.getStackTrace.toString
+        response= (new ApiResult(ErrorCodeConstants.Failure, "dumpAllNodes",null, e.getStackTrace.toString)).toString
       }
     }
     response
@@ -64,7 +67,8 @@ object DumpService {
     catch {
       case e: Exception => {
         logger.warn("", e)
-        response=e.getStackTrace.toString
+        //response=e.getStackTrace.toString
+        response= (new ApiResult(ErrorCodeConstants.Failure, "dumpAllClusters",null, e.getStackTrace.toString)).toString
       }
     }
     response
@@ -77,7 +81,8 @@ object DumpService {
     catch {
       case e: Exception => {
         logger.warn("", e)
-        response=e.getStackTrace.toString
+        //response=e.getStackTrace.toString
+        response= (new ApiResult(ErrorCodeConstants.Failure, "dumpAllClusterCfgs",null, e.getStackTrace.toString)).toString
       }
     }
     response
@@ -90,7 +95,8 @@ object DumpService {
     catch {
       case e: Exception => {
         logger.warn("", e)
-        response=e.getStackTrace.toString
+        //response=e.getStackTrace.toString
+        response= (new ApiResult(ErrorCodeConstants.Failure, "dumpAllAdapters",null, e.getStackTrace.toString)).toString
       }
     }
     response

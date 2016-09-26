@@ -1305,7 +1305,7 @@ val apiResult = MetadataAPIImpl.GetMessageDefFromCache(msgNameSpace, msgName, "J
       println(pmmlStr)
       // Save the model
       //    MetadataAPIImpl.SetLoggerLevel(Level.TRACE)
-      println("Results as json string => \n" + MetadataAPIImpl.UpdateModel(ModelType.KPMML, pmmlStr, userid, Some("tenantid"), None, None, None, None, None))
+      println("Results as json string => \n" + MetadataAPIImpl.UpdateModel(ModelType.KPMML, pmmlStr, userid, Some("tenantid"), None, None, None, None, None, Some("{}")))
     } catch {
       case e: Exception => {
 
@@ -1427,7 +1427,7 @@ val apiResult = MetadataAPIImpl.GetMessageDefFromCache(msgNameSpace, msgName, "J
       if (op.equalsIgnoreCase("add")) {
         println("Results as json string => \n" + MetadataAPIImpl.AddModel(ModelType.JAVA, sourceStr, userid, Some("tenantid"), Some(modelConfigName), None, None, None, None, None))
       } else {
-        println("Results as json string => \n" + MetadataAPIImpl.UpdateModel(ModelType.JAVA, sourceStr, userid, Some("tenantid"), Some(modelConfigName), None, None, None, None))
+        println("Results as json string => \n" + MetadataAPIImpl.UpdateModel(ModelType.JAVA, sourceStr, userid, Some("tenantid"), Some(modelConfigName), None, None, None, None, Some("{}")))
       }
     } catch {
       case e: AlreadyExistsException => {
@@ -1514,7 +1514,7 @@ val apiResult = MetadataAPIImpl.GetMessageDefFromCache(msgNameSpace, msgName, "J
         println("Results as json string => \n" +
           getMetadataAPI.AddModel(ModelType.SCALA, sourceStr, userid, Some("tenantid"), Some(modelConfigName), None, None, None, None, None))
       } else {
-        println("Results as json string => \n" + getMetadataAPI.UpdateModel(ModelType.SCALA, sourceStr, userid, Some("tenantid"), Some(modelConfigName), None, None, None, None))
+        println("Results as json string => \n" + getMetadataAPI.UpdateModel(ModelType.SCALA, sourceStr, userid, Some("tenantid"), Some(modelConfigName), None, None, None, None, Some("{}")))
       }
 
     } catch {

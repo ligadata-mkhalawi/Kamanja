@@ -1,0 +1,54 @@
+
+
+
+[
+  {
+    "WireFormats": "for sending commands to python server"
+  },
+  {
+    "Cmd": "addModel",
+    "CmdVer": 1,
+    "CmdOptions": {
+      "ModelFile": "a.py",
+      "ModelName": "a"
+    },
+    "ModelOptions": {
+      "TypeInfo": {
+        "a": "Int",
+        "b": "Int"
+      }
+    }
+  },
+  {
+    "Cmd": "removeModel",
+    "CmdVer": 1,
+    "CmdOptions": {
+      "ModelName": "a"
+    },
+    "ModelOptions": {}
+  },
+  {
+    "Cmd": "serverStatus",
+    "CmdVer": 1,
+    "CmdOptions": {},
+    "ModelOptions": {}
+  },
+  {
+    "Cmd": "executeModel",
+    "CmdVer": 1,
+    "CmdOptions": {
+      "ModelName": "a",
+      "InputDictionary": {
+        "a": 1,
+        "b": 2
+      }
+    },
+    "ModelOptions": {}
+  },
+  {
+    "Cmd": "stopServer",
+    "CmdVer": 1,
+    "CmdOptions": {},
+    "ModelOptions": {}
+  }
+]

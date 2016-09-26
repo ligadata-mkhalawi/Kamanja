@@ -66,6 +66,7 @@ class AuditCassandraAdapter extends AuditAdapter {
   
   var insertStmt: com.datastax.driver.core.PreparedStatement = null
 
+  private[this] val lock = new Object
   /**
    * init - This is a method that must be implemented by the adapter impl.  This method should preform any necessary
    *        steps to set up the destination of the Audit Records (in this case Cassandra Keyspace/Table).
@@ -273,7 +274,7 @@ class AuditCassandraAdapter extends AuditAdapter {
     cluster.close()
   }
   
-  override def TruncateStore: Unit = {
+  override def TruncateStore: Unit = lock.synchronized {
     try {
       var stmt = session.prepare("truncate " + table + ";")
       val rs = session.execute(stmt.bind().setConsistencyLevel(consistencylevelDelete))
@@ -284,6 +285,23 @@ class AuditCassandraAdapter extends AuditAdapter {
       }
     }
   }
+
+
+  override def dropStore: Unit = lock.synchronized {
+    var fullTableName = table
+    if( keyspace != null ){
+      fullTableName = keyspace + "." + table
+    }
+    try {
+      var query = "drop table if exists " + fullTableName
+      session.execute(query);
+    } catch {
+      case e: Exception => {
+        throw new Exception("Unable to drop table " + fullTableName, e)
+      }
+    }
+  }
+
 
   private def initPropertiesFromFile(parmFile: String): Unit = {
     

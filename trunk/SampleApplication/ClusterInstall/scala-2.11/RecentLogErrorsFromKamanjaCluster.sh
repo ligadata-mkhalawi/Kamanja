@@ -25,7 +25,7 @@ Usage()
 
 
 name1=$1
-currentKamanjaVersion=1.5.3
+currentKamanjaVersion=1.6.0
 
 if [ "$#" -ge 3 ]; then
 	echo

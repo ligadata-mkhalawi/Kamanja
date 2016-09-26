@@ -17,7 +17,8 @@ import scala.actors.threadpool.{ExecutorService, Executors}
   * @param messageFoundCallback to call for every read message
   * @param finishCallback call when finished reading
   */
-class FileMessageExtractor(parentExecutor: ExecutorService,
+class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
+                            parentExecutor: ExecutorService,
                            adapterConfig : SmartFileAdapterConfiguration,
                            fileHandler: SmartFileHandler,
                            startOffset : Long,
@@ -26,7 +27,11 @@ class FileMessageExtractor(parentExecutor: ExecutorService,
                            finishCallback : (SmartFileHandler, SmartFileConsumerContext, Int) => Unit ) {
 
   private val maxlen: Int = adapterConfig.monitoringConfig.workerBufferSize * 1024 * 1024 //in MB
-  private val message_separator : Char = adapterConfig.monitoringConfig.messageSeparator
+
+  val srcDirLocInfo = parentSmartFileConsumer.getSrcDirLocationInfo(fileHandler.getParentDir)
+  private val message_separator : Char =
+    if(srcDirLocInfo == null) adapterConfig.monitoringConfig.messageSeparator
+    else srcDirLocInfo.messageSeparator
   private val message_separator_len = 1// since separator is a char
 
   lazy val loggerName = this.getClass.getName
@@ -42,7 +47,7 @@ class FileMessageExtractor(parentExecutor: ExecutorService,
   private var finished = false
   private var processingInterrupted = false
 
-
+  private var fileProcessingStartTm : Long = 0L
 
   def extractMessages() : Unit = {
 
@@ -96,7 +101,9 @@ class FileMessageExtractor(parentExecutor: ExecutorService,
 
     val fileName = fileHandler.getFullPath
 
-    logger.info("Smart File Consumer - Starting reading messages from file " + fileName)
+    fileProcessingStartTm = System.nanoTime
+    logger.warn("Smart File Consumer - Starting reading messages from file {} , on Node {} , PartitionId {}",
+      fileName, consumerContext.nodeId, consumerContext.partitionId.toString)
 
     try {
       fileHandler.openForRead()
@@ -251,11 +258,15 @@ class FileMessageExtractor(parentExecutor: ExecutorService,
       //most likely this happens if last message is not followed by the separator
       if(readlen > 0 && !processingInterrupted){
         val lastMsg: Array[Byte] = byteBuffer.slice(0, readlen)
-        currentMsgNum += 1
-        val msgOffset = globalOffset + lastMsg.length + message_separator_len //byte offset of next message in the file
-        val smartFileMessage = new SmartFileMessage(lastMsg, msgOffset, fileHandler, msgOffset)
-        messageFoundCallback(smartFileMessage, consumerContext)
+        if(lastMsg.length == 1 && lastMsg(0).asInstanceOf[Char] == message_separator){
 
+        }
+        else {
+          currentMsgNum += 1
+          val msgOffset = globalOffset + lastMsg.length + message_separator_len //byte offset of next message in the file
+          val smartFileMessage = new SmartFileMessage(lastMsg, msgOffset, fileHandler, msgOffset)
+          messageFoundCallback(smartFileMessage, consumerContext)
+        }
       }
 
 
@@ -289,12 +300,17 @@ class FileMessageExtractor(parentExecutor: ExecutorService,
     }
     finally{
       if(finishCallback != null) {
+
+        val endTm = System.nanoTime
+        val elapsedTm = endTm - fileProcessingStartTm
+
         if(processingInterrupted) {
           logger.debug("SMART FILE CONSUMER (FileMessageExtractor) - sending interrupting flag for file {}", fileName)
+          logger.warn("SMART FILE CONSUMER - finished reading file %s. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(fileName, elapsedTm/1000000.0, consumerContext.nodeId, consumerContext.partitionId.toString, fileProcessingStartTm, endTm))
           finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_ProcessingInterrupted)
         }
         else {
-          logger.debug("SMART FILE CONSUMER (FileMessageExtractor) - sending finish flag for file {}", fileName)
+          logger.warn("SMART FILE CONSUMER - finished reading file %s. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(fileName, elapsedTm/1000000.0, consumerContext.nodeId, consumerContext.partitionId.toString, fileProcessingStartTm, endTm))
           finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_FINISHED)
         }
       }
