@@ -118,39 +118,6 @@ class PythonMdlSupport(val mgr: MdMgr, val moduleName: String, val modelNamespac
   }
 
   /**
-  * This module checks the existence of python and its version. If python and it correction version is installed
-  * then the module returns true else false
-  *
-  **/
-  private def isPythonVerCorrect () : Boolean = {
-
-     val cmdSeq: Seq[String] = Seq[String]("python", "-V")
-     val (rc, stdoutResult, stderrResult): (Int, String, String) = runCommand(cmdSeq)
-
-     if (rc != 0) {
-       logger.error ("Unable to find python, please install python or python is not in the path") ;
-       false 
-     }
-     if (logger.isDebugEnabled()) {
-       logger.debug("In PythonMdlSupport " + " the value of python version is " + stderrResult)
-     }
-     val versionDetails : Array [String]  = stderrResult.split(' ')(1).split('.')
-     if (logger.isDebugEnabled()) {
-       logger.debug("In PythonMdlSupport " + " the value of python version details are  " + versionDetails)
-     }
-     val version : Int = (versionDetails(0) + versionDetails(1)).toInt
-     if (logger.isDebugEnabled()) {
-       logger.debug("In PythonMdlSupport " + " the value of python version converted is " + version)
-     }
-     if (version >= 27) {
-        true
-     }
-     else  {
-        false 
-     }
-  }
-
-  /**
    * Create Python ModelDef
    *
    * @param recompile when true, an update context...
@@ -162,11 +129,6 @@ class PythonMdlSupport(val mgr: MdMgr, val moduleName: String, val modelNamespac
     val facFacDefs: scala.collection.immutable.Set[FactoryOfModelInstanceFactoryDef] = mgr.ActiveFactoryOfMdlInstFactories
     val optPythonMdlFacFac: Option[FactoryOfModelInstanceFactoryDef] = facFacDefs.find(ff => ff.ModelRepSupported == ModelRepresentation.PYTHON)
     val pythonMdlFacFac: FactoryOfModelInstanceFactoryDef = optPythonMdlFacFac.orNull
-
-    if (isPythonVerCorrect != true) {
-      logger.error(s"Check python install and python version should be greater than  or equal to 27") ;
-      null
-      }    
 
     val modelDefinition: ModelDef = if (pythonMdlFacFac == null) {
       logger.error(s"While building model metadata for $modelNamespace.$modelName, it was discovered that there is no factory for this model representation (${ModelRepresentation.PYTHON}")

@@ -29,6 +29,7 @@ import scala.Enumeration
 import scala.io._
 import scala.collection.mutable.ArrayBuffer
 
+
 import scala.collection.mutable._
 import scala.reflect.runtime.{ universe => ru }
 
@@ -38,6 +39,7 @@ import com.ligadata.kamanja.metadata.MdMgr._
 
 import com.ligadata.kamanja.metadataload.MetadataLoad
 
+import scala.sys.process._
 // import com.ligadata.keyvaluestore._
 import com.ligadata.HeartBeat.{ MonitoringContext, HeartBeatUtil }
 import com.ligadata.StorageBase.{ DataStore, Transaction }
@@ -657,6 +659,78 @@ object ModelUtils {
     }
   }
 
+
+  /**
+   *  Execute the supplied command sequence. Answer with the rc, the stdOut, and stdErr outputs from
+   *  the external command represented in the sequence.
+   *
+   *  Warning: This function will wait for the process to end.  It is **_not_** to be used to launch a daemon. Use
+   *  cmd.run instead. If this application is itself a server, you can run it with the ProcessLogger as done
+   *  here ... possibly with a different kind of underlying stream that writes to a log file or in some fashion
+   *  consumable with the program.
+   *
+   *  @param cmd external command sequence
+   *  @return (rc, stdout, stderr)
+   */
+  private def runCommand(cmd: Seq[String]): (Int, String, String) = {
+    if (logger.isDebugEnabled()) {
+      logger.debug("in runCmdCollectOutput cmd string is  " + cmd.mkString(" "))
+
+    }
+    val stdoutStream = new ByteArrayOutputStream
+    val stderrStream = new ByteArrayOutputStream
+    val stdoutWriter = new PrintWriter(stdoutStream)
+    val stderrWriter = new PrintWriter(stderrStream)
+    val exitValue = cmd.!(ProcessLogger(stdoutWriter.println, stderrWriter.println))
+    stdoutWriter.close()
+    stderrWriter.close()
+    if (logger.isDebugEnabled()) {
+      logger.debug("in runCmdCollectOutput result is   " + exitValue.toString + " stdout = " + stdoutStream.toString + ", stderr = " + stderrStream.toString)
+
+    }
+    (exitValue, stdoutStream.toString, stderrStream.toString)
+  }
+
+  /**
+   * This module checks the existence of python and its version. If python and it correction version is installed
+   * then the module returns true else false
+   *
+    **/
+  private def isPythonVerCorrect () : Int  = {
+
+    val cmdSeq: Seq[String] = Seq[String]("python", "-V")
+    try {
+      val (rc, stdoutResult, stderrResult): (Int, String, String) = runCommand(cmdSeq)
+      if (rc != 0) {
+         logger.error ("Unable to find python, please install python or python is not in the path") ;
+         return 1
+      }
+      if (logger.isDebugEnabled()) {
+        logger.debug("In PythonMdlSupport " + " the value of python version is " + stderrResult)
+      }
+      val versionDetails : Array [String]  = stderrResult.split(' ')(1).split('.')
+     if (logger.isDebugEnabled()) {
+       logger.debug("In PythonMdlSupport " + " the value of python version details are  " + versionDetails)
+     }
+     val version : Int = (versionDetails(0) + versionDetails(1)).toInt
+     if (logger.isDebugEnabled()) {
+        logger.debug("In PythonMdlSupport " + " the value of python version converted is " + version)
+     }
+     if (version >= 27) {
+        return 0
+     }
+     else  {
+       return 2
+    }
+  }
+  catch {
+    case e: IOException => {
+      1
+    }
+  }
+ }
+  
+
   /**
    * Add a PYTHON model to the metadata.
    *
@@ -682,6 +756,24 @@ object ModelUtils {
    * @return json string result
    */
   private def AddPYTHONModel(modelName: String, version: String, msgConsumed: String, msgVersion: String, srcText: String, userid: Option[String], tenantId: String, optMsgProduced: Option[String], pStr: Option[String], someModelOptions: Option[String]): String = {
+
+    val pythonCheck : Int = isPythonVerCorrect() ;
+
+    if (pythonCheck == 1) {
+      if (logger.isDebugEnabled()) {
+         logger.debug(" in AddPYTHONModel : Unable to find python compiler ")
+      }
+      val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"${ErrorCodeConstants.Add_Model_Failed} - Unable to find python")
+      return (apiResult.toString())
+   }
+   if (pythonCheck == 2) {
+     if (logger.isDebugEnabled()) {
+        logger.debug(" in AddPYTHONModel : Unable to find python compiler ")
+     }
+     val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"${ErrorCodeConstants.Add_Model_Failed} - Python version must be greater than 2.6")
+     return (apiResult.toString())
+  }
+	     
     try {
       val buffer: StringBuilder = new StringBuilder
 
