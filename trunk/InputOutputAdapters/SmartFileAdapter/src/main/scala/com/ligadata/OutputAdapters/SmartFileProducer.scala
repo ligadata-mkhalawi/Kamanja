@@ -57,9 +57,18 @@ object SmartFileProducer extends OutputAdapterFactory {
   def CreateOutputAdapter(inputConfig: AdapterConfiguration, nodeContext: NodeContext): OutputAdapter = new SmartFileProducer(inputConfig, nodeContext)
 }
 
-case class PartitionFile(key: String, name: String, outStream: OutputStream, parquetWriter : ParquetWriter[Array[Any]],
+object PartitionFileFactory{
+  def createPartitionFile(fc : SmartFileProducerConfiguration, key : String, avroSchema : Option[String]) : PartitionFile = {
+    if(fc.isParquet) new ParquetPartitionFile(fc, key, avroSchema.get)
+    else new StreamPartitionFile(fc, key)
+
+  }
+
+}
+
+/*case class PartitionFile(key: String, name: String, outStream: OutputStream, parquetWriter : ParquetWriter[Array[Any]],
                          var records: Long, var size: Long, var streamBuffer: ArrayBuffer[Byte], var parquetBuffer: ArrayBuffer[ContainerInterface],
-                         var recordsInBuffer: Long, var flushBufferSize: Long)
+                         var recordsInBuffer: Long, var flushBufferSize: Long)*/
 
 case class PartitionStream(val compressStream: OutputStream, val originalStream: Any) extends OutputStream {
   override def	close() = {
@@ -98,84 +107,6 @@ class OutputStreamWriter {
     if (fileName.startsWith("file://"))
       return fileName.substring("file://".length() - 1)
     fileName
-  }
-
-  private def openFsFile(fc: SmartFileProducerConfiguration, fileName: String, canAppend: Boolean): OutputStream = {
-    var os: OutputStream = null
-    var numOfRetries = 0
-    while (os == null) {
-      try {
-        val file = new File(trimFileFromLocalFileSystem(fileName))
-        file.getParentFile().mkdirs();
-        os = new FileOutputStream(file, canAppend)
-      } catch {
-        case fio: IOException => {
-          LOG.warn("Smart File Producer " + fc.Name + ": Unable to create a file destination " + fc.uri + " due to an IOException", fio)
-          if (numOfRetries > MAX_RETRIES) {
-            LOG.error("Smart File Producer " + fc.Name + ":Unable to create a file destination after " + MAX_RETRIES + " tries.  Aborting.")
-            throw FatalAdapterException("Unable to open connection to specified file after " + MAX_RETRIES + " retries", fio)
-          }
-          numOfRetries += 1
-          LOG.warn("Smart File Producer " + fc.Name + ": Retyring " + numOfRetries + "/" + MAX_RETRIES)
-          Thread.sleep(FAIL_WAIT)
-        }
-        case e: Exception => {
-          throw FatalAdapterException("Unable to open connection to specified file ", e)
-        }
-      }
-    }
-    return os;
-  }
-
-  private def openHdfsFile(fc: SmartFileProducerConfiguration, fileName: String, canAppend: Boolean): OutputStream = {
-    var os: OutputStream = null
-    var numOfRetries = 0
-    while (os == null) {
-      try {
-        var hdfsConf: Configuration = new Configuration();
-        if (fc.kerberos != null) {
-          hdfsConf.set("hadoop.security.authentication", "kerberos")
-          UserGroupInformation.setConfiguration(hdfsConf)
-          ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(fc.kerberos.principal, fc.kerberos.keytab);
-        }
-
-        if (fc.hadoopConfig != null && !fc.hadoopConfig.isEmpty) {
-          fc.hadoopConfig.foreach(conf => {
-            hdfsConf.set(conf._1, conf._2)
-          })
-        }
-
-        var uri: URI = URI.create(fileName)
-        var path: Path = new Path(uri)
-        var fs: FileSystem = FileSystem.get(uri, hdfsConf);
-
-        if (fs.exists(path)) {
-          if (!canAppend) {
-            throw UnsupportedOperationException("File %s exists but append is not permitted".format(fileName), null)
-          }
-          LOG.info("Smart File Producer " + fc.Name + "(" + this + ") : Loading existing file " + uri)
-          os = fs.append(path)
-        } else {
-          LOG.info("Smart File Producer " + fc.Name + "(" + this + ") : Creating new file " + uri);
-          os = fs.create(path);
-        }
-      } catch {
-        case fio: IOException => {
-          LOG.warn("Smart File Producer " + fc.Name + ": Unable to create a file destination " + fc.uri + " due to an IOException", fio)
-          if (numOfRetries > MAX_RETRIES) {
-            LOG.error("Smart File Producer " + fc.Name + ":Unable to create a file destination after " + MAX_RETRIES + " tries.  Aborting.")
-            throw FatalAdapterException("Unable to open connection to specified file after " + MAX_RETRIES + " retries", fio)
-          }
-          numOfRetries += 1
-          LOG.warn("Smart File Producer " + fc.Name + ": Retyring " + numOfRetries + "/" + MAX_RETRIES)
-          Thread.sleep(FAIL_WAIT)
-        }
-        case e: Exception => {
-          throw FatalAdapterException("Unable to open connection to specified file ", e)
-        }
-      }
-    }
-    return os;
   }
 
   private def isFsFileExists(fc: SmartFileProducerConfiguration, fileName: String): Boolean = {
@@ -260,44 +191,10 @@ class OutputStreamWriter {
     }
   }
 
-  private def writeToFs(fc: SmartFileProducerConfiguration, os: OutputStream, message: Array[Byte]) = {
-    os.write(message)
-    os.flush()
-  }
-
-  private def writeToHdfs(fc: SmartFileProducerConfiguration, os: OutputStream, message: Array[Byte]) = {
-    try {
-      val stream = os.asInstanceOf[PartitionStream].compressStream
-      os.write(message)
-      os.flush()  // this flush will call hsync for HDFS    
-    } catch {
-      case e: Exception => {
-        if (fc.kerberos != null) {
-          LOG.debug("Smart File Producer " + fc.Name + ": Error writing to HDFS. Will relogin and try.")
-          ugi.reloginFromTicketCache()
-          os.write(message)
-          os.flush()
-        }
-      }
-    }
-  }
-
-  final def openFile(fc: SmartFileProducerConfiguration, fileName: String, canAppend: Boolean = true): OutputStream = if (fc.uri.startsWith("hdfs://")) openHdfsFile(fc, fileName, canAppend) else openFsFile(fc, fileName, canAppend)
-
   final def isFileExists(fc: SmartFileProducerConfiguration, fileName: String): Boolean = if (fc.uri.startsWith("hdfs://")) isHdfsFileExists(fc, fileName) else isFsFileExists(fc, fileName)
 
   final def removeFile(fc: SmartFileProducerConfiguration, fileName: String): Unit = if (fc.uri.startsWith("hdfs://")) removeHdfsFile(fc, fileName) else removeFsFile(fc, fileName)
 
-  final def writeStream(fc: SmartFileProducerConfiguration, pf : PartitionFile, message: Array[Byte]): Unit = {
-
-    val os: OutputStream = pf.outStream
-    if (fc.uri.startsWith("hdfs://")) writeToHdfs(fc, os, message) else writeToFs(fc, os, message)
-  }
-
-  final def writeParquet(fc: SmartFileProducerConfiguration, pf : PartitionFile, messages: Array[ContainerInterface]): Unit = {
-
-    Utils.writeParquet(fc, pf, messages)
-  }
 
   /*
     def hasCompressedFlag(fc: SmartFileProducerConfiguration): Boolean = {
@@ -454,7 +351,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
                 LOG.debug("Smart File Producer " + fc.Name + ": writing buffer for file at " + name)
                 try {
                   pf.synchronized {
-                    flushPartitionFile(pf)
+                    pf.flush()
                   }
                 } catch {
                   case e: Exception => LOG.debug("Smart File Producer " + fc.Name + ": Error closing file: ", e)
@@ -487,11 +384,11 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           LOG.info("Smart File Producer " + fc.Name + ": Rolling file at " + name)
           try {
             pf.synchronized {
-              flushPartitionFile(pf)
+              pf.flush()
               if(isParquet)
-                pf.parquetWriter.close()
+                pf.close()
               else
-                pf.outStream.close
+                pf.close
             }
           } catch {
             case e: Exception => LOG.debug("Smart File Producer " + fc.Name + ": Error closing file: ", e)
@@ -584,43 +481,21 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
             }
             else initialFileName
 
-          LOG.info("Smart File Producer " + fc.Name + "(" + this + "): Opening file " + fileName)
-          var os : OutputStream = null
-          var originalStream : OutputStream = null
-          if(!isParquet) {
-            os = openFile(fc, fileName)
-            originalStream = os
-            if (compress)
-              os = new CompressorStreamFactory().createCompressorOutputStream(fc.compressionString, os)
-          }
 
-          if(isParquet){
-
-            /*if(!avroSchemasMap.contains(typeName))
-              avroSchemasMap.put(typeName, Utils.getAvroSchema(record))
-            val parquetWriter = Utils.createAvroParquetWriter(fc, avroSchemasMap(typeName), fileName, parquetCompression)*/
-
-            if(!writeSupportsMap.contains(record.getFullTypeName)){
+          if(isParquet){//TODO : is it better to cache parsed schemas in a map ?
+            /*if(!writeSupportsMap.contains(record.getFullTypeName)){
               LOG.info(">>>>>>>>>>>>>>>>>> Avro schema : " + record.getAvroSchema)
-              val parquetSchema = Utils.getParquetSchema(record)
+              val parquetSchema = Utils.getParquetSchema(record.getAvroSchema)
               LOG.info(">>>>>>>>>>>>>>>>>> parquet schema : " + parquetSchema.toString)
 
               val writeSupport = new ParquetWriteSupport(parquetSchema)
               writeSupportsMap.put(record.getFullTypeName, writeSupport)
-            }
-            val parquetWriter = Utils.createParquetWriter(fc, fileName, writeSupportsMap(record.getFullTypeName), parquetCompression)
+            }*/
+          }
 
-            var buffer: ArrayBuffer[ContainerInterface] = null
-            if (fileBufferSize > 0)
-              buffer = new ArrayBuffer[ContainerInterface]
-            partKey = new PartitionFile(key, fileName, new PartitionStream(os, originalStream), parquetWriter, 0, 0, null, buffer, 0, fileBufferSize)
-          }
-          else {
-            var buffer: ArrayBuffer[Byte] = null
-            if (fileBufferSize > 0)
-              buffer = new ArrayBuffer[Byte]
-            partKey = new PartitionFile(key, fileName, new PartitionStream(os, originalStream), null, 0, 0, buffer, null, 0, fileBufferSize)
-          }
+          partKey = //new PartitionFile(key, fileName, new PartitionStream(os, originalStream), parquetWriter, 0, 0, null, buffer, 0, fileBufferSize)
+            PartitionFileFactory.createPartitionFile(fc, key, Some(record.getAvroSchema))
+          partKey.init(fileName, fileBufferSize)
 
           LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile adding key - [" + key + "]")
           partitionStreams(key) = partKey
@@ -633,76 +508,22 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     return partKey
   }
 
-  private def flushPartitionFile(file: PartitionFile) = {
-    LOG.info("Smart File Producer :" + fc.Name + " : In flushPartitionFile key - [" + file.key + "]")
-    var pf = file;
-    var isSuccess = false
-    var numOfRetries = 0
-    while (!isSuccess) {
-      try {
-        pf.synchronized {
-          if(isParquet){
-            if (pf.flushBufferSize > 0 && pf.parquetBuffer.size > 0) {
-              //avroSchemasMap(pf.parquetBuffer(0).getFullTypeName)
-              writeParquet(fc, pf, pf.parquetBuffer.toArray)
-              pf.size += pf.parquetBuffer.size
-              pf.records += pf.recordsInBuffer
-              pf.parquetBuffer.clear()
-              pf.recordsInBuffer = 0
-            }
-          }
-          else{
-            if (pf.flushBufferSize > 0 && pf.streamBuffer.size > 0) {
-              writeStream(fc, pf, pf.streamBuffer.toArray)
-              pf.size += pf.streamBuffer.size
-              pf.records += pf.recordsInBuffer
-              pf.streamBuffer.clear()
-              pf.recordsInBuffer = 0
-            }
-          }
-        }
-        isSuccess = true
-      } catch {
-        case fio: IOException => {
-          LOG.warn("Smart File Producer " + fc.Name + ": Unable to flush buffer to file " + pf.name)
-          if (numOfRetries == MAX_RETRIES) {
-            if(!isParquet) {
-              LOG.warn("Smart File Producer " + fc.Name + ": Unable to flush buffer to file destination after " + MAX_RETRIES + " tries.  Trying to reopen file " + pf.name, fio)
-              pf = reopenPartitionFile(pf)
-            }
-          } else if (numOfRetries > MAX_RETRIES) {
-            LOG.error("Smart File Producer " + fc.Name + ": Unable to flush buffer to file destination after " + MAX_RETRIES + " tries.  Aborting.", fio)
-            throw FatalAdapterException("Unable to flush buffer to specified file after " + MAX_RETRIES + " retries", fio)
-          }
-          numOfRetries += 1
-          LOG.warn("Smart File Producer " + fc.Name + ": Retyring " + numOfRetries + "/" + MAX_RETRIES)
-          Thread.sleep(FAIL_WAIT)
-        }
-        case e: Exception => {
-          LOG.error("Smart File Producer " + fc.Name + ": Unable to flush buffer to file " + pf.name, e)
-          throw e
-        }
-      }
-    }
-  }
 
-  private def reopenPartitionFile(pf: PartitionFile): PartitionFile = {//only for stream, not applicable for parquet
-    LOG.info("Smart File Producer :" + fc.Name + " : In PartitionFile key - [" + pf.key + "]")
+  /*private def reopenPartitionFile(pf: PartitionFile): PartitionFile = {//only for stream, not applicable for parquet
+    LOG.info("Smart File Producer :" + fc.Name + " : In PartitionFile key - [" + pf.getKey + "]")
     WriteLock(_reent_lock)
     try {
-      partitionStreams.remove(pf.key)
-      var os = openFile(fc, pf.name)
-      val originalStream = os
-      if (compress)
-        os = new CompressorStreamFactory().createCompressorOutputStream(fc.compressionString, os)
+      partitionStreams.remove(pf.getKey)
 
-      partitionStreams(pf.key) = new PartitionFile(pf.key, pf.name, new PartitionStream(os, originalStream), null, pf.records, pf.size, pf.streamBuffer, null, pf.recordsInBuffer, pf.flushBufferSize)
+      val newPf = PartitionFileFactory.createPartitionFile(fc, pf.getKey)
+      newPf.init(pf.getFilePath, pf.getFlushBufferSize)
+      partitionStreams(pf.getKey) = new PartitionFile(pf.key, pf.name, new PartitionStream(os, originalStream), null, pf.records, pf.size, pf.streamBuffer, null, pf.recordsInBuffer, pf.flushBufferSize)
 
-      return partitionStreams(pf.key)
+      return partitionStreams(pf.getKey)
     } finally {
       WriteUnlock(_reent_lock)
     }
-  }
+  }*/
 
   override def send(message: Array[Array[Byte]], partitionKey: Array[Array[Byte]]): Unit = {
     // Not implemented yet
@@ -738,95 +559,13 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       // Op is not atomic
       var idx = 0
       outputContainers.foreach(record => {
-        val message = if(isParquet) null else serializedContainerData(idx)
 
-        idx += 1
-
-        var isSuccess = false
-        var numOfRetries = 0
         var pf = getPartionFile(record);
-        while (!isSuccess) {
-          try {
-            pf.synchronized {
-              if (pf.flushBufferSize > 0) {
-                LOG.info("Smart File Producer " + fc.Name + ": adding record to buffer for file " + pf.name)
-                if(isParquet) {
-                  pf.parquetBuffer.append(record)
-
-                  pf.recordsInBuffer += 1
-                  if (pf.parquetBuffer.size > pf.flushBufferSize) {
-                    LOG.info("Smart File Producer " + fc.Name + ": buffer is full writing to file " + pf.name)
-                    //avroSchemasMap(pf.parquetBuffer(0).getFullTypeName)
-                    writeParquet(fc, pf, pf.parquetBuffer.toArray)
-                    pf.size += pf.parquetBuffer.size
-                    pf.records += pf.recordsInBuffer
-                    pf.parquetBuffer.clear()
-                    pf.recordsInBuffer = 0
-                  }
-                }
-                else{
-                  pf.streamBuffer ++= message
-                  pf.streamBuffer ++= fc.messageSeparator.getBytes
-
-                  pf.recordsInBuffer += 1
-                  if (pf.streamBuffer.size > pf.flushBufferSize) {
-                    LOG.info("Smart File Producer " + fc.Name + ": buffer is full writing to file " + pf.name)
-                    writeStream(fc, pf, pf.streamBuffer.toArray)
-                    pf.size += pf.streamBuffer.size
-                    pf.records += pf.recordsInBuffer
-                    pf.streamBuffer.clear()
-                    pf.recordsInBuffer = 0
-                  }
-                }
-
-              } else {
-                LOG.info("Smart File Producer " + fc.Name + ": writing record to file " + pf.name)
-                if(isParquet) {
-                  val data = Array(record)
-                  //avroSchemasMap(record.getFullTypeName)
-                  writeParquet(fc, pf, data)
-                  pf.size += data.length
-                }
-                else {
-                  val data = message ++ fc.messageSeparator.getBytes
-                  writeStream(fc, pf, data)
-                  pf.size += data.length
-                }
-                pf.records += 1
-
-              }
-            }
-            isSuccess = true
-            LOG.info("finished writing message")
-            metrics("MessagesProcessed").asInstanceOf[AtomicLong].incrementAndGet()
-          } catch {
-            case fio: IOException => {
-              LOG.warn("Smart File Producer " + fc.Name + ": Unable to write to file " + pf.name)
-              if (numOfRetries == MAX_RETRIES) {
-                LOG.warn("Smart File Producer " + fc.Name + ": Unable to write to file destination after " + MAX_RETRIES + " tries.  Trying to reopen file " + pf.name, fio)
-                pf = reopenPartitionFile(pf)
-              } else if (numOfRetries > MAX_RETRIES) {
-                LOG.error("Smart File Producer " + fc.Name + ": Unable to write to file destination after " + MAX_RETRIES + " tries.  Aborting.", fio)
-                throw FatalAdapterException("Unable to write to specified file after " + MAX_RETRIES + " retries", fio)
-              }
-              numOfRetries += 1
-              LOG.warn("Smart File Producer " + fc.Name + ": Retyring " + numOfRetries + "/" + MAX_RETRIES)
-              Thread.sleep(FAIL_WAIT)
-            }
-            case e: Exception => {
-
-              if(isParquet) {
-                val messageStr =
-                  if(record == null) "null"
-                  else record.getAllAttributeValues.map(attr => if(attr==null || attr.getValue == null) "null" else attr.getValue.toString).mkString(fc.messageSeparator)
-                LOG.error("Smart File Producer " + fc.Name + ": Unable to write output message: " + messageStr, e)
-              }
-              else
-                LOG.error("Smart File Producer " + fc.Name + ": Unable to write output message: " + new String(message), e)
-              throw e
-            }
-          }
+        pf.synchronized {
+          pf.send(tnxCtxt, record, this)
         }
+
+        metrics("MessagesProcessed").asInstanceOf[AtomicLong].incrementAndGet() //TODO : only if success
       })
     } catch {
       case e: Exception => {
@@ -850,12 +589,8 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
         if (pf != null) {
           LOG.info("Smart File Producer " + fc.Name + ": closing file at " + name)
           pf.synchronized {
-            flushPartitionFile(pf)
-
-            if(isParquet)
-              pf.parquetWriter.close
-            else
-              pf.outStream.close
+            pf.flush()
+            pf.close()
           }
         }
       }

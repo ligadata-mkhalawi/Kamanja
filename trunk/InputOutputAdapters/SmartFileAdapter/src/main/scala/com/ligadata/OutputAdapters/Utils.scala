@@ -34,12 +34,12 @@ object Utils {
     hdfsConf
   }
   
-  def getAvroSchema(record: ContainerInterface): org.apache.avro.Schema ={
+  def getAvroSchema(avroSchemaStr : String): org.apache.avro.Schema ={
 
     //replace basic types with Union type to allow nulls => optional in parquet,
     // otherwise generated parquet fields will be required
     val regex = "\"type\"\\s*:\\s*\"(int|double|float|boolean|long|string)\"".r
-    val modifiedAvroSchemaStr = regex.replaceAllIn(record.getAvroSchema, "\"type\" : [\"$1\",\"null\"]")
+    val modifiedAvroSchemaStr = regex.replaceAllIn(avroSchemaStr, "\"type\" : [\"$1\",\"null\"]")
 
     val arrayRegex = "\\{\"type\"\\s*:\\s*\"array\"(.)*\"\\}".r
     val finalAvroSchemaStr = arrayRegex.replaceAllIn(modifiedAvroSchemaStr, "[$0,\"null\"]")
@@ -165,8 +165,9 @@ object Utils {
   /***************************************************************/
   /********Parquet Writer*********/
 
-  def getParquetSchema(record: ContainerInterface): parquet.schema.MessageType ={
-    val avroSchema :  org.apache.avro.Schema = getAvroSchema(record)
+
+  def getParquetSchema(avroSchemaStr : String): parquet.schema.MessageType ={
+    val avroSchema :  org.apache.avro.Schema = getAvroSchema(avroSchemaStr)
     val avroSchemaConverter = new parquet.avro.AvroSchemaConverter()
     val parquetSchema = avroSchemaConverter.convert(avroSchema)
     parquetSchema
@@ -204,11 +205,11 @@ object Utils {
     parquetWriter
   }
 
-  def writeParquet(fc: SmartFileProducerConfiguration, pf : PartitionFile, messages: Array[ContainerInterface]): Unit = {
+  /*def writeParquet(fc: SmartFileProducerConfiguration, pf : PartitionFile, messages: Array[ContainerInterface]): Unit = {
     messages.foreach(message => {
       val msgData : Array[Any] = message.getAllAttributeValues.map(attr => attr.getValue)
       pf.parquetWriter.write(msgData)
     })
 
-  }
+  }*/
 }
