@@ -723,13 +723,16 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       }
     }
 
-    val (outContainers, serializedContainerData, serializerNames) = serialize(tnxCtxt, outputContainers)
+    val (outContainers, serializedContainerData, serializerNames) =
+      if(isParquet) (null, null, null) else serialize(tnxCtxt, outputContainers)
 
-    if (outputContainers.size != serializedContainerData.size || outputContainers.size != serializerNames.size) {
-      LOG.error("Smart File Producer " + fc.Name + ": Messages, messages serialized data & serializer names should has same number of elements. Messages:%d, Messages Serialized data:%d, serializerNames:%d".format(outputContainers.size, serializedContainerData.size, serializerNames.size))
-      return
+    if(!isParquet) {
+      if (outputContainers.size != serializedContainerData.size || outputContainers.size != serializerNames.size) {
+        LOG.error("Smart File Producer " + fc.Name + ": Messages, messages serialized data & serializer names should has same number of elements. Messages:%d, Messages Serialized data:%d, serializerNames:%d".format(outputContainers.size, serializedContainerData.size, serializerNames.size))
+        return
+      }
+      if (serializedContainerData.size == 0) return
     }
-    if (serializedContainerData.size == 0) return
 
     try {
       // Op is not atomic
