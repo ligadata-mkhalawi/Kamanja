@@ -48,10 +48,8 @@ class StreamPartitionFile(fc : SmartFileProducerConfiguration, key : String) ext
     var os : OutputStream = null
     var originalStream : OutputStream = null
     //os = openFile(fc, fileName)
-    if (fc.uri.startsWith("hdfs://"))
-      originalStream = openHdfsFile(fc, filePath, canAppend)
-    else
-      originalStream = openFsFile(fc, filePath, canAppend)
+    val osWriter = new com.ligadata.OutputAdapters.OutputStreamWriter()
+    originalStream = osWriter.openFile(fc, filePath, canAppend)
 
     if (compress)
       os = new CompressorStreamFactory().createCompressorOutputStream(fc.compressionString, originalStream)
@@ -81,7 +79,7 @@ class StreamPartitionFile(fc : SmartFileProducerConfiguration, key : String) ext
       return fileName.substring("file://".length() - 1)
     fileName
   }
-  private def openFsFile(fc: SmartFileProducerConfiguration, fileName: String, canAppend: Boolean): OutputStream = {
+  /*private def openFsFile(fc: SmartFileProducerConfiguration, fileName: String, canAppend: Boolean): OutputStream = {
     var os: OutputStream = null
     var numOfRetries = 0
     while (os == null) {
@@ -106,8 +104,8 @@ class StreamPartitionFile(fc : SmartFileProducerConfiguration, key : String) ext
       }
     }
     os
-  }
-  private def openHdfsFile(fc: SmartFileProducerConfiguration, fileName: String, canAppend: Boolean): OutputStream = {
+  }*/
+  /*private def openHdfsFile(fc: SmartFileProducerConfiguration, fileName: String, canAppend: Boolean): OutputStream = {
     var os: OutputStream = null
     var numOfRetries = 0
     while (os == null) {
@@ -156,7 +154,7 @@ class StreamPartitionFile(fc : SmartFileProducerConfiguration, key : String) ext
       }
     }
     os
-  }
+  }*/
 
 
   def reopen(): Unit ={
