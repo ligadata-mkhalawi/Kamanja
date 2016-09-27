@@ -151,6 +151,7 @@ object PythonFactoryOfModelInstanceFactory extends FactoryOfModelInstanceFactory
         mdlInstanceFactory
     }
 
+
     /**
       * Answer a model definition for the supplied model string, input message, output message and jarPaths.
       *
@@ -224,6 +225,11 @@ class PythonAdapter(factory : PythonAdapterFactory
             throw new KamanjaException("PythonAdapter initialization failed... factory's model def is null",null)
         }
 
+    if (factory.isPythonVerCorrect != true) {
+      logger.error(s"Check python install and python version should be greater than  or equal to 27") ;
+      throw new KamanjaException("Python Install failure  Please check logs ",null)
+      }    
+       
         val pyServerConnection : PyServerConnection = getServerConnection
 
       if (logger.isDebugEnabled()) {
@@ -401,6 +407,7 @@ class PythonAdapter(factory : PythonAdapterFactory
       if (logger.isDebugEnabled()){
         logger.debug (s"Evaluate Model for (moduleName = $moduleName, modelName = '$modelName')")
       }
+      
         val pyServerConnection : PyServerConnection = getServerConnection
         if (pyServerConnection == null) {
             logger.error(s"Python evaluateModel (moduleName = $moduleName, modelName = '$modelName') ... the python server connection could not be obtained... giving up")
@@ -805,6 +812,42 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext, val ser
     }
 
   /**
+  * This module checks the existence of python and its version. If python and it correction version is installed
+  * then the module returns true else false
+  *
+  **/
+    def isPythonVerCorrect () : Boolean = {
+
+     val cmdSeq: Seq[String] = Seq[String]("python", "-V")
+     val (rc, stdoutResult, stderrResult): (Int, String, String) = runCmdCollectOutput(cmdSeq)
+
+     if (rc != 0) {
+       logger.error ("Unable to find python, please install python or python is not in the path") ;
+       false 
+     }
+     if (logger.isDebugEnabled()) {
+       logger.debug("In PythonMdlSupport " + " the value of python version is " + stdoutResult)
+     }
+     val versionDetails : Array [String]  = stdoutResult.split(' ')(1).split('.')
+     if (logger.isDebugEnabled()) {
+       logger.debug("In PythonMdlSupport " + " the value of python version details are  " + versionDetails)
+     }
+     val version : Int = (versionDetails(0) + versionDetails(1)).toInt
+     if (logger.isDebugEnabled()) {
+       logger.debug("In PythonMdlSupport " + " the value of python version converted is " + version)
+     }
+     if (version >= 27) {
+        true
+     }
+     else  {
+        false 
+     }
+     
+  }
+
+    
+
+  /**
    * Execute the supplied command sequence. Answer with the rc, the stdOut, and stdErr outputs from
    * the external command represented in the sequence.
    *
@@ -911,6 +954,8 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext, val ser
       *  @return true
       */
     override def isModelInstanceReusable(): Boolean = true
+
+
 
 
 }
