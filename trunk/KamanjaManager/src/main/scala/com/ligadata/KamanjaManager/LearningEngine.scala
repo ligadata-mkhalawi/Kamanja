@@ -199,7 +199,7 @@ object KamanjaCacheQueueEntry {
 }
 
 // BUGBUG:: Do we need to get nodeIdModlsObj from KamanjaCacheQueueEntry?????
-class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: Int, val endPartitionId: Int) extends Runnable {
+class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: Int, val endPartitionId: Int, val queue: LogicalPartitionQueue) extends Runnable {
   private var waitTimeForNoMdlsExecInMs = 1
   private val LOG = LogManager.getLogger(getClass);
   private var mdlsChangedCntr: Long = -1
@@ -376,7 +376,7 @@ class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: I
 
   private def executeModels(): Unit = {
     while (isNotShuttingDown) {
-      val dqKamanjaCacheQueueEntry: KamanjaCacheQueueEntry = null
+      val dqKamanjaCacheQueueEntry: KamanjaCacheQueueEntry = queue.deQ()
       if (dqKamanjaCacheQueueEntry == null) {
         if (LOG.isTraceEnabled)
           LOG.trace("Did not get CacheQueueEntry to process for ThreadId:%d, StartPartitionId:%d, EndPartitionId:%d".format(threadId, startPartitionId, endPartitionId))

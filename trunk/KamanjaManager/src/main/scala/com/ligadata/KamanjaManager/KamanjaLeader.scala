@@ -1130,7 +1130,7 @@ object KamanjaLeader {
                   val (threadId, startPartRange, endPartitionRange) = (lp.ThreadId, lp.SRange, lp.ERange)
                   if (LOG.isInfoEnabled())
                     LOG.info("Creating logical partition executor for threadid:" + threadId)
-                  remoteExecPool.execute(new LeanringEngineRemoteExecution(threadId, startPartRange, endPartitionRange))
+                  remoteExecPool.execute(new LeanringEngineRemoteExecution(threadId, startPartRange, endPartitionRange, logicalPartitionQueues(threadId)))
                 })
               }
 
