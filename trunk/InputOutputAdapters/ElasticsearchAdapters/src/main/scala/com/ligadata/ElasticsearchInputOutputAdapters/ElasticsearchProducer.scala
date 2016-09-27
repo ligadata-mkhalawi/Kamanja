@@ -11,6 +11,7 @@ import com.ligadata.InputOutputAdapterInfo._
 import com.ligadata.KamanjaBase.{ContainerInterface, NodeContext, TransactionContext}
 import com.ligadata.KvBase.{Key, Value}
 import com.ligadata.Utils.KamanjaLoaderInfo
+import com.ligadata.keyvaluestore.ElasticsearchAdapter
 import org.apache.logging.log4j.LogManager
 import org.json4s.jackson.Serialization
 
@@ -20,6 +21,7 @@ import scala.collection.mutable.ArrayBuffer
 
 object ElasticsearchProducer extends OutputAdapterFactory {
   def CreateOutputAdapter(inputConfig: AdapterConfiguration, nodeContext: NodeContext): OutputAdapter = new ElasticsearchProducer(inputConfig, nodeContext)
+
   val HB_PERIOD = 5000
 
   // Statistics Keys
@@ -34,8 +36,8 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
   private[this] val LOG = LogManager.getLogger(getClass);
 
-  private var shutDown:Boolean = false
-  private val nodeId = if(nodeContext==null || nodeContext.getEnvCtxt()==null) "1" else nodeContext.getEnvCtxt().getNodeId()
+  private var shutDown: Boolean = false
+  private val nodeId = if (nodeContext == null || nodeContext.getEnvCtxt() == null) "1" else nodeContext.getEnvCtxt().getNodeId()
   private val FAIL_WAIT = 2000
   private var numOfRetries = 0
   private var MAX_RETRIES = 3
@@ -68,20 +70,24 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   val key = Category + "/" + adapterConfig.Name + "/evtCnt"
   val randomPartitionCntr = new java.util.Random
   var partitionsGetTm = System.currentTimeMillis
-  val refreshPartitionTime = 60 * 1000 // 60 secs
+  val refreshPartitionTime = 60 * 1000
+  // 60 secs
   var timePartition = System.currentTimeMillis()
   var transService = new com.ligadata.transactions.SimpleTransService
   transService.init(1)
-  transId = transService.getNextTransId // Getting first transaction. It may get wasted if we don't have any lines to save.
+  transId = transService.getNextTransId
+
+  // Getting first transaction. It may get wasted if we don't have any lines to save.
 
 
   case class MsgDataRecievedCnt(cntrToOrder: Long, msg: Array[(Array[Byte], Array[Byte])])
 
   val partitionsMap = new ConcurrentHashMap[Int, ConcurrentHashMap[Long, MsgDataRecievedCnt]](128);
-  val failedMsgsMap = new ConcurrentHashMap[Int, ConcurrentHashMap[Long, MsgDataRecievedCnt]](128); // We just need Array Buffer as Innser value. But the only issue is we need to make sure we handle it for multiple threads.
+  val failedMsgsMap = new ConcurrentHashMap[Int, ConcurrentHashMap[Long, MsgDataRecievedCnt]](128);
+  // We just need Array Buffer as Innser value. But the only issue is we need to make sure we handle it for multiple threads.
 
   var dataStoreInfo = elaticsearchutil.createDataStorageInfo(adapterConfig)
-  var dataStore = elaticsearchutil.GetDataStoreHandle(dataStoreInfo)
+  var dataStore = elaticsearchutil.GetDataStoreHandle(dataStoreInfo).asInstanceOf[ElasticsearchAdapter]
 
   override def send(messages: Array[Array[Byte]], partitionKeys: Array[Array[Byte]]): Unit = {
     //    if (!isHeartBeating) runHeartBeat
@@ -218,7 +224,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
           val cont = row._3.asInstanceOf[ContainerInterface]
           val arrayOfCont = Array(cont)
           val (containers, serData, serializers) = serialize(tnxCtxt, arrayOfCont)
-          // println("++container fullname++" + cont.getFullTypeName)
+          //           println("++container fullname++" + cont.getFullTypeName)
           if (containers == null || containers.size == 0) {
             (null, Value(0, null, null))
           } else {
@@ -234,15 +240,19 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     //    putData.foreach({x =>
     //    println("<===containername====>" + x._1 + "contianer size" + x._2.length)})
 
-    if (putData.size > 0)
-      dataStore.put(putData)
+//    if (putData.size > 0)
+//      dataStore.put(putData)
+    val tmparray: Array[(String, Array[String])]= Array(("sampleContainer",Array("data1","data2")),("sampleContainer",Array("data1","data2")))
+    dataStore.putJson(tmparray)
     // dataStore.put(tnxCtxt, data_list)
   }
 
+
   override def getComponentStatusAndMetrics: MonitorComponentInfo = {
     implicit val formats = org.json4s.DefaultFormats
-    return new MonitorComponentInfo( AdapterConfiguration.TYPE_OUTPUT, adapterConfig.Name, ElasticsearchProducer.ADAPTER_DESCRIPTION, startTime, lastSeen,  Serialization.write(metrics).toString)
+    return new MonitorComponentInfo(AdapterConfiguration.TYPE_OUTPUT, adapterConfig.Name, ElasticsearchProducer.ADAPTER_DESCRIPTION, startTime, lastSeen, Serialization.write(metrics).toString)
   }
+
   /**
     * this is a very simple string to be externalized on a Status timer for the adapter.
     *
@@ -254,7 +264,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
   override def Shutdown(): Unit = {
 
-    LOG.info(adapterConfig.Name +" Shutdown detected")
+    LOG.info(adapterConfig.Name + " Shutdown detected")
 
     // Shutdown HB
     isShutdown = true
@@ -301,7 +311,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
         metrics(key) = value.toString
       } else {
         // This is an aggregated Long value
-        val cur = metrics.getOrElse(key,"0").toString
+        val cur = metrics.getOrElse(key, "0").toString
         val longCur = cur.toLong
         metrics(key) = longCur + value.toString.toLong
       }
@@ -414,11 +424,11 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
         } catch {
           case e: Exception => {
             externalizeExceptionEvent(e)
-            if (! isShutdown) LOG.warn("", e)
+            if (!isShutdown) LOG.warn("", e)
           }
           case e: Throwable => {
             externalizeExceptionEvent(e)
-            if (! isShutdown) LOG.warn("", e)
+            if (!isShutdown) LOG.warn("", e)
           }
         }
         if (isShutdown == false) {
@@ -471,7 +481,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
           try {
             Thread.sleep(waitTm)
           } catch {
-            case e: Exception =>  {
+            case e: Exception => {
               externalizeExceptionEvent(e)
               throw e
             }
@@ -546,7 +556,6 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   //    }
   //    return HbaseConstants.HBASE_SEND_SUCCESS
   //  }
-
 
 
 }

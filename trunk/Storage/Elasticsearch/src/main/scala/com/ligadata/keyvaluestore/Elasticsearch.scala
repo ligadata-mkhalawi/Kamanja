@@ -471,6 +471,38 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     toFullTableName(containerName)
   }
 
+
+  def putJson(data_list: Array[(String, Array[(String)])]): Unit = {
+    var client: TransportClient = null
+    var containerName = ""
+
+    try {
+      client = getConnection
+      var bulkRequest = client.prepareBulk()
+      data_list.foreach({ x =>
+        containerName = x._1
+        val dataArray = x._2
+        dataArray.foreach({ jsonData =>
+          // insert y to table containerName
+          bulkRequest.add(client.prepareIndex(containerName, "type1").setSource(jsonData))
+        })
+      })
+      logger.debug("Executing bulk insert...")
+      val bulkResponse = bulkRequest.execute().actionGet()
+
+    }
+    catch {
+      case e: Exception => {
+        throw CreateDMLException("Failed to save an object in the table " + containerName + ":", e)
+      }
+    } finally {
+      if (client != null) {
+        client.close
+      }
+    }
+  }
+
+
   override def put(containerName: String, key: Key, value: Value): Unit = {
     var client: TransportClient = null
     var tableName = toFullTableName(containerName)
@@ -1992,6 +2024,9 @@ class ElasticsearchAdapterTx(val parent: DataStore) extends Transaction {
 
   //  val loggerName = this.getClass.getName
   //  val logger = LogManager.getLogger(loggerName)
+  def putJson(data_list: Array[(String, Array[(String)])]): Unit = {
+    putJson(data_list)
+  }
 
   override def put(containerName: String, key: Key, value: Value): Unit = {
     parent.put(containerName, key, value)
