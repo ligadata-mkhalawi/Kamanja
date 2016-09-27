@@ -1,0 +1,9 @@
+1,John Clark,food
+2,James Brown,games
+3,Clark Gable,music
+1,John Clark,food~games
+2,James Brown,games~music
+3,Clark Gable,music~food
+1,John Clark,food~games~music
+2,James Brown,games~music~food
+3,Clark Gable,music~food~games

@@ -1,0 +1,31 @@
+{
+  "Message": {
+    "NameSpace": "com.ligadata.kamanja.test.messages",
+    "Name": "TestApp1Message",
+    "Version": "00.00.01",
+    "Description": "New customer transaction",
+    "Fixed": "true",
+    "Persist": "false",
+    "Fields": [
+      {
+        "Name": "ID",
+        "Type": "System.String"
+      },
+      {
+
+        "Name": "Name",
+        "Type": "System.String"
+      },
+      {
+        "Name": "ShoppingList",
+        "Type": "System.ArrayOfString"
+      }
+    ],
+    "PartitionKey": [
+      "ID"
+    ],
+    "PrimaryKey": [
+      "ID"
+    ]
+  }
+}

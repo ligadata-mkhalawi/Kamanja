@@ -1,0 +1,34 @@
+{
+  "Message": {
+    "NameSpace": "com.ligadata.kamanja.test.messages",
+    "Name": "TestApp1OutputMessage",
+    "Version": "00.00.01",
+    "Description": "Results of a customer transaction",
+    "Fixed": "true",
+    "Persist": "false",
+    "Fields": [
+      {
+        "Name": "ID",
+        "Type": "System.String"
+      },
+      {
+        "Name": "Name",
+        "Type": "System.String"
+      },
+      {
+        "Name": "ShoppingList",
+        "Type": "System.ArrayOfString"
+      },
+      {
+        "Name": "TotalCost",
+        "Type": "System.Double"
+      }
+    ],
+    "PartitionKey": [
+      "ID"
+    ],
+    "PrimaryKey": [
+      "ID"
+    ]
+  }
+}

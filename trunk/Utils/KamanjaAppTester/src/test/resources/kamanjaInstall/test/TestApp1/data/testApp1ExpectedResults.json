@@ -1,0 +1,83 @@
+[
+  {
+    "ID": 1,
+    "Name": "John Clark",
+    "Shopping List": [
+      "food"
+    ],
+    "Total Cost": 39.95
+  },
+  {
+    "ID": 2,
+    "Name": "James Brown",
+    "Shopping List": [
+      "games"
+    ],
+    "Total Cost": 59.99
+  },
+  {
+    "ID": 3,
+    "Name": "Clark Gable",
+    "Shopping List": [
+      "music"
+    ],
+    "Total Cost": 14.80
+  },
+  {
+    "ID": 1,
+    "Name": "John Clark",
+    "Shopping List": [
+      "food",
+      "games"
+    ],
+    "Total Cost": 99.94
+  },
+  {
+    "ID": 2,
+    "Name": "James Brown",
+    "Shopping List": [
+      "games",
+      "music"
+    ],
+    "Total Cost": 64.79
+  },
+  {
+    "ID": 3,
+    "Name": "Clark Gable",
+    "Shopping List": [
+      "music",
+      "food"
+    ],
+    "Total Cost": 54.75
+  },
+  {
+    "ID": 1,
+    "Name": "John Clark",
+    "Shopping List": [
+      "food",
+      "games",
+      "music"
+    ],
+    "Total Cost": 114.74
+  },
+  {
+    "ID": 2,
+    "Name": "James Brown",
+    "Shopping List": [
+      "games",
+      "music",
+      "food"
+    ],
+    "Total Cost": 114.74
+  },
+  {
+    "ID": 3,
+    "Name": "Clark Gable",
+    "Shopping List": [
+      "music",
+      "food",
+      "games"
+    ],
+    "Total Cost": 114.74
+  }
+]

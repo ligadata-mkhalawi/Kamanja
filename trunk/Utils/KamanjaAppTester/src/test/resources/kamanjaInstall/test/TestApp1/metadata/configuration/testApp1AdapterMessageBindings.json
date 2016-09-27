@@ -1,0 +1,22 @@
+[
+  {
+    "AdapterName": "TestIn_1",
+    "MessageName": "com.ligadata.kamanja.test.messages.TestApp1Message",
+    "Serializer": "com.ligadata.kamanja.serializer.csvserdeser",
+    "Options": {
+      "alwaysQuoteFields": false,
+      "fieldDelimiter": ","
+    }
+  },
+  {
+    "AdapterName": "TestOut_1",
+    "MessageNames": [
+      "com.ligadata.kamanja.test.messages.TestApp1OutputMessage"
+    ],
+    "Serializer": "com.ligadata.kamanja.serializer.csvserdeser",
+    "Options": {
+      "alwaysQuoteFields": false,
+      "fieldDelimiter": ","
+    }
+  }
+]

@@ -1,0 +1,16 @@
+{
+  "TestApp1ModelConfiguration": {
+    "Dependencies": [ ],
+    "MessageAndContainers": [
+      "com.ligadata.kamanja.test.containers.TestApp1Container"
+    ],
+    "InputTypesSets":[
+      [
+        "com.ligadata.kamanja.test.messages.TestApp1Message"
+      ]
+    ],
+    "OutputTypes": [
+      "com.ligadata.kamanja.test.messages.TestApp1OutputMessage"
+    ]
+  }
+}
