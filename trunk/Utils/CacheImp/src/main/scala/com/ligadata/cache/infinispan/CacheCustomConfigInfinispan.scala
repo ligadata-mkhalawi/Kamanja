@@ -6,9 +6,10 @@ package com.ligadata.cache.infinispan
 
 import com.ligadata.cache.{CacheCustomConfig, Config}
 import org.infinispan.configuration.cache.{CacheMode, ConfigurationBuilder}
-import org.infinispan.configuration.global.{GlobalConfigurationBuilder}
+import org.infinispan.configuration.global.GlobalConfigurationBuilder
 import org.infinispan.eviction.EvictionStrategy
 import org.infinispan.manager.DefaultCacheManager
+import org.infinispan.transaction.{LockingMode, TransactionMode}
 
 object CacheCustomConfigInfinispan {
   private var cacheManager: DefaultCacheManager = null
@@ -49,6 +50,7 @@ class CacheCustomConfigInfinispan(val jsonconfig: Config) {
       new ConfigurationBuilder().expiration
         .lifespan(values.getOrElse(CacheCustomConfig.TIMETOLIVESECONDS, "10000000").toLong)
         .maxIdle(values.getOrElse(CacheCustomConfig.TIMETOIDLESECONDS, "10000000").toLong)
+        .transaction().transactionManagerLookup(org.infinispan.transaction.lookup.GenericTransactionManagerLookup).lockingMode(LockingMode.OPTIMISTIC).transactionMode(TransactionMode.TRANSACTIONAL)
         .eviction().strategy(EvictionStrategy.LIRS).maxEntries(jsonconfig.getvalue(CacheCustomConfig.MAXENTRIES).getOrElse("300000").toLong)
         .clustering
         .cacheMode(CacheMode.DIST_SYNC)

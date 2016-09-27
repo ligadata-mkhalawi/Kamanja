@@ -1883,6 +1883,30 @@ object KamanjaLeader {
   }
 
   def Shutdown: Unit = {
+    if (LOG.isInfoEnabled())
+      LOG.info("Stopping processing")
+    isLocallyExecuting = true
+    KamanjaConfiguration.totalReadThreadCount = 1
+    KamanjaConfiguration.totalProcessingThreadCount = 1
+    remoteExecPool.shutdownNow()
+    globalThreadIdToLogicalPartitions.clear
+    globalLogicalPartitionsToThreadId = Array[Short](1)
+    isLogicalThreadProcessingOnLocalNode = Array[Boolean](false)
+    ClearAllLogicalPartitionQueues
+    SaveProcessingOffsetsAndClearEntries(inputAdapters.filter(a => (a.getAdapterName != null && a.getAdapterName.trim.length > 0)).map(a => a.getAdapterName.trim.toLowerCase).toSet, true)
+    var tryNo = 0
+    while (!remoteExecPool.isTerminated && tryNo < 5) {
+      // Sleep for a 1000ms
+      try {
+        Thread.sleep(1000)
+      } catch {
+        case e: Exception => {
+          // Not doing anything
+          LOG.debug("", e)
+        }
+      }
+      tryNo += 1
+    }
     distributionExecutor.shutdown
     CloseSetDataZkc
   }
