@@ -132,9 +132,9 @@ class PythonMdlSupport(val mgr: MdMgr, val moduleName: String, val modelNamespac
        false 
      }
      if (logger.isDebugEnabled()) {
-       logger.debug("In PythonMdlSupport " + " the value of python version is " + stdoutResult)
+       logger.debug("In PythonMdlSupport " + " the value of python version is " + stderrResult)
      }
-     val versionDetails : Array [String]  = stdoutResult.split(' ')(1).split('.')
+     val versionDetails : Array [String]  = stderrResult.split(' ')(1).split('.')
      if (logger.isDebugEnabled()) {
        logger.debug("In PythonMdlSupport " + " the value of python version details are  " + versionDetails)
      }
