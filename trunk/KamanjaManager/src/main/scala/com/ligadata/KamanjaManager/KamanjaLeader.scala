@@ -947,6 +947,8 @@ object KamanjaLeader {
             }
 
             // BUGBUG:: Need to save the state in case if we shutdown
+            if (LOG.isInfoEnabled())
+              LOG.info("Stopping processing")
             isLocallyExecuting = true
             KamanjaConfiguration.totalReadThreadCount = 1
             KamanjaConfiguration.totalProcessingThreadCount = 1
@@ -1057,6 +1059,8 @@ object KamanjaLeader {
               val nodeDistMap = GetNodeDistMapForNodeId(actionOnAdaptersMap.distributionmap, nodeId)
               val logicalPartsForNode = GetLogicalPartitionsForNodeId(actionOnAdaptersMap.distributionmap, nodeId)
 
+              if (LOG.isInfoEnabled())
+                LOG.info("Stopping processing")
               KamanjaConfiguration.totalReadThreadCount = 1
               KamanjaConfiguration.totalProcessingThreadCount = 1
               remoteExecPool.shutdownNow()
@@ -1118,6 +1122,8 @@ object KamanjaLeader {
                   logicalPartitionQueues(kv._1) = new LogicalPartitionQueue(cacheBaseName, kv._1, hosts, localNodeLogicalPartsPort, lpCallback, KamanjaCacheQueueEntry.deserialize)
                 })
 
+                if (LOG.isInfoEnabled())
+                  LOG.info("Creating Logical partitions execution pool")
                 remoteExecPool = scala.actors.threadpool.Executors.newFixedThreadPool(logicalPartsForNode.length)
 
                 logicalPartsForNode.foreach(lp => {

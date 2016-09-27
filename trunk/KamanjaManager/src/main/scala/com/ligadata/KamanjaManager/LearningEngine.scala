@@ -378,6 +378,8 @@ class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: I
     while (isNotShuttingDown) {
       val dqKamanjaCacheQueueEntry: KamanjaCacheQueueEntry = null
       if (dqKamanjaCacheQueueEntry == null) {
+        if (LOG.isTraceEnabled)
+          LOG.trace("Did not get CacheQueueEntry to process for ThreadId:%d, StartPartitionId:%d, EndPartitionId:%d".format(threadId, startPartitionId, endPartitionId))
         // Sleep some time or until we get listener or sleep done for this queue
         try {
           Thread.sleep(waitTimeForNoMdlsExecInMs)
@@ -390,6 +392,8 @@ class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: I
           }
         }
       } else /* if (dqKamanjaCacheQueueEntry != null) */ {
+        if (LOG.isTraceEnabled)
+          LOG.trace("Got CacheQueueEntry with txnid:%d to process for ThreadId:%d, StartPartitionId:%d, EndPartitionId:%d".format(dqKamanjaCacheQueueEntry.txnCtxt.getTransactionId(), threadId, startPartitionId, endPartitionId))
         var execNextMdl = true
         while (execNextMdl && isNotShuttingDown) {
           execNextMdl = false
@@ -426,7 +430,11 @@ class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: I
   }
 
   override def run(): Unit = {
+    if (LOG.isInfoEnabled())
+      LOG.info("Started processing logical partition task for ThreadId:%d, StartPartitionId:%d, EndPartitionId:%d".format(threadId, startPartitionId, endPartitionId))
     executeModels
+    if (LOG.isInfoEnabled())
+      LOG.info("Done processing logical partition task for ThreadId:%d, StartPartitionId:%d, EndPartitionId:%d".format(threadId, startPartitionId, endPartitionId))
   }
 }
 
