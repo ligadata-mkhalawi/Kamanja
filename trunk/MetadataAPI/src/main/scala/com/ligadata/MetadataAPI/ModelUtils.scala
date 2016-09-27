@@ -760,16 +760,12 @@ object ModelUtils {
     val pythonCheck : Int = isPythonVerCorrect() ;
 
     if (pythonCheck == 1) {
-      if (logger.isDebugEnabled()) {
-         logger.debug(" in AddPYTHONModel : Unable to find python compiler ")
-      }
+         logger.error(" in AddPYTHONModel : Unable to find python compiler ")
       val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"${ErrorCodeConstants.Add_Model_Failed} - Unable to find python")
       return (apiResult.toString())
    }
    if (pythonCheck == 2) {
-     if (logger.isDebugEnabled()) {
-        logger.debug(" in AddPYTHONModel : Unable to find python compiler ")
-     }
+        logger.error(" in AddPYTHONModel : Unable to find python compiler ")
      val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"${ErrorCodeConstants.Add_Model_Failed} - Python version must be greater than 2.6")
      return (apiResult.toString())
   }

@@ -225,16 +225,19 @@ class PythonAdapter(factory : PythonAdapterFactory
             throw new KamanjaException("PythonAdapter initialization failed... factory's model def is null",null)
         }
 
-    if (factory.isPythonVerCorrect != true) {
-      logger.error(s"Check python install and python version should be greater than  or equal to 27") ;
-      throw new KamanjaException("Python Install failure  Please check logs ",null)
-      }    
+    val pythonCheck : Int = factory.isPythonVerCorrect() ;
+
+    if (pythonCheck == 1) {
+         logger.error(" in AddPYTHONModel : Unable to find python compiler ")
+         throw new KamanjaException(" Unable to find python", null)
+   }
+   if (pythonCheck == 2) {
+        logger.error(" in AddPYTHONModel : Unable to find python compiler ")
+        throw new KamanjaException(" Python version must be greater than 2.6", null)
+  }
        
         val pyServerConnection : PyServerConnection = getServerConnection
 
-      if (logger.isDebugEnabled()) {
-        logger.debug ()
-      }
         if (pyServerConnection == null) {
           val modelName: String = factory.getModelName()
           logger.error(s"Python initialization for model '$modelName' failed... the python server connection could not be established")
@@ -812,40 +815,44 @@ class PythonAdapterFactory(modelDef: ModelDef, nodeContext: NodeContext, val ser
     }
 
   /**
-  * This module checks the existence of python and its version. If python and it correction version is installed
-  * then the module returns true else false
-  *
-  **/
-    def isPythonVerCorrect () : Boolean = {
+   * This module checks the existence of python and its version. If python and it correction version is installed
+   * then the module returns true else false
+   *
+    **/
+  def isPythonVerCorrect () : Int  = {
 
-     val cmdSeq: Seq[String] = Seq[String]("python", "-V")
-     val (rc, stdoutResult, stderrResult): (Int, String, String) = runCmdCollectOutput(cmdSeq)
-
-     if (rc != 0) {
-       logger.error ("Unable to find python, please install python or python is not in the path") ;
-       false 
-     }
-     if (logger.isDebugEnabled()) {
-       logger.debug("In PythonMdlSupport " + " the value of python version is " + stderrResult)
-     }
-     val versionDetails : Array [String]  = stderrResult.split(' ')(1).split('.')
+    val cmdSeq: Seq[String] = Seq[String]("python", "-V")
+    try {
+      val (rc, stdoutResult, stderrResult): (Int, String, String) = runCmdCollectOutput(cmdSeq)
+      if (rc != 0) {
+         logger.error ("Unable to find python, please install python or python is not in the path") ;
+         return 1
+      }
+      if (logger.isDebugEnabled()) {
+        logger.debug("In PythonMdlSupport " + " the value of python version is " + stderrResult)
+      }
+      val versionDetails : Array [String]  = stderrResult.split(' ')(1).split('.')
      if (logger.isDebugEnabled()) {
        logger.debug("In PythonMdlSupport " + " the value of python version details are  " + versionDetails)
      }
      val version : Int = (versionDetails(0) + versionDetails(1)).toInt
      if (logger.isDebugEnabled()) {
-       logger.debug("In PythonMdlSupport " + " the value of python version converted is " + version)
+        logger.debug("In PythonMdlSupport " + " the value of python version converted is " + version)
      }
      if (version >= 27) {
-        true
+        return 0
      }
      else  {
-        false 
-     }
-     
+       return 2
+    }
   }
-
-    
+  catch {
+    case e: IOException => {
+      1
+    }
+  }
+ }
+  
 
   /**
    * Execute the supplied command sequence. Answer with the rc, the stdOut, and stdErr outputs from
