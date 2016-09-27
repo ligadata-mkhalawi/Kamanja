@@ -17,5 +17,5 @@ public interface PartitionFile {
 
     void close();
     void flush();
-    void send(TransactionContext tnxCtxt, ContainerInterface record, SmartFileProducer serializer);
+    int send(TransactionContext tnxCtxt, ContainerInterface record, SmartFileProducer serializer);
 }

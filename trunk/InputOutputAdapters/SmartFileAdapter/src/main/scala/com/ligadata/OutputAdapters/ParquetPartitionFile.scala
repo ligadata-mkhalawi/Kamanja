@@ -1,8 +1,6 @@
 package com.ligadata.OutputAdapters
 
-import java.io.{IOException, OutputStream}
-import java.util.concurrent.atomic.AtomicLong
-
+import java.io.{IOException}
 import com.ligadata.AdaptersConfiguration.SmartFileProducerConfiguration
 import com.ligadata.Exceptions.FatalAdapterException
 import com.ligadata.KamanjaBase.{ContainerInterface, TransactionContext}
@@ -13,21 +11,19 @@ import parquet.hadoop.metadata.CompressionCodecName
 
 import scala.collection.mutable.ArrayBuffer
 
-/**
-  * Created by Yasser on 9/27/2016.
-  */
+
 class ParquetPartitionFile(fc : SmartFileProducerConfiguration, key : String, avroSchemaStr : String) extends PartitionFile {
 
   private[this] val LOG = LogManager.getLogger(getClass)
   private val FAIL_WAIT = 2000
   private val MAX_RETRIES = 3
 
-  private var outStream: OutputStream = null
-  private var parquetBuffer = new ArrayBuffer[ContainerInterface]()
+  //private val parquetBuffer = new ArrayBuffer[ContainerInterface]()
+  //private var recordsInBuffer: Long = 0
   private var records: Long = 0
   private var size: Long = 0
-  private var recordsInBuffer: Long = 0
-  private var flushBufferSize: Long = 0 // get as param
+
+  //private var flushBufferSize: Long = 0
   private var filePath : String = ""
   private var ugi : UserGroupInformation = null
   private var parquetCompression : CompressionCodecName = null
@@ -36,7 +32,7 @@ class ParquetPartitionFile(fc : SmartFileProducerConfiguration, key : String, av
   private var parquetWriter : ParquetWriter[Array[Any]] = null
 
   def init(filePath: String, flushBufferSize: Long) = {
-    this.flushBufferSize = flushBufferSize
+    //this.flushBufferSize = flushBufferSize
     this.filePath = filePath
 
     parquetCompression = if(fc.parquetCompression == null || fc.parquetCompression.length == 0) null else CompressionCodecName.valueOf(fc.parquetCompression)
@@ -61,15 +57,15 @@ class ParquetPartitionFile(fc : SmartFileProducerConfiguration, key : String, av
 
   def getKey: String = key
 
-  def getRecordsInBuffer: Long = recordsInBuffer
+  def getRecordsInBuffer: Long = 0
 
-  def getSize: Long = size
+  def getSize: Long = 0
 
-  def getFlushBufferSize: Long = flushBufferSize
+  def getFlushBufferSize: Long = 0
 
   def close() : Unit = {
-    if(outStream != null)
-      outStream.close()
+    if(parquetWriter != null)
+      parquetWriter.close()
   }
 
   def reopen(): Unit ={
@@ -77,7 +73,7 @@ class ParquetPartitionFile(fc : SmartFileProducerConfiguration, key : String, av
   }
 
   def send(tnxCtxt: TransactionContext, record: ContainerInterface,
-           serializer : SmartFileProducer) : Unit = {
+           serializer : SmartFileProducer) : Int = {
 
     try {
       // Op is not atomic
@@ -86,39 +82,20 @@ class ParquetPartitionFile(fc : SmartFileProducerConfiguration, key : String, av
         var numOfRetries = 0
         while (!isSuccess) {
           try {
-            this.synchronized {
-              if (flushBufferSize > 0) {
-                LOG.info("Smart File Producer " + fc.Name + ": adding record to buffer for file " + filePath)
+            this.synchronized {//no need to buffer in parquet, writer already acts as a buffer
 
-                parquetBuffer.append(record)
+              LOG.info("Smart File Producer " + fc.Name + ": writing record to file " + filePath)
+              val recordData : Array[Any] = record.getAllAttributeValues.map(attr => attr.getValue)
+              //avroSchemasMap(record.getFullTypeName)
+              parquetWriter.write(recordData)
 
-                recordsInBuffer += 1
-                if (parquetBuffer.size > flushBufferSize) {
-                  LOG.info("Smart File Producer " + fc.Name + ": buffer is full writing to file " + filePath)
-                  //avroSchemasMap(pf.parquetBuffer(0).getFullTypeName)
-                  writeParquet(fc, parquetBuffer.toArray)
-                  size += parquetBuffer.size
-                  records += recordsInBuffer
-                  parquetBuffer.clear()
-                  recordsInBuffer = 0
-                }
-
-
-
-              } else {
-                LOG.info("Smart File Producer " + fc.Name + ": writing record to file " + filePath)
-                val data = Array(record)
-                //avroSchemasMap(record.getFullTypeName)
-                writeParquet(fc, data)
-                size += data.length
-
-                records += 1
-
-              }
+              size += recordData.length // TODO : do we need to get actual size ?
+              records += 1
             }
             isSuccess = true
             LOG.info("finished writing message")
-            //metrics("MessagesProcessed").asInstanceOf[AtomicLong].incrementAndGet() //TODO
+            //metrics("MessagesProcessed").asInstanceOf[AtomicLong].incrementAndGet()
+            return SendStatus.SUCCESS
           } catch {
             case fio: IOException => {
               LOG.warn("Smart File Producer " + fc.Name + ": Unable to write to file " + filePath)
@@ -145,6 +122,8 @@ class ParquetPartitionFile(fc : SmartFileProducerConfiguration, key : String, av
           }
         }
 
+      SendStatus.FAILURE
+
     } catch {
       case e: Exception => {
         LOG.error("Smart File Producer " + fc.Name + ": Failed to send", e)
@@ -154,48 +133,13 @@ class ParquetPartitionFile(fc : SmartFileProducerConfiguration, key : String, av
   }
 
   def flush(): Unit ={
-    LOG.info("Smart File Producer :" + fc.Name + " : In flushPartitionFile key - [" + key + "]")
-    var isSuccess = false
-    var numOfRetries = 0
-    while (!isSuccess) {
-      try {
-        this.synchronized {
-          if (flushBufferSize > 0 && parquetBuffer.size > 0) {
-            writeParquet(fc, parquetBuffer.toArray)
-            size += parquetBuffer.size
-            records += recordsInBuffer
-            parquetBuffer.clear()
-            recordsInBuffer = 0
-          }
-
-        }
-        isSuccess = true
-      } catch {
-        case fio: IOException => {
-          LOG.warn("Smart File Producer " + fc.Name + ": Unable to flush buffer to file " + filePath)
-          if (numOfRetries == MAX_RETRIES) {
-            //TODO : what to be done?
-          } else if (numOfRetries > MAX_RETRIES) {
-            LOG.error("Smart File Producer " + fc.Name + ": Unable to flush buffer to file destination after " + MAX_RETRIES + " tries.  Aborting.", fio)
-            throw FatalAdapterException("Unable to flush buffer to specified file after " + MAX_RETRIES + " retries", fio)
-          }
-          numOfRetries += 1
-          LOG.warn("Smart File Producer " + fc.Name + ": Retyring " + numOfRetries + "/" + MAX_RETRIES)
-          Thread.sleep(FAIL_WAIT)
-        }
-        case e: Exception => {
-          LOG.error("Smart File Producer " + fc.Name + ": Unable to flush buffer to file " + filePath, e)
-          throw e
-        }
-      }
-    }
+    //no manual buffering, so nothing to flush
   }
 
-  private def writeParquet(fc: SmartFileProducerConfiguration, messages: Array[ContainerInterface]): Unit = {
-
+  /*private def writeParquet(fc: SmartFileProducerConfiguration, messages: Array[ContainerInterface]): Unit = {
     messages.foreach(message => {
       val msgData : Array[Any] = message.getAllAttributeValues.map(attr => attr.getValue)
       parquetWriter.write(msgData)
     })
-  }
+  }*/
 }

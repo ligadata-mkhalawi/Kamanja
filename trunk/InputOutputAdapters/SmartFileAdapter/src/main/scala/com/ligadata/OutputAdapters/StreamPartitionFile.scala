@@ -1,8 +1,6 @@
 package com.ligadata.OutputAdapters
 
 import java.io.{FileOutputStream, File, OutputStream, IOException}
-import java.net.URI
-import java.util.concurrent.atomic.AtomicLong
 
 import com.ligadata.AdaptersConfiguration.SmartFileProducerConfiguration
 import com.ligadata.Exceptions.{UnsupportedOperationException, FatalAdapterException}
@@ -27,7 +25,7 @@ class StreamPartitionFile(fc : SmartFileProducerConfiguration, key : String) ext
   private var records: Long = 0
   private var size: Long = 0
   private var recordsInBuffer: Long = 0
-  private var flushBufferSize: Long = 0 // get as param
+  private var flushBufferSize: Long = 0
   private var filePath : String = ""
   private var ugi : UserGroupInformation = null
   private var compress = false
@@ -174,6 +172,12 @@ class StreamPartitionFile(fc : SmartFileProducerConfiguration, key : String) ext
       case e: Exception =>
         if (fc.kerberos != null) {
           LOG.debug("Smart File Producer " + fc.Name + ": Error writing to HDFS. Will relogin and try.")
+
+          val hdfsConf: Configuration = new Configuration()
+          hdfsConf.set("hadoop.security.authentication", "kerberos")
+          UserGroupInformation.setConfiguration(hdfsConf)
+          ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(fc.kerberos.principal, fc.kerberos.keytab)
+
           ugi.reloginFromTicketCache()
           outStream.write(message)
           outStream.flush()
@@ -186,15 +190,15 @@ class StreamPartitionFile(fc : SmartFileProducerConfiguration, key : String) ext
   }
 
   def send(tnxCtxt: TransactionContext, record: ContainerInterface,
-           serializer : SmartFileProducer) : Unit = {
+           serializer : SmartFileProducer) : Int = {
 
     val (outContainers, serializedContainerData, serializerNames) = serializer.serialize(tnxCtxt, Array(record))
 
     if (1 != serializedContainerData.length || 1 != serializerNames.length) {
       LOG.error("Smart File Producer " + fc.Name + ": Messages, messages serialized data & serializer names should has same number of elements. Messages:%d, Messages Serialized data:%d, serializerNames:%d".format(1, serializedContainerData.length, serializerNames.length))
-      return
+      return SendStatus.FAILURE
     }
-    if (serializedContainerData.length == 0) return
+    if (serializedContainerData.length == 0) return SendStatus.NO_DATA
 
     try {
       // Op is not atomic
@@ -235,12 +239,14 @@ class StreamPartitionFile(fc : SmartFileProducerConfiguration, key : String) ext
           isSuccess = true
           LOG.info("finished writing message")
           //metrics("MessagesProcessed").asInstanceOf[AtomicLong].incrementAndGet() : TODO : call from producer, based on return val
+          return SendStatus.SUCCESS
         } catch {
           case fio: IOException =>
             LOG.warn("Smart File Producer " + fc.Name + ": Unable to write to file " + filePath)
             if (numOfRetries == MAX_RETRIES) {
               LOG.warn("Smart File Producer " + fc.Name + ": Unable to write to file destination after " + MAX_RETRIES + " tries.  Trying to reopen file " + filePath, fio)
-              //pf = reopenPartitionFile() //TODO : call from producer, based on return val
+              //pf = reopenPartitionFile() //call from producer, based on return val
+              return SendStatus.REOPEN
             } else if (numOfRetries > MAX_RETRIES) {
               LOG.error("Smart File Producer " + fc.Name + ": Unable to write to file destination after " + MAX_RETRIES + " tries.  Aborting.", fio)
               throw FatalAdapterException("Unable to write to specified file after " + MAX_RETRIES + " retries", fio)
@@ -257,12 +263,16 @@ class StreamPartitionFile(fc : SmartFileProducerConfiguration, key : String) ext
         }
       }
 
+      return SendStatus.FAILURE
+
     } catch {
       case e: Exception =>
         LOG.error("Smart File Producer " + fc.Name + ": Failed to send", e)
         throw FatalAdapterException("Unable to send message", e)
 
     }
+
+
   }
 
   def flush(): Unit ={

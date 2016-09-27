@@ -66,6 +66,13 @@ object PartitionFileFactory{
 
 }
 
+object SendStatus {
+  val SUCCESS = 0
+  val REOPEN = 1
+  val FAILURE = 2
+  val NO_DATA = 3
+}
+
 /*case class PartitionFile(key: String, name: String, outStream: OutputStream, parquetWriter : ParquetWriter[Array[Any]],
                          var records: Long, var size: Long, var streamBuffer: ArrayBuffer[Byte], var parquetBuffer: ArrayBuffer[ContainerInterface],
                          var recordsInBuffer: Long, var flushBufferSize: Long)*/
@@ -465,10 +472,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           try {
             pf.synchronized {
               pf.flush()
-              if(isParquet)
-                pf.close()
-              else
-                pf.close
+              pf.close()
             }
           } catch {
             case e: Exception => LOG.debug("Smart File Producer " + fc.Name + ": Error closing file: ", e)
@@ -624,28 +628,21 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       }
     }
 
-    val (outContainers, serializedContainerData, serializerNames) =
-      if(isParquet) (null, null, null) else serialize(tnxCtxt, outputContainers)
-
-    if(!isParquet) {
-      if (outputContainers.size != serializedContainerData.size || outputContainers.size != serializerNames.size) {
-        LOG.error("Smart File Producer " + fc.Name + ": Messages, messages serialized data & serializer names should has same number of elements. Messages:%d, Messages Serialized data:%d, serializerNames:%d".format(outputContainers.size, serializedContainerData.size, serializerNames.size))
-        return
-      }
-      if (serializedContainerData.size == 0) return
-    }
-
     try {
       // Op is not atomic
       var idx = 0
       outputContainers.foreach(record => {
 
-        var pf = getPartionFile(record);
+        val pf = getPartionFile(record);
         pf.synchronized {
-          pf.send(tnxCtxt, record, this)
+          val status = pf.send(tnxCtxt, record, this)
+
+          if(status == SendStatus.SUCCESS)
+            metrics("MessagesProcessed").asInstanceOf[AtomicLong].incrementAndGet()
+          else if(status == SendStatus.REOPEN)//this status is not expected from parquet
+            pf.reopen()
         }
 
-        metrics("MessagesProcessed").asInstanceOf[AtomicLong].incrementAndGet() //TODO : only if success
       })
     } catch {
       case e: Exception => {
