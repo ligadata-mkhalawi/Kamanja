@@ -1,6 +1,7 @@
 package com.ligadata.test.application
 
 import scala.io.Source
+import java.io.File
 
 import com.ligadata.test.application.data.DataSet
 import com.ligadata.test.configuration.cluster._
@@ -26,7 +27,7 @@ class ResultsManager(cluster: Cluster) {
 
   def parseExpectedResults(dataSet: DataSet): List[String] = {
     var source: Source = null
-    if(!dataSet.expectedResultsFile.exists())
+    if(!(new File(dataSet.expectedResultsFile).exists))
       throw new Exception(s"[Kamanja Application Tester] ---> ***ERROR*** Expected results file '${dataSet.expectedResultsFile}' does not exist.")
     if(dataSet.expectedResultsFormat.toLowerCase == "csv") {
       try {
