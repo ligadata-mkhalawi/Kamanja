@@ -238,15 +238,14 @@ class StreamPartitionFile(fc : SmartFileProducerConfiguration, key : String) ext
           }
           isSuccess = true
           LOG.info("finished writing message")
-          //metrics("MessagesProcessed").asInstanceOf[AtomicLong].incrementAndGet() : TODO : call from producer, based on return val
           return SendStatus.SUCCESS
         } catch {
           case fio: IOException =>
             LOG.warn("Smart File Producer " + fc.Name + ": Unable to write to file " + filePath)
             if (numOfRetries == MAX_RETRIES) {
               LOG.warn("Smart File Producer " + fc.Name + ": Unable to write to file destination after " + MAX_RETRIES + " tries.  Trying to reopen file " + filePath, fio)
-              //pf = reopenPartitionFile() //call from producer, based on return val
-              return SendStatus.REOPEN
+              reopen()
+              return SendStatus.FAILURE
             } else if (numOfRetries > MAX_RETRIES) {
               LOG.error("Smart File Producer " + fc.Name + ": Unable to write to file destination after " + MAX_RETRIES + " tries.  Aborting.", fio)
               throw FatalAdapterException("Unable to write to specified file after " + MAX_RETRIES + " retries", fio)
@@ -296,8 +295,8 @@ class StreamPartitionFile(fc : SmartFileProducerConfiguration, key : String) ext
         case fio: IOException => {
           LOG.warn("Smart File Producer " + fc.Name + ": Unable to flush buffer to file " + filePath)
           if (numOfRetries == MAX_RETRIES) {
-              LOG.warn("Smart File Producer " + fc.Name + ": Unable to flush buffer to file destination after " + MAX_RETRIES + " tries.  Trying to reopen file " + filePath, fio)
-              //pf = reopenPartitionFile(pf) TODO
+            LOG.warn("Smart File Producer " + fc.Name + ": Unable to flush buffer to file destination after " + MAX_RETRIES + " tries.  Trying to reopen file " + filePath, fio)
+            reopen()
 
           } else if (numOfRetries > MAX_RETRIES) {
             LOG.error("Smart File Producer " + fc.Name + ": Unable to flush buffer to file destination after " + MAX_RETRIES + " tries.  Aborting.", fio)

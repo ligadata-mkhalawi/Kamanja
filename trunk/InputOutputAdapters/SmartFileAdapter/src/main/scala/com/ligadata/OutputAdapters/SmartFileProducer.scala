@@ -68,7 +68,7 @@ object PartitionFileFactory{
 
 object SendStatus {
   val SUCCESS = 0
-  val REOPEN = 1
+  //val REOPEN = 1
   val FAILURE = 2
   val NO_DATA = 3
 }
@@ -639,8 +639,6 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
 
           if(status == SendStatus.SUCCESS)
             metrics("MessagesProcessed").asInstanceOf[AtomicLong].incrementAndGet()
-          else if(status == SendStatus.REOPEN)//this status is not expected from parquet
-            pf.reopen()
         }
 
       })
