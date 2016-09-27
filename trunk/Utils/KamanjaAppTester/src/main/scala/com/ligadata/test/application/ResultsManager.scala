@@ -26,6 +26,8 @@ class ResultsManager(cluster: Cluster) {
 
   def parseExpectedResults(dataSet: DataSet): List[String] = {
     var source: Source = null
+    if(!dataSet.expectedResultsFile.exists())
+      throw new Exception(s"[Kamanja Application Tester] ---> ***ERROR*** Expected results file '${dataSet.expectedResultsFile}' does not exist.")
     if(dataSet.expectedResultsFormat.toLowerCase == "csv") {
       try {
         source = Source.fromFile(dataSet.expectedResultsFile)
