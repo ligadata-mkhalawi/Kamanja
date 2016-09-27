@@ -371,7 +371,7 @@ class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: I
   }
 
   private def isNotShuttingDown: Boolean = {
-    (KamanjaConfiguration.shutdown == false && KamanjaManager.instance != null && KamanjaManager.instance.GetEnvCtxts.length > 0)
+    (KamanjaConfiguration.shutdown == false && KamanjaManager.instance != null /* && KamanjaManager.instance.GetEnvCtxts.length > 0 */)
   }
 
   private def executeModels(): Unit = {
