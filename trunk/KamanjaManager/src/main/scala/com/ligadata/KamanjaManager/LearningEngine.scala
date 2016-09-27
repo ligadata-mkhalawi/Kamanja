@@ -375,7 +375,7 @@ class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: I
   }
 
   private def executeModels(): Unit = {
-    while (isNotShuttingDown) {
+    while (isNotShuttingDown && queue != null) {
       val dqKamanjaCacheQueueEntry: KamanjaCacheQueueEntry = queue.deQ()
       if (dqKamanjaCacheQueueEntry == null) {
         if (LOG.isTraceEnabled)
@@ -685,7 +685,7 @@ class LearningEngine {
   private var mdlsChangedCntr: Long = -1
   private val isLocalInlineExecution = true
   // inlineExecution is used for local inline execution
-  private var inlineExecution: LeanringEngineRemoteExecution = new LeanringEngineRemoteExecution(0, 0, 0)
+  private var inlineExecution: LeanringEngineRemoteExecution = new LeanringEngineRemoteExecution(0, 0, 0, null)
   private var nodeIdModlsObj = scala.collection.mutable.Map[Long, (MdlInfo, ModelInstance)]()
   // Key is Nodeid (Model ElementId), Value is ModelInfo & Previously Initialized model instance in case of Reuse instances
   // ModelName, ModelInfo, IsModelInstanceReusable, Global ModelInstance if the model is IsModelInstanceReusable == true. The last boolean is to check whether we tested message type or not (thi is to check Reusable flag)
