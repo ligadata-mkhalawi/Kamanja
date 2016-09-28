@@ -11,6 +11,7 @@ import org.infinispan.eviction.EvictionStrategy
 import org.infinispan.manager.DefaultCacheManager
 import org.infinispan.transaction.{LockingMode, TransactionMode}
 import org.infinispan.util.concurrent.IsolationLevel
+import org.infinispan.transaction.lookup.GenericTransactionManagerLookup
 
 object CacheCustomConfigInfinispan {
   private var cacheManager: DefaultCacheManager = null
@@ -26,11 +27,7 @@ object CacheCustomConfigInfinispan {
         .globalJmxStatistics().allowDuplicateDomains(true).enable()
         .build(),
         new ConfigurationBuilder()
-          .locking()
-          .concurrencyLevel(10000).isolationLevel(IsolationLevel.REPEATABLE_READ)
-          .lockAcquisitionTimeout(12000L).useLockStriping(false)
-          .invocationBatching().enable()
-          .transaction().transactionManagerLookup(org.infinispan.transaction.lookup.GenericTransactionManagerLookup.INSTANCE).lockingMode(LockingMode.OPTIMISTIC).transactionMode(TransactionMode.TRANSACTIONAL)
+          .transaction().transactionMode(TransactionMode.TRANSACTIONAL)
           .build())
 
       return cacheManager
@@ -62,6 +59,9 @@ class CacheCustomConfigInfinispan(val jsonconfig: Config) {
         .cacheMode(CacheMode.DIST_SYNC)
         .hash.numOwners(jsonconfig.getvalue(Config.NUMBEROFKETOWNERS).getOrElse("1").toInt)
         .invocationBatching().enable()
+        .transaction().transactionMode(TransactionMode.TRANSACTIONAL).autoCommit(false)
+        .lockingMode(LockingMode.OPTIMISTIC).transactionManagerLookup(new GenericTransactionManagerLookup())
+        .locking().isolationLevel(IsolationLevel.REPEATABLE_READ)
         .build);
     return cacheManager
   }
