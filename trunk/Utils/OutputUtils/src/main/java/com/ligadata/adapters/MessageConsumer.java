@@ -220,33 +220,41 @@ public class MessageConsumer implements Runnable {
             }
 
             if (messageCount > 0 && (messageCount >= syncMessageCount || System.currentTimeMillis() >= nextSyncTime)) {
-                long endRead = System.currentTimeMillis();
-                logger.info("Saving " + messageCount + " messages. Read time " + (endRead - start) + " msecs.");
-
-                AtomicInteger breaker = new AtomicInteger(0);
-                ExecutorService executor = Executors.newFixedThreadPool(1);
-
-                executor.execute(new SimpleKafkaPoll(consumer, breaker));
-
-                // Save data here
-                processWithRetry();
-
-                breaker.incrementAndGet();
-                executor.shutdown();
                 try {
-                    executor.awaitTermination(86400, TimeUnit.SECONDS);
-                } catch (InterruptedException e) {
+                    long endRead = System.currentTimeMillis();
+                    logger.info("Saving " + messageCount + " messages. Read time " + (endRead - start) + " msecs.");
+
+                    AtomicInteger breaker = new AtomicInteger(0);
+                    ExecutorService executor = Executors.newFixedThreadPool(1);
+
+                    executor.execute(new SimpleKafkaPoll(consumer, breaker));
+
+                    // Save data here
+                    processWithRetry();
+
+                    breaker.incrementAndGet();
+                    executor.shutdown();
+                    try {
+                        executor.awaitTermination(86400, TimeUnit.SECONDS);
+                    } catch (InterruptedException e) {
+                    }
+
+                    processor.clearAll();
+                    long endWrite = System.currentTimeMillis();
+                    consumer.commitSync();
+                    totalMessageCount += messageCount;
+                    logger.info("Saved " + messageCount + " messages. Write time " + (endWrite - endRead) + " msecs.");
+
+                    messageCount = 0;
+                    nextSyncTime = System.currentTimeMillis() + syncInterval;
+                    start = System.currentTimeMillis();
+                } catch (Exception e) {
+                    logger.error("Failed with: " + e.getMessage(), e);
+                    throw e; // Rethrowing
+                } catch (Throwable t) {
+                    logger.error("Failed with: " + e.getMessage(), e);
+                    throw e; // Rethrowing
                 }
-
-                processor.clearAll();
-                long endWrite = System.currentTimeMillis();
-                consumer.commitSync();
-                totalMessageCount += messageCount;
-                logger.info("Saved " + messageCount + " messages. Write time " + (endWrite - endRead) + " msecs.");
-
-                messageCount = 0;
-                nextSyncTime = System.currentTimeMillis() + syncInterval;
-                start = System.currentTimeMillis();
             }
         }
 
