@@ -76,7 +76,7 @@ if [ "${array[0] }" = "edit" ]; then
   fi
   done < ~/MetadataAPIConfig.properties
   echo "${array[2]}=${array[3]}" >> ~/MetadataAPIConfig.temp
-  mv ~/MetadataAPIConfig.temp ~/MetadataAPIConfig.prope rties
+  mv ~/MetadataAPIConfig.temp ~/MetadataAPIConfig.properties
   echo "MetadataAPIConfig.properties update complete!"
   exit 0
 fi
