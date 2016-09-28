@@ -221,10 +221,15 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
 
 
+    val dataJsonsArray: Array[(Array[String])] = null
 
+    val jsonDataNew = data_list.foreach(oneContainerData => {
+      val valuesArray: Array[(Key, String, Any)] = oneContainerData._2
+      val containerName: String = oneContainerData._1
 
-    val jsonDataNew = data_list.map(oneContainerData => {
-
+      valuesArray.foreach(value => {
+        dataJsonsArray.addString(new StringBuilder(value._2))
+      })
     })
 
     val putData = data_list.map(oneContainerData => {
@@ -252,7 +257,8 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     //    if (putData.size > 0)
     //    dataStore.put(putData)
     val tmparray: Array[(Array[String])] = Array((Array("{\"user\":\"kimchy\",\"postDate\":\"2013-01-30\",\"message\":\"trying out Elasticsearch\"}", "{\"user\":\"kimchy\",\"postDate\":\"2013-01-30\",\"message\":\"trying out Elasticsearch\"}")), (Array("{\"user\":\"kimchy\",\"postDate\":\"2013-01-30\",\"message\":\"trying out Elasticsearch\"}")))
-    dataStore.putJson(adapterConfig.TableName, tmparray)
+//    dataStore.putJson(adapterConfig.TableName, tmparray)
+    dataStore.putJson(adapterConfig.TableName, dataJsonsArray)
     // dataStore.put(tnxCtxt, data_list)
   }
 
