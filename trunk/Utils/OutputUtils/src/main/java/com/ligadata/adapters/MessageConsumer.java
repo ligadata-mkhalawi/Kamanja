@@ -102,10 +102,9 @@ public class MessageConsumer implements Runnable {
         shutdownTriggerCounter.incrementAndGet();
         if (consumer != null)
             consumer.close();
-        consumer = null;
-        if (processor != null)
-            processor.close();
-        processor = null;
+//        if (processor != null)
+//            processor.close();
+//        processor = null;
     }
 
     private void createKafkaConsumer() {
@@ -254,9 +253,11 @@ public class MessageConsumer implements Runnable {
                     } catch (InterruptedException e) {
                     }
 
-                    processor.clearAll();
+                    if (processor != null)
+                        processor.clearAll();
                     long endWrite = System.currentTimeMillis();
-                    consumer.commitSync();
+                    if (consumer != null)
+                        consumer.commitSync();
                     totalMessageCount += messageCount;
                     logger.info("Saved " + messageCount + " messages. Write time " + (endWrite - endRead) + " msecs.");
 
