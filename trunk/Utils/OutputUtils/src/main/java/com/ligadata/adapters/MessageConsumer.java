@@ -66,7 +66,7 @@ public class MessageConsumer implements Runnable {
 
     private final AdapterConfiguration configuration;
     private KafkaConsumer<String, String> consumer;
-    private final BufferedMessageProcessor processor;
+    private BufferedMessageProcessor processor;
     private HashMap<Integer, Long> partitionOffsets = new HashMap<Integer, Long>();
     private Thread thisThread;
     private AtomicInteger shutdownTriggerCounter;
@@ -267,7 +267,7 @@ public class MessageConsumer implements Runnable {
                     logger.error("Failed with: " + e.getMessage(), e);
                     stop = true;
                 } catch (Throwable t) {
-                    logger.error("Failed with: " + e.getMessage(), e);
+                    logger.error("Failed with: " + t.getMessage(), t);
                     stop = true;
                 }
             }
