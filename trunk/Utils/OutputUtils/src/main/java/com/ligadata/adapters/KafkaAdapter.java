@@ -20,7 +20,7 @@ public class KafkaAdapter implements Observer {
     private AdapterConfiguration configuration;
     private ArrayList<MessageConsumer> consumers;
     private ExecutorService executor;
-    private AtomicInteger shutdownTriggerCounter = new AtomicInteger(0);
+    AtomicInteger shutdownTriggerCounter = new AtomicInteger(0);
 
     public KafkaAdapter(AdapterConfiguration config) {
         this.configuration = config;
@@ -117,19 +117,19 @@ public class KafkaAdapter implements Observer {
             adapter.run();
         } catch (Exception e) {
             logger.error("Error starting the adapater.\n", e);
-            shutdownTriggerCounter.incrementAndGet();
+            adapter.shutdownTriggerCounter.incrementAndGet();
             System.exit(1);
         }
 
-        while (shutdownTriggerCounter.get() == 0) {
+        while (adapter.shutdownTriggerCounter.get() == 0) {
             try {
                 Thread.sleep(100);
             } catch (Exception e) {
                 logger.info("Main thread is interrupted.\n", e);
-                shutdownTriggerCounter.incrementAndGet();
+                adapter.shutdownTriggerCounter.incrementAndGet();
             } catch (Throwable t) {
-                logger.info("Main thread is interrupted.\n", e);
-                shutdownTriggerCounter.incrementAndGet();
+                logger.info("Main thread is interrupted.\n", t);
+                adapter.shutdownTriggerCounter.incrementAndGet();
             }
         }
 
