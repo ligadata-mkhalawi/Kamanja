@@ -38,7 +38,7 @@ import org.elasticsearch.search.{SearchHit, SearchHits}
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 
-import scala.collection.mutable.TreeSet
+import scala.collection.mutable.{ArrayBuffer, TreeSet}
 import scala.util.control.Breaks._
 
 
@@ -472,7 +472,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   }
 
 
-  def putJson(containerName: String, data_list: Array[(Array[(String)])]): Unit = {
+  def putJson(containerName: String, data_list: ArrayBuffer[(ArrayBuffer[(String)])]): Unit = {
     var client: TransportClient = null
     val tableName = toFullTableName(containerName)
     //    CheckTableExists(tableName)

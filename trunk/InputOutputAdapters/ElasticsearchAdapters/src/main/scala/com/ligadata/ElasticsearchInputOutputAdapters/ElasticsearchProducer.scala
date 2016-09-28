@@ -219,18 +219,23 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       throw new InvalidArgumentException("Data should not be null", null)
 
 
-    var dataJsonsArray: Array[(Array[String])] = Array(Array[String]())
-    var internalArray: Array[String] = Array[String]()
+    var dataJsonsArray: ArrayBuffer[(ArrayBuffer[String])] = ArrayBuffer(ArrayBuffer[String]())
+    var internalArray: ArrayBuffer[String] = ArrayBuffer[String]()
 
     data_list.foreach(oneContainerData => {
       val valuesArray: Array[(Key, String, Any)] = oneContainerData._2
 
       valuesArray.foreach(value => {
-        internalArray :+ value._2
+        internalArray += value._2
       })
-      dataJsonsArray :+ internalArray
+      dataJsonsArray += internalArray
     })
 
+    dataJsonsArray.foreach(x => {
+      x.foreach(y => {
+        println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + y)
+      })
+    })
 
     val putData = data_list.map(oneContainerData => {
       val containerData: Array[(com.ligadata.KvBase.Key, com.ligadata.KvBase.Value)] = oneContainerData._2.map(row => {
