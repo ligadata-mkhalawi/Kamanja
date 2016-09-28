@@ -219,18 +219,18 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       throw new InvalidArgumentException("Data should not be null", null)
 
 
+    var dataJsonsArray: Array[(Array[String])] = Array(Array[String]())
+    var internalArray: Array[String] = Array[String]()
 
-
-    val dataJsonsArray: Array[(Array[String])] = null
-
-    val jsonDataNew = data_list.foreach(oneContainerData => {
+    data_list.foreach(oneContainerData => {
       val valuesArray: Array[(Key, String, Any)] = oneContainerData._2
-      val containerName: String = oneContainerData._1
 
       valuesArray.foreach(value => {
-        dataJsonsArray.addString(new StringBuilder(value._2))
+        internalArray :+ value._2
       })
+      dataJsonsArray :+ internalArray
     })
+
 
     val putData = data_list.map(oneContainerData => {
       val containerData: Array[(com.ligadata.KvBase.Key, com.ligadata.KvBase.Value)] = oneContainerData._2.map(row => {
@@ -257,7 +257,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     //    if (putData.size > 0)
     //    dataStore.put(putData)
     val tmparray: Array[(Array[String])] = Array((Array("{\"user\":\"kimchy\",\"postDate\":\"2013-01-30\",\"message\":\"trying out Elasticsearch\"}", "{\"user\":\"kimchy\",\"postDate\":\"2013-01-30\",\"message\":\"trying out Elasticsearch\"}")), (Array("{\"user\":\"kimchy\",\"postDate\":\"2013-01-30\",\"message\":\"trying out Elasticsearch\"}")))
-//    dataStore.putJson(adapterConfig.TableName, tmparray)
+    //    dataStore.putJson(adapterConfig.TableName, tmparray)
     dataStore.putJson(adapterConfig.TableName, dataJsonsArray)
     // dataStore.put(tnxCtxt, data_list)
   }

@@ -15,11 +15,11 @@
  */
 package com.ligadata.keyvaluestore
 
-import java.io.File
 import java.net.{URL, URLClassLoader}
 import java.sql.{CallableStatement, Connection, Driver, DriverManager, DriverPropertyInfo, PreparedStatement, ResultSet, Statement}
 import java.text.SimpleDateFormat
 import java.util.{Properties, TimeZone}
+
 import com.ligadata.Exceptions._
 import com.ligadata.KamanjaBase.NodeContext
 import com.ligadata.KvBase.{Key, TimeRange, Value}
@@ -29,6 +29,7 @@ import com.ligadata.kamanja.metadata.AdapterInfo
 import org.apache.commons.dbcp2.BasicDataSource
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
+
 import scala.collection.mutable.TreeSet
 
 
@@ -584,7 +585,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
       // statement in H2db
       sql = "merge into " + tableName + "(timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo) key(timePartition, bucketKey, transactionId, rowId) values (?,?,?,?,?,?,?)"
       pstmt = con.prepareStatement(sql)
-      pstmt.setLong(1,0)
+      pstmt.setLong(1,key.timePartition)
       pstmt.setString(2, key.bucketKey.mkString(","))
       pstmt.setLong(3, key.transactionId)
       pstmt.setInt(4, key.rowId)
