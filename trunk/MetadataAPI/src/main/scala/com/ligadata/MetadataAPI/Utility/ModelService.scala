@@ -333,7 +333,8 @@ object ModelService {
         val response : String = if (input == "") {
             val reply : String = "PMML models are only ingested with command line arguments.. default directory selection is deprecated"
             logger.error(reply)
-            null /// FIXME : we will return null for now and complain with first failure
+            //null /// FIXME : we will return null for now and complain with first failure
+            (new ApiResult(ErrorCodeConstants.Failure, "addModelPmml",null, reply)).toString
         } else {
             val model = new File(input.toString)
             val resp : String = if(model.exists()){
@@ -356,7 +357,8 @@ object ModelService {
 
                 val reply : String = s"PMML model definition ingestion has failed for model $modelName, version = $version, consumes msg = $msgConsumed user=$userId: Invalid input file $input"
                 logger.error(reply)
-                null /// FIXME : we will return null for now and complain with first failure/
+                //null /// FIXME : we will return null for now and complain with first failure/
+                (new ApiResult(ErrorCodeConstants.Failure, "addModelPmml",null, reply)).toString
             }
             resp
         }
@@ -568,7 +570,8 @@ object ModelService {
         val response: String = if (input == "") {
             val reply: String = "PYTHON models are only ingested with command line arguments.. default directory selection is deprecated"
             logger.error(reply)
-            null /// FIXME : we will return null for now and complain with first failure
+            //null /// FIXME : we will return null for now and complain with first failure
+            (new ApiResult(ErrorCodeConstants.Failure, "addModelPython",null, reply)).toString
         } else {
             val model = new File(input.toString)
             val resp: String = if (model.exists()) {
@@ -590,10 +593,10 @@ object ModelService {
                 val modelName: String = optModelName.getOrElse("no model name supplied")
                 val version: String = optVersion.getOrElse("no version supplied")
                 val msgConsumed: String = optMsgConsumed.getOrElse("no message supplied")
-
-                val reply: String = s"PMML model definition ingestion has failed for model $modelName, version = $version, consumes msg = $msgConsumed user=$userId"
+                val reply: String = s"PYTHON model definition ingestion has failed for model $modelName, version = $version, consumes msg = $msgConsumed user=$userId"
                 logger.error(reply)
-                null /// FIXME : we will return null for now and complain with first failure/
+               // null /// FIXME : we will return null for now and complain with first failure/
+                (new ApiResult(ErrorCodeConstants.Failure, "addModelPython",null, reply)).toString
             }
             resp
         }
@@ -646,7 +649,8 @@ object ModelService {
         val response: String = if (input == "") {
             val reply: String = "JYTHON models are only ingested with command line arguments.. default directory selection is deprecated"
             logger.error(reply)
-            null /// FIXME : we will return null for now and complain with first failure
+            //null /// FIXME : we will return null for now and complain with first failure
+            (new ApiResult(ErrorCodeConstants.Failure, "addModelJython",null, reply)).toString
         } else {
             val model = new File(input.toString)
             val resp: String = if (model.exists()) {
@@ -668,9 +672,10 @@ object ModelService {
                 val version: String = optVersion.getOrElse("no version supplied")
                 val msgConsumed: String = optMsgConsumed.getOrElse("no message supplied")
 
-                val reply: String = s"PMML model definition ingestion has failed for model $modelName, version = $version, consumes msg = $msgConsumed user=$userId"
+                val reply: String = s"JYTHON model definition ingestion has failed for model $modelName, version = $version, consumes msg = $msgConsumed user=$userId"
                 logger.error(reply)
-                null /// FIXME : we will return null for now and complain with first failure/
+                //null /// FIXME : we will return null for now and complain with first failure/
+                (new ApiResult(ErrorCodeConstants.Failure, "addModelJython",null, reply)).toString
             }
             resp
         }
@@ -873,7 +878,8 @@ object ModelService {
         }
         if (pmmlPath == "") {
             val reply : String = "PMML models are only ingested with command line arguments.. default directory selection is deprecated"
-            return reply
+            //return reply
+            return (new ApiResult(ErrorCodeConstants.Failure, "updateModelPmml",null, reply)).toString
         }
 
         val response : String = try {
@@ -890,12 +896,14 @@ object ModelService {
             case fnf : FileNotFoundException => {
                 val msg : String = s"updateModelPmml... supplied file path not found ... path = $pmmlPath"
                 logger.error(msg, fnf)
-                msg
+                //msg
+                return (new ApiResult(ErrorCodeConstants.Failure, "updateModelPmml",null, msg)).toString
             }
             case e : Exception => {
                 val msg : String = if (pmmlPath == null) "updateModelPmml pmml path was not supplied" else s"updateModelPmml... exception e = ${e.toString}"
                 logger.error(s"$msg...", e)
-                msg
+                //msg
+                return (new ApiResult(ErrorCodeConstants.Failure, "updateModelPmml",null, msg)).toString
             }
         }
         response
@@ -1171,7 +1179,8 @@ object ModelService {
         }
         if (pythonModelPath == "") {
             val reply: String = "Python models are only ingested with command line arguments.. default directory selection is deprecated"
-            return reply
+            //return reply
+            return (new ApiResult(ErrorCodeConstants.Failure, "updateModelPython",null, reply)).toString
         }
 
         val response: String = try {
@@ -1183,12 +1192,14 @@ object ModelService {
             case fnf: FileNotFoundException => {
                 val msg: String = s"updateModelPython... supplied file path not found ... path = updateModelPython"
                 logger.error(msg, fnf)
-                msg
+                //msg
+                return (new ApiResult(ErrorCodeConstants.Failure, "updateModelPython",null, msg)).toString
             }
             case e: Exception => {
                 val msg: String = if (pythonModelPath == null) "updateModelPython pythonModel path was not supplied" else s"updateModelPython... exception e = ${e.toString}"
                 logger.error(s"$msg...", e)
-                msg
+                //msg
+                return (new ApiResult(ErrorCodeConstants.Failure, "updateModelPython",null, msg)).toString
             }
         }
         response
@@ -1225,7 +1236,8 @@ object ModelService {
         }
         if (jythonModelPath == "") {
             val reply: String = "Python models are only ingested with command line arguments.. default directory selection is deprecated"
-            return reply
+            //return reply
+            return (new ApiResult(ErrorCodeConstants.Failure, "updateModelJython",null, reply)).toString
         }
 
         val response: String = try {
@@ -1237,12 +1249,14 @@ object ModelService {
             case fnf: FileNotFoundException => {
                 val msg: String = s"updateModelJython... supplied file path not found ... path = updateModelPython"
                 logger.error(msg, fnf)
-                msg
+                //msg
+                return (new ApiResult(ErrorCodeConstants.Failure, "updateModelJython",null, msg)).toString
             }
             case e: Exception => {
                 val msg: String = if (jythonModelPath == null) "updateModelJython jythonModel path was not supplied" else s"updateModelJython... exception e = ${e.toString}"
                 logger.error(s"$msg...", e)
-                msg
+                //msg
+                return (new ApiResult(ErrorCodeConstants.Failure, "updateModelJython",null, msg)).toString
             }
         }
         response
