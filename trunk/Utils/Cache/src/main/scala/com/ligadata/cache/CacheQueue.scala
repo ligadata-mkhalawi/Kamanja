@@ -143,7 +143,23 @@ class CacheQueue(val cache: DataCache, val kQueueHead: String, val kQueueTail: S
     // For head we are setting successor key
     map.put(kQueueHead, kQueueTail)
 
-    cache.put(map)
+    val tm = cache.beginTransaction
+    try {
+      cache.put(map)
+      tm.commit()
+    } catch {
+      case e: Throwable => {
+        if (tm != null) {
+          try {
+            tm.rollback()
+          } catch {
+            case e: Throwable => {
+              LOG.error("Failed to rollback transaction", e)
+            }
+          }
+        }
+      }
+    }
   }
 
   def enQ(key: String, element: CacheQueueElement): Unit = {
