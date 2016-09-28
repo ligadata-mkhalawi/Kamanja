@@ -218,6 +218,15 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     if (data_list == null)
       throw new InvalidArgumentException("Data should not be null", null)
 
+
+
+
+
+
+    val jsonDataNew = data_list.map(oneContainerData => {
+
+    })
+
     val putData = data_list.map(oneContainerData => {
       val containerData: Array[(com.ligadata.KvBase.Key, com.ligadata.KvBase.Value)] = oneContainerData._2.map(row => {
         if (row._3.isInstanceOf[ContainerInterface]) {
@@ -240,10 +249,10 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     //    putData.foreach({x =>
     //    println("<===containername====>" + x._1 + "contianer size" + x._2.length)})
 
-//    if (putData.size > 0)
-//      dataStore.put(putData)
-    val tmparray: Array[(String, Array[String])]= Array(("sampleContainer",Array("data1","data2")),("sampleContainer",Array("data1","data2")))
-    dataStore.putJson(tmparray)
+    //    if (putData.size > 0)
+    dataStore.put(putData)
+    val tmparray: Array[(Array[String])] = Array((Array("{\"filename\":\"1234.txt\",\"messageBody\":\"base64IncodedData\",\"attachments\":[{\"1234_atch1.jpg\":\"base64IncodedData\",\"1234_atch2.jpg\":\"base64IncodedData\",\"1234_atch1.xls\":\"base64IncodedData\",\"1234_atch2.xls\":\"base64IncodedData\",\"1234_atch1.json\":\"base64IncodedData\"}]}", "{\"filename\":\"1234.txt\",\"messageBody\":\"base64IncodedData\",\"attachments\":[{\"1234_atch1.jpg\":\"base64IncodedData\",\"1234_atch2.jpg\":\"base64IncodedData\",\"1234_atch1.xls\":\"base64IncodedData\",\"1234_atch2.xls\":\"base64IncodedData\",\"1234_atch1.json\":\"base64IncodedData\"}]}")), (Array("{\"filename\":\"1234.txt\",\"messageBody\":\"base64IncodedData\",\"attachments\":[{\"1234_atch1.jpg\":\"base64IncodedData\",\"1234_atch2.jpg\":\"base64IncodedData\",\"1234_atch1.xls\":\"base64IncodedData\",\"1234_atch2.xls\":\"base64IncodedData\",\"1234_atch1.json\":\"base64IncodedData\"}]}", "{\"filename\":\"1234.txt\",\"messageBody\":\"base64IncodedData\",\"attachments\":[{\"1234_atch1.jpg\":\"base64IncodedData\",\"1234_atch2.jpg\":\"base64IncodedData\",\"1234_atch1.xls\":\"base64IncodedData\",\"1234_atch2.xls\":\"base64IncodedData\",\"1234_atch1.json\":\"base64IncodedData\"}]}")))
+    dataStore.putJson(adapterConfig.TableName, tmparray)
     // dataStore.put(tnxCtxt, data_list)
   }
 

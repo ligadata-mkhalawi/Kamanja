@@ -472,19 +472,16 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   }
 
 
-  def putJson(data_list: Array[(String, Array[(String)])]): Unit = {
+  def putJson(tableName: String, data_list: Array[(Array[(String)])]): Unit = {
     var client: TransportClient = null
-    var containerName = ""
-
+    CheckTableExists(tableName)
     try {
       client = getConnection
       var bulkRequest = client.prepareBulk()
       data_list.foreach({ x =>
-        containerName = x._1
-        val dataArray = x._2
-        dataArray.foreach({ jsonData =>
-          // insert y to table containerName
-          bulkRequest.add(client.prepareIndex(containerName, "type1").setSource(jsonData))
+        x.foreach({ jsonData =>
+          // insert x to table tableName
+          bulkRequest.add(client.prepareIndex(tableName, "type1").setSource(jsonData))
         })
       })
       logger.debug("Executing bulk insert...")
@@ -493,7 +490,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     }
     catch {
       case e: Exception => {
-        throw CreateDMLException("Failed to save an object in the table " + containerName + ":", e)
+        throw CreateDMLException("Failed to save an object in the table " + tableName + ":", e)
       }
     } finally {
       if (client != null) {
@@ -597,7 +594,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
         var byteCount = 0
         data_list.foreach(f = li => {
           var containerName = li._1
-          CheckTableExists(containerName)
           var tableName = toFullTableName(containerName)
           var keyValuePairs = li._2
 
