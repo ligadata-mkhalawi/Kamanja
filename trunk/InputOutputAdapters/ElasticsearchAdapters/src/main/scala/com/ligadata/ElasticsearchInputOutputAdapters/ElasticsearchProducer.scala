@@ -250,7 +250,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     //    println("<===containername====>" + x._1 + "contianer size" + x._2.length)})
 
     //    if (putData.size > 0)
-    dataStore.put(putData)
+//    dataStore.put(putData)
     val tmparray: Array[(Array[String])] = Array((Array("{\"filename\":\"1234.txt\",\"messageBody\":\"base64IncodedData\",\"attachments\":[{\"1234_atch1.jpg\":\"base64IncodedData\",\"1234_atch2.jpg\":\"base64IncodedData\",\"1234_atch1.xls\":\"base64IncodedData\",\"1234_atch2.xls\":\"base64IncodedData\",\"1234_atch1.json\":\"base64IncodedData\"}]}", "{\"filename\":\"1234.txt\",\"messageBody\":\"base64IncodedData\",\"attachments\":[{\"1234_atch1.jpg\":\"base64IncodedData\",\"1234_atch2.jpg\":\"base64IncodedData\",\"1234_atch1.xls\":\"base64IncodedData\",\"1234_atch2.xls\":\"base64IncodedData\",\"1234_atch1.json\":\"base64IncodedData\"}]}")), (Array("{\"filename\":\"1234.txt\",\"messageBody\":\"base64IncodedData\",\"attachments\":[{\"1234_atch1.jpg\":\"base64IncodedData\",\"1234_atch2.jpg\":\"base64IncodedData\",\"1234_atch1.xls\":\"base64IncodedData\",\"1234_atch2.xls\":\"base64IncodedData\",\"1234_atch1.json\":\"base64IncodedData\"}]}", "{\"filename\":\"1234.txt\",\"messageBody\":\"base64IncodedData\",\"attachments\":[{\"1234_atch1.jpg\":\"base64IncodedData\",\"1234_atch2.jpg\":\"base64IncodedData\",\"1234_atch1.xls\":\"base64IncodedData\",\"1234_atch2.xls\":\"base64IncodedData\",\"1234_atch1.json\":\"base64IncodedData\"}]}")))
     dataStore.putJson(adapterConfig.TableName, tmparray)
     // dataStore.put(tnxCtxt, data_list)

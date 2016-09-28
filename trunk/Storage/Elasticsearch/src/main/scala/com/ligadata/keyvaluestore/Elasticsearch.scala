@@ -472,8 +472,9 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   }
 
 
-  def putJson(tableName: String, data_list: Array[(Array[(String)])]): Unit = {
+  def putJson(containerName: String, data_list: Array[(Array[(String)])]): Unit = {
     var client: TransportClient = null
+    val tableName = toFullTableName(containerName)
     CheckTableExists(tableName)
     try {
       client = getConnection
