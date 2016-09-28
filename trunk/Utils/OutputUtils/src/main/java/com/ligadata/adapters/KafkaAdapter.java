@@ -14,113 +14,124 @@ import org.apache.logging.log4j.LogManager;
 import sun.misc.Signal;
 
 public class KafkaAdapter implements Observer {
-	static Logger logger = LogManager.getLogger(KafkaAdapter.class);
-	
-	private AdapterConfiguration configuration;
-	private ArrayList<MessageConsumer> consumers;
-	private ExecutorService executor;
+    static Logger logger = LogManager.getLogger(KafkaAdapter.class);
 
-	public KafkaAdapter(AdapterConfiguration config) {
-		this.configuration = config;
-	}
+    private AdapterConfiguration configuration;
+    private ArrayList<MessageConsumer> consumers;
+    private ExecutorService executor;
+    private AtomicInteger shutdownTriggerCounter = new AtomicInteger(0);
 
-	@Override
-	public void update(Observable o, Object arg) {
-		String sig = arg.toString();
-		logger.info("Received signal: " + sig);
-		if (sig.compareToIgnoreCase("SIGTERM") == 0 || sig.compareToIgnoreCase("SIGINT") == 0
-				|| sig.compareToIgnoreCase("SIGABRT") == 0) {
-			logger.info("Got " + sig + " signal. Shutting down the process");
-			shutdown();
-			System.exit(0);
-		}
-	}
+    public KafkaAdapter(AdapterConfiguration config) {
+        this.configuration = config;
+    }
 
-	public void shutdown() {
-		for(MessageConsumer c: consumers)
-			c.shutdown();
-		
+    @Override
+    public void update(Observable o, Object arg) {
+        String sig = arg.toString();
+        logger.info("Received signal: " + sig);
+        if (sig.compareToIgnoreCase("SIGTERM") == 0 || sig.compareToIgnoreCase("SIGINT") == 0
+                || sig.compareToIgnoreCase("SIGABRT") == 0) {
+            logger.info("Got " + sig + " signal. Shutting down the process");
+            shutdownTriggerCounter.incrementAndGet();
+//            shutdown();
+//            System.exit(0);
+        }
+    }
+
+    public void shutdown() {
+        for (MessageConsumer c : consumers)
+            c.shutdown();
+
         if (executor != null) executor.shutdown();
         try {
             if (!executor.awaitTermination(30000, TimeUnit.MILLISECONDS)) {
-            	logger.info("Timed out waiting for consumer threads to shut down, exiting uncleanly");
+                logger.info("Timed out waiting for consumer threads to shut down, exiting uncleanly");
             }
         } catch (InterruptedException e) {
-        	logger.info("Interrupted during shutdown, exiting uncleanly");
+            logger.info("Interrupted during shutdown, exiting uncleanly");
         }
 
-		logger.info("Shutdown complete.");
-	}
+        logger.info("Shutdown complete.");
+    }
 
-	public void run() {
+    public void run() {
         int numThreads = Integer.parseInt(configuration.getProperty(AdapterConfiguration.COUNSUMER_THREADS, "2"));
         executor = Executors.newFixedThreadPool(numThreads);
         consumers = new ArrayList<MessageConsumer>();
-		try {
-			for (int threadNumber = 0; threadNumber < numThreads; threadNumber++) {
-				MessageConsumer c = new MessageConsumer(configuration);
-				executor.submit(c);
-				consumers.add(c);
-			}
-		} catch (Exception e) {
-			logger.error("Error: " + e.getMessage(), e);
-			shutdown();
-			System.exit(1);
-		}
-	}
+        try {
+            for (int threadNumber = 0; threadNumber < numThreads; threadNumber++) {
+                MessageConsumer c = new MessageConsumer(configuration, shutdownTriggerCounter);
+                executor.submit(c);
+                consumers.add(c);
+            }
+        } catch (Exception e) {
+            logger.error("Error: " + e.getMessage(), e);
+            shutdownTriggerCounter.incrementAndGet();
+//            shutdown();
+//            System.exit(1);
+        }
+    }
 
 
-	public static class AdapterSignalHandler extends Observable implements sun.misc.SignalHandler {
+    public static class AdapterSignalHandler extends Observable implements sun.misc.SignalHandler {
 
-		@Override
-		public void handle(Signal sig) {
-			setChanged();
-			notifyObservers(sig);
-		}
+        @Override
+        public void handle(Signal sig) {
+            setChanged();
+            notifyObservers(sig);
+        }
 
-		public void handleSignal(String signalName) {
-			sun.misc.Signal.handle(new sun.misc.Signal(signalName), this);
-		}
-	}
+        public void handleSignal(String signalName) {
+            sun.misc.Signal.handle(new sun.misc.Signal(signalName), this);
+        }
+    }
 
-	public static void main(String[] args) {
+    public static void main(String[] args) {
 
-		AdapterConfiguration config = null;
-		try {
-			if (args.length == 0)
-				config = new AdapterConfiguration();
-			else if (args.length == 1)
-				config = new AdapterConfiguration(args[0]);
-			else {
-				logger.error("Incorrect number of arguments. ");
-				logger.error("Usage: KafkaAdapter [configfilename]");
-				System.exit(1);
-			}
-		} catch (IOException e) {
-			logger.error("Error loading configuration properties.", e);
-			System.exit(1);
-		}
+        AdapterConfiguration config = null;
+        try {
+            if (args.length == 0)
+                config = new AdapterConfiguration();
+            else if (args.length == 1)
+                config = new AdapterConfiguration(args[0]);
+            else {
+                logger.error("Incorrect number of arguments. ");
+                logger.error("Usage: KafkaAdapter [configfilename]");
+                System.exit(1);
+            }
+        } catch (IOException e) {
+            logger.error("Error loading configuration properties.", e);
+            System.exit(1);
+        }
 
-		KafkaAdapter adapter = null;
-		try {
-			adapter = new KafkaAdapter(config);
-			KafkaAdapter.AdapterSignalHandler sh = new KafkaAdapter.AdapterSignalHandler();
-			sh.addObserver(adapter);
-			sh.handleSignal("TERM");
-			sh.handleSignal("INT");
-			sh.handleSignal("ABRT");
+        KafkaAdapter adapter = null;
+        try {
+            adapter = new KafkaAdapter(config);
+            KafkaAdapter.AdapterSignalHandler sh = new KafkaAdapter.AdapterSignalHandler();
+            sh.addObserver(adapter);
+            sh.handleSignal("TERM");
+            sh.handleSignal("INT");
+            sh.handleSignal("ABRT");
 
-			adapter.run();
-		} catch (Exception e) {
-			logger.error("Error starting the adapater.\n", e);
-			System.exit(1);
-		}
+            adapter.run();
+        } catch (Exception e) {
+            logger.error("Error starting the adapater.\n", e);
+            shutdownTriggerCounter.incrementAndGet();
+            System.exit(1);
+        }
 
-		try {
-			Thread.sleep(365L * 86400L * 1000L);
-		} catch (InterruptedException ie) {
-			logger.info("Main thread is interrupted.\n");
-		}
-		adapter.shutdown();
-	}
+        while (shutdownTriggerCounter.get() == 0) {
+            try {
+                Thread.sleep(100);
+            } catch (Exception e) {
+                logger.info("Main thread is interrupted.\n", e);
+                shutdownTriggerCounter.incrementAndGet();
+            } catch (Throwable t) {
+                logger.info("Main thread is interrupted.\n", e);
+                shutdownTriggerCounter.incrementAndGet();
+            }
+        }
+
+        adapter.shutdown();
+    }
 }

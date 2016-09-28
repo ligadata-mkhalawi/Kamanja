@@ -69,9 +69,11 @@ public class MessageConsumer implements Runnable {
     private final BufferedMessageProcessor processor;
     private HashMap<Integer, Long> partitionOffsets = new HashMap<Integer, Long>();
     private Thread thisThread;
+    private AtomicInteger shutdownTriggerCounter;
 
-    public MessageConsumer(AdapterConfiguration config) throws Exception {
+    public MessageConsumer(AdapterConfiguration config, AtomicInteger shutdownTriggerCounter) throws Exception {
         this.configuration = config;
+        this.shutdownTriggerCounter = shutdownTriggerCounter;
         String classname = configuration.getProperty(AdapterConfiguration.MESSAGE_PROCESSOR);
         if (classname == null || "".equals(classname) || "null".equalsIgnoreCase(classname)) {
             logger.info("Message prcessor not specified for processing messages.");
@@ -82,14 +84,28 @@ public class MessageConsumer implements Runnable {
         }
     }
 
-    public void shutdown() {
+    public synchronized void shutdown() {
+        shutdownTriggerCounter.incrementAndGet();
         stop = true;
+
         if (processor != null)
             processor.close();
+        processor = null;
         if (consumer != null)
             consumer.wakeup();
+
         if (thisThread != null && thisThread.getState() == Thread.State.TIMED_WAITING)
             thisThread.interrupt();
+    }
+
+    public synchronized void close() {
+        shutdownTriggerCounter.incrementAndGet();
+        if (consumer != null)
+            consumer.close();
+        consumer = null;
+        if (processor != null)
+            processor.close();
+        processor = null;
     }
 
     private void createKafkaConsumer() {
@@ -179,7 +195,6 @@ public class MessageConsumer implements Runnable {
         long totalMessageCount = 0;
         long errorMessageCount = 0;
         try {
-
             logger.info("Using " + processor.getClass().getName() + " for processing messages.");
             processor.init(configuration);
 
@@ -250,15 +265,15 @@ public class MessageConsumer implements Runnable {
                     start = System.currentTimeMillis();
                 } catch (Exception e) {
                     logger.error("Failed with: " + e.getMessage(), e);
-                    throw e; // Rethrowing
+                    stop = true;
                 } catch (Throwable t) {
                     logger.error("Failed with: " + e.getMessage(), e);
-                    throw e; // Rethrowing
+                    stop = true;
                 }
             }
         }
 
-        consumer.close();
+        close();
 
         logger.info("Shutting down after processing " + totalMessageCount + " messages with " + errorMessageCount
                 + " error messages.");
