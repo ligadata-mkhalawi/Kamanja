@@ -67,7 +67,7 @@ import org.apache.zookeeper.CreateMode
 
 import com.ligadata.keyvaluestore._
 import com.ligadata.Serialize._
-import com.ligadata.Utils._
+import com.ligadata.Utils.{Utils, KamanjaClassLoader, KamanjaLoaderInfo}
 import scala.util.control.Breaks._
 import com.ligadata.AuditAdapterInfo._
 import com.ligadata.SecurityAdapterInfo.SecurityAdapter
@@ -76,6 +76,7 @@ import com.ligadata.Exceptions.StackTrace
 
 import java.util.Date
 import org.json4s.jackson.Serialization
+import sys.process._
 
 // The implementation class
 object ConfigUtils {
@@ -780,6 +781,8 @@ object ConfigUtils {
               cfgMap("EnvironmentContext") = getStringFromJsonNode(cluster.getOrElse("EnvironmentContext", null))
             if (cluster.contains("Cache"))
               cfgMap("Cache") = getStringFromJsonNode(cluster.getOrElse("Cache", null))
+           if (cluster.contains("PYTHON_CONFIG"))
+                cfgMap("PYTHON_CONFIG") = getStringFromJsonNode(cluster.get("PYTHON_CONFIG"))
             if (cluster.contains("Config")) {
               val config = cluster.get("Config").get.asInstanceOf[Map[String, Any]] //BUGBUG:: Do we need to check the type before converting
               if (config.contains("SystemCatalog"))
@@ -790,6 +793,15 @@ object ConfigUtils {
                 cfgMap("EnvironmentContext") = getStringFromJsonNode(config.get("EnvironmentContext"))
             }
 
+	    if (logger.isDebugEnabled()) {
+	       logger.debug( "The value of python config while uploading is  " + cfgMap.getOrElse("PYTHON_CONFIG", "") ) 
+	    }
+
+	    getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_CONFIG", cfgMap.getOrElse("PYTHON_CONFIG", "")) 
+
+	    if (logger.isDebugEnabled()) {
+	       logger.debug( "The value of python config from meta config while uploading is  " + getMetadataAPI.GetMetadataAPIConfig.getProperty("PYTHON_CONFIG") ) 
+	    }
             // save in memory
             val cic = MdMgr.GetMdMgr.MakeClusterCfg(ClusterId, cfgMap, null, null)
             val addClusterResult = MdMgr.GetMdMgr.AddClusterCfg(cic)
@@ -1273,6 +1285,7 @@ object ConfigUtils {
       val key = e.nextElement().asInstanceOf[String]
       val value = getMetadataAPI.GetMetadataAPIConfig.getProperty(key)
       logger.debug("Key : " + key + ", Value : " + value)
+      System.out.println(key + " => " + value)
     }
   }
 
@@ -1370,7 +1383,7 @@ object ConfigUtils {
 
     val nd = mdMgr.Nodes.getOrElse(nodeId, null)
     if (nd == null) {
-      logger.error("Node %s not found in metadata".format(nodeId))
+      logger.error("In Refresh API Config - Node %s not found in metadata".format(nodeId))
       return false
     }
 
@@ -1392,6 +1405,47 @@ object ConfigUtils {
       logger.error("ZooKeeperInfo not found for Node %s  & ClusterId : %s".format(nodeId, nd.ClusterId))
       return false
     }
+
+    val pythonConfigs = cluster.cfgMap.getOrElse("PYTHON_CONFIG", null)
+    
+    if (pythonConfigs != null && pythonConfigs.isInstanceOf[String]
+      && pythonConfigs.asInstanceOf[String].trim().size > 0) {
+      if (logger.isDebugEnabled()) {
+      	 logger.debug(" The value of Pythonconfigs are " + pythonConfigs) ;
+      }
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_CONFIG", pythonConfigs) 
+
+      implicit val jsonFormats: Formats = DefaultFormats
+
+      val pyInfo = parse(pythonConfigs).extract[PythonInfo]
+
+      val pythonPath  = pyInfo.PYTHON_PATH.replace("\"", "").trim
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_PATH", pythonPath)
+      val pythonBinDir  = pyInfo.PYTHON_BIN_DIR.replace("\"", "").trim
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_BIN_DIR", pythonBinDir)
+      val pythonLogConfigPath  = pyInfo.PYTHON_LOG_CONFIG_PATH.replace("\"", "").trim
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_LOG_CONFIG_PATH", pythonLogConfigPath)
+      val pythonLogPath  = pyInfo.PYTHON_LOG_PATH.replace("\"", "").trim
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_LOG_PATH", pythonLogPath)
+      val serverBasePort  = pyInfo.SERVER_BASE_PORT.replace("\"", "").trim
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("SERVER_BASE_PORT", serverBasePort)
+      val serverPortLimit  = pyInfo.SERVER_PORT_LIMIT.replace("\"", "").trim
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("SERVER_PORT_LIMIT", serverPortLimit)
+      val serverHost  = pyInfo.SERVER_HOST.replace("\"", "").trim
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("SERVER_HOST", serverHost)
+      if (logger.isDebugEnabled()) {
+         logger.debug("PYTHON_PATH(based on PYTHON_CONFIG) => " + pythonPath)
+         logger.debug("PYTHON_BIN_DIR(based on PYTHON_CONFIG) => " + pythonBinDir)
+         logger.debug("PYTHON_LOG_CONFIG_PATH(based on PYTHON_CONFIG) => " + pythonLogConfigPath)
+         logger.debug("PYTHON_LOG_PATH(based on PYTHON_CONFIG) => " + pythonLogPath)
+         logger.debug("SERVER_BASE_PORT(based on PYTHON_CONFIG) => " + serverBasePort)
+         logger.debug("SERVER_PORT_LIMIT(based on PYTHON_CONFIG) => " + serverPortLimit)
+          logger.debug("SERVER_HOST(based on PYTHON_CONFIG) => " + serverHost)
+      }
+
+    }
+
+
     val jarPaths = if (nd.JarPaths == null) Set[String]() else nd.JarPaths.map(str => str.replace("\"", "").trim).filter(str => str.size > 0).toSet
       implicit val jsonFormats: Formats = DefaultFormats
     if (jarPaths.size == 0) {
@@ -1433,6 +1487,15 @@ object ConfigUtils {
     true
   }
 
+  private def fileExists(fileName: String): Boolean = {
+    val iFile = new File(fileName)
+    if (!iFile.exists) {
+      logger.error("The File  (" + fileName + ") is not found: ")
+      false
+    } else
+      true
+  }
+
     /**
      * Read metadata api configuration properties
       *
@@ -1463,6 +1526,7 @@ object ConfigUtils {
       setPropertyFromConfigFile("ZK_SESSION_TIMEOUT_MS", "3000")
       setPropertyFromConfigFile("ZK_CONNECTION_TIMEOUT_MS", "3000")
 
+
       // Loop through and set the rest of the values.
       val eProps1 = prop.propertyNames()
       while (eProps1.hasMoreElements()) {
@@ -1470,36 +1534,243 @@ object ConfigUtils {
         val value = prop.getProperty(key)
         setPropertyFromConfigFile(key, value)
       }
+
+      val nodeId = getMetadataAPI.GetMetadataAPIConfig.getProperty("NODE_ID")
+      if( nodeId == null ){
+	throw new Exception("NodeId must be defined in the config file " + configFile)
+      }
+      setPropertyFromConfigFile("NODE_ID", nodeId)
+
       val mdDataStore = getMetadataAPI.GetMetadataAPIConfig.getProperty("METADATA_DATASTORE")
+      if( mdDataStore == null ){
+	throw new Exception("MetadataDataStore must be defined in the config file " + configFile)
+      }
+      setPropertyFromConfigFile("METADATA_DATASTORE", mdDataStore)
 
-      if (mdDataStore == null) {
-        // Prepare from
-        val dbType = getMetadataAPI.GetMetadataAPIConfig.getProperty("DATABASE")
-        val dbHost = if (getMetadataAPI.GetMetadataAPIConfig.getProperty("DATABASE_HOST") != null) getMetadataAPI.GetMetadataAPIConfig.getProperty("DATABASE_HOST") else getMetadataAPI.GetMetadataAPIConfig.getProperty("DATABASE_LOCATION")
-        val dbSchema = getMetadataAPI.GetMetadataAPIConfig.getProperty("DATABASE_SCHEMA")
-        val dbAdapterSpecific = getMetadataAPI.GetMetadataAPIConfig.getProperty("ADAPTER_SPECIFIC_CONFIG")
+      val rootDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("ROOT_DIR")
+      if( rootDir == null ){
+	throw new Exception("The property ROOT_DIR must be defined in MetadataAPI properties file")
+      }
 
-        val dbType1 = if (dbType == null) "" else dbType.trim
-        val dbHost1 = if (dbHost == null) "" else dbHost.trim
-        val dbSchema1 = if (dbSchema == null) "" else dbSchema.trim
+      val libSystemPath = rootDir + "/lib/system"
+      val libApplicationPath = rootDir + "/lib/application"
 
-        if (dbAdapterSpecific != null) {
-          val json = ("StoreType" -> dbType1) ~
-            ("SchemaName" -> dbSchema1) ~
-            ("Location" -> dbHost1) ~
-            ("AdapterSpecificConfig" -> dbAdapterSpecific)
-          val jsonStr = pretty(render(json))
-          setPropertyFromConfigFile("METADATA_DATASTORE", jsonStr)
-        } else {
-          val json = ("StoreType" -> dbType1) ~
-            ("SchemaName" -> dbSchema1) ~
-            ("Location" -> dbHost1)
-          val jsonStr = pretty(render(json))
-          setPropertyFromConfigFile("METADATA_DATASTORE", jsonStr)
-        }
+      logger.debug("libSystemPath => " + libSystemPath)
+      logger.debug("libApplicationPath => " + libApplicationPath)
+
+      val defaultJarPathStr = libSystemPath + "," + libApplicationPath
+      setPropertyFromConfigFile("JarPaths", defaultJarPathStr)
+
+      var manifestPath = getMetadataAPI.GetMetadataAPIConfig.getProperty("MANIFEST_PATH")
+      if( manifestPath == null ){
+	manifestPath = rootDir + "/config/manifest.mf"
+        setPropertyFromConfigFile("MANIFEST_PATH", manifestPath)
+      }
+
+      var notifyEngine = getMetadataAPI.GetMetadataAPIConfig.getProperty("NOTIFY_ENGINE")
+      if( notifyEngine == null ){
+	notifyEngine = "YES"
+        setPropertyFromConfigFile("NOTIFY_ENGINE", notifyEngine)
+      }
+
+      var znodePath = getMetadataAPI.GetMetadataAPIConfig.getProperty("ZNODE_PATH")
+      if( znodePath == null ){
+	znodePath = "/kamanja"
+        setPropertyFromConfigFile("ZNODE_PATH", znodePath)
+      }
+
+      var apiLeaderSelectionZkNode = getMetadataAPI.GetMetadataAPIConfig.getProperty("API_LEADER_SELECTION_NODE_PATH")
+      if( apiLeaderSelectionZkNode == null ){
+	apiLeaderSelectionZkNode = "/kamanja"
+        setPropertyFromConfigFile("API_LEADER_SELECTION_NODE_PATH", apiLeaderSelectionZkNode)
+      }
+
+      var zkConnectString = getMetadataAPI.GetMetadataAPIConfig.getProperty("ZOOKEEPER_CONNECT_STRING")
+      if( zkConnectString == null ){
+	zkConnectString = "localhost:2181"
+        setPropertyFromConfigFile("ZOOKEEPER_CONNECT_STRING", zkConnectString)
+      }
+
+      var compilerWorkDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("COMPILER_WORK_DIR")
+      if( compilerWorkDir == null ){
+	compilerWorkDir = rootDir + "/workingdir"
+        setPropertyFromConfigFile("COMPILER_WORK_DIR", compilerWorkDir)
+      }
+
+      var serviceHost = getMetadataAPI.GetMetadataAPIConfig.getProperty("SERVICE_HOST")
+      if( serviceHost == null ){
+	serviceHost = "localhost"
+        setPropertyFromConfigFile("SERVICE_HOST", serviceHost)
+      }
+
+      var servicePort = getMetadataAPI.GetMetadataAPIConfig.getProperty("SERVICE_PORT")
+      if( servicePort == null ){
+	servicePort = "8081"
+        setPropertyFromConfigFile("SERVICE_PORT", servicePort)
+      }
+
+      var modelFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
+      if( modelFilesDir == null ){
+	modelFilesDir = rootDir + "/input/SampleApplications/metadata/model/"
+        setPropertyFromConfigFile("MODEL_FILES_DIR", modelFilesDir)
+      }
+
+      var typeFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("TYPE_FILES_DIR")
+      if( typeFilesDir == null ){
+	typeFilesDir = rootDir + "/input/SampleApplications/metadata/type/"
+        setPropertyFromConfigFile("TYPE_FILES_DIR", typeFilesDir)
+      }
+
+      var functionFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("FUNCTION_FILES_DIR")
+      if( functionFilesDir == null ){
+	functionFilesDir = rootDir + "/input/SampleApplications/metadata/function/"
+        setPropertyFromConfigFile("FUNCTION_FILES_DIR", functionFilesDir)
+      }
+
+      var conceptFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONCEPT_FILES_DIR")
+      if( conceptFilesDir == null ){
+	conceptFilesDir = rootDir + "/input/SampleApplications/metadata/concept/"
+        setPropertyFromConfigFile("CONCEPT_FILES_DIR", conceptFilesDir)
+      }
+
+      var messageFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MESSAGE_FILES_DIR")
+      if( messageFilesDir == null ){
+	messageFilesDir = rootDir + "/input/SampleApplications/metadata/message/"
+        setPropertyFromConfigFile("MESSAGE_FILES_DIR", messageFilesDir)
+      }
+
+      var containerFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONTAINER_FILES_DIR")
+      if( containerFilesDir == null ){
+	containerFilesDir = rootDir + "/input/SampleApplications/metadata/container/"
+        setPropertyFromConfigFile("CONTAINER_FILES_DIR", containerFilesDir)
+      }
+
+      var configFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONFIG_FILES_DIR")
+      if( configFilesDir == null ){
+	configFilesDir = rootDir + "/input/SampleApplications/metadata/config/"
+        setPropertyFromConfigFile("CONFIG_FILES_DIR", configFilesDir)
+      }
+
+      var modelExecFlag = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_EXEC_FLAG")
+      if( modelExecFlag == null ){
+	modelExecFlag = "false"
+        setPropertyFromConfigFile("MODEL_EXEC_FLAG", modelExecFlag)
+      }
+
+      var securityImplJar = getMetadataAPI.GetMetadataAPIConfig.getProperty("SECURITY_IMPL_JAR")
+      if( securityImplJar == null ){
+	securityImplJar = libSystemPath + "/simpleapacheshiroadapter_2.11-1.0.jar"
+        setPropertyFromConfigFile("SECURITY_IMPL_JAR", securityImplJar)
+      }
+
+      var securityImplClass = getMetadataAPI.GetMetadataAPIConfig.getProperty("SECURITY_IMPL_CLASS")
+      if( securityImplClass == null ){
+	securityImplClass = "com.ligadata.Security.SimpleApacheShiroAdapter"
+        setPropertyFromConfigFile("SECURITY_IMPL_CLASS", securityImplClass)
+      }
+
+      var doAuth = getMetadataAPI.GetMetadataAPIConfig.getProperty("DO_AUTH")
+      if( doAuth == null ){
+	doAuth = "NO"
+        setPropertyFromConfigFile("DO_AUTH", doAuth)
+      }
+
+      var auditImplJar = getMetadataAPI.GetMetadataAPIConfig.getProperty("AUDIT_IMPL_JAR")
+      if( auditImplJar == null ){
+	auditImplJar = libSystemPath + "/auditadapters_2.11-1.0.jar"
+        setPropertyFromConfigFile("AUDIT_IMPL_JAR", auditImplJar)
+      }
+
+      var auditImplClass = getMetadataAPI.GetMetadataAPIConfig.getProperty("AUDIT_IMPL_CLASS")
+      if( auditImplClass == null ){
+	auditImplClass = "com.ligadata.audit.adapters.AuditCassandraAdapter"
+        setPropertyFromConfigFile("AUDIT_IMPL_CLASS", auditImplClass)
+      }
+
+      var doAudit = getMetadataAPI.GetMetadataAPIConfig.getProperty("DO_AUDIT")
+      if( doAudit == null ){
+	doAudit = "NO"
+        setPropertyFromConfigFile("DO_AUDIT", doAudit)
+      }
+
+      var sslCertificate = getMetadataAPI.GetMetadataAPIConfig.getProperty("SSL_CERTIFICATE")
+      if( sslCertificate == null ){
+	sslCertificate = rootDir + "/config/keystore.jks"
+        setPropertyFromConfigFile("SSL_CERTIFICATE", sslCertificate)
+      }
+
+      var jarPaths = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS")
+      logger.debug("jarPaths => " + jarPaths)
+      if( jarPaths == null ){
+	jarPaths = libSystemPath + "," + libApplicationPath
+        setPropertyFromConfigFile("JAR_PATHS", jarPaths)
+      }
+
+      var jarTargetDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR")
+      logger.debug("jarTargetDir => " + jarTargetDir)
+      if( jarTargetDir == null ){
+	jarTargetDir = libApplicationPath
+        setPropertyFromConfigFile("JAR_TARGET_DIR", jarTargetDir)
+      }
+
+      val classPath =  getMetadataAPI.GetMetadataAPIConfig.getProperty("CLASSPATH")
+      logger.debug("classPath => " + classPath)
+      val jarPathSet = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(",").toSet
+      jarPathSet.foreach(j => { logger.debug("jarPath Element => " + j) })
+
+      val libraryFile = rootDir + "/config/library_list"
+      if( ! fileExists(libraryFile) ){
+	throw new Exception("Possible deployment error: The file " + libraryFile + " that lists the default libraries is not found")
+      }
+
+      var libList = new scala.collection.mutable.ListBuffer[String]()
+      for (line <- Source.fromFile(libraryFile).getLines()) {
+	libList += line
+      }
+
+      if ( libList.length == 0 ){
+	throw new Exception("Possible deployment error: The file " + libraryFile + " is empty, It must contain default libraries")
+      }
+
+      val defaultClassPath = libList.map(j => com.ligadata.Utils.Utils.GetValidJarFile(jarPathSet, j)).mkString(":")
+
+      logger.info("defaultClassPath => " + defaultClassPath)
+      var finalClassPath = defaultClassPath
+      if( classPath != null ){
+	finalClassPath = classPath + ":" + finalClassPath
+      }
+
+      setPropertyFromConfigFile("CLASSPATH", finalClassPath)
+
+      var scalaHome = getMetadataAPI.GetMetadataAPIConfig.getProperty("SCALA_HOME")
+      if( scalaHome == null ){
+	try{
+	  scalaHome = Process("which scala").!!
+	} catch {
+	  case e: Exception =>
+	    logger.error("Failed to locate SCALA_HOME")
+	    throw e
+	}
+	scalaHome = scalaHome.replaceAll("/bin/scala\n","")
+	setPropertyFromConfigFile("SCALA_HOME", scalaHome)
+      }
+
+      var javaHome = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAVA_HOME")
+      if( javaHome == null ){
+	try{
+	  javaHome = Process("which java").!!
+	} catch {
+	  case e: Exception =>
+	    logger.error("Failed to locate JAVA_HOME")
+	    throw e
+	}
+	javaHome = javaHome.replaceAll("/bin/java\n","")
+	setPropertyFromConfigFile("JAVA_HOME", javaHome)
       }
 
       pList.map(v => logger.warn(v + " remains unset"))
+
+      dumpMetadataAPIConfig
       MetadataAPIImpl.propertiesAlreadyLoaded = true;
 
     } catch {
@@ -1517,242 +1788,9 @@ object ConfigUtils {
   @throws(classOf[MissingPropertyException])
   @throws(classOf[LoadAPIConfigException])
   def readMetadataAPIConfigFromJsonFile(cfgFile: String): Unit = {
-    try {
-      if (MetadataAPIImpl.propertiesAlreadyLoaded) {
-        return ;
-      }
-      var configFile = "MetadataAPIConfig.json"
-      if (cfgFile != null) {
-        configFile = cfgFile
-      }
-
-      val configJson = Source.fromFile(configFile).mkString
-      implicit val jsonFormats: Formats = DefaultFormats
-      val json = parse(configJson)
-
-      logger.debug("Parsed the json : " + configJson)
-      val configMap = json.extract[MetadataAPIConfig]
-
-      var rootDir = configMap.APIConfigParameters.RootDir
-      if (rootDir == null) {
-        rootDir = System.getenv("HOME")
-      }
-      logger.debug("RootDir => " + rootDir)
-
-      var gitRootDir = configMap.APIConfigParameters.GitRootDir
-      if (gitRootDir == null) {
-        gitRootDir = rootDir + "git_hub"
-      }
-      logger.debug("GitRootDir => " + gitRootDir)
-
-      var database = configMap.APIConfigParameters.MetadataStoreType
-      if (database == null) {
-        database = "hashmap"
-      }
-      logger.debug("Database => " + database)
-
-      var databaseLocation = "/tmp"
-      var databaseHost = configMap.APIConfigParameters.MetadataLocation
-      if (databaseHost == null) {
-        databaseHost = "localhost"
-      } else {
-        databaseLocation = databaseHost
-      }
-      logger.debug("DatabaseHost => " + databaseHost + ", DatabaseLocation(applicable to treemap or hashmap databases only) => " + databaseLocation)
-
-      var databaseAdapterSpecificConfig = ""
-      var metadataDataStore = ""
-      /*
-      var tmpMdAdapSpecCfg = configMap.APIConfigParameters.MetadataAdapterSpecificConfig
-      if (tmpMdAdapSpecCfg != null && tmpMdAdapSpecCfg != None) {
-        databaseAdapterSpecificConfig = tmpMdAdapSpecCfg
-      }
-*/
-      logger.debug("DatabaseAdapterSpecificConfig => " + databaseAdapterSpecificConfig)
-
-      var databaseSchema = "metadata"
-      val databaseSchemaOpt = configMap.APIConfigParameters.MetadataSchemaName
-      if (databaseSchemaOpt != None) {
-        databaseSchema = databaseSchemaOpt.get
-      }
-      logger.debug("DatabaseSchema(applicable to cassandra only) => " + databaseSchema)
-
-      var jarTargetDir = configMap.APIConfigParameters.JarTargetDir
-      if (jarTargetDir == null) {
-        throw MissingPropertyException("The property JarTargetDir must be defined in the config file " + configFile, null)
-      }
-      logger.debug("JarTargetDir => " + jarTargetDir)
-
-      var jarPaths = jarTargetDir // configMap.APIConfigParameters.JarPaths
-      if (jarPaths == null) {
-        throw MissingPropertyException("The property JarPaths must be defined in the config file " + configFile, null)
-      }
-      logger.debug("JarPaths => " + jarPaths)
-
-      var scalaHome = configMap.APIConfigParameters.ScalaHome
-      if (scalaHome == null) {
-        throw MissingPropertyException("The property ScalaHome must be defined in the config file " + configFile, null)
-      }
-      logger.debug("ScalaHome => " + scalaHome)
-
-      var javaHome = configMap.APIConfigParameters.JavaHome
-      if (javaHome == null) {
-        throw MissingPropertyException("The property JavaHome must be defined in the config file " + configFile, null)
-      }
-      logger.debug("JavaHome => " + javaHome)
-
-      var manifestPath = configMap.APIConfigParameters.ManifestPath
-      if (manifestPath == null) {
-        throw MissingPropertyException("The property ManifestPath must be defined in the config file " + configFile, null)
-      }
-      logger.debug("ManifestPath => " + manifestPath)
-
-      var classPath = configMap.APIConfigParameters.ClassPath
-      if (classPath == null) {
-        throw MissingPropertyException("The property ClassPath must be defined in the config file " + configFile, null)
-      }
-      logger.debug("ClassPath => " + classPath)
-
-      var notifyEngine = configMap.APIConfigParameters.NotifyEngine
-      if (notifyEngine == null) {
-        throw MissingPropertyException("The property NotifyEngine must be defined in the config file " + configFile, null)
-      }
-      logger.debug("NotifyEngine => " + notifyEngine)
-
-      var znodePath = configMap.APIConfigParameters.ZnodePath
-      if (znodePath == null) {
-        throw MissingPropertyException("The property ZnodePath must be defined in the config file " + configFile, null)
-      }
-      logger.debug("ZNodePath => " + znodePath)
-
-      var zooKeeperConnectString = configMap.APIConfigParameters.ZooKeeperConnectString
-      if (zooKeeperConnectString == null) {
-        throw MissingPropertyException("The property ZooKeeperConnectString must be defined in the config file " + configFile, null)
-      }
-      logger.debug("ZooKeeperConnectString => " + zooKeeperConnectString)
-
-      var MODEL_FILES_DIR = ""
-      val MODEL_FILES_DIR1 = configMap.APIConfigParameters.MODEL_FILES_DIR
-      if (MODEL_FILES_DIR1 == None) {
-        MODEL_FILES_DIR = gitRootDir + "/Kamanja/trunk/MetadataAPI/src/test/SampleTestFiles/Models"
-      } else
-        MODEL_FILES_DIR = MODEL_FILES_DIR1.get
-      logger.debug("MODEL_FILES_DIR => " + MODEL_FILES_DIR)
-
-      var TYPE_FILES_DIR = ""
-      val TYPE_FILES_DIR1 = configMap.APIConfigParameters.TYPE_FILES_DIR
-      if (TYPE_FILES_DIR1 == None) {
-        TYPE_FILES_DIR = gitRootDir + "/Kamanja/trunk/MetadataAPI/src/test/SampleTestFiles/Types"
-      } else
-        TYPE_FILES_DIR = TYPE_FILES_DIR1.get
-      logger.debug("TYPE_FILES_DIR => " + TYPE_FILES_DIR)
-
-      var FUNCTION_FILES_DIR = ""
-      val FUNCTION_FILES_DIR1 = configMap.APIConfigParameters.FUNCTION_FILES_DIR
-      if (FUNCTION_FILES_DIR1 == None) {
-        FUNCTION_FILES_DIR = gitRootDir + "/Kamanja/trunk/MetadataAPI/src/test/SampleTestFiles/Functions"
-      } else
-        FUNCTION_FILES_DIR = FUNCTION_FILES_DIR1.get
-      logger.debug("FUNCTION_FILES_DIR => " + FUNCTION_FILES_DIR)
-
-      var CONCEPT_FILES_DIR = ""
-      val CONCEPT_FILES_DIR1 = configMap.APIConfigParameters.CONCEPT_FILES_DIR
-      if (CONCEPT_FILES_DIR1 == None) {
-        CONCEPT_FILES_DIR = gitRootDir + "/Kamanja/trunk/MetadataAPI/src/test/SampleTestFiles/Concepts"
-      } else
-        CONCEPT_FILES_DIR = CONCEPT_FILES_DIR1.get
-      logger.debug("CONCEPT_FILES_DIR => " + CONCEPT_FILES_DIR)
-
-      var MESSAGE_FILES_DIR = ""
-      val MESSAGE_FILES_DIR1 = configMap.APIConfigParameters.MESSAGE_FILES_DIR
-      if (MESSAGE_FILES_DIR1 == None) {
-        MESSAGE_FILES_DIR = gitRootDir + "/Kamanja/trunk/MetadataAPI/src/test/SampleTestFiles/Messages"
-      } else
-        MESSAGE_FILES_DIR = MESSAGE_FILES_DIR1.get
-      logger.debug("MESSAGE_FILES_DIR => " + MESSAGE_FILES_DIR)
-
-      var CONTAINER_FILES_DIR = ""
-      val CONTAINER_FILES_DIR1 = configMap.APIConfigParameters.CONTAINER_FILES_DIR
-      if (CONTAINER_FILES_DIR1 == None) {
-        CONTAINER_FILES_DIR = gitRootDir + "/Kamanja/trunk/MetadataAPI/src/test/SampleTestFiles/Containers"
-      } else
-        CONTAINER_FILES_DIR = CONTAINER_FILES_DIR1.get
-
-      logger.debug("CONTAINER_FILES_DIR => " + CONTAINER_FILES_DIR)
-
-      var COMPILER_WORK_DIR = ""
-      val COMPILER_WORK_DIR1 = configMap.APIConfigParameters.COMPILER_WORK_DIR
-      if (COMPILER_WORK_DIR1 == None) {
-        COMPILER_WORK_DIR = "/tmp"
-      } else
-        COMPILER_WORK_DIR = COMPILER_WORK_DIR1.get
-
-      logger.debug("COMPILER_WORK_DIR => " + COMPILER_WORK_DIR)
-
-      var MODEL_EXEC_FLAG = ""
-      val MODEL_EXEC_FLAG1 = configMap.APIConfigParameters.MODEL_EXEC_FLAG
-      if (MODEL_EXEC_FLAG1 == None) {
-        MODEL_EXEC_FLAG = "false"
-      } else
-        MODEL_EXEC_FLAG = MODEL_EXEC_FLAG1.get
-
-      logger.debug("MODEL_EXEC_FLAG => " + MODEL_EXEC_FLAG)
-
-      val CONFIG_FILES_DIR = gitRootDir + "/Kamanja/trunk/SampleApplication/Medical/Configs"
-      logger.debug("CONFIG_FILES_DIR => " + CONFIG_FILES_DIR)
-
-      var OUTPUTMESSAGE_FILES_DIR = ""
-      val OUTPUTMESSAGE_FILES_DIR1 = configMap.APIConfigParameters.OUTPUTMESSAGE_FILES_DIR
-      if (OUTPUTMESSAGE_FILES_DIR1 == None) {
-        OUTPUTMESSAGE_FILES_DIR = gitRootDir + "/Kamanja/trunk/MetadataAPI/src/test/SampleTestFiles/OutputMsgs"
-      } else
-        OUTPUTMESSAGE_FILES_DIR = OUTPUTMESSAGE_FILES_DIR1.get
-      logger.debug("OUTPUTMESSAGE_FILES_DIR => " + OUTPUTMESSAGE_FILES_DIR)
-
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("ROOT_DIR", rootDir)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("GIT_ROOT", gitRootDir)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("DATABASE", database)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("DATABASE_HOST", databaseHost)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("DATABASE_SCHEMA", databaseSchema)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("DATABASE_LOCATION", databaseLocation)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("ADAPTER_SPECIFIC_CONFIG", databaseAdapterSpecificConfig)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("METADATA_DATASTORE", metadataDataStore)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("JAR_TARGET_DIR", jarTargetDir)
-      val jp = if (jarPaths != null) jarPaths else jarTargetDir
-      val j_paths = jp.split(",").map(s => s.trim).filter(s => s.size > 0)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("JAR_PATHS", j_paths.mkString(","))
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("SCALA_HOME", scalaHome)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("JAVA_HOME", javaHome)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("MANIFEST_PATH", manifestPath)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("CLASSPATH", classPath)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("NOTIFY_ENGINE", notifyEngine)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("ZNODE_PATH", znodePath)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("ZOOKEEPER_CONNECT_STRING", zooKeeperConnectString)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("MODEL_FILES_DIR", MODEL_FILES_DIR)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("TYPE_FILES_DIR", TYPE_FILES_DIR)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("FUNCTION_FILES_DIR", FUNCTION_FILES_DIR)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("CONCEPT_FILES_DIR", CONCEPT_FILES_DIR)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("MESSAGE_FILES_DIR", MESSAGE_FILES_DIR)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("CONTAINER_FILES_DIR", CONTAINER_FILES_DIR)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("COMPILER_WORK_DIR", COMPILER_WORK_DIR)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("MODEL_EXEC_LOG", MODEL_EXEC_FLAG)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("CONFIG_FILES_DIR", CONFIG_FILES_DIR)
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("OUTPUTMESSAGE_FILES_DIR", OUTPUTMESSAGE_FILES_DIR)
-
-      MetadataAPIImpl.propertiesAlreadyLoaded = true;
-
-    } catch {
-      case e: MappingException => {
-
-        logger.debug("", e)
-        throw Json4sParsingException(e.getMessage(), e)
-      }
-      case e: Exception => {
-
-        logger.debug("", e)
-        throw LoadAPIConfigException("Failed to load configuration", e)
-      }
-    }
+    val msg = "The MetadataAPI properties from a json file are nolonger supported"
+    logger.error(msg)
+    throw LoadAPIConfigException("Failed to load configuration", new Exception(msg))
   }
 
     /**

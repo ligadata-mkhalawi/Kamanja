@@ -6,6 +6,18 @@ if [ -z $1 ]; then
    echo "Using the default file, {InstallDirectory}/config/Engine1Config.properties "
 fi
 
+if [ ! -d "$KAMANJA_HOME/python/logs" ]; then
+    mkdir -p $KAMANJA_HOME/python/logs
+else
+    now=$(date +"%m_%d_%Y")
+    if [ ! -d $KAMANJA_HOME/python/logs/$now ]; then
+	mkdir -p $KAMANJA_HOME/python/logs/$now
+    fi
+    cnt=`ls $KAMANJA_HOME/python/logs/pythonserver.log* 2>/dev/null | wc -l`
+    if [ "$cnt" != "0" ]; then
+	mv -f $KAMANJA_HOME/python/logs/pythonserver.*  $KAMANJA_HOME/python/logs/$now
+    fi
+fi
 # Start the engine with hashdb backed metadata configuration.  The zookeeper and your queue software should be running
 ipport="8998"
 

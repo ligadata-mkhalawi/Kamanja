@@ -16,20 +16,29 @@ class SubtractTuple(ModelInstance):
 		return outMsg
 
 	def __init__(self, host, port, modelOptions, logger):
+		""" One might want to configure the model here with modelOptions info"""
+		""" See getInputOutputFields(self) below for an example of how to access"""
+		""" modelOptions"""
 		super(SubtractTuple, self).__init__(host, port, modelOptions, logger)
 
 	def getInputOutputFields(self):
-		"""The fields and their types are returned  """
-		"""This is looking for dict item "TypeInfo" ... really it """
-		"""should be some other key... like InputFields and OutputFields"""
+		"""The field names and their types needed by the model are returned to """
+		"""the python proxy (model stub communicating with this server). """
+		"""Feel free to just hard code the type info if that is best. """
+		"""The returned dictionaries are used by the python proxy to choose """
+		"""which fields from the associated messages(s) to send to the python server """
+		"""when the model is executed.  This is appropriate when the message contains"""
+		"""a thousand fields, but the model only uses five of them. """
+
+		"""As shown, conceivably the information could be configured in the model """
+		"""options. """
 		self.logger.debug("Entered SubtractTuple.getInputOutputFields")
 		modelOptions = super(SubtractTuple, self).ModelOptions()
 		inputFields = dict()
 		outputFields = dict()
-		if "TypeInfo" in modelOptions:
-			inputFields.update(modelOptions["TypeInfo"])
-			outputFields.update(modelOptions["TypeInfo"])
-			outputFields["result"] = "Int"
+		if "InputTypeInfo" in modelOptions and "OutputTypeInfo" in modelOptions:
+			inputFields.update(modelOptions["InputTypeInfo"])
+			outputFields.update(modelOptions["OutputTypeInfo"])
 		else:
 			inputFields["a"] = "Int"
 			inputFields["b"] = "Int"
