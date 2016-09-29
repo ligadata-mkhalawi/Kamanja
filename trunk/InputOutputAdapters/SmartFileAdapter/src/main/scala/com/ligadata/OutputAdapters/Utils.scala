@@ -5,6 +5,7 @@ import com.ligadata.KamanjaBase.{AttributeValue, ContainerInterface}
 import org.apache.avro.Schema
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.security.UserGroupInformation
+import org.apache.logging.log4j.LogManager
 import parquet.hadoop.ParquetWriter
 import parquet.hadoop.metadata.CompressionCodecName
 import org.apache.hadoop.fs.Path
@@ -17,6 +18,8 @@ import parquet.avro.AvroParquetWriter;
   * Created by Yasser on 9/11/2016.
   */
 object Utils {
+
+  private val LOG = LogManager.getLogger(getClass)
 
   def createHdfsConfig(fc: SmartFileProducerConfiguration) : Configuration = {
     val hdfsConf: Configuration = new Configuration()
@@ -44,7 +47,7 @@ object Utils {
     val arrayRegex = "\\{\"type\"\\s*:\\s*\"array\"(.)*\"\\}".r
     val finalAvroSchemaStr = arrayRegex.replaceAllIn(modifiedAvroSchemaStr, "[$0,\"null\"]")
 
-    println("final avro schema: \n" + finalAvroSchemaStr)
+    LOG.info("final avro schema: \n" + finalAvroSchemaStr)
 
     val avroSchema = new org.apache.avro.Schema.Parser().parse(finalAvroSchemaStr)
 
