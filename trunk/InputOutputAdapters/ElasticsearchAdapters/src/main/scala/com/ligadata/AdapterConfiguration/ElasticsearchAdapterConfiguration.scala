@@ -8,11 +8,15 @@ import org.json4s._
 import org.json4s.native.JsonMethods._
 
 
-class ElasticsearchAdapterConfiguration extends AdapterConfiguration{
-  var hostList: String = null //folder to write files
-  var scehmaName: String = "" // prefix for the file names
-  var TableName: String = "" // optional separator inserted between messages
-  var clusterName: String = "" // optional
+class ElasticsearchAdapterConfiguration extends AdapterConfiguration {
+  var hostList: String = null
+  //folder to write files
+  var scehmaName: String = ""
+  // prefix for the file names
+  var TableName: String = ""
+  // optional separator inserted between messages
+  var clusterName: String = ""
+  // optional
   //  var serializerName: String =""
   var columnDelimiter: String = ""
   var rowkeyIncluded: Boolean = false
@@ -29,7 +33,7 @@ class KerberosConfig {
   var regionServer: String = null
 }
 
-object ElasticsearchAdapterConfiguration extends LogTrait{
+object ElasticsearchAdapterConfiguration extends LogTrait {
 
   def getAdapterConfig(inputConfig: AdapterConfiguration, inputType: String): ElasticsearchAdapterConfiguration = {
 
@@ -68,9 +72,9 @@ object ElasticsearchAdapterConfiguration extends LogTrait{
         adapterConfig.kerberos.keytab = kerbConf.getOrElse("Keytab", null)
         adapterConfig.kerberos.masterPrincipal = kerbConf.getOrElse("masterprincipal", null)
         adapterConfig.kerberos.regionServer = kerbConf.getOrElse("regionserve", null)
-      }  else if (kv._1.compareToIgnoreCase("numberOfThread") == 0) {
+      } else if (kv._1.compareToIgnoreCase("numberOfThread") == 0) {
         adapterConfig.numberOfThread = kv._2.toString.trim.toInt
-      }  else if (kv._1.compareToIgnoreCase("columnDelimiter") == 0) {
+      } else if (kv._1.compareToIgnoreCase("columnDelimiter") == 0) {
         adapterConfig.columnDelimiter = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("rowkeyIncluded") == 0) {
         adapterConfig.rowkeyIncluded = kv._2.toString.trim.toBoolean
@@ -96,7 +100,7 @@ object ElasticsearchAdapterConfiguration extends LogTrait{
     if (adapterConfig.scehmaName == null)
       throw new KamanjaException("schemaName should be specified to read/write data from Elasticsearch storage for Elasticsearch Producer: " + adapterConfig.Name, null)
 
-    if(inputType.equalsIgnoreCase("input")){
+    if (inputType.equalsIgnoreCase("input")) {
 
       if (adapterConfig.numberOfThread == 0)
         throw new KamanjaException("numberOfThread should be more than 0 for Elasticsearch Producer: " + adapterConfig.Name, null)
@@ -130,21 +134,24 @@ case class ElasticsearchKeyData(Version: Int, Type: String, Name: String, Partit
 
 class ElasticsearchPartitionUniqueRecordKey extends PartitionUniqueRecordKey {
   val Version: Int = 1
-  var Name: String = _ // Name
+  var Name: String = _
+  // Name
   val Type: String = "Elasticsearch"
   var PartitionId: Int = _ // Partition Id
 
-  override def Serialize: String = { // Making String from key
-  val json =
-  ("Version" -> Version) ~
-    ("Type" -> Type) ~
-    ("Name" -> Name) ~
-    ("PartitionId" -> PartitionId)
+  override def Serialize: String = {
+    // Making String from key
+    val json =
+    ("Version" -> Version) ~
+      ("Type" -> Type) ~
+      ("Name" -> Name) ~
+      ("PartitionId" -> PartitionId)
     compact(render(json))
   }
 
-  override def Deserialize(key: String): Unit = { // Making Key from Serialized String
-  implicit val jsonFormats: Formats = DefaultFormats
+  override def Deserialize(key: String): Unit = {
+    // Making Key from Serialized String
+    implicit val jsonFormats: Formats = DefaultFormats
     val keyData = parse(key).extract[ElasticsearchKeyData]
     if (keyData.Version == Version && keyData.Type.compareTo(Type) == 0) {
       Name = keyData.Name
@@ -153,12 +160,13 @@ class ElasticsearchPartitionUniqueRecordKey extends PartitionUniqueRecordKey {
   }
 }
 
-case class ElasticsearchRecData(Version: Int, TableName : String, Key: Option[Long], TimeStamp: Long)
+case class ElasticsearchRecData(Version: Int, TableName: String, Key: Option[Long], TimeStamp: Long)
 
 class ElasticsearchPartitionUniqueRecordValue extends PartitionUniqueRecordValue {
   val Version: Int = 1
-  var TableName : String = _
-  var Key: Long = -1 // key of next message in the file
+  var TableName: String = _
+  var Key: Long = -1
+  // key of next message in the file
   var TimeStamp: Long = -1 // timestamp of next message in the file
 
   override def Serialize: String = {
@@ -166,7 +174,7 @@ class ElasticsearchPartitionUniqueRecordValue extends PartitionUniqueRecordValue
     val json =
     ("Version" -> Version) ~
       ("Key" -> Key) ~
-      ("TableName" -> TableName)~
+      ("TableName" -> TableName) ~
       ("TimeStamp" -> TimeStamp)
     compact(render(json))
   }

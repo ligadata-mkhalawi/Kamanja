@@ -179,24 +179,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       LOG.error(szMsg)
       throw new Exception(szMsg)
     }
-    //
-    //    val (outContainers, serializedContainerData, serializerNames) = serialize(tnxCtxt, outputContainers)
-    //
-    //    if (outContainers.size != serializedContainerData.size || outContainers.size != serializerNames.size) {
-    //      val szMsg = adapterConfig.Name + " Hbase PRODUCER: Messages, messages serialized data & serializer names should has same number of elements. Messages:%d, Messages Serialized data:%d, serializerNames:%d".format(outContainers.size, serializedContainerData.size, serializerNames.size)
-    //      LOG.error(szMsg)
-    //      throw new Exception(szMsg)
-    //    }
-    //
-    //    if (serializedContainerData.size == 0) return
-    //
-    //    val partitionKeys = ArrayBuffer[Array[Byte]]()
-    //
-    //    for (i <- 0 until serializedContainerData.size) {
-    //      partitionKeys += outContainers(i).getPartitionKey.mkString(",").getBytes()
-    //    }
-    //
-    //    send(serializedContainerData, partitionKeys.toArray)
+
 
     for (i <- 0 until outputContainers.size) {
       metrics("MessagesProcessed").asInstanceOf[AtomicLong].incrementAndGet()
@@ -208,34 +191,9 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       }))
     }).toArray
 
-    //    val (outContainers, serializedContainerData, serializerNames) = serialize(tnxCtxt, outputContainers)
-    //
-    //    if (outputContainers.size != serializedContainerData.size || outputContainers.size != serializerNames.size) {
-    //      LOG.error("Hbase Producer " + adapterConfig.Name + ": Messages, messages serialized data & serializer names should has same number of elements. Messages:%d, Messages Serialized data:%d, serializerNames:%d".format(outputContainers.size, serializedContainerData.size, serializerNames.size))
-    //      return
-    //    }
-
     if (data_list == null)
       throw new InvalidArgumentException("Data should not be null", null)
 
-
-    var dataJsonsArray: ArrayBuffer[(ArrayBuffer[String])] = ArrayBuffer(ArrayBuffer[String]())
-    var internalArray: ArrayBuffer[String] = ArrayBuffer[String]()
-
-    data_list.foreach(oneContainerData => {
-      val valuesArray: Array[(Key, String, Any)] = oneContainerData._2
-
-      valuesArray.foreach(value => {
-        internalArray += value._2
-      })
-      dataJsonsArray += internalArray
-    })
-
-    dataJsonsArray.foreach(x => {
-      x.foreach(y => {
-        println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + y)
-      })
-    })
 
     val putData = data_list.map(oneContainerData => {
       val containerData: Array[(com.ligadata.KvBase.Key, com.ligadata.KvBase.Value)] = oneContainerData._2.map(row => {
@@ -256,13 +214,17 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       (oneContainerData._1, containerData)
     }).filter(oneContainerData => oneContainerData._2.size > 0)
 
-    //    putData.foreach({x =>
-    //    println("<===containername====>" + x._1 + "contianer size" + x._2.length)})
 
-    //    if (putData.size > 0)
-    //    dataStore.put(putData)
-    val tmparray: Array[(Array[String])] = Array((Array("{\"user\":\"kimchy\",\"postDate\":\"2013-01-30\",\"message\":\"trying out Elasticsearch\"}", "{\"user\":\"kimchy\",\"postDate\":\"2013-01-30\",\"message\":\"trying out Elasticsearch\"}")), (Array("{\"user\":\"kimchy\",\"postDate\":\"2013-01-30\",\"message\":\"trying out Elasticsearch\"}")))
-    //    dataStore.putJson(adapterConfig.TableName, tmparray)
+    var dataJsonsArray: ArrayBuffer[(ArrayBuffer[String])] = ArrayBuffer(ArrayBuffer[String]())
+    var internalArray: ArrayBuffer[String] = ArrayBuffer[String]()
+
+    putData.foreach(x => {
+      x._2.foreach(y => {
+        internalArray += new String(y._2.serializedInfo)
+      })
+      dataJsonsArray += internalArray
+    })
+
     dataStore.putJson(adapterConfig.TableName, dataJsonsArray)
     // dataStore.put(tnxCtxt, data_list)
   }

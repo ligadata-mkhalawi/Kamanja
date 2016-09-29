@@ -482,14 +482,11 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       data_list.foreach({ x =>
         x.foreach({ jsonData =>
           // insert x to table tableName
-          println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + jsonData)
           bulkRequest.add(client.prepareIndex(tableName, "type1").setSource(jsonData))
         })
       })
       logger.debug("Executing bulk insert...")
       val bulkResponse = bulkRequest.execute().actionGet()
-      println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>" + bulkRequest.numberOfActions())
-
     }
     catch {
       case e: Exception => {
