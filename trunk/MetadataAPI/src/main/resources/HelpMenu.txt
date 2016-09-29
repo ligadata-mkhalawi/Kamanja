@@ -42,14 +42,14 @@ kamanja dump all clusters
 kamanja dump all cluster cfgs
 kamanja dump all adapters
 VII. Kamanja engine operations
-kamanja start
-kamanja start -v (for verbose)
+kamanja start jvmoptions(optional) Properties/PropertiesFile(optional)
+kamanja start -v (for verbose) jvmoptions(optional) Properties/PropertiesFile(optional)
 VIII. Topic operations
 kamanja watch status queue
 kamanja push data
 kamanja create queues
 IX. Web service
-kamanja start webservice
+kamanja start jvmoptions(optional) webservice
 X. Adapter Message Bindings
 kamanja add adaptermessagebinding FROMFILE input
 kamanja add adaptermessagebinding FROMSTRING input
