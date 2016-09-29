@@ -4,6 +4,7 @@ import com.ligadata.test.utils.TestUtils
 
 object MetadataDefaults {
   lazy val jarResourceDir = getClass.getResource("/jars/lib/system").getPath
+  lazy val rootDir = getClass.getResource("/").getPath
 
   val nodeClassPath: String = {
     List(

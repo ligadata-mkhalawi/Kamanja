@@ -93,8 +93,7 @@ class MetadataManager extends KamanjaTestLogger {
       case e: Exception => throw new MetadataManagerException("[Metadata Manager]: Failed to initialize MetadataAPI with the following exception:\n" + e)
     }
     MetadataAPIImpl.metadataAPIConfig.setProperty("NODE_ID", "1")
-    MetadataAPIImpl.metadataAPIConfig.setProperty("ROOT_DIR", "")
-    MetadataAPIImpl.metadataAPIConfig.setProperty("GIT_ROOT", "")
+    MetadataAPIImpl.metadataAPIConfig.setProperty("ROOT_DIR", MetadataDefaults.rootDir)
     MetadataAPIImpl.metadataAPIConfig.setProperty("DATABASE", config.database)
     MetadataAPIImpl.metadataAPIConfig.setProperty("JAR_TARGET_DIR", config.appJarPath)
     MetadataAPIImpl.metadataAPIConfig.setProperty("MANIFEST_PATH", metadataDir.getAbsoluteFile + "/manifest.mf")

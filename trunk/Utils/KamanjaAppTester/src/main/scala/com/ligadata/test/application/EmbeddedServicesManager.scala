@@ -122,7 +122,7 @@ object EmbeddedServicesManager {
 
     zkClient = new ZookeeperClient(embeddedZookeeper.getConnection)
     try {
-      println("[Kamanja Application Tester] ---> Starting Kamanja...")
+      println(s"[Kamanja Application Tester] ---> Starting Kamanja with configuration file $kamanjaConfigFile...")
       val startCode = embeddedKamanjaManager.startup(kamanjaConfigFile, clusterConfig.zookeeperConfig, zkClient)
       if (startCode != 0) {
         println("[Kamanja Application Tester] ---> ***ERROR*** Failed to start Kamanja")

@@ -29,7 +29,7 @@ import scala.io._
 import java.util.Date
 import java.io._
 
-import com.ligadata.MetadataAPI.test.MetadataAPIProperties
+import com.ligadata.MetadataAPI.test.{MetadataAPIProperties, MetadataDefaults}
 
 import sys.process._
 import org.apache.logging.log4j._

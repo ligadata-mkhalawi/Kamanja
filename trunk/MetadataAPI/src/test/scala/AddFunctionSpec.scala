@@ -20,12 +20,11 @@ import com.ligadata.MetadataAPI.MetadataAPI.ModelType
 import com.ligadata.automation.unittests.api.setup._
 import org.scalatest._
 import Matchers._
-
 import com.ligadata.MetadataAPI._
 import com.ligadata.kamanja.metadata._
 import com.ligadata.kamanja.metadata.MdMgr._
-
 import com.ligadata.Utils._
+
 import util.control.Breaks._
 import scala.io._
 import java.util.Date
@@ -37,9 +36,8 @@ import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import com.ligadata.Serialize._
-
 import com.ligadata.kamanja.metadataload.MetadataLoad
-import com.ligadata.MetadataAPI.test.MetadataAPIProperties
+import com.ligadata.MetadataAPI.test.{MetadataAPIProperties, MetadataDefaults}
 import com.ligadata.test.configuration.cluster.adapters.interfaces._
 import com.ligadata.test.utils._
 import com.ligadata.test.embedded.zookeeper._

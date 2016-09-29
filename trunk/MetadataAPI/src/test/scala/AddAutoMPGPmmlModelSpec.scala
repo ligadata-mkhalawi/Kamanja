@@ -29,7 +29,7 @@ import scala.io._
 import java.util.Date
 import java.io._
 
-import com.ligadata.MetadataAPI.test.MetadataAPIProperties
+import com.ligadata.MetadataAPI.test.{MetadataAPIProperties, MetadataDefaults}
 
 import sys.process._
 import org.apache.logging.log4j._
@@ -40,7 +40,6 @@ import com.ligadata.Serialize._
 import org.json4s.native.Serialization
 import org.json4s.native.Serialization.{read, write, writePretty}
 import com.ligadata.kamanja.metadataload.MetadataLoad
-
 import com.ligadata.test.utils._
 import com.ligadata.test.configuration.cluster.adapters.interfaces._
 import com.ligadata.test.embedded.zookeeper._

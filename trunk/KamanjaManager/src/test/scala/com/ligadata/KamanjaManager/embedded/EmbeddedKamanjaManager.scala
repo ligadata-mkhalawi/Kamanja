@@ -22,7 +22,7 @@ class EmbeddedKamanjaManager {
   var nodeId: String = ""
 
   def startup(configFile: String, zkConfig: ZookeeperConfig, zkc: ZookeeperClient): Int = {
-    logger.info("[Embedded Kamanja Manager]: Starting Kamanja Manager...")
+    logger.info(s"[Embedded Kamanja Manager]: Starting Kamanja Manager with configuration file $configFile...")
     val confProperties: Properties = new Properties()
     confProperties.load(new FileInputStream(configFile))
     nodeId = confProperties.getProperty("NODEID")
