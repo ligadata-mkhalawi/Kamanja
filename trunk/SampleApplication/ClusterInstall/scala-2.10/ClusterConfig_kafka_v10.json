@@ -1,0 +1,266 @@
+{
+  "Clusters": [
+    {
+      "ClusterId": "ligadata1",
+      "SystemCatalog": {
+        "StoreType": "h2db",
+        "connectionMode": "embedded",
+        "SchemaName": "kamanja",
+        "Location": "/media/home2/installKamanja160/Kamanja-1.6.0_2.10/storage/syscatalog",
+        "portnumber": "9100",
+        "user": "test",
+        "password": "test"
+      },
+      "Tenants": [
+        {
+          "TenantId": "tenant1",
+          "Description": "tenant1",
+          "PrimaryDataStore": {
+            "StoreType": "h2db",
+            "connectionMode": "embedded",
+            "SchemaName": "testdata",
+            "Location": "/media/home2/installKamanja160/Kamanja-1.6.0_2.10/storage/tenant1_default",
+            "portnumber": "9100",
+            "user": "test",
+            "password": "test"
+          },
+          "CacheConfig": {
+            "MaxSizeInMB": 256
+          }
+        }
+      ],
+      "ZooKeeperInfo": {
+        "ZooKeeperNodeBasePath": "/kamanja",
+        "ZooKeeperConnectString": "localhost:2181",
+        "ZooKeeperSessionTimeoutMs": "30000",
+        "ZooKeeperConnectionTimeoutMs": "30000"
+      },
+      "PYTHON_CONFIG" : {
+	    "PYTHON_PATH": "{InstallDirectory}/python",
+            "SERVER_BASE_PORT": 8100,
+	    "SERVER_PORT_LIMIT": 40,
+	    "SERVER_HOST": "localhost",
+	    "PYTHON_LOG_CONFIG_PATH": "{InstallDirectory}/python/bin/pythonlog4j.cfg",
+	    "PYTHON_LOG_PATH": "{InstallDirectory}/python/logs/pythonserver.log",
+	    "PYTHON_BIN_DIR" : "/usr/bin/"
+      },
+      "EnvironmentContext": {
+        "classname": "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$",
+        "jarname": "KamanjaInternalDeps_2.10-1.6.0.jar",
+        "dependencyjars": [
+          "ExtDependencyLibs_2.10-1.6.0.jar",
+          "ExtDependencyLibs2_2.10-1.6.0.jar"
+        ]
+      },
+      "Cache": {
+        "CacheStartPort": 7800,
+        "CacheSizePerNodeInMB": 256,
+        "ReplicateFactor": 1,
+        "TimeToIdleSeconds": 31622400,
+        "EvictionPolicy": "LFU"
+      },
+      "Nodes": [
+        {
+          "NodeId": "1",
+          "NodePort": 6541,
+          "NodeIpAddr": "localhost",
+          "JarPaths": [
+            "/media/home2/installKamanja160/Kamanja-1.6.0_2.10/lib/system",
+            "/media/home2/installKamanja160/Kamanja-1.6.0_2.10/lib/application"
+          ],
+          "Scala_home": "/home/vmandava/scala-2.11.7",
+          "Java_home": "/home/vmandava/jdk1.8.0_05",
+          "Roles": [
+            "RestAPI",
+            "ProcessingEngine"
+          ],
+          "Classpath": ".:/media/home2/installKamanja160/Kamanja-1.6.0_2.10/lib/system/ExtDependencyLibs_2.10-1.6.0.jar:/media/home2/installKamanja160/Kamanja-1.6.0_2.10/lib/system/KamanjaInternalDeps_2.10-1.6.0.jar:/media/home2/installKamanja160/Kamanja-1.6.0_2.10/lib/system/ExtDependencyLibs2_2.10-1.6.0.jar"
+        }
+      ],
+      "Adapters": [
+        {
+          "Name": "Storage_1",
+          "TypeString": "Storage",
+          "TenantId": "tenant1",
+          "StoreType": "h2db",
+          "connectionMode": "embedded",
+          "SchemaName": "testdata",
+          "Location": "/media/home2/installKamanja160/Kamanja-1.6.0_2.10/storage/tenant1_storage_1",
+          "portnumber": "9100",
+          "user": "test",
+          "password": "test"
+        },
+        {
+          "Name": "HelloWorldInput",
+          "TypeString": "Input",
+          "TenantId": "tenant1",
+          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
+          "JarName": "kamanjakafkaadapters_0_10_2.10-1.6.0.jar",
+          "DependencyJars": [
+            "kafka-clients-0.10.0.0.jar",
+            "KamanjaInternalDeps_2.10-1.6.0.jar",
+            "ExtDependencyLibs_2.10-1.6.0.jar",
+            "ExtDependencyLibs2_2.10-1.6.0.jar"
+          ],
+          "AdapterSpecificCfg": {
+            "HostList": "localhost:9092",
+            "TopicName": "helloworldinput"
+          }
+        },
+        {
+          "Name": "LoanInput",
+          "TypeString": "Input",
+          "TenantId": "tenant1",
+          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
+          "JarName": "kamanjakafkaadapters_0_10_2.10-1.6.0.jar",
+          "DependencyJars": [
+            "kafka-clients-0.10.0.0.jar",
+            "KamanjaInternalDeps_2.10-1.6.0.jar",
+            "ExtDependencyLibs_2.10-1.6.0.jar",
+            "ExtDependencyLibs2_2.10-1.6.0.jar"
+          ],
+          "AdapterSpecificCfg": {
+            "HostList": "localhost:9092",
+            "TopicName": "loaninput"
+          }
+        },
+        {
+          "Name": "MedicalInput",
+          "TypeString": "Input",
+          "TenantId": "tenant1",
+          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
+          "JarName": "kamanjakafkaadapters_0_10_2.10-1.6.0.jar",
+          "DependencyJars": [
+            "kafka-clients-0.10.0.0.jar",
+            "KamanjaInternalDeps_2.10-1.6.0.jar",
+            "ExtDependencyLibs_2.10-1.6.0.jar",
+            "ExtDependencyLibs2_2.10-1.6.0.jar"
+          ],
+          "AdapterSpecificCfg": {
+            "HostList": "localhost:9092",
+            "TopicName": "medicalinput"
+          }
+        },
+        {
+          "Name": "FinanceInput",
+          "TypeString": "Input",
+          "TenantId": "tenant1",
+          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
+          "JarName": "kamanjakafkaadapters_0_10_2.10-1.6.0.jar",
+          "DependencyJars": [
+            "kafka-clients-0.10.0.0.jar",
+            "KamanjaInternalDeps_2.10-1.6.0.jar",
+            "ExtDependencyLibs_2.10-1.6.0.jar",
+            "ExtDependencyLibs2_2.10-1.6.0.jar"
+          ],
+          "AdapterSpecificCfg": {
+            "HostList": "localhost:9092",
+            "TopicName": "financeinput"
+          }
+        },
+        {
+          "Name": "TelecomInput",
+          "TypeString": "Input",
+          "TenantId": "tenant1",
+          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
+          "JarName": "kamanjakafkaadapters_0_10_2.10-1.6.0.jar",
+          "DependencyJars": [
+            "kafka-clients-0.10.0.0.jar",
+            "KamanjaInternalDeps_2.10-1.6.0.jar",
+            "ExtDependencyLibs_2.10-1.6.0.jar",
+            "ExtDependencyLibs2_2.10-1.6.0.jar"
+          ],
+          "AdapterSpecificCfg": {
+            "HostList": "localhost:9092",
+            "TopicName": "telecominput"
+          }
+        },
+        {
+          "Name": "TestIn_1",
+          "TypeString": "Input",
+          "TenantId": "tenant1",
+          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KamanjaKafkaConsumer$",
+          "JarName": "kamanjakafkaadapters_0_10_2.10-1.6.0.jar",
+          "DependencyJars": [
+            "kafka-clients-0.10.0.0.jar",
+            "KamanjaInternalDeps_2.10-1.6.0.jar",
+            "ExtDependencyLibs_2.10-1.6.0.jar",
+            "ExtDependencyLibs2_2.10-1.6.0.jar"
+          ],
+          "AdapterSpecificCfg": {
+            "HostList": "localhost:9092",
+            "TopicName": "testin_1"
+          }
+        },
+        {
+          "Name": "TestOut_1",
+          "TypeString": "Output",
+          "TenantId": "tenant1",
+          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
+          "JarName": "kamanjakafkaadapters_0_10_2.10-1.6.0.jar",
+          "DependencyJars": [
+            "kafka-clients-0.10.0.0.jar",
+            "KamanjaInternalDeps_2.10-1.6.0.jar",
+            "ExtDependencyLibs_2.10-1.6.0.jar",
+            "ExtDependencyLibs2_2.10-1.6.0.jar"
+          ],
+          "AdapterSpecificCfg": {
+            "HostList": "localhost:9092",
+            "TopicName": "testout_1"
+          }
+        },
+        {
+          "Name": "TestFailedEvents_1",
+          "TypeString": "Output",
+          "TenantId": "tenant1",
+          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
+          "JarName": "kamanjakafkaadapters_0_10_2.10-1.6.0.jar",
+          "DependencyJars": [
+            "kafka-clients-0.10.0.0.jar",
+            "KamanjaInternalDeps_2.10-1.6.0.jar",
+            "ExtDependencyLibs_2.10-1.6.0.jar",
+            "ExtDependencyLibs2_2.10-1.6.0.jar"
+          ],
+          "AdapterSpecificCfg": {
+            "HostList": "localhost:9092",
+            "TopicName": "testfailedevents_1"
+          }
+        },
+        {
+          "Name": "TestMessageEvents_1",
+          "TypeString": "Output",
+          "TenantId": "tenant1",
+          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
+          "JarName": "kamanjakafkaadapters_0_10_2.10-1.6.0.jar",
+          "DependencyJars": [
+            "kafka-clients-0.10.0.0.jar",
+            "KamanjaInternalDeps_2.10-1.6.0.jar",
+            "ExtDependencyLibs_2.10-1.6.0.jar",
+            "ExtDependencyLibs2_2.10-1.6.0.jar"
+          ],
+          "AdapterSpecificCfg": {
+            "HostList": "localhost:9092",
+            "TopicName": "testmessageevents_1"
+          }
+        },
+        {
+          "Name": "TestStatus_1",
+          "TypeString": "Output",
+          "TenantId": "System",
+          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
+          "JarName": "kamanjakafkaadapters_0_10_2.10-1.6.0.jar",
+          "DependencyJars": [
+            "kafka-clients-0.10.0.0.jar",
+            "KamanjaInternalDeps_2.10-1.6.0.jar",
+            "ExtDependencyLibs_2.10-1.6.0.jar",
+            "ExtDependencyLibs2_2.10-1.6.0.jar"
+          ],
+          "AdapterSpecificCfg": {
+            "HostList": "localhost:9092",
+            "TopicName": "teststatus_1"
+          }
+        }
+      ]
+    }
+  ]
+}
