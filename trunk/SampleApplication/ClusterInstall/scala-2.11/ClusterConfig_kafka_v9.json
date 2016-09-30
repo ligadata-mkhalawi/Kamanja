@@ -6,7 +6,7 @@
         "StoreType": "h2db",
         "connectionMode": "embedded",
         "SchemaName": "kamanja",
-        "Location": "/media/home2/installKamanja160/Kamanja-1.6.0_2.11/storage/syscatalog",
+        "Location": "{InstallDirectory}/storage/syscatalog",
         "portnumber": "9100",
         "user": "test",
         "password": "test"
@@ -19,7 +19,7 @@
             "StoreType": "h2db",
             "connectionMode": "embedded",
             "SchemaName": "testdata",
-            "Location": "/media/home2/installKamanja160/Kamanja-1.6.0_2.11/storage/tenant1_default",
+            "Location": "{InstallDirectory}/storage/tenant1_default",
             "portnumber": "9100",
             "user": "test",
             "password": "test"
@@ -65,8 +65,8 @@
           "NodePort": 6541,
           "NodeIpAddr": "localhost",
           "JarPaths": [
-            "/media/home2/installKamanja160/Kamanja-1.6.0_2.11/lib/system",
-            "/media/home2/installKamanja160/Kamanja-1.6.0_2.11/lib/application"
+            "{InstallDirectory}/lib/system",
+            "{InstallDirectory}/lib/application"
           ],
           "Scala_home": "/home/vmandava/scala-2.11.7",
           "Java_home": "/home/vmandava/jdk1.8.0_05",
@@ -74,7 +74,7 @@
             "RestAPI",
             "ProcessingEngine"
           ],
-          "Classpath": ".:/media/home2/installKamanja160/Kamanja-1.6.0_2.11/lib/system/ExtDependencyLibs_2.11-1.6.0.jar:/media/home2/installKamanja160/Kamanja-1.6.0_2.11/lib/system/KamanjaInternalDeps_2.11-1.6.0.jar:/media/home2/installKamanja160/Kamanja-1.6.0_2.11/lib/system/ExtDependencyLibs2_2.11-1.6.0.jar"
+          "Classpath": ".:{InstallDirectory}/lib/system/ExtDependencyLibs_2.11-1.6.0.jar:{InstallDirectory}/lib/system/KamanjaInternalDeps_2.11-1.6.0.jar:{InstallDirectory}/lib/system/ExtDependencyLibs2_2.11-1.6.0.jar"
         }
       ],
       "Adapters": [
@@ -85,7 +85,7 @@
           "StoreType": "h2db",
           "connectionMode": "embedded",
           "SchemaName": "testdata",
-          "Location": "/media/home2/installKamanja160/Kamanja-1.6.0_2.11/storage/tenant1_storage_1",
+          "Location": "{InstallDirectory}/storage/tenant1_storage_1",
           "portnumber": "9100",
           "user": "test",
           "password": "test"
