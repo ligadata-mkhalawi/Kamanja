@@ -159,12 +159,12 @@ public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 			}
 
 			// set letfover attributes to _Remaining_Attributes_ parameter
-			if (remainingParamIndex > 0) {
+			if (remainingParamIndex > 0 &&  jo.size() > 0) {
 				statement.setString(remainingParamIndex, jo.toJSONString());
 			}
 
 		} catch (Exception e) {
-			logger.error("Error binding parameters: " + e.getMessage() + " for Parameter index : [" + paramIndex + 
+			logger.error("Error binding parameters: " + e.getMessage() + " for Parameter index : [" + paramIndex +
 					"] Key : [" + key + "] value : [" + value + "] - ignoring message : " + jsonObject.toJSONString(), e);
 			try {
 				statement.clearParameters();
@@ -184,7 +184,7 @@ public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 		dataSource.setUsername(config.getProperty(AdapterConfiguration.JDBC_USER));
 		dataSource.setPassword(config.getProperty(AdapterConfiguration.JDBC_PASSWORD));
 		dataSource.setDefaultAutoCommit(false);
-		
+
 		dataSource.setMaxTotal(Integer.parseInt(config.getProperty(AdapterConfiguration.DBCP_MAX_TOTAL, "2")));
 		dataSource.setMaxIdle(Integer.parseInt(config.getProperty(AdapterConfiguration.DBCP_MAX_IDLE, "2")));
 		dataSource.setMaxWaitMillis(Long.parseLong(config.getProperty(AdapterConfiguration.DBCP_MAX_WAIT_MILLIS, "10000")));
