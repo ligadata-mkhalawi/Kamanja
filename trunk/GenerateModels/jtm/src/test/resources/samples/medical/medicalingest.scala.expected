@@ -17,10 +17,14 @@ package com.ligadata.models.samples.medical.V1
 import com.ligadata.KamanjaBase._
 import com.ligadata.KvBase.TimeRange
 import com.ligadata.kamanja.metadata.ModelDef
-import com.ligadata.runtime.Log
+import com.ligadata.runtime._
 import com.ligadata.runtime.Conversion
+// Package code start
+// Package code end
 class TransactionIngestFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
-  override def createModelInstance(): ModelInstance = return new TransactionIngest(this)
+  // Factory code start
+  // Factory code end
+  override def createModelInstance(txnCtxt: com.ligadata.KamanjaBase.TransactionContext): ModelInstance = return new TransactionIngest(this)
   override def getModelName: String = "com.ligadata.models.samples.medical.TransactionIngest"
   override def getVersion: String = "0.0.1"
   override def createResultObject(): ModelResultBase = new MappedModelResults()
@@ -28,7 +32,10 @@ class TransactionIngestFactory(modelDef: ModelDef, nodeContext: NodeContext) ext
 class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(factory) {
   val conversion = new com.ligadata.runtime.Conversion
   val log = new com.ligadata.runtime.Log(this.getClass.getName)
+  val context = new com.ligadata.runtime.JtmContext
   import log._
+  // Model code start
+  // Model code end
   override def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
     if (isTraceEnabled)
     Trace(s"Model::execute transid=%d triggeredset=%d outputdefault=%s".format(txnCtxt.transId, triggerdSetIndex, outputDefault.toString))
@@ -36,226 +43,303 @@ class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(fac
     {
       execMsgsSet.foreach(m => Debug( s"Input: %s -> %s".format(m.getFullTypeName, m.toString())))
     }
-    //
-    //
+    // Grok parts
+    // Model methods
     def exeGenerated_transactionmsg_1(msg1: com.ligadata.kamanja.samples.messages.V1000000.TransactionMsgIn): Array[MessageInterface] = {
       Debug("exeGenerated_transactionmsg_1")
+      context.SetSection("transactionmsg")
       // Split the incoming data
       val arraydata: Array[String] = msg1.data.split(",")
       // extract the type
       val typeName: String = arraydata(0)
       def process_o1(): Array[MessageInterface] = {
         Debug("exeGenerated_transactionmsg_1::process_o1")
-        if (!("com.ligadata.kamanja.samples.messages.Beneficiary" == typeName)) {
-          Debug("Filtered: transactionmsg@o1")
-          return Array.empty[MessageInterface]
+        context.SetScope("o1")
+        try {
+          if (!("com.ligadata.kamanja.samples.messages.Beneficiary" == typeName)) {
+            Debug("Filtered: transactionmsg@o1")
+            return Array.empty[MessageInterface]
+          }
+          val result = com.ligadata.kamanja.samples.messages.V1000000.Beneficiary.createInstance
+          result.sp_copd = conversion.ToInteger(arraydata(17))
+          result.benres_ip = conversion.ToDouble(arraydata(25))
+          result.pppymt_op = conversion.ToDouble(arraydata(29))
+          result.sp_osteoprs = conversion.ToInteger(arraydata(21))
+          result.bene_county_cd = conversion.ToInteger(arraydata(8))
+          result.bene_hi_cvrage_tot_mons = conversion.ToInteger(arraydata(9))
+          result.bene_birth_dt = conversion.ToInteger(arraydata(2))
+          result.sp_chrnkidn = conversion.ToInteger(arraydata(15))
+          result.sp_diabetes = conversion.ToInteger(arraydata(19))
+          result.desynpuf_id = arraydata(1)
+          result.sp_depressn = conversion.ToInteger(arraydata(18))
+          result.bene_smi_cvrage_tot_mons = conversion.ToInteger(arraydata(10))
+          result.sp_chf = conversion.ToInteger(arraydata(14))
+          result.sp_ra_oa = conversion.ToInteger(arraydata(22))
+          result.medreimb_ip = conversion.ToDouble(arraydata(24))
+          result.bene_esrd_ind = conversion.ToChar(arraydata(6))
+          result.sp_ischmcht = conversion.ToInteger(arraydata(20))
+          result.sp_cncr = conversion.ToInteger(arraydata(16))
+          result.bene_sex_ident_cd = conversion.ToInteger(arraydata(4))
+          result.pppymt_car = conversion.ToDouble(arraydata(32))
+          result.sp_state_code = conversion.ToInteger(arraydata(7))
+          result.plan_cvrg_mos_num = conversion.ToInteger(arraydata(12))
+          result.bene_hmo_cvrage_tot_mons = conversion.ToInteger(arraydata(11))
+          result.bene_race_cd = conversion.ToInteger(arraydata(5))
+          result.benres_car = conversion.ToDouble(arraydata(31))
+          result.pppymt_ip = conversion.ToDouble(arraydata(26))
+          result.sp_alzhdmta = conversion.ToInteger(arraydata(13))
+          result.medreimb_car = conversion.ToDouble(arraydata(30))
+          result.bene_death_dt = conversion.ToInteger(arraydata(3))
+          result.sp_strketia = conversion.ToInteger(arraydata(23))
+          result.medreimb_op = conversion.ToDouble(arraydata(27))
+          result.benres_op = conversion.ToDouble(arraydata(28))
+          if(context.CurrentErrors()==0) {
+            Array(result)
+          } else {
+            Array.empty[MessageInterface]
+          }
+        } catch {
+          case e: AbortOutputException => {
+            context.AddError(e.getMessage)
+            return Array.empty[MessageInterface]
+          }
+          case e: Exception => {
+            Debug("Exception: o1:" + e.getMessage)
+            throw e
+          }
         }
-        val result = com.ligadata.kamanja.samples.messages.V1000000.Beneficiary.createInstance
-        result.sp_copd = conversion.ToInteger(arraydata(17))
-        result.benres_ip = conversion.ToDouble(arraydata(25))
-        result.pppymt_op = conversion.ToDouble(arraydata(29))
-        result.sp_osteoprs = conversion.ToInteger(arraydata(21))
-        result.bene_county_cd = conversion.ToInteger(arraydata(8))
-        result.bene_hi_cvrage_tot_mons = conversion.ToInteger(arraydata(9))
-        result.bene_birth_dt = conversion.ToInteger(arraydata(2))
-        result.sp_chrnkidn = conversion.ToInteger(arraydata(15))
-        result.sp_diabetes = conversion.ToInteger(arraydata(19))
-        result.desynpuf_id = arraydata(1)
-        result.sp_depressn = conversion.ToInteger(arraydata(18))
-        result.bene_smi_cvrage_tot_mons = conversion.ToInteger(arraydata(10))
-        result.sp_chf = conversion.ToInteger(arraydata(14))
-        result.sp_ra_oa = conversion.ToInteger(arraydata(22))
-        result.medreimb_ip = conversion.ToDouble(arraydata(24))
-        result.bene_esrd_ind = conversion.ToChar(arraydata(6))
-        result.sp_ischmcht = conversion.ToInteger(arraydata(20))
-        result.sp_cncr = conversion.ToInteger(arraydata(16))
-        result.bene_sex_ident_cd = conversion.ToInteger(arraydata(4))
-        result.pppymt_car = conversion.ToDouble(arraydata(32))
-        result.sp_state_code = conversion.ToInteger(arraydata(7))
-        result.plan_cvrg_mos_num = conversion.ToInteger(arraydata(12))
-        result.bene_hmo_cvrage_tot_mons = conversion.ToInteger(arraydata(11))
-        result.bene_race_cd = conversion.ToInteger(arraydata(5))
-        result.benres_car = conversion.ToDouble(arraydata(31))
-        result.pppymt_ip = conversion.ToDouble(arraydata(26))
-        result.sp_alzhdmta = conversion.ToInteger(arraydata(13))
-        result.medreimb_car = conversion.ToDouble(arraydata(30))
-        result.bene_death_dt = conversion.ToInteger(arraydata(3))
-        result.sp_strketia = conversion.ToInteger(arraydata(23))
-        result.medreimb_op = conversion.ToDouble(arraydata(27))
-        result.benres_op = conversion.ToDouble(arraydata(28))
-        Array(result)
       }
       def process_o2(): Array[MessageInterface] = {
         Debug("exeGenerated_transactionmsg_1::process_o2")
-        if (!("com.ligadata.kamanja.samples.messages.HL7" == typeName)) {
-          Debug("Filtered: transactionmsg@o2")
-          return Array.empty[MessageInterface]
+        context.SetScope("o2")
+        try {
+          if (!("com.ligadata.kamanja.samples.messages.HL7" == typeName)) {
+            Debug("Filtered: transactionmsg@o2")
+            return Array.empty[MessageInterface]
+          }
+          val result = com.ligadata.kamanja.samples.messages.V1000000.HL7.createInstance
+          result.sp_copd = conversion.ToInteger(arraydata(20))
+          result.aatdeficiency = conversion.ToInteger(arraydata(84))
+          result.weight = conversion.ToDouble(arraydata(76))
+          result.injury_poisoning = conversion.ToInteger(arraydata(44))
+          result.atrial_fibrillation = conversion.ToInteger(arraydata(53))
+          result.diseases_skin_subcutaneous_tissue = conversion.ToInteger(arraydata(39))
+          result.hypothyroidism = conversion.ToInteger(arraydata(47))
+          result.hyperlipidemia = conversion.ToInteger(arraydata(63))
+          result.sp_osteoprs = conversion.ToInteger(arraydata(24))
+          result.triglycerides = conversion.ToDouble(arraydata(81))
+          result.bene_county_cd = conversion.ToInteger(arraydata(11))
+          result.depression = conversion.ToInteger(arraydata(58))
+          result.diabetes = conversion.ToInteger(arraydata(59))
+          result.endometrial_cancer = conversion.ToInteger(arraydata(73))
+          result.diseases_digestive_system = conversion.ToInteger(arraydata(36))
+          result.bene_hi_cvrage_tot_mons = conversion.ToInteger(arraydata(12))
+          result.factors_influencing_health_status_contact_with_health_services = conversion.ToInteger(arraydata(45))
+          result.hyperplasia = conversion.ToInteger(arraydata(54))
+          result.bene_birth_dt = conversion.ToInteger(arraydata(5))
+          result.prostate_cancer = conversion.ToInteger(arraydata(71))
+          result.sp_chrnkidn = conversion.ToInteger(arraydata(18))
+          result.congenital_anomalies = conversion.ToInteger(arraydata(41))
+          result.sp_diabetes = conversion.ToInteger(arraydata(22))
+          result.desynpuf_id = arraydata(1)
+          result.sp_depressn = conversion.ToInteger(arraydata(21))
+          result.neoplasms = conversion.ToInteger(arraydata(29))
+          result.hip_pelvic_fracture = conversion.ToInteger(arraydata(62))
+          result.stroke = conversion.ToInteger(arraydata(68))
+          result.asthma = conversion.ToInteger(arraydata(52))
+          result.kidney_disease = conversion.ToInteger(arraydata(56))
+          result.bene_smi_cvrage_tot_mons = conversion.ToInteger(arraydata(13))
+          result.totalcholesterol = conversion.ToDouble(arraydata(79))
+          result.sp_chf = conversion.ToInteger(arraydata(17))
+          result.sp_ra_oa = conversion.ToInteger(arraydata(25))
+          result.height = conversion.ToDouble(arraydata(75))
+          result.ldl = conversion.ToDouble(arraydata(80))
+          result.tobacco = conversion.ToInteger(arraydata(74))
+          result.mental_disorders = conversion.ToInteger(arraydata(32))
+          result.bene_esrd_ind = conversion.ToChar(arraydata(9))
+          result.sp_ischmcht = conversion.ToInteger(arraydata(23))
+          result.hypertension = conversion.ToInteger(arraydata(64))
+          result.sp_cncr = conversion.ToInteger(arraydata(19))
+          result.age = conversion.ToInteger(arraydata(27))
+          result.alzheimer = conversion.ToInteger(arraydata(49))
+          result.ischemic_heart_disease = conversion.ToInteger(arraydata(65))
+          result.diseases_respiratory_system = conversion.ToInteger(arraydata(35))
+          result.bene_sex_ident_cd = conversion.ToInteger(arraydata(7))
+          result.glaucoma = conversion.ToInteger(arraydata(60))
+          result.diastolic = conversion.ToDouble(arraydata(78))
+          result.diseases_musculoskeletal_system_connective_tissue = conversion.ToInteger(arraydata(40))
+          result.heart_failure = conversion.ToInteger(arraydata(61))
+          result.complications_of_pregnancy_childbirth_the_puerperium = conversion.ToInteger(arraydata(38))
+          result.diseases_genitourinary_system = conversion.ToInteger(arraydata(37))
+          result.ra_oa = conversion.ToInteger(arraydata(67))
+          result.sp_state_code = conversion.ToInteger(arraydata(10))
+          result.clm_from_dt = conversion.ToInteger(arraydata(3))
+          result.pulmonary_disease = conversion.ToInteger(arraydata(57))
+          result.plan_cvrg_mos_num = conversion.ToInteger(arraydata(15))
+          result.osteoporosis = conversion.ToInteger(arraydata(66))
+          result.diseases_blood_blood_forming_organs = conversion.ToInteger(arraydata(31))
+          result.colorectal_cancer = conversion.ToInteger(arraydata(70))
+          result.cataract = conversion.ToInteger(arraydata(55))
+          result.bene_hmo_cvrage_tot_mons = conversion.ToInteger(arraydata(14))
+          result.bene_race_cd = conversion.ToInteger(arraydata(8))
+          result.shortnessofbreath = conversion.ToInteger(arraydata(82))
+          result.external_causes_of_injury_poisoning = conversion.ToInteger(arraydata(46))
+          result.certain_conditions_originating_in_the_perinatal_period = conversion.ToInteger(arraydata(42))
+          result.symptoms_signs_ill_defined_conditions = conversion.ToInteger(arraydata(43))
+          result.lung_cancer = conversion.ToInteger(arraydata(72))
+          result.chestpain = arraydata(83)
+          result.infectious_parasitic_diseases = conversion.ToInteger(arraydata(28))
+          result.endocrine_nutritional_metabolic_diseases_immunity_disorders = conversion.ToInteger(arraydata(30))
+          result.systolic = conversion.ToDouble(arraydata(77))
+          result.alzheimer_related = conversion.ToInteger(arraydata(50))
+          result.diseases_nervous_system_sense_organs = conversion.ToInteger(arraydata(33))
+          result.anemia = conversion.ToInteger(arraydata(51))
+          result.sp_alzhdmta = conversion.ToInteger(arraydata(16))
+          result.chroniccough = conversion.ToInteger(arraydata(85))
+          result.chronicsputum = conversion.ToInteger(arraydata(86))
+          result.breast_cancer = conversion.ToInteger(arraydata(69))
+          result.bene_death_dt = conversion.ToInteger(arraydata(6))
+          result.clm_thru_dt = conversion.ToInteger(arraydata(4))
+          result.clm_id = conversion.ToLong(arraydata(2))
+          result.sp_strketia = conversion.ToInteger(arraydata(26))
+          result.infarction = conversion.ToInteger(arraydata(48))
+          result.diseases_circulatory_system = conversion.ToInteger(arraydata(34))
+          if(context.CurrentErrors()==0) {
+            Array(result)
+          } else {
+            Array.empty[MessageInterface]
+          }
+        } catch {
+          case e: AbortOutputException => {
+            context.AddError(e.getMessage)
+            return Array.empty[MessageInterface]
+          }
+          case e: Exception => {
+            Debug("Exception: o2:" + e.getMessage)
+            throw e
+          }
         }
-        val result = com.ligadata.kamanja.samples.messages.V1000000.HL7.createInstance
-        result.sp_copd = conversion.ToInteger(arraydata(20))
-        result.aatdeficiency = conversion.ToInteger(arraydata(84))
-        result.weight = conversion.ToDouble(arraydata(76))
-        result.injury_poisoning = conversion.ToInteger(arraydata(44))
-        result.atrial_fibrillation = conversion.ToInteger(arraydata(53))
-        result.diseases_skin_subcutaneous_tissue = conversion.ToInteger(arraydata(39))
-        result.hypothyroidism = conversion.ToInteger(arraydata(47))
-        result.hyperlipidemia = conversion.ToInteger(arraydata(63))
-        result.sp_osteoprs = conversion.ToInteger(arraydata(24))
-        result.triglycerides = conversion.ToDouble(arraydata(81))
-        result.bene_county_cd = conversion.ToInteger(arraydata(11))
-        result.depression = conversion.ToInteger(arraydata(58))
-        result.diabetes = conversion.ToInteger(arraydata(59))
-        result.endometrial_cancer = conversion.ToInteger(arraydata(73))
-        result.diseases_digestive_system = conversion.ToInteger(arraydata(36))
-        result.bene_hi_cvrage_tot_mons = conversion.ToInteger(arraydata(12))
-        result.factors_influencing_health_status_contact_with_health_services = conversion.ToInteger(arraydata(45))
-        result.hyperplasia = conversion.ToInteger(arraydata(54))
-        result.bene_birth_dt = conversion.ToInteger(arraydata(5))
-        result.prostate_cancer = conversion.ToInteger(arraydata(71))
-        result.sp_chrnkidn = conversion.ToInteger(arraydata(18))
-        result.congenital_anomalies = conversion.ToInteger(arraydata(41))
-        result.sp_diabetes = conversion.ToInteger(arraydata(22))
-        result.desynpuf_id = arraydata(1)
-        result.sp_depressn = conversion.ToInteger(arraydata(21))
-        result.neoplasms = conversion.ToInteger(arraydata(29))
-        result.hip_pelvic_fracture = conversion.ToInteger(arraydata(62))
-        result.stroke = conversion.ToInteger(arraydata(68))
-        result.asthma = conversion.ToInteger(arraydata(52))
-        result.kidney_disease = conversion.ToInteger(arraydata(56))
-        result.bene_smi_cvrage_tot_mons = conversion.ToInteger(arraydata(13))
-        result.totalcholesterol = conversion.ToDouble(arraydata(79))
-        result.sp_chf = conversion.ToInteger(arraydata(17))
-        result.sp_ra_oa = conversion.ToInteger(arraydata(25))
-        result.height = conversion.ToDouble(arraydata(75))
-        result.ldl = conversion.ToDouble(arraydata(80))
-        result.tobacco = conversion.ToInteger(arraydata(74))
-        result.mental_disorders = conversion.ToInteger(arraydata(32))
-        result.bene_esrd_ind = conversion.ToChar(arraydata(9))
-        result.sp_ischmcht = conversion.ToInteger(arraydata(23))
-        result.hypertension = conversion.ToInteger(arraydata(64))
-        result.sp_cncr = conversion.ToInteger(arraydata(19))
-        result.age = conversion.ToInteger(arraydata(27))
-        result.alzheimer = conversion.ToInteger(arraydata(49))
-        result.ischemic_heart_disease = conversion.ToInteger(arraydata(65))
-        result.diseases_respiratory_system = conversion.ToInteger(arraydata(35))
-        result.bene_sex_ident_cd = conversion.ToInteger(arraydata(7))
-        result.glaucoma = conversion.ToInteger(arraydata(60))
-        result.diastolic = conversion.ToDouble(arraydata(78))
-        result.diseases_musculoskeletal_system_connective_tissue = conversion.ToInteger(arraydata(40))
-        result.heart_failure = conversion.ToInteger(arraydata(61))
-        result.complications_of_pregnancy_childbirth_the_puerperium = conversion.ToInteger(arraydata(38))
-        result.diseases_genitourinary_system = conversion.ToInteger(arraydata(37))
-        result.ra_oa = conversion.ToInteger(arraydata(67))
-        result.sp_state_code = conversion.ToInteger(arraydata(10))
-        result.clm_from_dt = conversion.ToInteger(arraydata(3))
-        result.pulmonary_disease = conversion.ToInteger(arraydata(57))
-        result.plan_cvrg_mos_num = conversion.ToInteger(arraydata(15))
-        result.osteoporosis = conversion.ToInteger(arraydata(66))
-        result.diseases_blood_blood_forming_organs = conversion.ToInteger(arraydata(31))
-        result.colorectal_cancer = conversion.ToInteger(arraydata(70))
-        result.cataract = conversion.ToInteger(arraydata(55))
-        result.bene_hmo_cvrage_tot_mons = conversion.ToInteger(arraydata(14))
-        result.bene_race_cd = conversion.ToInteger(arraydata(8))
-        result.shortnessofbreath = conversion.ToInteger(arraydata(82))
-        result.external_causes_of_injury_poisoning = conversion.ToInteger(arraydata(46))
-        result.certain_conditions_originating_in_the_perinatal_period = conversion.ToInteger(arraydata(42))
-        result.symptoms_signs_ill_defined_conditions = conversion.ToInteger(arraydata(43))
-        result.lung_cancer = conversion.ToInteger(arraydata(72))
-        result.chestpain = arraydata(83)
-        result.infectious_parasitic_diseases = conversion.ToInteger(arraydata(28))
-        result.endocrine_nutritional_metabolic_diseases_immunity_disorders = conversion.ToInteger(arraydata(30))
-        result.systolic = conversion.ToDouble(arraydata(77))
-        result.alzheimer_related = conversion.ToInteger(arraydata(50))
-        result.diseases_nervous_system_sense_organs = conversion.ToInteger(arraydata(33))
-        result.anemia = conversion.ToInteger(arraydata(51))
-        result.sp_alzhdmta = conversion.ToInteger(arraydata(16))
-        result.chroniccough = conversion.ToInteger(arraydata(85))
-        result.chronicsputum = conversion.ToInteger(arraydata(86))
-        result.breast_cancer = conversion.ToInteger(arraydata(69))
-        result.bene_death_dt = conversion.ToInteger(arraydata(6))
-        result.clm_thru_dt = conversion.ToInteger(arraydata(4))
-        result.clm_id = conversion.ToLong(arraydata(2))
-        result.sp_strketia = conversion.ToInteger(arraydata(26))
-        result.infarction = conversion.ToInteger(arraydata(48))
-        result.diseases_circulatory_system = conversion.ToInteger(arraydata(34))
-        Array(result)
       }
       def process_o3(): Array[MessageInterface] = {
         Debug("exeGenerated_transactionmsg_1::process_o3")
-        if (!("com.ligadata.kamanja.samples.messages.inpatientclaim" == typeName)) {
-          Debug("Filtered: transactionmsg@o3")
-          return Array.empty[MessageInterface]
+        context.SetScope("o3")
+        try {
+          if (!("com.ligadata.kamanja.samples.messages.inpatientclaim" == typeName)) {
+            Debug("Filtered: transactionmsg@o3")
+            return Array.empty[MessageInterface]
+          }
+          val result = com.ligadata.kamanja.samples.messages.V1000000.InpatientClaim.createInstance
+          result.clm_pass_thru_per_diem_amt = conversion.ToDouble(arraydata(14))
+          result.nch_bene_blood_ddctbl_lblty_am = conversion.ToDouble(arraydata(17))
+          result.nch_bene_dschrg_dt = conversion.ToInteger(arraydata(19))
+          result.nch_prmry_pyr_clm_pd_amt = conversion.ToDouble(arraydata(8))
+          result.clm_pmt_amt = conversion.ToDouble(arraydata(7))
+          result.desynpuf_id = arraydata(1)
+          result.nch_bene_ip_ddctbl_amt = conversion.ToDouble(arraydata(15))
+          result.icd9_prcdr_cds = arraydata(22)
+          result.segment = conversion.ToInteger(arraydata(3))
+          result.clm_admsn_dt = conversion.ToInteger(arraydata(12))
+          result.clm_drg_cd = conversion.ToInteger(arraydata(20))
+          result.icd9_dgns_cds = arraydata(21)
+          result.prvdr_num = arraydata(6)
+          result.clm_from_dt = conversion.ToInteger(arraydata(4))
+          result.hcpcs_cds = arraydata(23)
+          result.at_physn_npi = conversion.ToLong(arraydata(9))
+          result.op_physn_npi = conversion.ToLong(arraydata(10))
+          result.admtng_icd9_dgns_cd = arraydata(13)
+          result.ot_physn_npi = conversion.ToLong(arraydata(11))
+          result.clm_thru_dt = conversion.ToInteger(arraydata(5))
+          result.clm_id = conversion.ToLong(arraydata(2))
+          result.nch_bene_pta_coinsrnc_lblty_am = conversion.ToDouble(arraydata(16))
+          result.clm_utlztn_day_cnt = conversion.ToInteger(arraydata(18))
+          if(context.CurrentErrors()==0) {
+            Array(result)
+          } else {
+            Array.empty[MessageInterface]
+          }
+        } catch {
+          case e: AbortOutputException => {
+            context.AddError(e.getMessage)
+            return Array.empty[MessageInterface]
+          }
+          case e: Exception => {
+            Debug("Exception: o3:" + e.getMessage)
+            throw e
+          }
         }
-        val result = com.ligadata.kamanja.samples.messages.V1000000.InpatientClaim.createInstance
-        result.clm_pass_thru_per_diem_amt = conversion.ToDouble(arraydata(14))
-        result.nch_bene_blood_ddctbl_lblty_am = conversion.ToDouble(arraydata(17))
-        result.nch_bene_dschrg_dt = conversion.ToInteger(arraydata(19))
-        result.nch_prmry_pyr_clm_pd_amt = conversion.ToDouble(arraydata(8))
-        result.clm_pmt_amt = conversion.ToDouble(arraydata(7))
-        result.desynpuf_id = arraydata(1)
-        result.nch_bene_ip_ddctbl_amt = conversion.ToDouble(arraydata(15))
-        result.icd9_prcdr_cds = arraydata(22)
-        result.segment = conversion.ToInteger(arraydata(3))
-        result.clm_admsn_dt = conversion.ToInteger(arraydata(12))
-        result.clm_drg_cd = conversion.ToInteger(arraydata(20))
-        result.icd9_dgns_cds = arraydata(21)
-        result.prvdr_num = arraydata(6)
-        result.clm_from_dt = conversion.ToInteger(arraydata(4))
-        result.hcpcs_cds = arraydata(23)
-        result.at_physn_npi = conversion.ToLong(arraydata(9))
-        result.op_physn_npi = conversion.ToLong(arraydata(10))
-        result.admtng_icd9_dgns_cd = arraydata(13)
-        result.ot_physn_npi = conversion.ToLong(arraydata(11))
-        result.clm_thru_dt = conversion.ToInteger(arraydata(5))
-        result.clm_id = conversion.ToLong(arraydata(2))
-        result.nch_bene_pta_coinsrnc_lblty_am = conversion.ToDouble(arraydata(16))
-        result.clm_utlztn_day_cnt = conversion.ToInteger(arraydata(18))
-        Array(result)
       }
       def process_o4(): Array[MessageInterface] = {
         Debug("exeGenerated_transactionmsg_1::process_o4")
-        if (!("com.ligadata.kamanja.samples.messages.OutpatientClaim" == typeName)) {
-          Debug("Filtered: transactionmsg@o4")
+        context.SetScope("o4")
+        try {
+          if (!("com.ligadata.kamanja.samples.messages.OutpatientClaim" == typeName)) {
+            Debug("Filtered: transactionmsg@o4")
+            return Array.empty[MessageInterface]
+          }
+          val result = com.ligadata.kamanja.samples.messages.V1000000.OutpatientClaim.createInstance
+          result.nch_bene_blood_ddctbl_lblty_am = conversion.ToDouble(arraydata(12))
+          result.nch_prmry_pyr_clm_pd_amt = conversion.ToDouble(arraydata(8))
+          result.clm_pmt_amt = conversion.ToDouble(arraydata(7))
+          result.desynpuf_id = arraydata(1)
+          result.icd9_prcdr_cds = arraydata(14)
+          result.segment = conversion.ToInteger(arraydata(3))
+          result.icd9_dgns_cds = arraydata(13)
+          result.prvdr_num = arraydata(6)
+          result.clm_from_dt = conversion.ToInteger(arraydata(4))
+          result.hcpcs_cds = arraydata(18)
+          result.at_physn_npi = conversion.ToLong(arraydata(9))
+          result.op_physn_npi = conversion.ToLong(arraydata(10))
+          result.nch_bene_ptb_coinsrnc_amt = conversion.ToDouble(arraydata(16))
+          result.admtng_icd9_dgns_cd = arraydata(17)
+          result.nch_bene_ptb_ddctbl_amt = conversion.ToDouble(arraydata(15))
+          result.ot_physn_npi = conversion.ToLong(arraydata(11))
+          result.clm_thru_dt = conversion.ToInteger(arraydata(5))
+          result.clm_id = conversion.ToLong(arraydata(2))
+          if(context.CurrentErrors()==0) {
+            Array(result)
+          } else {
+            Array.empty[MessageInterface]
+          }
+        } catch {
+          case e: AbortOutputException => {
+            context.AddError(e.getMessage)
+            return Array.empty[MessageInterface]
+          }
+          case e: Exception => {
+            Debug("Exception: o4:" + e.getMessage)
+            throw e
+          }
+        }
+      }
+      try {
+        process_o1()++
+        process_o2()++
+        process_o3()++
+        process_o4()
+      } catch {
+        case e: AbortTransformationException => {
           return Array.empty[MessageInterface]
         }
-        val result = com.ligadata.kamanja.samples.messages.V1000000.OutpatientClaim.createInstance
-        result.nch_bene_blood_ddctbl_lblty_am = conversion.ToDouble(arraydata(12))
-        result.nch_prmry_pyr_clm_pd_amt = conversion.ToDouble(arraydata(8))
-        result.clm_pmt_amt = conversion.ToDouble(arraydata(7))
-        result.desynpuf_id = arraydata(1)
-        result.icd9_prcdr_cds = arraydata(14)
-        result.segment = conversion.ToInteger(arraydata(3))
-        result.icd9_dgns_cds = arraydata(13)
-        result.prvdr_num = arraydata(6)
-        result.clm_from_dt = conversion.ToInteger(arraydata(4))
-        result.hcpcs_cds = arraydata(18)
-        result.at_physn_npi = conversion.ToLong(arraydata(9))
-        result.op_physn_npi = conversion.ToLong(arraydata(10))
-        result.nch_bene_ptb_coinsrnc_amt = conversion.ToDouble(arraydata(16))
-        result.admtng_icd9_dgns_cd = arraydata(17)
-        result.nch_bene_ptb_ddctbl_amt = conversion.ToDouble(arraydata(15))
-        result.ot_physn_npi = conversion.ToLong(arraydata(11))
-        result.clm_thru_dt = conversion.ToInteger(arraydata(5))
-        result.clm_id = conversion.ToLong(arraydata(2))
-        Array(result)
       }
-      process_o1()++
-      process_o2()++
-      process_o3()++
-      process_o4()
     }
     // Evaluate messages
     val msgs = execMsgsSet.map(m => m.getFullTypeName -> m).toMap
     val msg1 = msgs.getOrElse("com.ligadata.kamanja.samples.messages.TransactionMsgIn", null).asInstanceOf[com.ligadata.kamanja.samples.messages.V1000000.TransactionMsgIn]
     // Main dependency -> execution check
-    //
+    // Create result object
     val results: Array[MessageInterface] =
-    (if(msg1!=null) {
-      exeGenerated_transactionmsg_1(msg1)
-    } else {
+    try {
+      (if(msg1!=null) {
+        exeGenerated_transactionmsg_1(msg1)
+      } else {
+        Array.empty[MessageInterface]
+      }) ++
       Array.empty[MessageInterface]
-    }) ++
-    Array.empty[MessageInterface]
+    } catch {
+      case e: AbortExecuteException => {
+        Array.empty[MessageInterface]
+      }
+    }
     if(isDebugEnabled)
     {
       results.foreach(m => Debug( s"Output: %s -> %s".format(m.getFullTypeName, m.toString())))
