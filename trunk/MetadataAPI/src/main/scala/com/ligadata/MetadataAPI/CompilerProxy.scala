@@ -136,11 +136,11 @@ class CompilerProxy {
     * is available.. so just generate the new ModelDef
     *
     */
-  def recompileModelFromSource(sourceCode: String, pName: String, deps: List[String], typeDeps: List[String], inMsgSets: List[List[String]], outputMsgs: List[String], sourceLang: String, userid: Option[String], tenantId: String, modCfgJson: String): ModelDef = {
+  def recompileModelFromSource(sourceCode: String, pName: String, deps: List[String], typeDeps: List[String], inMsgSets: List[List[String]], outputMsgs: List[String], sourceLang: String, userid: Option[String], tenantId: String, modCfgJson: String, modCfgName: String): ModelDef = {
     try {
       val (classPath, elements, totalDeps, nonTypeDeps) = buildClassPath(deps, typeDeps, null, inMsgSets, outputMsgs)
       val msgDefClassFilePath = compiler_work_dir + "/tempCode." + sourceLang
-      val ((modelNamespace, modelName, modelVersion, pname, mdlFactory, loaderInfo, modConfigName), repackagedCode, tempPackage) = parseSourceForMetadata(sourceCode, "tempCode", sourceLang, msgDefClassFilePath, classPath, elements, userid)
+      val ((modelNamespace, modelName, modelVersion, pname, mdlFactory, loaderInfo, modConfigName), repackagedCode, tempPackage) = parseSourceForMetadata(sourceCode, modCfgName, sourceLang, msgDefClassFilePath, classPath, elements, userid)
       var inputMsgSets =
         if (inMsgSets == null) {
           val defaultInputMsgSets = getDefaultInputMsgSets(mdlFactory, loaderInfo, modConfigName, modCfgJson)
@@ -154,9 +154,10 @@ class CompilerProxy {
       val existingModel = MdMgr.GetMdMgr.Model(modelNamespace, modelName, -1, false) // Any version is fine. No need of active
       val uniqueId = getMetadataAPI.GetUniqueId
       val mdElementId = if (existingModel == None) getMetadataAPI.GetMdElementId else existingModel.get.MdElementId
-
+      // use the model Config Name passed by the caller of this function
+      logger.debug("recompileModelFromSource: Model Config Name => " + modCfgName)
       return generateModelDef(repackagedCode, sourceLang, pname, classPath, tempPackage, modelName,
-        modelVersion, msgDefClassFilePath, elements, sourceCode, totalDeps, typeDeps, nonTypeDeps, true, inputMsgSets, outputMsgs, userid, tenantId, null, uniqueId, mdElementId, modCfgJson)
+        modelVersion, msgDefClassFilePath, elements, sourceCode, totalDeps, typeDeps, nonTypeDeps, true, inputMsgSets, outputMsgs, userid, tenantId, modCfgName, uniqueId, mdElementId, modCfgJson)
     } catch {
       case e: Exception => {
         logger.error("COMPILER_PROXY: unable to determine model metadata information during recompile.", e)
@@ -821,7 +822,8 @@ class CompilerProxy {
       var depJars1 = deps.filter(x => ! jarsToBeExcludedRegEx.pattern.matcher(x).matches)
       logger.debug("deps => " + deps.toList)
       logger.debug("deps => " + depJars1.toList)
-      
+
+      val moduleName: String = "" /** This is a python/jython value ... of no importanance conjuring java/scala model defs*/
       val modDef: ModelDef = MdMgr.GetMdMgr.MakeModelDef(modelNamespace
         , modelName
         , pName
@@ -838,7 +840,8 @@ class CompilerProxy {
         , recompile
         , false
         , modCfgJson
-	, MessageAndContainerUtils.getContainersFromModelConfig(modCfgJson))
+        , moduleName
+	, MessageAndContainerUtils.getContainersFromModelConfig(None,modelConfigName))
 
       // Need to set some values by hand here.
       modDef.jarName = jarFileName

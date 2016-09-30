@@ -47,6 +47,8 @@ class MetadataManager(var config: MetadataAPIProperties) {
 
   private val logger = org.apache.logging.log4j.LogManager.getLogger(this.getClass)
 
+  logger.info("config => " + config)
+
   private val metadataDirResource = getClass.getResource("/Metadata")
   if( metadataDirResource == null ){
       throw new MetadataManagerException("Failed to retrieve resource value for '/Metadata'.");
@@ -116,21 +118,26 @@ class MetadataManager(var config: MetadataAPIProperties) {
     var dsJson:String = null
 
     
-    if( config.database.equalsIgnoreCase("sqlserver") || config.database.equalsIgnoreCase("mysql") ){
+    if( config.database.equalsIgnoreCase("sqlserver") || 
+	config.database.equalsIgnoreCase("mysql") ){
       md.metadataAPIConfig.setProperty("DATABASE_LOCATION", config.dataDirectory)
       dsJson = md.metadataAPIConfig.getProperty("metadatadatastore")
       logger.info("metadataDataStore => " + dsJson)
     }
-    else{
-      if( config.database.equalsIgnoreCase("hashmap") || config.database.equalsIgnoreCase("treemap") ){
+    else if ( config.database.equalsIgnoreCase("hashmap") || 
+	      config.database.equalsIgnoreCase("treemap") ){
 	md.metadataAPIConfig.setProperty("DATABASE_LOCATION", config.dataDirectory)
-	dsJson="{\"StoreType\": \"" + config.database + "\",\"SchemaName\": \"" + config.databaseSchema + "\",\"Location\": \"" + config.dataDirectory + "\"}"
-      }
-      else{
-	md.metadataAPIConfig.setProperty("DATABASE_LOCATION", config.databaseHost)
-	dsJson="{\"StoreType\": \"" + config.database + "\",\"SchemaName\": \"" + config.databaseSchema + "\",\"Location\": \"" + config.databaseHost + "\"}"
-      }
+	dsJson="{\"StoreType\": \"" + config.database + "\",\"SchemaName\": \"" + config.databaseSchema + "\",\"Location\": \"" + config.dataDirectory + "\"" + "}"
+    } 
+    else if( config.database.equalsIgnoreCase("h2db") ){
+	md.metadataAPIConfig.setProperty("DATABASE_LOCATION", config.dataDirectory)
+	dsJson="{\"StoreType\": \"" + config.database + "\",\"SchemaName\": \"" + config.databaseSchema + "\",\"Location\": \"" + config.dataDirectory + "\"" + ",\"connectionMode\": \"embedded\",\"portnumber\": \"9100\",\"user\": \"test\",\"password\": \"test\"" + "}"
     }
+    else{
+      md.metadataAPIConfig.setProperty("DATABASE_LOCATION", config.databaseHost)
+      dsJson="{\"StoreType\": \"" + config.database + "\",\"SchemaName\": \"" + config.databaseSchema + "\",\"Location\": \"" + config.databaseHost + "\"}"
+    }
+
     md.metadataAPIConfig.setProperty("MetadataDataStore",dsJson)
     md.metadataAPIConfig.setProperty("METADATA_DATASTORE",dsJson)
     md.metadataAPIConfig.setProperty("JAR_TARGET_DIR", jarPathApp)
@@ -143,11 +150,11 @@ class MetadataManager(var config: MetadataAPIProperties) {
     md.metadataAPIConfig.setProperty("COMPILER_WORK_DIR", getClass.getResource("/jars/lib/workingdir").getPath)
     md.metadataAPIConfig.setProperty("API_LEADER_SELECTION_ZK_NODE", "/ligadata/metadata")
     md.metadataAPIConfig.setProperty("MODEL_EXEC_LOG", config.modelExecLog)
-    md.metadataAPIConfig.setProperty("SECURITY_IMPL_JAR", jarPathSystem + s"/simpleapacheshiroadapter_${ConfigDefaults.scalaVersion}-1.0.jar")
+    md.metadataAPIConfig.setProperty("SECURITY_IMPL_JAR", jarPathSystem + s"/simpleapacheshiroadapter_${ConfigDefaults.scalaVersion}-${ConfigDefaults.kamanjaVersion}.jar")
     md.metadataAPIConfig.setProperty("SECURITY_IMPL_CLASS", "com.ligadata.Security.SimpleApacheShiroAdapter")
     md.metadataAPIConfig.setProperty("DO_AUTH", "YES")
-    md.metadataAPIConfig.setProperty("AUDIT_IMPL_JAR", jarPathSystem + s"/auditadapters_${ConfigDefaults.scalaVersion}-1.0.jar")
-    md.metadataAPIConfig.setProperty("DO_AUDIT", "NO")
+    md.metadataAPIConfig.setProperty("AUDIT_IMPL_JAR", jarPathSystem + s"/auditadapters_${ConfigDefaults.scalaVersion}-${ConfigDefaults.kamanjaVersion}.jar")
+    md.metadataAPIConfig.setProperty("DO_AUDIT", "YES")
     var db = config.database.toLowerCase
     db match {
       case "cassandra" => {
@@ -162,7 +169,7 @@ class MetadataManager(var config: MetadataAPIProperties) {
       case "treemap" => {
 	md.metadataAPIConfig.setProperty("AUDIT_IMPL_CLASS", "com.ligadata.audit.adapters.AuditHashMapAdapter")
       }
-      case "sqlserver" | "mysql" => {
+      case "sqlserver" | "mysql" | "h2db" => {
 	md.metadataAPIConfig.setProperty("AUDIT_IMPL_CLASS", "com.ligadata.audit.adapters.AuditCassandraAdapter")
       }
       case _ => {

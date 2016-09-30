@@ -955,7 +955,7 @@ object MessageAndContainerUtils {
       val msgObj = Array(msgNameSpace, msgName, msgVer).mkString(".").toLowerCase
       val msgObjName = (msgNameSpace + "." + msgName).toLowerCase
       val modDefs = MdMgr.GetMdMgr.Models(true, true)
-      var depModels = new Array[ModelDef](0)
+      var depModels: scala.collection.mutable.Set[ModelDef] = scala.collection.mutable.Set[ModelDef]()
       modDefs match {
         case None =>
           logger.debug("No Models found ")
@@ -963,43 +963,44 @@ object MessageAndContainerUtils {
           val msa = ms.toArray
           msa.foreach(mod => {
             logger.debug("Checking model " + mod.FullName + "." + MdMgr.Pad0s2Version(mod.Version))
-            breakable {
-              /*
-                            mod.inputVars.foreach(ivar => {
-                              val baseTyp = getBaseType(ivar.asInstanceOf[AttributeDef].typeDef)
-                              if (baseTyp.FullName.toLowerCase == msgObjName) {
-                                logger.debug("The model " + mod.FullName + "." + MdMgr.Pad0s2Version(mod.Version) + " is  dependent on the message " + msgObj)
-                                depModels = depModels :+ mod
-                                break
-                              }
-                            })
-              */
-              mod.inputMsgSets.foreach(set => {
-                set.foreach(msgInfo => {
-                  if (msgInfo != null && msgInfo.message != null && msgInfo.message.trim.nonEmpty &&
+            mod.inputMsgSets.foreach(set => {
+              set.foreach(msgInfo => {
+                if (msgInfo != null && msgInfo.message != null && msgInfo.message.trim.nonEmpty &&
                     msgInfo.message.toLowerCase == msgObjName) {
                     logger.warn("The model " + mod.FullName + "." + MdMgr.Pad0s2Version(mod.Version) + " is  dependent on the message " + msgInfo.message)
-                    depModels = depModels :+ mod
-                  }
-                })
+                    depModels.add(mod)
+                }
               })
+            })
 
-             mod.outputMsgs.foreach( message => {
-               if (message != null && message.toLowerCase() == msgObjName) {
-                 logger.warn("The model " + mod.FullName + "." + MdMgr.Pad0s2Version(mod.Version) + " is  dependent on the message " + message)
-                 depModels = depModels :+ mod
+            mod.outputMsgs.foreach( message => {
+              if (message != null && message.toLowerCase() == msgObjName) {
+                logger.warn("The model " + mod.FullName + "." + MdMgr.Pad0s2Version(mod.Version) + " is  dependent on the message " + message)
+                depModels.add(mod)
+              }
+            })
+	    // use ModeDef.depContainers to determine the model dependency on containers
+	    mod.depContainers.foreach(dc => {
+	      if (dc.toLowerCase() == msgObjName){
+		logger.warn("The model " + mod.FullName + "." + MdMgr.Pad0s2Version(mod.Version) + " is  dependent on the container " + dc)
+		depModels.add(mod)
+	      }
+	    })
 
-               }
-              })
-
-            }
+	    // use model.modelConfig to determine the model dependency on messages
+	    var messages = getMessagesFromModelConfig(mod.modelConfig)
+	    messages.foreach(m => {
+	      if (m.toLowerCase() == msgObjName){
+		logger.warn("The model " + mod.FullName + "." + MdMgr.Pad0s2Version(mod.Version) + " is  dependent on the message " + m)
+		depModels.add(mod)
+	      }
+	    })
           })
       }
-      logger.debug("Found " + depModels.length + " dependent models ")
-      depModels
+      logger.debug("Found " + depModels.size + " dependent models ")
+      depModels.toArray
     } catch {
       case e: Exception => {
-
         logger.debug("", e)
         throw InternalErrorException("Unable to find dependent models " + e.getMessage(), e)
       }
@@ -1419,7 +1420,7 @@ object MessageAndContainerUtils {
   /**
     * Check whether any message already exists in metadata manager. Ideally,
     * we should never add the message into metadata manager more than once
-    * and there is no need to use this function in main code flow
+    * and there is no need to use this function in main code flow
     * This is just a utility function being during these initial phases
     *
     * @param msgDef
@@ -1615,6 +1616,60 @@ object MessageAndContainerUtils {
     depContainers = depContainers ::: containers.toList
     logger.debug("depContainers => " + depContainers)
     depContainers.toArray
+  }
+
+  def IsMessage(msgName: String): Boolean = {
+    try {
+      var(nameSpace,name) = MdMgr.SplitFullName(msgName)
+      val dispkey = nameSpace + "." + name
+      val o = MdMgr.GetMdMgr.Message(nameSpace.toLowerCase,name.toLowerCase,-1,false)
+      o match {
+        case None =>
+          logger.debug("message not in the cache => " + dispkey)
+          return false;
+        case Some(m) =>
+          logger.debug("message found => " + m.asInstanceOf[MessageDef].FullName);
+          return true
+      }
+    } catch {
+      case e: Exception => {
+        logger.debug("", e)
+        throw UnexpectedMetadataAPIException(e.getMessage(), e)
+      }
+    }
+  }
+
+  def getMessagesFromModelConfig(cfgmap: Map[String,Any]): Array[String] = {
+    var messageList = List[String]()
+    var msgsAndContainers = getMessagesAndContainers(cfgmap)
+    if( msgsAndContainers.length > 0 ){
+      msgsAndContainers.foreach(msg => {
+	logger.debug("checking the message " + msg)
+	if( MessageAndContainerUtils.IsMessage(msg) ){
+	  logger.debug("The " + msg + " is a message")
+	  messageList = msg :: messageList
+	}
+	else{
+	  logger.debug("The " + msg + " is not a message")
+	}
+      })
+    }
+    else{
+      logger.debug("getMessagesAndContainers: No types for the model config " + cfgmap)
+    }
+    messageList.toArray
+  }
+
+  def getMessagesFromModelConfig(modCfgJson: String): Array[String] = {
+    logger.debug("Parsing ModelConfig : " + modCfgJson)
+    var cfgmap = parse(modCfgJson).values.asInstanceOf[Map[String, Any]]
+    logger.debug("Count of objects in cfgmap : " + cfgmap.keys.size)
+    var depMessages = List[String]()
+    var messages = getMessagesFromModelConfig(cfgmap)
+    logger.debug("messages => " + messages)
+    depMessages = depMessages ::: messages.toList
+    logger.debug("depMessages => " + depMessages)
+    depMessages.toArray
   }
 
   def getContainersFromModelConfig(userid: Option[String], cfgName: String): Array[String] = {

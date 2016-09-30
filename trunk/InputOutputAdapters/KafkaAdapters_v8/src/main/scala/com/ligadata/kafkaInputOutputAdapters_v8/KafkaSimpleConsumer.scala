@@ -32,6 +32,7 @@ import scala.collection.mutable.Map
 import com.ligadata.Exceptions.{FatalAdapterException, KamanjaException}
 import com.ligadata.KamanjaBase.{NodeContext, DataDelimiters}
 import com.ligadata.HeartBeat.{MonitorComponentInfo, Monitorable}
+import java.util.concurrent.atomic.AtomicLong
 
 case class ExceptionInfo (Last_Failure: String, Last_Recovery: String)
 
@@ -63,7 +64,7 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
   private val LOG = LogManager.getLogger(getClass)
   private var isQuiesced = false
   private var startTime: Long = 0
-  private var msgCount = 0
+  private var msgCount = new AtomicLong(0)
   private var isShutdown = false
 
   private var metrics: collection.mutable.Map[String,Any] = collection.mutable.Map[String,Any]()
@@ -170,7 +171,7 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
   }
 
   override def getComponentSimpleStats: String = {
-    return "Input/"+qc.topic+"/evtCnt" + "->" + msgCount
+    return "Input/"+qc.topic+"/evtCnt" + "->" + msgCount.get()
   }
 
   /**
@@ -421,7 +422,7 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
                   incrementCountForPartition(partitionId)
 
                   uniqueVal.Offset = msgBuffer.offset
-                  msgCount += 1
+                  msgCount.incrementAndGet()
                   //                val dontSendOutputToOutputAdap = uniqueVal.Offset <= uniqueRecordValue
                   if (isQuiesced) {
                     LOG.debug("KAFKA-ADAPTER: isQuiesced:true. Breaking loop")
