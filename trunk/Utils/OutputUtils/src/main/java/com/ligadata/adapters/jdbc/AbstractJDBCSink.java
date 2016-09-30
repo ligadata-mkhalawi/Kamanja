@@ -159,7 +159,7 @@ public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 			}
 
 			// set letfover attributes to _Remaining_Attributes_ parameter
-			if (remainingParamIndex > 0 &&  jo.size() > 0) {
+			if (remainingParamIndex > 0 &&  !jo.isEmpty()) {
 				statement.setString(remainingParamIndex, jo.toJSONString());
 			}
 
