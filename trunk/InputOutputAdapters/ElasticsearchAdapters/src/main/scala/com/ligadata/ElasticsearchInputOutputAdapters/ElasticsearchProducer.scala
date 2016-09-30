@@ -5,11 +5,9 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 
 import com.ligadata.AdapterConfiguration.{ElasticsearchAdapterConfiguration, ElasticsearchConstants}
-import com.ligadata.Exceptions.InvalidArgumentException
 import com.ligadata.HeartBeat.MonitorComponentInfo
 import com.ligadata.InputOutputAdapterInfo._
 import com.ligadata.KamanjaBase.{ContainerInterface, NodeContext, TransactionContext}
-import com.ligadata.KvBase.{Key, Value}
 import com.ligadata.Utils.KamanjaLoaderInfo
 import com.ligadata.keyvaluestore.ElasticsearchAdapter
 import org.apache.logging.log4j.LogManager
@@ -179,53 +177,10 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       LOG.error(szMsg)
       throw new Exception(szMsg)
     }
+    val (outContainers, serializedContainerData, serializerNames) = serialize(tnxCtxt, outputContainers)
+    //    serializedContainerData.map(data => new String(data))
 
-
-    for (i <- 0 until outputContainers.size) {
-      metrics("MessagesProcessed").asInstanceOf[AtomicLong].incrementAndGet()
-    }
-
-    val data_list = outputContainers.groupBy(_.getFullTypeName.toLowerCase).map(oneContainerData => {
-      (oneContainerData._1, oneContainerData._2.map(container => {
-        (Key(container.TimePartitionData(), container.PartitionKeyData(), container.getTransactionId, container.getRowNumber), "", container.asInstanceOf[Any])
-      }))
-    }).toArray
-
-    if (data_list == null)
-      throw new InvalidArgumentException("Data should not be null", null)
-
-
-    val putData = data_list.map(oneContainerData => {
-      val containerData: Array[(com.ligadata.KvBase.Key, com.ligadata.KvBase.Value)] = oneContainerData._2.map(row => {
-        if (row._3.isInstanceOf[ContainerInterface]) {
-          val cont = row._3.asInstanceOf[ContainerInterface]
-          val arrayOfCont = Array(cont)
-          val (containers, serData, serializers) = serialize(tnxCtxt, arrayOfCont)
-          //           println("++container fullname++" + cont.getFullTypeName)
-          if (containers == null || containers.size == 0) {
-            (null, Value(0, null, null))
-          } else {
-            (row._1, Value(cont.getSchemaId, serializers(0), serData(0)))
-          }
-        } else {
-          (row._1, Value(0, row._2, row._3.asInstanceOf[Array[Byte]]))
-        }
-      }).filter(row => row._1 != null || row._2.serializedInfo != null || row._2.serializerType != null || row._2.schemaId != 0)
-      (oneContainerData._1, containerData)
-    }).filter(oneContainerData => oneContainerData._2.size > 0)
-
-
-    var dataJsonsArray: ArrayBuffer[(ArrayBuffer[String])] = ArrayBuffer(ArrayBuffer[String]())
-    var internalArray: ArrayBuffer[String] = ArrayBuffer[String]()
-
-    putData.foreach(x => {
-      x._2.foreach(y => {
-        internalArray += new String(y._2.serializedInfo)
-      })
-      dataJsonsArray += internalArray
-    })
-
-    dataStore.putJson(adapterConfig.TableName, dataJsonsArray)
+    dataStore.putJson(adapterConfig.TableName, serializedContainerData.map(data => new String(data)))
     // dataStore.put(tnxCtxt, data_list)
   }
 

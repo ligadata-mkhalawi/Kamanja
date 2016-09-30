@@ -38,7 +38,7 @@ import org.elasticsearch.search.{SearchHit, SearchHits}
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
 
-import scala.collection.mutable.{ArrayBuffer, TreeSet}
+import scala.collection.mutable.TreeSet
 import scala.util.control.Breaks._
 
 
@@ -472,18 +472,16 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   }
 
 
-  def putJson(containerName: String, data_list: ArrayBuffer[(ArrayBuffer[(String)])]): Unit = {
+  def putJson(containerName: String, data_list: Array[(String)]): Unit = {
     var client: TransportClient = null
     val tableName = toFullTableName(containerName)
     //    CheckTableExists(tableName)
     try {
       client = getConnection
       var bulkRequest = client.prepareBulk()
-      data_list.foreach({ x =>
-        x.foreach({ jsonData =>
-          // insert x to table tableName
-          bulkRequest.add(client.prepareIndex(tableName, "type1").setSource(jsonData))
-        })
+      data_list.foreach({ jsonData =>
+        // insert x to table tableName
+        bulkRequest.add(client.prepareIndex(tableName, "type1").setSource(jsonData))
       })
       logger.debug("Executing bulk insert...")
       val bulkResponse = bulkRequest.execute().actionGet()
