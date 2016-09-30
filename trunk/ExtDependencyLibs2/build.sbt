@@ -62,6 +62,7 @@ assemblyMergeStrategy in assembly := {
   case "blueprint.xml" => MergeStrategy.discard
   case "OSGI-INF/blueprint/blueprint.xml" => MergeStrategy.discard
   case "features.xml" => MergeStrategy.discard
+  case "ScalaTestBundle.properties" => MergeStrategy.discard
   case x =>
     val oldStrategy = (assemblyMergeStrategy in assembly).value
     oldStrategy(x)
@@ -193,3 +194,9 @@ libraryDependencies += "org.slf4j" % "slf4j-api" % "1.7.12"
 libraryDependencies += "org.slf4j" % "slf4j-log4j12" % "1.7.12"
 libraryDependencies += "org.slf4j" % "slf4j-nop" % "1.7.12"
 // libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.0"
+
+
+assemblyMergeStrategy in assembly := {
+  case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+  case x => MergeStrategy.first
+}

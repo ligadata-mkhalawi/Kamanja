@@ -37,7 +37,7 @@ object ConfigDefaults {
   val scalaVersionFull = scala.util.Properties.versionNumberString
   val scalaVersion = scalaVersionFull.substring(0, scalaVersionFull.lastIndexOf('.'))
 
-  val kamanjaVersion = "1.5.3"
+  val kamanjaVersion = "1.6.0"
 
   private val RootDir = s"./MetadataAPI/target/scala-$scalaVersion/test-classes"
   private val targetLibDir = RootDir + "/jars/lib/system"
@@ -108,6 +108,7 @@ object ConfigDefaults {
   logger.info("jarResourceDir " + jarResourceDir)
 
   def envContextClassName: String = "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$"
+
   def envContextDependecyJarList: List[String] = List(s"ExtDependencyLibs_$scalaVersion-$kamanjaVersion.jar", s"KamanjaInternalDeps_$scalaVersion-$kamanjaVersion.jar", s"ExtDependencyLibs2_$scalaVersion-$kamanjaVersion.jar")
   def envContextJarName = s"simpleenvcontextimpl_$scalaVersion-1.0.jar"
 

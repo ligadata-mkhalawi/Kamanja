@@ -1,0 +1,8 @@
+[
+ {
+     "AdapterName": "TestOut_1",
+     "MessageNames": ["org.kamanja.arithmetic.arithmeticOutMsg"],
+     "Serializer": "com.ligadata.kamanja.serializer.JsonSerDeser"
+ }
+]
+
