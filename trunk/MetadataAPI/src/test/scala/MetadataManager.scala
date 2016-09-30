@@ -143,11 +143,11 @@ class MetadataManager(var config: MetadataAPIProperties) {
     md.metadataAPIConfig.setProperty("COMPILER_WORK_DIR", getClass.getResource("/jars/lib/workingdir").getPath)
     md.metadataAPIConfig.setProperty("API_LEADER_SELECTION_ZK_NODE", "/ligadata/metadata")
     md.metadataAPIConfig.setProperty("MODEL_EXEC_LOG", config.modelExecLog)
-    md.metadataAPIConfig.setProperty("SECURITY_IMPL_JAR", jarPathSystem + s"/simpleapacheshiroadapter_${ConfigDefaults.scalaVersion}-1.0.jar")
+    md.metadataAPIConfig.setProperty("SECURITY_IMPL_JAR", jarPathSystem + s"/simpleapacheshiroadapter_${ConfigDefaults.scalaVersion}-${ConfigDefaults.kamanjaVersion}.jar")
     md.metadataAPIConfig.setProperty("SECURITY_IMPL_CLASS", "com.ligadata.Security.SimpleApacheShiroAdapter")
     md.metadataAPIConfig.setProperty("DO_AUTH", "YES")
-    md.metadataAPIConfig.setProperty("AUDIT_IMPL_JAR", jarPathSystem + s"/auditadapters_${ConfigDefaults.scalaVersion}-1.0.jar")
-    md.metadataAPIConfig.setProperty("DO_AUDIT", "NO")
+    md.metadataAPIConfig.setProperty("AUDIT_IMPL_JAR", jarPathSystem + s"/auditadapters_${ConfigDefaults.scalaVersion}-${ConfigDefaults.kamanjaVersion}.jar")
+    md.metadataAPIConfig.setProperty("DO_AUDIT", "YES")
     var db = config.database.toLowerCase
     db match {
       case "cassandra" => {

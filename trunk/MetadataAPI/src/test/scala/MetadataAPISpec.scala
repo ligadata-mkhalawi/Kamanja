@@ -576,7 +576,7 @@ class MetadataAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
 				And("Clone the input json and update the version number to simulate a model for an update operation")
 				modStr = modStr.replaceFirst("01.00", "01.01")
 				assert(modStr.indexOf("\"00.01.01\"") >= 0)
-				res = MetadataAPIImpl.UpdateModel(ModelType.KPMML, modStr, None,tenantId,None,None,None,None,None)
+				res = MetadataAPIImpl.UpdateModel(ModelType.KPMML, modStr, None,tenantId,None,None,None,None,None, None)
 				res should include regex ("\"Status Code\" : 0")
 
 				And("GetModelDef API to fetch the model that was just updated")
