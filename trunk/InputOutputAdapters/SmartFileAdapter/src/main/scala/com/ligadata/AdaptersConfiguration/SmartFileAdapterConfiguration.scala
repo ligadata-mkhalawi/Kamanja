@@ -49,28 +49,35 @@ class FileAdapterMonitoringConfig {
 
   var detailedLocations: Array[LocationInfo] = Array.empty[LocationInfo] //folders to monitor, with other info
 
-  var fileBufferingTimeout = 300 // in seconds
+  var fileBufferingTimeout = 300
+  // in seconds
   //folders to move consumed files to. either one directory for all input (locations) or same number as (locations)
   //var targetMoveDirs : Array[String] = Array.empty[String]
-  var consumersCount: Int = _ //number of threads to read files
-  var monitoringThreadsCount: Int = 1 //number of threads to monitor src dirs
+  var consumersCount: Int = _
+  //number of threads to read files
+  var monitoringThreadsCount: Int = 1
+  //number of threads to monitor src dirs
   var workerBufferSize: Int = 4 //buffer size in MB to read messages from files
 
 
-  var msgTags: Array[String] = Array.empty[String]  //public
+  var msgTags: Array[String] = Array.empty[String]
+  //public
   var tagDelimiter: String = "," //public
 
   var messageSeparator: Char = 10
   var orderBy: Array[String] = Array.empty[String]
   var entireFileAsOneMessage = false
 
-  var enableMoving: String = "on"  //on, off - public
+  var enableMoving: String = "on"
+
+  //on, off - public
   def isMovingEnabled: Boolean = enableMoving == null || enableMoving.length == 0 || enableMoving.equalsIgnoreCase("on")
 }
 
 class Padding {
   //var componentName : String = ""
-  var padPos: String = "left"  //left, right
+  var padPos: String = "left"
+  //left, right
   var padSize: Int = 0
   var padStr: String = ""
 }
@@ -91,10 +98,13 @@ class LocationInfo {
   var msgTags: Array[String] = Array.empty[String]
   var tagDelimiter: String = "" //if empty get public one
 
-  var messageSeparator: Char = 0  //0 this means separator is not set, so get it from public attributes
+  var messageSeparator: Char = 0
+  //0 this means separator is not set, so get it from public attributes
   var orderBy: Array[String] = Array.empty[String]
 
-  var enableMoving: String = ""  //on, off, empty means get it from public attribute
+  var enableMoving: String = ""
+
+  //on, off, empty means get it from public attribute
   def isMovingEnabled: Boolean = enableMoving == null || enableMoving.length == 0 || enableMoving.equalsIgnoreCase("on")
 }
 
@@ -208,7 +218,7 @@ object SmartFileAdapterConfiguration {
         val hadoopConfig = kv._2.asInstanceOf[Map[String, String]]
         connectionConfig.hadoopConfig = List[(String, String)]()
         hadoopConfig.foreach(hconf => {
-          connectionConfig.hadoopConfig ::=(hconf._1, hconf._2)
+          connectionConfig.hadoopConfig ::= (hconf._1, hconf._2)
         })
       }
     })
@@ -478,17 +488,18 @@ case class SmartFileKeyData(Version: Int, Type: String, Name: String, PartitionI
 
 class SmartFilePartitionUniqueRecordKey extends PartitionUniqueRecordKey {
   val Version: Int = 1
-  var Name: String = _  // Name
+  var Name: String = _
+  // Name
   val Type: String = "SmartFile"
   var PartitionId: Int = _ // Partition Id
 
   override def Serialize: String = {
     // Making String from key
     val json =
-      ("Version" -> Version) ~
-        ("Type" -> Type) ~
-        ("Name" -> Name) ~
-        ("PartitionId" -> PartitionId)
+    ("Version" -> Version) ~
+      ("Type" -> Type) ~
+      ("Name" -> Name) ~
+      ("PartitionId" -> PartitionId)
     compact(render(json))
   }
 
@@ -514,9 +525,9 @@ class SmartFilePartitionUniqueRecordValue extends PartitionUniqueRecordValue {
   override def Serialize: String = {
     // Making String from Value
     val json =
-      ("Version" -> Version) ~
-        ("Offset" -> Offset) ~
-        ("FileName" -> FileName)
+    ("Version" -> Version) ~
+      ("Offset" -> Offset) ~
+      ("FileName" -> FileName)
     compact(render(json))
   }
 

@@ -1,11 +1,14 @@
 package com.ligadata.InputAdapters
 
 import java.io.IOException
+
 import com.ligadata.AdaptersConfiguration.SmartFileAdapterConfiguration
 import org.apache.logging.log4j.LogManager
-import scala.util.control.Breaks._
 
 import scala.actors.threadpool.{ExecutorService, Executors}
+import scala.collection.mutable.ArrayBuffer
+import scala.util.control.Breaks._
+import org.apache.commons.codec.binary.Base64
 
 /**
   *
@@ -58,13 +61,23 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
 
     else {
       //just run it in a separate thread
-      val extractorThread = new Runnable() {
-        override def run(): Unit = {
-          readBytesChunksFromFile()
+      if (adapterConfig.monitoringConfig.entireFileAsOneMessage) {
+        println(">>>>>>>>>>>>>>>>>>>>>>>>>> Before Initializing thread" + fileHandler.getFullPath)
+        val extractorThread = new Runnable() {
+          override def run(): Unit = {
+            println(">>>>>>>>>>>>>>>>>>>>>>>>>> Inside Thread thread" + fileHandler.getFullPath)
+            readWholeFile()
+          }
         }
+        extractExecutor.execute(extractorThread)
+      } else {
+        val extractorThread = new Runnable() {
+          override def run(): Unit = {
+            readBytesChunksFromFile()
+          }
+        }
+        extractExecutor.execute(extractorThread)
       }
-      extractExecutor.execute(extractorThread)
-
       //keep updating status so leader knows participant is working fine
       //TODO : find a way to send the update in same reading thread
       val statusUpdateThread = new Runnable() {
@@ -328,6 +341,49 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
 
     logger.debug("File message Extractor - shutting down extractExecutor")
     MonitorUtils.shutdownAndAwaitTermination(extractExecutor, "file message extractor")
+  }
+
+
+  def readWholeFile(): Unit = {
+    println(">>>>>>>>>>>>>>>>>>>>>>>>>> inside readWholeFile")
+    val allData = ArrayBuffer[Byte]()
+    // create tmpFlHandler from filename
+    //    val fileName = fileHandler.getFullPath
+    val byteBuffer = new Array[Byte](maxlen)
+
+    fileHandler.openForRead()
+
+    var readlen = 0
+    var curReadLen = fileHandler.read(byteBuffer, readlen, maxlen - readlen - 1)
+    var lastReadLen = curReadLen
+
+    while (lastReadLen > 0) {
+      val minBuf = maxlen / 3; // We are expecting at least 1/3 of the buffer need to fill before
+      while (readlen < minBuf && curReadLen > 0) {
+        // Re-reading some more data
+        curReadLen = fileHandler.read(byteBuffer, readlen, maxlen - readlen - 1)
+        if (curReadLen > 0) {
+          readlen += curReadLen
+        }
+        lastReadLen = curReadLen
+      }
+
+      allData ++= byteBuffer
+    }
+
+    val filePath = fileHandler.getFullPath
+    if (fileHandler != null) fileHandler.close
+    println(">>>>>>>>>>>>>>>>>>>>>>>>>> Before returning from readwholeFile")
+    //encode base64
+    val base64String = Base64.encodeBase64(allData.toArray)
+    // prepare Json here.
+    val jsonString = "{\"filename\":\"%s\",\"messageBody\": \"%s\"}".format(filePath, base64String)
+
+    val smartFileMessage = new SmartFileMessage(jsonString.getBytes(), 0, fileHandler, 0)
+    messageFoundCallback(smartFileMessage, consumerContext)
+    finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_FINISHED)
+
+
   }
 
   private def extractMessages(chunk: Array[Byte], len: Int): Int = {
