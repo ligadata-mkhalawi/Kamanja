@@ -532,6 +532,17 @@ bash $installPath/Kamanja-$ver210/bin/SetPaths.sh $KafkaRootDir
 chmod 0700 $installPath/Kamanja-$ver210/input/SampleApplications/bin/*.sh
 chmod 0700 $installPath/Kamanja-$ver210/ClusterInstall/*.sh
 
+# In order to simplify MetadataAPIConfig.properties, we allow for setting up a file
+# that contains the list of all the libraries. This file is hard-coded as
+# $installPath/Kamanja-$ver210/config/library_list. It contains the three fat jars
+# to start with. The CLASSPATH to be used during metadata object(container,message, model)
+# is constructed from the list of libraries specified in this file
+touch $installPath/Kamanja-$ver210/config/library_list
+chmod a+r $installPath/Kamanja-$ver210/config/library_list
+echo ExtDependencyLibs_2.10-$currentKamanjaVersion.jar > $installPath/Kamanja-$ver210/config/library_list
+echo KamanjaInternalDeps_2.10-$currentKamanjaVersion.jar >> $installPath/Kamanja-$ver210/config/library_list
+echo ExtDependencyLibs2_2.10-$currentKamanjaVersion.jar >> $installPath/Kamanja-$ver210/config/library_list
+
 ################################ Version-2.10 Finished ################################
 
 fi # if [ "$build210" == "1" ]; then #beginning of the 2.10 build
@@ -901,6 +912,17 @@ bash $installPath/Kamanja-$ver211/bin/SetPaths.sh $KafkaRootDir
 chmod 0700 $installPath/Kamanja-$ver211/input/SampleApplications/bin/*.sh
 chmod 0700 $installPath/Kamanja-$ver211/ClusterInstall/*.sh
 fi # if [ "$build211" == "1" ]; then #beginning of the 2.11 build
+
+# In order to simplify MetadataAPIConfig.properties, we allow for setting up a file
+# that contains the list of all the libraries. This file is hard-coded as
+# $installPath/Kamanja-$ver211/config/library_list. It contains the three fat jars
+# to start with. The CLASSPATH to be used during metadata object(container,message, model)
+# is constructed from the list of libraries specified in this file
+touch $installPath/Kamanja-$ver211/config/library_list
+chmod a+r $installPath/Kamanja-$ver211/config/library_list
+echo ExtDependencyLibs_2.11-$currentKamanjaVersion.jar > $installPath/Kamanja-$ver211/config/library_list
+echo KamanjaInternalDeps_2.11-$currentKamanjaVersion.jar >> $installPath/Kamanja-$ver211/config/library_list
+echo ExtDependencyLibs2_2.11-$currentKamanjaVersion.jar >> $installPath/Kamanja-$ver211/config/library_list
 
 
 #Migration and cluster Install*****************

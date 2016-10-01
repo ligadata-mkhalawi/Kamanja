@@ -240,6 +240,13 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     externalDDLOnly = parsed_json.get("externalDDLOnly").get.toString.trim
   }
 
+  // some misc optional parameters
+  var appendOnly = "NO"
+  if (parsed_json.contains("appendOnly")) {
+    appendOnly = parsed_json.get("appendOnly").get.toString.trim
+  }
+
+
   logger.info("hostname => " + hostname)
   logger.info("username => " + user)
   logger.info("SchemaName => " + SchemaName)
@@ -248,6 +255,7 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
   logger.info("clusterdIndex  => " + clusteredIndex)
   logger.info("autoCreateTables  => " + autoCreateTables)
   logger.info("externalDDLOnly  => " + externalDDLOnly)
+  logger.info("appendOnly  => " + appendOnly)
 
   var sqlServerInstance: String = hostname
   if (instanceName != null) {
@@ -560,7 +568,7 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     toTableName(containerName)
   }
 
-  override def put(containerName: String, key: Key, value: Value): Unit = {
+  private def putUpsert(containerName: String, key: Key, value: Value): Unit = {
     var con: Connection = null
     var pstmt: PreparedStatement = null
     var tableName = toFullTableName(containerName)
@@ -630,6 +638,66 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     }
   }
 
+  private def putInsert(containerName: String, key: Key, value: Value): Unit = {
+    var con: Connection = null
+    var pstmt: PreparedStatement = null
+    var tableName = toFullTableName(containerName)
+    var sql = ""
+    try {
+      CheckTableExists(containerName)
+      con = getConnection
+      // put is sematically an upsert. An upsert is being implemented using a transact-sql update 
+      // statement in sqlserver
+      sql = "insert into " + tableName + "(timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo)" +
+        " values(?,?,?,?,?,?,?)"
+      logger.debug("sql => " + sql)
+      pstmt = con.prepareStatement(sql)
+      pstmt.setLong(1, key.timePartition)
+      pstmt.setString(2, key.bucketKey.mkString(","))
+      pstmt.setLong(3, key.transactionId)
+      pstmt.setInt(4, key.rowId)
+      pstmt.setInt(5, value.schemaId)
+      pstmt.setString(6, value.serializerType)
+      pstmt.setBinaryStream(7, new java.io.ByteArrayInputStream(value.serializedInfo), value.serializedInfo.length)
+      pstmt.executeUpdate();
+      updateOpStats("put",tableName,1)
+      updateObjStats("put",tableName,1)
+      updateByteStats("put",tableName,getKeySize(key)+getValueSize(value))
+    } catch {
+      case e: Exception => {
+        externalizeExceptionEvent(e)
+        if (con != null) {
+          try {
+            // rollback has thrown exception in some special scenarios, capture it
+            con.rollback()
+          } catch {
+            case ie: Exception => {
+              externalizeExceptionEvent(ie)
+              logger.error("", ie)
+            }
+          }
+        }
+        throw CreateDMLException("Failed to save an object in the table " + tableName + ":" + "sql => " + sql, e)
+      }
+    } finally {
+      if (pstmt != null) {
+        pstmt.close
+      }
+      if (con != null) {
+        con.close
+      }
+    }
+  }
+
+  override def put(containerName: String, key: Key, value: Value): Unit = {
+    if( appendOnly.equalsIgnoreCase("YES") ){
+      putInsert(containerName,key,value)
+    }
+    else{
+      putUpsert(containerName,key,value)
+    }
+  }
+
   private def IsSingleRowPut(data_list: Array[(String, Array[(Key, Value)])]): Boolean = {
     if (data_list.length == 1) {
       if (data_list(0)._2.length == 1) {
@@ -639,7 +707,7 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     return false
   }
 
-  override def put(data_list: Array[(String, Array[(Key, Value)])]): Unit = {
+  private def putUpsert(data_list: Array[(String, Array[(Key, Value)])]): Unit = {
     var con: Connection = null
     var pstmt: PreparedStatement = null
     var sql: String = null
@@ -741,6 +809,103 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       if (con != null) {
         con.close
       }
+    }
+  }
+
+
+  private def putInsert(data_list: Array[(String, Array[(Key, Value)])]): Unit = {
+    var con: Connection = null
+    var pstmt: PreparedStatement = null
+    var sql: String = null
+    var totalRowsUpdated = 0;
+    try {
+      if (IsSingleRowPut(data_list)) {
+        var containerName = data_list(0)._1
+        var isMetadataContainer = data_list(0)._2
+        var keyValuePairs = data_list(0)._2
+        var key = keyValuePairs(0)._1
+        var value = keyValuePairs(0)._2
+        put(containerName,  key, value)
+      } else {
+        logger.debug("Get a new connection...")
+        con = getConnection
+        // we need to commit entire batch
+        con.setAutoCommit(false)
+	var byteCount = 0
+        data_list.foreach(li => {
+          var containerName = li._1
+          CheckTableExists(containerName)
+          var tableName = toFullTableName(containerName)
+          var keyValuePairs = li._2
+          logger.info("Input row count for the table " + tableName + " => " + keyValuePairs.length)
+          sql = " insert into " + tableName + "(timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo)" +
+            " values(?,?,?,?,?,?,?)"
+          logger.debug("sql => " + sql)
+          pstmt = con.prepareStatement(sql)
+          keyValuePairs.foreach(keyValuePair => {
+            var key = keyValuePair._1
+            var value = keyValuePair._2
+            pstmt.setLong(1, key.timePartition)
+            pstmt.setString(2, key.bucketKey.mkString(","))
+            pstmt.setLong(3, key.transactionId)
+            pstmt.setInt(4, key.rowId)
+            pstmt.setInt(5, value.schemaId)
+            pstmt.setString(6, value.serializerType)
+            pstmt.setBinaryStream(7, new java.io.ByteArrayInputStream(value.serializedInfo), value.serializedInfo.length)
+            pstmt.addBatch()
+	    byteCount = byteCount + getKeySize(key)+getValueSize(value)
+          })
+          logger.debug("Executing bulk upsert...")
+          var updateCount = pstmt.executeBatch();
+          updateCount.foreach(cnt => { totalRowsUpdated += cnt });
+          if (pstmt != null) {
+            pstmt.clearBatch();
+            pstmt.close
+            pstmt = null;
+          }
+	  updateOpStats("put",tableName,1)
+	  updateObjStats("put",tableName,totalRowsUpdated)
+	  updateByteStats("put",tableName,byteCount)
+          logger.info("Inserted/Updated " + totalRowsUpdated + " rows for " + tableName)
+        })
+        con.commit()
+        con.close
+        con = null
+      }
+    } catch {
+      case e: Exception => {
+        externalizeExceptionEvent(e)
+        if (con != null) {
+          try {
+            // rollback has thrown exception in some special scenarios, capture it
+            con.rollback()
+          } catch {
+            case ie: Exception => {
+              externalizeExceptionEvent(ie)
+              logger.error("", ie)
+            }
+          }
+        }
+        throw CreateDMLException("Failed to save a batch of objects into the table :" + "sql => " + sql, e)
+      }
+    } finally {
+      if (pstmt != null) {
+        pstmt.close
+        pstmt = null
+      }
+      if (con != null) {
+        con.close
+      }
+    }
+  }
+
+
+  override def put(data_list: Array[(String, Array[(Key, Value)])]): Unit = {
+    if( appendOnly.equalsIgnoreCase("YES") ){
+      putInsert(data_list)
+    }
+    else{
+      putUpsert(data_list)
     }
   }
 

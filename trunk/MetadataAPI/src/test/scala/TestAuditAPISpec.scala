@@ -40,7 +40,7 @@ import com.ligadata.Serialize._
 
 import com.ligadata.kamanja.metadataload.MetadataLoad
 
-class AddContainerSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
+class TestAuditAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
   var res: String = null;
   var statusCode: Int = -1;
   var apiResKey: String = "\"Status Code\" : 0"
@@ -52,26 +52,41 @@ class AddContainerSpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
   var iFile: File = null
   var fileList: List[String] = null
   var newVersion: String = null
-  val userId: Option[String] = Some("kamanja")
-  val tenantId: Option[String] = Some("kamanja")
-  val ns = "com.ligadata.kamanja.samples.containers"
+  val userid: Option[String] = Some("test")
+  val tenantId: Option[String] = Some("testTenantId")
+  var da: String = null
+
   private val loggerName = this.getClass.getName
   private val logger = LogManager.getLogger(loggerName)
-
-  private var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id","avroschemainfo","element_info","elementinfo","ismetadata","metadatacounters")
 
   private def TruncateDbStore = {
     val db = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
     assert(null != db)
-    var ds = MetadataAPIImpl.GetMainDS
-    ds.TruncateContainer(containerList)
+    db match {
+      case "sqlserver" | "mysql" | "hbase" | "cassandra" | "hashmap" | "treemap" => {
+	var ds = MetadataAPIImpl.GetMainDS
+	var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id")
+	ds.TruncateContainer(containerList)
+      }
+      case _ => {
+	logger.info("TruncateDbStore is not supported for database " + db)
+      }
+    }
   }
 
   private def DropDbStore = {
     val db = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
     assert(null != db)
-    var ds = MetadataAPIImpl.GetMainDS
-    ds.DropContainer(containerList)
+    db match {
+      case "sqlserver" | "mysql" | "hbase" | "cassandra" | "hashmap" | "treemap" => {
+	var ds = MetadataAPIImpl.GetMainDS
+	var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id")
+	ds.DropContainer(containerList)
+      }
+      case _ => {
+	logger.info("DropDbStore is not supported for database " + db)
+      }
+    }
   }
 
   override def beforeAll = {
@@ -106,17 +121,6 @@ class AddContainerSpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
       logger.info("jarPaths => " + jp)
 
 
-      logger.info("Truncating dbstore")
-      TruncateDbStore
-
-      And("PutTranId updates the tranId")
-      noException should be thrownBy {
-	MetadataAPIImpl.PutTranId(0)
-      }
-
-      logger.info("Load All objects into cache")
-      MetadataAPIImpl.LoadAllObjectsIntoCache(false)
-
       // The above call is resetting JAR_PATHS based on nodeId( node-specific configuration)
       // This is causing unit-tests to fail
       // restore JAR_PATHS value
@@ -125,12 +129,11 @@ class AddContainerSpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
       logger.info("jarPaths => " + jp)
 
       logger.info("Initialize security adapter")
-      val tempAuditParamsFile = getClass.getResource("/").getPath + this.getClass.getSimpleName
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("AUDIT_PARMS", TestUtils.createAuditParamsFile(tempAuditParamsFile))
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("AUDIT_PARMS", TestUtils.createAuditParamsFile(this.getClass.getSimpleName))
+
       MetadataAPIImpl.InitSecImpl
 
-      //MetadataAPIImpl.TruncateAuditStore
+      MetadataAPIImpl.TruncateAuditStore
+
       MetadataAPIImpl.isInitilized = true
       logger.info(MetadataAPIImpl.GetMetadataAPIConfig)
     }
@@ -142,24 +145,8 @@ class AddContainerSpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
     }
   }
 
-  /**
-   * extractNameFromPMML - pull the Application name="xxx" from the PMML doc and construct
-   * a name  string from it, cloned from APIService.scala
-   */
-  def extractNameFromPMML(pmmlObj: String): String = {
-    var firstOccurence: String = "unknownModel"
-    val pattern = """Application[ ]*name="([^ ]*)"""".r
-    val allMatches = pattern.findAllMatchIn(pmmlObj)
-    allMatches.foreach(m => {
-      if (firstOccurence.equalsIgnoreCase("unknownModel")) {
-	firstOccurence = (m.group(1))
-      }
-    })
-    return firstOccurence
-  }
 
   describe("Unit Tests for all MetadataAPI operations") {
-
     // validate property setup
     it("Validate properties for MetadataAPI") {
       And("MetadataAPIImpl.GetMetadataAPIConfig should have been initialized")
@@ -194,7 +181,7 @@ class AddContainerSpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
       assert(null != sh)
 
       And("The property JAVA_HOME must have been defined")
-      val jh = cfg.getProperty("SCALA_HOME")
+      val jh = cfg.getProperty("JAVA_HOME")
       assert(null != jh)
 
       And("The property CLASSPATH must have been defined")
@@ -251,103 +238,55 @@ class AddContainerSpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
       assert(null != sc)
     }
 
-    // CRUD operations on container objects
-    it("Container Tests") {
-      And("Check whether CONTAINER_FILES_DIR defined as property")
-      dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CONTAINER_FILES_DIR")
-      assert(null != dirName)
 
-      And("Check Directory Path")
-      iFile = new File(dirName)
-      assert(true == iFile.exists)
+    it("AuditAPI tests ...") {
+      var cfg = MetadataAPIImpl.GetMetadataAPIConfig
+      assert(null != cfg)
+      And("Audit Functions")
+      And("The property DO_AUDIT  must have been defined")
+      da = cfg.getProperty("DO_AUDIT")
+      assert(null != da)
 
-      And("Check whether " + dirName + " is a directory ")
-      assert(true == iFile.isDirectory)
-
-      And("Make sure there are few JSON container files in " + dirName);
-      val contFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith(".json"))
-      assert(0 != contFiles.length)
-
-      //fileList = List("CoughCodes.json","EnvCodes.json","DyspnoeaCodes.json","SmokeCodes.json","SputumCodes.json")
-      fileList = List("EnvCodes.json")
-      fileList.foreach(f1 => {
-	And("Add the Container From " + f1)
-	And("Make Sure " + f1 + " exist")
-	var exists = false
-	var file: java.io.File = null
-	breakable {
-	  contFiles.foreach(f2 => {
-	    if (f2.getName() == f1) {
-	      exists = true
-	      file = f2
-	      break
-	    }
-	  })
+      if (da.equalsIgnoreCase("YES")) {
+	And("logAuditRec ")
+	noException should be thrownBy {
+	  MetadataAPIImpl.logAuditRec(Some("lonestarr"), Some("write"), "GetContainerDef", "system.coughcodes.000000100000000000", "true", "12345657", "system.coughcodes.000000100000000000")
 	}
-	assert(true == exists)
 
-	And("GetContainerDef API to fetch the container that may not even exist, check for Status Code of -1")
-	objName = f1.stripSuffix(".json").toLowerCase
-	version = "0000000000001000000"
-	res = MetadataAPIImpl.GetContainerDef(ns, objName, "JSON", version, None,None)
-	logger.info("response => " + res)
-	res should include regex ("\"Status Code\" : -1")
-
-	And("AddContainer first time from " + file.getPath)
-	contStr = Source.fromFile(file).mkString
-	res = MetadataAPIImpl.AddContainer(contStr, "JSON", None,tenantId,None)
-	logger.info("response => " + res)
-	res should include regex ("\"Status Code\" : 0")
-
-	And("GetContainerDef API to fetch the container that was just added")
-	res = MetadataAPIImpl.GetContainerDef(ns, objName, "JSON", version, userId,None)
-	logger.info("response => " + res)
-	res should include regex ("\"Status Code\" : 0")
-
-	And("RemoveContainer API for the container that was just added")
-	res = MetadataAPIImpl.RemoveContainer(ns, objName,1000000, userId)
-	logger.info("response => " + res)
-	res should include regex ("\"Status Code\" : 0")
-
-	And("GetContainerDef API to fetch the container that was just removed, should fail, check for Status Code of -1")
-	res = MetadataAPIImpl.GetContainerDef(ns, objName, "JSON", version, userId,None)
-	logger.info("response => " + res)
-	res should include regex ("\"Status Code\" : -1")
-
-	And("AddContainer second time from " + file.getPath + ",should not result in error")
-	contStr = Source.fromFile(file).mkString
-	res = MetadataAPIImpl.AddContainer(contStr, "JSON", None,tenantId,None)
-	logger.info("response => " + res)
-	res should include regex ("\"Status Code\" : 0")
-
-	And("GetContainerDef API to fetch the container that was just added")
-	res = MetadataAPIImpl.GetContainerDef(ns, objName, "JSON", version, None,None)
-	logger.info("response => " + res)
-	res should include regex ("\"Status Code\" : 0")
-
-	And("Get the container object from the cache")
-	o = MdMgr.GetMdMgr.Container(ns, objName, version.toLong, true)
-	assert(o != None)
-      })
+	And("getAuditRec ")
+	res = MetadataAPIImpl.getAuditRec(new Date((new Date).getTime() - 1500 * 60000), null, null, null, null)
+	assert(res != null)
+	logger.info(res)
+	res should include regex ("\"Action\" : \"GetContainerDef\"")
+	res should include regex ("\"UserOrRole\" : \"lonestarr\"")
+	res should include regex ("\"Status\" : \"true\"")
+	res should include regex ("\"ObjectAccessed\" : \"system.coughcodes.000000100000000000\"")
+	res should include regex ("\"ActionResult\" : \"system.coughcodes.000000100000000000\"")
+      }
     }
   }
 
   override def afterAll = {
+    logger.info("Truncating dbstore")
     var file = new java.io.File("logs")
     if (file.exists()) {
       TestUtils.deleteFile(file)
     }
 
-    logger.info("Drop dbstore")
+    //file = new java.io.File("lib_managed")
+    //if(file.exists()){
+    //TestUtils.deleteFile(file)
+    //}
+
     val db = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
     assert(null != db)
-    DropDbStore
-    if( MetadataAPIImpl.GetAuditObj != null ){
-      MetadataAPIImpl.GetAuditObj.dropStore
-      MetadataAPIImpl.SetAuditObj(null)
-      val pFile = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("AUDIT_PARMS")
-      if( pFile != null ){
-	TestUtils.deleteFile(pFile)
+    db match {
+      case "hashmap" | "treemap" => {
+	DropDbStore
+      }
+      case _ => {
+	logger.info("cleanup...")
+
       }
     }
     MetadataAPIImpl.shutdown
