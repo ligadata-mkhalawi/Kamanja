@@ -744,6 +744,11 @@ object KamanjaLeader {
               }
             }
 
+            if (KamanjaManager.instance != null) {
+              KamanjaManager.instance.ClearExecContext()
+              KamanjaManager.instance.RecreateExecCtxtsCommitPartitionOffsetPool()
+            }
+
             // Write all adapters end points in case if requested
             if (saveEndOffsets) {
               saveEndOffsets = false

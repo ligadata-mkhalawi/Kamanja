@@ -59,36 +59,21 @@ class UpdateModelContainersSpec extends FunSpec with LocalTestFixtures with Befo
   private val loggerName = this.getClass.getName
   private val logger = LogManager.getLogger(loggerName)
 
+  private var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id","avroschemainfo","element_info","elementinfo","ismetadata","metadatacounters")
+
   private def TruncateDbStore = {
     val db = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
     assert(null != db)
-    db match {
-      case "sqlserver" | "mysql" | "hbase" | "cassandra" | "hashmap" | "treemap" => {
-	var ds = MetadataAPIImpl.GetMainDS
-	var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id")
-	ds.TruncateContainer(containerList)
-      }
-      case _ => {
-	logger.info("TruncateDbStore is not supported for database " + db)
-      }
-    }
+    var ds = MetadataAPIImpl.GetMainDS
+    ds.TruncateContainer(containerList)
   }
 
   private def DropDbStore = {
     val db = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
     assert(null != db)
-    db match {
-      case "sqlserver" | "mysql" | "hbase" | "cassandra" | "hashmap" | "treemap" => {
-	var ds = MetadataAPIImpl.GetMainDS
-	var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id")
-	ds.DropContainer(containerList)
-      }
-      case _ => {
-	logger.info("DropDbStore is not supported for database " + db)
-      }
-    }
+    var ds = MetadataAPIImpl.GetMainDS
+    ds.DropContainer(containerList)
   }
-
 
   override def beforeAll = {
     try {
@@ -140,7 +125,9 @@ class UpdateModelContainersSpec extends FunSpec with LocalTestFixtures with Befo
       jp = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS")
       logger.info("jarPaths => " + jp)
 
-      logger.info("Initialize security adapter")
+      logger.info("Initialize security adapter") 
+      val tempAuditParamsFile = getClass.getResource("/").getPath + this.getClass.getSimpleName
+      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("AUDIT_PARMS", TestUtils.createAuditParamsFile(tempAuditParamsFile))
       MetadataAPIImpl.InitSecImpl
 
       //MetadataAPIImpl.TruncateAuditStore
@@ -633,10 +620,22 @@ class UpdateModelContainersSpec extends FunSpec with LocalTestFixtures with Befo
   }
 
   override def afterAll = {
-    logger.info("Truncating dbstore")
     var file = new java.io.File("logs")
     if (file.exists()) {
       TestUtils.deleteFile(file)
+    }
+
+    logger.info("Drop dbstore")
+    val db = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
+    assert(null != db)
+    DropDbStore
+    if( MetadataAPIImpl.GetAuditObj != null ){
+      MetadataAPIImpl.GetAuditObj.dropStore
+      MetadataAPIImpl.SetAuditObj(null)
+      val pFile = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("AUDIT_PARMS")
+      if( pFile != null ){
+	TestUtils.deleteFile(pFile)
+      }
     }
     MetadataAPIImpl.shutdown
   }

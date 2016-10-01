@@ -177,7 +177,7 @@ object ErrorCodeConstants {
    val Add_Node_Successful = "Node added/updated Successfully";
    val Remove_Node_Successful = "Deleted node successfully";
    val Remove_Node_Failed = "Failed to delete node";
-   val Get_All_Nodes_Successful = "Successfuly fetched all nodes";
+   val Get_All_Nodes_Successful = "Successfully fetched all nodes";
    val Get_All_Nodes_Failed = "Failed to fetch all nodes";
    val Get_All_Nodes_Failed_Not_Available = "Failed to fetch all nodes. No node available.";
    val Get_Leader_Host_Failed_Not_Available = "Failed to fetch leader host. No node available.";

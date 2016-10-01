@@ -1,3 +1,5 @@
+package com.ligadata.automation.unittests.api
+
 import com.ligadata.MetadataAPI.MonitorAPIImpl
 import org.scalatest._
 

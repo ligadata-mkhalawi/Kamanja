@@ -53,6 +53,8 @@ object SmartFileAdapterConstants {
   val DESERIALIZERNAME = "deserializerName"
   val DESERIALIZEROPTIONSJSON = "deserializerOptionsJson"
 
+  val MAX_MESSAGE_SIZE = "maxMessageSize"
+
   // Security constants
   val SEC_PROTOCOL = "security.protocol"
   val SSL_KEY_PASSWORD = "ssl.key.password"
