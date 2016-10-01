@@ -129,9 +129,11 @@ class TestAuditAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
       logger.info("jarPaths => " + jp)
 
       logger.info("Initialize security adapter")
+
       MetadataAPIImpl.InitSecImpl
 
       MetadataAPIImpl.TruncateAuditStore
+
       MetadataAPIImpl.isInitilized = true
       logger.info(MetadataAPIImpl.GetMetadataAPIConfig)
     }
@@ -179,7 +181,7 @@ class TestAuditAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
       assert(null != sh)
 
       And("The property JAVA_HOME must have been defined")
-      val jh = cfg.getProperty("SCALA_HOME")
+      val jh = cfg.getProperty("JAVA_HOME")
       assert(null != jh)
 
       And("The property CLASSPATH must have been defined")
@@ -284,6 +286,7 @@ class TestAuditAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
       }
       case _ => {
 	logger.info("cleanup...")
+
       }
     }
     MetadataAPIImpl.shutdown

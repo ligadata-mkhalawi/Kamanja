@@ -69,34 +69,20 @@ class AddAutoMPGPmmlModelSpec extends FunSpec with LocalTestFixtures with Before
     )
   )
 
+  private var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id","avroschemainfo","element_info","elementinfo","ismetadata","metadatacounters")
+
   private def TruncateDbStore = {
     val db = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
     assert(null != db)
-    db match {
-      case "sqlserver" | "mysql" | "hbase" | "cassandra" | "hashmap" | "treemap" => {
-        var ds = MetadataAPIImpl.GetMainDS
-        var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id")
-        ds.TruncateContainer(containerList)
-      }
-      case _ => {
-        logger.info("TruncateDbStore is not supported for database " + db)
-      }
-    }
+    var ds = MetadataAPIImpl.GetMainDS
+    ds.TruncateContainer(containerList)
   }
 
   private def DropDbStore = {
     val db = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
     assert(null != db)
-    db match {
-      case "sqlserver" | "mysql" | "hbase" | "cassandra" | "hashmap" | "treemap" => {
-        var ds = MetadataAPIImpl.GetMainDS
-        var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id")
-        ds.DropContainer(containerList)
-      }
-      case _ => {
-        logger.info("DropDbStore is not supported for database " + db)
-      }
-    }
+    var ds = MetadataAPIImpl.GetMainDS
+    ds.DropContainer(containerList)
   }
 
   override def beforeAll = {
@@ -153,9 +139,12 @@ class AddAutoMPGPmmlModelSpec extends FunSpec with LocalTestFixtures with Before
       logger.info("jarPaths => " + jp)
 
       logger.info("Initialize security adapter")
+      val tempAuditParamsFile = getClass.getResource("/").getPath + this.getClass.getSimpleName
+      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("AUDIT_PARMS", TestUtils.createAuditParamsFile(tempAuditParamsFile))
+      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("AUDIT_PARMS", TestUtils.createAuditParamsFile(this.getClass.getSimpleName))
       MetadataAPIImpl.InitSecImpl
 
-      MetadataAPIImpl.TruncateAuditStore
+      //MetadataAPIImpl.TruncateAuditStore
       MetadataAPIImpl.isInitilized = true
       logger.info(MetadataAPIImpl.GetMetadataAPIConfig)
     }
@@ -533,25 +522,21 @@ class AddAutoMPGPmmlModelSpec extends FunSpec with LocalTestFixtures with Before
   }
 
   override def afterAll = {
-    logger.info("Truncating dbstore")
     var file = new java.io.File("logs")
     if (file.exists()) {
       TestUtils.deleteFile(file)
     }
 
-    //file = new java.io.File("lib_managed")
-    //if(file.exists()){
-    //  TestUtils.deleteFile(file)
-    //}
-
+    logger.info("Drop dbstore")
     val db = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
     assert(null != db)
-    db match {
-      case "hashmap" | "treemap" => {
-        DropDbStore
-      }
-      case _ => {
-        logger.info("cleanup...")
+    DropDbStore
+    if( MetadataAPIImpl.GetAuditObj != null ){
+      MetadataAPIImpl.GetAuditObj.dropStore
+      MetadataAPIImpl.SetAuditObj(null)
+      val pFile = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("AUDIT_PARMS")
+      if( pFile != null ){
+	TestUtils.deleteFile(pFile)
       }
     }
     MetadataAPIImpl.shutdown

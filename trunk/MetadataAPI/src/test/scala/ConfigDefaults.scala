@@ -133,4 +133,6 @@ object ConfigDefaults {
     s"KamanjaInternalDeps_$scalaVersion-$kamanjaVersion.jar",
     s"ExtDependencyLibs2_$scalaVersion-$kamanjaVersion.jar"
   ).mkString(s""""$jarResourceDir/""", s":$jarResourceDir/", "\"")
+
+  logger.info("metadataClasspath => " + metadataClasspath)
 }
