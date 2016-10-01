@@ -4,7 +4,8 @@
     <Property name="log-path">{InstallDirectory}/logs</Property>
   </Properties>
   <Appenders>
-    <RollingFile name="HourlyRoll" fileName="${log-path}/KamanjaLog.log" filePattern="${log-path}/KamanjaLog-%d{yyyy-MM-dd-HH}-%i.log.gz">
+    <RollingFile name="HourlyRoll" fileName="${log-path}/KamanjaLog.log" filePattern="${log-path}/KamanjaLog-%d{
+yyyy-MM-dd-HH}-%i.log.gz">
       <!-- PatternLayout pattern="%d - %c [%t] (%F:%L) - %p - %m %n"  -->
       <!-- PatternLayout pattern="%d - %c [%t] (%M) - %p - %m %n"  -->
       <PatternLayout pattern="%d - %c [%t] - %p - %m %n" />
@@ -12,16 +13,32 @@
         <SizeBasedTriggeringPolicy size="200 MB" />
         <TimeBasedTriggeringPolicy />
         <OnStartupTriggeringPolicy />
-      </Policies>      
+      </Policies>
     </RollingFile>
-    <Console name="CONSOLE" target="SYSTEM_OUT">
+    <RollingFile name="HourlyRollPython" fileName="${log-path}/KamanjaPythonLog.log" filePattern="${log-path}/Ka
+manjaPythonLog-%d{yyyy-MM-dd-HH}-%i.log.gz">
+      <!-- PatternLayout pattern="%d - %c [%t] (%F:%L) - %p - %m %n"  -->
+      <!-- PatternLayout pattern="%d - %c [%t] (%M) - %p - %m %n"  -->
+      <PatternLayout pattern="%d - %c [%t] - %p - %m %n" />
+      <Policies>
+        <SizeBasedTriggeringPolicy size="200 MB" />
+        <TimeBasedTriggeringPolicy />
+        <OnStartupTriggeringPolicy />
+      </Policies>
+    </RollingFile>
+    <Console name="CONSOLE" target="SYSTEM_OUT" follow="true">
       <PatternLayout pattern="%5p [%t] - %m%n" />
     </Console>
   </Appenders>
   <Loggers>
-    <Root level="WARN">
-      <AppenderRef ref="CONSOLE" />
-      <AppenderRef ref="HourlyRoll" />
+      <Logger name="PyProcess" level="WARN">
+          <AppenderRef ref="CONSOLE"/>>
+          <AppenderRef ref="HourlyRollPython"/>
+      </Logger>
+      <Root level="WARN">
+          <AppenderRef ref="CONSOLE" />
+          <AppenderRef ref="HourlyRoll" />
     </Root>
   </Loggers>
 </Configuration>
+

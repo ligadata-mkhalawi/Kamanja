@@ -44,13 +44,13 @@ $KAMANJA_HOME/bin/kamanja $apiConfigProperties add message $PY_METADATA/message/
 
 **add models**
 
-$KAMANJA_HOME/bin/kamanja add model python $PY_METADATA/model/add.py MODELNAME AddTuple MESSAGENAME org.kamanja.arithmetic.arithmeticMsg OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg MODELOPTIONS '{"a": "Int", "b": "Int"}' TENANTID tenant1
+$KAMANJA_HOME/bin/kamanja debug add model python $PY_METADATA/model/add.py MODELNAME AddTuple MESSAGENAME org.kamanja.arithmetic.arithmeticMsg OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}, "OutputTypeInfo": {"a": "Int", "b": "Int", "result": "Int"} }' TENANTID tenant1
 
-$KAMANJA_HOME/bin/kamanja add model python $PY_METADATA/model/add.py MODELNAME AddTuple MESSAGENAME org.kamanja.arithmetic.arithmeticOutMsg OUTMESSAGE <output message> MODELOPTIONS '{"a": "Int", "b": "Int"}'
+$KAMANJA_HOME/bin/kamanja debug add model python $PY_METADATA/model/multiply.py MODELNAME MultiplyTuple MESSAGENAME org.kamanja.arithmetic.arithmeticOutMsg OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}, "OutputTypeInfo": {"a": "Int", "b": "Int", "result": "Int"} }' TENANTID tenant1
 
-$KAMANJA_HOME/bin/kamanja add model python $PY_METADATA/model/add.py MODELNAME AddTuple MESSAGENAME org.kamanja.arithmetic.arithmeticOutMsg OUTMESSAGE <output message> MODELOPTIONS '{"a": "Int", "b": "Int"}'
+$KAMANJA_HOME/bin/kamanja add model python $PY_METADATA/model/subtract.py MODELNAME SubtractTuple MESSAGENAME org.kamanja.arithmetic.arithmeticOutMsg OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}, "OutputTypeInfo": {"a": "Int", "b": "Int", "result": "Int"} }' TENANTID tenant1
 
-$KAMANJA_HOME/bin/kamanja add model python $PY_METADATA/model/add.py MODELNAME AddTuple MESSAGENAME org.kamanja.arithmetic.arithmeticOutMsg OUTMESSAGE <output message> MODELOPTIONS '{"a": "Int", "b": "Int"}'
+$KAMANJA_HOME/bin/kamanja add model python $PY_METADATA/model/divide.py MODELNAME DivideTuple MESSAGENAME org.kamanja.arithmetic.arithmeticOutMsg OUTMESSAGE org.kamanja.arithmetic.arithmeticOutMsg MODELOPTIONS '{"InputTypeInfo": {"a": "Int", "b": "Int"}, "OutputTypeInfo": {"a": "Int", "b": "Int", "result": "Int"} }' TENANTID tenant1
 
 
 **Add bindings for system messages**
@@ -72,9 +72,9 @@ $KAMANJA_HOME/bin/kamanja $apiConfigProperties remove adaptermessagebinding key 
 
 **Add the output adapter (JSON) binding**
 
-$KAMANJA_HOME/bin/kamanja $apiConfigProperties add adaptermessagebinding FROMSTRING '{"AdapterName": "TestOut_1", "MessageNames": ["org.kamanja.arithmetic.arithmeticOutMsg"], "Serializer": " com.ligadata.kamanja.serializer.JsonSerDeser"}'
+$KAMANJA_HOME/bin/kamanja $apiConfigProperties add adaptermessagebinding FROMSTRING '{"AdapterName": "TestOut_1", "MessageNames": ["org.kamanja.arithmetic.arithmeticOutMsg"], "Serializer": "com.ligadata.kamanja.serializer.JsonSerDeser"}'
 
-$KAMANJA_HOME/bin/kamanja $apiConfigProperties remove adaptermessagebinding key 'TestIn_1,org.kamanja.arithmetic.arithmeticOutMsg,com.ligadata.kamanja.serializer.csvserdeser'
+$KAMANJA_HOME/bin/kamanja $apiConfigProperties remove adaptermessagebinding key 'TestOut_1,org.kamanja.arithmetic.arithmeticOutMsg,com.ligadata.kamanja.serializer.jsonserdeser'
 
 **Push data**
 

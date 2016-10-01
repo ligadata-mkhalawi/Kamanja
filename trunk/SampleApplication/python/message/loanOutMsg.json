@@ -1,0 +1,25 @@
+{
+  "Message": {
+    "NameSpace": "org.kamanja.arithmetic",
+    "Name": "loanOutMsg",
+    "Version": "00.01.01",
+    "Description": "loan default message",
+    "Fixed": "true",
+    "Persist": "false",
+    "Elements": [
+      {
+        "Field": {
+          "Name": "rec_id",
+          "Type": "system.Int"
+        }
+      },
+      {
+        "Field": {
+          "Name": "python_risk_score",
+          "Type": "system.Float"
+        }
+      }
+    ]
+  }
+}
+

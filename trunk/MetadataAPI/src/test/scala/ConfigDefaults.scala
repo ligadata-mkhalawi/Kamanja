@@ -108,6 +108,7 @@ object ConfigDefaults {
   logger.info("jarResourceDir " + jarResourceDir)
 
   def envContextClassName: String = "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$"
+
   def envContextDependecyJarList: List[String] = List(s"ExtDependencyLibs_$scalaVersion-$kamanjaVersion.jar", s"KamanjaInternalDeps_$scalaVersion-$kamanjaVersion.jar", s"ExtDependencyLibs2_$scalaVersion-$kamanjaVersion.jar")
   def envContextJarName = s"simpleenvcontextimpl_$scalaVersion-1.0.jar"
 

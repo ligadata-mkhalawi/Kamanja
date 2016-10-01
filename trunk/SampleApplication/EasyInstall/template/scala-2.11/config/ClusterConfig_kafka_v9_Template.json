@@ -43,7 +43,16 @@
           "ExtDependencyLibs2_2.11-1.6.0.jar"
         ]
       },
-      "Cache": {
+      "PYTHON_CONFIG" : {
+	    "PYTHON_PATH": "{InstallDirectory}/python",
+            "SERVER_BASE_PORT": 8100,
+	    "SERVER_PORT_LIMIT": 40,
+	    "SERVER_HOST": "localhost",
+	    "PYTHON_LOG_CONFIG_PATH": "{InstallDirectory}/python/bin/pythonlog4j.cfg",
+	    "PYTHON_LOG_PATH": "{InstallDirectory}/python/logs/pythonserver.log",
+	    "PYTHON_BIN_DIR" : "/usr/bin/"
+	},
+	"Cache": {
         "CacheStartPort": 7800,
         "CacheSizePerNodeInMB": 256,
         "ReplicateFactor": 1,
@@ -96,6 +105,23 @@
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
             "TopicName": "helloworldinput"
+          }
+        },
+        {
+          "Name": "LoanInput",
+          "TypeString": "Input",
+          "TenantId": "tenant1",
+          "ClassName": "com.ligadata.kafkaInputOutputAdapters_v9.KamanjaKafkaConsumer$",
+          "JarName": "kamanjakafkaadapters_0_9_2.11-1.6.0.jar",
+          "DependencyJars": [
+            "kafka-clients-0.9.0.1.jar",
+            "KamanjaInternalDeps_2.11-1.6.0.jar",
+            "ExtDependencyLibs_2.11-1.6.0.jar",
+            "ExtDependencyLibs2_2.11-1.6.0.jar"
+          ],
+          "AdapterSpecificCfg": {
+            "HostList": "localhost:9092",
+            "TopicName": "loaninput"
           }
         },
         {

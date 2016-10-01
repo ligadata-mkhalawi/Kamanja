@@ -19,6 +19,6 @@ class serverStatus(CommandBase):
 		modelNameView = modelDict.viewkeys()
 		modelNames = ["{}".format(v) for v in modelNameView]
 		svrstatus = 'Active models are: {}'.format(modelNames)
-		result = json.dumps({'Cmd' : 'serverStatus', 'Server' : host, 'Port' : str(port), 'Result' : svrstatus })
+		result = json.dumps({'Cmd' : 'serverStatus', 'Server' : host, 'Port' : str(port), 'Code' : 0, 'Result' : svrstatus })
 		self.logger.info(result)
 		return result
