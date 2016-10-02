@@ -62,10 +62,8 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
     else {
       //just run it in a separate thread
       if (adapterConfig.monitoringConfig.entireFileAsOneMessage) {
-        println(">>>>>>>>>>>>>>>>>>>>>>>>>> Before Initializing thread" + fileHandler.getFullPath)
         val extractorThread = new Runnable() {
           override def run(): Unit = {
-            println(">>>>>>>>>>>>>>>>>>>>>>>>>> Inside Thread thread" + fileHandler.getFullPath)
             readWholeFile()
           }
         }
@@ -345,7 +343,6 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
 
 
   def readWholeFile(): Unit = {
-    println(">>>>>>>>>>>>>>>>>>>>>>>>>> inside readWholeFile")
     val allData = ArrayBuffer[Byte]()
     // create tmpFlHandler from filename
     //    val fileName = fileHandler.getFullPath
@@ -372,10 +369,12 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
     }
 
     val filePath = fileHandler.getFullPath
-    if (fileHandler != null) fileHandler.close
-    println(">>>>>>>>>>>>>>>>>>>>>>>>>> Before returning from readwholeFile")
+    if (fileHandler != null) {
+      fileHandler.close
+    }
     //encode base64
-    val base64String = Base64.encodeBase64(allData.toArray)
+    val base64String: String = Base64.encodeBase64String(allData.toArray)
+
     // prepare Json here.
     val jsonString = "{\"filename\":\"%s\",\"messageBody\": \"%s\"}".format(filePath, base64String)
 
@@ -390,60 +389,48 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
     var indx = 0
     var prevIndx = indx
 
-    if (adapterConfig.monitoringConfig.entireFileAsOneMessage) {
-      val smartFileMessage = new SmartFileMessage(chunk, 0, fileHandler, 0)
-      messageFoundCallback(smartFileMessage, consumerContext)
+    breakable {
+      for (i <- 0 to len - 1) {
 
-    } else {
-      breakable {
-        for (i <- 0 to len - 1) {
-
-          if (Thread.currentThread().isInterrupted) {
-            logger.info("SMART FILE CONSUMER (FileMessageExtractor) - interrupted while extracting messages from file {}", fileHandler.getFullPath)
-            processingInterrupted = true
-            break
-          }
-          if (parentExecutor == null) {
-            logger.info("SMART FILE CONSUMER (FileMessageExtractor) - (parentExecutor = null) while extracting messages from file {}", fileHandler.getFullPath)
-            processingInterrupted = true
-            break
-          }
-          if (parentExecutor.isShutdown) {
-            logger.info("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is shutdown while extracting messages from file {}", fileHandler.getFullPath)
-            processingInterrupted = true
-            break
-          }
-          if (parentExecutor.isTerminated) {
-            logger.info("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is terminated while extracting messages from file {}", fileHandler.getFullPath)
-            processingInterrupted = true
-            break
-          }
-
-          if (chunk(i).asInstanceOf[Char] == message_separator) {
-            val newMsg: Array[Byte] = chunk.slice(prevIndx, indx)
-            if (newMsg.length > 0) {
-              currentMsgNum += 1
-              //if(globalOffset >= startOffset) {//send messages that are only after startOffset
-              val msgOffset = globalOffset + newMsg.length + message_separator_len //byte offset of next message in the file
-              val smartFileMessage = new SmartFileMessage(newMsg, msgOffset, fileHandler, msgOffset)
-              messageFoundCallback(smartFileMessage, consumerContext)
-
-              //}
-              prevIndx = indx + 1
-              globalOffset = globalOffset + newMsg.length + message_separator_len
-            }
-          }
-          indx = indx + 1
+        if (Thread.currentThread().isInterrupted) {
+          logger.info("SMART FILE CONSUMER (FileMessageExtractor) - interrupted while extracting messages from file {}", fileHandler.getFullPath)
+          processingInterrupted = true
+          break
         }
+        if (parentExecutor == null) {
+          logger.info("SMART FILE CONSUMER (FileMessageExtractor) - (parentExecutor = null) while extracting messages from file {}", fileHandler.getFullPath)
+          processingInterrupted = true
+          break
+        }
+        if (parentExecutor.isShutdown) {
+          logger.info("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is shutdown while extracting messages from file {}", fileHandler.getFullPath)
+          processingInterrupted = true
+          break
+        }
+        if (parentExecutor.isTerminated) {
+          logger.info("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is terminated while extracting messages from file {}", fileHandler.getFullPath)
+          processingInterrupted = true
+          break
+        }
+
+        if (chunk(i).asInstanceOf[Char] == message_separator) {
+          val newMsg: Array[Byte] = chunk.slice(prevIndx, indx)
+          if (newMsg.length > 0) {
+            currentMsgNum += 1
+            //if(globalOffset >= startOffset) {//send messages that are only after startOffset
+            val msgOffset = globalOffset + newMsg.length + message_separator_len //byte offset of next message in the file
+            val smartFileMessage = new SmartFileMessage(newMsg, msgOffset, fileHandler, msgOffset)
+            messageFoundCallback(smartFileMessage, consumerContext)
+
+            //}
+            prevIndx = indx + 1
+            globalOffset = globalOffset + newMsg.length + message_separator_len
+          }
+        }
+        indx = indx + 1
       }
     }
 
-
-
-    /*if(prevIndx == chunk.length)
-      Array()
-    else
-      chunk.slice(prevIndx, chunk.length)*/
     prevIndx
   }
 }
