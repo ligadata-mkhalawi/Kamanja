@@ -16,7 +16,7 @@
 
 package com.ligadata.automation.unittests.api.setup
 
-import java.io.{File, FileNotFoundException, IOException}
+import java.io.{File, FileNotFoundException, IOException,FileWriter,BufferedWriter}
 import java.net.ServerSocket
 
 import scala.util.Random
@@ -63,4 +63,31 @@ object TestUtils {
       path.delete()
     }
   }
+
+  def deleteFile(path:String):Unit = {
+    val file = new File(path);
+    deleteFile(file)
+  }
+
+  private def dumpStrTextToFile(strText: String, filePath: String): Unit = {
+    val file = new File(filePath);
+    val bufferedWriter = new BufferedWriter(new FileWriter(file,true))
+    bufferedWriter.write(strText)
+    bufferedWriter.close
+  }
+
+  def createAuditParamsFile(paramFile:String, tableName: String = null): String = {
+    val file = new File(paramFile);
+    deleteFile(file)
+    var tbl = tableName
+    if( tbl == null ){
+      //extract tableName as last token of file path
+      val fileNamePathTokens = paramFile.split("/")
+      tbl = fileNamePathTokens(fileNamePathTokens.length-1)
+    }
+    dumpStrTextToFile("schema=" + tbl + "\n",paramFile)
+    dumpStrTextToFile("table=" + tbl + "\n",paramFile)
+    paramFile
+  }
+
 }
