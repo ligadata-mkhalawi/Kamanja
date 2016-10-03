@@ -126,7 +126,8 @@ object KamanjaConfiguration {
   var totalProcessingThreadCount: Int = 1
   var totalReadThreadCount: Int = 1
 
-  var locallyExecFlag = true
+  val defaultLocallyExecFlag = true
+  var locallyExecFlag = defaultLocallyExecFlag
 
   var baseLoader = new KamanjaLoaderInfo
 
@@ -151,7 +152,7 @@ object KamanjaConfiguration {
     totalPartitionCount = 1
     totalProcessingThreadCount = 1
     totalReadThreadCount = 1
-    locallyExecFlag = false
+    locallyExecFlag = defaultLocallyExecFlag
   }
 }
 

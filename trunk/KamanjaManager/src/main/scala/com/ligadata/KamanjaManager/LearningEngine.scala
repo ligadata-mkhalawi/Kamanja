@@ -747,7 +747,7 @@ class LearningEngine {
       if (KamanjaConfiguration.shutdown == false && exeQueue.size > execPos) {
         if (inlineExecution != null && KamanjaLeader.isLocalExecution) {
           if (!isLogged) {
-            LOG.warn("=====> Executing Messages Locally")
+            LOG.info("Executing Messages Locally")
             isLogged = true
           }
           while (execPos < exeQueue.size) {
@@ -768,7 +768,7 @@ class LearningEngine {
           }
         } else {
           if (!isLogged) {
-            LOG.warn("=====> Executing Messages remotely")
+            LOG.info("Executing Messages remotely")
             isLogged = true
           }
           if (LOG.isDebugEnabled())

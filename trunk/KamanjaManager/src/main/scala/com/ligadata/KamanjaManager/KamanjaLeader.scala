@@ -1953,7 +1953,11 @@ object KamanjaLeader {
     globalThreadIdToLogicalPartitions.getOrElse(threadId, (0, 0))
   }
 
-  def isLocalExecution: Boolean = (isLocallyExecuting || remoteExecPool == null || remoteExecPool.isShutdown || globalThreadIdToLogicalPartitions.size == 0)
+  def isLocalExecution: Boolean = {
+//    val w = "=====> isLocallyExecuting:" + isLocallyExecuting + ", remoteExecPool:" + remoteExecPool + ", globalThreadIdToLogicalPartitions.size:" + globalThreadIdToLogicalPartitions.size
+//    LOG.warn(w)
+    (isLocallyExecuting || remoteExecPool == null || remoteExecPool.isShutdown || globalThreadIdToLogicalPartitions.size == 0)
+  }
 
   def AddToRemoteProcessingBucket(partitionIdx: Int, cacheQueueEntry: KamanjaCacheQueueEntry): Unit = {
     // Add to Queue to process in Remote
