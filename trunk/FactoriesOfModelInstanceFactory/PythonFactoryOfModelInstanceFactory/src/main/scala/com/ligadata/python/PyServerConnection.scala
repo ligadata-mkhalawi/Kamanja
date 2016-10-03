@@ -20,12 +20,14 @@ import java.io._
 import java.net.{InetAddress, Socket}
 import java.nio.ByteBuffer
 import java.util.regex.{Matcher, Pattern}
+import java.net.{SocketException, SocketTimeoutException, ConnectException}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.sys.process._
 import scala.util.control.Breaks._
 import scala.collection.immutable.Map
 
+import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import org.json4s.native.Json
@@ -74,9 +76,12 @@ trait LogTrait {
 class PyServerConnection(val host : String
                          , val port : Int
                          , val user : String
-                         , val log4jConfigPath : String
-                         , val fileLogPath : String
-                         , val pyPath : String) extends LogTrait {
+  , val log4jConfigPath : String,
+  val fileLogPath : String,
+  val pyPath : String,
+  val pyBinPath : String,
+  val pKey : String
+  ) extends LogTrait {
 
     private var _sock : Socket = null
     private var _in : DataInputStream = null
@@ -92,32 +97,80 @@ class PyServerConnection(val host : String
     def initialize : (String,String) = {
 
         /** start the server */
-        val startServerResult : String = startServer
+      val startServerResult : String = startServer
+      if (logger.isDebugEnabled()) {
         logger.debug(s"PyServerConnection.initialize ... start server result = $startServerResult")
+     }
         implicit val formats = org.json4s.DefaultFormats
-        val startResultsMap : Map[String, Any] = parse(startServerResult).extract[Map[String, Any]]
-        val startRc : Int = startResultsMap.getOrElse("code", -1).asInstanceOf[Int]
-
+        val startResultsMap : Map[String,Any] = parse(startServerResult).values.asInstanceOf[Map[String,Any]]
+        val pid : Int = startResultsMap.getOrElse("pid", -1).asInstanceOf[scala.math.BigInt].toInt
+      var attempts : Int  = 0
+      if (logger.isDebugEnabled()) {
+         logger.debug (" THe value of host is " + host + " in the initialize of PyServerConnection ")
+	 }
         /** create a connection to the server on the port that it is listening. */
         val inetbyname = InetAddress.getByName(host)
-        logger.debug("PyServerConnection.initialize ... connecting to host known as '$inetbyname'")
-        _sock = new Socket(inetbyname, port)
+      if (logger.isDebugEnabled()) {
+         logger.debug("PyServerConnection.initialize ... connecting to host known as '$inetbyname' " + inetbyname + " " + port.toString)
+       }
+      var mSecsToSleep : Long = 500
+      Thread.sleep(mSecsToSleep)
+      _sock = new Socket(inetbyname, port)
+      while (_sock == null && attempts < 10) {
+        try {
+          _sock = new Socket(inetbyname, port)
+        }
+        catch {
+          case ne : NullPointerException => {
+          }
+          case ste: SocketTimeoutException => {
+                                    /** Fixme: The behavior here is to retry, but wait a twice as long... this is no doubt incorrect... consider this a
+                                      *  place holder for actual behavior for actual problems....
+                                      */
+            logger.error(s"Exception encountered processing ... unable to produce result...exception = ${ste.toString}")
+          }
+          case co : ConnectException => {
+
+            logger.error(s"Connection Exception encountered processing ... unable to connectt...exception = ${co.toString}")
+          }
+          case e: Exception => {
+            /** if it is not one of the supported retry exceptions... we blow out of here */
+            logger.error(s"Exception encountered processing ... unable to produce result...exception = ${e.toString}")
+            break
+          }
+        }
+        if (_sock == null) {
+          mSecsToSleep *= 2
+          Thread.sleep(mSecsToSleep)
+          attempts = attempts + 1
+	  if (logger.isDebugEnabled()) {
+            logger.debug ("Continuting to connect for attempt " + attempts.toString)
+          }
+        }
+        else {
+          break
+        }
+
+      }
         _in = new DataInputStream(_sock.getInputStream)
         _out = new DataOutputStream(_sock.getOutputStream)
 
-        val (rc, result) : (Int,String) = if (startRc == 0 && _sock != null && _in != null && _out != null) {
-            (0, "connection created")
+        val (rc, result) : (Int,String) = if (pid >  0 && _sock != null && _in != null && _out != null) {
+          (0, "connection created")
+
         } else {
             (-1 ,"connection creation failed")
         }
-
-        val connResult : String = s"{ ${'"'}code${'"'} : $rc,  ${'"'}result${'"'} : ${'"'}$result${'"'}}"
+      val connResult : String = s"{ ${'"'}code${'"'} : $rc,  ${'"'}result${'"'} : ${'"'}$result${'"'}}"
+      if (logger.isDebugEnabled()) {
         logger.debug(s"PyServerConnection.initialize ... conection result = $connResult")
+       }
         (startServerResult, connResult)
     }
 
     /**
       * Using the constructor arguments start a python server. Mark this instance as usable.
+      *
       * @return JSON result string that is a dictionary with the "pid" and "result" as keys. For example,
       *         '''
       *         {
@@ -130,42 +183,14 @@ class PyServerConnection(val host : String
     private def startServer : String = {
         val useSSH : Boolean = host != "localhost"
 
-        val pythonCmdStr = s"python $pyPath/pythonserver.py --host $host --port ${port.toString} --pythonPath $pyPath --log4jConfig $log4jConfigPath --fileLogPath $fileLogPath"
-        val cmdSeq : Seq[String] = if (useSSH) {
-            val userMachine : String = s"$user@$host"
-            val remoteCmd : String = s"python $pythonCmdStr"
-            Seq[String]("ssh", userMachine, remoteCmd)
-        } else {
-            logger.info(s"Start the python server... $pythonCmdStr")
-            Seq[String]("bash", "-c", pythonCmdStr)
-        }
+      val pyProcess : PyProcess = new PyProcess(host, port, pyPath, pyBinPath, pKey)
+//        val pythonCmdStr = s"python $pyPath/pythonserver.py --host $host --port ${port.toString} --pythonPath $pyPath --log4jConfig $log4jConfigPath --fileLogPath $fileLogPath"
+      pyProcess.initPyProcess()
 
+      val (rc, result) : (Int, String) = if (pyProcess.pid != null) (0, "Server started successfully") else (-1, "Server start failed")
+      val pidStr : String = if (pyProcess.pid != null) pyProcess.pid.toString else s"${'"'}----${'"'}"
 
-        /**
-          * Note that if we ask for the result, the call will block.  This is not a good idea for the start server.
-          * We really want it to be put in background.  We might add a process logging here to get the output from
-          * the pythonserver via ProcessLogger (see runCmdCollectOutput for example that waits for completion with
-          * the .! invocation.
-          */
-
-        val pySrvCmd = Process(cmdSeq)
-        pySrvCmd.run
-
-        /** the last of the pids scraped out is the pythonserver that was just started */
-        val processInfo = ("ps aux" #| "grep python" #| s"grep ${port.toString}").!!.trim
-        val re = """[A-Za-z0-9]+[\t ]+([0-9]+).*""".r
-        val allMatches = re.findAllMatchIn(processInfo)
-        val pids : ArrayBuffer[String] = ArrayBuffer[String]()
-        allMatches.foreach ( m =>
-            pids += m.group(1)
-        )
-        //logger.debug(pids.toString)
-        val pid : String = if (pids != null) pids.last else null
-        val (rc, result) : (Int, String) = if (pid != null) (0, "Server started successfully") else (-1, "Server start failed")
-        val pidStr : String = if (pid != null) pid else s"${'"'}----${'"'}"
-
-        /** prepare the result string */
-        val resultStr : String = s"{ ${'"'}code${'"'} : $rc,  ${'"'}result${'"'} : ${'"'}$result${'"'},  ${'"'}pid${'"'} : $pidStr }"
+      val resultStr : String = s"{ ${'"'}code${'"'} : $rc,  ${'"'}result${'"'} : ${'"'}$result${'"'},  ${'"'}pid${'"'} : $pidStr }"
 
         resultStr
     }
@@ -184,31 +209,55 @@ class PyServerConnection(val host : String
         val cmdLen: Int = cmdMsg.length
         out.write(cmdMsg, 0, cmdLen)
         out.flush()
-
+      logger.warn (" In Process Msg ----- port number ---------- " + port.toString)
         /** Contend with multiple messages results returned */
         val answeredBytes: ArrayBuffer[Byte] = ArrayBuffer[Byte]()
+	if (logger.isDebugEnabled()) {
+	   logger.debug (" In Process Msg going to read " + port.toString)
+	}
         var bytesReceived = in.read(buffer)
+	if (logger.isDebugEnabled()) {
+           logger.debug (" In Process Msg did i get here  " + port.toString)
+	}
         var result : String = ""
         breakable {
             while (bytesReceived > 0) {
                 answeredBytes ++= buffer.slice(0, bytesReceived)
                 /** print one result each loop... and then the remaining (if any) after bytesReceived == 0) */
+		if (logger.isDebugEnabled()) {
+		   logger.debug ("The size of bytes received is " +  bytesReceived) 
+		   logger.debug ("The content  of bytes received is " +  answeredBytes.toString)
+		}
                 val endMarkerIdx: Int = answeredBytes.indexOfSlice(CmdConstants.endMarkerArray)
+		if (logger.isDebugEnabled()) {
+		   logger.debug ("The endMarkerIdx value is  " +  endMarkerIdx.toString)
+		}
                 if (endMarkerIdx >= 0) {
-                    val endMarkerIncludedIdx: Int = endMarkerIdx + CmdConstants.endMarkerArray.length
+                  val endMarkerIncludedIdx: Int = endMarkerIdx + CmdConstants.endMarkerArray.length
+                  if (logger.isDebugEnabled()) {
+                    logger.debug (" The value of endMarkerIncludedIdx is  " + endMarkerIncludedIdx.toString)
+                  }
                     val responseBytes: Array[Byte] = answeredBytes.slice(0, endMarkerIncludedIdx).toArray
-                    result = _decoder.unpack(responseBytes)
-                    logger.info(s"$cmd reply = \n$result")
+                    result =  _decoder.unpack(responseBytes)
+		    if (logger.isDebugEnabled()) {
+                       logger.debug(s"$cmd reply = \n$result")
+		    }
                     answeredBytes.remove(0, endMarkerIncludedIdx)
-                    break
+		    break 
                 }
+		if (logger.isDebugEnabled()) {
+		logger.debug("bytes received = " + bytesReceived.toString) 
+		}
                 bytesReceived = in.read(buffer)
             }
         }
-
+	if (logger.isDebugEnabled()) {
+           logger.debug (" In the end of Process Msg ----- port number ---------- " + port.toString + ", bytes left = " + answeredBytes.nonEmpty.toString)
+	}
         if (answeredBytes.nonEmpty) {
             logger.error("*****************************************************************************************************************************")
-            logger.error("... in processMsg, there are resisdual bytes remaining suggesting multiple commands were dispatched with no intervening receipt of response bytes... some component is sending multiple commands or commands are being sent to this connection from multiple threads... a violation of the supposed contract. ")
+          logger.error("... in processMsg, there are resisdual bytes remaining suggesting multiple commands were dispatched with no intervening receipt of response bytes... some component is sending multiple commands or commands are being sent to this connection from multiple threads... a violation of the supposed contract. ")
+          logger.error (" this is the result at that time " + result)
             logger.error("*****************************************************************************************************************************")
         }
 
@@ -216,23 +265,23 @@ class PyServerConnection(val host : String
           * However, if multiple commands are sent at once, then the additional responses are handled here
           * for those subsequent commands.  SINCE WE ARE NOT GOING TO BURST MESSAGES AT THIS JUNCTURE, THIS
           * IS COMMENTED OUT.
-
-        val lenOfRemainingAnsweredBytes: Int = answeredBytes.length
-        while (lenOfRemainingAnsweredBytes > 0) {
-            val endMarkerIdx: Int = answeredBytes.indexOfSlice(CmdConstants.endMarkerArray)
-            if (endMarkerIdx >= 0) {
-                val endMarkerIncludedIdx: Int = endMarkerIdx + CmdConstants.endMarkerArray.length
-                val responseBytes: Array[Byte] = answeredBytes.slice(0, endMarkerIncludedIdx).toArray
-                val response: String = _decoder.unpack(responseBytes)
-                logger.info(response)
-                answeredBytes.remove(0, endMarkerIncludedIdx)
-            } else {
-                if (answeredBytes.nonEmpty) {
-                    logger.error("There were residual bytes remaining in the answer buffer suggesting that the connection went down")
-                    logger.error(s"Bytes were '${answeredBytes.toString}'")
-                }
-            }
-        }
+          **
+          *val lenOfRemainingAnsweredBytes: Int = answeredBytes.length
+          *while (lenOfRemainingAnsweredBytes > 0) {
+          *val endMarkerIdx: Int = answeredBytes.indexOfSlice(CmdConstants.endMarkerArray)
+          *if (endMarkerIdx >= 0) {
+          *val endMarkerIncludedIdx: Int = endMarkerIdx + CmdConstants.endMarkerArray.length
+          *val responseBytes: Array[Byte] = answeredBytes.slice(0, endMarkerIncludedIdx).toArray
+          *val response: String = _decoder.unpack(responseBytes)
+          *logger.info(response)
+          *answeredBytes.remove(0, endMarkerIncludedIdx)
+          *} else {
+          *if (answeredBytes.nonEmpty) {
+          *logger.error("There were residual bytes remaining in the answer buffer suggesting that the connection went down")
+          *logger.error(s"Bytes were '${answeredBytes.toString}'")
+          *}
+          *}
+          *}
           */
 
         result
@@ -240,6 +289,7 @@ class PyServerConnection(val host : String
 
     /**
       * Stop the server.  Mark this instance as unusable.
+      *
       * @return JSON result string that describes the result of the operation.  For example,
       *         '''
       *         {
@@ -251,19 +301,14 @@ class PyServerConnection(val host : String
       *         '''
       */
     def stopServer : String = {
-        val json = (
-            ("Cmd" -> "stopServer") ~
-            ("CmdVer" -> 1) // ~
-            //("CmdOptions" -> List[String]() ~
-            //("ModelOptions" -> List[String]())
-            )
-        val payloadStr : String = compact(render(json))
+        val payloadStr : String = s"{${'"'}Cmd${'"'}: ${'"'}stopServer${'"'}, ${'"'}CmdVer${'"'}: 1 }"
         val result : String = encodeAndProcess("stopServer", payloadStr)
         result
     }
 
     /**
       * Add the supplied model to the python server found at the other end of this PyServerConnection's socket.
+      *
       * @param moduleName the name of the module (i.e, the file name) to be installed on the server
       * @param modelName the name of the model in that module file to be sent executeModel commands
       * @param moduleSrc the python source for this module
@@ -296,36 +341,38 @@ class PyServerConnection(val host : String
 
         /** serialize the modelOptions */
         val modelOpts : String = Json(DefaultFormats).write(modelOptions)
-
         /** copy the file into a tmp file from string for either local copy to models or possibly remote copy to other server */
-        cpSrcFile(moduleName, moduleSrc)
-
-        val moduleFile : String = s"$moduleName.py"
-        val json = (
-            ("Cmd" -> "addModel") ~
-                ("CmdVer" -> 1) ~
-                ("CmdOptions" -> (
-                    ("ModelFile" -> moduleFile) ~
-                        ("ModelName" -> modelName)
-                    )) ~
-                ("ModelOptions" ->  "{OPTIONS_KEY}"
-                    )
-            )
-        val addMsg : String = compact(render(json))
-
-        /** once the json4s is done with its rendering, make the substitution of the supplied options */
+      if (logger.isDebugEnabled()) {
+         logger.debug("Before add model in PyServerConnection moduleName " + moduleName + " moduleSrc " + moduleSrc)
+      }
+      //  cpSrcFile(moduleName, moduleSrc)
+      if (logger.isDebugEnabled()) {
+         logger.debug("After  add model in PyServerConnection moduleName " + moduleName + " moduleSrc " + moduleSrc)
+      }
+      val addMsg : String = s"{${'"'}Cmd${'"'}: ${'"'}addModel${'"'}, ${'"'}CmdVer${'"'}: 1, ${'"'}CmdOptions${'"'}: {${'"'}Module${'"'}: ${'"'}$moduleName${'"'}, ${'"'}ModelName${'"'}: ${'"'}$modelName${'"'} }, ${'"'}ModelOptions${'"'}: ${'"'}{OPTIONS_KEY}${'"'} }"
+         if (logger.isDebugEnabled()) {
+            logger.debug("The add msg is " + addMsg)
+	}
         val subMap : Map[String,String] = Map[String,String]("{OPTIONS_KEY}" -> modelOpts)
         val sub = new MapSubstitution(addMsg, subMap)
         val payloadStr : String = sub.makeSubstitutions
 
+        if (logger.isDebugEnabled()) {
+	   logger.debug("payloadStr  is " + payloadStr)
+	}
         val result : String = encodeAndProcess("addModel", payloadStr)
+	if (logger.isDebugEnabled()) {
+	   logger.debug("result of encode and process is  " + result)
+	}
         result
     }
 
     private def cpSrcFile(moduleName : String, moduleSrc : String) : Unit = {
 
-        val srcTargetPath : String = s"$pyPath/tmp/$moduleName.py"
+      val srcTargetPath : String = s"$pyPath/tmp/$moduleName.py"
+      if (logger.isDebugEnabled() ) {
         logger.debug(s"create disk file for supplied moduleSrc ... srcTargetPath = $srcTargetPath")
+      }
         writeSrcFile(moduleSrc, srcTargetPath)
 
         /** copy the python model source file to $pyPath/models */
@@ -337,7 +384,9 @@ class PyServerConnection(val host : String
             val userMachine : String = s"$user@$host"
             Seq[String]("scp", userMachine, fromCpArgsStr, toCpArgsStr)
         } else {
+	  if (logger.isDebugEnabled()) {
             logger.debug(s"copy model $srcTargetPath locally to $pyPath${slash}models/")
+	  }
             Seq[String]("cp", fromCpArgsStr, toCpArgsStr)
         }
         val (result, stdoutStr, stderrStr) : (Int, String, String) = PyServerHelpers.runCmdCollectOutput(cmdSeq)
@@ -374,8 +423,8 @@ class PyServerConnection(val host : String
       *         }
       *         '''
       */
-    def removeModel(modelName : String) : String = {
-        val json = (
+    def removeModel(moduleName : String, modelName : String) : String = {
+        val json : org.json4s.JValue = (
             ("Cmd" -> "removeModel") ~
                 ("CmdVer" -> 1) ~
                 ("CmdOptions" -> (
@@ -384,7 +433,7 @@ class PyServerConnection(val host : String
                     ))
             //("ModelOptions" -> List[String]())
             )
-        val payloadStr : String = compact(render(json))
+        val payloadStr : String = s"{${'"'}Cmd${'"'}: ${'"'}removeModel${'"'}, ${'"'}CmdVer${'"'}: 1, ${'"'}CmdOptions${'"'}: {${'"'}Module${'"'}: ${'"'}$moduleName${'"'},${'"'}ModelName${'"'}: ${'"'}$modelName${'"'} } }"
         val result : String = encodeAndProcess("removeModel", payloadStr)
         result
     }
@@ -403,14 +452,7 @@ class PyServerConnection(val host : String
       *         '''
       */
     def serverStatus : String = {
-        val json = (
-            ("Cmd" -> "serverStatus") ~
-                ("CmdVer" -> 1) //~
-            //("CmdOptions" -> List[String]() ~
-            //("ModelOptions" -> List[String]())
-            )
-        val payloadStr : String = compact(render(json))
-
+        val payloadStr : String = s"{${'"'}Cmd${'"'}: ${'"'}serverStatus${'"'}, ${'"'}CmdVer${'"'}: 1 }"
         val result : String = encodeAndProcess("serverStatus", payloadStr)
         result
     }
@@ -436,26 +478,25 @@ class PyServerConnection(val host : String
       * In the case of the executeModel, the json returned is strictly the output map to be supplied for disposition
       * to the engine.
       */
-    def executeModel(modelName : String, msg : Map[String, Any]) : String = {
+    def executeModel(moduleName: String, modelName: String, msg : Map[String, Any]) : String = {
 
         val msgFieldMap : String = Json(DefaultFormats).write(msg)
 
-        val json = (
-            ("Cmd" -> "executeModel") ~
-                ("CmdVer" -> 1) ~
-                ("CmdOptions" -> (
-                    ("ModelName" -> modelName) ~
-                        ("InputDictionary" -> "{DATA.KEY}")
-                    )) //~
-            //("ModelOptions" -> List[String]())
-            )
-        val jsonCmdTemplate : String = compact(render(json))
+        val jsonCmdTemplate: String = s"{${'"'}Cmd${'"'}: ${'"'}executeModel${'"'}, ${'"'}CmdVer${'"'}: 1, ${'"'}CmdOptions${'"'}: { ${'"'}Module${'"'}: ${'"'}$moduleName${'"'},${'"'}ModelName${'"'}: ${'"'}$modelName${'"'}, ${'"'}InputDictionary${'"'}: ${'"'}{DATA.KEY}${'"'}}}"
 
         val subMap : Map[String,String] = Map[String,String]("{DATA.KEY}" -> msgFieldMap)
         val sub = new MapSubstitution(jsonCmdTemplate, subMap)
         val payloadStr : String = sub.makeSubstitutions
+	if (logger.isDebugEnabled()) {
+           logger.debug(s"executeModel msg='$payloadStr'")
+	}
 
         val result : String = encodeAndProcess("executeModel", payloadStr)
+//	  val  result : String  = payloadStr
+	if (logger.isDebugEnabled()) {
+           logger.debug(s"executeModel result='$result'")
+	}
+
         result
     }
 
@@ -468,7 +509,12 @@ class PyServerConnection(val host : String
       * @return cmd result (a JSON string)
       */
     private def encodeAndProcess(cmdName : String, cmdStr : String) : String = {
-        val payload : Array[Byte] = cmdStr.getBytes
+
+      if (logger.isDebugEnabled()) {
+        logger.debug("cmdName = " + cmdName + " , cmdStr = " + cmdStr)
+      }
+
+      val payload : Array[Byte] = cmdStr.getBytes
         val checksumBytes : ByteBuffer = ByteBuffer.allocate(CmdConstants.lenOfCheckSum)
         checksumBytes.putLong(0L)
         val chkBytesArray : scala.Array[Byte] = checksumBytes.array()
@@ -481,8 +527,10 @@ class PyServerConnection(val host : String
             payload ++
             CmdConstants.endMarkerArray
 
+      if (logger.isDebugEnabled()) {
         logger.debug(s"$cmdName msg = ${CmdConstants.startMarkerValue} 0L ${payload.length} $cmdStr ${CmdConstants.endMarkerValue}")
         logger.debug(s"$cmdName msg len = ${cmdBytes.length}")
+      }
 
         val result : String = if (cmdBytes.length == 0) {
             logger.error(s"there were no commands formed for cmdName = $cmdName... abandoning processing")
@@ -536,6 +584,10 @@ class Decoder extends LogTrait {
         val startMarkerValueLen : Int = CmdConstants.startMarkerValue.length
         val endMarkerValueLen : Int = CmdConstants.endMarkerValue.length
 
+      if (logger.isDebugEnabled()) {
+        logger.debug ("in unpack answeredBytes = " + answeredBytes.length.toString)
+        logger.debug ("in unpack content of answeredBytes is " + answeredBytes.toString)
+      }
         val reasonable : Boolean = answeredBytes != null &&
             answeredBytes.length > (startMarkerValueLen + lenOfCheckSum + lenOfInt + endMarkerValueLen)
         val answer : String = if (reasonable) {
@@ -546,15 +598,21 @@ class Decoder extends LogTrait {
             byteBuffer.get(startMark,0,startMarkerValueLen)
             val crc : Long = byteBuffer.getLong()
             val payloadLen : Int = byteBuffer.getInt()
-            val startMarkStr : String = new String(startMark)
-            //logger.debug(s"startMark = $startMarkStr, crc = $crc, payload len = $payloadLen")
+          val startMarkStr : String = new String(startMark)
+          if (logger.isDebugEnabled()) {
+          logger.debug(s"startMark = $startMarkStr, crc = $crc, payload len = $payloadLen")
+          logger.debug(s"startMark = $startMarkStr, crc = $crc, endMarkerLoan = $endMarkerValueLen")
+          }
             val payloadArray : scala.Array[Byte] = new scala.Array[Byte](payloadLen)
             byteBuffer.get(payloadArray,0,payloadLen)
             byteBuffer.get(endMark,0,endMarkerValueLen)
             val endMarkStr : String = new String(endMark)
-            val payloadStr : String = new String(payloadArray)
-            //logger.debug(s"payload = $payloadStr")
-            //logger.debug(s"endMark = $endMarkStr")
+          val payloadStr : String = new String(payloadArray)
+          if ( logger.isDebugEnabled()) {
+            logger.debug(s"payload = $payloadStr")
+            logger.debug(s"endMark = $endMarkStr")
+          }
+
             payloadStr
         } else {
             "unreasonable bytes returned... either null or insufficient bytes in the supplied result"
@@ -577,7 +635,10 @@ object PyServerHelpers extends LogTrait {
       * @param cmd external command sequence
       * @return (rc, stdout, stderr)
       */
-    def runCmdCollectOutput(cmd: Seq[String]): (Int, String, String) = {
+  def runCmdCollectOutput(cmd: Seq[String]): (Int, String, String) = {
+    if (logger.isDebugEnabled()) {
+      logger.debug ("in runCmdCollectOutput cmd string is  " + cmd.mkString (" ") )
+    }
         val stdoutStream = new ByteArrayOutputStream
         val stderrStream = new ByteArrayOutputStream
         val stdoutWriter = new PrintWriter(stdoutStream)
@@ -585,7 +646,10 @@ object PyServerHelpers extends LogTrait {
         val exitValue = cmd.!(ProcessLogger(stdoutWriter.println, stderrWriter.println))
         stdoutWriter.close()
         stderrWriter.close()
-        (exitValue, stdoutStream.toString, stderrStream.toString)
+    if (logger.isDebugEnabled()) {
+      logger.debug ("in runCmdCollectOutput result is   " + exitValue.toString + " stdout = " + stdoutStream.toString + ", stderr = " + stderrStream.toString )
+    }
+    (exitValue, stdoutStream.toString, stderrStream.toString)
     }
 
 }
@@ -602,7 +666,7 @@ object PyServerHelpers extends LogTrait {
   * @param template the string to have its embedded keys substituted
   * @param subMap a map of substutitions to make.
   */
-class MapSubstitution(template: String, subMap: scala.collection.immutable.Map[String, String]) {
+class MapSubstitution(template: String, subMap: scala.collection.immutable.Map[String, String]) extends LogTrait {
 
     def findAndReplace(m: Matcher)(callback: String => String): String = {
         val sb = new StringBuffer
@@ -628,4 +692,3 @@ class MapSubstitution(template: String, subMap: scala.collection.immutable.Map[S
     }
 
 }
-

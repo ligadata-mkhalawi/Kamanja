@@ -42,6 +42,7 @@ import com.ligadata.Exceptions._
 
 case class Customer(name:String, address: String, homePhone: String)
 
+@Ignore
 class SqlServerAdapterSpec extends FunSpec with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
   var res : String = null;
   var statusCode: Int = -1;
@@ -61,7 +62,7 @@ class SqlServerAdapterSpec extends FunSpec with BeforeAndAfter with BeforeAndAft
 
   serializer = SerializerManager.GetSerializer("kryo")
   logger.info("Initialize SqlServerAdapter")
-  val dataStoreInfo = """{"StoreType": "sqlserver","hostname": "192.168.56.1","instancename":"KAMANJA","portnumber":"1433","database": "bofa","user":"bofauser","SchemaName":"bofauser","password":"bofauser","jarpaths":"/media/home2/jdbc","jdbcJar":"sqljdbc4-2.0.jar","clusteredIndex":"YES","autoCreateTables":"YES"}"""
+  val dataStoreInfo = """{"StoreType": "sqlserver","hostname": "192.168.56.1","instancename":"KAMANJA","portnumber":"1433","database": "bofa","user":"bofauser","SchemaName":"bofauser","password":"bofauser","jarpaths":"/media/home2/jdbc","jdbcJar":"sqljdbc4-2.0.jar","clusteredIndex":"YES","autoCreateTables":"YES","appendOnly":"YES"}"""
 
   private def CreateAdapter: DataStore = {
     var connectionAttempts = 0

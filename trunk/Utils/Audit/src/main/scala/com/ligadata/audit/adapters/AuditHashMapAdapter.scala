@@ -39,6 +39,10 @@ class AuditHashMapAdapter extends AuditAdapter {
   var withTransactions:Boolean = true
   lazy val serializer = SerializerManager.GetSerializer("kryo")
 
+  var path = "."
+  var keyspace = "default"
+  var table = "default"
+
   /**
    * init - This is a method that must be implemented by the adapter impl.  This method should preform any necessary
    *        steps to set up the destination of the Audit Records 
@@ -52,9 +56,9 @@ class AuditHashMapAdapter extends AuditAdapter {
       initPropertiesFromFile(parms)   
     }
 
-    var path = adapterProperties.getOrElse("path", ".")
-    var keyspace = adapterProperties.getOrElse("schema", "default")
-    var table = adapterProperties.getOrElse("table", "default")
+    path = adapterProperties.getOrElse("path", ".")
+    keyspace = adapterProperties.getOrElse("schema", "default")
+    table = adapterProperties.getOrElse("table", "default")
 
     val InMemory = adapterProperties.getOrElse("inmemory", "false").toBoolean
     withTransactions = adapterProperties.getOrElse("withtransaction", "false").toBoolean
@@ -94,6 +98,16 @@ class AuditHashMapAdapter extends AuditAdapter {
     year
   }    
 
+  private def Commit(tableName: String): Unit = {
+    if (withTransactions) {
+      db.commit();
+    }
+  }
+
+  private def Commit: Unit = {
+    Commit(table)
+  }
+
   /**
    * addAuditRecord - adds the auditRecord to the audit table.
    */
@@ -103,9 +117,8 @@ class AuditHashMapAdapter extends AuditAdapter {
       var at:java.lang.Long = rec.actionTime.toLong
       val key = at.toString.getBytes()
       var value = serializer.SerializeObjectToByteArray(rec)
-      map.putIfAbsent(key, value)
-      if (withTransactions)
-        db.commit() //persist changes into disk
+      map.put(key, value)
+      // Commit(table)
     }catch {
       case e: Exception => 
         logger.error("", e)
@@ -179,10 +192,7 @@ class AuditHashMapAdapter extends AuditAdapter {
   override def TruncateStore: Unit = {
     try{
       map.clear()
-      if (withTransactions)
-	db.commit() //persist changes into disk
-      // Defrag on startup
-      db.compact()
+      Commit
     } catch {
       case e: Exception => {
         logger.debug("", e)
@@ -190,12 +200,35 @@ class AuditHashMapAdapter extends AuditAdapter {
       }
     }
   }
+
+  private def deleteFile(file: File): Unit = {
+    if (file.exists()) {
+      var ret = true
+      if (file.isDirectory) {
+        for (f <- file.listFiles) {
+          deleteFile(f)
+        }
+      }
+      logger.info("cleanup: Deleting file '" + file + "'")
+      file.delete()
+    }
+  }
+
+  override def dropStore: Unit = {
+    logger.info("Dropping audit store..")
+    Shutdown()
+    var f = new File(path + "/" + keyspace + ".hdb")
+    deleteFile(f)
+    f = new File(path + "/" + keyspace + ".hdb.p")
+    deleteFile(f)
+  }
   
-  private def initPropertiesFromFile(parmFile: String): Unit = {
-    
+  private def initPropertiesFromFile(paramFile: String): Unit = {
+    logger.info("paramFile = " + paramFile)
     try {
-       scala.io.Source.fromFile(parmFile).getLines.foreach(line => {
+       scala.io.Source.fromFile(paramFile).getLines.foreach(line => {
          var parsedLine = line.split('=')
+	 logger.info(parsedLine(0).trim + "=" + parsedLine(1).trim)
          adapterProperties(parsedLine(0).trim) = parsedLine(1).trim      
        })
     } catch {

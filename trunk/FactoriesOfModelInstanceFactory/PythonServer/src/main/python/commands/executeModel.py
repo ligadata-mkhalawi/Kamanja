@@ -36,8 +36,9 @@ class executeModel(CommandBase):
 		modelNames = ["{}".format(v) for v in modelNameView]
 		modelValueView = modelDict.viewvalues()
 		modelInsts =  ["{}".format(str(v)) for v in modelValueView]
-		self.logger.debug("{} models in modelDict = {}".format(len(modelNameView),modelNames))
-		self.logger.debug("{} instances in modelDict = {}".format(len(modelValueView),modelInsts))
+                if self.logger.isEnabledFor(logging.DEBUG): 
+		   self.logger.debug("{} models in modelDict = {}".format(len(modelNameView),modelNames))
+		   self.logger.debug("{} instances in modelDict = {}".format(len(modelValueView),modelInsts))
 
 		if "ModelName" in cmdOptions:
 			modelName = str(cmdOptions["ModelName"])
@@ -54,10 +55,16 @@ class executeModel(CommandBase):
 			try:
 				model = modelDict.get(modelName)
 				msg = cmdOptions["InputDictionary"]
-				self.logger.debug("model instance selected = {}".format(str(model)))
+                                if self.logger.isEnabledFor(logging.DEBUG): 
+				   self.logger.debug("model instance selected = {}".format(str(model)))
 				results = model.execute(msg)
-			except:
-				results = super(executeModel, self).exceptionMsg("The model '{}' is having a bad day...".format(modelName))
+  			        if (results and results.strip()) :
+                                   results = json.dumps({"Status" : "0", "Exception" : "", "Result" : results})
+                                else :
+                                   results = json.dumps({"Status" : "1", "Exception" : "", "Result" : results})
+                        except:
+				results = super(executeModel, self).exceptionMsg("The model '{}' is having problems...".format(modelName))
+                                results =  json.dumps({"Status" : "-1", "Exception" : results, "Result" : ""})
 		return results
 
 

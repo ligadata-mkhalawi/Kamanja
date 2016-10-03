@@ -112,8 +112,8 @@ class KamanjaMonitor {
    * @param receivedString String
    */
   private def ActionOnActionChange(receivedString: String): Unit = {
-    throw new Exception("Not implemented - during Logical Partitions")
-    /*if (receivedString.size == 1 && receivedString.toInt == 1) {
+    throw new Exception("Not implemented v8- during Logical Partitions")
+   /* if (receivedString.size == 1 && receivedString.toInt == 1) {
       LOG.debug("Monitoring turned ON")
       if (isStarted) {
         return
