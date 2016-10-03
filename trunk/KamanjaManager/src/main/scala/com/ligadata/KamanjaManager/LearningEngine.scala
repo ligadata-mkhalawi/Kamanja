@@ -743,8 +743,8 @@ class LearningEngine {
 
       exeQueue ++= readyNodes
 
-      if (exeQueue.size > execPos) {
-        if (KamanjaConfiguration.shutdown == false && inlineExecution != null && KamanjaLeader.isLocalExecution) {
+      if (KamanjaConfiguration.shutdown == false && exeQueue.size > execPos) {
+        if (inlineExecution != null && KamanjaLeader.isLocalExecution) {
           while (execPos < exeQueue.size) {
             val execNode = exeQueue(execPos)
             inlineExecution.executeModel(new KamanjaCacheQueueEntry(exeQueue, execPos, dagRuntime, txnCtxt, thisMsgEvent, modelsForMessage, msgProcessingStartTime, false))

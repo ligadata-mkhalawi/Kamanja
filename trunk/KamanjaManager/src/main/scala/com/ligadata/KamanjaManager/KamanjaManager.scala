@@ -126,7 +126,7 @@ object KamanjaConfiguration {
   var totalProcessingThreadCount: Int = 1
   var totalReadThreadCount: Int = 1
 
-  var locallyExecFlag = false
+  var locallyExecFlag = true
 
   var baseLoader = new KamanjaLoaderInfo
 
