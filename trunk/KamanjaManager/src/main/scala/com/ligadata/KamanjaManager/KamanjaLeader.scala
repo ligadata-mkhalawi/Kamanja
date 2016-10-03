@@ -1134,6 +1134,7 @@ object KamanjaLeader {
                 })
               }
 
+              LOG.info("isLocallyExecuting:" + isLocallyExecuting)
               isLocallyExecuting = KamanjaConfiguration.locallyExecFlag
 
               var foundKeysInVald = scala.collection.mutable.Map[String, (String, Int, Int, Long)]()

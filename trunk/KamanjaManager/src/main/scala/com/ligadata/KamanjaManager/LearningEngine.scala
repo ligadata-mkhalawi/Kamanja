@@ -682,6 +682,7 @@ object CommitDataComponent {
 class LearningEngine {
   private val LOG = LogManager.getLogger(getClass);
   private var cntr: Long = 0
+  private var isLogged = false
   private var mdlsChangedCntr: Long = -1
   private val isLocalInlineExecution = true
   // inlineExecution is used for local inline execution
@@ -745,6 +746,10 @@ class LearningEngine {
 
       if (KamanjaConfiguration.shutdown == false && exeQueue.size > execPos) {
         if (inlineExecution != null && KamanjaLeader.isLocalExecution) {
+          if (!isLogged) {
+            LOG.warn("=====> Executing Messages Locally")
+            isLogged = true
+          }
           while (execPos < exeQueue.size) {
             val execNode = exeQueue(execPos)
             inlineExecution.executeModel(new KamanjaCacheQueueEntry(exeQueue, execPos, dagRuntime, txnCtxt, thisMsgEvent, modelsForMessage, msgProcessingStartTime, false))
@@ -762,6 +767,10 @@ class LearningEngine {
             }
           }
         } else {
+          if (!isLogged) {
+            LOG.warn("=====> Executing Messages remotely")
+            isLogged = true
+          }
           if (LOG.isDebugEnabled())
             LOG.debug("Executing logical partition for transactionid:" + txnCtxt.getTransactionId())
           var runningTxns = KamanjaLeader.getThrottleControllerCache.size
