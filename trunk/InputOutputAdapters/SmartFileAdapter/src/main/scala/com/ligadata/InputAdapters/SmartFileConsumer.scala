@@ -20,7 +20,7 @@ import scala.collection.mutable.{Map, MultiMap, HashMap, ArrayBuffer}
 
 case class BufferLeftoversArea(workerNumber: Int, leftovers: Array[Byte], relatedChunk: Int)
 //case class BufferToChunk(len: Int, payload: Array[Byte], chunkNumber: Int, relatedFileHandler: SmartFileHandler, firstValidOffset: Int, isEof: Boolean, partMap: scala.collection.mutable.Map[Int,Int])
-case class SmartFileMessage(msg: Array[Byte], offsetInFile: Long, relatedFileHandler: SmartFileHandler, msgOffset: Long)
+case class SmartFileMessage(msg: Array[Byte], offsetInFile: Long, relatedFileHandler: SmartFileHandler, msgNumber: Long)
 case class FileStatus(status: Int, offset: Long, createDate: Long)
 //case class OffsetValue (lastGoodOffset: Int, partitionOffsets: Map[Int,Int])
 case class EnqueuedFileHandler(fileHandler: SmartFileHandler, offset: Long, createDate: Long,  partMap: scala.collection.mutable.Map[Int,Int])
@@ -1627,21 +1627,21 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         if(tag.startsWith("$")) {//predefined tags
           tag match {
             //assuming msg type is defined by parent folder name
-            case "$Dir_Name" => parentDirName
-            case "$File_Name" => fileName
-            case "$File_Full_Path" => smartMessage.relatedFileHandler.getFullPath
+            case "$Dir_Name" | "$DirName" => parentDirName
+            case "$File_Name" | "$FileName" => fileName
+            case "$File_Full_Path" | "$FileFullPath" => smartMessage.relatedFileHandler.getFullPath
+            case "$Line_Number" | "$LineNumber" => smartMessage.msgNumber.toString
+            case "$Msg_Number" | "$MsgNumber" => smartMessage.msgNumber.toString
             case _ => ""
           }
         }
         else{//if not predefined just add it as is
           tag
         }
-      if(tagValue.length > 0)
-        pre + (if(pre.length == 0) "" else tagDelimiter) + tagValue
-      else pre
+      pre + tagValue + tagDelimiter
     })
 
-    val finalMsg = prefix + (if(prefix.length == 0) "" else tagDelimiter) + msgStr
+    val finalMsg = prefix + msgStr
     finalMsg.getBytes
   }
 
