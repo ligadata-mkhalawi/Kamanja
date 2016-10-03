@@ -2269,6 +2269,7 @@ class MdMgr {
       */
     if (mdl.modelRepresentation == ModelRepresentation.PMML)
       mdl.ObjectFormat(ObjFormatType.fPMML)
+
     mdl.PhysicalName(physicalName)
     mdl.tenantId = tenantId
     SetBaseElem(mdl, nameSpace, name, ver, jarNm, dJars, ownerId, tenantId, uniqueId, mdElementId)
@@ -3156,7 +3157,7 @@ class MdMgr {
   def GetUserProperty(clusterId: String, key: String): String = {
     if (configurations.contains(clusterId)) {
       val upi: scala.collection.mutable.HashMap[String, String] = configurations(clusterId).Props
-      return upi.get(key).getOrElse("")
+      return (upi.get(key).getOrElse("")).asInstanceOf[String]
     }
     return ""
   }
@@ -3209,7 +3210,8 @@ class MdMgr {
 
   /**
       * Construct a SerializeDeserializeConfig instance and add it to the metadata.
-      * @param nameSpace the namespace for this SerializeDeserializeConfig
+    *
+    * @param nameSpace the namespace for this SerializeDeserializeConfig
       * @param name its serializer name
       * @param version its serializer version
       * @param serializerType the serializer type
@@ -3249,6 +3251,7 @@ class MdMgr {
 
     /**
       * Add a SerializeDeserializeConfig instance to the map designated to hold them.
+      *
       * @param config the prepared SerializeDeserializeConfig object
       * @return true if the object was added to the map (exception is thrown if one exists with this name)
       */
@@ -3265,6 +3268,7 @@ class MdMgr {
 
     /**
       * Construct a SerializeDeserializeConfig from the supplied arguments.
+      *
       * @param nameSpace the namespace for this SerializeDeserializeConfig
       * @param name its serializer name
       * @param version its serializer version
@@ -3353,6 +3357,7 @@ class MdMgr {
 
     /**
       * Make an AdapterMessageBinding instance
+      *
       * @param adapterName the adapter's name
       * @param namespaceMsgName the message that can be consumed by the specified serializer
       * @param namespaceSerializerName the serializer that can deserialize and serialize the message
@@ -3471,6 +3476,7 @@ class MdMgr {
 
   /**
     * GetUserProperty - return a String value of a User Property
+    *
     * @param key: String
     */
   def GetUserProperty(key: String): UserPropertiesInfo = {

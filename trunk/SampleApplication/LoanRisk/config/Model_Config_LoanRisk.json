@@ -1,0 +1,18 @@
+{
+  "LoanRiskdModel": {
+    "Dependencies": [],
+    "MessageAndContainers": [
+      "com.ligadata.kamanja.loanMsg",
+      "com.ligadata.kamanja.loanOutMsg"
+    ],
+    "InputTypesSets": [
+      [
+        "com.ligadata.kamanja.loanMsg"
+      ]
+    ],
+    "OutputTypes": [
+      "com.ligadata.kamanja.loanOutMsg"
+    ]
+  }
+}
+

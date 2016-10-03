@@ -289,13 +289,13 @@ trait MetadataAPIService extends HttpService {
       val addModelService: ActorRef = actorRefFactory.actorOf(Props(new UpdateModelService(rContext, userid, password, role, None, tid)))
       addModelService ! UpdateModelService.Process(body)
     } else if (objtype.equalsIgnoreCase("modelpmml")) {
-      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new UpdateModelService(rContext, userid, password, role, modelcompileinfo, tid)))
+      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new UpdateModelService(rContext, userid, password, role, modelcompileinfo, tid, ModelType.PMML)))
       addModelService ! UpdateModelService.Process(body)
     }else if (objtype.equalsIgnoreCase("modelpython")) {
-      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new UpdateModelService(rContext, userid, password, role, modelcompileinfo, tid)))
+      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new UpdateModelService(rContext, userid, password, role, modelcompileinfo, tid, ModelType.PYTHON)))
       addModelService ! UpdateModelService.Process(body)
     }else if (objtype.equalsIgnoreCase("modeljython")) {
-      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new UpdateModelService(rContext, userid, password, role, modelcompileinfo, tid)))
+      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new UpdateModelService(rContext, userid, password, role, modelcompileinfo, tid, ModelType.JYTHON)))
       addModelService ! UpdateModelService.Process(body)
     } else {
       rContext.complete((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown PUT route")).toString)
@@ -370,16 +370,16 @@ trait MetadataAPIService extends HttpService {
       val addSourceModelService: ActorRef = actorRefFactory.actorOf(Props(new AddSourceModelService(rContext, userid, password, role, modelcompileinfo, tenantId)))
       addSourceModelService ! AddSourceModelService.ProcessScala(body)
     }else if (objtype.equalsIgnoreCase("modelkpmml")) {
-      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new AddModelService(rContext, userid, password, role, None, tenantId)))
+      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new AddModelService(rContext, userid, password, role, None, tenantId )))
       addModelService ! AddModelService.Process(body)
     } else if (objtype.equalsIgnoreCase("modelpmml")) {
-      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new AddModelService(rContext, userid, password, role, modelcompileinfo, tenantId)))
+      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new AddModelService(rContext, userid, password, role, modelcompileinfo, tenantId, ModelType.PMML)))
       addModelService ! AddModelService.Process(body)
     } else if (objtype.equalsIgnoreCase("modelpython")) {
-      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new AddModelService(rContext, userid, password, role, modelcompileinfo, tenantId)))
+      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new AddModelService(rContext, userid, password, role, modelcompileinfo, tenantId, ModelType.PYTHON)))
       addModelService ! AddModelService.Process(body)
     }  else if (objtype.equalsIgnoreCase("modeljython")) {
-      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new AddModelService(rContext, userid, password, role, modelcompileinfo, tenantId)))
+      val addModelService: ActorRef = actorRefFactory.actorOf(Props(new AddModelService(rContext, userid, password, role, modelcompileinfo, tenantId, ModelType.JYTHON)))
       addModelService ! AddModelService.Process(body)
     }  
     else {

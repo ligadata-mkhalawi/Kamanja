@@ -17,8 +17,7 @@
 
 package com.ligadata.KamanjaManager
 
-import java.io.File
-
+import java.io._
 import com.ligadata.Exceptions.KamanjaException
 import com.ligadata.InputOutputAdapterInfo.{InputAdapter, OutputAdapter}
 import com.ligadata.StorageBase.DataStore
@@ -44,7 +43,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import com.ligadata.Utils.{KamanjaClassLoader, KamanjaLoaderInfo, Utils}
 import org.json4s._
 import org.json4s.native.JsonMethods._
-
 
 import scala.actors.threadpool.{ExecutorService, Executors}
 import scala.collection.immutable.Map
@@ -77,6 +75,7 @@ class KamanjaMetadata(var envCtxt: EnvContext) {
   val containerObjects = new HashMap[String, MsgContainerObjAndTransformInfo]
   val modelObjsMap = new HashMap[String, MdlInfo]
   val modelRepFactoryOfFactoryMap: HashMap[String, FactoryOfModelInstanceFactory] = HashMap[String, FactoryOfModelInstanceFactory]()
+   val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
 
   def LoadMdMgrElems(tmpMsgDefs: Option[scala.collection.immutable.Set[MessageDef]], tmpContainerDefs: Option[scala.collection.immutable.Set[ContainerDef]],
                      tmpModelDefs: Option[scala.collection.immutable.Set[ModelDef]]): Unit = {
@@ -479,18 +478,23 @@ class KamanjaMetadata(var envCtxt: EnvContext) {
       * import org.json4s._
       * import org.json4s.native.JsonMethods._
       */
-    val PYTHON_CONFIG : String = "python_config"
+    val PYTHON_CONFIG : String = "PYTHON_CONFIG"
     val ROOT_DIR : String = "root_dir"
     private def PreparePythonConfiguration(): Unit = {
         val properties: java.util.Properties = KamanjaConfiguration.allConfigs
-        val pythonPropertiesStr : String = properties.getProperty(PYTHON_CONFIG)
+        // val pythonPropertiesStr : String = properties.getProperty(PYTHON_CONFIG)
+	//        val pythonPropertiesStr : String = mdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "PYTHON_CONFIG")
+	        val pythonPropertiesStr : String = getMetadataAPI.GetMetadataAPIConfig.getProperty("PYTHON_CONFIG")
+	if (logger.isDebugEnabled()) {
+	   logger.debug ("The value of pythonPropertiesStr is in Prepare Python Configuration "  + pythonPropertiesStr ) ;
+	}
         if (pythonPropertiesStr != null) {
             implicit val formats = org.json4s.DefaultFormats
             //val pyPropertyMap : Map[String, Any] = parse(pythonPropertiesStr).extract[Map[String, Any]]
             val pyPropertyMap : Map[String,Any] = parse(pythonPropertiesStr).values.asInstanceOf[Map[String,Any]]
             var pyPath : String = pyPropertyMap.getOrElse("PYTHON_PATH", "").asInstanceOf[String]
             val pySrvStartPort : Int = pyPropertyMap.getOrElse("SERVER_BASE_PORT", 8100).asInstanceOf[scala.math.BigInt].toInt
-            val pySrvMaxSrvrs : Int = pyPropertyMap.getOrElse("SERVER_NODE_LIMIT", 20).asInstanceOf[scala.math.BigInt].toInt
+            val pySrvMaxSrvrs : Int = pyPropertyMap.getOrElse("SERVER_PORT_LIMIT", 40).asInstanceOf[scala.math.BigInt].toInt
             val host : String = pyPropertyMap.getOrElse("SERVER_HOST", "localhost").asInstanceOf[String]
             var loggerConfigPath : String = pyPropertyMap.getOrElse("PYTHON_LOG_CONFIG_PATH", "").asInstanceOf[String]
             var logFilePath : String = pyPropertyMap.getOrElse("PYTHON_LOG_PATH", "").asInstanceOf[String]
@@ -506,7 +510,7 @@ class KamanjaMetadata(var envCtxt: EnvContext) {
                     installLoc
                 } else {
                     logger.error("Kamanja's root directory is not available in the 'allConfigs'... bad news!")
-                    throw new KamanjaException("Kamanja's root directory is not available in the 'allConfigs'... bad news!",null)
+                    throw new KamanjaException("Kamanja's root directory is not available in the 'allConfigs'... bad news! Python default configuration can't be performed",null)
                 }
             } else {
                 pyPath
@@ -521,6 +525,8 @@ class KamanjaMetadata(var envCtxt: EnvContext) {
             KamanjaMetadata.gNodeContext.putValue("PYTHON_CONNECTIONS", new mutable.HashMap[String,Any]())
             KamanjaMetadata.gNodeContext.putValue("PYTHON_LOG_CONFIG_PATH",  loggerConfigPath)
             KamanjaMetadata.gNodeContext.putValue("PYTHON_LOG_PATH", logFilePath)
+            KamanjaMetadata.gNodeContext.putValue("SERVER_BASE_PORT", pySrvStartPort)
+            KamanjaMetadata.gNodeContext.putValue("SERVER_PORT_LIMIT", pySrvMaxSrvrs)
 
             /** for diagnostics at run time, put the whole propertyMap */
             KamanjaMetadata.gNodeContext.putValue("pyPropertyMap", pyPropertyMap)
@@ -547,7 +553,7 @@ class KamanjaMetadata(var envCtxt: EnvContext) {
                     KamanjaMetadata.gNodeContext.putValue("PYTHON_CONNECTIONS", new mutable.HashMap[String,Any]())
                     /** With these default values (8100, 20) add an iterator to get a port from when the time comes to build a connection */
                     val p : Int = 8100 /** ports starting here for 20... */
-                    val it = Iterator[Int](p, p+1, p+2, p+3, p+4, p+5, p+6, p+7, p+8, p+9, p+10, p+11, p+12, p+13, p+14, p+15, p+16, p+17, p+18, p+19)
+                    val it = Iterator[Int](p, p+1, p+2, p+3, p+4, p+5, p+6, p+7, p+8, p+9, p+10, p+11, p+12, p+13, p+14, p+15, p+16, p+17, p+18, p+19, p+20, p+21, p+22, p+23, p+24, p+25, p+26, p+27, p+28, p+29, p+30, p+31, p+32, p+33, p+34, p+35, p+36, p+37, p+38, p+39)
                     KamanjaMetadata.gNodeContext.putValue("PYTHON_CONNECTION_PORTS", it)
                     KamanjaMetadata.gNodeContext.putValue("PYTHON_LOG_CONFIG_PATH",  s"$pyPath/bin/pythonlog4j.cfg")
                     KamanjaMetadata.gNodeContext.putValue("PYTHON_LOG_PATH", s"$pyPath/logs/pythonserver.log")
@@ -564,29 +570,29 @@ class KamanjaMetadata(var envCtxt: EnvContext) {
 
 
     private def PrepareModelsFactories(tmpModelDefs: Option[scala.collection.immutable.Set[ModelDef]]): Unit = {
-    if (tmpModelDefs == None) // Not found any models
-      return
+        if (tmpModelDefs == None) // Not found any models
+          return
 
-    val modelDefs = tmpModelDefs.get
+        val modelDefs = tmpModelDefs.get
 
-    /** Set up the python key values in the node context.  Connections are generated at make python proxy instance time
-      * Conceivably, we could avoid setup if there were no models, only to have to set them up when the engine accepts
-      * a newly added model. Ergo, we set the configuration up as if we were to need them. */
-    // val hasPythonModels : Boolean = modelDefs.find(m => m.modelRepresentation == ModelRepresentation.PYTHON).getOrElse(null) != null
-    // logger.debug("This cluster node has python models")
+        /** Set up the python key values in the node context.  Connections are generated at make python proxy instance time
+          * Conceivably, we could avoid setup if there were no models, only to have to set them up when the engine accepts
+          * a newly added model. Ergo, we set the configuration up as if we were to need them. */
+        val hasPythonModels : Boolean = modelDefs.find(m => m.modelRepresentation == ModelRepresentation.PYTHON).getOrElse(null) != null
+        logger.debug("This cluster node has python models")
 
-    /** Add a number of properties to the node context that are needed by the python factories to set up the servers */
-    // PreparePythonConfiguration
+        /** Add a number of properties to the node context that are needed by the python factories to set up the servers */
+        PreparePythonConfiguration
 
-    // Load all jars first
-    modelDefs.foreach(mdl => {
-      KamanjaMetadata.LoadJarIfNeeded(mdl)
-    })
+        // Load all jars first
+        modelDefs.foreach(mdl => {
+          KamanjaMetadata.LoadJarIfNeeded(mdl)
+        })
 
-    modelDefs.foreach(mdl => {
-      PrepareModelFactory(mdl, false, null) // Already Loaded required dependency jars before calling this
-    })
-  }
+        modelDefs.foreach(mdl => {
+          PrepareModelFactory(mdl, false, null) // Already Loaded required dependency jars before calling this
+        })
+    }
 }
 
 object KamanjaMetadata extends ObjectResolver {
@@ -1162,9 +1168,7 @@ object KamanjaMetadata extends ObjectResolver {
               case "Add" => {
                 try {
                   val mdl = mdMgr.Model(zkMessage.NameSpace, zkMessage.Name, zkMessage.Version.toLong, true)
-                  if (mdl != None) {
-                    allJarsToBeValidated ++= GetAllJarsFromElem(mdl.get)
-                  }
+  		  allJarsToBeValidated ++= GetAllJarsFromElem(mdl.get)
                 } catch {
                   case e: Exception => {
                     LOG.debug("", e)
@@ -1352,6 +1356,7 @@ object KamanjaMetadata extends ObjectResolver {
           case "clusterInfoDef" => {}
           case "clusterDef" => {}
           case "upDef" => {}
+          case "TenantDef" => {}
 
           case "AdapterMessageBinding" => {
             logger.debug("Got adapter change")
@@ -1447,6 +1452,18 @@ object KamanjaMetadata extends ObjectResolver {
         UpdateKamanjaMdObjects(obj.messageObjects, obj.containerObjects, obj.modelObjsMap, removedModels, removedMessages, removedContainers)
     }
   }
+
+   /** Write the source file string to the supplied target path.
+    *
+    * @param srcCode
+    * @param srcTargetPath
+   */
+   private def writeSrcFile(srcCode: String, srcTargetPath: String) {
+      val file = new File(srcTargetPath)
+      val bufferedWriter = new BufferedWriter(new FileWriter(file))
+      bufferedWriter.write(srcCode)
+      bufferedWriter.close
+   }
 
   override def getInstance(MsgContainerType: String): ContainerInterface = {
     var v: MsgContainerObjAndTransformInfo = null

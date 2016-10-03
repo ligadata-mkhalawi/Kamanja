@@ -34,13 +34,14 @@ object UpdateModelService {
   case class Process(pmmlStr: String)
 }
 
-class UpdateModelService(requestContext: RequestContext, userid: Option[String], password: Option[String], cert: Option[String], modelCompileInfo: Option[String], tenantId: Option[String]) extends Actor {
+class UpdateModelService(requestContext: RequestContext, userid: Option[String], password: Option[String], cert: Option[String], modelCompileInfo: Option[String], tenantId: Option[String], modelType: ModelType.ModelType = ModelType.KPMML) extends Actor {
 
   import UpdateModelService._
 
   implicit val system = context.system
   import system.dispatcher
   val log = Logging(system, getClass)
+
   val APIName = "UpdateModelService"
   // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
   val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
@@ -55,34 +56,32 @@ class UpdateModelService(requestContext: RequestContext, userid: Option[String],
       context.stop(self)
   }
 
-  def process(pmmlStr:String) = {
+  def process(pmmlStr: String) = {
 
-    log.debug("Requesting UpdateModel {}",pmmlStr)
+    log.debug("Requesting UpdateModel {}", pmmlStr)
 
     var nameVal = APIService.extractNameFromPMML(pmmlStr)
 
-    if (!getMetadataAPI.checkAuth(userid,password,cert, getMetadataAPI.getPrivilegeName("update","model"))) {
-       getMetadataAPI.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.UPDATEOBJECT,pmmlStr,AuditConstants.FAIL,"",nameVal)
-      requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error:UPDATE not allowed for this user").toString )
+    if (!getMetadataAPI.checkAuth(userid, password, cert, getMetadataAPI.getPrivilegeName("update", "model"))) {
+      getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.UPDATEOBJECT, pmmlStr, AuditConstants.FAIL, "", nameVal)
+      requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error:UPDATE not allowed for this user").toString)
     } else {
 
       // Ok, if this is a KPMML model, we dont need any additional info for compilation, its all enclosed in the model.  for normal PMML,
       // we need to know ModelName, Version, and associated Message.  modelCompileInfo will be set if this is PMML, and not set if KPMML
       if (modelCompileInfo == None) {
         log.info("No configuration information provided, assuming Kamanja PMML implementation.")
-        val apiResult = getMetadataAPI.UpdateModel(ModelType.KPMML, pmmlStr, userid, tenantId, None, None, None, None, None, None)
+        val apiResult = getMetadataAPI.UpdateModel(ModelType.KPMML, pmmlStr, userid, tenantId, None, None, None, None, None, Some("{}"))
         requestContext.complete(apiResult)
       } else {
-        val cInfo = modelCompileInfo.getOrElse("")
 
-        // Error if nothing specified in the modelCompileInfo
-        if (cInfo.equalsIgnoreCase(""))
-          requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error: modelconfig is not specified, PMML model is required to have Model Compilation Information.").toString)
+          val cInfo = modelCompileInfo.getOrElse("")
 
-        val compileConfigTokens = cInfo.split(",")
-        if (compileConfigTokens.size < 2 ||
-          compileConfigTokens.size > 4)
-          requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error: Invalid compile config paramters specified for PMML, Needs  ModelName, ModelVersion, Optional[UpdateModelVersion].").toString)
+          // Error if nothing specified in the modelCompileInfo
+          if (cInfo.equalsIgnoreCase(""))
+            requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error: modelconfig is not specified, PMML model is required to have Model Compilation Information.").toString)
+
+          val compileConfigTokens = cInfo.split(",")
 
         if (compileConfigTokens.size == 2) {
           if (!compileConfigTokens(0).equalsIgnoreCase("python") && !compileConfigTokens(0).equalsIgnoreCase("jython")) {

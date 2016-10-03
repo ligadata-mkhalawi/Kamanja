@@ -21,7 +21,7 @@ assemblyJarName in assembly := {
 name := "KamanjaKafkaAdapters_0_8"
 
 
-version := "1.5.3"
+version := "1.6.0"
 
 
 libraryDependencies += "org.apache.kafka" %% "kafka" % "0.8.2.2"

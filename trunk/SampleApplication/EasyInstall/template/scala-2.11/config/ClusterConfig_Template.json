@@ -39,12 +39,21 @@
         "ZooKeeperSessionTimeoutMs": "30000",
         "ZooKeeperConnectionTimeoutMs": "30000"
       },
+      "PYTHON_CONFIG" : {
+	    "PYTHON_PATH": "{InstallDirectory}/python",
+            "SERVER_BASE_PORT": 8100,
+	    "SERVER_PORT_LIMIT": 40,
+	    "SERVER_HOST": "localhost",
+	    "PYTHON_LOG_CONFIG_PATH": "{InstallDirectory}/python/bin/pythonlog4j.cfg",
+	    "PYTHON_LOG_PATH": "{InstallDirectory}/python/logs/pythonserver.log",
+	    "PYTHON_BIN_DIR" : "/usr/bin/"
+      },
       "EnvironmentContext": {
         "classname": "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$",
-        "jarname": "KamanjaInternalDeps_2.11-1.5.3.jar",
+        "jarname": "KamanjaInternalDeps_2.11-1.6.0.jar",
         "dependencyjars": [
-          "ExtDependencyLibs_2.11-1.5.3.jar",
-          "ExtDependencyLibs2_2.11-1.5.3.jar"
+          "ExtDependencyLibs_2.11-1.6.0.jar",
+          "ExtDependencyLibs2_2.11-1.6.0.jar"
         ]
       },
       "Cache": {
@@ -72,7 +81,7 @@
             "RestAPI",
             "ProcessingEngine"
           ],
-          "Classpath": ".:{InstallDirectory}/lib/system/ExtDependencyLibs_2.11-1.5.3.jar:{InstallDirectory}/lib/system/KamanjaInternalDeps_2.11-1.5.3.jar:{InstallDirectory}/lib/system/ExtDependencyLibs2_2.11-1.5.3.jar"
+          "Classpath": ".:{InstallDirectory}/lib/system/ExtDependencyLibs_2.11-1.6.0.jar:{InstallDirectory}/lib/system/KamanjaInternalDeps_2.11-1.6.0.jar:{InstallDirectory}/lib/system/ExtDependencyLibs2_2.11-1.6.0.jar"
         }
       ],
       "Adapters": [
@@ -93,10 +102,10 @@
           "TypeString": "Input",
           "TenantId": "tenant1",
           "ClassName": "com.ligadata.InputAdapters.KamanjaKafkaConsumer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.5.3.jar",
+          "JarName": "KamanjaInternalDeps_2.11-1.6.0.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.5.3.jar",
-            "ExtDependencyLibs2_2.11-1.5.3.jar"
+            "ExtDependencyLibs_2.11-1.6.0.jar",
+            "ExtDependencyLibs2_2.11-1.6.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -104,14 +113,29 @@
           }
         },
         {
+          "Name": "LoanInput",
+          "TypeString": "Input",
+          "TenantId": "tenant1",
+          "ClassName": "com.ligadata.InputAdapters.KamanjaKafkaConsumer$",
+          "JarName": "KamanjaInternalDeps_2.11-1.6.0.jar",
+          "DependencyJars": [
+            "ExtDependencyLibs_2.11-1.6.0.jar",
+            "ExtDependencyLibs2_2.11-1.6.0.jar"
+          ],
+          "AdapterSpecificCfg": {
+            "HostList": "localhost:9092",
+            "TopicName": "loaninput"
+          }
+        },
+        {
           "Name": "MedicalInput",
           "TypeString": "Input",
           "TenantId": "tenant1",
           "ClassName": "com.ligadata.InputAdapters.KamanjaKafkaConsumer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.5.3.jar",
+          "JarName": "KamanjaInternalDeps_2.11-1.6.0.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.5.3.jar",
-            "ExtDependencyLibs2_2.11-1.5.3.jar"
+            "ExtDependencyLibs_2.11-1.6.0.jar",
+            "ExtDependencyLibs2_2.11-1.6.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -123,10 +147,10 @@
           "TypeString": "Input",
           "TenantId": "tenant1",
           "ClassName": "com.ligadata.InputAdapters.KamanjaKafkaConsumer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.5.3.jar",
+          "JarName": "KamanjaInternalDeps_2.11-1.6.0.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.5.3.jar",
-            "ExtDependencyLibs2_2.11-1.5.3.jar"
+            "ExtDependencyLibs_2.11-1.6.0.jar",
+            "ExtDependencyLibs2_2.11-1.6.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -138,10 +162,10 @@
           "TypeString": "Input",
           "TenantId": "tenant1",
           "ClassName": "com.ligadata.InputAdapters.KamanjaKafkaConsumer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.5.3.jar",
+          "JarName": "KamanjaInternalDeps_2.11-1.6.0.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.5.3.jar",
-            "ExtDependencyLibs2_2.11-1.5.3.jar"
+            "ExtDependencyLibs_2.11-1.6.0.jar",
+            "ExtDependencyLibs2_2.11-1.6.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -153,10 +177,10 @@
           "TypeString": "Input",
           "TenantId": "tenant1",
           "ClassName": "com.ligadata.InputAdapters.KamanjaKafkaConsumer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.5.3.jar",
+          "JarName": "KamanjaInternalDeps_2.11-1.6.0.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.5.3.jar",
-            "ExtDependencyLibs2_2.11-1.5.3.jar"
+            "ExtDependencyLibs_2.11-1.6.0.jar",
+            "ExtDependencyLibs2_2.11-1.6.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -168,10 +192,10 @@
           "TypeString": "Output",
           "TenantId": "tenant1",
           "ClassName": "com.ligadata.OutputAdapters.KafkaProducer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.5.3.jar",
+          "JarName": "KamanjaInternalDeps_2.11-1.6.0.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.5.3.jar",
-            "ExtDependencyLibs2_2.11-1.5.3.jar"
+            "ExtDependencyLibs_2.11-1.6.0.jar",
+            "ExtDependencyLibs2_2.11-1.6.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -183,10 +207,10 @@
           "TypeString": "Output",
           "TenantId": "tenant1",
           "ClassName": "com.ligadata.OutputAdapters.KafkaProducer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.5.3.jar",
+          "JarName": "KamanjaInternalDeps_2.11-1.6.0.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.5.3.jar",
-            "ExtDependencyLibs2_2.11-1.5.3.jar"
+            "ExtDependencyLibs_2.11-1.6.0.jar",
+            "ExtDependencyLibs2_2.11-1.6.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -198,10 +222,10 @@
           "TypeString": "Output",
           "TenantId": "tenant1",
           "ClassName": "com.ligadata.OutputAdapters.KafkaProducer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.5.3.jar",
+          "JarName": "KamanjaInternalDeps_2.11-1.6.0.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.5.3.jar",
-            "ExtDependencyLibs2_2.11-1.5.3.jar"
+            "ExtDependencyLibs_2.11-1.6.0.jar",
+            "ExtDependencyLibs2_2.11-1.6.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
@@ -213,10 +237,10 @@
           "TypeString": "Output",
           "TenantId": "System",
           "ClassName": "com.ligadata.OutputAdapters.KafkaProducer$",
-          "JarName": "KamanjaInternalDeps_2.11-1.5.3.jar",
+          "JarName": "KamanjaInternalDeps_2.11-1.6.0.jar",
           "DependencyJars": [
-            "ExtDependencyLibs_2.11-1.5.3.jar",
-            "ExtDependencyLibs2_2.11-1.5.3.jar"
+            "ExtDependencyLibs_2.11-1.6.0.jar",
+            "ExtDependencyLibs2_2.11-1.6.0.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",

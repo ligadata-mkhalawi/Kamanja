@@ -55,7 +55,7 @@ import scala.actors.threadpool.{Executors, ExecutorService, TimeUnit}
 
 case class adapterMessageBinding(var AdapterName: String, var MessageNames: List[String], var Options: Map[String, String], var Serializer: String)
 
-class MigrateTo_V_1_5_0 extends MigratableTo {
+class MigrateTo_V_1_5 extends MigratableTo {
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
   // 646 - 676 Change begins - replace MetadataAPIImpl
@@ -720,6 +720,9 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
     _metaDataStoreDb.CreateMetadataContainer(metadataTables)
   }
 
+  override def uploadClusterConfig(): Unit = {
+    throw new Exception("Not applicable when migrating to 1.4")
+  }
 
   private def getUniqueId: Long = {
     _uniqueIdGenerator.incrementAndGet
@@ -1614,7 +1617,7 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
     containerList.toArray
   }
 
-  private def update140ModelsInPlace(mdObjs: ArrayBuffer[(String,String,Map[String, Any])],
+  private def update14ModelsInPlace(mdObjs: ArrayBuffer[(String,String,Map[String, Any])],
 				     containerSet: scala.collection.mutable.Set[String] ): Unit = {
     try {
       logger.info("Models to be Updated => " + mdObjs.length)
@@ -1647,16 +1650,13 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
 
 	  // Filter 1.4.0 fat jars now
 	  val depJars1 = md.DependencyJarNames
-	  val jarsToBeExcluded = List("ExtDependencyLibs_2.11-1.4.0.jar", "KamanjaInternalDeps_2.11-1.4.0.jar", "ExtDependencyLibs2_2.11-1.4.0.jar")
+	  val jarsToBeExcluded = List(s"ExtDependencyLibs_${_fromScalaVersion}-${_sourceVersion}.jar", s"KamanjaInternalDeps_${_fromScalaVersion}-${_sourceVersion}.jar", s"ExtDependencyLibs2_${_fromScalaVersion}-${_sourceVersion}.jar")
 	  var depJars = (depJars1 diff jarsToBeExcluded)
 	  md.dependencyJarNames = depJars.toArray
 	  var mdStrAfter = MetadataAPISerialization.serializeObjectToJson(md)
-	  mdStrAfter = mdStrAfter.replaceAll("ExtDependencyLibs_2.11-1.4.0.jar",s"ExtDependencyLibs_2.11-${curVersion}.jar")
-	  mdStrAfter = mdStrAfter.replaceAll("ExtDependencyLibs2_2.11-1.4.0.jar",s"ExtDependencyLibs2_2.11-${curVersion}.jar")
-	  mdStrAfter = mdStrAfter.replaceAll("KamanjaInternalDeps_2.11-1.4.0.jar",s"KamanjaInternalDeps_2.11-${curVersion}.jar")
-	  mdStrAfter = mdStrAfter.replaceAll("ExtDependencyLibs_2.11-1.4.1.jar",s"ExtDependencyLibs_2.11-${curVersion}.jar")
-	  mdStrAfter = mdStrAfter.replaceAll("ExtDependencyLibs2_2.11-1.4.1.jar",s"ExtDependencyLibs2_2.11-${curVersion}.jar")
-	  mdStrAfter = mdStrAfter.replaceAll("KamanjaInternalDeps_2.11-1.4.1.jar",s"KamanjaInternalDeps_2.11-${curVersion}.jar")
+	  mdStrAfter = mdStrAfter.replaceAll(s"ExtDependencyLibs_${_fromScalaVersion}-${_sourceVersion}.jar",s"ExtDependencyLibs_${_toScalaVersion}-${curVersion}.jar")
+	  mdStrAfter = mdStrAfter.replaceAll(s"ExtDependencyLibs2_${_fromScalaVersion}-${_sourceVersion}.jar",s"ExtDependencyLibs2_${_toScalaVersion}-${curVersion}.jar")
+	  mdStrAfter = mdStrAfter.replaceAll(s"KamanjaInternalDeps_${_fromScalaVersion}-${_sourceVersion}.jar",s"KamanjaInternalDeps_${_toScalaVersion}-${curVersion}.jar")
 	  logger.debug("Model Json Afer Update => " + mdStrAfter)
 	  // save updated mdStr
           val md1 = MetadataAPISerialization.deserializeMetadata(mdStrAfter).asInstanceOf[ModelDef]
@@ -1705,7 +1705,7 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
     logger.info("Uploading configuration:" + cfgStr)
     getMetadataAPI.UploadConfig(cfgStr, defaultUserId, "ClusterConfig")
     logger.info("Updating Models")
-    update140ModelsInPlace(models,containerSet)
+    update14ModelsInPlace(models,containerSet)
     return addedMessagesContainers
   }
 
@@ -1718,7 +1718,7 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
     // In case of model objects we remove the dependency of the 1.4.0 fat jars
     // In case of config objects, make adapters depend on ${curVersion} fat jars
     // instead of 1.4.0 or 1.4.1 fat jars.
-    if( _sourceVersion == "1.4" ||  _sourceVersion == "1.4.1" ){
+    if( _sourceVersion.substring(0,3) == "1.4" ){
       var msgs = update14ObjectsInPlace(allMetadataElemsJson)
       return msgs
     }
