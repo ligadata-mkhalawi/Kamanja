@@ -105,12 +105,12 @@ object ConfigDefaults {
 
   def envContextClassName: String = "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$"
 
-  def envContextDependecyJarList: List[String] = List(s"ExtDependencyLibs_${TestUtils.scalaVersion}-$kamanjaVersion.jar", s"KamanjaInternalDeps_${TestUtils.scalaVersion}-$kamanjaVersion.jar", s"ExtDependencyLibs2_${TestUtils.scalaVersion}-$kamanjaVersion.jar")
+  def envContextDependecyJarList: List[String] = List(s"ExtDependencyLibs_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar", s"KamanjaInternalDeps_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar", s"ExtDependencyLibs2_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar")
   def envContextJarName = s"simpleenvcontextimpl_${TestUtils.scalaVersion}-1.0.jar"
 
-  def nodeClassPath: String = s".:$jarResourceDir/ExtDependencyLibs_${TestUtils.scalaVersion}-$kamanjaVersion.jar:$jarResourceDir/KamanjaInternalDeps_${TestUtils.scalaVersion}-$kamanjaVersion.jar:$jarResourceDir/ExtDependencyLibs2_${TestUtils.scalaVersion}-$kamanjaVersion.jar"
+  def nodeClassPath: String = s".:$jarResourceDir/ExtDependencyLibs_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar:$jarResourceDir/KamanjaInternalDeps_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar:$jarResourceDir/ExtDependencyLibs2_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar"
 
-  def adapterDepJars: List[String] = List(s"ExtDependencyLibs_${TestUtils.scalaVersion}-$kamanjaVersion.jar", s"KamanjaInternalDeps_${TestUtils.scalaVersion}-$kamanjaVersion.jar", s"ExtDependencyLibs2_${TestUtils.scalaVersion}-$kamanjaVersion.jar")
+  def adapterDepJars: List[String] = List(s"ExtDependencyLibs_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar", s"KamanjaInternalDeps_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar", s"ExtDependencyLibs2_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar")
 
   val scala_home = System.getenv("SCALA_HOME")
 

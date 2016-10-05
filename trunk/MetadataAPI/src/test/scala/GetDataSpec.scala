@@ -87,7 +87,6 @@ class GetDataSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter wit
       logger.info("resource dir => " + getClass.getResource("/").getPath)
 
       logger.info("Starting Embedded Zookeeper")
-      zkServer = new EmbeddedZookeeper
       zkServer.startup
       logger.info("Zookeeper started with")
 
@@ -347,7 +346,9 @@ class GetDataSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter wit
       MetadataAPIImpl.SetAuditObj(null)
       val pFile = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("AUDIT_PARMS")
       if( pFile != null ){
-	TestUtils.deleteFile(pFile)
+        if(new File(pFile) exists) {
+          TestUtils.deleteFile(pFile)
+        }
       }
     }
     MetadataAPIImpl.shutdown

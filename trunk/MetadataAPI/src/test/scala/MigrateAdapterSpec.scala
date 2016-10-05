@@ -99,7 +99,6 @@ class MigrateAdapterSpec extends FunSpec with LocalTestFixtures with BeforeAndAf
 
       logger.info("resource dir => " + getClass.getResource("/").getPath)
 
-      val zkServer = new EmbeddedZookeeper
       zkServer.startup
 
       logger.info("Initialize MetadataManager")
@@ -590,7 +589,9 @@ class MigrateAdapterSpec extends FunSpec with LocalTestFixtures with BeforeAndAf
       MetadataAPIImpl.SetAuditObj(null)
       val pFile = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("AUDIT_PARMS")
       if( pFile != null ){
-	TestUtils.deleteFile(pFile)
+        if(new File(pFile) exists) {
+          TestUtils.deleteFile(pFile)
+        }
       }
     }
     MetadataAPIImpl.shutdown

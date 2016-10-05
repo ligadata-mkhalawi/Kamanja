@@ -72,7 +72,7 @@ class MetadataManager extends KamanjaTestLogger {
     }
 
     if(config.appJarPath == "") {
-      config.appJarPath = this.getClass.getResource("/jars/lib/aplication").getPath
+      config.appJarPath = this.getClass.getResource("/jars/lib/application").getPath
     }
 
     val mdDataStore = new MetadataDataStore(config.database, config.connectionMode, config.databaseSchema, config.databaseHost)

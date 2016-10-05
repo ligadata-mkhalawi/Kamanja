@@ -85,7 +85,6 @@ class AddFunctionSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
 
       logger.info("Initialize MetadataManager")
       //mdMan.config.classPath = ConfigDefaults.metadataClasspath
-      zkServer = new EmbeddedZookeeper
       zkServer.startup
 
       mdMan.initMetadataCfg(new MetadataAPIProperties(H2DBStore.name, H2DBStore.connectionMode, ConfigDefaults.storageDirectory, zkConnStr = zkServer.getConnection))
@@ -364,8 +363,8 @@ class AddFunctionSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
       MetadataAPIImpl.GetAuditObj.dropStore
       MetadataAPIImpl.SetAuditObj(null)
       val pFile = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("AUDIT_PARMS")
-      if( pFile != null ){
-	TestUtils.deleteFile(pFile)
+      if( pFile != null ) {
+        TestUtils.deleteFile(pFile)
       }
     }
     MetadataAPIImpl.shutdown

@@ -85,7 +85,6 @@ class AddMedicalModelSpec extends FunSpec with LocalTestFixtures with BeforeAndA
       logger.info("resource dir => " + getClass.getResource("/").getPath)
 
       logger.info("Startup embedded zooKeeper ")
-      zkServer = new EmbeddedZookeeper
       zkServer.startup
 
       logger.info("Initialize MetadataManager")
@@ -560,7 +559,9 @@ class AddMedicalModelSpec extends FunSpec with LocalTestFixtures with BeforeAndA
       MetadataAPIImpl.SetAuditObj(null)
       val pFile = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("AUDIT_PARMS")
       if( pFile != null ){
-	TestUtils.deleteFile(pFile)
+        if(new File(pFile) exists) {
+          TestUtils.deleteFile(pFile)
+        }
       }
     }
     MetadataAPIImpl.shutdown

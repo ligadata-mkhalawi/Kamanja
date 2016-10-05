@@ -11,6 +11,7 @@ import org.scalatest.{BeforeAndAfterAll, FlatSpec}
 import com.ligadata.kamanja.metadataload.MetadataLoad
 import com.ligadata.MetadataAPI._
 import com.ligadata.automation.unittests.api.setup._
+import com.ligadata.test.utils._
 
 class MetadataAPISerializationTest extends FlatSpec with BeforeAndAfterAll {
 

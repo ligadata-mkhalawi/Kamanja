@@ -84,7 +84,6 @@ class UpdateModelContainersSpec extends FunSpec with LocalTestFixtures with Befo
       logger.info("resource dir => " + getClass.getResource("/").getPath)
 
       logger.info("Startup embedded zooKeeper ")
-      zkServer = new EmbeddedZookeeper
       zkServer.startup
 
       logger.info("Initialize MetadataManager")
@@ -635,7 +634,9 @@ class UpdateModelContainersSpec extends FunSpec with LocalTestFixtures with Befo
       MetadataAPIImpl.SetAuditObj(null)
       val pFile = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("AUDIT_PARMS")
       if( pFile != null ){
-	TestUtils.deleteFile(pFile)
+        if(new File(pFile) exists) {
+          TestUtils.deleteFile(pFile)
+        }
       }
     }
     MetadataAPIImpl.shutdown

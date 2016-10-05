@@ -89,7 +89,6 @@ class CmdLineAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter 
       logger.info("starting...");
 
       logger.info("resource dir => " + getClass.getResource("/").getPath)
-      zkServer = new EmbeddedZookeeper
       zkServer.startup
 
       logger.info("Initialize MetadataManager")
@@ -448,7 +447,9 @@ class CmdLineAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter 
       MetadataAPIImpl.SetAuditObj(null)
       val pFile = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("AUDIT_PARMS")
       if( pFile != null ){
-	TestUtils.deleteFile(pFile)
+        if(new File(pFile) exists) {
+          TestUtils.deleteFile(pFile)
+        }
       }
     }
     MetadataAPIImpl.shutdown

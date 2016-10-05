@@ -1,6 +1,6 @@
 package com.ligadata.test.utils
 
-import java.io.{File, FileNotFoundException, IOException}
+import java.io.{File, FileNotFoundException, IOException, FileWriter, BufferedWriter}
 import java.net.ServerSocket
 
 import scala.util.Random
@@ -43,7 +43,8 @@ object TestUtils extends KamanjaTestLogger {
   @throws(classOf[FileNotFoundException])
   def deleteFile(path:File):Boolean = {
     if(!path.exists()){
-      throw new FileNotFoundException(path.getAbsolutePath)
+      return true
+      //throw new FileNotFoundException(path.getAbsolutePath)
     }
     var ret = true
     if (path.isDirectory){
@@ -54,6 +55,33 @@ object TestUtils extends KamanjaTestLogger {
     logger.debug("[Kamanja Test Utils]: Deleting file '" + path + "'")
     return ret && path.delete()
   }
+
+  def deleteFile(path:String):Unit = {
+    val file = new File(path);
+    deleteFile(file)
+  }
+
+  private def dumpStrTextToFile(strText: String, filePath: String): Unit = {
+    val file = new File(filePath);
+    val bufferedWriter = new BufferedWriter(new FileWriter(file,true))
+    bufferedWriter.write(strText)
+    bufferedWriter.close
+  }
+
+  def createAuditParamsFile(paramFile:String, tableName: String = null): String = {
+    val file = new File(paramFile);
+    deleteFile(file)
+    var tbl = tableName
+    if( tbl == null ){
+      //extract tableName as last token of file path
+      val fileNamePathTokens = paramFile.split("/")
+      tbl = fileNamePathTokens(fileNamePathTokens.length-1)
+    }
+    dumpStrTextToFile("schema=" + tbl + "\n",paramFile)
+    dumpStrTextToFile("table=" + tbl + "\n",paramFile)
+    paramFile
+  }
+
 
   def retry[T](n: Int)(fn : => T): T = {
     util.Try { fn } match {

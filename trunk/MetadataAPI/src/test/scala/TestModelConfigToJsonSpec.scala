@@ -83,7 +83,6 @@ class TestModelConfigToJsonSpec extends FunSpec with LocalTestFixtures with Befo
 
       logger.info("resource dir => " + getClass.getResource("/").getPath)
 
-      zkServer = new EmbeddedZookeeper
       zkServer.startup
 
       logger.info("Initialize MetadataManager")
@@ -624,7 +623,9 @@ class TestModelConfigToJsonSpec extends FunSpec with LocalTestFixtures with Befo
       MetadataAPIImpl.SetAuditObj(null)
       val pFile = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("AUDIT_PARMS")
       if( pFile != null ){
-	TestUtils.deleteFile(pFile)
+        if(new File(pFile) exists) {
+          TestUtils.deleteFile(pFile)
+        }
       }
     }
     MetadataAPIImpl.shutdown
@@ -632,6 +633,6 @@ class TestModelConfigToJsonSpec extends FunSpec with LocalTestFixtures with Befo
 
   if (zkServer != null) {
     zkServer.shutdown
-    zkServer = null
+    //zkServer = null
   }
 }

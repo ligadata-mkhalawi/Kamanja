@@ -83,7 +83,6 @@ class AddContainerSpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
 
       logger.info("resource dir => " + getClass.getResource("/").getPath)
 
-      zkServer = new EmbeddedZookeeper
       zkServer.startup
 
       logger.info("Initialize MetadataManager")
@@ -349,8 +348,8 @@ class AddContainerSpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
       MetadataAPIImpl.GetAuditObj.dropStore
       MetadataAPIImpl.SetAuditObj(null)
       val pFile = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("AUDIT_PARMS")
-      if( pFile != null ){
-	TestUtils.deleteFile(pFile)
+      if( pFile != null ) {
+        TestUtils.deleteFile(pFile)
       }
     }
     MetadataAPIImpl.shutdown

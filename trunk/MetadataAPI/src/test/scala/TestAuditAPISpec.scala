@@ -20,16 +20,20 @@ import com.ligadata.MetadataAPI.MetadataAPI.ModelType
 import com.ligadata.automation.unittests.api.setup._
 import org.scalatest._
 import Matchers._
-
 import com.ligadata.MetadataAPI._
 import com.ligadata.kamanja.metadata._
 import com.ligadata.kamanja.metadata.MdMgr._
-
 import com.ligadata.Utils._
+import com.ligadata.test.utils._
+import com.ligadata.test.embedded.zookeeper._
+import com.ligadata.test.configuration.cluster.adapters.interfaces._
+
 import util.control.Breaks._
 import scala.io._
 import java.util.Date
 import java.io._
+
+import com.ligadata.MetadataAPI.test.MetadataAPIProperties
 
 import sys.process._
 import org.apache.logging.log4j._
@@ -37,7 +41,6 @@ import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import com.ligadata.Serialize._
-
 import com.ligadata.kamanja.metadataload.MetadataLoad
 
 class TestAuditAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
@@ -96,17 +99,15 @@ class TestAuditAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
 
       logger.info("resource dir => " + getClass.getResource("/").getPath)
 
+      zkServer.startup
+
       logger.info("Initialize MetadataManager")
-      mdMan.config.classPath = ConfigDefaults.metadataClasspath
-      mdMan.initMetadataCfg
+      mdMan.initMetadataCfg(new MetadataAPIProperties(H2DBStore.name, H2DBStore.connectionMode, ConfigDefaults.storageDirectory, zkConnStr = zkServer.getConnection))
 
       logger.info("Initialize MdMgr")
       MdMgr.GetMdMgr.truncate
       val mdLoader = new MetadataLoad(MdMgr.mdMgr, "", "", "", "")
       mdLoader.initialize
-
-      val zkServer = EmbeddedZookeeper
-      zkServer.instance.startup
 
       logger.info("Initialize zooKeeper connection")
       MetadataAPIImpl.initZkListeners(false)
@@ -293,6 +294,6 @@ class TestAuditAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
   }
 
   if (zkServer != null) {
-    zkServer.instance.shutdown
+    zkServer.shutdown
   }
 }

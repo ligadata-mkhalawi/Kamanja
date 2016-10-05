@@ -42,7 +42,7 @@ import com.ligadata.test.embedded.zookeeper._
 import com.ligadata.test.utils._
 import com.ligadata.test.configuration.cluster.adapters.interfaces._
 
-class MetadataAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
+class MetadataAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen with Matchers {
   var res: String = null;
   var statusCode: Int = -1;
   var apiResKey: String = "\"Status Code\" : 0"
@@ -83,17 +83,14 @@ class MetadataAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
 
       logger.info("resource dir => " + getClass.getResource("/").getPath)
 
+			zkServer.startup
       logger.info("Initialize MetadataManager")
-      mdMan.config.classPath = ConfigDefaults.metadataClasspath
-      mdMan.initMetadataCfg
+			mdMan.initMetadataCfg(new MetadataAPIProperties(H2DBStore.name, H2DBStore.connectionMode, ConfigDefaults.storageDirectory, zkConnStr = zkServer.getConnection))
 
       logger.info("Initialize MdMgr")
       MdMgr.GetMdMgr.truncate
       val mdLoader = new MetadataLoad(MdMgr.mdMgr, "", "", "", "")
       mdLoader.initialize
-
-      val zkServer = EmbeddedZookeeper
-      zkServer.instance.startup
 
       logger.info("Initialize zooKeeper connection")
       MetadataAPIImpl.initZkListeners(false)
@@ -129,7 +126,7 @@ class MetadataAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
       logger.info("Initialize security adapter")
       val tempAuditParamsFile = getClass.getResource("/").getPath + this.getClass.getSimpleName
       MetadataAPIImpl.GetMetadataAPIConfig.setProperty("AUDIT_PARMS", TestUtils.createAuditParamsFile(tempAuditParamsFile))
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("AUDIT_PARMS", TestUtils.createAuditParamsFile(this.getClass.getSimpleName))
+      //MetadataAPIImpl.GetMetadataAPIConfig.setProperty("AUDIT_PARMS", TestUtils.createAuditParamsFile(this.getClass.getSimpleName))
       MetadataAPIImpl.InitSecImpl
 
       //MetadataAPIImpl.TruncateAuditStore
@@ -599,10 +596,10 @@ class MetadataAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
       assert(true == iFile.isDirectory)
 
       And("Make sure there are few JSON type files in " + dirName);
-      val typeFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith(s"_${ConfigDefaults.scalaVersion}.json"))
+      val typeFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith(s"_${TestUtils.scalaVersion}.json"))
       assert(0 != typeFiles.length)
 
-      fileList = List(s"SampleTypes_${ConfigDefaults.scalaVersion}.json")
+      fileList = List(s"SampleTypes_${TestUtils.scalaVersion}.json")
       fileList.foreach(f1 => {
 	And("Add the Type From " + f1)
 	And("Make Sure " + f1 + " exist")
@@ -1057,10 +1054,10 @@ class MetadataAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
 			assert(true == iFile.isDirectory)
 
 			And("Make sure there are few JSON type files in " + dirName);
-			val typeFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith(s"_${ConfigDefaults.scalaVersion}.json"))
+			val typeFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith(s"_${TestUtils.scalaVersion}.json"))
 			assert(0 != typeFiles.length)
 
-			fileList = List(s"SampleTypes_${ConfigDefaults.scalaVersion}.json")
+			fileList = List(s"SampleTypes_${TestUtils.scalaVersion}.json")
 			fileList.foreach(f1 => {
 				And("Add the Type From " + f1)
 				And("Make Sure " + f1 + " exist")
@@ -1169,10 +1166,10 @@ class MetadataAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
 			assert(true == iFile.isDirectory)
 
 			And("Make sure there are few JSON function files in " + dirName);
-			val funcFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith(s"_${ConfigDefaults.scalaVersion}.json"))
+			val funcFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith(s"_${TestUtils.scalaVersion}.json"))
 			assert(0 != funcFiles.length)
 
-			fileList = List(s"SampleFunctions_${ConfigDefaults.scalaVersion}.json")
+			fileList = List(s"SampleFunctions_${TestUtils.scalaVersion}.json")
 			fileList.foreach(f1 => {
 				And("Add the Function From " + f1)
 				And("Make Sure " + f1 + " exist")
@@ -1832,7 +1829,9 @@ class MetadataAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
       MetadataAPIImpl.SetAuditObj(null)
       val pFile = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("AUDIT_PARMS")
       if( pFile != null ){
-	TestUtils.deleteFile(pFile)
+				if(new File(pFile) exists) {
+					TestUtils.deleteFile(pFile)
+				}
       }
     }
     MetadataAPIImpl.shutdown
@@ -1840,6 +1839,6 @@ class MetadataAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
 
 
   if (zkServer != null) {
-    zkServer.instance.shutdown
+    zkServer.shutdown
   }
 }

@@ -42,7 +42,7 @@ import com.ligadata.test.embedded.zookeeper._
 import com.ligadata.test.utils._
 import com.ligadata.test.configuration.cluster.adapters.interfaces._
 
-class ContainerAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
+class ContainerAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen with Matchers {
   var res: String = null;
   var statusCode: Int = -1;
   var apiResKey: String = "\"Status Code\" : 0"
@@ -85,16 +85,15 @@ class ContainerAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
       logger.info("resource dir => " + getClass.getResource("/").getPath)
 
       logger.info("Initialize MetadataManager")
-      mdMan.config.classPath = ConfigDefaults.metadataClasspath
-      mdMan.initMetadataCfg
+
+      zkServer.startup
+
+      mdMan.initMetadataCfg(new MetadataAPIProperties(H2DBStore.name, H2DBStore.connectionMode, ConfigDefaults.storageDirectory, zkConnStr = zkServer.getConnection))
 
       logger.info("Initialize MdMgr")
       MdMgr.GetMdMgr.truncate
       val mdLoader = new MetadataLoad(MdMgr.mdMgr, "", "", "", "")
       mdLoader.initialize
-
-      val zkServer = new EmbeddedZookeeper
-      zkServer.startup
 
       logger.info("Initialize zooKeeper connection")
       MetadataAPIImpl.initZkListeners(false)
@@ -394,14 +393,14 @@ class ContainerAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
       MetadataAPIImpl.GetAuditObj.dropStore
       MetadataAPIImpl.SetAuditObj(null)
       val pFile = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("AUDIT_PARMS")
-      if( pFile != null ){
-	TestUtils.deleteFile(pFile)
+      if( pFile != null ) {
+        TestUtils.deleteFile(pFile)
       }
     }
     MetadataAPIImpl.shutdown
   }
 
   if (zkServer != null) {
-    zkServer.instance.shutdown
+    zkServer.shutdown
   }
 }
