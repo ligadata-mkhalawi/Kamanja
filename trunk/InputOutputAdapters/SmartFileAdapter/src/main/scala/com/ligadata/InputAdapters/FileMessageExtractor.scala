@@ -346,42 +346,49 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
     val allData = ArrayBuffer[Byte]()
     // create tmpFlHandler from filename
     //    val fileName = fileHandler.getFullPath
-    val byteBuffer = new Array[Byte](maxlen)
+    val filePath = fileHandler.getFullPath
+    try {
+      val byteBuffer = new Array[Byte](maxlen)
 
-    fileHandler.openForRead()
+      fileHandler.openForRead()
 
-    var readlen = 0
-    var curReadLen = fileHandler.read(byteBuffer, readlen, maxlen - readlen - 1)
-    var lastReadLen = curReadLen
+      var readlen = 0
+      var curReadLen = fileHandler.read(byteBuffer, readlen, maxlen - readlen - 1)
+      var lastReadLen = curReadLen
 
-    while (lastReadLen > 0) {
-      val minBuf = maxlen / 3; // We are expecting at least 1/3 of the buffer need to fill before
-      while (readlen < minBuf && curReadLen > 0) {
-        // Re-reading some more data
-        curReadLen = fileHandler.read(byteBuffer, readlen, maxlen - readlen - 1)
-        if (curReadLen > 0) {
-          readlen += curReadLen
+      while (lastReadLen > 0) {
+        val minBuf = maxlen / 3; // We are expecting at least 1/3 of the buffer need to fill before
+        while (readlen < minBuf && curReadLen > 0) {
+          // Re-reading some more data
+          curReadLen = fileHandler.read(byteBuffer, readlen, maxlen - readlen - 1)
+          if (curReadLen > 0) {
+            readlen += curReadLen
+          }
+          lastReadLen = curReadLen
         }
-        lastReadLen = curReadLen
+
+        allData ++= byteBuffer
       }
 
-      allData ++= byteBuffer
+      if (fileHandler != null) {
+        fileHandler.close
+      }
+      //encode base64
+      val base64String: String = Base64.encodeBase64String(allData.toArray)
+      // prepare Json here.
+      val jsonString = "{\"filename\":\"%s\",\"messageBody\": \"%s\"}".format(filePath, base64String)
+
+      val smartFileMessage = new SmartFileMessage(jsonString.getBytes(), 0, fileHandler, 0)
+      messageFoundCallback(smartFileMessage, consumerContext)
+      finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_FINISHED)
+    } catch {
+      case jhs: java.lang.OutOfMemoryError => {
+        logger.error("SMART_FILE_CONSUMER Exception : Java Heap space issue, WorkerBufferSize property might need resetting, file %s could not be processed ".format(filePath), jhs)
+        finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_ProcessingInterrupted)
+        shutdownThreads
+
+      }
     }
-
-    val filePath = fileHandler.getFullPath
-    if (fileHandler != null) {
-      fileHandler.close
-    }
-    //encode base64
-    val base64String: String = Base64.encodeBase64String(allData.toArray)
-
-    // prepare Json here.
-    val jsonString = "{\"filename\":\"%s\",\"messageBody\": \"%s\"}".format(filePath, base64String)
-
-    val smartFileMessage = new SmartFileMessage(jsonString.getBytes(), 0, fileHandler, 0)
-    messageFoundCallback(smartFileMessage, consumerContext)
-    finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_FINISHED)
-
 
   }
 
