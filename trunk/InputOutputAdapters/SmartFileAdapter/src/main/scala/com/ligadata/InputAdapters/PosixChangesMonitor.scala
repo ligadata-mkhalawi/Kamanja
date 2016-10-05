@@ -392,7 +392,7 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
   private def checkExistingFiles(parentDir: File, isFirstScan : Boolean, locationInfo: LocationInfo): Unit = {
     // Process all the existing files in the directory that are not marked complete.
     if (parentDir.exists && parentDir.isDirectory) {
-      logger.warn("Posix Changes Monitor - listing dir " + parentDir.toString)
+      logger.info("Posix Changes Monitor - listing dir " + parentDir.toString)
       val files = parentDir.listFiles.filter(_.isFile).sortWith(_.lastModified < _.lastModified).toList
 
       val newFiles = ArrayBuffer[String]()

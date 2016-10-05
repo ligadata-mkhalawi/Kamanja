@@ -1793,11 +1793,13 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   }
 
   def getDirLocationInfo(srcDir : String) : LocationInfo = {
+    logger.debug("getDirLocationInfo for file "+srcDir)
+    logger.debug(locationsMap)
 
     if(locationsMap.contains(srcDir))
       locationsMap(srcDir)
     else {
-      val search = locationsMap.find(keyDir => srcDir.startsWith(srcDir))
+      val search = locationsMap.find(tuple => (srcDir + "/").startsWith(tuple._1 + "/"))
       search match{
         case None => null
         case Some(tuple) => tuple._2
@@ -1805,6 +1807,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     }
   }
   def getFileLocationConfig(fileHandler: SmartFileHandler): LocationInfo ={
+    logger.debug("getFileLocationConfig for file "+fileHandler.getFullPath)
     val parentDir = fileHandler.getParentDir
     getDirLocationInfo(parentDir)
 
