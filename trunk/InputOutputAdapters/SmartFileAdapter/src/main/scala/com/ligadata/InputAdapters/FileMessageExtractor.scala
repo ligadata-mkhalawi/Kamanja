@@ -28,7 +28,7 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
 
   private val maxlen: Int = adapterConfig.monitoringConfig.workerBufferSize * 1024 * 1024 //in MB
 
-  val srcDirLocInfo = parentSmartFileConsumer.getSrcDirLocationInfo(fileHandler.getParentDir)
+  val srcDirLocInfo = parentSmartFileConsumer.getDirLocationInfo(fileHandler.getParentDir)
   private val message_separator : Char =
     if(srcDirLocInfo == null) adapterConfig.monitoringConfig.messageSeparator
     else srcDirLocInfo.messageSeparator

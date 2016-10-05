@@ -86,17 +86,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
   private val adapterConfig = SmartFileAdapterConfiguration.getAdapterConfig(inputConfig)
 
-  private var locationTargetMoveDirsMap =
+  private val locationTargetMoveDirsMap =
     adapterConfig.monitoringConfig.detailedLocations.map(loc => loc.srcDir -> loc.targetDir).toMap
-  /*if(adapterConfig.monitoringConfig.targetMoveDirs.length == 1)
-    locationTargetMoveDirsMap = adapterConfig.monitoringConfig.locations.map(
-      loc => MonitorUtils.simpleDirPath(loc.srcDir) -> MonitorUtils.simpleDirPath(adapterConfig.monitoringConfig.targetMoveDirs(0))).toMap
-  else {
-    adapterConfig.monitoringConfig.locations.foldLeft(0)((counter, loc) => {
-      locationTargetMoveDirsMap += MonitorUtils.simpleDirPath(loc.srcDir) -> MonitorUtils.simpleDirPath(adapterConfig.monitoringConfig.targetMoveDirs(counter))
-      counter + 1
-    })
-  }*/
 
   private var isShutdown = false
   private var isQuiesced = false
@@ -1014,7 +1005,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
           if (status == File_Processing_Status_Finished || status == File_Processing_Status_Corrupted) {
             val procFileParentDir = MonitorUtils.getFileParentDir(processingFilePath, adapterConfig)
-            val procFileLocationInfo = getSrcDirLocationInfo(procFileParentDir)
+            val procFileLocationInfo = getDirLocationInfo(procFileParentDir)
             if(procFileLocationInfo.isMovingEnabled){
               val moved = moveFile(processingFilePath)
               if (moved)
@@ -1259,14 +1250,19 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   private def getTargetFile(fileHandler : SmartFileHandler): (String, String) = {
     val originalFilePath = fileHandler.getFullPath
 
-    val parentDir = fileHandler.getParentDir
-    if(!locationTargetMoveDirsMap.contains(parentDir))
+    /*if(!locationTargetMoveDirsMap.contains(parentDir))
       throw new Exception("No target move dir for directory " + parentDir)
 
     val targetMoveDir = locationTargetMoveDirsMap(parentDir)
-
     val fileStruct = originalFilePath.split("/")
+    (targetMoveDir, fileStruct(fileStruct.size - 1))*/
 
+    val locationInfo = getFileLocationConfig(fileHandler)
+    if(locationInfo == null)
+      throw new Exception("No target move dir for file " + originalFilePath)
+
+    val targetMoveDir = locationInfo.targetDir
+    val fileStruct = originalFilePath.split("/")
     (targetMoveDir, fileStruct(fileStruct.size - 1))
   }
 
@@ -1592,17 +1588,6 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   }
 
 
-  def getFileLocationConfig(fileHandler: SmartFileHandler): LocationInfo ={
-    val parentDir = fileHandler.getParentDir
-    val parentDirLocationConfig = adapterConfig.monitoringConfig.detailedLocations.find(loc =>
-      MonitorUtils.simpleDirPath(loc.srcDir).equals(MonitorUtils.simpleDirPath(parentDir)))
-
-    parentDirLocationConfig match{
-      case Some(loc) => loc
-      case None => null
-    }
-
-  }
   /**
     * add tags if needed
     */
@@ -1807,9 +1792,21 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     partitonCounts(pid.toString) = cVal + 1
   }
 
-  def getSrcDirLocationInfo(srcDir : String) : LocationInfo = {
+  def getDirLocationInfo(srcDir : String) : LocationInfo = {
+
     if(locationsMap.contains(srcDir))
       locationsMap(srcDir)
-    else null
+    else {
+      val search = locationsMap.find(keyDir => srcDir.startsWith(srcDir))
+      search match{
+        case None => null
+        case Some(tuple) => tuple._2
+      }
+    }
+  }
+  def getFileLocationConfig(fileHandler: SmartFileHandler): LocationInfo ={
+    val parentDir = fileHandler.getParentDir
+    getDirLocationInfo(parentDir)
+
   }
 }
