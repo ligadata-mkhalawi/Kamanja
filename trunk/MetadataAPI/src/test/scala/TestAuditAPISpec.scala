@@ -20,11 +20,12 @@ import com.ligadata.MetadataAPI.MetadataAPI.ModelType
 import com.ligadata.automation.unittests.api.setup._
 import org.scalatest._
 import Matchers._
+
 import com.ligadata.MetadataAPI._
 import com.ligadata.kamanja.metadata._
 import com.ligadata.kamanja.metadata.MdMgr._
-import com.ligadata.Utils._
 
+import com.ligadata.Utils._
 import util.control.Breaks._
 import scala.io._
 import java.util.Date
@@ -36,13 +37,10 @@ import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import com.ligadata.Serialize._
-import com.ligadata.kamanja.metadataload.MetadataLoad
-import com.ligadata.MetadataAPI.test.{MetadataAPIProperties, MetadataDefaults}
-import com.ligadata.test.configuration.cluster.adapters.interfaces._
-import com.ligadata.test.utils._
-import com.ligadata.test.embedded.zookeeper._
 
-class AddFunctionSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen with Matchers {
+import com.ligadata.kamanja.metadataload.MetadataLoad
+
+class TestAuditAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
   var res: String = null;
   var statusCode: Int = -1;
   var apiResKey: String = "\"Status Code\" : 0"
@@ -56,24 +54,39 @@ class AddFunctionSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
   var newVersion: String = null
   val userid: Option[String] = Some("test")
   val tenantId: Option[String] = Some("testTenantId")
+  var da: String = null
 
   private val loggerName = this.getClass.getName
   private val logger = LogManager.getLogger(loggerName)
 
-  private var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id","avroschemainfo","element_info","elementinfo","ismetadata","metadatacounters")
-
   private def TruncateDbStore = {
     val db = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
     assert(null != db)
-    var ds = MetadataAPIImpl.GetMainDS
-    ds.TruncateContainer(containerList)
+    db match {
+      case "sqlserver" | "mysql" | "hbase" | "cassandra" | "hashmap" | "treemap" => {
+	var ds = MetadataAPIImpl.GetMainDS
+	var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id")
+	ds.TruncateContainer(containerList)
+      }
+      case _ => {
+	logger.info("TruncateDbStore is not supported for database " + db)
+      }
+    }
   }
 
   private def DropDbStore = {
     val db = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
     assert(null != db)
-    var ds = MetadataAPIImpl.GetMainDS
-    ds.DropContainer(containerList)
+    db match {
+      case "sqlserver" | "mysql" | "hbase" | "cassandra" | "hashmap" | "treemap" => {
+	var ds = MetadataAPIImpl.GetMainDS
+	var containerList: Array[String] = Array("config_objects", "jar_store", "model_config_objects", "metadata_objects", "transaction_id")
+	ds.DropContainer(containerList)
+      }
+      case _ => {
+	logger.info("DropDbStore is not supported for database " + db)
+      }
+    }
   }
 
   override def beforeAll = {
@@ -84,16 +97,16 @@ class AddFunctionSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
       logger.info("resource dir => " + getClass.getResource("/").getPath)
 
       logger.info("Initialize MetadataManager")
-      //mdMan.config.classPath = ConfigDefaults.metadataClasspath
-      zkServer = new EmbeddedZookeeper
-      zkServer.startup
-
-      mdMan.initMetadataCfg(new MetadataAPIProperties(H2DBStore.name, H2DBStore.connectionMode, ConfigDefaults.storageDirectory, zkConnStr = zkServer.getConnection))
+      mdMan.config.classPath = ConfigDefaults.metadataClasspath
+      mdMan.initMetadataCfg
 
       logger.info("Initialize MdMgr")
       MdMgr.GetMdMgr.truncate
       val mdLoader = new MetadataLoad(MdMgr.mdMgr, "", "", "", "")
       mdLoader.initialize
+
+      val zkServer = EmbeddedZookeeper
+      zkServer.instance.startup
 
       logger.info("Initialize zooKeeper connection")
       MetadataAPIImpl.initZkListeners(false)
@@ -108,17 +121,6 @@ class AddFunctionSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
       logger.info("jarPaths => " + jp)
 
 
-      logger.info("Truncating dbstore")
-      TruncateDbStore
-
-      And("PutTranId updates the tranId")
-      noException should be thrownBy {
-	MetadataAPIImpl.PutTranId(0)
-      }
-
-      logger.info("Load All objects into cache")
-      MetadataAPIImpl.LoadAllObjectsIntoCache(false)
-
       // The above call is resetting JAR_PATHS based on nodeId( node-specific configuration)
       // This is causing unit-tests to fail
       // restore JAR_PATHS value
@@ -126,14 +128,12 @@ class AddFunctionSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
       jp = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS")
       logger.info("jarPaths => " + jp)
 
-      
       logger.info("Initialize security adapter")
-      val tempAuditParamsFile = getClass.getResource("/").getPath + this.getClass.getSimpleName
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("AUDIT_PARMS", TestUtils.createAuditParamsFile(tempAuditParamsFile))
-      MetadataAPIImpl.GetMetadataAPIConfig.setProperty("AUDIT_PARMS", TestUtils.createAuditParamsFile(this.getClass.getSimpleName))
+
       MetadataAPIImpl.InitSecImpl
 
-      //MetadataAPIImpl.TruncateAuditStore
+      MetadataAPIImpl.TruncateAuditStore
+
       MetadataAPIImpl.isInitilized = true
       logger.info(MetadataAPIImpl.GetMetadataAPIConfig)
     }
@@ -145,24 +145,8 @@ class AddFunctionSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
     }
   }
 
-  /**
-   * extractNameFromPMML - pull the Application name="xxx" from the PMML doc and construct
-   * a name  string from it, cloned from APIService.scala
-   */
-  def extractNameFromPMML(pmmlObj: String): String = {
-    var firstOccurence: String = "unknownModel"
-    val pattern = """Application[ ]*name="([^ ]*)"""".r
-    val allMatches = pattern.findAllMatchIn(pmmlObj)
-    allMatches.foreach(m => {
-      if (firstOccurence.equalsIgnoreCase("unknownModel")) {
-	firstOccurence = (m.group(1))
-      }
-    })
-    return firstOccurence
-  }
 
   describe("Unit Tests for all MetadataAPI operations") {
-
     // validate property setup
     it("Validate properties for MetadataAPI") {
       And("MetadataAPIImpl.GetMetadataAPIConfig should have been initialized")
@@ -197,7 +181,7 @@ class AddFunctionSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
       assert(null != sh)
 
       And("The property JAVA_HOME must have been defined")
-      val jh = cfg.getProperty("SCALA_HOME")
+      val jh = cfg.getProperty("JAVA_HOME")
       assert(null != jh)
 
       And("The property CLASSPATH must have been defined")
@@ -254,124 +238,61 @@ class AddFunctionSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
       assert(null != sc)
     }
 
-    // CRUD operations on type objects
 
-    it("Function Tests") {
+    it("AuditAPI tests ...") {
+      var cfg = MetadataAPIImpl.GetMetadataAPIConfig
+      assert(null != cfg)
+      And("Audit Functions")
+      And("The property DO_AUDIT  must have been defined")
+      da = cfg.getProperty("DO_AUDIT")
+      assert(null != da)
 
-      And("Check whether FUNCTION_FILES_DIR defined as property")
-      dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("FUNCTION_FILES_DIR")
-      assert(null != dirName)
-
-      And("Check Directory Path")
-      iFile = new File(dirName)
-      assert(true == iFile.exists)
-
-      And("Check whether " + dirName + " is a directory ")
-      assert(true == iFile.isDirectory)
-
-      And("Make sure there are few JSON function files in " + dirName);
-      val funcFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith("json"))
-      assert(0 != funcFiles.length)
-
-      fileList = List("udfFcns.json")
-      fileList.foreach(f1 => {
-	And("Add the Function From " + f1)
-	And("Make Sure " + f1 + " exist")
-	var exists = false
-	var file: java.io.File = null
-	breakable {
-	  funcFiles.foreach(f2 => {
-	    if (f2.getName() == f1) {
-	      exists = true
-	      file = f2
-	      break
-	    }
-	  })
+      if (da.equalsIgnoreCase("YES")) {
+	And("logAuditRec ")
+	noException should be thrownBy {
+	  MetadataAPIImpl.logAuditRec(Some("lonestarr"), Some("write"), "GetContainerDef", "system.coughcodes.000000100000000000", "true", "12345657", "system.coughcodes.000000100000000000")
 	}
-	assert(true == exists)
 
-	And("Count the functions before adding sample functions")
-	var fcnKeys = MetadataAPIImpl.GetAllFunctionsFromCache(true, None)
-	var fcnKeyCnt = fcnKeys.length
-	assert(fcnKeyCnt > 0)
-	logger.info("fcnKeyCnt => " + fcnKeyCnt)
-
-	And("Call AddFunctions MetadataAPI Function to add Function from " + file.getPath)
-	var funcListJson = Source.fromFile(file).mkString
-	implicit val jsonFormats: Formats = DefaultFormats
-	var json = parse(funcListJson)
-	var funcList = json.extract[FunctionList]
-	var fncCnt = funcList.Functions.length
-
-	res = MetadataAPIImpl.AddFunctions(funcListJson, "JSON", None)
-	res should include regex ("\"Status Code\" : 0")
-
-	And("GetAllFunctionDef API to fetch all the functions that were just added")
-	var rs1 = MetadataAPIImpl.GetAllFunctionDefs("JSON", None)
-	assert(rs1._1 != 0)
-	assert(rs1._2 != null)
-
-	And("Verify function count after adding sample functions")
-	fcnKeys = MetadataAPIImpl.GetAllFunctionsFromCache(true, None)
-	var fcnKeyCnt1 = fcnKeys.length
-	assert(fcnKeyCnt1 > 0)
-	logger.info("fcnKeyCnt1 => " + fcnKeyCnt1)
-
-	And("SampleFunctions.json contains only 2 functions and newCount is greater by 2")
-	assert(fcnKeyCnt1 - fcnKeyCnt == fncCnt)
-
-
-	And("RemoveFunction API for all the functions that were just added")
-	funcList.Functions.foreach(fcn => {
-	  res = MetadataAPIImpl.RemoveFunction(fcn.NameSpace, fcn.Name, fcn.Version.toLong, None)
-	})
-
-	And("Check whether all the functions are removed")
-	funcList.Functions.foreach(fcn => {
-	  res = MetadataAPIImpl.GetFunctionDef(fcn.NameSpace, fcn.Name, "JSON", fcn.Version, None)
-	  res should include regex ("\"Status Code\" : 0")
-	})
-
-	And("Verify function count after removing the sample functions")
-	fcnKeys = MetadataAPIImpl.GetAllFunctionsFromCache(true, None)
-	fcnKeyCnt1 = fcnKeys.length
-	assert(fcnKeyCnt1 > 0)
-	assert(fcnKeyCnt1 - fcnKeyCnt == 0)
-
-	And("AddFunctions MetadataAPI Function again to add Function from " + file.getPath)
-	res = MetadataAPIImpl.AddFunctions(funcListJson, "JSON", None)
-	res should include regex ("\"Status Code\" : 0")
-
-	funcList.Functions.foreach(fcn => {
-	  var o = MdMgr.GetMdMgr.Functions(fcn.NameSpace, fcn.Name, true, true)
-	  assert(o != None)
-	})
-      })
+	And("getAuditRec ")
+	res = MetadataAPIImpl.getAuditRec(new Date((new Date).getTime() - 1500 * 60000), null, null, null, null)
+	assert(res != null)
+	logger.info(res)
+	res should include regex ("\"Action\" : \"GetContainerDef\"")
+	res should include regex ("\"UserOrRole\" : \"lonestarr\"")
+	res should include regex ("\"Status\" : \"true\"")
+	res should include regex ("\"ObjectAccessed\" : \"system.coughcodes.000000100000000000\"")
+	res should include regex ("\"ActionResult\" : \"system.coughcodes.000000100000000000\"")
+      }
     }
   }
 
   override def afterAll = {
+    logger.info("Truncating dbstore")
     var file = new java.io.File("logs")
     if (file.exists()) {
       TestUtils.deleteFile(file)
     }
 
-    logger.info("Drop dbstore")
+    //file = new java.io.File("lib_managed")
+    //if(file.exists()){
+    //TestUtils.deleteFile(file)
+    //}
+
     val db = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("DATABASE")
     assert(null != db)
-    DropDbStore
-    if( MetadataAPIImpl.GetAuditObj != null ){
-      MetadataAPIImpl.GetAuditObj.dropStore
-      MetadataAPIImpl.SetAuditObj(null)
-      val pFile = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("AUDIT_PARMS")
-      if( pFile != null ){
-	TestUtils.deleteFile(pFile)
+    db match {
+      case "hashmap" | "treemap" => {
+	DropDbStore
+      }
+      case _ => {
+	logger.info("cleanup...")
+
       }
     }
     MetadataAPIImpl.shutdown
   }
 
   if (zkServer != null) {
-    zkServer.shutdown
+    zkServer.instance.shutdown
   }
 }

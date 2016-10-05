@@ -35,10 +35,7 @@ object ConfigDefaults {
   private val loggerName = this.getClass.getName
   private val logger = LogManager.getLogger(loggerName)
 
-  val scalaVersionFull = scala.util.Properties.versionNumberString
-  val scalaVersion = scalaVersionFull.substring(0, scalaVersionFull.lastIndexOf('.'))
-
-  private val RootDir = s"./MetadataAPI/target/scala-$scalaVersion/test-classes"
+  private val RootDir = s"./MetadataAPI/target/scala-${TestUtils.scalaVersion}/test-classes"
   private val targetLibDir = RootDir + "/jars/lib/system"
   private val appLibDir = RootDir + "/jars/lib/application"
   private val workDir = RootDir + "/jars/lib/workingdir"
@@ -106,11 +103,14 @@ object ConfigDefaults {
 
   logger.info("jarResourceDir " + jarResourceDir)
 
-  val envContextClassName: String = "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$"
-  val envContextDependecyJarList: List[String] = List(s"ExtDependencyLibs_$scalaVersion-${TestUtils.kamanjaVersion}.jar", s"KamanjaInternalDeps_$scalaVersion-${TestUtils.kamanjaVersion}.jar", s"ExtDependencyLibs2_$scalaVersion-${TestUtils.kamanjaVersion}.jar")
-  val envContextJarName = s"simpleenvcontextimpl_$scalaVersion-1.0.jar"
-  val nodeClassPath: String = s".:$jarResourceDir/ExtDependencyLibs_$scalaVersion-${TestUtils.kamanjaVersion}.jar:$jarResourceDir/KamanjaInternalDeps_$scalaVersion-${TestUtils.kamanjaVersion}.jar:$jarResourceDir/ExtDependencyLibs2_$scalaVersion-${TestUtils.kamanjaVersion}.jar"
-  val adapterDepJars: List[String] = List(s"ExtDependencyLibs_$scalaVersion-${TestUtils.kamanjaVersion}.jar", s"KamanjaInternalDeps_$scalaVersion-${TestUtils.kamanjaVersion}.jar", s"ExtDependencyLibs2_$scalaVersion-${TestUtils.kamanjaVersion}.jar")
+  def envContextClassName: String = "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$"
+
+  def envContextDependecyJarList: List[String] = List(s"ExtDependencyLibs_${TestUtils.scalaVersion}-$kamanjaVersion.jar", s"KamanjaInternalDeps_${TestUtils.scalaVersion}-$kamanjaVersion.jar", s"ExtDependencyLibs2_${TestUtils.scalaVersion}-$kamanjaVersion.jar")
+  def envContextJarName = s"simpleenvcontextimpl_${TestUtils.scalaVersion}-1.0.jar"
+
+  def nodeClassPath: String = s".:$jarResourceDir/ExtDependencyLibs_${TestUtils.scalaVersion}-$kamanjaVersion.jar:$jarResourceDir/KamanjaInternalDeps_${TestUtils.scalaVersion}-$kamanjaVersion.jar:$jarResourceDir/ExtDependencyLibs2_${TestUtils.scalaVersion}-$kamanjaVersion.jar"
+
+  def adapterDepJars: List[String] = List(s"ExtDependencyLibs_${TestUtils.scalaVersion}-$kamanjaVersion.jar", s"KamanjaInternalDeps_${TestUtils.scalaVersion}-$kamanjaVersion.jar", s"ExtDependencyLibs2_${TestUtils.scalaVersion}-$kamanjaVersion.jar")
 
   val scala_home = System.getenv("SCALA_HOME")
 
@@ -127,8 +127,10 @@ object ConfigDefaults {
   def dataStorePropertiesFile:String = metadataDirectory + "/config/DataStore.properties"
 
   val metadataClasspath: String = List(
-    s"ExtDependencyLibs_$scalaVersion-${TestUtils.kamanjaVersion}.jar",
-    s"KamanjaInternalDeps_$scalaVersion-${TestUtils.kamanjaVersion}.jar",
-    s"ExtDependencyLibs2_$scalaVersion-${TestUtils.kamanjaVersion}.jar"
+    s"ExtDependencyLibs_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
+    s"KamanjaInternalDeps_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
+    s"ExtDependencyLibs2_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar"
   ).mkString(s""""$jarResourceDir/""", s":$jarResourceDir/", "\"")
+
+  logger.info("metadataClasspath => " + metadataClasspath)
 }

@@ -55,7 +55,7 @@ class SqlServerPerfTestSpec extends FunSpec with BeforeAndAfter with BeforeAndAf
   // set the timezone to UTC for all time values
   TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
   
-  val dataStoreInfo = """{"StoreType": "sqlserver","hostname": "192.168.56.1","instancename":"KAMANJA","portnumber":"1433","database": "test_db","user":"bofauser1","SchemaName":"bofauser","password":"bofauser2","jarpaths":"/media/home2/jdbc","jdbcJar":"sqljdbc4-2.0.jar"}"""
+  val dataStoreInfo = """{"StoreType": "sqlserver","hostname": "192.168.56.1","instancename":"KAMANJA","portnumber":"1433","database": "bofa","user":"bofauser1","SchemaName":"bofauser","password":"bofauser2","jarpaths":"/media/home2/jdbc","jdbcJar":"sqljdbc4-2.0.jar","appendOnly":"YES"}"""
   private val kvManagerLoader = new KamanjaLoaderInfo
   private val maxConnectionAttempts = 10;
   var cnt = 0
