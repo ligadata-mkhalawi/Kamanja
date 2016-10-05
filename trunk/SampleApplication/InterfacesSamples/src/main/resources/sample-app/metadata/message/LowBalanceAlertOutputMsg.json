@@ -1,0 +1,39 @@
+{
+  "Message": {
+	"NameSpace": "com.ligadata.kamanja.samples.messages",
+	"Name": "LowBalanceAlertOutputMsg",
+	"Version": "00.01.00",
+	"Description": "LowBalanceAlertOutputMsg Message",
+	"Fixed": "true",
+	"Persist": "false",
+	"Fields": [
+	  {
+		"Name": "custId",
+		"Type": "System.Long"
+	  },
+	  {
+		"Name": "branchId",
+		"Type": "System.Int"
+	  },
+	  {
+		"Name": "accNo",
+		"Type": "System.Long"
+	  },
+	  {
+		"Name": "curBalance",
+		"Type": "System.Double"
+	  },
+	  {
+		"Name": "alertType",
+		"Type": "System.String"
+	  },
+	  {
+		"Name": "triggerTime",
+		"Type": "System.Long"
+	  }
+	],
+	"PartitionKey": [
+	  "custId"
+	]
+  }
+}

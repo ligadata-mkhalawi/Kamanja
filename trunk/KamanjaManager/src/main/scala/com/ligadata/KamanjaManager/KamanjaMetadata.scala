@@ -17,41 +17,57 @@
 
 package com.ligadata.KamanjaManager
 
-import com.ligadata.jpmml.JpmmlAdapter
-import com.ligadata.kamanja.metadata.{ BaseElem, MappedMsgTypeDef, BaseAttributeDef, StructTypeDef, EntityType, AttributeDef, ArrayBufTypeDef, MessageDef, ContainerDef, ModelDef }
+import java.io.File
+
+import com.ligadata.Exceptions.KamanjaException
+import com.ligadata.InputOutputAdapterInfo.{InputAdapter, OutputAdapter}
+import com.ligadata.StorageBase.DataStore
+import com.ligadata.kamanja.metadata.{AttributeDef, BaseAttributeDef, BaseElem, ContainerDef, EntityType, MappedMsgTypeDef, MessageDef, ModelDef, StructTypeDef}
 import com.ligadata.kamanja.metadata._
 import com.ligadata.kamanja.metadata.MdMgr._
-
 import com.ligadata.kamanja.metadataload.MetadataLoad
+import com.ligadata.utils.dag.{Dag, EdgeId}
+
 import scala.collection.mutable.TreeSet
 import scala.util.control.Breaks._
-import com.ligadata.KamanjaBase.{ BaseMsg, MessageContainerBase, MessageContainerObjBase, BaseMsgObj, BaseContainerObj, BaseContainer, ModelInstanceFactory, TransformMessage, EnvContext, MdBaseResolveInfo, FactoryOfModelInstanceFactory, NodeContext, TransactionContext }
+import com.ligadata.KamanjaBase._
+
 import scala.collection.mutable.HashMap
 import org.apache.logging.log4j._
+
 import scala.collection.mutable.ArrayBuffer
 import com.ligadata.Serialize._
 import com.ligadata.ZooKeeper._
 import com.ligadata.MetadataAPI.MetadataAPIImpl
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import com.ligadata.Utils.{ Utils, KamanjaClassLoader, KamanjaLoaderInfo }
-import com.ligadata.KamanjaBase.{ EnvContext, ContainerNameAndDatastoreInfo }
-import scala.actors.threadpool.{ ExecutorService, Executors }
-import com.ligadata.KamanjaBase.ThreadLocalStorage
+import java.util.concurrent.locks.ReentrantReadWriteLock
 
-class MdlInfo(val mdl: ModelInstanceFactory, val jarPath: String, val dependencyJarNames: Array[String]) {
+import com.ligadata.Utils.{KamanjaClassLoader, KamanjaLoaderInfo, Utils}
+import org.json4s._
+import org.json4s.native.JsonMethods._
+
+
+import scala.actors.threadpool.{ExecutorService, Executors}
+import scala.collection.immutable.Map
+import scala.collection.mutable
+
+
+class MdlInfo(val mdl: ModelInstanceFactory, val jarPath: String, val dependencyJarNames: Array[String], val nodeId: Long, val inputs: Array[Array[EdgeId]], val outputs: Array[Long]) {
 }
 
 class TransformMsgFldsMap(var keyflds: Array[Int], var outputFlds: Array[Int]) {
 }
 
 // msgobj is null for Containers
-class MsgContainerObjAndTransformInfo(var tranformMsgFlds: TransformMsgFldsMap, var contmsgobj: MessageContainerObjBase) {
-  var parents = new ArrayBuffer[(String, String)] // Immediate parent comes at the end, grand parent last but one, ... Messages/Containers. the format is Message/Container Type name and the variable in that.
-  var childs = new ArrayBuffer[(String, String)] // Child Messages/Containers (Name & type). We fill this when we create message and populate parent later from this
+class MsgContainerObjAndTransformInfo(var tranformMsgFlds: TransformMsgFldsMap, var contmsgobj: ContainerFactoryInterface) {
+  // Immediate parent comes at the end, grand parent last but one, ... Messages/Containers. the format is Message/Container Type name and the variable in that.
+  var parents = new ArrayBuffer[(String, String)]
+
+  // Child Messages/Containers (Name & type). We fill this when we create message and populate parent later from this
+  var childs = new ArrayBuffer[(String, String)]
 }
 
 // This is shared by multiple threads to read (because we are not locking). We create this only once at this moment while starting the manager
-class KamanjaMetadata {
+class KamanjaMetadata(var envCtxt: EnvContext) {
   val LOG = LogManager.getLogger(getClass);
 
   // LOG.setLevel(Level.TRACE)
@@ -60,10 +76,10 @@ class KamanjaMetadata {
   val messageObjects = new HashMap[String, MsgContainerObjAndTransformInfo]
   val containerObjects = new HashMap[String, MsgContainerObjAndTransformInfo]
   val modelObjsMap = new HashMap[String, MdlInfo]
-  val modelRepFactoryOfFactoryMap : HashMap[String, FactoryOfModelInstanceFactory] =  HashMap[String, FactoryOfModelInstanceFactory]()
+  val modelRepFactoryOfFactoryMap: HashMap[String, FactoryOfModelInstanceFactory] = HashMap[String, FactoryOfModelInstanceFactory]()
 
   def LoadMdMgrElems(tmpMsgDefs: Option[scala.collection.immutable.Set[MessageDef]], tmpContainerDefs: Option[scala.collection.immutable.Set[ContainerDef]],
-    tmpModelDefs: Option[scala.collection.immutable.Set[ModelDef]]): Unit = {
+                     tmpModelDefs: Option[scala.collection.immutable.Set[ModelDef]]): Unit = {
     PrepareMessages(tmpMsgDefs)
     PrepareContainers(tmpContainerDefs)
     PrepareModelsFactories(tmpModelDefs)
@@ -80,13 +96,13 @@ class KamanjaMetadata {
     try {
       // If required we need to enable this test
       // Convert class name into a class
-      var curClz = Class.forName(clsName, true, KamanjaConfiguration.metadataLoader.loader)
+      var curClz = Class.forName(clsName, true, envCtxt.getMetadataLoader.loader)
       curClass = curClz
 
       isMsg = false
 
       while (curClz != null && isMsg == false) {
-        isMsg = Utils.isDerivedFrom(curClz, "com.ligadata.KamanjaBase.BaseMsgObj")
+        isMsg = Utils.isDerivedFrom(curClz, "com.ligadata.KamanjaBase.MessageFactoryInterface")
         if (isMsg == false)
           curClz = curClz.getSuperclass()
       }
@@ -102,8 +118,8 @@ class KamanjaMetadata {
         var objinst: Any = null
         try {
           // Trying Singleton Object
-          val module = KamanjaConfiguration.metadataLoader.mirror.staticModule(clsName)
-          val obj = KamanjaConfiguration.metadataLoader.mirror.reflectModule(module)
+          val module = envCtxt.getMetadataLoader.mirror.staticModule(clsName)
+          val obj = envCtxt.getMetadataLoader.mirror.reflectModule(module)
           objinst = obj.instance
         } catch {
           case e: Exception => {
@@ -112,30 +128,10 @@ class KamanjaMetadata {
             objinst = curClass.newInstance
           }
         }
-        if (objinst.isInstanceOf[BaseMsgObj]) {
-          val messageobj = objinst.asInstanceOf[BaseMsgObj]
+        if (objinst.isInstanceOf[MessageFactoryInterface]) {
+          val messageobj = objinst.asInstanceOf[MessageFactoryInterface]
           val msgName = msg.FullName.toLowerCase
           var tranformMsgFlds: TransformMsgFldsMap = null
-          if (messageobj.NeedToTransformData) {
-            val txfnMsg: TransformMessage = messageobj.TransformDataAttributes
-
-            val inputFieldsMap = txfnMsg.inputFields.map(f => f.trim.toLowerCase).view.zipWithIndex.toMap
-            val outputFldIdxs = txfnMsg.outputFields.map(f => {
-              val fld = inputFieldsMap.getOrElse(f.trim.toLowerCase, -1)
-              if (fld < 0) {
-                throw new Exception("Output Field \"" + f + "\" not found in input list of fields")
-              }
-              fld
-            })
-
-            val keyfldsIdxs = txfnMsg.outputKeys.map(f => {
-              val fld = inputFieldsMap.getOrElse(f.trim.toLowerCase, -1)
-              if (fld < 0)
-                throw new Exception("Key Field \"" + f + "\" not found in input list of fields")
-              fld
-            })
-            tranformMsgFlds = new TransformMsgFldsMap(keyfldsIdxs, outputFldIdxs)
-          }
           val mgsObj = new MsgContainerObjAndTransformInfo(tranformMsgFlds, messageobj)
           GetChildsFromEntity(msg.containerType, mgsObj.childs)
           messageObjects(msgName) = mgsObj
@@ -167,7 +163,8 @@ class KamanjaMetadata {
     var foundFlg = CheckAndPrepMessage(clsName, msg)
 
     if (foundFlg == false) {
-      if (clsName.size > 0 && clsName.charAt(clsName.size - 1) != '$') { // if no $ at the end we are taking $
+      // if no $ at the end we are taking $
+      if (clsName.size > 0 && clsName.charAt(clsName.size - 1) != '$') {
         clsName = clsName + "$"
         foundFlg = CheckAndPrepMessage(clsName, msg)
       }
@@ -184,13 +181,13 @@ class KamanjaMetadata {
     try {
       // If required we need to enable this test
       // Convert class name into a class
-      var curClz = Class.forName(clsName, true, KamanjaConfiguration.metadataLoader.loader)
+      var curClz = Class.forName(clsName, true, envCtxt.getMetadataLoader.loader)
       curClass = curClz
 
       isContainer = false
 
       while (curClz != null && isContainer == false) {
-        isContainer = Utils.isDerivedFrom(curClz, "com.ligadata.KamanjaBase.BaseContainerObj")
+        isContainer = Utils.isDerivedFrom(curClz, "com.ligadata.KamanjaBase.ContainerFactoryInterface")
         if (isContainer == false)
           curClz = curClz.getSuperclass()
       }
@@ -206,8 +203,8 @@ class KamanjaMetadata {
         var objinst: Any = null
         try {
           // Trying Singleton Object
-          val module = KamanjaConfiguration.metadataLoader.mirror.staticModule(clsName)
-          val obj = KamanjaConfiguration.metadataLoader.mirror.reflectModule(module)
+          val module = envCtxt.getMetadataLoader.mirror.staticModule(clsName)
+          val obj = envCtxt.getMetadataLoader.mirror.reflectModule(module)
           objinst = obj.instance
         } catch {
           case e: Exception => {
@@ -217,8 +214,8 @@ class KamanjaMetadata {
           }
         }
 
-        if (objinst.isInstanceOf[BaseContainerObj]) {
-          val containerobj = objinst.asInstanceOf[BaseContainerObj]
+        if (objinst.isInstanceOf[ContainerFactoryInterface]) {
+          val containerobj = objinst.asInstanceOf[ContainerFactoryInterface]
           val contName = container.FullName.toLowerCase
           val contObj = new MsgContainerObjAndTransformInfo(null, containerobj)
           GetChildsFromEntity(container.containerType, contObj.childs)
@@ -259,7 +256,8 @@ class KamanjaMetadata {
 
     var foundFlg = CheckAndPrepContainer(clsName, container)
     if (foundFlg == false) {
-      if (clsName.size > 0 && clsName.charAt(clsName.size - 1) != '$') { // if no $ at the end we are taking $
+      // if no $ at the end we are taking $
+      if (clsName.size > 0 && clsName.charAt(clsName.size - 1) != '$') {
         clsName = clsName + "$"
         foundFlg = CheckAndPrepContainer(clsName, container)
       }
@@ -269,91 +267,142 @@ class KamanjaMetadata {
     }
   }
 
-    /**
-      * @deprecated("GetFactoryOfMdlInstanceFactory(String) not used... use GetFactoryOfMdlInstanceFactory(ModelRepresentation) ","2015-Jun-03")
-      *
-      * Look up directly by name the FactoryOfModelInstanceFactory.
-      * @param fqName the namespace.name of the FactoryOfModelInstanceFactoryDef corresponding with an FactoryOfModelInstanceFactory instance
-      * @return a FactoryOfModelInstanceFactory
-      */
-    private def GetFactoryOfMdlInstanceFactory(fqName: String): FactoryOfModelInstanceFactory = {
-        val factObjs = KamanjaMetadata.AllFactoryOfMdlInstFactoriesObjects
-        factObjs.getOrElse(fqName.toLowerCase(), null)
-    }
+  /**
+    * @deprecated ("GetFactoryOfMdlInstanceFactory(String) not used... use GetFactoryOfMdlInstanceFactory(ModelRepresentation) ","2015-Jun-03")
+    *
+    *             Look up directly by name the FactoryOfModelInstanceFactory.
+    * @param fqName the namespace.name of the FactoryOfModelInstanceFactoryDef corresponding with an FactoryOfModelInstanceFactory instance
+    * @return a FactoryOfModelInstanceFactory
+    */
+  private def GetFactoryOfMdlInstanceFactory(fqName: String): FactoryOfModelInstanceFactory = {
+    val factObjs = KamanjaMetadata.AllFactoryOfMdlInstFactoriesObjects
+    factObjs.getOrElse(fqName.toLowerCase(), null)
+  }
 
-    /**
-      * With the supplied ModelRepresentation from a ModelDef, look up its corresponding FactoryOfModelInstanceFactory
-      * that knows what kind of ModelInstanceFactory is needed for that model representation.
-      * @param modelRepSupported a ModelDef's ModelRepresentation.ModelRepresentation value is used to determine the key
-      *                          to lookup the FactoryOfModelInstanceFactory needed to instantiate an appropriate
-      *                          ModelInstanceFactory
-      * @return a FactoryOfModelInstanceFactory
-      *
-      * Note:
-      * The idea here is that a user of a given model representation (e.g. a JPMML user) should not know or care what kind
-      * of factory of factory is needed to construct the factory of the model that will instantiate his/her model.  To make this
-      * possible CURRENTLY, the factory of factory metadata definition has the ModelRepresentation.ModelRepresentation "it understands" as
-      * part of its definition.
-      *
-      * As Pokuri has pointed out, when we make the factory of factory ingestible (dynamically addable) through the metadata api,
-      * the ModelRepresentation enumerated type is far too brittle.  We really desire the ability to maintain a metadata store relationship
-      * between the "model representation" and the factory that has the pristine safety of the enumeration but the form of strings
-      * easily stored in a persistent store.
-      *
-      * When the factory of factory becomes ingestible through the metadata api, the facKeyMapObjs currently used will change
-      * to use the mapping table from the MdMgr instance.
-      *
-      * Another issue.  To ingest objects that use other ingested objects, the MetadataAPI must be modified to dynamically load
-      * the needed dynamic extensions before it starts. As it is now, all of this is explicitly coded in the MetadataAPIImpl which
-      * makes that TOO very brittle.  The MetadataAPIImpl and API itself (likely) will need to be re-designed should we want to take
-      * this further.  To ingest a new model type, for example, not only must the standard interfaces for factory and instance
-      * in the ModelBase be implemented, but a new interface for the new model type needs to be implemented that describes the
-      * add, update, recompile, remove behaviors that are needed to support the ingestion of the new model.
-      *
-      * Perhaps not everything needs to be dynamic... or at least not at this time.
-      */
-    private def GetFactoryOfMdlInstanceFactory(modelRepSupported: ModelRepresentation.ModelRepresentation): FactoryOfModelInstanceFactory = {
-        val facKeyMapObjs : scala.collection.immutable.Map[String,String] = KamanjaMetadata.AllModelRepFacFacKeys
-        val facfacKey : String = facKeyMapObjs(modelRepSupported.toString)
-        val factObjs = KamanjaMetadata.AllFactoryOfMdlInstFactoriesObjects
-        factObjs.getOrElse(facfacKey, null)
-    }
+  /**
+    * With the supplied ModelRepresentation from a ModelDef, look up its corresponding FactoryOfModelInstanceFactory
+    * that knows what kind of ModelInstanceFactory is needed for that model representation.
+    *
+    * @param modelRepSupported a ModelDef's ModelRepresentation.ModelRepresentation value is used to determine the key
+    *                          to lookup the FactoryOfModelInstanceFactory needed to instantiate an appropriate
+    *                          ModelInstanceFactory
+    * @return a FactoryOfModelInstanceFactory
+    *
+    *         Note:
+    *         The idea here is that a user of a given model representation (e.g. a JPMML user) should not know or care what kind
+    *         of factory of factory is needed to construct the factory of the model that will instantiate his/her model.  To make this
+    *         possible CURRENTLY, the factory of factory metadata definition has the ModelRepresentation.ModelRepresentation "it understands" as
+    *         part of its definition.
+    *
+    *         As Pokuri has pointed out, when we make the factory of factory ingestible (dynamically addable) through the metadata api,
+    *         the ModelRepresentation enumerated type is far too brittle.  We really desire the ability to maintain a metadata store relationship
+    *         between the "model representation" and the factory that has the pristine safety of the enumeration but the form of strings
+    *         easily stored in a persistent store.
+    *
+    *         When the factory of factory becomes ingestible through the metadata api, the facKeyMapObjs currently used will change
+    *         to use the mapping table from the MdMgr instance.
+    *
+    *         Another issue.  To ingest objects that use other ingested objects, the MetadataAPI must be modified to dynamically load
+    *         the needed dynamic extensions before it starts. As it is now, all of this is explicitly coded in the MetadataAPIImpl which
+    *         makes that TOO very brittle.  The MetadataAPIImpl and API itself (likely) will need to be re-designed should we want to take
+    *         this further.  To ingest a new model type, for example, not only must the standard interfaces for factory and instance
+    *         in the ModelBase be implemented, but a new interface for the new model type needs to be implemented that describes the
+    *         add, update, recompile, remove behaviors that are needed to support the ingestion of the new model.
+    *
+    *         Perhaps not everything needs to be dynamic... or at least not at this time.
+    */
+  private def GetFactoryOfMdlInstanceFactory(modelRepSupported: ModelRepresentation.ModelRepresentation): FactoryOfModelInstanceFactory = {
+    val facKeyMapObjs: scala.collection.immutable.Map[String, String] = KamanjaMetadata.AllModelRepFacFacKeys
+    val facfacKey: String = facKeyMapObjs(modelRepSupported.toString)
+    val factObjs = KamanjaMetadata.AllFactoryOfMdlInstFactoriesObjects
+    factObjs.getOrElse(facfacKey, null)
+  }
 
   def PrepareModelFactory(mdl: ModelDef, loadJars: Boolean, txnCtxt: TransactionContext): Unit = {
     if (mdl != null && mdl.modelRepresentation != ModelRepresentation.UNKNOWN) {
-        if (loadJars) {
-            KamanjaMetadata.LoadJarIfNeeded(mdl)
-        }
+      if (loadJars) {
+        KamanjaMetadata.LoadJarIfNeeded(mdl)
+      }
 
-        //BUGBUG:: We need to get the name from Model Def
-        val factoryOfMdlInstFactoryFqName = "com.ligadata.FactoryOfModelInstanceFactory.JarFactoryOfModelInstanceFactory"
-        /** old way was by facfacname ...
-          *    val factoryOfMdlInstFactory: FactoryOfModelInstanceFactory = GetFactoryOfMdlInstanceFactory(factoryOfMdlInstFactoryFqName)
-          * new way...
-          *    use the appropriate factory of factory object according to the model def's representation type. */
-        val factoryOfMdlInstFactory: FactoryOfModelInstanceFactory = GetFactoryOfMdlInstanceFactory(mdl.modelRepresentation)
-        if (factoryOfMdlInstFactory == null) {
-            LOG.error("FactoryOfModelInstanceFactory %s not found in metadata. Unable to create ModelInstanceFactory for %s".format(factoryOfMdlInstFactoryFqName, mdl.FullName))
-        } else {
-            try {
-                val factory: ModelInstanceFactory = factoryOfMdlInstFactory.getModelInstanceFactory(mdl, KamanjaMetadata.gNodeContext, KamanjaConfiguration.metadataLoader, KamanjaConfiguration.jarPaths)
-                if (factory != null) {
-                    if (txnCtxt != null) // We are expecting txnCtxt is null only for first time initialization
-                        factory.init(txnCtxt)
-                    val mdlName = (mdl.NameSpace.trim + "." + mdl.Name.trim).toLowerCase
-                    modelObjsMap(mdlName) = new MdlInfo(factory, mdl.jarName, mdl.dependencyJarNames)
-                } else {
-                    LOG.debug("Failed to get ModelInstanceFactory for " + mdl.FullName)
+      //BUGBUG:: We need to get the name from Model Def
+      val factoryOfMdlInstFactoryFqName = "com.ligadata.FactoryOfModelInstanceFactory.JarFactoryOfModelInstanceFactory"
+      /** old way was by facfacname ...
+        * val factoryOfMdlInstFactory: FactoryOfModelInstanceFactory = GetFactoryOfMdlInstanceFactory(factoryOfMdlInstFactoryFqName)
+        * new way...
+        * use the appropriate factory of factory object according to the model def's representation type. */
+      val factoryOfMdlInstFactory: FactoryOfModelInstanceFactory = GetFactoryOfMdlInstanceFactory(mdl.modelRepresentation)
+      if (factoryOfMdlInstFactory == null) {
+        LOG.error("FactoryOfModelInstanceFactory %s not found in metadata. Unable to create ModelInstanceFactory for %s".format(factoryOfMdlInstFactoryFqName, mdl.FullName))
+      } else {
+        try {
+          val factory: ModelInstanceFactory = factoryOfMdlInstFactory.getModelInstanceFactory(mdl, KamanjaMetadata.gNodeContext, envCtxt.getMetadataLoader, KamanjaMetadata.gNodeContext.getEnvCtxt().getJarPaths())
+          if (factory != null) {
+            val newTxnCtxt =
+              if (txnCtxt != null) {
+                txnCtxt
+              } else {
+                var txnId = KamanjaConfiguration.nodeId.toString.hashCode()
+                if (txnId > 0)
+                  txnId = -1 * txnId
+                new TransactionContext(txnId, KamanjaMetadata.gNodeContext, Array[Byte](), EventOriginInfo(null, null), 0, null)
+              }
+            if (newTxnCtxt != null) // We are expecting txnCtxt is null only for first time initialization
+              factory.init(newTxnCtxt)
+            val mdlName = (mdl.NameSpace.trim + "." + mdl.Name.trim).toLowerCase
+
+            val mgr = KamanjaMetadata.gNodeContext.getEnvCtxt()._mgr
+
+            // Not expecting we will have mdl.inputMsgSets null
+            val inputs = mdl.inputMsgSets.map(set => {
+              set.map(msg => {
+                var nodeId: Long = 0
+                var edgeTypeId: Long = 0
+                if (msg.origin != null && msg.origin.trim.size > 0) {
+                  val orgMdl = mgr.Model(msg.origin.trim, -1, true)
+                  if (orgMdl != None) {
+                    nodeId = orgMdl.get.MdElementId
+                  }
                 }
-            } catch {
-                case e: Exception => {
-                    LOG.debug("Failed to get/initialize ModelInstanceFactory for %s.".format(mdl.FullName), e)
+                if (msg.message != null && msg.message.trim.size > 0) {
+                  val msgDef = mgr.Message(msg.message.trim, -1, true)
+                  if (msgDef != None) {
+                    edgeTypeId = msgDef.get.MdElementId
+                  } else {
+                    val contDef = mgr.Container(msg.message, -1, true)
+                    if (contDef != None)
+                      edgeTypeId = contDef.get.MdElementId
+                  }
                 }
-            }
+                // BUGBUG:: Not really checking whether it has valid edgeTypeId or not. nodeId can be 0 if it is not valid model
+                EdgeId(nodeId, edgeTypeId)
+              })
+            })
+
+            val outputs = mdl.outputMsgs.map(msg => {
+              var outTypeId: Long = 0
+              val msgDef = mgr.Message(msg, -1, true)
+              if (msgDef != None) {
+                outTypeId = msgDef.get.MdElementId
+              } else {
+                val contDef = mgr.Container(msg, -1, true)
+                if (contDef != None)
+                  outTypeId = contDef.get.MdElementId
+              }
+              outTypeId
+            })
+            modelObjsMap(mdlName) = new MdlInfo(factory, mdl.jarName, mdl.dependencyJarNames, mdl.MdElementId, inputs, outputs)
+          } else {
+            LOG.debug("Failed to get ModelInstanceFactory for " + mdl.FullName)
+          }
+        } catch {
+          case e: Exception => {
+            LOG.debug("Failed to get/initialize ModelInstanceFactory for %s.".format(mdl.FullName), e)
+          }
         }
+      }
     } else {
-        val msg : String = if (mdl != null) "Model definition supplie with unknown model representation..." else "Supplied model definition is null..."
-        LOG.error(msg)
+      val msg: String = if (mdl != null) "Model definition supplie with unknown model representation..." else "Supplied model definition is null..."
+      LOG.error(msg)
     }
   }
 
@@ -365,7 +414,7 @@ class KamanjaMetadata {
       if (attrMap != null) {
         childs ++= attrMap.filter(a => (a._2.isInstanceOf[AttributeDef] && (a._2.asInstanceOf[AttributeDef].aType.isInstanceOf[MappedMsgTypeDef] || a._2.asInstanceOf[AttributeDef].aType.isInstanceOf[StructTypeDef]))).map(a => (a._2.Name, a._2.asInstanceOf[AttributeDef].aType.FullName))
         // If the attribute is an arraybuffer (not yet handling others)
-        childs ++= attrMap.filter(a => (a._2.isInstanceOf[AttributeDef] && a._2.asInstanceOf[AttributeDef].aType.isInstanceOf[ArrayBufTypeDef] && (a._2.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayBufTypeDef].elemDef.isInstanceOf[MappedMsgTypeDef] || a._2.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayBufTypeDef].elemDef.isInstanceOf[StructTypeDef]))).map(a => (a._2.Name, a._2.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayBufTypeDef].elemDef.FullName))
+        childs ++= attrMap.filter(a => (a._2.isInstanceOf[AttributeDef] && a._2.asInstanceOf[AttributeDef].aType.isInstanceOf[ArrayTypeDef] && (a._2.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayTypeDef].elemDef.isInstanceOf[MappedMsgTypeDef] || a._2.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayTypeDef].elemDef.isInstanceOf[StructTypeDef]))).map(a => (a._2.Name, a._2.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayTypeDef].elemDef.FullName))
       }
     } else if (entity.isInstanceOf[StructTypeDef]) {
       var memberDefs = entity.asInstanceOf[StructTypeDef].memberDefs
@@ -373,7 +422,7 @@ class KamanjaMetadata {
       if (memberDefs != null) {
         childs ++= memberDefs.filter(a => (a.isInstanceOf[AttributeDef] && (a.asInstanceOf[AttributeDef].aType.isInstanceOf[MappedMsgTypeDef] || a.asInstanceOf[AttributeDef].aType.isInstanceOf[StructTypeDef]))).map(a => (a.Name, a.asInstanceOf[AttributeDef].aType.FullName))
         // If the attribute is an arraybuffer (not yet handling others)
-        childs ++= memberDefs.filter(a => (a.isInstanceOf[AttributeDef] && a.asInstanceOf[AttributeDef].aType.isInstanceOf[ArrayBufTypeDef] && (a.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayBufTypeDef].elemDef.isInstanceOf[MappedMsgTypeDef] || a.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayBufTypeDef].elemDef.isInstanceOf[StructTypeDef]))).map(a => (a.Name, a.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayBufTypeDef].elemDef.FullName))
+        childs ++= memberDefs.filter(a => (a.isInstanceOf[AttributeDef] && a.asInstanceOf[AttributeDef].aType.isInstanceOf[ArrayTypeDef] && (a.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayTypeDef].elemDef.isInstanceOf[MappedMsgTypeDef] || a.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayTypeDef].elemDef.isInstanceOf[StructTypeDef]))).map(a => (a.Name, a.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayTypeDef].elemDef.FullName))
       }
     } else {
       // Nothing to do at this moment
@@ -409,22 +458,125 @@ class KamanjaMetadata {
     })
 
     val baseContainersPhyName = scala.collection.mutable.Set[String]()
-    val baseContainerInfo = MetadataLoad.BaseContainersInfo
+    val baseContainerInfo = MetadataLoad.ContainerInterfacesInfo
     baseContainerInfo.foreach(bc => {
       baseContainersPhyName += bc._3
     })
 
     containerDefs.foreach(container => {
-      PrepareContainer(container, false, baseContainersPhyName.contains(container.PhysicalName.trim)) // Already Loaded required dependency jars before calling this
+      PrepareContainer(container, false, (container.PhysicalName.equalsIgnoreCase("com.ligadata.KamanjaBase.KamanjaModelEvent") == false) && baseContainersPhyName.contains(container.PhysicalName.trim)) // Already Loaded required dependency jars before calling this
+      //PrepareContainer(container, false, baseContainersPhyName.contains(container.PhysicalName.trim)) // Already Loaded required dependency jars before calling this
     })
 
   }
 
-  private def PrepareModelsFactories(tmpModelDefs: Option[scala.collection.immutable.Set[ModelDef]]): Unit = {
+    /**
+      * Configure for python models.  The necessary variables are set up to establish python servers for the partitions
+      * that are being managed by the engine on a given Kamanja cluster node... available in the node context properties.
+      *
+      * Information is picked out of the Kamanja configuration information.
+      *
+      * import org.json4s._
+      * import org.json4s.native.JsonMethods._
+      */
+    val PYTHON_CONFIG : String = "python_config"
+    val ROOT_DIR : String = "root_dir"
+    private def PreparePythonConfiguration(): Unit = {
+        val properties: java.util.Properties = KamanjaConfiguration.allConfigs
+        val pythonPropertiesStr : String = properties.getProperty(PYTHON_CONFIG)
+        if (pythonPropertiesStr != null) {
+            implicit val formats = org.json4s.DefaultFormats
+            //val pyPropertyMap : Map[String, Any] = parse(pythonPropertiesStr).extract[Map[String, Any]]
+            val pyPropertyMap : Map[String,Any] = parse(pythonPropertiesStr).values.asInstanceOf[Map[String,Any]]
+            var pyPath : String = pyPropertyMap.getOrElse("PYTHON_PATH", "").asInstanceOf[String]
+            val pySrvStartPort : Int = pyPropertyMap.getOrElse("SERVER_BASE_PORT", 8100).asInstanceOf[scala.math.BigInt].toInt
+            val pySrvMaxSrvrs : Int = pyPropertyMap.getOrElse("SERVER_NODE_LIMIT", 20).asInstanceOf[scala.math.BigInt].toInt
+            val host : String = pyPropertyMap.getOrElse("SERVER_HOST", "localhost").asInstanceOf[String]
+            var loggerConfigPath : String = pyPropertyMap.getOrElse("PYTHON_LOG_CONFIG_PATH", "").asInstanceOf[String]
+            var logFilePath : String = pyPropertyMap.getOrElse("PYTHON_LOG_PATH", "").asInstanceOf[String]
+            /** if there is no pyPath in the python config string, then base some of the properties on the ${ROOT_DIR} as needed*/
+            pyPath = if (pyPath == null) {
+                val installLoc : String = properties.getProperty("ROOT_DIR")
+                if (installLoc != null) {
+                    if (loggerConfigPath == "")
+                        loggerConfigPath = s"$pyPath/bin/pythonlog4j.cfg"
+                    if (logFilePath == null) {
+                        logFilePath = s"$pyPath/bin/pythonlog4j.cfg"
+                    }
+                    installLoc
+                } else {
+                    logger.error("Kamanja's root directory is not available in the 'allConfigs'... bad news!")
+                    throw new KamanjaException("Kamanja's root directory is not available in the 'allConfigs'... bad news!",null)
+                }
+            } else {
+                pyPath
+            }
+
+            /** Generate the port iterator used by the python model factories on this node to configure the servers. */
+            val lastOne : Int = pySrvStartPort + pySrvMaxSrvrs - 1
+            val pyPortsForUse : Iterator[Int] = (for ( p <- pySrvStartPort to lastOne ) yield p).toIterator
+            KamanjaMetadata.gNodeContext.putValue("PYTHON_CONNECTION_PORTS", pyPortsForUse)
+            KamanjaMetadata.gNodeContext.putValue("HOST", host)
+            KamanjaMetadata.gNodeContext.putValue("PYTHON_PATH", pyPath)
+            KamanjaMetadata.gNodeContext.putValue("PYTHON_CONNECTIONS", new mutable.HashMap[String,Any]())
+            KamanjaMetadata.gNodeContext.putValue("PYTHON_LOG_CONFIG_PATH",  loggerConfigPath)
+            KamanjaMetadata.gNodeContext.putValue("PYTHON_LOG_PATH", logFilePath)
+
+            /** for diagnostics at run time, put the whole propertyMap */
+            KamanjaMetadata.gNodeContext.putValue("pyPropertyMap", pyPropertyMap)
+        } else { /** we can stand not having the python config defaults for everything but the python path... iff
+          * (with this version at least) the pyPath is the 'python' subdirectory of the root dir.  If it is not there
+          * an exception is thrown. The server code has to exist there for this 'last stab' to work. */
+            val installRoot : String = properties.getProperty(ROOT_DIR)
+            if (installRoot != null) {
+                val pyPath : String = s"$installRoot/python"
+                val f : File = new File(pyPath)
+                val ok : Boolean = if (f.exists() && f.isDirectory) {
+                    val pythonServerPath : String = s"$pyPath/pythonserver.py"
+                    val pf : File = new File(pythonServerPath)
+                    pf.exists() && pf.isFile
+                } else {
+                    logger.error(s"Kamanja's python directory is not available in the '$pyPath'... bad news!")
+                    throw new KamanjaException(s"Kamanja's python directory is not available in the '$pyPath'... bad news!",null)
+                }
+                if (ok) {
+                    /** use default values to populate the node context for the python factories use */
+                    KamanjaMetadata.gNodeContext.putValue("HOST", "localhost")
+                    KamanjaMetadata.gNodeContext.putValue("PYTHON_PATH", pyPath)
+                    /** connections are HashMap[partitionKey, PyServerConnection] */
+                    KamanjaMetadata.gNodeContext.putValue("PYTHON_CONNECTIONS", new mutable.HashMap[String,Any]())
+                    /** With these default values (8100, 20) add an iterator to get a port from when the time comes to build a connection */
+                    val p : Int = 8100 /** ports starting here for 20... */
+                    val it = Iterator[Int](p, p+1, p+2, p+3, p+4, p+5, p+6, p+7, p+8, p+9, p+10, p+11, p+12, p+13, p+14, p+15, p+16, p+17, p+18, p+19)
+                    KamanjaMetadata.gNodeContext.putValue("PYTHON_CONNECTION_PORTS", it)
+                    KamanjaMetadata.gNodeContext.putValue("PYTHON_LOG_CONFIG_PATH",  s"$pyPath/bin/pythonlog4j.cfg")
+                    KamanjaMetadata.gNodeContext.putValue("PYTHON_LOG_PATH", s"$pyPath/logs/pythonserver.log")
+                    KamanjaMetadata.gNodeContext.putValue("pyPropertyMap", Map[String,Any]())
+                }
+            } else {
+                logger.error("there is no entry in the config for ROOT_DIR... we need that to find Kamanja's python directory")
+                logger.error("... better yet, be specific and define the engine config's 'PYTHON_CONFIG' dictionary")
+                logger.error("See the manual for more information")
+                throw new KamanjaException("there is no entry in the config for ROOT_DIR... we need that to find Kamanja's python directory",null)
+            }
+        }
+    }
+
+
+    private def PrepareModelsFactories(tmpModelDefs: Option[scala.collection.immutable.Set[ModelDef]]): Unit = {
     if (tmpModelDefs == None) // Not found any models
       return
 
     val modelDefs = tmpModelDefs.get
+
+    /** Set up the python key values in the node context.  Connections are generated at make python proxy instance time
+      * Conceivably, we could avoid setup if there were no models, only to have to set them up when the engine accepts
+      * a newly added model. Ergo, we set the configuration up as if we were to need them. */
+    // val hasPythonModels : Boolean = modelDefs.find(m => m.modelRepresentation == ModelRepresentation.PYTHON).getOrElse(null) != null
+    // logger.debug("This cluster node has python models")
+
+    /** Add a number of properties to the node context that are needed by the python factories to set up the servers */
+    // PreparePythonConfiguration
 
     // Load all jars first
     modelDefs.foreach(mdl => {
@@ -437,24 +589,36 @@ class KamanjaMetadata {
   }
 }
 
-object KamanjaMetadata extends MdBaseResolveInfo {
-  var envCtxt: EnvContext = null // Engine will set it once EnvContext is initialized
+object KamanjaMetadata extends ObjectResolver {
+  // Engine will set it once EnvContext is initialized
+  var envCtxt: EnvContext = null
   var gNodeContext: NodeContext = null
+  var isConfigChanged = false
   private[this] val LOG = LogManager.getLogger(getClass);
   private[this] val mdMgr = GetMdMgr
   private[this] var messageContainerObjects = new HashMap[String, MsgContainerObjAndTransformInfo]
   private[this] var modelObjs = new HashMap[String, MdlInfo]
-  private[this] var modelExecOrderedObjects = Array[(String, MdlInfo)]()
+  //  private[this] var modelExecOrderedObjects = Array[(String, MdlInfo)]()
   private[this] var factoryOfMdlInstFactoriesObjects = scala.collection.immutable.Map[String, FactoryOfModelInstanceFactory]()
-  private[this] var modelRepFacFacKeys : scala.collection.immutable.Map[String,String] = scala.collection.immutable.Map[String,String]()
+  private[this] var modelRepFacFacKeys: scala.collection.immutable.Map[String, String] = scala.collection.immutable.Map[String, String]()
   private[this] var zkListener: ZooKeeperListener = _
-  private[this] var mdlsChangedCntr: Long = 0
+  private[this] var mdlsChangedCntr: Long = 1
   private[this] var initializedFactOfMdlInstFactObjs = false
   private[this] val reent_lock = new ReentrantReadWriteLock(true);
   private[this] val updMetadataExecutor = Executors.newFixedThreadPool(1)
+  // Just having snapshot in case if multiple threads are updating metadta (MetadataImpl) in same JVM
+  private[this] var previousProcessedTxn: Long = -1
+  private[this] var updatedClusterConfig: Map[String, Any] = null
+  private[this] var masterDag: Dag = new Dag("0")
+  private[this] var nodeIdModlsObj = scala.collection.mutable.Map[Long, MdlInfo]()
+
+  def getConfigChanges: Array[(String, Any)] = {
+    return GetMdMgr.getConfigChanges
+  }
 
   def AllFactoryOfMdlInstFactoriesObjects = factoryOfMdlInstFactoriesObjects.toMap
-  def AllModelRepFacFacKeys : scala.collection.immutable.Map[String,String] = modelRepFacFacKeys.toMap
+
+  def AllModelRepFacFacKeys: scala.collection.immutable.Map[String, String] = modelRepFacFacKeys.toMap
 
   def GetAllJarsFromElem(elem: BaseElem): Set[String] = {
     var allJars: Array[String] = null
@@ -471,13 +635,13 @@ object KamanjaMetadata extends MdBaseResolveInfo {
       return Set[String]()
     }
 
-    return allJars.map(j => Utils.GetValidJarFile(KamanjaConfiguration.jarPaths, j)).toSet
+    return allJars.map(j => Utils.GetValidJarFile(envCtxt.getJarPaths(), j)).toSet
   }
 
   def LoadJarIfNeeded(elem: BaseElem): Boolean = {
     val allJars = GetAllJarsFromElem(elem)
     if (allJars.size > 0) {
-      return Utils.LoadJars(allJars.toArray, KamanjaConfiguration.metadataLoader.loadedJars, KamanjaConfiguration.metadataLoader.loader)
+      return Utils.LoadJars(allJars.toArray, envCtxt.getMetadataLoader.loadedJars, envCtxt.getMetadataLoader.loader)
     } else {
       return true
     }
@@ -487,25 +651,29 @@ object KamanjaMetadata extends MdBaseResolveInfo {
                               tmpModelDefs: Option[scala.collection.immutable.Set[ModelDef]], tmpModelFactiresDefs: Option[scala.collection.immutable.Set[FactoryOfModelInstanceFactoryDef]]): Boolean = {
     val allJarsToBeValidated = scala.collection.mutable.Set[String]();
 
-    if (tmpMsgDefs != None) { // Not found any messages
+    if (tmpMsgDefs != None) {
+      // Not found any messages
       tmpMsgDefs.get.foreach(elem => {
         allJarsToBeValidated ++= KamanjaMetadata.GetAllJarsFromElem(elem)
       })
     }
 
-    if (tmpContainerDefs != None) { // Not found any messages
+    if (tmpContainerDefs != None) {
+      // Not found any messages
       tmpContainerDefs.get.foreach(elem => {
         allJarsToBeValidated ++= KamanjaMetadata.GetAllJarsFromElem(elem)
       })
     }
 
-    if (tmpModelDefs != None) { // Not found any messages
+    if (tmpModelDefs != None) {
+      // Not found any messages
       tmpModelDefs.get.foreach(elem => {
         allJarsToBeValidated ++= KamanjaMetadata.GetAllJarsFromElem(elem)
       })
     }
 
-    if (tmpModelFactiresDefs != None) { // Not found any messages
+    if (tmpModelFactiresDefs != None) {
+      // Not found any messages
       tmpModelFactiresDefs.get.foreach(elem => {
         allJarsToBeValidated ++= KamanjaMetadata.GetAllJarsFromElem(elem)
       })
@@ -527,7 +695,7 @@ object KamanjaMetadata extends MdBaseResolveInfo {
     try {
       // If required we need to enable this test
       // Convert class name into a class
-      var curClz = Class.forName(clsName, true, KamanjaConfiguration.metadataLoader.loader)
+      var curClz = Class.forName(clsName, true, envCtxt.getMetadataLoader.loader)
       curClass = curClz
 
       isValid = false
@@ -549,8 +717,8 @@ object KamanjaMetadata extends MdBaseResolveInfo {
         var objinst: Any = null
         try {
           // Trying Singleton Object
-          val module = KamanjaConfiguration.metadataLoader.mirror.staticModule(clsName)
-          val obj = KamanjaConfiguration.metadataLoader.mirror.reflectModule(module)
+          val module = envCtxt.getMetadataLoader.mirror.staticModule(clsName)
+          val obj = envCtxt.getMetadataLoader.mirror.reflectModule(module)
           // curClz.newInstance
           objinst = obj.instance
         } catch {
@@ -579,16 +747,16 @@ object KamanjaMetadata extends MdBaseResolveInfo {
     return null
   }
 
-    /**
-      * Collect the Factory of factory objects by both modelRepresentation type and by fqClassname.
-      */
+  /**
+    * Collect the Factory of factory objects by both modelRepresentation type and by fqClassname.
+    */
   def ResolveAllFactoryOfMdlInstFactoriesObjects(): Unit = {
     val onlyActive: Boolean = true
     val latestVersion: Boolean = true
-    val fDefsOptions : Option[scala.collection.immutable.Set[FactoryOfModelInstanceFactoryDef]] = mdMgr.FactoryOfMdlInstFactories(onlyActive, latestVersion)
+    val fDefsOptions: Option[scala.collection.immutable.Set[FactoryOfModelInstanceFactoryDef]] = mdMgr.FactoryOfMdlInstFactories(onlyActive, latestVersion)
     val tmpFactoryOfMdlInstFactObjects = scala.collection.mutable.Map[String, FactoryOfModelInstanceFactory]()
     /** map ModelRepresentation str =>  FactoryOfModelInstanceFactory key (its namespace.name) */
-    val tmpModelRepFacFacObjects : scala.collection.mutable.Map[String,String] = scala.collection.mutable.Map[String,String]()
+    val tmpModelRepFacFacObjects: scala.collection.mutable.Map[String, String] = scala.collection.mutable.Map[String, String]()
 
 
     if (fDefsOptions != None) {
@@ -606,7 +774,8 @@ object KamanjaMetadata extends MdBaseResolveInfo {
         LOG.debug("FactoryOfModelInstanceFactory. FullName:%s, ClassName:%s".format(f.FullName, clsName))
         var fDefObj = ResolveFactoryOfModelInstanceFactoryDef(clsName, f)
         if (fDefObj == null) {
-          if (clsName.size > 0 && clsName.charAt(clsName.size - 1) != '$') { // if no $ at the end we are taking $
+          if (clsName.size > 0 && clsName.charAt(clsName.size - 1) != '$') {
+            // if no $ at the end we are taking $
             clsName = clsName + "$"
             fDefObj = ResolveFactoryOfModelInstanceFactoryDef(clsName, f)
           }
@@ -640,11 +809,11 @@ object KamanjaMetadata extends MdBaseResolveInfo {
     if (exp != null)
       throw exp
 
-   }
+  }
 
   private def UpdateKamanjaMdObjects(msgObjects: HashMap[String, MsgContainerObjAndTransformInfo], contObjects: HashMap[String, MsgContainerObjAndTransformInfo],
-    mdlObjects: HashMap[String, MdlInfo], removedModels: ArrayBuffer[(String, String, Long)], removedMessages: ArrayBuffer[(String, String, Long)],
-    removedContainers: ArrayBuffer[(String, String, Long)]): Unit = {
+                                     mdlObjects: HashMap[String, MdlInfo], removedModels: ArrayBuffer[(String, String, Long)], removedMessages: ArrayBuffer[(String, String, Long)],
+                                     removedContainers: ArrayBuffer[(String, String, Long)]): Unit = {
 
     var exp: Exception = null
 
@@ -664,8 +833,8 @@ object KamanjaMetadata extends MdBaseResolveInfo {
   }
 
   private def localUpdateKamanjaMdObjects(msgObjects: HashMap[String, MsgContainerObjAndTransformInfo], contObjects: HashMap[String, MsgContainerObjAndTransformInfo],
-    mdlObjects: HashMap[String, MdlInfo], removedModels: ArrayBuffer[(String, String, Long)], removedMessages: ArrayBuffer[(String, String, Long)],
-    removedContainers: ArrayBuffer[(String, String, Long)]): Unit = {
+                                          mdlObjects: HashMap[String, MdlInfo], removedModels: ArrayBuffer[(String, String, Long)], removedMessages: ArrayBuffer[(String, String, Long)],
+                                          removedContainers: ArrayBuffer[(String, String, Long)]): Unit = {
     //BUGBUG:: Assuming there is no issues if we remove the objects first and then add the new objects. We are not adding the object in the same order as it added in the transaction. 
 
     var mdlsChanged = false
@@ -702,10 +871,10 @@ object KamanjaMetadata extends MdBaseResolveInfo {
     if (contObjects != null && contObjects.size > 0) {
       messageContainerObjects ++= contObjects
       if (envCtxt != null) {
-        val containerNames = contObjects.map(container => container._1.toLowerCase).toList.sorted.toArray // Sort topics by names
-        val containerInfos = containerNames.map(c => { ContainerNameAndDatastoreInfo(c, null) })
-        envCtxt.RegisterMessageOrContainers(containerInfos) // Containers
-        envCtxt.CacheContainers(KamanjaConfiguration.clusterId) // Load data for Caching
+        //        val containerNames = contObjects.map(container => container._1.toLowerCase).toList.sorted.toArray // Sort topics by names
+        //        val containerInfos = containerNames.map(c => { ContainerNameAndDatastoreInfo(c, null) })
+        //        envCtxt.RegisterMessageOrContainers(containerInfos) // Containers
+        envCtxt.cacheContainers(KamanjaConfiguration.clusterId) // Load data for Caching
       }
     }
 
@@ -713,10 +882,10 @@ object KamanjaMetadata extends MdBaseResolveInfo {
     if (msgObjects != null && msgObjects.size > 0) {
       messageContainerObjects ++= msgObjects
       if (envCtxt != null) {
-        val topMessageNames = msgObjects.filter(msg => msg._2.parents.size == 0).map(msg => msg._1.toLowerCase).toList.sorted.toArray // Sort topics by names
-        val messagesInfos = topMessageNames.map(c => { ContainerNameAndDatastoreInfo(c, null) })
-        envCtxt.RegisterMessageOrContainers(messagesInfos) // Messages
-        envCtxt.CacheContainers(KamanjaConfiguration.clusterId) // Load data for Caching
+        //        val topMessageNames = msgObjects.filter(msg => msg._2.parents.size == 0).map(msg => msg._1.toLowerCase).toList.sorted.toArray // Sort topics by names
+        //        val messagesInfos = topMessageNames.map(c => { ContainerNameAndDatastoreInfo(c, null) })
+        //        envCtxt.RegisterMessageOrContainers(messagesInfos) // Messages
+        envCtxt.cacheContainers(KamanjaConfiguration.clusterId) // Load data for Caching
       }
     }
 
@@ -772,36 +941,51 @@ object KamanjaMetadata extends MdBaseResolveInfo {
     // Order Models (if property is given) if we added any
     if ((removedModels != null && removedModels.size > 0) || (mdlObjects != null && mdlObjects.size > 0)) {
       // Re-arrange only if there are any changes in models (add/remove)
-      if (modelObjs != null && modelObjs.size > 0) {
-        // Order Models Execution
-        val tmpExecOrderStr = mdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "modelsexecutionorder")
-        val ExecOrderStr = if (tmpExecOrderStr != null) tmpExecOrderStr.trim.toLowerCase.split(",").map(s => s.trim).filter(s => s.size > 0) else Array[String]()
+      //      if (modelObjs != null && modelObjs.size > 0) {
+      //        // Order Models Execution
+      //        val tmpExecOrderStr = mdMgr.GetUserProperty(KamanjaConfiguration.clusterId, "modelsexecutionorder")
+      //        val ExecOrderStr = if (tmpExecOrderStr != null) tmpExecOrderStr.trim.toLowerCase.split(",").map(s => s.trim).filter(s => s.size > 0) else Array[String]()
+      //
+      //        if (ExecOrderStr.size > 0 && modelObjs != null) {
+      //          var mdlsOrder = ArrayBuffer[(String, MdlInfo)]()
+      //          ExecOrderStr.foreach(mdlNm => {
+      //            val m = modelObjs.getOrElse(mdlNm, null)
+      //            if (m != null)
+      //              mdlsOrder += ((mdlNm, m))
+      //          })
+      //
+      //          var orderedMdlsSet = ExecOrderStr.toSet
+      //          modelObjs.foreach(kv => {
+      //            val mdlNm = kv._1.toLowerCase()
+      //            if (orderedMdlsSet.contains(mdlNm) == false)
+      //              mdlsOrder += ((mdlNm, kv._2))
+      //          })
+      //
+      //          LOG.warn("Models Order changed from %s to %s".format(modelObjs.map(kv => kv._1).mkString(","), mdlsOrder.map(kv => kv._1).mkString(",")))
+      //          modelExecOrderedObjects = mdlsOrder.toArray
+      //        } else {
+      //          modelExecOrderedObjects = if (modelObjs != null) modelObjs.toArray else Array[(String, MdlInfo)]()
+      //        }
+      //
+      //        mdlsChanged = true
+      //      } else {
+      //        modelExecOrderedObjects = Array[(String, MdlInfo)]()
+      //      }
 
-        if (ExecOrderStr.size > 0 && modelObjs != null) {
-          var mdlsOrder = ArrayBuffer[(String, MdlInfo)]()
-          ExecOrderStr.foreach(mdlNm => {
-            val m = modelObjs.getOrElse(mdlNm, null)
-            if (m != null)
-              mdlsOrder += ((mdlNm, m))
-          })
+      // create DAG node here
+      val dag = new Dag(mdlsChangedCntr.toString)
+      val tmpNodeIdModlsObj = scala.collection.mutable.Map[Long, MdlInfo]()
 
-          var orderedMdlsSet = ExecOrderStr.toSet
-          modelObjs.foreach(kv => {
-            val mdlNm = kv._1.toLowerCase()
-            if (orderedMdlsSet.contains(mdlNm) == false)
-              mdlsOrder += ((mdlNm, kv._2))
-          })
-
-          LOG.warn("Models Order changed from %s to %s".format(modelObjs.map(kv => kv._1).mkString(","), mdlsOrder.map(kv => kv._1).mkString(",")))
-          modelExecOrderedObjects = mdlsOrder.toArray
-        } else {
-          modelExecOrderedObjects = if (modelObjs != null) modelObjs.toArray else Array[(String, MdlInfo)]()
-        }
-
-        mdlsChanged = true
-      } else {
-        modelExecOrderedObjects = Array[(String, MdlInfo)]()
+      if (modelObjs != null) {
+        modelObjs.foreach(mdl => {
+          val mdlInfo = mdl._2
+          dag.AddNode(mdlInfo.nodeId, mdlInfo.inputs, mdlInfo.outputs)
+          tmpNodeIdModlsObj(mdlInfo.nodeId) = mdlInfo
+        })
       }
+
+      masterDag = dag
+      nodeIdModlsObj = tmpNodeIdModlsObj
     }
 
     LOG.debug("mdlsChanged:" + mdlsChanged.toString)
@@ -814,12 +998,13 @@ object KamanjaMetadata extends MdBaseResolveInfo {
     MetadataAPIImpl.InitMdMgrFromBootStrap(KamanjaConfiguration.configFile, false)
   }
 
-  def InitMdMgr(zkConnectString: String, znodePath: String, zkSessionTimeoutMs: Int, zkConnectionTimeoutMs: Int): Unit = {
+  def InitMdMgr(zkConnectString: String, znodePath: String, zkSessionTimeoutMs: Int, zkConnectionTimeoutMs: Int, inputAdapters: ArrayBuffer[InputAdapter],
+                outputAdapters: ArrayBuffer[OutputAdapter], storageAdapters: ArrayBuffer[DataStore]): Unit = {
     val tmpMsgDefs = mdMgr.Messages(true, true)
     val tmpContainerDefs = mdMgr.Containers(true, true)
     val tmpModelDefs = mdMgr.Models(true, true)
 
-    val obj = new KamanjaMetadata
+    val obj = new KamanjaMetadata(envCtxt)
 
     try {
       if (initializedFactOfMdlInstFactObjs == false) {
@@ -827,8 +1012,38 @@ object KamanjaMetadata extends MdBaseResolveInfo {
         initializedFactOfMdlInstFactObjs = true
       }
       obj.LoadMdMgrElems(tmpMsgDefs, tmpContainerDefs, tmpModelDefs)
+
       // Lock the global object here and update the global objects
       UpdateKamanjaMdObjects(obj.messageObjects, obj.containerObjects, obj.modelObjsMap, null, null, null)
+
+      val adapterLevelBinding = mdMgr.AllAdapterMessageBindings.values.groupBy(_.adapterName.trim.toLowerCase())
+
+      inputAdapters.foreach(adap => {
+        adap.setObjectResolver(KamanjaMetadata)
+        val bindsInfo = adapterLevelBinding.getOrElse(adap.getAdapterName.toLowerCase, null)
+        if (bindsInfo != null) {
+          // Message Name, Serializer Name & options.
+          adap.addMessageBinding(bindsInfo.map(bind => (bind.messageName ->(bind.serializer, bind.options))).toMap)
+        }
+      })
+
+      outputAdapters.foreach(adap => {
+        adap.setObjectResolver(KamanjaMetadata)
+        val bindsInfo = adapterLevelBinding.getOrElse(adap.getAdapterName.toLowerCase, null)
+        if (bindsInfo != null) {
+          // Message Name, Serializer Name & options.
+          adap.addMessageBinding(bindsInfo.map(bind => (bind.messageName ->(bind.serializer, bind.options))).toMap)
+        }
+      })
+
+      storageAdapters.foreach(adap => {
+        adap.setObjectResolver(KamanjaMetadata)
+        val bindsInfo = adapterLevelBinding.getOrElse(adap.getAdapterName.toLowerCase, null)
+        if (bindsInfo != null) {
+          // Message Name, Serializer Name & options.
+          adap.addMessageBinding(bindsInfo.map(bind => (bind.messageName ->(bind.serializer, bind.options))).toMap)
+        }
+      })
     } catch {
       case e: Exception => {
         LOG.error("Failed to load messages, containers & models from metadata manager.", e)
@@ -871,8 +1086,8 @@ object KamanjaMetadata extends MdBaseResolveInfo {
       LOG.error("Metadata Manager should not be NULL while updaing metadta in Kamanja manager.")
       return
     }
-    
-    if (zkTransaction.transactionId.getOrElse("0").toLong <= MetadataAPIImpl.getCurrentTranLevel) return
+
+    if (zkTransaction.transactionId.getOrElse("0").toLong <= previousProcessedTxn) return
 
     updMetadataExecutor.execute(new MetadataUpdate(zkTransaction))
   }
@@ -886,7 +1101,7 @@ object KamanjaMetadata extends MdBaseResolveInfo {
         txnId = -1 * txnId
       // Finally we are taking -ve txnid for this
       try {
-        txnCtxt = new TransactionContext(txnId, KamanjaMetadata.gNodeContext, Array[Byte](), "")
+        txnCtxt = new TransactionContext(txnId, KamanjaMetadata.gNodeContext, Array[Byte](), EventOriginInfo(null, null), 0, null)
         ThreadLocalStorage.txnContextInfo.set(txnCtxt)
         run1(txnCtxt)
       } catch {
@@ -895,7 +1110,7 @@ object KamanjaMetadata extends MdBaseResolveInfo {
       } finally {
         ThreadLocalStorage.txnContextInfo.remove
         if (txnCtxt != null) {
-          KamanjaMetadata.gNodeContext.getEnvCtxt.rollbackData(txnId)
+          KamanjaMetadata.gNodeContext.getEnvCtxt.rollbackData()
         }
       }
     }
@@ -910,16 +1125,18 @@ object KamanjaMetadata extends MdBaseResolveInfo {
       }
 
       if (mdMgr == null) {
-        LOG.error("Metadata Manager should not be NULL while updaing metadta in Kamanja manager.")
+        LOG.error("Metadata Manager should not be NULL while updaing metadata in Kamanja manager.")
         return
       }
 
       MetadataAPIImpl.UpdateMdMgr(zkTransaction)
+      val zkTxnId = zkTransaction.transactionId.getOrElse("0").toLong
+      previousProcessedTxn = if (zkTxnId != 0) zkTxnId else MetadataAPIImpl.getCurrentTranLevel
 
       if (updMetadataExecutor.isShutdown)
         return
 
-      val obj = new KamanjaMetadata
+      val obj = new KamanjaMetadata(envCtxt)
 
       // BUGBUG:: Not expecting added element & Removed element will happen in same transaction at this moment
       // First we are adding what ever we need to add, then we are removing. So, we are locking before we append to global array and remove what ever is gone.
@@ -954,8 +1171,10 @@ object KamanjaMetadata extends MdBaseResolveInfo {
                   }
                 }
               }
-              case "Remove" | "Deactivate" => { removedValues += 1 }
-              case _                       => {}
+              case "Remove" | "Deactivate" => {
+                removedValues += 1
+              }
+              case _ => {}
             }
           }
           case "MessageDef" => {
@@ -973,8 +1192,10 @@ object KamanjaMetadata extends MdBaseResolveInfo {
                   }
                 }
               }
-              case "Remove" => { removedValues += 1 }
-              case _        => {}
+              case "Remove" => {
+                removedValues += 1
+              }
+              case _ => {}
             }
           }
           case "ContainerDef" => {
@@ -992,8 +1213,10 @@ object KamanjaMetadata extends MdBaseResolveInfo {
                   }
                 }
               }
-              case "Remove" => { removedValues += 1 }
-              case _        => {}
+              case "Remove" => {
+                removedValues += 1
+              }
+              case _ => {}
             }
           }
           case _ => {}
@@ -1004,18 +1227,19 @@ object KamanjaMetadata extends MdBaseResolveInfo {
       if (removedValues > 0) {
         reent_lock.writeLock().lock();
         try {
-          KamanjaConfiguration.metadataLoader = new KamanjaLoaderInfo(KamanjaConfiguration.metadataLoader, true, true)
-          envCtxt.SetClassLoader(KamanjaConfiguration.metadataLoader.loader)
+          val metadataLoader = new KamanjaLoaderInfo(envCtxt.getMetadataLoader, true, true)
+          envCtxt.setMetadataLoader(metadataLoader)
         } catch {
-          case e: Exception => { LOG.warn("", e)
+          case e: Exception => {
+            LOG.warn("", e)
           }
         } finally {
           reent_lock.writeLock().unlock();
         }
       }
 
-      if (unloadMsgsContainers.size > 0)
-        envCtxt.clearIntermediateResults(unloadMsgsContainers.toArray)
+      //      if (unloadMsgsContainers.size > 0)
+      //        envCtxt.clearIntermediateResults(unloadMsgsContainers.toArray)
 
       val nonExistsJars = Utils.CheckForNonExistanceJars(allJarsToBeValidated.toSet)
       if (nonExistsJars.size > 0) {
@@ -1024,6 +1248,7 @@ object KamanjaMetadata extends MdBaseResolveInfo {
       }
 
       //// Check for Jars -- End
+      var msgBindingChanges = false
 
       zkTransaction.Notifications.foreach(zkMessage => {
         if (updMetadataExecutor.isShutdown)
@@ -1121,8 +1346,89 @@ object KamanjaMetadata extends MdBaseResolveInfo {
               }
             }
           }
-          case "OutputMsgDef" => {
+          case "OutputMsgDef" => {}
+          case "adapterDef" => {}
+          case "nodeDef" => {}
+          case "clusterInfoDef" => {}
+          case "clusterDef" => {}
+          case "upDef" => {}
+          case "TenantDef" => {}
 
+          case "AdapterMessageBinding" => {
+            logger.debug("Got adapter change")
+            /** Restate the key to use the binding key (see AdapterMessageBinding class decl in Metadata project) for form. */
+            val bindingKey: String = s"${zkMessage.ObjectType}.${zkMessage.Name}"
+            val (adapterName, adapter, binding): (String, AdapterInfo, AdapterMessageBinding) = if (zkMessage != null) {
+              val adapNm: String = zkMessage.Name.split(',').head.toLowerCase
+              val bndg: AdapterMessageBinding = mdMgr.AllAdapterMessageBindings.getOrElse(zkMessage.Name, null)
+              val adap: AdapterInfo = mdMgr.GetAdapter(adapNm)
+              (adapNm, adap, bndg)
+            } else {
+              (null, null, null)
+            }
+
+            /** An AdapterInfo and AdapterMessageBinding must be present in the metadata to proceed */
+            if (adapter != null) {
+              val kmgr: KamanjaManager = KamanjaManager.instance
+              val (inputAdapters, outputAdapters, storageAdapters, adapterChangedCntr)
+              : (Array[InputAdapter], Array[OutputAdapter], Array[DataStore], Long) = kmgr.getAllAdaptersInfo
+
+              val (optInputAdap, optOutputAdap, optStoreAdap): (Option[InputAdapter], Option[OutputAdapter], Option[DataStore]) =
+                if (adapterName != null) {
+                  (inputAdapters.find(adap => adap.getAdapterName.equalsIgnoreCase(adapterName))
+                    , outputAdapters.find(adap => adap.getAdapterName.equalsIgnoreCase(adapterName))
+                    , storageAdapters.find(adap => adap.getAdapterName.equalsIgnoreCase(adapterName)))
+                } else {
+                  (None, None, None)
+                }
+
+              /** Note that the only one the adapters will have Some(value) ... */
+              val (inputAdap, outputAdap, storeAdap): (InputAdapter, OutputAdapter, DataStore) = (optInputAdap.orNull, optOutputAdap.orNull, optStoreAdap.orNull)
+
+              zkMessage.Operation match {
+                case "Add" => {
+                  if (binding != null) {
+                    if (logger.isDebugEnabled) {
+                      logger.debug("About to add binding to adapter %s with message:%s".format(adapterName, binding.messageName))
+                    }
+                    if (inputAdap != null) inputAdap.addMessageBinding(binding.messageName, binding.serializer, binding.options)
+                    else if (outputAdap != null) outputAdap.addMessageBinding(binding.messageName, binding.serializer, binding.options)
+                    else if (storeAdap != null) storeAdap.addMessageBinding(binding.messageName, binding.serializer, binding.options)
+                    else {
+                      /** It should be impossible to reach this code, hence it was put here */
+                      LOG.error(s"The adapter referred to by the zookeeper notification (key=$bindingKey) does not exist in the metadata cache!!!!")
+                    }
+                    msgBindingChanges = true
+                  } else {
+                    val bindName: String = if (binding != null) binding.FullBindingName else "NO BINDING IN CACHE for " + zkMessage.Name
+                    LOG.error(s"For zookeeper notification type ${zkMessage.ObjectType} with operation ${zkMessage.Operation}, either an adapter named $adapterName or a cataloged binding named $bindName (or both) could not be found.  Notification was bad news!!!")
+                  }
+                }
+                case "Remove" => {
+                  // This is already removed from cache. So, we need to go with the binding name to get message name
+                  val strArr = zkMessage.Name.split(",", -1)
+                  // BUGBUG for now we are going by offset. Make sure we have a common function to extract adaptername, messagename & ser name from binding
+                  val msgName = if (strArr.size > 1 && strArr(1) != null) strArr(1) else ""
+                  if (logger.isDebugEnabled) {
+                    logger.debug("About to remove binding to adapter %s with message:%s".format(adapterName, msgName))
+                  }
+                  if (inputAdap != null) inputAdap.removeMessageBinding(msgName)
+                  else if (outputAdap != null) outputAdap.removeMessageBinding(msgName)
+                  else if (storeAdap != null) storeAdap.removeMessageBinding(msgName)
+                  else {
+                    /** It should be impossible to reach this code, hence it was put here */
+                    LOG.error(s"The adapter referred to by the zookeeper notification (key=$bindingKey) does not exist!!!!")
+                  }
+                  msgBindingChanges = true
+                }
+                case _ => {
+                  LOG.error(s"Unknown Operation ${zkMessage.Operation} in zookeeper notification type ${zkMessage.ObjectType}.  The notification is not processed ..")
+                }
+              }
+            } else {
+              val bindName: String = if (binding != null) binding.FullBindingName else "NO BINDING IN CACHE for " + zkMessage.Name
+              LOG.error(s"For zookeeper notification type ${zkMessage.ObjectType} with operation ${zkMessage.Operation}, either an adapter named $adapterName or a cataloged binding named $bindName (or both) could not be found.  Notification was bad news!!!")
+            }
           }
           case _ => {
             LOG.warn("Unknown objectType " + zkMessage.ObjectType + " in zookeeper notification, notification is not processed ..")
@@ -1130,23 +1436,48 @@ object KamanjaMetadata extends MdBaseResolveInfo {
         }
       })
 
+      // Notifying Engine for Adapters change
+      if (msgBindingChanges)
+        KamanjaManager.instance.incrAdapterChangedCntr()
+
+      if (obj.messageObjects.size > 0 || obj.containerObjects.size > 0 || removedMessages.size > 0 || removedContainers.size > 0)
+        KamanjaManager.instance.incrMsgChangedCntr()
+
       // Lock the global object here and update the global objects
       if (updMetadataExecutor.isShutdown == false)
         UpdateKamanjaMdObjects(obj.messageObjects, obj.containerObjects, obj.modelObjsMap, removedModels, removedMessages, removedContainers)
     }
   }
 
-  override def getMessgeOrContainerInstance(MsgContainerType: String): MessageContainerBase = {
+  override def getInstance(MsgContainerType: String): ContainerInterface = {
     var v: MsgContainerObjAndTransformInfo = null
 
     v = getMessageOrContainer(MsgContainerType)
-    if (v != null && v.contmsgobj != null && v.contmsgobj.isInstanceOf[BaseMsgObj]) {
-      return v.contmsgobj.asInstanceOf[BaseMsgObj].CreateNewMessage
-    } else if (v != null && v.contmsgobj != null && v.contmsgobj.isInstanceOf[BaseContainerObj]) { // NOTENOTE: Not considering Base containers here
-      return v.contmsgobj.asInstanceOf[BaseContainerObj].CreateNewContainer
+    if (v != null && v.contmsgobj != null && v.contmsgobj.isInstanceOf[MessageFactoryInterface]) {
+      return v.contmsgobj.createInstance.asInstanceOf[ContainerInterface]
+    } else if (v != null && v.contmsgobj != null && v.contmsgobj.isInstanceOf[ContainerFactoryInterface]) {
+      // NOTENOTE: Not considering Base containers here
+      return v.contmsgobj.createInstance.asInstanceOf[ContainerInterface]
     }
     return null
   }
+
+  override def getInstance(schemaId: Long): ContainerInterface = {
+    //BUGBUG:: For now we are getting latest class. But we need to get the old one too.
+    val md = getMetadataManager
+
+    if (md == null)
+      throw new KamanjaException("Metadata Not found", null)
+
+    val contOpt = getMdMgr.ContainerForSchemaId(schemaId.toInt)
+
+    if (contOpt == None)
+      throw new KamanjaException("Container Not found for schemaid:" + schemaId, null)
+
+    getInstance(contOpt.get.FullName)
+  }
+
+  override def getMdMgr: MdMgr = getMetadataManager
 
   def getMessgeInfo(msgType: String): MsgContainerObjAndTransformInfo = {
     var exp: Exception = null
@@ -1251,9 +1582,11 @@ object KamanjaMetadata extends MdBaseResolveInfo {
   def getAllModels: (Array[(String, MdlInfo)], Long) = {
     var exp: Exception = null
     var v: Array[(String, MdlInfo)] = null
+    var cntr: Long = 0
 
     reent_lock.readLock().lock();
     try {
+      cntr = mdlsChangedCntr
       v = localgetAllModels
     } catch {
       case e: Exception => {
@@ -1265,7 +1598,27 @@ object KamanjaMetadata extends MdBaseResolveInfo {
     }
     if (exp != null)
       throw exp
-    (v, mdlsChangedCntr)
+    (v, cntr)
+  }
+
+  def getExecutionDag: (Dag, Map[Long, MdlInfo], Long) = {
+    var exp: Exception = null
+    var v: (Dag, Map[Long, MdlInfo], Long) = null
+
+    reent_lock.readLock().lock();
+    try {
+      v = localgetDag
+    } catch {
+      case e: Exception => {
+        LOG.debug("", e)
+        exp = e
+      }
+    } finally {
+      reent_lock.readLock().unlock();
+    }
+    if (exp != null)
+      throw exp
+    v
   }
 
   def getAllContainers: Map[String, MsgContainerObjAndTransformInfo] = {
@@ -1291,7 +1644,7 @@ object KamanjaMetadata extends MdBaseResolveInfo {
   private def localgetMessgeInfo(msgType: String): MsgContainerObjAndTransformInfo = {
     if (messageContainerObjects == null) return null
     val v = messageContainerObjects.getOrElse(msgType.toLowerCase, null)
-    if (v != null && v.contmsgobj != null && v.contmsgobj.isInstanceOf[BaseMsgObj])
+    if (v != null && v.contmsgobj != null && v.contmsgobj.isInstanceOf[MessageFactoryInterface])
       return v
     return null
   }
@@ -1305,7 +1658,7 @@ object KamanjaMetadata extends MdBaseResolveInfo {
     if (messageContainerObjects == null) return null
     val v = messageContainerObjects.getOrElse(containerName.toLowerCase, null)
     if ((v != null && v.contmsgobj == null) // Base containers 
-      || (v != null && v.contmsgobj != null && v.contmsgobj.isInstanceOf[BaseContainerObj]))
+      || (v != null && v.contmsgobj != null && v.contmsgobj.isInstanceOf[ContainerFactoryInterface]))
       return v
     return null
   }
@@ -1320,12 +1673,12 @@ object KamanjaMetadata extends MdBaseResolveInfo {
     if (messageContainerObjects == null) return null
     messageContainerObjects.filter(o => {
       val v = o._2
-      (v != null && v.contmsgobj != null && v.contmsgobj.isInstanceOf[BaseMsgObj])
+      (v != null && v.contmsgobj != null && v.contmsgobj.isInstanceOf[MessageFactoryInterface])
     }).toMap
   }
 
   private def localgetAllModels: Array[(String, MdlInfo)] = {
-    modelExecOrderedObjects
+    modelObjs.toArray
   }
 
   private def localgetAllContainers: Map[String, MsgContainerObjAndTransformInfo] = {
@@ -1333,11 +1686,11 @@ object KamanjaMetadata extends MdBaseResolveInfo {
     messageContainerObjects.filter(o => {
       val v = o._2
       ((v != null && v.contmsgobj == null) // Base containers 
-        || (v != null && v.contmsgobj != null && v.contmsgobj.isInstanceOf[BaseContainerObj]))
+        || (v != null && v.contmsgobj != null && v.contmsgobj.isInstanceOf[ContainerFactoryInterface]))
     }).toMap
   }
 
-  def getMdMgr: MdMgr = mdMgr
+  def getMetadataManager: MdMgr = mdMgr
 
   def Shutdown: Unit = {
     if (zkListener != null)
@@ -1352,5 +1705,10 @@ object KamanjaMetadata extends MdBaseResolveInfo {
   }
 
   def GetModelsChangedCounter = mdlsChangedCntr
+
+  private def localgetDag: (Dag, Map[Long, MdlInfo], Long) = {
+    (masterDag, nodeIdModlsObj.toMap, mdlsChangedCntr)
+  }
+
 }
 

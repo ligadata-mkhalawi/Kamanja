@@ -5,14 +5,23 @@
 				"Name":"ProviderId",
 				"TypeNameSpace":"System",
 				"TypeName" : "String",
-				"Version"  : 100
+				"Version"  : 100,
+				"OwnerId" : "test_spec",
+				"TenantId" : "testTenantId",
+				"UniqueId" : 1,
+				"MdElementId" : 1
+
 			},
 			{
 				"NameSpace":"Ligadata",
 				"Name":"ProviderName",
 				"TypeNameSpace":"System",
 				"TypeName" : "String",
-				"Version"  : 100
+				"Version"  : 100,
+				"OwnerId" : "test_spec",
+				"TenantId" : "testTenantId",
+				"UniqueId" : 1,
+				"MdElementId" : 1
 			}
 	]
 }

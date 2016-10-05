@@ -62,10 +62,12 @@ class MigrateTo_V_1_3 extends MigratableTo {
   private var _jarPaths: collection.immutable.Set[String] = collection.immutable.Set[String]()
   private var _bInit = false
   private var _flCurMigrationSummary: PrintWriter = _
-  private val defaultUserId: Option[String] = Some("metadataapi")
+  private val defaultUserId: Option[String] = Some("kamanja")
   private var _parallelDegree = 0
   private var _mergeContainerAndMessages = true
-
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+    // 646 - 676 Change ends
   private val globalExceptions = ArrayBuffer[(String, Throwable)]()
 
   private def AddToGlobalException(failedMsg: String, e: Throwable): Unit = {
@@ -192,11 +194,11 @@ class MigrateTo_V_1_3 extends MigratableTo {
     MdMgr.GetMdMgr.truncate
     val mdLoader = new MetadataLoad(MdMgr.mdMgr, "", "", "", "")
     mdLoader.initialize
-    MetadataAPIImpl.readMetadataAPIConfigFromPropertiesFile(apiConfigFile)
+    getMetadataAPI.readMetadataAPIConfigFromPropertiesFile(apiConfigFile)
 
-    val tmpJarPaths = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS")
+    val tmpJarPaths = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS")
     val jarPaths = if (tmpJarPaths != null) tmpJarPaths.split(",").toSet else scala.collection.immutable.Set[String]()
-    val metaDataStoreInfo = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("METADATA_DATASTORE");
+    val metaDataStoreInfo = getMetadataAPI.GetMetadataAPIConfig.getProperty("METADATA_DATASTORE");
     val cfgStr = Source.fromFile(clusterConfigFile).mkString
     val (dataStoreInfo, statusStoreInfo) = GetDataStoreStatusStoreInfo(cfgStr)
 
@@ -264,6 +266,18 @@ class MigrateTo_V_1_3 extends MigratableTo {
     _statusStoreInfo
   }
 
+  override def getMetadataTableName(containerName: String) : String = {
+    if (_bInit == false)
+      throw new Exception("Not yet Initialized")
+    _metaDataStoreDb.getTableName(containerName)
+  }
+
+  override def getDataTableName(containerName: String) : String = {
+    if (_bInit == false)
+      throw new Exception("Not yet Initialized")
+    _dataStoreDb.getTableName(containerName)
+  }
+
   override def isMetadataTableExists(tblInfo: TableName): Boolean = {
     if (_bInit == false)
       throw new Exception("Not yet Initialized")
@@ -282,6 +296,31 @@ class MigrateTo_V_1_3 extends MigratableTo {
     if (_statusStoreDb != null)
       return _statusStoreDb.isTableExists(tblInfo.namespace, tblInfo.name)
     false
+  }
+
+  override def getDataTableSchemaName: String = {
+    if (_bInit == false)
+      throw new Exception("Not yet Initialized")
+
+    if (_dataStoreInfo.trim.size == 0)
+      throw new Exception("Invalid dataStoreInfo in clusterConfig")
+
+    var parsed_json: Map[String, Any] = null
+    try {
+      val json = parse(_dataStoreInfo)
+      if (json == null || json.values == null) {
+        val msg = "Failed to parse JSON configuration string:" + _metadataStoreInfo
+        throw new Exception(msg)
+      }
+      parsed_json = json.values.asInstanceOf[Map[String, Any]]
+    } catch {
+      case e: Exception => {
+        throw new Exception("Failed to parse JSON configuration string:" + _metadataStoreInfo, e)
+      }
+    }
+
+    val namespace = if (parsed_json.contains("SchemaName")) parsed_json.getOrElse("SchemaName", "default").toString.trim else parsed_json.getOrElse("SchemaName", "default").toString.trim
+    namespace
   }
 
   private def addBackupTablesToExecutor(executor: ExecutorService, storeDb: DataStore, tblsToBackedUp: Array[BackupTableInfo], errMsgTemplate: String, force: Boolean): Unit = {
@@ -523,7 +562,7 @@ class MigrateTo_V_1_3 extends MigratableTo {
         "json4s-jackson_2.10-3.2.9.jar" -> "json4s-jackson_2.11-3.2.9.jar", "pmmlruntime_2.10-1.0.jar" -> "pmmlruntime_2.11-1.0.jar", "pmmludfs_2.10-1.0.jar" -> "pmmludfs_2.11-1.0.jar",
         "datadelimiters_2.10-1.0.jar" -> "datadelimiters_2.11-1.0.jar", "metadata_2.10-1.0.jar" -> "metadata_2.11-1.0.jar", "exceptions_2.10-1.0.jar" -> "exceptions_2.11-1.0.jar",
         "json4s-ast_2.10-3.2.9.jar" -> "json4s-ast_2.11-3.2.9.jar", "json4s-native_2.10-3.2.9.jar" -> "json4s-native_2.11-3.2.9.jar", "bootstrap_2.10-1.0.jar" -> "bootstrap_2.11-1.0.jar",
-        "messagedef_2.10-1.0.jar" -> "messagedef_2.11-1.0.jar", "guava-16.0.1.jar" -> "guava-14.0.1.jar", "guava-18.0.jar" -> "guava-14.0.1.jar", "guava-19.0.jar" -> "guava-14.0.1.jar")
+        "messagedef_2.10-1.0.jar" -> "messagedef_2.11-1.0.jar", "guava-16.0.1.jar" -> "guava-16.0.1.jar", "guava-18.0.jar" -> "guava-16.0.1.jar", "guava-19.0.jar" -> "guava-16.0.1.jar")
 
       val newDeps = depJars.map(d => {
         if (d.startsWith("scala-reflect-2.10")) {
@@ -539,7 +578,7 @@ class MigrateTo_V_1_3 extends MigratableTo {
 
       newDeps
     } else {
-      val depJarsMap = Map("guava-16.0.1.jar" -> "guava-14.0.1.jar", "guava-18.0.jar" -> "guava-14.0.1.jar", "guava-19.0.jar" -> "guava-14.0.1.jar")
+      val depJarsMap = Map("guava-16.0.1.jar" -> "guava-16.0.1.jar", "guava-18.0.jar" -> "guava-16.0.1.jar", "guava-19.0.jar" -> "guava-16.0.1.jar")
       val newDeps = depJars.map(d => {
         depJarsMap.getOrElse(d, d)
       })
@@ -587,11 +626,11 @@ class MigrateTo_V_1_3 extends MigratableTo {
                   try {
                     val mdlCfgStr = compact(render(mdlConfig))
                     logger.debug("Temporary Model Config:" + mdlCfgStr)
-                    val retRes = MetadataAPIImpl.UploadModelsConfig(mdlCfgStr, defaultUserId, "configuration", true)
+                    val retRes = getMetadataAPI.UploadModelsConfig(mdlCfgStr, defaultUserId, "configuration", true)
                     failed = isFailedStatus(retRes)
 
                     if (failed == false) {
-                      val retRes1 = MetadataAPIImpl.AddModel(MetadataAPI.ModelType.fromString(objFormat), defStr, defaultUserId, Some((defaultUserId.get + "." + cfgnm).toLowerCase), Some(ver))
+                      val retRes1 = getMetadataAPI.AddModel(MetadataAPI.ModelType.fromString(objFormat), defStr, defaultUserId, Some((defaultUserId.get + "." + cfgnm).toLowerCase), Some(ver))
                       failed = isFailedStatus(retRes1)
                     }
                   } catch {
@@ -629,7 +668,7 @@ class MigrateTo_V_1_3 extends MigratableTo {
                   var failed = false
 
                   try {
-                    val retRes = MetadataAPIImpl.AddModel(MetadataAPI.ModelType.fromString("kpmml"), mdlDefStr, defaultUserId, Some(dispkey), Some(ver))
+                    val retRes = getMetadataAPI.AddModel(MetadataAPI.ModelType.fromString("kpmml"), mdlDefStr, defaultUserId, Some(dispkey), Some(ver))
                     failed = isFailedStatus(retRes)
                   } catch {
                     case e: Exception => {
@@ -658,7 +697,7 @@ class MigrateTo_V_1_3 extends MigratableTo {
                 var failed = false
 
                 try {
-                  val retRes = MetadataAPIImpl.AddMessage(msgDefStr, "JSON", defaultUserId)
+                  val retRes = getMetadataAPI.AddMessage(msgDefStr, "JSON", defaultUserId)
                   failed = isFailedStatus(retRes)
                 } catch {
                   case e: Exception => {
@@ -688,7 +727,7 @@ class MigrateTo_V_1_3 extends MigratableTo {
                 var failed = false
 
                 try {
-                  val retRes = MetadataAPIImpl.AddContainer(contDefStr, "JSON", defaultUserId)
+                  val retRes = getMetadataAPI.AddContainer(contDefStr, "JSON", defaultUserId)
                   failed = isFailedStatus(retRes)
                 } catch {
                   case e: Exception => {
@@ -734,7 +773,7 @@ class MigrateTo_V_1_3 extends MigratableTo {
 
                   implicit val jsonFormats: Formats = DefaultFormats
                   val newMdlCfgStr = Serialization.write(changedCfg)
-                  val retRes = MetadataAPIImpl.UploadModelsConfig(newMdlCfgStr, Some[String](namespace), null) // Considering namespace as userid
+                  val retRes = getMetadataAPI.UploadModelsConfig(newMdlCfgStr, Some[String](namespace), null) // Considering namespace as userid
                   failed = isFailedStatus(retRes)
                 } catch {
                   case e: Exception => {
@@ -760,7 +799,7 @@ class MigrateTo_V_1_3 extends MigratableTo {
                 var failed = false
 
                 try {
-                  val retRes = MetadataAPIImpl.AddFunctions(fnCfg, "JSON", defaultUserId)
+                  val retRes = getMetadataAPI.AddFunctions(fnCfg, "JSON", defaultUserId)
                   failed = isFailedStatus(retRes)
                 } catch {
                   case e: Exception => {
@@ -784,13 +823,6 @@ class MigrateTo_V_1_3 extends MigratableTo {
               logger.debug("Adding Jar:" + dispkey)
               //FIXME:: Yet to handle
               logger.error("Not yet handled migrating JarDef " + objType)
-            }
-            */
-            /*
-            case "OutputMsgDef" => {
-              logger.debug("Adding the Output Msg: name of the object =>  " + dispkey)
-              //FIXME:: Yet to handle
-              logger.error("Not yet handled migrating OutputMsgDef " + objType)
             }
             */
             /*
@@ -925,6 +957,85 @@ class MigrateTo_V_1_3 extends MigratableTo {
     }
   }
 
+  override def getMessagesAndContainers(allMetadataElemsJson: Array[MetadataFormat], uploadClusterConfig: Boolean, excludeMetadata: Array[String]): java.util.List[String] = {
+    if (_bInit == false)
+      throw new Exception("Not yet Initialized")
+
+    val excludedMetadataTypes = if (excludeMetadata != null && excludeMetadata.length > 0) excludeMetadata.map(t => t.toLowerCase.trim).toSet else Set[String]()
+
+    // Order metadata to add in the given order.
+    // First get all the message & containers And also the excluded types we automatically add when we add messages & containers
+    val allTemp = ArrayBuffer[(String, Map[String, Any])]()
+    val types = ArrayBuffer[(String, Map[String, Any])]()
+    val messages = ArrayBuffer[(String, Map[String, Any])]()
+    val containers = ArrayBuffer[(String, Map[String, Any])]()
+    val functions = ArrayBuffer[(String, Map[String, Any])]()
+    val mdlConfig = ArrayBuffer[(String, Map[String, Any])]()
+    val models = ArrayBuffer[(String, Map[String, Any])]()
+    val jarDef = ArrayBuffer[(String, Map[String, Any])]()
+    val configDef = ArrayBuffer[(String, Map[String, Any])]()
+    val typesToIgnore = scala.collection.mutable.Set[String]()
+
+    val addedMessagesContainers: java.util.List[String] = new java.util.ArrayList[String]()
+
+    allMetadataElemsJson.foreach(mdf => {
+      val json = parse(mdf.objDataInJson)
+      val jsonObjMap = json.values.asInstanceOf[Map[String, Any]]
+
+      val isActiveStr = jsonObjMap.getOrElse("IsActive", "").toString.trim()
+      if (isActiveStr.size > 0) {
+        val isActive = jsonObjMap.getOrElse("IsActive", "").toString.trim().toBoolean
+        if (isActive) {
+          if (mdf.objType == "MessageDef") {
+
+            val namespace = jsonObjMap.getOrElse("NameSpace", "").toString.trim()
+            val name = jsonObjMap.getOrElse("Name", "").toString.trim()
+
+            typesToIgnore += (namespace + ".arrayof" + name).toLowerCase
+            typesToIgnore += (namespace + ".arraybufferof" + name).toLowerCase
+            typesToIgnore += (namespace + ".sortedsetof" + name).toLowerCase
+            typesToIgnore += (namespace + ".immutablemapofintarrayof" + name).toLowerCase
+            typesToIgnore += (namespace + ".immutablemapofstringarrayof" + name).toLowerCase
+            typesToIgnore += (namespace + ".arrayofarrayof" + name).toLowerCase
+            typesToIgnore += (namespace + ".mapofstringarrayof" + name).toLowerCase
+            typesToIgnore += (namespace + ".mapofintarrayof" + name).toLowerCase
+            typesToIgnore += (namespace + ".setof" + name).toLowerCase
+            typesToIgnore += (namespace + ".treesetof" + name).toLowerCase
+
+            if (excludedMetadataTypes.contains(mdf.objType.toLowerCase()) == false) {
+              messages += ((mdf.objType, jsonObjMap))
+              addedMessagesContainers.add(namespace + "." + name)
+            }
+          } else if (mdf.objType == "ContainerDef") {
+
+            val namespace = jsonObjMap.getOrElse("NameSpace", "").toString.trim()
+            val name = jsonObjMap.getOrElse("Name", "").toString.trim()
+
+            typesToIgnore += (namespace + ".arrayof" + name).toLowerCase
+            typesToIgnore += (namespace + ".arraybufferof" + name).toLowerCase
+            typesToIgnore += (namespace + ".sortedsetof" + name).toLowerCase
+            typesToIgnore += (namespace + ".immutablemapofintarrayof" + name).toLowerCase
+            typesToIgnore += (namespace + ".immutablemapofstringarrayof" + name).toLowerCase
+            typesToIgnore += (namespace + ".arrayofarrayof" + name).toLowerCase
+            typesToIgnore += (namespace + ".mapofstringarrayof" + name).toLowerCase
+            typesToIgnore += (namespace + ".mapofintarrayof" + name).toLowerCase
+            typesToIgnore += (namespace + ".setof" + name).toLowerCase
+            typesToIgnore += (namespace + ".treesetof" + name).toLowerCase
+
+            if (excludedMetadataTypes.contains(mdf.objType.toLowerCase()) == false) {
+              containers += ((mdf.objType, jsonObjMap))
+              addedMessagesContainers.add(namespace + "." + name)
+            }
+          } else {
+            if (excludedMetadataTypes.contains(mdf.objType.toLowerCase()) == false) {
+              allTemp += ((mdf.objType, jsonObjMap))
+            }
+          }
+        }
+      }
+    })
+  }
+
   override def addMetadata(allMetadataElemsJson: Array[MetadataFormat], uploadClusterConfig: Boolean, excludeMetadata: Array[String]): java.util.List[String] = {
     if (_bInit == false)
       throw new Exception("Not yet Initialized")
@@ -941,7 +1052,6 @@ class MigrateTo_V_1_3 extends MigratableTo {
     val mdlConfig = ArrayBuffer[(String, Map[String, Any])]()
     val models = ArrayBuffer[(String, Map[String, Any])]()
     val jarDef = ArrayBuffer[(String, Map[String, Any])]()
-    val outputMsgDef = ArrayBuffer[(String, Map[String, Any])]()
     val configDef = ArrayBuffer[(String, Map[String, Any])]()
     val typesToIgnore = scala.collection.mutable.Set[String]()
 
@@ -1027,8 +1137,6 @@ class MigrateTo_V_1_3 extends MigratableTo {
         functions += jsonObjMap
       } else if (objType == "JarDef") {
         jarDef += jsonObjMap
-      } else if (objType == "OutputMsgDef") {
-        outputMsgDef += jsonObjMap
       } else if (objType == "ConfigDef") {
         configDef += jsonObjMap
       } else {
@@ -1037,11 +1145,11 @@ class MigrateTo_V_1_3 extends MigratableTo {
     })
 
     // Open OpenDbStore
-    MetadataAPIImpl.OpenDbStore(_jarPaths, _metaDataStoreInfo)
+    getMetadataAPI.OpenDbStore(_jarPaths, _metaDataStoreInfo)
 
     val cfgStr = Source.fromFile(_clusterConfigFile).mkString
     logger.debug("Uploading configuration")
-    MetadataAPIImpl.UploadConfig(cfgStr, defaultUserId, "ClusterConfig")
+    getMetadataAPI.UploadConfig(cfgStr, defaultUserId, "ClusterConfig")
 
     // We need to add the metadata in the following order
     // Jars
@@ -1082,8 +1190,6 @@ class MigrateTo_V_1_3 extends MigratableTo {
     ProcessObject(configDef)
     //ProcessObject(models)
     ProcessMdObjectsParallel(models, "Failed to add model")
-    ProcessObject(outputMsgDef)
-
 
     return addedMessagesContainers
   }
@@ -1210,7 +1316,7 @@ class MigrateTo_V_1_3 extends MigratableTo {
     _dataStoreDb = null
     _statusStoreDb = null
     _flCurMigrationSummary = null
-    MetadataAPIImpl.shutdown
+    getMetadataAPI.shutdown
   }
 
   override def getStatusFromDataStore(key: String): String = {
@@ -1237,5 +1343,12 @@ class MigrateTo_V_1_3 extends MigratableTo {
 
     callSaveData(_dataStoreDb, Array(("MigrateStatusInformation", Array((Key(KvBaseDefalts.defaultTime, Array(key.toLowerCase), 0, 0), Value("txt", value.getBytes()))))))
   }
-}
 
+  override def createMetadataTables(): Unit = {
+    throw new Exception("Not applicable when migrating to 1.3")
+  }
+
+  override def uploadClusterConfig(): Unit = {
+    throw new Exception("Not applicable when migrating to 1.3")
+  }
+}

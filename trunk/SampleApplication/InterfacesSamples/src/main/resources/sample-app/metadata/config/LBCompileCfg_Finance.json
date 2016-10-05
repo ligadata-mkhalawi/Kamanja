@@ -1,13 +1,20 @@
 {
-    "LowBalanceAlert": {
-        "Dependencies": [
-        ],
-        "MessageAndContainers": [
-            "com.ligadata.kamanja.samples.containers.custalerthistory",
-            "com.ligadata.kamanja.samples.containers.custpreferences",
-            "com.ligadata.kamanja.samples.containers.globalpreferences",
-            "com.ligadata.kamanja.samples.containers.customerinfo",
-            "com.ligadata.kamanja.samples.messages.transactionmsg"
-        ]
-    }
+  "LowBalanceAlert": {
+    "Dependencies": [],
+    "MessageAndContainers": [
+      "com.ligadata.kamanja.samples.containers.custalerthistory",
+      "com.ligadata.kamanja.samples.containers.custpreferences",
+      "com.ligadata.kamanja.samples.containers.globalpreferences",
+      "com.ligadata.kamanja.samples.containers.customerinfo"
+    ],
+    "InputTypesSets": [
+      [
+        "com.ligadata.kamanja.samples.messages.transactionmsg"
+      ]
+    ],
+    "OutputTypes": [
+      "com.ligadata.kamanja.samples.messages.LowBalanceAlertOutputMsg"
+    ]
+  }
 }
+

@@ -34,8 +34,10 @@ No schema setup
 
 package com.ligadata.keyvaluestore
 
-import com.ligadata.KvBase.{ Key, Value, TimeRange }
-import com.ligadata.StorageBase.{ DataStore, Transaction, StorageAdapterObj }
+import com.ligadata.KamanjaBase.NodeContext
+import com.ligadata.KvBase.{ Key, TimeRange, Value }
+import com.ligadata.StorageBase.{ DataStore, Transaction, StorageAdapterFactory }
+import com.ligadata.kamanja.metadata.AdapterInfo
 
 import org.mapdb._
 import java.io._
@@ -49,10 +51,10 @@ import com.ligadata.Utils.{ KamanjaLoaderInfo }
 
 import com.ligadata.Exceptions._
 
-class HashMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: String) extends DataStore {
+class HashMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: String, val nodeCtxt: NodeContext, val adapterInfo: AdapterInfo) extends DataStore {
   val adapterConfig = if (datastoreConfig != null) datastoreConfig.trim else ""
-  val loggerName = this.getClass.getName
-  val logger = LogManager.getLogger(loggerName)
+//  val loggerName = this.getClass.getName
+//  val logger = LogManager.getLogger(loggerName)
 
   private[this] val lock = new Object
   private var containerList: scala.collection.mutable.Set[String] = scala.collection.mutable.Set[String]()
@@ -208,6 +210,15 @@ class HashMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig
     }
   }
 
+  private def CheckTablesExists(containerNames: Array[String]): Unit = {
+    logger.debug("CheckTableExists: " + containerNames.mkString(",") + ",this => " + this)
+    lock.synchronized {
+      val nonExistingContainers = containerNames.filter(containerName => !containerList.contains(containerName))
+      CreateContainer(nonExistingContainers)
+      containerList ++= nonExistingContainers
+    }
+  }
+
   private def toTableName(containerName: String): String = {
     // we need to check for other restrictions as well
     // such as length of the table, special characters etc
@@ -218,6 +229,10 @@ class HashMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig
   private def toFullTableName(containerName: String): String = {
     // we need to check for other restrictions as well
     // such as length of the table, special characters etc
+    toTableName(containerName)
+  }
+
+  override def getTableName(containerName: String): String = {
     toTableName(containerName)
   }
 
@@ -243,6 +258,10 @@ class HashMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig
     })
   }
 
+  override def CreateMetadataContainer(containerNames: Array[String]): Unit = {
+    CheckTablesExists(containerNames)
+  }
+
   private def MakeCompositeKey(key: Key): Array[Byte] = {
     var compKey = key.timePartition.toString + "|" + key.bucketKey.mkString(".") +
       "|" + key.transactionId.toString + "|" + key.rowId.toString
@@ -250,6 +269,7 @@ class HashMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig
   }
 
   private def ValueToByteArray(value: Value, out: DataOutputStream): Unit = {
+    out.writeInt(value.schemaId)
     out.writeInt(value.serializerType.length);
     out.write(value.serializerType.getBytes());
     out.writeInt(value.serializedInfo.length);
@@ -258,6 +278,7 @@ class HashMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig
 
   private def ByteArrayToValue(byteArray: Array[Byte]): Value = {
     var in = new DataInputStream(new ByteArrayInputStream(byteArray));
+    var schemaId = in.readInt();
 
     var serializerTypeLength = in.readInt();
     var serializerType = new Array[Byte](serializerTypeLength);
@@ -267,7 +288,7 @@ class HashMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig
     var serializedInfo = new Array[Byte](serializedInfoLength);
     in.read(serializedInfo, 0, serializedInfoLength);
 
-    var v = new Value(new String(serializerType), serializedInfo)
+    var v = new Value(schemaId, new String(serializerType), serializedInfo)
     v
   }
 
@@ -395,6 +416,32 @@ class HashMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig
       }
     }
   }
+
+  //Added by Yousef Abu Elbeh in 2016-03-13 from here
+  override def del(containerName: String, time: TimeRange): Unit = {
+    var tableName = ""
+    try {
+      CheckTableExists(containerName)
+      tableName = toFullTableName(containerName)
+      var map = tablesMap(tableName)
+      var iter = map.keySet().iterator()
+      while (iter.hasNext()) {
+        val kba = iter.next()
+        val k = new String(kba)
+        var keyArray = k.split('|')
+        var tp = keyArray(0).toLong
+        if (tp >= time.beginTime && tp <= time.endTime) {
+            map.remove(kba)
+        }
+      }
+      Commit(tableName)
+    } catch {
+      case e: Exception => {
+        throw CreateDMLException("Failed to delete object(s) from table " + tableName, e)
+      }
+    }
+  }
+  //to here
 
   // get operations
   def getRowCount(containerName: String): Long = {
@@ -732,13 +779,23 @@ class HashMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig
     try {
       logger.info("Commit any outstanding transactions")
       dbStoreMap.foreach(db => {
-        logger.info("Committing transactions for db " + db._1)
-        db._2.commit();
+        if(!db._2.isClosed) {
+          logger.info("Committing transactions for db " + db._1)
+          db._2.commit();
+        }
+        else{
+          logger.info("db " + db._1+" is already closed")
+        }
       })
       logger.info("Close all map objects")
       tablesMap.foreach(map => {
-        logger.info("Closing the map " + map._1)
-        map._2.close();
+        if(map._2.getEngine.isClosed){
+          logger.info("map " + map._1+" is already closed")
+        }
+        else {
+          logger.info("Closing the map " + map._1)
+          map._2.close();
+        }
       })
     } catch {
       case e: NullPointerException => {
@@ -746,6 +803,9 @@ class HashMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig
       }
       case e: Exception => {
         throw CreateDDLException("Failed to shutdown map ", e)
+      }
+      case e: Throwable => {
+        CreateDDLException("Throwable : Failed to shutdown map ", new Exception(e))
       }
     }
   }
@@ -848,8 +908,8 @@ class HashMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig
 
 class HashMapAdapterTx(val parent: DataStore) extends Transaction {
 
-  val loggerName = this.getClass.getName
-  val logger = LogManager.getLogger(loggerName)
+//  val loggerName = this.getClass.getName
+//  val logger = LogManager.getLogger(loggerName)
 
   override def put(containerName: String, key: Key, value: Value): Unit = {
     parent.put(containerName, key, value)
@@ -867,6 +927,12 @@ class HashMapAdapterTx(val parent: DataStore) extends Transaction {
   override def del(containerName: String, time: TimeRange, keys: Array[Array[String]]): Unit = {
     parent.del(containerName, time, keys)
   }
+
+  //Added by Yousef Abu Elbeh in 2016-03-13 from here
+  override def del(containerName: String, time: TimeRange): Unit = {
+    parent.del(containerName, time)
+  }
+  //to here
 
   // get operations
   override def get(containerName: String, callbackFunction: (Key, Value) => Unit): Unit = {
@@ -953,9 +1019,14 @@ class HashMapAdapterTx(val parent: DataStore) extends Transaction {
   override def isTableExists(tableNamespace: String, tableName: String): Boolean = {
     parent.isTableExists(tableNamespace, tableName)
   }
+
+  override def getTableName(containerName: String): String = {
+    parent.getTableName(containerName)
+  }
+
 }
 
 // To create HashMap Datastore instance
-object HashMapAdapter extends StorageAdapterObj {
-  override def CreateStorageAdapter(kvManagerLoader: KamanjaLoaderInfo, datastoreConfig: String): DataStore = new HashMapAdapter(kvManagerLoader, datastoreConfig)
+object HashMapAdapter extends StorageAdapterFactory {
+  override def CreateStorageAdapter(kvManagerLoader: KamanjaLoaderInfo, datastoreConfig: String, nodeCtxt: NodeContext, adapterInfo: AdapterInfo): DataStore = new HashMapAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
 }

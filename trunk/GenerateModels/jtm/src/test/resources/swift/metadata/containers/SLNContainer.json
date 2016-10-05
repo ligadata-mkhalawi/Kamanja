@@ -1,0 +1,78 @@
+{
+    "Container": {
+        "NameSpace": "com.swift.containers.test",
+        "Name": "SNLContainer",
+        "Version": "1.00",
+        "Description": "SNL Lookup",
+        "Fixed": "true",
+        "Elements": [
+            {
+                "Field": {
+                    "Name": "SNL_Instance",
+                    "Type": "System.String"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "SNL_Version_SMS",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "SNL_Tuxedo_Version",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "SNL_OS_Version",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "Last_Updated_in_SMS",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "SAG_Version",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "SAS_Version",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "Last_Refresh_Date",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "Source",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "Env",
+                    "Type": "System.string"
+                }
+            }
+
+        ],
+        "PartitionKey": [
+	        "SNL_Instance"
+        ],
+        "PrimaryKey": [
+	        "SNL_Instance"
+		]
+    }
+}

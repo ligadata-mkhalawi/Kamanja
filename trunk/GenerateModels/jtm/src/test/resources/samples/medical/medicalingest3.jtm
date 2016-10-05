@@ -1,0 +1,37 @@
+{
+  "header": {
+    "namespace": "com.ligadata.models.samples.medical3",
+    "version": "0.0.1",
+    "language" : "scala",
+    "minVersion" : "2.11",
+    "description": "Finance load transaction message",
+    "name": "TransactionIngest"
+  },
+  "imports": {
+    "packages": [ "com.ligadata.runtime.Conversion"]
+  },
+  "aliases": {
+    "messages": {
+      "m1": "com.ligadata.kamanja.samples.messages.TransactionMsgIn",
+      "o2": "com.ligadata.kamanja.samples.messages.HL71"
+    }
+  },
+  "transformations": {
+    "transactionmsg": {
+      "dependsOn": [ ["m1"] ],
+      "computes": {
+        "arraydata":{ "type": "Array[String]", "val": "$data.split(\",\")", "comment": "Split the incoming data" },
+        "typeName": { "type": "String", "val": "$arraydata(0)", "comment": "extract the type" }
+      },
+      "outputs": {
+
+        "o2": {
+          "where": "\"com.ligadata.kamanja.samples.messages.HL7\" == $typeName",
+          "mapbyposition": {
+            "arraydata" : [ "-", "desynpuf_id", "clm_id", "clm_from_dt", "clm_thru_dt"]
+          }
+        }
+      }
+    }
+  }
+}

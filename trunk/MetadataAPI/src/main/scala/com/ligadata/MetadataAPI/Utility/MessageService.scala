@@ -18,7 +18,8 @@ package com.ligadata.MetadataAPI.Utility
 
 import java.io.File
 
-import com.ligadata.MetadataAPI.{MetadataAPIOutputMsg, MetadataAPIImpl,ApiResult,ErrorCodeConstants}
+import com.ligadata.Exceptions.InvalidArgumentException
+import com.ligadata.MetadataAPI.{MetadataAPIImpl,ApiResult,ErrorCodeConstants}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.io.Source
@@ -29,19 +30,43 @@ import scala.io._
 /**
  * Created by dhaval on 8/7/15.
  */
+
 object MessageService {
-  private val userid: Option[String] = Some("metadataapi")
+  private val userid: Option[String] = Some("kamanja")
   val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
+  // 646 - 676 Change begins - replase MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Chagne ends
 
-  def addMessage(input: String): String = {
+  def addMessage(input: String, tid: Option[String], paramStr : Option[String]): String = {
     var response = ""
     var msgFileDir: String = ""
+
+
     //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
+    var chosen: String = ""
+    var finalTid: Option[String] = None
+    try{
+    if (tid == None) {
+        chosen = getTenantId
+        finalTid = Some(chosen)
+    } else {
+      finalTid = tid
+    }
+    }catch {
+      case e: InvalidArgumentException => {
+        logger.error("Invalid choice")
+        return (new ApiResult(ErrorCodeConstants.Failure, "addMessage",null, "Invalid choice")).toString
+      }
+    }
+
+
     if (input == "") {
-      msgFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MESSAGE_FILES_DIR")
+      msgFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MESSAGE_FILES_DIR")
       if (msgFileDir == null) {
-        response = "MESSAGE_FILES_DIR property missing in the metadata API configuration"
+        response = new ApiResult(ErrorCodeConstants.Failure,"addMessage",null,"MESSAGE_FILES_DIR property missing in the metadata API configuration").toString
+        //response = "MESSAGE_FILES_DIR property missing in the metadata API configuration"
       } else {
         //verify the directory where messages can be present
         IsValidDir(msgFileDir) match {
@@ -50,20 +75,22 @@ object MessageService {
             val messages: Array[File] = new java.io.File(msgFileDir).listFiles.filter(_.getName.endsWith(".json"))
             messages.length match {
               case 0 => {
-                println("Messages not found at " + msgFileDir)
-                "Messages not found at " + msgFileDir
+                //println("Messages not found at " + msgFileDir)
+                //"Messages not found at " + msgFileDir
+                response=new ApiResult(ErrorCodeConstants.Failure,"addMessage",null,"Messages not found at "+msgFileDir).toString
               }
               case option => {
                 val messageDefs = getUserInputFromMainMenu(messages)
                 for (messageDef <- messageDefs) {
-                  response += MetadataAPIImpl.AddMessage(messageDef.toString, "JSON", userid)
+                  response += getMetadataAPI.AddMessage(messageDef.toString, "JSON", userid, finalTid, paramStr)
                 }
               }
             }
           }
           case false => {
             //println("Message directory is invalid.")
-            response = "Message directory is invalid."
+            //response = "Message directory is invalid."
+            response=new ApiResult(ErrorCodeConstants.Failure,"addMessage",null,"Message directory is invalid").toString
           }
         }
       }
@@ -72,43 +99,63 @@ object MessageService {
       var message = new File(input.toString)
       if(message.exists()){
         val messageDef = Source.fromFile(message).mkString
-        response = MetadataAPIImpl.AddMessage(messageDef, "JSON", userid)
+        response = getMetadataAPI.AddMessage(messageDef, "JSON", userid, finalTid, paramStr)
       }else{
-        response="Message defintion file does not exist"
+        //response="Message defintion file does not exist"
+        response=new ApiResult(ErrorCodeConstants.Failure,"addMessage",null,"Message defintion file does not exist").toString
       }
     }
     //Got the message. Now add them
     response
   }
 
-  def getAllMessages: String = {
+  // 646 - Sub task 672, 676 Changes begin
+  def getAllMessages (tid: Option[String] ) : String = {
     var response = ""
     var messageKeysList =""
     try {
-      val messageKeys: Array[String] = MetadataAPIImpl GetAllMessagesFromCache(true, userid)
+      val messageKeys: Array[String] = getMetadataAPI.GetAllMessagesFromCache(true, userid, tid)
       if (messageKeys.length == 0) {
        var emptyAlert="Sorry, No messages are available in the Metadata"
-        response =  (new ApiResult(ErrorCodeConstants.Success, "MessageService",null, emptyAlert)).toString
+        response =  (new ApiResult(ErrorCodeConstants.Success, "getAllMessages",null, emptyAlert)).toString
       } else {
-       response= (new ApiResult(ErrorCodeConstants.Success, "MessageService", messageKeys.mkString(", ") , "Successfully retrieved all the messages")).toString
+       response= (new ApiResult(ErrorCodeConstants.Success, "getAllMessages", messageKeys.mkString(", ") , "Successfully retrieved all the messages")).toString
       }
     } catch {
       case e: Exception => {
-        logger.warn("", e)
-        response = e.getStackTrace.toString
-        response= (new ApiResult(ErrorCodeConstants.Failure, "MessageService",null, response)).toString
+        //logger.warn("", e)
+        response= (new ApiResult(ErrorCodeConstants.Failure, "getAllMessages",null, e.getStackTrace.toString)).toString
       }
     }
     response
   }
 
-  def updateMessage(input: String): String = {
+  def updateMessage(input: String, tid: Option[String], pStr : Option[String]): String = {
     var response = ""
     //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
+
+    //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
+    var chosen: String = ""
+    var finalTid: Option[String] = None
+    try {
+      if (tid == None) {
+        chosen = getTenantId
+        finalTid = Some(chosen)
+      } else {
+        finalTid = tid
+      }
+    }catch {
+      case e: InvalidArgumentException => {
+        logger.error("Invalid choice")
+        return (new ApiResult(ErrorCodeConstants.Failure, "addMessage",null, "Invalid choice")).toString
+      }
+    }
+
     if (input == "") {
-      val msgFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MESSAGE_FILES_DIR")
+      val msgFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MESSAGE_FILES_DIR")
       if (msgFileDir == null) {
-        response = "MESSAGE_FILES_DIR property missing in the metadata API configuration"
+        //response = "MESSAGE_FILES_DIR property missing in the metadata API configuration"
+        response = new ApiResult(ErrorCodeConstants.Failure,"updateMessage",null,"MESSAGE_FILES_DIR property missing in the metadata API configuration").toString
       } else {
         //verify the directory where messages can be present
         IsValidDir(msgFileDir) match {
@@ -117,30 +164,36 @@ object MessageService {
             val messages: Array[File] = new java.io.File(msgFileDir).listFiles.filter(_.getName.endsWith(".json"))
             messages.length match {
               case 0 => {
-                println("Messages not found at " + msgFileDir)
-                "Messages not found at " + msgFileDir
+               // println("Messages not found at " + msgFileDir)
+                //"Messages not found at " + msgFileDir
+                response=new ApiResult(ErrorCodeConstants.Failure,"updateMessage",null,"Messages not found at "+msgFileDir).toString
               }
               case option => {
                 val messageDefs = getUserInputFromMainMenu(messages)
                 for (messageDef <- messageDefs) {
-                  response += MetadataAPIImpl.UpdateMessage(messageDef.toString, "JSON", userid)
+                  response += getMetadataAPI.UpdateMessage(messageDef.toString, "JSON", userid, finalTid, pStr)
                 }
               }
             }
           }
           case false => {
             //println("Message directory is invalid.")
-            response = "Message directory is invalid."
+           // response = "Message directory is invalid."
+            response=new ApiResult(ErrorCodeConstants.Failure,"updateMessage",null,"Message directory is invalid").toString
           }
         }
       }
     } else {
       //input provided
       var message = new File(input.toString)
-      val messageDef = Source.fromFile(message).mkString
-      response = MetadataAPIImpl.UpdateMessage(messageDef, "JSON", userid)
+      if(message.exists()){
+        val messageDef = Source.fromFile(message).mkString
+        response = getMetadataAPI.UpdateMessage(messageDef, "JSON", userid, finalTid, pStr)
+      }else{
+        //response="Message defintion file does not exist"
+        response=new ApiResult(ErrorCodeConstants.Failure,"updateMessage",null,"Message defintion file does not exist").toString
+      }
     }
-    //Got the message. Now add them
     response
   }
 
@@ -150,38 +203,46 @@ object MessageService {
       if (parm.length > 0) {
          val(ns, name, ver) = com.ligadata.kamanja.metadata.Utils.parseNameToken(parm)
          try {
-           return MetadataAPIImpl.RemoveMessage(ns, name, ver.toInt, userid)
+           return getMetadataAPI.RemoveMessage(ns, name, ver.toInt, userid)
          } catch {
-           case e: Exception => logger.error("", e)
+           case e: Exception =>
+             //logger.error("", e)
+             response= (new ApiResult(ErrorCodeConstants.Failure, "removeMessage",null, e.getStackTrace.toString)).toString
          }
       }
 
-      val messageKeys = MetadataAPIImpl.GetAllMessagesFromCache(true, None)
+      val messageKeys = getMetadataAPI.GetAllMessagesFromCache(true, None)
 
       if (messageKeys.length == 0) {
-        val errorMsg = "Sorry, No messages available, in the Metadata, to delete!"
-        response = errorMsg
+        //val errorMsg = "Sorry, No messages available, in the Metadata, to delete!"
+        //response = errorMsg
+        response = new ApiResult(ErrorCodeConstants.Failure, "removeMessage", null, "No messages in the metadata").toString
       }
       else {
         println("\nPick the message to be deleted from the following list: ")
         var srno = 0
+        var count =0
         for (messageKey <- messageKeys) {
+          count +=1
           srno += 1
           println("[" + srno + "] " + messageKey)
         }
         println("Enter your choice: ")
         val choice: Int = readInt()
 
-        if (choice < 1 || choice > messageKeys.length) {
-          val errormsg = "Invalid choice " + choice + ". Start with the main menu."
-          response = errormsg
+        if (choice < 1 || choice > count) {
+          //val errormsg = "Invalid choice " + choice + ". Start with the main menu."
+          //response = errormsg
+          response = new ApiResult(ErrorCodeConstants.Failure, "removeMessage", null, "Invalid choice").toString
+
+        }
+        else{
+          val msgKey = messageKeys(choice - 1)
+          val(msgNameSpace, msgName, msgVersion) = com.ligadata.kamanja.metadata.Utils.parseNameToken(msgKey)
+          val apiResult = getMetadataAPI.RemoveMessage(msgNameSpace, msgName, msgVersion.toLong, userid).toString
+          response = apiResult
         }
 
-        val msgKey = messageKeys(choice - 1)
-        val(msgNameSpace, msgName, msgVersion) = com.ligadata.kamanja.metadata.Utils.parseNameToken(msgKey)
-        val apiResult = MetadataAPIImpl.RemoveMessage(msgNameSpace, msgName, msgVersion.toLong, userid).toString
-
-        response = apiResult
       }
     } catch {
       case e: Exception => {
@@ -192,24 +253,27 @@ object MessageService {
     response
   }
 
-  def getMessage(param: String= "") : String = {
+  def getMessage(param: String= "", tid : Option[String] = None) : String = {
     try {
       var response=""
       if (param.length > 0) {
         val(ns, name, ver) = com.ligadata.kamanja.metadata.Utils.parseNameToken(param)
         try {
-          return MetadataAPIImpl.GetMessageDef(ns, name, "JSON", ver,  userid)
+          return getMetadataAPI.GetMessageDef(ns, name, "JSON", ver,  userid, tid)
         } catch {
-          case e: Exception => logger.error("", e)
+          case e: Exception =>
+            //logger.error("", e)
+            response= (new ApiResult(ErrorCodeConstants.Failure, "getMessage",null, e.getStackTrace.toString)).toString
         }
       }
 
       //    logger.setLevel(Level.TRACE); //check again
 
-      //val msgKeys = MetadataAPIImpl.GetAllKeys("MessageDef", None)
-      val msgKeys = MetadataAPIImpl.GetAllMessagesFromCache(true, None)
+      //val msgKeys = getMetadataAPI.GetAllKeys("MessageDef", None)
+      val msgKeys = getMetadataAPI.GetAllMessagesFromCache(true, None)
       if (msgKeys.length == 0) {
-        response="Sorry, No messages available in the Metadata"
+        //response="Sorry, No messages available in the Metadata"
+        response = new ApiResult(ErrorCodeConstants.Failure, "getMessage", null, "No messages in the metadata").toString
       }else{
         println("\nPick the message to be presented from the following list: ")
 
@@ -220,19 +284,20 @@ object MessageService {
         val choice: Int = readInt()
 
         if (choice < 1 || choice > msgKeys.length) {
-          response = "Invalid choice " + choice + ",start with main menu..."
+         // response = "Invalid choice " + choice + ",start with main menu..."
+          response = new ApiResult(ErrorCodeConstants.Failure, "getMessage", null, "Invalid choice").toString
         }
         else{
           val msgKey = msgKeys(choice - 1)
           val(msgNameSpace, msgName, msgVersion) = com.ligadata.kamanja.metadata.Utils.parseNameToken(msgKey)
-          val depModels = MetadataAPIImpl.GetDependentModels(msgNameSpace, msgName, msgVersion.toLong)
+          val depModels = getMetadataAPI.GetDependentModels(msgNameSpace, msgName, msgVersion.toLong)
           logger.debug("DependentModels => " + depModels)
 
           logger.debug("DependentModels => " + depModels)
 
-          val apiResult = MetadataAPIImpl.GetMessageDef(msgNameSpace, msgName, "JSON", msgVersion, userid)
+          val apiResult = getMetadataAPI.GetMessageDef(msgNameSpace, msgName, "JSON", msgVersion, userid, tid)
 
-          //     val apiResultStr = MetadataAPIImpl.getApiResult(apiResult)
+          //     val apiResultStr = getMetadataAPI.getApiResult(apiResult)
           response=apiResult
         }
       }
@@ -256,6 +321,34 @@ object MessageService {
       false
     } else
       true
+  }
+
+  @throws(classOf[InvalidArgumentException])
+  private def getTenantId: String = {
+    println("Select a tenant id:")
+    var tenatns = getMetadataAPI.GetAllTenants(userid)
+     getUserInputFromMainMenu(tenatns)
+  }
+
+  def getUserInputFromMainMenu(tenants: Array[String]) : String = {
+    logger.debug("getUserInputFromMainMenu for tenant ids")
+    var srNo = 0
+    for(tenant <- tenants) {
+      srNo += 1
+      println("[" + srNo + "]" + tenant)
+     }
+     print("\nEnter your choice(If more than 1 choice, please use commas to seperate them): \n")
+    val userOption: Int = readLine().trim.toInt
+    if(userOption<1 || userOption > srNo){
+      //(new ApiResult(ErrorCodeConstants.Failure, "getUserInputFromMainMenu(tenantid)",null, "Invalid choice")).toString
+      logger.debug("Invalid choice")
+        throw new InvalidArgumentException("Invalid choice",null)
+    }
+    else{
+logger.debug("User option is: "+(userOption-1))
+      tenants(userOption - 1)
+
+    }
   }
 
   def   getUserInputFromMainMenu(messages: Array[File]): Array[String] = {
@@ -285,201 +378,4 @@ object MessageService {
     }
     listOfMsgDef
   }
-
-
-  //OUTPUT MESSAGE
-  def addOutputMessage(input: String): String = {
-    var response = ""
-    var msgFileDir: String = ""
-    //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
-    if (input == "") {
-      msgFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("OUTPUTMESSAGE_FILES_DIR")
-      if (msgFileDir == null) {
-        response = "OUTPUTMESSAGE_FILES_DIR property missing in the metadata API configuration"
-      } else {
-        //verify the directory where messages can be present
-        IsValidDir(msgFileDir) match {
-          case true => {
-            //get all files with json extension
-            val messages: Array[File] = new java.io.File(msgFileDir).listFiles.filter(_.getName.endsWith(".json"))
-            messages.length match {
-              case 0 => {
-                response="Output Messages not found at " + msgFileDir
-              }
-              case option => {
-                val messageDefs = getUserInputFromMainMenu(messages)
-                for (messageDef <- messageDefs) {
-                  response = MetadataAPIOutputMsg.AddOutputMessage(messageDef, "JSON", userid)
-                }
-              }
-            }
-          }
-          case false => {
-            //println("Message directory is invalid.")
-            response = "Output Message directory is invalid."
-          }
-        }
-      }
-    } else {
-      //input provided
-      var message = new File(input.toString)
-      val messageDef = Source.fromFile(message).mkString
-      response = MetadataAPIOutputMsg.AddOutputMessage(messageDef, "JSON", userid)
-    }
-    //Got the message. Now add them
-    response
-  }
-
-  def updateOutputMessage(input: String): String = {
-    var response = ""
-    var msgFileDir: String = ""
-    //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
-    if (input == "") {
-      msgFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("OUTPUTMESSAGE_FILES_DIR")
-      if (msgFileDir == null) {
-        response = "OUTPUTMESSAGE_FILES_DIR property missing in the metadata API configuration"
-      } else {
-        //verify the directory where messages can be present
-        IsValidDir(msgFileDir) match {
-          case true => {
-            //get all files with json extension
-            val messages: Array[File] = new java.io.File(msgFileDir).listFiles.filter(_.getName.endsWith(".json"))
-            messages.length match {
-              case 0 => {
-                response="Output Messages not found at " + msgFileDir
-              }
-              case option => {
-                val messageDefs = getUserInputFromMainMenu(messages)
-                for (messageDef <- messageDefs) {
-                  response = MetadataAPIOutputMsg.UpdateOutputMsg(messageDef, userid)
-                }
-              }
-            }
-          }
-          case false => {
-            //println("Message directory is invalid.")
-            response = "Output Message directory is invalid."
-          }
-        }
-      }
-    } else {
-      //input provided
-      var message = new File(input.toString)
-      val messageDef = Source.fromFile(message).mkString
-      response = MetadataAPIOutputMsg.UpdateOutputMsg(messageDef, userid)
-    }
-    //Got the message. Now add them
-    response
-  }
-
-
-  def removeOutputMessage(param: String = ""): String = {
-    var response = ""
-
-    try {
-      if (param.length > 0) {
-
-        val(ns, name, ver) = com.ligadata.kamanja.metadata.Utils.parseNameToken(param)
-        try {
-          return MetadataAPIOutputMsg.RemoveOutputMsg(ns, name, ver.toLong, userid)
-        } catch {
-          case e: Exception => logger.error("", e)
-        }
-      }
-
-      val outputMessageKeys = MetadataAPIOutputMsg.GetAllOutputMsgsFromCache(true, userid)
-
-      if (outputMessageKeys.length == 0) {
-        val errorMsg = "Sorry, No messages available, in the Metadata, to delete!"
-        response = errorMsg
-      }
-      else {
-        println("\nPick the message to be deleted from the following list: ")
-        var srno = 0
-        for (messageKey <- outputMessageKeys) {
-          srno += 1
-          println("[" + srno + "] " + messageKey)
-        }
-        println("Enter your choice: ")
-        val choice: Int = readInt()
-
-        if (choice < 1 || choice > outputMessageKeys.length) {
-          val errormsg = "Invalid choice " + choice + ". Start with the main menu."
-          response = errormsg
-        }
-
-        val msgKey = outputMessageKeys(choice - 1)
-        val msgKeyTokens = msgKey.split("\\.")
-        val(msgNameSpace, msgName, msgVersion) = com.ligadata.kamanja.metadata.Utils.parseNameToken(msgKey)
-        val apiResult = MetadataAPIOutputMsg.RemoveOutputMsg(msgNameSpace, msgName, msgVersion.toLong, userid).toString
-        response = apiResult
-      }
-    } catch {
-      case e: Exception => {
-        logger.warn("", e)
-        response = e.getStackTrace.toString
-      }
-    }
-    response
-  }
-
-  def getAllOutputMessages: String ={
-    var response = ""
-    try {
-      val outputMessageKeys: Array[String] = MetadataAPIOutputMsg GetAllOutputMsgsFromCache(true,userid)
-      if (outputMessageKeys.length == 0) {
-        response = "Sorry, No output messages are available in the Metadata"
-      } else {
-        var srno = 0
-        println("List of output messages:")
-        for (outputMessageKey <- outputMessageKeys) {
-          srno += 1
-          println("[" + srno + "] " + outputMessageKey)
-          response += outputMessageKey
-        }
-      }
-    } catch {
-      case e: Exception => {
-        logger.warn("", e)
-        response = e.getStackTrace.toString
-      }
-    }
-    response
-  }
-
-  def getOutputMessage(param: String = ""): String ={
-    var response = ""
-
-    if (param.length > 0) {
-      val(ns, name, ver) = com.ligadata.kamanja.metadata.Utils.parseNameToken(param)
-      try {
-        return MetadataAPIOutputMsg.GetOutputMessageDefFromCache(ns, name,"JSON" ,ver,userid)
-      } catch {
-        case e: Exception => logger.error("", e)
-      }
-    }
-    val outputMessageKeys: Array[String] = MetadataAPIOutputMsg GetAllOutputMsgsFromCache(true,userid)
-
-    if (outputMessageKeys.length == 0) {
-      response = "Sorry, No output messages are available in the Metadata"
-    } else {
-      println("\nPick the output message to be presented from the following list: ")
-      var seq = 0
-      outputMessageKeys.foreach(key => { seq += 1; println("[" + seq + "] " + key) })
-
-      print("\nEnter your choice: ")
-      val choice: Int = readInt()
-
-      if (choice < 1 || choice > outputMessageKeys.length) {
-        response = "Invalid choice " + choice + ",start with main menu..."
-      }
-      val outputMessageKey = outputMessageKeys(choice - 1)
-      val(msgNameSpace, msgName, msgVersion) = com.ligadata.kamanja.metadata.Utils.parseNameToken(outputMessageKey)
-      val apiResult = MetadataAPIOutputMsg.GetOutputMessageDefFromCache(msgNameSpace, msgName, "JSON", msgVersion, userid)
-     // val apiResult=MetadataAPIOutputMsg.GetOutputMessageDef(msgNameSpace, msgName, "JSON", msgVersion)
-      response=apiResult
-    }
-      response
-    }
-
 }

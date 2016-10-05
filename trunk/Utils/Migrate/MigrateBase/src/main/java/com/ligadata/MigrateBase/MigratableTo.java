@@ -17,7 +17,7 @@
 package com.ligadata.MigrateBase;
 
 public interface MigratableTo {
-    public abstract void init(String destInstallPath, String apiConfigFile, String clusterConfigFile, String sourceVersion, String unhandledMetadataDumpDir, String curMigrationSummaryFlPath,int parallelDegree, boolean mergeContainersAndMessages, String fromScalaVersion, String toScalaVersion ); // Source version is like 1.1 or 1.2, etc
+  public abstract void init(String destInstallPath, String apiConfigFile, String clusterConfigFile, String sourceVersion, String unhandledMetadataDumpDir, String curMigrationSummaryFlPath,int parallelDegree, boolean mergeContainersAndMessages, String fromScalaVersion, String toScalaVersion, String tenantId, String adapterMessageBindings); // Source version is like 1.1 or 1.2, etc
   public abstract boolean isInitialized();
   public abstract String getMetadataStoreInfo();
   public abstract String getDataStoreInfo();
@@ -34,4 +34,12 @@ public interface MigratableTo {
   public abstract String getStatusFromDataStore(String key);
   public abstract void setStatusFromDataStore(String key, String value);
   public abstract FailedMetadataKey[] getFailedMetadataKeys();
+  public abstract void createMetadataTables();
+  public abstract String getMetadataTableName(String containerName);
+  public abstract String getDataTableName(String containerName);
+  public abstract String getDataTableSchemaName();
+  public abstract String getTenantTableSchemaName();
+  public abstract void uploadClusterConfig();
+
+  public abstract java.util.List<String> getMessagesAndContainers(MetadataFormat[] allMetadataElemsJson, boolean uploadClusterConfig, String[] excludeMetadata); // Returns Added Messages & Containers Full Qualified Names
 }

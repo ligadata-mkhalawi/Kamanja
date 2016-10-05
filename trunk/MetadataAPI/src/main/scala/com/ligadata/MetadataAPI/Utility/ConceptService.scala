@@ -31,16 +31,19 @@ import scala.io._
  */
 object ConceptService {
 
-  private val userid: Option[String] = Some("metadataapi")
+  private val userid: Option[String] = Some("kamanja")
   val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
+  // 646 - 676 Change begins - replase MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Chagne ends
 
   def addConcept(input: String): String ={
     var response = ""
     var conceptFileDir: String = ""
     //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
     if (input == "") {
-      conceptFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CONCEPT_FILES_DIR")
+      conceptFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONCEPT_FILES_DIR")
       if (conceptFileDir == null) {
         response = "CONCEPT_FILES_DIR property missing in the metadata API configuration"
       } else {
@@ -57,7 +60,7 @@ object ConceptService {
               case option => {
                 val conceptDefs = getUserInputFromMainMenu(types)
                 for (conceptDef <- conceptDefs) {
-                  response += MetadataAPIImpl.AddConcepts(conceptDef.toString, "JSON", userid)
+                  response += getMetadataAPI.AddConcepts(conceptDef.toString, "JSON", userid)
                 }
               }
             }
@@ -73,7 +76,7 @@ object ConceptService {
       var message = new File(input.toString)
       if(message.exists()){
         val conceptDef = Source.fromFile(message).mkString
-        response = MetadataAPIImpl.AddConcepts(conceptDef.toString, "JSON", userid)
+        response = getMetadataAPI.AddConcepts(conceptDef.toString, "JSON", userid)
       }else{
         response="File does not exist"
       }
@@ -85,12 +88,12 @@ object ConceptService {
     try {
       if (param != null && param.size > 0) {
         try {
-            return MetadataAPIImpl.RemoveConcept(param, userid)
+            return getMetadataAPI.RemoveConcept(param, userid)
         } catch {
           case e: Exception => logger.error("", e)
         }
       }
-      //val conceptKeys : String = MetadataAPIImpl.GetAllConcepts("JSON", userid) <<< this returns a JSON string
+      //val conceptKeys : String = getMetadataAPI.GetAllConcepts("JSON", userid) <<< this returns a JSON string
       val onlyActive: Boolean = false
       val latestVersion: Boolean = false
       val optConceptKeys : Option[scala.collection.immutable.Set[BaseAttributeDef]] = MdMgr.GetMdMgr.Attributes(onlyActive, latestVersion)
@@ -117,7 +120,7 @@ object ConceptService {
 
         val conceptKey = conceptKeys(choice - 1)
         val conceptName : String = conceptKey.FullName
-        response=MetadataAPIImpl.RemoveConcept(conceptName, userid)
+        response=getMetadataAPI.RemoveConcept(conceptName, userid)
 
       }
     } catch {
@@ -133,7 +136,7 @@ object ConceptService {
     var conceptFileDir: String = ""
     //val gitMsgFile = "https://raw.githubusercontent.com/ligadata-dhaval/Kamanja/master/HelloWorld_Msg_Def.json"
     if (input == "") {
-      conceptFileDir = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CONCEPT_FILES_DIR")
+      conceptFileDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONCEPT_FILES_DIR")
       if (conceptFileDir == null) {
         response = "CONCEPT_FILES_DIR property missing in the metadata API configuration"
       } else {
@@ -150,7 +153,7 @@ object ConceptService {
               case option => {
                 val conceptDefs = getUserInputFromMainMenu(types)
                 for (conceptDef <- conceptDefs) {
-                  response += MetadataAPIImpl.UpdateConcepts(conceptDef.toString, "JSON", userid)
+                  response += getMetadataAPI.UpdateConcepts(conceptDef.toString, "JSON", userid)
                 }
               }
             }
@@ -166,7 +169,7 @@ object ConceptService {
       var message = new File(input.toString)
       if(message.exists()){
         val conceptDef = Source.fromFile(message).mkString
-        response = MetadataAPIImpl.UpdateConcepts(conceptDef.toString, "JSON", userid)
+        response = getMetadataAPI.UpdateConcepts(conceptDef.toString, "JSON", userid)
       }else{
         response="File does not exist"
       }
@@ -180,7 +183,7 @@ object ConceptService {
   def dumpAllConceptsAsJson: String ={
     var response=""
     try{
-      response=MetadataAPIImpl.GetAllConcepts("JSON", userid).toString
+      response=getMetadataAPI.GetAllConcepts("JSON", userid).toString
     }
     catch {
       case e: Exception => {

@@ -20,7 +20,7 @@ import com.ligadata.KamanjaBase._
 import RddUtils._
 import RddDate._
 import com.ligadata.KamanjaBase.{ TimeRange, ModelInstanceFactory, ModelInstance, ModelResultBase, TransactionContext }
-import com.ligadata.KamanjaBase.{ BaseMsg, BaseContainer, RddUtils, RddDate, BaseContainerObj, MessageContainerBase, RDDObject, RDD }
+import com.ligadata.KamanjaBase.{ MessageInterface, ContainerInterface, RddUtils, RddDate, ContainerFactoryInterface, ContainerInterface, RDDObject, RDD }
 import com.ligadata.messagescontainers._
 import com.ligadata.messagescontainers.System._
 import com.ligadata.KamanjaBase.MinVarType._

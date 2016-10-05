@@ -1,0 +1,23 @@
+[
+  {
+    "AdapterName": "MedicalInput",
+    "MessageName": "com.ligadata.kamanja.samples.messages.COPDInputMessage",
+    "Serializer": "com.ligadata.kamanja.serializer.csvserdeser",
+    "Options": {
+      "alwaysQuoteFields": false,
+      "fieldDelimiter": "\\x01"
+    }
+  },
+  {
+    "AdapterName": "testout_1",
+    "MessageNames": [
+      "com.ligadata.kamanja.samples.messages.COPDOutputMessage"
+    ],
+    "Serializer": "com.ligadata.kamanja.serializer.csvserdeser",
+    "Options": {
+      "alwaysQuoteFields": false,
+      "fieldDelimiter": ","
+    }
+  }
+]
+

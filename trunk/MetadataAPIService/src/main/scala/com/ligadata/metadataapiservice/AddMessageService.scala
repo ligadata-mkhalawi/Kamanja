@@ -34,32 +34,35 @@ object AddMessageService {
   case class Process(messageJson:String)
 }
 
-class AddMessageService(requestContext: RequestContext, userid:Option[String], password:Option[String], cert:Option[String]) extends Actor {
+class AddMessageService(requestContext: RequestContext, userid:Option[String], password:Option[String], cert:Option[String], tenantId: Option[String]) extends Actor {
 
   import AddMessageService._
-  
+
   implicit val system = context.system
   import system.dispatcher
   val log = Logging(system, getClass)
   val APIName = "AddMessageService"
-  
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
+
   def receive = {
     case Process(messageJson) =>
       process(messageJson)
       context.stop(self)
   }
-  
+
   def process(messageJson:String) = {
-    
+
     log.debug("Requesting AddMessage {}",messageJson)
 
     var nameVal = APIService.extractNameFromJson(messageJson,AuditConstants.MESSAGE)
-    
-    if (!MetadataAPIImpl.checkAuth(userid,password,cert, MetadataAPIImpl.getPrivilegeName("insert","message"))) {
-      MetadataAPIImpl.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.INSERTOBJECT,messageJson,AuditConstants.FAIL,"",nameVal)   
-      requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null,  "Error:UPDATE not allowed for this user").toString )      
+
+    if (!getMetadataAPI.checkAuth(userid,password,cert, getMetadataAPI.getPrivilegeName("insert","message"))) {
+      getMetadataAPI.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.INSERTOBJECT,messageJson,AuditConstants.FAIL,"",nameVal)
+      requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null,  "Error:UPDATE not allowed for this user").toString )
     } else {
-      val apiResult = MetadataAPIImpl.AddMessage(messageJson,"JSON", userid)
+      val apiResult = getMetadataAPI.AddMessage(messageJson,"JSON", userid, tenantId, None)
       requestContext.complete(apiResult)
     }
   }

@@ -1,0 +1,243 @@
+{
+  "header": {
+    "namespace": "com.swift.messages.test",
+    "version": "0.1.0",
+    "language" : "scala",
+    "minVersion" : "2.10"
+  },
+
+  "imports": {
+    "packages": [ "com.ligadata.Utils._", "com.swift.containers.test._", "com.swift.messages.test._" ]
+  },
+
+  "aliases": {
+    "messages": {
+      "m1": "com.swift.messages.test.EventMessage",
+      "o1": "com.swift.messages.test.SmartsNw",
+      "o2": "com.swift.messages.test.OMS",
+      "o3": "com.swift.messages.test.FIN"
+    }
+  },
+
+  "transformations": {
+    "test1": {
+
+      "dependsOn": [ ["m1"] ],
+
+      "outputs": {
+        "o1": {
+
+          "where": "$EventType==\"SMARTS/NW\"",
+          "computes": {
+            "arraydata": {
+              "type": "Array[String]",
+              "val": "$EventText.split(\",\")",
+              "comment": "Split event field"
+            },
+            "tunnelidentification": {
+              "type": "String",
+              "val": "arraydata(0)",
+              "comment": "VPN Tunnel <BAP><TCF><CPTYPE><CONTYPE>_<VPNCENAME>_<NPID><TYPE><ID> like CHD7SPI_YETUAO51VA_4P1"
+            },
+            "eventstatus": {
+              "type": "String",
+              "val": "arraydata(1)",
+              "comment": "Event - Status - Up/Down/High Utilization"
+            },
+            "classressource": {
+              "type": "String",
+              "val": "arraydata(2)",
+              "comment": "Class - Resource (Processor/Tunnel)"
+            },
+            "notifieddate": {
+              "type": "String",
+              "val": "arraydata(3)",
+              "comment": "Notified Date - Created Date (“DOWN” date)"
+            },
+            "cleareddate": {
+              "type": "String",
+              "val": "arraydata(4)",
+              "comment": "Cleared Date  Date when the tunnel is back UP"
+            },
+            "bicdata": {
+              "type": "RDD[BICContainer]",
+              "val": "BICContainerFactory.getRDD.filter( c => c.Bic8!=$BICENT )",
+              "comment": "if we have bic id, lookup data, BICENT, BICCTY, BICHEX, BICVPN, what happends if lookup fails"
+            },
+            "bicdatunnel": {
+              "type": "RDD[TunnelContainer]",
+              "val": "TunnelContainerFactory.getRDD.filter( c => c.Bic8!=$EventResource )",
+              "comment": "Lookup the tunnel"
+            }
+          }
+        },
+        "o2": {
+          "where": "$EventType==\"OMS\"",
+          "computes": {
+            "arraydata": {
+              "type": "Array[String]",
+              "val": "$EventText.split(\"\\t\")",
+              "comment": "Split event field"
+            },
+            "appname": {
+              "type": "String",
+              "val": "arraydata(1)",
+              "comment": "Application Name/ Service Area (SN, FIN)"
+            },
+            "hostname": {
+              "type": "String",
+              "val": "arraydata(2)",
+              "comment": "Fully qualified host name from where message originates (Need to consider the Any further enrichment ???)"
+            },
+            "eventcode": {
+              "type": "String",
+              "val": "arraydata(3)",
+              "comment": "Event Code/ID  Event Codes of interest (NLSS01, NLSS04, NLSS05, SNL)"
+            },
+            "serverity": {
+              "type": "String",
+              "val": "arraydata(4)",
+              "comment": "Severity (Critical/Normal)"
+            },
+            "eventtype": {
+              "type": "String",
+              "val": "arraydata(5)",
+              "comment": "Event Type / Display Type - Log/Operator"
+            },
+            "eventtextinner": {
+              "type": "String",
+              "val": "arraydata(6)",
+              "comment": "Event Text(*)"
+            },
+            "ignore": {
+              "type": "String",
+              "val": "arraydata(7)",
+              "comment": "0/1 ( This field will be ignored, and will not be considered for processing)"
+            },
+            "history": {
+              "type": "String",
+              "val": "arraydata(8)",
+              "comment": "History/Active ( This field will be ignored, and will not be considered for processing)"
+            },
+            "timestamp": {
+              "type": "String",
+              "val": "arraydata(9)",
+              "comment": "Timestamp (Four-time stamp columns exist, however the first one will be considered for event processing)"
+            },
+            "operatorname": {
+              "type": "String",
+              "val": "arraydata(10)",
+              "comment": "Operator Name (Opc/prd_sn[1..4]/prd_fn[1..3])"
+            },
+            "linktosnlid": {
+              "type": "String",
+              "val": "arraydata(11)",
+              "comment": "Link to SNL ID (this would bring up various other synthetic/enriched fields from the SNL ID lookup)"
+            },
+            "snlid": {
+              "type": "String",
+              "val": "eventtextinner",
+              "comment": "Event Text, may have to be further processed to synthesize additional attributes. Event Text contains the SNLID"
+            },
+            "snldata": {
+              "type": "RDD[SNLContainer]",
+              "val": "SNLContainerFactory.getRDD()",
+              "comment": ""
+            }
+
+          }
+        },
+        "o3": {
+          "where": "$EventType==\"FIN\"",
+          "computes": {
+            "arraydata": {
+              "type": "Array[String]",
+              "val": "$EventText.split(\",\")",
+              "comment": "Split event field"
+            },
+            "date": {
+              "type": "String",
+              "val": "arraydata(0)",
+              "comment": "Date when the event occurred"
+            },
+            "time": {
+              "type": "String",
+              "val": "arraydata(1)",
+              "comment": "Time when the event occurred (format is HHmmss, with the leading zeros ignored, so the values range from 1 to 235959)"
+            },
+            "logind": {
+              "type": "String",
+              "val": "arraydata(2)",
+              "comment": "Node the event happened (Logical Node)"
+            },
+            "eventcode": {
+              "type": "String",
+              "val": "arraydata(3)",
+              "comment": "Event Code (RP0520  Select, RP6098  Abort)"
+            },
+            "eventlevel": {
+              "type": "String",
+              "val": "arraydata(4)",
+              "comment": "Level (1-5)"
+            },
+            "eventfatal": {
+              "type": "String",
+              "val": "arraydata(5)",
+              "comment": "Fatal (Y/N)"
+            },
+            "length": {
+              "type": "String",
+              "val": "arraydata(6)",
+              "comment": "Length of Status Text Message"
+            },
+            "slice": {
+              "type": "String",
+              "val": "arraydata(7)",
+              "comment": "Slice - SP ID, with a max of up to 4 Slices"
+            },
+            "zone": {
+              "type": "String",
+              "val": "arraydata(8)",
+              "comment": "(CC/EU/GL/TA/Blank  Need to confirm what should be the default value in the case of a blank)"
+            },
+            "object": {
+              "type": "String",
+              "val": "arraydata(9)",
+              "comment": "Application Specific Object"
+            },
+            "appcode": {
+              "type": "String",
+              "val": "arraydata(10)",
+              "comment": "Application Code (SP/RP/etc)"
+            },
+            "closed": {
+              "type": "String",
+              "val": "arraydata(11)",
+              "comment": "Close (Y/N) - Event Closed or Not"
+            },
+            "physnd": {
+              "type": "String",
+              "val": "arraydata(12)",
+              "comment": "Physical Node"
+            },
+            "eventtextinner": {
+              "type": "String",
+              "val": "arraydata(13)",
+              "comment": "Long message (length comes from length field)"
+            },
+            "snlid": {
+              "type": "String",
+              "val": "eventtextinner",
+              "comment": "Event Text, may have to be further processed to synthesize additional attributes. Event Text contains the SNLID"
+            },
+            "snldata": {
+              "type": "RDD[SNLContainer]",
+              "val": "SNLContainerFactory.getRDD()",
+              "comment": ""
+            }
+          }
+        }
+      }
+    }
+  }
+}

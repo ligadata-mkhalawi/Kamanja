@@ -1,0 +1,120 @@
+{
+    "Container": {
+        "NameSpace": "com.swift.containers.test",
+        "Name": "BICContainer",
+        "Version": "1.00",
+        "Description": "BIC Lookup",
+        "Fixed": "true",
+        "Elements": [
+            {
+                "Field": {
+                    "Name": "Bic8",
+                    "Type": "System.String"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "Country_code",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "BEI_TT",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "RP_ident",
+                    "Type": "System.int"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "SP_ident",
+                    "Type": "System.int"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "TIER_One",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "GPA_Status",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "FIN_Status",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "Admin_Status",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "Disabled_time",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "TIER_One_Threshold",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "Inter_Slice_Enable_Flag",
+                    "Type": "System.string"
+                }
+            },
+             {
+                "Field": {
+                    "Name": "Slice_Id",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "Zone_Id",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "Last_Refresh_Date",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "Source",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "Env",
+                    "Type": "System.string"
+                }
+            }
+
+        ],
+        "PartitionKey": [
+	        "Bic8"
+        ],
+        "PrimaryKey": [
+	        "Bic8"
+		]
+    }
+}

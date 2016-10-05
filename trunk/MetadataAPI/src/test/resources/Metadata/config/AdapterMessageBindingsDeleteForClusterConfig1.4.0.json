@@ -1,0 +1,7 @@
+[
+	"kafkaadapterinput1,com.botanical.json.ordermsg,com.ligadata.kamanja.serializer.jsonserdeser",
+	"kafkaadapterinput1,com.botanical.json.shippingmsg,com.ligadata.kamanja.serializer.jsonserdeser",
+	"kafkaadapteroutput2,com.botanical.csv.emailmsg,com.ligadata.kamanja.serializer.csvserdeser",
+	"hbasestore1,com.botanical.json.audit.ordermsg,com.ligadata.kamanja.serializer.jsonserdeser",
+	"hbasestore1,com.botanical.json.audit.shippingmsg,com.ligadata.kamanja.serializer.jsonserdeser"
+]

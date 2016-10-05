@@ -1,0 +1,22 @@
+[
+  {
+    "AdapterName": "TelecomInput",
+    "MessageName": "com.ligadata.kamanja.samples.messages.SubscriberUsage",
+    "Serializer": "com.ligadata.kamanja.serializer.csvserdeser",
+    "Options": {
+      "alwaysQuoteFields": false,
+      "fieldDelimiter": ","
+    }
+  },
+  {
+    "AdapterName": "testout_1",
+    "MessageNames": [
+      "com.ligadata.kamanja.samples.messages.AccountUsageAlertMessage",
+      "com.ligadata.kamanja.samples.messages.SubscriberUsageAlertMessage"
+    ],
+    "Serializer": "com.ligadata.kamanja.serializer.jsonserdeser",
+    "Options": {
+    }
+  }
+]
+

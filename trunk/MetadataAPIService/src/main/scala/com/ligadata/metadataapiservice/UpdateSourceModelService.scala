@@ -36,7 +36,7 @@ object UpdateSourceModelService {
 }
 
 
-class UpdateSourceModelService(requestContext: RequestContext, userid:Option[String], password:Option[String], cert:Option[String], modelname: Option[String]) extends Actor {
+class UpdateSourceModelService(requestContext: RequestContext, userid:Option[String], password:Option[String], cert:Option[String], modelname: Option[String], tid: Option[String]) extends Actor {
 
   import UpdateSourceModelService._
 
@@ -44,6 +44,9 @@ class UpdateSourceModelService(requestContext: RequestContext, userid:Option[Str
   import system.dispatcher
   val log = Logging(system, getClass)
   val APIName = "UpdateSourceModelService"
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   val loggerName = this.getClass.getName
   val logger = LogManager.getLogger(loggerName)
@@ -66,15 +69,15 @@ class UpdateSourceModelService(requestContext: RequestContext, userid:Option[Str
     val usersModelName=userid.getOrElse("")+"."+modelname.getOrElse("")
     logger.debug("user model name is: "+usersModelName)
 
-    if (!MetadataAPIImpl.checkAuth(userid,password,cert, MetadataAPIImpl.getPrivilegeName("update","model"))) {
-    //  MetadataAPIImpl.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.UPDATEOBJECT,pmmlStr,AuditConstants.FAIL,"",nameVal)
+    if (!getMetadataAPI.checkAuth(userid,password,cert, getMetadataAPI.getPrivilegeName("update","model"))) {
+    //  getMetadataAPI.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.UPDATEOBJECT,pmmlStr,AuditConstants.FAIL,"",nameVal)
       requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error:UPDATE not allowed for this user").toString )
     }else if((modelname.getOrElse(""))=="") {
       requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null,  "Failed to add model. No model configuration name supplied. Please specify in the header the model configuration name where the key is 'modelname' and the value is the name of the configuration.").toString )
     }
     else {
 
-      val apiResult = MetadataAPIImpl.UpdateModel(ModelType.SCALA, pmmlStr, userid, Some(usersModelName))
+      val apiResult = getMetadataAPI.UpdateModel(ModelType.SCALA, pmmlStr, userid, tid, Some(usersModelName), None, None, None, None, None)
       requestContext.complete(apiResult)
     }
   }
@@ -85,14 +88,14 @@ class UpdateSourceModelService(requestContext: RequestContext, userid:Option[Str
     val usersModelName=userid.getOrElse("")+"."+modelname.getOrElse("")
     logger.debug("(Put request) user model name is: "+usersModelName)
 
-    if (!MetadataAPIImpl.checkAuth(userid,password,cert, MetadataAPIImpl.getPrivilegeName("update","model"))) {
-      //  MetadataAPIImpl.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.UPDATEOBJECT,pmmlStr,AuditConstants.FAIL,"",nameVal)
+    if (!getMetadataAPI.checkAuth(userid,password,cert, getMetadataAPI.getPrivilegeName("update","model"))) {
+      //  getMetadataAPI.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.UPDATEOBJECT,pmmlStr,AuditConstants.FAIL,"",nameVal)
       requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error:UPDATE not allowed for this user").toString )
     }else if((modelname.getOrElse(""))=="") {
       requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null,  "Failed to add model. No model configuration name supplied. Please specify in the header the model configuration name where the key is 'modelname' and the value is the name of the configuration.").toString )
     }
     else {
-      val apiResult = MetadataAPIImpl.UpdateModel(ModelType.JAVA, pmmlStr,userid, Some(usersModelName))
+      val apiResult = getMetadataAPI.UpdateModel(ModelType.JAVA, pmmlStr,userid, tid, Some(usersModelName), None, None, None, None, None)
       requestContext.complete(apiResult)
     }
   }

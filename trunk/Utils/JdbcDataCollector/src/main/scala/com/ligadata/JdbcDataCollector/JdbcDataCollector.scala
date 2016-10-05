@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+package com.ligadata.JdbcDataCollector
+
 import scala.reflect.runtime.universe
 import scala.collection.mutable.ArrayBuffer
 import java.util.Properties

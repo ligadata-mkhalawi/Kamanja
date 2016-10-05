@@ -34,32 +34,35 @@ object AddContainerService {
   case class Process(containerJson:String)
 }
 
-class AddContainerService(requestContext: RequestContext, userid:Option[String], password:Option[String], cert:Option[String]) extends Actor {
+class AddContainerService(requestContext: RequestContext, userid:Option[String], password:Option[String], cert:Option[String], tenantId: Option[String]) extends Actor {
 
   import AddContainerService._
-  
+
   implicit val system = context.system
   import system.dispatcher
   val log = Logging(system, getClass)
   val APIName = "AddContainerService"
-  
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
+
   def receive = {
     case Process(containerJson) =>
       process(containerJson)
       context.stop(self)
   }
-  
+
   def process(containerJson:String) = {
     log.debug("Requesting AddContainer {}",containerJson)
 
-    var nameVal = APIService.extractNameFromJson(containerJson,AuditConstants.CONTAINER) 
-    
-    if (!MetadataAPIImpl.checkAuth(userid,password,cert, MetadataAPIImpl.getPrivilegeName("insert","container"))) {
-      MetadataAPIImpl.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.INSERTOBJECT,containerJson,AuditConstants.FAIL,"",nameVal)
+    var nameVal = APIService.extractNameFromJson(containerJson,AuditConstants.CONTAINER)
+
+    if (!getMetadataAPI.checkAuth(userid,password,cert, getMetadataAPI.getPrivilegeName("insert","container"))) {
+      getMetadataAPI.logAuditRec(userid,Some(AuditConstants.WRITE),AuditConstants.INSERTOBJECT,containerJson,AuditConstants.FAIL,"",nameVal)
       requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error:UPDATE not allowed for this user").toString )
-    } else { 
-      val apiResult = MetadataAPIImpl.AddContainer(containerJson,"JSON",userid)
-      requestContext.complete(apiResult)    
-    }   
+    } else {
+      val apiResult = getMetadataAPI.AddContainer(containerJson,"JSON",userid, tenantId, None)
+      requestContext.complete(apiResult)
+    }
   }
 }

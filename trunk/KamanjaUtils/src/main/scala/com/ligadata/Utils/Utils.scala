@@ -30,6 +30,10 @@ import scala.collection.mutable.TreeSet
 import org.apache.logging.log4j.{ Logger, LogManager }
 import scala.collection.mutable.ArrayBuffer
 
+case class ClusterStatus(nodeId: String, isLeader: Boolean, leaderNodeId: String, participantsNodeIds: Iterable[String])
+case class HostConfig(NodeId:String, NodeIp:String, Port: Int)
+case class CacheConfig(HostList: List[HostConfig], CacheStartPort: Int, CacheSizePerNode: Long, ReplicateFactor: Int, TimeToIdleSeconds: Long, EvictionPolicy: String)
+
 object Utils {
   private val logger = LogManager.getLogger(getClass)
 
@@ -37,8 +41,16 @@ object Utils {
     new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new java.util.Date(tmMs))
   }
 
+  def SimpDateFmtTimeFromMsWithTZ(tmMs: Long): String = {
+    new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS z").format(new java.util.Date(tmMs))
+  }
+
   def GetCurDtTmStr: String = {
     SimpDateFmtTimeFromMs(GetCurDtTmInMs)
+  }
+
+  def GetCurDtTmStrWithTZ: String = {
+    SimpDateFmtTimeFromMsWithTZ(GetCurDtTmInMs)
   }
 
   def GetCurDtTmInMs: Long = {
@@ -177,26 +189,28 @@ object Utils {
     if (jars != null) {
       // Loading all jars
       for (j <- jars) {
-        logger.debug("Processing Jar " + j.trim)
-        val fl = new File(j.trim)
-        if (fl.exists) {
-          try {
-            if (loadedJars(fl.getPath())) {
-              logger.debug("Jar " + j.trim + " already loaded to class path.")
-            } else {
-              loader.addURL(fl.toURI().toURL())
-              logger.debug("Jar " + j.trim + " added to class path.")
-              loadedJars += fl.getPath()
+        if (j != null) {
+          logger.debug("Processing Jar " + j.trim)
+          val fl = new File(j.trim)
+          if (fl.exists) {
+            try {
+              if (loadedJars(fl.getPath())) {
+                logger.debug("Jar " + j.trim + " already loaded to class path.")
+              } else {
+                loader.addURL(fl.toURI().toURL())
+                logger.debug("Jar " + j.trim + " added to class path.")
+                loadedJars += fl.getPath()
+              }
+            } catch {
+              case e: Exception => {
+                logger.error("Jar " + j.trim + " failed added to class path.", e)
+                return false
+              }
             }
-          } catch {
-            case e: Exception => {
-              logger.error("Jar " + j.trim + " failed added to class path.", e)
-              return false
-            }
+          } else {
+            logger.error("Jar " + j.trim + " not found")
+            return false
           }
-        } else {
-          logger.error("Jar " + j.trim + " not found")
-          return false
         }
       }
     }

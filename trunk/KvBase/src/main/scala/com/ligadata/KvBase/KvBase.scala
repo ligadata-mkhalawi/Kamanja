@@ -20,7 +20,7 @@ package com.ligadata.KvBase
 import java.util.{ Comparator };
 
 case class Key(timePartition: Long, bucketKey: Array[String], transactionId: Long, rowId: Int)
-case class Value(serializerType: String, serializedInfo: Array[Byte])
+case class Value(schemaId: Int, serializerType: String, serializedInfo: Array[Byte])
 case class TimeRange(beginTime: Long, endTime: Long)
 
 object KvBaseDefalts {
@@ -38,6 +38,18 @@ case class LoadKeyWithBucketId(bucketId: Int, tmRange: TimeRange, bucketKey: Arr
 object KeyWithBucketIdAndPrimaryKeyCompHelper {
 
   def BucketIdForBucketKey(bucketKey: Array[String]): Int = {
+    if (bucketKey == null) return 0
+    val prime = 31;
+    var result = 1;
+    bucketKey.foreach(k => {
+      result = result * prime
+      if (k != null)
+        result += k.hashCode();
+    })
+    return result
+  }
+
+  def BucketIdForBucketKey(bucketKey: List[String]): Int = {
     if (bucketKey == null) return 0
     val prime = 31;
     var result = 1;

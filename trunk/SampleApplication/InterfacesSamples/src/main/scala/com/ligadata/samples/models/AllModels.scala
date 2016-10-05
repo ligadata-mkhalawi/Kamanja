@@ -17,7 +17,7 @@
 package com.ligadata.models.samples.models
 
 import com.ligadata.kamanja.metadata.{ ModelDef }
-import com.ligadata.KamanjaBase.{ BaseMsg, BaseContainer, RddUtils, RddDate, BaseContainerObj, MessageContainerBase, RDDObject, RDD }
+import com.ligadata.KamanjaBase.{ MessageInterface, ContainerInterface, RddUtils, RddDate, ContainerFactoryInterface, ContainerInterface, RDDObject, RDD }
 import com.ligadata.KamanjaBase.{ ModelInstance, ModelInstanceFactory, ModelResultBase, TransactionContext, EnvContext, NodeContext }
 import com.ligadata.samples.messages.{ CustAlertHistory, GlobalPreferences, CustPreferences, CustTransaction }
 import RddUtils._
@@ -317,7 +317,7 @@ class LowBalanceAlert2(factory: ModelInstanceFactory) extends ModelInstance(fact
 
     // get history of transaction whose balance is less than minAlertBalance in last N days
     val lookBackTime = curDtTmInMs.lastNdays(gPref.numLookbackDaysForMultiDayMinBalanceAlert)
-    val rcntTxns = CustTransaction.getRDD(lookBackTime, { trnsaction: MessageContainerBase =>
+    val rcntTxns = CustTransaction.getRDD(lookBackTime, { trnsaction: ContainerInterface =>
       {
         val trn = trnsaction.asInstanceOf[CustTransaction]
         trn.balance < gPref.minAlertBalance

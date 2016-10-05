@@ -1,0 +1,72 @@
+{
+  "Message": {
+    "NameSpace": "com.stockquote.messages",
+    "Name": "StockQuote",
+    "Version": "00.01.00",
+    "Description": "Stock Quote",
+    "Fixed": "true",
+    "Persist": "false",
+    "Fields": [
+      {
+        "Name": "LongName",
+        "Type": "System.String"
+      },
+	  {
+        "Name": "ShortName",
+        "Type": "System.String"
+      },
+	  {
+        "Name": "Symbol",
+        "Type": "System.String"
+      },
+	  {
+        "Name": "Exchange",
+        "Type": "System.String"
+      },
+      {
+        "Name": "LastPrice",
+        "Type": "System.Double"
+      },
+      {
+        "Name": "Change",
+        "Type": "System.Double"
+      },
+      {
+        "Name": "ChangePercent",
+        "Type": "System.Double"
+      },
+      {
+        "Name": "TimeStamp",
+        "Type": "System.Long"
+      },
+      {
+        "Name": "MarketCap",
+        "Type": "System.Double"
+      },
+      {
+        "Name": "Volume",
+        "Type": "System.Int"
+      },
+      {
+        "Name": "ChangeYTD",
+        "Type": "System.Double"
+      },
+      {
+        "Name": "ChangePercentYTD",
+        "Type": "System.Double"
+      },
+      {
+        "Name": "High",
+        "Type": "System.Double"
+      },
+      {
+        "Name": "Low",
+        "Type": "System.Double"
+      },
+      {
+        "Name": "Open",
+        "Type": "System.Double"
+      }      
+    ]    
+  }
+}

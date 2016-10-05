@@ -22,13 +22,13 @@ object ErrorCodeConstants {
    val Failure = -1;
    val Not_Implemented_Yet = -2
    val File_Not_Found = "File not found";
-   
+
    val Not_Implemented_Yet_Msg = "Not Implemented Yet";
-  
+
   //Jar
    val Upload_Jar_Successful = "Uploaded Jar successfully";
    val Upload_Jar_Failed = "Failed to Upload the Jar";
-  
+
   //Type
    val Add_Type_Successful = "Type added successfully";
    val Add_Type_Failed = "Failed to Add Type";
@@ -71,7 +71,7 @@ object ErrorCodeConstants {
    val Get_Derived_Concept_Failed = "Failed to fetch derived concept";
    val Get_Derived_Concept_Failed_Not_Available = "Failed to fetch derived concept. No Derived Concept available.";
    val Get_Derived_Concept_Successful = "Successfully fetched derived concepts";
-  
+
   //Function
    val Add_Function_Successful = "Function Added Successfully";
    val Add_Function_Warning = "Some functions failed to update"
@@ -82,11 +82,11 @@ object ErrorCodeConstants {
    val Update_Function_Failed = "Failed to Update Fucntion";
    val Get_All_Functions_Failed = "Failed to fetch all containers";
    val Get_All_Functions_Failed_Not_Available = "Failed to fetch all containers. No function Available.";
-   val Get_All_Functions_Successful = "Successfully fetched all containers";
+   val Get_All_Functions_Successful = "Successfully fetched all functions";
    val Get_Function_Failed = "Failed to get function";
    val Get_Function_Failed_Not_Available = "Failed to get function. No Function Available.";
    val Get_Function_Successful = "Successfully fetched function";
-  
+
   //Container
    val Add_Container_Successful = "Container Added Successfully";
    val Add_Container_Failed = "Failed to Add Container";
@@ -100,14 +100,17 @@ object ErrorCodeConstants {
    val Get_All_Containers_Successful = "All Containers fetched successfully from cache";
    val Get_Container_From_Cache_Failed = "Failed to fetch container from cache";
    val Get_Container_From_Cache_Successful = "Successfully fetched container from Cache";
-   
+
    val Add_Container_Or_Message_Failed = "Failed to add container/message"
-  
+
   //Message
    val Add_Message_Successful = "Message Added Successfully";
    val Add_Message_Failed = "Failed to Add Message";
    val Update_Message_Successful = "Message Updated Successfully";
    val Update_Message_Failed = "Failed to Update Message";
+  // 1112 - Introduced to let user know higher version required - Change begins
+   val Update_Message_Failed_Higher_Version_Required = "Failed to Update Message. Message with higher version required than any previous version."
+  // 1112 - Change ends
    val Remove_Message_Successful = "Deleted Message Successfully";
    val Remove_Message_Failed = "Failed to Delete Message";
    val Remove_Message_Failed_Not_Found = "Failed to Delete Message. Message Not found"
@@ -117,7 +120,7 @@ object ErrorCodeConstants {
    val Get_Message_From_Cache_Failed = "Failed to fetch message from cache";
    val Get_Message_From_Cache_Successful = "Successfully fetched message from cache";
    val Recompile_Message_Failed = "Failed to recompile message";
-   
+
    //Output Message
    val Add_OutputMessage_Successful = "Output Message Added Successfully";
    val Add_OutputMessage_Failed = "Failed to Add Output Message";
@@ -132,7 +135,7 @@ object ErrorCodeConstants {
    val Get_OutputMessage_From_Cache_Failed = "Failed to fetch Output message from cache";
    val Get_OutputMessage_From_Cache_Successful = "Successfully fetched Output message from cache";
    val Recompile_OutputMessage_Failed = "Failed to recompile Output message";
-   
+
   //Model
    val Deactivate_Model_Successful = "Deactivated Model Successfully";
    val Deactivate_Model_Failed = "Failed to Deactivate Model";
@@ -145,9 +148,13 @@ object ErrorCodeConstants {
    val Remove_Model_Successful = "Deleted Model Successfully";
    val Add_Model_Successful = "Model Added Successfully";
    val Add_Model_Failed = "Failed to Add Model";
-   val Add_Model_Failed_Higher_Version_Required = "Failed to Add Model. Model with higher version required than any previous version including removed models"
+  val Add_Model_Failed_Higher_Version_Required = "Failed to Add Model. Model with higher version required than any previous version including removed models"
    val Update_Model_Failed = "Failed to Update Model";
-   val Update_Model_Failed_Invalid_Version = "Failed to Update Model. Invalid Version.";
+  val Update_Model_Failed_Invalid_Version = "Failed to Update Model. Invalid Version.";
+  // 1090 - Introduced to let user know higher version required - Change begins
+  val Update_Model_Failed_Higher_Version_Required = "Failed to Update Model. Model with higher version required than any previous version including removed models"
+  // 1090 - Change ends
+
    val Get_All_Models_Failed = "Failed to fetch all models";
    val Get_All_Models_Failed_Not_Available = "Failed to fetch all models. No Model available.";
    val Get_All_Models_Successful = "All Models fetched successfully";
@@ -161,29 +168,36 @@ object ErrorCodeConstants {
    val Get_Model_From_DB_Successful = "Successfully fetched Model form DB";
    val Model_Compilation_Failed = "Model Compilation Failed, see compliation errors in the log"
    val Model_ReCompilation_Failed = "Model Recompilation due to message update has failed"
-   
+
    // Functions
    val Remove_Function_Failed_Not_Found = "Failed to delete an existing Function"
-   
+
    //Node
    val Add_Node_Failed = "Failed to add/update a node";
    val Add_Node_Successful = "Node added/updated Successfully";
    val Remove_Node_Successful = "Deleted node successfully";
    val Remove_Node_Failed = "Failed to delete node";
-   val Get_All_Nodes_Successful = "Successfuly fetched all nodes";
+   val Get_All_Nodes_Successful = "Successfully fetched all nodes";
    val Get_All_Nodes_Failed = "Failed to fetch all nodes";
    val Get_All_Nodes_Failed_Not_Available = "Failed to fetch all nodes. No node available.";
    val Get_Leader_Host_Failed_Not_Available = "Failed to fetch leader host. No node available.";
-   
+
+ // Tenant
+ val Add_Tenant_Failed = "Failed to add/update a tenant";
+ val Add_Tenant_Successful = "Tenant added/updated Successfully";
+ val Remove_Tenant_Successful = "Deleted tenant successfully";
+ val Remove_Tenant_Failed = "Failed to delete tenant";
+
    //Adapter
    val Add_Adapter_Failed = "Failed to Add/Update Adapter";
    val Add_Adapter_Successful = "Successfully added/updated Adapter";
    val Remove_Adapter_Failed = "Failed to delete an adapter";
    val Remove_Adapter_Successful = "Deleted adapter successfully";
    val Get_All_Adapters_Failed= "Failed to fetch all adapters";
+  val Get_All_Tenants_Failed= "Failed to fetch all tenants";
    val Get_All_Adapters_Failed_Not_Available = "Failed to fetch all adapters. No Adapter available.";
    val Get_All_Adapters_Successful = "Successfully fetched all adpaters";
-   
+
    //Cluster
    val Add_Cluster_Failed = "Failed to add/update cluster";
    val Add_Cluster_Successful = "Cluster added/updated successfully";
@@ -199,7 +213,7 @@ object ErrorCodeConstants {
    val Get_All_Cluster_Configs_Failed = "Failed to fetch all cluster configs";
    val Get_All_Cluster_Configs_Failed_Not_Available = "Failed to fetch all cluster configs. No cluster config available.";
    val Get_All_Cluster_Configs_Successful = "Successfully fetched all Cluster Configs ";
-   
+
    //Config
    val Remove_Config_Failed = "Failed to delete config";
    val Remove_Config_Successful = "Deleted Config successfully";
@@ -208,12 +222,25 @@ object ErrorCodeConstants {
    val Get_All_Configs_Failed = "Failed to fetch all configs";
    val Get_All_Configs_Failed_Not_Available = "Failed to fetch all configs. No configs available.";
    val Get_All_Configs_Successful = "Successfully fetched all configs";
-   
+
+   // AdapterMessageBinding
+   val Add_AdapterMessageBinding_Successful = "Add adapter message binding successful"
+   val Add_AdapterMessageBinding_Failed = "Failed to add adapter message binding"
+   val Remove_AdapterMessageBinding_Successful = "Remove adapter message binding successful"
+   val Remove_AdapterMessageBinding_Failed = "Failed to remove adapter message binding"
+
    //Object
    val Get_All_Object_Keys_Successful = "Successfully fetched all object keys";
-   
+
    //Monitor
    val GetHeartbeat_Success = "Heartbeats fetched successfully"
    val GetHeartbeat_Failed = "Get Heartbeats Failed"
+
+   //GetTypeById
+   val Get_Type_By_SchemaId_Successful = "Successfully fetched message/container from Cache";
+   val Get_Type_By_ElementId_Successful = "Successfully fetched message/container/model from Cache";
+   val Get_Type_By_SchemaId_Failed = "Failed to fetch message/container from cache";
+   val Get_Type_By_ElementId_Failed = "Failed to fetch message/container/model from Cache";
+
 
 }

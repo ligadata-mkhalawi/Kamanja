@@ -1,0 +1,10 @@
+{
+  "Message": {
+    "NameSpace": "com.swift.messages.test",
+    "Name": "SmartsNw",
+    "Version": "00.01.00",
+    "Description": "",
+    "Fixed": "false",
+    "Persist": "false"
+  }
+}

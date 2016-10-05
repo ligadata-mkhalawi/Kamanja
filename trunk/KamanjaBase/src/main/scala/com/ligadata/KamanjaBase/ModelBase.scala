@@ -17,16 +17,21 @@
 
 package com.ligadata.KamanjaBase
 
+//import java.util.TreeMap
+
+import com.ligadata.Exceptions.{DeprecatedException, NotImplementedFunctionException}
+
 import scala.collection.immutable.Map
-import com.ligadata.Utils.Utils
-import com.ligadata.kamanja.metadata.{MdMgr, ModelDef}
+import com.ligadata.Utils.{CacheConfig, Utils, KamanjaLoaderInfo, ClusterStatus}
+import com.ligadata.kamanja.metadata.{RelationKeyType, MdMgr, ModelDef}
 import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import java.io.{DataInputStream, DataOutputStream}
-import com.ligadata.KvBase.{Key, Value, TimeRange /* , KvBaseDefalts, KeyWithBucketIdAndPrimaryKey, KeyWithBucketIdAndPrimaryKeyCompHelper */}
-import com.ligadata.Utils.{KamanjaLoaderInfo}
+import com.ligadata.KvBase._
 import com.ligadata.HeartBeat._
+
+import scala.collection.mutable.ArrayBuffer
 
 object MinVarType extends Enumeration {
   type MinVarType = Value
@@ -50,7 +55,7 @@ case class Result(val name: String, val result: Any)
 object ModelsResults {
   def ValueString(v: Any): String = {
     if (v == null) {
-      return "null"
+      return ""
     }
     if (v.isInstanceOf[Set[_]]) {
       return v.asInstanceOf[Set[_]].mkString(",")
@@ -64,15 +69,18 @@ object ModelsResults {
     v.toString
   }
 
-  def Deserialize(modelResults: Array[SavedMdlResult], dis: DataInputStream, mdResolver: MdBaseResolveInfo, loader: java.lang.ClassLoader, savedDataVersion: String): Unit = {
+  /*
+    def Deserialize(modelResults: Array[SavedMdlResult], dis: DataInputStream, mdResolver: MdBaseResolveInfo, loader: java.lang.ClassLoader, savedDataVersion: String): Unit = {
 
-  }
+    }
 
-  def Serialize(dos: DataOutputStream): Array[SavedMdlResult] = {
-    null
-  }
+    def Serialize(dos: DataOutputStream): Array[SavedMdlResult] = {
+      null
+    }
+    */
 }
 
+/*
 class SavedMdlResult {
   var mdlName: String = ""
   var mdlVersion: String = ""
@@ -142,6 +150,7 @@ class SavedMdlResult {
     compact(render(toJson))
   }
 }
+*/
 
 trait ModelResultBase {
   def toJson: List[org.json4s.JsonAST.JObject]
@@ -243,9 +252,12 @@ class MappedModelResults extends ModelResultBase {
   }
 }
 
-case class ContainerNameAndDatastoreInfo(containerName: String, dataDataStoreInfo: String)
+// case class ContainerNameAndDatastoreInfo(containerName: String, dataDataStoreInfo: String)
 
-trait EnvContext extends Monitorable {
+case class KeyValuePair(key: String, value: Any);
+case class SerializerTypeValuePair(serializerType: String, value: Array[Byte]);
+
+trait EnvContext /* extends Monitorable */  {
   // Metadata Ops
   var _mgr: MdMgr = _
 
@@ -253,95 +265,104 @@ trait EnvContext extends Monitorable {
 
   def getPropertyValue(clusterId: String, key: String): String
 
-  def SetClassLoader(cl: java.lang.ClassLoader): Unit
+//  def setClassLoader(cl: java.lang.ClassLoader): Unit
+//  def getClassLoader: java.lang.ClassLoader
 
-  def SetMetadataResolveInfo(mdres: MdBaseResolveInfo): Unit
+  def setMetadataLoader(metadataLoader: KamanjaLoaderInfo): Unit
+
+  def getMetadataLoader: KamanjaLoaderInfo
+
+  def setAdaptersAndEnvCtxtLoader(adaptersAndEnvCtxtLoader: KamanjaLoaderInfo): Unit
+
+  def getAdaptersAndEnvCtxtLoader: KamanjaLoaderInfo
+
+  def setObjectResolver(objResolver: ObjectResolver): Unit
 
   // Setting JarPaths
-  def SetJarPaths(jarPaths: collection.immutable.Set[String]): Unit
+  def setJarPaths(jarPaths: collection.immutable.Set[String]): Unit
+  def getJarPaths(): collection.immutable.Set[String]
 
-  // Datastores
-  def SetDefaultDatastore(dataDataStoreInfo: String): Unit
+  def openTenantsPrimaryDatastores(): Unit
 
   // Registerd Messages/Containers
-  def RegisterMessageOrContainers(containersInfo: Array[ContainerNameAndDatastoreInfo]): Unit
+  //  def RegisterMessageOrContainers(containersInfo: Array[ContainerNameAndDatastoreInfo]): Unit
 
   // RDD Ops
-  def getRecent(transId: Long, containerName: String, partKey: List[String], tmRange: TimeRange, f: MessageContainerBase => Boolean): Option[MessageContainerBase]
+  def getRecent(tenantId: String, containerName: String, partKey: List[String], tmRange: TimeRange, f: ContainerInterface => Boolean): Option[ContainerInterface]
 
-  def getRDD(transId: Long, containerName: String, partKey: List[String], tmRange: TimeRange, f: MessageContainerBase => Boolean): Array[MessageContainerBase]
+  def getRDD(tenantId: String, containerName: String, partKey: List[String], tmRange: TimeRange, f: ContainerInterface => Boolean): Array[ContainerInterface]
 
-  def saveOne(transId: Long, containerName: String, partKey: List[String], value: MessageContainerBase): Unit
-
-  def saveRDD(transId: Long, containerName: String, values: Array[MessageContainerBase]): Unit
+//  def saveOne(containerName: String, partKey: List[String], value: ContainerInterface): Unit
+//
+//  def saveRDD(containerName: String, values: Array[ContainerInterface]): Unit
 
   // RDD Ops
   def Shutdown: Unit
 
-  def getAllObjects(transId: Long, containerName: String): Array[MessageContainerBase]
+  def getAllObjects(tenantId: String, containerName: String): Array[ContainerInterface]
 
-  def getObject(transId: Long, containerName: String, partKey: List[String], primaryKey: List[String]): MessageContainerBase
+  def getObject(tenantId: String, containerName: String, partKey: List[String], primaryKey: List[String]): ContainerInterface
 
   // if appendCurrentChanges is true return output includes the in memory changes (new or mods) at the end otherwise it ignore them.
-  def getHistoryObjects(transId: Long, containerName: String, partKey: List[String], appendCurrentChanges: Boolean): Array[MessageContainerBase]
+  def getHistoryObjects(tenantId: String, containerName: String, partKey: List[String], appendCurrentChanges: Boolean): Array[ContainerInterface]
 
-  def setObject(transId: Long, containerName: String, partKey: List[String], value: MessageContainerBase): Unit
+  def setObject(tenantId: String, containerName: String, partKey: List[String], value: ContainerInterface): Unit
 
-  def contains(transId: Long, containerName: String, partKey: List[String], primaryKey: List[String]): Boolean
+  def contains(tenantId: String, containerName: String, partKey: List[String], primaryKey: List[String]): Boolean
 
-  def containsAny(transId: Long, containerName: String, partKeys: Array[List[String]], primaryKeys: Array[List[String]]): Boolean
+  def containsAny(tenantId: String, containerName: String, partKeys: Array[List[String]], primaryKeys: Array[List[String]]): Boolean
 
   //partKeys.size should be same as primaryKeys.size
-  def containsAll(transId: Long, containerName: String, partKeys: Array[List[String]], primaryKeys: Array[List[String]]): Boolean //partKeys.size should be same as primaryKeys.size
+  def containsAll(tenantId: String, containerName: String, partKeys: Array[List[String]], primaryKeys: Array[List[String]]): Boolean //partKeys.size should be same as primaryKeys.size
 
   // Adapters Keys & values
-  def setAdapterUniqueKeyValue(transId: Long, key: String, value: String, outputResults: List[(String, String, String)]): Unit
+  def setAdapterUniqueKeyValue(key: String, value: String): Unit
 
-  def getAdapterUniqueKeyValue(transId: Long, key: String): (Long, String, List[(String, String, String)])
+  def getAdapterUniqueKeyValue(key: String): String
 
-  def setAdapterUniqKeyAndValues(keyAndValues: List[(String, String)]): Unit
+//  def setAdapterUniqKeyAndValues(keyAndValues: List[(String, String)]): Unit
 
-  def getAllAdapterUniqKvDataInfo(keys: Array[String]): Array[(String, (Long, String, List[(String, String, String)]))] // Get Status information from Final table. No Transaction required here.
+  def getAllAdapterUniqKvDataInfo(keys: Array[String]): Array[(String, String)] // Get Status information from Final table. No Transaction required here.
 
   //  def getAllIntermediateCommittingInfo: Array[(String, (Long, String, List[(String, String)]))] // Getting intermediate committing information. Once we commit we don't have this, because we remove after commit
 
   //  def getAllIntermediateCommittingInfo(keys: Array[String]): Array[(String, (Long, String, List[(String, String)]))] // Getting intermediate committing information.
 
-  //  def removeCommittedKey(transId: Long, key: String): Unit
+  //  def removeCommittedKey(key: String): Unit
   //  def removeCommittedKeys(keys: Array[String]): Unit
 
   // Model Results Saving & retrieving. Don't return null, always return empty, if we don't find
-  def saveModelsResult(transId: Long, key: List[String], value: scala.collection.mutable.Map[String, SavedMdlResult]): Unit
-
-  def getModelsResult(transId: Long, key: List[String]): scala.collection.mutable.Map[String, SavedMdlResult]
+  //  def saveModelsResult(key: List[String], value: scala.collection.mutable.Map[String, SavedMdlResult]): Unit
+  //
+  //  def getModelsResult(key: List[String]): scala.collection.mutable.Map[String, SavedMdlResult]
 
   // Final Commit for the given transaction
   // outputResults has AdapterName, PartitionKey & Message
-  def commitData(transId: Long, key: String, value: String, outputResults: List[(String, String, String)], forceCommit: Boolean): Unit
+  def commitData(tenantId: String, txnCtxt: TransactionContext, data: Array[(String, Array[ContainerInterface])], forceCommit: Boolean): Unit
 
-  def rollbackData(transId: Long): Unit
+  def rollbackData(): Unit
 
   // Save State Entries on local node & on Leader
   // def PersistLocalNodeStateEntries: Unit
   // def PersistRemainingStateEntriesOnLeader: Unit
 
   // Clear Intermediate results before Restart processing
-  def clearIntermediateResults: Unit
+  //  def clearIntermediateResults: Unit
 
   // Clear Intermediate results After updating them on different node or different component (like KVInit), etc
-  def clearIntermediateResults(unloadMsgsContainers: Array[String]): Unit
+  //  def clearIntermediateResults(unloadMsgsContainers: Array[String]): Unit
 
   // Changed Data & Reloading data are Time in MS, Bucket Key & TransactionId
-  def getChangedData(tempTransId: Long, includeMessages: Boolean, includeContainers: Boolean): scala.collection.immutable.Map[String, List[Key]]
+  //  def getChangedData(tempTransId: Long, includeMessages: Boolean, includeContainers: Boolean): scala.collection.immutable.Map[String, List[Key]]
 
-  def ReloadKeys(tempTransId: Long, containerName: String, keys: List[Key]): Unit
+    def ReloadKeys(tempTransId: Long, tenatId: String, containerName: String, keys: List[Key]): Unit
 
   // Set Reload Flag
-  //  def setReloadFlag(transId: Long, containerName: String): Unit
+  //  def setReloadFlag(containerName: String): Unit
 
-  def PersistValidateAdapterInformation(validateUniqVals: Array[(String, String)]): Unit
+  //  def PersistValidateAdapterInformation(validateUniqVals: Array[(String, String)]): Unit
 
-  def GetValidateAdapterInformation: Array[(String, String)]
+  //  def GetValidateAdapterInformation: Array[(String, String)]
 
   /**
     * Answer an empty instance of the message or container with the supplied fully qualified class name.  If the name is
@@ -350,19 +371,123 @@ trait EnvContext extends Monitorable {
     * @param fqclassname : a full package qualified class name
     * @return a MesssageContainerBase of that ilk
     */
-  def NewMessageOrContainer(fqclassname: String): MessageContainerBase
+  def NewMessageOrContainer(fqclassname: String): ContainerInterface
+
+  def getContainerInstance(containerName: String): ContainerInterface
 
   // Just get the cached container key and see what are the containers we need to cache
-  def CacheContainers(clusterId: String): Unit
+  def cacheContainers(clusterId: String): Unit
 
   def EnableEachTransactionCommit: Boolean
+
+  // Lock functions
+//  def lockKeyInCluster(key: String): Unit
+//
+//  def lockKeyInNode(key: String): Unit
+//
+//  // Unlock functions
+//  def unlockKeyInCluster(key: String): Unit
+//
+//  def unlockKeyInNode(key: String): Unit
+
+//  def getAllClusterLocks(): Array[String]
+//
+//  def getAllNodeLocks(nodeId: String): Array[String]
+
+  // Saving & getting temporary objects in cache
+  // value should be Array[Byte]
+  def saveConfigInClusterCache(key: String, value: Array[Byte]): Unit
+
+  def saveObjectInNodeCache(key: String, value: Any): Unit
+
+  def getConfigFromClusterCache(key: String): Array[Byte]
+
+  def getObjectFromNodeCache(key: String): Any
+
+  def getAllKeysFromClusterCache(): Array[String]
+
+  def getAllKeysFromNodeCache(): Array[String]
+
+  def getAllConfigFromClusterCache(): Array[KeyValuePair]
+
+  def getAllObjectsFromNodeCache(): Array[KeyValuePair]
+
+  // Saving & getting data (from cache or disk)
+  def saveDataInPersistentStore(containerName: String, key: String, serializerType: String, value: Array[Byte]): Unit
+
+  def getDataFromPersistentStore(containerName: String, key: String): SerializerTypeValuePair
+
+  // Zookeeper functions
+  def setDataToZNode(zNodePath: String, value: Array[Byte]): Unit
+
+  def getDataFromZNode(zNodePath: String): Array[Byte]
+
+  def getTransactionRanges(): (Int, Int)
+
+  def hasZkConnectionString(): Boolean
+
+  def setZookeeperInfo(zkConnectString: String, zkBasePath: String, zkSessionTimeoutMs: Int, zkConnectionTimeoutMs: Int): Unit
+
+  def getZookeeperInfo(): (String, String, Int, Int)
+
+  def createZkPathListener(znodePath: String, ListenCallback: (String) => Unit): Unit
+
+  def createZkPathChildrenCacheListener(znodePath: String, getAllChildsData: Boolean, ListenCallback: (String, String, Array[Byte], Array[(String, Array[Byte])]) => Unit): Unit
+
+  // Cache Listeners
+  def setListenerCacheKey(key: String, value: String): Unit
+
+  // listenPath is the Path where it has to listen. Ex: /kamanja/notification/node1
+  // ListenCallback is the call back called when there is any change in listenPath. The return value is has 3 components. 1 st is eventType, 2 is eventPath and 3rd is eventPathData
+  // eventType is PUT, UPDATE, REMOVE etc
+  // eventPath is the Path where it changed the data
+  // eventPathData is the data of that path
+  def createListenerForCacheKey(listenPath: String, ListenCallback: (String, String, String) => Unit): Unit
+
+  // listenPath is the Path where it has to listen and its children
+  //    Ex: If we start watching /kamanja/nodification/ all the following puts/updates/removes/etc will notify callback
+  //    /kamanja/nodification/node1/1 or /kamanja/nodification/node1/2 or /kamanja/nodification/node1 or /kamanja/nodification/node2 or /kamanja/nodification/node3 or /kamanja/nodification/node4
+  // ListenCallback is the call back called when there is any change in listenPath and or its children. The return value is has 3 components. 1 st is eventType, 2 is eventPath and 3rd is eventPathData
+  // eventType is PUT, UPDATE, REMOVE etc
+  // eventPath is the Path where it changed the data
+  // eventPathData is the data of that path
+  // eventType: String, eventPath: String, eventPathData: Array[Byte]
+  def createListenerForCacheChildern(listenPath: String, ListenCallback: (String, String, String) => Unit): Unit
+
+  // Leader Information
+  def getClusterInfo(): ClusterStatus
+
+  // This will give either any node change or leader change
+  def registerNodesChangeNotification(EventChangeCallback: (ClusterStatus) => Unit): Unit
+
+//  def unregisterNodesChangeNotification(EventChangeCallback: (ClusterStatus) => Unit): Unit
+
+  def getNodeId(): String
+  def getClusterId(): String
+
+  def setNodeInfo(nodeId: String, clusterId: String): Unit
+
+  // This post the message into where ever these messages are associated immediately
+  // Later this will be posted to logical queue where it can execute on logical partition.
+  def postMessages(msgs: Array[ContainerInterface]): Unit
+
+  // We are handling only one listener at this moment
+  def postMessagesListener(postMsgListenerCallback: (Array[ContainerInterface]) => Unit): Unit
+
+  def getPrimaryDatastoreForTenantId(tenantId: String): String
+
+  def setSystemCatalogDatastore(sysCatalog: String): Unit
+  def getSystemCatalogDatastore(): String
+
+  def startCache(conf: CacheConfig): Unit
+  def getCacheConfig(): CacheConfig
 }
 
 // partitionKey is the one used for this message
-class ModelContext(val txnContext: TransactionContext, val msg: MessageContainerBase, val msgData: Array[Byte], val partitionKey: String) {
+class ModelContext(val txnContext: TransactionContext, val msg: ContainerInterface, val msgData: Array[Byte], val partitionKey: String) {
   def InputMessageData: Array[Byte] = msgData
 
-  def Message: MessageContainerBase = msg
+  def Message: ContainerInterface = msg
 
   def TransactionContext: TransactionContext = txnContext
 
@@ -381,7 +506,10 @@ abstract class ModelBase(var modelContext: ModelContext, val factory: ModelBaseO
   final def Version() = factory.Version()
 
   // Tenant Id
-  final def TenantId() = null
+  final def TenantId() = OwnerId()
+
+  // OwnerId Id
+  final def OwnerId(): String = null
 
   final def TransId() = if (modelContext != null && modelContext.txnContext != null) modelContext.txnContext.getTransactionId() else null // transId
 
@@ -412,7 +540,9 @@ trait ModelBaseObj {
   def Version(): String
 
   // ResultClass associated the model. Mainly used for Returning results as well as Deserialization
-  def CreateResultObject(): ModelResultBase
+  def CreateResultObject(): ModelResultBase = {
+    return new MappedModelResults();
+  }
 }
 
 // ModelInstance will be created from ModelInstanceFactory by demand.
@@ -448,7 +578,46 @@ abstract class ModelInstance(val factory: ModelInstanceFactory) {
   //		outputDefault: If this is true, engine is expecting output always.
   //	Output:
   //		Derived class of ModelResultBase is the return results expected. null if no results.
-  def execute(txnCtxt: TransactionContext, outputDefault: Boolean): ModelResultBase
+  // This call is deprecated and valid for models upto 1.3.x. Use run method for new implementation
+  def execute(txnCtxt: TransactionContext, outputDefault: Boolean): ModelResultBase = {
+    throw new DeprecatedException("Deprecated", null)
+  }
+
+  //	Intput:
+  //		txnCtxt: Transaction context related to this execution
+  //		outputDefault: If this is true, engine is expecting output always.
+  //	Output:
+  //		Derived messages are the return results expected.
+  def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
+    // Default implementation to invoke old model
+    if (execMsgsSet.size == 1 && triggerdSetIndex == 0 && factory.getModelDef().inputMsgSets.size == 1 && factory.getModelDef().inputMsgSets(0).size == 1 &&
+      factory.getModelDef().outputMsgs.size == 1 && execMsgsSet(0) != null && execMsgsSet(0).isInstanceOf[ContainerInterface]) {
+      // This could be calling old model
+      // Holding current transaction information original message and set the new information. Because the model will pull the message from transaction context
+      val (origin, orgInputMsg) = txnCtxt.getInitialMessage
+      var returnValues = Array[ContainerOrConcept]()
+      try {
+        txnCtxt.setInitialMessage("", execMsgsSet(0).asInstanceOf[ContainerInterface], false)
+        val mdlResults = execute(txnCtxt, outputDefault)
+        if (mdlResults != null) {
+          val outContainer = getEnvContext().getContainerInstance(factory.getModelDef().outputMsgs(0))
+          val resMap = mdlResults.asKeyValuesMap
+          resMap.foreach(kv => {
+            outContainer.set(kv._1, kv._2)
+          })
+          returnValues = Array[ContainerOrConcept](outContainer)
+        }
+      } catch {
+        case e: Exception => throw e
+      } finally {
+        txnCtxt.setInitialMessage(origin, orgInputMsg, false)
+      }
+      return returnValues
+    }
+    val mdlNm = if (getModelName() == null) "" else getModelName()
+    val msgsStr = if (execMsgsSet != null) execMsgsSet.map(msg => if (msg != null) msg.getFullTypeName else "").mkString(",") else ""
+    throw new NotImplementedFunctionException("execute method is not implemented for model:%s\nInputMessages (%d) are:%s and triggerdSetIndex:%s".format(mdlNm, execMsgsSet.size, msgsStr, triggerdSetIndex), null)
+  }
 }
 
 // ModelInstanceFactory will be created from FactoryOfModelInstanceFactory when metadata got resolved (while engine is starting and when metadata adding while running the engine).
@@ -478,13 +647,18 @@ abstract class ModelInstanceFactory(val modelDef: ModelDef, val nodeContext: Nod
   def getVersion(): String // Model Version
 
   // Checking whether the message is valid to execute this model instance or not.
-  def isValidMessage(msg: MessageContainerBase): Boolean
+  // Deprecated and no more supported in new versions from 1.4.0
+  def isValidMessage(msg: MessageContainerBase): Boolean = {
+    throw new DeprecatedException("Deprecated", null)
+  }
 
   // Creating new model instance related to this ModelInstanceFactory.
   def createModelInstance(): ModelInstance
 
   // Creating ModelResultBase associated this model/modelfactory.
-  def createResultObject(): ModelResultBase
+  def createResultObject(): ModelResultBase = {
+    return new MappedModelResults();
+  }
 
   // Is the ModelInstance created by this ModelInstanceFactory is reusable?
   def isModelInstanceReusable(): Boolean = false
@@ -501,52 +675,303 @@ trait FactoryOfModelInstanceFactory {
   def prepareModel(nodeContext: NodeContext, modelDefStr: String, inpMsgName: String, outMsgName: String, loaderInfo: KamanjaLoaderInfo, jarPaths: collection.immutable.Set[String]): ModelDef
 }
 
-class TransactionContext(val transId: Long, val nodeCtxt: NodeContext, val msgData: Array[Byte], val partitionKey: String) {
-  private var msg: MessageContainerBase = _
+case class EventOriginInfo(val key: String, val value: String)
 
-  def getInputMessageData(): Array[Byte] = msgData
+// FIXME: Need to have message creator (Model/InputMessage/Get(from db/cache))
+class TransactionContext(val transId: Long, val nodeCtxt: NodeContext, val msgData: Array[Byte], val origin: EventOriginInfo, val eventEpochStartTimeInMs: Long, val msgEvent: ContainerInterface) {
+  private var rowId = 0
+  case class ContaienrWithOriginAndPartKey(origin: String, container: ContainerOrConcept, partKey: List[String])
 
-  def getPartitionKey(): String = partitionKey
+  private var orgInputMsg = ContaienrWithOriginAndPartKey(null, null, null)
+  private val containerOrConceptsMapByName = scala.collection.mutable.Map[String, ArrayBuffer[ContaienrWithOriginAndPartKey]]() // Saving by Name
+  // private val containerOrConceptsMapByElementId = scala.collection.mutable.Map[Long, ArrayBuffer[ContaienrWithOriginAndPartKey]]() // Saving by ElementId
 
-  def getMessage(): MessageContainerBase = msg
+//  var dataByBucketKeyPart = new TreeMap[KeyWithBucketIdAndPrimaryKey, ContainerInterface](KvBaseDefalts.defualtBucketKeyComp) // By time, BucketKey, then PrimaryKey/{transactionid & rowid}. This is little cheaper if we are going to get exact match, because we compare time & then bucketid
+//  var loadedKeys = new java.util.TreeSet[LoadKeyWithBucketId](KvBaseDefalts.defaultLoadKeyComp) // By BucketId, BucketKey, Time Range
+//
+  // orgInputMsg & msgEvent is part in this also
+  private val valuesMap = new java.util.HashMap[String, Any]()
 
-  def setMessage(m: MessageContainerBase): Unit = {
-    msg = m
+  addContainerOrConcept("", msgEvent, null);
+
+  final def getMessageEvent: ContainerInterface = msgEvent
+
+  final def getInputMessageData(): Array[Byte] = msgData
+
+  final def getPartitionKey(): String = origin.key
+
+  final def getMessage(): ContainerInterface = orgInputMsg.container.asInstanceOf[ContainerInterface] // Original messages
+
+  final def getAllMsgNames(): Array[String] = containerOrConceptsMapByName.keys.toArray
+
+  final def getAllContainersOrConcepts(): Map[String, Array[ContaienrWithOriginAndPartKey]] = containerOrConceptsMapByName.map(kv => (kv._1, kv._2.toArray)).toMap
+
+  // Need to lock if we are going to run models parallel
+  final def getContainersOrConcepts(typeName: String): Array[(String, ContainerOrConcept)] = containerOrConceptsMapByName.getOrElse(typeName.toLowerCase(), ArrayBuffer[ContaienrWithOriginAndPartKey]()).map(v => (v.origin, v.container)).toArray
+
+  // Need to lock if we are going to run models parallel
+  final def getContainersOrConcepts(origin: String, typeName: String): Array[(String, ContainerOrConcept)] = {
+    containerOrConceptsMapByName.getOrElse(typeName.toLowerCase(), ArrayBuffer[ContaienrWithOriginAndPartKey]()).filter(m => m.origin.equalsIgnoreCase(origin)).map(v => (v.origin, v.container)).toArray
   }
 
-  def getTransactionId() = transId
+  // Need to lock if we are going to run models parallel
+  final def addContainerOrConcept(origin: String, m: ContainerOrConcept, partKey: List[String]): Unit = {
+    if (m == null) return
+    val msgNm = m.getFullTypeName.toLowerCase()
 
-  def getNodeCtxt() = nodeCtxt
+    if (m.isInstanceOf[MessageContainerBase] && m.asInstanceOf[MessageContainerBase].getTransactionId <= 0) {
+      m.asInstanceOf[MessageContainerBase].setTransactionId(transId)
+      m.asInstanceOf[MessageContainerBase].setRowNumber(rowId)
+      rowId += 1
+    }
 
-  private var valuesMap = new java.util.HashMap[String, Any]()
+    val tmp = containerOrConceptsMapByName.getOrElse(msgNm, ArrayBuffer[ContaienrWithOriginAndPartKey]())
+    tmp += ContaienrWithOriginAndPartKey(origin, m, partKey)
+    containerOrConceptsMapByName(msgNm) = tmp
+  }
 
-  def getPropertyValue(clusterId: String, key: String): String = {
+  final def addContainerOrConcepts(origin: String, curMsgs: Array[ContainerOrConcept]): Unit = {
+    curMsgs.foreach(m => addContainerOrConcept(origin, m, null))
+  }
+
+  final def addContainerOrConcepts(origin: String, curMsgs: Array[ContainerInterface]): Unit = {
+    curMsgs.foreach(m => addContainerOrConcept(origin, m, null))
+  }
+
+  final def setInitialMessage(origin: String, orgMsg: ContainerOrConcept, addToAllMsgs: Boolean = true): Unit = {
+    orgInputMsg = ContaienrWithOriginAndPartKey(origin, orgMsg, null)
+    if (addToAllMsgs)
+      addContainerOrConcept(origin, orgMsg, null)
+  }
+
+  final def getInitialMessage: (String, ContainerOrConcept) = {
+    (orgInputMsg.origin, orgInputMsg.container)
+  }
+
+  final def getTransactionId() = transId
+
+  final def getNodeCtxt() = nodeCtxt
+
+  // Need to lock if we are going to run models parallel
+  final def getPropertyValue(clusterId: String, key: String): String = {
     if (nodeCtxt != null) nodeCtxt.getPropertyValue(clusterId, key) else ""
   }
 
-  def putValue(key: String, value: Any): Unit = {
+  // Need to lock if we are going to run models parallel
+  final def putValue(key: String, value: Any): Unit = {
     valuesMap.put(key, value)
   }
 
-  def getValue(key: String): Any = {
+  // Need to lock if we are going to run models parallel
+  final def getValue(key: String): Any = {
     valuesMap.get(key)
   }
 
-  def setContextValue(key: String, value: Any): Unit = {
+  final def setContextValue(key: String, value: Any): Unit = {
     putValue(key, value)
   }
 
   // Deprecated. Use putValue
-  def getContextValue(key: String): Any = {
+  final def getContextValue(key: String): Any = {
     getValue(key)
   } // Deprecated. Use getValue
+
+  final def IsEmptyKey(key: List[String]): Boolean = {
+    (key == null || key.size == 0 /* || key.filter(k => k != null).size == 0 */)
+  }
+
+  final def IsEmptyKey(key: Array[String]): Boolean = {
+    (key == null || key.size == 0 /* || key.filter(k => k != null).size == 0 */)
+  }
+
+  final def IsSameKey(key1: List[String], key2: List[String]): Boolean = {
+    if (key1.size != key2.size)
+      return false
+
+    for (i <- 0 until key1.size) {
+      if (key1(i).compareTo(key2(i)) != 0)
+        return false
+    }
+
+    return true
+  }
+
+  final def IsSameKey(key1: Array[String], key2: Array[String]): Boolean = {
+    if (key1.size != key2.size)
+      return false
+
+    for (i <- 0 until key1.size) {
+      if (key1(i).compareTo(key2(i)) != 0)
+        return false
+    }
+
+    return true
+  }
+
+  private def isContainerHasPrimaryKey(containerName: String): Boolean = {
+    if (getNodeCtxt() != null && getNodeCtxt().getEnvCtxt() != null && getNodeCtxt().getEnvCtxt()._mgr != null) {
+      val msg = getNodeCtxt().getEnvCtxt()._mgr.Message(containerName, -1, true)
+      if (msg != None) {
+        if (msg.get.cType != null) {
+          val cTypeKeys = msg.get.cType.keys
+          if (cTypeKeys != null) {
+            cTypeKeys.foreach(key => {
+              if (key.KeyType == RelationKeyType.tPrimary)
+                return true
+            })
+          }
+        }
+        return false
+      }
+      val cntr = getNodeCtxt().getEnvCtxt()._mgr.Container(containerName, -1, true)
+      if (cntr != None) {
+        if (cntr.get.cType != null) {
+          val cTypeKeys = cntr.get.cType.keys
+          if (cTypeKeys != null) {
+            cTypeKeys.foreach(key => {
+              if (key.KeyType == RelationKeyType.tPrimary)
+                return true
+            })
+          }
+        }
+        return false
+      }
+    }
+    false
+  }
+
+  // containerName is full name of the message
+  private def getContainersList(containerName: String, partKey: List[String], tmRange: TimeRange, f: ContainerInterface => Boolean): Array[(String, ContainerInterface)] = {
+    var tmpMsgs = Array[ContaienrWithOriginAndPartKey]()
+
+    // Try to get from local cache
+    if (IsEmptyKey(partKey) == false) {
+      val tmRng =
+        if (tmRange == null)
+          TimeRange(Long.MinValue, Long.MaxValue)
+        else
+          tmRange
+
+      val partKeyAsArray = partKey.toArray
+      if (f != null) {
+        tmpMsgs = containerOrConceptsMapByName.getOrElse(containerName.toLowerCase(), ArrayBuffer[ContaienrWithOriginAndPartKey]()).filter(m => {
+          val retVal = if (m.container.isInstanceOf[ContainerInterface]) {
+            val container = m.container.asInstanceOf[ContainerInterface]
+            val tmData = container.getTimePartitionData
+            tmData >= tmRange.beginTime && tmData <= tmRange.endTime && IsSameKey(partKeyAsArray, container.getPartitionKey) && f(container) // Comparing time & Key & function call
+          } else {
+            false
+          }
+          retVal
+        }).toArray
+      } else {
+        tmpMsgs = containerOrConceptsMapByName.getOrElse(containerName.toLowerCase(), ArrayBuffer[ContaienrWithOriginAndPartKey]()).filter(m => {
+          val retVal = if (m.container.isInstanceOf[ContainerInterface]) {
+            val container = m.container.asInstanceOf[ContainerInterface]
+            val tmData = container.getTimePartitionData
+            tmData >= tmRange.beginTime && tmData <= tmRange.endTime && IsSameKey(partKeyAsArray, container.getPartitionKey) // Comparing time & Key
+          } else {
+            false
+          }
+          retVal
+        }).toArray
+      }
+    } else if (tmRange != null) {
+      if (f != null) {
+        tmpMsgs = containerOrConceptsMapByName.getOrElse(containerName.toLowerCase(), ArrayBuffer[ContaienrWithOriginAndPartKey]()).filter(m => {
+          val retVal = if (m.container.isInstanceOf[ContainerInterface]) {
+            val container = m.container.asInstanceOf[ContainerInterface]
+            val tmData = container.getTimePartitionData
+            tmData >= tmRange.beginTime && tmData <= tmRange.endTime && f(container) // Comparing time & function call
+          } else {
+            false
+          }
+          retVal
+        }).toArray
+      } else {
+        tmpMsgs = containerOrConceptsMapByName.getOrElse(containerName.toLowerCase(), ArrayBuffer[ContaienrWithOriginAndPartKey]()).filter(m => {
+          val retVal = if (m.container.isInstanceOf[ContainerInterface]) {
+            val container = m.container.asInstanceOf[ContainerInterface]
+            val tmData = container.getTimePartitionData
+            tmData >= tmRange.beginTime && tmData <= tmRange.endTime // Comparing time
+          } else {
+            false
+          }
+          retVal
+        }).toArray
+      }
+    } else {
+      if (f != null) {
+        tmpMsgs = containerOrConceptsMapByName.getOrElse(containerName.toLowerCase(), ArrayBuffer[ContaienrWithOriginAndPartKey]()).filter(m => {
+          val retVal = if (m.container.isInstanceOf[ContainerInterface]) {
+            f(m.container.asInstanceOf[ContainerInterface]) // Comparing function call
+          } else {
+            false
+          }
+          retVal
+        }).toArray
+      } else {
+        tmpMsgs = containerOrConceptsMapByName.getOrElse(containerName.toLowerCase(), ArrayBuffer[ContaienrWithOriginAndPartKey]()).filter(m => m.container.isInstanceOf[ContainerInterface]).toArray
+      }
+    }
+
+    return tmpMsgs.map(v => (v.origin, v.container.asInstanceOf[ContainerInterface]))
+  }
+
+  // containerName is full name of the message
+  final def getRecent(tenantId: String, containerName: String, partKey: List[String], tmRange: TimeRange, f: ContainerInterface => Boolean): Option[ContainerInterface] = {
+    var tmpMsgs = getContainersList(containerName, partKey, tmRange, f)
+    if (tmpMsgs.size > 0)
+      return Some(tmpMsgs(tmpMsgs.size - 1)._2) // Take the last one
+
+    if (getNodeCtxt != null && getNodeCtxt.getEnvCtxt != null)
+      return getNodeCtxt.getEnvCtxt.getRecent(tenantId, containerName, partKey, tmRange, f)
+    None
+  }
+
+  final def getRDD(tenantId: String, containerName: String, partKey: List[String], tmRange: TimeRange, f: ContainerInterface => Boolean): Array[ContainerInterface] = {
+    val tmpList =
+      if (getNodeCtxt != null && getNodeCtxt.getEnvCtxt != null) {
+        getNodeCtxt.getEnvCtxt.getRDD(tenantId, containerName, partKey, tmRange, f)
+      }
+      else
+        Array[ContainerInterface]()
+
+    // Now override the current transactionids list on top of this
+    val currentList = getContainersList(containerName, partKey, tmRange, f)
+    val finalList =
+      if (currentList.size > 0 && tmpList.size > 0) {
+        //BUGBUG:: Yet to fix -- Same timeRange, Partition Key & PrimaryKeys need to be updated with new ones
+        //FIXME:- Fix this -- Same timeRange, Partition Key & PrimaryKeys need to be updated with new ones
+        // May be we can create the map of current list and loop thru the list we got tmpList
+        tmpList ++ currentList.map(m => m._2)
+      } else if (currentList.size > 0) {
+        currentList.map(m => m._2)
+      } else {
+        tmpList
+      }
+
+    finalList
+  }
+
+  final def saveOne(value: ContainerInterface): Unit = {
+    addContainerOrConcept("", value, null)
+  }
+
+  final def saveOne(partKey: List[String], value: ContainerInterface): Unit = {
+    addContainerOrConcept("", value, partKey)
+  }
+
+  final def saveRDD(values: Array[ContainerInterface]): Unit = {
+    addContainerOrConcepts("", values)
+  }
 }
 
 // Node level context
 class NodeContext(val gCtx: EnvContext) {
   def getEnvCtxt() = gCtx
 
-  private var valuesMap = new java.util.HashMap[String, Any]()
+  private val valuesMap = new java.util.HashMap[String, Any]()
 
   def getPropertyValue(clusterId: String, key: String): String = {
     if (gCtx != null) gCtx.getPropertyValue(clusterId, key) else ""
@@ -593,10 +1018,17 @@ class ModelBaseObjMdlInstanceFactory(modelDef: ModelDef, nodeContext: NodeContex
   override def createResultObject() = mdlBaseObj.CreateResultObject()
 
   override def isModelInstanceReusable(): Boolean = {
-    // Temporary Transaction context & model contexts
-    val tmpTxnCtxt = new TransactionContext(0, nodeContext, Array[Byte](), "")
-    val modelContext = new ModelContext(tmpTxnCtxt, null, tmpTxnCtxt.getInputMessageData(), tmpTxnCtxt.getPartitionKey())
-    mdlBaseObj.CreateNewModel(modelContext).isModelInstanceReusable()
+    // Default value
+    var isReusable = false
+    try {
+      // Temporary Transaction context & model contexts
+      val tmpTxnCtxt = new TransactionContext(0, nodeContext, Array[Byte](), EventOriginInfo(null, null), 0, null)
+      val modelContext = new ModelContext(tmpTxnCtxt, null, tmpTxnCtxt.getInputMessageData(), tmpTxnCtxt.getPartitionKey())
+      isReusable = mdlBaseObj.CreateNewModel(modelContext).isModelInstanceReusable()
+    } catch {
+      case e: Throwable => { /* in case of exceptions we are just returning isReusable as false. That may be an issue. The assumption is create model and calling isModelInstanceReusable should not have big logic on messages etc. */ }
+    }
+    isReusable
   }
 }
 

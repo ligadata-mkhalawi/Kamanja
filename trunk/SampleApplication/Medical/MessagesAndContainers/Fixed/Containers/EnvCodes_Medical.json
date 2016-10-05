@@ -1,23 +1,23 @@
 {
   "Container": {
-    "NameSpace":"com.ligadata.kamanja.samples.containers",
-    "Name":"EnvCodes",
-    "Version":"00.01.00",
-    "Description":"Container for Environmental Exposure Codes",
-    "Fixed":"true",
-    "Elements" : [
+    "NameSpace": "com.ligadata.kamanja.samples.containers",
+    "Name": "EnvCodes",
+    "Version": "00.01.00",
+    "Description": "Container for Environmental Exposure Codes",
+    "Fixed": "true",
+    "Persist": "true",
+    "Fields": [
       {
-        "Field" : {
-          "Name":"icd9Code",
-          "Type":"System.String"
-        }
+        "Name": "icd9Code",
+        "Type": "System.String"
       },
       {
-        "Field" : {
-          "Name":"icd9Description",
-          "Type":"System.String"
-        }
+        "Name": "icd9Description",
+        "Type": "System.String"
       }
+    ],
+    "PartitionKey": [
+      "icd9Code"
     ]
   }
 }

@@ -33,12 +33,11 @@ import scala.collection.mutable.Map
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.ArrayBuffer
 
-import com.ligadata.messagedef._
+import com.ligadata.msgcompiler._
 import util.control.Breaks._
 
 import scala.xml.XML
 import org.apache.logging.log4j._
-
 
 class MsgContainers(var contMsgEntity: ContainerDef) {
 
@@ -49,8 +48,6 @@ class MsgContainers(var contMsgEntity: ContainerDef) {
   var children = new ArrayBuffer[(String, String)] // Child Messages/Containers (Name & type). We fill this when we create message and populate parent later from this
 
 }
-
- 
 
 object GetDependentMessages {
   val messageContainerObjects = new HashMap[String, MsgContainers]
@@ -68,7 +65,7 @@ object GetDependentMessages {
       if (attrMap != null) {
         children ++= attrMap.filter(a => (a._2.isInstanceOf[AttributeDef] && (a._2.asInstanceOf[AttributeDef].aType.isInstanceOf[MappedMsgTypeDef] || a._2.asInstanceOf[AttributeDef].aType.isInstanceOf[StructTypeDef]))).map(a => (a._2.Name, a._2.asInstanceOf[AttributeDef].aType.FullName))
         // If the attribute is an arraybuffer (not yet handling others)
-        children ++= attrMap.filter(a => (a._2.isInstanceOf[AttributeDef] && a._2.asInstanceOf[AttributeDef].aType.isInstanceOf[ArrayBufTypeDef] && (a._2.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayBufTypeDef].elemDef.isInstanceOf[MappedMsgTypeDef] || a._2.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayBufTypeDef].elemDef.isInstanceOf[StructTypeDef]))).map(a => (a._2.Name, a._2.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayBufTypeDef].elemDef.FullName))
+        children ++= attrMap.filter(a => (a._2.isInstanceOf[AttributeDef] && a._2.asInstanceOf[AttributeDef].aType.isInstanceOf[ArrayTypeDef] && (a._2.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayTypeDef].elemDef.isInstanceOf[MappedMsgTypeDef] || a._2.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayTypeDef].elemDef.isInstanceOf[StructTypeDef]))).map(a => (a._2.Name, a._2.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayTypeDef].elemDef.FullName))
       }
     } else if (entity.isInstanceOf[StructTypeDef]) {
       var memberDefs = entity.asInstanceOf[StructTypeDef].memberDefs
@@ -76,13 +73,12 @@ object GetDependentMessages {
       if (memberDefs != null) {
         children ++= memberDefs.filter(a => (a.isInstanceOf[AttributeDef] && (a.asInstanceOf[AttributeDef].aType.isInstanceOf[MappedMsgTypeDef] || a.asInstanceOf[AttributeDef].aType.isInstanceOf[StructTypeDef]))).map(a => (a.Name, a.asInstanceOf[AttributeDef].aType.FullName))
         // If the attribute is an arraybuffer (not yet handling others)
-        children ++= memberDefs.filter(a => (a.isInstanceOf[AttributeDef] && a.asInstanceOf[AttributeDef].aType.isInstanceOf[ArrayBufTypeDef] && (a.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayBufTypeDef].elemDef.isInstanceOf[MappedMsgTypeDef] || a.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayBufTypeDef].elemDef.isInstanceOf[StructTypeDef]))).map(a => (a.Name, a.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayBufTypeDef].elemDef.FullName))
+        children ++= memberDefs.filter(a => (a.isInstanceOf[AttributeDef] && a.asInstanceOf[AttributeDef].aType.isInstanceOf[ArrayTypeDef] && (a.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayTypeDef].elemDef.isInstanceOf[MappedMsgTypeDef] || a.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayTypeDef].elemDef.isInstanceOf[StructTypeDef]))).map(a => (a.Name, a.asInstanceOf[AttributeDef].aType.asInstanceOf[ArrayTypeDef].elemDef.FullName))
       }
     } else {
       // Nothing to do at this moment
     }
   }
-  
   def buildMsgHierarchy(contMsgEntity: ContainerDef) {
     val tmpMsgDefs = mdMgr.Messages(true, true)
     val tmpContainerDefs = mdMgr.Containers(true, true)
@@ -107,22 +103,22 @@ object GetDependentMessages {
     // 1. First prepare one level of parents
     messageContainerObjects.foreach(m => {
       m._2.children.foreach(c => {
-	// Checking whether we already have in childToParentMap or not before we replace. So that way we can check same child under multiple parents.
-	val childMsgNm = c._2.toLowerCase
-	val fnd = childToParentMap.getOrElse(childMsgNm, null)
-	if (fnd != null) {
-	  logger.error(s"$childMsgNm is used as child under $c and $fnd._1. First detected $fnd._1, so using as child of $fnd._1 as it is.")
-	} else {
-	  childToParentMap(childMsgNm) = (m._1.toLowerCase, c._1)
-	}
+        // Checking whether we already have in childToParentMap or not before we replace. So that way we can check same child under multiple parents.
+        val childMsgNm = c._2.toLowerCase
+        val fnd = childToParentMap.getOrElse(childMsgNm, null)
+        if (fnd != null) {
+          logger.error(s"$childMsgNm is used as child under $c and $fnd._1. First detected $fnd._1, so using as child of $fnd._1 as it is.")
+        } else {
+          childToParentMap(childMsgNm) = (m._1.toLowerCase, c._1)
+        }
       })
     })
     // 2. Now prepare Full Parent Hierarchy
     messageContainerObjects.foreach(m => {
       var curParent = childToParentMap.getOrElse(m._1.toLowerCase, null)
       while (curParent != null) {
-	m._2.parents += curParent
-	curParent = childToParentMap.getOrElse(curParent._1.toLowerCase, null)
+        m._2.parents += curParent
+        curParent = childToParentMap.getOrElse(curParent._1.toLowerCase, null)
       }
     })
     // 3. Order Parent Hierarchy properly
@@ -135,15 +131,15 @@ object GetDependentMessages {
   def getDependentObjects(cont: ContainerDef): Array[String] = {
     var depObjects = new Array[String](0)
     buildMsgHierarchy(cont)
-    
+
     logger.debug("Built " + messageContainerObjects.size + " objects ")
-    
+
     val contName = cont.FullName.toLowerCase
 
-    val containers = messageContainerObjects.getOrElse(contName,null)
-    if( containers != null ){
+    val containers = messageContainerObjects.getOrElse(contName, null)
+    if (containers != null) {
       containers.parents.foreach(p => {
-	depObjects = depObjects :+ p._1
+        depObjects = depObjects :+ p._1
       })
     }
     logger.debug("Found " + depObjects.length + " dependent objects ")

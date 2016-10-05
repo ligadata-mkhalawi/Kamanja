@@ -1,0 +1,53 @@
+{
+  "Message": {
+    "NameSpace": "com.botanical.json",
+    "Name": "shippingmsg2",
+    "Version": "1.00",
+    "Description": "shipping message",
+    "Fixed": "true",
+    "Elements": [
+      {
+        "Field": {
+          "Name": "TrackingId",
+          "Type": "System.Int"
+        }
+      },
+      {
+        "Field": {
+          "Name": "PackageList",
+          "Type": "System.ArrayOfString"
+        }
+      },
+      {
+        "Field": {
+           "Name": "Customer",
+          "Type": "System.String"
+        }
+      },
+      {
+        "Field": {
+          "Name": "CustomerAddress",
+          "Type": "System.String"
+        }
+      },
+      {
+        "Field": {
+          "Name": "PackageWeight",
+          "Type": "System.String"
+        }
+      },
+      {
+        "Field": {
+          "Name": "PackageDescription",
+          "Type": "com.botanical.json.packageDescr"
+        }
+      },
+      {
+        "Field": {
+          "Name": "ShippingCost",
+          "Type": "System.Double"
+        }
+      }
+    ]
+  }
+}

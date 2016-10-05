@@ -35,7 +35,7 @@ import com.ligadata.StorageBase._
 import com.ligadata.Serialize._
 import com.ligadata.Utils.Utils._
 import com.ligadata.Utils.{ KamanjaClassLoader, KamanjaLoaderInfo }
-import com.ligadata.StorageBase.StorageAdapterObj
+import com.ligadata.StorageBase.StorageAdapterFactory
 import com.ligadata.keyvaluestore.CassandraAdapter
 
 import com.ligadata.Exceptions._
@@ -117,7 +117,7 @@ class CassandraAdapterSpec extends FunSpec with BeforeAndAfter with BeforeAndAft
     var connectionAttempts = 0
     while (connectionAttempts < maxConnectionAttempts) {
       try {
-        adapter = CassandraAdapter.CreateStorageAdapter(kvManagerLoader, dataStoreInfo)
+        adapter = CassandraAdapter.CreateStorageAdapter(kvManagerLoader, dataStoreInfo, null, null)
         return adapter
       } catch {
         case e: Exception => {
@@ -197,7 +197,7 @@ class CassandraAdapterSpec extends FunSpec with BeforeAndAfter with BeforeAndAft
 	var custNumber = "4256667777"
 	var obj = new Customer(custName,custAddress,custNumber)
 	var v = serializer.SerializeObjectToByteArray(obj)
-	var value = new Value("kryo",v)
+	var value = new Value(1,"kryo",v)
 	adapter.put("&&",key,value)
       }
       logger.info("", ex2)
@@ -216,7 +216,7 @@ class CassandraAdapterSpec extends FunSpec with BeforeAndAfter with BeforeAndAft
 	var custNumber = "425666777" + i
 	var obj = new Customer(custName,custAddress,custNumber)
 	var v = serializer.SerializeObjectToByteArray(obj)
-	var value = new Value("kryo",v)
+	var value = new Value(1,"kryo",v)
 	noException should be thrownBy {
 	  adapter.put(containerName,key,value)
 	}
@@ -257,7 +257,7 @@ class CassandraAdapterSpec extends FunSpec with BeforeAndAfter with BeforeAndAft
 	var custNumber = "425666777" + i
 	var obj = new Customer(custName,custAddress,custNumber)
 	var v = serializer.SerializeObjectToByteArray(obj)
-	var value = new Value("kryo",v)
+	var value = new Value(1,"kryo",v)
 	noException should be thrownBy {
 	  adapter.put(containerName,key,value)
 	}
@@ -296,7 +296,7 @@ class CassandraAdapterSpec extends FunSpec with BeforeAndAfter with BeforeAndAft
 	var custNumber = "4256667777" + i
 	var obj = new Customer(custName,custAddress,custNumber)
 	var v = serializer.SerializeObjectToByteArray(obj)
-	var value = new Value("kryo",v)
+	var value = new Value(1,"kryo",v)
 	keyValueList = keyValueList :+ (key,value)
       }
       var dataList = new Array[(String, Array[(Key,Value)])](0)
@@ -409,30 +409,92 @@ class CassandraAdapterSpec extends FunSpec with BeforeAndAfter with BeforeAndAft
 	adapter.getKeys(containerName,timeRanges,keyStringList,readKeyCallBack _)
       }
       
-      And("Test backup container")
-      ex2 = the [com.ligadata.Exceptions.StorageDMLException] thrownBy {
-      //noException should be thrownBy {
-	adapter.backupContainer(containerName)
+      var exists = adapter.isContainerExists(containerName)
+      assert(exists == true)
+
+      var srcContainerName = containerName
+      var destContainerName = containerName
+
+      And("Test copy container with src and dest are same ")
+      var ex3 = the [com.ligadata.Exceptions.StorageDDLException] thrownBy {
+	adapter.copyContainer(srcContainerName,destContainerName,false)
       }
       logger.info("", ex2)
 
-      And("Test restore container")
-      ex2 = the [com.ligadata.Exceptions.StorageDMLException] thrownBy {
-	//noException should be thrownBy {
-	adapter.restoreContainer(containerName)
+      srcContainerName = containerName
+      destContainerName = containerName + "_bak"
+
+      And("Test copy container")
+      noException should be thrownBy {
+	adapter.copyContainer(srcContainerName,destContainerName,true)
       }
       logger.info("", ex2)
+
+      exists = adapter.isContainerExists(destContainerName)
+      assert(exists == true)
+
+      And("Test copy container without force")
+      ex3 = the [com.ligadata.Exceptions.StorageDDLException] thrownBy {
+	adapter.copyContainer(srcContainerName,destContainerName,false)
+      }
+      logger.info("Exception => " + ex3.cause)
+
+      And("Test copy container with force")
+      noException should be thrownBy {
+	adapter.copyContainer(srcContainerName,destContainerName,true)
+      }
+
+      And("Test the existence of the source table")
+      var srcTableName = cassandraAdapter.getTableName(srcContainerName)
+      exists = adapter.isTableExists(srcTableName)
+      assert(exists == true)
+
+      And("Test the existence of the destination table")
+      var destTableName = cassandraAdapter.getTableName(destContainerName)
+      exists = adapter.isTableExists(destTableName)
+      assert(exists == true)
+
+      And("Copy source table to destination table using force option")
+      adapter.copyTable(srcTableName,destTableName,true)
+
+      And("get all tables")
+      var tbls = new Array[String](0)
+      noException should be thrownBy {
+	tbls = adapter.getAllTables
+      }
+      
+      And("drop all tables")
+      noException should be thrownBy {
+	adapter.dropTables(tbls)
+      }
+
+      And("Test the existence of the source table after dropTables")
+      exists = adapter.isTableExists(srcTableName)
+      assert(exists == false)
+
+      And("Test the existence of the destination table after dropTables")
+      exists = adapter.isTableExists(destTableName)
+      assert(exists == false)
 
       And("Test drop container again, cleanup")
       noException should be thrownBy {
 	var containers = new Array[String](0)
-	containers = containers :+ containerName
-	//adapter.DropContainer(containers)
+	containers = containers :+ srcContainerName
+	containers = containers :+ destContainerName
+	adapter.DropContainer(containers)
       }
 
+      And("Test the existence of the source container after DropContainer")
+      exists = adapter.isContainerExists(srcContainerName)
+      assert(exists == false)
+
+      And("Test the existence of the destination container after DropContainer")
+      exists = adapter.isContainerExists(destContainerName)
+      assert(exists == false)
+      
       And("Test drop keyspace")
       noException should be thrownBy {
-	//cassandraAdapter.DropKeySpace("unit_tests")
+	cassandraAdapter.DropKeySpace("unit_tests")
       }
 
       And("Shutdown cassandra session")

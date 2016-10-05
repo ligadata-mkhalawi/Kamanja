@@ -16,12 +16,17 @@
 
 package com.ligadata.metadataapiservice
 
+import java.io.File
+import java.nio.file.{Path, Files}
+
 import akka.actor.{ActorSystem, Props}
 import akka.actor.ActorDSL._
 import akka.event.Logging
 import akka.io.IO
 import akka.io.Tcp._
+import com.typesafe.config.ConfigFactory
 import spray.can.Http
+
 import org.json4s.jackson.JsonMethods._
 import com.ligadata.kamanja.metadata.ObjType._
 import com.ligadata.kamanja.metadata._
@@ -29,14 +34,13 @@ import com.ligadata.kamanja.metadataload.MetadataLoad
 import com.ligadata.MetadataAPI.MetadataAPIImpl
 import org.apache.logging.log4j._
 import com.ligadata.Utils._
+import spray.can.server.ServerSettings
 import scala.util.control.Breaks._
 import com.ligadata.Exceptions._
 import com.ligadata.KamanjaVersion.KamanjaVersion
 
 // $COVERAGE-OFF$
-
 class APIService extends LigadataSSLConfiguration with Runnable{
-
 
   private type OptionMap = Map[Symbol, Any]
   var inArgs: Array[String] = null
@@ -48,23 +52,28 @@ class APIService extends LigadataSSLConfiguration with Runnable{
   val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
   var databaseOpen = false
-  
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
+
   /**
-   * 
+   *
    */
   def this(args: Array[String]) = {
     this
-    inArgs = args  
+    inArgs = args
   }
 
   /**
-   * 
+   *
    */
   def run() {
-    startService(inArgs) 
+    logger.warn("running service")
+    //StartService(inArgs)
+    startService(inArgs)
   }
-  
-  
+
+
   private def PrintUsage(): Unit = {
     logger.warn("    --config <configfilename>")
     logger.warn("    --version")
@@ -85,9 +94,65 @@ class APIService extends LigadataSSLConfiguration with Runnable{
     }
   }
 
-   def shutdown(exitCode: Int): Unit = {
+  private def Shutdown(exitCode: Int): Unit = {
+    if(system != null)
+      system.shutdown()
+
+    APIInit.Shutdown(0)
+    MetadataAPIImpl.shutdown
+    //System.exit(0)
+  }
+
+  def startService(args: Array[String]) : Unit = {
+    logger.debug("Args received + "+args.length)
+    initMetadata(args)
+    start()
+  }
+
+  def start(): Unit ={
+    try{
+
+      APIInit.SetDbOpen
+      // We will allow access to this web service from all the servers on the PORT # defined in the config file
+      val serviceHost = "0.0.0.0"
+      //val servicePort = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("SERVICE_PORT").toInt
+      val servicePort="8081".toInt
+      logger.debug("service port is "+servicePort)
+      // create and start our service actor
+      val callbackActor = actor(new Act {
+        become {
+          case b @ Bound(connection) => logger.debug(b.toString)
+          case cf @ CommandFailed(command) => logger.error(cf.toString)
+          case all => logger.debug("ApiService Received a message from Akka.IO: " + all.toString)
+        }
+      })
+      val service = system.actorOf(Props[MetadataAPIServiceActor], "metadata-api-service")
+
+      // start a new HTTP server on a specified port with our service actor as the handler
+      IO(Http).tell(Http.Bind(service, serviceHost, servicePort), callbackActor)
+      logger.debug("MetadataAPIService started, listening on (%s,%s)".format(serviceHost,servicePort))
+      APIService.setHasDataToProcess(true)
+      sys.addShutdownHook({
+        logger.debug("ShutdownHook called")
+        shutdown(0)
+      })
+
+      Thread.sleep(365*24*60*60*1000L)
+    } catch {
+      case e: InterruptedException => {
+        logger.debug("Unexpected Interrupt")
+      }
+      case e: Exception => {
+        logger.debug("", e)
+      }
+    } finally {
+      shutdown(0)
+    }
+  }
+
+  def shutdown(exitCode: Int): Unit = {
     APIInit.Shutdown(exitCode)
-     system.shutdown
+    system.shutdown
     //System.exit(0)
   }
 
@@ -96,7 +161,7 @@ class APIService extends LigadataSSLConfiguration with Runnable{
       var configFile = ""
       if (args.length == 0) {
         try {
-          configFile = scala.util.Properties.envOrElse("KAMANJA_HOME", scala.util.Properties.envOrElse("HOME", "~")) + "/config/MetadataAPIConfig.properties"
+          configFile = scala.util.Properties.envOrElse("KAMANJA_HOME", scala.util.Properties.envOrElse("HOME", "~" )) + "/config/MetadataAPIConfig.properties"
         } catch {
           case nsee: java.util.NoSuchElementException => {
             logger.warn("Either a CONFIG FILE parameter must be passed to start this service or KAMANJA_HOME must be set")
@@ -107,7 +172,6 @@ class APIService extends LigadataSSLConfiguration with Runnable{
             return
           }
         }
-
         logger.warn("Config File defaults to " + configFile)
         logger.warn("One Could optionally pass a config file as a command line argument:  --config myConfig.properties")
         logger.warn("The config file supplied is a complete path name of a  json file similar to one in github/Kamanja/trunk/MetadataAPI/src/main/resources/MetadataAPIConfig.properties")
@@ -129,24 +193,57 @@ class APIService extends LigadataSSLConfiguration with Runnable{
       val (loadConfigs, failStr) = com.ligadata.Utils.Utils.loadConfiguration(configFile.toString, true)
       if (failStr != null && failStr.size > 0) {
         logger.error(failStr)
-        shutdown(1)
+        Shutdown(1)
         return
       }
 
       if (loadConfigs == null) {
-        shutdown(1)
+        Shutdown(1)
         return
       }
 
       APIInit.SetConfigFile(configFile.toString)
 
       // Read properties file and Open db connection
-      MetadataAPIImpl.InitMdMgrFromBootStrap(configFile, true)
+      getMetadataAPI.InitMdMgrFromBootStrap(configFile, true)
       // APIInit deals with shutdown activity and it needs to know
       // that database connections were successfully made
       APIInit.SetDbOpen
 
+      val sslEnabled = getIsSslEnabledFromConfig
+      logger.warn("Setting ssl enabled to: "+sslEnabled)
+      MetadataAPIImpl.setSslEnabled(sslEnabled)
+
+      val isValid = {
+        if(MetadataAPIImpl.isSslEnabled){
+          val keyStoreResource = MetadataAPIImpl.getSSLCertificatePath
+          val kspass = MetadataAPIImpl.getSSLCertificatePasswd
+          println("-------------->"+kspass)
+          if(keyStoreResource == null || keyStoreResource.trim.length==0){
+            logger.error("SSL is enabled. please provide a value for SSL_CERTIFICATE file path in Metadata Api config ")
+            false
+          }
+          else if(!new File(keyStoreResource.trim).exists){
+            logger.error("SSL_CERTIFICATE file ({}) does not exist ", keyStoreResource.trim)
+            false
+          }
+          else if(kspass == null) {
+            //TODO : is it allowed to be empty???
+            logger.error("SSL is enabled. please provide a value for SSL_PASSWD in Metadata Api config ")
+            false
+          }
+          else true
+        }
+        else true
+      }
       logger.debug("API Properties => " + MetadataAPIImpl.GetMetadataAPIConfig)
+
+      if(!isValid){
+        logger.warn("Invalid Keystore setting. Shutting down")
+        Shutdown(0)
+        //System.exit(0)
+      }
+
     }catch {
       case e: InterruptedException => {
         logger.debug("Unexpected Interrupt")
@@ -157,55 +254,165 @@ class APIService extends LigadataSSLConfiguration with Runnable{
     }
   }
 
-   def startService(args: Array[String]) : Unit = {
-     logger.debug("Args received + "+args.length)
-     initMetadata(args)
-     start()
-  }
-
-  def start(): Unit ={
+  @Deprecated
+  private def StartService(args: Array[String]) : Unit = {
     try{
 
-      // We will allow access to this web service from all the servers on the PORT # defined in the config file
-      val serviceHost = "0.0.0.0"
-      val servicePort = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("SERVICE_PORT").toInt
-      //val servicePort="8081".toInt
-      logger.debug("service port is "+servicePort)
-      // create and start our service actor
-      val callbackActor = actor(new Act {
-        become {
-          case b @ Bound(connection) => logger.debug(b.toString)
-          case cf @ CommandFailed(command) => logger.error(cf.toString)
-          case all => logger.debug("ApiService Received a message from Akka.IO: " + all.toString)
+      var configFile = ""
+      if (args.length == 0) {
+        try {
+          configFile = scala.util.Properties.envOrElse("KAMANJA_HOME", scala.util.Properties.envOrElse("HOME", "~" )) + "/config/MetadataAPIConfig.properties"
+        } catch {
+          case nsee: java.util.NoSuchElementException => {
+            logger.warn("Either a CONFIG FILE parameter must be passed to start this service or KAMANJA_HOME must be set")
+            return
+          }
+          case e: Exception => {
+            logger.error("", e)
+            return
+          }
         }
-      })
-      val service = system.actorOf(Props[MetadataAPIServiceActor], "metadata-api-service")
+        logger.warn("Config File defaults to " + configFile)
+        logger.warn("One Could optionally pass a config file as a command line argument:  --config myConfig.properties")
+        logger.warn("The config file supplied is a complete path name of a  json file similar to one in github/Kamanja/trunk/MetadataAPI/src/main/resources/MetadataAPIConfig.properties")
+      } else {
+        val options = nextOption(Map(), args.toList)
+        val version = options.getOrElse('version, "false").toString
+        if (version.equalsIgnoreCase("true")) {
+          KamanjaVersion.print
+          sys.exit(0)
+        }
+        val cfgfile = options.getOrElse('config, null)
+        if (cfgfile == null) {
+          logger.error("Need configuration file as parameter")
+          throw MissingArgumentException("Usage: configFile  supplied as --config myConfig.properties", null)
+        }
+        configFile = cfgfile.asInstanceOf[String]
+      }
 
-      // start a new HTTP server on a specified port with our service actor as the handler
-      IO(Http).tell(Http.Bind(service, serviceHost, servicePort), callbackActor)
+      val (loadConfigs, failStr) = com.ligadata.Utils.Utils.loadConfiguration(configFile.toString, true)
+      if (failStr != null && failStr.size > 0) {
+        logger.error(failStr)
+        Shutdown(1)
+        return
+      }
 
-      logger.debug("MetadataAPIService started, listening on (%s,%s)".format(serviceHost,servicePort))
-      APIService.setHasDataToProcess(true)
-      sys.addShutdownHook({
-        logger.debug("ShutdownHook called")
-        shutdown(0)
-      })
+      if (loadConfigs == null) {
+        Shutdown(1)
+        return
+      }
 
-      Thread.sleep(365*24*60*60*1000L)
+      APIInit.SetConfigFile(configFile.toString)
+
+      // Read properties file and Open db connection
+      getMetadataAPI.InitMdMgrFromBootStrap(configFile, true)
+      // APIInit deals with shutdown activity and it needs to know
+      // that database connections were successfully made
+      APIInit.SetDbOpen
+
+      val sslEnabled = getIsSslEnabledFromConfig
+      logger.warn("Setting ssl enabled to: "+sslEnabled)
+      MetadataAPIImpl.setSslEnabled(sslEnabled)
+
+      val isValid = {
+        if(MetadataAPIImpl.isSslEnabled){
+          val keyStoreResource = MetadataAPIImpl.getSSLCertificatePath
+          val kspass = MetadataAPIImpl.getSSLCertificatePasswd
+          println("-------------->"+kspass)
+          if(keyStoreResource == null || keyStoreResource.trim.length==0){
+            logger.error("SSL is enabled. please provide a value for SSL_CERTIFICATE file path in Metadata Api config ")
+            false
+          }
+          else if(!new File(keyStoreResource.trim).exists){
+            logger.error("SSL_CERTIFICATE file ({}) does not exist ", keyStoreResource.trim)
+            false
+          }
+          else if(kspass == null) {
+            //TODO : is it allowed to be empty???
+            logger.error("SSL is enabled. please provide a value for SSL_PASSWD in Metadata Api config ")
+            false
+          }
+          else true
+        }
+        else true
+      }
+
+      if(!isValid){
+        logger.warn("Hence shutting down")
+        Shutdown(0)
+        //System.exit(0)
+        return
+      }
+      else {
+        //Open db connection
+        // APIInit deals with shutdown activity and it needs to know
+        // that database connections were successfully made
+        APIInit.SetDbOpen
+
+        logger.debug("API Properties => " + MetadataAPIImpl.GetMetadataAPIConfig)
+
+        // We will allow access to this web service from all the servers on the PORT # defined in the config file
+        val serviceHost = "0.0.0.0"
+        val servicePort = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("SERVICE_PORT").toInt
+
+        // create and start our service actor
+        val callbackActor = actor(new Act {
+          become {
+            case b@Bound(connection) => logger.debug(b.toString)
+            case cf@CommandFailed(command) => logger.error(cf.toString)
+            case all => logger.debug("ApiService Received a message from Akka.IO: " + all.toString)
+          }
+        })
+        val service = system.actorOf(Props[MetadataAPIServiceActor], "metadata-api-service")
+
+        logger.info("Starting MetadataAPIService")
+        // start a new HTTP server on a specified port with our service actor as the handler
+        IO(Http).tell(Http.Bind(service, serviceHost, servicePort), callbackActor)
+
+        logger.debug("MetadataAPIService started, listening on (%s,%s)".format(serviceHost, servicePort))
+
+        sys.addShutdownHook({
+          logger.warn("ShutdownHook called")
+          Shutdown(0)
+        })
+
+        Thread.sleep(365 * 24 * 60 * 60 * 1000L)
+      }
     } catch {
       case e: InterruptedException => {
-        logger.debug("Unexpected Interrupt")
+        logger.info("Unexpected Interrupt", e)
       }
       case e: Exception => {
-        logger.debug("", e)
+        logger.error("Exception: ", e)
+      }
+      case e: Throwable => {
+        logger.error("Throwable: ", e)
       }
     } finally {
-      shutdown(0)
+      logger.warn("Shutting down")
+      Shutdown(0)
     }
   }
+
+  def getIsSslEnabledFromConfig(): Boolean ={
+    var sslEnabled = true // consider this default?
+    val config = ConfigFactory.load()
+    if(config != null){
+      val sprayServerConfig = config.getConfig("spray.can.server")
+      if(sprayServerConfig != null){
+        val sslEncryptionConfigVAl = sprayServerConfig.getString("ssl-encryption")
+        if(sslEncryptionConfigVAl != null)
+          sslEnabled = sslEncryptionConfigVAl.toLowerCase.equals("on")
+      }
+    }
+    sslEnabled
+  }
+
 }
 
 object APIService {
+  val loggerName = this.getClass.getName
+  lazy val logger = LogManager.getLogger(loggerName)
 
   protected var isWSRunning: Boolean = false
 
@@ -221,22 +428,25 @@ object APIService {
     }
   }
 
-  val loggerName = this.getClass.getName
-  lazy val logger = LogManager.getLogger(loggerName)
-
   def main(args: Array[String]): Unit = {
     val mgr = new APIService
-    mgr.startService(args) 
+
+    /*logger.warn("shutting down for testing")
+    mgr.Shutdown(0)
+    return*/
+
+    //mgr.StartService(args)
+    mgr.startService(args)
   }
-  
-  
+
+
   /**
    * extractNameFromJson - applies to a simple Kamanja object
    */
   def extractNameFromJson (jsonObj: String, objType: String): String = {
     var inParm: Map[String,Any] = null
     try {
-      inParm = parse(jsonObj).values.asInstanceOf[Map[String,Any]] 
+      inParm = parse(jsonObj).values.asInstanceOf[Map[String,Any]]
     } catch {
       case e: Exception => {
         logger.warn("Unknown:NameParsingError", e)
@@ -250,7 +460,7 @@ object APIService {
     return vals.getOrElse("NameSpace","system")+"."+vals.getOrElse("Name","")+"."+vals.getOrElse("Version","-1")
   }
 
-  
+
   /**
    * extractNameFromPMML - pull the Application name="xxx" version="xxx.xx.xx" from the PMML doc and construct
    *                       a name  string from it
@@ -261,7 +471,7 @@ object APIService {
     val allMatches = pattern.findAllMatchIn(pmmlObj)
     allMatches.foreach( m => {
       if (firstOccurence.equalsIgnoreCase("unknownModel")) {
-      firstOccurence = (m.group(1)+"."+m.group(2))
+        firstOccurence = (m.group(1)+"."+m.group(2))
       }
     })
     return firstOccurence

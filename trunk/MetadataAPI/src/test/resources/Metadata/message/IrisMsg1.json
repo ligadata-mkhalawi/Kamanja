@@ -1,0 +1,54 @@
+{
+  "Message": {
+    "NameSpace": "system",
+    "Name": "irismsg1",
+    "Version": "00.01.01",
+    "Description": "Iris data message",
+    "Fixed": "true",
+    "Persist": "true",
+    "Elements": [
+      {
+        "Field": {
+          "Name": "serialnumber",
+          "Type": "system.Double"
+        }
+      },
+      {
+        "Field": {
+          "Name": "sepal_length",
+          "Type": "system.Double"
+        }
+      },
+      {
+        "Field": {
+          "Name": "sepal_width",
+          "Type": "system.Double"
+        }
+      },
+      {
+        "Field": {
+          "Name": "petal_length",
+          "Type": "system.Double"
+        }
+      },
+      {
+        "Field": {
+          "Name": "petal_width",
+          "Type": "system.Double"
+        }
+      },
+      {
+        "Field": {
+          "Name": "irisclass",
+          "Type": "system.String"
+        }
+      }
+    ],
+    "PartitionKey": [
+      "serialnumber"
+    ],
+    "PrimaryKey": [
+      "serialnumber"
+    ]
+  }
+}

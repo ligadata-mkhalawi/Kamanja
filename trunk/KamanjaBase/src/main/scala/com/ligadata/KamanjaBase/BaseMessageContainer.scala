@@ -16,15 +16,28 @@
  */
 
 package com.ligadata.KamanjaBase
+
 import java.net.URL
 import java.net.URLClassLoader
-import java.io.{ ByteArrayInputStream, DataInputStream, DataOutputStream, ByteArrayOutputStream }
+import java.io.{ByteArrayInputStream, DataInputStream, DataOutputStream, ByteArrayOutputStream}
+import com.ligadata.Exceptions.KamanjaException
+import com.ligadata.Utils.KamanjaClassLoader
+import com.ligadata.kamanja.metadata.MdMgr
 import org.apache.logging.log4j._
 import java.util.Date
 import java.util.Calendar
 import java.text.SimpleDateFormat
 
-trait MessageContainerBase {
+import scala.collection.mutable.ArrayBuffer
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import scala.collection.JavaConversions._
+
+//import org.json4s._
+//import org.json4s.JsonDSL._
+//import org.json4s.jackson.JsonMethods._
+import org.json4s.jackson.Serialization
+
+/*trait MessageContainerBase {
   // System Columns
   var transactionId: Long
   var timePartitionData: Long = 0 // By default we are taking Java date with 0 milliseconds.
@@ -141,12 +154,20 @@ trait MessageContainerObjBase {
   }
 
 }
+*/
 
 trait MdBaseResolveInfo {
-  def getMessgeOrContainerInstance(typName: String): MessageContainerBase
+  def getMessgeOrContainerInstance(typName: String): ContainerInterface
+
+  // Get Latest SchemaId For Type
+  // getMessgeOrContainerInstance for SchemaId
+  // Convert to LatestVersion (Take any object and tries to covert to new version)
 }
 
+
+/*
 object SerializeDeserialize {
+
   val loggerName = this.getClass.getName
   val logger = LogManager.getLogger(loggerName)
   def Serialize(inst: MessageContainerBase): Array[Byte] = {
@@ -231,8 +252,9 @@ object SerializeDeserialize {
     null
   }
 }
+*/
 
-trait BaseContainer extends MessageContainerBase {
+/*trait BaseContainer extends MessageContainerBase {
   override def isMessage: Boolean = false
   override def isContainer: Boolean = true
 }
@@ -252,19 +274,375 @@ trait BaseMsgObj extends MessageContainerObjBase {
   override def isMessage: Boolean = true
   override def isContainer: Boolean = false
   def NeedToTransformData: Boolean // Filter & Rearrange input attributes if needed
-  def TransformDataAttributes: TransformMessage // Filter & Rearrange input columns if needed
   def CreateNewMessage: BaseMsg
 }
+*/
 
-// BUGBUG:: for now handling only CSV input data.
-// Assuming this is filled properly, we are not checking whether outputFields are subset of inputFields or not.
-// Assuming the field names are all same case (lower or upper). Because we don't want to convert them every time.
-class TransformMessage {
-  var messageType: String = null // Type of the message (first field from incoming data)
-  var inputFields: Array[String] = null // All input fields
-  var outputFields: Array[String] = null // All output fields filters from input field. These are subset of input fields.
-  var outputKeys: Array[String] = null // Output Key field names from input fields.
+case class MsgBindingInfo(serName: String, options: Map[String, Any], optionsJsonStr: String, serInstance: SerializeDeserialize)
+
+trait AdaptersSerializeDeserializers {
+  val loggerName = this.getClass.getName
+  val logger = LogManager.getLogger(loggerName)
+
+  private var objectResolver: ObjectResolver = _
+  private var msgBindings = scala.collection.mutable.Map[String, MsgBindingInfo]()
+  // For now we are mapping to one message to one serializer. Later may be we need to handle multiple serializers
+  private val reent_lock = new ReentrantReadWriteLock(true)
+
+  def getAdapterName: String
+
+  private def ReadLock(reent_lock: ReentrantReadWriteLock): Unit = {
+    if (reent_lock != null)
+      reent_lock.readLock().lock()
+  }
+
+  private def ReadUnlock(reent_lock: ReentrantReadWriteLock): Unit = {
+    if (reent_lock != null)
+      reent_lock.readLock().unlock()
+  }
+
+  private def WriteLock(reent_lock: ReentrantReadWriteLock): Unit = {
+    if (reent_lock != null)
+      reent_lock.writeLock().lock()
+  }
+
+  private def WriteUnlock(reent_lock: ReentrantReadWriteLock): Unit = {
+    if (reent_lock != null)
+      reent_lock.writeLock().unlock()
+  }
+
+  final def setObjectResolver(objectResolver: ObjectResolver): Unit = {
+    this.objectResolver = objectResolver
+    val allBinds = getAllMessageBindings
+    if (allBinds.size > 0) {
+      val bindings = resolveBindings(allBinds.map(b => (b._1.toLowerCase(), (b._2.serName, b._2.options))))
+      WriteLock(reent_lock)
+      try {
+        msgBindings ++= bindings // If we support multiple, we must need to have proper comparison function.
+      } catch {
+        case e: Throwable => {
+          throw e
+        }
+      }
+      finally {
+        WriteUnlock(reent_lock)
+      }
+    }
+  }
+
+  final def getObjectResolver() = objectResolver
+
+  private def SerializeMapToJsonString(map: Map[String, Any]): String = {
+    implicit val formats = org.json4s.DefaultFormats
+    return Serialization.write(map)
+  }
+
+  protected def resolveBinding(serName: String, options: Map[String, Any]): MsgBindingInfo = {
+    if (objectResolver == null)
+      throw new KamanjaException("Metadata/ObjectResolver manager is not yet set", null)
+
+    val serInfo = objectResolver.getMdMgr.GetSerializer(serName)
+    if (serInfo == null) {
+      throw new KamanjaException(s"Not found Serializer/Deserializer for ${serName}", null)
+    }
+
+    val phyName = serInfo.PhysicalName
+    if (phyName == null) {
+      throw new KamanjaException(s"Not found Physical name for Serializer/Deserializer for ${serName}", null)
+    }
+
+    try {
+      val aclass = Class.forName(phyName).newInstance
+      val ser = aclass.asInstanceOf[SerializeDeserialize]
+      val map = new java.util.HashMap[String, String] //BUGBUG:: we should not convert the 2nd param to String. But still need to see how can we convert scala map to java map
+      if (options != null) {
+        options.foreach(o => {
+          map.put(o._1, o._2.toString)
+        })
+      }
+      ser.configure(objectResolver, map)
+      ser.setObjectResolver(objectResolver)
+      val optionsJsonStr = if (options != null) SerializeMapToJsonString(options) else "{}"
+      return MsgBindingInfo(serName, options, optionsJsonStr, ser)
+    } catch {
+      case e: Throwable => {
+        throw new KamanjaException(s"Failed to resolve Physical name ${phyName} in Serializer/Deserializer for ${serName}", e)
+      }
+    }
+
+    return null // Should not come here
+  }
+
+  private def resolveBindings(allBinds: Map[String, (String, Map[String, Any])]): Map[String, MsgBindingInfo] = {
+    if (allBinds.size > 0)
+      allBinds.map(b => (b._1.toLowerCase(), resolveBinding(b._2._1, b._2._2)))
+    else
+      Map[String, MsgBindingInfo]()
+  }
+
+  final def getAllMessageBindings: Map[String, MsgBindingInfo] = {
+    var retVal: Map[String, MsgBindingInfo] = null
+    ReadLock(reent_lock)
+    try {
+      retVal = msgBindings.toMap
+    } catch {
+      case e: Throwable => {
+        throw e
+      }
+    }
+    finally {
+      ReadUnlock(reent_lock)
+    }
+    return retVal
+  }
+
+  final def getMessageBinding(msgName: String): MsgBindingInfo = {
+    if (msgName == null) return null
+
+    var retVal: MsgBindingInfo = null
+    ReadLock(reent_lock)
+    try {
+      retVal = msgBindings.getOrElse(msgName.toLowerCase(), null)
+    } catch {
+      case e: Throwable => {
+        throw e
+      }
+    }
+    finally {
+      ReadUnlock(reent_lock)
+    }
+    return retVal
+  }
+
+  // No need to implement by default
+  def getDefaultSerializerDeserializer: MsgBindingInfo = null
+
+  // No need to implement by default
+  def setDefaultSerializerDeserializer(defaultSerDeser: String, serDeserOptions: Map[String, Any]): Unit = {}
+
+  // This tuple has Message Name, Serializer Name & options.
+  final def addMessageBinding(msgName: String, serName: String, options: Map[String, Any]): Unit = {
+    if (msgName != null && serName != null)
+      addMessageBinding(Map(msgName ->(serName, options)))
+  }
+
+  // This tuple has Message Name, Serializer Name & options.
+  final def addMessageBinding(binding: (String, String, Map[String, Any])): Unit = {
+    if (binding != null)
+      addMessageBinding(Map(binding._1 ->(binding._2, binding._3)))
+  }
+
+  // This tuple has Message Name, Serializer Name & options.
+  final def addMessageBinding(bindings: Array[(String, String, Map[String, Any])]): Unit = {
+    if (bindings == null || bindings.size == 0) return
+    addMessageBinding(bindings.map(b => (b._1, (b._2, b._3))).toMap)
+  }
+
+  // This tuple has Message Name, Serializer Name & options.
+  final def addMessageBinding(bindings: Map[String, (String, Map[String, Any])]): Unit = {
+    if (bindings == null || bindings.size == 0) return
+
+    val resolvedBindings = resolveBindings(bindings)
+
+    if (resolvedBindings.size > 0) {
+      WriteLock(reent_lock)
+      try {
+        msgBindings ++= resolvedBindings
+      } catch {
+        case e: Throwable => {
+          throw e
+        }
+      }
+      finally {
+        WriteUnlock(reent_lock)
+      }
+      if (logger.isInfoEnabled && bindings.size > 0) {
+        logger.info("For adapter %s adding new adapter bindings:%s. Total bindings:%s".format(getAdapterName, bindings.map(b => (b._1, b._2._1)).mkString("~"), msgBindings.map(b => (b._1, b._2.serName)).mkString("~")))
+      }
+    }
+  }
+
+  /*
+    // This tuple has Message Name, Serializer Name.
+    final def removeMessageBinding(msgName: String, serName: String): Unit = {
+      if (msgName != null && serName != null)
+        removeMessageBinding(Array((msgName, serName)))
+    }
+
+    // This tuple has Message Name, Serializer Name.
+    final def removeMessageBinding(binding: (String, String)): Unit = {
+      if (binding != null)
+        removeMessageBinding(Array(binding))
+    }
+
+    // This tuple has Message Name, Serializer Name.
+    final def removeMessageBinding(bindings: Array[(String, String)]): Unit = {
+      if (bindings == null) return
+
+      WriteLock(reent_lock)
+      try {
+        msgBindings --= bindings.map(b => b._1)
+      } catch {
+        case e: Throwable => {
+          throw e
+        }
+      }
+      finally {
+        WriteUnlock(reent_lock)
+      }
+    }
+  */
+
+  // This tuple has Message Name, Serializer Name.
+  final def removeMessageBinding(msgName: String): Unit = {
+    if (msgName != null)
+      removeMessageBinding(Array(msgName))
+  }
+
+  // This tuple has Message Name, Serializer Name.
+  final def removeMessageBinding(msgNames: Array[String]): Unit = {
+    if (msgNames == null) return
+
+    if (msgNames.size > 0) {
+      val lcMsgNames = msgNames.map(m => m.toLowerCase())
+      WriteLock(reent_lock)
+      try {
+        msgBindings --= lcMsgNames
+      } catch {
+        case e: Throwable => {
+          throw e
+        }
+      }
+      finally {
+        WriteUnlock(reent_lock)
+      }
+      if (logger.isInfoEnabled) {
+        logger.info("For adapter %s removing adapter bindings:%s. Remaining bindings:%s".format(getAdapterName, msgNames.mkString(","), msgBindings.map(b => (b._1, b._2.serName)).mkString("~")))
+      }
+    }
+  }
+
+  // Returns serialized msgs, serialized msgs data & serializers names applied on these messages.
+  def serialize(tnxCtxt: TransactionContext, outputContainers: Array[ContainerInterface]): (Array[ContainerInterface], Array[Array[Byte]], Array[String]) = {
+    if (outputContainers == null || outputContainers.size == 0) return (Array[ContainerInterface](), Array[Array[Byte]](), Array[String]())
+
+    val serOutputContainers = ArrayBuffer[ContainerInterface]()
+    val serializedContainerData = ArrayBuffer[Array[Byte]]()
+    val usedSerializersNames = ArrayBuffer[String]()
+
+    // We are going thru getAllMessageBindings and get from it ourself?. So one read lock for every serialize fintion
+    val allMsgBindings = getAllMessageBindings
+
+    outputContainers.map(c => {
+      val tmpSer = allMsgBindings.getOrElse(c.getFullTypeName.toLowerCase(), null)
+      val ser = if (tmpSer != null) tmpSer else if (getDefaultSerializerDeserializer != null) getDefaultSerializerDeserializer else null
+      if (ser != null && ser.serInstance != null) {
+        try {
+          val serData = ser.serInstance.serialize(c)
+          serOutputContainers += c
+          serializedContainerData += serData
+          usedSerializersNames += ser.serName
+        } catch {
+          case e: Throwable => {
+            throw new KamanjaException("Failed to Serialize " + c.getFullTypeName, e)
+          }
+        }
+      } else {
+        val adapName = getAdapterName
+        logger.error(s"Did not find/load Serializer for container/message:${c.getFullTypeName} @Adapter:${adapName}")
+      }
+    })
+
+    (serOutputContainers.toArray, serializedContainerData.toArray, usedSerializersNames.toArray)
+  }
+
+  //    // Returns serialized msgs, serialized msgs data & serializers names applied on these messages.
+  //    def serialize(tnxCtxt: TransactionContext, outputContainers: Array[ContainerInterface], serializersNames: Array[String]): (Array[ContainerInterface], Array[Array[Byte]], Array[String]) = {
+  //      if ((outputContainers == null || outputContainers.size == 0) && (serializersNames == null || serializersNames.size == 0)) return (Array[ContainerInterface](), Array[Array[Byte]](), Array[String]())
+  //
+  //      if (((outputContainers == null || outputContainers.size == 0) && !(serializersNames == null || serializersNames.size == 0)) ||
+  //        (!(outputContainers == null || outputContainers.size == 0) && (serializersNames == null || serializersNames.size == 0)))
+  //        throw new KamanjaException("Invalid input sizes", null)
+  //
+  //      val serOutputContainers = ArrayBuffer[ContainerInterface]()
+  //      val serializedContainerData = ArrayBuffer[Array[Byte]]()
+  //      val usedSerializersNames = ArrayBuffer[String]()
+  //
+  //      //FIXME:- yet to fix it
+  //
+  //      (serOutputContainers.toArray, serializedContainerData.toArray, usedSerializersNames.toArray)
+  //    }
+
+  // Returns deserialized msg, deserialized msg data & deserializer name, message name applied.
+  def deserialize(data: Array[Byte]): (ContainerInterface, String, String) = {
+    logger.debug("called deserialize")
+    // We are going thru getAllMessageBindings and get from it ourself?. So one read lock for every serialize fintion
+    val allMsgBindings = getAllMessageBindings
+    if (allMsgBindings.size == 0 && getDefaultSerializerDeserializer == null) {
+      val msg = "Not found any bindings to deserialize (including default serializer)"
+      logger.debug(msg)
+      throw new KamanjaException(msg, null)
+    }
+
+    if (allMsgBindings.size != 1) {
+      throw new KamanjaException("We can not deserialize more than one message from input adapter. Found:" + allMsgBindings.map(b => b._1), null)
+    }
+
+    val tmpSer = allMsgBindings.values.head
+    val ser = if (tmpSer != null) tmpSer else if (getDefaultSerializerDeserializer != null) getDefaultSerializerDeserializer else null
+    val msgName = allMsgBindings.keys.head
+    if (ser != null && ser.serInstance != null) {
+      try {
+        val container = ser.serInstance.deserialize(data, msgName)
+        if (container == null)
+          logger.error("Deserialize returned null container.")
+        return (container, ser.serName, msgName)
+      } catch {
+        case e: Throwable => {
+          throw new KamanjaException("Failed to Deserialize " + msgName, e)
+        }
+      }
+    } else {
+      val adapName = getAdapterName
+      val msg = s"Did not find/load Serializer for container/message:${msgName} @Adapter:${adapName}"
+      logger.error(msg)
+      throw new KamanjaException(msg, null)
+    }
+  }
+
+  private def getTypeForSchemaId(schemaId: Int): String = {
+    val contOpt = objectResolver.getMdMgr.ContainerForSchemaId(schemaId.toInt)
+    if (contOpt == None)
+      return null
+    contOpt.get.FullName
+  }
+
+  // Returns deserialized msg, deserialized msg data & deserializer name applied.
+  def deserialize(data: Array[Byte], deserializerName: String, schemaId: Int): (ContainerInterface, String) = {
+    val msgName = getTypeForSchemaId(schemaId)
+    if (msgName == null) {
+      val msg = s"Did not find container/message for schemaid:${schemaId}"
+      logger.error(msg)
+      throw new KamanjaException(msg, null)
+    }
+
+    val tmpSer = getMessageBinding(msgName)
+    val ser = if (tmpSer != null) tmpSer else if (getDefaultSerializerDeserializer != null) getDefaultSerializerDeserializer else null
+    if (ser != null && ser.serInstance != null) {
+      try {
+        val container = ser.serInstance.deserialize(data, msgName)
+        return (container, ser.serName)
+      } catch {
+        case e: Throwable => {
+          throw e
+        }
+      }
+    } else {
+      val adapName = getAdapterName
+      val msg = s"Did not find/load Serializer for container/message:${msgName} of schemaid:${schemaId} (including default serializer) @Adapter:${adapName}"
+      logger.error(msg)
+      throw new KamanjaException(msg, null)
+    }
+  }
 }
-
-case class MessageContainerBaseWithModFlag(modified: Boolean, value: MessageContainerBase)
 

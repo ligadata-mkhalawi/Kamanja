@@ -1,0 +1,52 @@
+{
+  "header": {
+    "namespace": "com.ligadata.jtm.test.grok",
+    "version": "0.0.1",
+    "language" : "scala",
+    "minVersion" : "2.11"
+  },
+
+  "imports": {
+    "packages": [ "com.ligadata.Utils._" ]
+  },
+
+  "aliases": {
+    "messages": {
+      "m1": "com.ligadata.kamanja.test.msg5",
+      "o1": "com.ligadata.kamanja.test.msg2"
+    }
+  },
+
+  "grok": {
+      "name_grok_instance" : {
+        "builtInDictionary": true,
+        "match": "{EMAIL: email}",
+        "file": ["path"],
+        "patterns_dis": {
+          "DOMAINTLD": "[a-zA-Z]+",
+          "EMAIL": "%{NOTSPACE}@%{WORD}\\.%{DOMAINTLD}"
+        }
+      }
+  },
+
+  "transformations": {
+    "test1": {
+      "dependsOn": [ ["m1"] ],
+
+      "grok match": {
+        "in1": "{EMAIL: email} {DOMAIN: domain} {USER: user}"
+      },
+
+      "outputs": {
+        "o1": {
+          "mapping": {
+            "out1": "in3",
+            "out2": "email",
+            "out3": "domain",
+            "out4": "user"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "Container": {
+    "NameSpace": "com.botanical.json",
+    "Name": "packageDescr",
+    "Version": "00.01.00",
+    "Description": "package description",
+    "Fixed": "true",
+    "Persist": "true",
+    "Fields": [
+      {
+        "Name": "name",
+        "Type": "System.String"
+      },
+      {
+        "Name": "description",
+        "Type": "System.String"
+      }
+    ],
+    "PartitionKey": [
+      "name"
+    ]
+  }
+}

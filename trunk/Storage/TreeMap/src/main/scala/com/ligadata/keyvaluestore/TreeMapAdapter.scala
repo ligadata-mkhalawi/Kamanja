@@ -34,8 +34,10 @@ No schema setup
 
 package com.ligadata.keyvaluestore
 
-import com.ligadata.KvBase.{ Key, Value, TimeRange }
-import com.ligadata.StorageBase.{ DataStore, Transaction, StorageAdapterObj }
+import com.ligadata.KamanjaBase.NodeContext
+import com.ligadata.KvBase.{ Key, TimeRange, Value }
+import com.ligadata.StorageBase.{ DataStore, Transaction, StorageAdapterFactory }
+import com.ligadata.kamanja.metadata.AdapterInfo
 
 import org.mapdb._
 import java.io._
@@ -47,16 +49,18 @@ import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import com.ligadata.Utils.{ KamanjaLoaderInfo }
 
-class TreeMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: String) extends DataStore {
+class TreeMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: String, val nodeCtxt: NodeContext, val adapterInfo: AdapterInfo) extends DataStore {
   val adapterConfig = if (datastoreConfig != null) datastoreConfig.trim else ""
-  val loggerName = this.getClass.getName
-  val logger = LogManager.getLogger(loggerName)
+//  val loggerName = this.getClass.getName
+//  val logger = LogManager.getLogger(loggerName)
   private[this] val lock = new Object
   private var containerList: scala.collection.mutable.Set[String] = scala.collection.mutable.Set[String]()
 
   private var dbStoreMap: scala.collection.mutable.Map[String, DB] = new scala.collection.mutable.HashMap()
 
   private var tablesMap: scala.collection.mutable.Map[String, BTreeMap[Array[Byte], Array[Byte]]] = new scala.collection.mutable.HashMap()
+
+//  override def getAdapterName: String = ""
 
   if (adapterConfig.size == 0) {
     throw new Exception("Not found valid TreeMap Configuration.")
@@ -185,6 +189,10 @@ class TreeMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig
     toTableName(containerName)
   }
 
+  override def getTableName(containerName: String): String = {
+    toTableName(containerName)
+  }
+
   private def CreateContainer(containerName: String): Unit = lock.synchronized {
     var tableName = toTableName(containerName)
     var fullTableName = toFullTableName(containerName)
@@ -205,6 +213,10 @@ class TreeMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig
     })
   }
 
+  override def CreateMetadataContainer(containerNames: Array[String]): Unit = {
+    CreateContainer(containerNames)
+  }
+
   private def MakeCompositeKey(key: Key): Array[Byte] = {
     var compKey = key.timePartition.toString + "|" + key.bucketKey.mkString(".") +
       "|" + key.transactionId.toString + "|" + key.rowId.toString
@@ -214,6 +226,7 @@ class TreeMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig
   private def ValueToByteArray(value: Value): Array[Byte] = {
     var byteOs = new ByteArrayOutputStream();
     var out = new DataOutputStream(byteOs);
+    out.writeInt(value.schemaId)
     out.writeInt(value.serializerType.length);
     out.write(value.serializerType.getBytes());
     out.writeInt(value.serializedInfo.length);
@@ -224,6 +237,8 @@ class TreeMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig
   private def ByteArrayToValue(byteArray: Array[Byte]): Value = {
     var in = new DataInputStream(new ByteArrayInputStream(byteArray));
 
+    val schemaId = in.readInt();
+
     var serializerTypeLength = in.readInt();
     var serializerType = new Array[Byte](serializerTypeLength);
     in.read(serializerType, 0, serializerTypeLength);
@@ -232,7 +247,7 @@ class TreeMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig
     var serializedInfo = new Array[Byte](serializedInfoLength);
     in.read(serializedInfo, 0, serializedInfoLength);
 
-    var v = new Value(new String(serializerType), serializedInfo)
+    var v = new Value(schemaId, new String(serializerType), serializedInfo)
     v
   }
 
@@ -338,6 +353,30 @@ class TreeMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig
     }
   }
 
+  //Added by Yousef Abu Elbeh at 2016-03-13 from here
+  override def del(containerName: String, time: TimeRange): Unit = {
+    try {
+      CheckTableExists(containerName)
+      var tableName = toFullTableName(containerName)
+      var map = tablesMap(tableName)
+      var iter = map.keySet().iterator()
+      while (iter.hasNext()) {
+        val kba = iter.next()
+        val k = new String(kba)
+        var keyArray = k.split('|')
+        var tp = keyArray(0).toLong
+        if (tp >= time.beginTime && tp <= time.endTime) {
+            map.remove(kba)
+        }
+      }
+      Commit
+    } catch {
+      case e: Exception => {
+        logger.error("", e)
+      }
+    }
+  }
+  // to here
   // get operations
   def getRowCount(containerName: String): Long = {
     var tableName = toFullTableName(containerName)
@@ -777,11 +816,11 @@ class TreeMapAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig
 
 class TreeMapAdapterTx(val parent: DataStore) extends Transaction {
 
-  val loggerName = this.getClass.getName
-  val logger = LogManager.getLogger(loggerName)
-
+//  val loggerName = this.getClass.getName
+//  val logger = LogManager.getLogger(loggerName)
+//
   override def put(containerName: String, key: Key, value: Value): Unit = {
-    parent.put(containerName, key, value)
+    parent.put(containerName,  key, value)
   }
 
   override def put(data_list: Array[(String, Array[(Key, Value)])]): Unit = {
@@ -796,7 +835,11 @@ class TreeMapAdapterTx(val parent: DataStore) extends Transaction {
   override def del(containerName: String, time: TimeRange, keys: Array[Array[String]]): Unit = {
     parent.del(containerName, time, keys)
   }
-
+  //Added by Yousef Abu Elbeh in 2016-03-13 from here
+  override def del(containerName: String, time: TimeRange): Unit = {
+    parent.del(containerName, time)
+  }
+  //to here
   // get operations
   override def get(containerName: String, callbackFunction: (Key, Value) => Unit): Unit = {
     parent.get(containerName, callbackFunction)
@@ -877,9 +920,13 @@ class TreeMapAdapterTx(val parent: DataStore) extends Transaction {
   override def isTableExists(tableNamespace: String, tableName: String): Boolean = {
     parent.isTableExists(tableNamespace, tableName)
   }
+
+  override def getTableName(containerName: String): String = {
+    parent.getTableName(containerName)
+  }
 }
 
 // To create TreeMap Datastore instance
-object TreeMapAdapter extends StorageAdapterObj {
-  override def CreateStorageAdapter(kvManagerLoader: KamanjaLoaderInfo, datastoreConfig: String): DataStore = new TreeMapAdapter(kvManagerLoader, datastoreConfig)
+object TreeMapAdapter extends StorageAdapterFactory {
+  override def CreateStorageAdapter(kvManagerLoader: KamanjaLoaderInfo, datastoreConfig: String, nodeCtxt: NodeContext, adapterInfo: AdapterInfo): DataStore = new TreeMapAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
 }

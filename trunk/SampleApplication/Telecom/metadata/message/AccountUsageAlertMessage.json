@@ -1,0 +1,27 @@
+{
+  "Message": {
+    "NameSpace": "com.ligadata.kamanja.samples.messages",
+    "Name": "AccountUsageAlertMessage",
+    "Version": "00.01.00",
+    "Description": "AccountUsageAlertMessage",
+    "Fixed": "true",
+    "Fields": [
+      {
+        "Name": "actNo",
+        "Type": "System.String"
+      },
+      {
+        "Name": "curUsage",
+        "Type": "System.Long"
+      },
+      {
+        "Name": "alertType",
+        "Type": "System.String"
+      },
+      {
+        "Name": "triggerTime",
+        "Type": "System.Long"
+      }
+    ]
+  }
+}

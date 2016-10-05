@@ -35,7 +35,7 @@ import com.ligadata.StorageBase._
 import com.ligadata.Serialize._
 import com.ligadata.Utils.Utils._
 import com.ligadata.Utils.{ KamanjaClassLoader, KamanjaLoaderInfo }
-import com.ligadata.StorageBase.StorageAdapterObj
+import com.ligadata.StorageBase.StorageAdapterFactory
 import com.ligadata.keyvaluestore.HBaseAdapter
 
 import com.ligadata.Exceptions._
@@ -66,7 +66,7 @@ class HBasePerfTestSpec extends FunSpec with BeforeAndAfter with BeforeAndAfterA
     var connectionAttempts = 0
     while (connectionAttempts < maxConnectionAttempts) {
       try {
-        adapter = HBaseAdapter.CreateStorageAdapter(kvManagerLoader, dataStoreInfo)
+        adapter = HBaseAdapter.CreateStorageAdapter(kvManagerLoader, dataStoreInfo, null, null)
         return adapter
       } catch {
         case e: StorageConnectionException => {
@@ -195,7 +195,7 @@ class HBasePerfTestSpec extends FunSpec with BeforeAndAfter with BeforeAndAfterA
             var custNumber = "4256667777" + batch * i
             var obj = new Customer(custName, custAddress, custNumber)
             var v = serializer.SerializeObjectToByteArray(obj)
-            var value = new Value("kryo", v)
+            var value = new Value(1,"kryo",v)
             keyValueList = keyValueList :+ (key, value)
           }
           var dataList = new Array[(String, Array[(Key, Value)])](0)

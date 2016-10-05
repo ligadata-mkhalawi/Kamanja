@@ -1256,7 +1256,7 @@ object NodePrinterHelpers extends com.ligadata.pmml.compiler.LogTrait {
 			/** 
 			 *  Add the initialize function to the the class body 
 			 */
-			clsBuffer.append(s"    def initialize(tmpMsg: MessageContainerBase, gCtx: EnvContext) : $classname = {\n")
+			clsBuffer.append(s"    def initialize(tmpMsg: ContainerInterface, gCtx: EnvContext) : $classname = {\n")
 			clsBuffer.append(s"\n")
 			
 			clsBuffer.append(s"        /** Initialize the data and transformation dictionaries */\n")
@@ -1449,7 +1449,7 @@ object NodePrinterHelpers extends com.ligadata.pmml.compiler.LogTrait {
 			 *  Add the execute function to the the class body... the prepareResults function will build the return array for consumption by engine. 
 			 */
 			clsBuffer.append(s"    /** provide access to the ruleset model's execute function */\n")
-			clsBuffer.append(s"    def execute(txnCtxt: TransactionContext, emitAllResults : Boolean) : ModelResultBase = {\n")
+			clsBuffer.append(s"    override def execute(txnCtxt: TransactionContext, emitAllResults : Boolean) : ModelResultBase = {\n")
 			clsBuffer.append(s"        ctx = new com.ligadata.pmml.runtime.Context(txnCtxt.getTransactionId, txnCtxt.getNodeCtxt.getEnvCtxt)\n")
 			clsBuffer.append(s"        initialize(txnCtxt.getMessage, txnCtxt.getNodeCtxt.getEnvCtxt)\n")
 			clsBuffer.append(s"        ctx.GetRuleSetModel.execute(ctx)\n")

@@ -1,0 +1,68 @@
+{
+
+  "header": {
+    "namespace": "com.ligadata.jtm.test.v3.filter",
+    "version": "0.0.1",
+    "language" : "scala",
+    "minVersion" : "2.11"
+  },
+
+  "dependencies": ["list of jars/modules - this should go into command line arguments instead of this file"],
+
+  "imports": {
+    "packages": [ "com.ligadata.Utils._" ]
+  },
+
+  "aliases": {
+    "messages": {
+      "m1": "com.ligadata.kamanja.test.msg1",
+      "m2": "com.ligadata.kamanja.test.msg3",
+      "omsg2": "com.ligadata.kamanja.test.msg2",
+      "omsg3": "com.ligadata.kamanja.test.msg4",
+      "c1": "com.ligadata.kamanja.test.msg5",
+      "c2": "com.ligadata.kamanja.test.msg6"
+    }
+  },
+
+  "transformations": {
+    "test1": {
+      "dependsOn": [ ["m1", "m2", "c1"], ["m2", "c1", "c2"]],
+      "computes": {
+        "zipcode": { "type": "Int", "val": "iplookup(${m2.in1}).zipcode", "comment": "in scala, type could be optional" },
+        "zipcode1": { "type": "Int", "vals": ["iplookup(${m1.in1}).zipcode", "iplookup(${m2.in1}.zipcode"] },
+        "ipinfo": { "type": "IpInfo", "val": "iplookup(${m2.in1})",  "comment": "type could be some class available from imports" }
+      },
+
+      "comment": "msg2 is part of com.ligadata.jtm.test.filter",
+
+      "outputs": {
+        "omsg2": {
+          "mapping": {
+            "out1": "${m2.in1}",
+            "out2": "tmp8",
+            "out3": "somefunc($zipcode, $zipcode1)",
+            "out4": "$ipinfo.zipCode"
+          },
+          "where": "!(${m2.in2} != -1 && ${m2.in2} < 100)",
+          "computes": {
+            "tmp8": { "type": "String", "val":"somefunc2(${m2.in3})" }
+          }
+        }
+      }
+    },
+    "test2": {
+      "dependsOn": [ ["com.ligadata.kamanja.test.msg3"] ],
+      "outputs": {
+        "omsg3": {
+          "mappingByName": true,
+          "mapping": {
+            "out1": "in1",
+            "out2": "in1",
+            "out3": "in1",
+            "out4": "in1"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "Message": {
+    "NameSpace": "com.ligadata.kamanja.samples.messages",
+    "Name": "SubscriberUsageAlertMessage",
+    "Version": "00.01.00",
+    "Description": "SubscriberUsageAlertMessage",
+    "Fixed": "true",
+    "Fields": [
+      {
+        "Name": "msisdn",
+        "Type": "System.Long"
+      },
+      {
+        "Name": "curUsage",
+        "Type": "System.Long"
+      },
+      {
+        "Name": "alertType",
+        "Type": "System.String"
+      },
+      {
+        "Name": "triggerTime",
+        "Type": "System.Long"
+      }
+    ]
+  }
+}

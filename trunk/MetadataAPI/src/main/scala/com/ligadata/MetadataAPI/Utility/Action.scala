@@ -25,27 +25,34 @@ import com.ligadata.MetadataAPI.Utility.Action.Value
  */
 object Action extends Enumeration {
   type Action = Value
+  // adapter message binding
+  val ADDADAPTERMESSAGEBINDING=Value("addadaptermessagebinding")
+  val UPDATEADAPTERMESSAGEBINDING=Value("updateadaptermessagebinding")
+  val REMOVEADAPTERMESSAGEBINDING=Value("removeadaptermessagebinding")
+  val LISTADAPTERMESSAGEBINDINGS=Value("listadaptermessagebindings")
+
   //message manangemen
   val ADDMESSAGE=Value("addmessage")
   val UPDATEMESSAGE=Value("updatemessage")
   val GETALLMESSAGES=Value("getallmessages")
   val REMOVEMESSAGE=Value("removemessage")
   val GETMESSAGE=Value("getmessage")
-  //output message management
-  val ADDOUTPUTMESSAGE=Value("addoutputmessage")
-  val UPDATEOUTPUTMESSAGE=Value("updateoutputmessage")
-  val REMOVEOUTPUTMESSAGE=Value("removeoutputmessage")
-  val GETALLOUTPUTMESSAGES=Value("getalloutputmessages")
   //model management
   val ADDMODELKPMML=Value("addmodelkpmml")
+  val ADDMODELJTM=Value("addmodeljtm")
   val ADDMODELPMML=Value("addmodelpmml")
+  val ADDMODELPYTHON=Value("addmodelpython")
+  val ADDMODELJYTHON=Value("addmodeljython")
   val ADDMODELSCALA=Value("addmodelscala")
   val ADDMODELJAVA=Value("addmodeljava")
   val REMOVEMODEL=Value("removemodel")
   val ACTIVATEMODEL=Value("activatemodel")
   val DEACTIVATEMODEL=Value("deactivatemodel")
   val UPDATEMODELKPMML=Value("updatemodelkpmml")
+  val UPDATEMODELJTM=Value("updatemodeljtm")
   val UPDATEMODELPMML=Value("updatemodelpmml")
+  val UPDATEMODELPYTHON=Value("updatemodelpython")
+  val UPDATEMODELJYTHON=Value("updatemodeljython")
   val UPDATEMODELSCALA=Value("updatemodelscala")
   val UPDATEMODELJAVA=Value("updatemodeljava")
   val GETALLMODELS=Value("getallmodels")
@@ -88,5 +95,8 @@ object Action extends Enumeration {
   val DUMPALLCLUSTERS=Value("dumpallclusters")
   val DUMPALLCLUSTERCFGS=Value("dumpallclustercfgs")
   val DUMPALLADAPTERS=Value("dumpalladapters")
-  val GETOUTPUTMESSAGE=Value("getoutputmessage")
+  
+  val GETTYPEBYSCHEMAID = Value("gettypebyschemaid")
+  val GETTYPEBYELEMENTID = Value("gettypebyelementid")
+   
 }

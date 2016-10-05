@@ -1,3 +1,21 @@
+#!/usr/bin/env bash
+###################################################################
+#
+#  Copyright 2015 ligaDATA
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+###################################################################
+
 
 echo "Setting up paths"
 KafkaRootDir=$1
@@ -37,7 +55,15 @@ scala_home_repl=$(echo $scala_home | sed 's/\//\\\//g')
 install_dir_repl=$(echo $install_dir | sed 's/\//\\\//g')
 
 # changing path in script files
+sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/StartH2dbServer_Template.sh > $install_dir/bin/StartH2dbServer.sh
 sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_home_repl/g;s/{JavaInstallDirectory}/$java_home_repl/g" $install_dir/template/script/StartEngine_Template.sh > $install_dir/bin/StartEngine.sh
+sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/ContainersUtility_Template.sh > $install_dir/bin/ContainersUtility.sh
+sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/JsonChecker_Template.sh > $install_dir/bin/JsonChecker.sh
+sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/QueryGenerator_Template.sh > $install_dir/bin/QueryGenerator.sh
+sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/FileDataConsumer_Template.sh > $install_dir/bin/FileDataConsumer.sh
+sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/ExtractData_Template.sh > $install_dir/bin/ExtractData.sh
+sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/JdbcDataCollector_Template.sh > $install_dir/bin/JdbcDataCollector.sh
+sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/GenerateMessage_Template.sh > $install_dir/bin/GenerateMessage.sh
 
 #new one
 #HelloWorld
@@ -71,16 +97,25 @@ sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/config/log4
 # changing path in config files
 sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_home_repl/g;s/{JavaInstallDirectory}/$java_home_repl/g" $install_dir/template/config/ClusterConfig_Template.json > $install_dir/config/ClusterConfig.json
 sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_home_repl/g;s/{JavaInstallDirectory}/$java_home_repl/g" $install_dir/template/config/EngineConfig_Template.properties > $install_dir/config/Engine1Config.properties
-sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_home_repl/g;s/{JavaInstallDirectory}/$java_home_repl/g" $install_dir/template/config/EngineConfig_Cassandra_Template.properties > $install_dir/config/Engine1Config_Cassandra.properties
 sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_home_repl/g;s/{JavaInstallDirectory}/$java_home_repl/g" $install_dir/template/config/MetadataAPIConfig_Template.properties > $install_dir/config/MetadataAPIConfig.properties
+sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_home_repl/g;s/{JavaInstallDirectory}/$java_home_repl/g" $install_dir/template/config/ClusterConfig_kafka_v8_Template.json > $install_dir/config/ClusterConfig_kafka_v8.json
+sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_home_repl/g;s/{JavaInstallDirectory}/$java_home_repl/g" $install_dir/template/config/ClusterConfig_kafka_v9_Template.json > $install_dir/config/ClusterConfig_kafka_v9.json
+sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_home_repl/g;s/{JavaInstallDirectory}/$java_home_repl/g" $install_dir/template/config/ClusterConfig_kafka_v10_Template.json > $install_dir/config/ClusterConfig_kafka_v10.json
+
+
 # HelloWorld
 
 # Expecting 1st Parameter as Kafka Install directory
 if [ "$#" -ne 1 ] || ! [ -d "$KafkaRootDir" ]; then
 	echo "WARN: Not given/found Kafka install directory. Not going to create CreateQueues.sh, WatchOutputQueue.sh, WatchStatusQueue.sh, WatchFailedEventQueue.sh and WatchInputQueue.sh"
 else
-	kafkatopics="$KafkaRootDir/bin/kafka-topics.sh"
-	if [ ! -f "$kafkatopics" ]; then
+	if [ -e "$KafkaRootDir/bin/kafka-topics.sh" ]; then
+		kafkatopics="$KafkaRootDir/bin/kafka-topics.sh"
+	elif [ -e "$KafkaRootDir/bin/kafka-topics" ]; then
+		kafkatopics="$KafkaRootDir/bin/kafka-topics"
+	fi
+	
+	if [ "" == "$kafkatopics" ]; then
 		echo "WARN: Not found bin/kafka-topics.sh in given Kafka install directory $KafkaRootDir. Not going to create CreateQueues.sh, WatchOutputQueue.sh, WatchStatusQueue.sh and WatchInputQueue.sh"
 	else
 		KafkaRootDir_repl=$(echo $KafkaRootDir | sed 's/\//\\\//g')
@@ -89,10 +124,16 @@ else
 		sed "s/{KafkaInstallDir}/$KafkaRootDir_repl/g" $install_dir/template/script/WatchStatusQueue_Template.sh > $install_dir/bin/WatchStatusQueue.sh
 		sed "s/{KafkaInstallDir}/$KafkaRootDir_repl/g" $install_dir/template/script/WatchInputQueue_Template.sh > $install_dir/bin/WatchInputQueue.sh
 		sed "s/{KafkaInstallDir}/$KafkaRootDir_repl/g" $install_dir/template/script/WatchFailedEventQueue_Template.sh > $install_dir/bin/WatchFailedEventQueue.sh
+		sed "s/{KafkaInstallDir}/$KafkaRootDir_repl/g" $install_dir/template/script/WatchMessageEventQueue_Template.sh > $install_dir/bin/WatchMessageEventQueue.sh
+		sed "s/{KafkaInstallDir}/$KafkaRootDir_repl/g" $install_dir/template/script/WatchFinanceQueue_Template.sh > $install_dir/bin/WatchFinanceQueue.sh
+		sed "s/{KafkaInstallDir}/$KafkaRootDir_repl/g" $install_dir/template/script/WatchHelloWorldQueue_Template.sh > $install_dir/bin/WatchHelloWorldQueue.sh
+		sed "s/{KafkaInstallDir}/$KafkaRootDir_repl/g" $install_dir/template/script/WatchMedicalQueue_Template.sh > $install_dir/bin/WatchMedicalQueue.sh
+		sed "s/{KafkaInstallDir}/$KafkaRootDir_repl/g" $install_dir/template/script/WatchTelecomQueue_Template.sh > $install_dir/bin/WatchTelecomQueue.sh
 		sed "s/{InstallDirectory}/$install_dir_repl/g;s/{KafkaInstallDir}/$KafkaRootDir_repl/g" $install_dir/template/script/PushSampleDataToKafka_Template.sh > $install_dir/bin/PushSampleDataToKafka.sh
 	fi
 fi
 
 chmod 777 $install_dir/bin/*.*
+chmod 777 $install_dir/bin/kamanja
 
 cd $pwdnm

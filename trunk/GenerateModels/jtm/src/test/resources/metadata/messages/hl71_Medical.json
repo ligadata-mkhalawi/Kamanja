@@ -1,0 +1,28 @@
+{
+    "Message": {
+        "NameSpace": "com.ligadata.kamanja.samples.messages",
+        "Name": "HL71",
+        "Version": "00.01.00",
+        "Description": "HL71",
+        "Fixed": "false",
+        "Persist": "true",
+        "Fields": [
+            {
+                "Name": "Desynpuf_Id",
+                "Type": "System.String"
+            },
+            {
+                "Name": "Clm_Id",
+                "Type": "System.Long"
+            }
+        ],
+        "PartitionKey": [
+            "Desynpuf_Id"
+        ],
+        "PrimaryKey": [
+            "Desynpuf_Id",
+            "Clm_Id"
+        ]
+    }
+}
+

@@ -23,6 +23,6 @@ public interface MigratableFrom {
   public abstract TableName[] getAllDataTableNames();
   public abstract TableName[] getAllStatusTableNames();
   public abstract void getAllMetadataObjs(String backupTblSufix, MetadataObjectCallBack callbackFunction, String[] excludeMetadata);
-  public abstract void getAllDataObjs(String backupTblSufix, MetadataFormat[] orderMetadata, DataObjectCallBack callbackFunction);
+  public abstract void getAllDataObjs(String backupTblSufix, MetadataFormat[] orderMetadata, java.util.List<String> msgsAndContainers,java.util.List<String> catalogTables, DataObjectCallBack callbackFunction);
   public abstract void shutdown();
 }

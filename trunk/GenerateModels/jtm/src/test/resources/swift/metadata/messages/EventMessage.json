@@ -1,0 +1,99 @@
+{
+  "Message": {
+    "NameSpace": "com.swift.messages.test",
+    "Name": "EventMessage",
+    "Version": "00.01.00",
+    "Description": "Event messages across entities with a timestamp of occurrence",
+    "Fixed": "false",
+    "Persist": "false",
+    "Fields": [
+	  {
+        "Name": "EventType",
+        "Type": "System.String"
+      },
+      {
+        "Name": "EventDateTime",
+        "Type": "System.String"
+      },
+      {
+        "Name": "EventStatus",
+        "Type": "System.String"
+      },
+      {
+        "Name": "EventHierarchy",
+        "Type": "System.int"
+      },
+      {
+        "Name": "EventCode",
+        "Type": "System.String"
+      },
+      {
+        "Name": "EventText",
+        "Type": "System.String"
+      },
+      {
+        "Name": "EventResource",
+        "Type": "System.String"
+      },
+      {
+        "Name": "SNLID",
+        "Type": "System.String"
+      },
+      {
+        "Name": "LTID",
+        "Type": "System.String"
+      },
+      {
+        "Name": "BAP",
+        "Type": "System.String"
+      },
+      {
+        "Name": "TCF",
+        "Type": "System.String"
+      },
+      {
+        "Name": "CPTYPE",
+        "Type": "System.String"
+      },
+      {
+        "Name": "CONTYPE",
+        "Type": "System.String"
+      },
+      {
+        "Name": "BICENT",
+        "Type": "System.String"
+      },
+      {
+        "Name": "BICCTY",
+        "Type": "System.String"
+      },
+      {
+        "Name": "BICHEX",
+        "Type": "System.String"
+      },
+      {
+        "Name": "BICVPN",
+        "Type": "System.String"
+      },
+      {
+        "Name": "NPID",
+        "Type": "System.String"
+      },
+      {
+        "Name": "NPTYPE",
+        "Type": "System.String"
+      },
+      {
+        "Name": "NPEXT",
+        "Type": "System.String"
+      }
+      
+    ],
+    "PartitionKey": [
+      "SNLID"
+    ],
+    "PrimaryKey": [
+      "SNLID","EventType"
+    ]
+  }
+}

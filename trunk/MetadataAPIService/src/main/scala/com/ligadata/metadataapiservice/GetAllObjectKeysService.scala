@@ -42,14 +42,17 @@ object GetAllObjectKeysService {
 class GetAllObjectKeysService(requestContext: RequestContext, userid:Option[String], password:Option[String], cert:Option[String]) extends Actor {
 
   import GetAllObjectKeysService._
-  
+
   implicit val system = context.system
   import system.dispatcher
   val log = Logging(system, getClass)
-  
+
   val loggerName = this.getClass.getName
   val logger = LogManager.getLogger(loggerName)
 //  logger.setLevel(Level.TRACE);
+// 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   val APIName = "GetAllObjectKeys"
 
@@ -61,40 +64,41 @@ class GetAllObjectKeysService(requestContext: RequestContext, userid:Option[Stri
 
   def GetAllObjectKeys(objectType:String): String = {
     var apiResult:Array[String] = new Array[String](0)
-    
-    if (!MetadataAPIImpl.checkAuth(userid,password,cert, MetadataAPIImpl.getPrivilegeName("get","keys"))) {
-	      MetadataAPIImpl.logAuditRec(userid,Some(AuditConstants.READ),AuditConstants.GETKEYS,objectType,AuditConstants.FAIL,"",objectType)
-	      return new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error:READ not allowed for this user").toString   
+
+    if (!getMetadataAPI.checkAuth(userid,password,cert, getMetadataAPI.getPrivilegeName("get","keys"))) {
+	      getMetadataAPI.logAuditRec(userid,Some(AuditConstants.READ),AuditConstants.GETKEYS,objectType,AuditConstants.FAIL,"",objectType)
+	      return new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Error:READ not allowed for this user").toString
     }
 
     objectType match {
       case "model" => {
-	      apiResult = MetadataAPIImpl.GetAllModelsFromCache(false,userid)
+	      apiResult = getMetadataAPI.GetAllModelsFromCache(false,userid)
       }
       case "message" => {
-	      apiResult = MetadataAPIImpl.GetAllMessagesFromCache(true,userid)
+	      apiResult = getMetadataAPI.GetAllMessagesFromCache(true,userid)
       }
       case "container" => {
-	      apiResult = MetadataAPIImpl.GetAllContainersFromCache(true,userid)
+	      apiResult = getMetadataAPI.GetAllContainersFromCache(true,userid)
       }
       case "function" => {
-	      apiResult = MetadataAPIImpl.GetAllFunctionsFromCache(true,userid)
+	      apiResult = getMetadataAPI.GetAllFunctionsFromCache(true,userid)
       }
       case "concept" => {
-	      apiResult = MetadataAPIImpl.GetAllConceptsFromCache(true,userid)
+	      apiResult = getMetadataAPI.GetAllConceptsFromCache(true,userid)
       }
       case "type" => {
-	      apiResult = MetadataAPIImpl.GetAllTypesFromCache(true,userid)
+	      apiResult = getMetadataAPI.GetAllTypesFromCache(true,userid)
       }
-      case "outputmsg" => {
-	      apiResult = MetadataAPIOutputMsg.GetAllOutputMsgsFromCache(true, userid)
+      case "adaptermessagebinding" => {
+        val allBindings = AdapterMessageBindingUtils.ListAllAdapterMessageBindings
+        return new ApiResult (ErrorCodeConstants.Success, "ListAllAdapterMessageBindings", constructAdaperMsgBindingsResults(allBindings), "").toString
       }
       case _ => {
          apiResult = Array[String]("The " + objectType + " is not supported yet ")
          return new ApiResult(ErrorCodeConstants.Failure, APIName, null,  "Invalid URL:" + apiResult.mkString).toString
       }
     }
-    MetadataAPIImpl.logAuditRec(userid,Some(AuditConstants.READ),AuditConstants.GETKEYS,objectType,AuditConstants.SUCCESS,"",objectType)
+    getMetadataAPI.logAuditRec(userid,Some(AuditConstants.READ),AuditConstants.GETKEYS,objectType,AuditConstants.SUCCESS,"",objectType)
     new ApiResult(ErrorCodeConstants.Success,  APIName, "Object Keys:" + apiResult.mkString(","), ErrorCodeConstants.Get_All_Object_Keys_Successful).toString
   }
 
@@ -104,6 +108,12 @@ class GetAllObjectKeysService(requestContext: RequestContext, userid:Option[Stri
     logger.debug(APIName + "(results):" + objectList)
     requestContext.complete(objectList)
   }
+
+  private def constructAdaperMsgBindingsResults(bindings: scala.collection.immutable.Map[String,AdapterMessageBinding]): String = {
+    if (bindings == null || bindings.size == 0) {return ""}
+    val result = bindings.values.map(binding => {
+      binding.FullBindingName
+    }).toArray.mkString(":")
+    return result
+  }
 }
-
-

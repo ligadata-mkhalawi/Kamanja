@@ -33,7 +33,7 @@ import scala.collection.mutable.{ ArrayBuffer, TreeSet }
 // import com.ligadata.ZooKeeper._
 // import org.apache.curator.framework._
 // import com.ligadata.Serialize.{ JZKInfo }
-import com.ligadata.KvBase.{ Key, Value, TimeRange, KvBaseDefalts, KeyWithBucketIdAndPrimaryKey, KeyWithBucketIdAndPrimaryKeyCompHelper, LoadKeyWithBucketId }
+import com.ligadata.KvBase.{ Key, TimeRange, KvBaseDefalts, KeyWithBucketIdAndPrimaryKey, KeyWithBucketIdAndPrimaryKeyCompHelper, LoadKeyWithBucketId }
 import com.ligadata.StorageBase.{ DataStore, Transaction }
 import java.util.{ Collection, Iterator, TreeMap }
 import com.ligadata.Exceptions._
@@ -47,15 +47,18 @@ trait LogTrait {
   val logger = LogManager.getLogger(loggerName)
 }
 
-class SaveContainerDataCompImpl extends LogTrait with MdBaseResolveInfo {
+class SaveContainerDataCompImpl extends LogTrait with ObjectResolver {
   private var _configFile: String = null
   private var _nodeId: Int = 0
   private var _initialized = false
   private var _jarPaths = collection.immutable.Set[String]()
   private var _dataStore: DataStore = null
-  private val _baseObjs = scala.collection.mutable.Map[String, MessageContainerObjBase]()
+  private val _baseObjs = scala.collection.mutable.Map[String, ContainerFactoryInterface]()
   private val _kamanjaLoader = new KamanjaLoaderInfo
   private var _transService: SimpleTransService = null
+  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   private def LoadJarIfNeeded(elem: BaseElem, loadedJars: TreeSet[String], loader: KamanjaClassLoader): Unit = {
     var retVal: Boolean = true
@@ -109,7 +112,7 @@ class SaveContainerDataCompImpl extends LogTrait with MdBaseResolveInfo {
   private def GetDataStoreHandle(jarPaths: collection.immutable.Set[String], dataStoreInfo: String): DataStore = {
     try {
       logger.debug("Getting DB Connection for dataStoreInfo:%s".format(dataStoreInfo))
-      return KeyValueManager.Get(jarPaths, dataStoreInfo)
+      return KeyValueManager.Get(jarPaths, dataStoreInfo, null, null)
     } catch {
       case e: Exception => {
         logger.error("Failed to connect Database:" + dataStoreInfo, e)
@@ -122,21 +125,21 @@ class SaveContainerDataCompImpl extends LogTrait with MdBaseResolveInfo {
     }
   }
 
-  private def collectKeyAndValues(k: Key, v: Value, dataByBucketKeyPart: TreeMap[KeyWithBucketIdAndPrimaryKey, MessageContainerBaseWithModFlag], loadedKeys: java.util.TreeSet[LoadKeyWithBucketId]): Unit = {
-    val value = SerializeDeserialize.Deserialize(v.serializedInfo, this, _kamanjaLoader.loader, true, "")
-    val primarykey = value.PrimaryKeyData
+  private def collectKeyAndValues(k: Key, v: Any, dataByBucketKeyPart: TreeMap[KeyWithBucketIdAndPrimaryKey, ContainerInterface], loadedKeys: java.util.TreeSet[LoadKeyWithBucketId]): Unit = {
+    val value: ContainerInterface = null // SerializeDeserialize.Deserialize(v.serializedInfo, this, _kamanjaLoader.loader, true, "")
+    val primarykey = value.getPrimaryKey
     val key = KeyWithBucketIdAndPrimaryKey(KeyWithBucketIdAndPrimaryKeyCompHelper.BucketIdForBucketKey(k.bucketKey), k, primarykey != null && primarykey.size > 0, primarykey)
-    dataByBucketKeyPart.put(key, MessageContainerBaseWithModFlag(false, value))
+    dataByBucketKeyPart.put(key, value)
 
     val bucketId = KeyWithBucketIdAndPrimaryKeyCompHelper.BucketIdForBucketKey(k.bucketKey)
     val loadKey = LoadKeyWithBucketId(bucketId, TimeRange(k.timePartition, k.timePartition), k.bucketKey)
     loadedKeys.add(loadKey)
   }
 
-  private def LoadDataIfNeeded(typ: String, loadKey: LoadKeyWithBucketId, loadedKeys: java.util.TreeSet[LoadKeyWithBucketId], dataByBucketKeyPart: TreeMap[KeyWithBucketIdAndPrimaryKey, MessageContainerBaseWithModFlag]): Unit = {
+  private def LoadDataIfNeeded(typ: String, loadKey: LoadKeyWithBucketId, loadedKeys: java.util.TreeSet[LoadKeyWithBucketId], dataByBucketKeyPart: TreeMap[KeyWithBucketIdAndPrimaryKey, ContainerInterface]): Unit = {
     if (loadedKeys.contains(loadKey))
       return
-    val buildOne = (k: Key, v: Value) => {
+    val buildOne = (k: Key, v: Any, serType: String, typ: String, ver:Int) => {
       collectKeyAndValues(k, v, dataByBucketKeyPart, loadedKeys)
     }
     try {
@@ -152,15 +155,30 @@ class SaveContainerDataCompImpl extends LogTrait with MdBaseResolveInfo {
     }
   }
 
-  override def getMessgeOrContainerInstance(MsgContainerType: String): MessageContainerBase = {
+  override def getInstance(MsgContainerType: String): ContainerInterface = {
     try {
-      return GetMessageContainerBase(MsgContainerType)
+      return GetContainerInterface(MsgContainerType)
     } catch {
       case e: Exception => { logger.warn("", e) }
       case e: Throwable => { logger.warn("", e) }
     }
     return null
   }
+
+  override def getInstance(schemaId: Long): ContainerInterface = {
+    //BUGBUG:: For now we are getting latest class. But we need to get the old one too.
+    if (mdMgr == null)
+      throw new KamanjaException("Metadata Not found", null)
+
+    val contOpt = mdMgr.ContainerForSchemaId(schemaId.toInt)
+
+    if (contOpt == None)
+      throw new KamanjaException("Container Not found for schemaid:" + schemaId, null)
+
+    getInstance(contOpt.get.FullName)
+  }
+
+  override def getMdMgr: MdMgr = mdMgr
 
   @throws(classOf[Exception])
   def Init(cfgfile: String): Unit = {
@@ -187,11 +205,13 @@ class SaveContainerDataCompImpl extends LogTrait with MdBaseResolveInfo {
     }
 
     // Metadata Init
-    MetadataAPIImpl.InitMdMgrFromBootStrap(cfgfile, false)
+    getMetadataAPI.InitMdMgrFromBootStrap(cfgfile, false)
 
     val nodeInfo = mdMgr.Nodes.getOrElse(nodeId.toString, null)
     if (nodeInfo == null) {
-      val msgStr = "Node %d not found in metadata".format(nodeId)
+      // 660 Change begins - bug fix for proper cluster config upload message
+      val msgStr = "Node %d not found in metadata, Please ensure cluster configuration has been uploaded.".format(nodeId)
+      // 660 Change ends
       logger.error(msgStr)
       throw new Exception(msgStr)
     }
@@ -212,7 +232,7 @@ class SaveContainerDataCompImpl extends LogTrait with MdBaseResolveInfo {
       throw new Exception(msgStr)
     }
 
-    val dataStore = cluster.cfgMap.getOrElse("DataStore", null)
+    val dataStore = cluster.cfgMap.getOrElse("SystemCatalog", null)
     if (dataStore == null) {
       val msgStr = "DataStore not found for Node %d  & ClusterId : %s".format(nodeId, nodeInfo.ClusterId)
       logger.error(msgStr)
@@ -275,11 +295,15 @@ class SaveContainerDataCompImpl extends LogTrait with MdBaseResolveInfo {
     _nodeId = nodeId
     _jarPaths = jarPaths
     _dataStore = dataStoreInst
+    if (_dataStore != null) {
+      _dataStore.setObjectResolver(this)
+      _dataStore.setDefaultSerializerDeserializer("com.ligadata.kamanja.serializer.kbinaryserdeser", scala.collection.immutable.Map[String, Any]())
+    }
     _initialized = true
   }
 
   @throws(classOf[Exception])
-  def GetMessageContainerBase(typ: String): MessageContainerBase = {
+  def GetContainerInterface(typ: String): ContainerInterface = {
     if (_initialized == false) {
       val msgStr = "SaveContainerDataComponent is not yet initialized"
       logger.error(msgStr)
@@ -297,9 +321,9 @@ class SaveContainerDataCompImpl extends LogTrait with MdBaseResolveInfo {
 
     // If we have cached obj, just create from it
     if (cachedObj != null) {
-      if (cachedObj.isMessage)
-        return cachedObj.asInstanceOf[BaseMsgObj].CreateNewMessage
-      return cachedObj.asInstanceOf[BaseContainerObj].CreateNewContainer
+      if (cachedObj.getContainerType == ContainerTypes.ContainerType.MESSAGE)
+        return cachedObj.createInstance.asInstanceOf[ContainerInterface]
+      return cachedObj.createInstance.asInstanceOf[ContainerInterface]
     }
 
     val typeNameCorrType = mdMgr.ActiveType(typeName)
@@ -326,7 +350,7 @@ class SaveContainerDataCompImpl extends LogTrait with MdBaseResolveInfo {
         var curClz = Class.forName(clsName, true, _kamanjaLoader.loader)
 
         while (curClz != null && isContainer == false) {
-          isContainer = Utils.isDerivedFrom(curClz, "com.ligadata.KamanjaBase.BaseContainerObj")
+          isContainer = Utils.isDerivedFrom(curClz, "com.ligadata.KamanjaBase.ContainerFactoryInterface")
           if (isContainer == false)
             curClz = curClz.getSuperclass()
         }
@@ -350,7 +374,7 @@ class SaveContainerDataCompImpl extends LogTrait with MdBaseResolveInfo {
         var curClz = Class.forName(clsName, true, _kamanjaLoader.loader)
 
         while (curClz != null && isMsg == false) {
-          isMsg = Utils.isDerivedFrom(curClz, "com.ligadata.KamanjaBase.BaseMsgObj")
+          isMsg = Utils.isDerivedFrom(curClz, "com.ligadata.KamanjaBase.MessageFactoryInterface")
           if (isMsg == false)
             curClz = curClz.getSuperclass()
         }
@@ -371,16 +395,16 @@ class SaveContainerDataCompImpl extends LogTrait with MdBaseResolveInfo {
         val module = _kamanjaLoader.mirror.staticModule(clsName)
         val obj = _kamanjaLoader.mirror.reflectModule(module)
         val objinst = obj.instance
-        if (objinst.isInstanceOf[BaseMsgObj]) {
-          val messageObj = objinst.asInstanceOf[BaseMsgObj]
+        if (objinst.isInstanceOf[MessageFactoryInterface]) {
+          val messageObj = objinst.asInstanceOf[MessageFactoryInterface]
           logger.debug("Created Message Object for type:%s (class:%s)".format(typ, clsName))
           _baseObjs(typeName) = messageObj
-          return messageObj.CreateNewMessage
-        } else if (objinst.isInstanceOf[BaseContainerObj]) {
-          val containerObj = objinst.asInstanceOf[BaseContainerObj]
+          return messageObj.createInstance.asInstanceOf[ContainerInterface]
+        } else if (objinst.isInstanceOf[ContainerFactoryInterface]) {
+          val containerObj = objinst.asInstanceOf[ContainerFactoryInterface]
           logger.debug("Created Container Object for type:%s (class:%s)".format(typ, clsName))
           _baseObjs(typeName) = containerObj
-          return containerObj.CreateNewContainer
+          return containerObj.createInstance.asInstanceOf[ContainerInterface]
         } else {
           val msgStr = "Failed to instantiate message or conatiner. type:%s (class:%s)".format(typ, clsName)
           logger.error(msgStr)
@@ -415,7 +439,7 @@ class SaveContainerDataCompImpl extends LogTrait with MdBaseResolveInfo {
 
   //FIXME:: changeExistingPrimaryKey not yet handled
   @throws(classOf[Exception])
-  def SaveMessageContainerBase(typAndData: Array[(String, Array[MessageContainerBase])], setNewTransactionId: Boolean, setNewRowNumber: Boolean, changeExistingPrimaryKey: Boolean): Unit = {
+  def SaveContainerInterface(typAndData: Array[(String, Array[ContainerInterface])], setNewTransactionId: Boolean, setNewRowNumber: Boolean, changeExistingPrimaryKey: Boolean): Unit = {
     if (_initialized == false) {
       val msgStr = "SaveContainerDataComponent is not yet initialized"
       logger.error(msgStr)
@@ -445,7 +469,7 @@ class SaveContainerDataCompImpl extends LogTrait with MdBaseResolveInfo {
       transId = GetNewTransactionId
 
     var rowNumber = 0
-    val storeObjsMap = collection.mutable.Map[String, ArrayBuffer[(Key, Value)]]()
+    val storeObjsMap = collection.mutable.Map[String, ArrayBuffer[(Key, String, Any)]]()
 
     typAndData.foreach(td => {
       val typ = td._1.toLowerCase
@@ -453,22 +477,21 @@ class SaveContainerDataCompImpl extends LogTrait with MdBaseResolveInfo {
 
       val tmpArrBuf = storeObjsMap.getOrElse(typ, null)
 
-      val arrBuf = if (tmpArrBuf != null) tmpArrBuf else ArrayBuffer[(Key, Value)]()
+      val arrBuf = if (tmpArrBuf != null) tmpArrBuf else ArrayBuffer[(Key, String, Any)]()
 
       data.foreach(d => {
         if (setNewRowNumber) {
           rowNumber += 1
-          d.RowNumber(rowNumber)
+          d.setRowNumber(rowNumber)
         }
 
         if (setNewTransactionId)
-          d.TransactionId(transId)
+          d.setTransactionId(transId)
 
-        val keyData = d.PartitionKeyData
-        val timeVal = d.TimePartitionData
-        val k = Key(timeVal, keyData, d.TransactionId, d.RowNumber)
-        val v = Value("manual", SerializeDeserialize.Serialize(d))
-        arrBuf += ((k, v))
+        val keyData = d.getPartitionKey
+        val timeVal = d.getTimePartitionData
+        val k = Key(timeVal, keyData, d.getTransactionId, d.getRowNumber)
+        arrBuf += ((k, "", d))
       })
 
       storeObjsMap(typ) = arrBuf
@@ -481,10 +504,10 @@ class SaveContainerDataCompImpl extends LogTrait with MdBaseResolveInfo {
         if (logger.isDebugEnabled()) {
           logger.debug("Going to save " + storeObjects.size + " objects")
           storeObjects.foreach(kv => {
-            logger.debug("ObjKey:(" + kv._1.timePartition + ":" + kv._1.bucketKey.mkString(",") + ":" + kv._1.transactionId + ") Value Size: " + kv._2.serializedInfo.size)
+            logger.debug("ObjKey:(" + kv._1.timePartition + ":" + kv._1.bucketKey.mkString(",") + ":" + kv._1.transactionId + ") ")
           })
         }
-        _dataStore.put(Array((typ, storeObjects)))
+        _dataStore.put(null, Array((typ, storeObjects)))
       } catch {
         case e: Exception => {
           logger.error("Failed to write data for type:" + typ, e)
@@ -503,7 +526,7 @@ class SaveContainerDataCompImpl extends LogTrait with MdBaseResolveInfo {
     if (_initialized) {
       _dataStore.Shutdown()
       NodeLevelTransService.Shutdown
-      MetadataAPIImpl.CloseDbStore
+      getMetadataAPI.CloseDbStore
     }
 
     _dataStore = null
@@ -528,8 +551,8 @@ class SaveContainerDataComponent {
 
   /* Get New Message/Container data Instances for the given Message/Container */
   @throws(classOf[Exception])
-  def GetMessageContainerBase(typ: String): MessageContainerBase = {
-    impl.GetMessageContainerBase(typ)
+  def GetContainerInterface(typ: String): ContainerInterface = {
+    impl.GetContainerInterface(typ)
   }
 
   /* Get New TransactionId */
@@ -540,14 +563,14 @@ class SaveContainerDataComponent {
 
   /* Save given Message/Container data Instances for the given container name. Caller can request to set new transactionid (so that he does not need to set it) and new rownumber. */
   @throws(classOf[Exception])
-  def SaveMessageContainerBase(typ: String, data: Array[MessageContainerBase], setNewTransactionId: Boolean, setNewRowNumber: Boolean): Unit = {
-    impl.SaveMessageContainerBase(Array((typ, data)), setNewTransactionId, setNewRowNumber, false)
+  def SaveContainerInterface(typ: String, data: Array[ContainerInterface], setNewTransactionId: Boolean, setNewRowNumber: Boolean): Unit = {
+    impl.SaveContainerInterface(Array((typ, data)), setNewTransactionId, setNewRowNumber, false)
   }
 
   /* Save given Message/Container data Instances for the given container name. Caller can request to set new transactionid (so that he does not need to set it) and new rownumber. */
   @throws(classOf[Exception])
-  def SaveMessageContainerBase(typAndData: Array[(String, Array[MessageContainerBase])], setNewTransactionId: Boolean, setNewRowNumber: Boolean): Unit = {
-    impl.SaveMessageContainerBase(typAndData, setNewTransactionId, setNewRowNumber, false)
+  def SaveContainerInterface(typAndData: Array[(String, Array[ContainerInterface])], setNewTransactionId: Boolean, setNewRowNumber: Boolean): Unit = {
+    impl.SaveContainerInterface(typAndData, setNewTransactionId, setNewRowNumber, false)
   }
 
   /* Shutdown services and reset everything */
@@ -555,4 +578,3 @@ class SaveContainerDataComponent {
     impl.Shutdown
   }
 }
-

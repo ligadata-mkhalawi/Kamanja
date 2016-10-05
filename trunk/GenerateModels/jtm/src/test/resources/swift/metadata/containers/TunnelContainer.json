@@ -1,0 +1,115 @@
+{
+    "Container": {
+        "NameSpace": "com.swift.containers.test",
+        "Name": "TunnelContainer",
+        "Version": "1.00",
+        "Description": "Tunnel Lookup",
+        "Fixed": "true",
+        "Elements": [
+            {
+                "Field": {
+                    "Name": "Host",
+                    "Type": "System.String"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "Rank",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "SNLs",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "BIC",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "NoMon_Decom",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "Providers",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "Assurance_ID",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "VPNCE_ID",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "Conn_Pack",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "Serial_No",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "Tunnel-1",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "Tunnel-2",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "Tunnel-3",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "TID-1",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "TID-2",
+                    "Type": "System.string"
+                }
+            },
+            {
+                "Field": {
+                    "Name": "TID-3",
+                    "Type": "System.string"
+                }
+            }
+            
+
+        ],
+        "PartitionKey": [
+	        "Host"
+        ],
+        "PrimaryKey": [
+	        "Host"
+		]
+    }
+}

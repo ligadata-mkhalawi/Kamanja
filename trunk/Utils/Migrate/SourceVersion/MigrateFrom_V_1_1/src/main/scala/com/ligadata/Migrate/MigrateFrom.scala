@@ -663,22 +663,6 @@ class MigrateFrom_V_1_1 extends MigratableFrom {
             ("DependantJars" -> o.CheckAndGetDependencyJarNames.toList))
           ("JarDef", compact(render(json)))
         }
-        case o: OutputMsgDef => {
-          val json = (("ObjectType" -> "OutputMsgDef") ~
-            ("IsActive" -> o.IsActive.toString) ~
-            ("IsDeleted" -> o.IsDeleted.toString) ~
-            ("TransId" -> o.TranId.toString) ~
-            ("OrigDef" -> o.OrigDef) ~
-            ("ObjectDefinition" -> o.ObjectDefinition) ~
-            ("ObjectFormat" -> ObjFormatType.asString(o.ObjectFormat)) ~
-            ("NameSpace" -> o.nameSpace) ~
-            ("Name" -> o.name) ~
-            ("Version" -> ver) ~
-            ("PhysicalName" -> o.physicalName) ~
-            ("JarName" -> getEmptyIfNull(o.jarName)) ~
-            ("DependantJars" -> o.CheckAndGetDependencyJarNames.toList))
-          ("OutputMsgDef", compact(render(json)))
-        }
         case _ => {
           throw new Exception("serializeObjectToJson doesn't support the objects of type objectType of " + mdObj.getClass().getName() + " yet.")
         }
@@ -1185,7 +1169,7 @@ class MigrateFrom_V_1_1 extends MigratableFrom {
 
   // metadataElemsJson are used for dependency load
   // Callback function calls with container name, timepartition value, bucketkey, transactionid, rowid, serializername & data in Gson (JSON) format.
-  override def getAllDataObjs(backupTblSufix: String, metadataElemsJson: Array[MetadataFormat], callbackFunction: DataObjectCallBack): Unit = {
+  override def getAllDataObjs(backupTblSufix: String, metadataElemsJson: Array[MetadataFormat], msgsAndContaienrs:java.util.List[String] , catalogTables: java.util.List[String], callbackFunction: DataObjectCallBack): Unit = {
     if (_bInit == false)
       throw new Exception("Not yet Initialized")
 

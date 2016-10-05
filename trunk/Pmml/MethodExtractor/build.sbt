@@ -4,8 +4,6 @@ import Keys._
 
 shellPrompt := { state =>  "sbt (%s)> ".format(Project.extract(state).currentProject.id) }
 
-
-
 assemblyOption in assembly ~= { _.copy(prependShellScript = Some(defaultShellScript)) }
 
 assemblyJarName in assembly := { s"${name.value}-${version.value}" }
@@ -55,10 +53,11 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
 
 name := "MethodExtractor"
 
-version := "1.0"
-
 scalacOptions += "-deprecation"
 
 net.virtualvoid.sbt.graph.Plugin.graphSettings
 
+coverageMinimum := 80
+
+coverageFailOnMinimum := false
 

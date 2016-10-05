@@ -45,6 +45,7 @@ script_dir=$(dirname "$0")
 
 scalaversion="2.11"
 name1=$1
+currentKamanjaVersion=1.6.0
 
 Usage()
 {
@@ -70,6 +71,7 @@ Usage()
     echo "                               --newInstallDirPath <new dir path of physical install>  "
     echo "                               --installVerificationFile <file to get the verification information>  "
     echo "                               --externalJarsDir <external jars directory to be copied to installation lib/application> "
+    echo "                               --tenantId <a tenantId is applied to all metadata objects> "
     echo
     echo "  NOTES: Only tar'd gzip files are supported for the tarballs at the moment."
     echo "         NodeConfigPath must be supplied always"
@@ -87,7 +89,7 @@ Usage()
 
 
 # Check 1: Is this even close to reasonable?
-if [[ "$#" -eq 1  || "$#" -eq 4  || "$#" -eq 6  || "$#" -eq 8  || "$#" -eq 10  || "$#" -eq 12  || "$#" -eq 14  || "$#" -eq 16  || "$#" -eq 18  || "$#" -eq 20 || "$#" -eq 22 || "$#" -eq 24 || "$#" -eq 26 ]]; then
+if [[ "$#" -eq 1  || "$#" -eq 4  || "$#" -eq 6  || "$#" -eq 8  || "$#" -eq 10  || "$#" -eq 12  || "$#" -eq 14  || "$#" -eq 16  || "$#" -eq 18  || "$#" -eq 20 || "$#" -eq 22 || "$#" -eq 24 || "$#" -eq 26 || "$#" -eq 28 || "$#" -eq 30 ]]; then
     echo 
 else 
     echo 
@@ -97,7 +99,7 @@ else
 fi
 
 # Check 2: Is this even close to reasonable?
-if [[ "$name1" != "--ClusterId" && "$name1" != "--MetadataAPIConfig" && "$name1" != "--NodeConfigPath"  && "$name1" != "--KafkaInstallPath"   && "$name1" != "--TarballPath"  && "$name1" != "--WorkingDir"   && "$name1" != "--ipAddrs"   && "$name1" != "--ipIdTargPaths"   && "$name1" != "--ipPathPairs" && "$name1" != "--priorInstallDirPath" &&  "$name1" != "--newInstallDirPath"  &&  "$name1" != "--externalJarsDir" ]]; then
+if [[ "$name1" != "--ClusterId" && "$name1" != "--MetadataAPIConfig" && "$name1" != "--NodeConfigPath"  && "$name1" != "--KafkaInstallPath"   && "$name1" != "--TarballPath"  && "$name1" != "--WorkingDir"   && "$name1" != "--ipAddrs"   && "$name1" != "--ipIdTargPaths"   && "$name1" != "--ipPathPairs" && "$name1" != "--priorInstallDirPath" &&  "$name1" != "--newInstallDirPath"  &&  "$name1" != "--externalJarsDir" && "$name1" != "--tenantId" && "$name1" != "--adapterMessageBindings"  ]]; then
     echo 
 	echo "Problem: Unreasonable number of arguments... as few as 2 and as many as 26 may be supplied."
     Usage
@@ -120,6 +122,8 @@ priorInstallDirPath=""
 newInstallDirPath=""
 installVerificationFile=""
 externalJarsDir=""
+tenantId=""
+adapterMessageBindings=""
 
 while [ "$1" != "" ]; do
     case $1 in
@@ -162,6 +166,12 @@ while [ "$1" != "" ]; do
                                 ;;
         --externalJarsDir )   shift
                                 externalJarsDir=$1
+                                ;;
+        --tenantId )           shift
+                                tenantId=$1
+                                ;;
+        --adapterMessageBindings )           shift
+                                adapterMessageBindings=$1
                                 ;;
         --help )           		Usage
         						exit 0
@@ -393,8 +403,10 @@ if [ "$ipAddrs" == "" -a "$ipIdTargPaths" == ""  -a "$ipPathPairs" == ""  -a "$p
 		echo "ipIdCfgTargPathQuartetTmpFileName = $ipIdCfgTargPathQuartetTmpFileName"
 		echo "installDir = $installDir"
 		echo "clusterId = $clusterId"
-		echo "...Command = NodeInfoExtract-1.0 --MetadataAPIConfig \"$metadataAPIConfig\" --NodeConfigPath \"$nodeConfigPath\"  --workDir \"$workDir\" --ipFileName \"$ipTmpFile\" --ipPathPairFileName \"$ipPathPairTmpFile\" --ipIdCfgTargPathQuartetFileName \"$ipIdCfgTargPathQuartetTmpFileName\" --installDir \"$installDir\" --clusterId \"$clusterId\""
-		NodeInfoExtract-1.0 --MetadataAPIConfig "$metadataAPIConfig" --NodeConfigPath "$nodeConfigPath" --workDir "$workDir" --ipFileName "$ipTmpFile" --ipPathPairFileName "$ipPathPairTmpFile" --ipIdCfgTargPathQuartetFileName "$ipIdCfgTargPathQuartetTmpFileName"  --installDir "$installDir" --clusterId "$clusterId"
+		echo "tenantId = $tenantId"
+		echo "adapterMessageBindings = $adapterMessageBindings"
+		echo "...Command = java -cp $installDir/lib/system/jarfactoryofmodelinstancefactory_2.11-1.0.jar:$installDir/lib/system/ExtDependencyLibs2_2.11-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs_2.11-${currentKamanjaVersion}.jar:$installDir/lib/system/KamanjaInternalDeps_2.11-${currentKamanjaVersion}.jar:$installDir/lib/system/nodeinfoextract_2.11-${currentKamanjaVersion}.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig \"$metadataAPIConfig\" --NodeConfigPath \"$nodeConfigPath\"  --workDir \"$workDir\" --ipFileName \"$ipTmpFile\" --ipPathPairFileName \"$ipPathPairTmpFile\" --ipIdCfgTargPathQuartetFileName \"$ipIdCfgTargPathQuartetTmpFileName\" --installDir \"$installDir\" --clusterId \"$clusterId\" --tenantId \"$tenantId\" --adapterMessageBidnings \"$adapterMessageBidnings\""
+		java -cp $installDir/lib/system/jarfactoryofmodelinstancefactory_2.11-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs2_2.11-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs_2.11-${currentKamanjaVersion}.jar:$installDir/lib/system/KamanjaInternalDeps_2.11-${currentKamanjaVersion}.jar:$installDir/lib/system/nodeinfoextract_2.11-${currentKamanjaVersion}.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig "$metadataAPIConfig" --NodeConfigPath "$nodeConfigPath" --workDir "$workDir" --ipFileName "$ipTmpFile" --ipPathPairFileName "$ipPathPairTmpFile" --ipIdCfgTargPathQuartetFileName "$ipIdCfgTargPathQuartetTmpFileName"  --installDir "$installDir" --clusterId "$clusterId" --tenantId "$tenantId" --adapterMessageBidnings "$adapterMessageBindings"
 		# Check 15: Bad NodeInfoExtract-1.0 arguments
 		if [ "$?" -ne 0 ]; then
 			echo
@@ -404,7 +416,7 @@ if [ "$ipAddrs" == "" -a "$ipIdTargPaths" == ""  -a "$ipPathPairs" == ""  -a "$p
 		fi
 	else # info is assumed to be present in the supplied metadata store... see trunk/utils/NodeInfoExtract for details
 		echo "...Command = $nodeInfoExtractDir/NodeInfoExtract-1.0 --MetadataAPIConfig \"$metadataAPIConfig\" --workDir \"$workDir\" --ipFileName \"$ipTmpFile\" --ipPathPairFileName \"$ipPathPairTmpFile\" --ipIdCfgTargPathQuartetFileName \"$ipIdCfgTargPathQuartetTmpFileName\" --installDir \"$installDir\" --clusterId \"$clusterId\""
-			NodeInfoExtract-1.0 --MetadataAPIConfig $metadataAPIConfig --workDir "$workDir" --ipFileName "$ipTmpFile" --ipPathPairFileName "$ipPathPairTmpFile" --ipIdCfgTargPathQuartetFileName "$ipIdCfgTargPathQuartetTmpFileName" --installDir "$installDir" --clusterId "$clusterId"
+			java -cp $installDir/lib/system/jarfactoryofmodelinstancefactory_2.11-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs2_2.11-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs_2.11-${currentKamanjaVersion}.jar:$installDir/lib/system/KamanjaInternalDeps_2.11-${currentKamanjaVersion}.jar:$installDir/lib/system/nodeinfoextract_2.11-${currentKamanjaVersion}.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig $metadataAPIConfig --workDir "$workDir" --ipFileName "$ipTmpFile" --ipPathPairFileName "$ipPathPairTmpFile" --ipIdCfgTargPathQuartetFileName "$ipIdCfgTargPathQuartetTmpFileName" --installDir "$installDir" --clusterId "$clusterId" --tenantId "$tenantId" --adapterMessageBidnings "$adapterMessageBindings"
 		# Check 15: Bad NodeInfoExtract-1.0 arguments
 		if [ "$?" -ne 0 ]; then
 			echo
@@ -578,9 +590,12 @@ while read LINE; do
     scp -o StrictHostKeyChecking=no "$cfgFile" "$machine:$targetPath/"
 
     # Engine Logfile. For now all nodes log files are same. May be later we can change.
-    sed "s/{InstallPath}/$installDir_repl/g;s/{NodeId}/$id/g" $script_dir/../config/engine_log4j2_template.xml > $workDir/engine_log4j2.xml
-    sed "s/{InstallPath}/$installDir_repl/g;s/{NodeId}/$id/g" $script_dir/../config/restapi_log4j2_template.xml > $workDir/restapi_log4j2.xml
-    sed "s/{InstallPath}/$installDir_repl/g;s/{NodeId}/$id/g" $script_dir/../config/log4j2_template.xml > $workDir/log4j2.xml
+    sed "s/{InstallPath}/$installDir_repl/g;s/{NodeId}/$id/g" $script_dir/engine_log4j2_template.xml > $workDir/engine_log4j2.xml
+    sed "s/{InstallPath}/$installDir_repl/g;s/{NodeId}/$id/g" $script_dir/restapi_log4j2_template.xml > $workDir/restapi_log4j2.xml
+    sed "s/{InstallPath}/$installDir_repl/g;s/{NodeId}/$id/g" $script_dir/log4j2_template.xml > $workDir/log4j2.xml
+    #sed "s/{InstallPath}/$installDir_repl/g;s/{NodeId}/$id/g" $script_dir/../config/engine_log4j2_template.xml > $workDir/engine_log4j2.xml
+    #sed "s/{InstallPath}/$installDir_repl/g;s/{NodeId}/$id/g" $script_dir/../config/restapi_log4j2_template.xml > $workDir/restapi_log4j2.xml
+    #sed "s/{InstallPath}/$installDir_repl/g;s/{NodeId}/$id/g" $script_dir/../config/log4j2_template.xml > $workDir/log4j2.xml
     sed "s/{NodeId}/$id/g;s/{HostName}/$machine/g" $metadataAPIConfig > $workDir/MetadataAPIConfig_${id}.properties
     scp -o StrictHostKeyChecking=no "$workDir/engine_log4j2.xml" "$machine:$targetPath/"
     scp -o StrictHostKeyChecking=no "$workDir/restapi_log4j2.xml" "$machine:$targetPath/"
@@ -635,6 +650,8 @@ while read LINE; do
 		echo "...copying $workDir/MetadataAPIConfig_${id}.properties to $machine:$targetPath/MetadataAPIConfig.properties"
 		scp -o StrictHostKeyChecking=no "$workDir/MetadataAPIConfig_${id}.properties" "$machine:$targetPath/MetadataAPIConfig.properties"
 	fi
+        echo "...copying $workDir/node${id}.cfg to $machine:$targetPath/Engine1Config.properties"
+        scp -o StrictHostKeyChecking=no "$workDir/node${id}.cfg" "$machine:$targetPath/Engine1Config.properties"
 done
 exec 0<&12 12<&-
 

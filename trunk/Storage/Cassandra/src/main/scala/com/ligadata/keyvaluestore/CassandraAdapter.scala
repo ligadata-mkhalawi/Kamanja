@@ -27,7 +27,15 @@ import com.datastax.driver.core.PreparedStatement
 import com.datastax.driver.core.BatchStatement
 import com.datastax.driver.core.HostDistance
 import com.datastax.driver.core.PoolingOptions
+
+import com.datastax.driver.core.ColumnDefinitions.Definition
+import com.datastax.driver.core.DataType
+import com.datastax.driver.core.Statement
+
+
 import java.nio.ByteBuffer
+import com.ligadata.KamanjaBase.NodeContext
+import com.ligadata.kamanja.metadata.AdapterInfo
 import org.apache.logging.log4j._
 import com.ligadata.Exceptions._
 import org.json4s._
@@ -35,8 +43,8 @@ import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import com.ligadata.Utils.{ KamanjaLoaderInfo }
 
-import com.ligadata.KvBase.{ Key, Value, TimeRange }
-import com.ligadata.StorageBase.{ DataStore, Transaction, StorageAdapterObj }
+import com.ligadata.KvBase.{ Key, TimeRange, Value }
+import com.ligadata.StorageBase.{ DataStore, Transaction, StorageAdapterFactory }
 import java.util.{ Date, Calendar, TimeZone }
 import java.text.SimpleDateFormat
 import java.io.File
@@ -44,47 +52,50 @@ import scala.collection.mutable.TreeSet
 import java.util.Properties
 import com.ligadata.Exceptions._
 
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+
 import scala.collection.JavaConversions._
 
+case class CassandraColumn(column_name:String, dtype: String, isKey: Boolean)
 /*
 datastoreConfig should have the following:
-	Mandatory Options:
-		hostlist/Location
-		schema/SchemaName
+Mandatory Options:
+hostlist/Location
+schema/SchemaName
 
-	Optional Options:
-		user
-		password
-		replication_class
-		replication_factor
-		ConsistencyLevelRead
-		ConsistencyLevelWrite
-		ConsistencyLevelDelete
-		
-		All the optional values may come from "AdapterSpecificConfig" also. That is the old way of giving more information specific to Adapter
+Optional Options:
+user
+password
+replication_class
+replication_factor
+ConsistencyLevelRead
+ConsistencyLevelWrite
+ConsistencyLevelDelete
+
+All the optional values may come from "AdapterSpecificConfig" also. That is the old way of giving more information specific to Adapter
 */
 
 /*
-  	You open connection to a cluster hostname[,hostname]:port
-  	You could provide username/password
+You open connection to a cluster hostname[,hostname]:port
+You could provide username/password
 
- 	You can operator on keyspace / table
+You can operator on keyspace / table
 
- 	if key space is missing we will try to create
- 	if table is missing we will try to create
+if key space is missing we will try to create
+if table is missing we will try to create
 
-	-- Lets start with this schema
-	--
-	CREATE KEYSPACE default WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': '4' };
-	USE default;
-	CREATE TABLE default (key blob, value blob, primary key(key) );
- */
+-- Lets start with this schema
+--
+CREATE KEYSPACE default WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': '4' };
+USE default;
+CREATE TABLE default (key blob, value blob, primary key(key) );
+*/
 
-class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: String) extends DataStore {
+class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: String, val nodeCtxt: NodeContext, val adapterInfo: AdapterInfo) extends DataStore {
   val adapterConfig = if (datastoreConfig != null) datastoreConfig.trim else ""
-  val loggerName = this.getClass.getName
-
-  val logger = LogManager.getLogger(loggerName)
+//  val loggerName = this.getClass.getName
+//  val logger = LogManager.getLogger(loggerName)
 
   private[this] val lock = new Object
   private var containerList: scala.collection.mutable.Set[String] = scala.collection.mutable.Set[String]()
@@ -126,6 +137,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     parsed_json = json.values.asInstanceOf[Map[String, Any]]
   } catch {
     case e: Exception => {
+      externalizeExceptionEvent(e)
       var msg = "Failed to parse Cassandra JSON configuration string:%s.".format(adapterConfig)
       throw CreateConnectionException(msg, e)
     }
@@ -146,6 +158,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
         adapterSpecificConfig_json = json.values.asInstanceOf[Map[String, Any]]
       } catch {
         case e: Exception => {
+          externalizeExceptionEvent(e)
           msg = "Failed to parse Cassandra Adapter Specific JSON configuration string:%s.".format(adapterSpecificStr)
           throw CreateConnectionException(msg, e)
         }
@@ -248,6 +261,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
         session.execute(createKeySpaceStmt);
       } catch {
         case e: Exception => {
+          externalizeExceptionEvent(e)
           msg = "Unable to create keyspace " + keyspace
           throw CreateConnectionException(msg, e)
         }
@@ -262,6 +276,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     logger.info("DataStore created successfully")
   } catch {
     case e: Exception => {
+      externalizeExceptionEvent(e)
       throw CreateConnectionException("Unable to connect to cassandra at " + hostnames, e)
     }
   }
@@ -276,6 +291,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw new Exception("Failed to create table  " + toTableName(containerName), e)
       }
     }
@@ -292,6 +308,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       session.execute(dropKeySpaceStmt);
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDDLException("Unable to drop keyspace " + keyspace, e)
       }
     }
@@ -316,11 +333,12 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
             }
           }
         }
-        var query = "create table if not exists " + fullTableName + "(bucketkey varchar,timepartition bigint,transactionid bigint, rowid int, serializertype varchar, serializedinfo blob, primary key(bucketkey,timepartition,transactionid,rowid));"
+        var query = "create table if not exists " + fullTableName + "(bucketkey varchar,timepartition bigint,transactionid bigint, rowid int, schemaid int, serializertype varchar, serializedinfo blob, primary key(bucketkey,timepartition,transactionid,rowid));"
         session.execute(query);
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDDLException("Failed to create table " + tableName, e)
       }
     }
@@ -332,6 +350,10 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       logger.info("create the container " + cont)
       CreateContainer(cont, "ddl")
     })
+  }
+
+  override def CreateMetadataContainer(containerNames: Array[String]): Unit = {
+    CreateContainer(containerNames)
   }
 
   private def toTableName(containerName: String): String = {
@@ -357,6 +379,12 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     toTableName(containerName)
   }
 
+  override def getTableName(containerName: String): String = {
+    // we need to check for other restrictions as well
+    // such as length of the table, special characters etc
+    toTableName(containerName)
+  }
+
   private def bucketKeyToString(bucketKey: Array[String]): String = {
     bucketKey.mkString(",")
   }
@@ -370,22 +398,23 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     try {
       CheckTableExists(containerName)
       tableName = toFullTableName(containerName)
-      var query = "UPDATE " + tableName + " SET serializertype = ? , serializedinfo = ? where timepartition = ? and bucketkey = ? and transactionid = ? and rowid = ?;"
+      var query = "UPDATE " + tableName + " SET schemaid = ? , serializertype = ? , serializedinfo = ? where timepartition = ? and bucketkey = ? and transactionid = ? and rowid = ?;"
       var prepStmt = preparedStatementsMap.getOrElse(query, null)
       if (prepStmt == null) {
         prepStmt = session.prepare(query)
         preparedStatementsMap.put(query, prepStmt)
       }
       var byteBuf = ByteBuffer.wrap(value.serializedInfo.toArray[Byte]);
-      session.execute(prepStmt.bind(value.serializerType,
-        byteBuf,
-        new java.lang.Long(key.timePartition),
-        bucketKeyToString(key.bucketKey),
-        new java.lang.Long(key.transactionId),
-        new java.lang.Integer(key.rowId)).
-        setConsistencyLevel(consistencylevelWrite))
+      session.execute(prepStmt.bind(new java.lang.Integer(value.schemaId), value.serializerType,
+				    byteBuf,
+				    new java.lang.Long(key.timePartition),
+				    bucketKeyToString(key.bucketKey),
+				    new java.lang.Long(key.transactionId),
+				    new java.lang.Integer(key.rowId)).
+		      setConsistencyLevel(consistencylevelWrite))
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to save an object in table " + tableName, e)
       }
     }
@@ -399,7 +428,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
         var containerName = li._1
         CheckTableExists(containerName)
         tableName = toFullTableName(containerName)
-        var query = "UPDATE " + tableName + " SET serializertype = ? , serializedinfo = ? where timepartition = ? and bucketkey = ? and transactionid = ? and rowid = ?;"
+        var query = "UPDATE " + tableName + " SET schemaid = ? , serializertype = ? , serializedinfo = ? where timepartition = ? and bucketkey = ? and transactionid = ? and rowid = ?;"
         var prepStmt = preparedStatementsMap.getOrElse(query, null)
         if (prepStmt == null) {
           prepStmt = session.prepare(query)
@@ -424,21 +453,21 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
           // whether updates are done in bulk or one at a time. By default we are doing this 
           // one at a time until we have a better solution.
           if (batchPuts.equalsIgnoreCase("YES")) {
-            batch.add(prepStmt.bind(value.serializerType,
-              byteBuf,
-              new java.lang.Long(key.timePartition),
-              bucketKeyToString(key.bucketKey),
-              new java.lang.Long(key.transactionId),
-              new java.lang.Integer(key.rowId)).
-              setConsistencyLevel(consistencylevelWrite))
+            batch.add(prepStmt.bind(new java.lang.Integer(value.schemaId), value.serializerType,
+				    byteBuf,
+				    new java.lang.Long(key.timePartition),
+				    bucketKeyToString(key.bucketKey),
+				    new java.lang.Long(key.transactionId),
+				    new java.lang.Integer(key.rowId)).
+		      setConsistencyLevel(consistencylevelWrite))
           } else {
-            session.execute(prepStmt.bind(value.serializerType,
-              byteBuf,
-              new java.lang.Long(key.timePartition),
-              bucketKeyToString(key.bucketKey),
-              new java.lang.Long(key.transactionId),
-              new java.lang.Integer(key.rowId)).
-              setConsistencyLevel(consistencylevelWrite))
+            session.execute(prepStmt.bind(new java.lang.Integer(value.schemaId), value.serializerType,
+					  byteBuf,
+					  new java.lang.Long(key.timePartition),
+					  bucketKeyToString(key.bucketKey),
+					  new java.lang.Long(key.transactionId),
+					  new java.lang.Integer(key.rowId)).
+			    setConsistencyLevel(consistencylevelWrite))
           }
         })
       })
@@ -447,6 +476,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to save object(s) in table " + tableName, e)
       }
     }
@@ -467,14 +497,15 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       }
       keys.foreach(key => {
         batch.add(prepStmt.bind(new java.lang.Long(key.timePartition),
-          bucketKeyToString(key.bucketKey),
-          new java.lang.Long(key.transactionId),
-          new java.lang.Integer(key.rowId)).
-          setConsistencyLevel(consistencylevelDelete))
+				bucketKeyToString(key.bucketKey),
+				new java.lang.Long(key.transactionId),
+				new java.lang.Integer(key.rowId)).
+		  setConsistencyLevel(consistencylevelDelete))
       })
       session.execute(batch);
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to delete object(s) from table " + tableName, e)
       }
     }
@@ -504,9 +535,9 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       var rowKeys = new Array[Key](0)
       bucketKeys.foreach(bucketKey => {
         var rows = session.execute(prepStmt.bind(bucketKeyToString(bucketKey),
-          new java.lang.Long(time.beginTime),
-          new java.lang.Long(time.endTime)).
-          setConsistencyLevel(consistencylevelDelete))
+						 new java.lang.Long(time.beginTime),
+						 new java.lang.Long(time.endTime)).
+				   setConsistencyLevel(consistencylevelDelete))
         for (rs <- rows) {
           rowKeys = rowKeys :+ getRowKey(rs)
         }
@@ -514,10 +545,40 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       del(containerName, rowKeys)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to delete object(s) from table " + tableName, e)
       }
     }
   }
+
+  //Added by Yousef Abu Elbeh at -2016-03-13 from here
+  override def del(containerName: String, time: TimeRange): Unit = {
+    var tableName = toFullTableName(containerName)
+    try {
+      CheckTableExists(containerName)
+      var query = "select timepartition,bucketkey,transactionid,rowid from " + tableName + " where timepartition >= ?  and timepartition <= ? "
+      var prepStmt = preparedStatementsMap.getOrElse(query, null)
+      if (prepStmt == null) {
+        prepStmt = session.prepare(query)
+        preparedStatementsMap.put(query, prepStmt)
+      }
+      var rowKeys = new Array[Key](0)
+        var rows = session.execute(prepStmt.bind(
+          new java.lang.Long(time.beginTime),
+          new java.lang.Long(time.endTime)).
+          setConsistencyLevel(consistencylevelDelete))
+        for (rs <- rows) {
+          rowKeys = rowKeys :+ getRowKey(rs)
+        }
+      del(containerName, rowKeys)
+    } catch {
+      case e: Exception => {
+        externalizeExceptionEvent(e)
+        throw CreateDMLException("Failed to delete object(s) from table " + tableName, e)
+      }
+    }
+  }
+  //to here
 
   // get operations
   def getRowCount(containerName: String, whereClause: String): Long = {
@@ -536,49 +597,52 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
   }
 
   private def processRow(rs: Row, callbackFunction: (Key, Value) => Unit) {
-    var timePartition = rs.getLong("timepartition")
-    var keyStr = rs.getString("bucketkey")
-    var tId = rs.getLong("transactionid")
-    var rId = rs.getInt("rowid")
-    var st = rs.getString("serializertype")
-    var buf = rs.getBytes("serializedinfo")
+    val timePartition = rs.getLong("timepartition")
+    val keyStr = rs.getString("bucketkey")
+    val tId = rs.getLong("transactionid")
+    val rId = rs.getInt("rowid")
+    val schemaid = rs.getInt("schemaid")
+    val st = rs.getString("serializertype")
+    val buf = rs.getBytes("serializedinfo")
     // format the data to create Key/Value
     val bucketKey = strToBucketKey(keyStr)
-    var key = new Key(timePartition, bucketKey, tId, rId)
-    var ba = convertByteBufToArrayOfBytes(buf)
-    var value = new Value(st, ba)
-    (callbackFunction)(key, value)
+    val key = new Key(timePartition, bucketKey, tId, rId)
+    val ba = convertByteBufToArrayOfBytes(buf)
+    val value = new Value(schemaid, st, ba)
+			 (callbackFunction)(key, value)
   }
 
   private def processRow(key: Key, rs: Row, callbackFunction: (Key, Value) => Unit) {
-    var st = rs.getString("serializertype")
-    var buf = rs.getBytes("serializedinfo")
-    var ba = convertByteBufToArrayOfBytes(buf)
-    var value = new Value(st, ba)
-    (callbackFunction)(key, value)
+    val schemaid = rs.getInt("schemaid")
+    val st = rs.getString("serializertype")
+    val buf = rs.getBytes("serializedinfo")
+    val ba = convertByteBufToArrayOfBytes(buf)
+    val value = new Value(schemaid, st, ba)
+			 (callbackFunction)(key, value)
   }
 
   private def processKey(rs: Row, callbackFunction: (Key) => Unit) {
-    var timePartition = rs.getLong("timepartition")
-    var keyStr = rs.getString("bucketkey")
-    var tId = rs.getLong("transactionid")
-    var rId = rs.getInt("rowid")
+    val timePartition = rs.getLong("timepartition")
+    val keyStr = rs.getString("bucketkey")
+    val tId = rs.getLong("transactionid")
+    val rId = rs.getInt("rowid")
     // format the data to create Key/Value
     val bucketKey = strToBucketKey(keyStr)
-    var key = new Key(timePartition, bucketKey, tId, rId)
-    (callbackFunction)(key)
+    val key = new Key(timePartition, bucketKey, tId, rId)
+		     (callbackFunction)(key)
   }
 
   private def getData(tableName: String, query: String, callbackFunction: (Key, Value) => Unit): Unit = {
     try {
-      var getDataStmt = new SimpleStatement(query)
-      var rows = session.execute(getDataStmt)
-      var rs: Row = null
+      val getDataStmt = new SimpleStatement(query)
+      val rows = session.execute(getDataStmt)
+      val rs: Row = null
       for (rs <- rows) {
         processRow(rs, callbackFunction)
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw e
       }
     }
@@ -601,6 +665,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         logger.error("", e)
       }
     }
@@ -625,10 +690,10 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       }
       keys.foreach(key => {
         var rows = session.execute(prepStmt.bind(new java.lang.Long(key.timePartition),
-          bucketKeyToString(key.bucketKey),
-          new java.lang.Long(key.transactionId),
-          new java.lang.Integer(key.rowId)).
-          setConsistencyLevel(consistencylevelRead))
+						 bucketKeyToString(key.bucketKey),
+						 new java.lang.Long(key.transactionId),
+						 new java.lang.Integer(key.rowId)).
+				   setConsistencyLevel(consistencylevelRead))
         var rs: Row = null
         for (rs <- rows) {
           processKey(rs, callbackFunction)
@@ -636,6 +701,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       })
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     }
@@ -645,7 +711,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     var tableName = toFullTableName(containerName)
     try {
       CheckTableExists(containerName)
-      var query = "select serializertype,serializedinfo from " + tableName + " where timepartition = ? and bucketkey = ? and transactionid = ? and rowid = ?"
+      var query = "select schemaid,serializertype,serializedinfo from " + tableName + " where timepartition = ? and bucketkey = ? and transactionid = ? and rowid = ?"
       var prepStmt = preparedStatementsMap.getOrElse(query, null)
       if (prepStmt == null) {
         prepStmt = session.prepare(query)
@@ -653,10 +719,10 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       }
       keys.foreach(key => {
         var rows = session.execute(prepStmt.bind(new java.lang.Long(key.timePartition),
-          bucketKeyToString(key.bucketKey),
-          new java.lang.Long(key.transactionId),
-          new java.lang.Integer(key.rowId)).
-          setConsistencyLevel(consistencylevelRead))
+						 bucketKeyToString(key.bucketKey),
+						 new java.lang.Long(key.transactionId),
+						 new java.lang.Integer(key.rowId)).
+				   setConsistencyLevel(consistencylevelRead))
         var rs: Row = null
         for (rs <- rows) {
           processRow(key, rs, callbackFunction)
@@ -664,6 +730,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       })
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     }
@@ -673,7 +740,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
   override def get(containerName: String, time_ranges: Array[TimeRange], callbackFunction: (Key, Value) => Unit): Unit = {
     CheckTableExists(containerName)
     var tableName = toFullTableName(containerName)
-    var query = "select timepartition,bucketkey,transactionid,rowid,serializertype,serializedinfo from " + tableName + " where timepartition >= ? and timepartition <= ? ALLOW FILTERING;"
+    var query = "select timepartition,bucketkey,transactionid,rowid,schemaid,serializertype,serializedinfo from " + tableName + " where timepartition >= ? and timepartition <= ? ALLOW FILTERING;"
     var prepStmt = preparedStatementsMap.getOrElse(query, null)
     if (prepStmt == null) {
       prepStmt = session.prepare(query)
@@ -682,8 +749,8 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     time_ranges.foreach(time_range => {
       var rs: Row = null
       var rows = session.execute(prepStmt.bind(new java.lang.Long(time_range.beginTime),
-        new java.lang.Long(time_range.endTime)).
-        setConsistencyLevel(consistencylevelRead))
+					       new java.lang.Long(time_range.endTime)).
+				 setConsistencyLevel(consistencylevelRead))
       for (rs <- rows) {
         processRow(rs, callbackFunction)
       }
@@ -702,8 +769,8 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     time_ranges.foreach(time_range => {
       var rs: Row = null
       var rows = session.execute(prepStmt.bind(new java.lang.Long(time_range.beginTime),
-        new java.lang.Long(time_range.endTime)).
-        setConsistencyLevel(consistencylevelRead))
+					       new java.lang.Long(time_range.endTime)).
+				 setConsistencyLevel(consistencylevelRead))
       for (rs <- rows) {
         processKey(rs, callbackFunction)
       }
@@ -714,7 +781,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     var tableName = toFullTableName(containerName)
     try {
       CheckTableExists(containerName)
-      var query = "select timepartition,bucketkey,transactionid,rowid,serializertype,serializedinfo from " + tableName + " where timepartition >= ?  and timepartition <= ?  and bucketkey = ? "
+      var query = "select timepartition,bucketkey,transactionid,rowid,schemaid,serializertype,serializedinfo from " + tableName + " where timepartition >= ?  and timepartition <= ?  and bucketkey = ? "
       var prepStmt = preparedStatementsMap.getOrElse(query, null)
       if (prepStmt == null) {
         prepStmt = session.prepare(query)
@@ -724,9 +791,9 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
         bucketKeys.foreach(bucketKey => {
           var rs: Row = null
           var rows = session.execute(prepStmt.bind(new java.lang.Long(time_range.beginTime),
-            new java.lang.Long(time_range.endTime),
-            bucketKeyToString(bucketKey)).
-            setConsistencyLevel(consistencylevelRead))
+						   new java.lang.Long(time_range.endTime),
+						   bucketKeyToString(bucketKey)).
+				     setConsistencyLevel(consistencylevelRead))
           for (rs <- rows) {
             processRow(rs, callbackFunction)
           }
@@ -734,6 +801,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       })
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     }
@@ -753,9 +821,9 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
         bucketKeys.foreach(bucketKey => {
           var rs: Row = null
           var rows = session.execute(prepStmt.bind(new java.lang.Long(time_range.beginTime),
-            new java.lang.Long(time_range.endTime),
-            bucketKeyToString(bucketKey)).
-            setConsistencyLevel(consistencylevelRead))
+						   new java.lang.Long(time_range.endTime),
+						   bucketKeyToString(bucketKey)).
+				     setConsistencyLevel(consistencylevelRead))
           for (rs <- rows) {
             processKey(rs, callbackFunction)
           }
@@ -763,6 +831,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       })
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     }
@@ -772,7 +841,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     var tableName = toFullTableName(containerName)
     try {
       CheckTableExists(containerName)
-      var query = "select timepartition,bucketkey,transactionid,rowid,serializertype,serializedinfo from " + tableName + " where  bucketkey = ? "
+      var query = "select timepartition,bucketkey,transactionid,rowid,schemaid,serializertype,serializedinfo from " + tableName + " where  bucketkey = ? "
       var prepStmt = preparedStatementsMap.getOrElse(query, null)
       if (prepStmt == null) {
         prepStmt = session.prepare(query)
@@ -781,13 +850,14 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       bucketKeys.foreach(bucketKey => {
         var rs: Row = null
         var rows = session.execute(prepStmt.bind(bucketKeyToString(bucketKey)).
-          setConsistencyLevel(consistencylevelRead))
+				   setConsistencyLevel(consistencylevelRead))
         for (rs <- rows) {
           processRow(rs, callbackFunction)
         }
       })
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     }
@@ -805,13 +875,14 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       }
       bucketKeys.foreach(bucketKey => {
         var rows = session.execute(prepStmt.bind(bucketKeyToString(bucketKey)).
-          setConsistencyLevel(consistencylevelRead))
+				   setConsistencyLevel(consistencylevelRead))
         for (rs <- rows) {
           processKey(rs, callbackFunction)
         }
       })
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
       }
     }
@@ -840,6 +911,7 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       session.execute(query);
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Unable to truncate table " + fullTableName, e)
       }
     }
@@ -857,11 +929,27 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     var tableName = toTableName(containerName)
     var fullTableName = toFullTableName(containerName)
     try {
+      dropTable(fullTableName)
+    } catch {
+      case e: Exception => {
+        externalizeExceptionEvent(e)
+        throw CreateDDLException("Unable to drop table " + tableName + ":" + e.getMessage(), e)
+      }
+    }
+  }
+
+  private def dropTable(tableName: String,ks:String = null): Unit = lock.synchronized {
+    var fullTableName = tableName
+    if( ks != null ){
+      fullTableName = ks + "." + tableName
+    }
+    try {
       var query = "drop table if exists " + fullTableName
       session.execute(query);
     } catch {
       case e: Exception => {
-        throw CreateDDLException("Unable to drop table " + tableName, e)
+        externalizeExceptionEvent(e)
+        throw CreateDDLException("Unable to drop table " + fullTableName, e)
       }
     }
   }
@@ -874,33 +962,14 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     })
   }
 
-  private def ExportTable(tableName: String, exportDump: String): Unit = {
+  private def IsTableExists(tableName: String,ks:String = null): Boolean = {
+    var keyspaceSearched = keyspace
     try {
-      var query = "copy " + tableName + " to '" + exportDump + "';"
-      logger.info("query => " + query)
-      session.execute(query)
-    } catch {
-      case e: Exception => {
-        throw CreateDMLException("Unable to export table " + tableName, e)
+      if( ks != null ){
+	keyspaceSearched = ks
       }
-    }
-  }
-
-  private def ImportTable(tableName: String, exportDump: String): Unit = {
-    try {
-      var query = "copy " + tableName + " from '" + exportDump + "';"
-      session.execute(query);
-    } catch {
-      case e: Exception => {
-        throw CreateDMLException("Unable to import table " + tableName, e)
-      }
-    }
-  }
-
-  private def IsTableExists(tableName: String): Boolean = {
-    try {
-      var ks = cluster.getMetadata().getKeyspace(keyspace)
-      var t = ks.getTable(tableName)
+      var ks1 = cluster.getMetadata().getKeyspace(keyspaceSearched)
+      var t = ks1.getTable(tableName)
       if (t != null) {
         return true;
       } else {
@@ -908,13 +977,10 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
       }
     } catch {
       case e: Exception => {
-        throw CreateDMLException("Unable to verify whether table " + tableName + " exists", e)
+        externalizeExceptionEvent(e)
+        throw CreateDMLException("Unable to verify whether table " + keyspaceSearched + "." + tableName + " exists", e)
       }
     }
-  }
-
-  private def IsFileExists(fileName: String): Boolean = {
-    new java.io.File(fileName).exists
   }
 
   private def getColDataType(validator: String): String = {
@@ -940,176 +1006,333 @@ class CassandraAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
     column_type.equals("partition_key") | column_type.equals("clustering_key")
   }
 
-  private def cloneTable(oldTableName: String, newTableName: String): Unit = {
+  private def getColumns(oldTableName: String): Array[CassandraColumn] = {
     try {
       var query = "SELECT column_name,type,validator FROM system.schema_columns WHERE keyspace_name = ? AND columnfamily_name = ?"
       var prepStmt = preparedStatementsMap.getOrElse(query, null)
       prepStmt = session.prepare(query)
       var rows = session.execute(prepStmt.bind(keyspace, oldTableName).setConsistencyLevel(consistencylevelRead))
-      var createStmt = "CREATE TABLE IF NOT EXISTS " + newTableName + "("
-      var keyColStr = ""
-      var colStr = ""
-      var colCount = 0
-      var colDtypeMap: scala.collection.mutable.Map[String, String] = new scala.collection.mutable.HashMap()
-
-      var columnArray = new Array[String](0)
+      var columnArray = new Array[CassandraColumn](0)
       for (rs <- rows) {
         var column_name = rs.getString("column_name")
         var column_type = rs.getString("type")
         var validator = rs.getString("validator")
         var dtype = getColDataType(validator);
-        createStmt = createStmt + column_name + " " + dtype + ","
-        if (isKeyCol(column_type)) {
-          keyColStr = keyColStr + column_name + ","
-        }
-        colStr = colStr + column_name + ","
-        colCount = colCount + 1
-        columnArray :+ columnArray + column_name
-        colDtypeMap(column_name) = dtype;
-      }
-      // strip the last comma of keyColStr
-      keyColStr = keyColStr.stripSuffix(",")
-      colStr = colStr.stripSuffix(",")
-      // construct complete create statement
-      createStmt = createStmt + " primary key ( " + keyColStr + "));"
-      logger.info("create table statement => " + createStmt)
-      session.execute(createStmt);
+        var isKey = isKeyCol(column_type);
 
-      /*
-      // copy the data
-
-      var insertStatement = "insert into " + newTableName  + "(" + colStr + ") values (";
-      for( _ <- 1 to  colCount ){
-	insertStatement = insertStatement + "? "
+	var cc = new CassandraColumn(column_name,dtype,isKey)
+        columnArray = columnArray :+ cc
       }
-      insertStatement = insertStatement + ");"
-      prepInsertStmt = session.prepare(insertStatement)
-
-      query = "SELECT " + colStr + " FROM " + oldTableName + ";"
-      prepStmt = preparedStatementsMap.getOrElse(query,null)
-      if( prepStmt == null ){
-	prepStmt = session.prepare(query)
-	preparedStatementsMap.put(query,prepStmt)
-      }
-      rows = session.execute(prepStmt.setConsistencyLevel(consistencylevelRead))
-      for( rs <- rows ){
-	var colValueMap: scala.collection.mutable.Map[String,Any] = new scala.collection.mutable.HashMap()
-	columnArray.foreach( col => {
-	  colDtypeMap(col) match {
-	    case "blob" => {
-	      colValues(col) = rs.getBytes(col)
-	    }
-	    case "bigint" => {
-	      colValues(col) = rs.getLong(col)
-	    }
-	    case "int" => {
-	      colValues(col) = rs.getInt(col)
-	    }
-	    case "varchar" => {
-	      colValues(col) = rs.getString(col)
-	    }
-	  }
-	})
-      }
-      */
+      columnArray
     } catch {
       case e: Exception => {
-        throw CreateDMLException("Unable to clone the table " + oldTableName, e)
+        externalizeExceptionEvent(e)
+        throw CreateDMLException("Unable to clone the table " + oldTableName + ":" + e.getMessage(), e)
       }
     }
   }
 
-  private def CreateBackupTable(oldTableName: String, newTableName: String): Unit = lock.synchronized {
+
+  private def createTable(tableName: String, columns: Array[CassandraColumn], ks: String = null): Unit = {
+    var tn = tableName;
+    try {
+      var keyColStr = ""
+      if( ks != null && ! ks.equalsIgnoreCase(keyspace) ){
+	tn = ks + "." + tableName
+      }
+      var createStmt = "create table " + tn + "("
+      for (col <- columns ) {
+        createStmt = createStmt + col.column_name + " " + col.dtype + ","
+        if ( col.isKey ) {
+          keyColStr = keyColStr + col.column_name + ","
+        }
+      }
+      // strip the last comma
+      keyColStr = keyColStr.stripSuffix(",")
+      // construct complete create statement
+      createStmt = createStmt + " primary key ( " + keyColStr + "));"
+      logger.info("create table statement => " + createStmt)
+      session.execute(createStmt);
+    } catch {
+      case e: Exception => {
+        externalizeExceptionEvent(e)
+        throw CreateDMLException("Unable to clone the table " + tn + ":" + e.getMessage(), e)
+      }
+    }
+  }
+
+
+  private def cloneTable(oldTableName: String, newTableName: String,ks:String = null): Unit = {
+    try {
+      val columns = getColumns(oldTableName);
+      createTable(newTableName,columns,ks)
+    } catch {
+      case e: Exception => {
+        externalizeExceptionEvent(e)
+        throw CreateDMLException("Unable to clone the table " + oldTableName + ":" + e.getMessage(), e)
+      }
+    }
+  }
+
+  private def selectStr(tableName:String, columns: Array[CassandraColumn]): String = {
+    try {
+      var colStr = ""
+      var selectStmt = "select ";
+      for (col <- columns ) {
+        selectStmt = selectStmt + col.column_name  + ","
+      }
+      // strip the last comma
+      selectStmt = selectStmt.stripSuffix(",")
+      selectStmt = selectStmt + " from " + tableName
+      logger.info("select statement => " + selectStmt)
+      selectStmt
+    } catch {
+      case e: Exception => {
+        externalizeExceptionEvent(e)
+        throw CreateDMLException("Unable to clone the table " + tableName + ":" + e.getMessage(), e)
+      }
+    }
+  }
+
+  private def byteBufferToHexStr(bb: java.nio.ByteBuffer): String = {
+    logger.debug("byte buffer capacity => " + bb.capacity)
+    val ba = new Array[Byte](bb.remaining())
+    logger.debug("byte array length => " + ba.length)
+    bb.get(ba,0,ba.length)
+    val hexStr = "0x" + ba.map("%02x".format(_)).mkString
+    logger.debug("hexStr => " + hexStr)
+    hexStr
+  }
+
+  private def copyData(oldTableName: String, newTableName: String, ks: String = null): Unit = {
+    var tn = newTableName;
+    logger.info("copy the contents of table " + oldTableName + " into " + newTableName);
+    try {
+      if( ks != null && ! ks.equalsIgnoreCase(keyspace) ){
+	tn = ks + "." + newTableName
+      }
+      val columns = getColumns(oldTableName);
+      val stmt = new SimpleStatement(selectStr(oldTableName,columns))
+      stmt.setFetchSize(1000);
+      val  rows = session.execute(stmt);
+      var batchStr =  new StringBuilder();
+      batchStr.append("BEGIN BATCH")
+      batchStr.append("\n")
+      for( row <- rows ){ 
+	logger.info("Processing a row ...");
+	var columnStr =  new StringBuilder();
+	val  valueStr = new StringBuilder();
+	row.getColumnDefinitions().asList().foreach( key => {
+	  val col = key.getName();
+	  columnStr.append(col);
+	  columnStr.append(",");
+	  valueStr.append(" ")
+	  if (key.getType() == DataType.cdouble()) {
+	    valueStr.append(row.getDouble(col).toString())
+	    valueStr.append(",")
+	    logger.debug("Double Value: valueStr sofar => " + valueStr.toString())
+	  }
+	  else if (key.getType() == DataType.bigint()) {
+	    valueStr.append(row.getLong(col).toString())
+	    valueStr.append(",")
+	    logger.debug("BigInt Value: valueStr sofar => " + valueStr.toString())
+	  }
+	  else if (key.getType() == DataType.cint()) {
+	    valueStr.append(row.getInt(col).toString())
+	    valueStr.append(",")
+	    logger.debug("Int Value: valueStr sofar => " + valueStr.toString())
+	  }
+	  else if (key.getType() == DataType.uuid()) {
+	    valueStr.append("'")
+	    valueStr.append(row.getUUID(col).toString())
+	    valueStr.append("',")
+	    logger.debug("UUID Value: valueStr sofar => " + valueStr.toString())
+	  }
+	  else if (key.getType() == DataType.cfloat()){
+	    valueStr.append(row.getFloat(col).toString())
+	    valueStr.append(",")
+	    logger.debug("valueStr sofar => " + valueStr.toString())
+	  }
+	  else if (key.getType() == DataType.blob()){
+	    valueStr.append(byteBufferToHexStr(row.getBytes(col)))
+	    valueStr.append(",")
+	    logger.debug("Blob Value: valueStr sofar => " + valueStr.toString())
+	  }
+	  else if (key.getType() == DataType.timestamp()) {
+	    val fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssZ");
+	    var str = fmt.format(row.getDate(col));
+	    valueStr.append("'")
+	    valueStr.append(str)
+	    valueStr.append("',")
+	    logger.debug("Date Value: valueStr sofar => " + valueStr.toString())
+	  }
+	  else {
+	    valueStr.append("'")
+	    valueStr.append(row.getString(col))
+	    valueStr.append("',")
+	    logger.debug("String Value: valueStr sofar => " + valueStr.toString())
+	  }
+	})
+	val colStr = columnStr.toString().stripSuffix(",");
+	val valStr = valueStr.toString().stripSuffix(",");
+	val insertStmt = "insert into " + tn + "(" + colStr + ") values (" + valStr + ")"
+	logger.debug(insertStmt)
+	batchStr.append(insertStmt)
+	batchStr.append("\n")
+      }
+      batchStr.append("APPLY BATCH")
+      batchStr.append("\n")
+      logger.info(batchStr)
+      session.execute(batchStr.toString());
+    } catch {
+      case e: Exception => {
+        externalizeExceptionEvent(e)
+        throw CreateDMLException("Unable to copy the table " + oldTableName, e)
+      }
+    }
+  }
+
+  private def copyTableOptionally(srcTableName: String, destTableName: String, forceCopy: Boolean = false, ks:String = null): Unit = {
+
+    if( ! IsTableExists(srcTableName) ){
+      logger.warn("The table being renamed doesn't exist, nothing to be done")
+      throw CreateDDLException("Failed to copy the table " + srcTableName + ":", new Exception("Source Table doesn't exist"))
+    }
+    if (IsTableExists(destTableName,ks)) {
+      if (forceCopy) {
+        dropTable(destTableName,ks);
+        cloneTable(srcTableName,destTableName,ks)
+      } else {
+        logger.warn("A Destination table already exist, nothing to be done")
+        throw CreateDDLException("Failed to copy the table " + srcTableName + ":", new Exception("Destination Table already exist"))
+      }
+    }
+    else{
+      cloneTable(srcTableName,destTableName,ks)
+      copyData(srcTableName,destTableName)
+    }
+  }
+
+  private def CreateBackupTable(oldTableName: String, newTableName: String, ks:String = null): Unit = lock.synchronized {
     try {
       // check whether new table already exists
-      if (IsTableExists(newTableName)) {
+      if (IsTableExists(newTableName,ks)) {
         logger.info("The table " + newTableName + " exists, may have beem created already ")
       } else {
         if (!IsTableExists(oldTableName)) {
           logger.info("The table " + oldTableName + " doesn't exist, nothing to rename ")
         } else {
-          var dumpFilePath = exportDumpDir + "/" + oldTableName + ".csv"
-          if (!IsFileExists(dumpFilePath)) {
-            //ExportTable(oldTableName,dumpFilePath)
-          }
           // create the new table with the same structure
-          cloneTable(oldTableName, newTableName)
-          //ImportTable(newTableName,dumpFilePath)
+          cloneTable(oldTableName, newTableName,ks)
+	  // copy data
+          copyData(oldTableName,newTableName,ks)
         }
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         throw CreateDMLException("Unable to create the backup table " + newTableName, e)
       }
     }
   }
 
-  def backupContainer(containerName: String): Unit = lock.synchronized {
-    throw CreateDDLException("Not Implemented yet :", new Exception("Failed to backup the container " + containerName))
-
-    // create an export file
-    //var fullTableName = toFullTableName(containerName)
-    //var oldTableName = fullTableName
-    //var newTableName = oldTableName + "_b"
-    //CreateBackupTable(oldTableName,newTableName)
+  override def backupContainer(containerName: String): Unit = lock.synchronized {
+    var fullTableName = toFullTableName(containerName)
+    var oldTableName = fullTableName
+    var newTableName = oldTableName + "_b"
+    CreateBackupTable(oldTableName,newTableName)
   }
 
-  def restoreContainer(containerName: String): Unit = lock.synchronized {
-    throw CreateDDLException("Not Implemented yet :", new Exception("Failed to restore the container " + containerName))
-    // create an export file
-    //var fullTableName = toFullTableName(containerName)
-    //var newTableName = fullTableName
-    //var oldTableName = newTableName + "_b"
-    //CreateBackupTable(oldTableName,newTableName)
+  override def restoreContainer(containerName: String): Unit = lock.synchronized {
+    var fullTableName = toFullTableName(containerName)
+    var newTableName = fullTableName
+    var oldTableName = newTableName + "_b"
+    CreateBackupTable(oldTableName,newTableName)
   }
 
   override def isContainerExists(containerName: String): Boolean = {
-    throw CreateDDLException("Not Implemented yet :", new Exception("Failed to check container existence " + containerName))
+    var fullTableName = toFullTableName(containerName)
+    IsTableExists(fullTableName)
   }
 
-  override def copyContainer(srcContainerName: String, destContainerName: String, forceCopy: Boolean): Unit = {
-    throw CreateDDLException("Not Implemented yet :", new Exception("Failed to copy container " + srcContainerName))
+  override def copyContainer(srcContainerName: String, destContainerName: String, forceCopy: Boolean = false): Unit = {
+    if (srcContainerName.equalsIgnoreCase(destContainerName)) {
+      throw CreateDDLException("Failed to copy the container " + srcContainerName, new Exception("Source Container Name can't be same as destination container name"))
+    }
+    var oldTableName = toFullTableName(srcContainerName)
+    var newTableName = toFullTableName(destContainerName)
+    logger.info("copy the table " + oldTableName + " to " + newTableName);
+    try {
+      copyTableOptionally(oldTableName, newTableName, forceCopy)
+    } catch {
+      case e: Exception => {
+        externalizeExceptionEvent(e)
+        throw CreateDDLException("Failed to copy the container " + srcContainerName, e)
+      }
+    }
   }
 
   override def getAllTables: Array[String] = {
-    logger.info("Not Implemeted yet")
-    new Array[String](0)
+    var tables = new Array[String](0)
+    try {
+      var query = "SELECT columnfamily_name FROM system.schema_columnfamilies WHERE keyspace_name=? "
+      var prepStmt = preparedStatementsMap.getOrElse(query, null)
+      prepStmt = session.prepare(query)
+      var rows = session.execute(prepStmt.bind(keyspace).setConsistencyLevel(consistencylevelRead))
+      for (rs <- rows) {
+        var table_name = rs.getString("columnfamily_name")
+        tables = tables :+ table_name
+      }
+      tables
+    } catch {
+      case e: Exception => {
+        externalizeExceptionEvent(e)
+        throw CreateDMLException("Failed to fetch the table list  ", e)
+      }
+    }
   }
 
   override def dropTables(tbls: Array[String]): Unit = {
-    logger.info("Not Implemeted yet")
+    try {
+      tbls.foreach(t => {
+        dropTable(t)
+      })
+    } catch {
+      case e: Exception => {
+        externalizeExceptionEvent(e)
+        throw CreateDDLException("Failed to drop table list  ", e)
+      }
+    }
   }
 
   override def dropTables(tbls: Array[(String, String)]): Unit = {
-    logger.info("Not Implemeted yet")
+    dropTables(tbls.map(t => t._1 + ':' + t._2))
   }
 
   override def copyTable(srcTableName: String, destTableName: String, forceCopy: Boolean): Unit = {
-    logger.info("Not Implemeted yet")
+    copyTableOptionally(srcTableName,destTableName,forceCopy)
   }
 
   override def copyTable(namespace: String, srcTableName: String, destTableName: String, forceCopy: Boolean): Unit = {
-    logger.info("Not Implemeted yet")
+    copyTableOptionally(srcTableName,destTableName,forceCopy,namespace)
   }
 
   override def isTableExists(tableName: String): Boolean = {
-    logger.info("Not Implemeted yet")
-    false
+    IsTableExists(tableName)
   }
 
   override def isTableExists(tableNamespace: String, tableName: String): Boolean = {
-    logger.info("Not Implemeted yet")
-    false
+    IsTableExists(tableName,tableNamespace)
   }
 }
 
 class CassandraAdapterTx(val parent: DataStore) extends Transaction {
 
-  val loggerName = this.getClass.getName
-  val logger = LogManager.getLogger(loggerName)
+//  val loggerName = this.getClass.getName
+//  val logger = LogManager.getLogger(loggerName)
 
   override def put(containerName: String, key: Key, value: Value): Unit = {
-    parent.put(containerName, key, value)
+    parent.put(containerName,  key, value)
   }
 
   override def put(data_list: Array[(String, Array[(Key, Value)])]): Unit = {
@@ -1124,6 +1347,11 @@ class CassandraAdapterTx(val parent: DataStore) extends Transaction {
   override def del(containerName: String, time: TimeRange, keys: Array[Array[String]]): Unit = {
     parent.del(containerName, time, keys)
   }
+  //Added by Yousef Abu Elbeh at 2016-03-13 from here
+  override def del(containerName: String, time: TimeRange): Unit = {
+    parent.del(containerName, time)
+  }
+  //to here
 
   // get operations
   override def get(containerName: String, callbackFunction: (Key, Value) => Unit): Unit = {
@@ -1199,6 +1427,12 @@ class CassandraAdapterTx(val parent: DataStore) extends Transaction {
     isTableExists(tableNamespace, tableName)
   }
 
+  override def getTableName(containerName: String): String = {
+    // we need to check for other restrictions as well
+    // such as length of the table, special characters etc
+    parent.getTableName(containerName)
+  }
+
   override def dropTables(tbls: Array[(String, String)]): Unit = {
     dropTables(tbls)
   }
@@ -1209,6 +1443,6 @@ class CassandraAdapterTx(val parent: DataStore) extends Transaction {
 }
 
 // To create Cassandra Datastore instance
-object CassandraAdapter extends StorageAdapterObj {
-  override def CreateStorageAdapter(kvManagerLoader: KamanjaLoaderInfo, datastoreConfig: String): DataStore = new CassandraAdapter(kvManagerLoader, datastoreConfig)
+object CassandraAdapter extends StorageAdapterFactory {
+  override def CreateStorageAdapter(kvManagerLoader: KamanjaLoaderInfo, datastoreConfig: String, nodeCtxt: NodeContext, adapterInfo: AdapterInfo): DataStore = new CassandraAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
 }

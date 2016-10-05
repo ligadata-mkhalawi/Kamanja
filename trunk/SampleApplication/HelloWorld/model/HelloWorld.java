@@ -25,7 +25,7 @@ public class HelloWorldModel extends ModelInstance {
     	super(factory);
     }
 
-	public ModelResultBase execute(TransactionContext txnCtxt, boolean outputDefault) {
+	public ContainerOrConcept[] execute(TransactionContext txnCtxt, ContainerOrConcept[] execMsgsSet, int matchedInputSetIndex, boolean outputDefault) {
     	/*
 		System.out.println("inside model");
     	GlobalPreferences gPref = GlobalPreferencesFactory.rddObject.getRecentOrNew(new String[]{"PrefType"});  //(new String[]{"Type1"});
@@ -57,27 +57,24 @@ public class HelloWorldModel extends ModelInstance {
     	 if (rcntTxn.balance() >= gPref.minalertbalance())
     	      return null;
 		*/
-		msg1 helloWorld = (msg1) txnCtxt.getMessage();
+		msg1 helloWorld = (msg1) execMsgsSet[0];  // This run should trigger when we have only msg1
 		if(helloWorld.score()!=1)
 			return null;
-
-        Result[] actualResult = {new Result("Id",helloWorld.id()) , new Result("Name",helloWorld.Name()), new Result("Score",helloWorld.score())};
-        return new MappedModelResults().withResults(actualResult);
+		outmsg1 output = (outmsg1) outmsg1.createInstance();
+		output.set(0, helloWorld.id());
+		output.set(1, helloWorld.name());
+		ContainerInterface[] returnArr = new ContainerInterface[1];
+		returnArr[0] = output;
+        return returnArr;
   }
 
     /**
      * @param inTxnContext
      */
 
-
-
-
     public static class HelloWorldModelFactory extends ModelInstanceFactory {
 		public HelloWorldModelFactory(ModelDef modelDef, NodeContext nodeContext) {
 			super(modelDef, nodeContext);
-		}
-		public boolean isValidMessage(MessageContainerBase msg) {
-			return (msg instanceof msg1);
 		}
 
 		public ModelInstance createModelInstance() {
@@ -85,15 +82,11 @@ public class HelloWorldModel extends ModelInstance {
 		}
 
 		public String getModelName() {
-			return "HelloWorldModel";
+			return "com.ligadata.kamanja.samples.models.HelloWorldModel";
 		}
 
 		public String getVersion() {
 			return "0.0.1";
-		}
-
-		public ModelResultBase createResultObject() {
-			return new MappedModelResults();
 		}
 	}
 

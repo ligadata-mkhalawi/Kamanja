@@ -1,0 +1,257 @@
+{
+    "Message" : {
+        "NameSpace" : "org.kdd99.network.traffic",
+        "Name" : "msg1",
+        "Version" : "00.01.00",
+        "Description" : "Predict normal/abnormal network traffic...active Fields for org.kdd99.rattle.treemodel.IntrusionDetection",
+        "Fixed" : "true",
+        "Elements" : [
+            {
+                "Field" : {
+                "Name" : "num_file_creations",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "protocol",
+                "Type" : "System.String"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "scheme",
+                "Type" : "System.String"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "sf",
+                "Type" : "System.String"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "duration",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "dst_host_same_srv_rate",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "dst_host_srv_count",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "dst_host_srv_rerror_rate",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "land",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "serror_rate",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "normal",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "src_bytes",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "logged_in",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "num_failed_logins",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "num_shells",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "su_attempted",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "is_guest_login",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "srv_serror_rate",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "service",
+                "Type" : "System.String"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "protocol_type",
+                "Type" : "System.String"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "diff_srv_rate",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "num_root",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "num_access_files",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "dst_host_count",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "dst_host_rerror_rate",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "dst_host_srv_serror_rate",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "dst_host_serror_rate",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "flag",
+                "Type" : "System.String"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "srv_count",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "dst_bytes",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "same_srv_rate",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "dst_host_diff_srv_rate",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "hot",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "rerror_rate",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "dst_host_srv_diff_host_rate",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "dst_host_same_src_port_rate",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "srv_rerror_rate",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "wrong_fragment",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "num_compromised",
+                "Type" : "System.Double"
+                }
+            },        
+            {
+                "Field" : {
+                "Name" : "srv_diff_host_rate",
+                "Type" : "System.Double"
+                }
+            },
+            {
+                "Field" : {
+                "Name" : "normal_target",
+                "Type" : "System.String"
+                }
+            }
+        ]
+    }
+}

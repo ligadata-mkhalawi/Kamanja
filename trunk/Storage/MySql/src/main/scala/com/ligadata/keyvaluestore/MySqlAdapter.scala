@@ -36,7 +36,7 @@ import java.sql.DriverManager
 import java.sql.{ Statement, PreparedStatement, CallableStatement, DatabaseMetaData, ResultSet }
 import java.sql.Connection
 import com.ligadata.KvBase.{ Key, Value, TimeRange }
-import com.ligadata.StorageBase.{ DataStore, Transaction, StorageAdapterObj }
+import com.ligadata.StorageBase.{ DataStore, Transaction, StorageAdapterFactory }
 import java.nio.ByteBuffer
 import org.apache.logging.log4j._
 import com.ligadata.Exceptions._
@@ -110,6 +110,7 @@ class MySqlAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
     parsed_json = json.values.asInstanceOf[Map[String, Any]]
   } catch {
     case e: Exception => {
+      externalizeExceptionEvent(e)
       logger.error("Failed to parse MySql JSON configuration string:%s".format(adapterConfig), e)
       throw e
     }
@@ -130,6 +131,7 @@ class MySqlAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
         adapterSpecificConfig_json = json.values.asInstanceOf[Map[String, Any]]
       } catch {
         case e: Exception => {
+          externalizeExceptionEvent(e)
           logger.error("Failed to parse MySql Adapter Specific JSON configuration string:%s.".format(adapterSpecificStr), e)
           throw e
         }
@@ -294,6 +296,7 @@ class MySqlAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
           }
         } catch {
           case e: Exception => {
+            externalizeExceptionEvent(e)
             val errMsg = "Jar " + jarNm + " failed added to class path."
             logger.error("Error:" + errMsg, e)
             throw new Exception(errMsg, e)
@@ -367,6 +370,7 @@ class MySqlAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       */
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         logger.error("", e)
         throw new Exception("Failed to save an object in the table " + tableName, e)
       }
@@ -449,6 +453,7 @@ class MySqlAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       con.commit()
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         logger.error("", e)
         throw new Exception("Batch put operation failed", e)
       }
@@ -493,6 +498,7 @@ class MySqlAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       logger.info("Deleted " + totalRowsDeleted + " rows from " + tableName)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         logger.debug("", e)
         throw new Exception("Failed to delete object(s) from the table " + tableName, e)
       }
@@ -541,6 +547,7 @@ class MySqlAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       logger.info("Deleted " + totalRowsDeleted + " rows from " + tableName)
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         logger.error("", e)
         throw new Exception("Failed to delete object(s) from the table " + tableName, e)
       }
@@ -582,6 +589,7 @@ class MySqlAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       rowCount
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         logger.debug("", e)
         throw new Exception("Failed to fetch data from the table " + tableName, e)
       }
@@ -625,6 +633,7 @@ class MySqlAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         logger.error("", e)
         //throw new Exception("Failed to fetch data from the table " + tableName, e)
       }
@@ -669,6 +678,7 @@ class MySqlAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         logger.debug("", e)
         //throw new Exception("Failed to fetch data from the table " + tableName, e)
       }
@@ -721,6 +731,7 @@ class MySqlAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       })
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         logger.debug("", e)
         //throw new Exception("Failed to fetch object(s) from the table " + tableName, e)
       }
@@ -762,6 +773,7 @@ class MySqlAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       })
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         logger.debug("", e)
         //throw new Exception("Failed to fetch object(s) from the table " + tableName, e)
       }
@@ -830,6 +842,7 @@ class MySqlAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       })
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         logger.error("", e)
         //throw new Exception("Failed to fetch object(s) from the table " + tableName, e)
       }
@@ -876,6 +889,7 @@ class MySqlAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       })
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         logger.error("", e)
         //throw new Exception("Failed to fetch object(s) from the table " + tableName, e)
       }
@@ -918,6 +932,7 @@ class MySqlAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       })
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         logger.error("", e)
         //throw new Exception("Failed to fetch object(s) from the table " + tableName, e)
       }
@@ -957,6 +972,7 @@ class MySqlAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       })
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         logger.error("", e)
         //throw new Exception("Failed to fetch object(s) from the table " + tableName, e)
       }
@@ -998,6 +1014,7 @@ class MySqlAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       stmt.executeUpdate(query);
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         logger.debug("", e)
         throw new Exception("Failed to truncate table " + tableName, e)
       }
@@ -1040,6 +1057,7 @@ class MySqlAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         logger.error("", e)
         throw new Exception("Failed to drop the table " + fullTableName, e)
       }
@@ -1096,6 +1114,7 @@ class MySqlAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       }
     } catch {
       case e: Exception => {
+        externalizeExceptionEvent(e)
         logger.error("", e)
         //throw new Exception("Failed to create the table " + tableName, e)
       }
@@ -1185,6 +1204,6 @@ class MySqlAdapterTx(val parent: DataStore) extends Transaction {
 }
 
 // To create MySql Datastore instance
-object MySqlAdapter extends StorageAdapterObj {
+object MySqlAdapter extends StorageAdapterFactory {
   override def CreateStorageAdapter(kvManagerLoader: KamanjaLoaderInfo, datastoreConfig: String): DataStore = new MySqlAdapter(kvManagerLoader, datastoreConfig)
 }

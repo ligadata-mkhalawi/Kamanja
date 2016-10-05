@@ -2,10 +2,10 @@ package com.ligadata.filedataprocessor
 
 import java.io.{IOException, File, PrintWriter}
 import java.nio.file.{Path, FileSystems}
-
 import com.ligadata.Exceptions.{InternalErrorException, MissingArgumentException}
 import org.apache.logging.log4j.{ Logger, LogManager }
 import com.ligadata.KamanjaVersion.KamanjaVersion
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Created by danielkozin on 9/24/15.
@@ -35,7 +35,8 @@ object LocationWatcher {
 
       val lines = scala.io.Source.fromFile(config).getLines.toList
       lines.foreach(line => {
-        if (!line.startsWith("#")) {
+        //Handle empty lines also 
+        if (!line.isEmpty() && !line.startsWith("#")) {
           val lProp = line.split("=")
           try {
             logger.info("SMART FILE CONSUMER "+lProp(0) + " = "+lProp(1))
@@ -43,7 +44,12 @@ object LocationWatcher {
           } catch {
             case iobe: IndexOutOfBoundsException => {
               logger.error("SMART FILE CONSUMER: Invalid format in the configuration file " + config, iobe)
-              logger.error("SMART FILE CONSUMER: unable to determine the value for property " + lProp(0))
+              logger.error("SMART FILE CONSUMER: unable to determine the value for property " + lProp(0), iobe)
+              return
+            }
+            case e: Throwable => {
+              logger.error("SMART FILE CONSUMER: Invalid format in the configuration file " + config)
+              logger.error("SMART FILE CONSUMER: unable to determine the value for property " + lProp(0), e)
               return
             }
           }
@@ -63,35 +69,63 @@ object LocationWatcher {
 
       var processors: Array[FileProcessor] = new Array[FileProcessor](numberOfProcessors)
       var threads: Array[Thread] = new Array[Thread](numberOfProcessors)
-      var path: Path= null
+      
+      //var path: Path= null
+      //Create an array of paths
+      var path = new ArrayBuffer[Path]()
+      
       try {
          val dirName = properties.getOrElse(SmartFileAdapterConstants.DIRECTORY_TO_WATCH, null)
          if (dirName == null) {
            logger.error("SMART FILE CONSUMER: Directory to watch is missing, must be specified")
            return
          }
-         path = FileSystems.getDefault().getPath(dirName)
+         
+         //path = FileSystems.getDefault().getPath(dirName)
+         var p:Int = 0;
+         for(x <- dirName.split(System.getProperty("path.separator"))){
+           path += FileSystems.getDefault().getPath(x)
+         }
+         
       } catch {
         case e: IOException => {
           logger.error ("Unable to find the directory to watch", e)
           return
         }
+        case e: Throwable => {
+          logger.error ("Unable to find the directory to watch", e)
+          return
+      }
       }
 
-      logger.info("SMART FILE CONSUMER: Starting "+ numberOfProcessors+" file consumers, reading from "+ path)
+      for(dir <- path)
+        logger.info("SMART FILE CONSUMER: Starting "+ numberOfProcessors+" file consumers, reading from "+ dir)
 
       try {
         for (i <- 1 to numberOfProcessors) {
-          var processor = new FileProcessor(path,i)
-          processor.init(properties)
-          val watch_thread = new Thread(processor)
-          watch_thread.start
+          try {
+            val processor = new FileProcessor(path,i)
+            processor.init(properties)
+            val watch_thread = new Thread(processor)
+            watch_thread.start
+          } catch {
+            case e: Exception => {
+              logger.error("Failure", e)
+            }
+            case e: Throwable => {
+              logger.error("Failure", e)
+            }
+          }
         }
       } catch {
         case e: Exception => {
           logger.error("SMART FILE CONSUMER:  ERROR in starting SMART FILE CONSUMER ", e)
           return
         }
-      }
+        case e: Throwable => {
+          logger.error("SMART FILE CONSUMER:  ERROR in starting SMART FILE CONSUMER ", e)
+          return
+        }
   }
+}
 }

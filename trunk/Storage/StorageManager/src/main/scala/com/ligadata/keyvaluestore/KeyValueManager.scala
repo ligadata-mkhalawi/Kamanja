@@ -16,7 +16,9 @@
 
 package com.ligadata.keyvaluestore
 
+import com.ligadata.KamanjaBase.NodeContext
 import com.ligadata._
+import com.ligadata.kamanja.metadata.AdapterInfo
 import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
@@ -25,7 +27,7 @@ import org.apache.logging.log4j._
 import com.ligadata.keyvaluestore._
 import com.ligadata.Utils.Utils._
 import com.ligadata.Utils.{ KamanjaClassLoader, KamanjaLoaderInfo }
-import com.ligadata.StorageBase.StorageAdapterObj
+import com.ligadata.StorageBase.StorageAdapterFactory
 
 object KeyValueManager {
   private val loggerName = this.getClass.getName
@@ -34,7 +36,7 @@ object KeyValueManager {
   // We will add more implementations here 
   // so we can test  the system characteristics
   //
-  def Get(jarPaths: collection.immutable.Set[String], datastoreConfig: String): DataStore = {
+  def Get(jarPaths: collection.immutable.Set[String], datastoreConfig: String, nodeCtxt: NodeContext, adapterInfo: AdapterInfo): DataStore = {
     val adapterConfig = if (datastoreConfig != null) datastoreConfig.trim else ""
 
     if (adapterConfig.size == 0) {
@@ -62,16 +64,17 @@ object KeyValueManager {
     storeType match {
 
       // Other KV stores
-      case "cassandra" => return CassandraAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig)
-      case "hbase" => return HBaseAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig)
+      case "cassandra" => return CassandraAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+      case "hbase" => return HBaseAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
       /*
       // Simple file base implementations
       case "redis" => return KeyValueRedis.CreateStorageAdapter(kvManagerLoader, datastoreConfig, tableName)
       */
-      case "hashmap" => return HashMapAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig)
-      case "treemap" => return TreeMapAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig)
+      case "hashmap" => return HashMapAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+      case "treemap" => return TreeMapAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
       // Other relational stores such as sqlserver, mysql
-      case "sqlserver" => return SqlServerAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig)
+      case "sqlserver" => return SqlServerAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+      case "h2db" => return H2dbAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
       // case "mysql" => return MySqlAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig)
 
       // Default, Load it from Class
@@ -120,8 +123,8 @@ object KeyValueManager {
           var isDs = false
           var curClz = clz
 
-          while (clz != null && isDs == false) {
-            isDs = isDerivedFrom(curClz, "com.ligadata.StorageBase.StorageAdapterObj")
+          while (curClz != null && isDs == false) {
+            isDs = isDerivedFrom(curClz, "com.ligadata.StorageBase.StorageAdapterFactory")
             if (isDs == false)
               curClz = curClz.getSuperclass()
           }
@@ -132,9 +135,9 @@ object KeyValueManager {
               val obj = kvManagerLoader.mirror.reflectModule(module)
 
               val objinst = obj.instance
-              if (objinst.isInstanceOf[StorageAdapterObj]) {
-                val storageAdapterObj = objinst.asInstanceOf[StorageAdapterObj]
-                return storageAdapterObj.CreateStorageAdapter(kvManagerLoader, datastoreConfig)
+              if (objinst.isInstanceOf[StorageAdapterFactory]) {
+                val storageAdapterObj = objinst.asInstanceOf[StorageAdapterFactory]
+                return storageAdapterObj.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
               } else {
                 logger.error("Failed to instantiate Storage Adapter with configuration:" + adapterConfig)
                 return null

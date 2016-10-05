@@ -16,26 +16,31 @@
 
 package com.ligadata.MetadataAPI.Utility
 
-import com.ligadata.MetadataAPI.MetadataAPIImpl
+import com.ligadata.MetadataAPI.{ApiResult, ErrorCodeConstants, MetadataAPIImpl}
 import org.apache.logging.log4j._
 import com.ligadata.kamanja.metadata.MdMgr
 /**
  * Created by dhaval on 8/13/15.
  */
 object DumpService {
-  private val userid: Option[String] = Some("metadataapi")
+  private val userid: Option[String] = Some("kamanja")
   val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Chagne ends
 
   def dumpMetadata: String ={
     var response=""
     try{
       MdMgr.GetMdMgr.dump
-      response="Metadata dumped in DEBUG mode"
+      //response="Metadata dumped in DEBUG mode"
+      response= (new ApiResult(ErrorCodeConstants.Failure, "getAllMessages",null, "Metadata dumped in DEBUG mode")).toString
     }catch{
       case e: Exception => {
-        logger.warn("", e)
-        response=e.getStackTrace.toString
+        logger.error("", e)
+        //response=e.getStackTrace.toString
+        response= (new ApiResult(ErrorCodeConstants.Failure, "dumpMetadata",null, e.getStackTrace.toString)).toString
       }
     }
     response
@@ -43,12 +48,13 @@ object DumpService {
   def dumpAllNodes: String ={
     var response=""
     try{
-      response=MetadataAPIImpl.GetAllNodes("JSON", userid)
+      response=getMetadataAPI.GetAllNodes("JSON", userid)
     }
     catch {
       case e: Exception => {
-        logger.warn("", e)
-        response=e.getStackTrace.toString
+        logger.error("", e)
+        //response=e.getStackTrace.toString
+        response= (new ApiResult(ErrorCodeConstants.Failure, "dumpAllNodes",null, e.getStackTrace.toString)).toString
       }
     }
     response
@@ -56,12 +62,13 @@ object DumpService {
   def dumpAllClusters: String ={
     var response=""
     try{
-      response=MetadataAPIImpl.GetAllClusters("JSON", userid)
+      response=getMetadataAPI.GetAllClusters("JSON", userid)
     }
     catch {
       case e: Exception => {
         logger.warn("", e)
-        response=e.getStackTrace.toString
+        //response=e.getStackTrace.toString
+        response= (new ApiResult(ErrorCodeConstants.Failure, "dumpAllClusters",null, e.getStackTrace.toString)).toString
       }
     }
     response
@@ -69,12 +76,13 @@ object DumpService {
   def dumpAllClusterCfgs: String ={
     var response=""
     try{
-      response=MetadataAPIImpl.GetAllClusterCfgs("JSON", userid)
+      response=getMetadataAPI.GetAllClusterCfgs("JSON", userid)
     }
     catch {
       case e: Exception => {
         logger.warn("", e)
-        response=e.getStackTrace.toString
+        //response=e.getStackTrace.toString
+        response= (new ApiResult(ErrorCodeConstants.Failure, "dumpAllClusterCfgs",null, e.getStackTrace.toString)).toString
       }
     }
     response
@@ -82,12 +90,13 @@ object DumpService {
   def dumpAllAdapters: String ={
     var response=""
     try{
-      response=MetadataAPIImpl.GetAllAdapters("JSON", userid)
+      response=getMetadataAPI.GetAllAdapters("JSON", userid)
     }
     catch {
       case e: Exception => {
         logger.warn("", e)
-        response=e.getStackTrace.toString
+        //response=e.getStackTrace.toString
+        response= (new ApiResult(ErrorCodeConstants.Failure, "dumpAllAdapters",null, e.getStackTrace.toString)).toString
       }
     }
     response

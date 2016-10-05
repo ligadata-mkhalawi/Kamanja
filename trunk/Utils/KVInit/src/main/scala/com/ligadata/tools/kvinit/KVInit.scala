@@ -29,16 +29,16 @@ import java.io.InputStream
 import java.io.ByteArrayInputStream
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
-import org.apache.logging.log4j.{ Logger, LogManager }
+import org.apache.logging.log4j.{Logger, LogManager}
 import com.ligadata.keyvaluestore._
 import com.ligadata.KamanjaBase._
 import com.ligadata.kamanja.metadataload.MetadataLoad
-import com.ligadata.Utils.{ Utils, KamanjaClassLoader, KamanjaLoaderInfo }
+import com.ligadata.Utils.{Utils, KamanjaClassLoader, KamanjaLoaderInfo}
 import java.util.Properties
 import com.ligadata.MetadataAPI.MetadataAPIImpl
 import com.ligadata.kamanja.metadata.MdMgr._
 import com.ligadata.kamanja.metadata._
-import scala.reflect.runtime.{ universe => ru }
+import scala.reflect.runtime.{universe => ru}
 import com.ligadata.Serialize._
 import org.json4s._
 import org.json4s.JsonDSL._
@@ -47,14 +47,15 @@ import java.io.FileInputStream
 import java.util.zip.GZIPInputStream
 import java.io.BufferedReader
 import java.io.InputStreamReader
+
 //import scala.util.control.Breaks._
 import scala.collection.mutable.ArrayBuffer
 import com.ligadata.ZooKeeper._
 import org.apache.curator.framework._
-import com.ligadata.Serialize.{ JDataStore, JZKInfo, JEnvCtxtJsonStr }
-import com.ligadata.KvBase.{ Key, Value, TimeRange, KvBaseDefalts, KeyWithBucketIdAndPrimaryKey, KeyWithBucketIdAndPrimaryKeyCompHelper, LoadKeyWithBucketId }
-import com.ligadata.StorageBase.{ DataStore, Transaction }
-import java.util.{ Collection, Iterator, TreeMap }
+import com.ligadata.Serialize.{JDataStore, JZKInfo, JEnvCtxtJsonStr}
+import com.ligadata.KvBase.{Key, TimeRange, KvBaseDefalts, KeyWithBucketIdAndPrimaryKey, KeyWithBucketIdAndPrimaryKeyCompHelper, LoadKeyWithBucketId}
+import com.ligadata.StorageBase.{DataStore, Transaction}
+import java.util.{Collection, Iterator, TreeMap}
 import com.ligadata.Exceptions._
 import com.ligadata.KamanjaVersion.KamanjaVersion
 
@@ -65,28 +66,32 @@ trait LogTrait {
 
 object KVInit extends App with LogTrait {
 
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
+
   def usage: String = {
-    """ 
-Usage: scala com.ligadata.kvinit.KVInit 
+    """
+Usage: scala com.ligadata.kvinit.KVInit
     --version
     --config <config file while has jarpaths, metadata store information & data store information>
-    --typename <full package qualified name of a Container or Message> 
-    --datafiles <input to load> 
+    --typename <full package qualified name of a Container or Message>
+    --datafiles <input to load>
     --keyfieldname  <name of one of the fields in the first line of the datafiles file>
 
 Nothing fancy here.  Mapdb kv store is created from arguments... style is hash map. Support
-for other styles of input (e.g., JSON, XML) are not supported.  
-      
+for other styles of input (e.g., JSON, XML) are not supported.
+
 The name of the kvstore will be the classname(without it path).
 
 It is expected that the first row of the csv file will be the column names.  One of the names
 must be specified as the key field name.  Failure to find this name causes termination and
 no kv store creation.
-      
+
 Sample uses:
       java -jar /tmp/KamanjaInstall/KVInit-1.0 --typename System.TestContainer --config /tmp/KamanjaInstall/EngineConfig.cfg --datafiles /tmp/KamanjaInstall/sampledata/TestContainer.csv --keyfieldname Id
 
-"""
+    """
   }
 
   override def main(args: Array[String]) {
@@ -115,19 +120,25 @@ Sample uses:
         case "--keyfields" :: value :: tail =>
           nextOption(map ++ Map('keyfields -> value), tail)
         case "--delimiter" :: value :: tail =>
-          nextOption(map ++ Map('delimiter -> value), tail)
+          nextOption(map ++ Map('delimiter -> value), tail) // Deprecated, use deserializer & optionsjson
         case "--keyandvaluedelimiter" :: value :: tail =>
-          nextOption(map ++ Map('keyandvaluedelimiter -> value), tail)
+          nextOption(map ++ Map('keyandvaluedelimiter -> value), tail) // Deprecated, use deserializer & optionsjson
         case "--fielddelimiter" :: value :: tail =>
-          nextOption(map ++ Map('fielddelimiter -> value), tail)
+          nextOption(map ++ Map('fielddelimiter -> value), tail) // Deprecated, use deserializer & optionsjson
         case "--valuedelimiter" :: value :: tail =>
-          nextOption(map ++ Map('valuedelimiter -> value), tail)
+          nextOption(map ++ Map('valuedelimiter -> value), tail) // Deprecated, use deserializer & optionsjson
         case "--ignoreerrors" :: value :: tail =>
           nextOption(map ++ Map('ignoreerrors -> value), tail)
         case "--ignorerecords" :: value :: tail =>
           nextOption(map ++ Map('ignorerecords -> value), tail)
         case "--format" :: value :: tail =>
           nextOption(map ++ Map('format -> value), tail)
+        case "--deserializer" :: value :: tail =>
+          nextOption(map ++ Map('deserializer -> value), tail)
+        case "--optionsjson" :: value :: tail =>
+          nextOption(map ++ Map('optionsjson -> value), tail)
+        case "--onlyappend" :: tail =>
+          nextOption(map ++ Map('onlyappend -> "true"), tail)
         case "--version" :: tail =>
           nextOption(map ++ Map('version -> "true"), tail)
         case option :: tail =>
@@ -147,24 +158,49 @@ Sample uses:
     var typename = if (options.contains('typename)) options.apply('typename) else if (options.contains('kvname)) options.apply('kvname) else null
     var tmpdatafiles = if (options.contains('datafiles)) options.apply('datafiles) else if (options.contains('csvpath)) options.apply('csvpath) else null
     val tmpkeyfieldnames = if (options.contains('keyfields)) options.apply('keyfields) else if (options.contains('keyfieldname)) options.apply('keyfieldname) else null
-    val delimiterString = if (options.contains('delimiter)) options.apply('delimiter) else null
-    val keyAndValueDelimiter = if (options.contains('keyandvaluedelimiter)) options.apply('keyandvaluedelimiter) else null
-    val fieldDelimiter1 = if (options.contains('fielddelimiter)) options.apply('fielddelimiter) else null
-    val valueDelimiter = if (options.contains('valuedelimiter)) options.apply('valuedelimiter) else null
     var ignoreerrors = (if (options.contains('ignoreerrors)) options.apply('ignoreerrors) else "0").trim
-    val format = (if (options.contains('format)) options.apply('format) else "delimited").trim.toLowerCase()
     var commitBatchSize = (if (options.contains('commitbatchsize)) options.apply('commitbatchsize) else "10000").trim.toInt
+    var deserializer = if (options.contains('deserializer)) options.apply('deserializer) else null
+    var optionsjson = if (options.contains('optionsjson)) options.apply('optionsjson) else null
+
+    val isOnlyAppend = options.getOrElse('onlyappend, "false").toString.trim.toBoolean
 
     if (commitBatchSize <= 0) {
       logger.error("commitbatchsize must be greater than 0")
       return
     }
 
-    val fieldDelimiter = if (fieldDelimiter1 != null) fieldDelimiter1 else delimiterString
+    if (deserializer != null) {
+      val delimiterString = if (options.contains('delimiter)) options.apply('delimiter) else null
+      val format = (if (options.contains('format)) options.apply('format) else null)
+      val keyAndValueDelimiter = if (options.contains('keyandvaluedelimiter)) options.apply('keyandvaluedelimiter) else null
+      val fieldDelimiter1 = if (options.contains('fielddelimiter)) options.apply('fielddelimiter) else null
+      val valueDelimiter = if (options.contains('valuedelimiter)) options.apply('valuedelimiter) else null
 
-    if (!(format.equals("delimited") || format.equals("json"))) {
-      logger.error("Supported formats are only delimited & json")
-      return
+      if (delimiterString != null || format != null || keyAndValueDelimiter != null || fieldDelimiter1 != null && valueDelimiter != null)
+        logger.warn("deserializer:%s is specified. Ignoring deprecated options: delimiter, format, keyandvaluedelimiter, fielddelimiter, valuedelimiter")
+    } else {
+      logger.warn("recommented to use deserializer & optionsjson")
+
+      val delimiterString = if (options.contains('delimiter)) options.apply('delimiter) else null
+      val format = (if (options.contains('format)) options.apply('format) else "delimited").trim.toLowerCase()
+      val keyAndValueDelimiter = if (options.contains('keyandvaluedelimiter)) options.apply('keyandvaluedelimiter) else null
+      val fieldDelimiter1 = if (options.contains('fielddelimiter)) options.apply('fielddelimiter) else null
+      val valueDelimiter = if (options.contains('valuedelimiter)) options.apply('valuedelimiter) else null
+
+      val fieldDelimiter = if (fieldDelimiter1 != null) fieldDelimiter1 else delimiterString
+
+      if (format.equals("delimited")) {
+        deserializer = "com.ligadata.kamanja.serializer.csvserdeser"
+        optionsjson = """{"alwaysQuoteFields":false,"fieldDelimiter":"%s","valueDelimiter":"%s"}""".format(fieldDelimiter, valueDelimiter)
+      }
+      else if (format.equals("json")) {
+        deserializer = "com.ligadata.kamanja.serializer.jsonserdeser"
+        optionsjson = """{"alwaysQuoteFields":false,"fieldDelimiter":"%s","valueDelimiter":"%s"}""".format(fieldDelimiter, valueDelimiter)
+      } else {
+        logger.error("Supported formats are only delimited & json")
+        return
+      }
     }
 
     val keyfieldnames = if (tmpkeyfieldnames != null && tmpkeyfieldnames.trim.size > 0) tmpkeyfieldnames.trim.split(",").map(_.trim).filter(_.length() > 0) else Array[String]()
@@ -201,10 +237,11 @@ Sample uses:
 
       KvInitConfiguration.configFile = cfgfile.toString
 
-      val kvmaker: KVInit = new KVInit(loadConfigs, typename.toLowerCase, dataFiles, keyfieldnames, keyAndValueDelimiter, fieldDelimiter, valueDelimiter, ignoreerrors, ignoreRecords, format, commitBatchSize)
+      val kvmaker: KVInit = new KVInit(loadConfigs, typename.toLowerCase, dataFiles, keyfieldnames, deserializer, optionsjson, ignoreerrors, ignoreRecords, commitBatchSize, isOnlyAppend)
       if (kvmaker.isOk) {
+        var dstore: DataStore = null;
         try {
-          val dstore = kvmaker.GetDataStoreHandle(KvInitConfiguration.jarPaths, kvmaker.dataDataStoreInfo)
+          dstore = kvmaker.GetDataStoreHandle(KvInitConfiguration.jarPaths, kvmaker.dataDataStoreInfo)
           if (dstore != null) {
             try {
               kvmaker.buildContainerOrMessage(dstore)
@@ -215,10 +252,13 @@ Sample uses:
             } finally {
               if (dstore != null)
                 dstore.Shutdown()
+              dstore = null
               com.ligadata.transactions.NodeLevelTransService.Shutdown
               if (kvmaker.zkcForSetData != null)
                 kvmaker.zkcForSetData.close()
             }
+          } else {
+            logger.error("Failed to connect to datastore:" + kvmaker.dataDataStoreInfo)
           }
         } catch {
           case e: FatalAdapterException => {
@@ -242,6 +282,10 @@ Sample uses:
           case e: Throwable => {
             logger.error("Failed to connect to Datastore.", e)
           }
+        } finally {
+          if (dstore != null)
+            dstore.Shutdown()
+          dstore = null
         }
       }
       MetadataAPIImpl.CloseDbStore
@@ -259,21 +303,16 @@ object KvInitConfiguration {
   var jarPaths: collection.immutable.Set[String] = _
 }
 
-class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: Array[String], val keyfieldnames: Array[String], keyAndValueDelimiter1: String,
-             fieldDelimiter1: String, valueDelimiter1: String, ignoreerrors: String, ignoreRecords: Int, format: String, commitBatchSize: Int) extends LogTrait with MdBaseResolveInfo {
-  val fieldDelimiter = if (DataDelimiters.IsEmptyDelimiter(fieldDelimiter1) == false) fieldDelimiter1 else ","
-  val keyAndValueDelimiter = if (DataDelimiters.IsEmptyDelimiter(keyAndValueDelimiter1) == false) keyAndValueDelimiter1 else "\\x01"
-  val valueDelimiter = if (DataDelimiters.IsEmptyDelimiter(valueDelimiter1) == false) valueDelimiter1 else "~"
-
+class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: Array[String], val keyfieldnames: Array[String], val deserializer: String, val optionsjson: String,
+             ignoreerrors: String, ignoreRecords: Int, commitBatchSize: Int, val isOnlyAppend: Boolean) extends LogTrait with ObjectResolver {
   var ignoreErrsCount = if (ignoreerrors != null && ignoreerrors.size > 0) ignoreerrors.toInt else 0
   if (ignoreErrsCount < 0) ignoreErrsCount = 0
   var isOk: Boolean = true
-  val isDelimited = format.equals("delimited")
-  val isJson = format.equals("json")
-  val isKv = format.equals("kv")
   var zkcForSetData: CuratorFramework = null
   var totalCommittedMsgs: Int = 0
-
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+    // 646 - 676 Change ends
   val kvInitLoader = new KamanjaLoaderInfo
 
   KvInitConfiguration.nodeId = loadConfigs.getProperty("nodeId".toLowerCase, "0").replace("\"", "").trim.toInt
@@ -285,11 +324,13 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
   var nodeInfo: NodeInfo = _
 
   if (isOk) {
-    MetadataAPIImpl.InitMdMgrFromBootStrap(KvInitConfiguration.configFile, false)
+    getMetadataAPI.InitMdMgrFromBootStrap(KvInitConfiguration.configFile, false)
 
     nodeInfo = mdMgr.Nodes.getOrElse(KvInitConfiguration.nodeId.toString, null)
     if (nodeInfo == null) {
-      logger.error("Node %d not found in metadata".format(KvInitConfiguration.nodeId))
+      // 660 Change begins - bug fix for proper cluster config upload message
+      logger.error("Node %d not found in metadata. Please ensure cluster configuration has been uploaded.".format(KvInitConfiguration.nodeId))
+      // 660 Change ends
       isOk = false
     }
   }
@@ -308,18 +349,13 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
     isOk = false
   }
 
-  val dataStore = if (isOk) cluster.cfgMap.getOrElse("DataStore", null) else null
-  if (isOk && dataStore == null) {
-    logger.error("DataStore not found for Node %d  & ClusterId : %s".format(KvInitConfiguration.nodeId, nodeInfo.ClusterId))
-    isOk = false
-  }
-
   val zooKeeperInfo = if (isOk) cluster.cfgMap.getOrElse("ZooKeeperInfo", null) else null
-  if (isOk && dataStore == null) {
+  if (isOk && zooKeeperInfo == null) {
     logger.error("ZooKeeperInfo not found for Node %d  & ClusterId : %s".format(KvInitConfiguration.nodeId, nodeInfo.ClusterId))
     isOk = false
   }
 
+  var sysCatalogDataStoreInfo: String = null
   var dataDataStoreInfo: String = null
   var zkConnectString: String = null
   var zkNodeBasePath: String = null
@@ -327,11 +363,17 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
   var zkConnectionTimeoutMs: Int = 0
 
   if (isOk) {
+    sysCatalogDataStoreInfo = if (isOk) cluster.cfgMap.getOrElse("SystemCatalog", null) else null
+    if (isOk && sysCatalogDataStoreInfo == null) {
+      logger.error("SystemCatalog not found for Node %d  & ClusterId : %s".format(KvInitConfiguration.nodeId, nodeInfo.ClusterId))
+      isOk = false
+    }
+  }
+
+  if (isOk) {
     implicit val jsonFormats: Formats = DefaultFormats
     // val dataStoreInfo = parse(dataStore).extract[JDataStore]
     val zKInfo = parse(zooKeeperInfo).extract[JZKInfo]
-
-    dataDataStoreInfo = dataStore
 
     if (isOk) {
       zkConnectString = zKInfo.ZooKeeperConnectString.replace("\"", "").trim
@@ -356,9 +398,10 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
   }
 
   var typeNameCorrType: BaseTypeDef = _
+  var tenantId: String = ""
   var kvTableName: String = _
-  var messageObj: BaseMsgObj = _
-  var containerObj: BaseContainerObj = _
+  var messageObj: MessageFactoryInterface = _
+  var containerObj: ContainerFactoryInterface = _
   var objFullName: String = _
   // var kryoSer: com.ligadata.Serialize.Serializer = null
 
@@ -368,8 +411,29 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
       logger.error("Not found valid type for " + typename.toLowerCase)
       isOk = false
     } else {
+      val msg = mdMgr.Message(typename.toLowerCase, -1, false)
+      val cnt = mdMgr.Container(typename.toLowerCase, -1, false)
+      tenantId = if (msg != None) msg.get.TenantId else if (cnt != None) cnt.get.TenantId else ""
       objFullName = typeNameCorrType.FullName.toLowerCase
       kvTableName = objFullName.replace('.', '_')
+    }
+  }
+
+  if (isOk && tenantId.trim.size == 0) {
+    logger.error("Not found valid tenantId for " + typename)
+    isOk = false
+  } else {
+    val tenatInfo = mdMgr.GetTenantInfo(tenantId.toLowerCase)
+    if (tenatInfo == null) {
+      logger.error("Not found tenantInfo for tenantId " + tenantId)
+      isOk = false
+    } else {
+      if (tenatInfo.primaryDataStore == null || tenatInfo.primaryDataStore.trim.size == 0) {
+        logger.error("Not found valid Primary Datastore for tenantId " + tenantId)
+        isOk = false
+      } else {
+        dataDataStoreInfo = tenatInfo.primaryDataStore
+      }
     }
   }
 
@@ -392,7 +456,7 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
         var curClz = Class.forName(clsName, true, kvInitLoader.loader)
 
         while (curClz != null && isContainer == false) {
-          isContainer = Utils.isDerivedFrom(curClz, "com.ligadata.KamanjaBase.BaseContainerObj")
+          isContainer = Utils.isDerivedFrom(curClz, "com.ligadata.KamanjaBase.ContainerFactoryInterface")
           if (isContainer == false)
             curClz = curClz.getSuperclass()
         }
@@ -411,7 +475,7 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
         var curClz = Class.forName(clsName, true, kvInitLoader.loader)
 
         while (curClz != null && isMsg == false) {
-          isMsg = Utils.isDerivedFrom(curClz, "com.ligadata.KamanjaBase.BaseMsgObj")
+          isMsg = Utils.isDerivedFrom(curClz, "com.ligadata.KamanjaBase.MessageFactoryInterface")
           if (isMsg == false)
             curClz = curClz.getSuperclass()
         }
@@ -427,11 +491,11 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
         val module = kvInitLoader.mirror.staticModule(clsName)
         val obj = kvInitLoader.mirror.reflectModule(module)
         val objinst = obj.instance
-        if (objinst.isInstanceOf[BaseMsgObj]) {
-          messageObj = objinst.asInstanceOf[BaseMsgObj]
+        if (objinst.isInstanceOf[MessageFactoryInterface]) {
+          messageObj = objinst.asInstanceOf[MessageFactoryInterface]
           logger.debug("Created Message Object")
-        } else if (objinst.isInstanceOf[BaseContainerObj]) {
-          containerObj = objinst.asInstanceOf[BaseContainerObj]
+        } else if (objinst.isInstanceOf[ContainerFactoryInterface]) {
+          containerObj = objinst.asInstanceOf[ContainerFactoryInterface]
           logger.debug("Created Container Object")
         } else {
           logger.error("Failed to instantiate message or conatiner object :" + clsName)
@@ -504,120 +568,57 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
     true
   }
 
-  override def getMessgeOrContainerInstance(MsgContainerType: String): MessageContainerBase = {
-    if (MsgContainerType.compareToIgnoreCase(objFullName) != 0)
-      return null
-    // Simply creating new object and returning. Not checking for MsgContainerType. This is issue if the child level messages ask for the type 
-    if (isMsg)
-      return messageObj.CreateNewMessage
-    if (isContainer)
-      return containerObj.CreateNewContainer
-    return null
-  }
-
   private def GetDataStoreHandle(jarPaths: collection.immutable.Set[String], dataStoreInfo: String): DataStore = {
     try {
       logger.debug("Getting DB Connection for dataStoreInfo:%s".format(dataStoreInfo))
-      return KeyValueManager.Get(jarPaths, dataStoreInfo)
+      return KeyValueManager.Get(jarPaths, dataStoreInfo, null, null)
     } catch {
       case e: Exception => throw e
       case e: Throwable => throw e
     }
   }
 
-  // We are not expecting Container/MessageType as first child of JSON. This is just to match to Delimited data, where we don't have type in the data.
-  private def prepareInputData(inputStr: String): InputData = {
-    /** if we can make one ... we add the data to the store. This will crash if the data is bad */
-    if (isDelimited) {
-      val fieldDelimiter = if (DataDelimiters.IsEmptyDelimiter(fieldDelimiter1) == false) fieldDelimiter1 else ","
-      val keyAndValueDelimiter = if (DataDelimiters.IsEmptyDelimiter(keyAndValueDelimiter1) == false) keyAndValueDelimiter1 else "\\x01"
-      val valueDelimiter = if (DataDelimiters.IsEmptyDelimiter(valueDelimiter1) == false) valueDelimiter1 else "~"
-      val delimiters = new DataDelimiters()
-      delimiters.keyAndValueDelimiter = keyAndValueDelimiter
-      delimiters.fieldDelimiter = fieldDelimiter
-      delimiters.valueDelimiter = valueDelimiter
-      val inputData = new DelimitedData(inputStr, delimiters)
-      inputData.tokens = inputData.dataInput.split(inputData.delimiters.fieldDelimiter, -1)
-      inputData.curPos = 0
-      return inputData
-    }
-
-    if (isKv) {
-      val fieldDelimiter = if (DataDelimiters.IsEmptyDelimiter(fieldDelimiter1) == false) fieldDelimiter1 else ","
-      val keyAndValueDelimiter = if (DataDelimiters.IsEmptyDelimiter(keyAndValueDelimiter1) == false) keyAndValueDelimiter1 else "\\x01"
-      val valueDelimiter = if (DataDelimiters.IsEmptyDelimiter(valueDelimiter1) == false) valueDelimiter1 else "~"
-      val delimiters = new DataDelimiters()
-      delimiters.keyAndValueDelimiter = keyAndValueDelimiter
-      delimiters.fieldDelimiter = fieldDelimiter
-      delimiters.valueDelimiter = valueDelimiter
-      val inputData = new KvData(inputStr, delimiters)
-
-      val dataMap = scala.collection.mutable.Map[String, String]()
-
-      val str_arr = inputData.dataInput.split(delimiters.fieldDelimiter, -1)
-
-      if (delimiters.fieldDelimiter.compareTo(delimiters.keyAndValueDelimiter) == 0) {
-        if (str_arr.size % 2 != 0) {
-          throw new Exception("Expecting Key & Value pairs are even number of tokens when FieldDelimiter & KeyAndValueDelimiter are matched")
-        }
-        for (i <- 0 until str_arr.size by 2) {
-          dataMap(str_arr(i).trim) = str_arr(i + 1)
-        }
-      } else {
-        str_arr.foreach(kv => {
-          val kvpair = kv.split(delimiters.keyAndValueDelimiter)
-          if (kvpair.size != 2) {
-            throw new Exception("Expecting Key & Value pair only")
-          }
-          dataMap(kvpair(0).trim) = kvpair(1)
-        })
-      }
-
-      inputData.dataMap = dataMap.toMap
-      return inputData
-    }
-
-    if (isJson) {
-      try {
-        val json = parse(inputStr)
-        if (json == null || json.values == null) {
-          logger.error("Invalid JSON data: " + inputStr)
-          return null
-        } else {
-          val parsed_json = json.values.asInstanceOf[scala.collection.immutable.Map[String, Any]]
-          val inputData = new JsonData(inputStr)
-
-          inputData.root_json = Option(parsed_json)
-          inputData.cur_json = Option(parsed_json)
-          return inputData
-        }
-      } catch {
-        case e: Exception => {
-          logger.error("Invalid JSON data:%s".format(inputStr), e)
-          return null
-        }
-      }
-    }
-
-    logger.error("Not handling anything other than JSON & Delimited formats. Found:" + format)
+  override def getInstance(MsgContainerType: String): ContainerInterface = {
+    if (MsgContainerType.compareToIgnoreCase(objFullName) != 0)
+      return null
+    // Simply creating new object and returning. Not checking for MsgContainerType. This is issue if the child level messages ask for the type
+    if (isMsg)
+      return messageObj.createInstance.asInstanceOf[ContainerInterface]
+    if (isContainer)
+      return containerObj.createInstance.asInstanceOf[ContainerInterface]
     return null
   }
 
-  private def collectKeyAndValues(k: Key, v: Value, dataByBucketKeyPart: TreeMap[KeyWithBucketIdAndPrimaryKey, MessageContainerBaseWithModFlag], loadedKeys: java.util.TreeSet[LoadKeyWithBucketId]): Unit = {
-    val value = SerializeDeserialize.Deserialize(v.serializedInfo, this, kvInitLoader.loader, true, "")
-    val primarykey = value.PrimaryKeyData
+  override def getInstance(schemaId: Long): ContainerInterface = {
+    //BUGBUG:: For now we are getting latest class. But we need to get the old one too.
+    if (mdMgr == null)
+      throw new KamanjaException("Metadata Not found", null)
+
+    val contOpt = mdMgr.ContainerForSchemaId(schemaId.toInt)
+
+    if (contOpt == None)
+      throw new KamanjaException("Container Not found for schemaid:" + schemaId, null)
+
+    getInstance(contOpt.get.FullName)
+  }
+
+  override def getMdMgr: MdMgr = mdMgr
+
+  private def collectKeyAndValues(k: Key, v: Any, dataByBucketKeyPart: TreeMap[KeyWithBucketIdAndPrimaryKey, ContainerInterface], loadedKeys: java.util.TreeSet[LoadKeyWithBucketId]): Unit = {
+    val value: ContainerInterface = v.asInstanceOf[ContainerInterface]
+    val primarykey = value.getPrimaryKey
     val key = KeyWithBucketIdAndPrimaryKey(KeyWithBucketIdAndPrimaryKeyCompHelper.BucketIdForBucketKey(k.bucketKey), k, primarykey != null && primarykey.size > 0, primarykey)
-    dataByBucketKeyPart.put(key, MessageContainerBaseWithModFlag(false, value))
+    dataByBucketKeyPart.put(key, value)
 
     val bucketId = KeyWithBucketIdAndPrimaryKeyCompHelper.BucketIdForBucketKey(k.bucketKey)
     val loadKey = LoadKeyWithBucketId(bucketId, TimeRange(k.timePartition, k.timePartition), k.bucketKey)
     loadedKeys.add(loadKey)
   }
 
-  private def LoadDataIfNeeded(loadKey: LoadKeyWithBucketId, loadedKeys: java.util.TreeSet[LoadKeyWithBucketId], dataByBucketKeyPart: TreeMap[KeyWithBucketIdAndPrimaryKey, MessageContainerBaseWithModFlag], kvstore: DataStore): Unit = {
+  private def LoadDataIfNeeded(loadKey: LoadKeyWithBucketId, loadedKeys: java.util.TreeSet[LoadKeyWithBucketId], dataByBucketKeyPart: TreeMap[KeyWithBucketIdAndPrimaryKey, ContainerInterface], kvstore: DataStore): Unit = {
     if (loadedKeys.contains(loadKey))
       return
-    val buildOne = (k: Key, v: Value) => {
+    val buildOne = (k: Key, v: Any, serType: String, typ: String, ver: Int) => {
       collectKeyAndValues(k, v, dataByBucketKeyPart, loadedKeys)
     }
 
@@ -631,7 +632,7 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
         loadedKeys.add(loadKey)
         doneGet = true
       } catch {
-        case e @ (_: ObjectNotFoundException | _: KeyNotFoundException) => {
+        case e@(_: ObjectNotFoundException | _: KeyNotFoundException) => {
           logger.debug("In Container %s Key %s Not found for timerange: %d-%d".format(objFullName, loadKey.bucketKey.mkString(","), loadKey.tmRange.beginTime, loadKey.tmRange.endTime), e)
           doneGet = true
         }
@@ -657,7 +658,9 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
           logger.error("Failed to get data from datastore. Waiting for another %d milli seconds and going to start them again.".format(failedWaitTime))
           Thread.sleep(failedWaitTime)
         } catch {
-          case e: Exception => { logger.warn("", e) }
+          case e: Exception => {
+            logger.warn("", e)
+          }
         }
         // Adjust time for next time
         if (failedWaitTime < maxFailedWaitTime) {
@@ -669,19 +672,18 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
     }
   }
 
-  private def commitData(transId: Long, kvstore: DataStore, dataByBucketKeyPart: TreeMap[KeyWithBucketIdAndPrimaryKey, MessageContainerBaseWithModFlag], commitBatchSize: Int, processedRows: Int): Unit = {
-    val storeObjects = new ArrayBuffer[(Key, Value)](dataByBucketKeyPart.size())
+  private def commitData(transId: Long, kvstore: DataStore, dataByBucketKeyPart: TreeMap[KeyWithBucketIdAndPrimaryKey, ContainerInterface], commitBatchSize: Int, processedRows: Int): Unit = {
+    val storeObjects = new ArrayBuffer[(Key, String, Any)](dataByBucketKeyPart.size())
     var it1 = dataByBucketKeyPart.entrySet().iterator()
     while (it1.hasNext()) {
       val entry = it1.next();
 
       val value = entry.getValue();
-      if (value.modified) {
+      if (true /* value.modified */) {
         val key = entry.getKey();
         try {
           val k = entry.getKey().key
-          val v = Value("manual", SerializeDeserialize.Serialize(value.value))
-          storeObjects += ((k, v))
+          storeObjects += ((k, "", value))
         } catch {
           case e: Exception => {
             logger.error("Failed to serialize/write data.", e)
@@ -697,7 +699,7 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
 
     while (!doneSave) {
       try {
-        kvstore.put(Array((objFullName, storeObjects.toArray)))
+        kvstore.put(null, Array((objFullName, storeObjects.toArray)))
         doneSave = true
       } catch {
         case e: FatalAdapterException => {
@@ -722,7 +724,9 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
           logger.error("Failed to save data into datastore. Waiting for another %d milli seconds and going to start them again.".format(failedWaitTime))
           Thread.sleep(failedWaitTime)
         } catch {
-          case e: Exception => { logger.warn("", e) }
+          case e: Exception => {
+            logger.warn("", e)
+          }
         }
         // Adjust time for next time
         if (failedWaitTime < maxFailedWaitTime) {
@@ -768,6 +772,47 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
     }
   }
 
+  private def ResolveDeserializer(deserializer: String, optionsjson: String): MsgBindingInfo = {
+    val serInfo = getMdMgr.GetSerializer(deserializer)
+    if (serInfo == null) {
+      throw new KamanjaException(s"Not found Serializer/Deserializer for ${deserializer}", null)
+    }
+
+    val phyName = serInfo.PhysicalName
+    if (phyName == null) {
+      throw new KamanjaException(s"Not found Physical name for Serializer/Deserializer for ${deserializer}", null)
+    }
+
+    try {
+      val aclass = Class.forName(phyName).newInstance
+      val ser = aclass.asInstanceOf[SerializeDeserialize]
+
+      val map = new java.util.HashMap[String, String] //BUGBUG:: we should not convert the 2nd param to String. But still need to see how can we convert scala map to java map
+      var options: collection.immutable.Map[String, Any] = null
+      if (optionsjson != null) {
+        implicit val jsonFormats: Formats = DefaultFormats
+        val validJson = parse(optionsjson)
+
+        options = validJson.values.asInstanceOf[collection.immutable.Map[String, Any]]
+        if (options != null) {
+          options.foreach(o => {
+            map.put(o._1, o._2.toString)
+          })
+        }
+      }
+      ser.configure(this, map)
+      ser.setObjectResolver(this)
+      return MsgBindingInfo(deserializer, options, optionsjson, ser)
+    } catch {
+      case e: Throwable => {
+        throw new KamanjaException(s"Failed to resolve Physical name ${phyName} in Serializer/Deserializer for ${deserializer}", e)
+      }
+    }
+
+    return null // Should not come here
+  }
+
+
   // If we have keyfieldnames.size > 0
   private def buildContainerOrMessage(kvstore: DataStore): Unit = {
     if (!isOk)
@@ -781,18 +826,18 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
 
     logger.debug("KeyFields:" + keyfieldnames.mkString(","))
 
-    // The value for this is Boolean & MessageContainerBase. Here Boolean represents it is changed in this transaction or loaded from previous file
-    var dataByBucketKeyPart = new TreeMap[KeyWithBucketIdAndPrimaryKey, MessageContainerBaseWithModFlag](KvBaseDefalts.defualtBucketKeyComp) // By time, BucketKey, then PrimaryKey/{transactionid & rowid}. This is little cheaper if we are going to get exact match, because we compare time & then bucketid
+    // The value for this is Boolean & ContainerInterface. Here Boolean represents it is changed in this transaction or loaded from previous file
+    var dataByBucketKeyPart = new TreeMap[KeyWithBucketIdAndPrimaryKey, ContainerInterface](KvBaseDefalts.defualtBucketKeyComp) // By time, BucketKey, then PrimaryKey/{transactionid & rowid}. This is little cheaper if we are going to get exact match, because we compare time & then bucketid
     var loadedKeys = new java.util.TreeSet[LoadKeyWithBucketId](KvBaseDefalts.defaultLoadKeyComp) // By BucketId, BucketKey, Time Range
 
     var hasPrimaryKey = false
-    var triedForPrimaryKey = false
+    var firstTime = true
     var transService: com.ligadata.transactions.SimpleTransService = null
 
     if (zkConnectString != null && zkNodeBasePath != null && zkConnectString.size > 0 && zkNodeBasePath.size > 0) {
       try {
         // TransactionId
-        com.ligadata.transactions.NodeLevelTransService.init(zkConnectString, zkSessionTimeoutMs, zkConnectionTimeoutMs, zkNodeBasePath, 1, dataDataStoreInfo, KvInitConfiguration.jarPaths)
+        com.ligadata.transactions.NodeLevelTransService.init(zkConnectString, zkSessionTimeoutMs, zkConnectionTimeoutMs, zkNodeBasePath, 1, sysCatalogDataStoreInfo, KvInitConfiguration.jarPaths)
         transService = new com.ligadata.transactions.SimpleTransService
         transService.init(1)
         transId = transService.getNextTransId // Getting first transaction. It may get wasted if we don't have any lines to save.
@@ -806,9 +851,19 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
       }
     }
 
+    val deserMsgBindingInfo = ResolveDeserializer(deserializer, optionsjson)
+
+    if (deserMsgBindingInfo == null || deserMsgBindingInfo.serInstance == null) {
+      throw new KamanjaException("Unable to resolve deserializer", null)
+    }
+
+    kvstore.setObjectResolver(this)
+    kvstore.setDefaultSerializerDeserializer("com.ligadata.kamanja.serializer.kbinaryserdeser", scala.collection.immutable.Map[String, Any]())
+    // kvstore.addMessageBinding(typename, deserMsgBindingInfo.serName, deserMsgBindingInfo.options)
+
     dataFiles.foreach(fl => {
       logger.info("%s: File:%s => About to process".format(GetCurDtTmStr, fl))
-      val alldata: List[String] = fileData(fl, format)
+      val alldata: List[String] = fileData(fl, deserializer)
       logger.info("%s: File:%s => Lines in file:%d".format(GetCurDtTmStr, fl, alldata.size))
 
       var lnNo = 0
@@ -818,97 +873,56 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
         if (lnNo > ignoreRecords && inputStr.size > 0) {
           logger.debug("Record:" + inputStr)
 
-          /** if we can make one ... we add the data to the store. This will crash if the data is bad */
-          val inputData = prepareInputData(inputStr)
+          val container = deserMsgBindingInfo.serInstance.deserialize(inputStr.getBytes, typename)
+          if (container != null) {
 
-          if (inputData != null) {
-            var messageOrContainer: MessageContainerBase = null
-
-            if (isMsg) {
-              messageOrContainer = messageObj.CreateNewMessage
-            } else if (isContainer) {
-              messageOrContainer = containerObj.CreateNewContainer
-            } else { // This should not happen
-              throw new Exception("Handling only message or container")
+            if (firstTime) {
+              firstTime = false
+              hasPrimaryKey = container.hasPrimaryKey
             }
 
-            if (messageOrContainer != null) {
-              try {
-                messageOrContainer.TransactionId(transId)
-                messageOrContainer.populate(inputData)
-                if (triedForPrimaryKey == false) {
-                  val primaryKey = messageOrContainer.PrimaryKeyData
-                  hasPrimaryKey = primaryKey != null && primaryKey.size > 0 // Checking for the first record
-                }
-                triedForPrimaryKey = true
-              } catch {
-                case e: Exception => {
-                  logger.debug("Failed to populate message/container.", e)
-                  errsCnt += 1
-                }
+            container.setTransactionId(transId)
+
+            try {
+              val keyData = container.getPartitionKey
+
+              val timeVal = container.getTimePartitionData
+              container.setRowNumber(processedRows)
+
+              val bucketId = KeyWithBucketIdAndPrimaryKeyCompHelper.BucketIdForBucketKey(keyData)
+              val k = KeyWithBucketIdAndPrimaryKey(bucketId, Key(timeVal, keyData, transId, processedRows), hasPrimaryKey, if (hasPrimaryKey) container.getPrimaryKey else null)
+              if (!isOnlyAppend && hasPrimaryKey) {
+                // Get the record(s) for this partition key, time value & primary key
+                val loadKey = LoadKeyWithBucketId(bucketId, TimeRange(timeVal, timeVal), keyData)
+                LoadDataIfNeeded(loadKey, loadedKeys, dataByBucketKeyPart, kvstore)
               }
-              try {
-                // If we have external Partition Key, we are taking the key stuff from value, otherwise we are taking it from messageOrContainer.PartitionKeyData
-                // BUGBUG:: For now we are using messageOrContainer.get and converting it to String. It may not always convert properly (if we have complex type etc). So, we need to get String for the given key from message/container itself.
-                val keyData =
-                  if (keyfieldnames.size > 0) keyfieldnames.map(key => {
-                    var value = "" // Default in case of Exception or NULL value (Mainly for NULL value)
-                    try {
-                      val v = messageOrContainer.get(key.toLowerCase) //BUGBUG:: We need to remove this if we are going to handle case sensitive.
-                      if (v != null) {
-                        value = v.toString
-                        logger.debug("Requested field:%s, got value:%s".format(key, value))
-                      } else {
-                        logger.debug("Requested field:%s, but got null back".format(key))
-                      }
-                    } catch {
-                      case e: Exception => {
-                        logger.error("Failed to get value for field:%s.".format(key), e)
-                        //BUGBUG:: May be we can take empty string if we get any exception in get. which one is correct way?
-                        throw e
-                      }
-                    }
-                    value
-                  })
-                  else {
-                    messageOrContainer.PartitionKeyData
-                  }
 
-                val timeVal = messageOrContainer.TimePartitionData
-                messageOrContainer.RowNumber(processedRows)
+              dataByBucketKeyPart.put(k, container)
+              processedRows += 1
+              if (processedRows % commitBatchSize == 0) {
+                logger.info("%s: Collected batch (%d) of values. About to insert".format(GetCurDtTmStr, commitBatchSize))
+                // Get transaction and commit them
+                commitData(transId, kvstore, dataByBucketKeyPart, commitBatchSize, processedRows)
+                dataByBucketKeyPart.clear()
+                loadedKeys.clear()
+                // Getting new transactionid for next batch
+                transId = transService.getNextTransId
+                logger.info("%s: Inserted batch (%d) of values. Total processed so far:%d".format(GetCurDtTmStr, commitBatchSize, processedRows))
 
-                val bucketId = KeyWithBucketIdAndPrimaryKeyCompHelper.BucketIdForBucketKey(keyData)
-                val k = KeyWithBucketIdAndPrimaryKey(bucketId, Key(timeVal, keyData, transId, processedRows), hasPrimaryKey, if (hasPrimaryKey) messageOrContainer.PrimaryKeyData else null)
-                if (hasPrimaryKey) {
-                  // Get the record(s) for this partition key, time value & primary key
-                  val loadKey = LoadKeyWithBucketId(bucketId, TimeRange(timeVal, timeVal), keyData)
-                  LoadDataIfNeeded(loadKey, loadedKeys, dataByBucketKeyPart, kvstore)
-                }
-
-                dataByBucketKeyPart.put(k, MessageContainerBaseWithModFlag(true, messageOrContainer))
-                processedRows += 1
-                if (processedRows % commitBatchSize == 0) {
-                  logger.info("%s: Collected batch (%d) of values. About to insert".format(GetCurDtTmStr, commitBatchSize))
-                  // Get transaction and commit them
-                  commitData(transId, kvstore, dataByBucketKeyPart, commitBatchSize, processedRows)
-                  dataByBucketKeyPart.clear()
-                  loadedKeys.clear()
-                  // Getting new transactionid for next batch
-                  transId = transService.getNextTransId
-                  logger.info("%s: Inserted batch (%d) of values. Total processed so far:%d".format(GetCurDtTmStr, commitBatchSize, processedRows))
-
-                }
-              } catch {
-                case e: Exception => {
-                  logger.debug("Failed to serialize/write data.", e)
-                  errsCnt += 1
-                }
+              }
+            } catch {
+              case e: Exception => {
+                logger.debug("Failed to serialize/write data.", e)
+                errsCnt += 1
               }
             }
+          } else {
+            logger.error("Deserialize returned null container.")
+            errsCnt += 1
           }
 
           if (errsCnt > ignoreErrsCount) {
-            val errStr = "Populate/Serialize errors (%d) exceed the given count(%d)." format (errsCnt, ignoreErrsCount)
+            val errStr = "Populate/Serialize errors (%d) exceed the given count(%d)." format(errsCnt, ignoreErrsCount)
             logger.error(errStr)
             throw new Exception(errStr)
           }
@@ -927,7 +941,7 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
     println(msgStr)
   }
 
-  private def fileData(inputeventfile: String, format: String): List[String] = {
+  private def fileData(inputeventfile: String, deserializer: String): List[String] = {
     var br: BufferedReader = null
     try {
       if (isCompressed(inputeventfile)) {
@@ -944,12 +958,14 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
     var fileContentsArray = ArrayBuffer[String]()
 
     try {
-      if (isDelimited) {
+      if (deserializer.equalsIgnoreCase("com.ligadata.kamanja.serializer.csvserdeser")) {
         var line: String = ""
-        while ({ line = br.readLine(); line != null }) {
+        while ( {
+          line = br.readLine(); line != null
+        }) {
           fileContentsArray += line
         }
-      } else if (isJson) {
+      } else if (deserializer.equalsIgnoreCase("com.ligadata.kamanja.serializer.jsonserdeser")) {
         var buf = new ArrayBuffer[Int]()
         var ch = br.read()
 
@@ -991,7 +1007,9 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
                   foundOpen = false
                 } // else // Did not match the correct json even if we have one open brace. Tring for the next open one
               } catch {
-                case e: Exception => { logger.warn("", e) } // Not yet valid json
+                case e: Exception => {
+                  logger.warn("", e)
+                } // Not yet valid json
               }
             } else {
               buf += ch
@@ -1007,8 +1025,8 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
         }
       } else {
         // Un-handled format
-        logger.error("Got unhandled format :" + format)
-        throw new Exception("Got unhandled format :" + format)
+        logger.error("Got unhandled deserializer :" + deserializer)
+        throw new Exception("Got unhandled deserializer :" + deserializer)
       }
     } catch {
       case e: Exception => {
@@ -1059,5 +1077,3 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
     SimpDateFmtTimeFromMs(System.currentTimeMillis)
   }
 }
-
-

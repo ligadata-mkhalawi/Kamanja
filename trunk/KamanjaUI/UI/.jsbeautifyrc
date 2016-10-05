@@ -1,0 +1,6 @@
+{
+    "js": {
+        "comma_first": false
+    },
+    "jslint_happy": true
+}

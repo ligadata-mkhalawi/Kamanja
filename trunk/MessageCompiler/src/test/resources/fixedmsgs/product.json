@@ -1,0 +1,41 @@
+{
+  "Message": {
+    "NameSpace": "System",
+    "Name": "Product",
+    "Version": "1.00",
+    "Description": "Product",
+    "Fixed": "true",
+    "Elements": [
+      {
+        "Field": {
+          "Name": "ProductId",
+          "Type": "System.Int"
+        }
+      },
+      {
+        "Field": {
+          "Name": "ProductName",
+          "Type": "System.String"
+        }
+      },
+      {
+        "Field": {
+          "Name": "ProductDescription",
+          "Type": "System.String"
+        }
+      },
+      {
+        "Field": {
+           "Name": "ProductStatus",
+          "Type": "System.String"
+        }
+      },
+      {
+        "Field": {
+          "Name": "Price",
+          "Type": "System.Float"
+        }
+      }
+    ]
+  }
+}

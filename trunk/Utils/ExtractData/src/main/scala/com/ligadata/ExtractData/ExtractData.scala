@@ -16,6 +16,8 @@
 
 package com.ligadata.ExtractData
 
+import com.ligadata.Exceptions.KamanjaException
+
 import scala.reflect.runtime.universe
 import scala.collection.mutable.ArrayBuffer
 import java.util.Properties
@@ -27,6 +29,9 @@ import scala.reflect.runtime.{ universe => ru }
 import scala.collection.mutable.TreeSet
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.google.gson.ExclusionStrategy
+import com.google.gson.FieldAttributes
+import java.lang.reflect.Modifier
 import com.ligadata.Serialize._
 import com.ligadata.MetadataAPI.MetadataAPIImpl
 import com.ligadata.kamanja.metadata.MdMgr._
@@ -36,22 +41,37 @@ import com.ligadata.KamanjaBase._
 import com.ligadata.kamanja.metadataload.MetadataLoad
 import com.ligadata.Utils.{ Utils, KamanjaClassLoader, KamanjaLoaderInfo }
 import com.ligadata.Serialize.{ JDataStore }
-import com.ligadata.KvBase.{ Key, Value, TimeRange }
+import com.ligadata.KvBase.{ Key, TimeRange }
 import com.ligadata.StorageBase.{ DataStore, Transaction }
 import java.util.Date
 import java.text.SimpleDateFormat
 import com.ligadata.KamanjaVersion.KamanjaVersion
 
-object ExtractData extends MdBaseResolveInfo {
+class ExcludeLogger extends ExclusionStrategy {
+  override def shouldSkipField(f: FieldAttributes): Boolean = {
+    //val exclude = f.getName().endsWith("LOG")
+    val exclude = f.getDeclaredClass().getName().equals("org.apache.log4j.Logger")
+    //println("name is " + f.getName() + "type is " + f.getDeclaredClass().getName() + " exclude " + exclude)
+    return exclude
+  }
+  override def shouldSkipClass(c: Class[_]): Boolean = {
+    return false
+  }
+}
+
+object ExtractData extends ObjectResolver {
   private val LOG = LogManager.getLogger(getClass);
   private val clsLoaderInfo = new KamanjaLoaderInfo
-  private var _currentMessageObj: BaseMsgObj = null
-  private var _currentContainerObj: BaseContainerObj = null
+  private var _currentMessageObj: MessageFactoryInterface = null
+  private var _currentContainerObj: ContainerFactoryInterface = null
   private var _currentTypName: String = ""
   private var jarPaths: Set[String] = null
   private var _dataStore: DataStore = null
 
   private type OptionMap = Map[Symbol, Any]
+  // 646 - 676 Change begins - replace MetadataAPIImpl
+  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  // 646 - 676 Change ends
 
   private def PrintUsage(): Unit = {
     LOG.warn("Available options:")
@@ -59,15 +79,30 @@ object ExtractData extends MdBaseResolveInfo {
     LOG.warn("    --version")
   }
 
-  override def getMessgeOrContainerInstance(MsgContainerType: String): MessageContainerBase = {
+  override def getInstance(MsgContainerType: String): ContainerInterface = {
     if (MsgContainerType.compareToIgnoreCase(_currentTypName) == 0) {
       if (_currentMessageObj != null)
-        return _currentMessageObj.CreateNewMessage
+        return _currentMessageObj.createInstance.asInstanceOf[ContainerInterface]
       if (_currentContainerObj != null)
-        return _currentContainerObj.CreateNewContainer
+        return _currentContainerObj.createInstance.asInstanceOf[ContainerInterface]
     }
     return null
   }
+
+  override def getInstance(schemaId: Long): ContainerInterface = {
+    //BUGBUG:: For now we are getting latest class. But we need to get the old one too.
+    if (mdMgr == null)
+      throw new KamanjaException("Metadata Not found", null)
+
+    val contOpt = mdMgr.ContainerForSchemaId(schemaId.toInt)
+
+    if (contOpt == None)
+      throw new KamanjaException("Container Not found for schemaid:" + schemaId, null)
+
+    getInstance(contOpt.get.FullName)
+  }
+
+  override def getMdMgr: MdMgr = mdMgr
 
   private def LoadJars(elem: BaseElem): Boolean = {
     var retVal: Boolean = true
@@ -181,7 +216,7 @@ object ExtractData extends MdBaseResolveInfo {
         var curClz = Class.forName(clsName, true, clsLoaderInfo.loader)
 
         while (curClz != null && isContainer == false) {
-          isContainer = Utils.isDerivedFrom(curClz, "com.ligadata.KamanjaBase.BaseContainerObj")
+          isContainer = Utils.isDerivedFrom(curClz, "com.ligadata.KamanjaBase.ContainerFactoryInterface")
           if (isContainer == false)
             curClz = curClz.getSuperclass()
         }
@@ -209,7 +244,7 @@ object ExtractData extends MdBaseResolveInfo {
         var curClz = Class.forName(clsName, true, clsLoaderInfo.loader)
 
         while (curClz != null && isMsg == false) {
-          isMsg = Utils.isDerivedFrom(curClz, "com.ligadata.KamanjaBase.BaseMsgObj")
+          isMsg = Utils.isDerivedFrom(curClz, "com.ligadata.KamanjaBase.MessageFactoryInterface")
           if (isMsg == false)
             curClz = curClz.getSuperclass()
         }
@@ -227,12 +262,12 @@ object ExtractData extends MdBaseResolveInfo {
         val module = mirror.staticModule(clsName)
         val obj = mirror.reflectModule(module)
         val objinst = obj.instance
-        if (objinst.isInstanceOf[BaseMsgObj]) {
-          _currentMessageObj = objinst.asInstanceOf[BaseMsgObj]
+        if (objinst.isInstanceOf[MessageFactoryInterface]) {
+          _currentMessageObj = objinst.asInstanceOf[MessageFactoryInterface]
           _currentTypName = typName
           LOG.debug("Created Message Object")
-        } else if (objinst.isInstanceOf[BaseContainerObj]) {
-          _currentContainerObj = objinst.asInstanceOf[BaseContainerObj]
+        } else if (objinst.isInstanceOf[ContainerFactoryInterface]) {
+          _currentContainerObj = objinst.asInstanceOf[ContainerFactoryInterface]
           _currentTypName = typName
           LOG.debug("Created Container Object")
         } else {
@@ -254,7 +289,7 @@ object ExtractData extends MdBaseResolveInfo {
   private def GetDataStoreHandle(jarPaths: collection.immutable.Set[String], dataStoreInfo: String): DataStore = {
     try {
       logger.debug("Getting DB Connection for dataStoreInfo:%s".format(dataStoreInfo))
-      return KeyValueManager.Get(jarPaths, dataStoreInfo)
+      return KeyValueManager.Get(jarPaths, dataStoreInfo, null, null)
     } catch {
       case e: Exception => {
         logger.debug("", e)
@@ -263,22 +298,12 @@ object ExtractData extends MdBaseResolveInfo {
     }
   }
 
-  private def deSerializeData(v: Value): MessageContainerBase = {
-    v.serializerType.toLowerCase match {
-      case "manual" => {
-        return SerializeDeserialize.Deserialize(v.serializedInfo, this, clsLoaderInfo.loader, true, "")
-      }
-      case _ => {
-        throw new Exception("Found un-handled Serializer Info: " + v.serializerType)
-      }
-    }
-  }
-
   private def extractData(startTm: Date, endTm: Date, compressionString: String, sFileName: String, partKey: List[String], primaryKey: List[String]): Unit = {
     val hasValidPrimaryKey = (partKey != null && primaryKey != null && partKey.size > 0 && primaryKey.size > 0)
 
     var os: OutputStream = null
-    val gson = new Gson();
+    //val gson = new Gson();
+    val gson = new GsonBuilder().setExclusionStrategies(new ExcludeLogger()).create()
 
     try {
       val compString = if (compressionString == null) null else compressionString.trim
@@ -293,12 +318,16 @@ object ExtractData extends MdBaseResolveInfo {
 
       val ln = "\n".getBytes("UTF8")
 
-      val getObjFn = (k: Key, v: Value) => {
-        val dta = deSerializeData(v)
+      val getObjFn = (k: Key, v: Any, serType: String, typ: String, ver:Int) => {
+        val dta = v.asInstanceOf[ContainerInterface]
         if (dta != null) {
+          //val aa = dta.getNativeKeyValues
+          //aa.keys.foreach{ i => print(aa(i))}
+          //println("")
+
           if (hasValidPrimaryKey) {
             // Search for primary key match
-            if (primaryKey.sameElements(dta.PrimaryKeyData)) {
+            if (primaryKey.sameElements(dta.getPrimaryKey)) {
               LOG.debug("Primarykey found")
               os.write(gson.toJson(dta).getBytes("UTF8"));
               os.write(ln);
@@ -381,11 +410,13 @@ object ExtractData extends MdBaseResolveInfo {
 
       val typName = loadConfigs.getProperty("TypeName".toLowerCase, "").replace("\"", "").trim.toLowerCase
 
-      MetadataAPIImpl.InitMdMgrFromBootStrap(cfgfile, false)
+      getMetadataAPI.InitMdMgrFromBootStrap(cfgfile, false)
 
       val nodeInfo = mdMgr.Nodes.getOrElse(nodeId.toString, null)
       if (nodeInfo == null) {
-        LOG.error("Node %d not found in metadata".format(nodeId))
+        // 660 Change begins - bug fix for proper cluster config upload message
+        LOG.error("Node %d not found in metadata. Please ensure cluster configuration has been uploaded.".format(nodeId))
+        // 660 Change ends
         sys.exit(1)
       }
 
@@ -401,7 +432,7 @@ object ExtractData extends MdBaseResolveInfo {
         sys.exit(1)
       }
 
-      val dataStore = cluster.cfgMap.getOrElse("DataStore", null)
+      val dataStore = cluster.cfgMap.getOrElse("SystemCatalog", null)
       if (dataStore == null) {
         LOG.error("DataStore not found for Node %d  & ClusterId : %s".format(nodeId, nodeInfo.ClusterId))
         sys.exit(1)
@@ -451,4 +482,3 @@ object ExtractData extends MdBaseResolveInfo {
     sys.exit(exitCode)
   }
 }
-

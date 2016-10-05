@@ -1,15 +1,20 @@
 {
-    "SubscriberUsageAlert": {
-        "Dependencies": [
-        ],
-        "MessageAndContainers": [
-            "com.ligadata.kamanja.samples.containers.subscriberaggregatedusage",
-            "com.ligadata.kamanja.samples.containers.subscriberinfo",
-            "com.ligadata.kamanja.samples.containers.subscriberglobalpreferences",
-            "com.ligadata.kamanja.samples.containers.subscriberplans",
-            "com.ligadata.kamanja.samples.containers.accountinfo",
-            "com.ligadata.kamanja.samples.containers.accountaggregatedusage",
-            "com.ligadata.kamanja.samples.messages.subscriberusage"
-        ]
-    }
+  "SubscriberUsageAlert": {
+    "Dependencies": [],
+    "MessageAndContainers": [
+      "com.ligadata.kamanja.samples.containers.subscriberaggregatedusage",
+      "com.ligadata.kamanja.samples.containers.subscriberinfo",
+      "com.ligadata.kamanja.samples.containers.subscriberglobalpreferences",
+      "com.ligadata.kamanja.samples.containers.subscriberplans",
+      "com.ligadata.kamanja.samples.containers.accountinfo",
+      "com.ligadata.kamanja.samples.containers.accountaggregatedusage"
+    ],
+    "InputTypesSets": [
+      [ "com.ligadata.kamanja.samples.messages.subscriberusage" ]
+    ],
+    "OutputTypes": [
+      "com.ligadata.kamanja.samples.messages.AccountUsageAlertMessage",
+      "com.ligadata.kamanja.samples.messages.SubscriberUsageAlertMessage"
+    ]
+  }
 }

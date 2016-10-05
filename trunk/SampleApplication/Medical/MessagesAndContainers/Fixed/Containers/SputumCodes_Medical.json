@@ -1,23 +1,23 @@
 {
-   	"Container": { 
-   		"NameSpace":"com.ligadata.kamanja.samples.containers",
-   		"Name":"SputumCodes",
-   		"Version":"00.01.00",
-   		"Description":"Container for Chronic Sputum Codes",
-   		"Fixed":"true",
-   		"Elements" : [
-   		   {
-   		   "Field" : {
-                "Name":"icd9Code",
-                "Type":"System.String"
-   		     }
-   		   },
-   		   {
-   		   "Field" : {
-                "Name":"icd9Description",
-                "Type":"System.String"
-   		     }
-   		   }
-   		]
-   	}
+  "Container": {
+    "NameSpace": "com.ligadata.kamanja.samples.containers",
+    "Name": "SputumCodes",
+    "Version": "00.01.00",
+    "Description": "Container for Chronic Sputum Codes",
+    "Fixed": "true",
+    "Persist": "true",
+    "Fields": [
+      {
+        "Name": "icd9Code",
+        "Type": "System.String"
+      },
+      {
+        "Name": "icd9Description",
+        "Type": "System.String"
+      }
+    ],
+    "PartitionKey": [
+      "icd9Code"
+    ]
+  }
 }

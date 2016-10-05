@@ -1,0 +1,18 @@
+{
+    "Message" : {
+        "NameSpace" : "org.kdd99.network.traffic",
+        "Name" : "score1",
+        "Version" : "00.01.00",
+        "Description" : "Prediction - normal/abnormal network traffic",
+        "Fixed" : "true",
+        "Elements" : [
+            {
+                "Field" : {
+                "Name" : "Predicted_normal",
+                "Type" : "System.Double"
+                }
+            }         
+        ]
+    }
+}
+

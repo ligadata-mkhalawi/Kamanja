@@ -1,7 +1,5 @@
 name := "IbmMqSimpleInputOutputAdapters"
 
-version := "1.0"
-
 resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
 libraryDependencies += "org.apache.logging.log4j" % "log4j-1.2-api" % "2.4.1"
@@ -23,3 +21,7 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.0" % "test"
 libraryDependencies += "org.scalamock" %% "scalamock-scalatest-support" % "3.2" % "test"
 
 EclipseKeys.relativizeLibs := false
+
+coverageMinimum := 80
+
+coverageFailOnMinimum := false

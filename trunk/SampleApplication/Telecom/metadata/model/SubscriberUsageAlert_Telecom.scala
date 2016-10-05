@@ -34,14 +34,13 @@
 //     
 package com.ligadata.models.samples.models
 
-import com.ligadata.KvBase.{ Key, Value }
 import com.ligadata.KamanjaBase._
 import RddUtils._
 import RddDate._
 import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
-import org.apache.logging.log4j.{ Logger, LogManager }
+import org.apache.logging.log4j.{Logger, LogManager}
 import org.joda.time.format.DateTimeFormat
 import org.joda.time.DateTime
 import java.util.Locale
@@ -49,161 +48,27 @@ import java.io._
 import com.ligadata.kamanja.metadata.ModelDef;
 
 class SubscriberUsageAlertFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
-  override def isValidMessage(msg: MessageContainerBase): Boolean = return msg.isInstanceOf[SubscriberUsage]
+  // override def isValidMessage(msg: MessageContainerBase): Boolean = return msg.isInstanceOf[SubscriberUsage]
   override def createModelInstance(): ModelInstance = return new SubscriberUsageAlert(this)
-  override def getModelName(): String = "System.SubscriberUsageAlert" // Model Name
+
+  override def getModelName(): String = "com.ligadata.models.samples.models.SubscriberUsageAlert"
+
+  // Model Name
   override def getVersion(): String = "0.0.1" // Model Version
-  override def createResultObject(): ModelResultBase = new SubscriberUsageAlertResult()
-}
-
-class SubscriberUsageAlertResult extends ModelResultBase {
-  var msisdn: Long = 0;
-  var curUsage: Long = 0
-  var alertType: String = ""
-  var triggerTime: Long = 0
-
-  lazy val loggerName = this.getClass.getName
-  lazy val logger = LogManager.getLogger(loggerName)
-
-  def withMsisdn(cId: Long): SubscriberUsageAlertResult = {
-    msisdn = cId
-    this
-  }
-
-  def withCurusage(curTotalUsage: Long): SubscriberUsageAlertResult = {
-    curUsage = curTotalUsage
-    this
-  }
-
-  def withAlertType(alertTyp: String): SubscriberUsageAlertResult = {
-    alertType = alertTyp
-    this
-  }
-
-  def withTriggerTime(triggerTm: Long): SubscriberUsageAlertResult = {
-    triggerTime = triggerTm
-    this
-  }
-
-  override def toJson: List[org.json4s.JsonAST.JObject] = {
-    val json = List(
-      ("Msisdn" -> msisdn) ~
-        ("Curusage" -> curUsage) ~
-        ("AlertType" -> alertType) ~
-        ("TriggerTime" -> triggerTime))
-    return json
-  }
-
-  override def toString: String = {
-    compact(render(toJson))
-  }
-
-  override def get(key: String): Any = {
-    if (key.compareToIgnoreCase("msisdn") == 0) return msisdn
-    if (key.compareToIgnoreCase("curUsage") == 0) return curUsage
-    if (key.compareToIgnoreCase("alertType") == 0) return alertType
-    if (key.compareToIgnoreCase("triggerTime") == 0) return triggerTime
-    return null
-  }
-
-  override def asKeyValuesMap: Map[String, Any] = {
-    val map = scala.collection.mutable.Map[String, Any]()
-    map("msisdn") = msisdn
-    map("curusage") = curUsage
-    map("alerttype") = alertType
-    map("triggertime") = triggerTime
-    map.toMap
-  }
-
-  override def Deserialize(dis: DataInputStream): Unit = {
-    // BUGBUG:: Yet to implement
-  }
-
-  override def Serialize(dos: DataOutputStream): Unit = {
-    // BUGBUG:: Yet to implement
-  }
-}
-
-
-class AccountUsageAlertResult extends ModelResultBase {
-  var actNo: String = ""
-  var curUsage: Long = 0
-  var alertType: String = ""
-  var triggerTime: Long = 0
-
-  lazy val loggerName = this.getClass.getName
-  lazy val logger = LogManager.getLogger(loggerName)
-
-  def withAct(aId: String): AccountUsageAlertResult = {
-    actNo = aId
-    this
-  }
-
-  def withCurusage(curTotalUsage: Long): AccountUsageAlertResult = {
-    curUsage = curTotalUsage
-    this
-  }
-
-  def withAlertType(alertTyp: String): AccountUsageAlertResult = {
-    alertType = alertTyp
-    this
-  }
-
-  def withTriggerTime(triggerTm: Long): AccountUsageAlertResult = {
-    triggerTime = triggerTm
-    this
-  }
-
-  override def toJson: List[org.json4s.JsonAST.JObject] = {
-    val json = List(
-      ("ActNo" -> actNo) ~
-        ("Curusage" -> curUsage) ~
-        ("AlertType" -> alertType) ~
-        ("TriggerTime" -> triggerTime))
-    return json
-  }
-
-  override def toString: String = {
-    compact(render(toJson))
-  }
-
-  override def get(key: String): Any = {
-    if (key.compareToIgnoreCase("actNo") == 0) return actNo
-    if (key.compareToIgnoreCase("curUsage") == 0) return curUsage
-    if (key.compareToIgnoreCase("alertType") == 0) return alertType
-    if (key.compareToIgnoreCase("triggerTime") == 0) return triggerTime
-    return null
-  }
-
-  override def asKeyValuesMap: Map[String, Any] = {
-    val map = scala.collection.mutable.Map[String, Any]()
-    map("actno") = actNo
-    map("curusage") = curUsage
-    map("alerttype") = alertType
-    map("triggertime") = triggerTime
-    map.toMap
-  }
-
-  override def Deserialize(dis: DataInputStream): Unit = {
-    // BUGBUG:: Yet to implement
-  }
-
-  override def Serialize(dos: DataOutputStream): Unit = {
-    // BUGBUG:: Yet to implement
-  }
+  // override def createResultObject(): ModelResultBase = new SubscriberUsageAlertResult()
 }
 
 class SubscriberUsageAlert(factory: ModelInstanceFactory) extends ModelInstance(factory) {
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
   val df = DateTimeFormat.forPattern("yyyyMMdd").withLocale(Locale.US)
-  
+
   private def getMonth(dt: String): Int = {
-    val jdt = DateTime.parse(dt,df)
+    val jdt = DateTime.parse(dt, df)
     jdt.monthOfYear().get()
   }
 
-  private def getCurrentMonth : Int = {
+  private def getCurrentMonth: Int = {
     val jdt = new DateTime()
     jdt.monthOfYear().get()
   }
@@ -216,21 +81,20 @@ class SubscriberUsageAlert(factory: ModelInstanceFactory) extends ModelInstance(
     finally fw.close()
   }
 
-  override def execute(txnCtxt: TransactionContext, outputDefault: Boolean): ModelResultBase = {
-
+  override def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
     // Make sure current transaction has some data
-    val rcntTxn = SubscriberUsage.getRecent
-    if (rcntTxn.isEmpty) {
-      return null
+    if (execMsgsSet.size == 0) {
+      return Array[ContainerOrConcept]()
     }
+    val curMsg = execMsgsSet(0).asInstanceOf[SubscriberUsage]
 
     // Get the current subscriber, account info and global preferences
     val gPref = SubscriberGlobalPreferences.getRecentOrNew(Array("Type1"))
-    val subInfo = SubscriberInfo.getRecentOrNew(Array(rcntTxn.get.msisdn.toString))
+    val subInfo = SubscriberInfo.getRecentOrNew(Array(curMsg.msisdn.toString))
     val actInfo = AccountInfo.getRecentOrNew(Array(subInfo.actno))
-    val planInfo  = SubscriberPlans.getRecentOrNew(Array(subInfo.planname))
+    val planInfo = SubscriberPlans.getRecentOrNew(Array(subInfo.planname))
 
-    var logTag = "SubscriberUsageAlertApp(" + subInfo.msisdn + "," +  actInfo.actno + "): "
+    var logTag = "SubscriberUsageAlertApp(" + subInfo.msisdn + "," + actInfo.actno + "): "
 
     // Get current values of aggregatedUsage
     val subAggrUsage = SubscriberAggregatedUsage.getRecentOrNew(Array(subInfo.msisdn.toString))
@@ -240,17 +104,17 @@ class SubscriberUsageAlert(factory: ModelInstanceFactory) extends ModelInstance(
 
     // Get current month
     val curDtTmInMs = RddDate.currentGmtDateTime
-    val txnMonth = getMonth(rcntTxn.get.date.toString)
+    val txnMonth = getMonth(curMsg.date.toString)
     val currentMonth = getCurrentMonth
 
     // planLimit values are supplied as GB. But SubscriberUsage record contains the usage as MB
     // So convert planLimit to MB
     val planLimit = planInfo.planlimit * 1000
-    val indLimit  = planInfo.individuallimit * 1000
+    val indLimit = planInfo.individuallimit * 1000
 
 
     //dumpAppLog(logTag + "Subscriber plan name => " + subInfo.planname + ",plan type => " + planInfo.plantype + ",plan limit => " + planLimit + ",individual limit => " + indLimit)
-    dumpAppLog(logTag + "Subscriber usage in the current transaction  => " + rcntTxn.get.usage)
+    dumpAppLog(logTag + "Subscriber usage in the current transaction  => " + curMsg.usage)
 
     // we are supposed to check whether the usage belongs to current month
     // if the usage doesn't belong to this month, we are supposed to ignore it
@@ -262,48 +126,60 @@ class SubscriberUsageAlert(factory: ModelInstanceFactory) extends ModelInstance(
     //}
 
     // aggregate account usage
-    val actMonthlyUsage = actAggrUsage.thismonthusage + rcntTxn.get.usage
-    actAggrUsage.withthismonthusage(actMonthlyUsage).Save
+    val actMonthlyUsage = actAggrUsage.thismonthusage + curMsg.usage
+    actAggrUsage.set("thismonthusage", actMonthlyUsage);
+    actAggrUsage.save;
 
     // aggregate the usage 
     // aggregate individual subscriber usage
-    val subMonthlyUsage = subAggrUsage.thismonthusage + rcntTxn.get.usage
-    subAggrUsage.withthismonthusage(subMonthlyUsage).Save
+    val subMonthlyUsage = subAggrUsage.thismonthusage + curMsg.usage
+    subAggrUsage.set("thismonthusage", subMonthlyUsage);
+    subAggrUsage.save
 
 
     dumpAppLog(logTag + "After Aggregation: Subscriber current month usage => " + subMonthlyUsage + ",Account current month usage => " + actMonthlyUsage)
 
     val curTmInMs = curDtTmInMs.getDateTimeInMs
-    
+
     // generate alerts if plan limits are exceeded based on planType
     planInfo.plantype match {
-      case 1 => { // shared plans
-	// exceeded plan limit
-	if ( actMonthlyUsage > planLimit ){
-	  if (actInfo.thresholdalertoptout == false) {
-	    dumpAppLog(logTag + "Creating Alert for a shared plan account " + actInfo.actno)
-	    dumpAppLog(logTag + "---------------------------")
-	    return new AccountUsageAlertResult().withAct(actInfo.actno).withCurusage(actMonthlyUsage).withAlertType("pastThresholdAlert").withTriggerTime(curTmInMs)
-	    //return null
-	  }
-	}
+      case 1 => {
+        // shared plans
+        // exceeded plan limit
+        if (actMonthlyUsage > planLimit) {
+          if (actInfo.thresholdalertoptout == false) {
+            dumpAppLog(logTag + "Creating Alert for a shared plan account " + actInfo.actno)
+            dumpAppLog(logTag + "---------------------------")
+            val msg = AccountUsageAlertMessage.createInstance()
+            msg.actno = actInfo.actno;
+            msg.curusage = actMonthlyUsage;
+            msg.alerttype = "pastThresholdAlert";
+            msg.triggertime = curTmInMs;
+            return Array(msg)
+          }
+        }
       }
-      case 2 => { // individual plans
-	// individual plan,  individual limit may have been exceeded
-	if ( subMonthlyUsage > indLimit ){
-	  if (subInfo.thresholdalertoptout == false) {
-	    dumpAppLog(logTag + "Creating alert for individual subscriber account " + rcntTxn.get.msisdn)
-	    dumpAppLog(logTag + "---------------------------")
-	    return new SubscriberUsageAlertResult().withMsisdn(rcntTxn.get.msisdn).withCurusage(subMonthlyUsage).withAlertType("pastThresholdAlert").withTriggerTime(curTmInMs)
-	    //return null
-	  }
-	}
+      case 2 => {
+        // individual plans
+        // individual plan,  individual limit may have been exceeded
+        if (subMonthlyUsage > indLimit) {
+          if (subInfo.thresholdalertoptout == false) {
+            dumpAppLog(logTag + "Creating alert for individual subscriber account " + curMsg.msisdn)
+            dumpAppLog(logTag + "---------------------------")
+            val msg = SubscriberUsageAlertMessage.createInstance()
+            msg.msisdn = curMsg.msisdn;
+            msg.curusage = subMonthlyUsage;
+            msg.alerttype = "pastThresholdAlert";
+            msg.triggertime = curTmInMs;
+            return Array(msg)
+          }
+        }
       }
       case _ => {
-	// unsupported plan type
-	//dumpAppLog("Unknown planType => " + planInfo.plantype)
+        // unsupported plan type
+        //dumpAppLog("Unknown planType => " + planInfo.plantype)
       }
     }
-    return null
+    return Array[ContainerOrConcept]()
   }
 }

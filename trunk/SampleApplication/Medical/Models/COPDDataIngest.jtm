@@ -1,0 +1,179 @@
+{
+  "header": {
+    "namespace": "com.ligadata.kamanja.samples.models",
+    "name": "COPDDataIngest",
+    "version": "0.0.1",
+    "language": "scala",
+    "minVersion": "2.11",
+    "description": "COPD messages transformation"
+  },
+  "imports": {
+    "packages": [
+      "com.ligadata.runtime.Conversion"
+    ]
+  },
+  "aliases": {
+    "messages": {
+      "m1": "com.ligadata.kamanja.samples.messages.COPDInputMessage",
+      "o1": "com.ligadata.kamanja.samples.messages.HL7",
+      "o2": "com.ligadata.kamanja.samples.messages.OutpatientClaim",
+      "o3": "com.ligadata.kamanja.samples.messages.InpatientClaim",
+      "o4": "com.ligadata.kamanja.samples.messages.Beneficiary"
+    }
+  },
+  "transformations": {
+    "copddataingestmsgtransform": {
+      "dependsOn": [
+        [
+          "m1"
+        ]
+      ],
+      "computes": {
+        "inpData": {
+          "type": "Array[String]",
+          "val": "$msg.split(\",\", -1)",
+          "comment": "Split the incoming data"
+        }
+      },
+      "outputs": {
+        "o1": {
+          "computes": {
+            "typeName": {
+              "type": "String",
+              "val": "inpData(0)",
+              "comment": "extract the type"
+            }
+          },
+          "where": "\"com.ligadata.kamanja.samples.messages.hl7\" == $typeName.trim.toLowerCase",
+          "mapbyposition": {
+            "inpData" : [ "-", "desynpuf_id", "clm_id", "clm_from_dt", "clm_thru_dt", "bene_birth_dt", "bene_death_dt", "bene_sex_ident_cd", 
+            				"bene_race_cd", "bene_esrd_ind", "sp_state_code", "bene_county_cd", "bene_hi_cvrage_tot_mons", "bene_smi_cvrage_tot_mons", 
+            				"bene_hmo_cvrage_tot_mons", "plan_cvrg_mos_num", "sp_alzhdmta", "sp_chf", "sp_chrnkidn", "sp_cncr", "sp_copd", "sp_depressn", 
+            				"sp_diabetes", "sp_ischmcht", "sp_osteoprs", "sp_ra_oa", "sp_strketia", "age", "infectious_parasitic_diseases", "neoplasms",
+            				"endocrine_nutritional_metabolic_diseases_immunity_disorders", "diseases_blood_blood_forming_organs", "mental_disorders",
+            				"diseases_nervous_system_sense_organs", "diseases_circulatory_system", "diseases_respiratory_system", "diseases_digestive_system",
+            				"diseases_genitourinary_system", "complications_of_pregnancy_childbirth_the_puerperium", "diseases_skin_subcutaneous_tissue",
+            				"diseases_musculoskeletal_system_connective_tissue", "congenital_anomalies", "certain_conditions_originating_in_the_perinatal_period", 
+            				"symptoms_signs_ill_defined_conditions", "injury_poisoning", "factors_influencing_health_status_contact_with_health_services", 
+            				"external_causes_of_injury_poisoning", "hypothyroidism", "infarction", "alzheimer", "alzheimer_related", "anemia", "asthma",
+            				"atrial_fibrillation", "hyperplasia", "cataract", "kidney_disease", "pulmonary_disease", "depression", "diabetes", "glaucoma", 
+            				"heart_failure", "hip_pelvic_fracture", "hyperlipidemia", "hypertension", "ischemic_heart_disease", "osteoporosis", "ra_oa", 
+            				"stroke", "breast_cancer", "colorectal_cancer", "prostate_cancer", "lung_cancer", "endometrial_cancer", "tobacco", "height",
+            				"weight", "systolic", "diastolic", "totalcholesterol", "ldl", "triglycerides", "shortnessofbreath", "chestpain", 
+            				"aatdeficiency", "chroniccough", "chronicsputum"]
+            }
+        },
+        "o2": {
+          "computes": {
+            "typeName": {
+              "type": "String",
+              "val": "inpData(0)",
+              "comment": "extract the type"
+            }
+          },
+          "where": "\"com.ligadata.kamanja.samples.messages.outpatientclaim\" == $typeName.trim.toLowerCase",
+          "mapping": {
+            "desynpuf_id": "$inpData(1)",
+            "clm_id": "$inpData(2)",
+            "segment": "$inpData(3)",
+            "clm_from_dt": "$inpData(4)",
+            "clm_thru_dt": "$inpData(5)",
+            "prvdr_num": "$inpData(6)",
+            "clm_pmt_amt": "$inpData(7)",
+            "nch_prmry_pyr_clm_pd_amt": "$inpData(8)",
+            "at_physn_npi": "$inpData(9)",
+            "op_physn_npi": "$inpData(10)",
+            "ot_physn_npi": "$inpData(11)",
+            "nch_bene_blood_ddctbl_lblty_am": "$inpData(12)",
+            "icd9_dgns_cds": "conversion.ToStringArray($inpData(13), \"~\")",
+            "icd9_prcdr_cds": "conversion.ToIntegerArray($inpData(14), \"~\")",
+            "nch_bene_ptb_ddctbl_amt": "$inpData(15)",
+            "nch_bene_ptb_coinsrnc_amt": "$inpData(16)",
+            "admtng_icd9_dgns_cd": "$inpData(17)",
+            "hcpcs_cds": "conversion.ToIntegerArray($inpData(18), \"~\")"
+          }
+        },
+        "o3": {
+          "computes": {
+            "typeName": {
+              "type": "String",
+              "val": "inpData(0)",
+              "comment": "extract the type"
+            }
+          },
+          "where": "\"com.ligadata.kamanja.samples.messages.inpatientclaim\" == $typeName.trim.toLowerCase",
+          "mapping": {
+            "desynpuf_id": "$inpData(1)",
+            "clm_id": "$inpData(2)",
+            "segment": "$inpData(3)",
+            "clm_from_dt": "$inpData(4)",
+            "clm_thru_dt": "$inpData(5)",
+            "prvdr_num": "$inpData(6)",
+            "clm_pmt_amt": "$inpData(7)",
+            "nch_prmry_pyr_clm_pd_amt": "$inpData(8)",
+            "at_physn_npi": "$inpData(9)",
+            "op_physn_npi": "$inpData(10)",
+            "ot_physn_npi": "$inpData(11)",
+            "clm_admsn_dt": "$inpData(12)",
+            "admtng_icd9_dgns_cd": "$inpData(13)",
+            "clm_pass_thru_per_diem_amt": "$inpData(14)",
+            "nch_bene_ip_ddctbl_amt": "$inpData(15)",
+            "nch_bene_pta_coinsrnc_lblty_am": "$inpData(16)",
+            "nch_bene_blood_ddctbl_lblty_am": "$inpData(17)",
+            "clm_utlztn_day_cnt": "$inpData(18)",
+            "nch_bene_dschrg_dt": "$inpData(19)",
+            "clm_drg_cd": "$inpData(20)",
+            "icd9_dgns_cds": "conversion.ToStringArray($inpData(21), \"~\")",
+            "icd9_prcdr_cds": "conversion.ToIntegerArray($inpData(22), \"~\")",
+            "hcpcs_cds": "conversion.ToIntegerArray($inpData(23), \"~\")"
+          }
+        },
+        "o4": {
+          "computes": {
+            "typeName": {
+              "type": "String",
+              "val": "inpData(0)",
+              "comment": "extract the type"
+            }
+          },
+          "where": "\"com.ligadata.kamanja.samples.messages.beneficiary\" == $typeName.trim.toLowerCase",
+          "mapping": {
+            "desynpuf_id": "$inpData(1)",
+            "bene_birth_dt": "$inpData(2)",
+            "bene_death_dt": "$inpData(3)",
+            "bene_sex_ident_cd": "$inpData(4)",
+            "bene_race_cd": "$inpData(5)",
+            "bene_esrd_ind": "$inpData(6)",
+            "sp_state_code": "$inpData(7)",
+            "bene_county_cd": "$inpData(8)",
+            "bene_hi_cvrage_tot_mons": "$inpData(9)",
+            "bene_smi_cvrage_tot_mons": "$inpData(10)",
+            "bene_hmo_cvrage_tot_mons": "$inpData(11)",
+            "plan_cvrg_mos_num": "$inpData(12)",
+            "sp_alzhdmta": "$inpData(13)",
+            "sp_chf": "$inpData(14)",
+            "sp_chrnkidn": "$inpData(15)",
+            "sp_cncr": "$inpData(16)",
+            "sp_copd": "$inpData(17)",
+            "sp_depressn": "$inpData(18)",
+            "sp_diabetes": "$inpData(19)",
+            "sp_ischmcht": "$inpData(20)",
+            "sp_osteoprs": "$inpData(21)",
+            "sp_ra_oa": "$inpData(22)",
+            "sp_strketia": "$inpData(23)",
+            "medreimb_ip": "$inpData(24)",
+            "benres_ip": "$inpData(25)",
+            "pppymt_ip": "$inpData(26)",
+            "medreimb_op": "$inpData(27)",
+            "benres_op": "$inpData(28)",
+            "pppymt_op": "$inpData(29)",
+            "medreimb_car": "$inpData(30)",
+            "benres_car": "$inpData(31)",
+            "pppymt_car": "$inpData(32)"
+          }
+        }
+      }
+    }
+  }
+}
+

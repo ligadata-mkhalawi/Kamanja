@@ -29,16 +29,14 @@ import org.joda.time._
 import com.ligadata.kamanja.metadata.ModelDef;
 
 class COPDRiskAssessmentFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
-  override def isValidMessage(msg: MessageContainerBase): Boolean = return msg.isInstanceOf[Beneficiary]
   override def createModelInstance(): ModelInstance = return new COPDRiskAssessment(this)
-  override def getModelName: String = "COPDRisk"
+  override def getModelName: String = "com.ligadata.kamanja.samples.models.COPDRisk"
   override def getVersion: String = "0.0.1"
-  override def createResultObject(): ModelResultBase = new MappedModelResults()
 }
 
 class COPDRiskAssessment(factory: ModelInstanceFactory) extends ModelInstance(factory) {
-  override def execute(txnCtxt: TransactionContext, outputDefault: Boolean): ModelResultBase = {
-    var msgBeneficiary: Beneficiary = txnCtxt.getMessage().asInstanceOf[Beneficiary]
+  override def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
+    var msgBeneficiary: Beneficiary = execMsgsSet(0).asInstanceOf[Beneficiary]
     val smokingCodeSet: Array[String] = SmokeCodes.getRDD.map { x => (x.icd9code) }.toArray
     val sputumCodeSet: Array[String] = SputumCodes.getRDD.map { x => (x.icd9code) }.toArray
     val envExposureCodeSet: Array[String] = EnvCodes.getRDD.map { x => (x.icd9code) }.toArray
@@ -50,11 +48,11 @@ class COPDRiskAssessment(factory: ModelInstanceFactory) extends ModelInstance(fa
     var today: Date = Calendar.getInstance.getTime
     var threeYearsBeforeDate = cal.getTime
     var originalFormat: SimpleDateFormat = new SimpleDateFormat("yyyyMMdd")
-    val inPatientInfoThisLastyear: RDD[InpatientClaim] = InpatientClaim.getRDD(msgBeneficiary.PartitionKeyData).filter { x =>
+    val inPatientInfoThisLastyear: RDD[InpatientClaim] = InpatientClaim.getRDD(msgBeneficiary.getPartitionKey()).filter { x =>
       originalFormat.parse(x.clm_thru_dt.toString()).before(today) && originalFormat.parse(x.clm_thru_dt.toString()).after(threeYearsBeforeDate)
     }
 
-    val outPatientInfoThisLastYear: RDD[OutpatientClaim] = OutpatientClaim.getRDD(msgBeneficiary.PartitionKeyData).filter { x =>
+    val outPatientInfoThisLastYear: RDD[OutpatientClaim] = OutpatientClaim.getRDD(msgBeneficiary.getPartitionKey()).filter { x =>
       originalFormat.parse(x.clm_thru_dt.toString()).before(today) && originalFormat.parse(x.clm_thru_dt.toString()).after(threeYearsBeforeDate)
     }
 
@@ -202,7 +200,7 @@ class COPDRiskAssessment(factory: ModelInstanceFactory) extends ModelInstance(fa
 
     def getHL7InfoThisLastYear(): Boolean = {
 
-      val hl7info = HL7.getRDD(msgBeneficiary.PartitionKeyData).filter { x =>
+      val hl7info = HL7.getRDD(msgBeneficiary.getPartitionKey()).filter { x =>
         originalFormat.parse(x.clm_thru_dt.toString()).before(today) && originalFormat.parse(x.clm_thru_dt.toString()).after(threeYearsBeforeDate)
       }
       for (x <- hl7info) {
@@ -216,7 +214,7 @@ class COPDRiskAssessment(factory: ModelInstanceFactory) extends ModelInstance(fa
     }
 
     def getAATDeficiencyInLastYear(): Boolean = {
-      val hl7info = HL7.getRDD(msgBeneficiary.PartitionKeyData).filter { x =>
+      val hl7info = HL7.getRDD(msgBeneficiary.getPartitionKey()).filter { x =>
         originalFormat.parse(x.clm_thru_dt.toString()).before(today) && originalFormat.parse(x.clm_thru_dt.toString()).after(threeYearsBeforeDate)
       }
       for (x <- hl7info) {
@@ -299,39 +297,36 @@ class COPDRiskAssessment(factory: ModelInstanceFactory) extends ModelInstance(fa
     }
 
     println("Executing COPD Risk Assessment against message:");
-    println("Message Type: " + msgBeneficiary.FullName)
-    println("Message Name: " + msgBeneficiary.Name);
+    println("Message Type: " + msgBeneficiary.getFullTypeName())
+    println("Message Name: " + msgBeneficiary.getTypeName());
     println("Message Desynpuf ID: " + msgBeneficiary.desynpuf_id);
 
-    if (getCATI_Rule1b) {
-      var actualResults: Array[Result] = Array[Result](new Result("Risk Level:", "1b"),
-        new Result("Age of the Benificiary:", age),
-        new Result("Has Copd Symptoms?:", getCopdSymptoms.toString()),
-        new Result("Has AAT Deficiency?:", getAATDeficiencyInLastYear.toString()),
-        new Result("Has Family History?:", getFamilyHistory.toString),
-        new Result("Has OverSmoking Codes?:", getOverSmokingCodesInLastYear.toString),
-        new Result("Has Environmental Exposures?:", getEnvironmentalExposuresInLastYear.toString))
-      return factory.createResultObject().asInstanceOf[MappedModelResults].withResults(actualResults)
-    } else if (getCATI_Rule1a) {
-      var actualResults: Array[Result] = Array[Result](new Result("Risk Level:", "1a"),
-        new Result("Age of the Benificiary:", age),
-        new Result("Has Copd Symptoms?:", getCopdSymptoms.toString()),
-        new Result("Has AAT Deficiency?:", getAATDeficiencyInLastYear.toString()),
-        new Result("Has Family History?:", getFamilyHistory.toString),
-        new Result("Has OverSmoking Codes?:", getOverSmokingCodesInLastYear.toString),
-        new Result("Has Environmental Exposures?:", getEnvironmentalExposuresInLastYear.toString))
-      return factory.createResultObject().asInstanceOf[MappedModelResults].withResults(actualResults)
-    } else if (getCATII_Rule2) {
-      var actualResults: Array[Result] = Array[Result](new Result("Risk Level:", "2"),
-        new Result("Age of the Benificiary:", age),
-        new Result("Has Copd Symptoms?:", getCopdSymptoms.toString()),
-        new Result("Has AAT Deficiency?:", getAATDeficiencyInLastYear.toString()),
-        new Result("Has Family History?:", getFamilyHistory.toString),
-        new Result("Has OverSmoking Codes?:", getOverSmokingCodesInLastYear.toString),
-        new Result("Has Environmental Exposures?:", getEnvironmentalExposuresInLastYear.toString))
-      return factory.createResultObject().asInstanceOf[MappedModelResults].withResults(actualResults)
-    } else {
+	val output = COPDOutputMessage.createInstance().asInstanceOf[COPDOutputMessage];
+	output.desynpuf_id = msgBeneficiary.desynpuf_id;
+	output.ageofthebenificiary = age;
+	output.ageover40 = age > 40;
+	output.hascopdsymptoms = getCopdSymptoms;
+	output.hasaatdeficiency = getAATDeficiencyInLastYear;
+	output.hasfamilyhistory = getFamilyHistory;
+	output.hassmokinghistory = getOverSmokingCodesInLastYear;
+	output.hasdyspnea = false
+	output.haschroniccough = false
+	output.haschronicsputum = false
+	output.hasdyspnea = false
+	output.hasenvironmentalexposure = getEnvironmentalExposuresInLastYear;
+	output.inpatientclaimcosts = 0;
+	output.outpatientclaimcosts = 0;
 
+    if (getCATI_Rule1b) {
+		output.risklevel = "1b";
+        return Array(output);
+    } else if (getCATI_Rule1a) {
+		output.risklevel = "1a";
+        return Array(output);
+    } else if (getCATII_Rule2) {
+		output.risklevel = "2";
+        return Array(output);
+    } else {
       return null
     }
 
