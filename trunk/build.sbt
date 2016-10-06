@@ -33,6 +33,7 @@ val Organization = "com.ligadata"
 val assembleDependencies = TaskKey[Unit]("assembleDependencies")
 
 assembleDependencies in Global := {
+  (packageBin in Compile in KafkaAdapters_v10).value
   (assembly in Test in ExtDependencyLibs).value
   (assembly in Test in ExtDependencyLibs2).value
   (assembly in Test in KamanjaInternalDeps).value
