@@ -1278,7 +1278,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
     try {
 
-      println("SMART FILE CONSUMER Moving File" + originalFilePath + " to " + targetMoveDir)
+      logger.info("SMART FILE CONSUMER Moving File" + originalFilePath + " to " + targetMoveDir)
       if (fileHandler.exists()) {
         val targetDirHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, targetMoveDir)
 

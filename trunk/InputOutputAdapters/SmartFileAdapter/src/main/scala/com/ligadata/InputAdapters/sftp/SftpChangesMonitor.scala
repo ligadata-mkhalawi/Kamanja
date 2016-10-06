@@ -45,7 +45,9 @@ class SftpFileHandler extends SmartFileHandler{
   private var channelSftp : ChannelSftp = null
   private var session : Session = null
   private var jsch : JSch = null
-  def getNewSession = jsch.getSession(connectionConfig.userId, host, port)
+
+  private var ui : SftpUserInfo = null
+
 
   private var isBinary: Boolean = false
 
@@ -65,11 +67,27 @@ class SftpFileHandler extends SmartFileHandler{
     if (connectionConfig.keyFile != null && connectionConfig.keyFile.length > 0) {
       jsch.addIdentity(connectionConfig.keyFile)
     }
+
+    ui = new SftpUserInfo(connectionConfig.password, passphrase)
   }
 
   def this(fullPath : String, config : FileAdapterConnectionConfig, isBin: Boolean) {
     this(fullPath, config)
     isBinary = isBin
+  }
+
+  private def getNewSession() : Unit = {
+    if(session == null || !session.isConnected) {
+      session = jsch.getSession(connectionConfig.userId, host, port)
+      session.setUserInfo(ui)
+      session.connect()
+    }
+
+    if(channelSftp == null || !channelSftp.isConnected || channelSftp.isClosed){
+      val channel = session.openChannel("sftp")
+      channel.connect()
+      channelSftp = channel.asInstanceOf[ChannelSftp]
+    }
   }
 
   def getParentDir : String = {
@@ -82,14 +100,8 @@ class SftpFileHandler extends SmartFileHandler{
 
   //gets the input stream according to file system type - SFTP here
   def getDefaultInputStream : InputStream = {
-    val ui=new SftpUserInfo(connectionConfig.password, passphrase)
 
-    session = getNewSession
-    session.setUserInfo(ui)
-    session.connect()
-    val channel = session.openChannel("sftp")
-    channel.connect()
-    channelSftp = channel.asInstanceOf[ChannelSftp]
+    getNewSession()
 
     logger.info("Sftp File Handler - opening file " + getFullPath)
     val inputStream : InputStream =
@@ -169,13 +181,7 @@ class SftpFileHandler extends SmartFileHandler{
 
     val ui = new SftpUserInfo(connectionConfig.password, passphrase)
     try {
-      session = getNewSession
-      session.setUserInfo(ui)
-      session.connect()
-      val channel = session.openChannel("sftp")
-      channel.connect()
-      channelSftp = channel.asInstanceOf[ChannelSftp]
-
+      getNewSession()
 
       if(!fileExists(channelSftp,getFullPath )) {
         logger.warn("Source file {} does not exists", getFullPath)
@@ -219,12 +225,8 @@ class SftpFileHandler extends SmartFileHandler{
     val ui = new SftpUserInfo(connectionConfig.password, passphrase)
 
     try {
-      session = getNewSession
-      session.setUserInfo(ui)
-      session.connect()
-      val channel = session.openChannel("sftp")
-      channel.connect()
-      channelSftp = channel.asInstanceOf[ChannelSftp]
+      getNewSession()
+
       channelSftp.rm(getFullPath)
 
       channelSftp.exit()
@@ -255,12 +257,8 @@ class SftpFileHandler extends SmartFileHandler{
     val ui = new SftpUserInfo(connectionConfig.password, passphrase)
 
     try {
-      session = getNewSession
-      session.setUserInfo(ui)
-      session.connect()
-      val channel = session.openChannel("sftp")
-      channel.connect()
-      channelSftp = channel.asInstanceOf[ChannelSftp]
+      getNewSession
+
       channelSftp.rm(fileName)
 
       channelSftp.exit()
@@ -307,22 +305,28 @@ class SftpFileHandler extends SmartFileHandler{
   @throws(classOf[Exception])
   def length : Long = {
     logger.info("Sftp File Handler - checking length for file " + hashPath(getFullPath))
-    val attrs = getRemoteFileAttrs
+    val attrs = getRemoteFileAttrs()
     if (attrs == null) 0 else attrs.getSize
   }
 
   @throws(classOf[Exception])
   def lastModified : Long = {
     logger.info("Sftp File Handler - checking modification time for file " + hashPath(getFullPath))
-    val attrs = getRemoteFileAttrs
+    val attrs = getRemoteFileAttrs()
     if (attrs == null) 0 else attrs.getMTime
   }
 
   @throws(classOf[Exception])
   def exists(): Boolean = {
-    logger.info("Sftp File Handler - checking existence for file " + hashPath(getFullPath))
-    val att = getRemoteFileAttrs
-    att != null
+    try {
+      logger.info("Sftp File Handler - checking existence for file " + hashPath(getFullPath))
+      val att = getRemoteFileAttrs(logError = false)
+      att != null
+    }
+    catch{
+      case ex : Exception => false
+      case ex : Throwable => false
+    }
   }
 
   private def fileExists(channel : ChannelSftp, file : String) : Boolean = {
@@ -345,35 +349,33 @@ class SftpFileHandler extends SmartFileHandler{
   @throws(classOf[Exception])
   override def isFile: Boolean = {
     logger.info("Sftp File Handler - checking (isFile) for file " + hashPath(getFullPath))
-    val attrs = getRemoteFileAttrs
+    val attrs = getRemoteFileAttrs()
     if (attrs == null) false else !attrs.isDir
   }
 
   @throws(classOf[Exception])
   override def isDirectory: Boolean = {
     logger.info("Sftp File Handler - checking (isDir) for file " + hashPath(getFullPath))
-    val attrs = getRemoteFileAttrs
+    val attrs = getRemoteFileAttrs()
     if (attrs == null) false else attrs.isDir
   }
 
-  private def getRemoteFileAttrs :  SftpATTRS = {
+  private def getRemoteFileAttrs(logError : Boolean = true) :  SftpATTRS = {
     try {
-      val ui = new SftpUserInfo(connectionConfig.password, passphrase)
-      session = getNewSession
-      session.setUserInfo(ui)
-      session.connect()
-      val channel = session.openChannel("sftp")
-      channel.connect()
-      channelSftp = channel.asInstanceOf[ChannelSftp]
+
+      getNewSession
+
       channelSftp.lstat(getFullPath)
     }
     catch {
       case ex : Exception =>
-        logger.error("Error while getting file attrs for file " + getFullPath, ex)
+        if(logError)
+          logger.warn("Error while getting file attrs for file " + getFullPath)
         null
 
       case ex : Throwable =>
-        logger.error("Error while getting file attrs for file " + getFullPath, ex)
+        if(logError)
+          logger.warn("Error while getting file attrs for file " + getFullPath)
         null
 
     } finally {
@@ -391,13 +393,9 @@ class SftpFileHandler extends SmartFileHandler{
   override def mkdirs() : Boolean = {
     logger.info("Sftp File Handler - mkdirs for path " + getFullPath)
     try {
-      val ui = new SftpUserInfo(connectionConfig.password, passphrase)
-      session = getNewSession
-      session.setUserInfo(ui)
-      session.connect()
-      val channel = session.openChannel("sftp")
-      channel.connect()
-      channelSftp = channel.asInstanceOf[ChannelSftp]
+
+      getNewSession
+
       //no direct method to create nonexistent parent dirs, so create one by one whenever necessary
       val tokens = getFullPath.split("/")
       var currentPath = ""
@@ -426,11 +424,11 @@ class SftpFileHandler extends SmartFileHandler{
     catch {
       case ex : Throwable =>
         logger.error("Sftp File Handler - Error while creating path " + getFullPath)
-        ex.printStackTrace()
+        //ex.printStackTrace()
         false
 
     } finally {
-      println("Closing SFTP session from mkdirs()")
+      logger.debug("Closing SFTP session from mkdirs()")
       if(channelSftp != null) channelSftp.exit()
       if(session != null) session.disconnect()
     }
@@ -714,8 +712,8 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
     val newFile = new SftpFileEntry()
     newFile.name = fileObject.getURL.toString
     newFile.parent = fileObject.getParent.getURL.toString
-    newFile.lastModificationTime = fileObject.getContent.getLastModifiedTime
     newFile.isDirectory = fileObject.getType.getName.equalsIgnoreCase("folder")
+    newFile.lastModificationTime = if(newFile.isDirectory) 0 else fileObject.getContent.getLastModifiedTime
     newFile.lastReportedSize = if(newFile.isDirectory) -1 else fileObject.getContent.getSize //size is not defined for folders
     newFile
   }
