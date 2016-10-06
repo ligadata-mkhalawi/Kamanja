@@ -65,6 +65,8 @@ class FileAdapterMonitoringConfig {
 
   var enableMoving: String = "on"  //on, off - public
   def isMovingEnabled: Boolean = enableMoving == null || enableMoving.length == 0 || enableMoving.equalsIgnoreCase("on")
+
+  val createInputStructureInTargetDirs = true
 }
 
 class Padding {

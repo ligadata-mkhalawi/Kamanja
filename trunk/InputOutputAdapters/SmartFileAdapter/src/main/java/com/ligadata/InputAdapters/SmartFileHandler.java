@@ -4,9 +4,7 @@ import com.ligadata.Exceptions.KamanjaException;
 
 import java.io.InputStream;
 
-/**
- * Created by Yasser on 3/10/2016.
- */
+
 public interface SmartFileHandler {
     String getFullPath();
     String getParentDir();
@@ -28,4 +26,6 @@ public interface SmartFileHandler {
     boolean isDirectory() throws KamanjaException;
 
     boolean isAccessible();
+
+    boolean mkdirs();
 }

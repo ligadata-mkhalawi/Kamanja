@@ -1,8 +1,5 @@
 package com.ligadata.InputAdapters.sftp
 
-/**
-  * Created by Yasser on 3/10/2016.
-  */
 import java.io._
 import com.ligadata.AdaptersConfiguration.{SmartFileAdapterConfiguration, FileAdapterMonitoringConfig, FileAdapterConnectionConfig}
 import com.ligadata.Exceptions.KamanjaException
@@ -390,6 +387,54 @@ class SftpFileHandler extends SmartFileHandler{
   //api can only tell the unix rep. of file permissions but cannot find user name or group name of that file
   //so for now return true if exists
   override def isAccessible : Boolean = exists()
+
+  override def mkdirs() : Boolean = {
+    logger.info("Sftp File Handler - mkdirs for path " + getFullPath)
+    try {
+      val ui = new SftpUserInfo(connectionConfig.password, passphrase)
+      session = getNewSession
+      session.setUserInfo(ui)
+      session.connect()
+      val channel = session.openChannel("sftp")
+      channel.connect()
+      channelSftp = channel.asInstanceOf[ChannelSftp]
+      //no direct method to create nonexistent parent dirs, so create one by one whenever necessary
+      val tokens = getFullPath.split("/")
+      var currentPath = ""
+      var idx = 0
+      var fail = false
+      while(idx < tokens.length && !fail) {
+        currentPath += tokens(idx) + "/"
+        if(tokens(idx).length() >0){
+          if(!fileExists(channelSftp, currentPath)){
+            logger.error("Sftp File Handler - Error while creating path " + currentPath)
+            try{
+              channelSftp.mkdir(currentPath)
+            }
+            catch{
+              case ex : Throwable =>
+                logger.error("", ex)
+                fail = true
+            }
+          }
+        }
+        idx += 1
+      }
+
+      !fail
+    }
+    catch {
+      case ex : Throwable =>
+        logger.error("Sftp File Handler - Error while creating path " + getFullPath)
+        ex.printStackTrace()
+        false
+
+    } finally {
+      println("Closing SFTP session from mkdirs()")
+      if(channelSftp != null) channelSftp.exit()
+      if(session != null) session.disconnect()
+    }
+  }
 }
 
 class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileHandler, Boolean) => Unit) extends SmartFileMonitor{

@@ -1261,8 +1261,14 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     if(locationInfo == null)
       throw new Exception("No target move dir for file " + originalFilePath)
 
-    val targetMoveDir = locationInfo.targetDir
+    val targetMoveDirBase = locationInfo.targetDir
     val fileStruct = originalFilePath.split("/")
+    val targetMoveDir =
+      if(adapterConfig.monitoringConfig.createInputStructureInTargetDirs) {
+        fileStruct.take( fileStruct.length-1).mkString("/").replace(locationInfo.srcDir, targetMoveDirBase)
+      }
+      else targetMoveDirBase
+
     (targetMoveDir, fileStruct(fileStruct.size - 1))
   }
 
@@ -1272,25 +1278,38 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
     try {
 
-      LOG.info("SMART FILE CONSUMER Moving File" + originalFilePath + " to " + targetMoveDir)
+      println("SMART FILE CONSUMER Moving File" + originalFilePath + " to " + targetMoveDir)
       if (fileHandler.exists()) {
-        return fileHandler.moveTo(targetMoveDir + "/" + flBaseName)
+        val targetDirHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, targetMoveDir)
+
+        //base target dir already exists, but might need to build sub-dirs corresponding to input dir structure
+        val targetDirExists =
+          if(!targetDirHandler.exists())
+            targetDirHandler.mkdirs()
+          else true
+
+        if(targetDirExists)
+          fileHandler.moveTo(targetMoveDir + "/" + flBaseName)
         //fileCacheRemove(fileHandler.getFullPath)
+        else{
+          logger.warn("SMART FILE CONSUMER - Target dir not found and could not be created:" + targetMoveDir)
+          false
+        }
       } else {
-        LOG.warn("SMART FILE CONSUMER File has been deleted " + originalFilePath);
-        return true
+        LOG.warn("SMART FILE CONSUMER File has been deleted " + originalFilePath)
+        true
       }
     }
     catch{
       case e : Exception => {
         externalizeExceptionEvent(e)
         LOG.error(s"SMART FILE CONSUMER - Failed to move file ($originalFilePath) into directory ($targetMoveDir)")
-        return false
+        false
       }
       case e : Throwable => {
         externalizeExceptionEvent(e)
         LOG.error(s"SMART FILE CONSUMER - Failed to move file ($originalFilePath) into directory ($targetMoveDir)")
-        return false
+        false
       }
     }
   }
