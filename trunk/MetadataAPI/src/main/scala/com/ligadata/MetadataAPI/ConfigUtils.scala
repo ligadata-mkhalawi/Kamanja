@@ -1571,26 +1571,6 @@ object ConfigUtils {
       }
       setPropertyFromConfigFile("METADATA_DATASTORE", mdDataStore)
 
-      val rootDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("ROOT_DIR")
-      if( rootDir == null ){
-	throw new Exception("The property ROOT_DIR must be defined in MetadataAPI properties file")
-      }
-
-      val libSystemPath = rootDir + "/lib/system"
-      val libApplicationPath = rootDir + "/lib/application"
-
-      logger.debug("libSystemPath => " + libSystemPath)
-      logger.debug("libApplicationPath => " + libApplicationPath)
-
-      val defaultJarPathStr = libSystemPath + "," + libApplicationPath
-      setPropertyFromConfigFile("JarPaths", defaultJarPathStr)
-
-      var manifestPath = getMetadataAPI.GetMetadataAPIConfig.getProperty("MANIFEST_PATH")
-      if( manifestPath == null ){
-	manifestPath = rootDir + "/config/manifest.mf"
-        setPropertyFromConfigFile("MANIFEST_PATH", manifestPath)
-      }
-
       var notifyEngine = getMetadataAPI.GetMetadataAPIConfig.getProperty("NOTIFY_ENGINE")
       if( notifyEngine == null ){
 	notifyEngine = "YES"
@@ -1615,12 +1595,6 @@ object ConfigUtils {
         setPropertyFromConfigFile("ZOOKEEPER_CONNECT_STRING", zkConnectString)
       }
 
-      var compilerWorkDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("COMPILER_WORK_DIR")
-      if( compilerWorkDir == null ){
-	compilerWorkDir = rootDir + "/workingdir"
-        setPropertyFromConfigFile("COMPILER_WORK_DIR", compilerWorkDir)
-      }
-
       var serviceHost = getMetadataAPI.GetMetadataAPIConfig.getProperty("SERVICE_HOST")
       if( serviceHost == null ){
 	serviceHost = "localhost"
@@ -1633,58 +1607,10 @@ object ConfigUtils {
         setPropertyFromConfigFile("SERVICE_PORT", servicePort)
       }
 
-      var modelFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
-      if( modelFilesDir == null ){
-	modelFilesDir = rootDir + "/input/SampleApplications/metadata/model/"
-        setPropertyFromConfigFile("MODEL_FILES_DIR", modelFilesDir)
-      }
-
-      var typeFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("TYPE_FILES_DIR")
-      if( typeFilesDir == null ){
-	typeFilesDir = rootDir + "/input/SampleApplications/metadata/type/"
-        setPropertyFromConfigFile("TYPE_FILES_DIR", typeFilesDir)
-      }
-
-      var functionFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("FUNCTION_FILES_DIR")
-      if( functionFilesDir == null ){
-	functionFilesDir = rootDir + "/input/SampleApplications/metadata/function/"
-        setPropertyFromConfigFile("FUNCTION_FILES_DIR", functionFilesDir)
-      }
-
-      var conceptFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONCEPT_FILES_DIR")
-      if( conceptFilesDir == null ){
-	conceptFilesDir = rootDir + "/input/SampleApplications/metadata/concept/"
-        setPropertyFromConfigFile("CONCEPT_FILES_DIR", conceptFilesDir)
-      }
-
-      var messageFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MESSAGE_FILES_DIR")
-      if( messageFilesDir == null ){
-	messageFilesDir = rootDir + "/input/SampleApplications/metadata/message/"
-        setPropertyFromConfigFile("MESSAGE_FILES_DIR", messageFilesDir)
-      }
-
-      var containerFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONTAINER_FILES_DIR")
-      if( containerFilesDir == null ){
-	containerFilesDir = rootDir + "/input/SampleApplications/metadata/container/"
-        setPropertyFromConfigFile("CONTAINER_FILES_DIR", containerFilesDir)
-      }
-
-      var configFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONFIG_FILES_DIR")
-      if( configFilesDir == null ){
-	configFilesDir = rootDir + "/input/SampleApplications/metadata/config/"
-        setPropertyFromConfigFile("CONFIG_FILES_DIR", configFilesDir)
-      }
-
       var modelExecFlag = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_EXEC_FLAG")
       if( modelExecFlag == null ){
 	modelExecFlag = "false"
         setPropertyFromConfigFile("MODEL_EXEC_FLAG", modelExecFlag)
-      }
-
-      var securityImplJar = getMetadataAPI.GetMetadataAPIConfig.getProperty("SECURITY_IMPL_JAR")
-      if( securityImplJar == null ){
-	securityImplJar = libSystemPath + "/simpleapacheshiroadapter_2.11-1.0.jar"
-        setPropertyFromConfigFile("SECURITY_IMPL_JAR", securityImplJar)
       }
 
       var securityImplClass = getMetadataAPI.GetMetadataAPIConfig.getProperty("SECURITY_IMPL_CLASS")
@@ -1699,12 +1625,6 @@ object ConfigUtils {
         setPropertyFromConfigFile("DO_AUTH", doAuth)
       }
 
-      var auditImplJar = getMetadataAPI.GetMetadataAPIConfig.getProperty("AUDIT_IMPL_JAR")
-      if( auditImplJar == null ){
-	auditImplJar = libSystemPath + "/auditadapters_2.11-1.0.jar"
-        setPropertyFromConfigFile("AUDIT_IMPL_JAR", auditImplJar)
-      }
-
       var auditImplClass = getMetadataAPI.GetMetadataAPIConfig.getProperty("AUDIT_IMPL_CLASS")
       if( auditImplClass == null ){
 	auditImplClass = "com.ligadata.audit.adapters.AuditCassandraAdapter"
@@ -1717,54 +1637,12 @@ object ConfigUtils {
         setPropertyFromConfigFile("DO_AUDIT", doAudit)
       }
 
-      var sslCertificate = getMetadataAPI.GetMetadataAPIConfig.getProperty("SSL_CERTIFICATE")
-      if( sslCertificate == null ){
-	sslCertificate = rootDir + "/config/keystore.jks"
-        setPropertyFromConfigFile("SSL_CERTIFICATE", sslCertificate)
+      var rootDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("ROOT_DIR")
+      if( rootDir == null ){
+	logger.warn("The property ROOT_DIR is not defined in MetadataAPI properties file")
+	logger.warn("This property is required if metadata api operation is being performed")
+	logger.warn("It is not required for engine startup")
       }
-
-      var jarPaths = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS")
-      logger.debug("jarPaths => " + jarPaths)
-      if( jarPaths == null ){
-	jarPaths = libSystemPath + "," + libApplicationPath
-        setPropertyFromConfigFile("JAR_PATHS", jarPaths)
-      }
-
-      var jarTargetDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR")
-      logger.debug("jarTargetDir => " + jarTargetDir)
-      if( jarTargetDir == null ){
-	jarTargetDir = libApplicationPath
-        setPropertyFromConfigFile("JAR_TARGET_DIR", jarTargetDir)
-      }
-
-      val classPath =  getMetadataAPI.GetMetadataAPIConfig.getProperty("CLASSPATH")
-      logger.debug("classPath => " + classPath)
-      val jarPathSet = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(",").toSet
-      jarPathSet.foreach(j => { logger.debug("jarPath Element => " + j) })
-
-      val libraryFile = rootDir + "/config/library_list"
-      if( ! fileExists(libraryFile) ){
-	throw new Exception("Possible deployment error: The file " + libraryFile + " that lists the default libraries is not found")
-      }
-
-      var libList = new scala.collection.mutable.ListBuffer[String]()
-      for (line <- Source.fromFile(libraryFile).getLines()) {
-	libList += line
-      }
-
-      if ( libList.length == 0 ){
-	throw new Exception("Possible deployment error: The file " + libraryFile + " is empty, It must contain default libraries")
-      }
-
-      val defaultClassPath = libList.map(j => com.ligadata.Utils.Utils.GetValidJarFile(jarPathSet, j)).mkString(":")
-
-      logger.info("defaultClassPath => " + defaultClassPath)
-      var finalClassPath = defaultClassPath
-      if( classPath != null ){
-	finalClassPath = classPath + ":" + finalClassPath
-      }
-
-      setPropertyFromConfigFile("CLASSPATH", finalClassPath)
 
       var scalaHome = getMetadataAPI.GetMetadataAPIConfig.getProperty("SCALA_HOME")
       if( scalaHome == null ){
@@ -1792,8 +1670,135 @@ object ConfigUtils {
 	setPropertyFromConfigFile("JAVA_HOME", javaHome)
       }
 
-      pList.map(v => logger.warn(v + " remains unset"))
 
+      if( rootDir != null ){
+	val libSystemPath = rootDir + "/lib/system"
+	val libApplicationPath = rootDir + "/lib/application"
+
+	logger.debug("libSystemPath => " + libSystemPath)
+	logger.debug("libApplicationPath => " + libApplicationPath)
+
+	val defaultJarPathStr = libSystemPath + "," + libApplicationPath
+	setPropertyFromConfigFile("JarPaths", defaultJarPathStr)
+
+	var manifestPath = getMetadataAPI.GetMetadataAPIConfig.getProperty("MANIFEST_PATH")
+	if( manifestPath == null ){
+	  manifestPath = rootDir + "/config/manifest.mf"
+          setPropertyFromConfigFile("MANIFEST_PATH", manifestPath)
+	}
+
+	var compilerWorkDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("COMPILER_WORK_DIR")
+	if( compilerWorkDir == null ){
+	  compilerWorkDir = rootDir + "/workingdir"
+          setPropertyFromConfigFile("COMPILER_WORK_DIR", compilerWorkDir)
+	}
+
+	var modelFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
+	if( modelFilesDir == null ){
+	  modelFilesDir = rootDir + "/input/SampleApplications/metadata/model/"
+          setPropertyFromConfigFile("MODEL_FILES_DIR", modelFilesDir)
+	}
+
+	var typeFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("TYPE_FILES_DIR")
+	if( typeFilesDir == null ){
+	  typeFilesDir = rootDir + "/input/SampleApplications/metadata/type/"
+          setPropertyFromConfigFile("TYPE_FILES_DIR", typeFilesDir)
+	}
+
+	var functionFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("FUNCTION_FILES_DIR")
+	if( functionFilesDir == null ){
+	  functionFilesDir = rootDir + "/input/SampleApplications/metadata/function/"
+          setPropertyFromConfigFile("FUNCTION_FILES_DIR", functionFilesDir)
+	}
+
+	var conceptFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONCEPT_FILES_DIR")
+	if( conceptFilesDir == null ){
+	  conceptFilesDir = rootDir + "/input/SampleApplications/metadata/concept/"
+          setPropertyFromConfigFile("CONCEPT_FILES_DIR", conceptFilesDir)
+	}
+
+	var messageFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MESSAGE_FILES_DIR")
+	if( messageFilesDir == null ){
+	  messageFilesDir = rootDir + "/input/SampleApplications/metadata/message/"
+          setPropertyFromConfigFile("MESSAGE_FILES_DIR", messageFilesDir)
+	}
+
+	var containerFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONTAINER_FILES_DIR")
+	if( containerFilesDir == null ){
+	  containerFilesDir = rootDir + "/input/SampleApplications/metadata/container/"
+          setPropertyFromConfigFile("CONTAINER_FILES_DIR", containerFilesDir)
+	}
+
+	var configFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONFIG_FILES_DIR")
+	if( configFilesDir == null ){
+	  configFilesDir = rootDir + "/input/SampleApplications/metadata/config/"
+          setPropertyFromConfigFile("CONFIG_FILES_DIR", configFilesDir)
+	}
+
+
+	var securityImplJar = getMetadataAPI.GetMetadataAPIConfig.getProperty("SECURITY_IMPL_JAR")
+	if( securityImplJar == null ){
+	  securityImplJar = libSystemPath + "/simpleapacheshiroadapter_2.11-1.0.jar"
+          setPropertyFromConfigFile("SECURITY_IMPL_JAR", securityImplJar)
+	}
+
+	var auditImplJar = getMetadataAPI.GetMetadataAPIConfig.getProperty("AUDIT_IMPL_JAR")
+	if( auditImplJar == null ){
+	  auditImplJar = libSystemPath + "/auditadapters_2.11-1.0.jar"
+          setPropertyFromConfigFile("AUDIT_IMPL_JAR", auditImplJar)
+	}
+
+	var sslCertificate = getMetadataAPI.GetMetadataAPIConfig.getProperty("SSL_CERTIFICATE")
+	if( sslCertificate == null ){
+	  sslCertificate = rootDir + "/config/keystore.jks"
+          setPropertyFromConfigFile("SSL_CERTIFICATE", sslCertificate)
+	}
+
+	var jarPaths = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS")
+	logger.debug("jarPaths => " + jarPaths)
+	if( jarPaths == null ){
+	  jarPaths = libSystemPath + "," + libApplicationPath
+          setPropertyFromConfigFile("JAR_PATHS", jarPaths)
+	}
+
+	var jarTargetDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR")
+	logger.debug("jarTargetDir => " + jarTargetDir)
+	if( jarTargetDir == null ){
+	  jarTargetDir = libApplicationPath
+          setPropertyFromConfigFile("JAR_TARGET_DIR", jarTargetDir)
+	}
+
+	val classPath =  getMetadataAPI.GetMetadataAPIConfig.getProperty("CLASSPATH")
+	logger.debug("classPath => " + classPath)
+	val jarPathSet = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(",").toSet
+	jarPathSet.foreach(j => { logger.debug("jarPath Element => " + j) })
+
+	val libraryFile = rootDir + "/config/library_list"
+	if( ! fileExists(libraryFile) ){
+	  throw new Exception("Possible deployment error: The file " + libraryFile + " that lists the default libraries is not found")
+	}
+
+	var libList = new scala.collection.mutable.ListBuffer[String]()
+	for (line <- Source.fromFile(libraryFile).getLines()) {
+	  libList += line
+	}
+
+	if ( libList.length == 0 ){
+	  throw new Exception("Possible deployment error: The file " + libraryFile + " is empty, It must contain default libraries")
+	}
+
+	val defaultClassPath = libList.map(j => com.ligadata.Utils.Utils.GetValidJarFile(jarPathSet, j)).mkString(":")
+
+	logger.info("defaultClassPath => " + defaultClassPath)
+	var finalClassPath = defaultClassPath
+	if( classPath != null ){
+	  finalClassPath = classPath + ":" + finalClassPath
+	}
+
+	setPropertyFromConfigFile("CLASSPATH", finalClassPath)
+      }
+
+      pList.map(v => logger.warn(v + " remains unset"))
       dumpMetadataAPIConfig
       MetadataAPIImpl.propertiesAlreadyLoaded = true;
 
