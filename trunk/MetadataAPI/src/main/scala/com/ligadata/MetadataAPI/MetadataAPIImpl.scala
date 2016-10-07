@@ -3726,9 +3726,9 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     jarPaths: List[String], scala_home: String,
     java_home: String, classpath: String,
     clusterId: String, power: Int,
-    roles: Array[String], description: String, readerThreads: Int, processThreads: Int, logicalPartitionCachePort: Int): String = {
+    roles: Array[String], description: String, readerThreads: Int, processThreads: Int, logicalPartitionCachePort: Int, akkaPort: Int): String = {
     ConfigUtils.AddNode(nodeId, nodePort, nodeIpAddr, jarPaths, scala_home,
-        java_home, classpath, clusterId, power, roles, description, readerThreads, processThreads, logicalPartitionCachePort)
+        java_home, classpath, clusterId, power, roles, description, readerThreads, processThreads, logicalPartitionCachePort, akkaPort)
   }
 
     /**
@@ -3751,10 +3751,10 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     jarPaths: List[String], scala_home: String,
     java_home: String, classpath: String,
     clusterId: String, power: Int,
-    roles: Array[String], description: String, readerThreads: Int, processThreads: Int, logicalPartitionCachePort: Int): String = {
+    roles: Array[String], description: String, readerThreads: Int, processThreads: Int, logicalPartitionCachePort: Int, akkaPort: Int): String = {
     ConfigUtils.AddNode(nodeId, nodePort, nodeIpAddr, jarPaths, scala_home,
       java_home, classpath,
-      clusterId, power, roles, description, readerThreads, processThreads, logicalPartitionCachePort)
+      clusterId, power, roles, description, readerThreads, processThreads, logicalPartitionCachePort, akkaPort)
   }
 
     /**
@@ -3837,8 +3837,8 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
      * @param privileges
      * @return
      */
-  def AddCluster(clusterId: String, description: String, privileges: String, globalReaderThreads: Int, globalProcessThreads: Int, logicalPartitions: Int, globalLogicalPartitionCachePort: Int): String = {
-    ConfigUtils.AddCluster(clusterId,description,privileges, globalReaderThreads, globalProcessThreads, logicalPartitions, globalLogicalPartitionCachePort)
+  def AddCluster(clusterId: String, description: String, privileges: String, globalReaderThreads: Int, globalProcessThreads: Int, logicalPartitions: Int, globalLogicalPartitionCachePort: Int, globalAkkaPort: Int): String = {
+    ConfigUtils.AddCluster(clusterId,description,privileges, globalReaderThreads, globalProcessThreads, logicalPartitions, globalLogicalPartitionCachePort, globalAkkaPort)
   }
 
     /**
@@ -3849,8 +3849,8 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
      * @param privileges
      * @return
      */
-  def UpdateCluster(clusterId: String, description: String, privileges: String, globalReaderThreads: Int, globalProcessThreads: Int, logicalPartitions: Int, globalLogicalPartitionCachePort: Int): String = {
-    ConfigUtils.AddCluster(clusterId, description, privileges, globalReaderThreads, globalProcessThreads, logicalPartitions, globalLogicalPartitionCachePort: Int)
+  def UpdateCluster(clusterId: String, description: String, privileges: String, globalReaderThreads: Int, globalProcessThreads: Int, logicalPartitions: Int, globalLogicalPartitionCachePort: Int, globalAkkaPort: Int): String = {
+    ConfigUtils.AddCluster(clusterId, description, privileges, globalReaderThreads, globalProcessThreads, logicalPartitions, globalLogicalPartitionCachePort, globalAkkaPort)
   }
 
     /**

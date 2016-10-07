@@ -67,7 +67,7 @@ import org.apache.zookeeper.CreateMode
 
 import com.ligadata.keyvaluestore._
 import com.ligadata.Serialize._
-import com.ligadata.Utils.{Utils, KamanjaClassLoader, KamanjaLoaderInfo}
+import com.ligadata.Utils.{ Utils, KamanjaClassLoader, KamanjaLoaderInfo }
 import scala.util.control.Breaks._
 import com.ligadata.AuditAdapterInfo._
 import com.ligadata.SecurityAdapterInfo.SecurityAdapter
@@ -84,7 +84,7 @@ object ConfigUtils {
   // 646 - 676 Change begins - replace MetadataAPIImpl
   val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
   // 646 - 676 Change ends
-  val LOGICAL_PARTITION_LIMIT : Int = 16000
+  val LOGICAL_PARTITION_LIMIT: Int = 16000
   //lazy val serializer = SerializerManager.GetSerializer(serializerType)
   /**
    *
@@ -122,11 +122,11 @@ object ConfigUtils {
               jarPaths: List[String], scala_home: String,
               java_home: String, classpath: String,
               clusterId: String, power: Int,
-              roles: Array[String], description: String, readerThreads: Int, processThreads: Int, logicalPartitionCachePort: Int): String = {
+              roles: Array[String], description: String, readerThreads: Int, processThreads: Int, logicalPartitionCachePort: Int, akkaPort: Int): String = {
     try {
       // save in memory
       val ni = MdMgr.GetMdMgr.MakeNode(nodeId, nodePort, nodeIpAddr, jarPaths, scala_home,
-        java_home, classpath, clusterId, power, roles, description, readerThreads, processThreads, logicalPartitionCachePort)
+        java_home, classpath, clusterId, power, roles, description, readerThreads, processThreads, logicalPartitionCachePort, akkaPort)
       MdMgr.GetMdMgr.AddNode(ni)
       // save in database
       val key = "NodeInfo." + nodeId
@@ -164,10 +164,10 @@ object ConfigUtils {
                  jarPaths: List[String], scala_home: String,
                  java_home: String, classpath: String,
                  clusterId: String, power: Int,
-                 roles: Array[String], description: String, readerThreads: Int, processThreads: Int, logicalPartitionCachePort: Int): String = {
+                 roles: Array[String], description: String, readerThreads: Int, processThreads: Int, logicalPartitionCachePort: Int, akkaPort: Int): String = {
     AddNode(nodeId, nodePort, nodeIpAddr, jarPaths, scala_home,
       java_home, classpath,
-      clusterId, power, roles, description, readerThreads, processThreads, logicalPartitionCachePort)
+      clusterId, power, roles, description, readerThreads, processThreads, logicalPartitionCachePort, akkaPort)
   }
 
   /**
@@ -321,10 +321,10 @@ object ConfigUtils {
    * @param privileges
    * @return
    */
-  def AddCluster(clusterId: String, description: String, privileges: String, globalReaderThreads: Int, globalProcessThreads: Int, logicalPartitions: Int, globalLogicalPartitionCachePort: Int): String = {
+  def AddCluster(clusterId: String, description: String, privileges: String, globalReaderThreads: Int, globalProcessThreads: Int, logicalPartitions: Int, globalLogicalPartitionCachePort: Int, globalAkkPort: Int): String = {
     try {
       // save in memory
-      val ci = MdMgr.GetMdMgr.MakeCluster(clusterId, description, privileges, globalReaderThreads, globalProcessThreads, logicalPartitions, globalLogicalPartitionCachePort)
+      val ci = MdMgr.GetMdMgr.MakeCluster(clusterId, description, privileges, globalReaderThreads, globalProcessThreads, logicalPartitions, globalLogicalPartitionCachePort, globalAkkPort)
       MdMgr.GetMdMgr.AddCluster(ci)
       // save in database
       val key = "ClusterInfo." + clusterId
@@ -350,8 +350,8 @@ object ConfigUtils {
    * @param privileges
    * @return
    */
-  def UpdateCluster(clusterId: String, description: String, privileges: String, globalReaderThreads: Int, globalProcessThreads: Int, logicalPartitions: Int, globalLogicalPartitionCachePort: Int): String = {
-    AddCluster(clusterId, description, privileges, globalReaderThreads, globalProcessThreads, logicalPartitions, globalLogicalPartitionCachePort)
+  def UpdateCluster(clusterId: String, description: String, privileges: String, globalReaderThreads: Int, globalProcessThreads: Int, logicalPartitions: Int, globalLogicalPartitionCachePort: Int, globalAkkaPort: Int): String = {
+    AddCluster(clusterId, description, privileges, globalReaderThreads, globalProcessThreads, logicalPartitions, globalLogicalPartitionCachePort, globalAkkaPort)
   }
 
   /**
@@ -759,9 +759,14 @@ object ConfigUtils {
               val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GlobalLogicalPartitionCachePort", cfgStr, "Error : GlobalLogicalPartitionCachePort Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
               return apiResult.toString()
             }
+            val GlobalAkkaPort = cluster.getOrElse("GlobalAkkaPort", "0").toString.trim.toInt
+            if (GlobalAkkaPort == 0) {
+              val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GlobalAkkaPort", cfgStr, "Error : GlobalAkkaPort Must be present to upload Cluster Config " + ErrorCodeConstants.Upload_Config_Failed)
+              return apiResult.toString()
+            }
             logger.debug("Processing the cluster => " + ClusterId)
             // save in memory
-            val ci = MdMgr.GetMdMgr.MakeCluster(ClusterId, "", "", GlobalReaderThreads, GlobalProcessThreads, LogicalPartitions, GlobalLogicalPartitionCachePort)
+            val ci = MdMgr.GetMdMgr.MakeCluster(ClusterId, "", "", GlobalReaderThreads, GlobalProcessThreads, LogicalPartitions, GlobalLogicalPartitionCachePort, GlobalAkkaPort)
             val addCluserReuslt = MdMgr.GetMdMgr.AddCluster(ci)
 
             if (addCluserReuslt != None) {
@@ -771,6 +776,7 @@ object ConfigUtils {
               clusterDef.globalProcessThreads = ci.globalProcessThreads
               clusterDef.logicalPartitions = ci.logicalPartitions
               clusterDef.globalLogicalPartitionCachePort = ci.globalLogicalPartitionCachePort
+              clusterDef.globalAkkaPort = ci.GlobalAkkaPort
               clusterDef.elementType = "clusterDef"
               clusterDef.nameSpace = "cluster"
               clusterDef.name = ci.clusterId
@@ -807,8 +813,8 @@ object ConfigUtils {
               cfgMap("EnvironmentContext") = getStringFromJsonNode(cluster.getOrElse("EnvironmentContext", null))
             if (cluster.contains("Cache"))
               cfgMap("Cache") = getStringFromJsonNode(cluster.getOrElse("Cache", null))
-           if (cluster.contains("PYTHON_CONFIG"))
-                cfgMap("PYTHON_CONFIG") = getStringFromJsonNode(cluster.get("PYTHON_CONFIG"))
+            if (cluster.contains("PYTHON_CONFIG"))
+              cfgMap("PYTHON_CONFIG") = getStringFromJsonNode(cluster.get("PYTHON_CONFIG"))
             if (cluster.contains("Config")) {
               val config = cluster.get("Config").get.asInstanceOf[Map[String, Any]] //BUGBUG:: Do we need to check the type before converting
               if (config.contains("SystemCatalog"))
@@ -819,15 +825,15 @@ object ConfigUtils {
                 cfgMap("EnvironmentContext") = getStringFromJsonNode(config.get("EnvironmentContext"))
             }
 
-	    if (logger.isDebugEnabled()) {
-	       logger.debug( "The value of python config while uploading is  " + cfgMap.getOrElse("PYTHON_CONFIG", "") ) 
-	    }
+            if (logger.isDebugEnabled()) {
+              logger.debug("The value of python config while uploading is  " + cfgMap.getOrElse("PYTHON_CONFIG", ""))
+            }
 
-	    getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_CONFIG", cfgMap.getOrElse("PYTHON_CONFIG", "")) 
+            getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_CONFIG", cfgMap.getOrElse("PYTHON_CONFIG", ""))
 
-	    if (logger.isDebugEnabled()) {
-	       logger.debug( "The value of python config from meta config while uploading is  " + getMetadataAPI.GetMetadataAPIConfig.getProperty("PYTHON_CONFIG") ) 
-	    }
+            if (logger.isDebugEnabled()) {
+              logger.debug("The value of python config from meta config while uploading is  " + getMetadataAPI.GetMetadataAPIConfig.getProperty("PYTHON_CONFIG"))
+            }
             // save in memory
             val cic = MdMgr.GetMdMgr.MakeClusterCfg(ClusterId, cfgMap, null, null)
             val addClusterResult = MdMgr.GetMdMgr.AddClusterCfg(cic)
@@ -867,6 +873,7 @@ object ConfigUtils {
                 var readerThreads: Int = node.getOrElse("ReaderThreads", "0").toString.trim.toInt
                 var processThreads = node.getOrElse("ProcessThreads", "0").toString.trim.toInt
                 var logicalPartitionCachePort = node.getOrElse("LogicalPartitionCachePort", "0").toString.trim.toInt
+                var akkaPort = node.getOrElse("AkkaPort", "0").toString.trim.toInt
 
                 val validRoles = NodeRole.ValidRoles.map(r => r.toLowerCase).toSet
                 val givenRoles = roles
@@ -885,7 +892,7 @@ object ConfigUtils {
                 }
 
                 val ni = MdMgr.GetMdMgr.MakeNode(nodeId, nodePort, nodeIpAddr, jarPaths,
-                  scala_home, java_home, classpath, ClusterId, 0, foundRoles.toArray, "", readerThreads, processThreads, logicalPartitionCachePort)
+                  scala_home, java_home, classpath, ClusterId, 0, foundRoles.toArray, "", readerThreads, processThreads, logicalPartitionCachePort, akkaPort)
 
                 val addNodeResult = MdMgr.GetMdMgr.AddNode(ni)
                 if (addNodeResult != None) {
@@ -1432,44 +1439,43 @@ object ConfigUtils {
     }
 
     val pythonConfigs = cluster.cfgMap.getOrElse("PYTHON_CONFIG", null)
-    
+
     if (pythonConfigs != null && pythonConfigs.isInstanceOf[String]
       && pythonConfigs.asInstanceOf[String].trim().size > 0) {
       if (logger.isDebugEnabled()) {
-      	 logger.debug(" The value of Pythonconfigs are " + pythonConfigs) ;
+        logger.debug(" The value of Pythonconfigs are " + pythonConfigs);
       }
-      getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_CONFIG", pythonConfigs) 
+      getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_CONFIG", pythonConfigs)
 
       implicit val jsonFormats: Formats = DefaultFormats
 
       val pyInfo = parse(pythonConfigs).extract[PythonInfo]
 
-      val pythonPath  = pyInfo.PYTHON_PATH.replace("\"", "").trim
+      val pythonPath = pyInfo.PYTHON_PATH.replace("\"", "").trim
       getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_PATH", pythonPath)
-      val pythonBinDir  = pyInfo.PYTHON_BIN_DIR.replace("\"", "").trim
+      val pythonBinDir = pyInfo.PYTHON_BIN_DIR.replace("\"", "").trim
       getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_BIN_DIR", pythonBinDir)
-      val pythonLogConfigPath  = pyInfo.PYTHON_LOG_CONFIG_PATH.replace("\"", "").trim
+      val pythonLogConfigPath = pyInfo.PYTHON_LOG_CONFIG_PATH.replace("\"", "").trim
       getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_LOG_CONFIG_PATH", pythonLogConfigPath)
-      val pythonLogPath  = pyInfo.PYTHON_LOG_PATH.replace("\"", "").trim
+      val pythonLogPath = pyInfo.PYTHON_LOG_PATH.replace("\"", "").trim
       getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_LOG_PATH", pythonLogPath)
-      val serverBasePort  = pyInfo.SERVER_BASE_PORT.replace("\"", "").trim
+      val serverBasePort = pyInfo.SERVER_BASE_PORT.replace("\"", "").trim
       getMetadataAPI.GetMetadataAPIConfig.setProperty("SERVER_BASE_PORT", serverBasePort)
-      val serverPortLimit  = pyInfo.SERVER_PORT_LIMIT.replace("\"", "").trim
+      val serverPortLimit = pyInfo.SERVER_PORT_LIMIT.replace("\"", "").trim
       getMetadataAPI.GetMetadataAPIConfig.setProperty("SERVER_PORT_LIMIT", serverPortLimit)
-      val serverHost  = pyInfo.SERVER_HOST.replace("\"", "").trim
+      val serverHost = pyInfo.SERVER_HOST.replace("\"", "").trim
       getMetadataAPI.GetMetadataAPIConfig.setProperty("SERVER_HOST", serverHost)
       if (logger.isDebugEnabled()) {
-         logger.debug("PYTHON_PATH(based on PYTHON_CONFIG) => " + pythonPath)
-         logger.debug("PYTHON_BIN_DIR(based on PYTHON_CONFIG) => " + pythonBinDir)
-         logger.debug("PYTHON_LOG_CONFIG_PATH(based on PYTHON_CONFIG) => " + pythonLogConfigPath)
-         logger.debug("PYTHON_LOG_PATH(based on PYTHON_CONFIG) => " + pythonLogPath)
-         logger.debug("SERVER_BASE_PORT(based on PYTHON_CONFIG) => " + serverBasePort)
-         logger.debug("SERVER_PORT_LIMIT(based on PYTHON_CONFIG) => " + serverPortLimit)
-          logger.debug("SERVER_HOST(based on PYTHON_CONFIG) => " + serverHost)
+        logger.debug("PYTHON_PATH(based on PYTHON_CONFIG) => " + pythonPath)
+        logger.debug("PYTHON_BIN_DIR(based on PYTHON_CONFIG) => " + pythonBinDir)
+        logger.debug("PYTHON_LOG_CONFIG_PATH(based on PYTHON_CONFIG) => " + pythonLogConfigPath)
+        logger.debug("PYTHON_LOG_PATH(based on PYTHON_CONFIG) => " + pythonLogPath)
+        logger.debug("SERVER_BASE_PORT(based on PYTHON_CONFIG) => " + serverBasePort)
+        logger.debug("SERVER_PORT_LIMIT(based on PYTHON_CONFIG) => " + serverPortLimit)
+        logger.debug("SERVER_HOST(based on PYTHON_CONFIG) => " + serverHost)
       }
 
     }
-
 
     val jarPaths = if (nd.JarPaths == null) Set[String]() else nd.JarPaths.map(str => str.replace("\"", "").trim).filter(str => str.size > 0).toSet
     if (jarPaths.size == 0) {
@@ -1521,11 +1527,11 @@ object ConfigUtils {
       true
   }
 
-    /**
-     * Read metadata api configuration properties
-      *
-      * @param configFile the MetadataAPI configuration file
-     */
+  /**
+   * Read metadata api configuration properties
+   *
+   * @param configFile the MetadataAPI configuration file
+   */
   @throws(classOf[MissingPropertyException])
   @throws(classOf[InvalidPropertyException])
   def readMetadataAPIConfigFromPropertiesFile(configFile: String): Unit = {
@@ -1551,7 +1557,6 @@ object ConfigUtils {
       setPropertyFromConfigFile("ZK_SESSION_TIMEOUT_MS", "3000")
       setPropertyFromConfigFile("ZK_CONNECTION_TIMEOUT_MS", "3000")
 
-
       // Loop through and set the rest of the values.
       val eProps1 = prop.propertyNames()
       while (eProps1.hasMoreElements()) {
@@ -1561,242 +1566,240 @@ object ConfigUtils {
       }
 
       val nodeId = getMetadataAPI.GetMetadataAPIConfig.getProperty("NODE_ID")
-      if( nodeId == null ){
-	throw new Exception("NodeId must be defined in the config file " + configFile)
+      if (nodeId == null) {
+        throw new Exception("NodeId must be defined in the config file " + configFile)
       }
       setPropertyFromConfigFile("NODE_ID", nodeId)
 
       val mdDataStore = getMetadataAPI.GetMetadataAPIConfig.getProperty("METADATA_DATASTORE")
-      if( mdDataStore == null ){
-	throw new Exception("MetadataDataStore must be defined in the config file " + configFile)
+      if (mdDataStore == null) {
+        throw new Exception("MetadataDataStore must be defined in the config file " + configFile)
       }
       setPropertyFromConfigFile("METADATA_DATASTORE", mdDataStore)
 
       var notifyEngine = getMetadataAPI.GetMetadataAPIConfig.getProperty("NOTIFY_ENGINE")
-      if( notifyEngine == null ){
-	notifyEngine = "YES"
+      if (notifyEngine == null) {
+        notifyEngine = "YES"
         setPropertyFromConfigFile("NOTIFY_ENGINE", notifyEngine)
       }
 
       var znodePath = getMetadataAPI.GetMetadataAPIConfig.getProperty("ZNODE_PATH")
-      if( znodePath == null ){
-	znodePath = "/kamanja"
+      if (znodePath == null) {
+        znodePath = "/kamanja"
         setPropertyFromConfigFile("ZNODE_PATH", znodePath)
       }
 
       var apiLeaderSelectionZkNode = getMetadataAPI.GetMetadataAPIConfig.getProperty("API_LEADER_SELECTION_NODE_PATH")
-      if( apiLeaderSelectionZkNode == null ){
-	apiLeaderSelectionZkNode = "/kamanja"
+      if (apiLeaderSelectionZkNode == null) {
+        apiLeaderSelectionZkNode = "/kamanja"
         setPropertyFromConfigFile("API_LEADER_SELECTION_NODE_PATH", apiLeaderSelectionZkNode)
       }
 
       var zkConnectString = getMetadataAPI.GetMetadataAPIConfig.getProperty("ZOOKEEPER_CONNECT_STRING")
-      if( zkConnectString == null ){
-	zkConnectString = "localhost:2181"
+      if (zkConnectString == null) {
+        zkConnectString = "localhost:2181"
         setPropertyFromConfigFile("ZOOKEEPER_CONNECT_STRING", zkConnectString)
       }
 
       var serviceHost = getMetadataAPI.GetMetadataAPIConfig.getProperty("SERVICE_HOST")
-      if( serviceHost == null ){
-	serviceHost = "localhost"
+      if (serviceHost == null) {
+        serviceHost = "localhost"
         setPropertyFromConfigFile("SERVICE_HOST", serviceHost)
       }
 
       var servicePort = getMetadataAPI.GetMetadataAPIConfig.getProperty("SERVICE_PORT")
-      if( servicePort == null ){
-	servicePort = "8081"
+      if (servicePort == null) {
+        servicePort = "8081"
         setPropertyFromConfigFile("SERVICE_PORT", servicePort)
       }
 
       var modelExecFlag = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_EXEC_FLAG")
-      if( modelExecFlag == null ){
-	modelExecFlag = "false"
+      if (modelExecFlag == null) {
+        modelExecFlag = "false"
         setPropertyFromConfigFile("MODEL_EXEC_FLAG", modelExecFlag)
       }
 
       var securityImplClass = getMetadataAPI.GetMetadataAPIConfig.getProperty("SECURITY_IMPL_CLASS")
-      if( securityImplClass == null ){
-	securityImplClass = "com.ligadata.Security.SimpleApacheShiroAdapter"
+      if (securityImplClass == null) {
+        securityImplClass = "com.ligadata.Security.SimpleApacheShiroAdapter"
         setPropertyFromConfigFile("SECURITY_IMPL_CLASS", securityImplClass)
       }
 
       var doAuth = getMetadataAPI.GetMetadataAPIConfig.getProperty("DO_AUTH")
-      if( doAuth == null ){
-	doAuth = "NO"
+      if (doAuth == null) {
+        doAuth = "NO"
         setPropertyFromConfigFile("DO_AUTH", doAuth)
       }
 
       var auditImplClass = getMetadataAPI.GetMetadataAPIConfig.getProperty("AUDIT_IMPL_CLASS")
-      if( auditImplClass == null ){
-	auditImplClass = "com.ligadata.audit.adapters.AuditCassandraAdapter"
+      if (auditImplClass == null) {
+        auditImplClass = "com.ligadata.audit.adapters.AuditCassandraAdapter"
         setPropertyFromConfigFile("AUDIT_IMPL_CLASS", auditImplClass)
       }
 
       var doAudit = getMetadataAPI.GetMetadataAPIConfig.getProperty("DO_AUDIT")
-      if( doAudit == null ){
-	doAudit = "NO"
+      if (doAudit == null) {
+        doAudit = "NO"
         setPropertyFromConfigFile("DO_AUDIT", doAudit)
       }
 
       var rootDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("ROOT_DIR")
-      if( rootDir == null ){
-	logger.warn("The property ROOT_DIR is not defined in MetadataAPI properties file")
-	logger.warn("This property is required if metadata api operation is being performed")
-	logger.warn("It is not required for engine startup")
+      if (rootDir == null) {
+        logger.warn("The property ROOT_DIR is not defined in MetadataAPI properties file")
+        logger.warn("This property is required if metadata api operation is being performed")
+        logger.warn("It is not required for engine startup")
       }
 
       var scalaHome = getMetadataAPI.GetMetadataAPIConfig.getProperty("SCALA_HOME")
-      if( scalaHome == null ){
-	try{
-	  scalaHome = Process("which scala").!!
-	} catch {
-	  case e: Exception =>
-	    logger.error("Failed to locate SCALA_HOME")
-	    throw e
-	}
-	scalaHome = scalaHome.replaceAll("/bin/scala\n","")
-	setPropertyFromConfigFile("SCALA_HOME", scalaHome)
+      if (scalaHome == null) {
+        try {
+          scalaHome = Process("which scala").!!
+        } catch {
+          case e: Exception =>
+            logger.error("Failed to locate SCALA_HOME")
+            throw e
+        }
+        scalaHome = scalaHome.replaceAll("/bin/scala\n", "")
+        setPropertyFromConfigFile("SCALA_HOME", scalaHome)
       }
 
       var javaHome = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAVA_HOME")
-      if( javaHome == null ){
-	try{
-	  javaHome = Process("which java").!!
-	} catch {
-	  case e: Exception =>
-	    logger.error("Failed to locate JAVA_HOME")
-	    throw e
-	}
-	javaHome = javaHome.replaceAll("/bin/java\n","")
-	setPropertyFromConfigFile("JAVA_HOME", javaHome)
+      if (javaHome == null) {
+        try {
+          javaHome = Process("which java").!!
+        } catch {
+          case e: Exception =>
+            logger.error("Failed to locate JAVA_HOME")
+            throw e
+        }
+        javaHome = javaHome.replaceAll("/bin/java\n", "")
+        setPropertyFromConfigFile("JAVA_HOME", javaHome)
       }
 
+      if (rootDir != null) {
+        val libSystemPath = rootDir + "/lib/system"
+        val libApplicationPath = rootDir + "/lib/application"
 
-      if( rootDir != null ){
-	val libSystemPath = rootDir + "/lib/system"
-	val libApplicationPath = rootDir + "/lib/application"
+        logger.debug("libSystemPath => " + libSystemPath)
+        logger.debug("libApplicationPath => " + libApplicationPath)
 
-	logger.debug("libSystemPath => " + libSystemPath)
-	logger.debug("libApplicationPath => " + libApplicationPath)
+        val defaultJarPathStr = libSystemPath + "," + libApplicationPath
+        setPropertyFromConfigFile("JarPaths", defaultJarPathStr)
 
-	val defaultJarPathStr = libSystemPath + "," + libApplicationPath
-	setPropertyFromConfigFile("JarPaths", defaultJarPathStr)
-
-	var manifestPath = getMetadataAPI.GetMetadataAPIConfig.getProperty("MANIFEST_PATH")
-	if( manifestPath == null ){
-	  manifestPath = rootDir + "/config/manifest.mf"
+        var manifestPath = getMetadataAPI.GetMetadataAPIConfig.getProperty("MANIFEST_PATH")
+        if (manifestPath == null) {
+          manifestPath = rootDir + "/config/manifest.mf"
           setPropertyFromConfigFile("MANIFEST_PATH", manifestPath)
-	}
+        }
 
-	var compilerWorkDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("COMPILER_WORK_DIR")
-	if( compilerWorkDir == null ){
-	  compilerWorkDir = rootDir + "/workingdir"
+        var compilerWorkDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("COMPILER_WORK_DIR")
+        if (compilerWorkDir == null) {
+          compilerWorkDir = rootDir + "/workingdir"
           setPropertyFromConfigFile("COMPILER_WORK_DIR", compilerWorkDir)
-	}
+        }
 
-	var modelFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
-	if( modelFilesDir == null ){
-	  modelFilesDir = rootDir + "/input/SampleApplications/metadata/model/"
+        var modelFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
+        if (modelFilesDir == null) {
+          modelFilesDir = rootDir + "/input/SampleApplications/metadata/model/"
           setPropertyFromConfigFile("MODEL_FILES_DIR", modelFilesDir)
-	}
+        }
 
-	var typeFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("TYPE_FILES_DIR")
-	if( typeFilesDir == null ){
-	  typeFilesDir = rootDir + "/input/SampleApplications/metadata/type/"
+        var typeFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("TYPE_FILES_DIR")
+        if (typeFilesDir == null) {
+          typeFilesDir = rootDir + "/input/SampleApplications/metadata/type/"
           setPropertyFromConfigFile("TYPE_FILES_DIR", typeFilesDir)
-	}
+        }
 
-	var functionFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("FUNCTION_FILES_DIR")
-	if( functionFilesDir == null ){
-	  functionFilesDir = rootDir + "/input/SampleApplications/metadata/function/"
+        var functionFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("FUNCTION_FILES_DIR")
+        if (functionFilesDir == null) {
+          functionFilesDir = rootDir + "/input/SampleApplications/metadata/function/"
           setPropertyFromConfigFile("FUNCTION_FILES_DIR", functionFilesDir)
-	}
+        }
 
-	var conceptFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONCEPT_FILES_DIR")
-	if( conceptFilesDir == null ){
-	  conceptFilesDir = rootDir + "/input/SampleApplications/metadata/concept/"
+        var conceptFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONCEPT_FILES_DIR")
+        if (conceptFilesDir == null) {
+          conceptFilesDir = rootDir + "/input/SampleApplications/metadata/concept/"
           setPropertyFromConfigFile("CONCEPT_FILES_DIR", conceptFilesDir)
-	}
+        }
 
-	var messageFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MESSAGE_FILES_DIR")
-	if( messageFilesDir == null ){
-	  messageFilesDir = rootDir + "/input/SampleApplications/metadata/message/"
+        var messageFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("MESSAGE_FILES_DIR")
+        if (messageFilesDir == null) {
+          messageFilesDir = rootDir + "/input/SampleApplications/metadata/message/"
           setPropertyFromConfigFile("MESSAGE_FILES_DIR", messageFilesDir)
-	}
+        }
 
-	var containerFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONTAINER_FILES_DIR")
-	if( containerFilesDir == null ){
-	  containerFilesDir = rootDir + "/input/SampleApplications/metadata/container/"
+        var containerFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONTAINER_FILES_DIR")
+        if (containerFilesDir == null) {
+          containerFilesDir = rootDir + "/input/SampleApplications/metadata/container/"
           setPropertyFromConfigFile("CONTAINER_FILES_DIR", containerFilesDir)
-	}
+        }
 
-	var configFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONFIG_FILES_DIR")
-	if( configFilesDir == null ){
-	  configFilesDir = rootDir + "/input/SampleApplications/metadata/config/"
+        var configFilesDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("CONFIG_FILES_DIR")
+        if (configFilesDir == null) {
+          configFilesDir = rootDir + "/input/SampleApplications/metadata/config/"
           setPropertyFromConfigFile("CONFIG_FILES_DIR", configFilesDir)
-	}
+        }
 
-
-	var securityImplJar = getMetadataAPI.GetMetadataAPIConfig.getProperty("SECURITY_IMPL_JAR")
-	if( securityImplJar == null ){
-	  securityImplJar = libSystemPath + "/simpleapacheshiroadapter_2.11-1.0.jar"
+        var securityImplJar = getMetadataAPI.GetMetadataAPIConfig.getProperty("SECURITY_IMPL_JAR")
+        if (securityImplJar == null) {
+          securityImplJar = libSystemPath + "/simpleapacheshiroadapter_2.11-1.0.jar"
           setPropertyFromConfigFile("SECURITY_IMPL_JAR", securityImplJar)
-	}
+        }
 
-	var auditImplJar = getMetadataAPI.GetMetadataAPIConfig.getProperty("AUDIT_IMPL_JAR")
-	if( auditImplJar == null ){
-	  auditImplJar = libSystemPath + "/auditadapters_2.11-1.0.jar"
+        var auditImplJar = getMetadataAPI.GetMetadataAPIConfig.getProperty("AUDIT_IMPL_JAR")
+        if (auditImplJar == null) {
+          auditImplJar = libSystemPath + "/auditadapters_2.11-1.0.jar"
           setPropertyFromConfigFile("AUDIT_IMPL_JAR", auditImplJar)
-	}
+        }
 
-	var sslCertificate = getMetadataAPI.GetMetadataAPIConfig.getProperty("SSL_CERTIFICATE")
-	if( sslCertificate == null ){
-	  sslCertificate = rootDir + "/config/keystore.jks"
+        var sslCertificate = getMetadataAPI.GetMetadataAPIConfig.getProperty("SSL_CERTIFICATE")
+        if (sslCertificate == null) {
+          sslCertificate = rootDir + "/config/keystore.jks"
           setPropertyFromConfigFile("SSL_CERTIFICATE", sslCertificate)
-	}
+        }
 
-	var jarPaths = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS")
-	logger.debug("jarPaths => " + jarPaths)
-	if( jarPaths == null ){
-	  jarPaths = libSystemPath + "," + libApplicationPath
+        var jarPaths = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS")
+        logger.debug("jarPaths => " + jarPaths)
+        if (jarPaths == null) {
+          jarPaths = libSystemPath + "," + libApplicationPath
           setPropertyFromConfigFile("JAR_PATHS", jarPaths)
-	}
+        }
 
-	var jarTargetDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR")
-	logger.debug("jarTargetDir => " + jarTargetDir)
-	if( jarTargetDir == null ){
-	  jarTargetDir = libApplicationPath
+        var jarTargetDir = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_TARGET_DIR")
+        logger.debug("jarTargetDir => " + jarTargetDir)
+        if (jarTargetDir == null) {
+          jarTargetDir = libApplicationPath
           setPropertyFromConfigFile("JAR_TARGET_DIR", jarTargetDir)
-	}
+        }
 
-	val classPath =  getMetadataAPI.GetMetadataAPIConfig.getProperty("CLASSPATH")
-	logger.debug("classPath => " + classPath)
-	val jarPathSet = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(",").toSet
-	jarPathSet.foreach(j => { logger.debug("jarPath Element => " + j) })
+        val classPath = getMetadataAPI.GetMetadataAPIConfig.getProperty("CLASSPATH")
+        logger.debug("classPath => " + classPath)
+        val jarPathSet = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(",").toSet
+        jarPathSet.foreach(j => { logger.debug("jarPath Element => " + j) })
 
-	val libraryFile = rootDir + "/config/library_list"
-	if( ! fileExists(libraryFile) ){
-	  throw new Exception("Possible deployment error: The file " + libraryFile + " that lists the default libraries is not found")
-	}
+        val libraryFile = rootDir + "/config/library_list"
+        if (!fileExists(libraryFile)) {
+          throw new Exception("Possible deployment error: The file " + libraryFile + " that lists the default libraries is not found")
+        }
 
-	var libList = new scala.collection.mutable.ListBuffer[String]()
-	for (line <- Source.fromFile(libraryFile).getLines()) {
-	  libList += line
-	}
+        var libList = new scala.collection.mutable.ListBuffer[String]()
+        for (line <- Source.fromFile(libraryFile).getLines()) {
+          libList += line
+        }
 
-	if ( libList.length == 0 ){
-	  throw new Exception("Possible deployment error: The file " + libraryFile + " is empty, It must contain default libraries")
-	}
+        if (libList.length == 0) {
+          throw new Exception("Possible deployment error: The file " + libraryFile + " is empty, It must contain default libraries")
+        }
 
-	val defaultClassPath = libList.map(j => com.ligadata.Utils.Utils.GetValidJarFile(jarPathSet, j)).mkString(":")
+        val defaultClassPath = libList.map(j => com.ligadata.Utils.Utils.GetValidJarFile(jarPathSet, j)).mkString(":")
 
-	logger.info("defaultClassPath => " + defaultClassPath)
-	var finalClassPath = defaultClassPath
-	if( classPath != null ){
-	  finalClassPath = classPath + ":" + finalClassPath
-	}
+        logger.info("defaultClassPath => " + defaultClassPath)
+        var finalClassPath = defaultClassPath
+        if (classPath != null) {
+          finalClassPath = classPath + ":" + finalClassPath
+        }
 
-	setPropertyFromConfigFile("CLASSPATH", finalClassPath)
+        setPropertyFromConfigFile("CLASSPATH", finalClassPath)
       }
 
       pList.map(v => logger.warn(v + " remains unset"))
@@ -1810,11 +1813,11 @@ object ConfigUtils {
     }
   }
 
-    /**
-     * Read the default configuration property values from config file.
-      *
-      * @param cfgFile
-     */
+  /**
+   * Read the default configuration property values from config file.
+   *
+   * @param cfgFile
+   */
   @throws(classOf[MissingPropertyException])
   @throws(classOf[LoadAPIConfigException])
   def readMetadataAPIConfigFromJsonFile(cfgFile: String): Unit = {
@@ -1823,11 +1826,11 @@ object ConfigUtils {
     throw LoadAPIConfigException("Failed to load configuration", new Exception(msg))
   }
 
-    /**
-     * LoadAllConfigObjectsIntoCache
-      *
-      * @return
-     */
+  /**
+   * LoadAllConfigObjectsIntoCache
+   *
+   * @return
+   */
   def LoadAllConfigObjectsIntoCache: Boolean = {
     try {
       var processed: Long = 0L
@@ -1862,8 +1865,8 @@ object ConfigUtils {
               MdMgr.GetMdMgr.AddUserProperty(up)
             }
             case "tenantinfo" => {
-                val ti = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[TenantInfo] //serializer.DeserializeObjectFromByteArray(v.asInstanceOf[Array[Byte]]).asInstanceOf[TenantInfo]
-                MdMgr.GetMdMgr.AddTenantInfo(ti)
+              val ti = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[TenantInfo] //serializer.DeserializeObjectFromByteArray(v.asInstanceOf[Array[Byte]]).asInstanceOf[TenantInfo]
+              MdMgr.GetMdMgr.AddTenantInfo(ti)
             }
             case "adaptermessagebinding" => {
               val binding = MetadataAPISerialization.deserializeMetadata(new String(v.asInstanceOf[Array[Byte]])).asInstanceOf[AdapterMessageBinding] //serializer.DeserializeObjectFromByteArray(v.asInstanceOf[Array[Byte]]).asInstanceOf[TenantInfo]
