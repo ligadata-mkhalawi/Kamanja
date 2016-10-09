@@ -425,7 +425,7 @@ class HdfsChangesMonitor(adapterName: String, modifiedFileCallback: (SmartFileHa
                         if (MonitorUtils.isPatternMatch(MonitorUtils.getFileName(tuple._1.getFullPath), location.fileComponents.regex))
                           validModifiedFiles.append(tuple)
                         else
-                          logger.info("Smart File Consumer (Hdfs) : File {}, does not follow configured name pattern ({}), so it will be ignored - Adapter {}",
+                          logger.warn("Smart File Consumer (Hdfs) : File {}, does not follow configured name pattern ({}), so it will be ignored - Adapter {}",
                             tuple._1.getFullPath, location.fileComponents.regex, adapterName)
                       })
                     }

@@ -57,6 +57,8 @@ assemblyMergeStrategy in assembly := {
   case "blueprint.xml" => MergeStrategy.discard
   case "OSGI-INF/blueprint/blueprint.xml" => MergeStrategy.discard
   case "features.xml" => MergeStrategy.discard
+  case x if x endsWith ".class" => MergeStrategy.last
+  case x if x endsWith ".txt" => MergeStrategy.last
   case x =>
     val oldStrategy = (assemblyMergeStrategy in assembly).value
     oldStrategy(x)
@@ -196,6 +198,10 @@ libraryDependencies ++= {
   )
 }
 
+
+//smart file adapter
+libraryDependencies += "com.twitter" % "parquet-hadoop" % "1.6.0"
+libraryDependencies += "com.twitter" % "parquet-avro" % "1.6.0"
 
 //////////////////////  InstallDriver
 //already available
