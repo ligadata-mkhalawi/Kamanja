@@ -58,7 +58,7 @@ class FileAdapterMonitoringConfig {
 
 
   //var msgTags: Array[String] = Array.empty[String]  //public
-  var msgTagsKV = scala.collection.mutable.LinkedHashMap[String, String]()  //public
+  var msgTagsKV = scala.collection.immutable.Map[String, String]()  //public
   var tagDelimiter: String = "," //public
 
   var messageSeparator: Char = 10
@@ -91,7 +91,7 @@ class LocationInfo {
   var fileComponents: FileComponents = null
   //array of keywords, each one has a meaning to the adapter, which will add corresponding data to msg before sending to engine
   //var msgTags: Array[String] = Array.empty[String]
-  var msgTagsKV = scala.collection.mutable.LinkedHashMap[String, String]()
+  var msgTagsKV = scala.collection.immutable.Map[String, String]()
   var tagDelimiter: String = "" //if empty get public one
 
   var messageSeparator: Char = 0  //0 this means separator is not set, so get it from public attributes
@@ -254,7 +254,7 @@ object SmartFileAdapterConfiguration {
         monitoringConfig.tagDelimiter = kv._2.asInstanceOf[String]
       }
       else if (kv._1.compareToIgnoreCase("MsgTagsKV") == 0) {
-        monitoringConfig.msgTagsKV = kv._2.asInstanceOf[scala.collection.mutable.LinkedHashMap[String, String]]
+        monitoringConfig.msgTagsKV = kv._2.asInstanceOf[scala.collection.immutable.Map[String, String]]
       }
       else if (kv._1.compareToIgnoreCase("DirCheckThreshold") == 0) {
         monitoringConfig.dirCheckThreshold = kv._2.asInstanceOf[String].trim.toInt
@@ -294,7 +294,7 @@ object SmartFileAdapterConfiguration {
               locationInfo.enableMoving = kv._2.asInstanceOf[String]
             }
             else if (kv._1.compareToIgnoreCase("MsgTagsKV") == 0) {
-              locationInfo.msgTagsKV = kv._2.asInstanceOf[scala.collection.mutable.LinkedHashMap[String, String]]
+              locationInfo.msgTagsKV = kv._2.asInstanceOf[scala.collection.immutable.Map[String, String]]
             }
             else if (kv._1.compareToIgnoreCase("TagDelimiter") == 0) {
               locationInfo.tagDelimiter = kv._2.asInstanceOf[String].trim
