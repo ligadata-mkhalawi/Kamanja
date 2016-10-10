@@ -57,7 +57,8 @@ class FileAdapterMonitoringConfig {
   var workerBufferSize: Int = 4 //buffer size in MB to read messages from files
 
 
-  var msgTags: Array[String] = Array.empty[String]  //public
+  //var msgTags: Array[String] = Array.empty[String]  //public
+  var msgTagsKV = scala.collection.mutable.LinkedHashMap[String, String]()  //public
   var tagDelimiter: String = "," //public
 
   var messageSeparator: Char = 10
@@ -89,7 +90,8 @@ class LocationInfo {
 
   var fileComponents: FileComponents = null
   //array of keywords, each one has a meaning to the adapter, which will add corresponding data to msg before sending to engine
-  var msgTags: Array[String] = Array.empty[String]
+  //var msgTags: Array[String] = Array.empty[String]
+  var msgTagsKV = scala.collection.mutable.LinkedHashMap[String, String]()
   var tagDelimiter: String = "" //if empty get public one
 
   var messageSeparator: Char = 0  //0 this means separator is not set, so get it from public attributes
@@ -251,8 +253,8 @@ object SmartFileAdapterConfiguration {
       else if (kv._1.compareToIgnoreCase("TagDelimiter") == 0) {
         monitoringConfig.tagDelimiter = kv._2.asInstanceOf[String]
       }
-      else if (kv._1.compareToIgnoreCase("MsgTags") == 0) {
-        monitoringConfig.msgTags = kv._2.asInstanceOf[List[String]].toArray
+      else if (kv._1.compareToIgnoreCase("MsgTagsKV") == 0) {
+        monitoringConfig.msgTagsKV = kv._2.asInstanceOf[scala.collection.mutable.LinkedHashMap[String, String]]
       }
       else if (kv._1.compareToIgnoreCase("DirCheckThreshold") == 0) {
         monitoringConfig.dirCheckThreshold = kv._2.asInstanceOf[String].trim.toInt
@@ -291,8 +293,8 @@ object SmartFileAdapterConfiguration {
             else if (kv._1.compareToIgnoreCase("EnableMoving") == 0) {
               locationInfo.enableMoving = kv._2.asInstanceOf[String]
             }
-            else if (kv._1.compareToIgnoreCase("MsgTags") == 0) {
-              locationInfo.msgTags = kv._2.asInstanceOf[List[String]].toArray
+            else if (kv._1.compareToIgnoreCase("MsgTagsKV") == 0) {
+              locationInfo.msgTagsKV = kv._2.asInstanceOf[scala.collection.mutable.LinkedHashMap[String, String]]
             }
             else if (kv._1.compareToIgnoreCase("TagDelimiter") == 0) {
               locationInfo.tagDelimiter = kv._2.asInstanceOf[String].trim
@@ -373,8 +375,8 @@ object SmartFileAdapterConfiguration {
         if (locationInfo.fileComponents == null)
           locationInfo.fileComponents = publicFileComponents
 
-        if (locationInfo.msgTags == null || locationInfo.msgTags.length == 0)
-          locationInfo.msgTags = monitoringConfig.msgTags
+        if (locationInfo.msgTagsKV == null || locationInfo.msgTagsKV.size == 0)
+          locationInfo.msgTagsKV = monitoringConfig.msgTagsKV
 
         if (locationInfo.tagDelimiter == null || locationInfo.tagDelimiter.length == 0)
           locationInfo.tagDelimiter = monitoringConfig.tagDelimiter

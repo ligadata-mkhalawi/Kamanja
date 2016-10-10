@@ -1617,7 +1617,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     if(parentDirLocationConfig == null)
       throw new Exception(s"Dir ${parentDir} has no entry in adapter config location section")
 
-    if(parentDirLocationConfig.msgTags == null || parentDirLocationConfig.msgTags.length == 0)
+    if(parentDirLocationConfig.msgTagsKV == null || parentDirLocationConfig.msgTagsKV.size == 0)
       return smartMessage.msg
 
     val msgStr = new String(smartMessage.msg)
@@ -1626,10 +1626,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     val fileName = MonitorUtils.getFileName(smartMessage.relatedFileHandler.getFullPath)
     val parentDirName = MonitorUtils.getFileName(smartMessage.relatedFileHandler.getParentDir)
 
-    val prefix = parentDirLocationConfig.msgTags.foldLeft("")((pre, tag) => {
+    val prefix = parentDirLocationConfig.msgTagsKV.foldLeft("")((pre, tagTuple) => {
       val tagValue =
-        if(tag.startsWith("$")) {//predefined tags
-          tag match {
+        if(tagTuple._2.startsWith("$")) {//predefined tags
+          tagTuple._2 match {
             //assuming msg type is defined by parent folder name
             case "$Dir_Name" | "$DirName" => parentDirName
             case "$File_Name" | "$FileName" => fileName
@@ -1640,9 +1640,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
           }
         }
         else{//if not predefined just add it as is
-          tag
+          tagTuple._2
         }
-      pre + tagValue + tagDelimiter
+      //send tags as key:value
+      pre + tagTuple._1 + ":" + tagValue + tagDelimiter
     })
 
     val finalMsg = prefix + msgStr
