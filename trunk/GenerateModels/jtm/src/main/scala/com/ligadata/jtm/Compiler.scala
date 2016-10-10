@@ -563,7 +563,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
                notUniqueInputs: Set[String],
                currentPath: String,
                inputs: Array[Element],
-               dictMessages: Map[String, String]): (Array[String], Array[String], Map[String, eval.Tracker], Set[String]) = {
+               dictMessages: Map[String, String]): (Array[String], Array[String], Map[String, eval.Tracker], Set[String], Integer) = {
 
     var collect: Array[String] = Array.empty[String]
     var methods: Array[String] = Array.empty[String]
@@ -628,6 +628,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
     // Filters
     // Where
     logger.trace("while: {}!={}", cnt1.toString, cnt2.toString)
+    var scopesopened = 0
 
     while (cnt1 != cnt2) {
 
@@ -838,8 +839,9 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
           // Output the actual filter
           collect :+= "if (!(%s)) {".format(newExpression)
           collect :+= "  Debug(\"Filtered: %s\")".format(currentPath)
-          collect :+= "  return Array.empty[MessageInterface]"
-          collect :+= "}"
+          collect :+= "  Array.empty[MessageInterface]"
+          collect :+= "} else {"
+          scopesopened = scopesopened + 1
           false
         } else {
           true
@@ -971,7 +973,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
       logger.trace("Not all elements used")
     }
 
-    (collect, methods, innerMapping, innerTracking)
+    (collect, methods, innerMapping, innerTracking, scopesopened)
   }
 
   // Controls the code generation
@@ -985,6 +987,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
     Validate(root)
 
     val aliaseMessages: Map[String, String] = root.aliases.messages.toMap
+    var classes = Array.empty[String]
     var groks = Array.empty[String]
     var result = Array.empty[String]
     var exechandler = Array.empty[String]
@@ -1178,7 +1181,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
 
         // Common computes section
         //
-        val (collectOuter, methodsOuter, outerMapping, outerTracking) = {
+        val (collectOuter, methodsOuter, outerMapping, outerTracking, outerScopesOpened) = {
 
           Generate(transformation.grokMatch,
             Map.empty[String, String],
@@ -1195,14 +1198,34 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
             dictMessages)
         }
 
-        methods ++= methodsOuter
-        methods ++= collectOuter
+        val clsGenerated = """class common_exeGenerated_%s_%d(conversion: com.ligadata.runtime.Conversion,
+                                                   log: com.ligadata.runtime.Log,
+                                                   context: com.ligadata.runtime.JtmContext,
+          %s) {
+          import log._
+          %s
+          %s
+          %s
+        }
+        """.format(t, depId, names,
+          methodsOuter.mkString("\n"),
+          collectOuter.mkString("\n"),
+          List.fill(outerScopesOpened)("}\n").mkString("") // close any open scopes
+        )
+
+        classes :+= clsGenerated
+
+        val namesonly = deps.map( m => { "msg%d".format(incomingToMsgId.get(m).get)}).mkString(", ")
+        methods :+= "val common = new common_exeGenerated_%s_%d(conversion, log, context, %s)".format(t, depId, namesonly)
+
+        //methods ++= methodsOuter
+        //methods ++= collectOuter
 
         // Individual outputs
         //
         val inner = transformation.outputs.foldLeft(Array.empty[String]) ( (r, o) => {
 
-          val (collectInner, methodsInner, innerMapping, innerTracking) = {
+          val (collectInner, methodsInner, innerMapping, innerTracking, innerScopesOpened) = {
 
             val mapping = uniqueInputs ++ qualifiedInputs
 
@@ -1235,8 +1258,13 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
           collect :+= "\ndef process_%s(): Array[MessageInterface] = {\n".format(o._1)
           collect :+= "Debug(\"exeGenerated_%s_%d::process_%s\")".format(t, depId, o._1)
           collect :+= "context.SetScope(%s)".format(escape(o._1))
-          collect :+= "try {"
-          collect ++= collectInner
+          collect :+= "val result = new common_exeGenerated_%s_%d_process_%s(conversion, log, context, common, %s)".format(t, depId, o._1, namesonly)
+          collect :+= "result.result"
+          collect :+= "}"
+
+          var collectClass = Array.empty[String]
+          collectClass :+= "try {"
+          collectClass ++= collectInner
 
           {
             // Generate the output for this iteration
@@ -1300,9 +1328,9 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
             val outputResult = "val result = %s.createInstance\n%s\n%s\n%s".format(
               outputType,
               outputElements.mkString("\n"), outputElements1.mkString("\n"), setTimePartitionIfNeeded)
-            collect ++= Array(outputResult)
+            collectClass ++= Array(outputResult)
 
-            collect :+= {if (o._2.onerror == "exception") {
+            collectClass :+= {if (o._2.onerror == "exception") {
                           """if(context.CurrentErrors()==0) {
                           |    Array(result)
                           |  } else {
@@ -1322,22 +1350,27 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
                           ""
                         }}
 
-            collect :+= {if(o._2.exception == "catch") {
+            // close any open scopes
+            if(innerScopesOpened>0) {
+              collectClass ++= List.fill(innerScopesOpened)("}\n")
+            }
+
+            collectClass :+= {if(o._2.exception == "catch") {
                           """|} catch {
                              |  case e: AbortOutputException => {
                              |   context.AddError(e.getMessage)
-                             |   return Array.empty[MessageInterface]
+                             |   Array.empty[MessageInterface]
                              |  }
                              |  case e: Exception => {
                              |   context.AddError(e.getMessage)
-                             |   return Array.empty[MessageInterface]
+                             |   Array.empty[MessageInterface]
                              |  }
                              |}""".stripMargin
                         } else if(o._2.exception == "abort") {
                           """|} catch {
                              |  case e: AbortOutputException => {
                              |   context.AddError(e.getMessage)
-                             |   return Array.empty[MessageInterface]
+                             |   Array.empty[MessageInterface]
                              |  }
                              |  case e: Exception => {
                              |    Debug("Exception: %s:" + e.getMessage)
@@ -1348,7 +1381,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
                           ""
                         }}
 
-            collect :+= "}\n"
+            //collectClass :+= "}\n"
           }
           // Collect all input messages attribute used
           logger.trace("Final map: transformation %s output %s used %s".format(t, o._1, innerTracking.mkString(", ")))
@@ -1371,6 +1404,17 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
             logger.trace("Incoming: \n%s".format(map1.mkString(",\n")))
             inmessages :+= map1
           }
+
+          classes :+= """class common_exeGenerated_%s_%d_process_%s(conversion: com.ligadata.runtime.Conversion,
+            |  log : com.ligadata.runtime.Log,
+            |  context: com.ligadata.runtime.JtmContext,
+            |  common: common_exeGenerated_%s_%d,
+            |  %s) {
+            |  import log._
+            |  import common._
+            |  val result: Array[MessageInterface]= %s
+            |  }
+            |""".stripMargin.format(t, depId, o._1, t, depId, names, collectClass.mkString("\n"))
 
           // Outputs result
           r ++ collect
@@ -1404,6 +1448,8 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
     subtitutions.Add("model.code", exechandler.mkString("\n"))
     subtitutions.Add("external.modelcode", root.imports.modelcode.mkString("\n"))
     val model = subtitutions.Run(Parts.model)
+
+    result ++= classes
     result :+= model
 
     // Write to output file

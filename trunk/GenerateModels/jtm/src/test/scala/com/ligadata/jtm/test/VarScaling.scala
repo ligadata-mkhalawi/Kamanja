@@ -33,9 +33,9 @@ class VarScaling extends FunSuite with BeforeAndAfter {
   // Simple jtm
   test("test1") {
 
-    val fileInput = getClass.getResource("/varscaling/varscaling002.jtm").getPath
-    val fileOutput = getClass.getResource("/varscaling/").getPath + "/varscaling002.scala.actual"
-    val fileExpected = getClass.getResource("/varscaling/varscaling002.scala.expected").getPath
+    val fileInput = getClass.getResource("/varscaling/varscaling001.jtm").getPath
+    val fileOutput = getClass.getResource("/varscaling/").getPath + "/varscaling001.scala.actual"
+    val fileExpected = getClass.getResource("/varscaling/varscaling001.scala.expected").getPath
     val metadataLocation = getClass.getResource("/metadata").getPath
 
     val compiler = CompilerBuilder.create().
@@ -60,9 +60,9 @@ class VarScaling extends FunSuite with BeforeAndAfter {
   // Simple jtm
   test("test2") {
 
-    val fileInput = getClass.getResource("/varscaling/varscaling001.jtm").getPath
-    val fileOutput = getClass.getResource("/varscaling/").getPath + "/varscaling001.scala.actual"
-    val fileExpected = getClass.getResource("/varscaling/varscaling001.scala.expected").getPath
+    val fileInput = getClass.getResource("/varscaling/varscaling002.jtm").getPath
+    val fileOutput = getClass.getResource("/varscaling/").getPath + "/varscaling002.scala.actual"
+    val fileExpected = getClass.getResource("/varscaling/varscaling002.scala.expected").getPath
     val metadataLocation = getClass.getResource("/metadata").getPath
 
     val compiler = CompilerBuilder.create().

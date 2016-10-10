@@ -30,6 +30,46 @@ class ModelFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelIn
   override def createResultObject(): ModelResultBase = new MappedModelResults()
   override def isModelInstanceReusable(): Boolean = true;
 }
+class common_exeGenerated_test1_1(conversion: com.ligadata.runtime.Conversion,
+log: com.ligadata.runtime.Log,
+context: com.ligadata.runtime.JtmContext,
+msg1: com.ligadata.kamanja.test.V1000000.msg1) {
+  import log._
+  // in scala, type could be optional
+  val out3: Int = msg1.in1 + 1000
+}
+class common_exeGenerated_test1_1_process_o1(conversion: com.ligadata.runtime.Conversion,
+log : com.ligadata.runtime.Log,
+context: com.ligadata.runtime.JtmContext,
+common: common_exeGenerated_test1_1,
+msg1: com.ligadata.kamanja.test.V1000000.msg1) {
+  import log._
+  import common._
+  val result: Array[MessageInterface]= try {
+    if (!(!(msg1.in2 != -1 && msg1.in2 < 100))) {
+      Debug("Filtered: test1@o1")
+      Array.empty[MessageInterface]
+    } else {
+      val t1: String = "s:" + msg1.in2.toString()
+      val result = com.ligadata.kamanja.test.V1000000.msg2.createInstance
+      result.out4 = msg1.in3
+      result.out3 = msg1.in2
+      result.out2 = t1
+      result.out1 = msg1.in1
+      if (result.hasTimePartitionInfo) result.setTimePartitionData ;
+      Array(result)
+    }
+  } catch {
+    case e: AbortOutputException => {
+      context.AddError(e.getMessage)
+      Array.empty[MessageInterface]
+    }
+    case e: Exception => {
+      context.AddError(e.getMessage)
+      Array.empty[MessageInterface]
+    }
+  }
+}
 class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
   val conversion = new com.ligadata.runtime.Conversion
   val log = new com.ligadata.runtime.Log(this.getClass.getName)
@@ -50,34 +90,12 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
     def exeGenerated_test1_1(msg1: com.ligadata.kamanja.test.V1000000.msg1): Array[MessageInterface] = {
       Debug("exeGenerated_test1_1")
       context.SetSection("test1")
-      // in scala, type could be optional
-      val out3: Int = msg1.in1 + 1000
+      val common = new common_exeGenerated_test1_1(conversion, log, context, msg1)
       def process_o1(): Array[MessageInterface] = {
         Debug("exeGenerated_test1_1::process_o1")
         context.SetScope("o1")
-        try {
-          if (!(!(msg1.in2 != -1 && msg1.in2 < 100))) {
-            Debug("Filtered: test1@o1")
-            return Array.empty[MessageInterface]
-          }
-          val t1: String = "s:" + msg1.in2.toString()
-          val result = com.ligadata.kamanja.test.V1000000.msg2.createInstance
-          result.out4 = msg1.in3
-          result.out3 = msg1.in2
-          result.out2 = t1
-          result.out1 = msg1.in1
-          if (result.hasTimePartitionInfo) result.setTimePartitionData ;
-          Array(result)
-        } catch {
-          case e: AbortOutputException => {
-            context.AddError(e.getMessage)
-            return Array.empty[MessageInterface]
-          }
-          case e: Exception => {
-            context.AddError(e.getMessage)
-            return Array.empty[MessageInterface]
-          }
-        }
+        val result = new common_exeGenerated_test1_1_process_o1(conversion, log, context, common, msg1)
+        result.result
       }
       try {
         process_o1()

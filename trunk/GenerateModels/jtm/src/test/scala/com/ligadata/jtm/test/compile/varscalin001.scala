@@ -24,9 +24,18 @@ import com.ligadata.Utils._
 // Package code start
 object MsgConstants{
   val conversion = new com.ligadata.runtime.Conversion
+
+  def HandleError(v1: String, v2: String): Unit ={
+
+  }
 }
+
 import MsgConstants._
 // Package code end
+// READ ME BEFORE YOU MAKE CHANGES TO THE INTERFACE
+//
+// If you adjust the interface here, you need to fix the code generation as well
+//
 class test_jtmFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
   // Factory code start
   // Factory code end
@@ -37,9 +46,9 @@ class test_jtmFactory(modelDef: ModelDef, nodeContext: NodeContext) extends Mode
   override def isModelInstanceReusable(): Boolean = true;
 }
 class common_exeGenerated_AirRefillCS5_1_1(conversion: com.ligadata.runtime.Conversion,
-log: com.ligadata.runtime.Log,
-context: com.ligadata.runtime.JtmContext,
-msg1: com.ligadata.messages.V1000000.AirRefillCS5_input) {
+                                           log: com.ligadata.runtime.Log,
+                                           context: com.ligadata.runtime.JtmContext,
+                                           msg1: com.ligadata.messages.V1000000.AirRefillCS5_input) {
   import log._
   // dummy
   val empty_str: String = ""
@@ -807,10 +816,10 @@ msg1: com.ligadata.messages.V1000000.AirRefillCS5_input) {
   val rechargedivpartpda1st___val: Double = if(!isDouble(inpData(277), "rechargedivpartpda1st", HandleError )) 0  else { val fieldVal = conversion.ToDouble(inpData(277));fieldVal}
 }
 class common_exeGenerated_AirRefillCS5_1_1_process_o1(conversion: com.ligadata.runtime.Conversion,
-log : com.ligadata.runtime.Log,
-context: com.ligadata.runtime.JtmContext,
-common: common_exeGenerated_AirRefillCS5_1_1,
-msg1: com.ligadata.messages.V1000000.AirRefillCS5_input) {
+                                                      log : com.ligadata.runtime.Log,
+                                                      context: com.ligadata.runtime.JtmContext,
+                                                      common: common_exeGenerated_AirRefillCS5_1_1,
+                                                      msg1: com.ligadata.messages.V1000000.AirRefillCS5_input) {
   import log._
   import common._
   val result: Array[MessageInterface]= try {
@@ -1416,10 +1425,10 @@ msg1: com.ligadata.messages.V1000000.AirRefillCS5_input) {
   }
 }
 class common_exeGenerated_AirRefillCS5_1_1_process_oo(conversion: com.ligadata.runtime.Conversion,
-log : com.ligadata.runtime.Log,
-context: com.ligadata.runtime.JtmContext,
-common: common_exeGenerated_AirRefillCS5_1_1,
-msg1: com.ligadata.messages.V1000000.AirRefillCS5_input) {
+                                                      log : com.ligadata.runtime.Log,
+                                                      context: com.ligadata.runtime.JtmContext,
+                                                      common: common_exeGenerated_AirRefillCS5_1_1,
+                                                      msg1: com.ligadata.messages.V1000000.AirRefillCS5_input) {
   import log._
   import common._
   val result: Array[MessageInterface]= try {
@@ -1458,7 +1467,7 @@ class test_jtm(factory: ModelInstanceFactory) extends ModelInstance(factory) {
   override def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
     context.Reset(); // Resetting the JtmContext before executing the model
     if (isTraceEnabled)
-    Trace(s"Model::execute transid=%d triggeredset=%d outputdefault=%s".format(txnCtxt.transId, triggerdSetIndex, outputDefault.toString))
+      Trace(s"Model::execute transid=%d triggeredset=%d outputdefault=%s".format(txnCtxt.transId, triggerdSetIndex, outputDefault.toString))
     if(isDebugEnabled)
     {
       execMsgsSet.foreach(m => Debug( s"Input: %s -> %s".format(m.getFullTypeName, m.toString())))
@@ -1483,7 +1492,7 @@ class test_jtm(factory: ModelInstanceFactory) extends ModelInstance(factory) {
       }
       try {
         process_o1()++
-        process_oo()
+          process_oo()
       } catch {
         case e: AbortTransformationException => {
           return Array.empty[MessageInterface]
@@ -1502,7 +1511,7 @@ class test_jtm(factory: ModelInstanceFactory) extends ModelInstance(factory) {
       } else {
         Array.empty[MessageInterface]
       }) ++
-      Array.empty[MessageInterface]
+        Array.empty[MessageInterface]
     } catch {
       case e: AbortExecuteException => {
         Array.empty[MessageInterface]

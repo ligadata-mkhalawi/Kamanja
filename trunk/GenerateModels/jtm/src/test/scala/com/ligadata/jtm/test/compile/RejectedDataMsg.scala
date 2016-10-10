@@ -1,5 +1,5 @@
 
-package com.ligadata.kamanja.test.V1000000; 
+package com.ligadata.gen.V1000000; 
 
 import org.json4s.jackson.JsonMethods._;
 import org.json4s.DefaultFormats;
@@ -13,17 +13,17 @@ import java.io.{ DataInputStream, DataOutputStream, ByteArrayOutputStream }
 
     
  
-object arrin1 extends RDDObject[arrin1] with MessageFactoryInterface { 
+object RejectedDataMsg extends RDDObject[RejectedDataMsg] with MessageFactoryInterface { 
  
   val log = LogManager.getLogger(getClass)
-	type T = arrin1 ;
-	override def getFullTypeName: String = "com.ligadata.kamanja.test.arrin1"; 
-	override def getTypeNameSpace: String = "com.ligadata.kamanja.test"; 
-	override def getTypeName: String = "arrin1"; 
+	type T = RejectedDataMsg ;
+	override def getFullTypeName: String = "com.ligadata.gen.RejectedDataMsg"; 
+	override def getTypeNameSpace: String = "com.ligadata.gen"; 
+	override def getTypeName: String = "RejectedDataMsg"; 
 	override def getTypeVersion: String = "000000.000001.000000"; 
 	override def getSchemaId: Int = 0; 
 	override def getTenantId: String = ""; 
-	override def createInstance: arrin1 = new arrin1(arrin1); 
+	override def createInstance: RejectedDataMsg = new RejectedDataMsg(RejectedDataMsg); 
 	override def isFixed: Boolean = true; 
 	def isCaseSensitive(): Boolean = false; 
 	override def getContainerType: ContainerTypes.ContainerType = ContainerTypes.ContainerType.MESSAGE
@@ -56,7 +56,7 @@ object arrin1 extends RDDObject[arrin1] with MessageFactoryInterface {
       return (tmInfo != null && tmInfo.getTimePartitionType != TimePartitionInfo.TimePartitionType.NONE);
     }
   
-    override def getAvroSchema: String = """{ "type": "record",  "namespace" : "com.ligadata.kamanja.test" , "name" : "arrin1" , "fields":[{ "name" : "ext_type_id" , "type" : "string"},{ "name" : "mydata" , "type" :  {"type" : "array", "items" : "string"}}]}""";  
+    override def getAvroSchema: String = """{ "type": "record",  "namespace" : "com.ligadata.gen" , "name" : "rejecteddatamsg" , "fields":[{ "name" : "origmsg" , "type" : "string"},{ "name" : "reasons" , "type" :  {"type" : "array", "items" : "string"}}]}""";  
 
     final override def convertFrom(srcObj: Any): T = convertFrom(createInstance(), srcObj);
       
@@ -65,7 +65,7 @@ object arrin1 extends RDDObject[arrin1] with MessageFactoryInterface {
         if (oldVerobj == null) return null;
         oldVerobj match {
           
-      case oldVerobj: com.ligadata.kamanja.test.V1000000.arrin1 => { return  convertToVer1000000(oldVerobj); } 
+      case oldVerobj: com.ligadata.gen.V1000000.RejectedDataMsg => { return  convertToVer1000000(oldVerobj); } 
           case _ => {
             throw new Exception("Unhandled Version Found");
           }
@@ -78,7 +78,7 @@ object arrin1 extends RDDObject[arrin1] with MessageFactoryInterface {
       return null;
     }
   
-    private def convertToVer1000000(oldVerobj: com.ligadata.kamanja.test.V1000000.arrin1): com.ligadata.kamanja.test.V1000000.arrin1= {
+    private def convertToVer1000000(oldVerobj: com.ligadata.gen.V1000000.RejectedDataMsg): com.ligadata.gen.V1000000.RejectedDataMsg= {
       return oldVerobj
     }
   
@@ -95,22 +95,22 @@ object arrin1 extends RDDObject[arrin1] with MessageFactoryInterface {
   override def CanPersist: Boolean = false
   override def isMessage: Boolean = true
   override def isContainer: Boolean = false
-  override def PartitionKeyData(inputdata: InputData): Array[String] = { throw new Exception("Deprecated method PartitionKeyData in obj arrin1") };
-  override def PrimaryKeyData(inputdata: InputData): Array[String] = throw new Exception("Deprecated method PrimaryKeyData in obj arrin1");
-  override def TimePartitionData(inputdata: InputData): Long = throw new Exception("Deprecated method TimePartitionData in obj arrin1");
+  override def PartitionKeyData(inputdata: InputData): Array[String] = { throw new Exception("Deprecated method PartitionKeyData in obj RejectedDataMsg") };
+  override def PrimaryKeyData(inputdata: InputData): Array[String] = throw new Exception("Deprecated method PrimaryKeyData in obj RejectedDataMsg");
+  override def TimePartitionData(inputdata: InputData): Long = throw new Exception("Deprecated method TimePartitionData in obj RejectedDataMsg");
  override def NeedToTransformData: Boolean = false
     }
 
-class arrin1(factory: MessageFactoryInterface, other: arrin1) extends MessageInterface(factory) { 
+class RejectedDataMsg(factory: MessageFactoryInterface, other: RejectedDataMsg) extends MessageInterface(factory) { 
  
-  val log = arrin1.log
+  val log = RejectedDataMsg.log
 
       var attributeTypes = generateAttributeTypes;
       
     private def generateAttributeTypes(): Array[AttributeTypeInfo] = {
       var attributeTypes = new Array[AttributeTypeInfo](2);
-   		 attributeTypes(0) = new AttributeTypeInfo("ext_type_id", 0, AttributeTypeInfo.TypeCategory.STRING, -1, -1, 0)
-		 attributeTypes(1) = new AttributeTypeInfo("mydata", 1, AttributeTypeInfo.TypeCategory.ARRAY, 1, -1, 0)
+   		 attributeTypes(0) = new AttributeTypeInfo("origmsg", 0, AttributeTypeInfo.TypeCategory.STRING, -1, -1, 0)
+		 attributeTypes(1) = new AttributeTypeInfo("reasons", 1, AttributeTypeInfo.TypeCategory.ARRAY, 1, -1, 0)
 
      
       return attributeTypes
@@ -123,9 +123,9 @@ class arrin1(factory: MessageFactoryInterface, other: arrin1) extends MessageInt
       fromFunc(other)
     }
     
-    override def save: Unit = { arrin1.saveOne(this) }
+    override def save: Unit = { RejectedDataMsg.saveOne(this) }
   
-    def Clone(): ContainerOrConcept = { arrin1.build(this) }
+    def Clone(): ContainerOrConcept = { RejectedDataMsg.build(this) }
 
 		override def getPartitionKey: Array[String] = Array[String]() 
 
@@ -141,8 +141,8 @@ class arrin1(factory: MessageFactoryInterface, other: arrin1) extends MessageInt
     }
   
   
- 		var ext_type_id: String = _; 
- 		var mydata: scala.Array[String] = _; 
+ 		var origmsg: String = _; 
+ 		var reasons: scala.Array[String] = _; 
 
     override def getAttributeTypes(): Array[AttributeTypeInfo] = {
       if (attributeTypes == null) return null;
@@ -155,7 +155,7 @@ class arrin1(factory: MessageFactoryInterface, other: arrin1) extends MessageInt
       val ru = scala.reflect.runtime.universe
       val m = ru.runtimeMirror(getClass.getClassLoader)
       val im = m.reflect(this)
-      val fieldX = ru.typeOf[arrin1].declaration(ru.newTermName(key)).asTerm.accessed.asTerm
+      val fieldX = ru.typeOf[RejectedDataMsg].declaration(ru.newTermName(key)).asTerm.accessed.asTerm
       val fmX = im.reflectField(fieldX)
       return fmX.get.asInstanceOf[AnyRef];      
     } 
@@ -178,7 +178,7 @@ class arrin1(factory: MessageFactoryInterface, other: arrin1) extends MessageInt
      if(keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name "+keyName);
       val key = caseSensitiveKey(keyName);
    
-      if (!keyTypes.contains(key)) throw new KeyNotFoundException(s"Key $key does not exists in message/container arrin1", null);
+      if (!keyTypes.contains(key)) throw new KeyNotFoundException(s"Key $key does not exists in message/container RejectedDataMsg", null);
       return get(keyTypes(key).getIndex)
   }
   
@@ -201,10 +201,10 @@ class arrin1(factory: MessageFactoryInterface, other: arrin1) extends MessageInt
     override def get(index : Int) : AnyRef = { // Return (value, type)
       try{
         index match {
-   		case 0 => return this.ext_type_id.asInstanceOf[AnyRef]; 
-		case 1 => return this.mydata.asInstanceOf[AnyRef]; 
+   		case 0 => return this.origmsg.asInstanceOf[AnyRef]; 
+		case 1 => return this.reasons.asInstanceOf[AnyRef]; 
 
-      	 case _ => throw new Exception(s"$index is a bad index for message arrin1");
+      	 case _ => throw new Exception(s"$index is a bad index for message RejectedDataMsg");
     	  }       
      }catch {
           case e: Exception => {
@@ -247,8 +247,8 @@ class arrin1(factory: MessageFactoryInterface, other: arrin1) extends MessageInt
     override def getAllAttributeValues(): Array[AttributeValue] = { // Has ( value, attributetypeinfo))
       var attributeVals = new Array[AttributeValue](2);
       try{
- 				attributeVals(0) = new AttributeValue(this.ext_type_id, keyTypes("ext_type_id")) 
-				attributeVals(1) = new AttributeValue(this.mydata, keyTypes("mydata")) 
+ 				attributeVals(0) = new AttributeValue(this.origmsg, keyTypes("origmsg")) 
+				attributeVals(1) = new AttributeValue(this.reasons, keyTypes("reasons")) 
        
       }catch {
           case e: Exception => {
@@ -265,7 +265,7 @@ class arrin1(factory: MessageFactoryInterface, other: arrin1) extends MessageInt
       val key = caseSensitiveKey(keyName);
       try {
    
-  			 if (!keyTypes.contains(key)) throw new KeyNotFoundException(s"Key $key does not exists in message arrin1", null)
+  			 if (!keyTypes.contains(key)) throw new KeyNotFoundException(s"Key $key does not exists in message RejectedDataMsg", null)
 			 set(keyTypes(key).getIndex, value); 
 
       }catch {
@@ -279,23 +279,23 @@ class arrin1(factory: MessageFactoryInterface, other: arrin1) extends MessageInt
   
       
     def set(index : Int, value :Any): Unit = {
-      if (value == null) throw new Exception(s"Value is null for index $index in message arrin1 ")
+      if (value == null) throw new Exception(s"Value is null for index $index in message RejectedDataMsg ")
       try{
         index match {
  				case 0 => { 
 				if(value.isInstanceOf[String]) 
-				  this.ext_type_id = value.asInstanceOf[String]; 
-				 else throw new Exception(s"Value is the not the correct type for field ext_type_id in message arrin1") 
+				  this.origmsg = value.asInstanceOf[String]; 
+				 else throw new Exception(s"Value is the not the correct type for field origmsg in message RejectedDataMsg") 
 				} 
 				case 1 => { 
 				if(value.isInstanceOf[scala.Array[String]]) 
-				  this.mydata = value.asInstanceOf[scala.Array[String]]; 
+				  this.reasons = value.asInstanceOf[scala.Array[String]]; 
 				else if(value.isInstanceOf[scala.Array[_]]) 
-				  this.mydata = value.asInstanceOf[scala.Array[_]].map(v => v.asInstanceOf[String]); 
-				 else throw new Exception(s"Value is the not the correct type for field mydata in message arrin1") 
+				  this.reasons = value.asInstanceOf[scala.Array[_]].map(v => v.asInstanceOf[String]); 
+				 else throw new Exception(s"Value is the not the correct type for field reasons in message RejectedDataMsg") 
 				} 
 
-        case _ => throw new Exception(s"$index is a bad index for message arrin1");
+        case _ => throw new Exception(s"$index is a bad index for message RejectedDataMsg");
         }
     	}catch {
           case e: Exception => {
@@ -310,27 +310,27 @@ class arrin1(factory: MessageFactoryInterface, other: arrin1) extends MessageInt
       throw new Exception ("Set Func for Value and ValueType By Key is not supported for Fixed Messages" )
     }
   
-    private def fromFunc(other: arrin1): arrin1 = {  
-   			this.ext_type_id = com.ligadata.BaseTypes.StringImpl.Clone(other.ext_type_id);
-		 if (other.mydata != null ) { 
-		 mydata = new scala.Array[String](other.mydata.length); 
-		 mydata = other.mydata.map(v => com.ligadata.BaseTypes.StringImpl.Clone(v)); 
+    private def fromFunc(other: RejectedDataMsg): RejectedDataMsg = {  
+   			this.origmsg = com.ligadata.BaseTypes.StringImpl.Clone(other.origmsg);
+		 if (other.reasons != null ) { 
+		 reasons = new scala.Array[String](other.reasons.length); 
+		 reasons = other.reasons.map(v => com.ligadata.BaseTypes.StringImpl.Clone(v)); 
 		 } 
-		 else this.mydata = null; 
+		 else this.reasons = null; 
 
       this.setTimePartitionData(com.ligadata.BaseTypes.LongImpl.Clone(other.getTimePartitionData));
       return this;
     }
     
-	 def withext_type_id(value: String) : arrin1 = {
-		 this.ext_type_id = value 
+	 def withorigmsg(value: String) : RejectedDataMsg = {
+		 this.origmsg = value 
 		 return this 
  	 } 
-	 def withmydata(value: scala.Array[String]) : arrin1 = {
-		 this.mydata = value 
+	 def withreasons(value: scala.Array[String]) : RejectedDataMsg = {
+		 this.reasons = value 
 		 return this 
  	 } 
-    def isCaseSensitive(): Boolean = arrin1.isCaseSensitive(); 
+    def isCaseSensitive(): Boolean = RejectedDataMsg.isCaseSensitive(); 
     def caseSensitiveKey(keyName: String): String = {
       if(isCaseSensitive)
         return keyName;
@@ -343,7 +343,7 @@ class arrin1(factory: MessageFactoryInterface, other: arrin1) extends MessageInt
       this(factory, null)
      }
     
-    def this(other: arrin1) = {
+    def this(other: RejectedDataMsg) = {
       this(other.getFactory.asInstanceOf[MessageFactoryInterface], other)
     }
 

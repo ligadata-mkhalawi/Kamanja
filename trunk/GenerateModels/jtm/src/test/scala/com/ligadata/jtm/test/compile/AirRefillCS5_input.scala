@@ -1,5 +1,5 @@
 
-package com.ligadata.kamanja.test.V1000000; 
+package com.ligadata.messages.V1000000; 
 
 import org.json4s.jackson.JsonMethods._;
 import org.json4s.DefaultFormats;
@@ -13,17 +13,17 @@ import java.io.{ DataInputStream, DataOutputStream, ByteArrayOutputStream }
 
     
  
-object arrin1 extends RDDObject[arrin1] with MessageFactoryInterface { 
+object AirRefillCS5_input extends RDDObject[AirRefillCS5_input] with MessageFactoryInterface { 
  
   val log = LogManager.getLogger(getClass)
-	type T = arrin1 ;
-	override def getFullTypeName: String = "com.ligadata.kamanja.test.arrin1"; 
-	override def getTypeNameSpace: String = "com.ligadata.kamanja.test"; 
-	override def getTypeName: String = "arrin1"; 
+	type T = AirRefillCS5_input ;
+	override def getFullTypeName: String = "com.ligadata.messages.AirRefillCS5_input"; 
+	override def getTypeNameSpace: String = "com.ligadata.messages"; 
+	override def getTypeName: String = "AirRefillCS5_input"; 
 	override def getTypeVersion: String = "000000.000001.000000"; 
 	override def getSchemaId: Int = 0; 
 	override def getTenantId: String = ""; 
-	override def createInstance: arrin1 = new arrin1(arrin1); 
+	override def createInstance: AirRefillCS5_input = new AirRefillCS5_input(AirRefillCS5_input); 
 	override def isFixed: Boolean = true; 
 	def isCaseSensitive(): Boolean = false; 
 	override def getContainerType: ContainerTypes.ContainerType = ContainerTypes.ContainerType.MESSAGE
@@ -56,7 +56,7 @@ object arrin1 extends RDDObject[arrin1] with MessageFactoryInterface {
       return (tmInfo != null && tmInfo.getTimePartitionType != TimePartitionInfo.TimePartitionType.NONE);
     }
   
-    override def getAvroSchema: String = """{ "type": "record",  "namespace" : "com.ligadata.kamanja.test" , "name" : "arrin1" , "fields":[{ "name" : "ext_type_id" , "type" : "string"},{ "name" : "mydata" , "type" :  {"type" : "array", "items" : "string"}}]}""";  
+    override def getAvroSchema: String = """{ "type": "record",  "namespace" : "com.ligadata.messages" , "name" : "airrefillcs5_input" , "fields":[{ "name" : "msg" , "type" : "string"}]}""";  
 
     final override def convertFrom(srcObj: Any): T = convertFrom(createInstance(), srcObj);
       
@@ -65,7 +65,7 @@ object arrin1 extends RDDObject[arrin1] with MessageFactoryInterface {
         if (oldVerobj == null) return null;
         oldVerobj match {
           
-      case oldVerobj: com.ligadata.kamanja.test.V1000000.arrin1 => { return  convertToVer1000000(oldVerobj); } 
+      case oldVerobj: com.ligadata.messages.V1000000.AirRefillCS5_input => { return  convertToVer1000000(oldVerobj); } 
           case _ => {
             throw new Exception("Unhandled Version Found");
           }
@@ -78,7 +78,7 @@ object arrin1 extends RDDObject[arrin1] with MessageFactoryInterface {
       return null;
     }
   
-    private def convertToVer1000000(oldVerobj: com.ligadata.kamanja.test.V1000000.arrin1): com.ligadata.kamanja.test.V1000000.arrin1= {
+    private def convertToVer1000000(oldVerobj: com.ligadata.messages.V1000000.AirRefillCS5_input): com.ligadata.messages.V1000000.AirRefillCS5_input= {
       return oldVerobj
     }
   
@@ -95,22 +95,21 @@ object arrin1 extends RDDObject[arrin1] with MessageFactoryInterface {
   override def CanPersist: Boolean = false
   override def isMessage: Boolean = true
   override def isContainer: Boolean = false
-  override def PartitionKeyData(inputdata: InputData): Array[String] = { throw new Exception("Deprecated method PartitionKeyData in obj arrin1") };
-  override def PrimaryKeyData(inputdata: InputData): Array[String] = throw new Exception("Deprecated method PrimaryKeyData in obj arrin1");
-  override def TimePartitionData(inputdata: InputData): Long = throw new Exception("Deprecated method TimePartitionData in obj arrin1");
+  override def PartitionKeyData(inputdata: InputData): Array[String] = { throw new Exception("Deprecated method PartitionKeyData in obj AirRefillCS5_input") };
+  override def PrimaryKeyData(inputdata: InputData): Array[String] = throw new Exception("Deprecated method PrimaryKeyData in obj AirRefillCS5_input");
+  override def TimePartitionData(inputdata: InputData): Long = throw new Exception("Deprecated method TimePartitionData in obj AirRefillCS5_input");
  override def NeedToTransformData: Boolean = false
     }
 
-class arrin1(factory: MessageFactoryInterface, other: arrin1) extends MessageInterface(factory) { 
+class AirRefillCS5_input(factory: MessageFactoryInterface, other: AirRefillCS5_input) extends MessageInterface(factory) { 
  
-  val log = arrin1.log
+  val log = AirRefillCS5_input.log
 
       var attributeTypes = generateAttributeTypes;
       
     private def generateAttributeTypes(): Array[AttributeTypeInfo] = {
-      var attributeTypes = new Array[AttributeTypeInfo](2);
-   		 attributeTypes(0) = new AttributeTypeInfo("ext_type_id", 0, AttributeTypeInfo.TypeCategory.STRING, -1, -1, 0)
-		 attributeTypes(1) = new AttributeTypeInfo("mydata", 1, AttributeTypeInfo.TypeCategory.ARRAY, 1, -1, 0)
+      var attributeTypes = new Array[AttributeTypeInfo](1);
+   		 attributeTypes(0) = new AttributeTypeInfo("msg", 0, AttributeTypeInfo.TypeCategory.STRING, -1, -1, 0)
 
      
       return attributeTypes
@@ -123,9 +122,9 @@ class arrin1(factory: MessageFactoryInterface, other: arrin1) extends MessageInt
       fromFunc(other)
     }
     
-    override def save: Unit = { arrin1.saveOne(this) }
+    override def save: Unit = { AirRefillCS5_input.saveOne(this) }
   
-    def Clone(): ContainerOrConcept = { arrin1.build(this) }
+    def Clone(): ContainerOrConcept = { AirRefillCS5_input.build(this) }
 
 		override def getPartitionKey: Array[String] = Array[String]() 
 
@@ -141,8 +140,7 @@ class arrin1(factory: MessageFactoryInterface, other: arrin1) extends MessageInt
     }
   
   
- 		var ext_type_id: String = _; 
- 		var mydata: scala.Array[String] = _; 
+ 		var msg: String = _; 
 
     override def getAttributeTypes(): Array[AttributeTypeInfo] = {
       if (attributeTypes == null) return null;
@@ -155,7 +153,7 @@ class arrin1(factory: MessageFactoryInterface, other: arrin1) extends MessageInt
       val ru = scala.reflect.runtime.universe
       val m = ru.runtimeMirror(getClass.getClassLoader)
       val im = m.reflect(this)
-      val fieldX = ru.typeOf[arrin1].declaration(ru.newTermName(key)).asTerm.accessed.asTerm
+      val fieldX = ru.typeOf[AirRefillCS5_input].declaration(ru.newTermName(key)).asTerm.accessed.asTerm
       val fmX = im.reflectField(fieldX)
       return fmX.get.asInstanceOf[AnyRef];      
     } 
@@ -178,7 +176,7 @@ class arrin1(factory: MessageFactoryInterface, other: arrin1) extends MessageInt
      if(keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name "+keyName);
       val key = caseSensitiveKey(keyName);
    
-      if (!keyTypes.contains(key)) throw new KeyNotFoundException(s"Key $key does not exists in message/container arrin1", null);
+      if (!keyTypes.contains(key)) throw new KeyNotFoundException(s"Key $key does not exists in message/container AirRefillCS5_input", null);
       return get(keyTypes(key).getIndex)
   }
   
@@ -201,10 +199,9 @@ class arrin1(factory: MessageFactoryInterface, other: arrin1) extends MessageInt
     override def get(index : Int) : AnyRef = { // Return (value, type)
       try{
         index match {
-   		case 0 => return this.ext_type_id.asInstanceOf[AnyRef]; 
-		case 1 => return this.mydata.asInstanceOf[AnyRef]; 
+   		case 0 => return this.msg.asInstanceOf[AnyRef]; 
 
-      	 case _ => throw new Exception(s"$index is a bad index for message arrin1");
+      	 case _ => throw new Exception(s"$index is a bad index for message AirRefillCS5_input");
     	  }       
      }catch {
           case e: Exception => {
@@ -245,10 +242,9 @@ class arrin1(factory: MessageFactoryInterface, other: arrin1) extends MessageInt
     }
  
     override def getAllAttributeValues(): Array[AttributeValue] = { // Has ( value, attributetypeinfo))
-      var attributeVals = new Array[AttributeValue](2);
+      var attributeVals = new Array[AttributeValue](1);
       try{
- 				attributeVals(0) = new AttributeValue(this.ext_type_id, keyTypes("ext_type_id")) 
-				attributeVals(1) = new AttributeValue(this.mydata, keyTypes("mydata")) 
+ 				attributeVals(0) = new AttributeValue(this.msg, keyTypes("msg")) 
        
       }catch {
           case e: Exception => {
@@ -265,7 +261,7 @@ class arrin1(factory: MessageFactoryInterface, other: arrin1) extends MessageInt
       val key = caseSensitiveKey(keyName);
       try {
    
-  			 if (!keyTypes.contains(key)) throw new KeyNotFoundException(s"Key $key does not exists in message arrin1", null)
+  			 if (!keyTypes.contains(key)) throw new KeyNotFoundException(s"Key $key does not exists in message AirRefillCS5_input", null)
 			 set(keyTypes(key).getIndex, value); 
 
       }catch {
@@ -279,23 +275,16 @@ class arrin1(factory: MessageFactoryInterface, other: arrin1) extends MessageInt
   
       
     def set(index : Int, value :Any): Unit = {
-      if (value == null) throw new Exception(s"Value is null for index $index in message arrin1 ")
+      if (value == null) throw new Exception(s"Value is null for index $index in message AirRefillCS5_input ")
       try{
         index match {
  				case 0 => { 
 				if(value.isInstanceOf[String]) 
-				  this.ext_type_id = value.asInstanceOf[String]; 
-				 else throw new Exception(s"Value is the not the correct type for field ext_type_id in message arrin1") 
-				} 
-				case 1 => { 
-				if(value.isInstanceOf[scala.Array[String]]) 
-				  this.mydata = value.asInstanceOf[scala.Array[String]]; 
-				else if(value.isInstanceOf[scala.Array[_]]) 
-				  this.mydata = value.asInstanceOf[scala.Array[_]].map(v => v.asInstanceOf[String]); 
-				 else throw new Exception(s"Value is the not the correct type for field mydata in message arrin1") 
+				  this.msg = value.asInstanceOf[String]; 
+				 else throw new Exception(s"Value is the not the correct type for field msg in message AirRefillCS5_input") 
 				} 
 
-        case _ => throw new Exception(s"$index is a bad index for message arrin1");
+        case _ => throw new Exception(s"$index is a bad index for message AirRefillCS5_input");
         }
     	}catch {
           case e: Exception => {
@@ -310,27 +299,18 @@ class arrin1(factory: MessageFactoryInterface, other: arrin1) extends MessageInt
       throw new Exception ("Set Func for Value and ValueType By Key is not supported for Fixed Messages" )
     }
   
-    private def fromFunc(other: arrin1): arrin1 = {  
-   			this.ext_type_id = com.ligadata.BaseTypes.StringImpl.Clone(other.ext_type_id);
-		 if (other.mydata != null ) { 
-		 mydata = new scala.Array[String](other.mydata.length); 
-		 mydata = other.mydata.map(v => com.ligadata.BaseTypes.StringImpl.Clone(v)); 
-		 } 
-		 else this.mydata = null; 
+    private def fromFunc(other: AirRefillCS5_input): AirRefillCS5_input = {  
+   			this.msg = com.ligadata.BaseTypes.StringImpl.Clone(other.msg);
 
       this.setTimePartitionData(com.ligadata.BaseTypes.LongImpl.Clone(other.getTimePartitionData));
       return this;
     }
     
-	 def withext_type_id(value: String) : arrin1 = {
-		 this.ext_type_id = value 
+	 def withmsg(value: String) : AirRefillCS5_input = {
+		 this.msg = value 
 		 return this 
  	 } 
-	 def withmydata(value: scala.Array[String]) : arrin1 = {
-		 this.mydata = value 
-		 return this 
- 	 } 
-    def isCaseSensitive(): Boolean = arrin1.isCaseSensitive(); 
+    def isCaseSensitive(): Boolean = AirRefillCS5_input.isCaseSensitive(); 
     def caseSensitiveKey(keyName: String): String = {
       if(isCaseSensitive)
         return keyName;
@@ -343,7 +323,7 @@ class arrin1(factory: MessageFactoryInterface, other: arrin1) extends MessageInt
       this(factory, null)
      }
     
-    def this(other: arrin1) = {
+    def this(other: AirRefillCS5_input) = {
       this(other.getFactory.asInstanceOf[MessageFactoryInterface], other)
     }
 

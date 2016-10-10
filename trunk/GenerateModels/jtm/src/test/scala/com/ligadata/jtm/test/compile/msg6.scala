@@ -25,6 +25,7 @@ object msg6 extends RDDObject[msg6] with MessageFactoryInterface {
 	override def getTenantId: String = ""; 
 	override def createInstance: msg6 = new msg6(msg6); 
 	override def isFixed: Boolean = true; 
+	def isCaseSensitive(): Boolean = false; 
 	override def getContainerType: ContainerTypes.ContainerType = ContainerTypes.ContainerType.MESSAGE
 	override def getFullName = getFullTypeName; 
 	override def getRddTenantId = getTenantId; 
@@ -123,7 +124,7 @@ class msg6(factory: MessageFactoryInterface, other: msg6) extends MessageInterfa
       fromFunc(other)
     }
     
-    override def save: Unit = { /* msg6.saveOne(this) */}
+    override def save: Unit = { msg6.saveOne(this) }
   
     def Clone(): ContainerOrConcept = { msg6.build(this) }
 
@@ -134,7 +135,7 @@ class msg6(factory: MessageFactoryInterface, other: msg6) extends MessageInterfa
     override def getAttributeType(name: String): AttributeTypeInfo = {
       if (name == null || name.trim() == "") return null;
       attributeTypes.foreach(attributeType => {
-        if(attributeType.getName == name.toLowerCase())
+        if(attributeType.getName == caseSensitiveKey(name))
           return attributeType
       }) 
       return null;
@@ -152,7 +153,7 @@ class msg6(factory: MessageFactoryInterface, other: msg6) extends MessageInterfa
     
     private def getWithReflection(keyName: String): AnyRef = {
       if(keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name "+keyName);
-      val key = keyName.toLowerCase;
+      val key = caseSensitiveKey(keyName);
       val ru = scala.reflect.runtime.universe
       val m = ru.runtimeMirror(getClass.getClassLoader)
       val im = m.reflect(this)
@@ -164,35 +165,35 @@ class msg6(factory: MessageFactoryInterface, other: msg6) extends MessageInterfa
     override def get(key: String): AnyRef = {
     try {
       // Try with reflection
-      return getByName(key.toLowerCase())
+      return getByName(caseSensitiveKey(key))
     } catch {
       case e: Exception => {
         val stackTrace = StackTrace.ThrowableTraceString(e)
         log.debug("StackTrace:" + stackTrace)
         // Call By Name
-        return getWithReflection(key.toLowerCase())
+        return getWithReflection(caseSensitiveKey(key))
         }
       }
     }      
     
     private def getByName(keyName: String): AnyRef = {
      if(keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name "+keyName);
-      val key = keyName.toLowerCase;
+      val key = caseSensitiveKey(keyName);
    
       if (!keyTypes.contains(key)) throw new KeyNotFoundException(s"Key $key does not exists in message/container msg6", null);
       return get(keyTypes(key).getIndex)
   }
   
-    override def getOrElse(keyName: String, defaultVal: Any): AnyRef = { // Return (value, type)
+    override def getOrElse(keyName: String, defaultVal: Any): AnyRef = { // Return (value)
       if (keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name "+keyName);
-      val key = keyName.toLowerCase;
+      val key = caseSensitiveKey(keyName);
       try {
-        val value = get(key.toLowerCase())
-        if (value == null) return defaultVal.asInstanceOf[AnyRef]; else return value;
-      } catch {
+        return get(key)
+       } catch {
         case e: Exception => {
           log.debug("", e)
-          throw e
+          if(defaultVal == null) return null;
+          return defaultVal.asInstanceOf[AnyRef];
         }
       }
       return null;
@@ -217,14 +218,14 @@ class msg6(factory: MessageFactoryInterface, other: msg6) extends MessageInterfa
       
     }      
     
-    override def getOrElse(index: Int, defaultVal: Any): AnyRef = { // Return (value,  type)
+    override def getOrElse(index: Int, defaultVal: Any): AnyRef = { // Return (value)
       try {
-        val value = get(index)
-        if (value == null) return defaultVal.asInstanceOf[AnyRef]; else return value;
-      } catch {
+        return get(index);
+        } catch {
         case e: Exception => {
           log.debug("", e)
-          throw e
+          if(defaultVal == null) return null;
+          return defaultVal.asInstanceOf[AnyRef];
         }
       }
       return null;
@@ -265,7 +266,7 @@ class msg6(factory: MessageFactoryInterface, other: msg6) extends MessageInterfa
     
     override def set(keyName: String, value: Any) = {
       if(keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name "+keyName);
-      val key = keyName.toLowerCase;
+      val key = caseSensitiveKey(keyName);
       try {
    
   			 if (!keyTypes.contains(key)) throw new KeyNotFoundException(s"Key $key does not exists in message msg6", null)
@@ -337,7 +338,15 @@ class msg6(factory: MessageFactoryInterface, other: msg6) extends MessageInterfa
 		 this.in3 = value 
 		 return this 
  	 } 
+    def isCaseSensitive(): Boolean = msg6.isCaseSensitive(); 
+    def caseSensitiveKey(keyName: String): String = {
+      if(isCaseSensitive)
+        return keyName;
+      else return keyName.toLowerCase;
+    }
 
+
+    
     def this(factory:MessageFactoryInterface) = {
       this(factory, null)
      }

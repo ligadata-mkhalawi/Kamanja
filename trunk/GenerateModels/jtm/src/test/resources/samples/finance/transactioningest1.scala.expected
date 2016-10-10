@@ -30,6 +30,56 @@ class TransactionIngestFactory(modelDef: ModelDef, nodeContext: NodeContext) ext
   override def createResultObject(): ModelResultBase = new MappedModelResults()
   override def isModelInstanceReusable(): Boolean = true;
 }
+class common_exeGenerated_transactionmsg_1(conversion: com.ligadata.runtime.Conversion,
+log: com.ligadata.runtime.Log,
+context: com.ligadata.runtime.JtmContext,
+msg1: com.ligadata.kamanja.samples.messages.V1000000.TransactionMsgIn) {
+  import log._
+  // Split the incoming data
+  val arrayData: Array[String] = msg1.data.split(",")
+}
+class common_exeGenerated_transactionmsg_1_process_o1(conversion: com.ligadata.runtime.Conversion,
+log : com.ligadata.runtime.Log,
+context: com.ligadata.runtime.JtmContext,
+common: common_exeGenerated_transactionmsg_1,
+msg1: com.ligadata.kamanja.samples.messages.V1000000.TransactionMsgIn) {
+  import log._
+  import common._
+  val result: Array[MessageInterface]= try {
+    // extract the type
+    val typeName: String = arrayData(0)
+    if (!("com.ligadata.kamanja.samples.messages.TransactionMsg" == typeName)) {
+      Debug("Filtered: transactionmsg@o1")
+      Array.empty[MessageInterface]
+    } else {
+      val result = com.ligadata.kamanja.samples.messages.V1000000.TransactionMsg.createInstance
+      result.branchid = conversion.ToInteger(arrayData(2))
+      result.custid = conversion.ToLong(arrayData(1))
+      result.locationid = conversion.ToInteger(arrayData(8))
+      result.balance = conversion.ToDouble(arrayData(5))
+      result.amount = conversion.ToDouble(arrayData(4))
+      result.transtype = arrayData(9)
+      result.accno = conversion.ToLong(arrayData(3))
+      result.date = conversion.ToInteger(arrayData(6))
+      result.time = conversion.ToInteger(arrayData(7))
+      if (result.hasTimePartitionInfo) result.setTimePartitionData ;
+      if(context.CurrentErrors()==0) {
+        Array(result)
+      } else {
+        Array.empty[MessageInterface]
+      }
+    }
+  } catch {
+    case e: AbortOutputException => {
+      context.AddError(e.getMessage)
+      Array.empty[MessageInterface]
+    }
+    case e: Exception => {
+      Debug("Exception: o1:" + e.getMessage)
+      throw e
+    }
+  }
+}
 class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(factory) {
   val conversion = new com.ligadata.runtime.Conversion
   val log = new com.ligadata.runtime.Log(this.getClass.getName)
@@ -50,44 +100,12 @@ class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(fac
     def exeGenerated_transactionmsg_1(msg1: com.ligadata.kamanja.samples.messages.V1000000.TransactionMsgIn): Array[MessageInterface] = {
       Debug("exeGenerated_transactionmsg_1")
       context.SetSection("transactionmsg")
-      // Split the incoming data
-      val arrayData: Array[String] = msg1.data.split(",")
+      val common = new common_exeGenerated_transactionmsg_1(conversion, log, context, msg1)
       def process_o1(): Array[MessageInterface] = {
         Debug("exeGenerated_transactionmsg_1::process_o1")
         context.SetScope("o1")
-        try {
-          // extract the type
-          val typeName: String = arrayData(0)
-          if (!("com.ligadata.kamanja.samples.messages.TransactionMsg" == typeName)) {
-            Debug("Filtered: transactionmsg@o1")
-            return Array.empty[MessageInterface]
-          }
-          val result = com.ligadata.kamanja.samples.messages.V1000000.TransactionMsg.createInstance
-          result.branchid = conversion.ToInteger(arrayData(2))
-          result.custid = conversion.ToLong(arrayData(1))
-          result.locationid = conversion.ToInteger(arrayData(8))
-          result.balance = conversion.ToDouble(arrayData(5))
-          result.amount = conversion.ToDouble(arrayData(4))
-          result.transtype = arrayData(9)
-          result.accno = conversion.ToLong(arrayData(3))
-          result.date = conversion.ToInteger(arrayData(6))
-          result.time = conversion.ToInteger(arrayData(7))
-          if (result.hasTimePartitionInfo) result.setTimePartitionData ;
-          if(context.CurrentErrors()==0) {
-            Array(result)
-          } else {
-            Array.empty[MessageInterface]
-          }
-        } catch {
-          case e: AbortOutputException => {
-            context.AddError(e.getMessage)
-            return Array.empty[MessageInterface]
-          }
-          case e: Exception => {
-            Debug("Exception: o1:" + e.getMessage)
-            throw e
-          }
-        }
+        val result = new common_exeGenerated_transactionmsg_1_process_o1(conversion, log, context, common, msg1)
+        result.result
       }
       try {
         process_o1()
