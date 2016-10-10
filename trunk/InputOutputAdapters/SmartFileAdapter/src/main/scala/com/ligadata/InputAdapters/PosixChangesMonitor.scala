@@ -3,6 +3,7 @@ package com.ligadata.InputAdapters
 
 import java.io._
 import java.nio.file.Path
+import java.nio.file.Path
 import java.nio.file._
 import java.util
 import java.util.zip.GZIPInputStream
@@ -228,6 +229,18 @@ class PosixFileHandler extends SmartFileHandler{
     val file = new File(fileFullPath)
     file.exists() && file.canRead && file.canWrite
   }
+
+  override def mkdirs() : Boolean = {
+    logger.info("Posix File Handler - mkdirs for path " + getFullPath)
+    try {
+      new File(fileFullPath).mkdirs()
+    }
+    catch{
+      case e : Throwable =>
+        logger.error("Posix File Handler - Error while creating path " + fileFullPath, e)
+        false
+    }
+  }
 }
 
 
@@ -331,7 +344,8 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
 
                         val dir = new File(dirToCheck)
                         checkExistingFiles(dir, isFirstScan, location)
-                        //dir.listFiles.filter(_.isDirectory).foreach(d => dirsToCheck += d.toString)
+                        //get subdirectories
+                        dir.listFiles.filter(_.isDirectory).foreach(d => dirsToCheck += d.toString)
 
                         errorWaitTime = 1000
                       }
