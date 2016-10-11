@@ -1,0 +1,19 @@
+{
+  "Message": {
+    "NameSpace": "com.ligadata.kamanja.logicalpartition.test.messages",
+    "Name": "marathon_out_msg",
+    "Version": "00.08.00",
+    "Description": "Marathon Out Message",
+    "Fixed": "true",
+    "Fields": [
+      {
+        "Name": "Ranking",
+        "Type": "System.Int"
+      },
+      {
+        "Name": "Name",
+        "Type": "System.String"
+      }
+    ]
+  }
+}
