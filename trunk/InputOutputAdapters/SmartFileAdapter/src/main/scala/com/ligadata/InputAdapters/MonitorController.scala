@@ -25,8 +25,9 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
 
   implicit def orderedEnqueuedFileHandler(f: EnqueuedFileHandler): Ordered[EnqueuedFileHandler] = new Ordered[EnqueuedFileHandler] {
     def compare(other: EnqueuedFileHandler) = {
-      val locationInfo1 = parentSmartFileConsumer.getSrcDirLocationInfo(MonitorUtils.simpleDirPath(f.fileHandler.getParentDir))
-      val locationInfo2 = parentSmartFileConsumer.getSrcDirLocationInfo(MonitorUtils.simpleDirPath(other.fileHandler.getParentDir))
+
+      val locationInfo1 = parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(f.fileHandler.getParentDir))
+      val locationInfo2 = parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(other.fileHandler.getParentDir))
       //not sure why but had to invert sign
       (MonitorUtils.compareFiles(f.fileHandler, locationInfo1, other.fileHandler, locationInfo2)) * -1
     }
@@ -187,7 +188,8 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
 
             val fileHandler = fileTuple._1
             val currentFileParentDir = fileHandler.getParentDir
-            val currentFileLocationInfo = parentSmartFileConsumer.getSrcDirLocationInfo(currentFileParentDir)
+
+            val currentFileLocationInfo = parentSmartFileConsumer.getDirLocationInfo(currentFileParentDir)
 
             try {
 

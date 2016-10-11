@@ -214,6 +214,7 @@ class HdfsFileHandler extends SmartFileHandler {
         false
       }
 
+
     } finally {
 
     }
@@ -297,6 +298,18 @@ class HdfsFileHandler extends SmartFileHandler {
 
   //TODO : see if can check whether current user can read and write
   override def isAccessible: Boolean = exists()
+
+  override def mkdirs() : Boolean = {
+    logger.info("Hdfs File Handler - mkdirs for path " + getFullPath)
+    try {
+      getHdFileSystem("mkdirs").mkdirs(new Path(getFullPath))
+    }
+    catch{
+      case e : Throwable =>
+        logger.error("Hdfs File Handler - Error while creating path " + fileFullPath, e)
+        false
+    }
+  }
 }
 
 /**

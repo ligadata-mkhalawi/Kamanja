@@ -20,6 +20,7 @@ import org.apache.commons.codec.binary.Base64
   * @param messageFoundCallback to call for every read message
   * @param finishCallback       call when finished reading
   */
+
 class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
                            parentExecutor: ExecutorService,
                            adapterConfig: SmartFileAdapterConfiguration,
@@ -31,7 +32,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
 
   private val maxlen: Int = adapterConfig.monitoringConfig.workerBufferSize * 1024 * 1024 //in MB
 
-  val srcDirLocInfo = parentSmartFileConsumer.getSrcDirLocationInfo(fileHandler.getParentDir)
+  val srcDirLocInfo = parentSmartFileConsumer.getDirLocationInfo(fileHandler.getParentDir)
   private val message_separator: Char =
     if (srcDirLocInfo == null) adapterConfig.monitoringConfig.messageSeparator
     else srcDirLocInfo.messageSeparator
@@ -39,8 +40,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
 
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
-  private var currentMsgNum = -1
-  // to start from zero
+  private var currentMsgNum = 0
   private var globalOffset = 0L
 
   private val extractExecutor = Executors.newFixedThreadPool(1)
@@ -270,13 +270,14 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
       //most likely this happens if last message is not followed by the separator
       if (readlen > 0 && !processingInterrupted) {
         val lastMsg: Array[Byte] = byteBuffer.slice(0, readlen)
+
         if (lastMsg.length == 1 && lastMsg(0).asInstanceOf[Char] == message_separator) {
 
         }
         else {
           currentMsgNum += 1
           val msgOffset = globalOffset + lastMsg.length + message_separator_len //byte offset of next message in the file
-          val smartFileMessage = new SmartFileMessage(lastMsg, msgOffset, fileHandler, msgOffset)
+          val smartFileMessage = new SmartFileMessage(lastMsg, msgOffset, fileHandler, currentMsgNum)
           messageFoundCallback(smartFileMessage, consumerContext)
         }
       }
@@ -426,7 +427,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
             currentMsgNum += 1
             //if(globalOffset >= startOffset) {//send messages that are only after startOffset
             val msgOffset = globalOffset + newMsg.length + message_separator_len //byte offset of next message in the file
-            val smartFileMessage = new SmartFileMessage(newMsg, msgOffset, fileHandler, msgOffset)
+            val smartFileMessage = new SmartFileMessage(newMsg, msgOffset, fileHandler, currentMsgNum)
             messageFoundCallback(smartFileMessage, consumerContext)
 
             //}
