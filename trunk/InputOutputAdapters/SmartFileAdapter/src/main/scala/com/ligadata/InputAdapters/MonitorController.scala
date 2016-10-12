@@ -200,30 +200,39 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
 
         // val grps = bufferingQ_map.groupby(....)
 
-
         var grps: ArrayBuffer[ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))]] = ArrayBuffer()
 
-        bufferingQ_map.foreach(element => {
-          val fh = element._1
-          val pattern = "^((?!_att).)*$"
-          if (fh.getFullPath.matches(pattern)) {
-            var tmpArray: ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))] = ArrayBuffer()
-            // creating a tmpArray, and adding an email file FileHandler to it
-            tmpArray += element
+        if (adapterConfig.monitoringConfig.enableEmailAndAttachmentMode == true) {
 
-            val emailName = extractFileNameWithoutExtention(fh.getFullPath)
-            bufferingQ_map.foreach(element2 => {
-              val fileName = extractFileNameWithoutExtention(element2._1.getFullPath)
-              // adding attachments, but make sure not to add the email to the tmpArray again
-              val pattern2 = emailName + "_" + "att" + "\\p{Alnum}.*"
-              if (fileName.matches(pattern2) && !fileName.equals(emailName)) {
-                // adding attachments of the previous email to the tmpArray
-                tmpArray += element2
-              }
-            })
+          bufferingQ_map.foreach(element => {
+            val fh = element._1
+            val pattern = "^((?!_att).)*$"
+            if (fh.getFullPath.matches(pattern)) {
+              var tmpArray: ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))] = ArrayBuffer()
+              // creating a tmpArray, and adding an email file FileHandler to it
+              tmpArray += element
+
+              val emailName = extractFileNameWithoutExtention(fh.getFullPath)
+              bufferingQ_map.foreach(element2 => {
+                val fileName = extractFileNameWithoutExtention(element2._1.getFullPath)
+                // adding attachments, but make sure not to add the email to the tmpArray again
+                val pattern2 = emailName + "_" + "att" + "\\p{Alnum}.*"
+                if (fileName.matches(pattern2) && !fileName.equals(emailName)) {
+                  // adding attachments of the previous email to the tmpArray
+                  tmpArray += element2
+                }
+              })
+              grps += tmpArray
+            }
+          })
+        } else {
+          bufferingQ_map.foreach(element => {
+            var tmpArray: ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))] = ArrayBuffer()
+            tmpArray += element
             grps += tmpArray
-          }
-        })
+          })
+        }
+
 
 
         grps.foreach(grp => {
