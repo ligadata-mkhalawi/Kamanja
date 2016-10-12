@@ -287,7 +287,7 @@ object SmartFileHandlerFactory{
     val srcFileStruct = srcFileToArchive.split("/")
     val dstDirToArchive =
       if(locationInfo != null && adapterConfig.monitoringConfig.createInputStructureInTargetDirs) {
-        srcFileStruct.take( srcFileStruct.length-1).mkString("/").replace(locationInfo.srcDir, dstDirToArchiveBase)
+        srcFileStruct.take( srcFileStruct.length-1).mkString("/").replace(locationInfo.targetDir, dstDirToArchiveBase)
       }
       else dstDirToArchiveBase
 
@@ -304,7 +304,7 @@ object SmartFileHandlerFactory{
       return false
     }
 
-    val dstFileToArchive =  dstDirToArchiveBase + "/" + srcFileBaseName
+    val dstFileToArchive =  dstDirToArchive + "/" + srcFileBaseName
 
     logger.warn("Archiving file from " + srcFileToArchive + " to " + dstFileToArchive)
 
