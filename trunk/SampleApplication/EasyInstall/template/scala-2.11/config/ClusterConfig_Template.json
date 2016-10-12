@@ -5,7 +5,8 @@
       "GlobalReaderThreads":2,
       "GlobalProcessThreads":8,
       "LogicalPartitions":8192,
-      "GlobalLogicalPartitionCachePort":7700,	  
+      "GlobalLogicalPartitionCachePort":7700,	
+      "GlobalAkkaPort":2552,	  
       "SystemCatalog": {
         "StoreType": "h2db",
         "connectionMode": "embedded",
@@ -69,6 +70,7 @@
           "ReaderThreads":2,
           "ProcessThreads":8,
           "LogicalPartitionCachePort":7700,
+          "AkkaPort":2552,
           "NodePort": 6541,
           "NodeIpAddr": "localhost",
           "JarPaths": [
