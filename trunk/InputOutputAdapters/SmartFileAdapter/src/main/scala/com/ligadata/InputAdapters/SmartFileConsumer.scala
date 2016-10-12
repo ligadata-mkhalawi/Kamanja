@@ -1478,7 +1478,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                   val archInfo = getNextArchiveFileInfo
                   if (archInfo != null) {
                     try {
-                      val status = SmartFileHandlerFactory.archiveFile(archInfo.adapterConfig, archInfo.srcFileDir, archInfo.srcFileBaseName, archInfo.componentsMap)
+                      val status = SmartFileHandlerFactory.archiveFile(archInfo.adapterConfig, archInfo.locationInfo, archInfo.srcFileDir, archInfo.srcFileBaseName, archInfo.componentsMap)
                       if (! status)
                         addArchiveFileInfo(archInfo)
                     } catch {
