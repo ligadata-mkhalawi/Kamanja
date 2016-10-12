@@ -270,7 +270,7 @@ object SmartFileHandlerFactory{
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
 
-  def archiveFile(adapterConfig: SmartFileAdapterConfiguration, srcFileDir: String, srcFileBaseName: String, componentsMap: scala.collection.immutable.Map[String, String]): Boolean = {
+  def archiveFile(adapterConfig: SmartFileAdapterConfiguration, locationInfo: LocationInfo, srcFileDir: String, srcFileBaseName: String, componentsMap: scala.collection.immutable.Map[String, String]): Boolean = {
     if (adapterConfig.archiveConfig == null || adapterConfig.archiveConfig.outputConfig == null)
       return true
 
@@ -282,12 +282,34 @@ object SmartFileHandlerFactory{
     val values = partitionFormats.map(fmt => { componentsMap.getOrElse(fmt, "default").toString.trim })
 
     val srcFileToArchive = srcFileDir + "/" + srcFileBaseName
-    val dstFileToArchive =  partitionFormatString.format(values: _*) + "/" + srcFileBaseName
+    //val dstFileToArchive =  partitionFormatString.format(values: _*) + "/" + srcFileBaseName
+    val dstDirToArchiveBase =  partitionFormatString.format(values: _*)
+    val srcFileStruct = srcFileToArchive.split("/")
+    val dstDirToArchive =
+      if(locationInfo != null && adapterConfig.monitoringConfig.createInputStructureInTargetDirs) {
+        srcFileStruct.take( srcFileStruct.length-1).mkString("/").replace(locationInfo.srcDir, dstDirToArchiveBase)
+      }
+      else dstDirToArchiveBase
 
-    logger.debug("Archiving file from " + srcFileToArchive + " to " + dstFileToArchive)
+
+    val destArchiveDirHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, dstDirToArchive)
+    //might need to build sub-dirs corresponding to input dir structure
+    val destArchiveDirExists =
+      if(!destArchiveDirHandler.exists())
+        destArchiveDirHandler.mkdirs()
+      else true
+
+    if(!destArchiveDirExists) {
+      logger.error("Archiving dest dir {} does not exist and could not be created", dstDirToArchive)
+      return false
+    }
+
+    val dstFileToArchive =  dstDirToArchiveBase + "/" + srcFileBaseName
+
+    logger.warn("Archiving file from " + srcFileToArchive + " to " + dstFileToArchive)
 
     var fileHandler: SmartFileHandler = null
-    var osWriter = new com.ligadata.OutputAdapters.OutputStreamWriter()
+    val osWriter = new com.ligadata.OutputAdapters.OutputStreamWriter()
     var os: OutputStream = null
 
     try {

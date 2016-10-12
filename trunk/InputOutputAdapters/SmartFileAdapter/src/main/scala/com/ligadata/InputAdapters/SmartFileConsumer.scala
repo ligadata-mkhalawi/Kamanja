@@ -73,7 +73,7 @@ object SmartFileConsumer extends InputAdapterFactory {
 
 case class SmartFileExceptionInfo (Last_Failure: String, Last_Recovery: String)
 
-case class ArchiveFileInfo(adapterConfig: SmartFileAdapterConfiguration, srcFileDir: String, srcFileBaseName: String, componentsMap: scala.collection.immutable.Map[String, String])
+case class ArchiveFileInfo(adapterConfig: SmartFileAdapterConfiguration, locationInfo: LocationInfo, srcFileDir: String, srcFileBaseName: String, componentsMap: scala.collection.immutable.Map[String, String])
 
 class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecContextFactory, val nodeContext: NodeContext) extends InputAdapter {
 
@@ -1222,13 +1222,13 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       var componentsMap = scala.collection.immutable.Map[String, String]()
       var targetMoveDir: String = null
       var flBaseName: String = null
+      val parentDir = smartFileHandler.getParentDir
+      val locationInfo = getDirLocationInfo(parentDir)
       if (adapterConfig.archiveConfig != null && adapterConfig.archiveConfig.outputConfig != null) {
-        val parentDir = smartFileHandler.getParentDir
-        if(locationsMap.contains(parentDir)) {
-          val locationInfo = locationsMap(parentDir)
-          if (locationInfo != null && locationInfo.fileComponents != null)
-            componentsMap = MonitorUtils.getFileComponents(originalFilePath, locationInfo)
-        }
+        //val locationInfo = locationsMap(parentDir)
+        if (locationInfo != null && locationInfo.fileComponents != null)
+          componentsMap = MonitorUtils.getFileComponents(originalFilePath, locationInfo)
+
         val (targetMoveDir1, flBaseName1) = getTargetFile(smartFileHandler)
         targetMoveDir = targetMoveDir1
         flBaseName = flBaseName1
@@ -1236,7 +1236,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
       isFileMoved = moveFile(smartFileHandler)
       if (isFileMoved && adapterConfig.archiveConfig != null && adapterConfig.archiveConfig.outputConfig != null) {
-        addArchiveFileInfo(ArchiveFileInfo(adapterConfig, targetMoveDir, flBaseName, componentsMap))
+        addArchiveFileInfo(ArchiveFileInfo(adapterConfig, locationInfo, targetMoveDir, flBaseName, componentsMap))
       }
     } catch {
       case e: Throwable => {
@@ -1525,12 +1525,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                 if (smartFileHandler != null)
                   smartFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, tgtDir + "/" + f)
                 var componentsMap = scala.collection.immutable.Map[String, String]()
-                if(locationsMap.contains(srcDir)) {
-                  val locationInfo = locationsMap(srcDir)
-                  if (locationInfo != null && locationInfo.fileComponents != null)
-                    componentsMap = MonitorUtils.getFileComponents(tgtDir + "/" + f, locationInfo)
-                }
-                addArchiveFileInfo(ArchiveFileInfo(adapterConfig, tgtDir, f, componentsMap))
+                val locationInfo = getDirLocationInfo(srcDir)
+                if (locationInfo != null && locationInfo.fileComponents != null)
+                  componentsMap = MonitorUtils.getFileComponents(tgtDir + "/" + f, locationInfo)
+                addArchiveFileInfo(ArchiveFileInfo(adapterConfig, locationInfo, tgtDir, f, componentsMap))
               })
             }
             processedDirs += srcDir
