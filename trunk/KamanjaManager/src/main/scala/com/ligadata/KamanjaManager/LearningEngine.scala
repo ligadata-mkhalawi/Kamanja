@@ -32,7 +32,7 @@ import scala.collection.mutable.ArrayBuffer
 //import org.json4s._
 //import org.json4s.JsonDSL._
 //import org.json4s.jackson.JsonMethods._
-import com.ligadata.InputOutputAdapterInfo.{ExecContext, InputAdapter, PartitionUniqueRecordKey, PartitionUniqueRecordValue}
+import com.ligadata.InputOutputAdapterInfo.{ExecContext, InputAdapter, PartitionUniqueRecordKey, PartitionUniqueRecordValue, CallbackInterface, CompletionCallback}
 import com.ligadata.Exceptions.{KamanjaException, StackTrace, MessagePopulationException}
 
 object LeanringEngine {
@@ -56,7 +56,7 @@ class LearningEngine {
 
   var dagRuntime = new DagRuntime()
 
-  def execute(txnCtxt: TransactionContext): Unit = {
+  def execute(txnCtxt: TransactionContext, callback: CallbackInterface): Unit = {
 
     // List of ModelIds that we ran.
     var outMsgIds: ArrayBuffer[Long] = new ArrayBuffer[Long]()

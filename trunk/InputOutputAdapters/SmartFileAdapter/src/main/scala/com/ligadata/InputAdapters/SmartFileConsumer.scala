@@ -1409,7 +1409,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             })
      */
     partitionIds.foreach(part => {
-      part.threadPartitions.foreach {p => {
+      part.threadPartitions.foreach { p => {
           val partitionId = p._key.asInstanceOf[SmartFilePartitionUniqueRecordKey].PartitionId
           // Initialize the monitoring status
           partitonCounts(partitionId.toString) = 0
@@ -1502,20 +1502,18 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     }
 
     //(1,file1,0,true)~(2,file2,0,true)~(3,file3,1000,true)
- /*   val myPartitionInfo = partitionIds.map(pid => (pid._key.asInstanceOf[SmartFilePartitionUniqueRecordKey].PartitionId,
+    /*   val myPartitionInfo = partitionIds.map(pid => (pid._key.asInstanceOf[SmartFilePartitionUniqueRecordKey].PartitionId,
       pid._val.asInstanceOf[SmartFilePartitionUniqueRecordValue].FileName,
       pid._val.asInstanceOf[SmartFilePartitionUniqueRecordValue].Offset, ignoreFirstMsg)).mkString("~")
 */
     var threadParts = ArrayBuffer[StartProcPartInfo]()
-    partitionIds.foreach( tp => {
-      for(i <- 0 until tp.threadPartitions.size)
-      threadParts += tp.threadPartitions(i)})
-    
-      val myPartitionInfo = threadParts.map(pid => (pid._key.asInstanceOf[SmartFilePartitionUniqueRecordKey].PartitionId,
+    partitionIds.foreach(tp => {
+      for (i <- 0 until tp.threadPartitions.size)
+        threadParts += tp.threadPartitions(i)})
+
+    val myPartitionInfo = threadParts.map(pid => (pid._key.asInstanceOf[SmartFilePartitionUniqueRecordKey].PartitionId,
       pid._val.asInstanceOf[SmartFilePartitionUniqueRecordValue].FileName,
       pid._val.asInstanceOf[SmartFilePartitionUniqueRecordValue].Offset, ignoreFirstMsg)).mkString("~")
-      
-    
     val SendStartInfoToLeaderPath = sendStartInfoToLeaderParentPath + "/" + clusterStatus.nodeId // Should be different for each Nodes
     LOG.warn("Smart File Consumer - Node {} is sending start info to leader. path is {}, value is {} ",
       clusterStatus.nodeId, SendStartInfoToLeaderPath, myPartitionInfo)
@@ -1526,7 +1524,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   }
 
   private def sendSmartFileMessageToEngin(smartMessage: SmartFileMessage,
-                                          smartFileConsumerContext: SmartFileConsumerContext): Unit = {
+                                          smartFileConsumerContext: SmartFileConsumerContext, callback: CallbackInterface): Unit = {
 
     //in case the msg extracotr still had some msgs to send but some parts of the engine were already shutdown, just ignore
     if (isShutdown)
@@ -1571,8 +1569,9 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     LOG.debug("Smart File Consumer - Node {} is sending a msg to engine. partition id= {}. msg={}. file={}. offset={}",
       smartFileConsumerContext.nodeId, smartFileConsumerContext.partitionId.toString, new String(message), fileName, offset.toString)
     msgCount += 1
-    smartFileConsumerContext.execThread.execute(message, uniqueKey, uniqueVal, readTmMs)
-
+   
+    smartFileConsumerContext.execThread.execute(message, uniqueKey, uniqueVal, readTmMs, callback)
+  
   }
 
   def getFileLocationConfig(fileHandler: SmartFileHandler): LocationInfo = {

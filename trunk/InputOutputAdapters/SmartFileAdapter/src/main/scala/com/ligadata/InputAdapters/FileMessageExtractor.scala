@@ -4,35 +4,37 @@ import java.io.IOException
 import com.ligadata.AdaptersConfiguration.SmartFileAdapterConfiguration
 import org.apache.logging.log4j.LogManager
 import scala.util.control.Breaks._
+import java.util.concurrent.atomic.AtomicInteger
+import com.ligadata.InputOutputAdapterInfo.{CallbackInterface, CompletionCallback}
 
-import scala.actors.threadpool.{ExecutorService, Executors}
+import scala.actors.threadpool.{ ExecutorService, Executors }
 
 /**
-  *
-  *
-  * @param adapterConfig
-  * @param fileHandler file to read messages from
-  * @param startOffset offset in the file to start with
-  * @param consumerContext has required params
-  * @param messageFoundCallback to call for every read message
-  * @param finishCallback call when finished reading
-  */
-class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
-                            parentExecutor: ExecutorService,
-                           adapterConfig : SmartFileAdapterConfiguration,
+ *
+ *
+ * @param adapterConfig
+ * @param fileHandler file to read messages from
+ * @param startOffset offset in the file to start with
+ * @param consumerContext has required params
+ * @param messageFoundCallback to call for every read message
+ * @param finishCallback call when finished reading
+ */
+class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
+                           parentExecutor: ExecutorService,
+                           adapterConfig: SmartFileAdapterConfiguration,
                            fileHandler: SmartFileHandler,
-                           startOffset : Long,
-                           consumerContext : SmartFileConsumerContext,
-                           messageFoundCallback : (SmartFileMessage, SmartFileConsumerContext) => Unit,
-                           finishCallback : (SmartFileHandler, SmartFileConsumerContext, Int) => Unit ) {
+                           startOffset: Long,
+                           consumerContext: SmartFileConsumerContext,
+                           messageFoundCallback: (SmartFileMessage, SmartFileConsumerContext, CallbackInterface) => Unit,
+                           finishCallback: (SmartFileHandler, SmartFileConsumerContext, Int) => Unit) {
 
   private val maxlen: Int = adapterConfig.monitoringConfig.workerBufferSize * 1024 * 1024 //in MB
 
   val srcDirLocInfo = parentSmartFileConsumer.getSrcDirLocationInfo(fileHandler.getParentDir)
-  private val message_separator : Char =
-    if(srcDirLocInfo == null) adapterConfig.monitoringConfig.messageSeparator
+  private val message_separator: Char =
+    if (srcDirLocInfo == null) adapterConfig.monitoringConfig.messageSeparator
     else srcDirLocInfo.messageSeparator
-  private val message_separator_len = 1// since separator is a char
+  private val message_separator_len = 1 // since separator is a char
 
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
@@ -42,20 +44,20 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
   private val extractExecutor = Executors.newFixedThreadPool(1)
   private val updatExecutor = Executors.newFixedThreadPool(1)
 
-  private val StatusUpdateInterval = 1000//ms
+  private val StatusUpdateInterval = 1000 //ms
 
   private var finished = false
   private var processingInterrupted = false
 
-  private var fileProcessingStartTm : Long = 0L
+  private var fileProcessingStartTm: Long = 0L
 
-  def extractMessages() : Unit = {
+  private var counter = new AtomicInteger(0)
 
-    if(!fileHandler.exists()){
+  def extractMessages(): Unit = {
+
+    if (!fileHandler.exists()) {
       finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_NOT_FOUND)
-    }
-
-    else {
+    } else {
       //just run it in a separate thread
       val extractorThread = new Runnable() {
         override def run(): Unit = {
@@ -76,15 +78,13 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
                 consumerContext.nodeId, consumerContext.partitionId.toString, data)
               consumerContext.envContext.saveConfigInClusterCache(consumerContext.statusUpdateCacheKey, data.getBytes)
 
-
               Thread.sleep(StatusUpdateInterval)
 
             }
-          }
-          catch {
+          } catch {
             case ie: InterruptedException => {}
-            case e: Exception => logger.error("", e)
-            case e: Throwable => logger.error("", e)
+            case e: Exception             => logger.error("", e)
+            case e: Throwable             => logger.error("", e)
           }
         }
       }
@@ -110,24 +110,24 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
     } catch {
 
       case fio: java.io.FileNotFoundException => {
-        logger.error("SMART_FILE_CONSUMER Exception accessing the file for processing the file - File is missing",fio)
+        logger.error("SMART_FILE_CONSUMER Exception accessing the file for processing the file - File is missing", fio)
         finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_NOT_FOUND)
         shutdownThreads
         return
       }
       case fio: IOException => {
-        logger.error("SMART_FILE_CONSUMER Exception accessing the file for processing ",fio)
+        logger.error("SMART_FILE_CONSUMER Exception accessing the file for processing ", fio)
         finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_CORRUPT)
         shutdownThreads
         return
       }
-      case ex : Exception => {
+      case ex: Exception => {
         logger.error("", ex)
         finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_CORRUPT)
         shutdownThreads
         return
       }
-      case ex : Throwable => {
+      case ex: Throwable => {
         logger.error("", ex)
         finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_CORRUPT)
         shutdownThreads
@@ -140,19 +140,19 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
 
     //skip to startOffset
     //TODO : modify to use seek whenever possible
-    if(startOffset > 0)
+    if (startOffset > 0)
       logger.debug("SMART FILE CONSUMER - skipping into offset {} while reading file {}", startOffset.toString, fileName)
     var totalReadLen = 0
-    var lengthToRead : Int = 0
-    do{
+    var lengthToRead: Int = 0
+    do {
       lengthToRead = Math.min(maxlen, startOffset - totalReadLen).toInt
       curReadLen = fileHandler.read(byteBuffer, 0, lengthToRead)
       totalReadLen += curReadLen
       logger.debug("SMART FILE CONSUMER - reading {} bytes from file {} but got only {} bytes",
         lengthToRead.toString, fileHandler.getFullPath, curReadLen.toString)
-    }while(totalReadLen < startOffset && curReadLen >0)
+    } while (totalReadLen < startOffset && curReadLen > 0)
 
-    logger.debug("SMART FILE CONSUMER - totalReadLen from file {} is {}", fileHandler.getFullPath,totalReadLen.toString)
+    logger.debug("SMART FILE CONSUMER - totalReadLen from file {} is {}", fileHandler.getFullPath, totalReadLen.toString)
 
     globalOffset = totalReadLen
 
@@ -169,23 +169,23 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
               processingInterrupted = true
               //break
             }
-            if(parentExecutor == null){
+            if (parentExecutor == null) {
               logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - (parentExecutor = null) while reading file {}", fileHandler.getFullPath)
               processingInterrupted = true
               //break
             }
-            if(parentExecutor.isShutdown){
+            if (parentExecutor.isShutdown) {
               logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is shutdown while reading file {}", fileHandler.getFullPath)
               processingInterrupted = true
               //break
             }
-            if(parentExecutor.isTerminated){
+            if (parentExecutor.isTerminated) {
               logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is terminated while reading file {}", fileHandler.getFullPath)
               processingInterrupted = true
               //break
             }
 
-            if(!processingInterrupted) {
+            if (!processingInterrupted) {
               var curReadLen = fileHandler.read(byteBuffer, readlen, maxlen - readlen - 1)
               lastReadLen = curReadLen
 
@@ -194,8 +194,7 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
 
               if (curReadLen > 0) {
                 readlen += curReadLen
-              }
-              else // First time reading into buffer triggered end of file (< 0)
+              } else // First time reading into buffer triggered end of file (< 0)
                 readlen = curReadLen
               val minBuf = maxlen / 3; // We are expecting at least 1/3 of the buffer need to fill before
               while (readlen < minBuf && curReadLen > 0) {
@@ -226,7 +225,7 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
             }
           }
 
-          if(!processingInterrupted) {
+          if (!processingInterrupted) {
             logger.debug("SMART FILE CONSUMER (FileMessageExtractor) - readlen1={}", readlen.toString)
             if (readlen > 0) {
               len += readlen
@@ -244,8 +243,7 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
                 }
 
                 readlen = readlen - consumedBytes
-              }
-              else {
+              } else {
                 readlen = 0
               }
             }
@@ -256,22 +254,20 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
       logger.debug("SMART FILE CONSUMER (FileMessageExtractor) - readlen2={}", readlen.toString)
       //now if readlen>0 means there is one last message.
       //most likely this happens if last message is not followed by the separator
-      if(readlen > 0 && !processingInterrupted){
+      if (readlen > 0 && !processingInterrupted) {
         val lastMsg: Array[Byte] = byteBuffer.slice(0, readlen)
-        if(lastMsg.length == 1 && lastMsg(0).asInstanceOf[Char] == message_separator){
+        if (lastMsg.length == 1 && lastMsg(0).asInstanceOf[Char] == message_separator) {
 
-        }
-        else {
+        } else {
           currentMsgNum += 1
           val msgOffset = globalOffset + lastMsg.length + message_separator_len //byte offset of next message in the file
           val smartFileMessage = new SmartFileMessage(lastMsg, msgOffset, fileHandler, msgOffset)
-          messageFoundCallback(smartFileMessage, consumerContext)
+          val callback = new CompletionCallback(counter)
+          messageFoundCallback(smartFileMessage, consumerContext, callback)
         }
       }
 
-
-    }
-    catch {
+    } catch {
       case ioe: IOException => {
         logger.error("SMART FILE CONSUMER: Exception while accessing the file for processing " + fileName, ioe)
         finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_CORRUPT)
@@ -297,20 +293,18 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
       case et: Throwable => {
         logger.error("SMART FILE CONSUMER: Throwable while closing file " + fileName, et)
       }
-    }
-    finally{
-      if(finishCallback != null) {
+    } finally {
+      if (finishCallback != null) {
 
         val endTm = System.nanoTime
         val elapsedTm = endTm - fileProcessingStartTm
 
-        if(processingInterrupted) {
+        if (processingInterrupted) {
           logger.debug("SMART FILE CONSUMER (FileMessageExtractor) - sending interrupting flag for file {}", fileName)
-          logger.warn("SMART FILE CONSUMER - finished reading file %s. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(fileName, elapsedTm/1000000.0, consumerContext.nodeId, consumerContext.partitionId.toString, fileProcessingStartTm, endTm))
+          logger.warn("SMART FILE CONSUMER - finished reading file %s. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(fileName, elapsedTm / 1000000.0, consumerContext.nodeId, consumerContext.partitionId.toString, fileProcessingStartTm, endTm))
           finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_ProcessingInterrupted)
-        }
-        else {
-          logger.warn("SMART FILE CONSUMER - finished reading file %s. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(fileName, elapsedTm/1000000.0, consumerContext.nodeId, consumerContext.partitionId.toString, fileProcessingStartTm, endTm))
+        } else {
+          logger.warn("SMART FILE CONSUMER - finished reading file %s. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(fileName, elapsedTm / 1000000.0, consumerContext.nodeId, consumerContext.partitionId.toString, fileProcessingStartTm, endTm))
           finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_FINISHED)
         }
       }
@@ -320,7 +314,7 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
 
   }
 
-  private def shutdownThreads(): Unit ={
+  private def shutdownThreads(): Unit = {
     finished = true
     logger.debug("File message Extractor - shutting down updatExecutor")
     MonitorUtils.shutdownAndAwaitTermination(updatExecutor, "file message extracting status updator")
@@ -329,7 +323,7 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
     MonitorUtils.shutdownAndAwaitTermination(extractExecutor, "file message extractor")
   }
 
-  private def extractMessages(chunk : Array[Byte], len : Int) : Int = {
+  private def extractMessages(chunk: Array[Byte], len: Int): Int = {
     var indx = 0
     var prevIndx = indx
 
@@ -364,7 +358,8 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
             //if(globalOffset >= startOffset) {//send messages that are only after startOffset
             val msgOffset = globalOffset + newMsg.length + message_separator_len //byte offset of next message in the file
             val smartFileMessage = new SmartFileMessage(newMsg, msgOffset, fileHandler, msgOffset)
-            messageFoundCallback(smartFileMessage, consumerContext)
+            val callback = new CompletionCallback(counter)
+            messageFoundCallback(smartFileMessage, consumerContext, callback)
 
             //}
             prevIndx = indx + 1
@@ -374,8 +369,6 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
         indx = indx + 1
       }
     }
-
-
 
     /*if(prevIndx == chunk.length)
       Array()

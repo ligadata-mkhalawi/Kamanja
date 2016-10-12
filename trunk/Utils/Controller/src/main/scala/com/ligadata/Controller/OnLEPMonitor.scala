@@ -64,7 +64,7 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
 
   }
 
-  protected override def executeMessage(txnCtxt: TransactionContext): Unit = {
+  protected override def executeMessage(txnCtxt: TransactionContext, callback: CallbackInterface): Unit = {
 //    if (format.equalsIgnoreCase("json")) {
 //      //if (data.charAt(0).toString.equals("{")) {
 //      agg.processJsonMessage(parse(new String(data)).values.asInstanceOf[Map[String, Any]])

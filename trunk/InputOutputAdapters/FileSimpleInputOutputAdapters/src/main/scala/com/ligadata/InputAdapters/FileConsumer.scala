@@ -120,7 +120,7 @@ class FileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecC
                     try {
                       // Creating new string to convert from Byte Array to string
                       uniqueVal.Offset = 0 //BUGBUG:: yet to fill this information
-                      execThread.execute(sendmsg.getBytes, uniqueKey, uniqueVal, readTmMs)
+                      execThread.execute(sendmsg.getBytes, uniqueKey, uniqueVal, readTmMs, null)
                     } catch {
                       case e: Exception => {
                         LOG.error("", e)
@@ -174,7 +174,7 @@ class FileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecC
           try {
             // Creating new string to convert from Byte Array to string
             uniqueVal.Offset = 0 //BUGBUG:: yet to fill this information
-            execThread.execute(sendmsg.getBytes, uniqueKey, uniqueVal, readTmMs)
+            execThread.execute(sendmsg.getBytes, uniqueKey, uniqueVal, readTmMs, null)
           } catch {
             case e: Exception => {
               LOG.error("", e)
