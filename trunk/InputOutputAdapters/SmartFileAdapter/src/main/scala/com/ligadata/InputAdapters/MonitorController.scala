@@ -37,6 +37,9 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
   //new scala.collection.mutable.PriorityQueue[EnqueuedFileHandler]()(Ordering.by(fileComparisonField))
     new scala.collection.mutable.PriorityQueue[EnqueuedFileHandler]() //use above implicit compare function
 
+  private var groupQ: scala.collection.mutable.PriorityQueue[ArrayBuffer[EnqueuedFileHandler]] =
+    new scala.collection.mutable.PriorityQueue[ArrayBuffer[EnqueuedFileHandler]]() //use above implicit compare function
+
   private val fileQLock = new Object
 
   private var refreshRate: Int = 2000
@@ -435,12 +438,14 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
   private def enQGroup(fileHandlers: ArrayBuffer[SmartFileHandler], offset: Int, createDates: ArrayBuffer[Long], partMap: scala.collection.mutable.Map[Int, Int] = scala.collection.mutable.Map[Int, Int]()): Unit = {
     fileQLock.synchronized {
       var i = 0
+      var tmpArrayBuffer: ArrayBuffer[EnqueuedFileHandler] = new ArrayBuffer()
       while (i < fileHandlers.length) {
         var fileHandler = fileHandlers(i)
         var createDate = createDates(i)
-        logger.info("SMART FILE CONSUMER (MonitorController):  enq file " + fileHandler.getFullPath + " with priority " + createDate + " --- curretnly " + fileQ.size + " files on a QUEUE")
-        fileQ += new EnqueuedFileHandler(fileHandler, offset, createDate, partMap)
+        tmpArrayBuffer += new EnqueuedFileHandler(fileHandler, offset, createDate, partMap)
       }
+      logger.info("SMART FILE CONSUMER (MonitorController):  enq group " + fileHandlers(0).getFullPath + " with priority " + createDates(0) + " --- curretnly " + groupQ.size + " groups on a QUEUE")
+      groupQ += tmpArrayBuffer
     }
   }
 
@@ -465,6 +470,22 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
     }
   }
 
+  private def deQGroup: ArrayBuffer[EnqueuedFileHandler] = {
+
+    var enqueuedFileHandlers: ArrayBuffer[EnqueuedFileHandler] = ArrayBuffer()
+    if (fileQ.isEmpty) {
+      return null
+    }
+    groupQ.foreach(deQFile => {
+      fileQLock.synchronized {
+        val ef = fileQ.dequeue()
+        logger.info("SMART FILE CONSUMER (MonitorController):  deq file " + ef.fileHandler.getFullPath + " with priority " + ef.createDate + " --- curretnly " + fileQ.size + " files left on a QUEUE")
+        enqueuedFileHandlers += ef
+      }
+    })
+    return enqueuedFileHandlers
+  }
+
   private def waitingFilesToProcessCount: Int = {
     fileQLock.synchronized {
       fileQ.length
@@ -481,6 +502,21 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
   def getNextFileToProcess: String = {
     val f = deQFile
     if (f == null) null else f.fileHandler.getFullPath
+  }
+
+
+  def getNextGroupToProcess: ArrayBuffer[String] = {
+    val g = deQGroup
+    var retvalue: ArrayBuffer[String] = ArrayBuffer()
+
+    if (g == null) {
+      return null
+    } else {
+      g.foreach(f => {
+        retvalue += f.fileHandler.getFullPath
+      })
+      return retvalue
+    }
   }
 
   /*private def moveFile(fileHandler: SmartFileHandler): Unit = {
