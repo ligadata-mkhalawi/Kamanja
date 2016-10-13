@@ -291,9 +291,9 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
                         if (isEnqueued(fileTuple._1)) {
                           logger.debug("SMART FILE CONSUMER (MonitorController):  File already enqueued " + fileHandler.getFullPath)
                         } else {
-                          logger.info("SMART FILE CONSUMER (MonitorController):  File READY TO PROCESS " + fileHandler.getFullPath)
-                          enQFile(fileTuple._1, NOT_RECOVERY_SITUATION, fileHandler.lastModified)
-                          newlyAdded.append(fileHandler)
+                          //                          logger.info("SMART FILE CONSUMER (MonitorController):  File READY TO PROCESS " + fileHandler.getFullPath)
+                          //                          enQFile(fileTuple._1, NOT_RECOVERY_SITUATION, fileHandler.lastModified)
+                          //                          newlyAdded.append(fileHandler)
                         }
                         // bufferingQ_map.remove(fileTuple._1)
                         removedEntries += fileTuple._1
@@ -386,6 +386,15 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
           }
           if (canProcessFiles == grp.size) {
             //                        enQGroup
+            var x = 0
+            var fileHandlers: ArrayBuffer[SmartFileHandler] = ArrayBuffer()
+            var fileLastModified: ArrayBuffer[Long] = ArrayBuffer()
+            while (x < grp.size) {
+              val fileTuple = grp(x)
+              fileHandlers += fileTuple._1
+              fileLastModified += fileTuple._1.lastModified
+            }
+            enQGroup(fileHandlers, NOT_RECOVERY_SITUATION, fileLastModified)
           }
         })
 
@@ -420,6 +429,18 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
     fileQLock.synchronized {
       logger.info("SMART FILE CONSUMER (MonitorController):  enq file " + fileHandler.getFullPath + " with priority " + createDate + " --- curretnly " + fileQ.size + " files on a QUEUE")
       fileQ += new EnqueuedFileHandler(fileHandler, offset, createDate, partMap)
+    }
+  }
+
+  private def enQGroup(fileHandlers: ArrayBuffer[SmartFileHandler], offset: Int, createDates: ArrayBuffer[Long], partMap: scala.collection.mutable.Map[Int, Int] = scala.collection.mutable.Map[Int, Int]()): Unit = {
+    fileQLock.synchronized {
+      var i = 0
+      while (i < fileHandlers.length) {
+        var fileHandler = fileHandlers(i)
+        var createDate = createDates(i)
+        logger.info("SMART FILE CONSUMER (MonitorController):  enq file " + fileHandler.getFullPath + " with priority " + createDate + " --- curretnly " + fileQ.size + " files on a QUEUE")
+        fileQ += new EnqueuedFileHandler(fileHandler, offset, createDate, partMap)
+      }
     }
   }
 
