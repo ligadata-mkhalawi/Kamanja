@@ -42,7 +42,7 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
   private val extractExecutor = Executors.newFixedThreadPool(1)
   private val updatExecutor = Executors.newFixedThreadPool(1)
 
-  private val StatusUpdateInterval = 1000//ms
+
 
   private var finished = false
   private var processingInterrupted = false
@@ -56,13 +56,6 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
     }
 
     else {
-      //just run it in a separate thread
-      val extractorThread = new Runnable() {
-        override def run(): Unit = {
-          readBytesChunksFromFile()
-        }
-      }
-      extractExecutor.execute(extractorThread)
 
       //keep updating status so leader knows participant is working fine
       //TODO : find a way to send the update in same reading thread
@@ -77,7 +70,7 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
               consumerContext.envContext.saveConfigInClusterCache(consumerContext.statusUpdateCacheKey, data.getBytes)
 
 
-              Thread.sleep(StatusUpdateInterval)
+              Thread.sleep(consumerContext.statusUpdateInterval)
 
             }
           }
@@ -89,6 +82,14 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
         }
       }
       updatExecutor.execute(statusUpdateThread)
+
+      //just run it in a separate thread
+      val extractorThread = new Runnable() {
+        override def run(): Unit = {
+          readBytesChunksFromFile()
+        }
+      }
+      extractExecutor.execute(extractorThread)
     }
   }
 

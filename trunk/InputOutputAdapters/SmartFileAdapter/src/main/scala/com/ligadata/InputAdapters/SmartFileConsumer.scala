@@ -155,7 +155,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
   private var _ignoreFirstMsg : Boolean = _
 
-  val statusUpdateInterval = 2000 //ms
+  val statusUpdateInterval = 5000 //ms
   //val maxWaitingTimeForNodeStatus = 10 * 1000000000L;//10 seconds, value is in nanoseconds.
   val maxFailedCheckCounts = 3
 
@@ -270,9 +270,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
           var lastStatus : scala.collection.mutable.Map[String, (Long, Int)] = null
           override def run(): Unit = {
            while(keepCheckingStatus){
-             lastStatus = checkParticipantsStatus(lastStatus)
              try {
                Thread.sleep(statusUpdateInterval)
+
+               lastStatus = checkParticipantsStatus(lastStatus)
              }
              catch{
                case ie: InterruptedException => {
