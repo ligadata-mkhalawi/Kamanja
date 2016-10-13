@@ -1,4 +1,19 @@
 <div class="topHeader" ng-click="header.hideSideMenu()">
+  <div id="tabs">
+    <div ng-repeat="tab in main.tabs" class="tabView" ng-class="{'active':tab === currentTab}"
+    >
+      <div ng-if="!tab.editTitle" ng-dblclick="tab.editTitle = true" sglclick="main.setTab(tab)">
+        {{tab.title}}
+      </div>
+      <div ng-if="tab.editTitle">
+        <input ng-model="tab.title" ng-model-options="{ updateOn: 'blur' }" ng-keyup="cancel($event)"
+               click-outside="tab.editTitle = false" type="text"
+               ng-change="tab.editTitle = false">
+      </div>
+      <!--<span class="glyphicon glyphicon-remove-sign" aria-hidden="true" ng-click="main.removeView(tab)"-->
+            <!--ng-if="tab !== currentView"></span>-->
+    </div>
+  </div>
   <div class="row headerBar">
     <div class="col-sm-6 col-xs-6 col-md-6">
       <img class="logo" id="imgLogo" src="./images/logo.svg" width="168"
@@ -11,7 +26,8 @@
           <ul class="list-inline rightItems">
             <li>
               <div ng-hide="false" class="checkbox">
-                <input type="checkbox" ng-click="header.toggleShowStatus()" ng-checked="header.getShowStatus()" id="chkShowStatus">
+                <input type="checkbox" ng-click="header.toggleShowStatus()" ng-checked="header.getShowStatus()"
+                       id="chkShowStatus">
                 <label for="chkShowStatus">Show status</label>
               </div>
             </li>
