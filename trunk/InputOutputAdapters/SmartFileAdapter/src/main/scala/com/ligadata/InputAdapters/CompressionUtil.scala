@@ -123,14 +123,14 @@ object CompressionUtil {
         logger.warn("SmartFileConsumer - Tika processing runtime exception - "+e.getMessage)
         throw e
       }
-    } finally {
-      //try{
-        fileHandler.close()
-      //}
-      /*catch{
-        case e : Throwable => logger.warn("SmartFileConsumer - error while closing file" + fileHandler.getFullPath, e)
-      }*/
     }
+    try{
+      if (is != null) is.close()
+    }
+    catch{
+      case e : Throwable => logger.warn("SmartFileConsumer - error while closing file" + fileHandler.getFullPath, e)
+    }
+
     var checkMagicMatchManually = false
     if(contentType!= null && !contentType.isEmpty() && contentType.equalsIgnoreCase("application/octet-stream")){
       var magicMatcher : MagicMatch =  null;
@@ -169,8 +169,11 @@ object CompressionUtil {
         }
 
       }
-      finally {
-        fileHandler.close()
+      try{
+        if (is != null) is.close()
+      }
+      catch{
+        case e : Throwable => logger.warn("SmartFileConsumer - error while closing file" + fileHandler.getFullPath, e)
       }
     }
 
@@ -183,7 +186,7 @@ object CompressionUtil {
         logger.debug("SmartFileConsumer - checking magic numbers directly")
         is = fileHandler.getDefaultInputStream()
         val manuallyDetectedType = detectCompressionTypeByMagicNumbers(is)
-        fileHandler.close()
+        is.close()
 
         //if manual detected got unknown, keep the value plain. else get manually detected value
         if(manuallyDetectedType != UNKNOWN)

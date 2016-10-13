@@ -1008,17 +1008,18 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             val procFileLocationInfo = getDirLocationInfo(procFileParentDir)
             if(procFileLocationInfo.isMovingEnabled){
               val moved = moveFile(processingFilePath)
-              if (moved)
+              if (moved && !isShutdown)
                 monitorController.markFileAsProcessed(processingFilePath)
             }
             else {
               logger.info("File {} will not be moved since moving is disabled for folder {} - Adapter {}",
                 processingFilePath, procFileParentDir, adapterConfig.Name)
 
-              monitorController.markFileAsProcessed(processingFilePath)
+              if(!isShutdown)
+                monitorController.markFileAsProcessed(processingFilePath)
             }
           }
-          else if (status == File_Processing_Status_NotFound)
+          else if (status == File_Processing_Status_NotFound && !isShutdown)
             monitorController.markFileAsProcessed(processingFilePath)
         }
       }
