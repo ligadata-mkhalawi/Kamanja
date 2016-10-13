@@ -6,8 +6,9 @@ import java.nio.file.{Paths, Files}
 import com.ligadata.AdaptersConfiguration.{LocationInfo, SmartFileAdapterConfiguration, FileAdapterMonitoringConfig, FileAdapterConnectionConfig}
 import com.ligadata.InputAdapters.hdfs._
 import com.ligadata.InputAdapters.sftp._
-import com.ligadata.Exceptions.KamanjaException
+import com.ligadata.Exceptions.{FatalAdapterException, KamanjaException}
 import net.sf.jmimemagic._
+import org.apache.commons.compress.compressors.CompressorStreamFactory
 import org.apache.logging.log4j.LogManager
 import org.apache.tika.Tika
 import org.apache.tika.detect.DefaultDetector
@@ -270,6 +271,19 @@ object SmartFileHandlerFactory{
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
 
+  def validateArchiveDestCompression(adapterConfig : SmartFileAdapterConfiguration) : Boolean = {
+    if (CompressorStreamFactory.BZIP2.equalsIgnoreCase(adapterConfig.archiveConfig.outputConfig.compressionString) ||
+      CompressorStreamFactory.GZIP.equalsIgnoreCase(adapterConfig.archiveConfig.outputConfig.compressionString) ||
+      CompressorStreamFactory.XZ.equalsIgnoreCase(adapterConfig.archiveConfig.outputConfig.compressionString)
+    ) {
+      logger.info("Smart File Consumer " + adapterConfig.Name + " Archiving is using compression: " + adapterConfig.archiveConfig.outputConfig.compressionString)
+      true
+    }
+    else
+      throw FatalAdapterException("Unsupported compression type " + adapterConfig.archiveConfig.outputConfig.compressionString + " for Smart File Producer: " + adapterConfig.archiveConfig.outputConfig.Name, new Exception("Invalid Parameters"))
+
+  }
+
   def archiveFile(adapterConfig: SmartFileAdapterConfiguration, locationInfo: LocationInfo, srcFileDir: String, srcFileBaseName: String, componentsMap: scala.collection.immutable.Map[String, String]): Boolean = {
     if (adapterConfig.archiveConfig == null || adapterConfig.archiveConfig.outputConfig == null)
       return true
@@ -319,9 +333,22 @@ object SmartFileHandlerFactory{
         osWriter.removeFile(adapterConfig.archiveConfig.outputConfig, dstFileToArchive)
       }
 
-      fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, srcFileToArchive, true)
+
+      fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, srcFileToArchive, false)
       fileHandler.openForRead()
-      os = osWriter.openFile(adapterConfig.archiveConfig.outputConfig, dstFileToArchive, false)
+
+      //TODO: compare input compression to output compression, would this give better performance?
+      //if same compression, can simply read and write as binary
+      //else must open src to read using proper compression, and open dest for write with proper compression
+
+      val originalOutputStream = osWriter.openFile(adapterConfig.archiveConfig.outputConfig, dstFileToArchive, false)
+      val compress = adapterConfig.archiveConfig.outputConfig.compressionString != null
+      if(compress) {
+        validateArchiveDestCompression(adapterConfig)
+        os = new CompressorStreamFactory().createCompressorOutputStream(adapterConfig.archiveConfig.outputConfig.compressionString, originalOutputStream)
+      }
+      else
+        os = originalOutputStream
 
       var curReadLen = -1
       val bufferSz = 8 * 1024 * 1024

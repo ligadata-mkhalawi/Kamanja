@@ -14,6 +14,8 @@ class ArchiveConfig {
   var archiveSleepTimeInMs: Int = 10
   var archiveParallelism: Int = 1
   var outputConfig: SmartFileProducerConfiguration = null
+
+  var consolidationMaxSizeGB = 1
 }
 
 /**

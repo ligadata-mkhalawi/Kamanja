@@ -48,8 +48,9 @@ class SftpFileHandler extends SmartFileHandler{
 
   private var ui : SftpUserInfo = null
 
-
   private var isBinary: Boolean = false
+
+  private var fileType : String = null
 
   def this(path : String, config : FileAdapterConnectionConfig){
     this()
@@ -135,9 +136,10 @@ class SftpFileHandler extends SmartFileHandler{
 
       val is = getDefaultInputStream()
       if (!isBinary) {
-        val compressionType = CompressionUtil.getFileType(this, null)
-        in = CompressionUtil.getProperInputStream(is, compressionType)
+        fileType = CompressionUtil.getFileType(this, null)
+        in = CompressionUtil.getProperInputStream(is, fileType)
       } else {
+        fileType = FileType.UNKNOWN
         in = is
       }
       in
@@ -146,6 +148,10 @@ class SftpFileHandler extends SmartFileHandler{
       case e : Exception => throw new KamanjaException (e.getMessage, e)
       case e : Throwable => throw new KamanjaException (e.getMessage, e)
     }
+  }
+
+  def getOpenedStreamFileType() : String = {
+    fileType
   }
 
   @throws(classOf[KamanjaException])
@@ -467,7 +473,7 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
 
     val hostTokens = connectionConf.hostsList(0).split(":")
     host = hostTokens(0)
-    port = if(hostTokens(1) != null && hostTokens(1).length >0 ) hostTokens(1).toInt else 22 //default
+    port = if(hostTokens.length > 1 && hostTokens(1).length >0 ) hostTokens(1).toInt else 22 //default
   }
 
   def markFileAsProcessed(filePath : String) : Unit = {

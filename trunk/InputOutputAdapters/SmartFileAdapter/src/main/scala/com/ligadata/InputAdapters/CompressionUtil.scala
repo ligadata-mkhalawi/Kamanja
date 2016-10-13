@@ -12,6 +12,7 @@ import org.apache.logging.log4j.LogManager
 import net.sf.jmimemagic._
 import org.apache.tika.Tika
 import org.apache.tika.detect.DefaultDetector
+import org.apache.commons.compress.compressors.CompressorStreamFactory
 import java.io._
 import java.nio.file._
 
@@ -252,6 +253,18 @@ object CompressionUtil {
       }
     }
 
+  }
+
+  /**
+    *
+    * @param srcCompression
+    * @param destCompression
+    * @return true if both src and dest have same compression
+    */
+  def compareSrcDistCompression(srcCompression : String, destCompression : String) :  Boolean = {
+    (srcCompression.equalsIgnoreCase(FileType.GZIP) && destCompression.equalsIgnoreCase(CompressorStreamFactory.GZIP)) ||
+      (srcCompression.equalsIgnoreCase(FileType.BZIP2) && destCompression.equalsIgnoreCase(CompressorStreamFactory.BZIP2)) ||
+      ((srcCompression.equalsIgnoreCase(FileType.PLAIN) || srcCompression.equalsIgnoreCase(FileType.UNKNOWN)) && (destCompression == null || destCompression.length == 0 ))
   }
 
 }

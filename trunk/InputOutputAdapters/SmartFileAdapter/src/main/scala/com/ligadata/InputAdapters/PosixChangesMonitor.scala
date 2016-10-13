@@ -41,6 +41,8 @@ class PosixFileHandler extends SmartFileHandler{
 
   private var isBinary: Boolean = false
 
+  private var fileType : String = null
+
   def this(fullPath : String){
     this()
     fileFullPath = fullPath
@@ -76,10 +78,11 @@ class PosixFileHandler extends SmartFileHandler{
     try {
       val is = getDefaultInputStream()
       if (!isBinary) {
-        val fileType = CompressionUtil.getFileType(this, null)
+        fileType = CompressionUtil.getFileType(this, null)
         in = CompressionUtil.getProperInputStream(is, fileType)
         //bufferedReader = new BufferedReader(in)
       } else {
+        fileType = FileType.UNKNOWN
         in = is
       }
       in
@@ -88,6 +91,10 @@ class PosixFileHandler extends SmartFileHandler{
       case e : Exception => throw new KamanjaException (e.getMessage, e)
       case e : Throwable => throw new KamanjaException (e.getMessage, e)
     }
+  }
+
+  def getOpenedStreamFileType() : String = {
+    fileType
   }
 
   @throws(classOf[KamanjaException])

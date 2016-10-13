@@ -48,6 +48,8 @@ class HdfsFileHandler extends SmartFileHandler {
 
   private var isBinary: Boolean = false
 
+  private var fileType : String = null
+
   def this(fullPath: String, connectionConf: FileAdapterConnectionConfig) {
     this()
 
@@ -107,9 +109,10 @@ class HdfsFileHandler extends SmartFileHandler {
     try {
       val is = getDefaultInputStream()
       if (!isBinary) {
-        val compressionType = CompressionUtil.getFileType(this, null)
-        in = CompressionUtil.getProperInputStream(is, compressionType)
+        fileType = CompressionUtil.getFileType(this, null)
+        in = CompressionUtil.getProperInputStream(is, fileType)
       } else {
+        fileType = FileType.UNKNOWN
         in = is
       }
       in
@@ -118,6 +121,10 @@ class HdfsFileHandler extends SmartFileHandler {
       case e: Exception => throw new KamanjaException(e.getMessage, e)
       case e: Throwable => throw new KamanjaException(e.getMessage, e)
     }
+  }
+
+  def getOpenedStreamFileType() : String = {
+    fileType
   }
 
   @throws(classOf[KamanjaException])
