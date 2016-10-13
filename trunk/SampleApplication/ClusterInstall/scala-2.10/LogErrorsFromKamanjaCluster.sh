@@ -97,7 +97,7 @@ installDir=`cat $metadataAPIConfig | grep '[Rr][Oo][Oo][Tt]_[Dd][Ii][Rr]' | sed 
 
 echo "...extract node information for the cluster to be started from the Metadata configuration information supplied"
 
-currentKamanjaVersion=1.6.0
+currentKamanjaVersion=1.6.1
 
 # info is assumed to be present in the supplied metadata store... see trunk/utils/NodeInfoExtract for details 
 echo "...Command = java -cp $installDir/lib/system/jarfactoryofmodelinstancefactory_2.10-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs2_2.10-${currentKamanjaVersion}.jar:$installDir/lib/system/ExtDependencyLibs_2.10-${currentKamanjaVersion}.jar:$installDir/lib/system/KamanjaInternalDeps_2.10-${currentKamanjaVersion}.jar:$installDir/lib/system/nodeinfoextract_2.10-${currentKamanjaVersion}.jar com.ligadata.installer.NodeInfoExtract --MetadataAPIConfig \"$metadataAPIConfig\" --workDir \"$workDir\" --ipFileName \"$ipFile\" --ipPathPairFileName \"$ipPathPairFile\" --ipIdCfgTargPathQuartetFileName \"$ipIdCfgTargPathQuartetFileName\" --installDir \"$installDir\" --clusterId \"$clusterId\""

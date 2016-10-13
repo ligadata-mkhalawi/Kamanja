@@ -37,7 +37,7 @@ object ConfigDefaults {
   val scalaVersionFull = scala.util.Properties.versionNumberString
   val scalaVersion = scalaVersionFull.substring(0, scalaVersionFull.lastIndexOf('.'))
 
-  val kamanjaVersion = "1.6.0"
+  val kamanjaVersion = "1.6.1"
 
   private val RootDir = s"./MetadataAPI/target/scala-$scalaVersion/test-classes"
   private val targetLibDir = RootDir + "/jars/lib/system"

@@ -407,9 +407,9 @@ public class Migrate {
                 return retCode;
             }
 
-            if (dstVer.equalsIgnoreCase("1.6.0") == false) {
-                sendStatus("We support destination version only 1.6.0. We don't support " + dstVer, "ERROR");
-                logger.error("We support destination version only 1.6.0. We don't support " + dstVer);
+            if (dstVer.equalsIgnoreCase("1.6.1") == false) {
+                sendStatus("We support destination version only 1.6.1. We don't support " + dstVer, "ERROR");
+                logger.error("We support destination version only 1.6.1. We don't support " + dstVer);
                 usage();
                 return retCode;
             }
@@ -470,21 +470,21 @@ public class Migrate {
             }
 
 
-            // From Srouce version 1.1,1.2,1.3 to Destination version 1.6.0 we do both
+            // From Srouce version 1.1,1.2,1.3 to Destination version 1.6.1 we do both
             // Metadata Upgrade & Data Upgrade
-            // From Source Version 1.3,1.4 to Destination version 1.6.0, we only do
+            // From Source Version 1.3,1.4 to Destination version 1.6.1, we only do
             // Metadata Upgrade.
             boolean canUpgradeMetadata = ((srcVer.equalsIgnoreCase("1.1") ||
                     srcVer.equalsIgnoreCase("1.2") ||
                     srcVer.equalsIgnoreCase("1.3") ||
 		    srcVer.substring(0,3).equalsIgnoreCase("1.4")
 					   ) &&
-                    dstVer.equalsIgnoreCase("1.6.0"));
+                    dstVer.equalsIgnoreCase("1.6.1"));
 
             boolean canUpgradeData = ((srcVer.equalsIgnoreCase("1.1") ||
                     srcVer.equalsIgnoreCase("1.2") ||
                     srcVer.equalsIgnoreCase("1.3")) &&
-                    dstVer.equalsIgnoreCase("1.6.0"));
+                    dstVer.equalsIgnoreCase("1.6.1"));
 
 	    boolean canUpgradeClusterConfig = 
 		((srcVer.substring(0,3).equalsIgnoreCase("1.4") ||

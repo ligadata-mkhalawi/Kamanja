@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 scalaver=2.11
-release=1.6.0
+release=1.6.1
 topicname="testIn_1"
 inputfmt="CSV"
 gzcompressed=false
