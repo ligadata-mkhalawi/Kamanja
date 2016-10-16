@@ -33,12 +33,22 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
     }
   }
 
+  implicit def orderedEnqueuedGroupHandler(f: ArrayBuffer[EnqueuedFileHandler]): Ordered[EnqueuedFileHandler] = new Ordered[EnqueuedFileHandler] {
+    def compare(other: EnqueuedFileHandler) = {
+      val g = f(0)
+      val locationInfo1 = parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(g.fileHandler.getParentDir))
+      val locationInfo2 = parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(other.fileHandler.getParentDir))
+      //not sure why but had to invert sign
+      (MonitorUtils.compareFiles(g.fileHandler, locationInfo1, other.fileHandler, locationInfo2)) * -1
+    }
+  }
+
   private var fileQ: scala.collection.mutable.PriorityQueue[EnqueuedFileHandler] =
   //new scala.collection.mutable.PriorityQueue[EnqueuedFileHandler]()(Ordering.by(fileComparisonField))
     new scala.collection.mutable.PriorityQueue[EnqueuedFileHandler]() //use above implicit compare function
 
-  private var groupQ: scala.collection.mutable.PriorityQueue[ArrayBuffer[EnqueuedFileHandler]] =
-    new scala.collection.mutable.PriorityQueue[ArrayBuffer[EnqueuedFileHandler]]() //use above implicit compare function
+  private var groupQ: scala.collection.mutable.PriorityQueue[EnqueuedGroupHandler] =
+    new scala.collection.mutable.PriorityQueue[EnqueuedGroupHandler]() //use above implicit compare function
 
   private val fileQLock = new Object
 
