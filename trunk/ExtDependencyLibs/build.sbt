@@ -74,7 +74,8 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
 
 /////////////////////// StorageElasticsearch
 // https://mvnrepository.com/artifact/org.elasticsearch/elasticsearch
-libraryDependencies += "org.elasticsearch" % "elasticsearch" % "2.3.5"
+//libraryDependencies += "org.elasticsearch" % "elasticsearch" % "2.3.5"
+libraryDependencies += "org.elasticsearch" % "elasticsearch" % "1.4.4"
 
 /////////////////////// KamanjaManager
 resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"

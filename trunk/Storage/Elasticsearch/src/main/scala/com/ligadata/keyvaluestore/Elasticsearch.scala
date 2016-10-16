@@ -29,7 +29,7 @@ import com.ligadata.kamanja.metadata.AdapterInfo
 import org.apache.commons.codec.binary.Base64
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
 import org.elasticsearch.client.transport.TransportClient
-import org.elasticsearch.common.settings.Settings
+import org.elasticsearch.common.settings.{ImmutableSettings, Settings}
 import org.elasticsearch.common.transport.InetSocketTransportAddress
 import org.elasticsearch.common.xcontent.{XContentBuilder, XContentFactory}
 import org.elasticsearch.index.query.QueryBuilders
@@ -330,8 +330,10 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
   private def getConnection: TransportClient = {
     try {
-      val settings = Settings.settingsBuilder().put("cluster.name", clusterName).build()
-      var client = TransportClient.builder().settings(settings).build().addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(location), portNumber.toInt))
+//      val settings = Settings.settingsBuilder().put("cluster.name", clusterName).build()
+//      var client = TransportClient.builder().settings(settings).build().addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(location), portNumber.toInt))
+      val settings = ImmutableSettings.settingsBuilder().put("cluster.name", clusterName).build()
+      var client = new TransportClient(settings).addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(location), portNumber.toInt))
       client
     } catch {
       case e: Exception => {
