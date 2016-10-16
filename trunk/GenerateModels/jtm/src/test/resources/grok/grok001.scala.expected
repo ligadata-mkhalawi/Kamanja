@@ -25,10 +25,48 @@ import org.aicer.grok.dictionary.GrokDictionary
 class ModelFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
   // Factory code start
   // Factory code end
-  override def createModelInstance(txnCtxt: com.ligadata.KamanjaBase.TransactionContext): ModelInstance = return new Model(this)
+  override def createModelInstance(): ModelInstance = return new Model(this)
   override def getModelName: String = "com.ligadata.jtm.test.grok.Model"
   override def getVersion: String = "0.0.1"
   override def createResultObject(): ModelResultBase = new MappedModelResults()
+  override def isModelInstanceReusable(): Boolean = true;
+}
+class common_exeGenerated_test1_1(conversion: com.ligadata.runtime.Conversion,
+log: com.ligadata.runtime.Log,
+context: com.ligadata.runtime.JtmContext,
+msg1: com.ligadata.kamanja.test.V1000000.msg5) {
+  import log._
+  lazy val grok_instance_1_0_grp = grok_instance_1_0.extractNamedGroups(msg1.in1)
+}
+class common_exeGenerated_test1_1_process_o1(conversion: com.ligadata.runtime.Conversion,
+log : com.ligadata.runtime.Log,
+context: com.ligadata.runtime.JtmContext,
+common: common_exeGenerated_test1_1,
+msg1: com.ligadata.kamanja.test.V1000000.msg5) {
+  import log._
+  import common._
+  val result: Array[MessageInterface]= try {
+    val result = com.ligadata.kamanja.test.V1000000.msg2.createInstance
+    result.out4 = (if(grok_instance_1_0_grp.containsKey("user")) grok_instance_1_0_grp.get("user") else "")
+    result.out3 = (if(grok_instance_1_0_grp.containsKey("domain")) grok_instance_1_0_grp.get("domain") else "")
+    result.out2 = (if(grok_instance_1_0_grp.containsKey("email")) grok_instance_1_0_grp.get("email") else "")
+    result.out1 = msg1.in3
+    if (result.hasTimePartitionInfo) result.setTimePartitionData ;
+    if(context.CurrentErrors()==0) {
+      Array(result)
+    } else {
+      Array.empty[MessageInterface]
+    }
+  } catch {
+    case e: AbortOutputException => {
+      context.AddError(e.getMessage)
+      Array.empty[MessageInterface]
+    }
+    case e: Exception => {
+      Debug("Exception: o1:" + e.getMessage)
+      throw e
+    }
+  }
 }
 class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
   val conversion = new com.ligadata.runtime.Conversion
@@ -38,6 +76,7 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
   // Model code start
   // Model code end
   override def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
+    context.Reset(); // Resetting the JtmContext before executing the model
     if (isTraceEnabled)
     Trace(s"Model::execute transid=%d triggeredset=%d outputdefault=%s".format(txnCtxt.transId, triggerdSetIndex, outputDefault.toString))
     if(isDebugEnabled)
@@ -57,31 +96,12 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
     def exeGenerated_test1_1(msg1: com.ligadata.kamanja.test.V1000000.msg5): Array[MessageInterface] = {
       Debug("exeGenerated_test1_1")
       context.SetSection("test1")
-      lazy val grok_instance_1_0_in1 = grok_instance_1_0.extractNamedGroups(in1)
+      val common = new common_exeGenerated_test1_1(conversion, log, context, msg1)
       def process_o1(): Array[MessageInterface] = {
         Debug("exeGenerated_test1_1::process_o1")
         context.SetScope("o1")
-        try {
-          val result = com.ligadata.kamanja.test.V1000000.msg2.createInstance
-          result.out4 = if(grok_instance_1_0_in1.containsKey("user")) grok_instance_1_0_in1.get("user") else "")
-          result.out3 = if(grok_instance_1_0_in1.containsKey("domain")) grok_instance_1_0_in1.get("domain") else "")
-          result.out2 = if(grok_instance_1_0_in1.containsKey("email")) grok_instance_1_0_in1.get("email") else "")
-          result.out1 = msg1.in3
-          if(context.CurrentErrors()==0) {
-            Array(result)
-          } else {
-            Array.empty[MessageInterface]
-          }
-        } catch {
-          case e: AbortOutputException => {
-            context.AddError(e.getMessage)
-            return Array.empty[MessageInterface]
-          }
-          case e: Exception => {
-            Debug("Exception: o1:" + e.getMessage)
-            throw e
-          }
-        }
+        val result = new common_exeGenerated_test1_1_process_o1(conversion, log, context, common, msg1)
+        result.result
       }
       try {
         process_o1()

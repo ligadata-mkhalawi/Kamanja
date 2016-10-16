@@ -25,6 +25,7 @@ object varout1 extends RDDObject[varout1] with MessageFactoryInterface {
 	override def getTenantId: String = ""; 
 	override def createInstance: varout1 = new varout1(varout1); 
 	override def isFixed: Boolean = false; 
+	def isCaseSensitive(): Boolean = false; 
 	override def getContainerType: ContainerTypes.ContainerType = ContainerTypes.ContainerType.MESSAGE
 	override def getFullName = getFullTypeName; 
 	override def getRddTenantId = getTenantId; 
@@ -122,7 +123,7 @@ class varout1(factory: MessageFactoryInterface, other: varout1) extends MessageI
       fromFunc(other)
     }
     
-    override def save: Unit = { /* varout1.saveOne(this) */}
+    override def save: Unit = { varout1.saveOne(this) }
   
     def Clone(): ContainerOrConcept = { varout1.build(this) }
 
@@ -133,7 +134,7 @@ class varout1(factory: MessageFactoryInterface, other: varout1) extends MessageI
     override def getAttributeType(name: String): AttributeTypeInfo = {
       if (name == null || name.trim() == "") return null;
       attributeTypes.foreach(attributeType => {
-        if(attributeType.getName == name.toLowerCase())
+        if(attributeType.getName == caseSensitiveKey(name))
           return attributeType
       }) 
       return null;
@@ -147,9 +148,9 @@ class varout1(factory: MessageFactoryInterface, other: varout1) extends MessageI
       if (attributeTyps == null) return null else return attributeTyps
     }   
  
-    override def get(keyName: String): AnyRef = { // Return (value, type)
+    override def get(keyName: String): AnyRef = { // Return (value)
       if(keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name " +keyName);
-      val key = keyName.toLowerCase;
+      val key = caseSensitiveKey(keyName);
       try {
         val value = valuesMap(key).getValue
         if (value == null) return null; else return value.asInstanceOf[AnyRef];  
@@ -161,15 +162,17 @@ class varout1(factory: MessageFactoryInterface, other: varout1) extends MessageI
       }      
     }
 
-    override def getOrElse(keyName: String, defaultVal: Any): AnyRef = { // Return (value, type)
+    override def getOrElse(keyName: String, defaultVal: Any): AnyRef = { // Return (value)
       var attributeValue: AttributeValue = new AttributeValue();
       if(keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name "+keyName);
-      val key = keyName.toLowerCase;
+      val key = caseSensitiveKey(keyName);
       try {
-        val value = valuesMap(key).getValue
-        if (value == null) return defaultVal.asInstanceOf[AnyRef];
-        return value.asInstanceOf[AnyRef];   
-      } catch {
+         if (valuesMap.contains(key)) return get(key)
+         else {
+          if (defaultVal == null) return null;
+         return defaultVal.asInstanceOf[AnyRef];
+        }
+       } catch {
         case e: Exception => {
           log.debug("", e)
           throw e
@@ -192,7 +195,7 @@ class varout1(factory: MessageFactoryInterface, other: varout1) extends MessageI
       }
     }  
 
-    override def get(index: Int): AnyRef = { // Return (value, type)
+    override def get(index: Int): AnyRef = { // Return (value)
       throw new Exception("Get By Index is not supported in mapped messages");
     }
 
@@ -206,7 +209,7 @@ class varout1(factory: MessageFactoryInterface, other: varout1) extends MessageI
     
     override def set(keyName: String, value: Any) = {
       if(keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name "+keyName);
-      val key = keyName.toLowerCase;
+      val key = caseSensitiveKey(keyName);
       try {
        if (keyTypes.contains(key)) {
           valuesMap(key) = new AttributeValue(value, keyTypes(key))
@@ -226,7 +229,7 @@ class varout1(factory: MessageFactoryInterface, other: varout1) extends MessageI
 
     override def set(keyName: String, value: Any, valTyp: String) = {
        if(keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name "+keyName);
-       val key = keyName.toLowerCase;      
+       val key = caseSensitiveKey(keyName);      
        try{
           if (keyTypes.contains(key)) {
            valuesMap(key) = new AttributeValue(value, keyTypes(key))
@@ -252,6 +255,9 @@ class varout1(factory: MessageFactoryInterface, other: varout1) extends MessageI
     } 
   
     private def ValueToString(v: Any): String = {
+      if (v == null) {
+        return "null"
+      }
       if (v.isInstanceOf[Set[_]]) {
         return v.asInstanceOf[Set[_]].mkString(",")
       }
@@ -268,7 +274,7 @@ class varout1(factory: MessageFactoryInterface, other: varout1) extends MessageI
       
      if (other.valuesMap != null) {
       other.valuesMap.foreach(vMap => {
-        val key = vMap._1.toLowerCase
+        val key = caseSensitiveKey(vMap._1)
         val attribVal = vMap._2
         val valType = attribVal.getValueType.getTypeCategory.getValue
         if (attribVal.getValue != null && attribVal.getValueType != null) {
@@ -301,7 +307,15 @@ class varout1(factory: MessageFactoryInterface, other: varout1) extends MessageI
 		 valuesMap("out2") = new AttributeValue(value, keyTypes("out2")) 
 	 return this 
  	 } 
+    def isCaseSensitive(): Boolean = varout1.isCaseSensitive(); 
+    def caseSensitiveKey(keyName: String): String = {
+      if(isCaseSensitive)
+        return keyName;
+      else return keyName.toLowerCase;
+    }
 
+
+    
     def this(factory:MessageFactoryInterface) = {
       this(factory, null)
      }

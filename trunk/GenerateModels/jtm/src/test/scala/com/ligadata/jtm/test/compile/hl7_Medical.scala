@@ -25,6 +25,7 @@ object HL7 extends RDDObject[HL7] with MessageFactoryInterface {
 	override def getTenantId: String = ""; 
 	override def createInstance: HL7 = new HL7(HL7); 
 	override def isFixed: Boolean = true; 
+	def isCaseSensitive(): Boolean = false; 
 	override def getContainerType: ContainerTypes.ContainerType = ContainerTypes.ContainerType.MESSAGE
 	override def getFullName = getFullTypeName; 
 	override def getRddTenantId = getTenantId; 
@@ -206,14 +207,14 @@ class HL7(factory: MessageFactoryInterface, other: HL7) extends MessageInterface
       fromFunc(other)
     }
     
-    override def save: Unit = { /* HL7.saveOne(this) */}
+    override def save: Unit = { HL7.saveOne(this) }
   
     def Clone(): ContainerOrConcept = { HL7.build(this) }
 
 		override def getPartitionKey: Array[String] = {
 		var partitionKeys: scala.collection.mutable.ArrayBuffer[String] = scala.collection.mutable.ArrayBuffer[String]();
 		try {
-		 partitionKeys += com.ligadata.BaseTypes.StringImpl.toString(get("desynpuf_id").asInstanceOf[String]);
+		 partitionKeys += com.ligadata.BaseTypes.StringImpl.toString(get(caseSensitiveKey("desynpuf_id")).asInstanceOf[String]);
 		 }catch {
           case e: Exception => {
           log.debug("", e)
@@ -228,8 +229,8 @@ class HL7(factory: MessageFactoryInterface, other: HL7) extends MessageInterface
 		override def getPrimaryKey: Array[String] = {
 		var primaryKeys: scala.collection.mutable.ArrayBuffer[String] = scala.collection.mutable.ArrayBuffer[String]();
 		try {
-		 primaryKeys += com.ligadata.BaseTypes.StringImpl.toString(get("desynpuf_id").asInstanceOf[String]);
-		 primaryKeys += com.ligadata.BaseTypes.LongImpl.toString(get("clm_id").asInstanceOf[Long]);
+		 primaryKeys += com.ligadata.BaseTypes.StringImpl.toString(get(caseSensitiveKey("desynpuf_id")).asInstanceOf[String]);
+		 primaryKeys += com.ligadata.BaseTypes.LongImpl.toString(get(caseSensitiveKey("clm_id")).asInstanceOf[Long]);
 		 }catch {
           case e: Exception => {
           log.debug("", e)
@@ -244,7 +245,7 @@ class HL7(factory: MessageFactoryInterface, other: HL7) extends MessageInterface
     override def getAttributeType(name: String): AttributeTypeInfo = {
       if (name == null || name.trim() == "") return null;
       attributeTypes.foreach(attributeType => {
-        if(attributeType.getName == name.toLowerCase())
+        if(attributeType.getName == caseSensitiveKey(name))
           return attributeType
       }) 
       return null;
@@ -345,7 +346,7 @@ class HL7(factory: MessageFactoryInterface, other: HL7) extends MessageInterface
     
     private def getWithReflection(keyName: String): AnyRef = {
       if(keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name "+keyName);
-      val key = keyName.toLowerCase;
+      val key = caseSensitiveKey(keyName);
       val ru = scala.reflect.runtime.universe
       val m = ru.runtimeMirror(getClass.getClassLoader)
       val im = m.reflect(this)
@@ -357,35 +358,35 @@ class HL7(factory: MessageFactoryInterface, other: HL7) extends MessageInterface
     override def get(key: String): AnyRef = {
     try {
       // Try with reflection
-      return getByName(key.toLowerCase())
+      return getByName(caseSensitiveKey(key))
     } catch {
       case e: Exception => {
         val stackTrace = StackTrace.ThrowableTraceString(e)
         log.debug("StackTrace:" + stackTrace)
         // Call By Name
-        return getWithReflection(key.toLowerCase())
+        return getWithReflection(caseSensitiveKey(key))
         }
       }
     }      
     
     private def getByName(keyName: String): AnyRef = {
      if(keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name "+keyName);
-      val key = keyName.toLowerCase;
+      val key = caseSensitiveKey(keyName);
    
       if (!keyTypes.contains(key)) throw new KeyNotFoundException(s"Key $key does not exists in message/container HL7", null);
       return get(keyTypes(key).getIndex)
   }
   
-    override def getOrElse(keyName: String, defaultVal: Any): AnyRef = { // Return (value, type)
+    override def getOrElse(keyName: String, defaultVal: Any): AnyRef = { // Return (value)
       if (keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name "+keyName);
-      val key = keyName.toLowerCase;
+      val key = caseSensitiveKey(keyName);
       try {
-        val value = get(key.toLowerCase())
-        if (value == null) return defaultVal.asInstanceOf[AnyRef]; else return value;
-      } catch {
+        return get(key)
+       } catch {
         case e: Exception => {
           log.debug("", e)
-          throw e
+          if(defaultVal == null) return null;
+          return defaultVal.asInstanceOf[AnyRef];
         }
       }
       return null;
@@ -493,14 +494,14 @@ class HL7(factory: MessageFactoryInterface, other: HL7) extends MessageInterface
       
     }      
     
-    override def getOrElse(index: Int, defaultVal: Any): AnyRef = { // Return (value,  type)
+    override def getOrElse(index: Int, defaultVal: Any): AnyRef = { // Return (value)
       try {
-        val value = get(index)
-        if (value == null) return defaultVal.asInstanceOf[AnyRef]; else return value;
-      } catch {
+        return get(index);
+        } catch {
         case e: Exception => {
           log.debug("", e)
-          throw e
+          if(defaultVal == null) return null;
+          return defaultVal.asInstanceOf[AnyRef];
         }
       }
       return null;
@@ -624,7 +625,7 @@ class HL7(factory: MessageFactoryInterface, other: HL7) extends MessageInterface
     
     override def set(keyName: String, value: Any) = {
       if(keyName == null || keyName.trim.size == 0) throw new Exception("Please provide proper key name "+keyName);
-      val key = keyName.toLowerCase;
+      val key = caseSensitiveKey(keyName);
       try {
    
   			 if (!keyTypes.contains(key)) throw new KeyNotFoundException(s"Key $key does not exists in message HL7", null)
@@ -1526,7 +1527,15 @@ class HL7(factory: MessageFactoryInterface, other: HL7) extends MessageInterface
 		 this.chronicsputum = value 
 		 return this 
  	 } 
+    def isCaseSensitive(): Boolean = HL7.isCaseSensitive(); 
+    def caseSensitiveKey(keyName: String): String = {
+      if(isCaseSensitive)
+        return keyName;
+      else return keyName.toLowerCase;
+    }
 
+
+    
     def this(factory:MessageFactoryInterface) = {
       this(factory, null)
      }

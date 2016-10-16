@@ -1,0 +1,86 @@
+{
+  "header": {
+    "namespace": "phoenix.tests",
+    "name": "test_jtm",
+    "version": "0.0.1",
+    "language": "scala",
+    "minVersion": "2.11",
+    "description": "generated at 2016:08:05 14:21:13.389, based on msg defs: (com.ligadata.messages.AirRefillCS5)"
+  },
+  "imports": {
+    "packages": [
+      "com.ligadata.runtime.Conversion",
+      "com.ligadata.runtime.Validation._",
+      "com.ligadata.Utils._"
+    ],
+    "packagecode": [
+      "object MsgConstants{",
+      "  val conversion = new com.ligadata.runtime.Conversion",
+      "}",
+      "import MsgConstants._"
+    ],
+    "modelcode": [
+      "def HandleError(fieldName : String, checkName : String) : Unit = {",
+      "  val err = fieldName + \" - check (\" + checkName + \") violated \"",
+      "  context.AddError(err)",
+      "}"
+    ]
+  },
+  "aliases": {
+    "messages": {
+      "m1": "com.ligadata.messages.AirRefillCS5_input",
+      "o1": "com.ligadata.messages.AirRefillCS5s",
+      "oo": "com.ligadata.gen.RejectedDataMsg"
+    }
+  },
+  "transformations": {
+    "AirRefillCS5_1": {
+      "dependsOn": [
+        [
+          "m1"
+        ]
+      ],
+      "computes": {
+        "inpData": {
+          "type": "Array[String]",
+          "val": "$msg.split(\",\", -1)"
+        },
+        "f1___val": {
+          "type": "Double",
+          "val": "if(!isDouble($inpData(1), \"localsequencenumber\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(1));fieldVal}"
+        },
+        "f2___val": {
+          "type": "Double",
+          "val": "if(!isDouble($inpData(2), \"currentserviceclass\", HandleError )) 0  else { val fieldVal = conversion.ToDouble($inpData(2));fieldVal}"
+        },
+        "f3___val": {
+          "type": "Double",
+          "val": "$f2___val + 1"
+        }
+      },
+      "outputs": {
+        "o1": {
+          "mapbyposition": {
+            "inpData": [
+              "originnodetype",
+              "originhostname"
+            ]
+          },
+          "mapping": {
+            "f1": "$f1___val - f3___val",
+            "f2": "$f2___val"
+          },
+          "where": "(context.CurrentErrors()==0)"
+        },
+        "oo": {
+          "onerror": "ignore",
+          "mapping": {
+            "origmsg": "$msg",
+            "reasons": "$context.CurrentErrorList()"
+          },
+          "where": "(context.CurrentErrors() > 0)"
+        }
+      }
+    }
+  }
+}
