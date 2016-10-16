@@ -75,7 +75,7 @@ class PosixFileHandler extends SmartFileHandler{
 
   @throws(classOf[KamanjaException])
   def openForRead(): InputStream = {
-    try {
+    /*try {
       val is = getDefaultInputStream()
       if (!isBinary) {
         fileType = CompressionUtil.getFileType(this, null)
@@ -85,6 +85,45 @@ class PosixFileHandler extends SmartFileHandler{
         fileType = FileType.UNKNOWN
         in = is
       }
+      in
+    }
+    catch{
+      case e : Exception => throw new KamanjaException (e.getMessage, e)
+      case e : Throwable => throw new KamanjaException (e.getMessage, e)
+    }*/
+    openForRead(null)
+  }
+
+  /**
+    *
+    * @param ftype when file type is already known, no need to check again,
+    *              if null or empty string is passed, file type will be checked
+    *              if Plain or Unknown is passed, default stream will be opened
+    *              else will try to open compressed stream based on value of ftype
+    * @throws com.ligadata.Exceptions.KamanjaException
+    * @return
+    */
+  @throws(classOf[KamanjaException])
+  def openForRead(ftype : String): InputStream = {
+    try {
+      val is = getDefaultInputStream()
+
+      if(ftype == null || ftype.length == 0){
+        //get file type
+        if (!isBinary) {
+          fileType = CompressionUtil.getFileType(this, null)
+          in = CompressionUtil.getProperInputStream(is, fileType)
+        } else {
+          fileType = FileType.UNKNOWN
+          in = is
+        }
+      }
+      else {//already have file type
+        fileType = ftype
+        if(ftype == FileType.UNKNOWN || ftype == FileType.PLAIN) in = is
+        else in = CompressionUtil.getProperInputStream(is, fileType)
+      }
+
       in
     }
     catch{
