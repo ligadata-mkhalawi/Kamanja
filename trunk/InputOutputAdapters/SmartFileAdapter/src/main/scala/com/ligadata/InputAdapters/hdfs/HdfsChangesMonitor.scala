@@ -266,6 +266,9 @@ class HdfsFileHandler extends SmartFileHandler {
   def length: Long = getHdFileSystem("get length").getFileStatus(new Path(getFullPath)).getLen
 
   @throws(classOf[KamanjaException])
+  def fileLength(fileName : String): Long = getHdFileSystem("get length").getFileStatus(new Path(fileName)).getLen
+
+  @throws(classOf[KamanjaException])
   def lastModified: Long = getHdFileSystem("get modification time").getFileStatus(new Path(getFullPath)).getModificationTime
 
   @throws(classOf[KamanjaException])

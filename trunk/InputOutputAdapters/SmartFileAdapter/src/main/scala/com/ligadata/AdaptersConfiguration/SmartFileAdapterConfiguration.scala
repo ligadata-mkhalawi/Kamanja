@@ -15,7 +15,7 @@ class ArchiveConfig {
   var archiveParallelism: Int = 1
   var outputConfig: SmartFileProducerConfiguration = null
 
-  var consolidationMaxSizeGB = 1
+  var consolidationMaxSizeGB : Double = 1
 }
 
 /**
@@ -425,6 +425,10 @@ object SmartFileAdapterConfiguration {
 
         archiveConfig.archiveSleepTimeInMs = if (connConf.contains("ArchiveSleepTimeInMs")) connConf.getOrElse("ArchiveSleepTimeInMs", "10").toString.trim.toInt else 10
         if (archiveConfig.archiveSleepTimeInMs < 0) archiveConfig.archiveSleepTimeInMs = 10
+
+        archiveConfig.consolidationMaxSizeGB = if (connConf.contains("ConsolidationMaxSizeGB")) connConf.getOrElse("ConsolidationMaxSizeGB", "1").toString.trim.toDouble else 1
+        if (archiveConfig.consolidationMaxSizeGB <= 0) archiveConfig.consolidationMaxSizeGB = 1
+
       } catch {
         case e: Throwable => {
           logger.error("Failed to load ArchiveConfig", e)

@@ -251,6 +251,12 @@ class PosixFileHandler extends SmartFileHandler{
     fileObject.length
   }
 
+  @throws(classOf[KamanjaException])
+  def fileLength(fileName : String) : Long = {
+    logger.info("Posix File Handler - checking length for file " + fileName)
+    new File(fileName).length
+  }
+
   def lastModified : Long = {
     logger.info("Posix File Handler - checking modification time for file " + getFullPath)
     fileObject.lastModified
@@ -279,7 +285,9 @@ class PosixFileHandler extends SmartFileHandler{
   override def mkdirs() : Boolean = {
     logger.info("Posix File Handler - mkdirs for path " + getFullPath)
     try {
-      new File(fileFullPath).mkdirs()
+      if(isDirectory)
+        new File(fileFullPath).mkdirs()
+      else new File(getParentDir).mkdirs()
     }
     catch{
       case e : Throwable =>
