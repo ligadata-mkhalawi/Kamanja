@@ -34,6 +34,7 @@ import java.io.FileReader;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.ligadata.KamanjaVersion.KamanjaVersion;
 
@@ -84,15 +85,19 @@ public class Migrate {
         String dstVer = "0";
         byte[] appendData = new byte[0];
         ExecutorService executor = null;
+        AtomicInteger _limiter = null;
+        int _parallelDegree = 1;
 
         DataCallback(MigratableTo tmigrateTo, List<DataFormat> tcollectedData,
-                     int tkSaveThreshold, String tsrcVer, String tdstVer, ExecutorService texecutor) {
+                     int tkSaveThreshold, String tsrcVer, String tdstVer, ExecutorService texecutor, AtomicInteger limiter, int tParallelDegree) {
             migrateTo = tmigrateTo;
             collectedData = tcollectedData;
             kSaveThreshold = tkSaveThreshold;
             srcVer = tsrcVer;
             dstVer = tdstVer;
             executor = texecutor;
+            _limiter = limiter;
+            _parallelDegree = tParallelDegree;
 
             if (srcVer.equalsIgnoreCase("1.1")
                     && (dstVer.equalsIgnoreCase("1.3") ||
@@ -132,8 +137,24 @@ public class Migrate {
                 String msg = String.format("Adding batch of Migrated data with " + collectedData.size() + " rows to write");
                 logger.debug(msg);
                 sendStatus(msg, "DEBUG");
-                SaveDataInBackground(executor, migrateTo, collectedData.toArray(new DataFormat[collectedData.size()]));
-                collectedData.clear();
+
+                while (_parallelDegree < _limiter.get()) {
+                    // Sleep a sec and check once again
+                    try {
+                        Thread.sleep(1000);
+                    } catch (Exception e) {
+                        // Not doing anything
+                    } catch (Throwable e) {
+                        // Not doing anything
+                    } finally {
+                    }
+                }
+
+                synchronized (migrateTo) {
+                    _limiter.incrementAndGet();
+                    SaveDataInBackground(executor, migrateTo, collectedData.toArray(new DataFormat[collectedData.size()]), _limiter);
+                    collectedData.clear();
+                }
             }
             return (writeFailedException == null); // Stop if we already got some issue to write.
         }
@@ -151,10 +172,12 @@ public class Migrate {
     class DataSaveTask implements Runnable {
         private final MigratableTo _migrateTo;
         private final DataFormat[] _data;
+        private final AtomicInteger _limiter;
 
-        public DataSaveTask(MigratableTo migrateTo, DataFormat[] data) {
+        public DataSaveTask(MigratableTo migrateTo, DataFormat[] data, AtomicInteger limiter) {
             _migrateTo = migrateTo;
             _data = data;
+            _limiter = limiter;
         }
 
         public void run() {
@@ -171,6 +194,7 @@ public class Migrate {
             } catch (Throwable t) {
                 SetDataWritingFailure(t);
             }
+            _limiter.decrementAndGet();
         }
     }
 
@@ -239,8 +263,8 @@ public class Migrate {
         }
     }
 
-    public void SaveDataInBackground(ExecutorService executor, MigratableTo migrateTo, DataFormat[] data) {
-        executor.execute(new DataSaveTask(migrateTo, data));
+    public void SaveDataInBackground(ExecutorService executor, MigratableTo migrateTo, DataFormat[] data, AtomicInteger limiter) {
+        executor.execute(new DataSaveTask(migrateTo, data, limiter));
     }
 
     boolean isValidPath(String path, boolean checkForDir, boolean checkForFile, String str) {
@@ -954,12 +978,11 @@ public class Migrate {
 			    sendStatus(newTablesStr, "INFO");
 			    logger.info(newTablesStr);
 			}
-
 			int parallelDegree = 1;
 			if (configuration.parallelDegree > 1)
 			    parallelDegree = configuration.parallelDegree;
 			ExecutorService executor = Executors.newFixedThreadPool(parallelDegree);
-
+			AtomicInteger limiter = new AtomicInteger(0);
 			int kSaveThreshold = 1024;
 
 			if (configuration.dataSaveThreshold > 0)
@@ -970,16 +993,20 @@ public class Migrate {
 			List<DataFormat> collectedData = new ArrayList<DataFormat>();
 
 			DataCallback dataCallback = new DataCallback(migrateTo,
-								     collectedData, kSaveThreshold, srcVer, dstVer, executor);
-
+								     collectedData, kSaveThreshold, srcVer, dstVer, executor, limiter, parallelDegree);
 			migrateFrom.getAllDataObjs(backupTblSufix, metadataArr, msgsAndContainers, catalogTables, dataCallback);
+
 
 			if (collectedData.size() > 0) {
 			    String msg = String.format("Adding final batch of Migrated data with " + collectedData.size() + " rows to write");
 			    logger.debug(msg);
 			    sendStatus(msg, "DEBUG");
-			    SaveDataInBackground(executor, migrateTo, collectedData.toArray(new DataFormat[collectedData.size()]));
-			    collectedData.clear();
+
+			    synchronized (migrateTo) {
+				limiter.incrementAndGet();
+				SaveDataInBackground(executor, migrateTo, collectedData.toArray(new DataFormat[collectedData.size()]), limiter);
+				collectedData.clear();
+			    }
 			}
 
 			logger.info("Waiting to flush all data");
