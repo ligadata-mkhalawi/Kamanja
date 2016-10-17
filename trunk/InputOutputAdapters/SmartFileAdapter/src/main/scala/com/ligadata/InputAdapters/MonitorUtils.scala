@@ -271,19 +271,7 @@ object SmartFileHandlerFactory{
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
 
-  def validateArchiveDestCompression(adapterConfig : SmartFileAdapterConfiguration) : Boolean = {
-    if (CompressorStreamFactory.BZIP2.equalsIgnoreCase(adapterConfig.archiveConfig.outputConfig.compressionString) ||
-      CompressorStreamFactory.GZIP.equalsIgnoreCase(adapterConfig.archiveConfig.outputConfig.compressionString) ||
-      CompressorStreamFactory.XZ.equalsIgnoreCase(adapterConfig.archiveConfig.outputConfig.compressionString)
-    ) {
-      logger.info("Smart File Consumer " + adapterConfig.Name + " Archiving is using compression: " + adapterConfig.archiveConfig.outputConfig.compressionString)
-      true
-    }
-    else
-      throw FatalAdapterException("Unsupported compression type " + adapterConfig.archiveConfig.outputConfig.compressionString + " for Smart File Producer: " + adapterConfig.archiveConfig.outputConfig.Name, new Exception("Invalid Parameters"))
-
-  }
-
+  /*
   def archiveFile(adapterConfig: SmartFileAdapterConfiguration, locationInfo: LocationInfo, srcFileDir: String, srcFileBaseName: String, componentsMap: scala.collection.immutable.Map[String, String]): Boolean = {
     if (adapterConfig.archiveConfig == null || adapterConfig.archiveConfig.outputConfig == null)
       return true
@@ -338,7 +326,7 @@ object SmartFileHandlerFactory{
       fileHandler.openForRead()
 
       //TODO: compare input compression to output compression, would this give better performance?
-      //if same compression, can simply read and write as binary
+      //might need to do this: if same compression, can simply read and write as binary
       //else must open src to read using proper compression, and open dest for write with proper compression
 
       val originalOutputStream = osWriter.openFile(adapterConfig.archiveConfig.outputConfig, dstFileToArchive, false)
@@ -390,6 +378,9 @@ object SmartFileHandlerFactory{
     }
     status
   }
+
+*/
+
 
   def createSmartFileHandler(adapterConfig : SmartFileAdapterConfiguration, fileFullPath : String, isBinary: Boolean = false): SmartFileHandler ={
     val connectionConf = adapterConfig.connectionConfig

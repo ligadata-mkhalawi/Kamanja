@@ -147,6 +147,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   private var leaderExecutor : ExecutorService = null
   private var filesParallelism : Int = -1
   private var monitorController : MonitorController = null
+  private var archiver : Archiver = null
+
   private var initialized = false
   private var filesParallelismCallback_initialized = false
   private var prevRegLeader = ""
@@ -258,6 +260,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       //node wasn't a leader before
       if(initialized == false || ! clusterStatus.leaderNodeId.equals(prevRegLeader)){
         LOG.debug("Smart File Consumer - Leader is running on node " + clusterStatus.nodeId)
+
+        archiver = new Archiver()
 
         monitorController = new MonitorController(adapterConfig, this, newFileDetectedCallback)
         monitorController.checkConfigDirsAccessibility//throw an exception if a folder is not accissible
@@ -1474,11 +1478,11 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             var interruptedVal = false
             while (!interruptedVal) {
               try {
-                if (hasNextArchiveFileInfo) {
+                if (archiver != null && hasNextArchiveFileInfo) {
                   val archInfo = getNextArchiveFileInfo
                   if (archInfo != null) {
                     try {
-                      val status = SmartFileHandlerFactory.archiveFile(archInfo.adapterConfig, archInfo.locationInfo, archInfo.srcFileDir, archInfo.srcFileBaseName, archInfo.componentsMap)
+                      val status = archiver.archiveFile(archInfo.adapterConfig, archInfo.locationInfo, archInfo.srcFileDir, archInfo.srcFileBaseName, archInfo.componentsMap)
                       if (! status)
                         addArchiveFileInfo(archInfo)
                     } catch {
@@ -1662,6 +1666,11 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     if(monitorController!=null)
       monitorController.stopMonitoring
     monitorController = null
+
+    if(archiver != null){
+      archiver.clear
+      archiver = null
+    }
 
     if(leaderExecutor != null) {
       LOG.debug("Smart File Consumer - shutting down leader executor service")
