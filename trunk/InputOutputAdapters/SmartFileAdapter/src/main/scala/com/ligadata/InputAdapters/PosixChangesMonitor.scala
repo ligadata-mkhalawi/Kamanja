@@ -285,9 +285,7 @@ class PosixFileHandler extends SmartFileHandler{
   override def mkdirs() : Boolean = {
     logger.info("Posix File Handler - mkdirs for path " + getFullPath)
     try {
-      if(isDirectory)
         new File(fileFullPath).mkdirs()
-      else new File(getParentDir).mkdirs()
     }
     catch{
       case e : Throwable =>
