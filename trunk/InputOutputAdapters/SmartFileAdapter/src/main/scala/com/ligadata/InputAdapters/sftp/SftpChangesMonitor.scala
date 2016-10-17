@@ -318,7 +318,7 @@ class SftpFileHandler extends SmartFileHandler{
   @throws(classOf[KamanjaException])
   def fileLength(fileName : String) : Long = {
     logger.info("Sftp File Handler - checking length for file " + hashPath(fileName))
-    val attrs = getRemoteFileAttrs(fileName)
+    val attrs = getRemoteFileAttrs(fileName, true)
     if (attrs == null) 0 else attrs.getSize
   }
 
@@ -377,7 +377,7 @@ class SftpFileHandler extends SmartFileHandler{
     getRemoteFileAttrs(getFullPath, logError)
   }
 
-  private def getRemoteFileAttrs(filePath : String, logError : Boolean = true) :  SftpATTRS = {
+  private def getRemoteFileAttrs(filePath : String, logError : Boolean) :  SftpATTRS = {
     try {
       getNewSession
       channelSftp.lstat(filePath)
