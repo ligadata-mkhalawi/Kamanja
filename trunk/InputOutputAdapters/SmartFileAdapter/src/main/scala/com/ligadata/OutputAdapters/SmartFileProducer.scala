@@ -283,6 +283,40 @@ class OutputStreamWriter {
   final def openFile(fc: SmartFileProducerConfiguration, fileName: String, canAppend: Boolean = true): OutputStream = if (fc.uri.startsWith("hdfs://")) openHdfsFile(fc, fileName, canAppend) else openFsFile(fc, fileName, canAppend)
 
 
+  def getFileSize(fc : SmartFileProducerConfiguration, fileName: String) : Long = if (fc.uri.startsWith("hdfs://")) getHdfsFileSize(fc, fileName) else getFSFileSize(fc, fileName)
+
+  def getHdfsFileSize(fc : SmartFileProducerConfiguration, fileName: String) : Long = {
+    try {
+      val hdfsConf: Configuration = new Configuration()
+      if (fc.kerberos != null) {
+        hdfsConf.set("hadoop.security.authentication", "kerberos")
+        UserGroupInformation.setConfiguration(hdfsConf)
+        ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(fc.kerberos.principal, fc.kerberos.keytab);
+      }
+
+      if (fc.hadoopConfig != null && !fc.hadoopConfig.isEmpty) {
+        fc.hadoopConfig.foreach(conf => {
+          hdfsConf.set(conf._1, conf._2)
+        })
+      }
+
+      val uri: URI = URI.create(fileName)
+      val path: Path = new Path(uri)
+      val fs: FileSystem = FileSystem.get(uri, hdfsConf)
+      fs.getFileStatus(path).getLen
+    }
+    catch{
+      case ex : Throwable =>
+        LOG.warn("", ex)
+        0
+    }
+  }
+
+  def getFSFileSize(fc : SmartFileProducerConfiguration, fileName: String) : Long = {
+    val file = new File(trimFileFromLocalFileSystem(fileName))
+    file.length()
+  }
+
   /*
     def hasCompressedFlag(fc: SmartFileProducerConfiguration): Boolean = {
       return (fc.compressionString != null)

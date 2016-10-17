@@ -79,14 +79,23 @@ class Archiver {
   def consolidateFile(adapterConfig: SmartFileAdapterConfiguration, locationInfo: LocationInfo,
                       fileHandler : SmartFileHandler, dstDirToArchive : String) : Boolean = {
 
-    var status = false
+    //TODO : should have a map per folders. must have append file/files corresponding to each dest folder
+    //in order to consolidate files in the same directory only
+
+    //var status = false
+    var result : (Boolean, Long) = (false, 0)
 
     val currentFileToArchiveSize = fileHandler.length()
     val currentFileToArchiveTimestamp = fileHandler.lastModified()
 
+    logger.warn("currentFileToArchiveSize="+currentFileToArchiveSize.toString)
+
     val consolidateThresholdBytes : Long = (adapterConfig.archiveConfig.consolidationMaxSizeGB * 1024 * 1024 * 1024).toLong
 
     val currentAppendFileInfo = getCurrentAppendFile
+
+    logger.warn("adapterConfig.archiveConfig.consolidationMaxSizeGB={}",adapterConfig.archiveConfig.consolidationMaxSizeGB.toString)
+    logger.warn("consolidateThresholdBytes={}",consolidateThresholdBytes.toString)
 
     if(currentAppendFileInfo.isEmpty)
       logger.warn("Archiver: no entry for currentAppendFiles")
@@ -97,49 +106,58 @@ class Archiver {
 
     if(currentFileToArchiveSize < consolidateThresholdBytes){
       if(currentAppendFileInfo.isEmpty){//no files already in dest
+        logger.warn("Archier: path 1")
         //copy from src to new file on dest
-        val destFilePath = dstDirToArchive + getNewArchiveFileName
-        status = copyFileToArchiveAndDelete(adapterConfig, locationInfo, fileHandler, destFilePath)
-        addToCurrentAppendFiles(destFilePath, fileHandler.fileLength(destFilePath), currentFileToArchiveTimestamp)//using timestamp of src?
+        val destFilePath = dstDirToArchive + "/" + getNewArchiveFileName
+        result = copyFileToArchiveAndDelete(adapterConfig, locationInfo, fileHandler, destFilePath)
+        addToCurrentAppendFiles(destFilePath, result._2, currentFileToArchiveTimestamp)//using timestamp of src?
       }
       else{
         val currentAppendFileSize = currentAppendFileInfo.get._2
         val currentAppendFilePath = currentAppendFileInfo.get._1
 
+        logger.warn("currentAppendFileSize="+currentAppendFileSize.toString)
         if(currentAppendFileSize + currentFileToArchiveSize >  consolidateThresholdBytes){
+          logger.warn("Archier: path 2")
+
           //copy from src to new file on dest
-          val destFilePath = dstDirToArchive + getNewArchiveFileName
-          status = copyFileToArchiveAndDelete(adapterConfig, locationInfo, fileHandler, destFilePath)
+          val destFilePath = dstDirToArchive + "/" + getNewArchiveFileName
+          result = copyFileToArchiveAndDelete(adapterConfig, locationInfo, fileHandler, destFilePath)
           //change currentAppendFilePath and size to new dest
           removeFromCurrentAppendFiles(currentAppendFilePath)
-          addToCurrentAppendFiles(destFilePath, fileHandler.fileLength(destFilePath), currentFileToArchiveTimestamp)//using timestamp of src?
+          addToCurrentAppendFiles(destFilePath, result._2, currentFileToArchiveTimestamp)//using timestamp of src?
         }
         else{
+          logger.warn("Archier: path 3")
           //append src to currentAppendFilePath
-          status = copyFileToArchiveAndDelete(adapterConfig, locationInfo, fileHandler, currentAppendFilePath)
+          result = copyFileToArchiveAndDelete(adapterConfig, locationInfo, fileHandler, currentAppendFilePath)
 
           //increase size currentAppendFileSize
-          updateCurrentAppendFile(currentAppendFilePath, fileHandler.fileLength(currentAppendFilePath), currentFileToArchiveTimestamp)
+          //val currentAppendFileSize = fileHandler.fileLength(currentAppendFilePath)
+          logger.warn("path 3 . currentAppendFileSize="+result._2)
+          updateCurrentAppendFile(currentAppendFilePath, result._2, currentFileToArchiveTimestamp)
         }
       }
     }
     else{
       //TODO : might need to split files larger than thresold
 
+      logger.warn("Archier: path 4")
       //copy from src to new file on dest
       val destFilePath = dstDirToArchive + "/" + getNewArchiveFileName
-      status = copyFileToArchiveAndDelete(adapterConfig, locationInfo, fileHandler, destFilePath)
+      result = copyFileToArchiveAndDelete(adapterConfig, locationInfo, fileHandler, destFilePath)
 
       //for now, assuming order matters, remove current append because it got old
       if(currentAppendFileInfo.isDefined)
         removeFromCurrentAppendFiles(currentAppendFileInfo.get._1)
     }
 
-    status
+    result._1
   }
 
+  //return status and new size of dest file
   def copyFileToArchiveAndDelete(adapterConfig: SmartFileAdapterConfiguration, locationInfo: LocationInfo,
-                                 srcFileHandler: SmartFileHandler, dstFileToArchive : String): Boolean ={
+                                 srcFileHandler: SmartFileHandler, dstFileToArchive : String): (Boolean, Long) ={
 
     logger.warn("Archive: Copying from {} to {}", srcFileHandler.getFullPath, dstFileToArchive)
 
@@ -147,6 +165,7 @@ class Archiver {
     var os: OutputStream = null
 
     var status = false
+    var resultSize : Long = 0
 
     try {
       //fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, srcFileToArchive, false)
@@ -196,6 +215,7 @@ class Archiver {
       if (os != null) {
         try {
           os.close()
+          resultSize = osWriter.getFileSize(adapterConfig.archiveConfig.outputConfig, dstFileToArchive)
         } catch {
           case e: Throwable => {
             logger.error("Failed to close OutputStream for " + dstFileToArchive, e)
@@ -203,7 +223,8 @@ class Archiver {
         }
       }
     }
-    status
+
+    (status, resultSize)
   }
 
   def validateArchiveDestCompression(adapterConfig : SmartFileAdapterConfiguration) : Boolean = {
