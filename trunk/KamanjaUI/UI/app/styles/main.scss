@@ -167,6 +167,10 @@ div.vis-network {
     color: #ffffff;
     background-color: #444444;
     cursor: pointer;
+    position: relative;
+    &.editing {
+      background-color: transparent;
+    }
     &.active {
       background-color: #004444;
     }
@@ -182,4 +186,8 @@ div.vis-network {
       padding: 4px;
     }
   }
+  .glyphicon-plus {
+    padding: 10px 0 0 5px;
+  }
+
 }

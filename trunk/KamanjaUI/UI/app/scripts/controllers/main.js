@@ -20,6 +20,26 @@ angular.module('networkApp')
         });
         tab.show = true;
       };
+      main.tabDblClick = function (tab,$index) {
+        tab.editTitle = true;
+        angular.element('tab-' + $index).focus();
+      };
+      main.addNewTab = function () {
+        _.each(main.tabs, function (tab) {
+          tab.show = false;
+        });
+        var t = {title: 'new tab', show:true};
+        main.tabs.push(t);
+      };
+      main.removeTab = function (tab) {
+        if (tab.show){
+          if (main.tabs[0]){
+            main.tabs[0].show = true;
+          }
+        }
+        var index = main.tabs.indexOf(tab);
+        main.tabs.splice(index, 1);
+      };
       main.getShowStatus = function () {
         return $rootScope.showStatus;
       };
