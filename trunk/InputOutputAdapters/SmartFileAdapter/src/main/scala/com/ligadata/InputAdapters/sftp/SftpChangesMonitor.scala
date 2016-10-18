@@ -539,7 +539,7 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
                     logger.info(s"Checking configured SFTP directory ($targetRemoteFolder)...")
 
                     val modifiedDirs = new ArrayBuffer[(String, Int)]()//dir name, dir depth
-                    modifiedDirs.append((targetRemoteFolder, 1))
+                    modifiedDirs.append((sftpEncodedUri, 1))
                     while (modifiedDirs.nonEmpty) {
                       //each time checking only updated folders: first find direct children of target folder that were modified
                       // then for each folder of these search for modified files and folders, repeat for the modified folders

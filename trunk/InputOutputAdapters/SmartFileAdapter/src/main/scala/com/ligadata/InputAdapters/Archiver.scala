@@ -227,7 +227,7 @@ class Archiver {
           os.write(buf, 0, curReadLen)
         }
       } while (curReadLen > 0)
-      srcFileHandler.deleteFile(srcFileHandler.getFullPath) // Deleting file after archive
+
       status = true
     } catch {
       case e: Throwable => {
@@ -252,6 +252,17 @@ class Archiver {
         } catch {
           case e: Throwable => {
             logger.error("Failed to close OutputStream for " + dstFileToArchive, e)
+          }
+        }
+      }
+
+      if (srcFileHandler != null) {
+        try {
+          srcFileHandler.deleteFile(srcFileHandler.getFullPath) // Deleting file after archive
+        }
+        catch {
+          case e: Throwable => {
+            logger.error("Failed to delete file " + dstFileToArchive, e)
           }
         }
       }
