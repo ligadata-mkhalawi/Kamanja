@@ -33,6 +33,18 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
     }
   }
 
+  implicit def orderedEnqueuedFileArrayBufferHandler(fa: ArrayBuffer[EnqueuedFileHandler]): Ordered[ArrayBuffer[EnqueuedFileHandler]] = new Ordered[ArrayBuffer[EnqueuedFileHandler]] {
+    def compare(othera: ArrayBuffer[EnqueuedFileHandler]) : Int = {
+
+      if(fa.length==0 || othera.length==0) return 0
+
+      val locationInfo1 = parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(fa(0).fileHandler.getParentDir))
+      val locationInfo2 = parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(othera(0).fileHandler.getParentDir))
+      //not sure why but had to invert sign
+      (MonitorUtils.compareFiles(fa(0).fileHandler, locationInfo1, othera(0).fileHandler, locationInfo2)) * -1
+    }
+  }
+
   private var fileQ: scala.collection.mutable.PriorityQueue[EnqueuedFileHandler] =
   //new scala.collection.mutable.PriorityQueue[EnqueuedFileHandler]()(Ordering.by(fileComparisonField))
     new scala.collection.mutable.PriorityQueue[EnqueuedFileHandler]() //use above implicit compare function

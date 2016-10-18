@@ -75,7 +75,8 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
 /////////////////////// StorageElasticsearch
 // https://mvnrepository.com/artifact/org.elasticsearch/elasticsearch
 //libraryDependencies += "org.elasticsearch" % "elasticsearch" % "2.3.5"
-libraryDependencies += "org.elasticsearch" % "elasticsearch" % "1.4.4"
+//libraryDependencies += "org.elasticsearch" % "elasticsearch" % "1.4.4"
+libraryDependencies += "org.elasticsearch" % "elasticsearch" % "2.4.0"
 
 /////////////////////// KamanjaManager
 resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
@@ -413,3 +414,11 @@ libraryDependencies += "net.jcip" % "jcip-annotations" % "1.0"
 
 // QueryGenerator
 // libraryDependencies += "com.orientechnologies" % "orientdb-jdbc" % "2.1.19"
+assemblyMergeStrategy in assembly := {
+  case x if x endsWith ".txt" => MergeStrategy.first
+  case x if x endsWith ".xml" => MergeStrategy.first
+  case x =>
+    val oldStrategy = (assemblyMergeStrategy in assembly).value
+    oldStrategy(x)
+
+}

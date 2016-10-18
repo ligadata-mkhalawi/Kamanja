@@ -330,10 +330,10 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
   private def getConnection: TransportClient = {
     try {
-//      val settings = Settings.settingsBuilder().put("cluster.name", clusterName).build()
-//      var client = TransportClient.builder().settings(settings).build().addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(location), portNumber.toInt))
-      val settings = ImmutableSettings.settingsBuilder().put("cluster.name", clusterName).build()
-      var client = new TransportClient(settings).addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(location), portNumber.toInt))
+      val settings = Settings.settingsBuilder().put("cluster.name", clusterName).build()
+      var client = TransportClient.builder().settings(settings).build().addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(location), portNumber.toInt))
+//      val settings = ImmutableSettings.settingsBuilder().put("cluster.name", clusterName).build()
+//      var client = new TransportClient(settings).addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(location), portNumber.toInt))
       client
     } catch {
       case e: Exception => {
