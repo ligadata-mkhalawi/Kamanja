@@ -1503,7 +1503,7 @@ object ConfigUtils {
      */
   @throws(classOf[MissingPropertyException])
   @throws(classOf[InvalidPropertyException])
-  def readMetadataAPIConfigFromPropertiesFile(configFile: String): Unit = {
+  def readMetadataAPIConfigFromPropertiesFile(configFile: String,setDefaults:Boolean): Unit = {
     try {
       if (MetadataAPIImpl.propertiesAlreadyLoaded) {
         logger.debug("Configuratin properties already loaded, skipping the load configuration step")
@@ -1567,8 +1567,10 @@ object ConfigUtils {
 
       var zkConnectString = getMetadataAPI.GetMetadataAPIConfig.getProperty("ZOOKEEPER_CONNECT_STRING")
       if( zkConnectString == null ){
-	zkConnectString = "localhost:2181"
-        setPropertyFromConfigFile("ZOOKEEPER_CONNECT_STRING", zkConnectString)
+	if( setDefaults ){
+	  zkConnectString = "localhost:2181"
+          setPropertyFromConfigFile("ZOOKEEPER_CONNECT_STRING", zkConnectString)
+	}
       }
 
       var serviceHost = getMetadataAPI.GetMetadataAPIConfig.getProperty("SERVICE_HOST")
