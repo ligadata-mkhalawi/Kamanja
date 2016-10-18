@@ -33,13 +33,13 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
     }
   }
 
-  implicit def orderedEnqueuedGroupHandler(f: ArrayBuffer[EnqueuedFileHandler]): Ordered[EnqueuedFileHandler] = new Ordered[EnqueuedFileHandler] {
-    def compare(other: EnqueuedFileHandler) = {
-      val g = f(0)
-      val locationInfo1 = parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(g.fileHandler.getParentDir))
-      val locationInfo2 = parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(other.fileHandler.getParentDir))
+  implicit def orderedEnqueuedGroupHandler(f: EnqueuedGroupHandler): Ordered[EnqueuedGroupHandler] = new Ordered[EnqueuedGroupHandler] {
+    def compare(other: EnqueuedGroupHandler) = {
+      val g = f
+      val locationInfo1 = parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(g.fileHandlers(0).getParentDir))
+      val locationInfo2 = parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(other.fileHandlers(0).getParentDir))
       //not sure why but had to invert sign
-      (MonitorUtils.compareFiles(g.fileHandler, locationInfo1, other.fileHandler, locationInfo2)) * -1
+      (MonitorUtils.compareFiles(g.fileHandlers(0), locationInfo1, other.fileHandlers(0), locationInfo2)) * -1
     }
   }
 
