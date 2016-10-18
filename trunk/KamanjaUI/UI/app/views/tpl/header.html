@@ -1,21 +1,4 @@
 <div class="topHeader" ng-click="header.hideSideMenu()">
-  <div id="tabs">
-    <span class="glyphicon glyphicon-plus" aria-hidden="true" ng-click="main.addNewTab()"></span>
-    <div ng-repeat="tab in main.tabs" class="tabView" ng-class="{'active':tab === currentTab, 'editing': tab.editTitle}">
-      <div ng-if="!tab.editTitle" ng-dblclick="main.tabDblClick(tab,$index)" sglclick="main.setTab(tab)">
-        {{tab.title}}
-      </div>
-      <div ng-if="tab.editTitle">
-        <input ng-model="tab.title" ng-model-options="{ updateOn: 'blur' }" ng-keyup="cancel($event)"
-               click-outside="tab.editTitle = false" type="text" ng-click="$event.stopPropagation()"
-               ng-change="tab.editTitle = false"
-               ng-attr-id="{{ 'tab-' + $index }}"
-        >
-      </div>
-      <span class="glyphicon glyphicon-remove-sign" aria-hidden="true" ng-click="main.removeTab(tab)"
-            ></span>
-    </div>
-  </div>
   <div class="row headerBar">
     <div class="col-sm-6 col-xs-6 col-md-6">
       <img class="logo" id="imgLogo" src="./images/logo.svg" width="168"

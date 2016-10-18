@@ -22,6 +22,7 @@ angular
         console.log();
         var container = element[0];
         var data = {nodes: new vis.DataSet([]), edges: new vis.DataSet([])};
+        var selectedNodes = [];
         var options = {
           'edges': {
             'smooth': {
@@ -232,11 +233,16 @@ angular
         network.on('click', function (params) {
           var id = params.nodes[0];
           if (id) {
-            var alreadyActive = isNodeActive(id);
-            updateNodesImagesToBeInactive();
-            if (!alreadyActive) {
-              updateNodeToBeActive(id);
+            if (selectedNodes.indexOf(id) >=0 ){
+              selectedNodes.splice(selectedNodes.indexOf(id),1);
+            } else {
+              selectedNodes.push(id);
             }
+            updateNodesImagesToBeInactive();
+            _.each(selectedNodes,function (id) {
+              updateNodeToBeActive(id);
+            });
+
           }
         });
         network.on('afterDrawing', function (ctx) {
