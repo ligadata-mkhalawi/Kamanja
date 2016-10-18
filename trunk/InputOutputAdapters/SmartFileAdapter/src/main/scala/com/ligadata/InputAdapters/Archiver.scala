@@ -110,25 +110,25 @@ class Archiver {
     val currentFileToArchiveSize = fileHandler.length()
     val currentFileToArchiveTimestamp = fileHandler.lastModified()
 
-    logger.warn("currentFileToArchiveSize="+currentFileToArchiveSize.toString)
+    logger.info("currentFileToArchiveSize="+currentFileToArchiveSize.toString)
 
     val consolidateThresholdBytes : Long = (adapterConfig.archiveConfig.consolidationMaxSizeGB * 1024 * 1024 * 1024).toLong
 
     val currentAppendFileInfo = getCurrentAppendFile(dstDirToArchive)
 
-    logger.warn("adapterConfig.archiveConfig.consolidationMaxSizeGB={}",adapterConfig.archiveConfig.consolidationMaxSizeGB.toString)
-    logger.warn("consolidateThresholdBytes={}",consolidateThresholdBytes.toString)
+    logger.debug("adapterConfig.archiveConfig.consolidationMaxSizeGB={}",adapterConfig.archiveConfig.consolidationMaxSizeGB.toString)
+    logger.info("consolidateThresholdBytes={}",consolidateThresholdBytes.toString)
 
     if(currentAppendFileInfo.isEmpty)
-      logger.warn("Archiver: no entry for currentAppendFiles")
+      logger.debug("Archiver: no entry for currentAppendFiles")
     else{
-      logger.warn("Archiver: currentAppendFile ({}, {}, {})",
+      logger.debug("Archiver: currentAppendFile ({}, {}, {})",
         currentAppendFileInfo.get._1, currentAppendFileInfo.get._2.toString, currentAppendFileInfo.get._3.toString)
     }
 
     if(currentFileToArchiveSize < consolidateThresholdBytes){
       if(currentAppendFileInfo.isEmpty){//no files already in dest
-        logger.warn("Archiver: path 1")
+        logger.debug("Archiver: path 1")
         //copy from src to new file on dest
         val destFilePath = dstDirToArchive + "/" + getNewArchiveFileName
         result = copyFileToArchiveAndDelete(adapterConfig, locationInfo, fileHandler, destFilePath)
@@ -138,9 +138,9 @@ class Archiver {
         val currentAppendFileSize = currentAppendFileInfo.get._2
         val currentAppendFilePath = currentAppendFileInfo.get._1
 
-        logger.warn("currentAppendFileSize="+currentAppendFileSize.toString)
+        logger.debug("currentAppendFileSize="+currentAppendFileSize.toString)
         if(currentAppendFileSize + currentFileToArchiveSize >  consolidateThresholdBytes){
-          logger.warn("Archiver: path 2")
+          logger.debug("Archiver: path 2")
 
           //copy from src to new file on dest
           val destFilePath = dstDirToArchive + "/" + getNewArchiveFileName
@@ -150,13 +150,13 @@ class Archiver {
           addToCurrentAppendFiles(dstDirToArchive, destFilePath, result._2, currentFileToArchiveTimestamp)//using timestamp of src?
         }
         else{
-          logger.warn("Archiver: path 3")
+          logger.debug("Archiver: path 3")
           //append src to currentAppendFilePath
           result = copyFileToArchiveAndDelete(adapterConfig, locationInfo, fileHandler, currentAppendFilePath)
 
           //increase size currentAppendFileSize
           //val currentAppendFileSize = fileHandler.fileLength(currentAppendFilePath)
-          logger.warn("path 3 . currentAppendFileSize="+result._2)
+          logger.debug("path 3 . currentAppendFileSize="+result._2)
           updateCurrentAppendFile(dstDirToArchive, currentAppendFilePath, result._2, currentFileToArchiveTimestamp)
         }
       }
@@ -164,7 +164,7 @@ class Archiver {
     else{//currentFileToArchiveSize >= consolidateThresholdBytes
       //TODO : might need to split files larger than threshold
 
-      logger.warn("Archiver: path 4")
+      logger.debug("Archiver: path 4")
       //copy from src to new file on dest
       val destFilePath = dstDirToArchive + "/" + getNewArchiveFileName
       result = copyFileToArchiveAndDelete(adapterConfig, locationInfo, fileHandler, destFilePath)
