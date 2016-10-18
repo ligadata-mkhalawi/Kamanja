@@ -1067,62 +1067,84 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   //what a participant should do when receiving file to process (from leader)
   def fileAssignmentFromLeaderCallback(eventType: String, eventPath: String, eventPathData: String): Unit = {
 
+    logger.error("==============> HaithamLog => inside fileAssignmentFromLeaderCallback ")
+
     if (eventPathData == null || eventPathData.length == 0)
       return
-
     envContext.setListenerCacheKey(eventPath, "") //TODO : so that it will not be read again. find a better way
 
-    //data has format <file name>|offset
-    val dataTokens = eventPathData.split("\\|")
-    if (dataTokens.length >= 2) {
-      val fileToProcessName = dataTokens(0)
-      val offset = dataTokens(1).toLong
+    //data has format <file name>|offset~~<file name2>|offset2
+    // how to do the split "~~" , then  filename and offset "|"
 
-      val keyTokens = eventPath.split("/")
-      if (keyTokens.length >= 2) {
-        val processingThreadId = keyTokens(keyTokens.length - 1).toInt
-        val processingNodeId = keyTokens(keyTokens.length - 2)
+    var filesToProcessNames: ArrayBuffer[String] = ArrayBuffer() // All all files list here
+    var offsets: ArrayBuffer[Long] = ArrayBuffer() // All all files list here
+    var smartFileContexts: ArrayBuffer[SmartFileConsumerContext] = ArrayBuffer() // All all files list here
 
-        if (isShutdown) {
-          LOG.debug("Smart File Consumer - Node Id = {}, Thread Id = {} had been assigned a new file ({}), but shutdown already called. so ignore the assignment",
+
+    val arraytOfDataTokens = eventPathData.split("~~")
+    logger.error("==============> HaithamLog => arraytOfDataTokens =  " + arraytOfDataTokens)
+    arraytOfDataTokens.foreach(listItem => {
+      val dataTokens = eventPathData.split("\\|")
+      logger.error("==============> HaithamLog => dataTokens =  " + dataTokens)
+      if (dataTokens.length >= 2) {
+        val fileToProcessName = dataTokens(0)
+        val offset = dataTokens(1).toLong
+
+        filesToProcessNames += fileToProcessName
+        offsets += offset
+
+        val keyTokens = eventPath.split("/")
+        if (keyTokens.length >= 2) {
+          val processingThreadId = keyTokens(keyTokens.length - 1).toInt
+          val processingNodeId = keyTokens(keyTokens.length - 2)
+
+          if (isShutdown) {
+            LOG.debug("Smart File Consumer - Node Id = {}, Thread Id = {} had been assigned a new file ({}), but shutdown already called. so ignore the assignment",
+              processingNodeId, processingThreadId.toString, fileToProcessName)
+            return
+          }
+
+          LOG.info("Smart File Consumer - Node Id = {}, Thread Id = {}, File ({}) was assigned",
             processingNodeId, processingThreadId.toString, fileToProcessName)
-          return
+
+
+          val partitionId = processingThreadId.toInt
+          var smartFileContext: SmartFileConsumerContext = null
+          if (smartFileContextMap.contains(partitionId)) {
+            val context = smartFileContextMap(partitionId)
+            if (context.nodeId.equals(processingNodeId)) //maybe this could take place if re-shuffling happened
+              smartFileContext = context
+          }
+          if (smartFileContext == null) {
+            smartFileContext = new SmartFileConsumerContext()
+            smartFileContext.adapterName = inputConfig.Name
+            smartFileContext.partitionId = partitionId
+            smartFileContext.ignoreFirstMsg = _ignoreFirstMsg
+            smartFileContext.nodeId = processingNodeId
+            smartFileContext.envContext = envContext
+            //context.fileOffsetCacheKey = getFileOffsetCacheKey(fileToProcessName)
+            smartFileContext.statusUpdateCacheKey = Status_Check_Cache_KeyParent + "/" + processingNodeId + "/" + processingThreadId
+            smartFileContext.statusUpdateInterval = statusUpdateInterval
+
+            smartFileContexts += smartFileContext
+            logger.error("==============> HaithamLog => fileToProcessName =  " + fileToProcessName)
+            logger.error("==============> HaithamLog => offset =  " + offset)
+            logger.error("==============> HaithamLog => smartFileContext =  " + smartFileContext)
+
+            smartFileContextMap.put(partitionId, smartFileContext)
+          }
+          //        val filesToProcessName = Array(fileToProcessName) // All all files list here
         }
-
-        LOG.info("Smart File Consumer - Node Id = {}, Thread Id = {}, File ({}) was assigned",
-          processingNodeId, processingThreadId.toString, fileToProcessName)
-
-
-        val partitionId = processingThreadId.toInt
-        var smartFileContext: SmartFileConsumerContext = null
-        if (smartFileContextMap.contains(partitionId)) {
-          val context = smartFileContextMap(partitionId)
-          if (context.nodeId.equals(processingNodeId)) //maybe this could take place if re-shuffling happened
-            smartFileContext = context
-        }
-        if (smartFileContext == null) {
-          smartFileContext = new SmartFileConsumerContext()
-          smartFileContext.adapterName = inputConfig.Name
-          smartFileContext.partitionId = partitionId
-          smartFileContext.ignoreFirstMsg = _ignoreFirstMsg
-          smartFileContext.nodeId = processingNodeId
-          smartFileContext.envContext = envContext
-          //context.fileOffsetCacheKey = getFileOffsetCacheKey(fileToProcessName)
-          smartFileContext.statusUpdateCacheKey = Status_Check_Cache_KeyParent + "/" + processingNodeId + "/" + processingThreadId
-          smartFileContext.statusUpdateInterval = statusUpdateInterval
-
-          smartFileContextMap.put(partitionId, smartFileContext)
-        }
-
-        //start processing the file
-
-        val fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, fileToProcessName)
-        //now read the file and call sendSmartFileMessageToEngin for each message, and when finished call fileMessagesExtractionFinished_Callback to update status
-        val fileMessageExtractor = new FileMessageExtractor(this, participantExecutor, adapterConfig, fileHandler, offset, smartFileContext,
-          sendSmartFileMessageToEngin, fileMessagesExtractionFinished_Callback)
-        fileMessageExtractor.extractMessages()
       }
-    }
+    })
+
+    //start processing the group
+    val fileHandlers = filesToProcessNames.map(fileToProcessName => SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, fileToProcessName))
+    //now read the file and call sendSmartFileMessageToEngin for each message, and when finished call fileMessagesExtractionFinished_Callback to update status
+    val fileMessageExtractor = new FileMessageExtractor(this, participantExecutor, adapterConfig, fileHandlers.toArray, offsets.toArray, smartFileContexts.toArray,
+      sendSmartFileMessageToEngin, fileMessagesExtractionFinished_Callback)
+    fileMessageExtractor.extractMessages()
+
   }
 
   //key: SmartFileCommunication/FileProcessing/<node>/<threadId>
