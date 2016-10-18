@@ -538,8 +538,8 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
                     val sftpEncodedUri = createConnectionString(connectionConf, targetRemoteFolder)
                     logger.info(s"Checking configured SFTP directory ($targetRemoteFolder)...")
 
-                    val modifiedDirs = new ArrayBuffer[String]()
-                    modifiedDirs += sftpEncodedUri
+                    val modifiedDirs = new ArrayBuffer[(String, Int)]()//dir name, dir depth
+                    modifiedDirs.append((targetRemoteFolder, 1))
                     while (modifiedDirs.nonEmpty) {
                       //each time checking only updated folders: first find direct children of target folder that were modified
                       // then for each folder of these search for modified files and folders, repeat for the modified folders
@@ -548,7 +548,7 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
                       val modifiedFiles = Map[SmartFileHandler, FileChangeType]() // these are the modified files found in folder $aFolder
 
                       modifiedDirs.remove(0)
-                      findDirModifiedDirectChilds(aFolder, manager, modifiedDirs, modifiedFiles, firstCheck)
+                      findDirModifiedDirectChilds(aFolder._1, aFolder._2, manager, modifiedDirs, modifiedFiles, firstCheck)
                       logger.debug("modifiedFiles map is {}", modifiedFiles)
 
                       //check for file names pattern
@@ -634,12 +634,12 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
   }
 
 
-  private def findDirModifiedDirectChilds(parentfolder : String, manager : StandardFileSystemManager,
-                                          modifiedDirs : ArrayBuffer[String], modifiedFiles : Map[SmartFileHandler, FileChangeType], isFirstCheck : Boolean){
-    val parentfolderHashed = hashPath(parentfolder)//used for logging since path contains user and password
+  private def findDirModifiedDirectChilds(parentFolder : String, parentFolderDepth : Int, manager : StandardFileSystemManager,
+                                          modifiedDirs : ArrayBuffer[(String, Int)], modifiedFiles : Map[SmartFileHandler, FileChangeType], isFirstCheck : Boolean){
+    val parentFolderHashed = hashPath(parentFolder)//used for logging since path contains user and password
 
-    logger.info("SFTP Changes Monitor - listing dir " + parentfolderHashed)
-    val directChildren = getRemoteFolderContents(parentfolder, manager).sortWith(_.getContent.getLastModifiedTime < _.getContent.getLastModifiedTime)
+    logger.info("SFTP Changes Monitor - listing dir " + parentFolderHashed)
+    val directChildren = getRemoteFolderContents(parentFolder, manager).sortWith(_.getContent.getLastModifiedTime < _.getContent.getLastModifiedTime)
     logger.debug("SftpChangesMonitor - Found following children " + directChildren.map(c=>c.getURL.toString).mkString(","))
 
     var changeType : FileChangeType = null //new, modified
@@ -662,8 +662,8 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
           logger.debug("SftpChangesMonitor - file {} is {}", uniquePath, changeType.toString)
 
           filesStatusMap.put(uniquePath, currentChildEntry)
-          if (currentChildEntry.isDirectory)
-            modifiedDirs += uniquePath
+          /*if (currentChildEntry.isDirectory)
+            modifiedDirs += uniquePath*/
         }
         else {
           logger.debug("SftpChangesMonitor - file {} is already in monitors filesStatusMap", uniquePath)
@@ -679,9 +679,10 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
         }
 
         //TODO : this method to find changed folders is not working as expected. so for now check all dirs
-        if (currentChildEntry.isDirectory) {
+        if (currentChildEntry.isDirectory &&
+          (monitoringConf.dirMonitoringDepth == 0 || parentFolderDepth < monitoringConf.dirMonitoringDepth)) {
           logger.debug("SftpChangesMonitor - file {} is directory", uniquePath)
-          modifiedDirs += uniquePath
+          modifiedDirs.append((uniquePath, parentFolderDepth + 1))
         }
 
         if (isChanged) {
@@ -704,7 +705,7 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
     val deletedFiles = new ArrayBuffer[String]()
 
     filesStatusMap.values.foreach(fileEntry =>{
-      if(isDirectParentDir(fileEntry, parentfolder)){
+      if(isDirectParentDir(fileEntry, parentFolder)){
         if(!directChildren.exists(fileStatus => fileStatus.getURL.toString.equals(fileEntry.name))) {
           //key that is no more in the folder => file/folder deleted
           logger.debug("file {} is no more under folder  {}, will be deleted from map", fileEntry.name, fileEntry.parent)

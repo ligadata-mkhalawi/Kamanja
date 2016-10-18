@@ -91,11 +91,12 @@ class Archiver {
 
     logger.warn("dstDirToArchive="+dstDirToArchive)
 
-    val destArchiveDirHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, dstDirToArchive)
+    //val destArchiveDirHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, dstDirToArchive)
+    val osWriter = new com.ligadata.OutputAdapters.OutputStreamWriter()
     //might need to build sub-dirs corresponding to input dir structure
     val destArchiveDirExists =
-      if (!destArchiveDirHandler.exists())
-        destArchiveDirHandler.mkdirs()
+      if (!osWriter.isFileExists(adapterConfig.archiveConfig.outputConfig, dstDirToArchive))
+        osWriter.mkdirs(adapterConfig.archiveConfig.outputConfig, dstDirToArchive)
       else true
 
     if (!destArchiveDirExists) {

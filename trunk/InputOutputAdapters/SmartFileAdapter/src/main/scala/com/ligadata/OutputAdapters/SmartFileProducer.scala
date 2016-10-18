@@ -317,6 +317,51 @@ class OutputStreamWriter {
     file.length()
   }
 
+  def mkdirs(fc : SmartFileProducerConfiguration, dirPath : String ) : Boolean = {
+    if (fc.uri.startsWith("hdfs://")) mkdirsFS(fc, dirPath)
+    else mkdirsHDFS(fc, dirPath)
+  }
+
+  def mkdirsFS(fc : SmartFileProducerConfiguration, dirPath : String ) : Boolean = {
+    LOG.info("OutputStreamWriter - mkdirs for path " + dirPath)
+    try {
+      new File(dirPath).mkdirs()
+    }
+    catch{
+      case e : Throwable =>
+        LOG.error("Posix File Handler - Error while creating path " + dirPath, e)
+        false
+    }
+  }
+
+  def mkdirsHDFS(fc : SmartFileProducerConfiguration, dirPath : String) : Boolean = {
+    LOG.info("OutputStreamWriter - mkdirs for path " + dirPath)
+    try {
+      val hdfsConf: Configuration = new Configuration()
+      if (fc.kerberos != null) {
+        hdfsConf.set("hadoop.security.authentication", "kerberos")
+        UserGroupInformation.setConfiguration(hdfsConf)
+        ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(fc.kerberos.principal, fc.kerberos.keytab);
+      }
+
+      if (fc.hadoopConfig != null && !fc.hadoopConfig.isEmpty) {
+        fc.hadoopConfig.foreach(conf => {
+          hdfsConf.set(conf._1, conf._2)
+        })
+      }
+
+      val uri: URI = URI.create(dirPath)
+      val path: Path = new Path(uri)
+      val fs: FileSystem = FileSystem.get(uri, hdfsConf)
+      fs.mkdirs(path)
+    }
+    catch{
+      case ex : Throwable =>
+        LOG.warn("", ex)
+        false
+    }
+  }
+
   /*
     def hasCompressedFlag(fc: SmartFileProducerConfiguration): Boolean = {
       return (fc.compressionString != null)
