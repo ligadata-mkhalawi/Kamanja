@@ -71,15 +71,25 @@ class Archiver {
 
     val srcFileToArchive = srcFileDir + "/" + srcFileBaseName
     //val dstFileToArchive =  partitionFormatString.format(values: _*) + "/" + srcFileBaseName
-    val dstDirToArchiveBase = partitionFormatString.format(values: _*)
+
+    val dstDirToArchiveBase =
+      if(adapterConfig.archiveConfig.createDirPerLocation) {
+        val srcDirStruct = locationInfo.srcDir.split("/")
+        val srcDirOnly = srcDirStruct(srcDirStruct.length - 1) //last part of src dir
+        partitionFormatString.format(values: _*) + "/" +  srcDirOnly
+      }
+      else partitionFormatString.format(values: _*)
+
     val srcFileStruct = srcFileToArchive.split("/")
     val dstDirToArchive =
       if (locationInfo != null && adapterConfig.monitoringConfig.createInputStructureInTargetDirs) {
-         val dir = srcFileStruct.take(srcFileStruct.length - 1).mkString("/").replace(locationInfo.targetDir, dstDirToArchiveBase)
+        val dir = srcFileStruct.take(srcFileStruct.length - 1).mkString("/").replace(locationInfo.targetDir, dstDirToArchiveBase)
         trimFileFromLocalFileSystem(dir)
       }
       else trimFileFromLocalFileSystem(dstDirToArchiveBase)
 
+
+    logger.warn("dstDirToArchive="+dstDirToArchive)
 
     val destArchiveDirHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, dstDirToArchive)
     //might need to build sub-dirs corresponding to input dir structure

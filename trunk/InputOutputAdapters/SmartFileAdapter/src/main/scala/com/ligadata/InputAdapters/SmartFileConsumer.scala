@@ -1252,7 +1252,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
   // Returns target
   private def getTargetFile(fileHandler : SmartFileHandler): (String, String) = {
-    val originalFilePath = fileHandler.getFullPath
+    val originalFilePath = fileHandler.getSimplifiedFullPath
 
     /*if(!locationTargetMoveDirsMap.contains(parentDir))
       throw new Exception("No target move dir for directory " + parentDir)

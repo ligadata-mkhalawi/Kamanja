@@ -16,6 +16,11 @@ class ArchiveConfig {
   var outputConfig: SmartFileProducerConfiguration = null
 
   var consolidationMaxSizeGB : Double = 1
+
+  //whether to create a dir for each location under archive dir.
+  //we are dealing with files not messages, so cannot use msg name
+  //instead last part of configured location src dir path will be used as dir name
+  var createDirPerLocation : Boolean = true
 }
 
 /**
@@ -70,6 +75,11 @@ class FileAdapterMonitoringConfig {
   def isMovingEnabled: Boolean = enableMoving == null || enableMoving.length == 0 || enableMoving.equalsIgnoreCase("on")
 
   var createInputStructureInTargetDirs = true
+
+  //0 => all depths
+  //1 => check only dir direct child files
+  //n > 1 => stop at corresponding depth
+  var dirMonitoringDepth : Int = 0
 }
 
 class Padding {
@@ -273,6 +283,13 @@ object SmartFileAdapterConfiguration {
       else if (kv._1.compareToIgnoreCase("EnableMoving") == 0) {
         monitoringConfig.enableMoving = kv._2.asInstanceOf[String]
       }
+      else if (kv._1.compareToIgnoreCase("CreateInputStructureInTargetDirs") == 0) {
+        monitoringConfig.createInputStructureInTargetDirs = kv._2.asInstanceOf[String].trim.toBoolean
+      }
+      else if (kv._1.compareToIgnoreCase("DirMonitoringDepth") == 0) {
+        monitoringConfig.dirMonitoringDepth = kv._2.asInstanceOf[String].trim.toInt
+      }
+
       else if (kv._1.compareToIgnoreCase("FileComponents") == 0) {
         //public FileComponents
         val componentsMap = kv._2.asInstanceOf[Map[String, Any]]
@@ -428,6 +445,8 @@ object SmartFileAdapterConfiguration {
 
         archiveConfig.consolidationMaxSizeGB = if (connConf.contains("ConsolidationMaxSizeGB")) connConf.getOrElse("ConsolidationMaxSizeGB", "1").toString.trim.toDouble else 1
         if (archiveConfig.consolidationMaxSizeGB <= 0) archiveConfig.consolidationMaxSizeGB = 1
+
+        archiveConfig.createDirPerLocation = if (connConf.contains("CreateDirPerLocation")) connConf.getOrElse("CreateDirPerLocation", "true").toString.trim.toBoolean else true
 
       } catch {
         case e: Throwable => {

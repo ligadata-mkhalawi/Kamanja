@@ -7,6 +7,7 @@ import java.io.InputStream;
 
 public interface SmartFileHandler {
     String getFullPath();
+    String getSimplifiedFullPath(); // remove protocol/port
     String getParentDir();
 
     //gets input stream based on the fs type (das/nas, hdfs, sft), usually used for file type detecting purposes

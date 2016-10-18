@@ -99,6 +99,10 @@ class SftpFileHandler extends SmartFileHandler{
 
   def getFullPath = remoteFullPath
 
+  def getSimplifiedFullPath : String = {
+    SftpUtility.getPathOnly(remoteFullPath)
+  }
+
   //gets the input stream according to file system type - SFTP here
   def getDefaultInputStream : InputStream = {
 

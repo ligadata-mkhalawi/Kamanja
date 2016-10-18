@@ -53,6 +53,12 @@ class PosixFileHandler extends SmartFileHandler{
     isBinary = isBin
   }
 
+  def getSimplifiedFullPath : String = {
+    if (fileFullPath.startsWith("file://"))
+      fileFullPath.substring("file://".length() - 1)
+    else fileFullPath
+  }
+
   def getParentDir : String = MonitorUtils.simpleDirPath(fileObject.getParent.trim)
 
   //gets the input stream according to file system type - POSIX here
@@ -387,18 +393,21 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
 
                     try {
 
-                      val dirsToCheck = new ArrayBuffer[String]()
-                      dirsToCheck += targetFolder
+                      val dirsToCheck = new ArrayBuffer[(String, Int)]() //dir name, dir level
+                      dirsToCheck.append((targetFolder, 1))
 
                       while (dirsToCheck.nonEmpty) {
                         val dirToCheck = dirsToCheck.head
                         dirsToCheck.remove(0)
 
-                        val dir = new File(dirToCheck)
+                        val dir = new File(dirToCheck._1)
+                        val dirDepth =  dirToCheck._2
                         checkExistingFiles(dir, isFirstScan, location)
-                        //get subdirectories
-                        dir.listFiles.filter(_.isDirectory).foreach(d => dirsToCheck += d.toString)
 
+                        if(monitoringConf.dirMonitoringDepth == 0 || dirDepth < monitoringConf.dirMonitoringDepth) {
+                          //get subdirectories
+                          dir.listFiles.filter(_.isDirectory).foreach(d => dirsToCheck.append((d.toString, dirDepth + 1)))
+                        }
                         errorWaitTime = 1000
                       }
 
@@ -501,15 +510,9 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
       val deletedFiles = new ArrayBuffer[String]()
       fileCacheLock.synchronized {
         fileCache.foreach(fileCacheEntry => {
-          //logger.debug("file in map is {}, its parent is {}, the folder being checked is {}",
-            //fileCacheEntry._1,  new File(fileCacheEntry._1).getParent, parentDir.toString.trim)
-
           if (new File(fileCacheEntry._1).getParent.trim.equals(parentDir.toString.trim)) {
-            //logger.debug("file in map is direct child of checked folder")
-            //logger.debug("checked folder's children are {}", files)
             if (!files.exists(file => file.toString.equals(fileCacheEntry._1))) {
               //key that is no more in the folder => file/folder deleted
-              //logger.debug("file in map is not currenlty in children list of the folder, adding it to deleted files list")
               deletedFiles += fileCacheEntry._1
             }
           }

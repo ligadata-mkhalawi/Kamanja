@@ -72,6 +72,10 @@ class HdfsFileHandler extends SmartFileHandler {
 
   def getFullPath = fileFullPath
 
+  def getSimplifiedFullPath : String = {
+    HdfsUtility.getFilePathNoProtocol(getFullPath)
+  }
+
   def getParentDir: String = {
 
     val simpleFilePath = HdfsUtility.getFilePathNoProtocol(getFullPath)
@@ -424,8 +428,8 @@ class HdfsChangesMonitor(adapterName: String, modifiedFileCallback: (SmartFileHa
                 try {
                   logger.info("Smart File Monitor - Monitoring folder {} on thread {}", targetFolder, currentThreadId.toString)
 
-                  val modifiedDirs = new ArrayBuffer[String]()
-                  modifiedDirs += targetFolder
+                  val modifiedDirs = new ArrayBuffer[(String, Int)]() //dir name, dir depth
+                  modifiedDirs.append((targetFolder, 1))
                   while (modifiedDirs.nonEmpty) {
                     //each time checking only updated folders: first find direct children of target folder that were modified
                     // then for each folder of these search for modified files and folders, repeat for the modified folders
@@ -435,7 +439,7 @@ class HdfsChangesMonitor(adapterName: String, modifiedFileCallback: (SmartFileHa
 
                     modifiedDirs.remove(0)
                     val fs = FileSystem.get(hdfsConfig)
-                    findDirModifiedDirectChilds(aFolder, fs, modifiedDirs, modifiedFiles, isFirstScan)
+                    findDirModifiedDirectChilds(aFolder._1, aFolder._2, fs, modifiedDirs, modifiedFiles, isFirstScan)
 
                     //logger.debug("Closing Hd File System object fs in monitorDirChanges()")
                     //fs.close()
@@ -503,11 +507,11 @@ class HdfsChangesMonitor(adapterName: String, modifiedFileCallback: (SmartFileHa
 
   }
 
-  private def findDirModifiedDirectChilds(parentfolder: String, hdFileSystem: FileSystem,
-                                          modifiedDirs: ArrayBuffer[String], modifiedFiles: Map[SmartFileHandler, FileChangeType], isFirstCheck: Boolean) {
+  private def findDirModifiedDirectChilds(parentFolder: String, parentFolderDepth : Int, hdFileSystem: FileSystem,
+                                          modifiedDirs: ArrayBuffer[(String, Int)], modifiedFiles: Map[SmartFileHandler, FileChangeType], isFirstCheck: Boolean) {
 
-    logger.info("HDFS Changes Monitor - listing dir " + parentfolder)
-    val directChildren = getFolderContents(parentfolder, hdFileSystem).sortWith(_.getModificationTime < _.getModificationTime)
+    logger.info("HDFS Changes Monitor - listing dir " + parentFolder)
+    val directChildren = getFolderContents(parentFolder, hdFileSystem).sortWith(_.getModificationTime < _.getModificationTime)
     var changeType: FileChangeType = null //new, modified
 
     //process each file reported by FS cache.
@@ -522,10 +526,11 @@ class HdfsChangesMonitor(adapterName: String, modifiedFileCallback: (SmartFileHa
           isChanged = true
           changeType = if (isFirstCheck) AlreadyExisting else New
 
-          val fileEntry = makeFileEntry(fileStatus, parentfolder)
+          val fileEntry = makeFileEntry(fileStatus, parentFolder)
           filesStatusMap.put(uniquePath, fileEntry)
-          if (fileStatus.isDirectory)
-            modifiedDirs += uniquePath
+          /*if (fileStatus.isDirectory &&
+            (monitoringConf.dirMonitoringDepth == 0 || parentFolderDepth < monitoringConf.dirMonitoringDepth))
+            modifiedDirs.append((uniquePath, parentFolderDepth + 1))*/
         }
         else {
           val storedEntry = filesStatusMap.get(uniquePath).get
@@ -539,8 +544,9 @@ class HdfsChangesMonitor(adapterName: String, modifiedFileCallback: (SmartFileHa
         }
 
         //TODO : this method to find changed folders is not working as expected. so for now check all dirs
-        if (fileStatus.isDirectory)
-          modifiedDirs += uniquePath
+        if (fileStatus.isDirectory &&
+          (monitoringConf.dirMonitoringDepth == 0 || parentFolderDepth < monitoringConf.dirMonitoringDepth))
+          modifiedDirs.append((uniquePath, parentFolderDepth + 1))
 
         if (isChanged) {
           if (fileStatus.isDirectory) {
@@ -567,10 +573,10 @@ class HdfsChangesMonitor(adapterName: String, modifiedFileCallback: (SmartFileHa
     filesStatusMap.values.foreach(fileEntry => {
       //logger.debug("checking if file {} is deleted, parent is {}. comparing to folder {}",
       //fileEntry.name, fileEntry.parent, parentfolder)
-      if (isDirectParentDir(fileEntry, parentfolder)) {
+      if (isDirectParentDir(fileEntry, parentFolder)) {
         if (!directChildren.exists(fileStatus => fileStatus.getPath.toString.equals(fileEntry.name))) {
           //key that is no more in the folder => file/folder deleted
-          logger.debug("file {} is no more under folder  {}, will be deleted from map", fileEntry.name, parentfolder)
+          logger.debug("file {} is no more under folder  {}, will be deleted from map", fileEntry.name, parentFolder)
           deletedFiles += fileEntry.name
         }
         else {
