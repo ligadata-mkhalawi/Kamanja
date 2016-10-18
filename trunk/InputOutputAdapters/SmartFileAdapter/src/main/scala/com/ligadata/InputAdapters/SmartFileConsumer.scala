@@ -23,7 +23,7 @@ case class FileStatus(status: Int, offset: Long, createDate: Long)
 //case class OffsetValue (lastGoodOffset: Int, partitionOffsets: Map[Int,Int])
 case class EnqueuedFileHandler(fileHandler: SmartFileHandler, offset: Long, createDate: Long, partMap: scala.collection.mutable.Map[Int, Int])
 
-case class EnqueuedGroupHandler(fileHandlers: Array[SmartFileHandler], offset: Long, createDate: Long, partMap: scala.collection.mutable.Map[Int, Int])
+case class EnqueuedGroupHandler(fileHandlers: Array[SmartFileHandler], offset: Long, createDates: Array[Long], partMap: scala.collection.mutable.Map[Int, Int])
 
 
 class SmartFileConsumerContext {
