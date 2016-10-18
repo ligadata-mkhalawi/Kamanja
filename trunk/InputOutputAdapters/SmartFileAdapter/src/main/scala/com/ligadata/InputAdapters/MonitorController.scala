@@ -480,20 +480,20 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
     }
   }
 
-  private def deQGroup: ArrayBuffer[EnqueuedFileHandler] = {
+  private def deQGroup: EnqueuedGroupHandler = {
 
-    var enqueuedFileHandlers: ArrayBuffer[EnqueuedFileHandler] = ArrayBuffer()
     if (fileQ.isEmpty) {
       return null
     }
-    groupQ.foreach(deQFile => {
-      fileQLock.synchronized {
-        val ef = fileQ.dequeue()
-        logger.info("SMART FILE CONSUMER (MonitorController):  deq file " + ef.fileHandler.getFullPath + " with priority " + ef.createDate + " --- curretnly " + fileQ.size + " files left on a QUEUE")
-        enqueuedFileHandlers += ef
-      }
-    })
-    return enqueuedFileHandlers
+    fileQLock.synchronized {
+      val enqueuedgroupHandler = groupQ.dequeue()
+
+      logger.info("SMART FILE CONSUMER (MonitorController):  deq group " + enqueuedgroupHandler.fileHandlers.foreach(x => {
+        print(x.getFullPath + ",")
+      }) + " with priority " + enqueuedgroupHandler.createDate + " --- curretnly " + fileQ.size + " files left on a QUEUE")
+
+      return enqueuedgroupHandler
+    }
   }
 
   private def waitingFilesToProcessCount: Int = {
@@ -515,17 +515,16 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
   }
 
 
-  def getNextGroupToProcess: ArrayBuffer[String] = {
+  def getNextGroupToProcess: String = {
     val g = deQGroup
-    var retvalue: ArrayBuffer[String] = ArrayBuffer()
-
+    var retvalue: String = ""
     if (g == null) {
       return null
     } else {
-      g.foreach(f => {
-        retvalue += f.fileHandler.getFullPath
+      g.fileHandlers.foreach(f => {
+        retvalue = retvalue + "~~" + f.getFullPath
       })
-      return retvalue
+      return retvalue.substring(2, retvalue.length)
     }
   }
 

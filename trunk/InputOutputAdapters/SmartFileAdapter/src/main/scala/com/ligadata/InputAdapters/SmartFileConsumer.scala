@@ -23,6 +23,8 @@ case class FileStatus(status: Int, offset: Long, createDate: Long)
 //case class OffsetValue (lastGoodOffset: Int, partitionOffsets: Map[Int,Int])
 case class EnqueuedFileHandler(fileHandler: SmartFileHandler, offset: Long, createDate: Long, partMap: scala.collection.mutable.Map[Int, Int])
 
+case class EnqueuedGroupHandler(fileHandlers: Array[SmartFileHandler], offset: Long, createDate: Long, partMap: scala.collection.mutable.Map[Int, Int])
+
 
 class SmartFileConsumerContext {
   var adapterName: String = _
@@ -645,7 +647,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       }
   }*/
 
-
+  //value for file processing queue in cache has the format <node1>/<thread1>:<groupOfFileNamesSeperatedBy"~~">|<node2>/<thread1>:<groupOfFileNamesSeperatedBy"~~">
   def addToProcessingQueue(processingItem: String, addToHead: Boolean = false): Unit = {
     processingQLock.synchronized {
 
@@ -666,6 +668,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     }
   }
 
+  //value for file processing queue in cache has the format <node1>/<thread1>:<groupOfFileNamesSeperatedBy"~~">|<node2>/<thread1>:<groupOfFileNamesSeperatedBy"~~">
   def removeFromProcessingQueue(processingItem: String): Unit = {
     processingQLock.synchronized {
 
@@ -755,24 +758,32 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             //check if it is allowed to process one more file
             if (processingQueue.length < adapterConfig.monitoringConfig.consumersCount) {
 
-              val fileToProcessFullPath = if (monitorController == null) null
-              else monitorController.getNextFileToProcess
-              if (fileToProcessFullPath != null) {
+              val groupToProcessFullPath = if (monitorController == null) null
+              else monitorController.getNextGroupToProcess
 
-                LOG.debug("Smart File Consumer - Adding a file processing assignment of file + " + fileToProcessFullPath +
+              var data: ArrayBuffer[String] = new ArrayBuffer()
+              if (groupToProcessFullPath != null) {
+
+                LOG.debug("Smart File Consumer - Adding a group processing assignment of group + " + groupToProcessFullPath +
                   " to Node " + requestingNodeId + ", thread Id=" + requestingThreadId)
 
                 //leave offset management to engine, usually this will be other than zero when calling startProcessing
                 val offset = 0L //getFileOffsetFromCache(fileToProcessFullPath)
-                val data = fileToProcessFullPath + "|" + offset
 
-                //there are files that need to process
+                // iterate to add ("|" + offset) to each file path
+                groupToProcessFullPath.split("~~").foreach(fileToProcessFullPath => {
+                  data += fileToProcessFullPath + "|" + offset
+                })
 
-                val newProcessingItem = requestingNodeId + "/" + requestingThreadId + ":" + fileToProcessFullPath
+                //there are groups that need to process
+                //val groupOfFiles = groupToProcessFullPath.mkString("~~")
+                val newProcessingItem = requestingNodeId + "/" + requestingThreadId + ":" + groupToProcessFullPath
                 addToProcessingQueue(newProcessingItem)
 
                 try {
-                  envContext.setListenerCacheKey(fileToProcessKeyPath, data)
+                  // one setListenerCacheKey for all keys
+                  val groupOfFilesData = data.mkString("~~")
+                  envContext.setListenerCacheKey(fileToProcessKeyPath, groupOfFilesData)
                 } catch {
                   case e: Throwable => {
                     removeFromProcessingQueue(newProcessingItem)
@@ -836,7 +847,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       val participantPathTokens = reqTokens(0).split("/")
       val nodeId = participantPathTokens(0)
       val partitionId = participantPathTokens(1).toInt
-      initialFilesToProcess.find(fileInfo => fileInfo._1.equals(nodeId) && fileInfo._2 == partitionId) match {
+      initialFilesToProcess.find(fileInfo =>
+        fileInfo._1.equals(nodeId) && fileInfo._2 == partitionId) match {
         case None => {}
         case Some(fileInfo) => {
           removeFromRequestQueue(requestStr) //remove the current request
@@ -1005,7 +1017,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
           //remove the file from processing queue
           var processingQueue = getFileProcessingQueue
-          val valueInProcessingQueue = processingNodeId + "/" + processingThreadId + ":" + processingFilePath
+          val valueInProcessingQueue = processingNodeId + "/" + processingThreadId + ":" + processingFilePath //// ???????
           LOG.debug("Smart File Consumer (Leader) - removing from processing queue: " + valueInProcessingQueue)
           if (!isShutdown)
             removeFromProcessingQueue(valueInProcessingQueue)
