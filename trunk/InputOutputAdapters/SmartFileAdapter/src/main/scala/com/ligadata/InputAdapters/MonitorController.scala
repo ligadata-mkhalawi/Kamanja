@@ -216,22 +216,33 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
 
         var grps: ArrayBuffer[ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))]] = ArrayBuffer()
 
+        logger.error("==============> HaithamLog => Before Grouping : adapterConfig.monitoringConfig.enableEmailAndAttachmentMode= " + adapterConfig.monitoringConfig.enableEmailAndAttachmentMode)
         if (adapterConfig.monitoringConfig.enableEmailAndAttachmentMode == true) {
 
           bufferingQ_map.foreach(element => {
+            //            logger.error("==============> HaithamLog => Grouping: outer loop")
+
             val fh = element._1
             val pattern = "^((?!_att).)*$"
             if (fh.getFullPath.matches(pattern)) {
+              //              logger.error("==============> HaithamLog => Grouping: outer loop : fh.getFullPath.matches(pattern)==true")
+
               var tmpArray: ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))] = ArrayBuffer()
               // creating a tmpArray, and adding an email file FileHandler to it
               tmpArray += element
 
               val emailName = extractFileNameWithoutExtention(fh.getFullPath)
+              //              logger.error("==============> HaithamLog => Grouping: outer loop : emailName = " + emailName)
               bufferingQ_map.foreach(element2 => {
+                //                logger.error("==============> HaithamLog => Grouping: inner loop ")
                 val fileName = extractFileNameWithoutExtention(element2._1.getFullPath)
+                //                logger.error("==============> HaithamLog => Grouping: inner loop : fileName = " + fileName)
+
                 // adding attachments, but make sure not to add the email to the tmpArray again
                 val pattern2 = emailName + "_" + "att" + "\\p{Alnum}.*"
                 if (fileName.matches(pattern2) && !fileName.equals(emailName)) {
+                  //                  logger.error("==============> HaithamLog => Grouping: inner loop : fileName.matches(pattern2) && !fileName.equals(emailName) = " + (fileName.matches(pattern2) && !fileName.equals(emailName)))
+
                   // adding attachments of the previous email to the tmpArray
                   tmpArray += element2
                 }
@@ -251,8 +262,8 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
         grps.foreach(grp => {
           grp.foreach(x => {
             print(x._1.getFullPath + " ,")
-            println(" ")
           })
+          println(" ")
         })
         logger.error("==============> HaithamLog => After Printing the grouped files")
 
@@ -318,7 +329,8 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
                         if (isEnqueued(fileTuple._1)) {
                           logger.debug("SMART FILE CONSUMER (MonitorController):  File already enqueued " + fileHandler.getFullPath)
                         } else {
-                          //                          logger.info("SMART FILE CONSUMER (MonitorController):  File READY TO PROCESS " + fileHandler.getFullPath)
+                          logger.info("SMART FILE CONSUMER (MonitorController):  File READY TO PROCESS " + fileHandler.getFullPath)
+                          canProcessFiles = canProcessFiles + 1
                           //                          enQFile(fileTuple._1, NOT_RECOVERY_SITUATION, fileHandler.lastModified)
                           //                          newlyAdded.append(fileHandler)
                         }
@@ -487,16 +499,13 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
       //        tmpArrayBuffer += EnqueuedFileHandler(fileHandler, offset, createDate, partMap)
       //      }
 
-      logger.info("SMART FILE CONSUMER (MonitorController):  enq group " + grp.foreach(x => {
-        print(x._1.getFullPath + ",")
-      }) + " with priority " + grp.foreach(x => {
-        print(x._1.lastModified() + ",")
-      }) + " --- curretnly " + groupQ.size + " groups on a QUEUE")
+      logger.info("SMART FILE CONSUMER (MonitorController):  enq group " + grp(0)._1.getFullPath + " with priority " + grp(0)._1.lastModified() + " --- curretnly " + groupQ.size + " groups on a QUEUE")
 
       // what should the offset be here ? instead of 0L
       val tmp: EnqueuedGroupHandler = new EnqueuedGroupHandler(tmpArrayOfSmartFileHandlers.toArray, 0L, tmpArrayOfCreateDates.toArray, scala.collection.mutable.Map[Int, Int]())
       logger.error("==============> HaithamLog => adding to groupQ ")
       groupQ += tmp
+      logger.error("==============> HaithamLog => AFTER ADDING TO groupQ , group.size= " + groupQ.size)
     }
   }
 

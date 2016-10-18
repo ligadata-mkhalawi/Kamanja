@@ -726,13 +726,13 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   //   and if there is file needs processing
   //if all conditions met then assign a file to first request in the queue
   private def assignFileProcessingIfPossible(): Unit = {
+    logger.error("==============> HaithamLog => inside assignFileProcessingIfPossible : initialFilesHandled = " + initialFilesHandled + ", hasPendingFileRequestsInQueue = " + hasPendingFileRequestsInQueue)
 
     if (isShutdown)
       return
 
     if (initialFilesHandled) {
       LOG.debug("Smart File Consumer - Leader is checking if it is possible to assign a new file to process")
-
       if (hasPendingFileRequestsInQueue) {
         requestQLock.synchronized {
           if (hasPendingFileRequestsInQueue) {
@@ -783,6 +783,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                 try {
                   // one setListenerCacheKey for all keys
                   val groupOfFilesData = data.mkString("~~")
+                  logger.error("==============> HaithamLog => inside assignFileProcessingIfPossible2 : fileToProcessKeyPath = " + fileToProcessKeyPath + ", groupOfFilesData = " + groupOfFilesData)
                   envContext.setListenerCacheKey(fileToProcessKeyPath, groupOfFilesData)
                 } catch {
                   case e: Throwable => {
@@ -880,10 +881,14 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   }
 
   private def assignInitialFiles(initialFilesToProcess: Array[(String, Int, String, Long)]): Unit = {
+    logger.error("==============> HaithamLog => inside assignInitialFiles ")
+
     LOG.debug("Smart File Consumer - handling initial assignment ")
 
     if (initialFilesToProcess == null || initialFilesToProcess.length == 0) {
       LOG.debug("Smart File Consumer - no initial files to process")
+      logger.error("==============> HaithamLog => inside assignInitialFiles : no initial files to process")
+
       return
     }
     requestQLock.synchronized {
@@ -906,6 +911,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
         if (assignedFilesList.contains(fileInfo._3)) {
           LOG.warn("Smart File Consumer - Initial files : file ({}) was already assigned", fileInfo._3)
+          logger.error("==============> HaithamLog => inside assignInitialFiles : file ({" + fileInfo._3 + "}) was already assigned")
         }
 
         else {
@@ -956,12 +962,16 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             assignedFilesList.append(fileToProcessFullPath)
 
             val newProcessingItem = nodeId + "/" + partitionId + ":" + fileToProcessFullPath
+            logger.error("==============> HaithamLog => inside assignInitialFiles : newProcessingItem =" + newProcessingItem)
+
             addToProcessingQueue(newProcessingItem) //add to processing queue
 
             LOG.debug("Smart File Consumer - Initial files : Adding a file processing assignment of file (" + fileToProcessFullPath +
               ") to Node " + nodeId + ", partition Id=" + partitionId)
             val offset = fileInfo._4
             val data = fileToProcessFullPath + "|" + offset
+            logger.error("==============> HaithamLog => inside assignInitialFiles : fileAssignmentKeyPath =" + fileAssignmentKeyPath + ", data" + data)
+
             envContext.setListenerCacheKey(fileAssignmentKeyPath, data)
           }
         }
