@@ -424,9 +424,10 @@ public class Migrate {
                     && srcVer.equalsIgnoreCase("1.3") == false
 		&& srcVer.substring(0,3).equalsIgnoreCase("1.4") == false
 		&& srcVer.substring(0,3).equalsIgnoreCase("1.5") == false
+		&& srcVer.substring(0,3).equalsIgnoreCase("1.6") == false
 		) {
-                sendStatus("We support source versions only 1.1 or 1.2 or 1.3 or 1.4 or 1.4.1 or 1.4.3 or 1.5.0 We don't support " + srcVer, "ERROR");
-                logger.error("We support source versions only 1.1 or 1.2 or 1.3 or 1.4 or 1.4.1 or 1.4.3 or 1.5.0 We don't support " + srcVer);
+                sendStatus("We support source versions only 1.1 or 1.2 or 1.3 or 1.4 or 1.4.1 or 1.4.3 or 1.5.0 or 1.6.0 We don't support " + srcVer, "ERROR");
+                logger.error("We support source versions only 1.1 or 1.2 or 1.3 or 1.4 or 1.4.1 or 1.4.3 or 1.5.0 or 1.6.0 We don't support " + srcVer);
                 usage();
                 return retCode;
             }
