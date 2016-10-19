@@ -439,7 +439,7 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
             //              fileLastModified += fileTuple._1.lastModified
             //            }
 
-            logger.error("==============> HaithamLog => call to enqueue a group ")
+            //            logger.error("==============> HaithamLog => call to enqueue a group ")
             enQGroup(grp, NOT_RECOVERY_SITUATION) // enqueue a group into the groupQ
             //            enQGroup(grp, NOT_RECOVERY_SITUATION, fileLastModified)
             //            newlyAddedGroups += grp.toArray
@@ -495,7 +495,7 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
   private def enQGroup(grp: ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))], offset: Int, partMap: scala.collection.mutable.Map[Int, Int] = scala.collection.mutable.Map[Int, Int]()): Unit = {
     groupQLock.synchronized {
 
-      logger.error("==============> HaithamLog => inside enQGroup ")
+      //      logger.error("==============> HaithamLog => inside enQGroup ")
 
       var i = 0
       var tmpArrayOfSmartFileHandlers: ArrayBuffer[SmartFileHandler] = ArrayBuffer()
@@ -517,7 +517,7 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
 
       // what should the offset be here ? instead of 0L
       val tmp: EnqueuedGroupHandler = new EnqueuedGroupHandler(tmpArrayOfSmartFileHandlers.toArray, 0L, tmpArrayOfCreateDates.toArray, scala.collection.mutable.Map[Int, Int]())
-      logger.error("==============> HaithamLog => adding to groupQ ")
+      //      logger.error("==============> HaithamLog => adding to groupQ ")
       groupQ += tmp
       logger.error("==============> HaithamLog => AFTER ADDING TO groupQ , group.size= " + groupQ.size)
     }
@@ -546,7 +546,7 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
 
   private def deQGroup: EnqueuedGroupHandler = {
 
-    logger.error("==============> HaithamLog => inside deQGroup ")
+    //    logger.error("==============> HaithamLog => inside deQGroup ")
 
     if (groupQ.isEmpty) {
       return null
@@ -584,7 +584,7 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
 
 
   def getNextGroupToProcess: String = {
-    logger.error("==============> HaithamLog => inside getNextGroupToProcess ")
+    //    logger.error("==============> HaithamLog => inside getNextGroupToProcess ")
     val g = deQGroup
     var retvalue: String = ""
     if (g == null) {
@@ -593,7 +593,7 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
       g.fileHandlers.foreach(f => {
         retvalue = retvalue + "~~" + f.getFullPath
       })
-      logger.error("==============> HaithamLog => retvalue=  " + retvalue.substring(2, retvalue.length))
+      //      logger.error("==============> HaithamLog => retvalue=  " + retvalue.substring(2, retvalue.length))
       return retvalue.substring(2, retvalue.length)
     }
   }

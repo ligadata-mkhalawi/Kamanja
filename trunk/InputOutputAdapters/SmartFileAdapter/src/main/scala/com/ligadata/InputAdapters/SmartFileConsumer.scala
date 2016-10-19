@@ -390,7 +390,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   //will be useful when leader has requests from all nodes but no more files are available. then leader should be notified when new files are detected
   private def newFileDetectedCallback(fileName: String): Unit = {
     LOG.debug("Smart File Consumer - a new file was sent to leader ({}).", fileName)
-    logger.error("==============> HaithamLog => inside newFileDetectedCallback : before assignFileProcessingIfPossible ")
+    //    logger.error("==============> HaithamLog => inside newFileDetectedCallback : before assignFileProcessingIfPossible ")
     assignFileProcessingIfPossible()
   }
 
@@ -398,7 +398,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   private def checkParticipantsStatus(previousStatusMap: scala.collection.mutable.Map[String, (Long, Int)]): scala.collection.mutable.Map[String, (Long, Int)] = {
     //if previousStatusMap==null means this is first run of checking, no errors
 
-    logger.error("==============> HaithamLog => inside checkParticipantsStatus :")
+    //    logger.error("==============> HaithamLog => inside checkParticipantsStatus :")
 
     if (isShutdown)
       return previousStatusMap
@@ -503,7 +503,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         LOG.debug("Smart File Consumer - removing the following from processing queue: {}", removeInfo._1)
 
         removeFromProcessingQueue(removeInfo._1)
-        logger.error("==============> HaithamLog => inside checkParticipantsStatus : before assignFileProcessingIfPossible ")
+        //        logger.error("==============> HaithamLog => inside checkParticipantsStatus : before assignFileProcessingIfPossible ")
         assignFileProcessingIfPossible()
 
         LOG.debug("Smart File Consumer - removing the following entry from currentStatusMap: {}", removeInfo._3)
@@ -699,7 +699,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   def requestFileLeaderCallback(eventType: String, eventPath: String, eventPathData: String): Unit = {
     LOG.debug("Smart File Consumer - requestFileLeaderCallback: eventType={}, eventPath={}, eventPathData={}",
       eventType, eventPath, eventPathData)
-    logger.error("==============> HaithamLog => inside requestFileLeaderCallback :")
+    //    logger.error("==============> HaithamLog => inside requestFileLeaderCallback :")
 
 
     if (eventPathData != null && eventPathData.length > 0) {
@@ -720,7 +720,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         if (!isShutdown)
           addToRequestQueue(newRequest)
 
-        logger.error("==============> HaithamLog => inside requestFileLeaderCallback : before assignFileProcessingIfPossible ")
+        //        logger.error("==============> HaithamLog => inside requestFileLeaderCallback : before assignFileProcessingIfPossible ")
         assignFileProcessingIfPossible()
       }
       //should do anything for remove?
@@ -732,7 +732,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   //   and if there is file needs processing
   //if all conditions met then assign a file to first request in the queue
   private def assignFileProcessingIfPossible(): Unit = {
-    logger.error("==============> HaithamLog => inside assignFileProcessingIfPossible : initialFilesHandled = " + initialFilesHandled + ", hasPendingFileRequestsInQueue = " + hasPendingFileRequestsInQueue)
+    //    logger.error("==============> HaithamLog => inside assignFileProcessingIfPossible : initialFilesHandled = " + initialFilesHandled + ", hasPendingFileRequestsInQueue = " + hasPendingFileRequestsInQueue)
 
     if (isShutdown)
       return
@@ -789,7 +789,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                 try {
                   // one setListenerCacheKey for all keys
                   val groupOfFilesData = data.mkString("~~")
-                  logger.error("==============> HaithamLog => inside assignFileProcessingIfPossible2 : fileToProcessKeyPath = " + fileToProcessKeyPath + ", groupOfFilesData = " + groupOfFilesData)
+                  //                  logger.error("==============> HaithamLog => inside assignFileProcessingIfPossible2 : fileToProcessKeyPath = " + fileToProcessKeyPath + ", groupOfFilesData = " + groupOfFilesData)
                   envContext.setListenerCacheKey(fileToProcessKeyPath, groupOfFilesData)
                 } catch {
                   case e: Throwable => {
@@ -887,13 +887,13 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   }
 
   private def assignInitialFiles(initialFilesToProcess: Array[(String, Int, String, Long)]): Unit = {
-    logger.error("==============> HaithamLog => inside assignInitialFiles ")
+    //    logger.error("==============> HaithamLog => inside assignInitialFiles ")
 
     LOG.debug("Smart File Consumer - handling initial assignment ")
 
     if (initialFilesToProcess == null || initialFilesToProcess.length == 0) {
       LOG.debug("Smart File Consumer - no initial files to process")
-      logger.error("==============> HaithamLog => inside assignInitialFiles : no initial files to process")
+      //      logger.error("==============> HaithamLog => inside assignInitialFiles : no initial files to process")
 
       return
     }
@@ -917,7 +917,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
         if (assignedFilesList.contains(fileInfo._3)) {
           LOG.warn("Smart File Consumer - Initial files : file ({}) was already assigned", fileInfo._3)
-          logger.error("==============> HaithamLog => inside assignInitialFiles : file ({" + fileInfo._3 + "}) was already assigned")
+          //          logger.error("==============> HaithamLog => inside assignInitialFiles : file ({" + fileInfo._3 + "}) was already assigned")
         }
 
         else {
@@ -968,7 +968,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             assignedFilesList.append(fileToProcessFullPath)
 
             val newProcessingItem = nodeId + "/" + partitionId + ":" + fileToProcessFullPath
-            logger.error("==============> HaithamLog => inside assignInitialFiles : newProcessingItem =" + newProcessingItem)
+            //            logger.error("==============> HaithamLog => inside assignInitialFiles : newProcessingItem =" + newProcessingItem)
 
             addToProcessingQueue(newProcessingItem) //add to processing queue
 
@@ -976,7 +976,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
               ") to Node " + nodeId + ", partition Id=" + partitionId)
             val offset = fileInfo._4
             val data = fileToProcessFullPath + "|" + offset
-            logger.error("==============> HaithamLog => inside assignInitialFiles : fileAssignmentKeyPath =" + fileAssignmentKeyPath + ", data" + data)
+            //            logger.error("==============> HaithamLog => inside assignInitialFiles : fileAssignmentKeyPath =" + fileAssignmentKeyPath + ", data" + data)
 
             envContext.setListenerCacheKey(fileAssignmentKeyPath, data)
           }
@@ -1015,7 +1015,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     LOG.debug("Smart File Consumer - fileProcessingLeaderCallback: eventType={}, eventPath={}, eventPathData={}",
       eventType, eventPath, eventPathData)
 
-    logger.error("==============> HaithamLog => inside fileProcessingLeaderCallback :")
+    //    logger.error("==============> HaithamLog => inside fileProcessingLeaderCallback :")
 
 
     if (eventPathData != null) {
@@ -1042,7 +1042,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             removeFromProcessingQueue(valueInProcessingQueue)
 
           //since a file just got finished, a new one can be processed
-          logger.error("==============> HaithamLog => inside fileProcessingLeaderCallback : before assignFileProcessingIfPossible ")
+          //          logger.error("==============> HaithamLog => inside fileProcessingLeaderCallback : before assignFileProcessingIfPossible ")
           assignFileProcessingIfPossible()
 
           if (status == File_Processing_Status_Finished || status == File_Processing_Status_Corrupted) {
@@ -1087,7 +1087,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   //what a participant should do when receiving file to process (from leader)
   def fileAssignmentFromLeaderCallback(eventType: String, eventPath: String, eventPathData: String): Unit = {
 
-    logger.error("==============> HaithamLog => inside fileAssignmentFromLeaderCallback ")
+    //    logger.error("==============> HaithamLog => inside fileAssignmentFromLeaderCallback ")
 
     if (eventPathData == null || eventPathData.length == 0)
       return
@@ -1147,9 +1147,9 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             smartFileContext.statusUpdateInterval = statusUpdateInterval
 
             smartFileContexts += smartFileContext
-            logger.error("==============> HaithamLog => fileToProcessName =  " + fileToProcessName)
-            logger.error("==============> HaithamLog => offset =  " + offset)
-            logger.error("==============> HaithamLog => smartFileContext =  " + smartFileContext)
+            //            logger.error("==============> HaithamLog => fileToProcessName =  " + fileToProcessName)
+            //            logger.error("==============> HaithamLog => offset =  " + offset)
+            //            logger.error("==============> HaithamLog => smartFileContext =  " + smartFileContext)
 
             smartFileContextMap.put(partitionId, smartFileContext)
           }

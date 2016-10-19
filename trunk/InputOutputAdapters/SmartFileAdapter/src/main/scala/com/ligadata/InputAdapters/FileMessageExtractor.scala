@@ -55,7 +55,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
 
   def extractMessages(): Unit = {
 
-    logger.error("==============> HaithamLog => inside extractMessages")
+    //    logger.error("==============> HaithamLog => inside extractMessages")
 
     if (!fileHandlers(0).exists()) {
       finishCallback(fileHandlers(0), consumerContexts(0), SmartFileConsumer.FILE_STATUS_NOT_FOUND)
@@ -107,12 +107,12 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
   }
 
   private def readBytesChunksFromFiles(): Unit = {
-    logger.error("==============> HaithamLog => inside readBytesChunksFromFiles")
+    //    logger.error("==============> HaithamLog => inside readBytesChunksFromFiles")
     fileHandlers.foreach(fileHandler => readBytesChunksFromFile(fileHandler))
   }
 
   private def readBytesChunksFromFile(fileHandler: SmartFileHandler): Unit = {
-    logger.error("==============> HaithamLog => inside readBytesChunksFromFile ")
+    //    logger.error("==============> HaithamLog => inside readBytesChunksFromFile ")
     val byteBuffer = new Array[Byte](maxlen)
 
     var readlen = 0
@@ -350,7 +350,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
   }
 
   def readWholeFiles(): Unit = {
-    logger.error("==============> HaithamLog => inside readWholeFiles")
+    //    logger.error("==============> HaithamLog => inside readWholeFiles")
 
     try {
       val msgBody = readWholeFile(fileHandlers(0))
@@ -366,13 +366,13 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
         attachmentsJson.append(",\"attachments\": {")
         for (i <- 0 until attachments.size) {
           if (i > 0)
-            attachmentsJson.append(",\"%s\":\"%s\"".format(fileHandlers(i+1).getFullPath, attachments(i)))
+            attachmentsJson.append(",\"%s\":\"%s\"".format(fileHandlers(i + 1).getFullPath, attachments(i)))
           else
-            attachmentsJson.append("\"%s\":\"%s\"".format(fileHandlers(i+1).getFullPath, attachments(i)))
+            attachmentsJson.append("\"%s\":\"%s\"".format(fileHandlers(i + 1).getFullPath, attachments(i)))
         }
 
         attachmentsJson.append("}")
-        logger.error("==============> HaithamLog => attachmentsJson " + attachmentsJson.toString)
+        //        logger.error("==============> HaithamLog => attachmentsJson " + attachmentsJson.toString)
       }
 
 
@@ -394,7 +394,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
   }
 
   def readWholeFile(fileHandler: SmartFileHandler): String = {
-    logger.error("==============> HaithamLog => inside readWholeFile")
+    //    logger.error("==============> HaithamLog => inside readWholeFile")
     val allData = ArrayBuffer[Byte]()
     // create tmpFlHandler from filename
     //    val fileName = fileHandler.getFullPath
