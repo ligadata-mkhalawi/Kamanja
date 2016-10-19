@@ -956,29 +956,31 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             //LOG.debug("Smart File Consumer - finished call to saveFileRequestsQueue, from assignInitialFiles")
             val fileToProcessFullPath = fileInfo._3
 
-
+            logger.error("==============> HaithamLog => inside assignInitialFiles : requestToAssign =" + requestToAssign)
             removeFromRequestQueue(requestToAssign) //remove the current request
-
+            // might need to add if ( reqTokens.size>0)
             val reqTokens = requestToAssign.split(":")
-            val fileAssignmentKeyPath = reqTokens(1)
-            val participantPathTokens = reqTokens(0).split("/")
-            val nodeId = participantPathTokens(0)
-            val partitionId = participantPathTokens(1).toInt
+            if (reqTokens.size >= 2) {
+              val fileAssignmentKeyPath = reqTokens(1)
+              val participantPathTokens = reqTokens(0).split("/")
+              val nodeId = participantPathTokens(0)
+              val partitionId = participantPathTokens(1).toInt
 
-            assignedFilesList.append(fileToProcessFullPath)
+              assignedFilesList.append(fileToProcessFullPath)
 
-            val newProcessingItem = nodeId + "/" + partitionId + ":" + fileToProcessFullPath
-            //            logger.error("==============> HaithamLog => inside assignInitialFiles : newProcessingItem =" + newProcessingItem)
+              val newProcessingItem = nodeId + "/" + partitionId + ":" + fileToProcessFullPath
+              //            logger.error("==============> HaithamLog => inside assignInitialFiles : newProcessingItem =" + newProcessingItem)
 
-            addToProcessingQueue(newProcessingItem) //add to processing queue
+              addToProcessingQueue(newProcessingItem) //add to processing queue
 
-            LOG.debug("Smart File Consumer - Initial files : Adding a file processing assignment of file (" + fileToProcessFullPath +
-              ") to Node " + nodeId + ", partition Id=" + partitionId)
-            val offset = fileInfo._4
-            val data = fileToProcessFullPath + "|" + offset
-            //            logger.error("==============> HaithamLog => inside assignInitialFiles : fileAssignmentKeyPath =" + fileAssignmentKeyPath + ", data" + data)
+              LOG.debug("Smart File Consumer - Initial files : Adding a file processing assignment of file (" + fileToProcessFullPath +
+                ") to Node " + nodeId + ", partition Id=" + partitionId)
+              val offset = fileInfo._4
+              val data = fileToProcessFullPath + "|" + offset
+              //            logger.error("==============> HaithamLog => inside assignInitialFiles : fileAssignmentKeyPath =" + fileAssignmentKeyPath + ", data" + data)
 
-            envContext.setListenerCacheKey(fileAssignmentKeyPath, data)
+              envContext.setListenerCacheKey(fileAssignmentKeyPath, data)
+            }
           }
         }
       })
@@ -1146,17 +1148,17 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             smartFileContext.statusUpdateCacheKey = Status_Check_Cache_KeyParent + "/" + processingNodeId + "/" + processingThreadId
             smartFileContext.statusUpdateInterval = statusUpdateInterval
 
-            smartFileContexts += smartFileContext
-            //            logger.error("==============> HaithamLog => fileToProcessName =  " + fileToProcessName)
-            //            logger.error("==============> HaithamLog => offset =  " + offset)
-            //            logger.error("==============> HaithamLog => smartFileContext =  " + smartFileContext)
-
             smartFileContextMap.put(partitionId, smartFileContext)
           }
           //        val filesToProcessName = Array(fileToProcessName) // All all files list here
+          smartFileContexts += smartFileContext
+          //          logger.error("==============> HaithamLog => smartFileContext =  " + smartFileContext)
         }
       }
     })
+
+    //    logger.error("==============> HaithamLog => smartFileContext =  smartFileContexts.size =" + smartFileContexts.size)
+
 
     //start processing the group
     val fileHandlers = filesToProcessNames.map(fileToProcessName => SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, fileToProcessName))
