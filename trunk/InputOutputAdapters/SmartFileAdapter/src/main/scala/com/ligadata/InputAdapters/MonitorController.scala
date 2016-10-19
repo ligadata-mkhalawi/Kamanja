@@ -344,8 +344,10 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
                           if (diff > bufferTimeout) {
                             logger.warn("SMART FILE CONSUMER (MonitorController): Detected that " + fileHandler.getFullPath + " has been on the buffering queue longer then " + bufferTimeout / 1000 + " seconds - Cleaning up")
 
-                            if (currentFileLocationInfo.isMovingEnabled)
+                            if (currentFileLocationInfo.isMovingEnabled) {
+                              logger.error("==============> HaithamLog => inside monitorBufferingFiles : before moveFile")
                               parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
+                            }
                             else
                               logger.info("SMART FILE CONSUMER (MonitorController): File {} will not be moved since moving is disabled for folder {} - Adapter {}",
                                 fileHandler.getFullPath, currentFileParentDir, adapterConfig.Name)
@@ -357,6 +359,7 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
                           //Invalid File - due to content type
                           if (currentFileLocationInfo.isMovingEnabled) {
                             logger.error("SMART FILE CONSUMER (MonitorController): Moving out " + fileHandler.getFullPath + " with invalid file type ")
+                            logger.error("==============> HaithamLog => inside monitorBufferingFiles 2: before moveFile")
                             parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
                           }
                           else {
@@ -385,6 +388,7 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
                   if (currentFileLocationInfo.isMovingEnabled && ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
                     logger.warn("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + fileTuple._1.getFullPath + " on the buffering queue", ioe)
                     try {
+                      logger.error("==============> HaithamLog => inside monitorBufferingFiles 3: before moveFile")
                       parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
                       // bufferingQ_map.remove(fileTuple._1)
                       removedEntries += fileTuple._1
@@ -403,6 +407,7 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
                   if (currentFileLocationInfo.isMovingEnabled && ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
                     logger.error("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + fileTuple._1 + " on the buffering queue", e)
                     try {
+                      logger.error("==============> HaithamLog => inside monitorBufferingFiles 4: before moveFile")
                       parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
                       // bufferingQ_map.remove(fileTuple._1)
                       removedEntries += fileTuple._1
