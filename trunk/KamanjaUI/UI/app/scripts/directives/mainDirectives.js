@@ -1,7 +1,7 @@
 'use strict';
 
 angular.module('networkApp')
-  .directive('footer', function () {
+  .directive('footer', function ($rootScope) {
     return {
       restrict: 'E',
       templateUrl: 'views/tpl/footer.html',
@@ -14,6 +14,18 @@ angular.module('networkApp')
           $rootScope.$broadcast('closeSideMenu');
         };
 
+        footer.filterNode = function(item){
+          item.visible = !item.visible;
+          if(item.visible){
+            item.style = {};
+          }else{
+            item.style = {'opacity': 0.5};
+          }
+
+          $rootScope.$broadcast('filterNodesChanged',
+            {id: item.id, visible: item.visible});
+        };
+
         $rootScope.$on('viewChanged', function (event, data) {
           footer.footerList = [];
           _.forEach(data.SymbolClasses, function (item) {
@@ -22,7 +34,10 @@ angular.module('networkApp')
               displayName: item === 'Input' || item === 'Output' || item === 'Storage' ? item + " " + "Adapter" : item,
               imageName: type.image + '.inactive.' + type.extension,
               imageWidth: type.width,
-              imageHeight: type.height
+              imageHeight: type.height,
+              id: item,
+              visible: true,
+              style: {}
             };
             footer.footerList.push(footerObj);
           });

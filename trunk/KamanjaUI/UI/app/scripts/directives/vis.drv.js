@@ -161,18 +161,31 @@ angular
             }
           });
 
-          $rootScope.$on('filterNodesChanged', function (event, filterObj) {
+          $rootScope.$on('filterNodesChanged', function (event, filteredNode) {
             if (data.nodes) {
-              _.each(data.nodes._data, function (item) {
-                data.nodes.update([{id: item.id, hidden: false}]);
-              });
-
-              _.each(data.edges._data, function (item) {
+              //_.each(data.nodes._data, function (item) {
+                //data.nodes._data.update([{id: filteredNode.id, hidden: filteredNode.visible}]);
+              //});
+              var selectedNodes = _.filter(data.nodes._data, {class: filteredNode.id.toLowerCase()});
+              if (selectedNodes && selectedNodes.length > 0) {
+                _.each(selectedNodes, function (item) {
+                  data.nodes.update([{id: item.id, hidden: !filteredNode.visible}]);
+                  var selectedEdges = _.filter(data.edges._data, function (edge) {
+                    return edge.from == item.id || edge.to == item.id;
+                  });
+                  if (selectedEdges && selectedEdges.length > 0) {
+                    _.each(selectedEdges, function (edge) {
+                      data.edges.update([{id: edge.id, hidden: !filteredNode.visible}]);
+                    });
+                  }
+                });
+              }
+              /*_.each(data.edges._data, function (item) {
                 data.edges.update([{id: item.id, hidden: false}]);
-              });
+              });*/
 
-              filterObj.filterList = _.orderBy(filterObj.filterList, ['checked'], ['desc']);
-              _.each(filterObj.filterList, function (filterData) {
+              //filterObj.filterList = _.orderBy(filterObj.filterList, ['checked'], ['desc']);
+              /*_.each(filterObj.filterList, function (filterData) {
                 var selectedNodes = _.filter(data.nodes._data, {class: filterData.name.toLowerCase()});
                 if (selectedNodes && selectedNodes.length > 0) {
                   _.each(selectedNodes, function (item) {
@@ -188,8 +201,8 @@ angular
                     }
                   });
                 }
-              });
-              if (filterObj.searchText != "") {
+              });*/
+              /*if (filterObj.searchText != "") {
                 var selectedNodes = _.filter(data.nodes._data, function (node) {
                   return !node._label.toLowerCase().contains(filterObj.searchText.toLowerCase())
                     && node.hidden == false;
@@ -206,7 +219,7 @@ angular
                     });
                   }
                 });
-              }
+              }*/
             }
           });
 
