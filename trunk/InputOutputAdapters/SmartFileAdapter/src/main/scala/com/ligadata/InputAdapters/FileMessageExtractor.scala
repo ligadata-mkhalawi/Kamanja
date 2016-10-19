@@ -378,7 +378,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
 
       // prepare Json here.
       val jsonString = "{\"filename\":\"%s\",\"messageBody\": \"%s\" %s}".format(fileHandlers(0).getFullPath, msgBody, attachmentsJson.toString)
-      logger.error("==============> HaithamLog => jsonString " + jsonString)
+      //      logger.error("==============> HaithamLog => jsonString " + jsonString)
 
 
       val smartFileMessage = new SmartFileMessage(jsonString.getBytes(), 0, fileHandlers(0), 0)
