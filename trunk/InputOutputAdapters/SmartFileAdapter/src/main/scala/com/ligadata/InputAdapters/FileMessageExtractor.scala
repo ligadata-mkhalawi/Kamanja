@@ -360,16 +360,24 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
         attachments += readWholeFile(fileHandlers(i))
       }
 
-      var attachmentsJson: String = "\"attachments\": {"
-      for (i <- 0 until attachments.size) {
-        attachmentsJson = attachmentsJson + "\"%s\":\"%s\",".format(fileHandlers(i).getFullPath, attachments(i))
+      var attachmentsJson = new java.lang.StringBuilder()
+
+      if (attachments.size > 0) {
+        attachmentsJson.append(",\"attachments\": {")
+        for (i <- 0 until attachments.size) {
+          if (i > 0)
+            attachmentsJson.append(",\"%s\":\"%s\"".format(fileHandlers(i+1).getFullPath, attachments(i)))
+          else
+            attachmentsJson.append("\"%s\":\"%s\"".format(fileHandlers(i+1).getFullPath, attachments(i)))
+        }
+
+        attachmentsJson.append("}")
+        logger.error("==============> HaithamLog => attachmentsJson " + attachmentsJson.toString)
       }
 
-      attachmentsJson = attachmentsJson.substring(0, attachmentsJson.length) + "}"
-      logger.error("==============> HaithamLog => attachmentsJson " + attachmentsJson)
 
       // prepare Json here.
-      val jsonString = "{\"filename\":\"%s\",\"messageBody\": \"%s,%s\"}".format(fileHandlers(0).getFullPath, msgBody, attachmentsJson)
+      val jsonString = "{\"filename\":\"%s\",\"messageBody\": \"%s\" %s}".format(fileHandlers(0).getFullPath, msgBody, attachmentsJson.toString)
       logger.error("==============> HaithamLog => jsonString " + jsonString)
 
 
@@ -395,22 +403,11 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
 
     fileHandler.openForRead()
 
-    var readlen = 0
-    var curReadLen = fileHandler.read(byteBuffer, readlen, maxlen - readlen - 1)
-    var lastReadLen = curReadLen
+    var curReadLen = fileHandler.read(byteBuffer, 0, maxlen - 1)
 
-    while (lastReadLen > 0) {
-      val minBuf = maxlen / 3; // We are expecting at least 1/3 of the buffer need to fill before
-      while (readlen < minBuf && curReadLen > 0) {
-        // Re-reading some more data
-        curReadLen = fileHandler.read(byteBuffer, readlen, maxlen - readlen - 1)
-        if (curReadLen > 0) {
-          readlen += curReadLen
-        }
-        lastReadLen = curReadLen
-      }
-
-      allData ++= byteBuffer
+    while (curReadLen > 0) {
+      allData ++= byteBuffer.slice(0, curReadLen)
+      curReadLen = fileHandler.read(byteBuffer, 0, maxlen - 1)
     }
 
     if (fileHandler != null) {

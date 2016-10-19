@@ -216,7 +216,7 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
 
         var grps: ArrayBuffer[ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))]] = ArrayBuffer()
 
-        logger.error("==============> HaithamLog => Before Grouping : adapterConfig.monitoringConfig.enableEmailAndAttachmentMode= " + adapterConfig.monitoringConfig.enableEmailAndAttachmentMode)
+        //        logger.error("==============> HaithamLog => Before Grouping : adapterConfig.monitoringConfig.enableEmailAndAttachmentMode= " + adapterConfig.monitoringConfig.enableEmailAndAttachmentMode)
         if (adapterConfig.monitoringConfig.enableEmailAndAttachmentMode == true) {
 
           bufferingQ_map.foreach(element => {
@@ -258,19 +258,20 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
           })
         }
 
-        logger.error("==============> HaithamLog => After grouping the files")
-        grps.foreach(grp => {
-          grp.foreach(x => {
-            print(x._1.getFullPath + " ,")
-          })
-          println(" ")
-        })
-        logger.error("==============> HaithamLog => After Printing the grouped files")
+        //        logger.error("==============> HaithamLog => After grouping the files")
+        //        grps.foreach(grp => {
+        //          grp.foreach(x => {
+        //            print(x._1.getFullPath + " ,")
+        //          })
+        //          println(" ")
+        //        })
+        //        logger.error("==============> HaithamLog => After Printing the grouped files")
 
 
+        //        logger.error("==============> HaithamLog => Start checking if we can enqueue a group")
 
-
-        logger.error("==============> HaithamLog => Start checking if we can enqueue a group")
+        //        var newlyAddedGroups = ArrayBuffer[Array[(SmartFileHandler, (Long, Long, Int, Boolean))]]()
+        var newlyAddedGroupsCount = 0
 
         grps.foreach(grp => {
           // for each group, iterate over each file.
@@ -424,8 +425,8 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
             }
           }
 
-          logger.error("==============> HaithamLog => before : if (canProcessFiles == grp.size) ")
-          logger.error("==============> HaithamLog => canProcessFiles=" + canProcessFiles + " grp.size=" + grp.size)
+          //          logger.error("==============> HaithamLog => before : if (canProcessFiles == grp.size) ")
+          //          logger.error("==============> HaithamLog => canProcessFiles=" + canProcessFiles + " grp.size=" + grp.size)
 
           if (canProcessFiles == grp.size) {
             //                        enQGroup
@@ -441,16 +442,29 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
             logger.error("==============> HaithamLog => call to enqueue a group ")
             enQGroup(grp, NOT_RECOVERY_SITUATION) // enqueue a group into the groupQ
             //            enQGroup(grp, NOT_RECOVERY_SITUATION, fileLastModified)
+            //            newlyAddedGroups += grp.toArray
+
+            newlyAddedGroupsCount += 1
+
           }
         })
 
-        newlyAdded.foreach(fileHandler => {
-          //notify leader about the new files
-          if (newFileDetectedCallback != null) {
-            logger.debug("Smart File Adapter (MonitorController) - New file is enqueued in monitor controller queue ({})", fileHandler.getFullPath)
-            newFileDetectedCallback(fileHandler.getFullPath)
-          }
-        })
+
+        if (newlyAddedGroupsCount > 0) {
+
+          // Triggerring detection callback only once even  thought if we find more groups
+          // We are passing empty filename, because we don't do anything with this filename at this moment.
+          newFileDetectedCallback("")
+
+        }
+
+        //        newlyAdded.foreach(fileHandler => {
+        //          //notify leader about the new files
+        //          if (newFileDetectedCallback != null) {
+        //            logger.debug("Smart File Adapter (MonitorController) - New file is enqueued in monitor controller queue ({})", fileHandler.getFullPath)
+        //            newFileDetectedCallback(fileHandler.getFullPath)
+        //          }
+        //        })
 
         try {
           bufferingQ_map --= removedEntries

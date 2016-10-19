@@ -390,12 +390,15 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   //will be useful when leader has requests from all nodes but no more files are available. then leader should be notified when new files are detected
   private def newFileDetectedCallback(fileName: String): Unit = {
     LOG.debug("Smart File Consumer - a new file was sent to leader ({}).", fileName)
+    logger.error("==============> HaithamLog => inside newFileDetectedCallback : before assignFileProcessingIfPossible ")
     assignFileProcessingIfPossible()
   }
 
   //leader constantly checks processing participants to make sure they are still working
   private def checkParticipantsStatus(previousStatusMap: scala.collection.mutable.Map[String, (Long, Int)]): scala.collection.mutable.Map[String, (Long, Int)] = {
     //if previousStatusMap==null means this is first run of checking, no errors
+
+    logger.error("==============> HaithamLog => inside checkParticipantsStatus :")
 
     if (isShutdown)
       return previousStatusMap
@@ -500,6 +503,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         LOG.debug("Smart File Consumer - removing the following from processing queue: {}", removeInfo._1)
 
         removeFromProcessingQueue(removeInfo._1)
+        logger.error("==============> HaithamLog => inside checkParticipantsStatus : before assignFileProcessingIfPossible ")
         assignFileProcessingIfPossible()
 
         LOG.debug("Smart File Consumer - removing the following entry from currentStatusMap: {}", removeInfo._3)
@@ -695,6 +699,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   def requestFileLeaderCallback(eventType: String, eventPath: String, eventPathData: String): Unit = {
     LOG.debug("Smart File Consumer - requestFileLeaderCallback: eventType={}, eventPath={}, eventPathData={}",
       eventType, eventPath, eventPathData)
+    logger.error("==============> HaithamLog => inside requestFileLeaderCallback :")
+
 
     if (eventPathData != null && eventPathData.length > 0) {
       envContext.setListenerCacheKey(eventPath, "") //clear it. TODO : find a better way
@@ -714,7 +720,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         if (!isShutdown)
           addToRequestQueue(newRequest)
 
-
+        logger.error("==============> HaithamLog => inside requestFileLeaderCallback : before assignFileProcessingIfPossible ")
         assignFileProcessingIfPossible()
       }
       //should do anything for remove?
@@ -1009,6 +1015,9 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     LOG.debug("Smart File Consumer - fileProcessingLeaderCallback: eventType={}, eventPath={}, eventPathData={}",
       eventType, eventPath, eventPathData)
 
+    logger.error("==============> HaithamLog => inside fileProcessingLeaderCallback :")
+
+
     if (eventPathData != null) {
       if (eventType.equalsIgnoreCase("put") || eventType.equalsIgnoreCase("update") ||
         eventType.equalsIgnoreCase("CHILD_UPDATED") || eventType.equalsIgnoreCase("CHILD_ADDED")) {
@@ -1033,6 +1042,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             removeFromProcessingQueue(valueInProcessingQueue)
 
           //since a file just got finished, a new one can be processed
+          logger.error("==============> HaithamLog => inside fileProcessingLeaderCallback : before assignFileProcessingIfPossible ")
           assignFileProcessingIfPossible()
 
           if (status == File_Processing_Status_Finished || status == File_Processing_Status_Corrupted) {
@@ -1092,10 +1102,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
 
     val arraytOfDataTokens = eventPathData.split("~~")
-    logger.error("==============> HaithamLog => arraytOfDataTokens =  " + arraytOfDataTokens)
+    logger.error("==============> HaithamLog => arraytOfDataTokens =  " + arraytOfDataTokens.mkString(",,"))
     arraytOfDataTokens.foreach(listItem => {
-      val dataTokens = eventPathData.split("\\|")
-      logger.error("==============> HaithamLog => dataTokens =  " + dataTokens)
+      val dataTokens = listItem.split("\\|")
+      logger.error("==============> HaithamLog => dataTokens =  " + dataTokens.mkString(",,"))
       if (dataTokens.length >= 2) {
         val fileToProcessName = dataTokens(0)
         val offset = dataTokens(1).toLong
