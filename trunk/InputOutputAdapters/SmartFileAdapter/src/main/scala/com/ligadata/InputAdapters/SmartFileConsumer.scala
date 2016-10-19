@@ -770,7 +770,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
               var data: ArrayBuffer[String] = new ArrayBuffer()
               if (groupToProcessFullPath != null) {
 
-                LOG.debug("Smart File Consumer - Adding a group processing assignment of group + " + groupToProcessFullPath +
+                val fileToProcessFullPath = groupToProcessFullPath.split("~~")(0)
+                LOG.debug("Smart File Consumer - Adding a group processing assignment of group + " + fileToProcessFullPath +
                   " to Node " + requestingNodeId + ", thread Id=" + requestingThreadId)
 
                 //leave offset management to engine, usually this will be other than zero when calling startProcessing
@@ -783,7 +784,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
                 //there are groups that need to process
                 //val groupOfFiles = groupToProcessFullPath.mkString("~~")
-                val newProcessingItem = requestingNodeId + "/" + requestingThreadId + ":" + groupToProcessFullPath
+                //                val newProcessingItem = requestingNodeId + "/" + requestingThreadId + ":" + groupToProcessFullPath
+                val newProcessingItem = requestingNodeId + "/" + requestingThreadId + ":" + fileToProcessFullPath
                 addToProcessingQueue(newProcessingItem)
 
                 try {
