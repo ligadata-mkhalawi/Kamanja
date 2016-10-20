@@ -148,7 +148,7 @@ angular
               _.each(scope.symbolClasses, function (symbolClass) {
                 _.each(messageObj[symbolClass + 'Counter'], function (model) {
                   if (model) {
-                    var node = _.find(data.nodes._data, {ID: model.Id});
+                    var node = _.find(data.nodes._data, {ID: parseInt(model.Id)});
                     if (node) {
                       console.log(model.In, linearScale(model.In));
                       data.nodes.update([{id: node.id, number: model.In, size: linearScale(model.In)}]);
@@ -166,19 +166,23 @@ angular
               //_.each(data.nodes._data, function (item) {
                 //data.nodes._data.update([{id: filteredNode.id, hidden: filteredNode.visible}]);
               //});
-              var selectedNodes = _.filter(data.nodes._data, {class: filteredNode.id.toLowerCase()});
-              if (selectedNodes && selectedNodes.length > 0) {
-                _.each(selectedNodes, function (item) {
-                  data.nodes.update([{id: item.id, hidden: !filteredNode.visible}]);
-                  var selectedEdges = _.filter(data.edges._data, function (edge) {
-                    return edge.from == item.id || edge.to == item.id;
-                  });
-                  if (selectedEdges && selectedEdges.length > 0) {
-                    _.each(selectedEdges, function (edge) {
-                      data.edges.update([{id: edge.id, hidden: !filteredNode.visible}]);
+              if(!filteredNode.isSearchText) {
+                var selectedNodes = _.filter(data.nodes._data, {class: filteredNode.id.toLowerCase()});
+                if (selectedNodes && selectedNodes.length > 0) {
+                  _.each(selectedNodes, function (item) {
+                    data.nodes.update([{id: item.id, hidden: !filteredNode.visible}]);
+                    var selectedEdges = _.filter(data.edges._data, function (edge) {
+                      return edge.from == item.id || edge.to == item.id;
                     });
-                  }
-                });
+                    if (selectedEdges && selectedEdges.length > 0) {
+                      _.each(selectedEdges, function (edge) {
+                        data.edges.update([{id: edge.id, hidden: !filteredNode.visible}]);
+                      });
+                    }
+                  });
+                }
+              }else{
+
               }
               /*_.each(data.edges._data, function (item) {
                 data.edges.update([{id: item.id, hidden: false}]);
@@ -348,10 +352,10 @@ angular
                 ctx.textAlign = 'left';
                 ctx.font = '9px arial';
                 ctx.fillStyle = '#ffffff';
-                ctx.fillText(d._label, (position.x + 13), (position.y + 0));
+                ctx.fillText(d._label, (position.x + 13), (position.y - 4));
                 ctx.font = '9px arial';
                 ctx.fillStyle = '#FFCC00';
-                ctx.fillText(d.number || '', (position.x + 19), (position.y + 10));
+                ctx.fillText(d.number == undefined ? '' : d.number, (position.x + 19), (position.y - 15));
               } else {
 
                 var rectWidth = d._label.length * 5 - 4;

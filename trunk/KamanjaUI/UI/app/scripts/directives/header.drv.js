@@ -46,10 +46,10 @@ angular.module('networkApp')
           header.filterNodes();
         };
 
-        header.filterNodes = function(){
+        /*header.filterNodes = function(){
           $rootScope.$broadcast('filterNodesChanged',
             {filterList: this.filterList, searchText: header.selectedSearch});
-        };
+        };*/
 
         header.generateFilterList = function(viewObj){
           header.filterList = [];
@@ -78,7 +78,7 @@ angular.module('networkApp')
 
         header.onSearchSelectChange = function($item, $model, $label, $event){
           $rootScope.$broadcast('filterNodesChanged',
-            {filterList: this.filterList, searchText: $item.name});
+            {searchText: $item.name, isSearchText: true});
         };
 
         header.init = function(){

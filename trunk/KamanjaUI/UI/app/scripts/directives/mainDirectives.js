@@ -23,7 +23,7 @@ angular.module('networkApp')
           }
 
           $rootScope.$broadcast('filterNodesChanged',
-            {id: item.id, visible: item.visible});
+            {id: item.id, visible: item.visible, isSearchText: false});
         };
 
         $rootScope.$on('viewChanged', function (event, data) {

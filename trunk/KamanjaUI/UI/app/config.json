@@ -2,6 +2,6 @@
   "serverIP": "52.21.246.16",
   "portNo": 8080,
   "socketUrl": "ws://54.176.225.148:7080/v2/broker/?topics=testmessageevents_1",
-  "showFilter": true,
+  "showFilter": false,
   "socketOn": true
 }
