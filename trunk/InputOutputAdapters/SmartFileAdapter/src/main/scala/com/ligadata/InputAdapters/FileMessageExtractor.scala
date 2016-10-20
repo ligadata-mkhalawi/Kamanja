@@ -130,25 +130,25 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
 
       case fio: java.io.FileNotFoundException => {
         logger.error("SMART_FILE_CONSUMER Exception accessing the file for processing the file - File is missing", fio)
-        finishCallback(fileHandler, consumerContexts(0), SmartFileConsumer.FILE_STATUS_NOT_FOUND)
+        finishCallback(fileHandlers, consumerContexts(0), SmartFileConsumer.FILE_STATUS_NOT_FOUND)
         shutdownThreads
         return
       }
       case fio: IOException => {
         logger.error("SMART_FILE_CONSUMER Exception accessing the file for processing ", fio)
-        finishCallback(fileHandler, consumerContexts(0), SmartFileConsumer.FILE_STATUS_CORRUPT)
+        finishCallback(fileHandlers, consumerContexts(0), SmartFileConsumer.FILE_STATUS_CORRUPT)
         shutdownThreads
         return
       }
       case ex: Exception => {
         logger.error("", ex)
-        finishCallback(fileHandler, consumerContexts(0), SmartFileConsumer.FILE_STATUS_CORRUPT)
+        finishCallback(fileHandlers, consumerContexts(0), SmartFileConsumer.FILE_STATUS_CORRUPT)
         shutdownThreads
         return
       }
       case ex: Throwable => {
         logger.error("", ex)
-        finishCallback(fileHandler, consumerContexts(0), SmartFileConsumer.FILE_STATUS_CORRUPT)
+        finishCallback(fileHandlers, consumerContexts(0), SmartFileConsumer.FILE_STATUS_CORRUPT)
         shutdownThreads
         return
       }
@@ -233,13 +233,13 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
 
             case ioe: IOException => {
               logger.error("Failed to read file " + fileName, ioe)
-              finishCallback(fileHandler, consumerContexts(0), SmartFileConsumer.FILE_STATUS_CORRUPT)
+              finishCallback(fileHandlers, consumerContexts(0), SmartFileConsumer.FILE_STATUS_CORRUPT)
               shutdownThreads
               return
             }
             case e: Throwable => {
               logger.error("Failed to read file, file corrupted " + fileName, e)
-              finishCallback(fileHandler, consumerContexts(0), SmartFileConsumer.FILE_STATUS_CORRUPT)
+              finishCallback(fileHandlers, consumerContexts(0), SmartFileConsumer.FILE_STATUS_CORRUPT)
               shutdownThreads
               return
             }
@@ -294,13 +294,13 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
     catch {
       case ioe: IOException => {
         logger.error("SMART FILE CONSUMER: Exception while accessing the file for processing " + fileName, ioe)
-        finishCallback(fileHandler, consumerContexts(0), SmartFileConsumer.FILE_STATUS_CORRUPT)
+        finishCallback(fileHandlers, consumerContexts(0), SmartFileConsumer.FILE_STATUS_CORRUPT)
         shutdownThreads
         return
       }
       case et: Throwable => {
         logger.error("SMART FILE CONSUMER: Throwable while accessing the file for processing " + fileName, et)
-        finishCallback(fileHandler, consumerContexts(0), SmartFileConsumer.FILE_STATUS_CORRUPT)
+        finishCallback(fileHandlers, consumerContexts(0), SmartFileConsumer.FILE_STATUS_CORRUPT)
         shutdownThreads
         return
       }
@@ -327,11 +327,11 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
         if (processingInterrupted) {
           logger.debug("SMART FILE CONSUMER (FileMessageExtractor) - sending interrupting flag for file {}", fileName)
           logger.warn("SMART FILE CONSUMER - finished reading file %s. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(fileName, elapsedTm / 1000000.0, consumerContexts(0).nodeId, consumerContexts(0).partitionId.toString, fileProcessingStartTm, endTm))
-          finishCallback(fileHandler, consumerContexts(0), SmartFileConsumer.FILE_STATUS_ProcessingInterrupted)
+          finishCallback(fileHandlers, consumerContexts(0), SmartFileConsumer.FILE_STATUS_ProcessingInterrupted)
         }
         else {
           logger.warn("SMART FILE CONSUMER - finished reading file %s. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(fileName, elapsedTm / 1000000.0, consumerContexts(0).nodeId, consumerContexts(0).partitionId.toString, fileProcessingStartTm, endTm))
-          finishCallback(fileHandler, consumerContexts(0), SmartFileConsumer.FILE_STATUS_FINISHED)
+          finishCallback(fileHandlers, consumerContexts(0), SmartFileConsumer.FILE_STATUS_FINISHED)
         }
       }
 
@@ -384,11 +384,11 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
       val smartFileMessage = new SmartFileMessage(jsonString.getBytes(), 0, fileHandlers(0), 0)
       messageFoundCallback(smartFileMessage, consumerContexts(0))
       // here we are really finished
-      finishCallback(fileHandlers(0), consumerContexts(0), SmartFileConsumer.FILE_STATUS_FINISHED)
+      finishCallback(fileHandlers, consumerContexts(0), SmartFileConsumer.FILE_STATUS_FINISHED)
     } catch {
       case jhs: java.lang.OutOfMemoryError => {
         logger.error("SMART_FILE_CONSUMER Exception : Java Heap space issue, WorkerBufferSize property might need resetting, file %s could not be processed ".format(fileHandlers(0).getFullPath), jhs)
-        finishCallback(fileHandlers(0), consumerContexts(0), SmartFileConsumer.FILE_STATUS_ProcessingInterrupted)
+        finishCallback(fileHandlers, consumerContexts(0), SmartFileConsumer.FILE_STATUS_ProcessingInterrupted)
         shutdownThreads
       }
     }
