@@ -298,7 +298,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         //now register listeners for new requests (other than initial ones)
         LOG.debug("Smart File Consumer - Leader is listening to children of path " + requestFilePath)
         envContext.createListenerForCacheChildern(requestFilePath, requestFileLeaderCallback) // listen to file requests
-        LOG.debug("Smart File Consumer - Leader is listening to children of path " + fileProcessingPath)
+        LOG.debug("Smart File Consumer - Leader is listening to children of fileProcessingLeaderCallbackpath " + fileProcessingPath)
         envContext.createListenerForCacheChildern(fileProcessingPath, fileProcessingLeaderCallback) // listen to file processing status
       }
       else {
@@ -1057,7 +1057,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
               val procFileLocationInfo = getDirLocationInfo(procFileParentDir)
               if (procFileLocationInfo.isMovingEnabled) {
-                logger.error("==============> HaithamLog => inside fileProcessingLeaderCallback : before moveFile")
+                //                logger.error("==============> HaithamLog => inside fileProcessingLeaderCallback : before moveFile")
                 val moved = moveFile(processingFilePath)
                 if (moved)
                   monitorController.markFileAsProcessed(processingFilePath)
@@ -1111,10 +1111,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
 
     val arraytOfDataTokens = eventPathData.split("~~")
-    logger.error("==============> HaithamLog => arraytOfDataTokens =  " + arraytOfDataTokens.mkString(",,"))
+    //    logger.error("==============> HaithamLog => arraytOfDataTokens =  " + arraytOfDataTokens.mkString(",,"))
     arraytOfDataTokens.foreach(listItem => {
       val dataTokens = listItem.split("\\|")
-      logger.error("==============> HaithamLog => dataTokens =  " + dataTokens.mkString(",,"))
+      //      logger.error("==============> HaithamLog => dataTokens =  " + dataTokens.mkString(",,"))
       if (dataTokens.length >= 2) {
         val fileToProcessName = dataTokens(0)
         val offset = dataTokens(1).toLong
@@ -1294,7 +1294,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
   //after a file is changed, move it into targetMoveDir
   def moveFile(originalFilePath: String): Boolean = {
-    logger.error("==============> HaithamLog => inside moveFile originalFilePath = " + originalFilePath)
+    //    logger.error("==============> HaithamLog => inside moveFile originalFilePath = " + originalFilePath)
     var isFileMoved = false
     try {
       val smartFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, originalFilePath)
@@ -1311,12 +1311,12 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         val (targetMoveDir1, flBaseName1) = getTargetFile(smartFileHandler)
         targetMoveDir = targetMoveDir1
         flBaseName = flBaseName1
-        logger.error("==============> HaithamLog => inside moveFile targetMoveDir = " + targetMoveDir + " ,flBaseName = " + flBaseName)
+        //        logger.error("==============> HaithamLog => inside moveFile targetMoveDir = " + targetMoveDir + " ,flBaseName = " + flBaseName)
 
       }
 
       isFileMoved = moveFile(smartFileHandler)
-      logger.error("==============> HaithamLog => inside moveFile isFileMoved = " + isFileMoved)
+      //      logger.error("==============> HaithamLog => inside moveFile isFileMoved = " + isFileMoved)
 
       if (isFileMoved && adapterConfig.archiveConfig != null && adapterConfig.archiveConfig.outputConfig != null) {
         addArchiveFileInfo(ArchiveFileInfo(adapterConfig, targetMoveDir, flBaseName, componentsMap))
