@@ -889,7 +889,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   }
 
   private def assignInitialFiles(initialFilesToProcess: Array[(String, Int, String, Long)]): Unit = {
-    //    logger.error("==============> HaithamLog => inside assignInitialFiles ")
+    //    logger.error("==============> HaithamLog => inside assignInitialFiles  ")
 
     LOG.debug("Smart File Consumer - handling initial assignment ")
 
@@ -957,7 +957,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
           if (requestToAssign != null) {
             //LOG.debug("Smart File Consumer - finished call to saveFileRequestsQueue, from assignInitialFiles")
             val fileToProcessFullPath = fileInfo._3
-            logger.error("==============> HaithamLog => inside assignInitialFiles : requestToAssign =" + requestToAssign)
+            //            logger.error("==============> HaithamLog => inside assignInitialFiles : requestToAssign =" + requestToAssign)
             removeFromRequestQueue(requestToAssign) //remove the current request
             // might need to add if ( reqTokens.size>0)
             val reqTokens = requestToAssign.split(":")
@@ -1017,7 +1017,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   def fileProcessingLeaderCallback(eventType: String, eventPath: String, eventPathData: String): Unit = {
     LOG.debug("Smart File Consumer - fileProcessingLeaderCallback: eventType={}, eventPath={}, eventPathData={}",
       eventType, eventPath, eventPathData)
-    logger.error("==============> HaithamLog => inside fileProcessingLeaderCallback : eventType={}, eventPath={}, eventPathData={}", eventType, eventPath, eventPathData)
+    //    logger.error("==============> HaithamLog => inside fileProcessingLeaderCallback : eventType={}, eventPath={}, eventPathData={}", eventType, eventPath, eventPathData)
 
     //    logger.error("==============> HaithamLog => inside fileProcessingLeaderCallback :")
 
