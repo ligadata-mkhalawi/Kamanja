@@ -5,7 +5,10 @@
   left: -1000px;
   position: absolute;
   z-index: 999999;
-  background: linear-gradient(to right, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.3));
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.5), rgba(0,0,0,0.3));
+  .modelHeaderWrapper{
+    height: 100vh;
+  }
   .modelHeader {
     width: 275px;
     height: 65px;
@@ -14,7 +17,7 @@
     padding-bottom: 62px;
     color: white;
     .content {
-      position: relative;
+      position:relative;
       top: 21px;
       padding-left: 22px;
       font-size: 16px;
@@ -45,7 +48,7 @@
       color: red;
     }
   }
-  .details {
+  .details{
     background-color: #ffffff;
     width: 275px;
     height: 92%;
@@ -66,6 +69,6 @@
   }
 }
 
-.dropdown-backdrop {
+.dropdown-backdrop{
   display: none;
 }

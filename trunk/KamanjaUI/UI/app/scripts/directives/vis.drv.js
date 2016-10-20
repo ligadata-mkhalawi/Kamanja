@@ -20,7 +20,7 @@ angular
         template: '<div><div id="visJsDiv"></div>',
         replace: true,
         link: function (scope, element) {
-          var selectedNodes = new Set();
+          var selectedObjects = [];
           var isNodeActive, updateNodesImagesToBeInactive, updateNodeToBeActive, updateNodeToBeInactive;
           var container = document.getElementById('visJsDiv');
           var data = {nodes: new vis.DataSet([]), edges: new vis.DataSet([])};
@@ -312,7 +312,6 @@ angular
                 active: true,
                 size: 17
               });
-              selectedNodes.add(node.id);
             };
             updateNodeToBeInactive = function (id) {
               var node = data.nodes.getItemById(id);
@@ -322,7 +321,6 @@ angular
                 active: false,
                 size: 16
               });
-              selectedNodes.delete(node.id);
             };
           }());
           scope.$on('closeSideMenu', function () {
@@ -331,13 +329,17 @@ angular
           network.on('click', function (params) {
             var id = params.nodes[0];
             if (id) {
-              var alreadyActive = isNodeActive(id);
-              // updateNodesImagesToBeInactive();
-              if (!alreadyActive) {
-                updateNodeToBeActive(id);
+              if (selectedObjects.indexOf(id) >=0 ){
+                selectedObjects.splice(selectedObjects.indexOf(id),1);
+
               } else {
-                updateNodeToBeInactive(id);
+                selectedObjects.push(id);
               }
+              updateNodesImagesToBeInactive();
+              _.each(selectedObjects,function (id) {
+                updateNodeToBeActive(id);
+              });
+
             }
           });
           network.on('afterDrawing', function (ctx) {
