@@ -21,7 +21,7 @@
       },
       {
         "Name": "TotalCost",
-        "Type": "System.Double"
+        "Type": "System.String"
       }
     ],
     "PartitionKey": [

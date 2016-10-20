@@ -14,6 +14,7 @@ object Globals extends KamanjaTestLogger {
 
   def waitForOutputResults(adapterConfig: KafkaAdapterConfig, timeout: Int = 15, msgCount: Int = 1): Option[List[String]] = {
     logger.info(s"[Test Globals]: Waiting for $msgCount output results...")
+    println(s"[Test Globals]: Waiting for $msgCount output results...")
 
     val topicName = adapterConfig.adapterSpecificConfig.topicName
     var timeoutCnt = 0
@@ -32,10 +33,13 @@ object Globals extends KamanjaTestLogger {
           }
           else if(outputCnt > msgCount) {
             Globals.modelOutputResult -= topicName
-            throw new Exception(s"[Test Globals]: Found $outputCnt output messages but was only excepting $msgCount messages")
+            logger.error(s"[Test Globals]: Found $outputCnt output messages but was only expecting $msgCount messages")
+            return currentOutput
+            //throw new Exception(s"[Test Globals]: Found $outputCnt output messages but was only excepting $msgCount messages")
           }
           else {
-            logger.info("[Test Globals]: Found all $outputCnt output messages")
+            logger.info(s"[Test Globals]: Found all $outputCnt output messages")
+            println(s"[Test Globals]: Found all $outputCnt output messages")
             while(Globals.modelOutputResult.exists(_._1 == topicName)) {
               innerCnt += 1
               Globals.modelOutputResult = Globals.modelOutputResult - topicName
@@ -53,6 +57,15 @@ object Globals extends KamanjaTestLogger {
         }
       }
     }
-    throw new Exception("[Test Globals]: Failed to retrieve output.")
+
+    currentOutput match {
+      case Some(x) =>
+        if (x.length < msgCount) {
+          logger.error(s"[Test Globals]: Timed out waiting for results. Found ${x.length} but expected $msgCount")
+        }
+      case None =>
+        logger.error("[Test Globals]: Failed to retrieve output.")
+    }
+    return currentOutput
   }
 }

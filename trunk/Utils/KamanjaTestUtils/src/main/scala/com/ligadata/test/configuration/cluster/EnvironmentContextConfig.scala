@@ -20,7 +20,10 @@ import com.ligadata.test.utils.TestUtils
 
 case class EnvironmentContextConfig(className: String = "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$",
                                     jarName: String = s"KamanjaInternalDeps_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
-                                    dependencyJars: List[String] = List(s"""ExtDependencyLibs_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar""", s"ExtDependencyLibs2_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar")) {
+                                    dependencyJars: List[String] = List(
+                                      s"ExtDependencyLibs_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
+                                      s"ExtDependencyLibs2_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar"
+                                    )) {
   override def toString = {
     s""""EnvironmentContext":""" +
       s"""{"classname": "$className",""" +

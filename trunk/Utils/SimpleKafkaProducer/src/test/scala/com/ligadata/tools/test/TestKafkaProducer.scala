@@ -44,24 +44,25 @@ class TestKafkaProducer {
       }
     }
 
-    val props = new Properties()
-    props.put("bootstrap.servers", hostList)
-    props.put("producer.type", "async")
-    props.put("batch.num.messages", "1024")
-    props.put("batch.size", "1024")
-    props.put("queue.time", "50")
-    props.put("queue.size", (16 * 1024 * 1024).toString)
-    props.put("message.send.max.retries", "3")
-    props.put("request.required.acks", "1")
-    val bufferMemory: Integer = 64 * 1024 * 1024
-    props.put("buffer.memory", bufferMemory.toString)
-    props.put("buffer.size", bufferMemory.toString)
-    props.put("socket.send.buffer", bufferMemory.toString)
-    props.put("socket.receive.buffer", bufferMemory.toString)
-    props.put("client.id", "Client1")
-    //props.put("partitioner.class", "com.ligadata.tools.CustPartitioner")
-    props.put("key.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer")
-    props.put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer")
+    val props = new Properties() {
+      put("bootstrap.servers", hostList)
+      put("producer.type", "async")
+      put("batch.num.messages", "1024")
+      put("batch.size", "1024")
+      put("queue.time", "50")
+      put("queue.size", (16 * 1024 * 1024).toString)
+      put("message.send.max.retries", "3")
+      put("request.required.acks", "1")
+      val bufferMemory: Integer = 64 * 1024 * 1024
+      put("buffer.memory", bufferMemory.toString)
+      put("buffer.size", bufferMemory.toString)
+      put("socket.send.buffer", bufferMemory.toString)
+      put("socket.receive.buffer", bufferMemory.toString)
+      put("client.id", "Client1")
+      //props.put("partitioner.class", "com.ligadata.tools.CustPartitioner")
+      put("key.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer")
+      put("value.serializer", "org.apache.kafka.common.serialization.ByteArraySerializer")
+    }
 
     //val producer = new Producer[Array[Byte], Array[Byte]](new ProducerConfig(props))
     //val producer = new org.apache.kafka.clients.producer.KafkaProducer[Array[Byte], Array[Byte]](props)
@@ -80,6 +81,8 @@ class TestKafkaProducer {
 
     try {
       //ProcessFile(producer, topics, threadNo, fl, msg, sleeptm, partitionkeyidxs, st, ignorelines, format, isGzip, topicpartitions, isVerbose.equalsIgnoreCase("true"))
+      println(s"Pushing data to topic $topicName")
+      println(s"Adapter: " + oAdapter.toString)
       SimpleKafkaProducer.ProcessFile(oAdapter, Array(topicName), 1, file, "", 0, partKeys, new SimpleKafkaProducer.Stats, 0, dataFormat, false, 8, true)
 
       //SimpleKafkaProducer.main(Array("--gz", "false", "--format", dataFormat, "--topics", topicName, "--brokerlist", hostList,

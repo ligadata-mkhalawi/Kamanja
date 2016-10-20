@@ -34,6 +34,10 @@ testOptions in Test += Tests.Setup( () => {
   sbt.IO.copyFile(new File(s"lib_managed/jars/org.apache.kafka/kafka-clients/kafka-clients-0.10.0.0.jar"), new File(s"Utils/KamanjaAppTester/target/scala-$scalaV/test-classes/kamanjaInstall/lib/system/kafka-clients-0.10.0.0.jar"))
 })
 
+// This allows "provided" libraries to be included in compile/run commands when executed through sbt.
+run in Compile <<= Defaults.runTask(fullClasspath in Compile, mainClass in (Compile, run), runner in (Compile, run))
+
+// Forking each test suite into a new JVM
 def singleTests(tests: Seq[TestDefinition]): Seq[Group] =
   tests map { test =>
     new Group(name = test.name,

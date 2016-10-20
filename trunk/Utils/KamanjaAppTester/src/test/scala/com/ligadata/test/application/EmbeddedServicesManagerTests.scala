@@ -1,8 +1,13 @@
 package com.ligadata.test.application
 
+import com.ligadata.test.utils.TestUtils
 import org.scalatest._
 
-class EmbeddedServicesManagerTests extends FlatSpec {
+class EmbeddedServicesManagerTests extends FlatSpec with BeforeAndAfterAll {
+
+  override def afterAll: Unit = {
+    TestUtils.deleteFile(EmbeddedServicesManager.storageDir)
+  }
 
   "Embedded Services Manager" should "start zookeeper and kafka" in {
     EmbeddedServicesManager.init(TestSetup.kamanjaInstallDir)

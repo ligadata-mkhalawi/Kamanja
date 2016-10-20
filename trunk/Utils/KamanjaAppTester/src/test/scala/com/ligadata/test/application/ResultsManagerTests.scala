@@ -1,6 +1,7 @@
 package com.ligadata.test.application
 
 import com.ligadata.test.application.data.DataSet
+import com.ligadata.test.utils.TestUtils
 import org.scalatest._
 
 class ResultsManagerTests extends FlatSpec with BeforeAndAfterAll {
@@ -12,6 +13,7 @@ class ResultsManagerTests extends FlatSpec with BeforeAndAfterAll {
 
   override def afterAll: Unit = {
     EmbeddedServicesManager.stopServices
+    TestUtils.deleteFile(EmbeddedServicesManager.storageDir)
   }
 
   "ResultsManager" should "compare an Array of actual results with expected results read from a file that are equal and in csv format and return a List of MatchResults that are all true" in {

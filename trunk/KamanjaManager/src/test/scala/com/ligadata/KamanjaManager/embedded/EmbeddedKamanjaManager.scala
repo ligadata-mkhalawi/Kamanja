@@ -26,6 +26,7 @@ class EmbeddedKamanjaManager {
     val confProperties: Properties = new Properties()
     confProperties.load(new FileInputStream(configFile))
     nodeId = confProperties.getProperty("NODEID")
+    zkc.init
 
     if (!isRunning(zkConfig, zkc)) {
       val engProc = new Runnable {
@@ -108,7 +109,7 @@ class EmbeddedKamanjaManager {
     try {
       heartbeatJson = zkc.getNodeData(zkConfig.zkNodeBasePath + s"/monitor/engine/$nodeId")
       if (heartbeatJson == "") {
-        logger.info("[Embedded Kamanja Manager]: Kamanja Manager is not running")
+        logger.info("[Embedded Kamanja Manager]: Kamanja Manager is not running... no heartbeat found")
         return false
       }
       else {
@@ -124,13 +125,15 @@ class EmbeddedKamanjaManager {
             Thread sleep 1000
           }
         }
-        logger.info("[Embedded Kamanja Manager]: Kamanja Manager is not running")
+        logger.info("[Embedded Kamanja Manager]: Kamanja Manager is not running. Heartbeat found but StartTime and LastSeen are the same.")
+        logger.debug("[Embedded Kamanja Manager]: HeartBeat:\n" + heartbeatJson)
         return false
       }
     }
     catch {
       case e: EmbeddedZookeeperException =>
-        logger.info("[Embedded Kamanja Manager]: Kamanja Manager is not running")
+        logger.warn("[Embedded Kamanja Manager]: Kamanja Manager is not running due to an EmbeddedZookeeperException")
+        logger.debug("[Embedded Kamanja Manager]: EmbeddedZookeeperException", e)
         return false
       case e: Exception =>
         logger.error("[Embedded Kamanja Manager]: Unexpected exception caught...", e)

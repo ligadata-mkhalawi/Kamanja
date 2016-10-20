@@ -46,6 +46,7 @@ class KamanjaApplicationConfiguration {
   private def parseMdElements(appDir: String, configStr: JValue): List[MetadataElement] = {
     var metadataElements: List[MetadataElement] = List()
     val mdElems: List[Map[String, Any]] = (configStr \\ "MetadataElements").values.asInstanceOf[List[Map[String, Any]]]
+
     mdElems.foreach(elem => {
       elem("Type").toString.toLowerCase match {
         case "container" => {

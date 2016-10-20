@@ -19,6 +19,7 @@ package com.ligadata.test.configuration.cluster
 import com.ligadata.test.configuration.cluster.adapters.{ClusterCacheConfig, TenantConfiguration}
 import com.ligadata.test.configuration.cluster.adapters.interfaces.{Adapter, H2DBStore, StorageAdapter}
 import com.ligadata.test.configuration.cluster.nodes.NodeConfiguration
+import com.ligadata.test.configuration.cluster.python.PythonConfiguration
 import com.ligadata.test.configuration.cluster.zookeeper.ZookeeperConfig
 
 import scala.collection.mutable.HashMap
@@ -28,6 +29,7 @@ case class Cluster(var id: String,
                    var systemCatalog: StorageAdapter,
                    var tenants: Array[TenantConfiguration],
                    var zookeeperConfig: ZookeeperConfig,
+                   var pythonConfig: PythonConfiguration,
                    var envContext: EnvironmentContextConfig,
                    var clusterCacheConfig: ClusterCacheConfig,
                    var nodes: Array[NodeConfiguration],
@@ -73,6 +75,7 @@ case class Cluster(var id: String,
       builder.append(s"""        ${zookeeperConfig.toString},""" + "\n")
       builder.append(s"""        ${envContext.toString}, """ + "\n")
       builder.append(s"""        ${clusterCacheConfig.toString},""" + "\n")
+      builder.append(s"""      ${pythonConfig.toString},""" + "\n")
       builder.append(s"""      "Nodes": [""" + "\n")
       for (i <- 0 to nodes.length - 1) {
         if (i == nodes.length - 1)
@@ -92,7 +95,7 @@ case class Cluster(var id: String,
       builder.toString()
     }
     catch {
-      case e: Exception => throw new KamanjaConfigurationException("AUTOMATION-KAMANJA-CONFIGURATION: Failed to convert cluster configuration to string", e)
+      case e: Exception => throw new KamanjaConfigurationException("[Kamanja Test Cluster Configuration]: Failed to convert cluster configuration to string", e)
     }
   }
 }
@@ -106,11 +109,17 @@ class ClusterBuilder {
   private var nodes: Array[NodeConfiguration] = Array()
   private var tenants: Array[TenantConfiguration] = Array()
   private var zkInfo: ZookeeperConfig = _
+  private var pythonConfig: PythonConfiguration = _
   private var clusterCacheConfig: ClusterCacheConfig = _
   private val customCfg: scala.collection.mutable.HashMap[String, String] = new HashMap[String, String]()
 
   def withZkInfo(zookeeperConfig: ZookeeperConfig): ClusterBuilder = {
     this.zkInfo = zookeeperConfig
+    this
+  }
+
+  def withPythonConfig(pythonConfig: PythonConfiguration): ClusterBuilder = {
+    this.pythonConfig = pythonConfig
     this
   }
 
@@ -164,10 +173,10 @@ class ClusterBuilder {
   def build(): Cluster = {
     var cluster: Cluster = null
     if (customCfg.isEmpty) {
-      cluster = new Cluster(id, systemCatalog, tenants, zkInfo, envContext, clusterCacheConfig, nodes, adapters, None)
+      cluster = new Cluster(id, systemCatalog, tenants, zkInfo, pythonConfig, envContext, clusterCacheConfig, nodes, adapters, None)
     }
     else
-     cluster = new Cluster(id, systemCatalog, tenants, zkInfo, envContext, clusterCacheConfig, nodes, adapters, Some(customCfg))
+     cluster = new Cluster(id, systemCatalog, tenants, zkInfo, pythonConfig, envContext, clusterCacheConfig, nodes, adapters, Some(customCfg))
     return cluster
   }
 }

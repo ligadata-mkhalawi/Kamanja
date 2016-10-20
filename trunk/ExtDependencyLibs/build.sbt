@@ -83,8 +83,8 @@ libraryDependencies += "org.scala-lang" % "scala-actors" % scalaVersion.value
 /////////////////////// MetadataAPI
 libraryDependencies += "org.joda" % "joda-convert" % "1.6"
 libraryDependencies += "joda-time" % "joda-time" % "2.8.2"
-libraryDependencies += "org.json4s" %% "json4s-native" % "3.4.0"
-libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.4.0"
+libraryDependencies += "org.json4s" %% "json4s-native" % "3.4.1"
+libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.4.1"
 libraryDependencies += "org.apache.zookeeper" % "zookeeper" % "3.4.6"
 //libraryDependencies += "org.apache.curator" % "apache-curator" % "2.0.0-incubating"
 libraryDependencies += "org.apache.curator" % "apache-curator" % "2.11.0"

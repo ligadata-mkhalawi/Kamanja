@@ -14,6 +14,7 @@ import com.ligadata.test.configuration.cluster.adapters.StorageConfiguration
 import com.ligadata.test.configuration.cluster.adapters.interfaces.KafkaIOAdapter
 import com.ligadata.test.utils.{Globals, KamanjaTestLogger, TestUtils}
 import com.ligadata.kamanja.metadata.{AdapterInfo, MdMgr, ModelDef}
+import com.ligadata.kamanja.metadataload.MetadataLoad
 import com.ligadata.keyvaluestore.KeyValueManager
 
 import scala.collection.mutable
@@ -25,6 +26,7 @@ import org.json4s.native.JsonMethods._
 case class MetadataAPIProperties(var database: String,
                                  var connectionMode:String,
                                  var databaseHost: String,
+                                 var rootDir: String = MetadataDefaults.rootDir,
                                  var databaseSchema: String = "kamanja",
                                  var classPath: String = MetadataDefaults.metadataClasspath,
                                  var systemJarPath: String = "",
@@ -93,12 +95,12 @@ class MetadataManager extends KamanjaTestLogger {
       case e: Exception => throw new MetadataManagerException("[Metadata Manager]: Failed to initialize MetadataAPI with the following exception:\n" + e)
     }
     MetadataAPIImpl.metadataAPIConfig.setProperty("NODE_ID", "1")
-    MetadataAPIImpl.metadataAPIConfig.setProperty("ROOT_DIR", MetadataDefaults.rootDir)
+    MetadataAPIImpl.metadataAPIConfig.setProperty("ROOT_DIR", config.rootDir)
     MetadataAPIImpl.metadataAPIConfig.setProperty("DATABASE", config.database)
     MetadataAPIImpl.metadataAPIConfig.setProperty("JAR_TARGET_DIR", config.appJarPath)
     MetadataAPIImpl.metadataAPIConfig.setProperty("MANIFEST_PATH", metadataDir.getAbsoluteFile + "/manifest.mf")
     MetadataAPIImpl.metadataAPIConfig.setProperty("CLASSPATH", config.classPath)
-    MetadataAPIImpl.metadataAPIConfig.setProperty("NOTIFY_ENGINE", "NO")
+    MetadataAPIImpl.metadataAPIConfig.setProperty("NOTIFY_ENGINE", "YES")
     MetadataAPIImpl.metadataAPIConfig.setProperty("ZNODE_PATH", config.znodeBasePath)
     MetadataAPIImpl.metadataAPIConfig.setProperty("ZOOKEEPER_CONNECT_STRING", config.zkConnStr)
     MetadataAPIImpl.metadataAPIConfig.setProperty("COMPILER_WORK_DIR", TestUtils.constructTempDir("workingdir").getPath)//getClass.getResource("/jars/lib/workingdir").getPath)

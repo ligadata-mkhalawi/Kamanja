@@ -5,32 +5,25 @@ import java.util.Properties
 import com.ligadata.test.configuration.cluster.adapters.KafkaAdapterConfig
 import com.ligadata.test.utils.{Globals, KamanjaTestLogger}
 import org.apache.kafka.clients.consumer._
+import org.apache.kafka.common.TopicPartition
 
 import collection.JavaConversions._
 import scala.collection.mutable.ListBuffer
+import scala.util.control.Breaks._
 
 class TestKafkaConsumer(config: KafkaAdapterConfig) extends Runnable with KamanjaTestLogger {
   private var consumer: KafkaConsumer[String, String] = null
 
   val props = new Properties() {
     put("bootstrap.servers", config.adapterSpecificConfig.hostList)
-    put("producer.type", "async")
-    put("batch.num.messages", "1024")
-    put("batch.size", "1024")
-    put("queue.time", "50")
-    put("queue.size", (16 * 1024 * 1024).toString)
-    put("message.send.max.retries", "3")
-    put("request.required.acks", "1")
-    val bufferMemory: Integer = 64 * 1024 * 1024
-    put("buffer.memory", bufferMemory.toString)
-    put("buffer.size", bufferMemory.toString)
-    put("socket.send.buffer", bufferMemory.toString)
-    put("socket.receive.buffer", bufferMemory.toString)
-    put("client.id", "Client1")
-    put("group.id", "kamanja-auto-group")
-    //props.put("partitioner.class", "com.ligadata.tools.CustPartitioner")
+    put("group.id", "kamanja-test-group")
+    put("enable.auto.commit", "true")
+    put("auto.commit.interval.ms", "1000")
+    put("session.timeout.ms", "30000")
     put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
     put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
+    //put("key.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer")
+    //put("value.deserializer", "org.apache.kafka.common.serialization.ByteArrayDeserializer")
   }
 
   consumer = new KafkaConsumer[String, String](props)
@@ -39,13 +32,12 @@ class TestKafkaConsumer(config: KafkaAdapterConfig) extends Runnable with Kamanj
     try {
       consumer.subscribe(List(config.adapterSpecificConfig.topicName))
       while(true) {
-        val records = consumer.poll(Long.MaxValue).iterator
-
+        val records = consumer.poll(100).iterator()
         while(records.hasNext) {
-          var record: ConsumerRecord[String, String] = records.next
-          println("partition: " + record.partition)
-          println("offset: " + record.offset)
-          println("value: " + record.value)
+          val record: ConsumerRecord[String, String] = records.next
+          logger.debug("[Test Kafka Consumer]: Record: partition: " + record.partition)
+          logger.debug("[Test Kafka Consumer]: Offset: " + record.offset)
+          logger.debug("[Test Kafka Consumer]: Value: " + record.value)
           val outputBuffer: ListBuffer[String] = new ListBuffer[String]
           if (Globals.modelOutputResult.exists((_._1 == config.adapterSpecificConfig.topicName))) {
             outputBuffer ++= Globals.modelOutputResult(config.adapterSpecificConfig.topicName)
@@ -61,8 +53,8 @@ class TestKafkaConsumer(config: KafkaAdapterConfig) extends Runnable with Kamanj
     catch {
       case e: org.apache.kafka.common.errors.WakeupException =>
       case e: Exception =>
-        logger.error("AUTOMATION-KAFKA-CONSUMER: Failed to start consumer", e)
-        throw new Exception("AUTOMATION-KAFKA-CONSUMER: Failed to start consumer", e)
+        logger.error("[Test Kafka Consumer]: Failed to start consumer", e)
+        throw new Exception("[Test Kafka Consumer]: Failed to start consumer", e)
     }
     finally {
       consumer.close()

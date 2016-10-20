@@ -4,8 +4,8 @@ import java.io.FileNotFoundException
 import java.util.Properties
 
 import kafka.server.{KafkaConfig, KafkaServer}
-
 import com.ligadata.test.utils._
+import org.apache.kafka.common.MetricName
 import org.apache.logging.log4j.{LogManager, Logger}
 
 case class EmbeddedKafkaException(message: String, cause: Throwable = null) extends Exception(message, cause)

@@ -1,12 +1,14 @@
 package com.ligadata.test.application
 
 import java.io.PrintWriter
+import java.util.NoSuchElementException
 
 import com.ligadata.KamanjaManager.embedded._
 import com.ligadata.test.configuration.cluster._
 import com.ligadata.test.configuration.cluster.adapters._
 import com.ligadata.test.configuration.cluster.adapters.interfaces._
 import com.ligadata.test.configuration.cluster.nodes._
+import com.ligadata.test.configuration.cluster.python.PythonConfiguration
 import com.ligadata.test.configuration.cluster.zookeeper._
 import com.ligadata.test.embedded.zookeeper._
 import com.ligadata.kafkaInputOutputAdapters_v10.embedded._
@@ -14,10 +16,11 @@ import com.ligadata.test.utils._
 import com.ligadata.MetadataAPI.test._
 import com.ligadata.test.embedded.kafka._
 
+case class EmbeddedServicesException(message: String, cause: Throwable = null) extends Exception(message, cause)
+
 object EmbeddedServicesManager {
   private var embeddedKamanjaManager: EmbeddedKamanjaManager = _
   private var kamanjaConfigFile: String = _
-  private var storageDir: String = _
   private var embeddedZookeeper: EmbeddedZookeeper = _
   private var kafkaCluster: EmbeddedKafkaCluster = _
   private var zkClient: ZookeeperClient = _
@@ -25,6 +28,8 @@ object EmbeddedServicesManager {
   private var kafkaConsumer: TestKafkaConsumer = _
   private var kamanjaInstallDir: String = _
   private var isInitialized: Boolean = false
+  private var mdMan = new MetadataManager
+  var storageDir: String = _
 
   def getInputKafkaAdapterConfig: KafkaAdapterConfig = {
     if (!isInitialized) {
@@ -40,6 +45,20 @@ object EmbeddedServicesManager {
     return clusterConfig.adapters.filter(_.asInstanceOf[KafkaAdapterConfig].adapterSpecificConfig.topicName.toLowerCase == "testout_1")(0).asInstanceOf[KafkaAdapterConfig]
   }
 
+  def getErrorKafkaAdapterConfig: KafkaAdapterConfig = {
+    if (!isInitialized) {
+      throw new Exception("[Kamanja Application Tester] ---> ***ERROR*** EmbeddedServicesManager has not been initialized. Please call def init first.")
+    }
+    return clusterConfig.adapters.filter(_.asInstanceOf[KafkaAdapterConfig].adapterSpecificConfig.topicName.toLowerCase == "testfailedevents_1")(0).asInstanceOf[KafkaAdapterConfig]
+  }
+
+  def getEventKafkaAdapterConfig: KafkaAdapterConfig = {
+    if (!isInitialized) {
+    throw new Exception("[Kamanja Application Tester] ---> ***ERROR*** EmbeddedServicesManager has not been initialized. Please call def init first.")
+  }
+    return clusterConfig.adapters.filter(_.asInstanceOf[KafkaAdapterConfig].adapterSpecificConfig.topicName.toLowerCase == "testmessageevents_1")(0).asInstanceOf[KafkaAdapterConfig]
+  }
+
   def getCluster: Cluster = {
     if (!isInitialized) {
       throw new Exception("[Kamanja Application Tester] ---> ***ERROR*** EmbeddedServicesManager has not been initialized. Please call def init first.")
@@ -49,42 +68,51 @@ object EmbeddedServicesManager {
 
   def init(kamanjaInstallDir: String): Unit = {
     isInitialized = true
+    try {
+      sys.env("PYTHON_HOME")
+    }
+    catch {
+      case e: NoSuchElementException =>
+        throw new EmbeddedServicesException("[Kamanja Application Tester] ---> ***ERROR*** Failed to discover environmental variable PYTHON_HOME. " +
+          "Please set it before running.\n" +
+          "EX: export PYTHON_HOME=/usr")
+    }
     this.kamanjaInstallDir = kamanjaInstallDir
     embeddedZookeeper = new EmbeddedZookeeper
     kafkaCluster = new EmbeddedKafkaCluster().
       withBroker(new KafkaBroker(1, embeddedZookeeper.getConnection))
     clusterConfig = generateClusterConfiguration
     kafkaConsumer = new TestKafkaConsumer(getOutputKafkaAdapterConfig)
+
   }
 
   def startServices: Boolean = {
     if (!isInitialized) {
       throw new Exception("[Kamanja Application Tester] ---> ***ERROR*** EmbeddedServicesManager has not been initialized. Please call def init first.")
     }
+
     val classPath: String = {
-        List(
-          s"ExtDependencyLibs_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
-          s"ExtDependencyLibs2_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
-          s"KamanjaInternalDeps_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar"
-        ).mkString(s"$kamanjaInstallDir/lib/system/", s":$kamanjaInstallDir/lib/system/", "")
-      }
+      List(
+        s"ExtDependencyLibs_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
+        s"ExtDependencyLibs2_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
+        s"KamanjaInternalDeps_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar"
+      ).mkString(s"$kamanjaInstallDir/lib/system/", s":$kamanjaInstallDir/lib/system/", "")
+    }
 
     try {
       val zkStartCode = startZookeeper
       val kafkaStartCode = startKafka
-      clusterConfig = generateClusterConfiguration
 
-      val mdMan = new MetadataManager
-
+      mdMan = new MetadataManager
       mdMan.setSSLPassword("")
-      mdMan.initMetadataCfg(new MetadataAPIProperties(H2DBStore.name, H2DBStore.connectionMode, storageDir, "kamanja", classPath, zkConnStr = embeddedZookeeper.getConnection, systemJarPath = s"$kamanjaInstallDir/lib/system", appJarPath = s"$kamanjaInstallDir/lib/application"))
+      mdMan.initMetadataCfg(new MetadataAPIProperties(H2DBStore.name, H2DBStore.connectionMode, storageDir, kamanjaInstallDir, "kamanja", classPath, zkConnStr = embeddedZookeeper.getConnection, systemJarPath = s"$kamanjaInstallDir/lib/system", appJarPath = s"$kamanjaInstallDir/lib/application"))
 
       val addConfigResult = mdMan.addConfig(clusterConfig)
-
       if (addConfigResult != 0) {
         println("[Kamanja Application Tester] ---> ***ERROR*** Attempted to upload cluster configuration but failed")
         return false
       }
+      println("[Kamanja Application Tester] ---> Cluster configuration successfully uploaded")
 
       val addSystemBindingsResult = mdMan.addBindings(this.getClass.getResource("/SystemMsgs_Adapter_Bindings.json").getPath)
 
@@ -97,7 +125,7 @@ object EmbeddedServicesManager {
       return zkStartCode && kafkaStartCode && startKamanja && startKafkaConsumer
     }
     catch {
-      case e:Exception => throw new Exception("[Kamanja Application Tester] ---> ***ERROR*** Failed to start services", e)
+      case e: Exception => throw new Exception("[Kamanja Application Tester] ---> ***ERROR*** Failed to start services", e)
     }
   }
 
@@ -145,7 +173,7 @@ object EmbeddedServicesManager {
     try {
       println("[Kamanja Application Tester] ---> Stopping Kamanja...")
       val shutdownCode = embeddedKamanjaManager.shutdown(clusterConfig.zookeeperConfig, zkClient)
-      if(shutdownCode != 0){
+      if (shutdownCode != 0) {
         println("[Kamanja Application Tester] ---> ***ERROR*** Failed to stop Kamanja. Return code: " + shutdownCode)
         return false
       }
@@ -163,7 +191,7 @@ object EmbeddedServicesManager {
   }
 
   private def startZookeeper: Boolean = {
-    if(!isInitialized){
+    if (!isInitialized) {
       throw new Exception("[Kamanja Application Tester] ---> ***ERROR*** EmbeddedServicesManager has not been initialized. Please call def init first.")
     }
     try {
@@ -181,7 +209,7 @@ object EmbeddedServicesManager {
   }
 
   private def stopZookeeper: Boolean = {
-    if(!isInitialized){
+    if (!isInitialized) {
       throw new Exception("[Kamanja Application Tester] ---> ***ERROR*** EmbeddedServicesManager has not been initialized. Please call def init first.")
     }
     try {
@@ -199,7 +227,7 @@ object EmbeddedServicesManager {
   }
 
   private def startKafka: Boolean = {
-    if(!isInitialized){
+    if (!isInitialized) {
       throw new Exception("[Kamanja Application Tester] ---> ***ERROR*** EmbeddedServicesManager has not been initialized. Please call def init first.")
     }
     try {
@@ -217,7 +245,7 @@ object EmbeddedServicesManager {
   }
 
   private def stopKafka: Boolean = {
-    if(!isInitialized){
+    if (!isInitialized) {
       throw new Exception("[Kamanja Application Tester] ---> ***ERROR*** EmbeddedServicesManager has not been initialized. Please call def init first.")
     }
     try {
@@ -235,24 +263,25 @@ object EmbeddedServicesManager {
   }
 
   private def startKafkaConsumer: Boolean = {
-    if(!isInitialized){
+    if (!isInitialized) {
       throw new Exception("[Kamanja Application Tester] ---> ***ERROR*** EmbeddedServicesManager has not been initialized. Please call def init first.")
     }
     try {
       println(s"[Kamanja Application Tester] ---> Starting Kafka consumer against topic '${getOutputKafkaAdapterConfig.adapterSpecificConfig.topicName}'...")
-      kafkaConsumer.run
+      val kafkaConsumerThread = new Thread(kafkaConsumer)
+      kafkaConsumerThread.start()
       println(s"[Kamanja Application Tester] ---> Kafka consumer started against topic '${getOutputKafkaAdapterConfig.adapterSpecificConfig.topicName}'")
       return true
     }
     catch {
       case e: Exception => {
-       throw new Exception(s"[Kamanja Application Tester] ---> ***ERROR*** Failed to start kafka consumer against topic '${getOutputKafkaAdapterConfig.adapterSpecificConfig.topicName}'", e)
+        throw new Exception(s"[Kamanja Application Tester] ---> ***ERROR*** Failed to start kafka consumer against topic '${getOutputKafkaAdapterConfig.adapterSpecificConfig.topicName}'", e)
       }
     }
   }
 
   private def stopKafkaConsumer: Boolean = {
-    if(!isInitialized){
+    if (!isInitialized) {
       throw new Exception("[Kamanja Application Tester] ---> ***ERROR*** EmbeddedServicesManager has not been initialized. Please call def init first.")
     }
     if (kafkaConsumer != null) {
@@ -271,6 +300,8 @@ object EmbeddedServicesManager {
 
   private def generateClusterConfiguration: Cluster = {
     val zkConfig: ZookeeperConfig = new ZookeeperConfig(zookeeperConnStr = embeddedZookeeper.getConnection)
+
+    val pythonConfig: PythonConfiguration = new PythonConfiguration(kamanjaInstallDir = kamanjaInstallDir, pythonBinDir = sys.env("PYTHON_HOME") + "/bin")
 
     val inputAdapter: KafkaAdapterConfig = new KafkaAdapterBuilder()
       .withAdapterSpecificConfig(new KafkaAdapterSpecificConfig(kafkaCluster.getBrokerList, "testin_1"))
@@ -346,6 +377,7 @@ object EmbeddedServicesManager {
       .withClusterCacheConfig(new ClusterCacheConfig())
       .withTenant(new TenantConfiguration(Globals.kamanjaTestTenant, "Kamanja Test Tenant", new TenantCacheConfig(), tenant1DataStore))
       .withZkInfo(zkConfig)
+      .withPythonConfig(pythonConfig)
       .build()
 
     return cluster

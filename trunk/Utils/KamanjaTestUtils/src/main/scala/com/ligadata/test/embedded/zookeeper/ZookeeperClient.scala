@@ -20,18 +20,18 @@ class ZookeeperClient(zkcConnectString:String, sessionTimeoutMs:Int = 30000, con
 
   def start(): Unit = {
     if(!isInit) {
-      throw new EmbeddedZookeeperException("AUTOMATION-ZOOKEEPER-CLIENT: You must call def init first")
+      throw new EmbeddedZookeeperException("[Embedded Zookeeper Client]: You must call def init first")
     }
     if(!isRunning) {
       try {
-        logger.info("AUTOMATION-ZOOKEEPER-CLIENT: Starting Curator Framework")
+        logger.info("[Embedded Zookeeper Client]: Starting Curator Framework")
         zkc.start()
         isRunning = true
       }
       catch {
         case e: Exception => {
-          logger.error("AUTOMATION-ZOOKEEPER-CLIENT: Failed to start Curator Framework")
-          throw new EmbeddedZookeeperException("AUTOMATION-ZOOKEEPER-CLIENT: Failed to start Curator Framework", e)
+          logger.error("[Embedded Zookeeper Client]: Failed to start Curator Framework")
+          throw new EmbeddedZookeeperException("[Embedded Zookeeper Client]: Failed to start Curator Framework", e)
         }
       }
     }
@@ -40,14 +40,14 @@ class ZookeeperClient(zkcConnectString:String, sessionTimeoutMs:Int = 30000, con
   def stop: Unit = {
     if(isRunning) {
       try {
-        logger.info("AUTOMATION-ZOOKEEPER-CLIENT: Stopping Curator Framework")
+        logger.info("[Embedded Zookeeper Client]: Stopping Curator Framework")
         zkc.close()
         isRunning = false
       }
       catch {
         case e: Exception => {
-          logger.error("AUTOMATION-ZOOKEEPER-CLIENT: Failed to stop Curator Framework")
-          throw new EmbeddedZookeeperException("AUTOMATION-ZOOKEEPER-CLIENT: Failed to stop Curator Framework")
+          logger.error("[Embedded Zookeeper Client]: Failed to stop Curator Framework")
+          throw new EmbeddedZookeeperException("[Embedded Zookeeper Client]: Failed to stop Curator Framework")
         }
       }
     }
@@ -55,30 +55,33 @@ class ZookeeperClient(zkcConnectString:String, sessionTimeoutMs:Int = 30000, con
 
   def doesNodeExist(znodePath:String): Boolean = {
     if(!isInit) {
-      throw new EmbeddedZookeeperException("AUTOMATION-ZOOKEEPER-CLIENT: You must call def init first")
+      throw new EmbeddedZookeeperException("[Embedded Zookeeper Client]: You must call def init first")
+    }
+    if(!isRunning){
+      this.start()
     }
     try {
-      logger.debug("AUTOMATION-ZOOKEEPER-CLIENT: Checking if zookeeper node path '" + znodePath + "' exists")
+      logger.debug("[Embedded Zookeeper Client]: Checking if zookeeper node path '" + znodePath + "' exists")
       if (zkc.checkExists().forPath(znodePath) == null) {
-        logger.debug("AUTOMATION-ZOOKEEPER-CLIENT: Zookeeper node path '" + znodePath + "' doesn't exist")
+        logger.debug("[Embedded Zookeeper Client]: Zookeeper node path '" + znodePath + "' doesn't exist")
         return false
       }
       else {
-        //logger.debug("AUTOMATION-ZOOKEEPER-CLIENT: Zookeeper node path found with data: " + zkc.checkExists().forPath(znodePath))
+        //logger.debug("[Embedded Zookeeper Client]: Zookeeper node path found with data: " + zkc.checkExists().forPath(znodePath))
         return true
       }
     }
     catch {
       case e: Exception => {
-        logger.error(s"AUTOMATION-ZOOKEEPER-CLIENT: Failed to verify node '$znodePath' exists", e)
-        throw new EmbeddedZookeeperException(s"AUTOMATION-ZOOKEEPER-CLIENT: Failed to verify node '$znodePath' exists", e)
+        logger.error(s"[Embedded Zookeeper Client]: Failed to verify node '$znodePath' exists", e)
+        throw new EmbeddedZookeeperException(s"[Embedded Zookeeper Client]: Failed to verify node '$znodePath' exists", e)
       }
     }
   }
 
   def waitForNodeToExist(znodePath:String, timeout:Int):Boolean = {
     if(!isInit) {
-      throw new EmbeddedZookeeperException("AUTOMATION-ZOOKEEPER-CLIENT: You must call def init first")
+      throw new EmbeddedZookeeperException("[Embedded Zookeeper Client]: You must call def init first")
     }
     var count = 0
     while(count < timeout) {
@@ -89,23 +92,26 @@ class ZookeeperClient(zkcConnectString:String, sessionTimeoutMs:Int = 30000, con
       }
       catch {
         case e: EmbeddedZookeeperException => {
-          logger.error("AUTOMATION-ZOOKEEPER-CLIENT: Caught exception\n" + e)
-          throw new EmbeddedZookeeperException("AUTOMATION-ZOOKEEPER-CLIENT: Caught exception\n" + e)
+          logger.error("[Embedded Zookeeper Client]: Caught exception\n" + e)
+          throw new EmbeddedZookeeperException("[Embedded Zookeeper Client]: Caught exception\n" + e)
         }
-        case e: Exception => throw new EmbeddedZookeeperException("AUTOMATION-ZOOKEEPER-CLIENT: Caught exception\n" + e)
+        case e: Exception => throw new EmbeddedZookeeperException("[Embedded Zookeeper Client]: Caught exception\n" + e)
       }
       Thread sleep 1000
     }
-    logger.warn("AUTOMATION-ZOOKEEPER-CLIENT: Node '" + znodePath + "' doesn't exist after " + timeout + " seconds")
+    logger.warn("[Embedded Zookeeper Client]: Node '" + znodePath + "' doesn't exist after " + timeout + " seconds")
     return false
   }
 
   def getNodeData(znodePath: String): String = {
     if(!isInit) {
-      throw new EmbeddedZookeeperException("AUTOMATION-ZOOKEEPER-CLIENT: You must call def init first")
+      throw new EmbeddedZookeeperException("[Embedded Zookeeper Client]: You must call def init first")
+    }
+    if(!isRunning) {
+      this.start()
     }
     try {
-      logger.debug(s"AUTOMATION-ZOOKEEPER-CLIENT: Retrieving data from node path '$znodePath'")
+      logger.debug(s"[Embedded Zookeeper Client]: Retrieving data from node path '$znodePath'")
       if(doesNodeExist(znodePath)) {
         return new String(zkc.getData().forPath(znodePath))
       }
@@ -114,7 +120,7 @@ class ZookeeperClient(zkcConnectString:String, sessionTimeoutMs:Int = 30000, con
       }
     }
     catch {
-      case e: Exception => throw new EmbeddedZookeeperException(s"AUTOMATION-ZOOKEEPER-CLIENT: Caught exception while attempting to get data from znode path '$znodePath'", e)
+      case e: Exception => throw new EmbeddedZookeeperException(s"[Embedded Zookeeper Client]: Caught exception while attempting to get data from znode path '$znodePath'", e)
     }
   }
 }

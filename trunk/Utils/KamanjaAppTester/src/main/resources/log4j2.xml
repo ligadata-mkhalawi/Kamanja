@@ -11,7 +11,7 @@
     </Appenders>
 
     <Loggers>
-        <ROOT level="ERROR">
+        <ROOT level="OFF">
             <AppenderRef ref="CONSOLE"/>
         </ROOT>
         <!--

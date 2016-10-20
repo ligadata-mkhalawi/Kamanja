@@ -48,7 +48,7 @@ lazy val KamanjaInternalDeps = project.in(file("KamanjaInternalDeps")).configs(T
   Serialize, ZooKeeperListener, ZooKeeperLeaderLatch, KamanjaUtils, TransactionService, StorageManager, PmmlCompiler, ZooKeeperClient, OutputMsgDef, SecurityAdapterBase, HeartBeat,
   PythonFactoryOfModelInstanceFactory, JpmmlFactoryOfModelInstanceFactory, JarFactoryOfModelInstanceFactory, KamanjaVersion, InstallDriverBase, BaseFunctions, KafkaSimpleInputOutputAdapters, FileSimpleInputOutputAdapters, SimpleEnvContextImpl,
   GenericMsgCompiler, MethodExtractor, JsonDataGen, Controller, AuditAdapters, CustomUdfLib, UtilityService,
-  UtilsForModels, MessageCompiler, jtm, Dag, NodeInfoExtract, SmartFileAdapter, Cache, CacheImp, CsvSerDeser, JsonSerDeser, KBinarySerDeser, KamanjaAppTester)
+  UtilsForModels, MessageCompiler, jtm, Dag, NodeInfoExtract, SmartFileAdapter, Cache, CacheImp, CsvSerDeser, JsonSerDeser, KBinarySerDeser)
 
 ////////////////////////
 
@@ -275,7 +275,8 @@ lazy val KamanjaAppTester = project.in(file("Utils/KamanjaAppTester"))
     test <<= (test in Test).dependsOn(assembleDependencies)
   )
   .dependsOn(KamanjaManager % "compile->test", MetadataAPI % "compile->test", SimpleKafkaProducer % "compile->test",
-    KamanjaTestUtils, KafkaAdapters_v10 % "compile;compile->test", ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided")
+    KamanjaTestUtils, KafkaAdapters_v10 % "compile;compile->test",
+    KamanjaInternalDeps % "provided", ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided")
 
 // TEST LIBRARIES ONLY TO BE INCLUDED AS PART OF TESTS
 

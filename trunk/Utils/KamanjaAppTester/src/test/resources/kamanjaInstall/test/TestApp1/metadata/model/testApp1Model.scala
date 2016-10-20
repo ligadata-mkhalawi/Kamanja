@@ -29,13 +29,13 @@ class TestApp1Model(factory: ModelInstanceFactory) extends ModelInstance(factory
       }
     })
 
-    println("Customer Total Cost: " + cost)
+    println("Customer Total Cost: " + String.format("%.2f", cost: java.lang.Double))
 
     val output = TestApp1OutputMessage.createInstance.asInstanceOf[TestApp1OutputMessage]
     output.id = customerId
     output.name = customerName
     output.shoppinglist = customerShoppingList
-    output.totalcost = cost
+    output.totalcost = String.format("%.2f", cost: java.lang.Double)
     return Array(output)
   }
 }
