@@ -28,7 +28,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
                            startOffsets: Array[Long],
                            consumerContexts: Array[SmartFileConsumerContext],
                            messageFoundCallback: (SmartFileMessage, SmartFileConsumerContext) => Unit,
-                           finishCallback: (SmartFileHandler, SmartFileConsumerContext, Int) => Unit) {
+                           finishCallback: (Array[SmartFileHandler], SmartFileConsumerContext, Int) => Unit) {
 
   private val maxlen: Int = adapterConfig.monitoringConfig.workerBufferSize * 1024 * 1024 //in MB
 
@@ -56,9 +56,9 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
   def extractMessages(): Unit = {
 
     //    logger.error("==============> HaithamLog => inside extractMessages")
-
+    // changes
     if (!fileHandlers(0).exists()) {
-      finishCallback(fileHandlers(0), consumerContexts(0), SmartFileConsumer.FILE_STATUS_NOT_FOUND)
+      finishCallback(fileHandlers, consumerContexts(0), SmartFileConsumer.FILE_STATUS_NOT_FOUND)
     }
 
     else {
@@ -383,6 +383,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
 
       val smartFileMessage = new SmartFileMessage(jsonString.getBytes(), 0, fileHandlers(0), 0)
       messageFoundCallback(smartFileMessage, consumerContexts(0))
+      // here we are really finished
       finishCallback(fileHandlers(0), consumerContexts(0), SmartFileConsumer.FILE_STATUS_FINISHED)
     } catch {
       case jhs: java.lang.OutOfMemoryError => {
