@@ -73,7 +73,10 @@ object SmartFileConsumer extends InputAdapterFactory {
 
 case class SmartFileExceptionInfo (Last_Failure: String, Last_Recovery: String)
 
-case class ArchiveFileInfo(adapterConfig: SmartFileAdapterConfiguration, locationInfo: LocationInfo, srcFileDir: String, srcFileBaseName: String, componentsMap: scala.collection.immutable.Map[String, String])
+case class ArchiveFileInfo(adapterConfig: SmartFileAdapterConfiguration, locationInfo: LocationInfo,
+                           srcFileDir: String, srcFileBaseName: String,
+                           componentsMap: scala.collection.immutable.Map[String, String],
+                           var previousAttemptsCount : Int)
 
 class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecContextFactory, val nodeContext: NodeContext) extends InputAdapter {
 
@@ -282,10 +285,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
              catch{
                case ie: InterruptedException => {
                  LOG.debug("Smart File Consumer - interrupted " + ie)
-                 throw ie
+                 //throw ie
                }
                case e : Throwable => {
-                 externalizeExceptionEvent(e)
+                 //externalizeExceptionEvent(e)
                  LOG.debug("Smart File Consumer - unkown exception " + e)
                }
              }
@@ -1242,7 +1245,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
       isFileMoved = moveFile(smartFileHandler)
       if (isFileMoved && adapterConfig.archiveConfig != null && adapterConfig.archiveConfig.outputConfig != null) {
-        addArchiveFileInfo(ArchiveFileInfo(adapterConfig, locationInfo, targetMoveDir, flBaseName, componentsMap))
+        addArchiveFileInfo(ArchiveFileInfo(adapterConfig, locationInfo, targetMoveDir, flBaseName, componentsMap, 0))
       }
     } catch {
       case e: Throwable => {
@@ -1474,6 +1477,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       logger.info("Archival Init. archiveParallelism:" + archiveParallelism + ", archiveSleepTimeInMs:" + archiveSleepTimeInMs)
       archiveExecutor = Executors.newFixedThreadPool(archiveParallelism)
 
+      val maxArchiveAttemptsCount = 3
+
       for (i <- 0 until archiveParallelism) {
         val archiveThread = new Runnable() {
           override def run(): Unit = {
@@ -1483,15 +1488,24 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                 if (archiver != null && hasNextArchiveFileInfo) {
                   val archInfo = getNextArchiveFileInfo
                   if (archInfo != null) {
-                    try {
-                      val status = archiver.archiveFile(archInfo.locationInfo, archInfo.srcFileDir, archInfo.srcFileBaseName, archInfo.componentsMap)
-                      if (! status)
-                        addArchiveFileInfo(archInfo)
-                    } catch {
-                      case e: Throwable => {
-                        addArchiveFileInfo(archInfo)
-                        logger.error("Failed to archive file:" + archInfo.srcFileDir + "/" + archInfo.srcFileBaseName, e)
+                    if(archInfo.previousAttemptsCount < maxArchiveAttemptsCount) {
+                      try {
+                        val status = archiver.archiveFile(archInfo.locationInfo, archInfo.srcFileDir, archInfo.srcFileBaseName, archInfo.componentsMap)
+                        if (!status) {
+                          archInfo.previousAttemptsCount = archInfo.previousAttemptsCount + 1
+                          addArchiveFileInfo(archInfo)
+                        }
+                      } catch {
+                        case e: Throwable => {
+                          archInfo.previousAttemptsCount = archInfo.previousAttemptsCount + 1
+                          addArchiveFileInfo(archInfo)
+                          logger.error("Failed to archive file:" + archInfo.srcFileDir + "/" + archInfo.srcFileBaseName, e)
+                        }
                       }
+                    }
+                    else{
+                      logger.warn("File {} failed to archive {} times. Ignoring", archInfo.srcFileDir + "/" + archInfo.srcFileBaseName,
+                        maxArchiveAttemptsCount.toString)
                     }
                   } else {
                     if (archiveSleepTimeInMs > 0)
@@ -1515,6 +1529,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         archiveExecutor.execute(archiveThread)
       }
 
+      //check all files that are already on target dirs and add to be archived
       if (locationTargetMoveDirsMap != null) {
         val processedDirs = scala.collection.mutable.Set[String]()
         val tmpMonitorController = new MonitorController(adapterConfig, this, DummyCallback)
@@ -1534,7 +1549,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                 val locationInfo = getDirLocationInfo(srcDir)
                 if (locationInfo != null && locationInfo.fileComponents != null)
                   componentsMap = MonitorUtils.getFileComponents(tgtDir + "/" + f, locationInfo)
-                addArchiveFileInfo(ArchiveFileInfo(adapterConfig, locationInfo, tgtDir, f, componentsMap))
+                addArchiveFileInfo(ArchiveFileInfo(adapterConfig, locationInfo, tgtDir, f, componentsMap, 0))
               })
             }
             processedDirs += srcDir
