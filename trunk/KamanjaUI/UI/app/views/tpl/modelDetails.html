@@ -1,4 +1,4 @@
-<div class="modelHeaderWrapper" ng-if ="modelDetails.selectedModels.length < 2">
+<div class="modelHeaderWrapper">
   <div class="modelHeader" ng-style="{'background-color': modelDetails.headerColor}">
     <div class="content">
       <div class="row">
@@ -25,30 +25,6 @@
       <span class="title" for="{{item.key}}">{{item.key}}:<span class="detailText"
                                                                 id="{{item.key}}">{{item.value}}</span></span>
 
-    </div>
-  </div>
-</div>
-<div class="modelHeaderWrapper" ng-if ="modelDetails.selectedModels.length >= 2">
-  <div class="modelHeader" ng-style="{'background-color': 'grey'}">
-    <div class="content">
-      <div class="row">
-        <div class="col-xs-10">
-          <span>Multiple Selection</span>
-        </div>
-        <div class="col-xs-2">
-          <div class="corner" ng-style="{'background-color': 'grey'}">
-            <img class="arrow" ng-click="modelDetails.closeSideMenu()" id="arrow" src="./images/arrow.svg" width="23"
-                 height="27" alt=""
-                 data-mu-svgfallback="images/artwork%204_poster_.png">
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-  <div class="details">
-    <div ng-repeat="model in modelDetails.selectedModels">
-      {{model.Name}}
     </div>
   </div>
 </div>

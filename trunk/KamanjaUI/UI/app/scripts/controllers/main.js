@@ -33,15 +33,15 @@ angular.module('networkApp')
         });
       };
       main.nodeClick = function (id) {
-        console.log("node", id);
+        // console.log("node", id);
         $rootScope.$broadcast('nodeSelected', id);
       };
       main.edgeClick = function (id) {
-        console.log("edge", id);
+        // console.log("edge", id);
         $rootScope.$broadcast('edgeSelected', id);
       };
       main.groundClick = function () {
-        console.log('ground');
+        // console.log('ground');
         $rootScope.$broadcast('closeSideMenu');
         $rootScope.$broadcast('groundSelected');
       };

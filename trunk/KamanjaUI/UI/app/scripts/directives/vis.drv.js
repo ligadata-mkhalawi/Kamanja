@@ -150,7 +150,6 @@ angular
                   if (model) {
                     var node = _.find(data.nodes._data, {ID: parseInt(model.Id)});
                     if (node) {
-                      console.log(model.In, linearScale(model.In));
                       data.nodes.update([{id: node.id, number: model.In, size: linearScale(model.In)}]);
                       //node.update({number: model.In});
                       //node.number = model.In;
@@ -286,7 +285,7 @@ angular
           }());
           network.on('click', function (params) {
             if (!params.edges.length && !params.nodes.length) {
-              updateNodesImagesToBeInactive();
+              // updateNodesImagesToBeInactive();
               scope.groundClick();
             }
           });
@@ -299,18 +298,17 @@ angular
                 data.nodes.update({
                   id: n.id,
                   image: serviceConfig.classImageColorPath + n.type.image + '.inactive.' + n.type.extension,
-                  active: false,
-                  size: 16
+                  active: false
                 });
               });
             };
             updateNodeToBeActive = function (id) {
               var node = data.nodes.getItemById(id);
+              console.log(node.size);
               data.nodes.update({
                 id: id,
                 image: serviceConfig.classImageColorPath + node.type.image + '.active.' + node.type.extension,
-                active: true,
-                size: 17
+                active: true
               });
             };
             updateNodeToBeInactive = function (id) {
@@ -318,14 +316,13 @@ angular
               data.nodes.update({
                 id: id,
                 image: serviceConfig.classImageColorPath + node.type.image + '.inactive.' + node.type.extension,
-                active: false,
-                size: 16
+                active: false
               });
             };
           }());
-          scope.$on('closeSideMenu', function () {
-            updateNodesImagesToBeInactive();
-          });
+          // scope.$on('closeSideMenu', function () {
+          //   updateNodesImagesToBeInactive();
+          // });
           network.on('click', function (params) {
             var id = params.nodes[0];
             if (id) {
@@ -428,6 +425,7 @@ angular
           };
           $window.onresize = resizeNetworkAndReposition;
           scope.$watch('data', function () {
+            selectedObjects = [];
             data.nodes.removeAll();
             data.nodes.add((function () {
               var nodes = [];

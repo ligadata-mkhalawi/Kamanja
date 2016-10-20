@@ -83,8 +83,11 @@ angular.module('networkApp')
             toggleModelDetails(false);
             modelDetails.currentNodeId = '';
           }
-          else if(selectedModelIds.length === 1) {
-            data = selectedModelIds[0];
+          else if(selectedModelIds.length >= 1) {
+            _.each(selectedModelIds, function (d) {
+              modelDetails.selectedModels.push(_.find(serviceData.getSelectedViewData().result, {id: d}));
+            });
+            data = selectedModelIds[selectedModelIds.length-1];
             modelDetails.currentNodeId = data;
             toggleModelDetails(true);
             modelDetails.modelInfo = [];
@@ -104,9 +107,6 @@ angular.module('networkApp')
             });
           }
           else {
-            _.each(selectedModelIds, function (d) {
-              modelDetails.selectedModels.push(_.find(serviceData.getSelectedViewData().result, {id: d}));
-            });
           }
         });
 
