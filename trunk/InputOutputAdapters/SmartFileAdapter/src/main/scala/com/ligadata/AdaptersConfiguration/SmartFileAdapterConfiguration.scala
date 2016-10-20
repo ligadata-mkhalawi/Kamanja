@@ -17,10 +17,14 @@ class ArchiveConfig {
 
   var consolidationMaxSizeGB : Double = 1
 
+  def consolidateThresholdBytes : Long = (consolidationMaxSizeGB * 1024 * 1024 * 1024).toLong
+
   //whether to create a dir for each location under archive dir.
   //we are dealing with files not messages, so cannot use msg name
   //instead last part of configured location src dir path will be used as dir name
   var createDirPerLocation : Boolean = true
+
+  //var enforceDataOrder : Boolean = false
 }
 
 /**

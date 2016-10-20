@@ -7,42 +7,74 @@ import com.ligadata.Exceptions.FatalAdapterException
 import org.apache.commons.compress.compressors.CompressorStreamFactory
 import org.apache.logging.log4j.LogManager
 
+import scala.collection.mutable.ArrayBuffer
 
-class Archiver {
+
+class Archiver(adapterConfig: SmartFileAdapterConfiguration) {
 
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
 
-  private val currentAppendFiles =  scala.collection.mutable.LinkedHashMap[String, scala.collection.mutable.LinkedHashMap[String, (Long, Long)]]()
-  //for now only keep one file
-  def getCurrentAppendFile(parentDir : String) : Option[(String, Long, Long)] = {//file name, size, last mod timestamp
+  val maximumAppendableSize = 10
+
+  private val currentAppendFiles =  scala.collection.mutable.LinkedHashMap[String, //scala.collection.mutable.LinkedHashMap[String, (Long, Long)]]()
+    ArrayBuffer[(String, Long, Long)]]()
+
+  /**
+    * search for appendable archived file compared with src file size
+    * @param parentDir
+    * @param srcFileSize
+    * @return file name, size, last mod timestamp
+    */
+  def getCurrentAppendFile(parentDir : String, srcFileSize : Long) : Option[(String, Long, Long)] = {
     this.synchronized {
-      if (currentAppendFiles.contains(parentDir) && currentAppendFiles(parentDir).nonEmpty)
-        Some(currentAppendFiles(parentDir).head._1, currentAppendFiles(parentDir).head._2._1, currentAppendFiles(parentDir).head._2._2)
+      //if (currentAppendFiles.contains(parentDir) && currentAppendFiles(parentDir).nonEmpty)
+      //  Some(currentAppendFiles(parentDir).head._1, currentAppendFiles(parentDir).head._2, currentAppendFiles(parentDir).head.._3)
+      //else None
+
+      if (currentAppendFiles.contains(parentDir) && currentAppendFiles(parentDir).nonEmpty){
+        currentAppendFiles(parentDir).
+          find(fileInfo => fileInfo._2 + srcFileSize <= adapterConfig.archiveConfig.consolidateThresholdBytes) match {
+          case Some(fileInfo) => Some(fileInfo)
+          case None => None
+        }
+      }
       else None
     }
   }
-  def removeFromCurrentAppendFiles(parentDir : String, file : String) = {
+
+  /*def removeFromCurrentAppendFiles(parentDir : String, file : String) = {
     this.synchronized {
       if (currentAppendFiles.contains(parentDir))
-        currentAppendFiles.remove(file)
+        currentAppendFiles(parentDir).remove(file)
     }
-  }
+  }*/
 
   def addToCurrentAppendFiles(parentDir : String, file : String, size : Long, timestamp : Long) = {
     this.synchronized {
-      if (currentAppendFiles.contains(parentDir))
-        currentAppendFiles(parentDir).put(file, (size, timestamp))
-      else {
-        val map = scala.collection.mutable.LinkedHashMap[String, (Long, Long)](file ->(size, timestamp))
-        currentAppendFiles.put(parentDir, map)
-      }
+
+      val buffer =
+        if (currentAppendFiles.contains(parentDir)) currentAppendFiles(parentDir)
+        else ArrayBuffer[(String, Long, Long)]()
+      buffer.append((file, size, timestamp))
+      if(buffer.length > maximumAppendableSize) buffer.remove(0)
+
+      currentAppendFiles.put(parentDir, buffer)
+
     }
   }
   def updateCurrentAppendFile(parentDir : String, file : String, newSize : Long, newTimestamp : Long) = {
     this.synchronized {
-      if (currentAppendFiles.contains(parentDir))
-        currentAppendFiles(parentDir).put(file, (newSize, newTimestamp))
+      val buffer = currentAppendFiles(parentDir)
+
+      val idx = buffer.indexWhere(tuple => tuple._1.equals(file))
+      if(idx >= 0) {//remove file info if too large to append to
+        //TODO : is it better to consider files that are larger than max*ratio (instead of max) unfit for appending?
+        if(newSize >= adapterConfig.archiveConfig.consolidateThresholdBytes)
+          buffer.remove(idx)
+        else buffer(idx) = (file, newSize, newTimestamp)
+      }
+      //else ??
     }
   }
 
@@ -57,7 +89,7 @@ class Archiver {
 
 
 
-  def archiveFile(adapterConfig: SmartFileAdapterConfiguration, locationInfo: LocationInfo, srcFileDir: String, srcFileBaseName: String, componentsMap: scala.collection.immutable.Map[String, String]): Boolean = {
+  def archiveFile(locationInfo: LocationInfo, srcFileDir: String, srcFileBaseName: String, componentsMap: scala.collection.immutable.Map[String, String]): Boolean = {
     if (adapterConfig.archiveConfig == null || adapterConfig.archiveConfig.outputConfig == null)
       return true
 
@@ -106,13 +138,17 @@ class Archiver {
 
     val srcFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, srcFileToArchive, isBinary = false)
 
-    val status = consolidateFile(adapterConfig, locationInfo, srcFileHandler, dstDirToArchive)
-
-    status
+    if(adapterConfig.archiveConfig.consolidationMaxSizeGB <= 0){ //no consolidation
+      val destFileToArchive = dstDirToArchive + "/" + srcFileBaseName
+      val(status, _) = copyFileToArchiveAndDelete(locationInfo, srcFileHandler, destFileToArchive)
+      status
+    }
+    else
+      consolidateFile(locationInfo, srcFileHandler, dstDirToArchive)
   }
 
 
-  def consolidateFile(adapterConfig: SmartFileAdapterConfiguration, locationInfo: LocationInfo,
+  def consolidateFile(locationInfo: LocationInfo,
                       fileHandler : SmartFileHandler, dstDirToArchive : String) : Boolean = {
 
     //var status = false
@@ -123,12 +159,10 @@ class Archiver {
 
     logger.info("currentFileToArchiveSize="+currentFileToArchiveSize.toString)
 
-    val consolidateThresholdBytes : Long = (adapterConfig.archiveConfig.consolidationMaxSizeGB * 1024 * 1024 * 1024).toLong
-
-    val currentAppendFileInfo = getCurrentAppendFile(dstDirToArchive)
+    val currentAppendFileInfo = getCurrentAppendFile(dstDirToArchive, currentFileToArchiveSize)
 
     logger.debug("adapterConfig.archiveConfig.consolidationMaxSizeGB={}",adapterConfig.archiveConfig.consolidationMaxSizeGB.toString)
-    logger.info("consolidateThresholdBytes={}",consolidateThresholdBytes.toString)
+    logger.info("consolidateThresholdBytes={}",adapterConfig.archiveConfig.consolidateThresholdBytes.toString)
 
     if(currentAppendFileInfo.isEmpty)
       logger.debug("Archiver: no entry for currentAppendFiles")
@@ -137,12 +171,12 @@ class Archiver {
         currentAppendFileInfo.get._1, currentAppendFileInfo.get._2.toString, currentAppendFileInfo.get._3.toString)
     }
 
-    if(currentFileToArchiveSize < consolidateThresholdBytes){
+    if(currentFileToArchiveSize < adapterConfig.archiveConfig.consolidateThresholdBytes){
       if(currentAppendFileInfo.isEmpty){//no files already in dest
         logger.debug("Archiver: path 1")
         //copy from src to new file on dest
         val destFilePath = dstDirToArchive + "/" + getNewArchiveFileName
-        result = copyFileToArchiveAndDelete(adapterConfig, locationInfo, fileHandler, destFilePath)
+        result = copyFileToArchiveAndDelete(locationInfo, fileHandler, destFilePath)
         addToCurrentAppendFiles(dstDirToArchive, destFilePath, result._2, currentFileToArchiveTimestamp)//using timestamp of src?
       }
       else{
@@ -150,20 +184,21 @@ class Archiver {
         val currentAppendFilePath = currentAppendFileInfo.get._1
 
         logger.debug("currentAppendFileSize="+currentAppendFileSize.toString)
-        if(currentAppendFileSize + currentFileToArchiveSize >  consolidateThresholdBytes){
+        if(currentAppendFileSize + currentFileToArchiveSize >  adapterConfig.archiveConfig.consolidateThresholdBytes){
           logger.debug("Archiver: path 2")
 
           //copy from src to new file on dest
           val destFilePath = dstDirToArchive + "/" + getNewArchiveFileName
-          result = copyFileToArchiveAndDelete(adapterConfig, locationInfo, fileHandler, destFilePath)
+          result = copyFileToArchiveAndDelete(locationInfo, fileHandler, destFilePath)
           //change currentAppendFilePath and size to new dest
-          removeFromCurrentAppendFiles(dstDirToArchive, currentAppendFilePath)
+          //removeFromCurrentAppendFiles(dstDirToArchive, currentAppendFilePath)
+          updateCurrentAppendFile(dstDirToArchive, currentAppendFilePath, result._2, currentFileToArchiveTimestamp)
           addToCurrentAppendFiles(dstDirToArchive, destFilePath, result._2, currentFileToArchiveTimestamp)//using timestamp of src?
         }
         else{
           logger.debug("Archiver: path 3")
           //append src to currentAppendFilePath
-          result = copyFileToArchiveAndDelete(adapterConfig, locationInfo, fileHandler, currentAppendFilePath)
+          result = copyFileToArchiveAndDelete(locationInfo, fileHandler, currentAppendFilePath)
 
           //increase size currentAppendFileSize
           //val currentAppendFileSize = fileHandler.fileLength(currentAppendFilePath)
@@ -178,18 +213,17 @@ class Archiver {
       logger.debug("Archiver: path 4")
       //copy from src to new file on dest
       val destFilePath = dstDirToArchive + "/" + getNewArchiveFileName
-      result = copyFileToArchiveAndDelete(adapterConfig, locationInfo, fileHandler, destFilePath)
+      result = copyFileToArchiveAndDelete(locationInfo, fileHandler, destFilePath)
 
-      //for now, assuming order matters, keep only one appendable dest file, remove current append because it got old
-      if(currentAppendFileInfo.isDefined)
-        removeFromCurrentAppendFiles(dstDirToArchive, currentAppendFileInfo.get._1)
+      //if(currentAppendFileInfo.isDefined)
+        //removeFromCurrentAppendFiles(dstDirToArchive, currentAppendFileInfo.get._1)
     }
 
     result._1
   }
 
   //return status and new size of dest file
-  def copyFileToArchiveAndDelete(adapterConfig: SmartFileAdapterConfiguration, locationInfo: LocationInfo,
+  def copyFileToArchiveAndDelete(locationInfo: LocationInfo,
                                  srcFileHandler: SmartFileHandler, dstFileToArchive : String): (Boolean, Long) ={
 
     logger.warn("Archiver: Copying from {} to {}", srcFileHandler.getFullPath, dstFileToArchive)
@@ -211,7 +245,7 @@ class Archiver {
       val originalOutputStream = osWriter.openFile(adapterConfig.archiveConfig.outputConfig, dstFileToArchive, canAppend = true)
       val compress = adapterConfig.archiveConfig.outputConfig.compressionString != null
       if(compress) {
-        validateArchiveDestCompression(adapterConfig)
+        validateArchiveDestCompression()
         os = new CompressorStreamFactory().createCompressorOutputStream(adapterConfig.archiveConfig.outputConfig.compressionString, originalOutputStream)
       }
       else
@@ -271,7 +305,7 @@ class Archiver {
     (status, resultSize)
   }
 
-  def validateArchiveDestCompression(adapterConfig : SmartFileAdapterConfiguration) : Boolean = {
+  def validateArchiveDestCompression() : Boolean = {
     if (CompressorStreamFactory.BZIP2.equalsIgnoreCase(adapterConfig.archiveConfig.outputConfig.compressionString) ||
       CompressorStreamFactory.GZIP.equalsIgnoreCase(adapterConfig.archiveConfig.outputConfig.compressionString) ||
       CompressorStreamFactory.XZ.equalsIgnoreCase(adapterConfig.archiveConfig.outputConfig.compressionString)
