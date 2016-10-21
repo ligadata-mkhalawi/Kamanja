@@ -223,7 +223,8 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
             //            logger.error("==============> HaithamLog => Grouping: outer loop")
 
             val fh = element._1
-            val pattern = "^((?!_att).)*$"
+            //            val pattern = "^((?!_att).)*$"
+            val pattern = ".*.\\w.\\D.txt"
             if (fh.getFullPath.matches(pattern)) {
               //              logger.error("==============> HaithamLog => Grouping: outer loop : fh.getFullPath.matches(pattern)==true")
 
@@ -239,7 +240,8 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
                 //                logger.error("==============> HaithamLog => Grouping: inner loop : fileName = " + fileName)
 
                 // adding attachments, but make sure not to add the email to the tmpArray again
-                val pattern2 = emailName + "_" + "att" + "\\p{Alnum}.*"
+                //                val pattern2 = emailName + "_" + "att" + "\\p{Alnum}.*"
+                val pattern2 = emailName + ".\\d.*"
                 if (fileName.matches(pattern2) && !fileName.equals(emailName)) {
                   //                  logger.error("==============> HaithamLog => Grouping: inner loop : fileName.matches(pattern2) && !fileName.equals(emailName) = " + (fileName.matches(pattern2) && !fileName.equals(emailName)))
 
