@@ -36,7 +36,7 @@ object MonitorUtils {
       if (fileHandler.exists && fileSize > 0) {
 
         val contentType = CompressionUtil.getFileType(fileHandler, "")
-        if (checkFileTypes == true && (validContentTypes contains contentType)) {
+        if (!checkFileTypes || (validContentTypes contains contentType)) {
           return true
         } else {
           //Log error for invalid content type
