@@ -70,6 +70,7 @@ class FileAdapterMonitoringConfig {
   var orderBy: Array[String] = Array.empty[String]
   var entireFileAsOneMessage = false
   var enableEmailAndAttachmentMode = false
+  var checkFileTypes = true
 
   var enableMoving: String = "on"
 
@@ -77,6 +78,7 @@ class FileAdapterMonitoringConfig {
   def isMovingEnabled: Boolean = enableMoving == null || enableMoving.length == 0 || enableMoving.equalsIgnoreCase("on")
 
   val createInputStructureInTargetDirs = true
+
 }
 
 class Padding {
@@ -263,6 +265,9 @@ object SmartFileAdapterConfiguration {
       }
       else if (kv._1.compareToIgnoreCase("EntireFileAsOneMessage") == 0) {
         monitoringConfig.entireFileAsOneMessage = kv._2.asInstanceOf[String].trim.toBoolean
+      }
+      else if (kv._1.compareToIgnoreCase("CheckFileTypes") == 0) {
+        monitoringConfig.checkFileTypes = kv._2.asInstanceOf[String].trim.toBoolean
       }
       else if (kv._1.compareToIgnoreCase("EnableEmailAndAttachmentMode") == 0) {
         monitoringConfig.enableEmailAndAttachmentMode = kv._2.asInstanceOf[String].trim.toBoolean

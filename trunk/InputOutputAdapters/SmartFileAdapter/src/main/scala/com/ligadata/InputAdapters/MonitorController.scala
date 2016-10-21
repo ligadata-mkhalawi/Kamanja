@@ -328,7 +328,7 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
                     if (fileTuple._2._1 == thisFileOrigLength) {
                       // If the length is > 0, we assume that the file completed transfer... (very problematic, but unless
                       // told otherwise by BofA, not sure what else we can do here.
-                      if (thisFileOrigLength > 0 && MonitorUtils.isValidFile(fileHandler)) {
+                      if (thisFileOrigLength > 0 && MonitorUtils.isValidFile(fileHandler, adapterConfig.monitoringConfig.checkFileTypes)) {
                         if (isEnqueued(fileTuple._1)) {
                           logger.debug("SMART FILE CONSUMER (MonitorController):  File already enqueued " + fileHandler.getFullPath)
                         } else {
