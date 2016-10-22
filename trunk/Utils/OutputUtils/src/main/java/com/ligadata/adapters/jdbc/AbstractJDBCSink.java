@@ -18,12 +18,14 @@ import org.json.simple.JSONObject;
 
 import com.ligadata.adapters.AdapterConfiguration;
 import com.ligadata.adapters.BufferedMessageProcessor;
+import com.ligadata.adapters.StatusCollectable;
 
 public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 	static Logger logger = LogManager.getLogger(AbstractJDBCSink.class);
 
 	protected BasicDataSource dataSource;
 	protected SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+	protected StatusCollectable statusWriter = null;
 
 	protected class ParameterMapping {
 		String typeName;
@@ -177,7 +179,7 @@ public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 	}
 
 	@Override
-	public void init(AdapterConfiguration config) throws Exception {
+	public void init(AdapterConfiguration config,  StatusCollectable sw) throws Exception {
 		dataSource = new BasicDataSource();
 		dataSource.setDriverClassName(config.getProperty(AdapterConfiguration.JDBC_DRIVER));
 		dataSource.setUrl(config.getProperty(AdapterConfiguration.JDBC_URL));
@@ -191,6 +193,8 @@ public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 		dataSource.setTestOnBorrow(Boolean.parseBoolean(config.getProperty(AdapterConfiguration.DBCP_TEST_ON_BORROW, "true")));
 		dataSource.setValidationQuery(config.getProperty(AdapterConfiguration.DBCP_VALIDATION_QUERY, "SELECT 1"));
 
+		statusWriter = sw;
+
 		inputFormat = new SimpleDateFormat(
 				config.getProperty(AdapterConfiguration.INPUT_DATE_FORMAT, "yyyy-MM-dd'T'HH:mm:ss.SSS"));
 	}
@@ -199,7 +203,7 @@ public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 	public abstract boolean addMessage(String message);
 
 	@Override
-	public abstract void processAll() throws Exception;
+	public abstract void processAll(long batchId) throws Exception;
 
 	@Override
 	public void clearAll() {

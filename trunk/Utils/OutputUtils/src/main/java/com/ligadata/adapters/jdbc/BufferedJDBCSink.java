@@ -10,6 +10,7 @@ import org.apache.logging.log4j.LogManager;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
+import com.ligadata.adapters.StatusCollectable;
 import com.ligadata.adapters.AdapterConfiguration;
 
 public class BufferedJDBCSink extends AbstractJDBCSink {
@@ -23,8 +24,8 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
     }
 
     @Override
-    public void init(AdapterConfiguration config) throws Exception {
-        super.init(config);
+    public void init(AdapterConfiguration config, StatusCollectable sw) throws Exception {
+        super.init(config, sw);
 
         insertParams = new ArrayList<ParameterMapping>();
         buffer = new ArrayList<JSONObject>();
@@ -64,7 +65,7 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
     }
 
     @Override
-    public void processAll() throws Exception {
+    public void processAll(long batchId) throws Exception {
         Connection connection = dataSource.getConnection();
         PreparedStatement statement = connection.prepareStatement(insertStatement);
 

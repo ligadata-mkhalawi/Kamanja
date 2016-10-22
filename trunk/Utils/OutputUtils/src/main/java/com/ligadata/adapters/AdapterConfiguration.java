@@ -101,6 +101,14 @@ public class AdapterConfiguration {
 
 	public static final String KAFKA_POLL_INTERVAL = "poll.interval";
 
+	// values for StatusRecorder
+	public static final String STATUS_IMPL = "statuscollector.impl";
+	public static final String STATUS_IMPL_INIT_PARMS= "statuscollector.parms";
+	// - for kakfa
+	public static final String STATUS_KAFKA_BOOTSTRAP_SERVERS = "status.bootstrap.servers";
+	public static final String STATUS_KAFKA_TOPIC  = "status.kafka.topic";
+
+
 	private Properties properties;
 
 	public AdapterConfiguration() throws IOException {

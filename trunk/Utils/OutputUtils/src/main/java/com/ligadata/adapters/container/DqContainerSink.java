@@ -11,6 +11,7 @@ import org.apache.logging.log4j.LogManager;
 
 import com.ligadata.adapters.AdapterConfiguration;
 import com.ligadata.adapters.jdbc.AbstractJDBCSink;
+import com.ligadata.adapters.StatusCollectable;
 
 public class DqContainerSink extends AbstractJDBCSink {
 	static Logger logger = LogManager.getLogger(DqContainerSink.class);
@@ -35,8 +36,8 @@ public class DqContainerSink extends AbstractJDBCSink {
 	private String sqlStr;
 	
 	@Override
-	public void init(AdapterConfiguration config) throws Exception {
-		super.init(config);
+	public void init(AdapterConfiguration config, StatusCollectable sw) throws Exception {
+		super.init(config, sw);
 
 		sqlStr = config.getProperty(AdapterConfiguration.JDBC_INSERT_STATEMENT);
 		if(sqlStr == null)
@@ -87,7 +88,7 @@ public class DqContainerSink extends AbstractJDBCSink {
 	}
 
 	@Override
-	public void processAll() throws Exception {
+	public void processAll(long batchid) throws Exception {
 		Connection connection = dataSource.getConnection();
 		PreparedStatement statement = connection.prepareStatement(sqlStr);
 

@@ -19,6 +19,7 @@ import org.json.simple.parser.JSONParser;
 
 import com.ligadata.adapters.AdapterConfiguration;
 import com.ligadata.adapters.BufferedMessageProcessor;
+import com.ligadata.adapters.StatusCollectable;
 
 public class BufferedPartitionedAvroSink implements BufferedMessageProcessor {
 	static Logger logger = LogManager.getLogger(BufferedPartitionedAvroSink.class); 
@@ -29,6 +30,7 @@ public class BufferedPartitionedAvroSink implements BufferedMessageProcessor {
 	private AvroHDFSWriter hdfsWriter;
 	private Schema schema;
 	private boolean createNewFile = false;
+	protected StatusCollectable statusWriter = null;
 	
 	public BufferedPartitionedAvroSink() {
 	}
@@ -52,7 +54,8 @@ public class BufferedPartitionedAvroSink implements BufferedMessageProcessor {
 	}
 	
 	@Override
-	public void init(AdapterConfiguration configuration) throws Exception {
+	public void init(AdapterConfiguration configuration,  StatusCollectable sw) throws Exception {
+		this.statusWriter = sw;
 		this.name = configuration.getProperty(AdapterConfiguration.FILE_PREFIX, "Log") + Thread.currentThread().getId();
 		this.buffer = new HashMap<String, ArrayList<Record>>();
 		logger.info("Using partition startegy: " + configuration.getProperty(AdapterConfiguration.PARTITION_STRATEGY)); 
@@ -104,7 +107,7 @@ public class BufferedPartitionedAvroSink implements BufferedMessageProcessor {
 	}
 
 	@Override
-	public void processAll() throws Exception {
+	public void processAll(long batchid) throws Exception {
 		for (String key : buffer.keySet()) {
 			try {
 				ArrayList<Record> records = buffer.get(key);
@@ -118,13 +121,17 @@ public class BufferedPartitionedAvroSink implements BufferedMessageProcessor {
 						hdfsWriter.write(rec);
 					}
 					logger.info("Sucessfully wrote " + records.size() + " records to partition [" + key + "]");
+                    statusWriter.addStatus(key, (new Integer (records.size()).toString()) );
 					hdfsWriter.close();
 				}
 			} catch(Exception e) {
+                statusWriter.addStatus(key,e.getMessage());
+                statusWriter.externalizeStatusMessage(String.valueOf(batchid), "BufferedPartitionedAvroSink");
 				hdfsWriter.closeAll();
 				throw e;
 			}
-		}		
+		}
+        statusWriter.externalizeStatusMessage(String.valueOf(batchid), "BufferedPartitionedAvroSink");
 	}
 
 	@Override

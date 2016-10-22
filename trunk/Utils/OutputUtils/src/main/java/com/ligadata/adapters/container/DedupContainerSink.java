@@ -11,9 +11,11 @@ import com.ligadata.KamanjaBase.MessageContainerBase;
 import com.ligadata.adapters.AdapterConfiguration;
 import com.ligadata.adapters.BufferedMessageProcessor;
 import com.ligadata.tools.SaveContainerDataComponent;
+import com.ligadata.adapters.StatusCollectable;
 
 public class DedupContainerSink implements BufferedMessageProcessor { //extends AbstractJDBCSink {
 	static Logger logger = LogManager.getLogger(DedupContainerSink.class);
+	protected StatusCollectable statusWriter = null;
 
 	protected class DedupPartition {
 		Integer key1;
@@ -32,7 +34,8 @@ public class DedupContainerSink implements BufferedMessageProcessor { //extends 
 	private SaveContainerDataComponent writer = null;
 	
 	@Override
-	public void init(AdapterConfiguration config) throws Exception {
+	public void init(AdapterConfiguration config, StatusCollectable sw) throws Exception {
+		statusWriter = sw;
 		writer = new SaveContainerDataComponent();
 		String configFile = config.getProperty(AdapterConfiguration.METADATA_CONFIG_FILE);
 		if(configFile == null)
@@ -72,7 +75,7 @@ public class DedupContainerSink implements BufferedMessageProcessor { //extends 
 	}
 
 	@Override
-	public void processAll() throws Exception {
+	public void processAll(long batchid) throws Exception {
 		ArrayList<MessageContainerBase> data = new ArrayList<MessageContainerBase>();
 		//logger.info("Container name is " + containerName);
 		for (String key : buffer.keySet()) {

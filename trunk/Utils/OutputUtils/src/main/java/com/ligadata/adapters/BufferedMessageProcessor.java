@@ -1,11 +1,11 @@
 package com.ligadata.adapters;
 
 public interface BufferedMessageProcessor {
-	public void init(AdapterConfiguration config) throws Exception;
+	public void init(AdapterConfiguration config, StatusCollectable stats) throws Exception;
 
 	public boolean addMessage(String message);
-	
-	public void processAll() throws Exception;
+
+	public void processAll(long batchId) throws Exception;
 
 	public void clearAll();
 
