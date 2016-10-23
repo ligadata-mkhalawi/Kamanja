@@ -1,6 +1,7 @@
 package com.ligadata.ElasticsearchInputOutputAdapters
 
-import java.util.Arrays
+import java.text.SimpleDateFormat
+import java.util.{Arrays, Calendar}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 
@@ -170,6 +171,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     if (outputContainers.size == 0) return
 
     val dt = System.currentTimeMillis
+    var indexName = adapterConfig.TableName
     lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(dt))
     // Sanity checks
     if (isShutdown) {
@@ -179,9 +181,13 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     }
     val (outContainers, serializedContainerData, serializerNames) = serialize(tnxCtxt, outputContainers)
     //    serializedContainerData.map(data => new String(data))
+    if (adapterConfig.rollIndexNameByDate) {
+      val dateFormat: SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd")
+      val currentDate = dateFormat.format(Calendar.getInstance().getTime())
+      indexName = indexName + "-" + currentDate
+    }
 
-    dataStore.putJson(adapterConfig.TableName, serializedContainerData.map(data => new String(data)))
-    // dataStore.put(tnxCtxt, data_list)
+    dataStore.putJson(indexName, serializedContainerData.map(data => new String(data)))
   }
 
 
