@@ -19,6 +19,8 @@ class ElasticsearchAdapterConfiguration extends AdapterConfiguration {
   // optional
   //  var serializerName: String =""
   var rollIndexNameByDate = false
+  var manuallyCreateIndexMapping = false
+  var indexMapping: String = ""
   var columnDelimiter: String = ""
   var rowkeyIncluded: Boolean = false
   var numberOfThread: Int = 1
@@ -77,10 +79,14 @@ object ElasticsearchAdapterConfiguration extends LogTrait {
         adapterConfig.numberOfThread = kv._2.toString.trim.toInt
       } else if (kv._1.compareToIgnoreCase("columnDelimiter") == 0) {
         adapterConfig.columnDelimiter = kv._2.toString.trim
+      } else if (kv._1.compareToIgnoreCase("IndexMapping") == 0) {
+        adapterConfig.indexMapping = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("rowkeyIncluded") == 0) {
         adapterConfig.rowkeyIncluded = kv._2.toString.trim.toBoolean
       } else if (kv._1.compareToIgnoreCase("RollIndexNameByDate") == 0) {
         adapterConfig.rollIndexNameByDate = kv._2.toString.trim.toBoolean
+      } else if (kv._1.compareToIgnoreCase("ManuallyCreateIndexMapping") == 0) {
+        adapterConfig.manuallyCreateIndexMapping = kv._2.toString.trim.toBoolean
       }
     })
 

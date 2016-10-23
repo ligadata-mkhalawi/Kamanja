@@ -472,6 +472,53 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   }
 
 
+  def checkIndexExsists(indexName: String): Boolean = {
+    var client: TransportClient = null
+    val fullIndexName = toFullTableName(indexName)
+    try {
+      client = getConnection
+      val indicies: Array[String] = client.admin().cluster().prepareState().execute()
+        .actionGet().getState().getMetaData().concreteAllIndices();
+
+      if (indicies.contains(fullIndexName)) {
+        return true
+      }
+
+      return false
+
+    } catch {
+      case e: Exception => {
+        throw CreateDDLException("Failed to check if Index exists " + indexName, e)
+      }
+    } finally {
+      if (client != null) {
+        client.close
+      }
+    }
+  }
+
+
+  def createIndexForOutputAdapter(indexName: String, indexMapping: String): Unit = {
+    var client: TransportClient = null
+    val fullIndexName = toFullTableName(indexName)
+    try {
+      client = getConnection
+
+      val putMappingResponse = client.admin().indices().prepareCreate(fullIndexName)
+        .setSource(indexMapping)
+        .execute().actionGet()
+    }
+    catch {
+      case e: Exception => {
+        throw CreateDDLException("Failed to create Index " + fullIndexName, e)
+      }
+    } finally {
+      if (client != null) {
+        client.close
+      }
+    }
+  }
+
   def putJson(containerName: String, data_list: Array[(String)]): Unit = {
     var client: TransportClient = null
     val tableName = toFullTableName(containerName)

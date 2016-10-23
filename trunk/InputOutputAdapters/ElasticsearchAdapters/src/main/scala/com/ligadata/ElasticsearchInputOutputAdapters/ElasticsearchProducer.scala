@@ -180,11 +180,19 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       throw new Exception(szMsg)
     }
     val (outContainers, serializedContainerData, serializerNames) = serialize(tnxCtxt, outputContainers)
-    //    serializedContainerData.map(data => new String(data))
+
+    // check if we need the indexName to be change according to the current date
     if (adapterConfig.rollIndexNameByDate) {
       val dateFormat: SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd")
       val currentDate = dateFormat.format(Calendar.getInstance().getTime())
       indexName = indexName + "-" + currentDate
+    }
+
+    // check if we need to cteate the indexMapping beforehand.
+    if (adapterConfig.manuallyCreateIndexMapping) {
+      if ((adapterConfig.indexMapping.length > 0) && !dataStore.checkIndexExsists(indexName)) {
+        dataStore.createIndexForOutputAdapter(indexName, adapterConfig.indexMapping)
+      }
     }
 
     dataStore.putJson(indexName, serializedContainerData.map(data => new String(data)))
