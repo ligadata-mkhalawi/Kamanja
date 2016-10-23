@@ -507,6 +507,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       val putMappingResponse = client.admin().indices().prepareCreate(fullIndexName)
         .setSource(indexMapping)
         .execute().actionGet()
+      client.admin().indices().prepareRefresh(fullIndexName).get()
     }
     catch {
       case e: Exception => {
@@ -532,6 +533,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       })
       logger.debug("Executing bulk insert...")
       val bulkResponse = bulkRequest.execute().actionGet()
+      //      client.admin().indices().prepareRefresh(tableName).get()
     }
     catch {
       case e: Exception => {
