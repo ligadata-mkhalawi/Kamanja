@@ -28,6 +28,8 @@ import com.ligadata.Utils.KamanjaLoaderInfo
 import com.ligadata.kamanja.metadata.AdapterInfo
 import org.apache.commons.codec.binary.Base64
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
+import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse
+import org.elasticsearch.client.IndicesAdminClient
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.common.transport.InetSocketTransportAddress
@@ -477,18 +479,26 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     val fullIndexName = toFullTableName(indexName)
     try {
       client = getConnection
-      val indicies: Array[String] = client.admin().cluster().prepareState().execute()
-        .actionGet().getState().getMetaData().concreteAllIndices();
 
-      if (indicies.contains(fullIndexName)) {
+      val indices: IndicesAdminClient = client.admin().indices()
+      val res: IndicesExistsResponse = indices.prepareExists(fullIndexName.toLowerCase).execute().actionGet()
+
+      if (res.isExists) {
         return true
+      } else {
+        return false
       }
-
-      return false
-
+      //      val indicies: Array[String] = client.admin().cluster().prepareState().execute()
+      //        .actionGet().getState().getMetaData().concreteAllIndices();
+      //
+      //      if (indicies.contains(fullIndexName)) {
+      //        return true
+      //      }
+      //
+      //      return false
     } catch {
       case e: Exception => {
-        throw CreateDDLException("Failed to check if Index exists " + indexName, e)
+        throw CreateDDLException("Failed to check if Index exists " + fullIndexName, e)
       }
     } finally {
       if (client != null) {
