@@ -25,4 +25,33 @@
     margin-left: 10px;
     margin-right: 5px;
   }
+  .list-inline > li {
+    position: relative;
+    &.arrow {
+      width: 30px;
+      text-align: left;
+      margin-left: -8px;
+      cursor: pointer;
+    }
+    .displayName {
+      margin-top:-7px;
+    }
+  }
+  .numberCircle{
+    position: absolute;
+    top:0;
+    right: 0px;
+    width: 20px;
+    height: 20px;
+    display:block;
+    border-radius: 10px;
+    background-color: red;
+  }
+  .selectedList{
+    position: fixed;
+    bottom: 30px;
+    .list-group-item{
+      color: black;
+    }
+  }
 }

@@ -2,9 +2,21 @@
   <div class="col-md-12 text-center itemsCol">
     <div class="items">
       <ul class="list-inline">
-        <li ng-repeat="item in footer.footerList">
-          <img ng-click="footer.filterNode(item)" ng-style="item.style" ng-src="images/{{item.imageName}}" width="{{item.imageWidth}}" height="{{item.imageHeight}}" alt=""/>
-          {{item.displayName}}
+        <li ng-repeat-start="item in footer.footerList">
+          <img ng-click="footer.filterNode(item)" ng-style="item.style" ng-src="images/{{item.imageName}}"
+               width="{{item.imageWidth}}" height="{{item.imageHeight}}" alt=""/>
+          <div class="displayName">
+            {{item.displayName}}
+            <span class="numberCircle" ng-if="item.selectedModels.length">
+              {{item.selectedModels.length}}
+            </span>
+          </div>
+          <ul class="list-group  selectedList" click-outside="item.showList = false;" ng-show="item.showList">
+            <li class="list-group-item" ng-repeat="selectedModel in item.selectedModels">{{selectedModel.Name}}</li>
+          </ul>
+        </li>
+        <li ng-repeat-end="" class="arrow">
+          <span class="glyphicon glyphicon-chevron-up" aria-hidden="true" ng-click=" item.showList= true;"></span>
         </li>
       </ul>
     </div>

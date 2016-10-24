@@ -304,7 +304,6 @@ angular
             };
             updateNodeToBeActive = function (id) {
               var node = data.nodes.getItemById(id);
-              console.log(node.size);
               data.nodes.update({
                 id: id,
                 image: serviceConfig.classImageColorPath + node.type.image + '.active.' + node.type.extension,

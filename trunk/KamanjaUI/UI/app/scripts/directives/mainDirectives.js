@@ -9,16 +9,17 @@ angular.module('networkApp')
       controller: function ($rootScope, serviceData, serviceConfig) {
         var footer = this;
         footer.footerList = [];
+        var selectedModelIds = [];
 
-        footer.hideSideMenu = function(){
+        footer.hideSideMenu = function () {
           $rootScope.$broadcast('closeSideMenu');
         };
 
-        footer.filterNode = function(item){
+        footer.filterNode = function (item) {
           item.visible = !item.visible;
-          if(item.visible){
+          if (item.visible) {
             item.style = {};
-          }else{
+          } else {
             item.style = {'opacity': 0.5};
           }
 
@@ -42,7 +43,22 @@ angular.module('networkApp')
             footer.footerList.push(footerObj);
           });
         });
-
+        $rootScope.$on('nodeSelected', function (event, data) {
+          footer.selectedModels = [];
+          if (selectedModelIds.indexOf(data) === -1) {
+            selectedModelIds.push(data);
+          } else {
+            selectedModelIds.splice(selectedModelIds.indexOf(data), 1);
+          }
+          _.each(selectedModelIds, function (d) {
+            footer.selectedModels.push(_.find(serviceData.getSelectedViewData().result, {id: d}));
+          });
+          _.each(footer.footerList, function (l) {
+            l.selectedModels = _.filter(footer.selectedModels, function (m) {
+              return m.class.toLowerCase() === l.id.toLowerCase();
+            });
+          });
+        });
 
       }
     };
@@ -52,42 +68,41 @@ angular.module('networkApp')
       restrict: 'E',
       templateUrl: 'views/tpl/modelDetails.html',
       controllerAs: 'modelDetails',
-      controller: function ($rootScope,$filter, serviceData, serviceConfig) {
+      controller: function ($rootScope, $filter, serviceData, serviceConfig) {
         var modelDetails = this;
         modelDetails.modelInfo = [];
         var selectedModelIds = [];
         modelDetails.currentNodeId = '';
 
-        modelDetails.closeSideMenu = function(){
+        modelDetails.closeSideMenu = function () {
           $rootScope.$broadcast('closeSideMenu');
         }
 
-        $rootScope.$on('closeSideMenu', function(event, data){
+        $rootScope.$on('closeSideMenu', function (event, data) {
           modelDetails.currentNodeId = '';
           toggleModelDetails(false);
         });
 
-        $rootScope.$on('serviceError', function(event, data){
+        $rootScope.$on('serviceError', function (event, data) {
           modelDetails.isError = true;
         });
 
         $rootScope.$on('nodeSelected', function (event, data) {
           modelDetails.selectedModels = [];
-          if (selectedModelIds.indexOf(data) === -1){
+          if (selectedModelIds.indexOf(data) === -1) {
             selectedModelIds.push(data);
           } else {
-            //remove data from array
-            selectedModelIds.splice(selectedModelIds.indexOf(data),1);
+            selectedModelIds.splice(selectedModelIds.indexOf(data), 1);
           }
-          if(selectedModelIds.length === 0) {
+          if (selectedModelIds.length === 0) {
             toggleModelDetails(false);
             modelDetails.currentNodeId = '';
           }
-          else if(selectedModelIds.length >= 1) {
+          else if (selectedModelIds.length >= 1) {
             _.each(selectedModelIds, function (d) {
               modelDetails.selectedModels.push(_.find(serviceData.getSelectedViewData().result, {id: d}));
             });
-            data = selectedModelIds[selectedModelIds.length-1];
+            data = selectedModelIds[selectedModelIds.length - 1];
             modelDetails.currentNodeId = data;
             toggleModelDetails(true);
             modelDetails.modelInfo = [];
@@ -100,7 +115,10 @@ angular.module('networkApp')
               modelDetails.imageWidth = type.widthProperties;
               modelDetails.imageHeight = type.heightProperties;
             }
-            serviceData.getProperties({"ViewName": serviceData.getSelectedViewName(), "RID": data}, function (response) {
+            serviceData.getProperties({
+              "ViewName": serviceData.getSelectedViewName(),
+              "RID": data
+            }, function (response) {
               //modelDetails.modelInfo = response;
               addProperties(response);
 
@@ -111,11 +129,11 @@ angular.module('networkApp')
         });
 
         $rootScope.$on('edgeSelected', function (event, data) {
-          if(modelDetails.currentNodeId === data) {
+          if (modelDetails.currentNodeId === data) {
             toggleModelDetails(false);
             modelDetails.currentNodeId = '';
           }
-          else{
+          else {
             modelDetails.currentNodeId = data;
             toggleModelDetails(true);
           }
@@ -125,10 +143,10 @@ angular.module('networkApp')
 
           nodeInfo = _.find(serviceData.getSelectedViewData().result, {id: nodeInfo.out});
           var type;
-          if(serviceData.getSelectedViewName().toLowerCase() === "dag"){
+          if (serviceData.getSelectedViewName().toLowerCase() === "dag") {
             type = serviceConfig.classImageColorMap['dag'];
-          }else{
-            type = serviceConfig.classImageColorMap[nodeInfo.class ];
+          } else {
+            type = serviceConfig.classImageColorMap[nodeInfo.class];
           }
 
 
@@ -145,13 +163,12 @@ angular.module('networkApp')
           });
         });
 
-        function addProperties(result){
+        function addProperties(result) {
           _.forOwn(result, function (value, key) {
             if (!key.startsWith('@')) {
-              if(key.toLowerCase() === 'CreatedTime'.toLocaleLowerCase())
-              {
+              if (key.toLowerCase() === 'CreatedTime'.toLocaleLowerCase()) {
                 modelDetails.modelInfo.push({key: key, value: $filter('date')(value, 'medium')});
-              }else {
+              } else {
                 modelDetails.modelInfo.push({key: key, value: value});
               }
             }
