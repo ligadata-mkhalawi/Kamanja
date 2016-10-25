@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.HashSet;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -58,7 +59,7 @@ public class BufferedPartitionedAvroSink implements BufferedMessageProcessor {
 		this.statusWriter = sw;
 		this.name = configuration.getProperty(AdapterConfiguration.FILE_PREFIX, "Log") + Thread.currentThread().getId();
 		this.buffer = new HashMap<String, ArrayList<Record>>();
-		logger.info("Using partition startegy: " + configuration.getProperty(AdapterConfiguration.PARTITION_STRATEGY)); 
+		logger.info("Using partition startegy: " + configuration.getProperty(AdapterConfiguration.PARTITION_STRATEGY));
 		this.partitioner = new PartitionStrategy(configuration.getProperty(AdapterConfiguration.PARTITION_STRATEGY),
 				configuration.getProperty(AdapterConfiguration.INPUT_DATE_FORMAT, "yyyy-MM-dd"));
 		
@@ -106,8 +107,15 @@ public class BufferedPartitionedAvroSink implements BufferedMessageProcessor {
 			return false;
 	}
 
+	private void removeProcessedKeys(HashSet<String> writtenKeysSet) {
+		for (String key : writtenKeysSet) {
+			buffer.remove(key);
+		}
+	}
+
 	@Override
 	public void processAll(long batchid, long retryNumber) throws Exception {
+		HashSet<String> writtenKeysSet = new HashSet<String>();
 		for (String key : buffer.keySet()) {
 			try {
 				ArrayList<Record> records = buffer.get(key);
@@ -122,21 +130,24 @@ public class BufferedPartitionedAvroSink implements BufferedMessageProcessor {
 					}
 					logger.info("Sucessfully wrote " + records.size() + " records to partition [" + key + "]");
                     statusWriter.addStatus(key, (new Integer (records.size()).toString()) );
+					writtenKeysSet.add(key);
 					hdfsWriter.close();
 				}
 			} catch(Exception e) {
+				removeProcessedKeys(writtenKeysSet);
                 statusWriter.addStatus(key,e.getMessage());
                 statusWriter.externalizeStatusMessage(String.valueOf(batchid), String.valueOf(retryNumber), "BufferedPartitionedAvroSink");
 				hdfsWriter.closeAll();
 				throw e;
 			}
 		}
+		removeProcessedKeys(writtenKeysSet);
         statusWriter.externalizeStatusMessage(String.valueOf(batchid), String.valueOf(retryNumber), "BufferedPartitionedAvroSink");
 	}
 
 	@Override
 	public void clearAll() {
-		buffer.clear();			
+		buffer.clear();
 	}
 
 	@Override
