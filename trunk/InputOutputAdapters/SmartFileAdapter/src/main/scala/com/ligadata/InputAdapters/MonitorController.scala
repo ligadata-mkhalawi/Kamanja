@@ -7,6 +7,7 @@ import com.ligadata.Exceptions.KamanjaException
 import org.apache.logging.log4j.LogManager
 
 import scala.actors.threadpool.{ExecutorService, Executors}
+import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 /**
@@ -219,39 +220,75 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
         //        logger.error("==============> HaithamLog => Before Grouping : adapterConfig.monitoringConfig.enableEmailAndAttachmentMode= " + adapterConfig.monitoringConfig.enableEmailAndAttachmentMode)
         if (adapterConfig.monitoringConfig.enableEmailAndAttachmentMode == true) {
 
+          ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+          //          bufferingQ_map.foreach(element => {
+          //            //            logger.error("==============> HaithamLog => Grouping: outer loop")
+          //
+          //            val fh = element._1
+          //            //            val pattern = "^((?!_att).)*$"
+          //            val pattern = ".*.\\w.\\D.txt"
+          //            if (fh.getFullPath.matches(pattern)) {
+          //              //              logger.error("==============> HaithamLog => Grouping: outer loop : fh.getFullPath.matches(pattern)==true")
+          //
+          //              var tmpArray: ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))] = ArrayBuffer()
+          //              // creating a tmpArray, and adding an email file FileHandler to it
+          //              tmpArray += element
+          //
+          //              val emailName = extractFileNameWithoutExtention(fh.getFullPath)
+          //              //              logger.error("==============> HaithamLog => Grouping: outer loop : emailName = " + emailName)
+          //              bufferingQ_map.foreach(element2 => {
+          //                //                logger.error("==============> HaithamLog => Grouping: inner loop ")
+          //                val fileName = extractFileNameWithoutExtention(element2._1.getFullPath)
+          //                //                logger.error("==============> HaithamLog => Grouping: inner loop : fileName = " + fileName)
+          //
+          //                // adding attachments, but make sure not to add the email to the tmpArray again
+          //                //                val pattern2 = emailName + "_" + "att" + "\\p{Alnum}.*"
+          //                val pattern2 = emailName + ".\\d.*"
+          //                if (fileName.matches(pattern2) && !fileName.equals(emailName)) {
+          //                  //                  logger.error("==============> HaithamLog => Grouping: inner loop : fileName.matches(pattern2) && !fileName.equals(emailName) = " + (fileName.matches(pattern2) && !fileName.equals(emailName)))
+          //
+          //                  // adding attachments of the previous email to the tmpArray
+          //                  tmpArray += element2
+          //                }
+          //              })
+          //              grps += tmpArray
+          //            }
+          //          })
+          ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+          var groupsHashmap: mutable.LinkedHashMap[String, ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))]] = mutable.LinkedHashMap[String, ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))]]()
           bufferingQ_map.foreach(element => {
-            //            logger.error("==============> HaithamLog => Grouping: outer loop")
-
+            logger.error("==============> HaithamLog => loop 1 : Creating Hashmap depending on files that are Emails")
             val fh = element._1
-            //            val pattern = "^((?!_att).)*$"
+            val fileFullPath: String = fh.getFullPath
             val pattern = ".*.\\w.\\D.txt"
-            if (fh.getFullPath.matches(pattern)) {
-              //              logger.error("==============> HaithamLog => Grouping: outer loop : fh.getFullPath.matches(pattern)==true")
-
-              var tmpArray: ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))] = ArrayBuffer()
-              // creating a tmpArray, and adding an email file FileHandler to it
-              tmpArray += element
-
-              val emailName = extractFileNameWithoutExtention(fh.getFullPath)
-              //              logger.error("==============> HaithamLog => Grouping: outer loop : emailName = " + emailName)
-              bufferingQ_map.foreach(element2 => {
-                //                logger.error("==============> HaithamLog => Grouping: inner loop ")
-                val fileName = extractFileNameWithoutExtention(element2._1.getFullPath)
-                //                logger.error("==============> HaithamLog => Grouping: inner loop : fileName = " + fileName)
-
-                // adding attachments, but make sure not to add the email to the tmpArray again
-                //                val pattern2 = emailName + "_" + "att" + "\\p{Alnum}.*"
-                val pattern2 = emailName + ".\\d.*"
-                if (fileName.matches(pattern2) && !fileName.equals(emailName)) {
-                  //                  logger.error("==============> HaithamLog => Grouping: inner loop : fileName.matches(pattern2) && !fileName.equals(emailName) = " + (fileName.matches(pattern2) && !fileName.equals(emailName)))
-
-                  // adding attachments of the previous email to the tmpArray
-                  tmpArray += element2
-                }
-              })
-              grps += tmpArray
+            //      val pattern = ".*[[:alpha:]].txt"
+            //      val pattern = "^((?!_att).)*$"
+            if (fileFullPath.matches(pattern)) {
+              val emailName = extractFileNameWithoutExtention(fileFullPath)
+              groupsHashmap.put(emailName, ArrayBuffer(element))
             }
           })
+
+          bufferingQ_map.foreach(element2 => {
+            logger.error("==============> HaithamLog => loop 2 : adding attachments to the groups of emails inside the map")
+            val fileName = extractFileNameWithoutExtention(element2._1.getFullPath)
+            val fileLookupName = fileName.substring(0, fileName.lastIndexOf("."))
+            if (groupsHashmap.getOrElse(fileLookupName, null) != null) {
+              var tmpBuffer: ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))] = groupsHashmap.getOrElse(fileName.substring(0, fileName.length - 2), null)
+              tmpBuffer += element2
+              groupsHashmap.put(fileLookupName, tmpBuffer)
+            }
+          })
+
+
+          groupsHashmap.foreach(element3 => {
+            logger.error("==============> HaithamLog => loop 3 : moving groups from map to grps object ")
+            val group = element3._2
+            grps += group
+          })
+
+          ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
         } else {
           bufferingQ_map.foreach(element => {
             var tmpArray: ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))] = ArrayBuffer()
