@@ -84,7 +84,7 @@ public class UpsertJDBCSink extends AbstractJDBCSink {
 	}
 
 	@Override
-	public void processAll(long batchId) throws Exception {
+	public void processAll(long batchId, long retryNumber) throws Exception {
 		Connection connection = dataSource.getConnection();
 		PreparedStatement updateStatement = connection.prepareStatement(updateSql);
 		PreparedStatement insertStatement = connection.prepareStatement(insertSql);

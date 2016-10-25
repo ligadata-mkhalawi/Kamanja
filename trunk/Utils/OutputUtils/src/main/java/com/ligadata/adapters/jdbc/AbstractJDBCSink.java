@@ -203,7 +203,7 @@ public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 	public abstract boolean addMessage(String message);
 
 	@Override
-	public abstract void processAll(long batchId) throws Exception;
+	public abstract void processAll(long batchId, long retryNumber) throws Exception;
 
 	@Override
 	public void clearAll() {

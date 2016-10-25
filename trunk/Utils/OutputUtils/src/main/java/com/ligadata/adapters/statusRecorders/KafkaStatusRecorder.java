@@ -55,7 +55,7 @@ public class KafkaStatusRecorder implements StatusCollectable {
      * @return
      * @throws Exception
      */
-    public boolean externalizeStatusMessage(String batchId, String sourceOfStatus) {
+    public boolean externalizeStatusMessage(String batchId, String retryNumber, String sourceOfStatus) {
         logger.debug("Externalizing status from " + sourceOfStatus + " for batchId " + batchId);
 
 
@@ -63,6 +63,7 @@ public class KafkaStatusRecorder implements StatusCollectable {
         java.util.HashMap<String,String> newMessage = new java.util.HashMap<String,String>();
         newMessage.put("ComponentName",componentName);
         newMessage.put("BatchId",batchId);
+        newMessage.put("RetryNumber",retryNumber);
         newMessage.put("TimeStamp", sdf.format(new java.util.Date()));
         newMessage.put("Status",JSONObject.toJSONString(currentStatus));
         String statusOutput = JSONObject.toJSONString(newMessage);

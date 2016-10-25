@@ -5,7 +5,7 @@ public interface BufferedMessageProcessor {
 
 	public boolean addMessage(String message);
 
-	public void processAll(long batchId) throws Exception;
+	public void processAll(long batchId, long retryNumber) throws Exception;
 
 	public void clearAll();
 

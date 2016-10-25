@@ -65,7 +65,7 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
     }
 
     @Override
-    public void processAll(long batchId) throws Exception {
+    public void processAll(long batchId, long retryNumber) throws Exception {
         Connection connection = dataSource.getConnection();
         PreparedStatement statement = connection.prepareStatement(insertStatement);
 

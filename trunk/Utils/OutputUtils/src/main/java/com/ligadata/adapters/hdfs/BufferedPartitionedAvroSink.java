@@ -107,7 +107,7 @@ public class BufferedPartitionedAvroSink implements BufferedMessageProcessor {
 	}
 
 	@Override
-	public void processAll(long batchid) throws Exception {
+	public void processAll(long batchid, long retryNumber) throws Exception {
 		for (String key : buffer.keySet()) {
 			try {
 				ArrayList<Record> records = buffer.get(key);
@@ -126,12 +126,12 @@ public class BufferedPartitionedAvroSink implements BufferedMessageProcessor {
 				}
 			} catch(Exception e) {
                 statusWriter.addStatus(key,e.getMessage());
-                statusWriter.externalizeStatusMessage(String.valueOf(batchid), "BufferedPartitionedAvroSink");
+                statusWriter.externalizeStatusMessage(String.valueOf(batchid), String.valueOf(retryNumber), "BufferedPartitionedAvroSink");
 				hdfsWriter.closeAll();
 				throw e;
 			}
 		}
-        statusWriter.externalizeStatusMessage(String.valueOf(batchid), "BufferedPartitionedAvroSink");
+        statusWriter.externalizeStatusMessage(String.valueOf(batchid), String.valueOf(retryNumber), "BufferedPartitionedAvroSink");
 	}
 
 	@Override

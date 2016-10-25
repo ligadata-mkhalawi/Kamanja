@@ -193,7 +193,7 @@ public class MessageConsumer implements Runnable {
         long retryInterval = 5000;
         while (!stop) {
             try {
-                processor.processAll(batchId);
+                processor.processAll(batchId, retry);
                 if (retry > 0)
                     logger.info("Successfully processed messages after " + retry + " retries.");
                 return;
