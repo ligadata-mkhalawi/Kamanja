@@ -255,9 +255,9 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
           //            }
           //          })
           ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
+          logger.error("==============> HaithamLog => loop 1 : Creating Hashmap depending on files that are Emails")
           var groupsHashmap: mutable.LinkedHashMap[String, ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))]] = mutable.LinkedHashMap[String, ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))]]()
           bufferingQ_map.foreach(element => {
-            logger.error("==============> HaithamLog => loop 1 : Creating Hashmap depending on files that are Emails")
             val fh = element._1
             val fileFullPath: String = fh.getFullPath
             val pattern = ".*.\\w.\\D.txt"
@@ -269,8 +269,9 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
             }
           })
 
+
+          logger.error("==============> HaithamLog => loop 2 : adding attachments to the groups of emails inside the map")
           bufferingQ_map.foreach(element2 => {
-            logger.error("==============> HaithamLog => loop 2 : adding attachments to the groups of emails inside the map")
             val fileName = extractFileNameWithoutExtention(element2._1.getFullPath)
             val fileLookupName = fileName.substring(0, fileName.lastIndexOf("."))
             if (groupsHashmap.getOrElse(fileLookupName, null) != null) {
@@ -280,9 +281,8 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
             }
           })
 
-
+          logger.error("==============> HaithamLog => loop 3 : moving groups from map to grps object ")
           groupsHashmap.foreach(element3 => {
-            logger.error("==============> HaithamLog => loop 3 : moving groups from map to grps object ")
             val group = element3._2
             grps += group
           })
