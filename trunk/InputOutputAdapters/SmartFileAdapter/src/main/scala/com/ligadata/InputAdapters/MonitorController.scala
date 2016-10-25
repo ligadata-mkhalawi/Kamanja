@@ -255,7 +255,7 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
           //            }
           //          })
           ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-          logger.error("==============> HaithamLog => loop 1 : Creating Hashmap depending on files that are Emails")
+          //          logger.error("==============> HaithamLog => loop 1 : Creating Hashmap depending on files that are Emails")
           var groupsHashmap: mutable.LinkedHashMap[String, ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))]] = mutable.LinkedHashMap[String, ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))]]()
           bufferingQ_map.foreach(element => {
             val fh = element._1
@@ -263,6 +263,7 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
             val pattern = ".*.\\w.\\D.txt"
             //      val pattern = ".*[[:alpha:]].txt"
             //      val pattern = "^((?!_att).)*$"
+
             if (fileFullPath.matches(pattern)) {
               val emailName = extractFileNameWithoutExtention(fileFullPath)
               groupsHashmap.put(emailName, ArrayBuffer(element))
@@ -270,7 +271,7 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
           })
 
 
-          logger.error("==============> HaithamLog => loop 2 : adding attachments to the groups of emails inside the map")
+          //          logger.error("==============> HaithamLog => loop 2 : adding attachments to the groups of emails inside the map")
           bufferingQ_map.foreach(element2 => {
             val fileName = extractFileNameWithoutExtention(element2._1.getFullPath)
             val fileLookupName = fileName.substring(0, fileName.lastIndexOf("."))
@@ -281,7 +282,6 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
             }
           })
 
-          logger.error("==============> HaithamLog => loop 3 : moving groups from map to grps object ")
           groupsHashmap.foreach(element3 => {
             val group = element3._2
             grps += group
