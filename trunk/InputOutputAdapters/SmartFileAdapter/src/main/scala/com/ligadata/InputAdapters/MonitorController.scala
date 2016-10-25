@@ -274,7 +274,7 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
             val fileName = extractFileNameWithoutExtention(element2._1.getFullPath)
             val fileLookupName = fileName.substring(0, fileName.lastIndexOf("."))
             if (groupsHashmap.getOrElse(fileLookupName, null) != null) {
-              var tmpBuffer: ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))] = groupsHashmap.getOrElse(fileName.substring(0, fileName.length - 2), null)
+              var tmpBuffer: ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))] = groupsHashmap.getOrElse(fileLookupName, null)
               tmpBuffer += element2
               groupsHashmap.put(fileLookupName, tmpBuffer)
             }
