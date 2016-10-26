@@ -1,0 +1,22 @@
+[
+  {
+    "AdapterName": "testin_1",
+    "MessageName": "com.ligadata.kamanja.logicalpartition.test.messages.marathon_in_msg",
+    "Serializer": "com.ligadata.kamanja.serializer.csvserdeser",
+    "Options": {
+      "alwaysQuoteFields": false,
+      "fieldDelimiter": ","
+    }
+  },
+  {
+    "AdapterName": "testout_1",
+    "MessageNames": [
+      "com.ligadata.kamanja.logicalpartition.test.messages.marathon_out_msg"
+    ],
+    "Serializer": "com.ligadata.kamanja.serializer.csvserdeser",
+    "Options": {
+      "alwaysQuoteFields": false,
+      "fieldDelimiter": ","
+    }
+  }
+]

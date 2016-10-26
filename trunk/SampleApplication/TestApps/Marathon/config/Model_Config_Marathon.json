@@ -1,0 +1,17 @@
+{
+  "MarathonModel": {
+    "Dependencies": [],
+    "MessageAndContainers": [
+      "com.ligadata.kamanja.logicalpartition.test.messages.marathon_in_msg",
+      "com.ligadata.kamanja.logicalpartition.test.messages.marathon_out_msg"
+    ],
+    "InputTypesSets": [
+      [
+        "com.ligadata.kamanja.logicalpartition.test.messages.marathon_in_msg"
+      ]
+    ],
+    "OutputTypes": [
+      "com.ligadata.kamanja.logicalpartition.test.messages.marathon_out_msg"
+    ]
+  }
+}
