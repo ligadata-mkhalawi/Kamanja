@@ -126,7 +126,7 @@ object KamanjaConfiguration {
   var totalProcessingThreadCount: Int = 1
   var totalReadThreadCount: Int = 1
 
-  val defaultLocallyExecFlag = true
+  val defaultLocallyExecFlag = false
   var locallyExecFlag = defaultLocallyExecFlag
 
   var baseLoader = new KamanjaLoaderInfo
@@ -423,6 +423,7 @@ class KamanjaManager extends Observer {
     ClearExecContext
     KamanjaLeader.Shutdown
     KamanjaMetadata.Shutdown
+    AkkaActorSystem.shutDown
     ShutdownAdapters
     PostMessageExecutionQueue.shutdown
     if (KamanjaMetadata.envCtxt != null)

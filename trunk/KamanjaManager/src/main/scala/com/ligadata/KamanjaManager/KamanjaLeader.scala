@@ -114,12 +114,11 @@ object KamanjaLeader {
   private[this] var saveEndOffsets = false
   private[this] var distributionExecutor = Executors.newFixedThreadPool(1)
   private[this] var isLocallyExecuting = true
-  private[this] var remoteExecPool: ExecutorService = scala.actors.threadpool.Executors.newFixedThreadPool(1)
   private[this] var globalLogicalPartitionsToThreadId = Array[Short]()
   private[this] var isLogicalThreadProcessingOnLocalNode = Array[Boolean]()
-  private[this] var logicalPartitionQueues = Array[LogicalPartitionQueue]()
+  private[this] var logicalPartitionAkkaExecs = Array[LogicalPartitionAkkaExecution]()
   private[this] val localCacheQueueEntriesForCache = new ConcurrentHashMap[Long, KamanjaCacheQueueEntry](4096)
-  private[this] var globalThreadIdToLogicalPartitions = scala.collection.mutable.Map[Short, (Int, Int)]()
+  private[this] var globalThreadIdToLogicalPartitions = scala.collection.mutable.Map[Short, (Int, Int, Boolean)]()
   private[this] var throttleControllerCache: ThrottleControllerCache = null
 
   private val MAX_ZK_RETRIES = 1
@@ -804,16 +803,16 @@ object KamanjaLeader {
     if (distributionmap != None && distributionmap != null) {
       val nodeDistMap = distributionmap.get.filter(ndistmap => { (ndistmap.Node.compareToIgnoreCase(nodeId) == 0) })
       if (nodeDistMap != None && nodeDistMap != null) { // At most 1 value, but not enforcing
-        LOG.debug("1================================")
+        if (LOG.isTraceEnabled) LOG.trace("1.exec")
         nodeDistMap.foreach(ndistmap => {
-          LOG.debug("2================================")
+          if (LOG.isTraceEnabled) LOG.trace("2.exec")
           ndistmap.Adaps.map(ndm => {
             retVals(ndm.Adap) = ndm.Parts.toArray
           })
         })
       }
     }
-    LOG.debug("3================================" + retVals.toMap)
+    if (LOG.isTraceEnabled) LOG.trace("3.exec -- " + retVals.toMap)
     retVals.toMap
   }*/
   /** Commenting below code for LogicalParitions updates - End **/
@@ -823,7 +822,7 @@ object KamanjaLeader {
       // This has to be done on every node
       localCacheQueueEntriesForCache.clear()
     }
-    if (! IsLeaderNode)
+    if (!IsLeaderNode)
       return
 
     val allValues = getThrottleControllerCache.getAll()
@@ -952,26 +951,11 @@ object KamanjaLeader {
             isLocallyExecuting = true
             KamanjaConfiguration.totalReadThreadCount = 1
             KamanjaConfiguration.totalProcessingThreadCount = 1
-            remoteExecPool.shutdownNow()
             globalThreadIdToLogicalPartitions.clear
             globalLogicalPartitionsToThreadId = Array[Short](1)
             isLogicalThreadProcessingOnLocalNode = Array[Boolean](false)
-            ClearAllLogicalPartitionQueues
+            ClearAllLogicalPartitionAkkaExecs
             SaveProcessingOffsetsAndClearEntries(inputAdapters.filter(a => (a.getAdapterName != null && a.getAdapterName.trim.length > 0)).map(a => a.getAdapterName.trim.toLowerCase).toSet, false)
-
-            tryNo = 0
-            while (!remoteExecPool.isTerminated && tryNo < maxTries) {
-              // Sleep for a 1000ms
-              try {
-                Thread.sleep(1000)
-              } catch {
-                case e: Exception => {
-                  // Not doing anything
-                  LOG.debug("", e)
-                }
-              }
-              tryNo += 1
-            }
 
             // Sleep for a sec
             try {
@@ -1005,7 +989,7 @@ object KamanjaLeader {
                           value = kv._2.Serialize
                           if (key != null && value != null && key.size > 0 && value.size > 0) {
                             envCtxt.setAdapterUniqueKeyValue(key, value)
-                            // LOG.warn("===============> Partition Key:%s, Partition Value:%s".format(key, value))
+                            if (LOG.isTraceEnabled) LOG.trace("Partition Key:%s, Partition Value:%s".format(key, value))
                           }
                         } catch {
                           case e: Throwable => {}
@@ -1063,8 +1047,6 @@ object KamanjaLeader {
                 LOG.info("Stopping processing")
               KamanjaConfiguration.totalReadThreadCount = 1
               KamanjaConfiguration.totalProcessingThreadCount = 1
-              remoteExecPool.shutdownNow()
-              ClearAllLogicalPartitionQueues
               globalThreadIdToLogicalPartitions.clear
               globalLogicalPartitionsToThreadId = new Array[Short](KamanjaConfiguration.totalPartitionCount)
 
@@ -1085,7 +1067,7 @@ object KamanjaLeader {
                   val (threadId, startPartRange, endPartitionRange) = (lp.ThreadId, lp.SRange, lp.ERange)
                   for (i <- startPartRange to endPartitionRange)
                     globalLogicalPartitionsToThreadId(i) = threadId
-                  globalThreadIdToLogicalPartitions(threadId) = (startPartRange, endPartitionRange)
+                  globalThreadIdToLogicalPartitions(threadId) = (startPartRange, endPartitionRange, isLocalThread)
                   isLogicalThreadProcessingOnLocalNode(threadId) = isLocalThread
                 })
               })
@@ -1093,44 +1075,28 @@ object KamanjaLeader {
               if (!KamanjaConfiguration.locallyExecFlag) {
                 if (LOG.isInfoEnabled())
                   LOG.info("Creating %d logical partition queues".format(KamanjaConfiguration.totalProcessingThreadCount))
-                logicalPartitionQueues = new Array[LogicalPartitionQueue](KamanjaConfiguration.totalProcessingThreadCount)
+                logicalPartitionAkkaExecs = new Array[LogicalPartitionAkkaExecution](KamanjaConfiguration.totalProcessingThreadCount)
                 // BUGBUG get this cache basename from distribution
                 val cacheBaseName: String = if (actionOnAdaptersMap.distributionname != None) actionOnAdaptersMap.distributionname.get else "Dist_" + com.ligadata.Utils.Utils.GetCurDtTmStr
                 val cluster1 = mdMgr.Clusters.getOrElse(KamanjaConfiguration.clusterId, null)
                 var localNodeLogicalPartsPort = cluster1.GlobalLogicalPartitionCachePort
+                var localhostIp = "localhost"
                 val localNodeId = KamanjaConfiguration.nodeId.toString
+                val hostsMap = scala.collection.mutable.Map[String, String]()
                 val hosts = mdMgr.Nodes.values.map(nd => {
+                  hostsMap(nd.nodeId) = nd.nodeIpAddr
                   val port = if (nd.logicalPartitionCachePort <= 0) cluster1.GlobalLogicalPartitionCachePort else nd.logicalPartitionCachePort
-                  if (nd.nodeId.equalsIgnoreCase(localNodeId))
+                  if (nd.nodeId.equalsIgnoreCase(localNodeId)) {
                     localNodeLogicalPartsPort = port
+                    localhostIp = nd.nodeIpAddr
+                  }
                   "%s[%d]".format(nd.nodeIpAddr, port)
                 }).mkString(",")
 
                 globalThreadIdToLogicalPartitions.foreach(kv => {
-                  // Create Cache Queues here
-                  var lpCallback: CacheCallback = null
-                  /*
-                  // If we need to alert from input, we need to fix both LogicalPartitionCallback & creating it for local node
-                  if (isLogicalThreadProcessingOnLocalNode(kv._1)) {
-
-                  } else {
-
-                  }
-                  */
                   if (LOG.isDebugEnabled())
-                    LOG.debug("Creating %d logical partition queue".format(kv._1))
-                  logicalPartitionQueues(kv._1) = new LogicalPartitionQueue(cacheBaseName, kv._1, hosts, localNodeLogicalPartsPort, lpCallback, KamanjaCacheQueueEntry.deserialize)
-                })
-
-                if (LOG.isInfoEnabled())
-                  LOG.info("Creating Logical partitions execution pool")
-                remoteExecPool = scala.actors.threadpool.Executors.newFixedThreadPool(logicalPartsForNode.length)
-
-                logicalPartsForNode.foreach(lp => {
-                  val (threadId, startPartRange, endPartitionRange) = (lp.ThreadId, lp.SRange, lp.ERange)
-                  if (LOG.isInfoEnabled())
-                    LOG.info("Creating logical partition executor for threadid:" + threadId)
-                  remoteExecPool.execute(new LeanringEngineRemoteExecution(threadId, startPartRange, endPartitionRange, logicalPartitionQueues(threadId)))
+                    LOG.debug("Creating %d logical partition executor".format(kv._1))
+                  logicalPartitionAkkaExecs(kv._1) = new LogicalPartitionAkkaExecution(cacheBaseName, kv._1, kv._2._1, kv._2._2, localhostIp, localNodeLogicalPartsPort, kv._2._3)
                 })
               }
 
@@ -1198,14 +1164,14 @@ object KamanjaLeader {
       LOG.debug("ActionOnAdaptersDistImpl => Exit. receivedJsonStr: " + receivedJsonStr)
   }
 
-/*
-  class LogicalPartitionCallback(threadId: Int) extends CacheCallback {
-    @throws(classOf[Exception])
-    override def call(callbackData: CacheCallbackData): Unit = {
-      //BUGBUG:: make sure this trigger LeanringEngineRemoteExecution.executeModels for execution
+  /*
+    class LogicalPartitionCallback(threadId: Int) extends CacheCallback {
+      @throws(classOf[Exception])
+      override def call(callbackData: CacheCallbackData): Unit = {
+        //BUGBUG:: make sure this trigger LeanringEngineRemoteExecution.executeModels for execution
+      }
     }
-  }
-*/
+  */
 
   private def ActionOnAdaptersDistribution(receivedJsonStr: String): Unit = {
     ActionOnAdaptersDistImpl(receivedJsonStr)
@@ -1707,7 +1673,7 @@ object KamanjaLeader {
               "%s[%d]".format(nd.nodeIpAddr, cacheConfigParseInfo.CacheStartPort)
             }).mkString(",")
             val tmpThrottleControllerCache = new ThrottleControllerCache(hosts, cacheConfigParseInfo.CacheStartPort, true)
-            tmpThrottleControllerCache .Init();
+            tmpThrottleControllerCache.Init();
             throttleControllerCache = tmpThrottleControllerCache
           } catch {
             case e: Throwable => {
@@ -1769,7 +1735,6 @@ object KamanjaLeader {
   }
 
   def SetNewDataToZkc(zkNodePath: String, data: Array[Byte]): Unit = {
-
     var retriesAttempted = 0
     while (retriesAttempted <= MAX_ZK_RETRIES) {
       try {
@@ -1797,7 +1762,6 @@ object KamanjaLeader {
   }
 
   def GetDataFromZkc(zkNodePath: String): Array[Byte] = {
-
     var retriesAttempted = 0
     while (retriesAttempted <= MAX_ZK_RETRIES) {
       try {
@@ -1889,26 +1853,12 @@ object KamanjaLeader {
     isLocallyExecuting = true
     KamanjaConfiguration.totalReadThreadCount = 1
     KamanjaConfiguration.totalProcessingThreadCount = 1
-    remoteExecPool.shutdownNow()
     globalThreadIdToLogicalPartitions.clear
     globalLogicalPartitionsToThreadId = Array[Short](1)
     isLogicalThreadProcessingOnLocalNode = Array[Boolean](false)
-    ClearAllLogicalPartitionQueues
     SaveProcessingOffsetsAndClearEntries(inputAdapters.filter(a => (a.getAdapterName != null && a.getAdapterName.trim.length > 0)).map(a => a.getAdapterName.trim.toLowerCase).toSet, true)
-    var tryNo = 0
-    while (!remoteExecPool.isTerminated && tryNo < 5) {
-      // Sleep for a 1000ms
-      try {
-        Thread.sleep(1000)
-      } catch {
-        case e: Exception => {
-          // Not doing anything
-          LOG.debug("", e)
-        }
-      }
-      tryNo += 1
-    }
     distributionExecutor.shutdown
+    ClearAllLogicalPartitionAkkaExecs
     CloseSetDataZkc
   }
 
@@ -1920,7 +1870,6 @@ object KamanjaLeader {
     if (cluster == null) throw new Exception("cluster from metadata  is null")
 
     var nodeDistInfo = ArrayBuffer[NodeDistInfo]()
-    LOG.warn(" clusterId : " + clusterId)
     var nodes: Array[NodeInfo] = mdMgr.NodesForCluster(clusterId)
     if (nodes == null || nodes.size == 0) throw new Exception("Node Info not founbd for the cluster" + clusterId);
     for (i <- 0 until nodes.size) {
@@ -1943,35 +1892,28 @@ object KamanjaLeader {
   }
 
   def getThreadIdForPartitionId(partId: Int): Short = {
-    if (partId < globalLogicalPartitionsToThreadId.size && !remoteExecPool.isShutdown)
+    if (partId < globalLogicalPartitionsToThreadId.size)
       globalLogicalPartitionsToThreadId(partId)
     else
       0
   }
 
-  def getPartitionRangeForThreadId(threadId: Short): (Int, Int) = {
-    globalThreadIdToLogicalPartitions.getOrElse(threadId, (0, 0))
+  def getPartitionRangeForThreadId(threadId: Short): (Int, Int, Boolean) = {
+    globalThreadIdToLogicalPartitions.getOrElse(threadId, (0, 0, false))
   }
 
   def isLocalExecution: Boolean = {
-//    val w = "=====> isLocallyExecuting:" + isLocallyExecuting + ", remoteExecPool:" + remoteExecPool + ", globalThreadIdToLogicalPartitions.size:" + globalThreadIdToLogicalPartitions.size
-//    LOG.warn(w)
-    (isLocallyExecuting || remoteExecPool == null || remoteExecPool.isShutdown || globalThreadIdToLogicalPartitions.size == 0)
+    (isLocallyExecuting || globalThreadIdToLogicalPartitions.size == 0)
   }
 
   def AddToRemoteProcessingBucket(partitionIdx: Int, cacheQueueEntry: KamanjaCacheQueueEntry): Unit = {
     // Add to Queue to process in Remote
     val threadId = globalLogicalPartitionsToThreadId(partitionIdx)
-    if (threadId >= 0 && threadId < logicalPartitionQueues.size) {
-      if (LOG.isDebugEnabled())
-        LOG.debug("Adding KamanjaCacheQueueEntry for transactionid:%d to threadId:%d, fromLocalThread:%s".format(cacheQueueEntry.txnCtxt.getTransactionId(), threadId, cacheQueueEntry.fromLocalThread.toString))
-      if (cacheQueueEntry.fromLocalThread) {
+    if (threadId >= 0 && threadId < logicalPartitionAkkaExecs.size) {
+      if (LOG.isTraceEnabled()) LOG.trace("Adding KamanjaCacheQueueEntry for transactionid:%d to threadId:%d (partitionIdx:%d), fromLocalThread:%s, logicalPartitionAkkaExecs.size:%d".format(cacheQueueEntry.txnCtxt.getTransactionId(), threadId, partitionIdx, cacheQueueEntry.fromLocalThread.toString, logicalPartitionAkkaExecs.size))
+      if (cacheQueueEntry.fromLocalThread)
         AddToLocalCacheQueueEntriesForCache(cacheQueueEntry)
-      } else {
-        if (LOG.isDebugEnabled())
-          LOG.debug("Adding KamanjaCacheQueueEntry for transactionid:%d to remote logical partitions".format(cacheQueueEntry.txnCtxt.getTransactionId()))
-        logicalPartitionQueues(threadId).enQ(cacheQueueEntry.txnCtxt.getTransactionId().toString, cacheQueueEntry)
-      }
+      logicalPartitionAkkaExecs(threadId).process(cacheQueueEntry.txnCtxt.getTransactionId(), cacheQueueEntry)
     } else {
       throw new Exception("Not found proper threadId to add CacheEntry")
     }
@@ -1979,24 +1921,24 @@ object KamanjaLeader {
 
   def AddToLocalCacheQueueEntriesForCache(cacheQueueEntry: KamanjaCacheQueueEntry): Unit = {
     if (cacheQueueEntry.fromLocalThread) {
-      if (LOG.isDebugEnabled())
-        LOG.debug("Adding KamanjaCacheQueueEntry for transactionid:%d to local logical partitions".format(cacheQueueEntry.txnCtxt.getTransactionId()))
+      if (LOG.isTraceEnabled())
+        LOG.trace("Adding KamanjaCacheQueueEntry for transactionid:%d to local logical partitions".format(cacheQueueEntry.txnCtxt.getTransactionId()))
       localCacheQueueEntriesForCache.put(cacheQueueEntry.txnCtxt.getTransactionId(), cacheQueueEntry)
     }
   }
 
   // Removing and getting what ever is removed for this id
   def GetFromLocalCacheQueueEntriesForCache(id: Long): KamanjaCacheQueueEntry = {
-    if (LOG.isDebugEnabled())
-      LOG.debug("Getting KamanjaCacheQueueEntry for transactionid:%d from local logical partitions".format(id))
+    if (LOG.isTraceEnabled())
+      LOG.trace("Getting KamanjaCacheQueueEntry for transactionid:%d from local logical partitions".format(id))
     localCacheQueueEntriesForCache.remove(id)
   }
 
-  def ClearAllLogicalPartitionQueues: Unit = {
-    // Shutdown every queue from logicalPartitionQueues
-    LOG.info("Cleaning logical partition queues")
-    val tmp = logicalPartitionQueues
-    logicalPartitionQueues = Array[LogicalPartitionQueue]()
+  def ClearAllLogicalPartitionAkkaExecs: Unit = {
+    // Shutdown all from logicalPartitionAkkaExecs
+    if (LOG.isInfoEnabled()) LOG.info("Cleaning logical partition info")
+    val tmp = logicalPartitionAkkaExecs
+    logicalPartitionAkkaExecs = Array[LogicalPartitionAkkaExecution]()
     tmp.foreach(lp => if (lp != null) lp.shutDown)
   }
 

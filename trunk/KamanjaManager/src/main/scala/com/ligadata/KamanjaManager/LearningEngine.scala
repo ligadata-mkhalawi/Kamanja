@@ -199,7 +199,7 @@ object KamanjaCacheQueueEntry {
 }
 
 // BUGBUG:: Do we need to get nodeIdModlsObj from KamanjaCacheQueueEntry?????
-class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: Int, val endPartitionId: Int, val queue: LogicalPartitionQueue) extends Runnable {
+class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: Int, val endPartitionId: Int) {
   private var waitTimeForNoMdlsExecInMs = 1
   private val LOG = LogManager.getLogger(getClass);
   private var mdlsChangedCntr: Long = -1
@@ -230,8 +230,8 @@ class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: I
 
     val execMdl = nodeIdModlsObj.getOrElse(execNode.nodeId, null)
     if (execMdl != null) {
-      if (LOG.isDebugEnabled)
-        LOG.debug("LearningEngine:Executing Model:%s,NodeId:%d, iesPos:%d for Transactionid:%d".format(execMdl._1.mdl.getModelName(), execNode.nodeId, execNode.iesPos, dqKamanjaCacheQueueEntry.txnCtxt.getTransactionId()))
+      if (LOG.isTraceEnabled)
+        LOG.trace("LearningEngine:Executing Model:%s,NodeId:%d, iesPos:%d for Transactionid:%d".format(execMdl._1.mdl.getModelName(), execNode.nodeId, execNode.iesPos, dqKamanjaCacheQueueEntry.txnCtxt.getTransactionId()))
       val curMd =
         if (execMdl._1.mdl.isModelInstanceReusable()) {
           if (execMdl._2 == null) {
@@ -270,8 +270,8 @@ class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: I
 
         try {
           val execMsgsSet: Array[ContainerOrConcept] = execMdl._1.inputs(execNode.iesPos).map(eid => {
-            if (LOG.isDebugEnabled)
-              LOG.debug("MsgInfo: nodeId:" + eid.nodeId + ", edgeTypeId:" + eid.edgeTypeId)
+            if (LOG.isTraceEnabled)
+              LOG.trace("MsgInfo: nodeId:" + eid.nodeId + ", edgeTypeId:" + eid.edgeTypeId)
             val tmpElem = KamanjaMetadata.getMdMgr.ElementForElementId(eid.edgeTypeId)
 
             val finalEntry =
@@ -284,17 +284,17 @@ class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: I
                         if (mdlObj != null) {
                           mdlObj._1.mdl.getModelName()
                         } else {
-                          LOG.debug("Not found any node for eid.nodeId:" + eid.nodeId)
+                          if (LOG.isTraceEnabled) LOG.trace("Not found any node for eid.nodeId:" + eid.nodeId)
                           ""
                         }
                       } else {
-                        LOG.debug("Origin nodeid is not valid")
+                        if (LOG.isTraceEnabled) LOG.trace("Origin nodeid is not valid")
                         ""
                       }
-                    LOG.debug("Input message:" + tmpElem.get.FullName)
+                    if (LOG.isTraceEnabled) LOG.trace("Input message:" + tmpElem.get.FullName)
                     dqKamanjaCacheQueueEntry.txnCtxt.getContainersOrConcepts(origin, tmpElem.get.FullName)
                   } else {
-                    LOG.debug("Input message:" + tmpElem.get.FullName)
+                    if (LOG.isTraceEnabled) LOG.trace("Input message:" + tmpElem.get.FullName)
                     dqKamanjaCacheQueueEntry.txnCtxt.getContainersOrConcepts(tmpElem.get.FullName)
                   }
 
@@ -325,19 +325,19 @@ class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: I
             val readyNodes = dqKamanjaCacheQueueEntry.dagRuntime.FireEdges(newEges)
             dqKamanjaCacheQueueEntry.exeQueue ++= readyNodes
 
-            if (LOG.isDebugEnabled) {
+            if (LOG.isTraceEnabled) {
               val inputMsgs = execMsgsSet.map(msg => msg.getFullTypeName).mkString(",")
               val outputMsgs = res.map(msg => msg.getFullTypeName).mkString(",")
               val inputEges = newEges.map(edge => "(NodeId:%d,edgeTypeId:%d)".format(edge.nodeId, edge.edgeTypeId)).mkString(",")
               val producedNodeIds = if (readyNodes != null) readyNodes.map(nd => "(NodeId:%d,iesPos:%d)".format(nd.nodeId, nd.iesPos)).mkString(",") else ""
               val msg = "LearningEngine:Executed Model:%s with NodeId:%d Using messages:%s, which produced %s (with Edges:%s). Adding those message into DAG produced:%s".format(execMdl._1.mdl.getModelName(), execNode.nodeId, inputMsgs, outputMsgs, inputEges, producedNodeIds)
-              LOG.debug(msg)
+              LOG.trace(msg)
             }
           } else {
-            if (LOG.isDebugEnabled) {
+            if (LOG.isTraceEnabled) {
               val inputMsgs = execMsgsSet.map(msg => msg.getFullTypeName).mkString(",")
               val msg = "LearningEngine:Executed Model:%s with NodeId:%d Using messages:%s, which did not produce any result".format(execMdl._1.mdl.getModelName(), execNode.nodeId, inputMsgs)
-              LOG.debug(msg)
+              LOG.trace(msg)
             }
           }
         } catch {
@@ -374,68 +374,76 @@ class LeanringEngineRemoteExecution(val threadId: Short, val startPartitionId: I
     (KamanjaConfiguration.shutdown == false && KamanjaManager.instance != null /* && KamanjaManager.instance.GetEnvCtxts.length > 0 */)
   }
 
-  private def executeModels(): Unit = {
-    while (isNotShuttingDown && queue != null) {
-      val dqKamanjaCacheQueueEntry: KamanjaCacheQueueEntry = queue.deQ()
-      if (dqKamanjaCacheQueueEntry == null) {
-        if (LOG.isTraceEnabled)
-          LOG.trace("Did not get CacheQueueEntry to process for ThreadId:%d, StartPartitionId:%d, EndPartitionId:%d".format(threadId, startPartitionId, endPartitionId))
-        // Sleep some time or until we get listener or sleep done for this queue
-        try {
-          Thread.sleep(waitTimeForNoMdlsExecInMs)
-        } catch {
-          case e: InterruptedException => {
-            // Interrupted exception
-          }
-          case e: Throwable => {
-            LOG.error("Failed to sleep", e)
-          }
-        }
-      } else /* if (dqKamanjaCacheQueueEntry != null) */ {
-        if (LOG.isTraceEnabled)
-          LOG.trace("Got CacheQueueEntry with txnid:%d to process for ThreadId:%d, StartPartitionId:%d, EndPartitionId:%d".format(dqKamanjaCacheQueueEntry.txnCtxt.getTransactionId(), threadId, startPartitionId, endPartitionId))
-        var execNextMdl = true
-        while (execNextMdl && isNotShuttingDown) {
-          execNextMdl = false
-          executeModel(dqKamanjaCacheQueueEntry)
-          if (dqKamanjaCacheQueueEntry.execPos >= dqKamanjaCacheQueueEntry.exeQueue.size) {
-            try {
-              if (LOG.isDebugEnabled())
-                LOG.debug("Commiting data for transactionid:" + dqKamanjaCacheQueueEntry.txnCtxt.getTransactionId())
-              CommitDataComponent.commitData(dqKamanjaCacheQueueEntry.txnCtxt)
-              if (LeanringEngine.hasValidOrigin(dqKamanjaCacheQueueEntry.txnCtxt)) {
-                KamanjaLeader.getThrottleControllerCache.remove("TXN-" + dqKamanjaCacheQueueEntry.txnCtxt.getTransactionId())
-              }
-            } catch {
-              case e: Throwable => {
-                LOG.error("Failed to commit data for transactionId:" + dqKamanjaCacheQueueEntry.txnCtxt.getTransactionId(), e)
-              }
+  def executeModelsForTxnId(dqKamanjaCacheQueueEntry: KamanjaCacheQueueEntry): Unit = {
+    if (dqKamanjaCacheQueueEntry != null) {
+      if (LOG.isTraceEnabled)
+        LOG.trace("Got CacheQueueEntry with txnid:%d to process for ThreadId:%d, StartPartitionId:%d, EndPartitionId:%d".format(dqKamanjaCacheQueueEntry.txnCtxt.getTransactionId(), threadId, startPartitionId, endPartitionId))
+      var execNextMdl = true
+      while (execNextMdl && isNotShuttingDown) {
+        execNextMdl = false
+        executeModel(dqKamanjaCacheQueueEntry)
+        if (dqKamanjaCacheQueueEntry.execPos >= dqKamanjaCacheQueueEntry.exeQueue.size) {
+          try {
+            if (LOG.isTraceEnabled())
+              LOG.trace("Commiting data for transactionid:" + dqKamanjaCacheQueueEntry.txnCtxt.getTransactionId())
+            CommitDataComponent.commitData(dqKamanjaCacheQueueEntry.txnCtxt)
+            if (LeanringEngine.hasValidOrigin(dqKamanjaCacheQueueEntry.txnCtxt)) {
+              KamanjaLeader.getThrottleControllerCache.remove("TXN-" + dqKamanjaCacheQueueEntry.txnCtxt.getTransactionId())
             }
-          } else {
-            if (LOG.isDebugEnabled())
-              LOG.debug("Executing KamanjaCacheQueueEntry for transactionid:" + dqKamanjaCacheQueueEntry.txnCtxt.getTransactionId())
-            val execNode = dqKamanjaCacheQueueEntry.exeQueue(dqKamanjaCacheQueueEntry.execPos)
-            val (partKeyStr, partitionIdx) = LeanringEngine.GetQueuePartitionInfo(nodeIdModlsObj, execNode, dqKamanjaCacheQueueEntry.txnCtxt, startPartitionId)
+          } catch {
+            case e: Throwable => {
+              LOG.error("Failed to commit data for transactionId:" + dqKamanjaCacheQueueEntry.txnCtxt.getTransactionId(), e)
+            }
+          }
+        } else {
+          if (LOG.isTraceEnabled())
+            LOG.trace("Executing KamanjaCacheQueueEntry for transactionid:" + dqKamanjaCacheQueueEntry.txnCtxt.getTransactionId())
+          val execNode = dqKamanjaCacheQueueEntry.exeQueue(dqKamanjaCacheQueueEntry.execPos)
+          val (partKeyStr, partitionIdx) = LeanringEngine.GetQueuePartitionInfo(nodeIdModlsObj, execNode, dqKamanjaCacheQueueEntry.txnCtxt, startPartitionId)
 
-            if (partitionIdx < startPartitionId || partitionIdx > endPartitionId) {
-              dqKamanjaCacheQueueEntry.fromLocalThread = KamanjaLeader.isLocalThreadForPartitionId(partitionIdx)
-              KamanjaLeader.AddToRemoteProcessingBucket(partitionIdx, dqKamanjaCacheQueueEntry)
-            } else {
-              execNextMdl = true
-            }
+          if (partitionIdx < startPartitionId || partitionIdx > endPartitionId) {
+            dqKamanjaCacheQueueEntry.fromLocalThread = KamanjaLeader.isLocalThreadForPartitionId(partitionIdx)
+            KamanjaLeader.AddToRemoteProcessingBucket(partitionIdx, dqKamanjaCacheQueueEntry)
+          } else {
+            execNextMdl = true
           }
         }
       }
     }
   }
 
-  override def run(): Unit = {
-    if (LOG.isInfoEnabled())
-      LOG.info("Started processing logical partition task for ThreadId:%d, StartPartitionId:%d, EndPartitionId:%d".format(threadId, startPartitionId, endPartitionId))
-    executeModels
-    if (LOG.isInfoEnabled())
-      LOG.info("Done processing logical partition task for ThreadId:%d, StartPartitionId:%d, EndPartitionId:%d".format(threadId, startPartitionId, endPartitionId))
-  }
+  /*
+    private def executeModels(): Unit = {
+      while (isNotShuttingDown && queue != null) {
+        val dqKamanjaCacheQueueEntry: KamanjaCacheQueueEntry = queue.deQ()
+        if (dqKamanjaCacheQueueEntry == null) {
+          if (LOG.isTraceEnabled)
+            LOG.trace("Did not get CacheQueueEntry to process for ThreadId:%d, StartPartitionId:%d, EndPartitionId:%d".format(threadId, startPartitionId, endPartitionId))
+          // Sleep some time or until we get listener or sleep done for this queue
+          try {
+            Thread.sleep(waitTimeForNoMdlsExecInMs)
+          } catch {
+            case e: InterruptedException => {
+              // Interrupted exception
+            }
+            case e: Throwable => {
+              LOG.error("Failed to sleep", e)
+            }
+          }
+        } else /* if (dqKamanjaCacheQueueEntry != null) */ {
+          executeModelsForTxnId(dqKamanjaCacheQueueEntry)
+        }
+      }
+    }
+
+    override def run(): Unit = {
+      if (LOG.isInfoEnabled())
+        LOG.info("Started processing logical partition task for ThreadId:%d, StartPartitionId:%d, EndPartitionId:%d".format(threadId, startPartitionId, endPartitionId))
+      executeModels
+      if (LOG.isInfoEnabled())
+        LOG.info("Done processing logical partition task for ThreadId:%d, StartPartitionId:%d, EndPartitionId:%d".format(threadId, startPartitionId, endPartitionId))
+    }
+  */
 }
 
 object CommitDataComponent {
@@ -686,7 +694,7 @@ class LearningEngine {
   private var mdlsChangedCntr: Long = -1
   private val isLocalInlineExecution = true
   // inlineExecution is used for local inline execution
-  private var inlineExecution: LeanringEngineRemoteExecution = new LeanringEngineRemoteExecution(0, 0, 0, null)
+  private var inlineExecution: LeanringEngineRemoteExecution = new LeanringEngineRemoteExecution(0, 0, 0)
   private var nodeIdModlsObj = scala.collection.mutable.Map[Long, (MdlInfo, ModelInstance)]()
   // Key is Nodeid (Model ElementId), Value is ModelInfo & Previously Initialized model instance in case of Reuse instances
   // ModelName, ModelInfo, IsModelInstanceReusable, Global ModelInstance if the model is IsModelInstanceReusable == true. The last boolean is to check whether we tested message type or not (thi is to check Reusable flag)
@@ -775,10 +783,14 @@ class LearningEngine {
             LOG.debug("Executing logical partition for transactionid:" + txnCtxt.getTransactionId())
           var runningTxns = KamanjaLeader.getThrottleControllerCache.size
 
-          while (KamanjaConfiguration.shutdown == false && runningTxns >= KamanjaConfiguration.totalReadThreadCount * 5) {
+          var cntr: Long = 0
+          val maxLimit = KamanjaConfiguration.totalReadThreadCount * 5
+          while (KamanjaConfiguration.shutdown == false && runningTxns >= maxLimit) {
+            cntr += 1
+            if ((cntr % 250) == 1 && LOG.isTraceEnabled) LOG.trace("Transactionid:" + txnCtxt.getTransactionId() + " waiting for free slot. runningTxns:" + runningTxns + ", MaxTransactions:" + maxLimit)
             try {
-              // Waiting only 1ms
-              Thread.sleep(1)
+              // Waiting only 2ms
+              Thread.sleep(2)
             } catch {
               case e: InterruptedException => {
                 // Interrupted exception
@@ -790,12 +802,14 @@ class LearningEngine {
             runningTxns = KamanjaLeader.getThrottleControllerCache.size
           }
 
+          if (LOG.isTraceEnabled) LOG.trace("Transactionid:" + txnCtxt.getTransactionId() + " about to process")
           if (KamanjaConfiguration.shutdown == false) {
             // Push the following into Cache to execute
             val execNode = exeQueue(execPos)
 
             val partitionIdForNoKey = 0 // BUGBUG:: Collect this value
 
+            if (LOG.isTraceEnabled) LOG.trace("Transactionid:" + txnCtxt.getTransactionId() + " about to GetQueuePartitionInfo")
             val (partKeyStr, partitionIdx) = LeanringEngine.GetQueuePartitionInfo(nodeIdModlsObj, execNode, txnCtxt, partitionIdForNoKey)
             if (LeanringEngine.hasValidOrigin(txnCtxt)) {
               val map = new java.util.HashMap[String, AnyRef]
@@ -810,14 +824,15 @@ class LearningEngine {
 
               KamanjaLeader.getThrottleControllerCache.put(map)
             }
+            if (LOG.isTraceEnabled) LOG.trace("Transactionid:" + txnCtxt.getTransactionId() + " about to AddToRemoteProcessingBucket")
             KamanjaLeader.AddToRemoteProcessingBucket(partitionIdx, new KamanjaCacheQueueEntry(exeQueue, execPos, dagRuntime, txnCtxt, thisMsgEvent, modelsForMessage, msgProcessingStartTime, KamanjaLeader.isLocalThreadForPartitionId(partitionIdx)))
           }
         }
       } else {
         // No models found to execute. Send output
         try {
-          if (LOG.isDebugEnabled())
-            LOG.debug("Committing data for transactionid:" + txnCtxt.getTransactionId())
+          if (LOG.isTraceEnabled())
+            LOG.trace("Committing data for transactionid:" + txnCtxt.getTransactionId())
           CommitDataComponent.commitData(txnCtxt)
           if (LeanringEngine.hasValidOrigin(txnCtxt)) {
             KamanjaLeader.getThrottleControllerCache.put("ADAP-KEY-COMPLETED-MAX-" + txnCtxt.origin.key, txnCtxt.origin.value)

@@ -49,17 +49,15 @@ class LogicalPartitionQueue(val cacheBaseName: String, val threadId: Int, val ho
   var logicalPartCache: DataCache = null
   var logicalPartQueue: CacheQueue = null
 
-  try {
-    if (LOG.isInfoEnabled())
-      LOG.info("Starting Logical Partition Queue for Thread:%d with name:%s, hostList:%s and port:%d".format(threadId, name, hostListStr, port))
-    val aclass = Class.forName(cacheClass).newInstance
-    val tmpLogPartCache = aclass.asInstanceOf[DataCache]
-    tmpLogPartCache.init(cacheCfg, listenCallback)
-    tmpLogPartCache.start()
-    logicalPartCache = tmpLogPartCache
+  if (LOG.isInfoEnabled())
+    LOG.info("Starting Logical Partition Queue for Thread:%d with name:%s, hostList:%s and port:%d".format(threadId, name, hostListStr, port))
+  val aclass = Class.forName(cacheClass).newInstance
+  val tmpLogPartCache = aclass.asInstanceOf[DataCache]
+  tmpLogPartCache.init(cacheCfg, listenCallback)
+  tmpLogPartCache.start()
+  logicalPartCache = tmpLogPartCache
 
-    logicalPartQueue = new CacheQueue(logicalPartCache, "-1", "-2", deserializeCacheQueueElement)
-  }
+  logicalPartQueue = new CacheQueue(logicalPartCache, "-1", "-2", deserializeCacheQueueElement)
 
   def shutDown: Unit = {
     logicalPartQueue = null
