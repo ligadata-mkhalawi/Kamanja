@@ -389,10 +389,12 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
       case jhs: java.lang.OutOfMemoryError => {
         logger.error("SMART_FILE_CONSUMER Exception : Java Heap space issue, WorkerBufferSize property might need resetting, file %s could not be processed ".format(fileHandlers(0).getFullPath), jhs)
         finishCallback(fileHandlers, consumerContexts(0), SmartFileConsumer.FILE_STATUS_ProcessingInterrupted)
-        shutdownThreads
       }
+    } finally {
+      shutdownThreads
     }
   }
+
 
   def readWholeFile(fileHandler: SmartFileHandler): String = {
     //    logger.error("==============> HaithamLog => inside readWholeFile")
