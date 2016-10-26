@@ -47,7 +47,7 @@ class KafkaBroker(hostname: String, port: Int, private var brokerId: Int, zkConn
     props.put("broker.id", brokerId.toString)
     props.put("log.dir", logDir.getAbsolutePath)
     props.put("zookeeper.connect", zkConnStr)
-    props.put("controlled.shutdown.enable", "false")
+    props.put("controlled.shutdown.enable", "true")
     props.put("controlled.shutdown.max.retries", "0")
     props.put("delete.topic.enable", "true")
     kafkaConfig = new KafkaConfig(props)

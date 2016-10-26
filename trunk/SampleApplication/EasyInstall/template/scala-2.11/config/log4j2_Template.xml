@@ -2,6 +2,7 @@
 <Configuration monitorInterval="300">
   <Properties>
     <Property name="log-path">{InstallDirectory}/logs</Property>
+    <Property name="test-log-path">{InstallDirectory}/test/logs</Property>
   </Properties>
   <Appenders>
     <RollingFile name="HourlyRoll" fileName="${log-path}/KamanjaLog.log" filePattern="${log-path}/KamanjaLog-%d{
@@ -26,6 +27,12 @@ manjaPythonLog-%d{yyyy-MM-dd-HH}-%i.log.gz">
         <OnStartupTriggeringPolicy />
       </Policies>
     </RollingFile>
+    <RollingFile name="AppTesterAppender" fileName="${test-log-path}/KamanjaAppTester.log" filePattern="${test-log-path}/KamanjaAppTester-%d{yyyy-MM-dd-HH}-%i.log.gz">
+      <PatternLayout pattern="%m%n" />
+      <Policies>
+        <OnStartupTriggeringPolicy/>
+      </Policies>
+    </RollingFile>
     <Console name="CONSOLE" target="SYSTEM_OUT" follow="true">
       <PatternLayout pattern="%5p [%t] - %m%n" />
     </Console>
@@ -35,10 +42,13 @@ manjaPythonLog-%d{yyyy-MM-dd-HH}-%i.log.gz">
           <AppenderRef ref="CONSOLE"/>>
           <AppenderRef ref="HourlyRollPython"/>
       </Logger>
+      <Logger name="com.ligadata.test.application" level="INFO">
+          <AppenderRef ref="CONSOLE"/>
+          <AppenderRef ref="AppTesterAppender"/>
+      </Logger>
       <Root level="WARN">
           <AppenderRef ref="CONSOLE" />
           <AppenderRef ref="HourlyRoll" />
-    </Root>
+      </Root>
   </Loggers>
 </Configuration>
-

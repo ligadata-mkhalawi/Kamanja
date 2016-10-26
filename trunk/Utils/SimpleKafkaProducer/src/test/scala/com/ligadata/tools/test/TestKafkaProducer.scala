@@ -91,5 +91,8 @@ class TestKafkaProducer {
     catch {
       case e: Exception => throw new Exception("[Test Kafka Producer]: Failed to send message to kafka", e)
     }
+    finally {
+      oAdapter.Shutdown
+    }
   }
 }

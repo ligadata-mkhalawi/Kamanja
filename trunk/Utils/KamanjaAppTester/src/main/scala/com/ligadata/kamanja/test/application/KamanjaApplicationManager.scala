@@ -1,7 +1,9 @@
-package com.ligadata.test.application
+package com.ligadata.kamanja.test.application
 
-import java.io.{File, FilenameFilter}
-import com.ligadata.test.application.configuration.KamanjaApplicationConfiguration
+import java.io.File
+
+import com.ligadata.kamanja.test.application.configuration.KamanjaApplicationConfiguration
+
 import scala.collection.mutable.ListBuffer
 
 class KamanjaApplicationManager(baseDir: String) {

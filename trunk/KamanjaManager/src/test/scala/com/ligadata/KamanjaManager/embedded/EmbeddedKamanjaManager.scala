@@ -75,6 +75,7 @@ class EmbeddedKamanjaManager {
     for (i <- 0 to 30) {
       if (!isRunning(zkConfig, zkc)) {
         logger.info("[Embedded Kamanja Manager]: Kamanja Manager successfully shut down")
+        zkc.stop
         return 0
       }
       Thread sleep 1000

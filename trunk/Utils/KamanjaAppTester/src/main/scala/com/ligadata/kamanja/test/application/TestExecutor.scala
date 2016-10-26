@@ -1,14 +1,10 @@
-package com.ligadata.test.application
+package com.ligadata.kamanja.test.application
 
-import com.ligadata.MetadataAPI.test._
-import com.ligadata.test.application.data.DataSet
-import com.ligadata.test.application.metadata._
-import com.ligadata.test.application.metadata.interfaces.ModelElement
-import com.ligadata.test.configuration.cluster.adapters.KafkaAdapterConfig
-import com.ligadata.test.configuration.cluster.adapters.interfaces.IOAdapter
-import com.ligadata.test.utils.{Globals, TestUtils}
-import com.ligadata.tools.test._
+import com.ligadata.kamanja.test.application.metadata._
 import com.ligadata.test.embedded.kafka._
+import com.ligadata.test.utils.{Globals, TestUtils}
+import com.ligadata.MetadataAPI.test._
+import com.ligadata.tools.test._
 
 case class TestExecutorException(message: String, cause: Throwable = null) extends Exception(message, cause)
 
@@ -99,24 +95,26 @@ object TestExecutor {
         })
 
         var testResult = true
+
+
+        val consumer = new TestKafkaConsumer(EmbeddedServicesManager.getOutputKafkaAdapterConfig)
+        val consumerThread = new Thread(consumer)
+
+        val errorConsumer = new TestKafkaConsumer(EmbeddedServicesManager.getErrorKafkaAdapterConfig)
+        val errorConsumerThread = new Thread(errorConsumer)
+
+        val eventConsumer = new TestKafkaConsumer(EmbeddedServicesManager.getEventKafkaAdapterConfig)
+        val eventConsumerThread = new Thread(eventConsumer)
+
+        consumerThread.start()
+        errorConsumerThread.start()
+        eventConsumerThread.start()
+
         appManager.kamanjaApplications.foreach(app => {
           println(s"[Kamanja Application Tester] -> Processing Data Sets...")
           app.dataSets.foreach(set => {
             var dataSetResult = true
             val resultsManager = new ResultsManager(EmbeddedServicesManager.getCluster)
-
-            val consumer = new TestKafkaConsumer(EmbeddedServicesManager.getOutputKafkaAdapterConfig)
-            val consumerThread = new Thread(consumer)
-
-            val errorConsumer = new TestKafkaConsumer(EmbeddedServicesManager.getErrorKafkaAdapterConfig)
-            val errorConsumerThread = new Thread(errorConsumer)
-
-            val eventConsumer = new TestKafkaConsumer(EmbeddedServicesManager.getEventKafkaAdapterConfig)
-            val eventConsumerThread = new Thread(eventConsumer)
-
-            consumerThread.start()
-            errorConsumerThread.start()
-            eventConsumerThread.start()
 
             //TODO: For some reason, if we don't sleep, the consumer doesn't fully start until after the messages are pushed and the consumer won't pick up the messages that are already in kafka
             Thread sleep 1000
@@ -200,8 +198,13 @@ object TestExecutor {
           else
             println(s"[Kamanja Application Tester] -> Application '${app.name}' testing passed")
         })
+
+        consumer.shutdown
+        errorConsumer.shutdown
+        eventConsumer.shutdown
       }
     }
+
     EmbeddedServicesManager.stopServices
     TestUtils.deleteFile(EmbeddedServicesManager.storageDir)
   }

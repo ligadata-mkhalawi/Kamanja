@@ -1,16 +1,14 @@
-package com.ligadata.test.application
+package com.ligadata.kamanja.test.application
 
-import scala.io.Source
 import java.io.File
 
-import com.ligadata.test.application.data.DataSet
+import com.ligadata.kamanja.test.application.data.DataSet
 import com.ligadata.test.configuration.cluster._
 import com.ligadata.test.configuration.cluster.adapters._
-import com.ligadata.test.utils.Globals
-import com.ligadata.tools.test._
-
 import org.json4s._
 import org.json4s.native.JsonMethods._
+
+import scala.io.Source
 
 case class MatchResult(messageNumber: Int, expectedResult: String, actualResult: String, matched: Boolean)
 

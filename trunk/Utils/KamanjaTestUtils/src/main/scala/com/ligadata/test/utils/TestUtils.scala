@@ -7,9 +7,6 @@ import scala.util.Random
 
 import com.ligadata.KamanjaVersion.KamanjaVersion
 
-/**
- * Created by wtarver on 4/23/15.
- */
 object  TestUtils extends KamanjaTestLogger {
   val scalaVersionFull = scala.util.Properties.versionNumberString
   val scalaVersion = scalaVersionFull.substring(0, scalaVersionFull.lastIndexOf('.'))

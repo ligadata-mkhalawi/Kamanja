@@ -106,10 +106,10 @@ class MetadataManager extends KamanjaTestLogger {
     MetadataAPIImpl.metadataAPIConfig.setProperty("COMPILER_WORK_DIR", TestUtils.constructTempDir("workingdir").getPath)//getClass.getResource("/jars/lib/workingdir").getPath)
     MetadataAPIImpl.metadataAPIConfig.setProperty("API_LEADER_SELECTION_ZK_NODE", config.znodeBasePath)
     MetadataAPIImpl.metadataAPIConfig.setProperty("MODEL_EXEC_LOG", config.modelExecLog)
-    MetadataAPIImpl.metadataAPIConfig.setProperty("SECURITY_IMPL_JAR", config.systemJarPath + "/simpleapacheshiroadapter_2.11-1.0.jar")
+    MetadataAPIImpl.metadataAPIConfig.setProperty("SECURITY_IMPL_JAR", config.systemJarPath + s"/simpleapacheshiroadapter_${TestUtils.scalaVersion}-1.0.jar")
     MetadataAPIImpl.metadataAPIConfig.setProperty("SECURITY_IMPL_CLASS", "com.ligadata.Security.SimpleApacheShiroAdapter")
     MetadataAPIImpl.metadataAPIConfig.setProperty("DO_AUTH", "NO")
-    MetadataAPIImpl.metadataAPIConfig.setProperty("AUDIT_IMPL_JAR", config.systemJarPath + "/auditadapters_2.11-1.0.jar")
+    MetadataAPIImpl.metadataAPIConfig.setProperty("AUDIT_IMPL_JAR", config.systemJarPath + s"/auditadapters_${TestUtils.scalaVersion}-1.0.jar")
     MetadataAPIImpl.metadataAPIConfig.setProperty("DO_AUDIT", "NO")
     MetadataAPIImpl.metadataAPIConfig.setProperty("ADAPTER_SPECIFIC_CONFIG", config.adapterSpecificConfig)
     MetadataAPIImpl.metadataAPIConfig.setProperty("SERVICE_HOST", config.serviceHost)
@@ -160,6 +160,10 @@ class MetadataManager extends KamanjaTestLogger {
     source.close()
 
     return validateApiResults(AdapterMessageBindingService.addFromInlineAdapterMessageBinding(mdString, Some(userId)))
+  }
+
+  def addBindingsFromString(adapterMessageBindingDefs: String): Int = {
+    return validateApiResults(AdapterMessageBindingService.addFromInlineAdapterMessageBinding(adapterMessageBindingDefs, Some(userId)))
   }
 
   def add(mdType: String,

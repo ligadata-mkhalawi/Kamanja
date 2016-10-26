@@ -1,4 +1,4 @@
-package com.ligadata.test.application.metadata.interfaces
+package com.ligadata.kamanja.test.application.metadata.interfaces
 
 trait MetadataElement {
   def elementType: String

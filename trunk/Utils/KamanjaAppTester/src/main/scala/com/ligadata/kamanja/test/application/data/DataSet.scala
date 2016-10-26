@@ -1,6 +1,4 @@
-package com.ligadata.test.application.data
-
-import java.io.File
+package com.ligadata.kamanja.test.application.data
 
 case class DataSet(inputDataFile: String,
                    inputDataFormat: String,

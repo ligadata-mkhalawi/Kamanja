@@ -79,6 +79,7 @@ libraryDependencies += "org.ow2.asm" % "asm-tree" % "4.0"
 libraryDependencies += "org.ow2.asm" % "asm-commons" % "4.0"
 libraryDependencies <+= scalaVersion("org.scala-lang" % "scala-actors" % _) // ???
 libraryDependencies += "org.scala-lang" % "scala-actors" % scalaVersion.value
+libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value
 
 /////////////////////// MetadataAPI
 libraryDependencies += "org.joda" % "joda-convert" % "1.6"

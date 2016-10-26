@@ -1,7 +1,7 @@
-package com.ligadata.test.application.metadata
+package com.ligadata.kamanja.test.application.metadata
 
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType
-import com.ligadata.test.application.metadata.interfaces.{MetadataElement, ModelElement}
+import com.ligadata.kamanja.test.application.metadata.interfaces.{MetadataElement, ModelElement}
 
 case class ContainerElement(filename: String) extends MetadataElement {
   val elementType = "container"

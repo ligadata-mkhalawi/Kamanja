@@ -1,6 +1,7 @@
-package com.ligadata.test.application
+package com.ligadata.kamanja.test.application.configuration
 
-import com.ligadata.test.application.data.DataSet
+import com.ligadata.kamanja.test.application.data.DataSet
+import com.ligadata.kamanja.test.application.{EmbeddedServicesManager, MatchResult, ResultsManager}
 import com.ligadata.test.utils.TestUtils
 import org.scalatest._
 
@@ -23,7 +24,7 @@ class ResultsManagerTests extends FlatSpec with BeforeAndAfterAll {
       "2,James Brown,games,59.99",
       "3,Clark Gable,music,14.80",
       "1,John Clark,food~games,99.94",
-      "2,James Brown,games~music,64.79",
+      "2,James Brown,games~music,74.79",
       "3,Clark Gable,music~food,54.75",
       "1,John Clark,food~games~music,114.74",
       "2,James Brown,games~music~food,114.74",
@@ -53,7 +54,7 @@ class ResultsManagerTests extends FlatSpec with BeforeAndAfterAll {
       """{"ID":2,"Name":"James Brown","Shopping List":["games"],"Total Cost":59.99}""",
       """{"ID":3,"Name":"Clark Gable","Shopping List":["music"],"Total Cost":14.80}""",
       """{"ID":1,"Name":"John Clark","Shopping List":["food","games"],"Total Cost":99.94}""",
-      """{"ID":2,"Name":"James Brown","Shopping List":["games","music"],"Total Cost":64.79}""",
+      """{"ID":2,"Name":"James Brown","Shopping List":["games","music"],"Total Cost":74.79}""",
       """{"ID":3,"Name":"Clark Gable","Shopping List":["music","food"],"Total Cost":54.75}""",
       """{"ID":1,"Name":"John Clark","Shopping List":["food","games","music"],"Total Cost":114.74}""",
       """{"ID":2,"Name":"James Brown","Shopping List":["games","music","food"],"Total Cost":114.74}""",

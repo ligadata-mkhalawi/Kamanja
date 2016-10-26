@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 installPath=$1
 srcPath=$2
@@ -52,6 +52,7 @@ rm -Rf $installPath
 # *******************************
 mkdir -p $installPath/Kamanja-$ver210/bin
 #mkdir -p $installPath/Kamanja-$ver210/lib
+mkdir -p $installPath/Kamanja-$ver210/test
 mkdir -p $installPath/Kamanja-$ver210/lib/system
 mkdir -p $installPath/Kamanja-$ver210/lib/application
 mkdir -p $installPath/Kamanja-$ver210/storage
@@ -88,6 +89,7 @@ mkdir -p $installPath/Kamanja-$ver210/input/SampleApplications/template
 # *******************************
 mkdir -p $installPath/Kamanja-$ver211/bin
 #mkdir -p $installPath/Kamanja-$ver211/lib
+mkdir -p $installPath/Kamanja-$ver211/test
 mkdir -p $installPath/Kamanja-$ver211/lib/system
 mkdir -p $installPath/Kamanja-$ver211/lib/application
 mkdir -p $installPath/Kamanja-$ver211/storage
@@ -164,8 +166,7 @@ echo "clean, package and assemble $srcPath ..."
 
 cd $srcPath/
 
-sbt clean '++ 2.10.4 package' '++ 2.10.4 ExtDependencyLibs/assembly' '++ 2.10.4 ExtDependencyLibs2/assembly' '++ 2.10.4 KamanjaInternalDeps/assembly'
-sbt '++ 2.10.4 ClusterInstallerDriver/assembly' '++ 2.10.4 GetComponent/assembly' '++ 2.10.4 InstallDriver/assembly'
+sbt clean '++ 2.10.4 package' '++ 2.10.4 ExtDependencyLibs/assembly' '++ 2.10.4 ExtDependencyLibs2/assembly' '++ 2.10.4 KamanjaInternalDeps/assembly' '++ 2.10.4 ClusterInstallerDriver/assembly' '++ 2.10.4 GetComponent/assembly' '++ 2.10.4 InstallDriver/assembly' '++ 2.10.4 KamanjaAppTester/assembly'
 #   '++ 2.10.4 NodeInfoExtract/assembly' '++ 2.10.4 MigrateManager/assembly'
 
 #sbt clean '++ 2.10.4 package' '++ 2.10.4 KamanjaManager/assembly' '++ 2.10.4 MetadataAPI/assembly' '++ 2.10.4 KVInit/assembly' '++ 2.10.4 SimpleKafkaProducer/assembly'
@@ -176,7 +177,7 @@ sbt '++ 2.10.4 ClusterInstallerDriver/assembly' '++ 2.10.4 GetComponent/assembly
 # recreate eclipse projects
 #echo "refresh the eclipse projects ..."
 #cd $srcPath
-#sbt eclipse
+ #sbt eclipse
 
 # Move them into place
 echo "copy the fat jars to $installPath ..."
@@ -187,7 +188,6 @@ cp Utils/ContainersUtility/target/scala-2.10/containersutility* $systemlib
 cp MetadataAPI/target/scala-2.10/metadataapi* $systemlib
 cp KamanjaManager/target/scala-2.10/kamanjamanager* $systemlib
 cp Utils/SaveContainerDataComponent/target/scala-2.10/savecontainerdatacomponent_2.10* $systemlib
-
 
 # cp Pmml/MethodExtractor/target/scala-2.10/methodextractor* $bin
 
@@ -222,7 +222,7 @@ cp KamanjaInternalDeps/target/scala-2.10/KamanjaInternalDeps_2.10-${currentKaman
 # Copy jars needed for Kafka
 cp $ivyPath/cache/org.apache.kafka/kafka_2.10/jars/kafka_2.10-0.8.2.2.jar $systemlib
 cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.9.0.1.jar $systemlib
-cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.10.0.0.jar $systemlib
+cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.10.0.1.jar $systemlib
 cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.8.2.2.jar $systemlib
 cp $ivyPath/cache/com.yammer.metrics/metrics-core/jars/metrics-core-2.2.0.jar  $systemlib
 
@@ -342,6 +342,14 @@ cp $orientdb_jdbc_all $systemlib
 # copy the python directory into $installPath/Kamanja-$ver210/
 # *******************************
 cp -rf $srcPath/FactoriesOfModelInstanceFactory/PythonServer/src/main/python $installPath/Kamanja-$ver210/
+
+# *******************************
+# create directory copy the app tester jar into $installPath/bin/
+# *******************************
+cp $srcPath/Utils/KamanjaAppTester/target/scala-2.10/KamanjaAppTester* $systemlib
+rsync -av --progress $srcPath/Utils/KamanjaAppTester/src/test/resources/kamanjaInstall/test/* $installPath/Kamanja-$ver210/test --exclude '.gitignore'
+#cp -rf $srcPath/Utils/KamanjaAppTester/src/test/resources/kamanjaInstall/test/* $installPath/Kamanja-$ver210/test
+# cp Some Script to run KamanjaAppTester
 
 # *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep
@@ -547,8 +555,7 @@ if [ "$migration2_10libsCopiesFor2_11" == "false" ]; then
 fi
 
 #Now do full build of 2.11
-sbt clean '++ 2.11.7 package' '++ 2.11.7 ExtDependencyLibs/assembly' '++ 2.11.7 ExtDependencyLibs2/assembly' '++ 2.11.7 KamanjaInternalDeps/assembly'
-sbt '++ 2.11.7 ClusterInstallerDriver/assembly' '++ 2.11.7 GetComponent/assembly' '++ 2.11.7 InstallDriver/assembly'
+sbt clean '++ 2.11.7 package' '++ 2.11.7 ExtDependencyLibs/assembly' '++ 2.11.7 ExtDependencyLibs2/assembly' '++ 2.11.7 KamanjaInternalDeps/assembly' '++ 2.11.7 ClusterInstallerDriver/assembly' '++ 2.11.7 GetComponent/assembly' '++ 2.11.7 InstallDriver/assembly' '++ 2.11.7 KamanjaAppTester/assembly'
 #'++ 2.11.7 NodeInfoExtract/assembly' '++ 2.11.7 MigrateManager/assembly'
 
 #sbt clean '++ 2.11.7 package' '++ 2.11.7 KamanjaManager/assembly' '++ 2.11.7 MetadataAPI/assembly' '++ 2.11.7 KVInit/assembly' '++ 2.11.7 SimpleKafkaProducer/assembly'
@@ -600,7 +607,7 @@ cp KamanjaInternalDeps/target/scala-2.11/KamanjaInternalDeps_2.11-${currentKaman
 cp $ivyPath/cache/org.apache.kafka/kafka_2.11/jars/kafka_2.11-0.8.2.2.jar $systemlib
 cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.9.0.1.jar $systemlib
 cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.8.2.2.jar $systemlib
-cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.10.0.0.jar $systemlib
+cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.10.0.1.jar $systemlib
 cp $ivyPath/cache/com.yammer.metrics/metrics-core/jars/metrics-core-2.2.0.jar  $systemlib
 
 
@@ -713,6 +720,14 @@ cp $orientdb_jdbc_all $systemlib
 # copy the python directory into $installPath/Kamanja-$ver211/
 # *******************************
 cp -rf $srcPath/FactoriesOfModelInstanceFactory/PythonServer/src/main/python $installPath/Kamanja-$ver211/
+
+# *******************************
+# create directory copy the app tester jar into $installPath/bin/
+# *******************************
+cp $srcPath/Utils/KamanjaAppTester/target/scala-2.11/KamanjaAppTester* $systemlib
+rsync -av --progress $srcPath/Utils/KamanjaAppTester/src/test/resources/kamanjaInstall/test/* $installPath/Kamanja-$ver211/test --exclude '.gitignore'
+#cp -rf $srcPath/Utils/KamanjaAppTester/src/test/resources/kamanjaInstall/test/* $installPath/Kamanja-$ver211/test
+# cp Some Script to run KamanjaAppTester
 
 # *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep

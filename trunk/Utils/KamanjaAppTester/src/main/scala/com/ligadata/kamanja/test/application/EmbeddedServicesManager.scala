@@ -1,4 +1,4 @@
-package com.ligadata.test.application
+package com.ligadata.kamanja.test.application
 
 import java.io.PrintWriter
 import java.util.NoSuchElementException
@@ -101,6 +101,9 @@ object EmbeddedServicesManager {
 
     try {
       val zkStartCode = startZookeeper
+
+      // Sleeping for 1 second to give zookeeper time to fully start up so kafka doesn't spit out a bunch of errors
+      Thread sleep 1000
       val kafkaStartCode = startKafka
 
       mdMan = new MetadataManager
@@ -114,15 +117,52 @@ object EmbeddedServicesManager {
       }
       println("[Kamanja Application Tester] ---> Cluster configuration successfully uploaded")
 
-      val addSystemBindingsResult = mdMan.addBindings(this.getClass.getResource("/SystemMsgs_Adapter_Bindings.json").getPath)
+      //val addSystemBindingsResult = mdMan.addBindings(this.getClass.getResource("/SystemMsgs_Adapter_Bindings.json").getPath)
+      //val addSystemBindingsResult = mdMan.addBindings(kamanjaInstallDir + "/config/SystemMsgs_Adapter_Bindings.json")
+      val systemAdapterBindings: String =
+        """
+          |[
+          |  {
+          |    "AdapterName": "TestStatus_1",
+          |    "MessageNames": [
+          |      "com.ligadata.KamanjaBase.KamanjaStatusEvent"
+          |    ],
+          |    "Serializer": "com.ligadata.kamanja.serializer.csvserdeser",
+          |    "Options": {
+          |      "alwaysQuoteFields": false,
+          |      "fieldDelimiter": ","
+          |    }
+          |  },
+          |  {
+          |    "AdapterName": "TestFailedEvents_1",
+          |    "MessageNames": [
+          |      "com.ligadata.KamanjaBase.KamanjaExecutionFailureEvent"
+          |    ],
+          |    "Serializer": "com.ligadata.kamanja.serializer.jsonserdeser",
+          |    "Options": {
+          |    }
+          |  },
+          |  {
+          |    "AdapterName": "TestMessageEvents_1",
+          |    "MessageNames": [
+          |      "com.ligadata.KamanjaBase.KamanjaMessageEvent"
+          |    ],
+          |    "Serializer": "com.ligadata.kamanja.serializer.jsonserdeser",
+          |    "Options": {
+          |    }
+          |  }
+          |]
+        """.stripMargin
 
-      //Creating topics from the cluster config adapters
+      mdMan.addBindingsFromString(systemAdapterBindings)
+
+      //Creating topics from the cluster config adapters`
       val kafkaTestClient = new KafkaTestClient(embeddedZookeeper.getConnection)
       clusterConfig.adapters.foreach(adapter => {
         kafkaTestClient.createTopic(adapter.asInstanceOf[KafkaAdapterConfig].adapterSpecificConfig.topicName, 1, 1)
       })
 
-      return zkStartCode && kafkaStartCode && startKamanja && startKafkaConsumer
+      return zkStartCode && kafkaStartCode && startKamanja //&& startKafkaConsumer
     }
     catch {
       case e: Exception => throw new Exception("[Kamanja Application Tester] ---> ***ERROR*** Failed to start services", e)
@@ -130,7 +170,17 @@ object EmbeddedServicesManager {
   }
 
   def stopServices: Boolean = {
-    if (stopKamanja && stopKafkaConsumer && stopKafka && stopZookeeper) {
+
+    // Sleeping between each to give each one time to properly shut down to avoid errors
+    val stopKamanjaCode = stopKamanja
+    //val stopKafkaConsumerCode = stopKafkaConsumer
+    //Thread sleep 1000
+    val stopKafkaCode = stopKafka
+    val stopZookeeperCode = stopZookeeper
+
+    mdMan.shutdown
+
+    if (stopKamanjaCode && stopKafkaCode && stopZookeeperCode /*&& stopKafkaConsumerCode*/ ) {
       isInitialized = false
       return true
     }
@@ -288,6 +338,7 @@ object EmbeddedServicesManager {
       try {
         println("[Kamanja Application Tester] ---> Stopping Kafka consumer...")
         kafkaConsumer.shutdown
+
         println("[Kamanja Application Tester] ---> Kafka consumer stopped")
         return true
       }

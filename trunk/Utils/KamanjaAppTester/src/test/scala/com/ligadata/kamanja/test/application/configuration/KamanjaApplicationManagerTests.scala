@@ -1,7 +1,8 @@
-package com.ligadata.test.application
+package com.ligadata.kamanja.test.application.configuration
 
-import com.ligadata.test.application.metadata.interfaces.ModelElement
-import com.ligadata.test.application.metadata._
+import com.ligadata.kamanja.test.application.KamanjaApplicationManager
+import com.ligadata.kamanja.test.application.metadata._
+import com.ligadata.kamanja.test.application.metadata.interfaces.ModelElement
 import org.scalatest._
 
 class KamanjaApplicationManagerTests extends FlatSpec {

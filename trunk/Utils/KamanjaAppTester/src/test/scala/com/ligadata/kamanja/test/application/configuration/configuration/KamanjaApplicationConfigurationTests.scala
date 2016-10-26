@@ -1,7 +1,8 @@
-package com.ligadata.test.application.configuration
+package com.ligadata.kamanja.test.application.configuration.configuration
 
-import com.ligadata.test.application.metadata.{PmmlModelElement, _}
-import com.ligadata.test.application.KamanjaApplication
+import com.ligadata.kamanja.test.application.KamanjaApplication
+import com.ligadata.kamanja.test.application.configuration.KamanjaApplicationConfiguration
+import com.ligadata.kamanja.test.application.metadata._
 import org.scalatest._
 
 class KamanjaApplicationConfigurationTests extends FlatSpec with BeforeAndAfterAll {

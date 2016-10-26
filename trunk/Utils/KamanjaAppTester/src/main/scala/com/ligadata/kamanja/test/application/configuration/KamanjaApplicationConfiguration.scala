@@ -1,13 +1,12 @@
-package com.ligadata.test.application.configuration
+package com.ligadata.kamanja.test.application.configuration
 
-import com.ligadata.test.application.KamanjaApplication
 import java.io.File
 
-import com.ligadata.test.application.data.DataSet
-import com.ligadata.test.application.metadata._
-import com.ligadata.test.application.metadata.interfaces.MetadataElement
+import com.ligadata.kamanja.test.application.KamanjaApplication
+import com.ligadata.kamanja.test.application.data.DataSet
+import com.ligadata.kamanja.test.application.metadata._
+import com.ligadata.kamanja.test.application.metadata.interfaces.MetadataElement
 import org.json4s._
-import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 
 import scala.io.Source
