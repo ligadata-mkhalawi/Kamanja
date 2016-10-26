@@ -129,13 +129,15 @@ public class BufferedPartitionedAvroSink implements BufferedMessageProcessor {
 						hdfsWriter.write(rec);
 					}
 					logger.info("Sucessfully wrote " + records.size() + " records to partition [" + key + "]");
-                    statusWriter.addStatus(key, (new Integer (records.size()).toString()) );
+                    statusWriter.addStatus(key, String.valueOf(records.size()));
+                    statusWriter.addStatusMessage(key, "Sucessfully wrote " + records.size() + " records to partition [" + key + "]");
 					writtenKeysSet.add(key);
 					hdfsWriter.close();
 				}
 			} catch(Exception e) {
 				removeProcessedKeys(writtenKeysSet);
                 statusWriter.addStatus(key,e.getMessage());
+                statusWriter.setCompletionCode(key,"-1");
                 statusWriter.externalizeStatusMessage(String.valueOf(batchid), String.valueOf(retryNumber), "BufferedPartitionedAvroSink");
 				hdfsWriter.closeAll();
 				throw e;

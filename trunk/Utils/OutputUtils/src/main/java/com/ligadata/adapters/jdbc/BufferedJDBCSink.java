@@ -15,7 +15,7 @@ import com.ligadata.adapters.AdapterConfiguration;
 
 public class BufferedJDBCSink extends AbstractJDBCSink {
     static Logger logger = LogManager.getLogger(BufferedJDBCSink.class);
-
+    static final String STATUS_KEY = new String("SqlBatch");
     private String insertStatement;
     private List<ParameterMapping> insertParams;
     private ArrayList<JSONObject> buffer;
@@ -68,6 +68,7 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
     public void processAll(long batchId, long retryNumber) throws Exception {
         Connection connection = dataSource.getConnection();
         PreparedStatement statement = connection.prepareStatement(insertStatement);
+        int totalStatements = buffer.size();
 
         try {
             for (JSONObject jsonObject : buffer) {
@@ -80,15 +81,26 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
             logger.error("Error saving messages : " + e.getMessage(), e);
             int[] updateCounts = e.getUpdateCounts();
 
+
             for (int i = 0; i < updateCounts.length; i++) {
-                if (updateCounts[i] == Statement.EXECUTE_FAILED)
+                if (updateCounts[i] == Statement.EXECUTE_FAILED) {
                     logger.error("failed to execute this statement : " + buffer.get(i));
+                    statusWriter.addStatusMessage(this.STATUS_KEY, "failed to execute this statement : " + buffer.get(i));
+                    statusWriter.setCompletionCode(this.STATUS_KEY,"-1");
+                    totalStatements = totalStatements - 1;
+                }
             }
         } finally {
             try {
                 connection.commit();
+                statusWriter.addStatus(this.STATUS_KEY, String.valueOf(totalStatements));
+                statusWriter.externalizeStatusMessage(String.valueOf(batchId), String.valueOf(retryNumber), "BufferedJDBCSink");
             } catch (Exception e) {
                 logger.error("Error committing messages : " + e.getMessage(), e);
+                statusWriter.addStatusMessage(this.STATUS_KEY, "Error committing messages : " + e.getMessage());
+                statusWriter.addStatus(this.STATUS_KEY, String.valueOf(0));
+                statusWriter.setCompletionCode(this.STATUS_KEY,"-1");
+                statusWriter.externalizeStatusMessage(String.valueOf(batchId), String.valueOf(retryNumber), "BufferedJDBCSink");
             }
             try {
                 statement.close();

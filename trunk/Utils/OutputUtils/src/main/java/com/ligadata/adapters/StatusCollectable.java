@@ -19,6 +19,18 @@ public interface StatusCollectable {
     public void addStatus(String key, String value);
 
     /**
+     * Add a message to appear under the Messages[] array in the Status message
+     * @param msg
+     */
+    public void addStatusMessage(String key, String msg);
+
+    /**
+     * Set the completion code for this batch
+     * @param status
+     */
+    public void setCompletionCode(String key, String status);
+
+    /**
      *
      * @param config
      * @param destinationComponentName
