@@ -1,80 +1,65 @@
 package com.ligadata.InputAdapters
 
 import java.io.OutputStream
+import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import com.ligadata.AdaptersConfiguration.{LocationInfo, SmartFileAdapterConfiguration}
 import com.ligadata.Exceptions.FatalAdapterException
+import com.ligadata.OutputAdapters.PartitionStream
 import org.apache.commons.compress.compressors.CompressorStreamFactory
 import org.apache.logging.log4j.LogManager
 
+import scala.actors.threadpool.{ExecutorService, Executors}
 import scala.collection.mutable.ArrayBuffer
 
 
-class Archiver(adapterConfig: SmartFileAdapterConfiguration) {
+case class StreamFile(destDir: String, var destFileName: String, var outStream: OutputStream,
+                         var currentFileSize: Long, var streamBuffer: ArrayBuffer[Byte], var flushBufferSize: Long)
+
+class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: SmartFileConsumer) {
 
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
 
   val maximumAppendableSize = 10
 
-  private val currentAppendFiles =  scala.collection.mutable.LinkedHashMap[String, //scala.collection.mutable.LinkedHashMap[String, (Long, Long)]]()
-    ArrayBuffer[(String, Long, Long)]]()
+  private val currentAppendFiles =  scala.collection.mutable.LinkedHashMap[String, (String, Long, Long)]()
 
   /**
-    * search for appendable archived file compared with src file size
-    * @param parentDir
+
+    * @param parentDestDir
     * @param srcFileSize
     * @return file name, size, last mod timestamp
     */
-  def getCurrentAppendFile(parentDir : String, srcFileSize : Long) : Option[(String, Long, Long)] = {
+  def getCurrentAppendFile(parentDestDir : String, srcFileSize : Long) : Option[(String, Long, Long)] = {
     this.synchronized {
       //if (currentAppendFiles.contains(parentDir) && currentAppendFiles(parentDir).nonEmpty)
       //  Some(currentAppendFiles(parentDir).head._1, currentAppendFiles(parentDir).head._2, currentAppendFiles(parentDir).head.._3)
       //else None
-
-      if (currentAppendFiles.contains(parentDir) && currentAppendFiles(parentDir).nonEmpty){
-        currentAppendFiles(parentDir).
-          find(fileInfo => fileInfo._2 + srcFileSize <= adapterConfig.archiveConfig.consolidateThresholdBytes) match {
-          case Some(fileInfo) => Some(fileInfo)
-          case None => None
-        }
-      }
+      if (currentAppendFiles.contains(parentDestDir) )
+        Some(currentAppendFiles(parentDestDir))
       else None
     }
   }
 
-  /*def removeFromCurrentAppendFiles(parentDir : String, file : String) = {
-    this.synchronized {
-      if (currentAppendFiles.contains(parentDir))
-        currentAppendFiles(parentDir).remove(file)
-    }
-  }*/
 
   def addToCurrentAppendFiles(parentDir : String, file : String, size : Long, timestamp : Long) = {
     this.synchronized {
-
-      val buffer =
-        if (currentAppendFiles.contains(parentDir)) currentAppendFiles(parentDir)
-        else ArrayBuffer[(String, Long, Long)]()
-      buffer.append((file, size, timestamp))
-      if(buffer.length > maximumAppendableSize) buffer.remove(0)
-
-      currentAppendFiles.put(parentDir, buffer)
-
+      currentAppendFiles.put(parentDir, (file, size, timestamp))
     }
   }
   def updateCurrentAppendFile(parentDir : String, file : String, newSize : Long, newTimestamp : Long) = {
     this.synchronized {
-      val buffer = currentAppendFiles(parentDir)
 
-      val idx = buffer.indexWhere(tuple => tuple._1.equals(file))
-      if(idx >= 0) {//remove file info if too large to append to
+      //remove file info if too large to append to
         //TODO : is it better to consider files that are larger than max*ratio (instead of max) unfit for appending?
-        if(newSize >= adapterConfig.archiveConfig.consolidateThresholdBytes)
-          buffer.remove(idx)
-        else buffer(idx) = (file, newSize, newTimestamp)
+      if(currentAppendFiles.contains(parentDir)) {
+        if (newSize >= adapterConfig.archiveConfig.consolidateThresholdBytes)
+          currentAppendFiles.remove(parentDir)
+        else currentAppendFiles.put(parentDir, (file, newSize, newTimestamp))
       }
-      //else ??
+      else
+        currentAppendFiles.put(parentDir, (file, newSize, newTimestamp))
     }
   }
 
@@ -88,8 +73,38 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration) {
   def getNewArchiveFileName = destFileFormat.format(new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date()))
 
 
+  def getDestArchiveDir(locationInfo: LocationInfo, srcFileDir: String, srcFileBaseName: String, componentsMap: scala.collection.immutable.Map[String, String]) : String = {
+    val partitionVariable = "\\$\\{([^\\}]+)\\}".r
+    val partitionFormats = partitionVariable.findAllMatchIn(adapterConfig.archiveConfig.outputConfig.uri).map(x => x.group(1)).toList
+    val partitionFormatString = partitionVariable.replaceAllIn(adapterConfig.archiveConfig.outputConfig.uri, "%s")
 
-  def archiveFile(locationInfo: LocationInfo, srcFileDir: String, srcFileBaseName: String, componentsMap: scala.collection.immutable.Map[String, String]): Boolean = {
+    val values = partitionFormats.map(fmt => {
+      componentsMap.getOrElse(fmt, "default").trim
+    })
+
+    val srcFileToArchive = srcFileDir + "/" + srcFileBaseName
+    //val dstFileToArchive =  partitionFormatString.format(values: _*) + "/" + srcFileBaseName
+
+    val dstDirToArchiveBase =
+      if(adapterConfig.archiveConfig.createDirPerLocation) {
+        val srcDirStruct = locationInfo.srcDir.split("/")
+        val srcDirOnly = srcDirStruct(srcDirStruct.length - 1) //last part of src dir
+        partitionFormatString.format(values: _*) + "/" +  srcDirOnly
+      }
+      else partitionFormatString.format(values: _*)
+
+    val srcFileStruct = srcFileToArchive.split("/")
+    val dstDirToArchive =
+      if (locationInfo != null && adapterConfig.monitoringConfig.createInputStructureInTargetDirs) {
+        val dir = srcFileStruct.take(srcFileStruct.length - 1).mkString("/").replace(locationInfo.targetDir, dstDirToArchiveBase)
+        trimFileFromLocalFileSystem(dir)
+      }
+      else trimFileFromLocalFileSystem(dstDirToArchiveBase)
+
+    dstDirToArchive
+  }
+
+  /*def archiveFile(locationInfo: LocationInfo, srcFileDir: String, srcFileBaseName: String, componentsMap: scala.collection.immutable.Map[String, String]): Boolean = {
     if (adapterConfig.archiveConfig == null || adapterConfig.archiveConfig.outputConfig == null)
       return true
 
@@ -304,7 +319,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration) {
 
     (status, resultSize)
   }
-
+*/
   def validateArchiveDestCompression() : Boolean = {
     if (CompressorStreamFactory.BZIP2.equalsIgnoreCase(adapterConfig.archiveConfig.outputConfig.compressionString) ||
       CompressorStreamFactory.GZIP.equalsIgnoreCase(adapterConfig.archiveConfig.outputConfig.compressionString) ||
@@ -320,5 +335,304 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration) {
 
   def clear() = {
     currentAppendFiles.clear()
+  }
+
+
+
+
+  /*************************************************************************************************************/
+
+  //key is dest archive dir
+  private var archiveInfo = new scala.collection.mutable.LinkedHashMap[String, ArrayBuffer[ArchiveFileInfo]]()
+  private val _reent_lock = new ReentrantReadWriteLock(true)
+
+  private def ReadLock(reent_lock: ReentrantReadWriteLock): Unit = {
+    if (reent_lock != null)
+      reent_lock.readLock().lock()
+  }
+
+  private def ReadUnlock(reent_lock: ReentrantReadWriteLock): Unit = {
+    if (reent_lock != null)
+      reent_lock.readLock().unlock()
+  }
+
+  private def WriteLock(reent_lock: ReentrantReadWriteLock): Unit = {
+    if (reent_lock != null)
+      reent_lock.writeLock().lock()
+  }
+
+  private def WriteUnlock(reent_lock: ReentrantReadWriteLock): Unit = {
+    if (reent_lock != null)
+      reent_lock.writeLock().unlock()
+  }
+
+  def hasNextArchiveFileInfo: Boolean = {
+    (archiveInfo.size > 0)
+  }
+
+  def getNextArchiveFileInfoGroup(): (String, Array[ArchiveFileInfo]) = {
+    var archInfo: Array[ArchiveFileInfo] = null
+    var dir : String = null
+    ReadLock(_reent_lock)
+    try {
+      if (archiveInfo.size > 0) {
+        val archInfoTuple = archiveInfo.head
+        archInfo = archInfoTuple._2.toArray
+        archiveInfo.remove(archInfoTuple._1)
+        dir = archInfoTuple._1
+      }
+    } finally {
+      ReadUnlock(_reent_lock)
+    }
+    (dir, archInfo)
+  }
+
+  def addArchiveFileInfo(archInfo: ArchiveFileInfo): Unit = {
+    WriteLock(_reent_lock)
+    try {
+      val destArchiveDir = getDestArchiveDir(archInfo.locationInfo, archInfo.srcFileDir, archInfo.srcFileBaseName, archInfo.componentsMap)
+      archInfo.destArchiveDir = destArchiveDir
+
+      val archInfoGroup =
+        if(archiveInfo.contains(destArchiveDir)) archiveInfo(destArchiveDir)
+        else ArrayBuffer[ArchiveFileInfo]()
+
+      archInfoGroup.append(archInfo)
+      archiveInfo.put(destArchiveDir, archInfoGroup)
+
+    } finally {
+      WriteUnlock(_reent_lock)
+    }
+  }
+
+  val archiveParallelism = 3// TODO
+  val archiveSleepTimeInMs = 100
+  private var archiveExecutor : ExecutorService = null
+
+
+  //key is parent dir of src file
+  private val streamFiles: collection.mutable.Map[String, StreamFile] = collection.mutable.Map[String, StreamFile]()
+
+  def startArchiving(): Unit ={
+    archiveExecutor = Executors.newFixedThreadPool(archiveParallelism)
+    for (i <- 0 until archiveParallelism) {
+      val archiveThread = new Runnable() {
+        override def run(): Unit = {
+          var interruptedVal = false
+          while (!interruptedVal) {
+            try {
+              if (hasNextArchiveFileInfo) {
+                val archInfoGroupTuple = getNextArchiveFileInfoGroup()
+                if (archInfoGroupTuple != null && archInfoGroupTuple._2 != null && archInfoGroupTuple._2.length > 0) {
+                  archiveFilesGroup(archInfoGroupTuple._1, archInfoGroupTuple._2)
+                }
+              } else {
+                if (archiveSleepTimeInMs > 0)
+                  interruptedVal = smartFileConsumer.sleepMs(archiveSleepTimeInMs)
+              }
+            } catch {
+              case e: InterruptedException => {
+                interruptedVal = true
+              }
+              case e: Throwable => {
+              }
+            }
+
+          }
+        }
+      }
+      archiveExecutor.execute(archiveThread)
+    }
+  }
+
+  private def openStream(filePath : String): OutputStream ={
+    //open output stream
+    var os : OutputStream = null
+    var originalStream : OutputStream = null
+    //os = openFile(fc, fileName)
+    val osWriter = new com.ligadata.OutputAdapters.OutputStreamWriter()
+    originalStream = osWriter.openFile(adapterConfig.archiveConfig.outputConfig, filePath, true)
+
+    val compress = adapterConfig.archiveConfig.outputConfig.compressionString != null
+    if (compress)
+      os = new CompressorStreamFactory().createCompressorOutputStream(adapterConfig.archiveConfig.outputConfig.compressionString, originalStream)
+    else
+      os = originalStream
+
+    os
+  }
+
+  private def archiveFilesGroup(dstDirToArchive : String, archInfoGroup: Array[ArchiveFileInfo]) : Boolean = {
+    try {
+      var streamFile: StreamFile = null
+      val osWriter = new com.ligadata.OutputAdapters.OutputStreamWriter()
+      val fc = adapterConfig.archiveConfig.outputConfig
+
+      val appendFileOption = getCurrentAppendFile(dstDirToArchive, 0)
+
+      val appendFileInfo =
+        if (appendFileOption.isDefined) {
+          val fileSize = osWriter.getFileSize(fc, dstDirToArchive + "/" + appendFileOption.get._1)
+          (appendFileOption.get._1, fileSize)
+        }
+        else {
+          val newFileName = getNewArchiveFileName
+          updateCurrentAppendFile(dstDirToArchive, newFileName, 0, 0)
+          (newFileName, 0L)
+        }
+
+      val appendFileName = appendFileInfo._1
+      val appendFileCurrentSize = appendFileInfo._2
+
+      //var appendFilePath = dstDirToArchive + "/" + appendFileName
+
+      streamFile = StreamFile(dstDirToArchive, appendFileName, null, appendFileCurrentSize, new ArrayBuffer[Byte](),
+        adapterConfig.archiveConfig.consolidateThresholdBytes)
+
+      //might need to build sub-dirs corresponding to input dir structure
+      val destArchiveDirExists =
+        if (!osWriter.isFileExists(adapterConfig.archiveConfig.outputConfig, dstDirToArchive))
+          osWriter.mkdirs(adapterConfig.archiveConfig.outputConfig, dstDirToArchive)
+        else true
+
+      if (!destArchiveDirExists) {
+        logger.error("Archiving dest dir {} does not exist and could not be created", dstDirToArchive)
+        return false
+      }
+
+      var srcFileHandler : SmartFileHandler = null
+
+      var srcFileToArchive : String = null
+      var archInfo : ArchiveFileInfo = null
+      var archInfoGroupList = archInfoGroup.toList
+      if(archInfoGroupList.nonEmpty){
+        archInfo = archInfoGroupList.head
+        archInfoGroupList = archInfoGroupList.tail
+      }
+
+      while(archInfo != null){
+
+        val dstFileToArchive = streamFile.destDir + "/" + streamFile.destFileName
+        srcFileToArchive = archInfo.srcFileDir + "/" + archInfo.srcFileBaseName
+
+        logger.warn("current src file to archive {}", srcFileToArchive)
+        logger.warn("current dest  file to archive {}", dstFileToArchive)
+
+        //val currentFileToArchiveSize = srcFileHandler.length()
+        //val currentFileToArchiveTimestamp = srcFileHandler.lastModified()
+
+        var status = false
+        var resultSize : Long = 0
+        var srcFileFinished = false
+        var destFileFull = false
+
+        try {
+          //fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, srcFileToArchive, false)
+          if(srcFileHandler == null) {
+            srcFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, srcFileToArchive, isBinary = false)
+            logger.warn("opening src file to read")
+            srcFileHandler.openForRead()
+          }
+
+          if(streamFile.outStream == null) {
+            logger.warn("opening dest file to write")
+            streamFile.outStream = openStream(dstFileToArchive)
+          }
+
+          //TODO: compare input compression to output compression, would this give better performance?
+          //might need to do this: if same compression, can simply read and write as binary
+          //else must open src to read using proper compression, and open dest for write with proper compression
+
+          var curReadLen = -1
+          val bufferSz = 8 * 1024 * 1024
+          val buf = new Array[Byte](bufferSz)
+
+          do {
+            val lengthToRead = Math.min(bufferSz, adapterConfig.archiveConfig.consolidateThresholdBytes - streamFile.currentFileSize - 1).toInt
+            curReadLen = srcFileHandler.read(buf, 0, lengthToRead)
+            if (curReadLen > 0) {
+              streamFile.outStream.write(buf, 0, curReadLen)
+              streamFile.currentFileSize += curReadLen
+            }
+          } while (curReadLen > 0 && streamFile.currentFileSize < adapterConfig.archiveConfig.consolidateThresholdBytes)
+
+          status = true
+
+          srcFileFinished = curReadLen == 0
+          destFileFull = streamFile.currentFileSize >= adapterConfig.archiveConfig.consolidateThresholdBytes
+
+        } catch {
+          case e: Throwable => {
+            logger.error("Failed to archive file from " + srcFileHandler.getFullPath + " to " + dstFileToArchive, e)
+            status = false
+          }
+        } finally {
+          if (srcFileHandler != null && srcFileFinished) {
+            try {
+              srcFileHandler.close()
+            } catch {
+              case e: Throwable => {
+                logger.error("Failed to close InputStream for " + dstFileToArchive, e)
+              }
+            }
+          }
+
+          if (streamFile.outStream != null && destFileFull) {
+            try {
+              logger.warn("dest file {} is full, closing", streamFile.destDir+"/"+streamFile.destFileName)
+              streamFile.outStream.close()
+              //resultSize = osWriter.getFileSize(adapterConfig.archiveConfig.outputConfig, dstFileToArchive)
+
+              //dest file is full, open a new one
+              streamFile.destFileName = getNewArchiveFileName
+              streamFile.currentFileSize = 0
+
+              updateCurrentAppendFile(streamFile.destDir, streamFile.destFileName, streamFile.currentFileSize, 0)
+
+            } catch {
+              case e: Throwable => {
+                logger.error("Failed to close OutputStream for " + dstFileToArchive, e)
+              }
+            }
+          }
+
+          if (srcFileHandler != null && srcFileFinished) {
+            try {
+              logger.warn("file {} is finished, deleting", srcFileHandler.getFullPath)
+              srcFileHandler.deleteFile(srcFileHandler.getFullPath) // Deleting file after archive
+              srcFileHandler = null
+
+              if(archInfoGroupList.nonEmpty) {
+                archInfo = archInfoGroupList.head
+                archInfoGroupList = archInfoGroupList.tail
+              }
+              else{
+                logger.warn("finished group")
+                archInfo = null
+              }
+            }
+            catch {
+              case e: Throwable => {
+                logger.error("Failed to delete file " + dstFileToArchive, e)
+              }
+            }
+          }
+        }
+      }
+
+      true
+    }
+    catch{
+      case ex : Exception =>
+        logger.error("Error while archiving", ex)
+        false
+    }
+  }
+
+  def shutdown(): Unit ={
+    if (archiveExecutor != null)
+      archiveExecutor.shutdownNow()
+    archiveExecutor = null
+    archiveInfo.clear()
   }
 }

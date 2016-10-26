@@ -76,7 +76,8 @@ case class SmartFileExceptionInfo (Last_Failure: String, Last_Recovery: String)
 case class ArchiveFileInfo(adapterConfig: SmartFileAdapterConfiguration, locationInfo: LocationInfo,
                            srcFileDir: String, srcFileBaseName: String,
                            componentsMap: scala.collection.immutable.Map[String, String],
-                           var previousAttemptsCount : Int)
+                           var previousAttemptsCount : Int,
+                           var destArchiveDir : String = "")
 
 class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecContextFactory, val nodeContext: NodeContext) extends InputAdapter {
 
@@ -193,11 +194,11 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       reent_lock.writeLock().unlock()
   }
 
-  private def hasNextArchiveFileInfo: Boolean = {
+  /*def hasNextArchiveFileInfo: Boolean = {
     (archiveInfo.size > 0)
   }
 
-  private def getNextArchiveFileInfo: ArchiveFileInfo = {
+  def getNextArchiveFileInfo: ArchiveFileInfo = {
     var archInfo: ArchiveFileInfo = null
     ReadLock(_reent_lock)
     try {
@@ -216,7 +217,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     } finally {
       WriteUnlock(_reent_lock)
     }
-  }
+  }*/
 
     //add the node callback
   private def initializeNode: Unit ={
@@ -264,7 +265,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       if(initialized == false || ! clusterStatus.leaderNodeId.equals(prevRegLeader)){
         LOG.debug("Smart File Consumer - Leader is running on node " + clusterStatus.nodeId)
 
-        archiver = new Archiver(adapterConfig)
+        archiver = new Archiver(adapterConfig, this)
 
         monitorController = new MonitorController(adapterConfig, this, newFileDetectedCallback)
         monitorController.checkConfigDirsAccessibility//throw an exception if a folder is not accissible
@@ -1245,7 +1246,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
       isFileMoved = moveFile(smartFileHandler)
       if (isFileMoved && adapterConfig.archiveConfig != null && adapterConfig.archiveConfig.outputConfig != null) {
-        addArchiveFileInfo(ArchiveFileInfo(adapterConfig, locationInfo, targetMoveDir, flBaseName, componentsMap, 0))
+        archiver.addArchiveFileInfo(ArchiveFileInfo(adapterConfig, locationInfo, targetMoveDir, flBaseName, componentsMap, 0))
       }
     } catch {
       case e: Throwable => {
@@ -1416,7 +1417,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     infoBuffer.toArray
   }
 
-  private def sleepMs(sleepTimeInMs: Int): Boolean = {
+  def sleepMs(sleepTimeInMs: Int): Boolean = {
     var interruptedVal = false
     try {
       Thread.sleep(sleepTimeInMs)
@@ -1478,7 +1479,9 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       archiveExecutor = Executors.newFixedThreadPool(archiveParallelism)
 
       val maxArchiveAttemptsCount = 3
-
+      if(archiver != null)
+        archiver.startArchiving()
+/*
       for (i <- 0 until archiveParallelism) {
         val archiveThread = new Runnable() {
           override def run(): Unit = {
@@ -1527,8 +1530,9 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
           }
         }
         archiveExecutor.execute(archiveThread)
-      }
+      }*/
 
+/*
       //check all files that are already on target dirs and add to be archived
       if (locationTargetMoveDirsMap != null) {
         val processedDirs = scala.collection.mutable.Set[String]()
@@ -1555,7 +1559,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             processedDirs += srcDir
           }
         })
-      }
+      }*/
     }
 
     //(1,file1,0,true)~(2,file2,0,true)~(3,file3,1000,true)
@@ -1675,17 +1679,17 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     initialized = false
     isShutdown = true
 
-    if (archiveExecutor != null)
+    /*if (archiveExecutor != null)
       archiveExecutor.shutdownNow()
     archiveExecutor = null
-    archiveInfo.clear()
+    archiveInfo.clear()*/
 
     if(monitorController!=null)
       monitorController.stopMonitoring
     monitorController = null
 
     if(archiver != null){
-      archiver.clear
+      archiver.shutdown()
       archiver = null
     }
 
