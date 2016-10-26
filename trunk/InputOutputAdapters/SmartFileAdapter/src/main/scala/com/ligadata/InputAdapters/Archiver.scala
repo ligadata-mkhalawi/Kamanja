@@ -48,6 +48,12 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
       currentAppendFiles.put(parentDir, (file, size, timestamp))
     }
   }
+
+  def removeCurrentAppendFile(parentDir : String) : Unit = {
+    if(currentAppendFiles.contains(parentDir))
+        currentAppendFiles.remove(parentDir)
+  }
+
   def updateCurrentAppendFile(parentDir : String, file : String, newSize : Long, newTimestamp : Long) = {
     this.synchronized {
 
@@ -472,6 +478,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
 
       val appendFileInfo =
         if (appendFileOption.isDefined) {
+          //TODO : make sure file exists
           val fileSize = osWriter.getFileSize(fc, dstDirToArchive + "/" + appendFileOption.get._1)
           (appendFileOption.get._1, fileSize)
         }
@@ -483,6 +490,9 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
 
       val appendFileName = appendFileInfo._1
       val appendFileCurrentSize = appendFileInfo._2
+
+      logger.warn("initial appendFileName={}", appendFileName)
+      logger.warn("initial appendFileCurrentSize={}", appendFileCurrentSize.toString)
 
       //var appendFilePath = dstDirToArchive + "/" + appendFileName
 
@@ -522,9 +532,9 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
         //val currentFileToArchiveTimestamp = srcFileHandler.lastModified()
 
         var status = false
-        var resultSize : Long = 0
         var srcFileFinished = false
         var destFileFull = false
+        var isCloseDestFile = false
 
         try {
           //fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, srcFileToArchive, false)
@@ -548,18 +558,28 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
           val buf = new Array[Byte](bufferSz)
 
           do {
-            val lengthToRead = Math.min(bufferSz, adapterConfig.archiveConfig.consolidateThresholdBytes - streamFile.currentFileSize - 1).toInt
-            curReadLen = srcFileHandler.read(buf, 0, lengthToRead)
-            if (curReadLen > 0) {
-              streamFile.outStream.write(buf, 0, curReadLen)
-              streamFile.currentFileSize += curReadLen
+            val lengthToRead = Math.min(bufferSz, adapterConfig.archiveConfig.consolidateThresholdBytes - streamFile.currentFileSize).toInt
+            logger.warn("lengthToRead={}",lengthToRead.toString)
+            if(lengthToRead > 0) {
+              curReadLen = srcFileHandler.read(buf, 0, lengthToRead)
+              if (curReadLen > 0) {
+                streamFile.outStream.write(buf, 0, curReadLen)
+                streamFile.currentFileSize += curReadLen
+              }
             }
+            else curReadLen = 0
+
           } while (curReadLen > 0 && streamFile.currentFileSize < adapterConfig.archiveConfig.consolidateThresholdBytes)
 
           status = true
 
-          srcFileFinished = curReadLen == 0
+          srcFileFinished = curReadLen <= 0
           destFileFull = streamFile.currentFileSize >= adapterConfig.archiveConfig.consolidateThresholdBytes
+          isCloseDestFile = destFileFull || archInfoGroupList.isEmpty
+
+          logger.warn("srcFileFinished={}", srcFileFinished.toString)
+          logger.warn("destFileFull={}",destFileFull.toString )
+          logger.warn("isCloseDestFile={}", isCloseDestFile.toString)
 
         } catch {
           case e: Throwable => {
@@ -577,12 +597,15 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
             }
           }
 
-          if (streamFile.outStream != null && destFileFull) {
+          if(streamFile.outStream != null && isCloseDestFile){
+            logger.warn("closing dest file {} ", streamFile.destDir+"/"+streamFile.destFileName)
+            streamFile.outStream.close()
+            updateCurrentAppendFile(streamFile.destDir, streamFile.destFileName, streamFile.currentFileSize, 0)
+            streamFile.outStream = null
+          }
+          if (destFileFull) {
             try {
-              logger.warn("dest file {} is full, closing", streamFile.destDir+"/"+streamFile.destFileName)
-              streamFile.outStream.close()
-              //resultSize = osWriter.getFileSize(adapterConfig.archiveConfig.outputConfig, dstFileToArchive)
-
+              logger.warn("file {} is full", streamFile.destDir+"/"+streamFile.destFileName)
               //dest file is full, open a new one
               streamFile.destFileName = getNewArchiveFileName
               streamFile.currentFileSize = 0
