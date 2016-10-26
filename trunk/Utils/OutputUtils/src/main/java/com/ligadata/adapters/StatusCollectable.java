@@ -16,7 +16,7 @@ public interface StatusCollectable {
      * @param key
      * @param value
      */
-    public void addStatus(String key, String value);
+    public void addStatus(String key, String success, String failure);
 
     /**
      * Add a message to appear under the Messages[] array in the Status message

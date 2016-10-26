@@ -41,9 +41,9 @@ public class KafkaStatusRecorder implements StatusCollectable {
     private KafkaProducer<String, String> producer = null;
     private String statusTopic = null;
     private int completionStatus = -1;
-    private ArrayList<String> messages = new ArrayList<String>();
 
     private java.util.HashMap<String, String> currentStatus = new java.util.HashMap<String, String>();
+    private java.util.HashMap<String, String> currentFailedStatus = new java.util.HashMap<String, String>();
     private java.util.HashMap<String, ArrayList<String>> currentStatusMsg = new java.util.HashMap<String, ArrayList<String>>();
     private java.util.HashMap<String, String> currentStatusCompletionCode = new java.util.HashMap<String, String>();
 
@@ -70,19 +70,6 @@ public class KafkaStatusRecorder implements StatusCollectable {
     public boolean externalizeStatusMessage(String batchId, String retryNumber, String sourceOfStatus) {
         logger.debug("Externalizing status from " + sourceOfStatus + " for batchId " + batchId);
 
-
-
-       /* java.util.HashMap<String,String> newMessage = new java.util.HashMap<String,String>();
-        newMessage.put("ComponentName",componentName);
-        newMessage.put("BatchId",batchId);
-        newMessage.put("RetryNumber",retryNumber);
-        newMessage.put("TimeStamp", sdf.format(new java.util.Date()));
-        //newMessage.put("Status",JSONObject.toJSONString(currentStatus));
-      //  newMessage.put("Status",currentStatus);
-        String statusOutput = JSONObject.toJSONString(newMessage);
-        logger.debug("message=" + statusOutput);*/
-
-
         JsonObjectBuilder status_obldr =  Json.createObjectBuilder();
 
         java.util.Iterator statusIter = currentStatus.entrySet().iterator();
@@ -100,7 +87,9 @@ public class KafkaStatusRecorder implements StatusCollectable {
             JsonArray tarray = abldr.build();
 
             JsonObject subStatus = subStatus_obldr.add("Code", currentStatusCompletionCode.get(pair.getKey()))
-                    .add("BatchSize", currentStatus.get(pair.getKey()))
+                    .add("BatchSize",  Integer.parseInt(currentFailedStatus.get(pair.getKey())) +   Integer.parseInt(currentStatus.get(pair.getKey())))
+                    .add("Succeded", Integer.parseInt(currentStatus.get(pair.getKey())))
+                    .add("Failed", Integer.parseInt(currentFailedStatus.get(pair.getKey())))
                     .add("Messages", tarray).build();
 
 
@@ -110,7 +99,7 @@ public class KafkaStatusRecorder implements StatusCollectable {
         JsonObject finalStatus = status_obldr.build();
 
         JsonObject msg = Json.createObjectBuilder()
-                .add("ComponentName",componentName).add("BatchId",batchId).add("RetryNumber",retryNumber).add("TimeStamp", sdf.format(new java.util.Date()))
+                .add("ComponentName",componentName).add("BatchId",batchId).add("AttemptNumber",retryNumber).add("TimeStamp", sdf.format(new java.util.Date()))
                 .add("Status",finalStatus).build();
 
 
@@ -128,6 +117,9 @@ public class KafkaStatusRecorder implements StatusCollectable {
                                  });
         // TODO: for now we do not retry failed sends.  May need to introduce retry logic
         currentStatus.clear();
+        currentFailedStatus.clear();
+        currentStatusMsg.clear();
+        currentStatusCompletionCode.clear();
         return true;
     }
 
@@ -145,65 +137,6 @@ public class KafkaStatusRecorder implements StatusCollectable {
 
         logger.debug("Initializing status recorder with property bootstrap.servers = " + getOrElse(parms, "bootsrap.servers", ""));
         logger.debug("Initializing status recorder with property kafka.topic = " + getOrElse(parms, "kafka.topic", ""));
-
-
-        /*addStatus("key1","100");
-        addStatus("key2","200");
-        setCompletionCode("key1","-1");
-        addStatusMessage("key1","MSG1 forKey1") ;
-        addStatusMessage("key1","MSG2 forKey1");
-        addStatusMessage("key2","MSG1 forKey2") ;
-        addStatusMessage("key2","MSG2 forKey2");
-
-
-        JsonObjectBuilder status_obldr =  Json.createObjectBuilder();
-
-        java.util.Iterator statusIter = currentStatus.entrySet().iterator();
-        while(statusIter.hasNext()) {
-            java.util.Map.Entry<String, String> pair =  (java.util.Map.Entry<String, String>) statusIter.next();
-
-            JsonObjectBuilder subStatus_obldr =  Json.createObjectBuilder();
-            // Create Messages
-            javax.json.JsonArrayBuilder abldr = Json.createArrayBuilder();
-            // If we have any status for this key to report.. the message List is not null
-            java.util.Iterator<String> msgIter = currentStatusMsg.get(pair.getKey()).iterator();
-            while(msgIter.hasNext()) {
-                abldr = abldr.add(msgIter.next());
-            }
-            JsonArray tarray = abldr.build();
-
-            JsonObject subStatus = subStatus_obldr.add("Code", currentStatusCompletionCode.get(pair.getKey()))
-                                             .add("BatchSize", currentStatus.get(pair.getKey()))
-                                             .add("Messages", tarray).build();
-
-
-            status_obldr = status_obldr.add(pair.getKey(),subStatus);
-        }
-
-        JsonObject finalStatus = status_obldr.build();
-
-        JsonObject msg = Json.createObjectBuilder()
-                .add("ComponentName","CompTest").add("BatchId","4").add("TimeStamp", sdf.format(new java.util.Date()))
-                .add("Status",finalStatus).build();
-
-        logger.info("*******-> " +msg.toString() );
-        // Test Test Test
-      //  java.util.HashMap<String,String> newMessage = new java.util.HashMap<String,String>();
-      //  newMessage.put("ComponentName","CompTest");
-      //  newMessage.put("BatchId","4");
-      //  newMessage.put("RetryNumber","0");
-      //  newMessage.put("TimeStamp", sdf.format(new java.util.Date()));
-      //  newMessage.put("Status",JSONObject.toJSONString(currentStatus));
-
-      //  JSONArray ja = new JSONArray();
-      //  ja.add(currentStatus);
-
-
-       // newMessage.put("Status",ja);
-        //newMessage.put("Status",JSONObject.toJSONString(currentStatus));
-      //  String statusOutput = JSONObject.toJSONString(newMessage);
-       // logger.debug("message=" + statusOutput); */
-
 
 
         java.util.Iterator it = parms.entrySet().iterator();
@@ -253,7 +186,7 @@ public class KafkaStatusRecorder implements StatusCollectable {
      * @param key
      * @param value
      */
-    public void addStatus(String key, String value) {
+    public void addStatus(String key, String successValue, String failedValue) {
         // Make sure the completion code is initialized to true
         if (currentStatusCompletionCode.get(key) == null)
             currentStatusCompletionCode.put(key, "0");
@@ -262,7 +195,8 @@ public class KafkaStatusRecorder implements StatusCollectable {
         if(currentStatusMsg.get(key) == null)
             currentStatusMsg.put(key, new ArrayList<String>());
 
-        currentStatus.put(key, value);
+        currentStatus.put(key, successValue);
+        currentFailedStatus.put(key, failedValue);
     }
 
     /**
