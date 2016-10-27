@@ -75,7 +75,7 @@ public class DedupContainerSink implements BufferedMessageProcessor { //extends 
 	}
 
 	@Override
-	public void processAll(long batchid) throws Exception {
+	public void processAll(long batchid, long retryNumber) throws Exception {
 		ArrayList<MessageContainerBase> data = new ArrayList<MessageContainerBase>();
 		//logger.info("Container name is " + containerName);
 		for (String key : buffer.keySet()) {

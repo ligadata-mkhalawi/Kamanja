@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.HashSet;
 
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
@@ -58,7 +59,7 @@ public class BufferedPartitionedAvroSink implements BufferedMessageProcessor {
 		this.statusWriter = sw;
 		this.name = configuration.getProperty(AdapterConfiguration.FILE_PREFIX, "Log") + Thread.currentThread().getId();
 		this.buffer = new HashMap<String, ArrayList<Record>>();
-		logger.info("Using partition startegy: " + configuration.getProperty(AdapterConfiguration.PARTITION_STRATEGY)); 
+		logger.info("Using partition startegy: " + configuration.getProperty(AdapterConfiguration.PARTITION_STRATEGY));
 		this.partitioner = new PartitionStrategy(configuration.getProperty(AdapterConfiguration.PARTITION_STRATEGY),
 				configuration.getProperty(AdapterConfiguration.INPUT_DATE_FORMAT, "yyyy-MM-dd"));
 		
@@ -106,12 +107,24 @@ public class BufferedPartitionedAvroSink implements BufferedMessageProcessor {
 			return false;
 	}
 
+	private void removeProcessedKeys(HashSet<String> writtenKeysSet) {
+		for (String key : writtenKeysSet) {
+			buffer.remove(key);
+		}
+	}
+
 	@Override
-	public void processAll(long batchid) throws Exception {
+	public void processAll(long batchid, long retryNumber) throws Exception {
+
+        int totalMessages = 0;
+        int writtenMessages = 0;
+		HashSet<String> writtenKeysSet = new HashSet<String>();
 		for (String key : buffer.keySet()) {
 			try {
 				ArrayList<Record> records = buffer.get(key);
+                writtenMessages = 0;
 				if(records != null && records.size() > 0) {
+                    totalMessages = records.size();
 					logger.debug("Writing partition [" + key + "]");
 					String filename = createNewFile ? name + System.currentTimeMillis() + ".avro" : name + ".avro";
 					if(key != null && !key.equalsIgnoreCase(""))
@@ -119,27 +132,48 @@ public class BufferedPartitionedAvroSink implements BufferedMessageProcessor {
 					hdfsWriter.open(filename);
 					for (Record rec : records) {
 						hdfsWriter.write(rec);
+                        writtenMessages++;
 					}
 					logger.info("Sucessfully wrote " + records.size() + " records to partition [" + key + "]");
-                    statusWriter.addStatus(key, (new Integer (records.size()).toString()) );
+
+                    statusWriter.addStatus(key, String.valueOf(writtenMessages),  String.valueOf(0));
+                   // statusWriter.addStatusMessage(key, "Sucessfully wrote " + records.size() + " records to partition [" + key + "]");
+					writtenKeysSet.add(key);
 					hdfsWriter.close();
 				}
 			} catch(Exception e) {
-                statusWriter.addStatus(key,e.getMessage());
-                statusWriter.externalizeStatusMessage(String.valueOf(batchid), "BufferedPartitionedAvroSink");
+				removeProcessedKeys(writtenKeysSet);
+                statusWriter.addStatus(key, String.valueOf(writtenMessages), String.valueOf(totalMessages - writtenMessages) );
+
+                statusWriter.addStatusMessage(key, "Failed to write record due to " + getCauseForDisplay(e));
+                if (writtenMessages == 0)
+                    statusWriter.setCompletionCode(key,"1");
+                else
+                    statusWriter.setCompletionCode(key,"-1");
+
+                statusWriter.externalizeStatusMessage(String.valueOf(batchid), String.valueOf(retryNumber), "BufferedPartitionedAvroSink");
 				hdfsWriter.closeAll();
 				throw e;
 			}
 		}
-        statusWriter.externalizeStatusMessage(String.valueOf(batchid), "BufferedPartitionedAvroSink");
+		removeProcessedKeys(writtenKeysSet);
+        statusWriter.externalizeStatusMessage(String.valueOf(batchid), String.valueOf(retryNumber), "BufferedPartitionedAvroSink");
 	}
 
 	@Override
 	public void clearAll() {
-		buffer.clear();			
+		buffer.clear();
 	}
 
 	@Override
 	public void close() {
 	}
+
+
+    private String getCauseForDisplay(Exception e) {
+        java.io.StringWriter sw = new java.io.StringWriter();
+        java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+        e.printStackTrace(pw);
+        return sw.toString(); // stack trace as a string
+    }
 }

@@ -125,7 +125,7 @@ public class AITUserDailyProfileSink implements BufferedMessageProcessor {
 	}
 
 	@Override
-	public void processAll(long batchId) throws Exception {
+	public void processAll(long batchId, long retryNumber) throws Exception {
 			ArrayList<ContainerInterface> data = new ArrayList<ContainerInterface>();
 			for( HashMap<String, Object[]> record : buffer.values()) {
 				ArrayList<ContainerInterface> uaList = new ArrayList<ContainerInterface>();

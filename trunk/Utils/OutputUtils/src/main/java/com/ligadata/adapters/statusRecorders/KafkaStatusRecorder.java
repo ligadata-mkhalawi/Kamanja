@@ -6,13 +6,18 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.json.simple.JSONObject;
+import org.json.simple.JSONArray;
 import org.json.simple.parser.JSONParser;
+
+import javax.json.*;
+
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
 import com.ligadata.adapters.AdapterConfiguration;
 import com.ligadata.adapters.StatusCollectable;
 import java.util.Properties;
+import java.util.ArrayList;
 import java.util.concurrent.Future;
 
 
@@ -35,7 +40,14 @@ public class KafkaStatusRecorder implements StatusCollectable {
     private Properties props = null;
     private KafkaProducer<String, String> producer = null;
     private String statusTopic = null;
+    private int completionStatus = -1;
+
     private java.util.HashMap<String, String> currentStatus = new java.util.HashMap<String, String>();
+    private java.util.HashMap<String, String> currentFailedStatus = new java.util.HashMap<String, String>();
+    private java.util.HashMap<String, ArrayList<String>> currentStatusMsg = new java.util.HashMap<String, ArrayList<String>>();
+    private java.util.HashMap<String, String> currentStatusCompletionCode = new java.util.HashMap<String, String>();
+
+   // private JSONObject currentStatus = new JSONObject();
     private String componentName = "unknown";
     private java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS z");
 
@@ -55,22 +67,45 @@ public class KafkaStatusRecorder implements StatusCollectable {
      * @return
      * @throws Exception
      */
-    public boolean externalizeStatusMessage(String batchId, String sourceOfStatus) {
+    public boolean externalizeStatusMessage(String batchId, String retryNumber, String sourceOfStatus) {
         logger.debug("Externalizing status from " + sourceOfStatus + " for batchId " + batchId);
 
+        JsonObjectBuilder status_obldr =  Json.createObjectBuilder();
 
-        // Test Test Test
-        java.util.HashMap<String,String> newMessage = new java.util.HashMap<String,String>();
-        newMessage.put("ComponentName",componentName);
-        newMessage.put("BatchId",batchId);
-        newMessage.put("TimeStamp", sdf.format(new java.util.Date()));
-        newMessage.put("Status",JSONObject.toJSONString(currentStatus));
-        String statusOutput = JSONObject.toJSONString(newMessage);
-        logger.debug("message=" + statusOutput);
+        java.util.Iterator statusIter = currentStatus.entrySet().iterator();
+        while(statusIter.hasNext()) {
+            java.util.Map.Entry<String, String> pair =  (java.util.Map.Entry<String, String>) statusIter.next();
+
+            JsonObjectBuilder subStatus_obldr =  Json.createObjectBuilder();
+            // Create Messages
+            javax.json.JsonArrayBuilder abldr = Json.createArrayBuilder();
+            // If we have any status for this key to report.. the message List is not null
+            java.util.Iterator<String> msgIter = currentStatusMsg.get(pair.getKey()).iterator();
+            while(msgIter.hasNext()) {
+                abldr = abldr.add(msgIter.next());
+            }
+            JsonArray tarray = abldr.build();
+
+            JsonObject subStatus = subStatus_obldr.add("Code", currentStatusCompletionCode.get(pair.getKey()))
+                    .add("BatchSize",  Integer.parseInt(currentFailedStatus.get(pair.getKey())) +   Integer.parseInt(currentStatus.get(pair.getKey())))
+                    .add("Succeded", Integer.parseInt(currentStatus.get(pair.getKey())))
+                    .add("Failed", Integer.parseInt(currentFailedStatus.get(pair.getKey())))
+                    .add("Messages", tarray).build();
+
+
+            status_obldr = status_obldr.add(pair.getKey(),subStatus);
+        }
+
+        JsonObject finalStatus = status_obldr.build();
+
+        JsonObject msg = Json.createObjectBuilder()
+                .add("ComponentName",componentName).add("BatchId",batchId).add("AttemptNumber",retryNumber).add("TimeStamp", sdf.format(new java.util.Date()))
+                .add("Status",finalStatus).build();
+
 
         // TODO: Do we need to handle the failure differently? Will we have a problem if a lot of addStatus Calls are made
         // and then time out?
-        Future f = producer.send(new ProducerRecord<String, String>(statusTopic, "PKey_"+sourceOfStatus, statusOutput),
+        Future f = producer.send(new ProducerRecord<String, String>(statusTopic, "PKey_"+sourceOfStatus, msg.toString()),
                                  new Callback () {
                                      public void onCompletion(RecordMetadata metadata, Exception e) {
                                          if(e != null)
@@ -82,6 +117,9 @@ public class KafkaStatusRecorder implements StatusCollectable {
                                  });
         // TODO: for now we do not retry failed sends.  May need to introduce retry logic
         currentStatus.clear();
+        currentFailedStatus.clear();
+        currentStatusMsg.clear();
+        currentStatusCompletionCode.clear();
         return true;
     }
 
@@ -148,8 +186,38 @@ public class KafkaStatusRecorder implements StatusCollectable {
      * @param key
      * @param value
      */
-    public void addStatus(String key, String value) {
-        currentStatus.put(key, value);
+    public void addStatus(String key, String successValue, String failedValue) {
+        // Make sure the completion code is initialized to true
+        if (currentStatusCompletionCode.get(key) == null)
+            currentStatusCompletionCode.put(key, "0");
+
+        // Make sure the messages are initialized
+        if(currentStatusMsg.get(key) == null)
+            currentStatusMsg.put(key, new ArrayList<String>());
+
+        currentStatus.put(key, successValue);
+        currentFailedStatus.put(key, failedValue);
+    }
+
+    /**
+     * Add a message to appear under the Messages[] array in the Status message
+     * @param msg
+     */
+    public void addStatusMessage(String key, String msg) {
+        // Make sure the messages are initialized
+        if(currentStatusMsg.get(key) == null)
+            currentStatusMsg.put(key, new ArrayList<String>());
+        else
+            currentStatusMsg.get(key).add(msg);
+    }
+
+    /**
+     * Set the completion code for this batch
+     * @param status
+     */
+    public void setCompletionCode(String key, String status) {
+        // Dont care if it exists.. set to whatever the user wants
+        currentStatusCompletionCode.put(key, status);
     }
 
 

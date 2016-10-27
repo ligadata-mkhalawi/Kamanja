@@ -15,7 +15,7 @@ import com.ligadata.adapters.AdapterConfiguration;
 
 public class BufferedJDBCSink extends AbstractJDBCSink {
     static Logger logger = LogManager.getLogger(BufferedJDBCSink.class);
-
+    static final String STATUS_KEY = new String("SqlBatch");
     private String insertStatement;
     private List<ParameterMapping> insertParams;
     private ArrayList<JSONObject> buffer;
@@ -65,9 +65,11 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
     }
 
     @Override
-    public void processAll(long batchId) throws Exception {
+    public void processAll(long batchId, long retryNumber) throws Exception {
         Connection connection = dataSource.getConnection();
         PreparedStatement statement = connection.prepareStatement(insertStatement);
+        int totalStatements = buffer.size();
+        int failedStatements = 0;
 
         try {
             for (JSONObject jsonObject : buffer) {
@@ -81,14 +83,27 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
             int[] updateCounts = e.getUpdateCounts();
 
             for (int i = 0; i < updateCounts.length; i++) {
-                if (updateCounts[i] == Statement.EXECUTE_FAILED)
+                if (updateCounts[i] == Statement.EXECUTE_FAILED) {
                     logger.error("failed to execute this statement : " + buffer.get(i));
+                    statusWriter.addStatusMessage(this.STATUS_KEY, "failed to execute this statement : " + buffer.get(i));
+                    statusWriter.setCompletionCode(this.STATUS_KEY,"1");
+                    failedStatements++;
+                }
             }
+            statusWriter.addStatusMessage(this.STATUS_KEY, "BatchUpdateException encountered " + getCauseForDisplay(e));
         } finally {
             try {
+                if (totalStatements == failedStatements )
+                    statusWriter.setCompletionCode(this.STATUS_KEY,"-1");
                 connection.commit();
+                statusWriter.addStatus(this.STATUS_KEY, String.valueOf(totalStatements - failedStatements), String.valueOf(failedStatements));
+                statusWriter.externalizeStatusMessage(String.valueOf(batchId), String.valueOf(retryNumber), "BufferedJDBCSink");
             } catch (Exception e) {
                 logger.error("Error committing messages : " + e.getMessage(), e);
+                statusWriter.addStatusMessage(this.STATUS_KEY, "Error committing messages : " + getCauseForDisplay(e));
+                statusWriter.addStatus(this.STATUS_KEY, String.valueOf(0), String.valueOf(totalStatements));
+                statusWriter.setCompletionCode(this.STATUS_KEY,"-1");
+                statusWriter.externalizeStatusMessage(String.valueOf(batchId), String.valueOf(retryNumber), "BufferedJDBCSink");
             }
             try {
                 statement.close();
@@ -107,5 +122,12 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
     @Override
     public void clearAll() {
         buffer.clear();
+    }
+
+    private String getCauseForDisplay(Exception e) {
+        java.io.StringWriter sw = new java.io.StringWriter();
+        java.io.PrintWriter pw = new java.io.PrintWriter(sw);
+        e.printStackTrace(pw);
+        return sw.toString(); // stack trace as a string
     }
 }

@@ -152,7 +152,7 @@ public class SqlServerBulkCopySink extends AbstractJDBCSink {
 	}
 	
 	@Override
-	public void processAll(long batchId) throws Exception {
+	public void processAll(long batchId, long retryNumber) throws Exception {
 		
 		try {
 			if(out!= null)

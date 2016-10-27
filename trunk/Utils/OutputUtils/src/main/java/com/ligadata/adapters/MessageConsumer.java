@@ -118,19 +118,19 @@ public class MessageConsumer implements Runnable {
         String implName = config.getProperty(AdapterConfiguration.STATUS_IMPL, "");
         if (implName.length() > 0) {
             // Set up Kafka stuff
-            logger.info ("Initializing Kafka Status Recorder");
+            logger.info("Initializing Kafka Status Recorder");
             try {
                 StatusCollectable sc = (StatusCollectable) Class.forName(implName).newInstance();
                 sc.init(config.getProperty(AdapterConfiguration.STATUS_IMPL_INIT_PARMS, ""), componentName);
                 return sc;
             } catch (Exception e) {
-                logger.warn ("Error creating Status Recorder, unable to create status recorder due to ", e);
+                logger.warn("Error creating Status Recorder, unable to create status recorder due to ", e);
                 // Unknown value for Impl.. just return null and
                 return null;
             }
         }
 
-        logger.info ("Unkown Status Recorder, desired implementation was not provided, using the dafault log4j");
+        logger.info("Unkown Status Recorder, desired implementation was not provided, using the dafault log4j");
         // Unknown value for Impl.. just return null and
         return null;
     }
@@ -171,17 +171,17 @@ public class MessageConsumer implements Runnable {
                 return;
             } catch (Exception e) {
                 retry++;
-                if (retry <= 12) {
-                    logger.error("Error after " + retry + " retries : " + e.getMessage(), e);
-                    try {
-                        Thread.sleep(retryInterval * retry);
-                    } catch (InterruptedException e1) {
-                    }
-                } else
-                    try {
-                        Thread.sleep(60000);
-                    } catch (InterruptedException e1) {
-                    }
+                logger.error("Error after " + retry + " retries : " + e.getMessage(), e);
+                try {
+                    long tmpMaxRetry = retry;
+                    if (tmpMaxRetry > 10000)
+                        tmpMaxRetry = 10000;
+                    long waitInterval = retryInterval * tmpMaxRetry;
+                    if (waitInterval > 60000)
+                        waitInterval = 60000;
+                    Thread.sleep(waitInterval);
+                } catch (InterruptedException e1) {
+                }
             }
         }
 
@@ -193,23 +193,23 @@ public class MessageConsumer implements Runnable {
         long retryInterval = 5000;
         while (!stop) {
             try {
-                processor.processAll(batchId);
+                processor.processAll(batchId, retry);
                 if (retry > 0)
                     logger.info("Successfully processed messages after " + retry + " retries.");
                 return;
             } catch (Exception e) {
                 retry++;
-                if (retry <= 12) {
-                    logger.error("Error after " + retry + " retries : " + e.getMessage(), e);
-                    try {
-                        Thread.sleep(retryInterval * retry);
-                    } catch (InterruptedException e1) {
-                    }
-                } else
-                    try {
-                        Thread.sleep(60000);
-                    } catch (InterruptedException e1) {
-                    }
+                logger.error("Error after " + retry + " retries : " + e.getMessage(), e);
+                try {
+                    long tmpMaxRetry = retry;
+                    if (tmpMaxRetry > 10000)
+                        tmpMaxRetry = 10000;
+                    long waitInterval = retryInterval * tmpMaxRetry;
+                    if (waitInterval > 60000)
+                        waitInterval = 60000;
+                    Thread.sleep(waitInterval);
+                } catch (InterruptedException e1) {
+                }
             }
         }
     }

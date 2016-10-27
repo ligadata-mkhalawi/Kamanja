@@ -61,7 +61,7 @@ public class FileStatusSink extends AbstractJDBCSink {
 	}
 
 	@Override
-	public void processAll(long batchid) throws Exception {
+	public void processAll(long batchid, long retryNumber) throws Exception {
 		Connection connection = dataSource.getConnection();
 		PreparedStatement statement = connection.prepareStatement(sqlStr);
 
