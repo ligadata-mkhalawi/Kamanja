@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 function prepare_kamanja_app_tester {
   scalaVersion=$1
