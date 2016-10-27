@@ -479,8 +479,8 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
       val appendFileInfo =
         if (appendFileOption.isDefined) {
           //TODO : make sure file exists
-          val fileSize = osWriter.getFileSize(fc, dstDirToArchive + "/" + appendFileOption.get._1)
-          (appendFileOption.get._1, fileSize)
+          //val fileSize = osWriter.getFileSize(fc, dstDirToArchive + "/" + appendFileOption.get._1)
+          (appendFileOption.get._1, appendFileOption.get._2)
         }
         else {
           val newFileName = getNewArchiveFileName
@@ -511,6 +511,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
       }
 
       var srcFileHandler : SmartFileHandler = null
+      var previousDestFileSize : Long = 0
 
       var srcFileToArchive : String = null
       var archInfo : ArchiveFileInfo = null
@@ -519,6 +520,8 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
         archInfo = archInfoGroupList.head
         archInfoGroupList = archInfoGroupList.tail
       }
+
+      val archiveIndex = ArrayBuffer[ArchiveFileIndexEntry]()
 
       while(archInfo != null){
 
@@ -557,11 +560,13 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
           val bufferSz = 8 * 1024 * 1024
           val buf = new Array[Byte](bufferSz)
 
+          previousDestFileSize = streamFile.currentFileSize
           do {
             val lengthToRead = Math.min(bufferSz, adapterConfig.archiveConfig.consolidateThresholdBytes - streamFile.currentFileSize).toInt
             logger.warn("lengthToRead={}",lengthToRead.toString)
             if(lengthToRead > 0) {
               curReadLen = srcFileHandler.read(buf, 0, lengthToRead)
+              logger.warn("curReadLen={}",curReadLen.toString)
               if (curReadLen > 0) {
                 streamFile.outStream.write(buf, 0, curReadLen)
                 streamFile.currentFileSize += curReadLen
@@ -600,6 +605,17 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
           if(streamFile.outStream != null && isCloseDestFile){
             logger.warn("closing dest file {} ", streamFile.destDir+"/"+streamFile.destFileName)
             streamFile.outStream.close()
+
+            val sizeOnDisk = osWriter.getFileSize(adapterConfig.archiveConfig.outputConfig,
+              streamFile.destDir+"/"+streamFile.destFileName)
+
+            logger.warn("dest file{}. sizeOnDisk={}, estimated size={}",
+              streamFile.destDir+"/"+streamFile.destFileName, sizeOnDisk.toString, streamFile.currentFileSize.toString)
+
+            val entry = ArchiveFileIndexEntry(srcFileToArchive, streamFile.destDir+"/"+streamFile.destFileName,
+              previousDestFileSize, streamFile.currentFileSize - 1)
+            archiveIndex.append(entry)
+
             updateCurrentAppendFile(streamFile.destDir, streamFile.destFileName, streamFile.currentFileSize, 0)
             streamFile.outStream = null
           }
@@ -643,6 +659,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
         }
       }
 
+      archiveIndex.foreach(entry => println(entry))
       true
     }
     catch{
@@ -659,3 +676,6 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
     archiveInfo.clear()
   }
 }
+
+case class ArchiveFileIndexEntry(var srcFile : String, var destFile : String,
+                                 var destFileStartOffset : Long, var destFileEndOffset : Long)
