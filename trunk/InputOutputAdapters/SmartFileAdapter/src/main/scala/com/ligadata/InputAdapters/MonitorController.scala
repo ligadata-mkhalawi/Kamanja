@@ -23,6 +23,8 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
   private val bufferingQLock = new Object
   private var smartFileMonitor : SmartFileMonitor = null
 
+  private var genericFileHandler : SmartFileHandler = null
+
   implicit def orderedEnqueuedFileHandler(f: EnqueuedFileHandler): Ordered[EnqueuedFileHandler] = new Ordered[EnqueuedFileHandler] {
     def compare(other: EnqueuedFileHandler) = {
       val locationInfo1 = f.locationInfo//parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(f.fileHandler.getParentDir))
@@ -52,23 +54,27 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
 
   def init(files :  List[String]): Unit ={
     initialFiles = files
+
+    genericFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, "/")
   }
 
   def checkConfigDirsAccessibility(): Unit ={
-    val rootHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, "/")
+
     adapterConfig.monitoringConfig.detailedLocations.foreach(location => {
-      val srcHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, location.srcDir)
-      if(!srcHandler.exists())
+      //val srcHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, location.srcDir)
+      if(!genericFileHandler.exists(location.srcDir))
         throw new KamanjaException("Smart File Consumer - Dir to watch (" + location.srcDir + ") does not exist", null)
-      else if(!srcHandler.isAccessible)
+      /*else if(!srcHandler.isAccessible)
         throw new KamanjaException("Smart File Consumer - Dir to watch (" + location.srcDir + ") is not accessible. It must be readable and writable", null)
+      */
 
       if(location.isMovingEnabled) {
-        val targetHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, location.targetDir)
-        if (!targetHandler.exists())
+        //val targetHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, location.targetDir)
+        if (!genericFileHandler.exists(location.targetDir))
           throw new KamanjaException("Smart File Consumer - Target Dir (" + location.targetDir + ") does not exist", null)
-        else if (!targetHandler.isAccessible)
+        /*else if (!targetHandler.isAccessible)
           throw new KamanjaException("Smart File Consumer - Target Dir (" + location.targetDir + ") is not accessible. It must be readable and writable", null)
+          */
       }
     })
 
@@ -112,6 +118,9 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
   def stopMonitoring(): Unit ={
 
     logger.debug("MonitorController - shutting down")
+
+    if(genericFileHandler != null)
+      genericFileHandler.disconnect()
 
     if(smartFileMonitor != null)
       smartFileMonitor.shutdown()
@@ -216,7 +225,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
                 {
 
                   //TODO C&S - Changes
-                  thisFileOrigLength = fileHandler.length
+                  thisFileOrigLength = genericFileHandler.length(fileHandler.getFullPath)
 
                   // If file hasn't grown in the past 2 seconds - either a delay OR a completed transfer.
                   if (fileTuple._2._1 == thisFileOrigLength) {
@@ -227,7 +236,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
                         logger.debug("SMART FILE CONSUMER (MonitorController):  File already enqueued " + fileHandler.getFullPath)
                       } else {
                         logger.info("SMART FILE CONSUMER (MonitorController):  File READY TO PROCESS " + fileHandler.getFullPath)
-                        enQFile(fileTuple._1, NOT_RECOVERY_SITUATION, fileHandler.lastModified)
+                        enQFile(fileTuple._1, NOT_RECOVERY_SITUATION, genericFileHandler.lastModified(fileHandler.getFullPath))
                         newlyAdded.append(fileHandler)
                       }
                       // bufferingQ_map.remove(fileTuple._1)

@@ -258,9 +258,9 @@ class PosixFileHandler extends SmartFileHandler{
   }
 
   @throws(classOf[KamanjaException])
-  def fileLength(fileName : String) : Long = {
-    logger.info("Posix File Handler - checking length for file " + fileName)
-    new File(fileName).length
+  def length(file : String) : Long = {
+    logger.info("Posix File Handler - checking length for file " + file)
+    new File(file).length
   }
 
   def lastModified : Long = {
@@ -268,10 +268,14 @@ class PosixFileHandler extends SmartFileHandler{
     fileObject.lastModified
   }
 
+  def lastModified(file : String) : Long = ???
+
   override def exists(): Boolean = {
     logger.info("Posix File Handler - checking existence for file " + getFullPath)
     new File(fileFullPath).exists
   }
+
+  override def exists(file : String): Boolean = ???
 
   override def isFile: Boolean = {
     logger.info("Posix File Handler - checking (isFile) for file " + getFullPath)
@@ -299,6 +303,8 @@ class PosixFileHandler extends SmartFileHandler{
         false
     }
   }
+
+  def disconnect() : Unit = ???
 }
 
 
@@ -492,8 +498,8 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
       else
         validModifiedFiles.appendAll(newFiles)
 
-      val newFileHandlers = validModifiedFiles.map(file => new PosixFileHandler(file.toString)).
-        sortWith(MonitorUtils.compareFiles(_,_,locationInfo) < 0).toArray
+      val newFileHandlers = validModifiedFiles.map(file => new PosixFileHandler(file.toString))/*.
+        sortWith(MonitorUtils.compareFiles(_,_,locationInfo) < 0).toArray*/
       newFileHandlers.foreach(fileHandler =>{
         //call the callback for new files
         logger.info(s"Posix Changes Monitor - A new file found ${fileHandler.getFullPath}. initial = $isFirstScan")

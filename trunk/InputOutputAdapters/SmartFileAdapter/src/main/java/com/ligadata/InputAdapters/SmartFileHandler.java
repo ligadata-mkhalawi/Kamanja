@@ -22,13 +22,17 @@ public interface SmartFileHandler {
     boolean delete() throws KamanjaException;
     boolean deleteFile(String fileName) throws KamanjaException;
     long length() throws KamanjaException;
-    long fileLength(String fileName) throws KamanjaException;
+    long length(String file) throws KamanjaException;
     long lastModified() throws KamanjaException;
+    long lastModified(String file) throws KamanjaException;
     boolean exists() throws KamanjaException;
+    boolean exists(String file) throws KamanjaException;
     boolean isFile() throws KamanjaException;
     boolean isDirectory() throws KamanjaException;
 
     boolean isAccessible();
 
     boolean mkdirs();
+
+    void disconnect();
 }

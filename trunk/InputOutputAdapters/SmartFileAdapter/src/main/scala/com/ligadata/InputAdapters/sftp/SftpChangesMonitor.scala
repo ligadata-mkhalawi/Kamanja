@@ -313,8 +313,8 @@ class SftpFileHandler extends SmartFileHandler{
   }
 
   @throws(classOf[Exception])
-  def length : Long = {
-    logger.info("Sftp File Handler - checking length for file " + hashPath(getFullPath))
+  def length(file : String) : Long = {
+    logger.info("Sftp File Handler - checking length for file " + hashPath(file))
     val startTm = System.nanoTime
     val attrs = getRemoteFileAttrs()
     val result = if (attrs == null) 0 else attrs.getSize
@@ -323,34 +323,23 @@ class SftpFileHandler extends SmartFileHandler{
     val elapsedTm = endTm - startTm
     val callstack = Thread.currentThread().getStackTrace().drop(1).take(25).
       map(s =>s.getClassName +"."+ s.getMethodName + "("+s.getLineNumber+")").mkString("\n")
-    logger.warn("Sftp File Handler - finished checking fileLength of file %s. Operation took %fms. StartTime:%d, EndTime:%d. callstack %s".
-      format(getFullPath, elapsedTm/1000000.0,elapsedTm, endTm, callstack))
+    logger.warn("Sftp File Handler - finished checking length of file %s. Operation took %fms. StartTime:%d, EndTime:%d. callstack %s".
+      format(file, elapsedTm/1000000.0,elapsedTm, endTm, callstack))
 
     result
   }
 
   @throws(classOf[KamanjaException])
-  def fileLength(fileName : String) : Long = {
-    logger.info("Sftp File Handler - checking length for file " + hashPath(fileName))
-    val startTm = System.nanoTime
-    val attrs = getRemoteFileAttrs(fileName, true)
-    val result = if (attrs == null) 0 else attrs.getSize
-
-    val endTm = System.nanoTime
-    val elapsedTm = endTm - startTm
-    val callstack = Thread.currentThread().getStackTrace().drop(1).take(25).
-      map(s =>s.getClassName +"."+ s.getMethodName + "("+s.getLineNumber+")").mkString("\n")
-    logger.warn("Sftp File Handler - finished checking fileLength of file %s. Operation took %fms. StartTime:%d, EndTime:%d. callstack %s".
-      format(getFullPath, elapsedTm/1000000.0,elapsedTm, endTm, callstack))
-
-    result
-  }
+  def length : Long = length(getFullPath)
 
   @throws(classOf[Exception])
-  def lastModified : Long = {
-    logger.info("Sftp File Handler - checking modification time for file " + hashPath(getFullPath))
+  def lastModified : Long = lastModified(getFullPath)
+
+  @throws(classOf[Exception])
+  def lastModified(file : String) : Long = {
+    logger.info("Sftp File Handler - checking modification time for file " + hashPath(file))
     val startTm = System.nanoTime
-    val attrs = getRemoteFileAttrs()
+    val attrs = getRemoteFileAttrs(file, true)
     val result = if (attrs == null) 0 else attrs.getMTime
 
     val endTm = System.nanoTime
@@ -358,15 +347,18 @@ class SftpFileHandler extends SmartFileHandler{
     val callstack = Thread.currentThread().getStackTrace().drop(1).take(25).
       map(s =>s.getClassName +"."+ s.getMethodName + "("+s.getLineNumber+")").mkString("\n")
     logger.warn("Sftp File Handler - finished checking lastModified of file %s. Operation took %fms. StartTime:%d, EndTime:%d. callstack %s".
-      format(getFullPath, elapsedTm/1000000.0,elapsedTm, endTm, callstack))
+      format(file, elapsedTm/1000000.0,elapsedTm, endTm, callstack))
 
     result
   }
 
   @throws(classOf[Exception])
-  def exists(): Boolean = {
+  def exists(): Boolean = exists(getFullPath)
+
+  @throws(classOf[Exception])
+  def exists(file : String): Boolean = {
     try {
-      logger.info("Sftp File Handler - checking existence for file " + hashPath(getFullPath))
+      logger.info("Sftp File Handler - checking existence for file " + hashPath(file))
       val startTm = System.nanoTime
       val att = getRemoteFileAttrs(logError = false)
       val exists = att != null
@@ -378,7 +370,7 @@ class SftpFileHandler extends SmartFileHandler{
         map(s =>s.getClassName +"."+ s.getMethodName + "("+s.getLineNumber+")").mkString("\n")
 
       logger.warn("Sftp File Handler - finished checking existing of file %s. Operation took %fms. StartTime:%d, EndTime:%d. callstack %s".
-        format(getFullPath, elapsedTm/1000000.0,elapsedTm, endTm, callstack))
+        format(file, elapsedTm/1000000.0,elapsedTm, endTm, callstack))
 
       exists
     }
@@ -513,6 +505,24 @@ class SftpFileHandler extends SmartFileHandler{
       logger.debug("Closing SFTP session from mkdirs()")
       if(channelSftp != null) channelSftp.exit()
       if(session != null) session.disconnect()
+    }
+  }
+
+
+  def disconnect() : Unit = {
+    try{
+      logger.info("Closing SFTP session from disconnect()")
+      if(channelSftp != null) channelSftp.exit()
+      if(session != null) session.disconnect()
+
+      channelSftp = null
+      session = null
+    }
+    catch{
+      case ex : Exception =>
+        logger.error("",ex)
+      case ex : Throwable =>
+        logger.error("",ex)
     }
   }
 }

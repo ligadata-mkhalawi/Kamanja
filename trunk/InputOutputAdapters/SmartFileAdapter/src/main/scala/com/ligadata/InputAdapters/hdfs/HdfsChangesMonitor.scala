@@ -270,13 +270,17 @@ class HdfsFileHandler extends SmartFileHandler {
   def length: Long = getHdFileSystem("get length").getFileStatus(new Path(getFullPath)).getLen
 
   @throws(classOf[KamanjaException])
-  def fileLength(fileName : String): Long = getHdFileSystem("get length").getFileStatus(new Path(fileName)).getLen
+  def length(file : String): Long = getHdFileSystem("get length").getFileStatus(new Path(file)).getLen
 
   @throws(classOf[KamanjaException])
   def lastModified: Long = getHdFileSystem("get modification time").getFileStatus(new Path(getFullPath)).getModificationTime
 
+  def lastModified(file : String) : Long = ???
+
   @throws(classOf[KamanjaException])
   override def exists(): Boolean = getHdFileSystem("check existence").exists(new Path(getFullPath))
+
+  override def exists(file : String): Boolean = ???
 
   @throws(classOf[KamanjaException])
   override def isFile: Boolean = getHdFileSystem("check if file").isFile(new Path(getFullPath))
@@ -323,6 +327,8 @@ class HdfsFileHandler extends SmartFileHandler {
         false
     }
   }
+
+  def disconnect() : Unit = ???
 }
 
 /**
@@ -458,8 +464,8 @@ class HdfsChangesMonitor(adapterName: String, modifiedFileCallback: (SmartFileHa
                     else
                       validModifiedFiles.appendAll(modifiedFiles)
 
-                    val orderedModifiedFiles = validModifiedFiles.map(tuple => (tuple._1, tuple._2)).toList.
-                      sortWith((tuple1, tuple2) => MonitorUtils.compareFiles(tuple1._1, tuple2._1, location) < 0)
+                    val orderedModifiedFiles = validModifiedFiles/*.map(tuple => (tuple._1, tuple._2)).toList.
+                      sortWith((tuple1, tuple2) => MonitorUtils.compareFiles(tuple1._1, tuple2._1, location) < 0)*/
 
                     if (orderedModifiedFiles.nonEmpty)
                       orderedModifiedFiles.foreach(tuple => {
