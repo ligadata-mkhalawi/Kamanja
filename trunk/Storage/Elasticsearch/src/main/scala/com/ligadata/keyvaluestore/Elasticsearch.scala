@@ -482,20 +482,11 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
       val indices: IndicesAdminClient = client.admin().indices()
       val res: IndicesExistsResponse = indices.prepareExists(fullIndexName.toLowerCase).execute().actionGet()
-
       if (res.isExists) {
         return true
       } else {
         return false
       }
-      //      val indicies: Array[String] = client.admin().cluster().prepareState().execute()
-      //        .actionGet().getState().getMetaData().concreteAllIndices();
-      //
-      //      if (indicies.contains(fullIndexName)) {
-      //        return true
-      //      }
-      //
-      //      return false
     } catch {
       case e: Exception => {
         throw CreateDDLException("Failed to check if Index exists " + fullIndexName, e)
@@ -530,7 +521,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     }
   }
 
-  def putJson(containerName: String, data_list: Array[(String)]): Unit = {
+  def putJsons(containerName: String, data_list: Array[(String)]): Unit = {
     var client: TransportClient = null
     val tableName = toFullTableName(containerName)
     //    CheckTableExists(tableName)
@@ -538,12 +529,31 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       client = getConnection
       var bulkRequest = client.prepareBulk()
       data_list.foreach({ jsonData =>
-        // insert x to table tableName
         bulkRequest.add(client.prepareIndex(tableName, "type1").setSource(jsonData))
       })
-      logger.debug("Executing bulk insert...")
+      logger.debug("Executing bulk indexing...")
       val bulkResponse = bulkRequest.execute().actionGet()
       //      client.admin().indices().prepareRefresh(tableName).get()
+    }
+    catch {
+      case e: Exception => {
+        throw CreateDMLException("Failed to save an object in the table " + tableName + ":", e)
+      }
+    } finally {
+      if (client != null) {
+        client.close
+      }
+    }
+  }
+
+  def putJson(containerName: String, dataJson: String): Unit = {
+    var client: TransportClient = null
+    val tableName = toFullTableName(containerName)
+    try {
+      client = getConnection
+      var bulkRequest = client.prepareBulk()
+      logger.debug("Executing index statement...")
+      val indexResponse = client.prepareIndex(tableName, "type1").setSource(dataJson).get()
     }
     catch {
       case e: Exception => {
