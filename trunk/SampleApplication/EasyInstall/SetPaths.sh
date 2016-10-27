@@ -64,6 +64,7 @@ sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/File
 sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/ExtractData_Template.sh > $install_dir/bin/ExtractData.sh
 sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/JdbcDataCollector_Template.sh > $install_dir/bin/JdbcDataCollector.sh
 sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/GenerateMessage_Template.sh > $install_dir/bin/GenerateMessage.sh
+sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/RunApplicationTests_Template.sh > $install_dir/bin/RunApplicationTests.sh
 
 #new one
 #HelloWorld

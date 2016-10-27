@@ -2,6 +2,17 @@
 
 set -ex
 
+function prepare_kamanja_app_tester {
+  scalaVersion=$1
+  kamanjaVersion=$2
+  # *******************************
+  # create directory copy the app tester jar into $installPath/bin/
+  # *******************************
+  cp $srcPath/Utils/KamanjaAppTester/target/scala-$scalaVersion/KamanjaAppTester* $systemlib
+  rsync -av --progress $srcPath/Utils/KamanjaAppTester/src/test/resources/kamanjaInstall/test/* $installPath/Kamanja-${kamanjaVersion}_${scalaVersion}/test --exclude '.gitignore'
+  cp $srcPath/Utils/KamanjaAppTester/src/main/resources/script/$scalaVersion/RunApplicationTests_Template.sh $installPath/Kamanja-${currentKamanjaVersion}_${scalaVersion}/template/script
+}
+
 installPath=$1
 srcPath=$2
 ivyPath=$3
@@ -343,13 +354,8 @@ cp $orientdb_jdbc_all $systemlib
 # *******************************
 cp -rf $srcPath/FactoriesOfModelInstanceFactory/PythonServer/src/main/python $installPath/Kamanja-$ver210/
 
-# *******************************
-# create directory copy the app tester jar into $installPath/bin/
-# *******************************
-cp $srcPath/Utils/KamanjaAppTester/target/scala-2.10/KamanjaAppTester* $systemlib
-rsync -av --progress $srcPath/Utils/KamanjaAppTester/src/test/resources/kamanjaInstall/test/* $installPath/Kamanja-$ver210/test --exclude '.gitignore'
-#cp -rf $srcPath/Utils/KamanjaAppTester/src/test/resources/kamanjaInstall/test/* $installPath/Kamanja-$ver210/test
-# cp Some Script to run KamanjaAppTester
+# Copying files for kamanja app tester compiled under scala 2.10
+prepare_kamanja_app_tester 2.10 $currentKamanjaVersion
 
 # *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep
@@ -721,13 +727,8 @@ cp $orientdb_jdbc_all $systemlib
 # *******************************
 cp -rf $srcPath/FactoriesOfModelInstanceFactory/PythonServer/src/main/python $installPath/Kamanja-$ver211/
 
-# *******************************
-# create directory copy the app tester jar into $installPath/bin/
-# *******************************
-cp $srcPath/Utils/KamanjaAppTester/target/scala-2.11/KamanjaAppTester* $systemlib
-rsync -av --progress $srcPath/Utils/KamanjaAppTester/src/test/resources/kamanjaInstall/test/* $installPath/Kamanja-$ver211/test --exclude '.gitignore'
-#cp -rf $srcPath/Utils/KamanjaAppTester/src/test/resources/kamanjaInstall/test/* $installPath/Kamanja-$ver211/test
-# cp Some Script to run KamanjaAppTester
+# Copying files for kamanja app tester compiled under scala 2.11
+prepare_kamanja_app_tester 2.11 $currentKamanjaVersion
 
 # *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep
