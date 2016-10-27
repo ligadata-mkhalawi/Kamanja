@@ -1001,7 +1001,7 @@ object KamanjaMetadata extends ObjectResolver {
   }
 
   def InitBootstrap: Unit = {
-    MetadataAPIImpl.InitMdMgrFromBootStrap(KamanjaConfiguration.configFile, false)
+    MetadataAPIImpl.InitMdMgrFromBootStrap(KamanjaConfiguration.configFile, false,false)
   }
 
   def InitMdMgr(zkConnectString: String, znodePath: String, zkSessionTimeoutMs: Int, zkConnectionTimeoutMs: Int, inputAdapters: ArrayBuffer[InputAdapter],

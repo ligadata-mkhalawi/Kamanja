@@ -3,9 +3,9 @@ import sbt._
 
 sbtPlugin := true
 
-version := "1.6.0"
+version := "1.6.1"
 
-version in ThisBuild := "1.6.0"
+version in ThisBuild := "1.6.1"
 
 //scalaVersion := "2.11.7"
 
@@ -234,6 +234,8 @@ lazy val MigrateFrom_V_1_4 = project.in(file("Utils/Migrate/SourceVersion/Migrat
 lazy val MigrateFrom_V_1_4_1 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_4_1")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(MigrateBase,MetadataAPI)
 
 lazy val MigrateFrom_V_1_5 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_5")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(MigrateBase,MetadataAPI)
+
+lazy val MigrateFrom_V_1_6 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_6")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(MigrateBase,MetadataAPI)
 
 lazy val MigrateTo_V_1_6 = project.in(file("Utils/Migrate/DestinationVersion/MigrateTo_V_1_6")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(MigrateBase, KamanjaManager)
 

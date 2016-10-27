@@ -324,7 +324,7 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
   var nodeInfo: NodeInfo = _
 
   if (isOk) {
-    getMetadataAPI.InitMdMgrFromBootStrap(KvInitConfiguration.configFile, false)
+    getMetadataAPI.InitMdMgrFromBootStrap(KvInitConfiguration.configFile, false,false)
 
     nodeInfo = mdMgr.Nodes.getOrElse(KvInitConfiguration.nodeId.toString, null)
     if (nodeInfo == null) {

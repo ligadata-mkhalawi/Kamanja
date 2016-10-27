@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-KAMANJA_HOME=/Users/hariramasamy/mykamanja/Kamanja-1.6.0_2.11
+KAMANJA_HOME=/Users/hariramasamy/mykamanja/Kamanja-1.6.1_2.11
 
 kafkahostname="localhost:9092"
 kafkaversion="0.10"
@@ -32,7 +32,7 @@ fi
 echo "User selected: $INPUTFILE"
 echo "Running kafka client version $kafkaversion"
 
-currentKamanjaVersion=1.6.0
+currentKamanjaVersion=1.6.1
 
 if [ "$kafkaversion" = "0.8" ]; then
   java  $JAAS_CLIENT_OPT $KERBEROS_CONFIG_OPT $KEYSTORE_CONFIG_OPT $KEYSTORE_PASS_CONFIG_OPT $TRUSTSTORE_CONFIG_OPT $TRUSTSTORE_PASS_CONFIG_OPT -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.11-$currentKamanjaVersion.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.11-$currentKamanjaVersion.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.11-$currentKamanjaVersion.jar:$KAMANJA_HOME/lib/system/kamanjakafkaadapters_0_8_2.11-$currentKamanjaVersion.jar:$KAMANJA_HOME/lib/system/kafka-clients-0.8.2.2.jar:$KAMANJA_HOME/lib/system/kafka_2.11-0.8.2.2.jar:$KAMANJA_HOME/lib/system/simplekafkaproducer_2.11-$currentKamanjaVersion.jar com.ligadata.tools.SimpleKafkaProducer --gz true --topics "testin_1" --threads 1 --topicpartitions 8 --brokerlist "$kafkahostname" --files "$KAMANJA_HOME/input/SampleApplications/data/hmeqdata.csv.gz" --partitionkeyidxs "0" --kafkaversion 8 --format CSV $SECURITY_PROP_OPT

@@ -27,12 +27,6 @@ manjaPythonLog-%d{yyyy-MM-dd-HH}-%i.log.gz">
         <OnStartupTriggeringPolicy />
       </Policies>
     </RollingFile>
-    <RollingFile name="AppTesterAppender" fileName="${test-log-path}/KamanjaAppTester.log" filePattern="${test-log-path}/KamanjaAppTester-%d{yyyy-MM-dd-HH}-%i.log.gz">
-      <PatternLayout pattern="%m%n" />
-      <Policies>
-        <OnStartupTriggeringPolicy/>
-      </Policies>
-    </RollingFile>
     <Console name="CONSOLE" target="SYSTEM_OUT" follow="true">
       <PatternLayout pattern="%5p [%t] - %m%n" />
     </Console>
@@ -41,10 +35,6 @@ manjaPythonLog-%d{yyyy-MM-dd-HH}-%i.log.gz">
       <Logger name="PyProcess" level="WARN">
           <AppenderRef ref="CONSOLE"/>>
           <AppenderRef ref="HourlyRollPython"/>
-      </Logger>
-      <Logger name="com.ligadata.test.application" level="INFO">
-          <AppenderRef ref="CONSOLE"/>
-          <AppenderRef ref="AppTesterAppender"/>
       </Logger>
       <Root level="WARN">
           <AppenderRef ref="CONSOLE" />

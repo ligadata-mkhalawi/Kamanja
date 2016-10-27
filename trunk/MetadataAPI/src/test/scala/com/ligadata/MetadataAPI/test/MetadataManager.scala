@@ -187,9 +187,11 @@ class MetadataManager extends KamanjaTestLogger {
     val source = Source.fromFile(file)
     val mdString = source.mkString
     source.close()
+
     mdType.toLowerCase match {
       case "message" => result = parseApiResult(MetadataAPIImpl.AddMessage(mdString, "JSON", Some(userId), tenantId, None))
-      case "container" => result = parseApiResult(MetadataAPIImpl.AddContainer(mdString, "JSON", Some(userId), tenantId, None))
+      case "container" =>
+        result = parseApiResult(MetadataAPIImpl.AddContainer(mdString, "JSON", Some(userId), tenantId, None))
       case "model" => {
         modelType match {
           case None =>

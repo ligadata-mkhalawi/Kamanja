@@ -15,45 +15,55 @@ object TestExecutor {
   private type OptionMap = Map[Symbol, Any]
 
   private def addApplicationMetadata(kamanjaApp: KamanjaApplication): Boolean = {
-    var result = 0
+    var result = 1
     kamanjaApp.metadataElements.foreach(element => {
-      element match {
-        case e: MessageElement => {
-          println(s"[Kamanja Application Tester] ---> Adding message from file '${e.filename}'")
-          result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant))
+      try {
+        element match {
+          case e: MessageElement => {
+            println(s"[Kamanja Application Tester] ---> Adding message from file '${e.filename}'")
+            result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant))
+          }
+          case e: ContainerElement => {
+            println(s"[Kamanja Application Tester] ---> Adding container from file '${e.filename}'")
+            result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant))
+          }
+          case e: JavaModelElement => {
+            println(s"[Kamanja Application Tester] ---> Adding java model from file '${e.filename}' with model configuration '${e.modelCfg}'")
+            result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant), Some(e.modelType), Some(e.modelCfg))
+          }
+          case e: ScalaModelElement => {
+            println(s"[Kamanja Application Tester] ---> Adding scala model from file '${e.filename}' with model configuration '${e.modelCfg}'")
+            result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant), Some(e.modelType), Some(e.modelCfg))
+          }
+          case e: KPmmlModelElement => {
+            println(s"[Kamanja Application Tester] ---> Adding KPMML model from file '${e.filename}'")
+            result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant), Some(e.modelType))
+          }
+          case e: PmmlModelElement => {
+            println(s"[Kamanja Application Tester] ---> Adding PMML model from file '${e.filename}' with message consumed '${e.msgConsumed}'")
+            result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant), Some(e.modelType), None, Some("0.0.1"), Some(e.msgConsumed), None, e.msgProduced)
+          }
+          case e: AdapterMessageBindingElement => {
+            println(s"[Kamanja Application Tester] ---> Adding adapter message bindings from file '${e.filename}'")
+            result = mdMan.addBindings(e.filename)
+          }
+          case e: ModelConfigurationElement => {
+            println(s"[Kamanja Application Tester] ---> Adding model configuration from file '${e.filename}'")
+            result = mdMan.add(e.elementType, e.filename)
+          }
+          case _ => throw new TestExecutorException("[Kamanja Application Tester] - ***ERROR*** Unknown element type: '" + element.elementType)
         }
-        case e: ContainerElement => {
-          println(s"[Kamanja Application Tester] ---> Adding container from file '${e.filename}'")
-          result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant))
-        }
-        case e: JavaModelElement => {
-          println(s"[Kamanja Application Tester] ---> Adding java model from file '${e.filename}' with model configuration '${e.modelCfg}'")
-          result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant), Some(e.modelType), Some(e.modelCfg))
-        }
-        case e: ScalaModelElement => {
-          println(s"[Kamanja Application Tester] ---> Adding scala model from file '${e.filename}' with model configuration '${e.modelCfg}'")
-          result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant), Some(e.modelType), Some(e.modelCfg))
-        }
-        case e: KPmmlModelElement => {
-          println(s"[Kamanja Application Tester] ---> Adding KPMML model from file '${e.filename}'")
-          result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant), Some(e.modelType))
-        }
-        case e: PmmlModelElement => {
-          println(s"[Kamanja Application Tester] ---> Adding PMML model from file '${e.filename}' with message consumed '${e.msgConsumed}'")
-          result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant), Some(e.modelType), None, Some("0.0.1"), Some(e.msgConsumed), None, e.msgProduced)
-        }
-        case e: AdapterMessageBindingElement => {
-          println(s"[Kamanja Application Tester] ---> Adding adapter message bindings from file '${e.filename}'")
-          result = mdMan.addBindings(e.filename)
-        }
-        case e: ModelConfigurationElement => {
-          println(s"[Kamanja Application Tester] ---> Adding model configuration from file '${e.filename}'")
-          result = mdMan.add(e.elementType, e.filename)
-        }
-        case _ => throw new TestExecutorException("[Kamanja Application Tester] - ***ERROR*** Unknown element type: '" + element.elementType)
+      }
+      catch {
+        case e: MetadataManagerException =>
+          println(s"[Kamanja Application Tester] ---> ***ERROR*** Failed to add '${element.elementType}' from file '${element.filename}' with result '${result}' and exception:\n$e")
+          return false
+        case e: Exception =>
+          println(s"[Kamanja Application Tester] ---> ***ERROR*** Failed to add '${element.elementType}' from file '${element.filename}' with result '${result}' and exception:\n$e")
+          return false
       }
 
-      if(result != 0) {
+      if (result != 0) {
         println(s"[Kamanja Application Tester] ---> ***ERROR*** Failed too add '${element.elementType}' from file '${element.filename}' with result '$result'")
         return false
       }

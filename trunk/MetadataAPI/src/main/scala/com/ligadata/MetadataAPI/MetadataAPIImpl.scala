@@ -4232,8 +4232,8 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     */
   @throws(classOf[MissingPropertyException])
   @throws(classOf[InvalidPropertyException])
-  def readMetadataAPIConfigFromPropertiesFile(configFile: String): Unit = {
-    ConfigUtils.readMetadataAPIConfigFromPropertiesFile(configFile)
+  def readMetadataAPIConfigFromPropertiesFile(configFile: String,setDefaults:Boolean): Unit = {
+    ConfigUtils.readMetadataAPIConfigFromPropertiesFile(configFile,setDefaults)
   }
 
     /**
@@ -4262,7 +4262,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     if (configFile.endsWith(".json")) {
       MetadataAPIImpl.readMetadataAPIConfigFromJsonFile(configFile)
     } else {
-      MetadataAPIImpl.readMetadataAPIConfigFromPropertiesFile(configFile)
+      MetadataAPIImpl.readMetadataAPIConfigFromPropertiesFile(configFile,true)
     }
     val tmpJarPaths = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS")
     val jarPaths = if (tmpJarPaths != null) tmpJarPaths.split(",").toSet else scala.collection.immutable.Set[String]()
@@ -4284,7 +4284,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param configFile the MetadataAPI configuration file
     * @param startHB
     */
-  def InitMdMgrFromBootStrap(configFile: String, startHB: Boolean) {
+  def InitMdMgrFromBootStrap(configFile: String, startHB: Boolean, setDefaults: Boolean = true) {
 
     MdMgr.GetMdMgr.truncate
     val mdLoader = new MetadataLoad(MdMgr.mdMgr, "", "", "", "")
@@ -4292,7 +4292,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     if (configFile.endsWith(".json")) {
       MetadataAPIImpl.readMetadataAPIConfigFromJsonFile(configFile)
     } else {
-      MetadataAPIImpl.readMetadataAPIConfigFromPropertiesFile(configFile)
+      MetadataAPIImpl.readMetadataAPIConfigFromPropertiesFile(configFile,setDefaults)
     }
 
     initZkListeners(startHB)

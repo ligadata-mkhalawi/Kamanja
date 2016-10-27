@@ -1504,7 +1504,7 @@ trait MetadataAPI {
     * @param configFile the MetadataAPI configuration file
     * @param startHB
     */
-  def InitMdMgrFromBootStrap(configFile: String, startHB: Boolean)
+  def InitMdMgrFromBootStrap(configFile: String, startHB: Boolean,setDefaults:Boolean = true)
 
   /**
     * CloseDbStore
@@ -1629,7 +1629,7 @@ trait MetadataAPI {
     *
     * @param configFile the MetadataAPI configuration file
     */
-  def readMetadataAPIConfigFromPropertiesFile(configFile: String): Unit
+  def readMetadataAPIConfigFromPropertiesFile(configFile: String,setDefaults:Boolean = true): Unit
 
   /**
     * OpenDbStore
