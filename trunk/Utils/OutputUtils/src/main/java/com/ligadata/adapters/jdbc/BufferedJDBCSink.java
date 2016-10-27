@@ -97,13 +97,13 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
                     statusWriter.setCompletionCode(this.STATUS_KEY,"-1");
                 connection.commit();
                 statusWriter.addStatus(this.STATUS_KEY, String.valueOf(totalStatements - failedStatements), String.valueOf(failedStatements));
-                statusWriter.externalizeStatusMessage(String.valueOf(batchId), String.valueOf(retryNumber), "BufferedJDBCSink");
+                statusWriter.externalizeStatusMessage(batchId, retryNumber, "BufferedJDBCSink");
             } catch (Exception e) {
                 logger.error("Error committing messages : " + e.getMessage(), e);
                 statusWriter.addStatusMessage(this.STATUS_KEY, "Error committing messages : " + getCauseForDisplay(e));
                 statusWriter.addStatus(this.STATUS_KEY, String.valueOf(0), String.valueOf(totalStatements));
                 statusWriter.setCompletionCode(this.STATUS_KEY,"-1");
-                statusWriter.externalizeStatusMessage(String.valueOf(batchId), String.valueOf(retryNumber), "BufferedJDBCSink");
+                statusWriter.externalizeStatusMessage(batchId, retryNumber, "BufferedJDBCSink");
             }
             try {
                 statement.close();

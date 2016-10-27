@@ -8,7 +8,7 @@ public interface StatusCollectable {
      * @param soureOfStatus
      * @return true if recorded
      */
-    public boolean externalizeStatusMessage(String batchId, String retryNumber, String sourceOfStatus);
+    public boolean externalizeStatusMessage(long batchId, long retryNumber, String sourceOfStatus);
 
     /**
      * Add the status message to the underlying status sturcutre. the whole thing will be externalized when

@@ -67,7 +67,7 @@ public class KafkaStatusRecorder implements StatusCollectable {
      * @return
      * @throws Exception
      */
-    public boolean externalizeStatusMessage(String batchId, String retryNumber, String sourceOfStatus) {
+    public boolean externalizeStatusMessage(long batchId, long retryNumber, String sourceOfStatus) {
         logger.debug("Externalizing status from " + sourceOfStatus + " for batchId " + batchId);
 
         JsonObjectBuilder status_obldr =  Json.createObjectBuilder();
@@ -75,11 +75,13 @@ public class KafkaStatusRecorder implements StatusCollectable {
         java.util.Iterator statusIter = currentStatus.entrySet().iterator();
         while(statusIter.hasNext()) {
             java.util.Map.Entry<String, String> pair =  (java.util.Map.Entry<String, String>) statusIter.next();
+            logger.info ("Processing key " + pair.getKey());
 
             JsonObjectBuilder subStatus_obldr =  Json.createObjectBuilder();
             // Create Messages
             javax.json.JsonArrayBuilder abldr = Json.createArrayBuilder();
             // If we have any status for this key to report.. the message List is not null
+            logger.info("Building Status Message, msgSetSize for " + pair.getKey() +" is " + currentStatusMsg.get(pair.getKey()));
             java.util.Iterator<String> msgIter = currentStatusMsg.get(pair.getKey()).iterator();
             while(msgIter.hasNext()) {
                 abldr = abldr.add(msgIter.next());
@@ -99,7 +101,7 @@ public class KafkaStatusRecorder implements StatusCollectable {
         JsonObject finalStatus = status_obldr.build();
 
         JsonObject msg = Json.createObjectBuilder()
-                .add("ComponentName",componentName).add("BatchId",batchId).add("AttemptNumber",retryNumber).add("TimeStamp", sdf.format(new java.util.Date()))
+                .add("ComponentName",componentName).add("BatchId",batchId).add("AttemptNumber",(retryNumber + 1)).add("TimeStamp", sdf.format(new java.util.Date()))
                 .add("Status",finalStatus).build();
 
 
@@ -205,10 +207,12 @@ public class KafkaStatusRecorder implements StatusCollectable {
      */
     public void addStatusMessage(String key, String msg) {
         // Make sure the messages are initialized
+        logger.debug("Adding message for " + key + " message: " + msg );
         if(currentStatusMsg.get(key) == null)
             currentStatusMsg.put(key, new ArrayList<String>());
-        else
-            currentStatusMsg.get(key).add(msg);
+
+        // TODO: Limit the size here.
+        currentStatusMsg.get(key).add(msg);
     }
 
     /**
