@@ -315,30 +315,72 @@ class SftpFileHandler extends SmartFileHandler{
   @throws(classOf[Exception])
   def length : Long = {
     logger.info("Sftp File Handler - checking length for file " + hashPath(getFullPath))
+    val startTm = System.nanoTime
     val attrs = getRemoteFileAttrs()
-    if (attrs == null) 0 else attrs.getSize
+    val result = if (attrs == null) 0 else attrs.getSize
+
+    val endTm = System.nanoTime
+    val elapsedTm = endTm - startTm
+    val callstack = Thread.currentThread().getStackTrace().drop(1).take(25).
+      map(s =>s.getClassName +"."+ s.getMethodName + "("+s.getLineNumber+")").mkString("\n")
+    logger.warn("Sftp File Handler - finished checking fileLength of file %s. Operation took %fms. StartTime:%d, EndTime:%d. callstack %s".
+      format(getFullPath, elapsedTm/1000000.0,elapsedTm, endTm, callstack))
+
+    result
   }
 
   @throws(classOf[KamanjaException])
   def fileLength(fileName : String) : Long = {
     logger.info("Sftp File Handler - checking length for file " + hashPath(fileName))
+    val startTm = System.nanoTime
     val attrs = getRemoteFileAttrs(fileName, true)
-    if (attrs == null) 0 else attrs.getSize
+    val result = if (attrs == null) 0 else attrs.getSize
+
+    val endTm = System.nanoTime
+    val elapsedTm = endTm - startTm
+    val callstack = Thread.currentThread().getStackTrace().drop(1).take(25).
+      map(s =>s.getClassName +"."+ s.getMethodName + "("+s.getLineNumber+")").mkString("\n")
+    logger.warn("Sftp File Handler - finished checking fileLength of file %s. Operation took %fms. StartTime:%d, EndTime:%d. callstack %s".
+      format(getFullPath, elapsedTm/1000000.0,elapsedTm, endTm, callstack))
+
+    result
   }
 
   @throws(classOf[Exception])
   def lastModified : Long = {
     logger.info("Sftp File Handler - checking modification time for file " + hashPath(getFullPath))
+    val startTm = System.nanoTime
     val attrs = getRemoteFileAttrs()
-    if (attrs == null) 0 else attrs.getMTime
+    val result = if (attrs == null) 0 else attrs.getMTime
+
+    val endTm = System.nanoTime
+    val elapsedTm = endTm - startTm
+    val callstack = Thread.currentThread().getStackTrace().drop(1).take(25).
+      map(s =>s.getClassName +"."+ s.getMethodName + "("+s.getLineNumber+")").mkString("\n")
+    logger.warn("Sftp File Handler - finished checking lastModified of file %s. Operation took %fms. StartTime:%d, EndTime:%d. callstack %s".
+      format(getFullPath, elapsedTm/1000000.0,elapsedTm, endTm, callstack))
+
+    result
   }
 
   @throws(classOf[Exception])
   def exists(): Boolean = {
     try {
       logger.info("Sftp File Handler - checking existence for file " + hashPath(getFullPath))
+      val startTm = System.nanoTime
       val att = getRemoteFileAttrs(logError = false)
-      att != null
+      val exists = att != null
+
+      val endTm = System.nanoTime
+      val elapsedTm = endTm - startTm
+
+      val callstack = Thread.currentThread().getStackTrace().drop(1).take(25).
+        map(s =>s.getClassName +"."+ s.getMethodName + "("+s.getLineNumber+")").mkString("\n")
+
+      logger.warn("Sftp File Handler - finished checking existing of file %s. Operation took %fms. StartTime:%d, EndTime:%d. callstack %s".
+        format(getFullPath, elapsedTm/1000000.0,elapsedTm, endTm, callstack))
+
+      exists
     }
     catch{
       case ex : Exception => false
@@ -363,18 +405,39 @@ class SftpFileHandler extends SmartFileHandler{
       }
   }
 
+
   @throws(classOf[Exception])
   override def isFile: Boolean = {
     logger.info("Sftp File Handler - checking (isFile) for file " + hashPath(getFullPath))
+    val startTm = System.nanoTime
     val attrs = getRemoteFileAttrs()
-    if (attrs == null) false else !attrs.isDir
+    val result = if (attrs == null) false else !attrs.isDir
+
+    val endTm = System.nanoTime
+    val elapsedTm = endTm - startTm
+    val callstack = Thread.currentThread().getStackTrace().drop(1).take(25).
+      map(s =>s.getClassName +"."+ s.getMethodName + "("+s.getLineNumber+")").mkString("\n")
+    logger.warn("Sftp File Handler - finished checking isFile of file %s. Operation took %fms. StartTime:%d, EndTime:%d. callstack %s".
+      format(getFullPath, elapsedTm/1000000.0,elapsedTm, endTm, callstack))
+
+    result
   }
 
   @throws(classOf[Exception])
   override def isDirectory: Boolean = {
     logger.info("Sftp File Handler - checking (isDir) for file " + hashPath(getFullPath))
+    val startTm = System.nanoTime
     val attrs = getRemoteFileAttrs()
-    if (attrs == null) false else attrs.isDir
+    val result =  if (attrs == null) false else attrs.isDir
+
+    val endTm = System.nanoTime
+    val elapsedTm = endTm - startTm
+    val callstack = Thread.currentThread().getStackTrace().drop(1).take(25).
+      map(s =>s.getClassName +"."+ s.getMethodName + "("+s.getLineNumber+")").mkString("\n")
+    logger.warn("Sftp File Handler - finished checking isDirectory of file %s. Operation took %fms. StartTime:%d, EndTime:%d. callstack %s".
+      format(getFullPath, elapsedTm/1000000.0,elapsedTm, endTm, callstack))
+
+    result
   }
 
   private def getRemoteFileAttrs(logError : Boolean = true) :  SftpATTRS = {
@@ -398,16 +461,16 @@ class SftpFileHandler extends SmartFileHandler{
         null
 
     } finally {
-      logger.debug("Closing SFTP session from getRemoteFileAttrs()")
+      /*logger.debug("Closing SFTP session from getRemoteFileAttrs()")
       if(channelSftp != null) channelSftp.exit()
-      if(session != null) session.disconnect()
+      if(session != null) session.disconnect()*/
     }
   }
 
   //no accurate way to make sure a file/folder is readable or writable by current user
   //api can only tell the unix rep. of file permissions but cannot find user name or group name of that file
   //so for now return true if exists
-  override def isAccessible : Boolean = exists()
+  override def isAccessible : Boolean = true//exists()     assuming exists is called before   isAccessible()
 
   override def mkdirs() : Boolean = {
     logger.info("Sftp File Handler - mkdirs for path " + getFullPath)
@@ -549,7 +612,7 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
 
                       modifiedDirs.remove(0)
                       findDirModifiedDirectChilds(aFolder._1, aFolder._2, manager, modifiedDirs, modifiedFiles, firstCheck)
-                      logger.debug("modifiedFiles map is {}", modifiedFiles)
+                      logger.warn("modifiedFiles map is {}", modifiedFiles)
 
                       //check for file names pattern
                       validModifiedFiles.clear()
@@ -565,8 +628,9 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
                       else
                         validModifiedFiles.appendAll(modifiedFiles)
 
-                      val orderedModifiedFiles = validModifiedFiles.map(tuple => (tuple._1, tuple._2)).toList.
-                        sortWith((tuple1, tuple2) => MonitorUtils.compareFiles(tuple1._1, tuple2._1, location) < 0)
+                      logger.warn("validModifiedFiles size is {}", validModifiedFiles.length.toString)
+                      val orderedModifiedFiles = validModifiedFiles/*.map(tuple => (tuple._1, tuple._2)).toList.
+                        sortWith((tuple1, tuple2) => MonitorUtils.compareFiles(tuple1._1, tuple2._1, location) < 0)*/
 
                       if (orderedModifiedFiles.nonEmpty)
                         orderedModifiedFiles.foreach(tuple => {
@@ -647,7 +711,7 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
     //logger.debug("got the following children for checked folder " + directChildren.map(c => c.getURL.toString).mkString(", "))
     //process each file reported by FS cache.
     directChildren.foreach(child => {
-      val currentChildEntry = makeFileEntry(child)
+      val currentChildEntry = makeFileEntry(child, parentFolder)
       var isChanged = false
       val uniquePath = child.getURL.toString
 
@@ -659,7 +723,7 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
           isChanged = true
           changeType = if (isFirstCheck) AlreadyExisting else New
 
-          logger.debug("SftpChangesMonitor - file {} is {}", uniquePath, changeType.toString)
+          logger.warn("SftpChangesMonitor - file {} is {}", uniquePath, changeType.toString)
 
           filesStatusMap.put(uniquePath, currentChildEntry)
           /*if (currentChildEntry.isDirectory)
@@ -667,7 +731,7 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
         }
         else {
           logger.debug("SftpChangesMonitor - file {} is already in monitors filesStatusMap", uniquePath)
-
+/*
           val storedEntry = filesStatusMap.get(uniquePath).get
           if (currentChildEntry.lastModificationTime > storedEntry.lastModificationTime) {
             //file has been modified
@@ -675,7 +739,7 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
             isChanged = true
 
             changeType = Modified
-          }
+          }*/
         }
 
         //TODO : this method to find changed folders is not working as expected. so for now check all dirs
@@ -727,11 +791,11 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
     children
   }
 
-  private def makeFileEntry(fileObject : FileObject) : SftpFileEntry = {
+  private def makeFileEntry(fileObject : FileObject, parent : String) : SftpFileEntry = {
 
     val newFile = new SftpFileEntry()
     newFile.name = fileObject.getURL.toString
-    newFile.parent = fileObject.getParent.getURL.toString
+    newFile.parent = parent//fileObject.getParent.getURL.toString
     newFile.isDirectory = fileObject.getType.getName.equalsIgnoreCase("folder")
     newFile.lastModificationTime = if(newFile.isDirectory) 0 else fileObject.getContent.getLastModifiedTime
     newFile.lastReportedSize = if(newFile.isDirectory) -1 else fileObject.getContent.getSize //size is not defined for folders
@@ -743,7 +807,7 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
   }*/
 
   private def isDirectParentDir(fileObj : SftpFileEntry, dirUrl : String) : Boolean = {
-    //logger.debug("comparing folders {} and {}", getPathOnly(fileObj.parent), getPathOnly(dirUrl))
+    //logger.warn("comparing folders {} and {}", getPathOnly(fileObj.parent), getPathOnly(dirUrl))
     getPathOnly(fileObj.parent).equals(getPathOnly(dirUrl))
   }
 

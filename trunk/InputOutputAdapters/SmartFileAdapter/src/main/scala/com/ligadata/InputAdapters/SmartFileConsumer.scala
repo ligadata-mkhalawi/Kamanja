@@ -23,7 +23,8 @@ case class BufferLeftoversArea(workerNumber: Int, leftovers: Array[Byte], relate
 case class SmartFileMessage(msg: Array[Byte], offsetInFile: Long, relatedFileHandler: SmartFileHandler, msgNumber: Long)
 case class FileStatus(status: Int, offset: Long, createDate: Long)
 //case class OffsetValue (lastGoodOffset: Int, partitionOffsets: Map[Int,Int])
-case class EnqueuedFileHandler(fileHandler: SmartFileHandler, offset: Long, createDate: Long,  partMap: scala.collection.mutable.Map[Int,Int])
+case class EnqueuedFileHandler(fileHandler: SmartFileHandler, offset: Long, lastModifiedDate: Long,
+                               locationInfo : LocationInfo, componentsMap: scala.collection.immutable.Map[String, String])
 
 
 class SmartFileConsumerContext{

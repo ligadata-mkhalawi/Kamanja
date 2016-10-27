@@ -2,7 +2,7 @@ package com.ligadata.InputAdapters
 
 import java.io.IOException
 
-import com.ligadata.AdaptersConfiguration.SmartFileAdapterConfiguration
+import com.ligadata.AdaptersConfiguration.{LocationInfo, SmartFileAdapterConfiguration}
 import com.ligadata.Exceptions.KamanjaException
 import org.apache.logging.log4j.LogManager
 
@@ -25,10 +25,10 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
 
   implicit def orderedEnqueuedFileHandler(f: EnqueuedFileHandler): Ordered[EnqueuedFileHandler] = new Ordered[EnqueuedFileHandler] {
     def compare(other: EnqueuedFileHandler) = {
-      val locationInfo1 = parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(f.fileHandler.getParentDir))
-      val locationInfo2 = parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(other.fileHandler.getParentDir))
+      val locationInfo1 = f.locationInfo//parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(f.fileHandler.getParentDir))
+      val locationInfo2 = other.locationInfo// parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(other.fileHandler.getParentDir))
       //not sure why but had to invert sign
-      (MonitorUtils.compareFiles(f.fileHandler, locationInfo1, other.fileHandler, locationInfo2)) * -1
+      (MonitorUtils.compareFiles(f, other)) * -1
     }
   }
   private var fileQ: scala.collection.mutable.PriorityQueue[EnqueuedFileHandler] =
@@ -55,8 +55,8 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
   }
 
   def checkConfigDirsAccessibility(): Unit ={
+    val rootHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, "/")
     adapterConfig.monitoringConfig.detailedLocations.foreach(location => {
-
       val srcHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, location.srcDir)
       if(!srcHandler.exists())
         throw new KamanjaException("Smart File Consumer - Dir to watch (" + location.srcDir + ") does not exist", null)
@@ -142,7 +142,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
 
   // Stuff used by the File Priority Queue.
   def OldestFile(file: EnqueuedFileHandler): Long = {
-    file.createDate * -1
+    file.lastModifiedDate * -1
   }
 
   /*def fileComparisonField(file: EnqueuedFileHandler) : String = {
@@ -212,7 +212,8 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
               }
               else {
                 // If the filesystem is accessible
-                if (fileHandler.exists) {
+                //if (fileHandler.exists)
+                {
 
                   //TODO C&S - Changes
                   thisFileOrigLength = fileHandler.length
@@ -221,7 +222,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
                   if (fileTuple._2._1 == thisFileOrigLength) {
                     // If the length is > 0, we assume that the file completed transfer... (very problematic, but unless
                     // told otherwise by BofA, not sure what else we can do here.
-                    if (thisFileOrigLength > 0 && MonitorUtils.isValidFile(fileHandler)) {
+                    if (thisFileOrigLength > 0 && MonitorUtils.isValidFile(fileHandler, false)) {
                       if (isEnqueued(fileTuple._1)) {
                         logger.debug("SMART FILE CONSUMER (MonitorController):  File already enqueued " + fileHandler.getFullPath)
                       } else {
@@ -266,12 +267,12 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
                       fileHandler.getFullPath, thisFileOrigLength.toString, fileTuple._2._1.toString)
                     bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
                   }
-                } else {
+                } /*else {
                   // File System is not accessible.. issue a warning and go on to the next file.
                   logger.warn("SMART FILE CONSUMER (MonitorController): File on the buffering Q is not found " + fileHandler.getFullPath)
                   // bufferingQ_map.remove(fileTuple._1)
                   removedEntries += fileTuple._1
-                }
+                }*/
               }
             } catch {
               case ioe: IOException => {
@@ -344,10 +345,13 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
     }
   }
 
-  private def enQFile(fileHandler: SmartFileHandler, offset: Int, createDate: Long, partMap: scala.collection.mutable.Map[Int,Int] = scala.collection.mutable.Map[Int,Int]()): Unit = {
+  private def enQFile(fileHandler: SmartFileHandler, offset: Int, createDate: Long): Unit = {
     fileQLock.synchronized {
       logger.info("SMART FILE CONSUMER (MonitorController):  enq file " + fileHandler.getFullPath + " with priority " + createDate+" --- curretnly " + fileQ.size + " files on a QUEUE")
-      fileQ += new EnqueuedFileHandler(fileHandler, offset, createDate, partMap)
+
+      val locationInfo =  parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(fileHandler.getParentDir))
+      val components = MonitorUtils.getFileComponents(fileHandler.getFullPath, locationInfo)
+      fileQ += new EnqueuedFileHandler(fileHandler, offset, createDate, locationInfo, components)
     }
   }
 
@@ -366,7 +370,7 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
         return null
       }
       val ef = fileQ.dequeue()
-      logger.info("SMART FILE CONSUMER (MonitorController):  deq file " + ef.fileHandler.getFullPath + " with priority " + ef.createDate+" --- curretnly " + fileQ.size + " files left on a QUEUE")
+      logger.info("SMART FILE CONSUMER (MonitorController):  deq file " + ef.fileHandler.getFullPath + " with priority " + ef.lastModifiedDate+" --- curretnly " + fileQ.size + " files left on a QUEUE")
       return ef
 
     }
