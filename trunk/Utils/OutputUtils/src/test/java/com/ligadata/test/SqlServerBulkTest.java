@@ -18,7 +18,7 @@ public class SqlServerBulkTest {
 			processor.addMessage(message1);
 			processor.addMessage(message2);
 			processor.addMessage(message3);
-			processor.processAll();
+			processor.processAll(0,0);
 			processor.close();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
