@@ -11,13 +11,27 @@ import scala.collection.mutable.ArrayBuffer
 
 /**
   *
-  * @param adapterConfig
-  * @param newFileDetectedCallback callback to notify leader whenever a file is detected
+  *  adapterConfig
+  *  newFileDetectedCallback callback to notify leader whenever a file is detected
   */
-class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSmartFileConsumer : SmartFileConsumer,
-                        newFileDetectedCallback :(String) => Unit) {
+class MonitorController {
+
+  def this(adapterConfig : SmartFileAdapterConfiguration, parentSmartFileConsumer : SmartFileConsumer,
+           newFileDetectedCallback :(String) => Unit) {
+    this()
+
+    this.adapterConfig = adapterConfig
+    this.newFileDetectedCallback = newFileDetectedCallback
+    this.parentSmartFileConsumer = parentSmartFileConsumer
+
+    genericFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, "/")
+  }
 
   val NOT_RECOVERY_SITUATION = -1
+
+  private var adapterConfig : SmartFileAdapterConfiguration = null
+  private var newFileDetectedCallback :(String) => Unit = null
+  private var parentSmartFileConsumer : SmartFileConsumer = null
 
   private val bufferingQ_map: scala.collection.mutable.Map[SmartFileHandler, (Long, Long, Int, Boolean)] = scala.collection.mutable.Map[SmartFileHandler, (Long, Long, Int, Boolean)]()
   private val bufferingQLock = new Object
@@ -55,7 +69,6 @@ class MonitorController(adapterConfig : SmartFileAdapterConfiguration, parentSma
   def init(files :  List[String]): Unit ={
     initialFiles = files
 
-    genericFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, "/")
   }
 
   def checkConfigDirsAccessibility(): Unit ={

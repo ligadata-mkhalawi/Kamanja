@@ -330,10 +330,18 @@ class SftpFileHandler extends SmartFileHandler{
   }
 
   @throws(classOf[KamanjaException])
-  def length : Long = length(getFullPath)
+  def length : Long = {
+    val result = length(getFullPath)
+    disconnect()
+    result
+  }
 
   @throws(classOf[Exception])
-  def lastModified : Long = lastModified(getFullPath)
+  def lastModified : Long = {
+    val result = lastModified(getFullPath)
+    disconnect()
+    result
+  }
 
   @throws(classOf[Exception])
   def lastModified(file : String) : Long = {
@@ -353,7 +361,11 @@ class SftpFileHandler extends SmartFileHandler{
   }
 
   @throws(classOf[Exception])
-  def exists(): Boolean = exists(getFullPath)
+  def exists(): Boolean = {
+    val result = exists(getFullPath)
+    disconnect()
+    result
+  }
 
   @throws(classOf[Exception])
   def exists(file : String): Boolean = {
@@ -412,6 +424,8 @@ class SftpFileHandler extends SmartFileHandler{
     logger.warn("Sftp File Handler - finished checking isFile of file %s. Operation took %fms. StartTime:%d, EndTime:%d. callstack %s".
       format(getFullPath, elapsedTm/1000000.0,elapsedTm, endTm, callstack))
 
+    disconnect()
+
     result
   }
 
@@ -428,6 +442,8 @@ class SftpFileHandler extends SmartFileHandler{
       map(s =>s.getClassName +"."+ s.getMethodName + "("+s.getLineNumber+")").mkString("\n")
     logger.warn("Sftp File Handler - finished checking isDirectory of file %s. Operation took %fms. StartTime:%d, EndTime:%d. callstack %s".
       format(getFullPath, elapsedTm/1000000.0,elapsedTm, endTm, callstack))
+
+    disconnect()
 
     result
   }
@@ -511,7 +527,7 @@ class SftpFileHandler extends SmartFileHandler{
 
   def disconnect() : Unit = {
     try{
-      logger.info("Closing SFTP session from disconnect()")
+      logger.warn("Closing SFTP session from disconnect(). original file path is " + getFullPath)
       if(channelSftp != null) channelSftp.exit()
       if(session != null) session.disconnect()
 

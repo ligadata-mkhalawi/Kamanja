@@ -1286,7 +1286,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     try {
 
       logger.info("SMART FILE CONSUMER Moving File" + originalFilePath + " to " + targetMoveDir)
-      if (fileHandler.exists()) {
+      //if (fileHandler.exists()) {
         val targetDirHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, targetMoveDir)
 
         //base target dir already exists, but might need to build sub-dirs corresponding to input dir structure
@@ -1302,10 +1302,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
           logger.warn("SMART FILE CONSUMER - Target dir not found and could not be created:" + targetMoveDir)
           false
         }
-      } else {
+      /*} else {
         LOG.warn("SMART FILE CONSUMER File has been deleted " + originalFilePath)
         true
-      }
+      }*/
     }
     catch{
       case e : Exception => {
