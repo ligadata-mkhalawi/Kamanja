@@ -159,11 +159,11 @@ public class KafkaStatusRecorder implements StatusCollectable {
                 if (pair.getKey().trim().equalsIgnoreCase("kafka.topic")) {
                     statusTopic =  pair.getValue();
                 }
-                else if ( (pair.getKey().trim().equalsIgnoreCase("kafka.maxMessageAreaBytes")) ) {
+                else if ( (pair.getKey().trim().equalsIgnoreCase("statusProcessor.maxMessageAreaBytes")) ) {
                     maxMessageSize = java.lang.Math.max(Long.parseLong(pair.getValue()) - 1024, 0);
                     logger.info("Total usable area for optional messages is " + maxMessageSize);
                 }
-                else if ((pair.getKey().trim().equalsIgnoreCase("kafka.displayComponentName")) ) {
+                else if ((pair.getKey().trim().equalsIgnoreCase("adpatermmessage.processor.displayName")) ) {
                     componentName = pair.getValue();
                 }
                 else {
