@@ -101,6 +101,11 @@ public class AdapterConfiguration {
 
 	public static final String KAFKA_POLL_INTERVAL = "poll.interval";
 
+	// values for StatusRecorder
+	public static final String STATUS_IMPL = "statuscollector.impl";
+	public static final String STATUS_IMPL_INIT_PARMS= "statuscollector.parms";
+
+
 	private Properties properties;
 
 	public AdapterConfiguration() throws IOException {
