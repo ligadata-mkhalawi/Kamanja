@@ -724,12 +724,20 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
   }
 
 
+  private def filterQueuedFiles(files : Array[FileObject]) : Array[FileObject] = {
+    if(files == null) return Array[FileObject]()
+    files.filter(f => !filesStatusMap.contains(f.getURL.toString))
+  }
+
   private def findDirModifiedDirectChilds(parentFolder : String, parentFolderDepth : Int, manager : StandardFileSystemManager,
                                           modifiedDirs : ArrayBuffer[(String, Int)], modifiedFiles : Map[SmartFileHandler, FileChangeType], isFirstCheck : Boolean){
     val parentFolderHashed = hashPath(parentFolder)//used for logging since path contains user and password
 
     logger.info("SFTP Changes Monitor - listing dir " + parentFolderHashed)
-    val directChildren = getRemoteFolderContents(parentFolder, manager).sortWith(_.getContent.getLastModifiedTime < _.getContent.getLastModifiedTime)
+    val filteredFiles = filterQueuedFiles(getRemoteFolderContents(parentFolder, manager))
+    logger.warn("filteredFiles: "+filteredFiles.map(f=>f.getURL.toString).mkString(","))
+    val directChildren = filteredFiles.sortWith(_.getContent.getLastModifiedTime < _.getContent.getLastModifiedTime)
+
     logger.debug("SftpChangesMonitor - Found following children " + directChildren.map(c=>c.getURL.toString).mkString(","))
 
     var changeType : FileChangeType = null //new, modified
@@ -744,7 +752,8 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
       if (processedFilesMap.contains(uniquePath))//TODO what if file was moved then copied again?
         logger.info("Smart File Consumer (Sftp) - File {} already processed, ignoring - Adapter {}", uniquePath, adapterName)
       else {
-        if (!filesStatusMap.contains(uniquePath)) {
+        //if (!filesStatusMap.contains(uniquePath))
+        {
           //path is new
           isChanged = true
           changeType = if (isFirstCheck) AlreadyExisting else New
@@ -755,18 +764,7 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
           /*if (currentChildEntry.isDirectory)
             modifiedDirs += uniquePath*/
         }
-        else {
-          logger.debug("SftpChangesMonitor - file {} is already in monitors filesStatusMap", uniquePath)
-/*
-          val storedEntry = filesStatusMap.get(uniquePath).get
-          if (currentChildEntry.lastModificationTime > storedEntry.lastModificationTime) {
-            //file has been modified
-            storedEntry.lastModificationTime = currentChildEntry.lastModificationTime
-            isChanged = true
 
-            changeType = Modified
-          }*/
-        }
 
         //TODO : this method to find changed folders is not working as expected. so for now check all dirs
         if (currentChildEntry.isDirectory &&
