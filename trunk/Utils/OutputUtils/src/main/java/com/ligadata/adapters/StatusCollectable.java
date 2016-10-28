@@ -22,7 +22,7 @@ public interface StatusCollectable {
      * Add a message to appear under the Messages[] array in the Status message
      * @param msg
      */
-    public void addStatusMessage(String key, String msg);
+    public void addStatusMessage(String key, String msg, boolean isRequired);
 
     /**
      * Set the completion code for this batch

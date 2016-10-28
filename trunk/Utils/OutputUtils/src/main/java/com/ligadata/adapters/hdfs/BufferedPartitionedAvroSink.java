@@ -136,26 +136,27 @@ public class BufferedPartitionedAvroSink implements BufferedMessageProcessor {
 					}
 					logger.info("Sucessfully wrote " + records.size() + " records to partition [" + key + "]");
 
-                   // statusWriter.addStatusMessage(key, "Sucessfully wrote " + records.size() + " records to partition [" + key + "]");
 					writtenKeysSet.add(key);
 					hdfsWriter.close();
-                    statusWriter.addStatus(key, String.valueOf(writtenMessages),  String.valueOf(0));
+                    if (statusWriter != null)
+                        statusWriter.addStatus(key, String.valueOf(writtenMessages),  String.valueOf(0));
 				}
 			} catch(Exception e) {
                 logger.warn("Exception encountered during processAll ", e);
 				removeProcessedKeys(writtenKeysSet);
-                statusWriter.addStatus(key, String.valueOf("0"), String.valueOf(totalMessages) );
-
-                statusWriter.addStatusMessage(key, "Failed to write record due to " + getCauseForDisplay(e));
-                statusWriter.setCompletionCode(key,"-1");
-
-                statusWriter.externalizeStatusMessage(batchid, retryNumber, "BufferedPartitionedAvroSink");
+                if (statusWriter != null) {
+                    statusWriter.addStatus(key, String.valueOf("0"), String.valueOf(totalMessages) );
+                    statusWriter.addStatusMessage(key, "Failed to write record due to " + getCauseForDisplay(e), true);
+                    statusWriter.setCompletionCode(key,"-1");
+                    statusWriter.externalizeStatusMessage(batchid, retryNumber, "BufferedPartitionedAvroSink");
+                }
 				hdfsWriter.closeAll();
 				throw e;
 			}
 		}
 		removeProcessedKeys(writtenKeysSet);
-        statusWriter.externalizeStatusMessage(batchid, retryNumber, "BufferedPartitionedAvroSink");
+        if (statusWriter != null)
+            statusWriter.externalizeStatusMessage(batchid, retryNumber, "BufferedPartitionedAvroSink");
 	}
 
 	@Override

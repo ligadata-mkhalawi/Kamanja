@@ -85,25 +85,32 @@ public class BufferedJDBCSink extends AbstractJDBCSink {
             for (int i = 0; i < updateCounts.length; i++) {
                 if (updateCounts[i] == Statement.EXECUTE_FAILED) {
                     logger.error("failed to execute this statement : " + buffer.get(i));
-                    statusWriter.addStatusMessage(this.STATUS_KEY, "failed to execute this statement : " + buffer.get(i));
-                    statusWriter.setCompletionCode(this.STATUS_KEY,"1");
+                    if (statusWriter != null) {
+                        statusWriter.addStatusMessage(this.STATUS_KEY, "failed to execute this statement : " + buffer.get(i), false);
+                        statusWriter.setCompletionCode(this.STATUS_KEY,"1");
+                    }
                     failedStatements++;
                 }
             }
-            statusWriter.addStatusMessage(this.STATUS_KEY, "BatchUpdateException encountered " + getCauseForDisplay(e));
+            if (statusWriter != null)
+              statusWriter.addStatusMessage(this.STATUS_KEY, "BatchUpdateException encountered " + getCauseForDisplay(e), true);
         } finally {
             try {
-                if (totalStatements == failedStatements )
+                if ((totalStatements == failedStatements && statusWriter != null))
                     statusWriter.setCompletionCode(this.STATUS_KEY,"-1");
                 connection.commit();
-                statusWriter.addStatus(this.STATUS_KEY, String.valueOf(totalStatements - failedStatements), String.valueOf(failedStatements));
-                statusWriter.externalizeStatusMessage(batchId, retryNumber, "BufferedJDBCSink");
+                if (statusWriter != null) {
+                    statusWriter.addStatus(this.STATUS_KEY, String.valueOf(totalStatements - failedStatements), String.valueOf(failedStatements));
+                    statusWriter.externalizeStatusMessage(batchId, retryNumber, "BufferedJDBCSink");
+                }
             } catch (Exception e) {
                 logger.error("Error committing messages : " + e.getMessage(), e);
-                statusWriter.addStatusMessage(this.STATUS_KEY, "Error committing messages : " + getCauseForDisplay(e));
-                statusWriter.addStatus(this.STATUS_KEY, String.valueOf(0), String.valueOf(totalStatements));
-                statusWriter.setCompletionCode(this.STATUS_KEY,"-1");
-                statusWriter.externalizeStatusMessage(batchId, retryNumber, "BufferedJDBCSink");
+                if (statusWriter != null) {
+                    statusWriter.addStatusMessage(this.STATUS_KEY, "Error committing messages : " + getCauseForDisplay(e), true);
+                    statusWriter.addStatus(this.STATUS_KEY, String.valueOf(0), String.valueOf(totalStatements));
+                    statusWriter.setCompletionCode(this.STATUS_KEY,"-1");
+                    statusWriter.externalizeStatusMessage(batchId, retryNumber, "BufferedJDBCSink");
+                }
             }
             try {
                 statement.close();
