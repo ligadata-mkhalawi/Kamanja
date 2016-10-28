@@ -82,6 +82,10 @@ class SftpFileHandler extends SmartFileHandler{
       session = jsch.getSession(connectionConfig.userId, host, port)
       session.setUserInfo(ui)
       session.connect()
+
+      val callstack = Thread.currentThread().getStackTrace().drop(1).take(25).
+        map(s =>s.getClassName +"."+ s.getMethodName + "("+s.getLineNumber+")").mkString("\n")
+      logger.warn("new sftp session is opened. callstack is: " + callstack)
     }
 
     if(channelSftp == null || !channelSftp.isConnected || channelSftp.isClosed){
@@ -137,6 +141,7 @@ class SftpFileHandler extends SmartFileHandler{
     try {
       /*manager = new StandardFileSystemManager()
       manager.init()*/
+      getNewSession()
 
       val is = getDefaultInputStream()
       if (!isBinary) {
@@ -219,11 +224,9 @@ class SftpFileHandler extends SmartFileHandler{
         logger.error("Sftp File Handler - Error while trying to moving sftp file " +
           getFullPath + " to " + remoteNewFilePath, ex)
         false
-
     }
     finally{
-      if(channelSftp != null) channelSftp.exit()
-      if(session != null) session.disconnect()
+      disconnect()
     }
 
   }
@@ -236,12 +239,7 @@ class SftpFileHandler extends SmartFileHandler{
 
     try {
       getNewSession()
-
       channelSftp.rm(getFullPath)
-
-      channelSftp.exit()
-      session.disconnect()
-
       true
     }
     catch {
@@ -255,8 +253,7 @@ class SftpFileHandler extends SmartFileHandler{
 
     }
     finally{
-      if(channelSftp != null) channelSftp.exit()
-      if(session != null) session.disconnect()
+      disconnect()
     }
   }
 
@@ -268,12 +265,7 @@ class SftpFileHandler extends SmartFileHandler{
 
     try {
       getNewSession
-
       channelSftp.rm(fileName)
-
-      channelSftp.exit()
-      session.disconnect()
-
       true
     }
     catch {
@@ -287,8 +279,7 @@ class SftpFileHandler extends SmartFileHandler{
 
     }
     finally{
-      if(channelSftp != null) channelSftp.exit()
-      if(session != null) session.disconnect()
+      disconnect()
     }
   }
 
@@ -308,8 +299,7 @@ class SftpFileHandler extends SmartFileHandler{
       in = null
     }
 
-    if(channelSftp != null) channelSftp.exit()
-    if(session != null) session.disconnect()
+    disconnect()
   }
 
   @throws(classOf[Exception])
@@ -518,16 +508,17 @@ class SftpFileHandler extends SmartFileHandler{
         false
 
     } finally {
-      logger.debug("Closing SFTP session from mkdirs()")
-      if(channelSftp != null) channelSftp.exit()
-      if(session != null) session.disconnect()
+      disconnect()
     }
   }
 
 
   def disconnect() : Unit = {
     try{
-      logger.warn("Closing SFTP session from disconnect(). original file path is " + getFullPath)
+      val callstack = Thread.currentThread().getStackTrace().drop(1).take(25).
+        map(s =>s.getClassName +"."+ s.getMethodName + "("+s.getLineNumber+")").mkString("\n")
+      logger.warn("Closing SFTP session from disconnect(). original file path is {}. callstack is{}", getFullPath, callstack)
+
       if(channelSftp != null) channelSftp.exit()
       if(session != null) session.disconnect()
 
