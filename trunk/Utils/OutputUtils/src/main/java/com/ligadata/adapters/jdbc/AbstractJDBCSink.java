@@ -22,6 +22,7 @@ import com.ligadata.adapters.StatusCollectable;
 
 public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 	static Logger logger = LogManager.getLogger(AbstractJDBCSink.class);
+    static final String STATUS_KEY = new String("SqlBatch");
 
 	protected BasicDataSource dataSource;
 	protected SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");

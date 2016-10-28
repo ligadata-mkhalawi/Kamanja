@@ -15,7 +15,6 @@ import com.ligadata.adapters.AdapterConfiguration;
 
 public class BufferedJDBCSink extends AbstractJDBCSink {
     static Logger logger = LogManager.getLogger(BufferedJDBCSink.class);
-    static final String STATUS_KEY = new String("SqlBatch");
     private String insertStatement;
     private List<ParameterMapping> insertParams;
     private ArrayList<JSONObject> buffer;
