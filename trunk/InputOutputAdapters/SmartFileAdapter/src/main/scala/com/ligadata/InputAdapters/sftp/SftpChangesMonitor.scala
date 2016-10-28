@@ -734,17 +734,16 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
     val parentFolderHashed = hashPath(parentFolder)//used for logging since path contains user and password
 
     logger.info("SFTP Changes Monitor - listing dir " + parentFolderHashed)
-    val filteredFiles = filterQueuedFiles(getRemoteFolderContents(parentFolder, manager))
+    val allDirectChildren = getRemoteFolderContents(parentFolder, manager)
+    val filteredFiles = filterQueuedFiles(allDirectChildren).
+      sortWith(_.getContent.getLastModifiedTime < _.getContent.getLastModifiedTime)
     logger.warn("filteredFiles: "+filteredFiles.map(f=>f.getURL.toString).mkString(","))
-    val directChildren = filteredFiles.sortWith(_.getContent.getLastModifiedTime < _.getContent.getLastModifiedTime)
-
-    logger.debug("SftpChangesMonitor - Found following children " + directChildren.map(c=>c.getURL.toString).mkString(","))
 
     var changeType : FileChangeType = null //new, modified
 
     //logger.debug("got the following children for checked folder " + directChildren.map(c => c.getURL.toString).mkString(", "))
     //process each file reported by FS cache.
-    directChildren.foreach(child => {
+    filteredFiles.foreach(child => {
       val currentChildEntry = makeFileEntry(child, parentFolder)
       var isChanged = false
       val uniquePath = child.getURL.toString
@@ -794,7 +793,7 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
 
     filesStatusMap.values.foreach(fileEntry =>{
       if(isDirectParentDir(fileEntry, parentFolder)){
-        if(!directChildren.exists(fileStatus => fileStatus.getURL.toString.equals(fileEntry.name))) {
+        if(!allDirectChildren.exists(fileStatus => fileStatus.getURL.toString.equals(fileEntry.name))) {
           //key that is no more in the folder => file/folder deleted
           logger.debug("file {} is no more under folder  {}, will be deleted from map", fileEntry.name, fileEntry.parent)
           deletedFiles += fileEntry.name
