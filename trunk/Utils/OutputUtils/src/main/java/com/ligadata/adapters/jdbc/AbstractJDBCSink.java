@@ -166,6 +166,11 @@ public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 			}
 
 		} catch (Exception e) {
+			if (statusWriter != null) {
+				statusWriter.addStatusMessage(this.STATUS_KEY, "Error binding parameters: " + e.getMessage() + " for Parameter index : [" + paramIndex +
+					"] Key : [" + key + "] value : [" + value + "] - ignoring message : " + jsonObject.toJSONString(), false);
+				statusWriter.setCompletionCode(this.STATUS_KEY,"1");
+			}
 			logger.error("Error binding parameters: " + e.getMessage() + " for Parameter index : [" + paramIndex +
 					"] Key : [" + key + "] value : [" + value + "] - ignoring message : " + jsonObject.toJSONString(), e);
 			try {
