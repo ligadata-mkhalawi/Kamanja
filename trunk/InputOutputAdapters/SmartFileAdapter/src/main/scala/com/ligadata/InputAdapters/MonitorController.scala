@@ -244,8 +244,8 @@ class MonitorController {
                   if (fileTuple._2._1 == thisFileOrigLength) {
                     // If the length is > 0, we assume that the file completed transfer... (very problematic, but unless
                     // told otherwise by BofA, not sure what else we can do here.
-                    val isValid = MonitorUtils.isValidFile(fileHandler, false)
-                    fileHandler.disconnect() //TODO
+                    val isValid = MonitorUtils.isValidFile(genericFileHandler, fileHandler.getFullPath, false)
+                    //fileHandler.disconnect()
                     if (thisFileOrigLength > 0 && isValid) {
                       if (isEnqueued(fileTuple._1)) {
                         logger.debug("SMART FILE CONSUMER (MonitorController):  File already enqueued " + fileHandler.getFullPath)

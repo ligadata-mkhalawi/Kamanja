@@ -12,6 +12,8 @@ public interface SmartFileHandler {
 
     //gets input stream based on the fs type (das/nas, hdfs, sft), usually used for file type detecting purposes
     InputStream getDefaultInputStream() throws KamanjaException;
+    InputStream getDefaultInputStream(String fileName) throws KamanjaException;
+
     //prepares input stream based on the fs type and also file type itself (plain, gzip, bz2, lzo), so data can be read directly
     InputStream openForRead() throws KamanjaException;
     String getOpenedStreamFileType();

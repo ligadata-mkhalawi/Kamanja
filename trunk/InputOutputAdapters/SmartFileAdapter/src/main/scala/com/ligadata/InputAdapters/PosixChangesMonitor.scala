@@ -62,6 +62,7 @@ class PosixFileHandler extends SmartFileHandler{
   def getParentDir : String = MonitorUtils.simpleDirPath(fileObject.getParent.trim)
 
   //gets the input stream according to file system type - POSIX here
+  def getDefaultInputStream(file : String) : InputStream = ???
   def getDefaultInputStream() : InputStream = {
     logger.info("Posix File Handler - opening file " + getFullPath)
     val inputStream : InputStream =

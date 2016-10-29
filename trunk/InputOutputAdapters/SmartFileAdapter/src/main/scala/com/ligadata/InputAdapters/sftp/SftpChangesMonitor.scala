@@ -108,21 +108,33 @@ class SftpFileHandler extends SmartFileHandler{
 
   //gets the input stream according to file system type - SFTP here
   def getDefaultInputStream : InputStream = {
+    getDefaultInputStream(getFullPath)
+  }
+  def getDefaultInputStream(file : String) : InputStream = {
 
-    getNewSession()
-
-    logger.info("Sftp File Handler - opening file " + getFullPath)
+    logger.info("Sftp File Handler - opening file " + file)
     val inputStream : InputStream =
       try {
-        channelSftp.get(remoteFullPath)
+        val startTm = System.nanoTime
+
+        getNewSession()
+        val is = channelSftp.get(file)
+
+        val endTm = System.nanoTime
+        val elapsedTm = endTm - startTm
+
+        logger.info("Sftp File Handler - finished openeing stream from file %s. Operation took %fms. StartTime:%d, EndTime:%d.".
+          format(file, elapsedTm/1000000.0,elapsedTm, endTm) + MonitorUtils.getCallStack())
+
+        is
       }
       catch {
         case e: Exception =>
-          logger.error("Error getting input stream for file " + getFullPath, e)
+          logger.error("Error getting input stream for file " + file, e)
           null
 
         case e: Throwable =>
-          logger.error("Error getting input stream for file " + getFullPath, e)
+          logger.error("Error getting input stream for file " + file, e)
           null
 
       }
@@ -144,7 +156,7 @@ class SftpFileHandler extends SmartFileHandler{
 
       val is = getDefaultInputStream()
       if (!isBinary) {
-        fileType = CompressionUtil.getFileType(this, null)
+        fileType = CompressionUtil.getFileType(this, getFullPath, null)
         in = CompressionUtil.getProperInputStream(is, fileType)
       } else {
         fileType = FileType.UNKNOWN

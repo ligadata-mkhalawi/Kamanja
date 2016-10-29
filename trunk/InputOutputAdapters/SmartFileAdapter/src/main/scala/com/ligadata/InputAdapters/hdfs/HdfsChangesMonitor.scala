@@ -85,6 +85,7 @@ class HdfsFileHandler extends SmartFileHandler {
   }
 
   //gets the input stream according to file system type - HDFS here
+  def getDefaultInputStream(file : String) : InputStream = ???
   def getDefaultInputStream(): InputStream = {
 
     hdFileSystem = FileSystem.newInstance(hdfsConfig)

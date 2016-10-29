@@ -29,34 +29,34 @@ object MonitorUtils {
   //Default allowed content types -
   val validContentTypes  = Set(PLAIN, GZIP, BZIP2, LZO) //might change to get that from some configuration
 
-  def isValidFile(fileHandler: SmartFileHandler, checkExistence : Boolean): Boolean = {
+  def isValidFile(genericFileHandler: SmartFileHandler, filePath : String, checkExistence : Boolean): Boolean = {
     try {
-      val filepathParts = fileHandler.getFullPath.split("/")
+      val filepathParts = filePath.split("/")
       val fileName = filepathParts(filepathParts.length - 1)
       if (fileName.startsWith("."))
         return false
 
       //val fileSize = fileHandler.length
       //Check if the File exists
-      if (!checkExistence || fileHandler.exists) {
+      if (!checkExistence || genericFileHandler.exists(filePath)) {
 
-        val contentType = CompressionUtil.getFileType(fileHandler, "")
+        val contentType = CompressionUtil.getFileType(genericFileHandler, filePath, "")
         if (validContentTypes contains contentType) {
           return true
         } else {
           //Log error for invalid content type
-          logger.error("SMART FILE CONSUMER (MonitorUtils): Invalid content type " + contentType + " for file " + fileHandler.getFullPath)
+          logger.error("SMART FILE CONSUMER (MonitorUtils): Invalid content type " + contentType + " for file " + filePath)
         }
       }
       else {
         //File doesnot exists - could be already processed
-        logger.warn("SMART FILE CONSUMER (MonitorUtils): File does not exist anymore " + fileHandler.getFullPath)
+        logger.warn("SMART FILE CONSUMER (MonitorUtils): File does not exist anymore " + filePath)
       }
       return false
     }
     catch{
       case e : Throwable =>
-        logger.debug("SMART FILE CONSUMER (MonitorUtils): Error while checking validity of file "+fileHandler.getDefaultInputStream, e)
+        logger.debug("SMART FILE CONSUMER (MonitorUtils): Error while checking validity of file "+filePath, e)
         false
     }
   }
