@@ -47,7 +47,7 @@ lazy val KamanjaInternalDeps = project.in(file("KamanjaInternalDeps")).configs(T
   Serialize, ZooKeeperListener, ZooKeeperLeaderLatch, KamanjaUtils, TransactionService, StorageManager, PmmlCompiler, ZooKeeperClient, OutputMsgDef, SecurityAdapterBase, HeartBeat,
   JpmmlFactoryOfModelInstanceFactory, JarFactoryOfModelInstanceFactory, KamanjaVersion, InstallDriverBase, BaseFunctions, FileSimpleInputOutputAdapters, SimpleEnvContextImpl,
   GenericMsgCompiler, MethodExtractor, JsonDataGen, Controller, AuditAdapters, CustomUdfLib, UtilityService,
-  UtilsForModels, MessageCompiler, jtm, Dag, NodeInfoExtract, SmartFileAdapter, Cache, CacheImp, CsvSerDeser, JsonSerDeser, KBinarySerDeser)
+  UtilsForModels, MessageCompiler, jtm, Dag, NodeInfoExtract, SmartFileAdapter, Cache, CacheImp, CsvSerDeser, JsonSerDeser, KBinarySerDeser, EncryptUtils)
 
 ////////////////////////
 
@@ -144,6 +144,8 @@ lazy val NodeInfoExtract = project.in(file("Utils/NodeInfoExtract")).configs(Tes
 lazy val Controller = project.in(file("Utils/Controller")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KafkaAdapters_v8 % "provided", ZooKeeperClient, ZooKeeperListener, KafkaSimpleInputOutputAdapters, Exceptions)
 
 lazy val SimpleApacheShiroAdapter = project.in(file("Utils/Security/SimpleApacheShiroAdapter")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, Exceptions, SecurityAdapterBase)
+
+lazy val EncryptUtils = project.in(file("Utils/EncryptUtils")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided")
 
 lazy val AuditAdapters = project.in(file("Utils/Audit")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageManager, Exceptions, AuditAdapterBase, Serialize)
 

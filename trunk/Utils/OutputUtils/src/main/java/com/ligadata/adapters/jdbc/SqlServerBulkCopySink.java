@@ -41,9 +41,13 @@ public class SqlServerBulkCopySink extends AbstractJDBCSink {
 	public void init(AdapterConfiguration config, StatusCollectable sw) throws Exception {
 		super.init(config, sw);
 
+		//connectionStr = config.getProperty(AdapterConfiguration.JDBC_URL) 
+		//		+ ";user=" + config.getProperty(AdapterConfiguration.JDBC_USER) 
+		//		+ ";password=" + config.getProperty(AdapterConfiguration.JDBC_PASSWORD);
+
 		connectionStr = config.getProperty(AdapterConfiguration.JDBC_URL) 
 				+ ";user=" + config.getProperty(AdapterConfiguration.JDBC_USER) 
-				+ ";password=" + config.getProperty(AdapterConfiguration.JDBC_PASSWORD);
+		    + ";password=" + getPassword(config);
 
 		dataTimeFormatStr = config.getProperty(AdapterConfiguration.INPUT_DATE_FORMAT, "yyyy-MM-dd'T'HH:mm:ss.SSS");
 		fieldSeperator = config.getProperty(AdapterConfiguration.FILE_FIELD_SEPERATOR, "\u0000");

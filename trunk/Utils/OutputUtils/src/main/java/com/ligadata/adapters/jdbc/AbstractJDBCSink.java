@@ -19,6 +19,7 @@ import org.json.simple.JSONObject;
 import com.ligadata.adapters.AdapterConfiguration;
 import com.ligadata.adapters.BufferedMessageProcessor;
 import com.ligadata.adapters.StatusCollectable;
+import com.ligadata.adapters.DecryptUtils;
 
 public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 	static Logger logger = LogManager.getLogger(AbstractJDBCSink.class);
@@ -184,13 +185,84 @@ public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 		return success;
 	}
 
+	private String getDecryptedPassword(AdapterConfiguration config) throws Exception {
+	    try{
+		// use the enrypted password if available
+		String encryptedPass = config.getProperty(AdapterConfiguration.ENCRYPTED_PASSWORD);
+		if (encryptedPass == null ){
+		    logger.warn("The properties " + AdapterConfiguration.ENCRYPTED_PASSWORD + " are not defined in properties file ");
+		    return null;
+		}
+		else{
+		    String privateKeyFile = config.getProperty(AdapterConfiguration.PRIVATE_KEY_FILE);		       
+		    if ( privateKeyFile == null ){
+			logger.warn("The property " + AdapterConfiguration.ENCRYPTED_PASSWORD + " is defined but the property " +  AdapterConfiguration.PRIVATE_KEY_FILE + " not defined");
+			return null;
+		    }
+		    String algorithm = config.getProperty(AdapterConfiguration.ENCRYPT_DECRYPT_ALGORITHM);
+		    if ( algorithm == null ){
+			logger.warn("The property " + AdapterConfiguration.ENCRYPTED_PASSWORD + " is defined but the property " +  AdapterConfiguration.ENCRYPT_DECRYPT_ALGORITHM + " not defined");
+			return null;
+		    }
+		    logger.info("algorithm      => " + algorithm);
+		    logger.info("encryptedPass  => " + encryptedPass);
+		    logger.info("privateKeyFile => " + privateKeyFile);
+		    byte[] passBytes = DecryptUtils.decode(encryptedPass);
+		    String pass = DecryptUtils.decrypt(algorithm,passBytes,privateKeyFile);
+		    return pass;
+		}
+	    } catch (Exception e) {
+		throw new Exception(e);
+	    }
+	}
+
+	private String getDecodedPassword(AdapterConfiguration config) throws Exception {
+	    try{
+		// use the enrypted password if available
+		String encodedPass = config.getProperty(AdapterConfiguration.ENCODED_PASSWORD);
+		if (encodedPass == null ){
+		    logger.warn("The properties " + AdapterConfiguration.ENCODED_PASSWORD + " are not defined in properties file ");
+		    return null;
+		}
+		else{
+		    logger.info("encodedPass  => " + encodedPass);
+		    String pass = new String(DecryptUtils.decode(encodedPass));
+		    return pass;
+		}
+	    } catch (Exception e) {
+		throw new Exception(e);
+	    }
+	}
+
+
+	protected String getPassword(AdapterConfiguration config) throws Exception {
+	    try{
+		String pass = getDecryptedPassword(config);
+		if( pass == null ){
+		    pass = getDecodedPassword(config);
+		    if( pass == null ){
+			pass = config.getProperty(AdapterConfiguration.JDBC_PASSWORD);
+		    }
+		}
+		return pass;
+	    } catch (Exception e) {
+		throw new Exception(e);
+	    }
+	}
+
+
 	@Override
 	public void init(AdapterConfiguration config,  StatusCollectable sw) throws Exception {
 		dataSource = new BasicDataSource();
 		dataSource.setDriverClassName(config.getProperty(AdapterConfiguration.JDBC_DRIVER));
 		dataSource.setUrl(config.getProperty(AdapterConfiguration.JDBC_URL));
 		dataSource.setUsername(config.getProperty(AdapterConfiguration.JDBC_USER));
-		dataSource.setPassword(config.getProperty(AdapterConfiguration.JDBC_PASSWORD));
+		//dataSource.setPassword(config.getProperty(AdapterConfiguration.JDBC_PASSWORD));
+
+		String pass = getPassword(config);
+		dataSource.setPassword(pass);
+		dataSource.setDefaultAutoCommit(false);
+
 		dataSource.setDefaultAutoCommit(false);
 
 		dataSource.setMaxTotal(Integer.parseInt(config.getProperty(AdapterConfiguration.DBCP_MAX_TOTAL, "2")));

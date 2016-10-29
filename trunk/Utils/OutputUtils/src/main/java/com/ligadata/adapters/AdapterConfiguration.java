@@ -105,6 +105,10 @@ public class AdapterConfiguration {
 	public static final String STATUS_IMPL = "statuscollector.impl";
 	public static final String STATUS_IMPL_INIT_PARMS= "statuscollector.parms";
 
+	public static final String ENCRYPTED_PASSWORD = "encrypted.password";
+	public static final String PRIVATE_KEY_FILE = "private.key.file";
+        public static final String ENCRYPT_DECRYPT_ALGORITHM = "encrypt.decrypt.algorithm";
+        public static final String ENCODED_PASSWORD = "encoded.password";
 
 	private Properties properties;
 
