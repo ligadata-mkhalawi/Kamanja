@@ -90,8 +90,9 @@ class GenerateKeys {
    
     try{
       val cipherText = EncryptionUtil.encrypt(pAlgorithm,pPassword, publicKeyFile);
-      System.out.println("Encrypted Password => " + cipherText);
-      logger.info("Encrypted Password => " + cipherText);
+      val encodedStr = EncryptionUtil.encode(cipherText);
+      System.out.println("Encrypted Password => " + encodedStr);
+      logger.info("Encrypted Password => " + encodedStr);
       return 0
     } catch {
       case e: Exception => throw new Exception("Failed to encrypt password", e)
