@@ -114,7 +114,7 @@ class HdfsFileHandler extends SmartFileHandler {
     try {
       val is = getDefaultInputStream()
       if (!isBinary) {
-        fileType = CompressionUtil.getFileType(this, null)
+        fileType = CompressionUtil.getFileType(this, getFullPath, null)
         in = CompressionUtil.getProperInputStream(is, fileType)
       } else {
         fileType = FileType.UNKNOWN

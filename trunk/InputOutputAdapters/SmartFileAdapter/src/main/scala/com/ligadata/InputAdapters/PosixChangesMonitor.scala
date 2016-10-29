@@ -118,7 +118,7 @@ class PosixFileHandler extends SmartFileHandler{
       if(ftype == null || ftype.length == 0){
         //get file type
         if (!isBinary) {
-          fileType = CompressionUtil.getFileType(this, null)
+          fileType = CompressionUtil.getFileType(this, getFullPath, null)
           in = CompressionUtil.getProperInputStream(is, fileType)
         } else {
           fileType = FileType.UNKNOWN
