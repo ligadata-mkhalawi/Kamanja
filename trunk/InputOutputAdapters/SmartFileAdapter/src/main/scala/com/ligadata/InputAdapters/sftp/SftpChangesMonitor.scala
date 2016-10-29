@@ -83,9 +83,8 @@ class SftpFileHandler extends SmartFileHandler{
       session.setUserInfo(ui)
       session.connect()
 
-      val callstack = Thread.currentThread().getStackTrace().drop(1).take(25).
-        map(s =>s.getClassName +"."+ s.getMethodName + "("+s.getLineNumber+")").mkString("\n")
-      logger.warn("new sftp session is opened. callstack is: " + callstack)
+
+      logger.info("new sftp session is opened." + MonitorUtils.getCallStack())
     }
 
     if(channelSftp == null || !channelSftp.isConnected || channelSftp.isClosed){
@@ -311,10 +310,9 @@ class SftpFileHandler extends SmartFileHandler{
 
     val endTm = System.nanoTime
     val elapsedTm = endTm - startTm
-    val callstack = Thread.currentThread().getStackTrace().drop(1).take(25).
-      map(s =>s.getClassName +"."+ s.getMethodName + "("+s.getLineNumber+")").mkString("\n")
-    logger.warn("Sftp File Handler - finished checking length of file %s. Operation took %fms. StartTime:%d, EndTime:%d. callstack %s".
-      format(file, elapsedTm/1000000.0,elapsedTm, endTm, callstack))
+
+    logger.info("Sftp File Handler - finished checking length of file %s. Operation took %fms. StartTime:%d, EndTime:%d.".
+      format(file, elapsedTm/1000000.0,elapsedTm, endTm) + MonitorUtils.getCallStack())
 
     result
   }
@@ -342,10 +340,9 @@ class SftpFileHandler extends SmartFileHandler{
 
     val endTm = System.nanoTime
     val elapsedTm = endTm - startTm
-    val callstack = Thread.currentThread().getStackTrace().drop(1).take(25).
-      map(s =>s.getClassName +"."+ s.getMethodName + "("+s.getLineNumber+")").mkString("\n")
-    logger.warn("Sftp File Handler - finished checking lastModified of file %s. Operation took %fms. StartTime:%d, EndTime:%d. callstack %s".
-      format(file, elapsedTm/1000000.0,elapsedTm, endTm, callstack))
+
+    logger.info("Sftp File Handler - finished checking lastModified of file %s. Operation took %fms. StartTime:%d, EndTime:%d.".
+      format(file, elapsedTm/1000000.0,elapsedTm, endTm) + MonitorUtils.getCallStack())
 
     result
   }
@@ -368,11 +365,8 @@ class SftpFileHandler extends SmartFileHandler{
       val endTm = System.nanoTime
       val elapsedTm = endTm - startTm
 
-      val callstack = Thread.currentThread().getStackTrace().drop(1).take(25).
-        map(s =>s.getClassName +"."+ s.getMethodName + "("+s.getLineNumber+")").mkString("\n")
-
-      logger.warn("Sftp File Handler - finished checking existing of file %s. Operation took %fms. StartTime:%d, EndTime:%d. callstack %s".
-        format(file, elapsedTm/1000000.0,elapsedTm, endTm, callstack))
+      logger.info("Sftp File Handler - finished checking existing of file %s. Operation took %fms. StartTime:%d, EndTime:%d.".
+        format(file, elapsedTm/1000000.0,elapsedTm, endTm) + MonitorUtils.getCallStack())
 
       exists
     }
@@ -409,10 +403,9 @@ class SftpFileHandler extends SmartFileHandler{
 
     val endTm = System.nanoTime
     val elapsedTm = endTm - startTm
-    val callstack = Thread.currentThread().getStackTrace().drop(1).take(25).
-      map(s =>s.getClassName +"."+ s.getMethodName + "("+s.getLineNumber+")").mkString("\n")
-    logger.warn("Sftp File Handler - finished checking isFile of file %s. Operation took %fms. StartTime:%d, EndTime:%d. callstack %s".
-      format(getFullPath, elapsedTm/1000000.0,elapsedTm, endTm, callstack))
+
+    logger.info("Sftp File Handler - finished checking isFile of file %s. Operation took %fms. StartTime:%d, EndTime:%d.".
+      format(getFullPath, elapsedTm/1000000.0,elapsedTm, endTm) + MonitorUtils.getCallStack())
 
     disconnect()
 
@@ -428,10 +421,9 @@ class SftpFileHandler extends SmartFileHandler{
 
     val endTm = System.nanoTime
     val elapsedTm = endTm - startTm
-    val callstack = Thread.currentThread().getStackTrace().drop(1).take(25).
-      map(s =>s.getClassName +"."+ s.getMethodName + "("+s.getLineNumber+")").mkString("\n")
-    logger.warn("Sftp File Handler - finished checking isDirectory of file %s. Operation took %fms. StartTime:%d, EndTime:%d. callstack %s".
-      format(getFullPath, elapsedTm/1000000.0,elapsedTm, endTm, callstack))
+
+    logger.info("Sftp File Handler - finished checking isDirectory of file %s. Operation took %fms. StartTime:%d, EndTime:%d.".
+      format(getFullPath, elapsedTm/1000000.0,elapsedTm, endTm) + MonitorUtils.getCallStack())
 
     disconnect()
 
@@ -515,9 +507,8 @@ class SftpFileHandler extends SmartFileHandler{
 
   def disconnect() : Unit = {
     try{
-      val callstack = Thread.currentThread().getStackTrace().drop(1).take(25).
-        map(s =>s.getClassName +"."+ s.getMethodName + "("+s.getLineNumber+")").mkString("\n")
-      logger.warn("Closing SFTP session from disconnect(). original file path is {}. callstack is{}", getFullPath, callstack)
+
+      logger.info("Closing SFTP session from disconnect(). original file path is %s.".format(getFullPath) + MonitorUtils.getCallStack())
 
       if(channelSftp != null) channelSftp.exit()
       if(session != null) session.disconnect()
@@ -603,7 +594,7 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
         override def run() = {
           try {
 
-            var firstCheck = true
+            //var firstCheck = true
 
             while (isMonitoring) {
 
@@ -614,6 +605,7 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
                   val location = dirQueuedInfo._1
                   val isFirstScan = dirQueuedInfo._3
                   val targetRemoteFolder = location.srcDir
+
                   try {
                     val sftpEncodedUri = createConnectionString(connectionConf, targetRemoteFolder)
                     logger.info(s"Checking configured SFTP directory ($targetRemoteFolder)...")
@@ -628,8 +620,8 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
                       val modifiedFiles = Map[SmartFileHandler, FileChangeType]() // these are the modified files found in folder $aFolder
 
                       modifiedDirs.remove(0)
-                      findDirModifiedDirectChilds(aFolder._1, aFolder._2, manager, modifiedDirs, modifiedFiles, firstCheck)
-                      logger.warn("modifiedFiles map is {}", modifiedFiles)
+                      findDirModifiedDirectChilds(aFolder._1, aFolder._2, manager, modifiedDirs, modifiedFiles, isFirstScan)
+                      logger.debug("modifiedFiles map is {}", modifiedFiles)
 
                       //check for file names pattern
                       validModifiedFiles.clear()
@@ -645,7 +637,7 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
                       else
                         validModifiedFiles.appendAll(modifiedFiles)
 
-                      logger.warn("validModifiedFiles size is {}", validModifiedFiles.length.toString)
+                      logger.debug("validModifiedFiles size is {}", validModifiedFiles.length.toString)
                       val orderedModifiedFiles = validModifiedFiles/*.map(tuple => (tuple._1, tuple._2)).toList.
                         sortWith((tuple1, tuple2) => MonitorUtils.compareFiles(tuple1._1, tuple2._1, location) < 0)*/
 
@@ -672,7 +664,9 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
                     case ex: Throwable => logger.error("Smart File Consumer (sftp Monitor) - Error while checking folder " + targetRemoteFolder, ex)
                   }
 
-                  monitoredDirsQueue.reEnqueue(dirQueuedInfo) // so the folder gets monitored again
+                  val updateDirQueuedInfo = (dirQueuedInfo._1, dirQueuedInfo._2, false)//not first scan anymore
+
+                  monitoredDirsQueue.reEnqueue(updateDirQueuedInfo) // so the folder gets monitored again
                 }
                 else {
                   //happens if last time queue head dir was monitored was less than waiting time
@@ -728,7 +722,7 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
     val allDirectChildren = getRemoteFolderContents(parentFolder, manager)
     val filteredFiles = filterQueuedFiles(allDirectChildren).
       sortWith(_.getContent.getLastModifiedTime < _.getContent.getLastModifiedTime)
-    logger.warn("filteredFiles: "+filteredFiles.map(f=>f.getURL.toString).mkString(","))
+    logger.debug("filteredFiles: "+filteredFiles.map(f=>f.getURL.toString).mkString(","))
 
     var changeType : FileChangeType = null //new, modified
 
@@ -748,7 +742,7 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
           isChanged = true
           changeType = if (isFirstCheck) AlreadyExisting else New
 
-          logger.warn("SftpChangesMonitor - file {} is {}", uniquePath, changeType.toString)
+          logger.debug("SftpChangesMonitor - file {} is {}", uniquePath, changeType.toString)
 
           filesStatusMap.put(uniquePath, currentChildEntry)
           /*if (currentChildEntry.isDirectory)

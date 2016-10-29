@@ -263,6 +263,16 @@ object MonitorUtils {
 
     processedFilesMap.put(filePath, timeAsLong)
   }
+
+  def getCallStack() : String = {
+    if(showStackTraceWithLogs) {
+      val callstack = Thread.currentThread().getStackTrace().drop(2).take(25).
+        map(s => s.getClassName + "." + s.getMethodName + "(" + s.getLineNumber + ")").mkString("\n")
+      " Callstack is: " + callstack
+    }
+    else ""
+  }
+  val showStackTraceWithLogs = true
 }
 
 object SmartFileHandlerFactory{
