@@ -732,8 +732,7 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(SmartFileH
 
     logger.info("SFTP Changes Monitor - listing dir " + parentFolderHashed)
     val allDirectChildren = getRemoteFolderContents(parentFolder, manager)
-    val filteredFiles = filterQueuedFiles(allDirectChildren).
-      sortWith(_.getContent.getLastModifiedTime < _.getContent.getLastModifiedTime)
+    val filteredFiles = filterQueuedFiles(allDirectChildren)//.sortWith(_.getContent.getLastModifiedTime < _.getContent.getLastModifiedTime)
     logger.debug("filteredFiles: "+filteredFiles.map(f=>f.getURL.toString).mkString(","))
 
     var changeType : FileChangeType = null //new, modified

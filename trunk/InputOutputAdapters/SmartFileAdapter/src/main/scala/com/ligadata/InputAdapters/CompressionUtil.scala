@@ -188,8 +188,8 @@ object CompressionUtil {
       }
     }
 
-    if(contentType == PLAIN)//lzo could be detected as plain
-      checkMagicMatchManually = true
+    /*if(contentType == PLAIN)
+      checkMagicMatchManually = true*/
 
     if(checkMagicMatchManually){
       //in case jmimemagic lib failed to detect, try manually - this happened when testing some lzop files
