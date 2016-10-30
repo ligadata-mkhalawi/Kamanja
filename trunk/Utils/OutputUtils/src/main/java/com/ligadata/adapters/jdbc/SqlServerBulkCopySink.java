@@ -19,6 +19,7 @@ import com.ligadata.adapters.AdapterConfiguration;
 import com.microsoft.sqlserver.jdbc.SQLServerBulkCSVFileRecord;
 import com.microsoft.sqlserver.jdbc.SQLServerBulkCopy;
 import com.ligadata.adapters.StatusCollectable;
+import com.ligadata.adapters.DecryptUtils;
 
 public class SqlServerBulkCopySink extends AbstractJDBCSink {
 	static Logger logger = LogManager.getLogger(SqlServerBulkCopySink.class);
@@ -47,7 +48,7 @@ public class SqlServerBulkCopySink extends AbstractJDBCSink {
 
 		connectionStr = config.getProperty(AdapterConfiguration.JDBC_URL) 
 				+ ";user=" + config.getProperty(AdapterConfiguration.JDBC_USER) 
-		    + ";password=" + getPassword(config);
+		    + ";password=" + DecryptUtils.getPassword(config,AdapterConfiguration.JDBC_PASSWORD);
 
 		dataTimeFormatStr = config.getProperty(AdapterConfiguration.INPUT_DATE_FORMAT, "yyyy-MM-dd'T'HH:mm:ss.SSS");
 		fieldSeperator = config.getProperty(AdapterConfiguration.FILE_FIELD_SEPERATOR, "\u0000");

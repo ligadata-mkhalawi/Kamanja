@@ -33,10 +33,8 @@ import javax.crypto.Cipher;
 import org.apache.logging.log4j.*;
 import java.util.Base64;
 
-/**
- * @author 
- * 
- */
+import com.ligadata.adapters.AdapterConfiguration;
+
 public class DecryptUtils{
     static String loggerName = "DecryptUtils";
     static Logger logger = LogManager.getLogger(loggerName);
@@ -133,5 +131,78 @@ public class DecryptUtils{
 	    throw e;
 	}
 	return new String(dectyptedText);
+    }
+
+    private static String getDecryptedPassword(AdapterConfiguration config) throws Exception {
+	try{
+	    // use the enrypted password if available
+	    String encryptedPass = config.getProperty(AdapterConfiguration.ENCRYPTED_PASSWORD);
+	    if (encryptedPass == null ){
+		logger.warn("The properties " + AdapterConfiguration.ENCRYPTED_PASSWORD + " are not defined in properties file ");
+		return null;
+	    }
+	    else{
+		String privateKeyFile = config.getProperty(AdapterConfiguration.PRIVATE_KEY_FILE);		       
+		if ( privateKeyFile == null ){
+		    logger.warn("The property " + AdapterConfiguration.ENCRYPTED_PASSWORD + " is defined but the property " +  AdapterConfiguration.PRIVATE_KEY_FILE + " not defined");
+		    return null;
+		}
+		String algorithm = config.getProperty(AdapterConfiguration.ENCRYPT_DECRYPT_ALGORITHM);
+		if ( algorithm == null ){
+		    logger.warn("The property " + AdapterConfiguration.ENCRYPTED_PASSWORD + " is defined but the property " +  AdapterConfiguration.ENCRYPT_DECRYPT_ALGORITHM + " not defined");
+		    return null;
+		}
+		logger.info("algorithm      => " + algorithm);
+		logger.info("encryptedPass  => " + encryptedPass);
+		logger.info("privateKeyFile => " + privateKeyFile);
+		byte[] passBytes = decode(encryptedPass);
+		String pass = decrypt(algorithm,passBytes,privateKeyFile);
+		return pass;
+	    }
+	} catch (Exception e) {
+	    throw new Exception(e);
+	}
+    }
+
+    private static String getDecodedPassword(AdapterConfiguration config) throws Exception {
+	try{
+	    // use the enrypted password if available
+	    String encodedPass = config.getProperty(AdapterConfiguration.ENCODED_PASSWORD);
+	    if (encodedPass == null ){
+		logger.warn("The properties " + AdapterConfiguration.ENCODED_PASSWORD + " are not defined in properties file ");
+		return null;
+	    }
+	    else{
+		logger.info("encodedPass  => " + encodedPass);
+		String pass = new String(decode(encodedPass));
+		return pass;
+	    }
+	} catch (Exception e) {
+	    throw new Exception(e);
+	}
+    }
+
+    /**
+     *  Get the original password
+     * 
+     * @param config
+     *          : AdapterConfiguraton contains property hash map
+     * @return password as plain text
+     * @throws java.lang.Exception
+     */
+
+    public static String getPassword(AdapterConfiguration config, String PasswordPropertyName) throws Exception {
+	try{
+	    String pass = getDecryptedPassword(config);
+	    if( pass == null ){
+		pass = getDecodedPassword(config);
+		if( pass == null ){
+		    pass = config.getProperty(PasswordPropertyName);
+		}
+	    }
+	    return pass;
+	} catch (Exception e) {
+	    throw new Exception(e);
+	}
     }
 }
