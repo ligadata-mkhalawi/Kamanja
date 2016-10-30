@@ -32,18 +32,29 @@ angular.module('networkApp')
           _.forEach(data.SymbolClasses, function (item) {
             var type = serviceConfig.classImageColorMap[item.toLowerCase()];
             var footerObj = {
+              headerColor : type.headerColor,
               displayName: item === 'Input' || item === 'Output' || item === 'Storage' ? item + " " + "Adapter" : item,
               imageName: type.image + '.inactive.' + type.extension,
               imageWidth: type.width,
               imageHeight: type.height,
               id: item,
               visible: true,
-              style: {}
+              style: {},
+              unselectUnselected: unselectUnselected
             };
             footer.footerList.push(footerObj);
           });
         });
-        $rootScope.$on('nodeSelected', function (event, data) {
+        function unselectUnselected() {
+          _.each(this.selectedModels,function(selectedModel){
+            if (selectedModel.unSelect){
+              $rootScope.$broadcast('nodeClicked', selectedModel.id);
+              $rootScope.$broadcast('nodeUnSelected', selectedModel.id);
+              selectedModel.unSelect = false;
+            }
+          });
+        }
+        $rootScope.$on('nodeClicked', function (event, data) {
           footer.selectedModels = [];
           if (selectedModelIds.indexOf(data) === -1) {
             selectedModelIds.push(data);
@@ -87,7 +98,7 @@ angular.module('networkApp')
           modelDetails.isError = true;
         });
 
-        $rootScope.$on('nodeSelected', function (event, data) {
+        $rootScope.$on('nodeClicked', function (event, data) {
           modelDetails.selectedModels = [];
           if (selectedModelIds.indexOf(data) === -1) {
             selectedModelIds.push(data);

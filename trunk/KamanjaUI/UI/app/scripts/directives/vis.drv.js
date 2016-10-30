@@ -159,7 +159,9 @@ angular
               });
             }
           });
-
+          $rootScope.$on('nodeUnSelected', function (event, id) {
+            nodeClick(id);
+          });
           $rootScope.$on('filterNodesChanged', function (event, filteredNode) {
             if (data.nodes) {
               //_.each(data.nodes._data, function (item) {
@@ -322,20 +324,23 @@ angular
           // scope.$on('closeSideMenu', function () {
           //   updateNodesImagesToBeInactive();
           // });
+          var nodeClick = function(id) {
+            if (selectedObjects.indexOf(id) >=0 ){
+              selectedObjects.splice(selectedObjects.indexOf(id),1);
+
+            } else {
+              selectedObjects.push(id);
+            }
+            updateNodesImagesToBeInactive();
+            _.each(selectedObjects,function (id) {
+              updateNodeToBeActive(id);
+            });
+
+          };
           network.on('click', function (params) {
             var id = params.nodes[0];
             if (id) {
-              if (selectedObjects.indexOf(id) >=0 ){
-                selectedObjects.splice(selectedObjects.indexOf(id),1);
-
-              } else {
-                selectedObjects.push(id);
-              }
-              updateNodesImagesToBeInactive();
-              _.each(selectedObjects,function (id) {
-                updateNodeToBeActive(id);
-              });
-
+              nodeClick(id);
             }
           });
           network.on('afterDrawing', function (ctx) {

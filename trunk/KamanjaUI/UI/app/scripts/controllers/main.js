@@ -34,7 +34,7 @@ angular.module('networkApp')
       };
       main.nodeClick = function (id) {
         // console.log("node", id);
-        $rootScope.$broadcast('nodeSelected', id);
+        $rootScope.$broadcast('nodeClicked', id);
       };
       main.edgeClick = function (id) {
         // console.log("edge", id);

@@ -53,8 +53,16 @@
     bottom: 10px;
     .list-group-item{
       background-color: #333333;
-      border:0;
+      //border:0;
       color:white;
+      cursor: default;
+      .list-group-item-icons {
+        padding-left: 8px;
+        .glyphicon {
+          cursor: pointer;
+          padding: 0 2px;
+        }
+      }
       &:hover{
         background-color: #666666;
       }

@@ -99,7 +99,6 @@ function clickOutside($document, $parse, $timeout) {
             id = element.id,
               classNames = element.className,
               l = classList.length;
-
             // Unwrap SVGAnimatedString classes
             if (classNames && classNames.baseVal !== undefined) {
               classNames = classNames.baseVal;

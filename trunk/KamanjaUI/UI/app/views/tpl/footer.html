@@ -14,14 +14,23 @@
         </li>
         <li ng-repeat-end="" class="arrow">
 
-          <ul class="list-group  selectedList" click-outside="item.showList = false;" ng-show="item.showList">
+          <ul class="list-group  selectedList" id="selectedList{{$index}}" click-outside="item.unselectUnselected(); item.showList = false;" ng-show="item.showList">
+            <li class="list-group-item" >selected: </li>
+
+            <li class="list-group-item" ng-repeat="selectedModel in item.selectedModels" ng-style="{'background-color':item.headerColor}">{{selectedModel.Name}}
+              <div class="list-group-item-icons pull-right">
+              <span ng-show="!selectedModel.unSelect" ng-click="selectedModel.unSelect = true;" class="glyphicon glyphicon-check" title="uncheck" aria-hidden="true" ></span>
+              <span ng-show="selectedModel.unSelect"  ng-click="selectedModel.unSelect = false;" class="glyphicon glyphicon-unchecked" title="check" aria-hidden="true" ></span>
+              <span class="glyphicon glyphicon-edit" title = "edit" aria-hidden="true" ></span>
+              <span class="glyphicon glyphicon-remove" title="remove" aria-hidden="true" ></span>
+              </div>
+            </li>
+
             <li class="list-group-item" >ADD</li>
-            <li class="list-group-item" >UPDATE</li>
-            <li class="list-group-item" >REMOVE</li>
-            <li class="list-group-item" >FILTER</li>
+            <li class="list-group-item disabled" >FILTER</li>
           </ul>
 
-          <span class="glyphicon glyphicon-chevron-up" aria-hidden="true" ng-click=" item.showList= true;"></span>
+          <span class="glyphicon glyphicon-menu-up" aria-hidden="true" ng-click=" item.showList= true;"></span>
         </li>
       </ul>
     </div>
