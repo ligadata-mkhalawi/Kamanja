@@ -361,58 +361,62 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
                     //TODO C&S - Changes
                     thisFileOrigLength = fileHandler.length
 
+                    // add code to ignore checking file size
                     // If file hasn't grown in the past 2 seconds - either a delay OR a completed transfer.
-                    if (fileTuple._2._1 == thisFileOrigLength) {
-                      // If the length is > 0, we assume that the file completed transfer... (very problematic, but unless
-                      // told otherwise by BofA, not sure what else we can do here.
-                      if (thisFileOrigLength > 0 && MonitorUtils.isValidFile(fileHandler, adapterConfig.monitoringConfig.checkFileTypes)) {
-                        if (isEnqueued(fileTuple._1)) {
-                          logger.debug("SMART FILE CONSUMER (MonitorController):  File already enqueued " + fileHandler.getFullPath)
-                        } else {
-                          logger.info("SMART FILE CONSUMER (MonitorController):  File READY TO PROCESS " + fileHandler.getFullPath)
-                          canProcessFiles = canProcessFiles + 1
-                          //                          enQFile(fileTuple._1, NOT_RECOVERY_SITUATION, fileHandler.lastModified)
-                          //                          newlyAdded.append(fileHandler)
-                        }
-                        // bufferingQ_map.remove(fileTuple._1)
-                        removedEntries += fileTuple._1
-                      } else {
-                        // Here becayse either the file is sitll of len 0,or its deemed to be invalid.
-                        if (thisFileOrigLength == 0) {
-                          val diff = System.currentTimeMillis - thisFileStarttime //d.lastModified
-                          if (diff > bufferTimeout) {
-                            logger.warn("SMART FILE CONSUMER (MonitorController): Detected that " + fileHandler.getFullPath + " has been on the buffering queue longer then " + bufferTimeout / 1000 + " seconds - Cleaning up")
 
-                            if (currentFileLocationInfo.isMovingEnabled) {
-                              //                              logger.error("==============> HaithamLog => inside monitorBufferingFiles : before moveFile")
-                              parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
-                            }
-                            else
-                              logger.info("SMART FILE CONSUMER (MonitorController): File {} will not be moved since moving is disabled for folder {} - Adapter {}",
-                                fileHandler.getFullPath, currentFileParentDir, adapterConfig.Name)
-
-                            // bufferingQ_map.remove(fileTuple._1)
-                            removedEntries += fileTuple._1
-                          }
-                        } else {
-                          //Invalid File - due to content type
-                          if (currentFileLocationInfo.isMovingEnabled) {
-                            logger.error("SMART FILE CONSUMER (MonitorController): Moving out " + fileHandler.getFullPath + " with invalid file type ")
-                            //                            logger.error("==============> HaithamLog => inside monitorBufferingFiles 2: before moveFile")
-                            parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
-                          }
-                          else {
-                            logger.info("SMART FILE CONSUMER (MonitorController): File {} has invalid file type but will not be moved since moving is disabled for folder {} - Adapter {}",
-                              fileHandler.getFullPath, currentFileParentDir, adapterConfig.Name)
+                    if (adapterConfig.monitoringConfig.checkFileSize) {
+                      if (fileTuple._2._1 == thisFileOrigLength) {
+                        // If the length is > 0, we assume that the file completed transfer... (very problematic, but unless
+                        // told otherwise by BofA, not sure what else we can do here.
+                        if (thisFileOrigLength > 0 && MonitorUtils.isValidFile(fileHandler, adapterConfig.monitoringConfig.checkFileTypes)) {
+                          if (isEnqueued(fileTuple._1)) {
+                            logger.debug("SMART FILE CONSUMER (MonitorController):  File already enqueued " + fileHandler.getFullPath)
+                          } else {
+                            logger.info("SMART FILE CONSUMER (MonitorController):  File READY TO PROCESS " + fileHandler.getFullPath)
+                            canProcessFiles = canProcessFiles + 1
+                            //                          enQFile(fileTuple._1, NOT_RECOVERY_SITUATION, fileHandler.lastModified)
+                            //                          newlyAdded.append(fileHandler)
                           }
                           // bufferingQ_map.remove(fileTuple._1)
                           removedEntries += fileTuple._1
+                        } else {
+                          // Here becayse either the file is sitll of len 0,or its deemed to be invalid.
+                          if (thisFileOrigLength == 0) {
+                            val diff = System.currentTimeMillis - thisFileStarttime //d.lastModified
+                            if (diff > bufferTimeout) {
+                              logger.warn("SMART FILE CONSUMER (MonitorController): Detected that " + fileHandler.getFullPath + " has been on the buffering queue longer then " + bufferTimeout / 1000 + " seconds - Cleaning up")
+
+                              if (currentFileLocationInfo.isMovingEnabled) {
+                                //                              logger.error("==============> HaithamLog => inside monitorBufferingFiles : before moveFile")
+                                parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
+                              }
+                              else
+                                logger.info("SMART FILE CONSUMER (MonitorController): File {} will not be moved since moving is disabled for folder {} - Adapter {}",
+                                  fileHandler.getFullPath, currentFileParentDir, adapterConfig.Name)
+
+                              // bufferingQ_map.remove(fileTuple._1)
+                              removedEntries += fileTuple._1
+                            }
+                          } else {
+                            //Invalid File - due to content type
+                            if (currentFileLocationInfo.isMovingEnabled) {
+                              logger.error("SMART FILE CONSUMER (MonitorController): Moving out " + fileHandler.getFullPath + " with invalid file type ")
+                              //                            logger.error("==============> HaithamLog => inside monitorBufferingFiles 2: before moveFile")
+                              parentSmartFileConsumer.moveFile(fileTuple._1.getFullPath)
+                            }
+                            else {
+                              logger.info("SMART FILE CONSUMER (MonitorController): File {} has invalid file type but will not be moved since moving is disabled for folder {} - Adapter {}",
+                                fileHandler.getFullPath, currentFileParentDir, adapterConfig.Name)
+                            }
+                            // bufferingQ_map.remove(fileTuple._1)
+                            removedEntries += fileTuple._1
+                          }
                         }
+                      } else {
+                        logger.debug("SMART FILE CONSUMER (MonitorController):  File {} size changed from {} to {}",
+                          fileHandler.getFullPath, thisFileOrigLength.toString, fileTuple._2._1.toString)
+                        bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
                       }
-                    } else {
-                      logger.debug("SMART FILE CONSUMER (MonitorController):  File {} size changed from {} to {}",
-                        fileHandler.getFullPath, thisFileOrigLength.toString, fileTuple._2._1.toString)
-                      bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
                     }
                   } else {
                     // File System is not accessible.. issue a warning and go on to the next file.

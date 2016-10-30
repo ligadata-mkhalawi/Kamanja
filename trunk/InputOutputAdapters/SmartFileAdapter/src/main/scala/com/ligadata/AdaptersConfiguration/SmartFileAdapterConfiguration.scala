@@ -71,6 +71,7 @@ class FileAdapterMonitoringConfig {
   var entireFileAsOneMessage = false
   var enableEmailAndAttachmentMode = false
   var checkFileTypes = true
+  var checkFileSize = true
 
   var enableMoving: String = "on"
 
@@ -268,6 +269,9 @@ object SmartFileAdapterConfiguration {
       }
       else if (kv._1.compareToIgnoreCase("CheckFileTypes") == 0) {
         monitoringConfig.checkFileTypes = kv._2.asInstanceOf[String].trim.toBoolean
+      }
+      else if (kv._1.compareToIgnoreCase("CheckFileSize") == 0) {
+        monitoringConfig.checkFileSize = kv._2.asInstanceOf[String].trim.toBoolean
       }
       else if (kv._1.compareToIgnoreCase("EnableEmailAndAttachmentMode") == 0) {
         monitoringConfig.enableEmailAndAttachmentMode = kv._2.asInstanceOf[String].trim.toBoolean

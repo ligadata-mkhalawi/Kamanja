@@ -101,7 +101,7 @@ object MonitorUtils {
       pool.shutdownNow(); // Cancel currently executing tasks
       // Wait a while for tasks to respond to being cancelled
       //        if (!pool.awaitTermination(2, TimeUnit.SECONDS)) {
-      logger.warn("Pool did not terminate " + id);
+      //      logger.warn("Pool did not terminate " + id);
       Thread.currentThread().interrupt()
       //        }
       //      }
