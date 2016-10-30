@@ -198,7 +198,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
           try {
             val jsonObj: JSONObject = new JSONObject(jsonData)
             // assuming format is yyyy-MM-dd'T'hh:mm'Z'
-            val dateFiled: String = jsonObj.getString(adapterConfig.dateFiledNameInOutputMessage).substring(0, 10)
+            val dateFiled: String = jsonObj.getString(adapterConfig.dateFiledNameInOutputMessage)
             val dateFormatString: String = jsonObj.getString(adapterConfig.dateFiledNameInOutputMessage)
             val sourceDateFormat: SimpleDateFormat = new SimpleDateFormat(dateFormatString)
             val targetDateFormat: SimpleDateFormat = new SimpleDateFormat("yyyyMMdd")

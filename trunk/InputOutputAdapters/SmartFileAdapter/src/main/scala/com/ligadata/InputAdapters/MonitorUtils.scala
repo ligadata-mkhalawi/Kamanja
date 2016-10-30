@@ -10,7 +10,7 @@ import com.ligadata.InputAdapters.sftp._
 import org.apache.commons.lang.StringUtils
 import org.apache.logging.log4j.LogManager
 
-import scala.actors.threadpool.{ExecutorService, TimeUnit}
+import scala.actors.threadpool.ExecutorService
 import scala.util.control.Breaks._
 
 /**
@@ -95,15 +95,16 @@ object MonitorUtils {
   def shutdownAndAwaitTermination(pool: ExecutorService, id: String): Unit = {
     pool.shutdown(); // Disable new tasks from being submitted
     try {
+      // change this to forcr shutdown
       // Wait a while for existing tasks to terminate
-      if (!pool.awaitTermination(2, TimeUnit.SECONDS)) {
-        pool.shutdownNow(); // Cancel currently executing tasks
-        // Wait a while for tasks to respond to being cancelled
-        if (!pool.awaitTermination(2, TimeUnit.SECONDS)) {
-          logger.warn("Pool did not terminate " + id);
-          Thread.currentThread().interrupt()
-        }
-      }
+      //      if (!pool.awaitTermination(2, TimeUnit.SECONDS)) {
+      pool.shutdownNow(); // Cancel currently executing tasks
+      // Wait a while for tasks to respond to being cancelled
+      //        if (!pool.awaitTermination(2, TimeUnit.SECONDS)) {
+      logger.warn("Pool did not terminate " + id);
+      Thread.currentThread().interrupt()
+      //        }
+      //      }
     } catch {
       case ie: InterruptedException => {
         logger.info("InterruptedException for " + id, ie)
