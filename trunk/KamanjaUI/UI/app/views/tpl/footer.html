@@ -15,7 +15,7 @@
         <li ng-repeat-end="" class="arrow">
 
           <ul class="list-group  selectedList" id="selectedList{{$index}}" click-outside="item.unselectUnselected(); item.showList = false;" ng-show="item.showList">
-            <li class="list-group-item" >selected: </li>
+            <li class="list-group-item"  ng-show="item.selectedModels.length">selected: </li>
 
             <li class="list-group-item" ng-repeat="selectedModel in item.selectedModels" ng-style="{'background-color':item.headerColor}">{{selectedModel.Name}}
               <div class="list-group-item-icons pull-right">

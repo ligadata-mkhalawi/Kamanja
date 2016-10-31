@@ -51,11 +51,15 @@
     z-index: 99999999999;
     position: fixed;
     bottom: 10px;
+    height: 400px;
+    overflow-y: auto;
     .list-group-item{
       background-color: #333333;
       //border:0;
       color:white;
-      cursor: default;
+      &:not(.disabled) {
+        cursor: default;
+      }
       .list-group-item-icons {
         padding-left: 8px;
         .glyphicon {
