@@ -541,13 +541,13 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
 
         try {
           //fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, srcFileToArchive, false)
-          if(srcFileHandler == null) {
+          if (srcFileHandler == null) {
             srcFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, srcFileToArchive, isBinary = false)
             logger.warn("opening src file to read")
             srcFileHandler.openForRead()
           }
 
-          if(streamFile.outStream == null) {
+          if (streamFile.outStream == null) {
             logger.warn("opening dest file to write")
             streamFile.outStream = openStream(dstFileToArchive)
           }
@@ -557,19 +557,52 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
           //else must open src to read using proper compression, and open dest for write with proper compression
 
           var curReadLen = -1
+          var readLen = 0
           val bufferSz = 8 * 1024 * 1024
-          val buf = new Array[Byte](bufferSz)
+          val byteBuffer = new Array[Byte](bufferSz)
+
+          val message_separator: Char =
+            if (archInfo.locationInfo == null) adapterConfig.monitoringConfig.messageSeparator
+            else archInfo.locationInfo.messageSeparator
 
           previousDestFileSize = streamFile.currentFileSize
           do {
             val lengthToRead = Math.min(bufferSz, adapterConfig.archiveConfig.consolidateThresholdBytes - streamFile.currentFileSize).toInt
-            logger.warn("lengthToRead={}",lengthToRead.toString)
-            if(lengthToRead > 0) {
-              curReadLen = srcFileHandler.read(buf, 0, lengthToRead)
-              logger.warn("curReadLen={}",curReadLen.toString)
+            logger.warn("lengthToRead={}", lengthToRead.toString)
+            if (lengthToRead > 0) {
+              logger.debug("reading {} to buffer with offset {}", lengthToRead.toString, readLen.toString)
+              curReadLen = srcFileHandler.read(byteBuffer, readLen, lengthToRead)
+              logger.debug("curReadLen={}", curReadLen.toString)
               if (curReadLen > 0) {
-                streamFile.outStream.write(buf, 0, curReadLen)
-                streamFile.currentFileSize += curReadLen
+
+                var idx = curReadLen - 1
+                var lastSeparatorIdx = -1
+                while (idx >= 0 && lastSeparatorIdx < 0) {
+                  if (byteBuffer(idx).asInstanceOf[Char] == message_separator) {
+                    lastSeparatorIdx = idx
+                  }
+                  idx += 1
+                }
+                val actualLenToWrite =
+                  if (lastSeparatorIdx >= 0) lastSeparatorIdx + 1
+                  else curReadLen
+
+                logger.debug("writing to dest actualLenToWrite ={}", actualLenToWrite.toString)
+                streamFile.outStream.write(byteBuffer, 0, actualLenToWrite)
+                streamFile.currentFileSize += actualLenToWrite
+
+                //fix buffer and index for next reading
+                if (lastSeparatorIdx >= 0) {
+                  logger.debug("lastSeparatorIdx={}", lastSeparatorIdx.toString)
+                  // copy reaming bytes to head of buffer
+                  for (i <- 0 to curReadLen - lastSeparatorIdx - 1) {
+                    byteBuffer(i) = byteBuffer(lastSeparatorIdx + i + 1)
+                  }
+                  readLen = curReadLen - lastSeparatorIdx
+                }
+                else readLen = 0
+
+                logger.debug("next offset is {}", readLen.toString)
               }
             }
             else curReadLen = 0
