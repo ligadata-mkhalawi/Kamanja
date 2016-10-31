@@ -331,6 +331,8 @@ class HdfsFileHandler extends SmartFileHandler {
     }
   }
 
+  def listFiles(path : String) : Array[MonitoredFile] = ???
+
   def disconnect() : Unit = {
     if (hdFileSystem != null) {
       try {

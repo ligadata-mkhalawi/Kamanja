@@ -36,5 +36,7 @@ public interface SmartFileHandler {
 
     boolean mkdirs();
 
+    com.ligadata.InputAdapters.MonitoredFile[] listFiles(String dirPath);
+
     void disconnect();
 }

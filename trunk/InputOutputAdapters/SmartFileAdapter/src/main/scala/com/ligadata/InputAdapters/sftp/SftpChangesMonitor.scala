@@ -24,6 +24,15 @@ class SftpFileEntry {
   var isDirectory : Boolean = false
 }
 
+class IteratorWrapper[A](iter:java.util.Iterator[A])
+{
+  def foreach(f: A => Unit): Unit = {
+    while(iter.hasNext){
+      f(iter.next)
+    }
+  }
+}
+
 class SftpFileHandler extends SmartFileHandler{
   private var remoteFullPath = ""
 
@@ -507,7 +516,7 @@ class SftpFileHandler extends SmartFileHandler{
     }
     catch {
       case ex : Throwable =>
-        logger.error("Sftp File Handler - Error while creating path " + getFullPath)
+        logger.error("Sftp File Handler - Error while creating path " + getFullPath, ex)
         //ex.printStackTrace()
         false
 
@@ -516,6 +525,53 @@ class SftpFileHandler extends SmartFileHandler{
     }
   }
 
+  implicit def iteratorToWrapper[T](iter:java.util.Iterator[T]):IteratorWrapper[T] = new IteratorWrapper[T](iter)
+  def listFiles(path : String) : Array[MonitoredFile] = {
+    val files = ArrayBuffer[MonitoredFile]()
+    try {
+      getNewSession()
+
+      val startTm = System.nanoTime
+      val children = channelSftp.ls(path).iterator()
+
+      for (child <- children) {
+        val monitoredFile = makeFileEntry(child, path)
+        if(monitoredFile != null) files.append(monitoredFile)
+      }
+
+      val endTm = System.nanoTime
+      val elapsedTm = endTm - startTm
+
+      logger.debug("Sftp File Handler - finished listing dir %s. Operation took %fms. StartTime:%d, EndTime:%d.".
+        format(path, elapsedTm / 1000000.0, elapsedTm, endTm))
+
+    }
+    catch {
+      case ex : Throwable =>
+        logger.error("Sftp File Handler - Error while listing files of dir " + path, ex)
+    }
+
+    files.toArray
+
+  }
+
+  private def makeFileEntry(child : Any, parent : String) : MonitoredFile = {
+
+    val aclass = Class.forName("com.jcraft.jsch.ChannelSftp$LsEntry")
+    val method = aclass.getDeclaredMethod("getFilename")
+    val filename = method.invoke(child).toString
+    if (!filename.equals(".") && !filename.equals("..")) {
+      val getAttrsMethod = aclass.getDeclaredMethod("getAttrs")
+      val anySftpATTRS = getAttrsMethod.invoke(child)
+      val sftpATTRS = anySftpATTRS.asInstanceOf[com.jcraft.jsch.SftpATTRS]
+      val lastModificationTime = sftpATTRS.getMTime();
+      val lastReportedSize = sftpATTRS.getSize()
+      val isDir = sftpATTRS.isDir
+      MonitoredFile(parent + "/" + filename, parent, lastModificationTime, lastReportedSize, isDir, !isDir)
+    }
+    else null
+
+  }
 
   def disconnect() : Unit = {
     try{

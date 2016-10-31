@@ -306,6 +306,8 @@ class PosixFileHandler extends SmartFileHandler{
     }
   }
 
+  def listFiles(path : String) : Array[MonitoredFile] = ???
+
   def disconnect() : Unit = {
 
   }
