@@ -60,13 +60,17 @@ public class EncryptionUtil {
 
     /**
      * The method checks if the pair of public and private key has been generated.
+     * @param publicKeyFile
+     *          :The file containing public key
+     * @param privateKeyFile
+     *          :The file containing private key
      * 
      * @return flag indicating if the pair of keys were generated.
      */
-    private static boolean areKeysPresent() {
+    private static boolean areKeysPresent(String publicKeyFile,String privateKeyFile) {
 	try {
-	    File privateKey = new File(PRIVATE_KEY_FILE);
-	    File publicKey = new File(PUBLIC_KEY_FILE);
+	    File privateKey = new File(privateKeyFile);
+	    File publicKey = new File(publicKeyFile);
 	    if (privateKey.exists() && publicKey.exists()) {
 		return true;
 	    }
@@ -78,49 +82,73 @@ public class EncryptionUtil {
 
     /**
      * Generate key which contains a pair of private and public key using 1024
+     * bytes. Store the set of keys in given files publicKeyFile,privateKeyFile
+     * @param algorithm
+     *          : algorithm used
+     * @param publicKeyFile
+     *          :The file containing public key
+     * @param privateKeyFile
+     *          :The file containing private key
+     * 
+     * @throws NoSuchAlgorithmException
+     * @throws IOException
+     * @throws FileNotFoundException
+     */
+    public static void generateSampleKeys(String algorithm,String publicKeyFile,String privateKeyFile) {
+	try {
+	    if( areKeysPresent(publicKeyFile,privateKeyFile) ){
+		return;
+	    }
+	    final KeyPairGenerator keyGen = KeyPairGenerator.getInstance(algorithm);
+	    keyGen.initialize(1024);
+	    final KeyPair key = keyGen.generateKeyPair();
+
+	    File privateKeyFD = new File(privateKeyFile);
+	    File publicKeyFD = new File(publicKeyFile);
+
+	    // Create files to store public and private key
+	    if (privateKeyFD.getParentFile() != null) {
+		privateKeyFD.getParentFile().mkdirs();
+	    }
+	    privateKeyFD.createNewFile();
+
+	    if (publicKeyFD.getParentFile() != null) {
+		publicKeyFD.getParentFile().mkdirs();
+	    }
+	    publicKeyFD.createNewFile();
+
+	    // Saving the Public key in a file
+	    ObjectOutputStream publicKeyOS = new ObjectOutputStream(
+								    new FileOutputStream(publicKeyFD));
+	    publicKeyOS.writeObject(key.getPublic());
+	    publicKeyOS.close();
+
+	    // Saving the Private key in a file
+	    ObjectOutputStream privateKeyOS = new ObjectOutputStream(
+								     new FileOutputStream(privateKeyFD));
+	    privateKeyOS.writeObject(key.getPrivate());
+	    privateKeyOS.close();
+	} catch (Exception e) {
+	    e.printStackTrace();
+	}
+    }
+
+    /**
+     * Generate key which contains a pair of private and public key using 1024
      * bytes. Store the set of keys in Prvate.key and Public.key files.
+     * @param algorithm
+     *          : algorithm used
+     * @param publicKeyFile
+     *          :The file containing public key
+     * @param privateKeyFile
+     *          :The file containing private key
      * 
      * @throws NoSuchAlgorithmException
      * @throws IOException
      * @throws FileNotFoundException
      */
     public static void generateSampleKeys() {
-	try {
-	    if( areKeysPresent() ){
-		return;
-	    }
-	    final KeyPairGenerator keyGen = KeyPairGenerator.getInstance(ALGORITHM);
-	    keyGen.initialize(1024);
-	    final KeyPair key = keyGen.generateKeyPair();
-
-	    File privateKeyFile = new File(PRIVATE_KEY_FILE);
-	    File publicKeyFile = new File(PUBLIC_KEY_FILE);
-
-	    // Create files to store public and private key
-	    if (privateKeyFile.getParentFile() != null) {
-		privateKeyFile.getParentFile().mkdirs();
-	    }
-	    privateKeyFile.createNewFile();
-
-	    if (publicKeyFile.getParentFile() != null) {
-		publicKeyFile.getParentFile().mkdirs();
-	    }
-	    publicKeyFile.createNewFile();
-
-	    // Saving the Public key in a file
-	    ObjectOutputStream publicKeyOS = new ObjectOutputStream(
-								    new FileOutputStream(publicKeyFile));
-	    publicKeyOS.writeObject(key.getPublic());
-	    publicKeyOS.close();
-
-	    // Saving the Private key in a file
-	    ObjectOutputStream privateKeyOS = new ObjectOutputStream(
-								     new FileOutputStream(privateKeyFile));
-	    privateKeyOS.writeObject(key.getPrivate());
-	    privateKeyOS.close();
-	} catch (Exception e) {
-	    e.printStackTrace();
-	}
+	generateSampleKeys(ALGORITHM,PUBLIC_KEY_FILE,PRIVATE_KEY_FILE);
     }
 
     /**
