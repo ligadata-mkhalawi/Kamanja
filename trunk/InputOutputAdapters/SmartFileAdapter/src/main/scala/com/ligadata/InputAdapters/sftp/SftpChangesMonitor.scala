@@ -733,9 +733,16 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(MonitoredF
   private def findDirModifiedDirectChilds(parentFolder : String, parentFolderDepth : Int, manager : StandardFileSystemManager,
                                           modifiedDirs : ArrayBuffer[(String, Int)], modifiedFiles : Map[MonitoredFile, FileChangeType], isFirstCheck : Boolean){
     val parentFolderHashed = hashPath(parentFolder)//used for logging since path contains user and password
-
     logger.info("SFTP Changes Monitor - listing dir " + parentFolderHashed)
+
+    val startTm = System.nanoTime
     val allDirectChildren = getRemoteFolderContents(parentFolder, manager)
+    val getRemoteFolderContentsEndTm = System.nanoTime
+    val getRemoteFolderContentsElapsedTm = getRemoteFolderContentsEndTm - startTm
+    logger.info("Sftp File Handler - finished call for getRemoteFolderContents() %s. Operation took %fms. StartTime:%d, EndTime:%d.".
+      format(parentFolder, getRemoteFolderContentsElapsedTm/1000000.0,getRemoteFolderContentsElapsedTm, getRemoteFolderContentsEndTm))
+
+
     val filteredFiles = filterQueuedFiles(allDirectChildren)//.sortWith(_.getContent.getLastModifiedTime < _.getContent.getLastModifiedTime)
     logger.debug("filteredFiles: "+filteredFiles.map(f=>f.getURL.toString).mkString(","))
 
@@ -812,6 +819,11 @@ class SftpChangesMonitor (adapterName : String, modifiedFileCallback:(MonitoredF
 
     //logger.debug("files to be deleted from map are : ", deletedFiles)
     deletedFiles.foreach(f => filesStatusMap.remove(f))
+
+    val allFuncEndTm = System.nanoTime
+    val allFuncElapsedTm = allFuncEndTm - startTm
+    logger.info("Sftp File Handler - finished call for findDirModifiedDirectChilds() %s. Operation took %fms. StartTime:%d, EndTime:%d.".
+      format(parentFolder, allFuncElapsedTm/1000000.0,allFuncElapsedTm, allFuncEndTm))
   }
 
   private def getRemoteFolderContents(parentRemoteFolderUri : String, manager : StandardFileSystemManager) : Array[FileObject] = {

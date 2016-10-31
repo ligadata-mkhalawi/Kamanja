@@ -206,12 +206,15 @@ class MonitorController {
       // Scan all the files that we are buffering, if there is not difference in their file size.. move them onto
       // the FileQ, they are ready to process.
 
+      ////val allfiles = GetAllChilds()
+      ////map => fileName, MonitorFile
       bufferingQLock.synchronized {
         val newlyAdded = ArrayBuffer[String]()
         val removedEntries = ArrayBuffer[String]()
 
         val iter = bufferingQ_map.iterator
         iter.foreach(fileTuple => {
+          logger.info("1.==============> File Test Start " + fileTuple._2._1.path)
           try {
             //TODO C&S - changes
             var thisFileFailures: Int = fileTuple._2._2
@@ -248,11 +251,14 @@ class MonitorController {
               }
               else {
                 // If the filesystem is accessible
+                ////val monFl = map.getOrElse(filePath)
+                ////if (monFl != null)
                 //if (fileHandler.exists)
                 {
 
                   //TODO C&S - Changes
                   thisFileNewLength = genericFileHandler.length(filePath)
+                  ////thisFileNewLength = monFl.getsize
 
                   // If file hasn't grown in the past  seconds - either a delay OR a completed transfer.
                   if (thisFilePreviousLength == thisFileNewLength) {
@@ -362,6 +368,7 @@ class MonitorController {
               logger.error("Smart File Adapter (MonitorController) - Failed to check for entry in bufferingQ_map", e)
             }
           }
+          logger.info("1.==============> File Test end " + fileTuple._2._1.path)
         })
 
         newlyAdded.foreach(filePath => {

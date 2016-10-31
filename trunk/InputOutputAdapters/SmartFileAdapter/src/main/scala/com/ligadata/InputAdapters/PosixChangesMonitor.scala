@@ -62,12 +62,11 @@ class PosixFileHandler extends SmartFileHandler{
   def getParentDir : String = MonitorUtils.simpleDirPath(fileObject.getParent.trim)
 
   //gets the input stream according to file system type - POSIX here
-  def getDefaultInputStream(file : String) : InputStream = ???
-  def getDefaultInputStream() : InputStream = {
+  def getDefaultInputStream(file : String) : InputStream = {
     logger.info("Posix File Handler - opening file " + getFullPath)
     val inputStream : InputStream =
       try {
-        new FileInputStream(fileFullPath)
+        new FileInputStream(file)
       }
       catch {
         case e: Exception =>
@@ -79,6 +78,8 @@ class PosixFileHandler extends SmartFileHandler{
       }
     inputStream
   }
+
+  def getDefaultInputStream() : InputStream = getDefaultInputStream(getFullPath)
 
   @throws(classOf[KamanjaException])
   def openForRead(): InputStream = {
@@ -264,19 +265,19 @@ class PosixFileHandler extends SmartFileHandler{
     new File(file).length
   }
 
-  def lastModified : Long = {
-    logger.info("Posix File Handler - checking modification time for file " + getFullPath)
-    fileObject.lastModified
+  def lastModified : Long = lastModified(getFullPath)
+
+  def lastModified(file : String) : Long = {
+    logger.info("Posix File Handler - checking modification time for file " + file)
+    new File(file).lastModified
   }
 
-  def lastModified(file : String) : Long = ???
+  override def exists(): Boolean = exists(getFullPath)
 
-  override def exists(): Boolean = {
-    logger.info("Posix File Handler - checking existence for file " + getFullPath)
-    new File(fileFullPath).exists
+  override def exists(file : String): Boolean = {
+    logger.info("Posix File Handler - checking existence for file " + file)
+    new File(file).exists
   }
-
-  override def exists(file : String): Boolean = ???
 
   override def isFile: Boolean = {
     logger.info("Posix File Handler - checking (isFile) for file " + getFullPath)
@@ -305,7 +306,9 @@ class PosixFileHandler extends SmartFileHandler{
     }
   }
 
-  def disconnect() : Unit = ???
+  def disconnect() : Unit = {
+
+  }
 }
 
 
@@ -315,7 +318,7 @@ class PosixFileHandler extends SmartFileHandler{
   * @param adapterName
   * @param modifiedFileCallback
   */
-class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileHandler, Boolean) => Unit) extends SmartFileMonitor {
+class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(MonitoredFile, Boolean) => Unit) extends SmartFileMonitor {
 
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
@@ -469,19 +472,19 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
     monitorsExecutorService.shutdown()
   }
 
-  val validModifiedFiles = ArrayBuffer[String]()
+  val validModifiedFiles = ArrayBuffer[File]()
+
 
   private def checkExistingFiles(parentDir: File, isFirstScan : Boolean, locationInfo: LocationInfo): Unit = {
     // Process all the existing files in the directory that are not marked complete.
     if (parentDir.exists && parentDir.isDirectory) {
       logger.info("Posix Changes Monitor - listing dir " + parentDir.toString)
-      val files = parentDir.listFiles.filter(_.isFile).sortWith(_.lastModified < _.lastModified).toList
+      val files = parentDir.listFiles.filter(_.isFile)//.sortWith(_.lastModified < _.lastModified).toList
 
-      val newFiles = ArrayBuffer[String]()
+      val newFiles = ArrayBuffer[File]()
       files.foreach(file => {
-        val tokenName = file.toString.split("/")
         if (!checkIfFileHandled(file.toString)) {
-          newFiles.append(file.toString)
+          newFiles.append(file)
         }
       })
 
@@ -489,7 +492,7 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
       validModifiedFiles.clear()
       if(locationInfo.fileComponents != null){
         newFiles.foreach(file => {
-          if(MonitorUtils.isPatternMatch(MonitorUtils.getFileName(file), locationInfo.fileComponents.regex))
+          if(MonitorUtils.isPatternMatch(MonitorUtils.getFileName(file.toString), locationInfo.fileComponents.regex))
             validModifiedFiles.append(file)
           else
             logger.warn("Smart File Consumer (DAS/NAS) : File {}, does not follow configured name pattern ({}), so it will be ignored - Adapter {}",
@@ -499,13 +502,13 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
       else
         validModifiedFiles.appendAll(newFiles)
 
-      val newFileHandlers = validModifiedFiles.map(file => new PosixFileHandler(file.toString))/*.
-        sortWith(MonitorUtils.compareFiles(_,_,locationInfo) < 0).toArray*/
-      newFileHandlers.foreach(fileHandler =>{
+      //val newMonitoredFiles = validModifiedFiles.map(f => makeFileEntry(f, parentDir.toString))
+      validModifiedFiles.foreach(file =>{
         //call the callback for new files
-        logger.info(s"Posix Changes Monitor - A new file found ${fileHandler.getFullPath}. initial = $isFirstScan")
+        logger.info(s"Posix Changes Monitor - A new file found ${file.toString}. initial = $isFirstScan")
         try {
-          modifiedFileCallback(fileHandler, isFirstScan)
+          val monitoredFile = makeFileEntry(file, parentDir.toString)
+          modifiedFileCallback(monitoredFile, isFirstScan)
         }
         catch{
           case e : Throwable =>
@@ -560,6 +563,15 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
         return false
       }
     }
+  }
+
+  private def makeFileEntry(file: File, parentfolder: String): MonitoredFile = {
+
+    val lastReportedSize = file.length()
+    val path = file.toString
+    val lastModificationTime = file.lastModified()
+    val isDirectory = file.isDirectory
+    MonitoredFile(path, parentfolder, lastModificationTime, lastReportedSize, isDirectory, !isDirectory)
   }
 
   override def listFiles(path: String): Array[String] ={
