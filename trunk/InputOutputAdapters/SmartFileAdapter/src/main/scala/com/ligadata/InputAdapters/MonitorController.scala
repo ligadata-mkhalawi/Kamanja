@@ -321,12 +321,17 @@ class MonitorController {
                 }*/
               }
             } catch {
+              case fnfe : java.io.FileNotFoundException =>{
+                logger.warn("SMART FILE CONSUMER (MonitorController): Detected that file " + filePath + " no longer exists")
+                removedEntries += fileTuple._1
+              }
               case ioe: IOException => {
                 thisFileFailures += 1
-                if (currentFileLocationInfo.isMovingEnabled && ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
+                if ( ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
                   logger.warn("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + filePath + " on the buffering queue", ioe)
                   try {
-                    parentSmartFileConsumer.moveFile(filePath)
+                    if(currentFileLocationInfo.isMovingEnabled)
+                      parentSmartFileConsumer.moveFile(filePath)
                     // bufferingQ_map.remove(fileTuple._1)
                     removedEntries += fileTuple._1
                   } catch {
@@ -343,10 +348,11 @@ class MonitorController {
               }
               case e: Throwable => {
                 thisFileFailures += 1
-                if (currentFileLocationInfo.isMovingEnabled && ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
+                if (((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
                   logger.error("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + fileTuple._1 + " on the buffering queue", e)
                   try {
-                    parentSmartFileConsumer.moveFile(filePath)
+                    if(currentFileLocationInfo.isMovingEnabled)
+                      parentSmartFileConsumer.moveFile(filePath)
                     // bufferingQ_map.remove(fileTuple._1)
                     removedEntries += fileTuple._1
                   } catch {
