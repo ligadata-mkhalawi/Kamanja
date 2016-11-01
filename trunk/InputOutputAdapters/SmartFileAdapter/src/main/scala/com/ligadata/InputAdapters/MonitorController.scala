@@ -39,7 +39,6 @@ class MonitorController {
 
   private val bufferingQ_map: scala.collection.mutable.Map[String, (MonitoredFile, Int, Boolean)] = scala.collection.mutable.Map[String, (MonitoredFile, Int, Boolean)]()
   private val bufferingQLock = new Object
-  private var smartFileMonitor : SmartFileMonitor = null
 
   private var genericFileHandler : SmartFileHandler = null
 
@@ -98,16 +97,9 @@ class MonitorController {
   }
 
   def markFileAsProcessed(filePath : String) : Unit = {
-    if(smartFileMonitor != null){
-      smartFileMonitor.markFileAsProcessed(filePath)
-    }
   }
 
   def startMonitoring(): Unit ={
-    smartFileMonitor = SmartFileMonitorFactory.createSmartFileMonitor(adapterConfig.Name, adapterConfig._type, fileDetectedCallback)
-    smartFileMonitor.init(adapterConfig.adapterSpecificCfg)
-    logger.debug("SMART FILE CONSUMER (MonitorController):  running smartFileMonitor.monitor()")
-    smartFileMonitor.monitor()
 
     keepMontoringBufferingFiles = true
 
@@ -115,20 +107,81 @@ class MonitorController {
       override def run() = {
         logger.debug("SMART FILE CONSUMER (MonitorController):  buffering files monitoring thread run")
         //while(true) {
-          monitorBufferingFiles
+        monitor()
         //}
       }
     })
   }
 
+  private var monitorsExecutorService: ExecutorService = null
+  def monitor (): Unit ={
+    val monitoringConf = adapterConfig.monitoringConfig
+    val maxThreadCount = Math.min(monitoringConf.monitoringThreadsCount, monitoringConf.detailedLocations.length)
+    monitorsExecutorService = Executors.newFixedThreadPool(maxThreadCount)
+    logger.info("Smart File Monitor - running {} threads to monitor {} dirs",
+      monitoringConf.monitoringThreadsCount.toString, monitoringConf.detailedLocations.length.toString)
+
+    val monitoredDirsQueue = new MonitoredDirsQueue()
+    monitoredDirsQueue.init(monitoringConf.detailedLocations, monitoringConf.waitingTimeMS)
+    for (currentThreadId <- 1 to maxThreadCount) {
+      val dirMonitorThread = new Runnable() {
+        override def run() = {
+          try {
+
+            while (keepMontoringBufferingFiles) {
+              logger.debug("waitingFilesToProcessCount={}, dirCheckThreshold={}",
+                waitingFilesToProcessCount.toString, adapterConfig.monitoringConfig.dirCheckThreshold.toString)
+
+              //start/stop listing folders contents based on current number of waiting files compared to a threshold
+              if (adapterConfig.monitoringConfig.dirCheckThreshold > 0 &&
+                waitingFilesToProcessCount > adapterConfig.monitoringConfig.dirCheckThreshold) {
+
+                logger.info("Smart File Monitor - too many files already in process queue. monitoring thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
+                Thread.sleep(monitoringConf.waitingTimeMS)
+              }
+              else {
+                val dirQueuedInfo = monitoredDirsQueue.getNextDir()
+                if(dirQueuedInfo != null){
+                  val location = dirQueuedInfo._1
+                  val isFirstScan = dirQueuedInfo._3
+                  val srcDir = location.srcDir
+
+                  monitorBufferingFiles(srcDir, location, isFirstScan)
+
+                  val updateDirQueuedInfo = (dirQueuedInfo._1, dirQueuedInfo._2, false)//not first scan anymore
+                  monitoredDirsQueue.reEnqueue(updateDirQueuedInfo) // so the folder gets monitored again
+                }
+                else {
+                  //happens if last time queue head dir was monitored was less than waiting time
+                  logger.info("Smart File Monitor - no folders to monitor for now. Thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
+                  Thread.sleep(monitoringConf.waitingTimeMS)
+                }
+              }
+            }
+          }
+          catch {
+            case ex: Exception =>
+              logger.error("Smart File Monitor - Error", ex)
+
+            case ex: Throwable =>
+              logger.error("Smart File Monitor - Error", ex)
+
+          }
+        }
+      }
+      monitorsExecutorService.execute(dirMonitorThread)
+    }
+  }
+
   def listFiles(path: String): Array[String] ={
-    if (smartFileMonitor == null) {
+    //TODO ------------------
+    /*if (smartFileMonitor == null) {
       smartFileMonitor = SmartFileMonitorFactory.createSmartFileMonitor(adapterConfig.Name, adapterConfig._type, fileDetectedCallback)
       smartFileMonitor.init(adapterConfig.adapterSpecificCfg)
     }
     if(smartFileMonitor != null)
       smartFileMonitor.listFiles(path)
-    else
+    else*/
       Array[String]()
   }
 
@@ -139,25 +192,11 @@ class MonitorController {
     if(genericFileHandler != null)
       genericFileHandler.disconnect()
 
-    if(smartFileMonitor != null)
-      smartFileMonitor.shutdown()
-    else
-      logger.debug("smartFileMonitor is null")
-
     keepMontoringBufferingFiles = false
+    monitorsExecutorService.shutdownNow()
+
     MonitorUtils.shutdownAndAwaitTermination(globalFileMonitorService, "MonitorController globalFileMonitorService")
-  }
 
-  /**
-    * this method is used as callback to be passed to monitor
-    * it basically does what method processExistingFiles used to do in file consumer tool
-    *
-    */
-  def fileDetectedCallback (file : MonitoredFile, initiallyExists : Boolean) : Unit = {
-    logger.debug("SMART FILE CONSUMER (MonitorController): got file {}", file.path)
-    //if (MonitorUtils.isValidFile(fileHandler))
-
-    enQBufferedFile(file, initiallyExists)
   }
 
   private def enQBufferedFile(file : MonitoredFile, initiallyExists : Boolean): Unit = {
@@ -167,115 +206,80 @@ class MonitorController {
     }
   }
 
-  // Stuff used by the File Priority Queue.
-  def OldestFile(file: EnqueuedFileHandler): Long = {
-    file.lastModifiedDate * -1
-  }
-
-  /*def fileComparisonField(file: EnqueuedFileHandler) : String = {
-    adapterConfig.monitoringConfig
-    ""
-  }*/
 
   /**
     *  Look at the files on the DEFERRED QUEUE... if we see that it stops growing, then move the file onto the READY
     *  to process QUEUE.
     */
-  private def monitorBufferingFiles: Unit = {
+  private def monitorBufferingFiles(dir : String, locationInfo: LocationInfo, isFirstScan : Boolean): Unit = {
     // This guys will keep track of when to exgernalize a WARNING Message.  Since this loop really runs every second,
     // we want to throttle the warning messages.
     logger.debug("SMART FILE CONSUMER (MonitorController):  monitorBufferingFiles")
 
     var specialWarnCounter: Int = 1
 
-    while (keepMontoringBufferingFiles) {
+    // Scan all the files that we are buffering, if there is not difference in their file size.. move them onto
+    // the FileQ, they are ready to process.
 
-      //sleep at first since we already have sizes of files
-      // Give all the files a 1 second to add a few bytes to the contents
-      try {
-        Thread.sleep(refreshRate)
-      }
-      catch{case e : Throwable => }
+    {
+      val newlyAdded = ArrayBuffer[String]()
+      val removedEntries = ArrayBuffer[String]()
 
-      //inform monitor to start/stop listing folders contents based on current number of waiting files compared to a threshold
-      if(adapterConfig.monitoringConfig.dirCheckThreshold > 0 &&
-        waitingFilesToProcessCount > adapterConfig.monitoringConfig.dirCheckThreshold)
-        smartFileMonitor.setMonitoringStatus(false)
-      else smartFileMonitor.setMonitoringStatus(true)
+      //TODO : for now check direct children only
+      val currentAllChilds = genericFileHandler.listFiles(dir)
 
-      // Scan all the files that we are buffering, if there is not difference in their file size.. move them onto
-      // the FileQ, they are ready to process.
+      currentAllChilds.foreach(currentMonitoredFile => {
 
-      ////val allfiles = GetAllChilds()
-      ////map => fileName, MonitorFile
-      bufferingQLock.synchronized {
-        val newlyAdded = ArrayBuffer[String]()
-        val removedEntries = ArrayBuffer[String]()
+        val filePath = currentMonitoredFile.path
+        try {
+          var thisFileNewLength: Long = 0
+          var thisFilePreviousLength: Long = 0
+          var thisFileFailures: Int = 0
+          val thisFileStarttime = currentMonitoredFile.lastModificationTime//todo
 
-        val iter = bufferingQ_map.iterator
-        iter.foreach(fileTuple => {
-          logger.info("1.==============> File Test Start " + fileTuple._2._1.path)
-          try {
-            //TODO C&S - changes
-            var thisFileFailures: Int = fileTuple._2._2
-            var thisFileStarttime: Long = fileTuple._2._1.lastModificationTime
-            var thisFilePreviousLength: Long = fileTuple._2._1.lastReportedSize
-            var thisFileNewLength : Long = 0
-            val initiallyExists = fileTuple._2._3
-            val filePath = fileTuple._2._1.path
+          val currentFileParentDir = currentMonitoredFile.parent
+          val currentFileLocationInfo = parentSmartFileConsumer.getDirLocationInfo(currentFileParentDir)
 
-            //val fileHandler = fileTuple._1
-            val currentFileParentDir = MonitorUtils.getFileParentDir(filePath, adapterConfig)
-            val currentFileLocationInfo = parentSmartFileConsumer.getDirLocationInfo(currentFileParentDir)
-
+          if (!bufferingQ_map.contains(currentMonitoredFile.path)) {
+            enQBufferedFile(currentMonitoredFile, isFirstScan)
+          }
+          else {
             try {
 
-              logger.debug("SMART FILE CONSUMER (MonitorController):  monitorBufferingFiles - file " + filePath)
+              logger.debug("SMART FILE CONSUMER (MonitorController):  monitorBufferingFiles - file " + currentMonitoredFile.path)
 
-              /*val matchingFileInfo : List[(String, Int, String, Int)] =
-              if (initialFiles ==null) null
-              else initialFiles.filter(tuple => tuple._3.equals(fileHandler.getFullPath))*/
-
-              if (initiallyExists && initialFiles != null && initialFiles.contains(filePath)) {
-                //this is an initial file, the leader will take care of it, ignore
-                /*initialFiles.filter(tuple => tuple._3.equals(fileHandler.getFullPath)) match{
-                case None =>
-                case Some(initialFileInfo) => initialFiles = initialFiles diff List(initialFileInfo)
-              }*/
+              if (isFirstScan && initialFiles != null && initialFiles.contains(filePath)) {
                 logger.debug("SMART FILE CONSUMER (MonitorController): file {} is already in initial files", filePath)
-                // bufferingQ_map.remove(fileHandler)
                 removedEntries += filePath
-                //initialFiles = initialFiles diff fileHandler.getFullPath
-
                 logger.debug("SMART FILE CONSUMER (MonitorController): now initialFiles = {}", initialFiles)
               }
               else {
-                // If the filesystem is accessible
-                ////val monFl = map.getOrElse(filePath)
-                ////if (monFl != null)
-                //if (fileHandler.exists)
-                {
+                if (currentMonitoredFile.isFile) {
 
-                  //TODO C&S - Changes
-                  thisFileNewLength = genericFileHandler.length(filePath)
-                  ////thisFileNewLength = monFl.getsize
+                  thisFileNewLength = currentMonitoredFile.lastReportedSize
+                  val previousMonitoredFile = bufferingQ_map(filePath)
+                  val thisFilePreviousLength = previousMonitoredFile._1.lastReportedSize
+                  thisFileFailures = previousMonitoredFile._2
 
                   // If file hasn't grown in the past  seconds - either a delay OR a completed transfer.
                   if (thisFilePreviousLength == thisFileNewLength) {
+                    logger.debug("SMART FILE CONSUMER (MonitorController):  File {} size has not changed" , filePath)
                     // If the length is > 0, we assume that the file completed transfer... (very problematic, but unless
                     // told otherwise by BofA, not sure what else we can do here.
-                    val isValid = MonitorUtils.isValidFile(genericFileHandler, filePath, false)
-                    //fileHandler.disconnect()
+
+                    val isValid = true//MonitorUtils.isValidFile(genericFileHandler, filePath, false)
+                    logger.warn("skipping is valid checking for file {}", filePath)
+
                     if (thisFilePreviousLength > 0 && isValid) {
-                      if (isEnqueued(fileTuple._1)) {
+                      if (isEnqueued(filePath)) {
                         logger.debug("SMART FILE CONSUMER (MonitorController):  File already enqueued " + filePath)
                       } else {
                         logger.info("SMART FILE CONSUMER (MonitorController):  File READY TO PROCESS " + filePath)
-                        enQFile(fileTuple._1, NOT_RECOVERY_SITUATION, genericFileHandler.lastModified(filePath))
+                        enQFile(filePath, NOT_RECOVERY_SITUATION, currentMonitoredFile.lastModificationTime)
                         newlyAdded.append(filePath)
                       }
                       // bufferingQ_map.remove(fileTuple._1)
-                      removedEntries += fileTuple._1
+                      removedEntries += filePath
                     } else {
                       // Here becayse either the file is sitll of len 0,or its deemed to be invalid.
                       if (thisFilePreviousLength == 0) {
@@ -290,7 +294,7 @@ class MonitorController {
                               filePath, currentFileParentDir, adapterConfig.Name)
 
                           // bufferingQ_map.remove(fileTuple._1)
-                          removedEntries += fileTuple._1
+                          removedEntries += filePath
                         }
                       } else {
                         //Invalid File - due to content type
@@ -303,37 +307,31 @@ class MonitorController {
                             filePath, currentFileParentDir, adapterConfig.Name)
                         }
                         // bufferingQ_map.remove(fileTuple._1)
-                        removedEntries += fileTuple._1
+                        removedEntries += filePath
                       }
                     }
                   } else {
                     logger.debug("SMART FILE CONSUMER (MonitorController):  File {} size changed from {} to {}",
                       filePath, thisFilePreviousLength.toString, thisFileNewLength.toString)
 
-                    bufferingQ_map(filePath) = (updateMonitoredFile(fileTuple._2._1, thisFileNewLength, System.currentTimeMillis),
-                      thisFileFailures, initiallyExists)
+                    bufferingQ_map(filePath) = (currentMonitoredFile, thisFileFailures, isFirstScan)
                   }
-                } /*else {
-                  // File System is not accessible.. issue a warning and go on to the next file.
-                  logger.warn("SMART FILE CONSUMER (MonitorController): File on the buffering Q is not found " + fileHandler.getFullPath)
-                  // bufferingQ_map.remove(fileTuple._1)
-                  removedEntries += fileTuple._1
-                }*/
+                }
               }
             } catch {
-              case fnfe : java.io.FileNotFoundException =>{
+              case fnfe: java.io.FileNotFoundException => {
                 logger.warn("SMART FILE CONSUMER (MonitorController): Detected that file " + filePath + " no longer exists")
-                removedEntries += fileTuple._1
+                removedEntries += filePath
               }
               case ioe: IOException => {
                 thisFileFailures += 1
-                if ( ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
+                if (((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
                   logger.warn("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + filePath + " on the buffering queue", ioe)
                   try {
-                    if(currentFileLocationInfo.isMovingEnabled)
+                    if (currentFileLocationInfo.isMovingEnabled)
                       parentSmartFileConsumer.moveFile(filePath)
                     // bufferingQ_map.remove(fileTuple._1)
-                    removedEntries += fileTuple._1
+                    removedEntries += filePath
                   } catch {
                     case e: Throwable => {
                       logger.error("SMART_FILE_CONSUMER: Failed to move file, retyring", e)
@@ -341,20 +339,19 @@ class MonitorController {
                   }
                 } else {
                   //bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
-                  bufferingQ_map(filePath) = (updateMonitoredFile(fileTuple._2._1, thisFileNewLength, System.currentTimeMillis),
-                    thisFileFailures, initiallyExists)
+                  bufferingQ_map(filePath) = (currentMonitoredFile, thisFileFailures, isFirstScan)
                   logger.warn("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue ", ioe)
                 }
               }
               case e: Throwable => {
                 thisFileFailures += 1
                 if (((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
-                  logger.error("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + fileTuple._1 + " on the buffering queue", e)
+                  logger.error("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + filePath + " on the buffering queue", e)
                   try {
-                    if(currentFileLocationInfo.isMovingEnabled)
+                    if (currentFileLocationInfo.isMovingEnabled)
                       parentSmartFileConsumer.moveFile(filePath)
                     // bufferingQ_map.remove(fileTuple._1)
-                    removedEntries += fileTuple._1
+                    removedEntries += filePath
                   } catch {
                     case e: Throwable => {
                       logger.error("SMART_FILE_CONSUMER (MonitorController): Failed to move file, retyring", e)
@@ -362,40 +359,38 @@ class MonitorController {
                   }
                 } else {
                   //bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
-                  bufferingQ_map(filePath) = (updateMonitoredFile(fileTuple._2._1, thisFileNewLength, System.currentTimeMillis),
-                    thisFileFailures, initiallyExists)
+                  bufferingQ_map(filePath) = (currentMonitoredFile, thisFileFailures, isFirstScan)
                   logger.error("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue ", e)
                 }
               }
             }
           }
-          catch {
-            case e: Throwable => {
-              logger.error("Smart File Adapter (MonitorController) - Failed to check for entry in bufferingQ_map", e)
-            }
-          }
-          logger.info("1.==============> File Test end " + fileTuple._2._1.path)
-        })
-
-        newlyAdded.foreach(filePath => {
-          //notify leader about the new files
-          if(newFileDetectedCallback != null){
-            logger.debug("Smart File Adapter (MonitorController) - New file is enqueued in monitor controller queue ({})", filePath)
-            newFileDetectedCallback(filePath)
-          }
-        })
-
-        try {
-          bufferingQ_map --= removedEntries
-        } catch {
+        }
+        catch {
           case e: Throwable => {
-            logger.error("Smart File Adapter (MonitorController) - Failed to remove entries from bufferingQ_map", e)
+            logger.error("Smart File Adapter (MonitorController) - Failed to check for entry in bufferingQ_map", e)
           }
         }
+      })
+
+      newlyAdded.foreach(filePath => {
+        //notify leader about the new files
+        if (newFileDetectedCallback != null) {
+          logger.debug("Smart File Adapter (MonitorController) - New file is enqueued in monitor controller queue ({})", filePath)
+          newFileDetectedCallback(filePath)
+        }
+      })
+
+      try {
+        bufferingQ_map --= removedEntries
+      } catch {
+        case e: Throwable => {
+          logger.error("Smart File Adapter (MonitorController) - Failed to remove entries from bufferingQ_map", e)
+        }
       }
-
-
     }
+
+
   }
 
   def updateMonitoredFile(file : MonitoredFile, newSize : Long, newModTime : Long) : MonitoredFile = {
@@ -440,28 +435,10 @@ class MonitorController {
     }
   }
 
-  private def getFilesTobeProcessed: List[String] = {
-    fileQLock.synchronized {
-      return fileQ.map(f => f.fileHandler.getFullPath).toList
-    }
-  }
-
   //get file name only for now
   def getNextFileToProcess : String = {
     val f = deQFile
     if(f == null) null else f.fileHandler.getFullPath
   }
 
-  /*private def moveFile(fileHandler: SmartFileHandler): Unit = {
-    val targetMoveDir = adapterConfig.monitoringConfig.targetMoveDir
-
-    val fileStruct = fileHandler.getFullPath.split("/")
-    logger.info("SMART FILE CONSUMER Moving File" + fileHandler.getFullPath+ " to " + targetMoveDir)
-    if (fileHandler.exists()) {
-      fileHandler.moveTo(targetMoveDir + "/" + fileStruct(fileStruct.size - 1))
-      //fileCacheRemove(fileHandler.getFullPath)
-    } else {
-      logger.warn("SMART FILE CONSUMER File has been deleted" + fileHandler.getFullPath);
-    }
-  }*/
 }
