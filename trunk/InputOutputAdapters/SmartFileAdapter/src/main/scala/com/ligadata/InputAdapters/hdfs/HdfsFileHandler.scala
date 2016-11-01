@@ -326,10 +326,26 @@ class HdfsFileHandler extends SmartFileHandler {
     MonitoredFile(path, parentfolder, lastModificationTime, lastReportedSize, isDirectory, !isDirectory)
   }
 
-  def listFiles(path : String, maxDirDepth : Int) : Array[MonitoredFile] = {
+  def listDirectFiles(path : String) :  (Array[MonitoredFile], Array[MonitoredFile]) = {
+    val currentDirectFiles = ArrayBuffer[MonitoredFile]()
+    val currentDirectDirs = ArrayBuffer[MonitoredFile]()
+
+    val startTm = System.nanoTime
+
     try {
       val files = getHdFileSystem("listFiles").listStatus(new Path(path))
-      files.map(file => makeFileEntry(file, path))
+      files.foreach(file => {
+        val monitoredFile = makeFileEntry(file, path)
+        if(monitoredFile != null) {
+          if (monitoredFile.isDirectory) currentDirectDirs.append(monitoredFile)
+          else currentDirectFiles.append(monitoredFile)
+        }
+      })
+
+      val endTm = System.nanoTime
+      val elapsedTm = endTm - startTm
+      logger.debug("Sftp File Handler - finished listing dir %s. Operation took %fms. StartTime:%d, EndTime:%d.".
+        format(path, elapsedTm / 1000000.0, elapsedTm, endTm))
     }
     catch {
       case ex: Exception => {
@@ -341,6 +357,31 @@ class HdfsFileHandler extends SmartFileHandler {
         Array[MonitoredFile]()
       }
     }
+
+    (currentDirectFiles.toArray, currentDirectDirs.toArray)
+  }
+  def listFiles(srcDir : String, maxDepth : Int) : Array[MonitoredFile] = {
+    val files = ArrayBuffer[MonitoredFile]()
+
+    val dirsToCheck = new ArrayBuffer[(String, Int)]()
+    dirsToCheck.append((srcDir, 1))
+
+    while (dirsToCheck.nonEmpty) {
+      val currentDirInfo = dirsToCheck.head
+      val currentDir = currentDirInfo._1
+      val currentDirDepth = currentDirInfo._2
+      dirsToCheck.remove(0)
+
+      val (currentDirectFiles, currentDirectDirs) = listDirectFiles(currentDir)
+      //val (currentDirectFiles, currentDirectDirs) = MonitorUtils.separateFilesFromDirs(currentAllChilds)
+      files.appendAll(currentDirectFiles)
+
+      if(maxDepth <= 0 || currentDirDepth < maxDepth)
+        dirsToCheck.appendAll(currentDirectDirs.map(dir => (dir.path, currentDirDepth + 1)))
+
+    }
+
+    files.toArray
   }
 
   def disconnect() : Unit = {

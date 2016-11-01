@@ -137,7 +137,12 @@ class MonitorController {
                 waitingFilesToProcessCount > adapterConfig.monitoringConfig.dirCheckThreshold) {
 
                 logger.info("Smart File Monitor - too many files already in process queue. monitoring thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
-                Thread.sleep(monitoringConf.waitingTimeMS)
+                try {
+                  Thread.sleep(monitoringConf.waitingTimeMS)
+                }
+                catch{
+                  case ex : Throwable =>
+                }
               }
               else {
                 val dirQueuedInfo = monitoredDirsQueue.getNextDir()
@@ -154,7 +159,12 @@ class MonitorController {
                 else {
                   //happens if last time queue head dir was monitored was less than waiting time
                   logger.info("Smart File Monitor - no folders to monitor for now. Thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
-                  Thread.sleep(monitoringConf.waitingTimeMS)
+                  try {
+                    Thread.sleep(monitoringConf.waitingTimeMS)
+                  }
+                  catch{
+                    case ex : Throwable =>
+                  }
                 }
               }
             }
@@ -174,15 +184,9 @@ class MonitorController {
   }
 
   def listFiles(path: String): Array[String] ={
-    //TODO ------------------
-    /*if (smartFileMonitor == null) {
-      smartFileMonitor = SmartFileMonitorFactory.createSmartFileMonitor(adapterConfig.Name, adapterConfig._type, fileDetectedCallback)
-      smartFileMonitor.init(adapterConfig.adapterSpecificCfg)
-    }
-    if(smartFileMonitor != null)
-      smartFileMonitor.listFiles(path)
-    else*/
-      Array[String]()
+    val files = genericFileHandler.listFiles(path, adapterConfig.monitoringConfig.dirMonitoringDepth)
+    if(files != null) files.map(file => file.path)
+    else Array[String]()
   }
 
   def stopMonitoring(): Unit ={

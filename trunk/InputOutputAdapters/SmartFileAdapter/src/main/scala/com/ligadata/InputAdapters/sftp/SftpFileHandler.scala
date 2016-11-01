@@ -498,13 +498,13 @@ class SftpFileHandler extends SmartFileHandler{
         currentPath += tokens(idx) + "/"
         if(tokens(idx).length() >0){
           if(!fileExists(channelSftp, currentPath)){
-            logger.error("Sftp File Handler - Error while creating path " + currentPath)
+            logger.info("Sftp File Handler - Creating path " + currentPath)
             try{
               channelSftp.mkdir(currentPath)
             }
             catch{
               case ex : Throwable =>
-                logger.error("", ex)
+                logger.error("Sftp File Handler - Error while creating path " + getFullPath, ex)
                 fail = true
             }
           }

@@ -313,15 +313,50 @@ class PosixFileHandler extends SmartFileHandler{
     val isDirectory = file.isDirectory
     MonitoredFile(path, parentFolder, lastModificationTime, lastReportedSize, isDirectory, !isDirectory)
   }
-  def listFiles(path : String, maxDepth : Int) : Array[MonitoredFile] = {
+  def listDirectFiles(path : String) : (Array[MonitoredFile], Array[MonitoredFile]) = {
+    val currentDirectFiles = ArrayBuffer[MonitoredFile]()
+    val currentDirectDirs = ArrayBuffer[MonitoredFile]()
+
     try {
-      new File(path).listFiles.map(file => makeFileEntry(file, path))
+      new File(path).listFiles.foreach(file => {
+        val monitoredFile = makeFileEntry(file, path)
+        if(monitoredFile != null) {
+          if (monitoredFile.isDirectory) currentDirectDirs.append(monitoredFile)
+          else currentDirectFiles.append(monitoredFile)
+        }
+      })
     }
     catch{
       case ex : Throwable =>
         logger.error("Error while listing contents of dir " + path, ex)
         Array[MonitoredFile]()
     }
+
+    (currentDirectFiles.toArray, currentDirectDirs.toArray)
+  }
+
+  def listFiles(srcDir : String, maxDepth : Int) : Array[MonitoredFile] = {
+    val files = ArrayBuffer[MonitoredFile]()
+
+    val dirsToCheck = new ArrayBuffer[(String, Int)]()
+    dirsToCheck.append((srcDir, 1))
+
+    while (dirsToCheck.nonEmpty) {
+      val currentDirInfo = dirsToCheck.head
+      val currentDir = currentDirInfo._1
+      val currentDirDepth = currentDirInfo._2
+      dirsToCheck.remove(0)
+
+      val (currentDirectFiles, currentDirectDirs) = listDirectFiles(currentDir)
+      //val (currentDirectFiles, currentDirectDirs) = MonitorUtils.separateFilesFromDirs(currentAllChilds)
+      files.appendAll(currentDirectFiles)
+
+      if(maxDepth <= 0 || currentDirDepth < maxDepth)
+        dirsToCheck.appendAll(currentDirectDirs.map(dir => (dir.path, currentDirDepth + 1)))
+
+    }
+
+    files.toArray
   }
 
   def disconnect() : Unit = {
