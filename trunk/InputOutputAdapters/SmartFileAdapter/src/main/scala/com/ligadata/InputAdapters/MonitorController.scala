@@ -258,7 +258,7 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
           //          logger.error("==============> HaithamLog => loop 1 : Creating Hashmap depending on files that are Emails")
 
 
-          logger.error("==============> HaithamLog => Started grouping process :")
+          //          logger.error("==============> HaithamLog => Started grouping process :")
 
           var groupsHashmap: mutable.LinkedHashMap[String, ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))]] = mutable.LinkedHashMap[String, ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))]]()
           bufferingQ_map.foreach(element => {
@@ -300,7 +300,7 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
             grps += tmpArray // ArrayBuffer that holds the groups
           })
         }
-        logger.error("==============> HaithamLog => Finished grouping")
+        //        logger.error("==============> HaithamLog => Finished grouping")
         //        grps.foreach(grp => {
         //          grp.foreach(x => {
         //            print(x._1.getFullPath + " ,")
