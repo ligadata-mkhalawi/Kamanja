@@ -3,5 +3,6 @@
   "portNo": 8080,
   "socketUrl": "ws://54.176.225.148:7080/v2/broker/?topics=testmessageevents_1",
   "showFilter": false,
-  "socketOn": true
+  "socketOn": true,
+  "servicesServerIP": "54.176.225.148"
 }

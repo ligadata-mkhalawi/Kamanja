@@ -159,3 +159,343 @@ div.vis-network {
     }
   }
 }
+
+@mixin dropBox() {
+  background: #F8F8F8;
+  border: 1px solid #999999;
+  width: 387px;
+  height: 151px;
+  text-align: center;
+  padding-top: 3px;
+  margin: 0 auto;
+  position: relative;
+  .fileName {
+    display: flex;
+    justify-content: center; /* align horizontal */
+    align-items: center; /* align vertical */
+    height: 100%;
+  }
+  .removeLink {
+    position: absolute;
+    color: #009999;
+    cursor: pointer;
+    top: 80%;
+    left: 0;
+    width: 100%;
+    text-align: center;
+  }
+  &.dragover {
+    border: 5px dashed #999999;
+  }
+  .ngfDragDescription {
+    color: #AFAFAF;
+    animation: goSmaller1 0.3s ease; /* Safari, Chrome and Opera > 12.1 */
+    animation-fill-mode: forwards;
+    .browseLink {
+      color: #009999;
+      cursor: pointer;
+    }
+    @keyframes goSmaller1 {
+      from {
+        font-size: 0px;
+      }
+      to {
+        font-size: 13px;
+      }
+    }
+  }
+
+  $smallWidth: 40px;
+  $bigWidth: 74px;
+  .fa-upload {
+    display: inline-block;
+    background-color: #FF0000;
+    color: white;
+    line-height: 36px;
+    animation: goBigger1 0.3s ease; /* Safari, Chrome and Opera > 12.1 */
+    animation-fill-mode: forwards;
+    //padding-left: 1px;
+    padding-bottom: 4px;
+    margin-top: 34px;
+    margin-bottom: 10px;
+    @keyframes goBigger1 {
+      from {
+        width: $bigWidth;
+        height: $bigWidth;
+        border-radius: $bigWidth/2;
+        font-size: $bigWidth * 7 / 12;
+        line-height: $bigWidth;
+      }
+      to {
+        width: $smallWidth;
+        height: $smallWidth;
+        border-radius: $smallWidth/2;
+        font-size: $smallWidth * 7 / 12;
+        line-height: $smallWidth;
+      }
+    }
+  }
+
+  &:hover {
+    .ngfDragDescription {
+      animation: goSmaller 0.3s ease; /* Safari, Chrome and Opera > 12.1 */
+      animation-fill-mode: forwards;
+      @keyframes goSmaller {
+        from {
+          font-size: 13px;
+        }
+        to {
+          font-size: 0px;
+        }
+      }
+    }
+    .fa-upload {
+      animation: goBigger 0.3s ease; /* Safari, Chrome and Opera > 12.1 */
+      animation-fill-mode: forwards;
+      @keyframes goBigger {
+        from {
+          width: $smallWidth;
+          height: $smallWidth;
+          border-radius: $smallWidth/2;
+          font-size: $smallWidth * 7 / 12;
+          line-height: $smallWidth;
+        }
+        to {
+          width: $bigWidth;
+          height: $bigWidth;
+          border-radius: $bigWidth/2;
+          font-size: $bigWidth * 7 / 12;
+          line-height: $bigWidth;
+        }
+      }
+    }
+  }
+}
+
+.addNewModelModal {
+  .modal-dialog {
+    margin-top: 60px;
+    width: 522px;
+    .modal-content {
+      height: 550px;
+      border-radius: 4px;
+      .addModelHeader {
+        padding: 34px 0 0 0;
+      }
+      .modal-title {
+        font-size: 28px;
+        font-weight: 300;
+        color: #484848;
+      }
+      .modal-config-title {
+        color: #31DADA;
+      }
+      .modal-sub-title {
+        font-size: 20px;
+        font-weight: 300;
+        color: #009999;
+        padding: 0 0 15px 0;
+      }
+      .closeButton {
+        vertical-align: top;
+        display: block;
+        position: absolute;
+        top: -25px;
+        left: calc(100% + 6px);
+        cursor: pointer;
+      }
+      .modalControls {
+        margin: 0 auto;
+        height: 410px;
+        overflow-y: hidden;
+        label {
+          color: #009999;
+        }
+        label.configLabel {
+          color: black;
+        }
+        input[type=text] {
+          border-color: #ccc;
+          height: 44px;
+          &:hover, &:focus {
+            border-color: #ccc;
+            outline: none;
+            -webkit-box-shadow: none !important;
+            -moz-box-shadow: none !important;
+            box-shadow: none !important;
+          }
+        }
+        .config, .message, .model {
+          height: 410px;
+          display: block;
+          .inputs {
+            display: block;
+            height: 267px;
+            padding-top: 30px;
+          }
+        }
+
+        .form-control.name {
+          width: 387px;
+          height: 57px;
+          margin: 6px auto 0 auto;
+          min-height: 15px;
+          color: black;
+          font-family: '__Roboto_5';
+          font-style: normal;
+          font-weight: 400;
+          padding: 19px;
+          z-index: 434;
+          border-style: solid;
+          border-width: 2px;
+          border-color: #009999;
+          background-color: #FFFFFF;
+          border-radius: 3px;
+          line-height: 14px;
+        }
+        .form-control.addModelDropDownBtn {
+          width: 387px;
+          height: 44px;
+          margin: 3px auto 0 auto;
+          min-height: 15px;
+          color: #AFAFAF;
+          font-family: '__Roboto_5';
+          font-style: normal;
+          font-weight: 400;
+          padding: 15px 19px 19px 19px;
+          z-index: 434;
+          border-style: solid;
+          border-width: 1px;
+          border-color: #999999;
+          background-color: #FFFFFF;
+          border-radius: 0px;
+          line-height: 14px;
+          text-align: left;
+          position: relative;
+          -webkit-box-shadow: none;
+          box-shadow: none;
+          &.thereIsProject {
+            color: black;
+          }
+          .projectIdCaret {
+            position: absolute;
+            left: 346px;
+            top: 14px;
+          }
+          .caret {
+            float: right;
+          }
+        }
+        .drop-box {
+          @include dropBox();
+        }
+        ul.addModelDropDowns {
+          border-radius: 0;
+          border-color: #999999;
+          border-top: 0;
+          margin-top: -7px;
+          padding-top: 22px;
+          width: 387px;
+          -webkit-box-shadow: none;
+          box-shadow: none;
+
+          -webkit-animation: fadein 0.7s; /* Safari, Chrome and Opera > 12.1 */
+          -moz-animation: fadein 0.7s; /* Firefox < 16 */
+          -ms-animation: fadein 0.7s; /* Internet Explorer */
+          -o-animation: fadein 0.7s; /* Opera < 12.1 */
+          animation: fadein 0.7s;
+
+          @keyframes fadein {
+            from {
+              opacity: 0;
+            }
+            to {
+              opacity: 1;
+            }
+          }
+          @-moz-keyframes fadein {
+            from {
+              opacity: 0;
+            }
+            to {
+              opacity: 1;
+            }
+          }
+          @-webkit-keyframes fadein {
+            from {
+              opacity: 0;
+            }
+            to {
+              opacity: 1;
+            }
+          }
+          @-ms-keyframes fadein {
+            from {
+              opacity: 0;
+            }
+            to {
+              opacity: 1;
+            }
+          }
+          @-o-keyframes fadein {
+            from {
+              opacity: 0;
+            }
+            to {
+              opacity: 1;
+            }
+          }
+          li {
+            a {
+              /*height: 62px;*/
+              width: 346px;
+              text-align: left;
+              margin: 0 auto;
+              /*padding-top: 20px;*/
+              font-size: 16px;
+              /*margin-bottom: 6px;*/
+              &:hover {
+                background: #009999;
+                color: white;
+              }
+            }
+          }
+        }
+        .btnAddModel {
+          display: inline;
+          width: 150px;
+          height: 53px;
+          font-size: 15px;
+          font-weight: 700;
+          background-color: #009999;
+          color: white;
+          position: relative;
+          border: 0;
+          margin: 37px auto 0 auto;
+        }
+        .ng-hide-add-active {
+          -webkit-transition: 0.3s linear all;
+          transition: 0.3s linear all;
+        }
+        .ng-hide-remove-active {
+          -webkit-transition: 0.3s linear all;
+          transition: 0.3s linear all;
+          -webkit-transition-delay: 0.3s;
+          transition-delay: 0.3s;
+        }
+
+        .ng-hide {
+          opacity: 0;
+        }
+        .ng-submitted {
+          .ng-invalid {
+            border-color: red !important;
+          }
+        }
+
+      }
+    }
+  }
+}
+
+

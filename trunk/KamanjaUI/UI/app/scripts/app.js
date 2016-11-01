@@ -13,7 +13,8 @@ angular
     'ngAnimate',
     'ui.router',
     'ngResource',
-    'ui.bootstrap'
+    'ui.bootstrap',
+    'ngFileUpload'
   ])
   .config(function ($stateProvider, $urlRouterProvider) {
 

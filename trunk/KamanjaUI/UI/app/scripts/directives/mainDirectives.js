@@ -6,7 +6,7 @@ angular.module('networkApp')
       restrict: 'E',
       templateUrl: 'views/tpl/footer.html',
       controllerAs: 'footer',
-      controller: function ($rootScope, serviceData, serviceConfig) {
+      controller: function ($rootScope, $uibModal, serviceData, serviceConfig) {
         var footer = this;
         footer.footerList = [];
         var selectedModelIds = [];
@@ -71,6 +71,24 @@ angular.module('networkApp')
           });
         });
 
+        // add new model
+        footer.addNewModelModal = function(size){
+          var modalInstance = $uibModal.open({
+            animation: true,
+            backdrop: true,
+            templateUrl: 'views/tpl/addModelModal.tpl.html',
+            controller: 'addNewModelModalCtrl',
+            windowClass: 'addNewModelModal',
+            size: size,
+            resolve: {
+              addModel: function () {
+                return function (newModel) {
+
+                }
+              }
+            }
+          });
+        };
       }
     };
   })

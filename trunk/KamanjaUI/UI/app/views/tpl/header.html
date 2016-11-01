@@ -1,9 +1,9 @@
 <div class="topHeader" ng-click="header.hideSideMenu()">
   <div class="row headerBar">
-    <div class="col-sm-6 col-xs-6 col-md-6">
+    <div class="col-sm-2 col-xs-2 col-md-2">
       <img class="logo" id="imgLogo" src="./images/logo.svg" width="168"
            height="47" alt="" data-mu-svgfallback="./images/logo.png">
-      <span class="version">beta v0.1</span>
+      <div class="version">beta v0.1</div>
       <div ng-show="header.showFilter" class="filtersearch">
         <table class="filterTable">
           <tr>
@@ -12,7 +12,7 @@
                 <i class="glyphicon glyphicon-search"
                    ng-click="header.isSearchBoxShown = true" ng-show="header.isSearchBoxShown == false"
                    aria-hidden="true"></i>
-                <div class="search-container" ng-show="header.isSearchBoxShown == true">
+                <div class="search-container2" ng-show="header.isSearchBoxShown == true">
                   <div>
                     <div>
                       <div id="imaginary_container">
@@ -72,6 +72,15 @@
           </tr>
         </table>
       </div>
+    </div>
+    <div class="col-sm-4 col-xs-4 col-md-4">
+      <form id="search-container">
+        <input type="search" ng-model="header.selectedSearch"
+               typeahead-popup-template-url="searchPopupTemplate.html"
+               uib-typeahead="item as item.Name for item in header.selectedViewData | filter: {Name: $viewValue}"
+               typeahead-on-select="header.onSearchSelectChange($item, $model, $label, $event)"
+               class="form-control" placeholder="Search" ng-change="header.filterNodes()">
+      </form>
     </div>
     <div class="col-sm-6 col-xs-6 col-md-6">
       <div class="row">

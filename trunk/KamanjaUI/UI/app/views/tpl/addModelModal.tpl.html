@@ -1,0 +1,62 @@
+
+<div class="modal-header addModelHeader">
+  <button type="button" class="close" ng-click="closeModal()">&times;</button>
+  <h3 class="modal-title">Add A New Model</h3>
+</div>
+<div class="modal-body">
+  <div class="modalControls text-center">
+    <form ng-show="state === 'config'" class="config">
+      <p class="modal-sub-title addModalTitle">Step 1: Add Model Config</p>
+      <div class="inputs">
+        <div class="form-group" >
+          <div ng-file-upload-wrapper file="file2" required="true" accept="'.json'" change="setConfigList"></div>
+        </div>
+        <div class="form-group" >
+          <div class="btn-group">
+            <button class="form-control addModelDropDownBtn dropdown-toggle" type="button"
+                    id="dropdownMenu1"
+                    ng-class="{'ng-invalid':!selectedConfig.length,'thereIsProject':selectedConfig}"
+                    data-toggle="dropdown">
+              {{selectedConfigName}}
+              <img class="projectIdCaret" src="images/angel.svg" width="12" height="18" alt="" data-mu-svgfallback="img/angel_poster_.png">
+            </button>
+            <ul class="dropdown-menu addModelDropDowns" aria-labelledby="dropdownMenu1">
+              <li ng-repeat="config in listConfig">
+                <a href="#" ng-click="setSelectedConfig($event, config)">{{config}}</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+      <div class="form-group" >
+        <button class="form-control btnAddModel" ng-click="addConfig()">NEXT
+        </button>
+        <!--<button class="form-control btnAddModel"  type='button'  ng-click="state = 'model'; ">remove me, don't forget-->
+        <!--</button>-->
+
+      </div>
+    </form>
+
+    <form ng-show="state === 'model'" ng-class="{'submitted':submitted}" ng-submit="addModel()" novalidate
+          class="model">
+      <p class="modal-sub-title addModalTitle">Step 2: Add Model</p>
+      <div class="inputs">
+
+        <div class="form-group" >
+          <div ng-file-upload-wrapper file="file3" required="true" accept="'.java,.scala,.kpmml,.xml'" accept-description="Java, Scala, or KPMML file"></div>
+        </div>
+      </div>
+      <div class="form-group" >
+        <button class="form-control btnAddModel" type='button' ng-click="state = 'config'">BACK
+        </button>
+        <button class="form-control btnAddModel" type="submit">SAVE
+        </button>
+      </div>
+    </form>
+    <div class="spinner" ng-show="uploading">
+      <div class="whirl">
+      </div>
+    </div>
+  </div>
+</div>
