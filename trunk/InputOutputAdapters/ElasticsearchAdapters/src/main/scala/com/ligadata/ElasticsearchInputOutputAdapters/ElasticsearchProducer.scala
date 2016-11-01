@@ -190,24 +190,21 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     }
 
     if (adapterConfig.rollIndexNameByDataDate) {
-      logger.error("==============> HaithamLog => Elasticsearch OutputAdapter: inside rollIndexNameByDataDate ")
       if (adapterConfig.dateFiledNameInOutputMessage.isEmpty) {
         logger.error("Elasticsearch OutputAdapter : dateFiledNameInOutputMessage filed is empty")
       } else {
-        logger.error("==============> HaithamLog => Elasticsearch OutputAdapter: inside dateFiledNameInOutputMessage ")
         val tmpData = serializedContainerData.map(data => new String(data))
         tmpData.foreach(jsonData => {
           try {
             val jsonObj: JSONObject = new JSONObject(jsonData)
             // assuming format is yyyy-MM-dd'T'hh:mm'Z'
             val dateFiled: String = jsonObj.getString(adapterConfig.dateFiledNameInOutputMessage)
-            val dateFormatString: String = jsonObj.getString(adapterConfig.dateFiledNameInOutputMessage)
+            val dateFormatString: String = adapterConfig.dateFiledFormat
             val sourceDateFormat: SimpleDateFormat = new SimpleDateFormat(dateFormatString)
             val targetDateFormat: SimpleDateFormat = new SimpleDateFormat("yyyyMMdd")
             val targetDate: String = targetDateFormat.format(sourceDateFormat.parse(dateFiled))
 
             indexName = indexName + "-" + targetDate
-            logger.error("==============> HaithamLog => Elasticsearch OutputAdapter: indexName changed to :" + indexName)
             dataStore.putJson(indexName, jsonData)
           } catch {
             case e => logger.error("Elasticsearch output adapter : error while retrieving date field from output message - " + e)
@@ -537,3 +534,4 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
 
 }
+
