@@ -103,5 +103,184 @@ angular.module('networkApp')
       });
     };
 
+    /* ----- Kamanja APIs -------- */
+
+    service.addModel = function (data, fileType, headerObj, callback) {
+      //            https://github.com/caolan/async
+      async.waterfall([
+        function (callback) {
+          serviceBase.HttpRequest.Save({
+              url: serviceRest.uploadModel(fileType),
+              headers: headerObj,
+              data: data
+            },
+            function (response) {
+              if (response.APIResults["Status Code"] === -1) {
+                serviceBase.showErrorNotification('Add {modelName} Model'.format({modelName: fileType.toUpperCase()}), response.APIResults["Result Description"]);
+                callback(response);
+              } else {
+                serviceBase.showSuccessNotification('Add {modelName} Model'.format({modelName: fileType.toUpperCase()}),
+                  response.APIResults["Result Description"]);
+                callback(response);
+              }
+            });
+        }
+      ], function (result) {
+        callback(result);
+      });
+    };
+
+    service.deleteModel = function (model, callback) {
+      serviceBase.HttpRequest.delete({
+        url: serviceRest.deleteModelUrl(model.originalName),
+        data: {}
+      }, function (response) {
+        if (response.APIResults["Status Code"] === 0) {
+          //models = _.without(models, _.findWhere(models, {id: model.id}));
+          serviceBase.showSuccessNotification('Delete Model', response.APIResults["Result Description"]);
+          serviceBase.HttpRequest.Save({
+            url: '/deleteModel',
+            data: {
+              model: model,
+              token: authenticationService.getToken()
+            }
+          }, function (response) {
+            if (response.result.error) {
+              serviceBase.showErrorNotification('Deleting Model', response.result.error);
+            } else {
+              callback(response.result);
+            }
+          });
+        } else {
+          serviceBase.showErrorNotification('Delete Model', response.APIResults["Result Description"]);
+        }
+      });
+    };
+
+    service.updateModel = function (fileInfo, modelInfo, headerObj, callback, errorCallback) {
+      async.waterfall([
+        function (callback) {
+          if (fileInfo.fileType) {
+            serviceBase.HttpRequest.Put({
+                url: serviceRest.uploadModel(fileInfo.fileType),
+                headers: headerObj,
+                data: fileInfo.fileData
+              },
+              function (response) {
+                if (response.APIResults["Status Code"] === -1) {
+                  serviceBase.showErrorNotification('Update {modelName} Model'.format({modelName: fileInfo.fileType.toUpperCase()}), response.APIResults["Result Description"]);
+                  errorCallback();
+                }
+                else {
+                  serviceBase.showSuccessNotification('{modelName} Model Updated'.format({modelName: fileInfo.fileType.toUpperCase()}),
+                    response.APIResults["Result Description"]);
+                  callback(response);
+                }
+              });
+          } else {
+            callback(null);
+          }
+        }
+      ], function (result) {
+        if (result) {
+          modelInfo.updatedName = result.APIResults["Result Description"].split(':')[1];
+        }
+        serviceBase.HttpRequest.Save({
+          url: '/updateModel',
+          headers: {},
+          data: {
+            model: modelInfo,
+            token: authenticationService.getToken()
+          }
+        }, function (response) {
+          //modelInfo.name = modelInfo.name.split('.')[modelInfo.name.split('.').length - 2];
+          callback(response.result);
+        });
+      });
+    };
+
+    service.updatePmml = function (fileInfo, modelInfo, headerObj, callback) {
+      async.waterfall([
+        function (callback) {
+          serviceBase.HttpRequest.Put({
+              url: serviceRest.uploadModel('pmml'),
+              headers: {modelconfig: 'system.DecisionTreeIris,0.2.0', tenantid: "tenant1"},
+              data: fileInfo.fileData
+            },
+            function (response) {
+              if (response.APIResults["Status Code"] === -1) {
+                serviceBase.showErrorNotification('Update PMML', response.APIResults["Result Description"]);
+                callback(null);
+              }
+              else {
+                serviceBase.showSuccessNotification('{modelName} Model Updated'.format({modelName: fileInfo.fileType.toUpperCase()}),
+                  response.APIResults["Result Description"]);
+                callback(response);
+              }
+            });
+        }
+      ], function (result) {
+        serviceBase.HttpRequest.Save({
+          url: '/updateModel',
+          headers: {},
+          data: {
+            model: modelInfo,
+            token: authenticationService.getToken
+          }
+        }, function (response) {
+          callback(response.result);
+        });
+      });
+    };
+
+    service.addPmml = function (data, fileType, headerObj, callback) {
+      //            https://github.com/caolan/async
+      async.waterfall([
+        function (callback) {
+          serviceBase.HttpRequest.Save({
+              url: serviceRest.uploadModel('pmml'),
+              headers: headerObj,
+              data: data
+            },
+            function (response) {
+              if (response.APIResults["Status Code"] === -1) {
+                serviceBase.showErrorNotification('Add PMML Model', response.APIResults["Result Description"]);
+                callback(response);
+              } else {
+                serviceBase.showSuccessNotification('Add PMML Model',
+                  response.APIResults["Result Description"]);
+                callback(response);
+              }
+            });
+        }
+      ], function (result) {
+        callback(result);
+      });
+    };
+
+    service.addDefinition = function (data, callback) {
+      //            https://github.com/caolan/async
+      async.waterfall([
+        function (callback) {
+          serviceBase.HttpRequest.Put({
+              url: serviceRest.uploadDefinition(),
+              data: data
+            },
+            function (response) {
+              if (response.APIResults["Status Code"] === -1) {
+                serviceBase.showErrorNotification('Upload Model Config', response.APIResults["Result Description"]);
+                callback(response);
+              } else {
+                callback(response);
+              }
+            });
+        }
+      ], function (result) {
+        callback(result);
+      });
+    };
+
+    /*---------- End Kamanja API --------------------*/
+
     return service;
   });
