@@ -93,7 +93,7 @@ object MonitorUtils {
   }
 
   def shutdownAndAwaitTermination(pool: ExecutorService, id: String): Unit = {
-    pool.shutdown(); // Disable new tasks from being submitted
+    //    pool.shutdown(); // Disable new tasks from being submitted
     try {
       // change this to forcr shutdown
       // Wait a while for existing tasks to terminate
@@ -102,7 +102,7 @@ object MonitorUtils {
       // Wait a while for tasks to respond to being cancelled
       //        if (!pool.awaitTermination(2, TimeUnit.SECONDS)) {
       //      logger.warn("Pool did not terminate " + id);
-      Thread.currentThread().interrupt()
+      //      Thread.currentThread().interrupt()
       //        }
       //      }
     } catch {
