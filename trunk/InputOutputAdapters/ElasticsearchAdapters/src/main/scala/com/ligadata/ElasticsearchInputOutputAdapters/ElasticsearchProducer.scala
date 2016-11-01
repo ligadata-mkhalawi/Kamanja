@@ -205,7 +205,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
             val targetDate: String = targetDateFormat.format(sourceDateFormat.parse(dateFiled))
 
             indexName = indexName + "-" + targetDate
-            dataStore.putJson(indexName, jsonData)
+            //            dataStore.putJson(indexName, jsonData)
           } catch {
             case e => logger.error("Elasticsearch output adapter : error while retrieving date field from output message - " + e)
           }

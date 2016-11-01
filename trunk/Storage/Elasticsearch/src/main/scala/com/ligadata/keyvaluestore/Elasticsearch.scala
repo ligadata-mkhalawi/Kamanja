@@ -29,6 +29,7 @@ import com.ligadata.kamanja.metadata.AdapterInfo
 import org.apache.commons.codec.binary.Base64
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse
+import org.elasticsearch.action.admin.indices.refresh.RefreshResponse
 import org.elasticsearch.client.IndicesAdminClient
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.settings.Settings
@@ -508,7 +509,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       val putMappingResponse = client.admin().indices().prepareCreate(fullIndexName)
         .setSource(indexMapping)
         .execute().actionGet()
-      client.admin().indices().prepareRefresh(fullIndexName).get()
+      val tmp: RefreshResponse = client.admin().indices().prepareRefresh(fullIndexName).get()
     }
     catch {
       case e: Exception => {
