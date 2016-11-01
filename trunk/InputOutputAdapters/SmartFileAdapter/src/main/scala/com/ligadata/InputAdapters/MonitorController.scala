@@ -206,7 +206,6 @@ class MonitorController {
     }
   }
 
-
   /**
     *  Look at the files on the DEFERRED QUEUE... if we see that it stops growing, then move the file onto the READY
     *  to process QUEUE.
@@ -226,7 +225,8 @@ class MonitorController {
       val removedEntries = ArrayBuffer[String]()
 
       //TODO : for now check direct children only
-      val currentAllChilds = genericFileHandler.listFiles(dir)
+      val currentAllChilds = genericFileHandler.listFiles(dir, adapterConfig.monitoringConfig.dirMonitoringDepth)
+      //val (currentDirectFiles, currentDirectDirs) = separateFilesFromDirs(currentAllChilds)
 
       currentAllChilds.foreach(currentMonitoredFile => {
 

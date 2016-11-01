@@ -36,7 +36,13 @@ public interface SmartFileHandler {
 
     boolean mkdirs();
 
-    com.ligadata.InputAdapters.MonitoredFile[] listFiles(String dirPath);
+    /**
+     *
+     * @param dirPath
+     * @param maxDirDepth : if 0 get all sub-children, if 1 get only direct files, else get files for corresponding depth
+     * @return
+     */
+    com.ligadata.InputAdapters.MonitoredFile[] listFiles(String dirPath, int maxDirDepth);
 
     void disconnect();
 }

@@ -526,8 +526,11 @@ class SftpFileHandler extends SmartFileHandler{
   }
 
   implicit def iteratorToWrapper[T](iter:java.util.Iterator[T]):IteratorWrapper[T] = new IteratorWrapper[T](iter)
-  def listFiles(path : String) : Array[MonitoredFile] = {
-    val files = ArrayBuffer[MonitoredFile]()
+  def listDirectFiles(path : String) : (Array[MonitoredFile], Array[MonitoredFile]) = {
+
+    val currentDirectFiles = ArrayBuffer[MonitoredFile]()
+    val currentDirectDirs = ArrayBuffer[MonitoredFile]()
+
     try {
       getNewSession()
 
@@ -536,7 +539,10 @@ class SftpFileHandler extends SmartFileHandler{
 
       for (child <- children) {
         val monitoredFile = makeFileEntry(child, path)
-        if(monitoredFile != null) files.append(monitoredFile)
+        if(monitoredFile != null) {
+          if(monitoredFile.isDirectory) currentDirectDirs.append(monitoredFile)
+          else currentDirectFiles.append(monitoredFile)
+        }
       }
 
       val endTm = System.nanoTime
@@ -551,8 +557,32 @@ class SftpFileHandler extends SmartFileHandler{
         logger.error("Sftp File Handler - Error while listing files of dir " + path, ex)
     }
 
-    files.toArray
+    (currentDirectFiles.toArray, currentDirectDirs.toArray)
 
+  }
+
+  def listFiles(srcDir : String, maxDepth : Int) : Array[MonitoredFile] = {
+    val files = ArrayBuffer[MonitoredFile]()
+
+    val dirsToCheck = new ArrayBuffer[(String, Int)]()
+    dirsToCheck.append((srcDir, 1))
+
+    while (dirsToCheck.nonEmpty) {
+      val currentDirInfo = dirsToCheck.head
+      val currentDir = currentDirInfo._1
+      val currentDirDepth = currentDirInfo._2
+      dirsToCheck.remove(0)
+
+      val (currentDirectFiles, currentDirectDirs) = listDirectFiles(currentDir)
+      //val (currentDirectFiles, currentDirectDirs) = MonitorUtils.separateFilesFromDirs(currentAllChilds)
+      files.appendAll(currentDirectFiles)
+
+      if(maxDepth <= 0 || currentDirDepth < maxDepth)
+        dirsToCheck.appendAll(currentDirectDirs.map(dir => (dir.path, currentDirDepth + 1)))
+
+    }
+
+    files.toArray
   }
 
   private def makeFileEntry(child : Any, parent : String) : MonitoredFile = {

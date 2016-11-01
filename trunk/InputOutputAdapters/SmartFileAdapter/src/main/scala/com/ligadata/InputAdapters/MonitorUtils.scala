@@ -16,6 +16,7 @@ import scala.actors.threadpool.ExecutorService
 import scala.actors.threadpool.TimeUnit
 import FileType._
 import org.apache.commons.lang.StringUtils
+import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks._
 
 /**
@@ -273,6 +274,14 @@ object MonitorUtils {
     else ""
   }
   val showStackTraceWithLogs = true
+
+  //(array of files, array of dirs)
+  def separateFilesFromDirs (allFiles : Array[MonitoredFile]) : (Array[MonitoredFile], Array[MonitoredFile]) = {
+    val files = ArrayBuffer[MonitoredFile]()
+    val dirs = ArrayBuffer[MonitoredFile]()
+    allFiles.foreach(f => if(f.isDirectory) dirs.append(f) else files.append(f) )
+    (files.toArray, dirs.toArray)
+  }
 }
 
 object SmartFileHandlerFactory{

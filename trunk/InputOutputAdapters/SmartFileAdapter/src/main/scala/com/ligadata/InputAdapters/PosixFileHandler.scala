@@ -313,7 +313,7 @@ class PosixFileHandler extends SmartFileHandler{
     val isDirectory = file.isDirectory
     MonitoredFile(path, parentFolder, lastModificationTime, lastReportedSize, isDirectory, !isDirectory)
   }
-  def listFiles(path : String) : Array[MonitoredFile] = {
+  def listFiles(path : String, maxDepth : Int) : Array[MonitoredFile] = {
     try {
       new File(path).listFiles.map(file => makeFileEntry(file, path))
     }

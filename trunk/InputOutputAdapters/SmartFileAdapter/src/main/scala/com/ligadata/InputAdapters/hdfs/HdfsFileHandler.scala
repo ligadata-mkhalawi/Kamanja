@@ -326,7 +326,7 @@ class HdfsFileHandler extends SmartFileHandler {
     MonitoredFile(path, parentfolder, lastModificationTime, lastReportedSize, isDirectory, !isDirectory)
   }
 
-  def listFiles(path : String) : Array[MonitoredFile] = {
+  def listFiles(path : String, maxDirDepth : Int) : Array[MonitoredFile] = {
     try {
       val files = getHdFileSystem("listFiles").listStatus(new Path(path))
       files.map(file => makeFileEntry(file, path))
