@@ -21,6 +21,7 @@ angular
         replace: true,
         link: function (scope, element) {
           var selectedObjects = [];
+          var visibleNodes = [];
           var isNodeActive, updateNodesImagesToBeInactive, updateNodeToBeActive, updateNodeToBeInactive;
           var container = document.getElementById('visJsDiv');
           var data = {nodes: new vis.DataSet([]), edges: new vis.DataSet([])};
@@ -162,8 +163,10 @@ angular
           $rootScope.$on('nodeUnSelected', function (event, id) {
             nodeClick(id);
           });
+
           $rootScope.$on('filterNodesChanged', function (event, filteredNode) {
             if (data.nodes) {
+
               //_.each(data.nodes._data, function (item) {
                 //data.nodes._data.update([{id: filteredNode.id, hidden: filteredNode.visible}]);
               //});
@@ -182,8 +185,42 @@ angular
                     }
                   });
                 }
-              }else{
+                visibleNodes = _.filter(data.nodes._data, function(item){
+                  return item.hidden == false || item.hidden == undefined;
+                });
+              }else {
+                _.each(visibleNodes, function(item){
+                  data.nodes.update([{id: item.id, hidden: false}]);
 
+                  var selectedEdges = _.filter(data.edges._data, function (edge) {
+                    return edge.from == item.id || edge.to == item.id;
+                  });
+
+                  if (selectedEdges && selectedEdges.length > 0) {
+                    _.each(selectedEdges, function (edge) {
+                      data.edges.update([{id: edge.id, hidden: false}]);
+                    });
+                  }
+                });
+
+                if (filteredNode.searchText != "") {
+                  var selectedNodes = _.filter(data.nodes._data, function (node) {
+                    return !node._label.toLowerCase().contains(filteredNode.searchText.toLowerCase());
+                  });
+                  if (selectedNodes && selectedNodes.length > 0) {
+                    _.each(selectedNodes, function (item) {
+                      data.nodes.update([{id: item.id, hidden: !filteredNode.visible}]);
+                      var selectedEdges = _.filter(data.edges._data, function (edge) {
+                        return edge.from == item.id || edge.to == item.id;
+                      });
+                      if (selectedEdges && selectedEdges.length > 0) {
+                        _.each(selectedEdges, function (edge) {
+                          data.edges.update([{id: edge.id, hidden: !filteredNode.visible}]);
+                        });
+                      }
+                    });
+                  }
+                }
               }
               /*_.each(data.edges._data, function (item) {
                 data.edges.update([{id: item.id, hidden: false}]);
@@ -430,6 +467,7 @@ angular
           $window.onresize = resizeNetworkAndReposition;
           scope.$watch('data', function () {
             selectedObjects = [];
+            visibleNodes = [];
             data.nodes.removeAll();
             data.nodes.add((function () {
               var nodes = [];
@@ -447,6 +485,9 @@ angular
               return edges;
             }()));
             resizeNetworkAndReposition();
+            visibleNodes = _.filter(data.nodes._data, function(item){
+              return item.hidden == false || item.hidden == undefined;
+            });
           });
         }
       };

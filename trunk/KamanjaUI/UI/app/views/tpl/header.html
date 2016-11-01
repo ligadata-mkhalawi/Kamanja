@@ -79,6 +79,7 @@
                typeahead-popup-template-url="searchPopupTemplate.html"
                uib-typeahead="item as item.Name for item in header.selectedViewData | filter: {Name: $viewValue}"
                typeahead-on-select="header.onSearchSelectChange($item, $model, $label, $event)"
+               ng-change="header.onTextChanged()"
                class="form-control" placeholder="Search" ng-change="header.filterNodes()">
       </form>
     </div>

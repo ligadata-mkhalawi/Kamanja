@@ -1,7 +1,8 @@
 'use strict';
 
 angular.module('networkApp')
-  .directive('header', ['$rootScope', 'serviceData', 'serviceConfig', function ($rootScope, serviceData, serviceConfig) {
+  .directive('header', ['$rootScope', 'serviceData', 'serviceConfig',
+    function ($rootScope, serviceData, serviceConfig) {
     return {
       restrict: 'E',
       templateUrl: 'views/tpl/header.html',
@@ -79,6 +80,10 @@ angular.module('networkApp')
         header.onSearchSelectChange = function($item, $model, $label, $event){
           $rootScope.$broadcast('filterNodesChanged',
             {searchText: $item.name, isSearchText: true});
+        };
+
+        header.onTextChanged = function(){
+          $rootScope.$broadcast('filterNodesChanged',{searchText: header.selectedSearch, isSearchText: true});
         };
 
         header.init = function(){
