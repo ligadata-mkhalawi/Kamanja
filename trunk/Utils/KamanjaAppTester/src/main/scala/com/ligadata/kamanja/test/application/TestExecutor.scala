@@ -84,28 +84,26 @@ object TestExecutor {
       }
       val installDir: String = options('kamanjadir).asInstanceOf[String]
       val appManager = new KamanjaApplicationManager(installDir + "/test")
-      var mdAddResult = true
 
-      println("[Kamanja Application Tester] -> Starting Embedded Services...")
-      EmbeddedServicesManager.init(installDir)
-      if (!EmbeddedServicesManager.startServices) {
-        println(s"[Kamanja Application Tester] -> ***ERROR*** Failed to start embedded services")
-        EmbeddedServicesManager.stopServices
-        TestUtils.deleteFile(EmbeddedServicesManager.storageDir)
-        throw new Exception(s"[Kamanja Application Tester] -> ***ERROR*** Failed to start embedded services")
-      }
-      else {
-        appManager.kamanjaApplications.foreach(app => {
-          println(s"[Kamanja Application Tester] -> Adding metadata for application '${app.name}'")
+      appManager.kamanjaApplications.foreach(app => {
+        println(s"[Kamanja Application Tester] -> Beginning test for Kamanja Application '${app.name}'")
+        println(s"[Kamanja Application Tester] ---> Starting Embedded Services...")
+        EmbeddedServicesManager.init(installDir)
+        if (!EmbeddedServicesManager.startServices) {
+          println(s"[Kamanja APplication Tester] ---> ***ERROR*** Failed to start embedded services")
+          EmbeddedServicesManager.stopServices
+          TestUtils.deleteFile(EmbeddedServicesManager.storageDir)
+          throw new Exception(s"[Kamanja Application Tester] ---> ***ERROR*** Failed to start embedded services")
+        }
+        else {
+          println(s"[Kamanja Application Tester] ---> Adding metadata...")
           if (!addApplicationMetadata(app)) {
             println(s"[Kamanja Application Tester] -> ***ERROR*** Failed to add metadata for application '${app.name}'")
-            throw new Exception(s"[Kamanja Application Tester] -> ***ERROR*** Failed to add metadata for application '${app.name}'")
+            throw new Exception(s"[Kamanja Application Tester] ---> ***ERROR*** Failed to add metadata for application '${app.name}'")
           }
-          println(s"[Kamanja Application Tester] -> Metadata added for application '${app.name}'")
-        })
-
+          println(s"[Kamanja Application Tester] ---> All metadata successfully added")
+        }
         var testResult = true
-
 
         val consumer = new TestKafkaConsumer(EmbeddedServicesManager.getOutputKafkaAdapterConfig)
         val consumerThread = new Thread(consumer)
@@ -120,103 +118,97 @@ object TestExecutor {
         errorConsumerThread.start()
         eventConsumerThread.start()
 
-        appManager.kamanjaApplications.foreach(app => {
-          println(s"[Kamanja Application Tester] -> Processing Data Sets...")
-          app.dataSets.foreach(set => {
-            var dataSetResult = true
-            val resultsManager = new ResultsManager(EmbeddedServicesManager.getCluster)
+        println(s"[Kamanja Application Tester] ---> Processing data sets...")
+        app.dataSets.foreach(set => {
+          val resultsManager = new ResultsManager(EmbeddedServicesManager.getCluster)
 
-            //TODO: For some reason, if we don't sleep, the consumer doesn't fully start until after the messages are pushed and the consumer won't pick up the messages that are already in kafka
-            Thread sleep 1000
+          //TODO: For some reason, if we don't sleep, the consumer doesn't fully start until after the messages are pushed and the consumer won't pick up the messages that are already in kafka
+          Thread sleep 1000
 
-            val producer = new TestKafkaProducer
-            producer.inputMessages(EmbeddedServicesManager.getInputKafkaAdapterConfig, set.inputDataFile, set.inputDataFormat, set.partitionKey.getOrElse("1"))
+          val producer = new TestKafkaProducer
+          println(s"s[Kamanja Application Tester] -----> Pushing data from file ${set.inputDataFile} in format ${set.inputDataFormat}")
+          producer.inputMessages(EmbeddedServicesManager.getInputKafkaAdapterConfig, set.inputDataFile, set.inputDataFormat, set.partitionKey.getOrElse("1"))
 
-            // Reading in the expected results from the given data set into a List[String]. This will be used to count the number of results to expect in kafka as well.
-            val expectedResults = resultsManager.parseExpectedResults(set)
+          //Reading in the expected results from the given data set into a List[String]. This will be used to count the number of results to expect in kafka as well.
+          val expectedResults = resultsManager.parseExpectedResults(set)
 
-            var setFailed = false
-            println("[Kamanja Application Tester] ---> Waiting for output results")
-            val results = Globals.waitForOutputResults(EmbeddedServicesManager.getOutputKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)//.getOrElse(throw new Exception(s"Failed to send messages to kafka topic ${EmbeddedServicesManager.getOutputKafkaAdapterConfig.adapterSpecificConfig.topicName}"))
+          println("[Kamanja Application Tester] ----->  Waiting for output results...")
+          val results = Globals.waitForOutputResults(EmbeddedServicesManager.getOutputKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
+          if (results == null) {
+            testResult = false
+            println(s"[Kamanja Application Tester] -----> ***ERROR*** Failed to retrieve results. Checking error queue...")
+            val errors = Globals.waitForOutputResults(EmbeddedServicesManager.getErrorKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
+            if (errors != null) {
+              errors.foreach(error => {
+                println(s"[Kamanja Application Tester] -----> Error Message: " + error)
+              })
+            }
+            else {
+              println(s"[Kamanja Application Tester] -----> ***WARN*** Failed to discover messages in error queue")
+              println(s"[Kamanja Application Tester] ---> Checking message event queue")
 
-            if(results == null) {
-              setFailed = true
-              testResult = false
-              println(s"[Kamanja Application Tester] ---> ***ERROR*** Failed to retrieve results. Checking error queue...")
-              val errors = Globals.waitForOutputResults(EmbeddedServicesManager.getErrorKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
-              if(errors != null) {
-                errors.foreach(error => {
-                  println(s"[Kamanja Application Tester] -----> Error Message: " + error)
+              val events = Globals.waitForOutputResults(EmbeddedServicesManager.getEventKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
+              if (events != null) {
+                events.foreach(event => {
+                  println(s"[Kamanja Application Tester] -----> Event Message: $event")
                 })
               }
               else {
-                println(s"[Kamanja Application Tester] -----> ***WARN*** Failed to discover messages in error queue")
-                println(s"[Kamanja Application Tester] ---> Checking message event queue")
-
-                val events = Globals.waitForOutputResults(EmbeddedServicesManager.getEventKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
-                if(events != null) {
-                  events.foreach(event => {
-                    println(s"[Kamanja Application Tester] -----> Event Message: $event")
-                  })
-                }
-                else {
-                  println(s"[Kamanja Application Tester] -----> ***ERROR*** No event messages found. Kamanja did not process any input messages")
-                }
-
+                println(s"[Kamanja Application Tester] -----> ***ERROR*** No event messages found. Kamanja did not process any input messages")
               }
             }
-            else if(results.length > expectedResults.length){
-              println(s"[Kamanja Application Tester] ---> ***ERROR*** Found more output results than exist in expected results file ${set.expectedResultsFile}")
-              println(s"[Kamanja Application Tester] -----> Results Found: ")
-              results.foreach(result => {
-                println(s"[Kamanja Application Tester] -------> Result: $result")
-              })
-              setFailed = true
+          }
+          else if (results.length > expectedResults.length) {
+            println(s"[Kamanja Application Tester] ---> ***ERROR*** Found more output results than exist in expected results file ${set.expectedResultsFile}")
+            println(s"[Kamanja Application Tester] -----> Results Found: ")
+            results.foreach(result => {
+              println(s"[Kamanja Application Tester] -------> Result: $result")
+            })
+            testResult = false
+          }
+          else {
+            val matchResults = resultsManager.compareResults(set, results)
+            var matchFailureCount = 0
+            // If results don't match, display an error and increment the matchFailure count
+            matchResults.foreach(matchResult => {
+              if (!matchResult.matched) {
+                println(s"[Kamanja Application Tester] -----> ***ERROR*** Actual result and expected result do not match")
+                println(s"[Kamanja Application Tester] -------> Expected Result: ${matchResult.expectedResult}")
+                println(s"[Kamanja Application Tester] -------> Actual Result:   ${matchResult.actualResult}")
+                println(s"[Kamanja Application Tester] -------> Message Number:  ${matchResult.messageNumber}")
+                matchFailureCount += 1
+              }
+            })
+
+            if (matchFailureCount > 0) {
               testResult = false
+              println(s"[Kamanja Application Tester] -----> ***ERROR*** Data Set actual results differ from expected results. Data Set failed.")
+              println(s"[Kamanja Application Tester] -------> Expected Results File:   ${set.expectedResultsFile}")
+              println(s"[Kamanja Application Tester] -------> Expected Results Format: ${set.expectedResultsFormat}")
+              println(s"[Kamanja Application Tester] -------> Input Data File:         ${set.inputDataFile}")
+              println(s"[Kamanja Application Tester] -------> Input Data Format:       ${set.inputDataFormat}")
+              println(s"[Kamanja Application Tester] -------> Partition Key:           ${set.partitionKey.getOrElse("None")}")
             }
-            // Comparing expected results to actual results read from the data set's expected results file
             else {
-              val matchResults = resultsManager.compareResults(set, results)
-              var matchFailureCount = 0
-              // If results don't match, display an error and increment the matchFailure count
-              matchResults.foreach(matchResult => {
-                if (!matchResult.matched) {
-                  println(s"[Kamanja Application Tester] ---> ***ERROR*** Actual result and expected result do not match")
-                  println(s"[Kamanja Application Tester] -----> Expected Result: ${matchResult.expectedResult}")
-                  println(s"[Kamanja Application Tester] -----> Actual Result:   ${matchResult.actualResult}")
-                  println(s"[Kamanja Application Tester] -----> Message Number:  ${matchResult.messageNumber}")
-                  matchFailureCount += 1
-                }
-              })
-
-              if (matchFailureCount > 0) {
-                testResult = false
-                println(s"[Kamanja Application Tester] ---> ***ERROR*** Data Set actual results differ from expected results. Data Set failed.")
-                println(s"[Kamanja Application Tester] -----> Expected Results File:   ${set.expectedResultsFile}")
-                println(s"[Kamanja Application Tester] -----> Expected Results Format: ${set.expectedResultsFormat}")
-                println(s"[Kamanja Application Tester] -----> Input Data File:         ${set.inputDataFile}")
-                println(s"[Kamanja Application Tester] -----> Input Data Format:       ${set.inputDataFormat}")
-                println(s"[Kamanja Application Tester] -----> Partition Key:           ${set.partitionKey.getOrElse("None")}")
-              }
-              else {
-                println(s"[Kamanja Application Tester] ---> Actual results match expected results")
-              }
+              println(s"[Kamanja Application Tester] -----> Actual results match expected results")
             }
-          })
-          if(!testResult)
-            println(s"[Kamanja Application Tester] -> ***ERROR*** Application '${app.name}' testing failed")
-          else
-            println(s"[Kamanja Application Tester] -> Application '${app.name}' testing passed")
+          }
         })
 
-        consumer.shutdown
-        errorConsumer.shutdown
-        eventConsumer.shutdown
-      }
-    }
+        if (!testResult)
+          println(s"[Kamanja Application Tester] -> ***ERROR*** Application '${app.name}' testing failed")
+        else
+          println(s"[Kamanja Application Tester] -> Application '${app.name}' testing passed")
 
-    EmbeddedServicesManager.stopServices
-    TestUtils.deleteFile(EmbeddedServicesManager.storageDir)
+        consumer.shutdown
+        eventConsumer.shutdown
+        errorConsumer.shutdown
+
+        EmbeddedServicesManager.stopServices
+        TestUtils.deleteFile(EmbeddedServicesManager.storageDir)
+
+      })
+    }
   }
 
   private def nextOption(map: OptionMap, list: List[String]): OptionMap = {

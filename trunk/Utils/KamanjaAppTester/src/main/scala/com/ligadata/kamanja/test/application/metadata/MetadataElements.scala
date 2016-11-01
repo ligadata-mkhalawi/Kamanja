@@ -3,7 +3,7 @@ package com.ligadata.kamanja.test.application.metadata
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType
 import com.ligadata.kamanja.test.application.metadata.interfaces.{MetadataElement, ModelElement}
 
-case class ContainerElement(filename: String) extends MetadataElement {
+case class ContainerElement(filename: String, kvFile: Option[String]) extends MetadataElement {
   val elementType = "container"
 }
 

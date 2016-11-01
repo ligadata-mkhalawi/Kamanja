@@ -53,7 +53,8 @@ class KamanjaApplicationConfiguration {
             println("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Container' requires 'Filename' to be defined.")
             throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Container' requires 'Filename' to be defined.")
           }
-          metadataElements = metadataElements :+ new ContainerElement(appDir + "/metadata/container/" + elem("Filename").toString)
+          val kvFile: Option[String] = if (elem.keySet.exists(_ == "KVFile")) Some(elem("KVFile").toString) else None
+          metadataElements = metadataElements :+ new ContainerElement(appDir + "/metadata/container/" + elem("Filename").toString, kvFile)
         }
         case "message" => {
           if (!elem.keySet.exists(_ == "Filename")) {

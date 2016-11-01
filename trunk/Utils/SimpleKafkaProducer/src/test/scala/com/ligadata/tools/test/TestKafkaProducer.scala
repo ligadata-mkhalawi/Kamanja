@@ -80,13 +80,7 @@ class TestKafkaProducer {
     val oAdapter = com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer.CreateOutputAdapter(adapterConfiguration, null)
 
     try {
-      //ProcessFile(producer, topics, threadNo, fl, msg, sleeptm, partitionkeyidxs, st, ignorelines, format, isGzip, topicpartitions, isVerbose.equalsIgnoreCase("true"))
-      println(s"Pushing data to topic $topicName")
-      println(s"Adapter: " + oAdapter.toString)
       SimpleKafkaProducer.ProcessFile(oAdapter, Array(topicName), 1, file, "", 0, partKeys, new SimpleKafkaProducer.Stats, 0, dataFormat, false, 8, true)
-
-      //SimpleKafkaProducer.main(Array("--gz", "false", "--format", dataFormat, "--topics", topicName, "--brokerlist", hostList,
-      //  "--files", file, "--partitionkeyidxs", partitionKeyIdxs, "--threads", "1", "--topicpartitions", "8"))
     }
     catch {
       case e: Exception => throw new Exception("[Test Kafka Producer]: Failed to send message to kafka", e)
