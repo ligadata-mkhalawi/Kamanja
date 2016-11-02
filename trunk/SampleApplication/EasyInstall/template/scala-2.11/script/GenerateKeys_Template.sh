@@ -1,4 +1,9 @@
-KAMANJA_HOME={InstallDirectory}
+if [ "$KAMANJA_HOME" = "" ]; then
+    echo "The environment variable KAMANJA_HOME must be set"
+    exit
+fi
+
+echo "KAMANJA_HOME => $KAMANJA_HOME"
 
 currentKamanjaVersion=1.5.3
 
