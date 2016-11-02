@@ -273,7 +273,6 @@ class MonitorController {
 
                     val isValid = MonitorUtils.isValidFile(genericFileHandler, filePath, false,
                       adapterConfig.monitoringConfig.checkFileTypes)
-                    logger.warn("skipping is valid checking for file {}", filePath)
 
                     if (thisFilePreviousLength > 0 && isValid) {
                       if (isEnqueued(filePath)) {
