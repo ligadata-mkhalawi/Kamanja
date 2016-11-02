@@ -40,16 +40,17 @@ class PosixFileHandler extends SmartFileHandler{
   lazy val logger = LogManager.getLogger(loggerName)
 
   private var isBinary: Boolean = false
-
+  private var monitoringConfig: FileAdapterMonitoringConfig = null
   private var fileType : String = null
 
-  def this(fullPath : String){
+  def this(fullPath : String, monitoringConfig: FileAdapterMonitoringConfig){
     this()
     fileFullPath = fullPath
+    this.monitoringConfig = monitoringConfig
   }
 
-  def this(fullPath : String, isBin: Boolean) {
-    this(fullPath)
+  def this(fullPath : String, monitoringConfig: FileAdapterMonitoringConfig, isBin: Boolean) {
+    this(fullPath, monitoringConfig)
     isBinary = isBin
   }
 
@@ -113,6 +114,7 @@ class PosixFileHandler extends SmartFileHandler{
     */
   @throws(classOf[KamanjaException])
   def openForRead(ftype : String): InputStream = {
+    val asIs = if(monitoringConfig == null) true else monitoringConfig.considerUnknownFileTypesAsIs
     try {
       val is = getDefaultInputStream()
 
@@ -120,7 +122,7 @@ class PosixFileHandler extends SmartFileHandler{
         //get file type
         if (!isBinary) {
           fileType = CompressionUtil.getFileType(this, getFullPath, null)
-          in = CompressionUtil.getProperInputStream(is, fileType)
+          in = CompressionUtil.getProperInputStream(is, fileType, asIs)
         } else {
           fileType = FileType.UNKNOWN
           in = is
@@ -129,7 +131,7 @@ class PosixFileHandler extends SmartFileHandler{
       else {//already have file type
         fileType = ftype
         if(ftype == FileType.UNKNOWN || ftype == FileType.PLAIN) in = is
-        else in = CompressionUtil.getProperInputStream(is, fileType)
+        else in = CompressionUtil.getProperInputStream(is, fileType, asIs)
       }
 
       in

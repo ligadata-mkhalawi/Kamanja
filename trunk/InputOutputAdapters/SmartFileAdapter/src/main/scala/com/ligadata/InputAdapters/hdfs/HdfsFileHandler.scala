@@ -29,6 +29,8 @@ class HdfsFileHandler extends SmartFileHandler {
   private var hdFileSystem: FileSystem = null
   private var hdfsConfig: Configuration = null
 
+  private var monitoringConfig: FileAdapterMonitoringConfig = null
+
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
 
@@ -36,16 +38,18 @@ class HdfsFileHandler extends SmartFileHandler {
 
   private var fileType : String = null
 
-  def this(fullPath: String, connectionConf: FileAdapterConnectionConfig) {
+  def this(fullPath: String, connectionConf: FileAdapterConnectionConfig, monitoringConfig: FileAdapterMonitoringConfig) {
     this()
+
+    this.monitoringConfig = monitoringConfig
 
     fileFullPath = fullPath
     hdfsConfig = HdfsUtility.createConfig(connectionConf)
     hdFileSystem = FileSystem.newInstance(hdfsConfig)
   }
 
-  def this(fullPath: String, connectionConf: FileAdapterConnectionConfig, isBin: Boolean) {
-    this(fullPath, connectionConf)
+  def this(fullPath: String, connectionConf: FileAdapterConnectionConfig, monitoringConfig: FileAdapterMonitoringConfig, isBin: Boolean) {
+    this(fullPath, connectionConf, monitoringConfig)
     isBinary = isBin
   }
 
@@ -102,7 +106,8 @@ class HdfsFileHandler extends SmartFileHandler {
       val is = getDefaultInputStream()
       if (!isBinary) {
         fileType = CompressionUtil.getFileType(this, getFullPath, null)
-        in = CompressionUtil.getProperInputStream(is, fileType)
+        val asIs = if(monitoringConfig == null) true else monitoringConfig.considerUnknownFileTypesAsIs
+        in = CompressionUtil.getProperInputStream(is, fileType, asIs)
       } else {
         fileType = FileType.UNKNOWN
         in = is

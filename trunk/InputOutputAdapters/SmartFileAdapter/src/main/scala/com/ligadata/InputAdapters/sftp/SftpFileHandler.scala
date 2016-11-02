@@ -37,6 +37,7 @@ class SftpFileHandler extends SmartFileHandler{
   private var remoteFullPath = ""
 
   private var connectionConfig : FileAdapterConnectionConfig = null
+  private var monitoringConfig: FileAdapterMonitoringConfig = null
   //private var manager : StandardFileSystemManager = null
   private var in : InputStream = null
   //private var bufferedReader : BufferedReader = null
@@ -61,10 +62,11 @@ class SftpFileHandler extends SmartFileHandler{
 
   private var fileType : String = null
 
-  def this(path : String, config : FileAdapterConnectionConfig){
+  def this(path : String, connectionConfig : FileAdapterConnectionConfig, monitoringConfig: FileAdapterMonitoringConfig){
     this()
     this.remoteFullPath = path
-    connectionConfig = config
+    this.connectionConfig = connectionConfig
+    this.monitoringConfig = monitoringConfig
 
     passphrase = if (connectionConfig.keyFile != null && connectionConfig.keyFile.length > 0)
       connectionConfig.passphrase else null
@@ -81,9 +83,11 @@ class SftpFileHandler extends SmartFileHandler{
     ui = new SftpUserInfo(connectionConfig.password, passphrase)
   }
 
-  def this(fullPath : String, config : FileAdapterConnectionConfig, isBin: Boolean) {
-    this(fullPath, config)
+  def this(fullPath : String, connectionConfig : FileAdapterConnectionConfig,
+           monitoringConfig: FileAdapterMonitoringConfig, isBin: Boolean) {
+    this(fullPath, connectionConfig, monitoringConfig)
     isBinary = isBin
+
   }
 
   private def getNewSession() : Unit = {
@@ -166,7 +170,8 @@ class SftpFileHandler extends SmartFileHandler{
       val is = getDefaultInputStream()
       if (!isBinary) {
         fileType = CompressionUtil.getFileType(this, getFullPath, null)
-        in = CompressionUtil.getProperInputStream(is, fileType)
+        val asIs = if(monitoringConfig == null) true else monitoringConfig.considerUnknownFileTypesAsIs
+        in = CompressionUtil.getProperInputStream(is, fileType, asIs)
       } else {
         fileType = FileType.UNKNOWN
         in = is

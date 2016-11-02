@@ -271,7 +271,8 @@ class MonitorController {
                     // If the length is > 0, we assume that the file completed transfer... (very problematic, but unless
                     // told otherwise by BofA, not sure what else we can do here.
 
-                    val isValid = true//MonitorUtils.isValidFile(genericFileHandler, filePath, false)
+                    val isValid = MonitorUtils.isValidFile(genericFileHandler, filePath, false,
+                      adapterConfig.monitoringConfig.checkFileTypes)
                     logger.warn("skipping is valid checking for file {}", filePath)
 
                     if (thisFilePreviousLength > 0 && isValid) {

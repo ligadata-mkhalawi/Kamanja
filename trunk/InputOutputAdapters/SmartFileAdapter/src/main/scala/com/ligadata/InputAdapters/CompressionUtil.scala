@@ -243,7 +243,8 @@ object CompressionUtil {
     * @param fileType GZIP, BZIP2, LZO, PLAIN, UNKNOWN
     * @return input stream suitable for the file based on its compression type
     */
-  def getProperInputStream(originalInStream : InputStream, fileType : String) : InputStream = {
+  def getProperInputStream(originalInStream : InputStream, fileType : String,
+                           considerUnknownFileTypesAsIs : Boolean) : InputStream = {
     val loggerName = this.getClass.getName
     val logger = LogManager.getLogger(loggerName)
     try {
@@ -252,7 +253,9 @@ object CompressionUtil {
         case BZIP2 => new BZip2CompressorInputStream(originalInStream)
         case LZO => new LzopInputStream(originalInStream)
         case PLAIN => originalInStream
-        case UNKNOWN => originalInStream //treat unknown as un-compressed
+        case UNKNOWN =>  if(considerUnknownFileTypesAsIs) originalInStream else throw new Exception("Unsupported file type " + fileType)
+        case _ => if(considerUnknownFileTypesAsIs) originalInStream else throw new Exception("Unsupported file type " + fileType)
+
       }
     }
     catch{

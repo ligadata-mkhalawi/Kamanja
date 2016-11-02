@@ -30,7 +30,7 @@ object MonitorUtils {
   //Default allowed content types -
   val validContentTypes  = Set(PLAIN, GZIP, BZIP2, LZO) //might change to get that from some configuration
 
-  def isValidFile(genericFileHandler: SmartFileHandler, filePath : String, checkExistence : Boolean): Boolean = {
+  def isValidFile(genericFileHandler: SmartFileHandler, filePath : String, checkExistence : Boolean, checkFileTypes: Boolean): Boolean = {
     try {
       val filepathParts = filePath.split("/")
       val fileName = filepathParts(filepathParts.length - 1)
@@ -41,12 +41,14 @@ object MonitorUtils {
       //Check if the File exists
       if (!checkExistence || genericFileHandler.exists(filePath)) {
 
-        val contentType = CompressionUtil.getFileType(genericFileHandler, filePath, "")
-        if (validContentTypes contains contentType) {
-          return true
-        } else {
-          //Log error for invalid content type
-          logger.error("SMART FILE CONSUMER (MonitorUtils): Invalid content type " + contentType + " for file " + filePath)
+        if (!checkFileTypes) return true
+        else {
+          val contentType = CompressionUtil.getFileType(genericFileHandler, filePath, "")
+          if((validContentTypes contains contentType)) return true
+          else {
+            //Log error for invalid content type
+            logger.error("SMART FILE CONSUMER (MonitorUtils): Invalid content type " + contentType + " for file " + filePath)
+          }
         }
       }
       else {
@@ -405,9 +407,9 @@ object SmartFileHandlerFactory{
 
     val handler : SmartFileHandler =
       adapterConfig._type.toLowerCase() match {
-        case "das/nas" => new PosixFileHandler(fileFullPath, isBinary)
-        case "sftp" => new SftpFileHandler(fileFullPath, connectionConf, isBinary)
-        case "hdfs" => new HdfsFileHandler(fileFullPath, connectionConf, isBinary)
+        case "das/nas" => new PosixFileHandler(fileFullPath, monitoringConf, isBinary)
+        case "sftp" => new SftpFileHandler(fileFullPath, connectionConf, monitoringConf, isBinary)
+        case "hdfs" => new HdfsFileHandler(fileFullPath, connectionConf, monitoringConf, isBinary)
         case _ => throw new KamanjaException("Unsupported Smart file adapter type", null)
       }
 
