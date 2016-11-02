@@ -136,20 +136,20 @@ public class DecryptUtils{
     private static String getDecryptedPassword(AdapterConfiguration config) throws Exception {
 	try{
 	    // use the enrypted password if available
-	    String encryptedPass = config.getProperty(AdapterConfiguration.ENCRYPTED_PASSWORD);
+	    String encryptedPass = config.getProperty(AdapterConfiguration.ENCRYPTED_ENCODED_PASSWORD);
 	    if (encryptedPass == null ){
-		logger.warn("The properties " + AdapterConfiguration.ENCRYPTED_PASSWORD + " are not defined in properties file ");
+		logger.warn("The properties " + AdapterConfiguration.ENCRYPTED_ENCODED_PASSWORD + " are not defined in properties file ");
 		return null;
 	    }
 	    else{
 		String privateKeyFile = config.getProperty(AdapterConfiguration.PRIVATE_KEY_FILE);		       
 		if ( privateKeyFile == null ){
-		    logger.warn("The property " + AdapterConfiguration.ENCRYPTED_PASSWORD + " is defined but the property " +  AdapterConfiguration.PRIVATE_KEY_FILE + " not defined");
+		    logger.warn("The property " + AdapterConfiguration.ENCRYPTED_ENCODED_PASSWORD + " is defined but the property " +  AdapterConfiguration.PRIVATE_KEY_FILE + " not defined");
 		    return null;
 		}
 		String algorithm = config.getProperty(AdapterConfiguration.ENCRYPT_DECRYPT_ALGORITHM);
 		if ( algorithm == null ){
-		    logger.warn("The property " + AdapterConfiguration.ENCRYPTED_PASSWORD + " is defined but the property " +  AdapterConfiguration.ENCRYPT_DECRYPT_ALGORITHM + " not defined");
+		    logger.warn("The property " + AdapterConfiguration.ENCRYPTED_ENCODED_PASSWORD + " is defined but the property " +  AdapterConfiguration.ENCRYPT_DECRYPT_ALGORITHM + " not defined");
 		    return null;
 		}
 		logger.info("algorithm      => " + algorithm);
@@ -191,7 +191,7 @@ public class DecryptUtils{
      * @throws java.lang.Exception
      */
 
-    public static String getPassword(AdapterConfiguration config, String PasswordPropertyName) throws Exception {
+    public static String getPassword(AdapterConfiguration config, String PasswordPropertyName)  {
 	try{
 	    String pass = getDecryptedPassword(config);
 	    if( pass == null ){
@@ -202,7 +202,8 @@ public class DecryptUtils{
 	    }
 	    return pass;
 	} catch (Exception e) {
-	    throw new Exception(e);
+	    logger.error("failed to decode password ",e);
+	    return null;
 	}
     }
 }

@@ -194,7 +194,6 @@ public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 		dataSource.setUrl(config.getProperty(AdapterConfiguration.JDBC_URL));
 		dataSource.setUsername(config.getProperty(AdapterConfiguration.JDBC_USER));
 		//dataSource.setPassword(config.getProperty(AdapterConfiguration.JDBC_PASSWORD));
-
 		String pass = DecryptUtils.getPassword(config,AdapterConfiguration.JDBC_PASSWORD);
 		dataSource.setPassword(pass);
 		dataSource.setDefaultAutoCommit(false);
