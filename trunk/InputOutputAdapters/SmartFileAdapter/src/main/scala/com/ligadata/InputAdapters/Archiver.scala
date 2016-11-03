@@ -14,7 +14,9 @@ import scala.collection.mutable.ArrayBuffer
 
 
 case class StreamFile(destDir: String, var destFileName: String, var outStream: OutputStream,
-                         var currentFileSize: Long, var streamBuffer: ArrayBuffer[Byte], var flushBufferSize: Long)
+                         var currentFileSize: Long, var streamBuffer: ArrayBuffer[Byte], var flushBufferSize: Long){
+  def destFileFullPath = destDir + "/" + destFileName
+}
 
 class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: SmartFileConsumer) {
 
@@ -76,7 +78,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
   }
 
   val destFileFormat = "file_%s"
-  def getNewArchiveFileName = destFileFormat.format(new java.text.SimpleDateFormat("yyyyMMdd_HHmmss").format(new java.util.Date()))
+  def getNewArchiveFileName = destFileFormat.format(new java.text.SimpleDateFormat("yyyyMMdd_HHmmssSSS").format(new java.util.Date()))
 
 
   def getDestArchiveDir(locationInfo: LocationInfo, srcFileDir: String, srcFileBaseName: String, componentsMap: scala.collection.immutable.Map[String, String]) : String = {
@@ -474,6 +476,8 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
       val osWriter = new com.ligadata.OutputAdapters.OutputStreamWriter()
       val fc = adapterConfig.archiveConfig.outputConfig
 
+      logger.info("consolidateThresholdBytes="+adapterConfig.archiveConfig.consolidateThresholdBytes)
+
       val appendFileOption = getCurrentAppendFile(dstDirToArchive, 0)
 
       val appendFileInfo =
@@ -491,8 +495,8 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
       val appendFileName = appendFileInfo._1
       val appendFileCurrentSize = appendFileInfo._2
 
-      logger.warn("initial appendFileName={}", appendFileName)
-      logger.warn("initial appendFileCurrentSize={}", appendFileCurrentSize.toString)
+      logger.debug("initial appendFileName={}", appendFileName)
+      logger.debug("initial appendFileCurrentSize={}", appendFileCurrentSize.toString)
 
       //var appendFilePath = dstDirToArchive + "/" + appendFileName
 
@@ -510,54 +514,35 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
         return false
       }
 
-      var srcFileHandler : SmartFileHandler = null
-      var previousDestFileSize : Long = 0
-
-      var srcFileToArchive : String = null
-      var archInfo : ArchiveFileInfo = null
+      var srcFileHandler: SmartFileHandler = null
+      var previousDestFileSize: Long = 0
       var archInfoGroupList = archInfoGroup.toList
-      if(archInfoGroupList.nonEmpty){
-        archInfo = archInfoGroupList.head
+      var srcFileToArchive: String = null
+
+
+      //val archiveIndex = ArrayBuffer[ArchiveFileIndexEntry]()
+
+      while (archInfoGroupList.nonEmpty) {
+
+        val archInfo = archInfoGroupList.head
         archInfoGroupList = archInfoGroupList.tail
-      }
 
-      val archiveIndex = ArrayBuffer[ArchiveFileIndexEntry]()
-
-      while(archInfo != null){
-
-        val dstFileToArchive = streamFile.destDir + "/" + streamFile.destFileName
+        //val dstFileToArchive = streamFile.destDir + "/" + streamFile.destFileName
         srcFileToArchive = archInfo.srcFileDir + "/" + archInfo.srcFileBaseName
-
-        logger.warn("current src file to archive {}", srcFileToArchive)
-        logger.warn("current dest  file to archive {}", dstFileToArchive)
-
-        //val currentFileToArchiveSize = srcFileHandler.length()
-        //val currentFileToArchiveTimestamp = srcFileHandler.lastModified()
-
-        var status = false
-        var srcFileFinished = false
-        var destFileFull = false
-        var isCloseDestFile = false
+        logger.debug("current src file to archive {}", srcFileToArchive)
+        logger.debug("current dest  file to archive {}", streamFile.destFileFullPath)
 
         try {
-          //fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, srcFileToArchive, false)
-          if (srcFileHandler == null) {
-            srcFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, srcFileToArchive, isBinary = false)
-            logger.warn("opening src file to read")
-            srcFileHandler.openForRead()
-          }
-
-          if (streamFile.outStream == null) {
-            logger.warn("opening dest file to write")
-            streamFile.outStream = openStream(dstFileToArchive)
-          }
+          srcFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, srcFileToArchive, isBinary = false)
+          logger.debug("opening src file to read {}", srcFileHandler.getFullPath)
+          srcFileHandler.openForRead()
 
           //TODO: compare input compression to output compression, would this give better performance?
           //might need to do this: if same compression, can simply read and write as binary
           //else must open src to read using proper compression, and open dest for write with proper compression
 
-          var curReadLen = -1
-          var readLen = 0
+          var lastReadLen = -1
+          var actualBufferLen = 0
           val bufferSz = 8 * 1024 * 1024
           val byteBuffer = new Array[Byte](bufferSz)
 
@@ -565,138 +550,179 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
             if (archInfo.locationInfo == null) adapterConfig.monitoringConfig.messageSeparator
             else archInfo.locationInfo.messageSeparator
 
-          previousDestFileSize = streamFile.currentFileSize
           do {
+            logger.debug("destFileName=" + streamFile.destFileName)
+            logger.debug("streamFile.currentFileSize=" + streamFile.currentFileSize)
+
+
             val lengthToRead = Math.min(bufferSz, adapterConfig.archiveConfig.consolidateThresholdBytes - streamFile.currentFileSize).toInt
-            logger.warn("lengthToRead={}", lengthToRead.toString)
+            logger.debug("lengthToRead={}", lengthToRead.toString)
             if (lengthToRead > 0) {
-              logger.debug("reading {} to buffer with offset {}", lengthToRead.toString, readLen.toString)
-              curReadLen = srcFileHandler.read(byteBuffer, readLen, lengthToRead)
-              logger.debug("curReadLen={}", curReadLen.toString)
-              if (curReadLen > 0) {
+              if (lengthToRead <= actualBufferLen) {
+                logger.debug("dest file {} is almost full. cannot write leftover from last iteration of src file {}. opening a new one",
+                  streamFile.destFileName, srcFileHandler.getFullPath)
+                if (streamFile.outStream != null) {
+                  streamFile.outStream.close()
+                  streamFile.outStream = null
+                }
+                streamFile.destFileName = getNewArchiveFileName
+                logger.debug("new file name is "+streamFile.destFileName)
+                logger.debug("resetting currentFileSize to 0")
+                streamFile.currentFileSize = 0
+                updateCurrentAppendFile(streamFile.destDir, streamFile.destFileName, streamFile.currentFileSize, 0)
+                //todo consider archive index here
+              }
 
-                var idx = curReadLen - 1
+              else {
+                logger.debug("reading {} to buffer with offset {}", lengthToRead.toString, actualBufferLen.toString)
+                lastReadLen = srcFileHandler.read(byteBuffer, actualBufferLen, lengthToRead)
+                logger.debug("curReadLen={}", lastReadLen.toString)
+
                 var lastSeparatorIdx = -1
-                while (idx >= 0 && lastSeparatorIdx < 0) {
-                  if (byteBuffer(idx).asInstanceOf[Char] == message_separator) {
-                    lastSeparatorIdx = idx
+                var actualLenToWrite: Int = actualBufferLen //initially
+                if (lastReadLen > 0) {
+                  actualBufferLen += lastReadLen
+
+                  var idx = actualBufferLen - 1
+                  while (idx >= 0 && lastSeparatorIdx < 0) {
+                    if (byteBuffer(idx).asInstanceOf[Char] == message_separator) {
+                      lastSeparatorIdx = idx
+                    }
+                    idx -= 1
                   }
-                  idx += 1
+                  if (lastSeparatorIdx >= 0)
+                    actualLenToWrite = lastSeparatorIdx + 1
+                  else actualLenToWrite = actualBufferLen
                 }
-                val actualLenToWrite =
-                  if (lastSeparatorIdx >= 0) lastSeparatorIdx + 1
-                  else curReadLen
 
-                logger.debug("writing to dest actualLenToWrite ={}", actualLenToWrite.toString)
-                streamFile.outStream.write(byteBuffer, 0, actualLenToWrite)
-                streamFile.currentFileSize += actualLenToWrite
-
-                //fix buffer and index for next reading
-                if (lastSeparatorIdx >= 0) {
+                if (actualLenToWrite > 0) {
                   logger.debug("lastSeparatorIdx={}", lastSeparatorIdx.toString)
-                  // copy reaming bytes to head of buffer
-                  for (i <- 0 to curReadLen - lastSeparatorIdx - 1) {
-                    byteBuffer(i) = byteBuffer(lastSeparatorIdx + i + 1)
-                  }
-                  readLen = curReadLen - lastSeparatorIdx
-                }
-                else readLen = 0
 
-                logger.debug("next offset is {}", readLen.toString)
+                  //how much can we write to dest file max
+                  val remainingArchiveSpace = adapterConfig.archiveConfig.consolidateThresholdBytes - streamFile.currentFileSize
+                  logger.debug("streamFile.currentFileSize=" + streamFile.currentFileSize)
+                  logger.debug("remainingArchiveSpace=" + remainingArchiveSpace)
+                  logger.debug("actualLenToWrite=" + actualLenToWrite)
+
+                  if (remainingArchiveSpace < actualLenToWrite) {
+                    logger.debug("file {} is full", streamFile.destDir + "/" + streamFile.destFileName)
+                    //dest file is full, close
+                    if(streamFile.outStream!=null)
+                      streamFile.outStream.close()
+                    streamFile.destFileName = getNewArchiveFileName
+                    logger.debug("resetting currentFileSize to 0")
+                    streamFile.currentFileSize = 0
+                    updateCurrentAppendFile(streamFile.destDir, streamFile.destFileName, streamFile.currentFileSize, 0)
+                    streamFile.outStream = null
+                    //todo consider archive index here
+                  }
+                  /*if (streamFile.outStream == null) {
+                    //open stream for new dest file
+                    logger.warn("opening dest file to write {}", streamFile.destFileFullPath)
+                    streamFile.outStream = openStream(streamFile.destFileFullPath)
+                  }*/
+
+                  logger.debug("writing to dest actualLenToWrite ={}", actualLenToWrite.toString)
+                  streamFile.outStream = openStream(streamFile.destFileFullPath)
+
+                  streamFile.outStream.write(byteBuffer, 0, actualLenToWrite)
+                  streamFile.outStream.close()
+                  streamFile.outStream = null
+
+                  val fileSizeStartTm = System.nanoTime
+                  val sizeOnDisk = osWriter.getFileSize(fc, streamFile.destFileFullPath)
+                  val fileSize = System.nanoTime
+                  val fileSizeElapsedTm = fileSize - fileSizeStartTm
+                  logger.debug("SMART FILE CONSUMER - finished getting size for file %s. Operation took %fms .".format(streamFile.destFileFullPath, fileSizeElapsedTm/1000000.0))
+                  logger.debug("new size for file {} is {}", streamFile.destFileFullPath, sizeOnDisk.toString)
+
+                  logger.debug("setting currentFileSize to "+sizeOnDisk)
+                  streamFile.currentFileSize = sizeOnDisk// += actualLenToWrite
+                  updateCurrentAppendFile(streamFile.destDir, streamFile.destFileName, streamFile.currentFileSize, 0)
+
+                  logger.debug("current buffer:" + new String(byteBuffer.slice(0, actualBufferLen)))
+                  logger.debug("written:" + new String(byteBuffer.slice(0, actualLenToWrite)))
+
+                  //fix buffer and index for next reading
+                  if (actualBufferLen >= actualLenToWrite) {
+                    // copy reaming bytes to head of buffer
+                    for (i <- 0 to actualBufferLen - actualLenToWrite) {
+                      byteBuffer(i) = byteBuffer(actualLenToWrite + i)
+                    }
+                    actualBufferLen = actualBufferLen - actualLenToWrite
+                  }
+                  else actualBufferLen = 0
+
+                  logger.debug("next offset is {}", actualBufferLen.toString)
+                }
+                else
+                  logger.debug("actualLenToWrite is 0, nothing to write")
+
               }
             }
-            else curReadLen = 0
+            else lastReadLen = 0
 
-          } while (curReadLen > 0 && streamFile.currentFileSize < adapterConfig.archiveConfig.consolidateThresholdBytes)
-
-          status = true
-
-          srcFileFinished = curReadLen <= 0
-          destFileFull = streamFile.currentFileSize >= adapterConfig.archiveConfig.consolidateThresholdBytes
-          isCloseDestFile = destFileFull || archInfoGroupList.isEmpty
-
-          logger.warn("srcFileFinished={}", srcFileFinished.toString)
-          logger.warn("destFileFull={}",destFileFull.toString )
-          logger.warn("isCloseDestFile={}", isCloseDestFile.toString)
+            logger.debug("lastReadLen="+lastReadLen)
+          } while (lastReadLen > 0)
 
         } catch {
           case e: Throwable => {
-            logger.error("Failed to archive file from " + srcFileHandler.getFullPath + " to " + dstFileToArchive, e)
-            status = false
+            logger.error("Failed to archive file from " + srcFileHandler.getFullPath + " to " + streamFile.destFileFullPath, e)
+            //status = false
           }
         } finally {
-          if (srcFileHandler != null && srcFileFinished) {
+          if (srcFileHandler != null) {
             try {
               srcFileHandler.close()
             } catch {
               case e: Throwable => {
-                logger.error("Failed to close InputStream for " + dstFileToArchive, e)
+                logger.error("Failed to close InputStream for " + streamFile.destFileFullPath, e)
               }
             }
+
+            try {
+              logger.info("file {} is finished, deleting", srcFileHandler.getFullPath)
+              srcFileHandler.deleteFile(srcFileHandler.getFullPath) // Deleting file after archive
+              srcFileHandler = null
+
+            }
+            catch {
+              case e: Throwable => {
+                logger.error("Failed to delete file " + streamFile.destFileFullPath, e)
+              }
+            }
+
           }
 
-          if(streamFile.outStream != null && isCloseDestFile){
-            logger.warn("closing dest file {} ", streamFile.destDir+"/"+streamFile.destFileName)
-            streamFile.outStream.close()
 
-            val sizeOnDisk = osWriter.getFileSize(adapterConfig.archiveConfig.outputConfig,
+          /*val sizeOnDisk = osWriter.getFileSize(adapterConfig.archiveConfig.outputConfig,
               streamFile.destDir+"/"+streamFile.destFileName)
-
             logger.warn("dest file{}. sizeOnDisk={}, estimated size={}",
               streamFile.destDir+"/"+streamFile.destFileName, sizeOnDisk.toString, streamFile.currentFileSize.toString)
 
             val entry = ArchiveFileIndexEntry(srcFileToArchive, streamFile.destDir+"/"+streamFile.destFileName,
               previousDestFileSize, streamFile.currentFileSize - 1)
-            archiveIndex.append(entry)
+            archiveIndex.append(entry)*/
 
-            updateCurrentAppendFile(streamFile.destDir, streamFile.destFileName, streamFile.currentFileSize, 0)
-            streamFile.outStream = null
-          }
-          if (destFileFull) {
-            try {
-              logger.warn("file {} is full", streamFile.destDir+"/"+streamFile.destFileName)
-              //dest file is full, open a new one
-              streamFile.destFileName = getNewArchiveFileName
-              streamFile.currentFileSize = 0
 
-              updateCurrentAppendFile(streamFile.destDir, streamFile.destFileName, streamFile.currentFileSize, 0)
-
-            } catch {
-              case e: Throwable => {
-                logger.error("Failed to close OutputStream for " + dstFileToArchive, e)
-              }
-            }
-          }
-
-          if (srcFileHandler != null && srcFileFinished) {
-            try {
-              logger.warn("file {} is finished, deleting", srcFileHandler.getFullPath)
-              srcFileHandler.deleteFile(srcFileHandler.getFullPath) // Deleting file after archive
-              srcFileHandler = null
-
-              if(archInfoGroupList.nonEmpty) {
-                archInfo = archInfoGroupList.head
-                archInfoGroupList = archInfoGroupList.tail
-              }
-              else{
-                logger.warn("finished group")
-                archInfo = null
-              }
-            }
-            catch {
-              case e: Throwable => {
-                logger.error("Failed to delete file " + dstFileToArchive, e)
-              }
-            }
-          }
         }
+
       }
 
-      archiveIndex.foreach(entry => println(entry))
+
+      if (streamFile.outStream != null) {
+        logger.info("finished group, closing file {} ", streamFile.destDir + "/" + streamFile.destFileName)
+        //dest file is full, close
+        streamFile.outStream.close()
+        updateCurrentAppendFile(streamFile.destDir, streamFile.destFileName, streamFile.currentFileSize, 0)
+        streamFile.outStream = null
+        //todo consider archive index here
+      }
+
       true
     }
-    catch{
-      case ex : Exception =>
+    catch {
+      case ex: Exception =>
         logger.error("Error while archiving", ex)
         false
     }
