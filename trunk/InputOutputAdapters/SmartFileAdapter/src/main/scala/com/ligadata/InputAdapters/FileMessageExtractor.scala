@@ -375,9 +375,13 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
         //        logger.error("==============> HaithamLog => attachmentsJson " + attachmentsJson.toString)
       }
 
-
+      var jsonString = ""
       // prepare Json here.
-      val jsonString = "{\"filename\":\"%s\",\"messageBody\": \"%s\" %s}".format(fileHandlers(0).getFullPath, msgBody, attachmentsJson.toString)
+      if (!adapterConfig.monitoringConfig.organizationName.isEmpty) {
+        jsonString = "{\"filename\":\"%s\",\"messageBody\": \"%s\",\"organizationName\": \"%s\" %s}".format(fileHandlers(0).getFullPath, msgBody, adapterConfig.monitoringConfig.organizationName, attachmentsJson.toString)
+      } else {
+        jsonString = "{\"filename\":\"%s\",\"messageBody\": \"%s\" %s}".format(fileHandlers(0).getFullPath, msgBody, attachmentsJson.toString)
+      }
       //      logger.error("==============> HaithamLog => jsonString " + jsonString)
 
 

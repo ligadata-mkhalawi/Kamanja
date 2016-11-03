@@ -70,6 +70,7 @@ class FileAdapterMonitoringConfig {
   var orderBy: Array[String] = Array.empty[String]
   var entireFileAsOneMessage = false
   var enableEmailAndAttachmentMode = false
+  var organizationName = ""
   var checkFileTypes = true
   var checkFileSize = true
 
@@ -281,6 +282,9 @@ object SmartFileAdapterConfiguration {
       }
       else if (kv._1.compareToIgnoreCase("TagDelimiter") == 0) {
         monitoringConfig.tagDelimiter = kv._2.asInstanceOf[String]
+      }
+      else if (kv._1.compareToIgnoreCase("OrganizationName") == 0) {
+        monitoringConfig.organizationName = kv._2.asInstanceOf[String]
       }
       else if (kv._1.compareToIgnoreCase("MsgTags") == 0) {
         monitoringConfig.msgTags = kv._2.asInstanceOf[List[String]].toArray
