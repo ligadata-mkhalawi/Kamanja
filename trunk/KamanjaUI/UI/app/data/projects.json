@@ -1,0 +1,92 @@
+[
+  {
+    "id": 1,
+    "projectName":"IntrusionDetection",
+    "name": "NetLog_PrepData",
+    "age": 23,
+    "tags": "csv, Kafka, Java, Ahmad, BankD",
+    "status": "Active",
+    "selection": "selected",
+    "percentage": "100",
+    "description": "Read in the network logs from inside the firewall.  Ahmed recently revised it (4/19/2016), to support *.csv input into Kafka",
+    "language": "java"
+  },
+  {
+    "id": 2,
+    "projectName":"IntrusionDetection",
+    "name": "NetLog_IntrusDet_3.1",
+    "age": 1080,
+    "modelId": 2,
+    "tags": "R, cluster, PMML, Kamanja, HBase, Tom, BankD",
+    "status": "Active",
+    "selection": "selected",
+    "percentage": "3",
+    "description": "This is Greg's network intrusion detection model.  Kmeans clusters per application are trained in R and exported via PMML.  Logs reflecting behavior far from any cluster can be considered for review.  This program outputs only the 0 to 3% of the records to consider for alerting.",
+    "language": "pmml"
+  },
+  {
+    "id": 3,
+    "projectName":"IntrusionDetection",
+    "name": "NetLog_PostProcessing",
+    "age": 540,
+    "modelId": 3,
+    "tags": "Java, Kafka, Ahmad, BankD",
+    "status": "Active",
+    "selection": "selected",
+    "percentage": "100",
+    "description": "Ahmed is loading the 0-3% of alert records from the previous job to the Security Operations Center (SOC) application, along with investigation reasons.",
+    "language": "java"
+  },
+  {
+    "id":4,
+    "projectName":"BotnetDetection",
+    "name": "WebLog_BotnetDet",
+    "age": 1320,
+    "modelId": 1,
+    "tags": "PMML, Yousef, BankD",
+    "status": "Active",
+    "selection": "selected",
+    "percentage": "100",
+    "description": "Extract unusual URL's from web logs that are 1) long and strange or 2) a few people keep going to, even though it is unresolved.",
+    "language": "python"
+  },
+  {
+    "id":5,
+    "projectName":"AccountTakeover",
+    "name": "webLog_accTakeover_prep",
+    "age": 606,
+    "modelId": 5,
+    "tags": "csv, Kafka, Sam, scala",
+    "status": "Active",
+    "selection": "selected",
+    "percentage": "100",
+    "description": "Pull weblogs of employees behavior on SaaS applications outside the firewall.",
+    "language": "scala"
+  },
+  {
+    "id":6,
+    "projectName":"AccountTakeover",
+    "name": "webLog_accTakeover_detet_2.8",
+    "age": 606,
+    "modelId": 6,
+    "tags": "R, cluster, PMML, Kamanja, HBase, Greg",
+    "status": "Active",
+    "selection": "selected",
+    "percentage": "100",
+    "description": "Create one set of clusters of normal behavior on the mix of apps and sections of apps they use.  Outlier behavior is of concern.",
+    "language": "pmml"
+  },
+  {
+    "id":7,
+    "projectName":"AccountTakeover",
+    "name": "webLog_accTakeover_post",
+    "age": 606,
+    "modelId": 7,
+    "tags": "Kafka, Bill, SOC_alert, scala",
+    "status": "Active",
+    "selection": "selected",
+    "percentage": "100",
+    "description": "Route the alerts to the internal SOC application for tracking employee behavior.",
+    "language": "scala"
+  }
+]

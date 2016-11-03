@@ -1,8 +1,41 @@
 'use strict';
 
 angular.module('networkApp')
-  .factory('serviceUtil', function ($rootScope, $resource, $http) {
+  .factory('serviceUtil', function ($rootScope, $resource, $http, toastrConfig, toastr) {
     var service = {};
+
+    service.showSuccessNotification = function (title, msg) {
+      if (title)
+        toastr.success(msg, title);
+      else {
+        toastr.success(msg);
+      }
+    }
+
+    service.showErrorNotification = function (title, msg) {
+      if (title)
+        toastr.error(msg, title);
+      else {
+        toastr.error(msg);
+      }
+    }
+
+    service.showWarningNotification = function (title, msg) {
+      if (title)
+        toastr.warning(msg, title);
+      else {
+        toastr.warning(msg);
+      }
+    }
+
+    service.showInfoNotification = function (title, msg) {
+      if (title)
+        toastr.info(msg, title);
+      else {
+        toastr.info(msg);
+      }
+    }
+
     service.httpRequest = {};
 
     service.httpRequest.get = function (Obj, callback) {

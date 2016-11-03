@@ -32,6 +32,8 @@ module.exports = function(config) {
       'bower_components/d3/d3.js',
       'bower_components/angular-bootstrap/ui-bootstrap-tpls.js',
       'bower_components/ng-file-upload/ng-file-upload.js',
+      'bower_components/async/dist/async.js',
+      'bower_components/angular-toastr/dist/angular-toastr.tpls.js',
       'bower_components/angular-mocks/angular-mocks.js',
       // endbower
       'app/scripts/**/*.js',

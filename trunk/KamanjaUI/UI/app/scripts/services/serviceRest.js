@@ -10,7 +10,7 @@ angular.module('networkApp')
     service.setConfig = function(configObj){
       serverIP = configObj.serverIP;
       portNo = configObj.portNo;
-      servicesServerIP = servicesServerIP;
+      servicesServerIP = configObj.servicesServerIP;
     };
 
     service.getViews = function(){
@@ -35,8 +35,12 @@ angular.module('networkApp')
 
     service.getModelDetailedInfo = function (modelName) {
       return "http://{serverIP}:{portNo}/api/Model/{modelName}".format({
-        serverIP: serverIP, portNo: portNo, modelName: modelName
+        serverIP: servicesServerIP, portNo: portNo, modelName: modelName
       });
+    };
+
+    service.uploadDefinition = function () {
+      return "http://{serverIP}:{portNo}/api/UploadModelConfig".format({serverIP: servicesServerIP, portNo: portNo});
     };
 
     service.getModelsUrl = function () {

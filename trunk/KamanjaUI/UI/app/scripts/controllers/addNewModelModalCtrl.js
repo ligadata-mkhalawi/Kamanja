@@ -3,8 +3,10 @@
  */
 
 angular.module('networkApp')
-  .controller('addNewModelModalCtrl', ['$scope', '$uibModalInstance', 'serviceData',
-  function($scope, $uibModalInstance, serviceData){
+  .controller('addNewModelModalCtrl', ['$scope', '$timeout', '$uibModalInstance', 'serviceData', 'serviceUtil',
+  function($scope, $timeout, $uibModalInstance, serviceData, serviceUtil){
+    $scope.projects = ['Kamanja Demo'];
+    $scope.projectName = $scope.projects[0];
     $scope.listConfig = [];
     $scope.selectedConfig = "";
     $scope.selectedConfigName = "Select Config";
@@ -17,14 +19,14 @@ angular.module('networkApp')
     });
     $scope.addMessage = function () {
       if (!$scope.file) {
-        serviceBase.showErrorNotification("Message file is required.");
+        serviceUtil.showErrorNotification("Message file is required.");
         return;
       }
       $scope.uploading = true;
       if ($scope.file && $scope.file.name) {
         $scope.upload($scope.file, function (response) {
           $scope.uploading = false;
-          serviceBase.showSuccessNotification('Message File Uploaded Successfully');
+          serviceUtil.showSuccessNotification('Message File Uploaded Successfully');
           $timeout(function () {
             $scope.state = 'config';
             $scope.$apply();
@@ -37,11 +39,11 @@ angular.module('networkApp')
     };
     $scope.addConfig = function () {
       if (!$scope.file2) {
-        serviceBase.showErrorNotification("Model Config file is required.");
+        serviceUtil.showErrorNotification("Model Config file is required.");
         return;
       }
       if (!$scope.selectedConfig.length) {
-        serviceBase.showErrorNotification("You have to select config");
+        serviceUtil.showErrorNotification("You have to select config");
         return;
       }
       $scope.uploading = true;
@@ -62,11 +64,11 @@ angular.module('networkApp')
     };
     $scope.addModel = function () {
       if (!$scope.file3) {
-        serviceBase.showErrorNotification("Model file is required.");
+        serviceUtil.showErrorNotification("Model file is required.");
         return;
       }
       if (!$scope.projectName) {
-        serviceBase.showErrorNotification("You have to select project name");
+        serviceUtil.showErrorNotification("You have to select project name");
         return;
       }
       try {
@@ -131,7 +133,7 @@ angular.module('networkApp')
           serviceData.addDefinition(data, function (response) {
             if (response) {
               if (response.APIResults["Status Code"] === -1) {
-                serviceBase.showErrorNotification(response.APIResults["Result Description"]);
+                serviceUtil.showErrorNotification(response.APIResults["Result Description"]);
                 callback(response.APIResults["Result Description"]);
                 return ;
               }
@@ -159,7 +161,7 @@ angular.module('networkApp')
             serviceData.addPmml(data, fileType,{modelconfig:"system.DecisionTreeIris,0.1.0,system.irismsg"}, function (response) {
               if (response) {
                 if (response.APIResults["Status Code"] === -1) {
-                  serviceBase.showErrorNotification('Add Pmml', response.APIResults["Result Description"]);
+                  serviceUtil.showErrorNotification('Add Pmml', response.APIResults["Result Description"]);
                   errorCallback();
                   return;
                 }

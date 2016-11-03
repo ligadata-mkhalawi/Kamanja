@@ -109,17 +109,17 @@ angular.module('networkApp')
       //            https://github.com/caolan/async
       async.waterfall([
         function (callback) {
-          serviceBase.HttpRequest.Save({
+          serviceUtil.httpRequest.Save({
               url: serviceRest.uploadModel(fileType),
               headers: headerObj,
               data: data
             },
             function (response) {
               if (response.APIResults["Status Code"] === -1) {
-                serviceBase.showErrorNotification('Add {modelName} Model'.format({modelName: fileType.toUpperCase()}), response.APIResults["Result Description"]);
+                serviceUtil.showErrorNotification('Add {modelName} Model'.format({modelName: fileType.toUpperCase()}), response.APIResults["Result Description"]);
                 callback(response);
               } else {
-                serviceBase.showSuccessNotification('Add {modelName} Model'.format({modelName: fileType.toUpperCase()}),
+                serviceUtil.showSuccessNotification('Add {modelName} Model'.format({modelName: fileType.toUpperCase()}),
                   response.APIResults["Result Description"]);
                 callback(response);
               }
@@ -131,14 +131,14 @@ angular.module('networkApp')
     };
 
     service.deleteModel = function (model, callback) {
-      serviceBase.HttpRequest.delete({
+      serviceUtil.httpRequest.delete({
         url: serviceRest.deleteModelUrl(model.originalName),
         data: {}
       }, function (response) {
         if (response.APIResults["Status Code"] === 0) {
           //models = _.without(models, _.findWhere(models, {id: model.id}));
-          serviceBase.showSuccessNotification('Delete Model', response.APIResults["Result Description"]);
-          serviceBase.HttpRequest.Save({
+          serviceUtil.showSuccessNotification('Delete Model', response.APIResults["Result Description"]);
+          serviceUtil.httpRequest.Save({
             url: '/deleteModel',
             data: {
               model: model,
@@ -146,13 +146,13 @@ angular.module('networkApp')
             }
           }, function (response) {
             if (response.result.error) {
-              serviceBase.showErrorNotification('Deleting Model', response.result.error);
+              serviceUtil.showErrorNotification('Deleting Model', response.result.error);
             } else {
               callback(response.result);
             }
           });
         } else {
-          serviceBase.showErrorNotification('Delete Model', response.APIResults["Result Description"]);
+          serviceUtil.showErrorNotification('Delete Model', response.APIResults["Result Description"]);
         }
       });
     };
@@ -161,18 +161,18 @@ angular.module('networkApp')
       async.waterfall([
         function (callback) {
           if (fileInfo.fileType) {
-            serviceBase.HttpRequest.Put({
+            serviceUtil.httpRequest.put({
                 url: serviceRest.uploadModel(fileInfo.fileType),
                 headers: headerObj,
                 data: fileInfo.fileData
               },
               function (response) {
                 if (response.APIResults["Status Code"] === -1) {
-                  serviceBase.showErrorNotification('Update {modelName} Model'.format({modelName: fileInfo.fileType.toUpperCase()}), response.APIResults["Result Description"]);
+                  serviceUtil.showErrorNotification('Update {modelName} Model'.format({modelName: fileInfo.fileType.toUpperCase()}), response.APIResults["Result Description"]);
                   errorCallback();
                 }
                 else {
-                  serviceBase.showSuccessNotification('{modelName} Model Updated'.format({modelName: fileInfo.fileType.toUpperCase()}),
+                  serviceUtil.showSuccessNotification('{modelName} Model Updated'.format({modelName: fileInfo.fileType.toUpperCase()}),
                     response.APIResults["Result Description"]);
                   callback(response);
                 }
@@ -185,7 +185,7 @@ angular.module('networkApp')
         if (result) {
           modelInfo.updatedName = result.APIResults["Result Description"].split(':')[1];
         }
-        serviceBase.HttpRequest.Save({
+        serviceUtil.httpRequest.Save({
           url: '/updateModel',
           headers: {},
           data: {
@@ -202,25 +202,25 @@ angular.module('networkApp')
     service.updatePmml = function (fileInfo, modelInfo, headerObj, callback) {
       async.waterfall([
         function (callback) {
-          serviceBase.HttpRequest.Put({
+          serviceUtil.httpRequest.put({
               url: serviceRest.uploadModel('pmml'),
               headers: {modelconfig: 'system.DecisionTreeIris,0.2.0', tenantid: "tenant1"},
               data: fileInfo.fileData
             },
             function (response) {
               if (response.APIResults["Status Code"] === -1) {
-                serviceBase.showErrorNotification('Update PMML', response.APIResults["Result Description"]);
+                serviceUtil.showErrorNotification('Update PMML', response.APIResults["Result Description"]);
                 callback(null);
               }
               else {
-                serviceBase.showSuccessNotification('{modelName} Model Updated'.format({modelName: fileInfo.fileType.toUpperCase()}),
+                serviceUtil.showSuccessNotification('{modelName} Model Updated'.format({modelName: fileInfo.fileType.toUpperCase()}),
                   response.APIResults["Result Description"]);
                 callback(response);
               }
             });
         }
       ], function (result) {
-        serviceBase.HttpRequest.Save({
+        serviceUtil.httpRequest.Save({
           url: '/updateModel',
           headers: {},
           data: {
@@ -237,17 +237,17 @@ angular.module('networkApp')
       //            https://github.com/caolan/async
       async.waterfall([
         function (callback) {
-          serviceBase.HttpRequest.Save({
+          serviceUtil.httpRequest.Save({
               url: serviceRest.uploadModel('pmml'),
               headers: headerObj,
               data: data
             },
             function (response) {
               if (response.APIResults["Status Code"] === -1) {
-                serviceBase.showErrorNotification('Add PMML Model', response.APIResults["Result Description"]);
+                serviceUtil.showErrorNotification('Add PMML Model', response.APIResults["Result Description"]);
                 callback(response);
               } else {
-                serviceBase.showSuccessNotification('Add PMML Model',
+                serviceUtil.showSuccessNotification('Add PMML Model',
                   response.APIResults["Result Description"]);
                 callback(response);
               }
@@ -262,13 +262,13 @@ angular.module('networkApp')
       //            https://github.com/caolan/async
       async.waterfall([
         function (callback) {
-          serviceBase.HttpRequest.Put({
+          serviceUtil.httpRequest.put({
               url: serviceRest.uploadDefinition(),
               data: data
             },
             function (response) {
               if (response.APIResults["Status Code"] === -1) {
-                serviceBase.showErrorNotification('Upload Model Config', response.APIResults["Result Description"]);
+                serviceUtil.showErrorNotification('Upload Model Config', response.APIResults["Result Description"]);
                 callback(response);
               } else {
                 callback(response);

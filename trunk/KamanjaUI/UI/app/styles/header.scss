@@ -157,13 +157,12 @@
 
   input[type=search] {
     background: #ededed url(http://static.tumblr.com/ftv85bp/MIXmud4tx/search-icon.png) no-repeat 9px center;
-    border: solid 1px #ccc;
+    border: solid 1px black;
     padding: 9px 10px 9px 32px;
     width: 55px;
+    height: 22px;
 
-    -webkit-border-radius: 10em;
-    -moz-border-radius: 10em;
-    border-radius: 10em;
+
 
     -webkit-transition: all .5s;
     -moz-transition: all .5s;
@@ -172,7 +171,7 @@
   input[type=search]:focus {
     width: 250px;
     background-color: #fff;
-    border-color: #920c06;
+
 
     -webkit-box-shadow: 0 0 5px rgba(109, 207, 246, .5);
     -moz-box-shadow: 0 0 5px rgba(109, 207, 246, .5);

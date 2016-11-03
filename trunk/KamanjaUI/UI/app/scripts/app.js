@@ -14,7 +14,8 @@ angular
     'ui.router',
     'ngResource',
     'ui.bootstrap',
-    'ngFileUpload'
+    'ngFileUpload',
+    'toastr'
   ])
   .config(function ($stateProvider, $urlRouterProvider) {
 
