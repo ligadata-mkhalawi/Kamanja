@@ -25,6 +25,7 @@ angular
           var isNodeActive, updateNodesImagesToBeInactive, updateNodeToBeActive, updateNodeToBeInactive;
           var container = document.getElementById('visJsDiv');
           var data = {nodes: new vis.DataSet([]), edges: new vis.DataSet([])};
+          var popupMenu = undefined;
           var options = {
             'edges': {
               'smooth': {
@@ -322,6 +323,27 @@ angular
             network.on('click', onClick);
             network.on('doubleClick', onDoubleClick);
           }());
+          container.addEventListener('contextmenu', function(e) {
+            if (popupMenu !== undefined) {
+              popupMenu.parentNode.removeChild(popupMenu);
+              popupMenu = undefined;
+            }
+            console.log('context');
+
+            if (network.getSelection().nodes.length > 0) {
+              var offsetLeft = container.offsetLeft;
+              var offsetTop = container.offsetTop;
+
+              popupMenu = document.createElement("div");
+              popupMenu.className = 'popupMenu';
+              popupMenu.style.left = e.clientX - offsetLeft + 'px';
+              popupMenu.style.top = e.clientY - offsetTop +'px';
+              container.appendChild(popupMenu);
+            }
+            e.preventDefault()
+
+          }, false);
+
           network.on('click', function (params) {
             if (!params.edges.length && !params.nodes.length) {
               // updateNodesImagesToBeInactive();

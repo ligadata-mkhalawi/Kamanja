@@ -37,6 +37,7 @@ angular.module('networkApp')
               imageName: type.image + '.inactive.' + type.extension,
               imageWidth: type.width,
               imageHeight: type.height,
+              hasNoFunctions: type.hasNoFunctions,
               id: item,
               visible: true,
               style: {},

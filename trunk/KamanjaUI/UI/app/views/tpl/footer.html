@@ -30,7 +30,7 @@
             <li class="list-group-item disabled" >FILTER</li>
           </ul>
 
-          <span class="glyphicon glyphicon-menu-up" aria-hidden="true" ng-click=" item.showList= true;"></span>
+          <span class="glyphicon glyphicon-menu-up" aria-hidden="true" ng-if ="!item.hasNoFunctions" ng-click=" item.showList= true;"></span>
         </li>
       </ul>
     </div>

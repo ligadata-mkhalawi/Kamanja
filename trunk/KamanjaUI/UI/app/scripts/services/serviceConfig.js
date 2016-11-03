@@ -52,7 +52,8 @@ angular.module('networkApp')
           width: '45',
           height: '45',
           widthProperties: '25',
-          heightProperties: '25'
+          heightProperties: '25',
+          hasNoFunctions: true
         },
         container: {
           image: 'container',
@@ -72,7 +73,8 @@ angular.module('networkApp')
           width: '45',
           height: '45',
           widthProperties: '25',
-          heightProperties: '25'
+          heightProperties: '25',
+          hasNoFunctions: true
         },
         dag: {
           image: 'dag',
