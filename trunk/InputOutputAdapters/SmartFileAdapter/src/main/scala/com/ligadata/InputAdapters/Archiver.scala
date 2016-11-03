@@ -12,9 +12,12 @@ import org.apache.logging.log4j.LogManager
 import scala.actors.threadpool.{ExecutorService, Executors}
 import scala.collection.mutable.ArrayBuffer
 
+import java.io.ByteArrayOutputStream
+
 
 case class StreamFile(destDir: String, var destFileName: String, var outStream: OutputStream,
-                         var currentFileSize: Long, var streamBuffer: ArrayBuffer[Byte], var flushBufferSize: Long){
+                         var currentFileSize: Long, var streamBuffer: ArrayBuffer[Byte], var flushBufferSize: Long,
+                         var currentActualOffset : Long){
   def destFileFullPath = destDir + "/" + destFileName
 }
 
@@ -25,15 +28,15 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
 
   val maximumAppendableSize = 10
 
-  private val currentAppendFiles =  scala.collection.mutable.LinkedHashMap[String, (String, Long, Long)]()
+  private val currentAppendFiles =  scala.collection.mutable.LinkedHashMap[String, (String, Long, Long, Long)]()
 
   /**
 
     * @param parentDestDir
     * @param srcFileSize
-    * @return file name, size, last mod timestamp
+    * @return file name, size, byte offset, last mod timestamp
     */
-  def getCurrentAppendFile(parentDestDir : String, srcFileSize : Long) : Option[(String, Long, Long)] = {
+  def getCurrentAppendFile(parentDestDir : String, srcFileSize : Long) : Option[(String, Long, Long, Long)] = {
     this.synchronized {
       //if (currentAppendFiles.contains(parentDir) && currentAppendFiles(parentDir).nonEmpty)
       //  Some(currentAppendFiles(parentDir).head._1, currentAppendFiles(parentDir).head._2, currentAppendFiles(parentDir).head.._3)
@@ -45,9 +48,9 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
   }
 
 
-  def addToCurrentAppendFiles(parentDir : String, file : String, size : Long, timestamp : Long) = {
+  def addToCurrentAppendFiles(parentDir : String, file : String, size : Long, byteOffset : Long, timestamp : Long) = {
     this.synchronized {
-      currentAppendFiles.put(parentDir, (file, size, timestamp))
+      currentAppendFiles.put(parentDir, (file, size, byteOffset, timestamp))
     }
   }
 
@@ -56,18 +59,22 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
         currentAppendFiles.remove(parentDir)
   }
 
-  def updateCurrentAppendFile(parentDir : String, file : String, newSize : Long, newTimestamp : Long) = {
+  def updateCurrentAppendFile(parentDir : String, file : String, newSize : Long, newByteOffset : Long, newTimestamp : Long) = {
     this.synchronized {
+
+      val callstack = Thread.currentThread().getStackTrace().drop(1).take(2).
+        map(s => s.getClassName + "." + s.getMethodName + "(" + s.getLineNumber + ")").mkString("\n")
+      logger.debug("updating CurrentAppendFile with newByteOffset={}", newByteOffset.toString + ". "  + callstack)
 
       //remove file info if too large to append to
         //TODO : is it better to consider files that are larger than max*ratio (instead of max) unfit for appending?
       if(currentAppendFiles.contains(parentDir)) {
         if (newSize >= adapterConfig.archiveConfig.consolidateThresholdBytes)
           currentAppendFiles.remove(parentDir)
-        else currentAppendFiles.put(parentDir, (file, newSize, newTimestamp))
+        else currentAppendFiles.put(parentDir, (file, newSize, newByteOffset, newTimestamp))
       }
       else
-        currentAppendFiles.put(parentDir, (file, newSize, newTimestamp))
+        currentAppendFiles.put(parentDir, (file, newSize, newByteOffset, newTimestamp))
     }
   }
 
@@ -78,7 +85,12 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
   }
 
   val destFileFormat = "file_%s"
-  def getNewArchiveFileName = destFileFormat.format(new java.text.SimpleDateFormat("yyyyMMdd_HHmmssSSS").format(new java.util.Date()))
+  def getNewArchiveFileName = {
+    val callstack = Thread.currentThread().getStackTrace().drop(1).take(2).
+      map(s => s.getClassName + "." + s.getMethodName + "(" + s.getLineNumber + ")").mkString("\n")
+    logger.debug("getting new archive file. " + callstack)
+    destFileFormat.format(new java.text.SimpleDateFormat("yyyyMMdd_HHmmssSSS").format(new java.util.Date()) )
+  }
 
 
   def getDestArchiveDir(locationInfo: LocationInfo, srcFileDir: String, srcFileBaseName: String, componentsMap: scala.collection.immutable.Map[String, String]) : String = {
@@ -460,14 +472,14 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
     //os = openFile(fc, fileName)
     val osWriter = new com.ligadata.OutputAdapters.OutputStreamWriter()
     originalStream = osWriter.openFile(adapterConfig.archiveConfig.outputConfig, filePath, true)
-
-    val compress = adapterConfig.archiveConfig.outputConfig.compressionString != null
+    originalStream
+    /*val compress = adapterConfig.archiveConfig.outputConfig.compressionString != null
     if (compress)
       os = new CompressorStreamFactory().createCompressorOutputStream(adapterConfig.archiveConfig.outputConfig.compressionString, originalStream)
     else
       os = originalStream
 
-    os
+    os*/
   }
 
   private def archiveFilesGroup(dstDirToArchive : String, archInfoGroup: Array[ArchiveFileInfo]) : Boolean = {
@@ -484,24 +496,30 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
         if (appendFileOption.isDefined) {
           //TODO : make sure file exists
           //val fileSize = osWriter.getFileSize(fc, dstDirToArchive + "/" + appendFileOption.get._1)
-          (appendFileOption.get._1, appendFileOption.get._2)
+          (appendFileOption.get._1, appendFileOption.get._2, appendFileOption.get._3)
         }
         else {
           val newFileName = getNewArchiveFileName
-          updateCurrentAppendFile(dstDirToArchive, newFileName, 0, 0)
-          (newFileName, 0L)
+          updateCurrentAppendFile(dstDirToArchive, newFileName, 0, -1, 0)
+          (newFileName, 0L, -1L)
         }
 
       val appendFileName = appendFileInfo._1
       val appendFileCurrentSize = appendFileInfo._2
+      val appendFileCurrentActualOffset = appendFileInfo._3
 
       logger.debug("initial appendFileName={}", appendFileName)
       logger.debug("initial appendFileCurrentSize={}", appendFileCurrentSize.toString)
+      logger.debug("initial appendFileCurrentActualOffset={}", appendFileCurrentActualOffset.toString)
 
       //var appendFilePath = dstDirToArchive + "/" + appendFileName
 
+      var originalMemroyStream = new ByteArrayOutputStream
+      val compress = adapterConfig.archiveConfig.outputConfig.compressionString != null
+      var memroyStream : OutputStream = null
+
       streamFile = StreamFile(dstDirToArchive, appendFileName, null, appendFileCurrentSize, new ArrayBuffer[Byte](),
-        adapterConfig.archiveConfig.consolidateThresholdBytes)
+        adapterConfig.archiveConfig.consolidateThresholdBytes, appendFileCurrentActualOffset)
 
       //might need to build sub-dirs corresponding to input dir structure
       val destArchiveDirExists =
@@ -516,11 +534,11 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
 
       var srcFileHandler: SmartFileHandler = null
       var previousDestFileSize: Long = 0
-      var archInfoGroupList = archInfoGroup.toList
+      var archInfoGroupList = archInfoGroup
       var srcFileToArchive: String = null
 
 
-      //val archiveIndex = ArrayBuffer[ArchiveFileIndexEntry]()
+      val archiveIndex = ArrayBuffer[ArchiveFileIndexEntry]()
 
       while (archInfoGroupList.nonEmpty) {
 
@@ -536,6 +554,10 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
           srcFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, srcFileToArchive, isBinary = false)
           logger.debug("opening src file to read {}", srcFileHandler.getFullPath)
           srcFileHandler.openForRead()
+
+          val entry = ArchiveFileIndexEntry(srcFileToArchive, streamFile.destFileFullPath,
+            streamFile.currentActualOffset + 1, -1)
+          archiveIndex.append(entry)
 
           //TODO: compare input compression to output compression, would this give better performance?
           //might need to do this: if same compression, can simply read and write as binary
@@ -559,18 +581,31 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
             logger.debug("lengthToRead={}", lengthToRead.toString)
             if (lengthToRead > 0) {
               if (lengthToRead <= actualBufferLen) {
-                logger.debug("dest file {} is almost full. cannot write leftover from last iteration of src file {}. opening a new one",
-                  streamFile.destFileName, srcFileHandler.getFullPath)
-                if (streamFile.outStream != null) {
-                  streamFile.outStream.close()
-                  streamFile.outStream = null
-                }
+                logger.debug("memory stream is almost full. cannot write leftover from last iteration of src file {}. saving to file {} and opening a new one",
+                  srcFileHandler.getFullPath, streamFile.destFileName)
+
+                //copy from memory to dest archive file
+                val diskOutputStream = openStream(streamFile.destFileFullPath)
+                originalMemroyStream.writeTo(diskOutputStream)
+                diskOutputStream.close()
+                originalMemroyStream.reset()
+
                 streamFile.destFileName = getNewArchiveFileName
                 logger.debug("new file name is "+streamFile.destFileName)
                 logger.debug("resetting currentFileSize to 0")
                 streamFile.currentFileSize = 0
-                updateCurrentAppendFile(streamFile.destDir, streamFile.destFileName, streamFile.currentFileSize, 0)
-                //todo consider archive index here
+
+                val previousEntry = archiveIndex.last
+                previousEntry.destFileEndOffset = streamFile.currentActualOffset
+                val newEntry = ArchiveFileIndexEntry(srcFileToArchive, streamFile.destFileFullPath,
+                  0, -1)
+                archiveIndex.append(newEntry)
+
+
+                streamFile.currentActualOffset = -1
+                updateCurrentAppendFile(streamFile.destDir, streamFile.destFileName,
+                  streamFile.currentFileSize, streamFile.currentActualOffset, 0)
+
               }
 
               else {
@@ -606,14 +641,27 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
 
                   if (remainingArchiveSpace < actualLenToWrite) {
                     logger.debug("file {} is full", streamFile.destDir + "/" + streamFile.destFileName)
-                    //dest file is full, close
-                    if(streamFile.outStream!=null)
-                      streamFile.outStream.close()
+                    //dest file is full
+                    //copy from memory to dest archive file
+                    val diskOutputStream = openStream(streamFile.destFileFullPath)
+                    originalMemroyStream.writeTo(diskOutputStream)
+                    diskOutputStream.close()
+                    originalMemroyStream.reset()
+
                     streamFile.destFileName = getNewArchiveFileName
                     logger.debug("resetting currentFileSize to 0")
                     streamFile.currentFileSize = 0
-                    updateCurrentAppendFile(streamFile.destDir, streamFile.destFileName, streamFile.currentFileSize, 0)
-                    streamFile.outStream = null
+
+                    val previousEntry = archiveIndex.last
+                    previousEntry.destFileEndOffset = streamFile.currentActualOffset
+                    val newEntry = ArchiveFileIndexEntry(srcFileToArchive, streamFile.destFileFullPath,
+                      0, -1)
+                    archiveIndex.append(newEntry)
+
+                    streamFile.currentActualOffset = -1
+                    updateCurrentAppendFile(streamFile.destDir, streamFile.destFileName, streamFile.currentFileSize,
+                      streamFile.currentActualOffset, 0)
+
                     //todo consider archive index here
                   }
                   /*if (streamFile.outStream == null) {
@@ -622,23 +670,20 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
                     streamFile.outStream = openStream(streamFile.destFileFullPath)
                   }*/
 
-                  logger.debug("writing to dest actualLenToWrite ={}", actualLenToWrite.toString)
-                  streamFile.outStream = openStream(streamFile.destFileFullPath)
-
+                  logger.debug("writing to memory stream actualLenToWrite ={}", actualLenToWrite.toString)
+                  if (compress)
+                    streamFile.outStream = new CompressorStreamFactory().createCompressorOutputStream(adapterConfig.archiveConfig.outputConfig.compressionString, originalMemroyStream)
+                  else
+                    streamFile.outStream = originalMemroyStream
                   streamFile.outStream.write(byteBuffer, 0, actualLenToWrite)
                   streamFile.outStream.close()
-                  streamFile.outStream = null
+                  streamFile.currentActualOffset += actualLenToWrite
+                  //streamFile.outStream = null
+                  //val compressedSize = originalMemroyStream.size()
+                  /*logger.debug("setting currentFileSize to "+compressedSize)
+                  streamFile.currentFileSize += compressedSize// += actualLenToWrite
+                  updateCurrentAppendFile(streamFile.destDir, streamFile.destFileName, streamFile.currentFileSize, 0)*/
 
-                  val fileSizeStartTm = System.nanoTime
-                  val sizeOnDisk = osWriter.getFileSize(fc, streamFile.destFileFullPath)
-                  val fileSize = System.nanoTime
-                  val fileSizeElapsedTm = fileSize - fileSizeStartTm
-                  logger.debug("SMART FILE CONSUMER - finished getting size for file %s. Operation took %fms .".format(streamFile.destFileFullPath, fileSizeElapsedTm/1000000.0))
-                  logger.debug("new size for file {} is {}", streamFile.destFileFullPath, sizeOnDisk.toString)
-
-                  logger.debug("setting currentFileSize to "+sizeOnDisk)
-                  streamFile.currentFileSize = sizeOnDisk// += actualLenToWrite
-                  updateCurrentAppendFile(streamFile.destDir, streamFile.destFileName, streamFile.currentFileSize, 0)
 
                   logger.debug("current buffer:" + new String(byteBuffer.slice(0, actualBufferLen)))
                   logger.debug("written:" + new String(byteBuffer.slice(0, actualLenToWrite)))
@@ -680,6 +725,9 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
               }
             }
 
+            val entry = archiveIndex.last
+            entry.destFileEndOffset = streamFile.currentActualOffset
+
             try {
               logger.info("file {} is finished, deleting", srcFileHandler.getFullPath)
               srcFileHandler.deleteFile(srcFileHandler.getFullPath) // Deleting file after archive
@@ -710,14 +758,26 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
       }
 
 
-      if (streamFile.outStream != null) {
-        logger.info("finished group, closing file {} ", streamFile.destDir + "/" + streamFile.destFileName)
-        //dest file is full, close
-        streamFile.outStream.close()
-        updateCurrentAppendFile(streamFile.destDir, streamFile.destFileName, streamFile.currentFileSize, 0)
-        streamFile.outStream = null
+      if (originalMemroyStream.size() > 0) {
+        logger.info("finished group, writing final leftovers to file {} ", streamFile.destDir + "/" + streamFile.destFileName)
+        val compressedSize = originalMemroyStream.size()
+
+        val diskOutputStream = openStream(streamFile.destFileFullPath)
+        originalMemroyStream.writeTo(diskOutputStream)
+        diskOutputStream.close()
+        logger.debug("line 731 - old file size is {}, new size is {}",
+          streamFile.currentFileSize.toString, (streamFile.currentFileSize + compressedSize).toString)
+        streamFile.currentFileSize += compressedSize// += actualLenToWrite
+        updateCurrentAppendFile(streamFile.destDir, streamFile.destFileName, streamFile.currentFileSize,
+          streamFile.currentActualOffset, 0)
+        originalMemroyStream.reset()
         //todo consider archive index here
       }
+
+      updateCurrentAppendFile(streamFile.destDir, streamFile.destFileName, streamFile.currentFileSize,
+        streamFile.currentActualOffset, 0)
+
+      archiveIndex.foreach(a => logger.debug(a.toString))
 
       true
     }
@@ -726,6 +786,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
         logger.error("Error while archiving", ex)
         false
     }
+
   }
 
   def shutdown(): Unit ={
