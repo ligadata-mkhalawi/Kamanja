@@ -94,7 +94,11 @@ Sample uses:
     """
   }
 
-  override def main(args: Array[String]) {
+  override def main(args: Array[String]): Unit = {
+    sys.exit(run(args))
+  }
+
+  def run(args: Array[String]): Int = {
 
     logger.debug("KVInit.main begins")
 
@@ -151,7 +155,7 @@ Sample uses:
     val version = options.getOrElse('version, "false").toString
     if (version.equalsIgnoreCase("true")) {
       KamanjaVersion.print
-      return
+      return 0
     }
 
     var cfgfile = if (options.contains('config)) options.apply('config) else null
@@ -167,7 +171,7 @@ Sample uses:
 
     if (commitBatchSize <= 0) {
       logger.error("commitbatchsize must be greater than 0")
-      return
+      return 1
     }
 
     if (deserializer != null) {
@@ -199,7 +203,7 @@ Sample uses:
         optionsjson = """{"alwaysQuoteFields":false,"fieldDelimiter":"%s","valueDelimiter":"%s"}""".format(fieldDelimiter, valueDelimiter)
       } else {
         logger.error("Supported formats are only delimited & json")
-        return
+        return 1
       }
     }
 
@@ -211,7 +215,7 @@ Sample uses:
 
     if (options.contains('keyfieldname) && keyfieldnames.size == 0) {
       logger.error("keyfieldname does not have valid strings to take header")
-      return
+      return 1
     }
 
     val dataFiles = if (tmpdatafiles == null || tmpdatafiles.trim.size == 0) Array[String]() else tmpdatafiles.trim.split(",").map(_.trim).filter(_.length() > 0)
@@ -228,11 +232,11 @@ Sample uses:
       val (loadConfigs, failStr) = Utils.loadConfiguration(cfgfile.toString, true)
       if (failStr != null && failStr.size > 0) {
         logger.error(failStr)
-        return
+        return 1
       }
       if (loadConfigs == null) {
         logger.error("Failed to load configurations from configuration file")
-        return
+        return 1
       }
 
       KvInitConfiguration.configFile = cfgfile.toString
@@ -293,7 +297,9 @@ Sample uses:
     } else {
       logger.error("Illegal and/or missing arguments")
       logger.error(usage)
+      return 1
     }
+    0
   }
 }
 

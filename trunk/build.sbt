@@ -278,7 +278,16 @@ lazy val KamanjaAppTester = project.in(file("Utils/KamanjaAppTester"))
   )
   .dependsOn(KamanjaManager % "compile->test", MetadataAPI % "compile->test", SimpleKafkaProducer % "compile->test",
     KamanjaTestUtils, KafkaAdapters_v10 % "compile;compile->test",
-    KamanjaInternalDeps % "provided", ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided")
+    KamanjaInternalDeps % "provided", ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided",
+    KVInit)
+
+lazy val SimpleKafkaProducer_v10 = project.in(file("Utils/SimpleKafkaProducer/v10")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, Exceptions)
+
+lazy val PythonModelPrototype = project.in(file("FactoriesOfModelInstanceFactory/PythonModelPrototype")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KamanjaVersion)
+
+lazy val SimpleKafkaProducer_v9 = project.in(file("Utils/SimpleKafkaProducer/v9")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, Exceptions)
+
+lazy val SimpleKafkaProducer_v8 = project.in(file("Utils/SimpleKafkaProducer/v8")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, Exceptions)
 
 // TEST LIBRARIES ONLY TO BE INCLUDED AS PART OF TESTS
 
@@ -288,13 +297,6 @@ lazy val KamanjaTestUtils = project.in(file("Utils/KamanjaTestUtils"))
   .settings(version <<= version in ThisBuild)
   .dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KamanjaVersion)
 
-lazy val SimpleKafkaProducer_v10 = project.in(file("Utils/SimpleKafkaProducer/v10")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, Exceptions)
-
-lazy val PythonModelPrototype = project.in(file("FactoriesOfModelInstanceFactory/PythonModelPrototype")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KamanjaVersion)
-
-lazy val SimpleKafkaProducer_v9 = project.in(file("Utils/SimpleKafkaProducer/v9")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, Exceptions)
-
-lazy val SimpleKafkaProducer_v8 = project.in(file("Utils/SimpleKafkaProducer/v8")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, Exceptions)
 /*
 val commonSettings = Seq(
     scalaVersion := "2.11.7",

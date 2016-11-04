@@ -4,6 +4,7 @@ import com.ligadata.kamanja.test.application.metadata._
 import com.ligadata.test.embedded.kafka._
 import com.ligadata.test.utils.{Globals, TestUtils}
 import com.ligadata.MetadataAPI.test._
+import com.ligadata.tools.kvinit.KVInit
 import com.ligadata.tools.test._
 
 case class TestExecutorException(message: String, cause: Throwable = null) extends Exception(message, cause)
@@ -26,6 +27,22 @@ object TestExecutor {
           case e: ContainerElement => {
             println(s"[Kamanja Application Tester] ---> Adding container from file '${e.filename}'")
             result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant))
+            //TODO: If there is an associated KVFile, run KVInit
+            e.kvFilename match {
+              case Some(file) =>
+                println(s"[Kamanja Application Tester] -----> Key-Value filename associated with container found. Adding data from $file")
+                if(KVInit.run(Array("--typename", s"${e.name}",
+                  "--config", EmbeddedServicesManager.kamanjaConfigFile,
+                  "--datafiles", file,
+                  "--ignorerecords", "1",
+                  "--deserializer", "com.ligadata.kamanja.serializer.csvserdeser",
+                  "--optionsjson", """{"alwaysQuoteFields": false, "fieldDelimiter:",", "valueDelimiter":"~"}"""
+                )) != 0)
+                  throw new TestExecutorException(s"[Kamanja Application Tester] ---> ***ERROR*** Failed to upload data from Key-Value file")
+                else
+                  println(s"[Kamanja Application Tester] -----> Successfully added Key-Value data")
+              case None =>
+            }
           }
           case e: JavaModelElement => {
             println(s"[Kamanja Application Tester] ---> Adding java model from file '${e.filename}' with model configuration '${e.modelCfg}'")

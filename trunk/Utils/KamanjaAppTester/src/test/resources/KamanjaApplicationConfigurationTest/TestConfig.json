@@ -9,7 +9,7 @@
       },
       {
         "Type": "Container",
-        "Filename": "container.json",
+        "Filename": "testApp1Container.json",
         "Tenant": "tenant1"
       },
       {

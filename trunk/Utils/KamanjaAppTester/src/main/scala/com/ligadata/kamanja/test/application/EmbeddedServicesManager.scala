@@ -20,7 +20,6 @@ case class EmbeddedServicesException(message: String, cause: Throwable = null) e
 
 object EmbeddedServicesManager {
   private var embeddedKamanjaManager: EmbeddedKamanjaManager = _
-  private var kamanjaConfigFile: String = _
   private var embeddedZookeeper: EmbeddedZookeeper = _
   private var kafkaCluster: EmbeddedKafkaCluster = _
   private var zkClient: ZookeeperClient = _
@@ -29,6 +28,7 @@ object EmbeddedServicesManager {
   private var kamanjaInstallDir: String = _
   private var isInitialized: Boolean = false
   private var mdMan = new MetadataManager
+  var kamanjaConfigFile: String = _
   var storageDir: String = _
 
   def getInputKafkaAdapterConfig: KafkaAdapterConfig = {
@@ -78,6 +78,7 @@ object EmbeddedServicesManager {
           "EX: export PYTHON_HOME=/usr")
     }
     this.kamanjaInstallDir = kamanjaInstallDir
+    kamanjaConfigFile = TestUtils.constructTempDir("/kamanja-tmp-config").getAbsolutePath + "/kamanja.conf"
     embeddedZookeeper = new EmbeddedZookeeper
     kafkaCluster = new EmbeddedKafkaCluster().
       withBroker(new KafkaBroker(1, embeddedZookeeper.getConnection))
@@ -191,7 +192,6 @@ object EmbeddedServicesManager {
     embeddedKamanjaManager = new EmbeddedKamanjaManager
 
     // Generating a Kamanja Configuration file in a temporary directory
-    val kamanjaConfigFile: String = TestUtils.constructTempDir("/kamanja-tmp-config").getAbsolutePath + "/kamanja.conf"
     new PrintWriter(kamanjaConfigFile) {
       write("NODEID=1\n")
       write(s"""MetadataDataStore={"StoreType": "h2db", "connectionMode": "embedded", "SchemaName": "kamanja", "Location": "$storageDir", "portnumber": "9100", "user": "test", "password": "test"}""")
