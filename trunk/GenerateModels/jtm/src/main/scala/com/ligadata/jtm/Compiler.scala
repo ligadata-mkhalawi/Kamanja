@@ -1203,11 +1203,15 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
                                                    context: com.ligadata.runtime.JtmContext,
           %s) {
           import log._
+          // Model code start
+          %s
+          // Model code end
           %s
           %s
           %s
         }
         """.format(t, depId, names,
+          root.imports.modelcode.mkString("\n"),
           methodsOuter.mkString("\n"),
           collectOuter.mkString("\n"),
           List.fill(outerScopesOpened)("}\n").mkString("") // close any open scopes
@@ -1446,7 +1450,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
     subtitutions.Add("model.message", messages.mkString("\n"))
     subtitutions.Add("model.methods", methods.mkString("\n"))
     subtitutions.Add("model.code", exechandler.mkString("\n"))
-    subtitutions.Add("external.modelcode", root.imports.modelcode.mkString("\n"))
+    //subtitutions.Add("external.modelcode", root.imports.modelcode.mkString("\n"))
     val model = subtitutions.Run(Parts.model)
 
     result ++= classes
