@@ -24,6 +24,7 @@ class KamanjaApplicationConfigurationTests extends FlatSpec with BeforeAndAfterA
       case e: ContainerElement =>
         assert(e.filename == s"$testAppDir/metadata/container/testApp1Container.json")
         assert(e.name == "com.ligadata.kamanja.test.containers.TestApp1Container")
+        assert(e.kvFilename == Some(s"$testAppDir/data/testApp1ContainerData.csv"))
       case e: MessageElement =>
         val inputMsg = s"$testAppDir/metadata/message/inputMessage.json"
         val outputMsg = s"$testAppDir/metadata/message/outputMessage.json"

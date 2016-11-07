@@ -4,7 +4,8 @@
     "MetadataElements": [
       {
         "Type": "Container",
-        "Filename": "testApp1Container.json"
+        "Filename": "testApp1Container.json",
+        "KVFile": "testApp1ContainerData.csv"
       },
       {
         "Type": "Message",

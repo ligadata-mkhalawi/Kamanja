@@ -30,13 +30,13 @@ object TestExecutor {
             //TODO: If there is an associated KVFile, run KVInit
             e.kvFilename match {
               case Some(file) =>
-                println(s"[Kamanja Application Tester] -----> Key-Value filename associated with container found. Adding data from $file")
+                println(s"[Kamanja Application Tester] -----> Key-Value filename associated with container ${e.name} found. Adding data from $file")
                 if(KVInit.run(Array("--typename", s"${e.name}",
                   "--config", EmbeddedServicesManager.kamanjaConfigFile,
                   "--datafiles", file,
                   "--ignorerecords", "1",
                   "--deserializer", "com.ligadata.kamanja.serializer.csvserdeser",
-                  "--optionsjson", """{"alwaysQuoteFields": false, "fieldDelimiter:",", "valueDelimiter":"~"}"""
+                  "--optionsjson", """{"alwaysQuoteFields": false, "fieldDelimiter":",", "valueDelimiter":"~"}"""
                 )) != 0)
                   throw new TestExecutorException(s"[Kamanja Application Tester] ---> ***ERROR*** Failed to upload data from Key-Value file")
                 else
@@ -81,7 +81,7 @@ object TestExecutor {
       }
 
       if (result != 0) {
-        println(s"[Kamanja Application Tester] ---> ***ERROR*** Failed too add '${element.elementType}' from file '${element.filename}' with result '$result'")
+        println(s"[Kamanja Application Tester] ---> ***ERROR*** Failed to add '${element.elementType}' from file '${element.filename}' with result '$result'")
         return false
       }
       else

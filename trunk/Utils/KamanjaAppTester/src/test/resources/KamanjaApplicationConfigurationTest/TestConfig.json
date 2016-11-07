@@ -10,17 +10,15 @@
       {
         "Type": "Container",
         "Filename": "testApp1Container.json",
-        "Tenant": "tenant1"
+        "KVFile": "testApp1ContainerData.csv"
       },
       {
         "Type": "Message",
-        "Filename": "inputMessage.json",
-        "Tenant": "tenant1"
+        "Filename": "inputMessage.json"
       },
       {
         "Type": "Message",
-        "Filename": "outputMessage.json",
-        "Tenant": "tenant1"
+        "Filename": "outputMessage.json"
       },
       {
         "Type": "ModelConfiguration",
@@ -30,14 +28,12 @@
         "Type": "Model",
         "ModelType": "Scala",
         "Filename": "model.scala",
-        "Tenant": "tenant1",
         "ModelConfiguration": "modelCfg"
       },
       {
         "Type": "Model",
         "ModelType": "Java",
         "Filename": "model.java",
-        "Tenant": "tenant1",
         "ModelConfiguration": "modelCfg"
       },
       {
@@ -45,21 +41,18 @@
         "ModelType": "PMML",
         "Filename": "pmmlModel.xml",
         "MessageConsumed": "com.ligadata.test.message.InputMessage",
-        "MessageProduced": "com.ligadata.test.message.OutputMessage",
-        "Tenant": "tenant1"
+        "MessageProduced": "com.ligadata.test.message.OutputMessage"
       },
       {
         "Type": "Model",
         "ModelType": "PMML",
         "Filename": "pmmlModel2.xml",
-        "MessageConsumed": "com.ligadata.test.message.InputMessage",
-        "Tenant": "tenant1"
+        "MessageConsumed": "com.ligadata.test.message.InputMessage"
       },
       {
         "Type": "Model",
         "ModelType": "KPMML",
-        "Filename": "kpmmlModel.xml",
-        "Tenant": "tenant1"
+        "Filename": "kpmmlModel.xml"
       }
     ],
     "DataSets": [
