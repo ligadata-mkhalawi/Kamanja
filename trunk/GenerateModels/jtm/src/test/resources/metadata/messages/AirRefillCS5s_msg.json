@@ -1,0 +1,22 @@
+{
+  "Message":{
+    "NameSpace":"com.ligadata.messages",
+    "Name":"AirRefillCS5s",
+    "Version":"00.01.00",
+    "Description":"test for db schema files",
+    "Fixed":"true",
+    "Fields":[{
+      "Name":"f1",
+      "Type":"Double"
+    },{
+      "Name":"f2",
+      "Type":"Double"
+    },{
+      "Name":"originnodetype",
+      "Type":"String"
+    },{
+      "Name":"originhostname",
+      "Type":"String"
+    }]
+  }
+}
