@@ -101,6 +101,15 @@ public class AdapterConfiguration {
 
 	public static final String KAFKA_POLL_INTERVAL = "poll.interval";
 
+	// values for StatusRecorder
+	public static final String STATUS_IMPL = "statuscollector.impl";
+	public static final String STATUS_IMPL_INIT_PARMS= "statuscollector.parms";
+
+	public static final String ENCRYPTED_ENCODED_PASSWORD = "encrypted.encoded.password";
+	public static final String PRIVATE_KEY_FILE = "private.key.file";
+        public static final String ENCRYPT_DECRYPT_ALGORITHM = "encrypt.decrypt.algorithm";
+        public static final String ENCODED_PASSWORD = "encoded.password";
+
 	private Properties properties;
 
 	public AdapterConfiguration() throws IOException {

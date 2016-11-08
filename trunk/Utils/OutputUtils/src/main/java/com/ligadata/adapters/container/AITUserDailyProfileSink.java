@@ -10,6 +10,7 @@ import com.ligadata.KamanjaBase.ContainerInterface;
 import com.ligadata.adapters.AdapterConfiguration;
 import com.ligadata.adapters.BufferedMessageProcessor;
 import com.ligadata.tools.SaveContainerDataComponent;
+import com.ligadata.adapters.StatusCollectable;
 
 public class AITUserDailyProfileSink implements BufferedMessageProcessor {
 	static Logger logger = LogManager.getLogger(AITUserDailyProfileSink.class);
@@ -21,6 +22,8 @@ public class AITUserDailyProfileSink implements BufferedMessageProcessor {
 	private String[] fieldNames;	
 	private String[] collectionFieldNames;	
 	private int[] sumFields = null;
+
+	protected StatusCollectable statusWriter = null;
 	
 	private SaveContainerDataComponent writer = null;
 	
@@ -42,7 +45,8 @@ public class AITUserDailyProfileSink implements BufferedMessageProcessor {
 	}
 
 	@Override
-	public void init(AdapterConfiguration config) throws Exception {
+	public void init(AdapterConfiguration config, StatusCollectable sw) throws Exception {
+		statusWriter = sw;
 		writer = new SaveContainerDataComponent();
 		String configFile = config.getProperty(AdapterConfiguration.METADATA_CONFIG_FILE);
 		if(configFile == null)
@@ -121,7 +125,7 @@ public class AITUserDailyProfileSink implements BufferedMessageProcessor {
 	}
 
 	@Override
-	public void processAll() throws Exception {
+	public void processAll(long batchId, long retryNumber) throws Exception {
 			ArrayList<ContainerInterface> data = new ArrayList<ContainerInterface>();
 			for( HashMap<String, Object[]> record : buffer.values()) {
 				ArrayList<ContainerInterface> uaList = new ArrayList<ContainerInterface>();
