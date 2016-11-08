@@ -3,8 +3,8 @@
 
 angular
   .module('networkApp')
-  .directive('uiHomeVisDemo', ['serviceConfig', 'serviceSocket', '$timeout', '$window', '$rootScope',
-    function (serviceConfig, serviceSocket, $timeout, $window, $rootScope) {
+  .directive('uiHomeVisDemo', ['serviceConfig', 'serviceSocket', '$timeout', '$window', '$rootScope', '$compile',
+    function (serviceConfig, serviceSocket, $timeout, $window, $rootScope ,$compile) {
       return {
         restrict: 'E',
         scope: {
@@ -293,6 +293,7 @@ angular
                 if (id) {
                   updateNodesImagesToBeInactive();
                   scope.edgeClick(id);
+                  singleSelectedNodeId = null;
                 }
               }
             }
@@ -323,22 +324,26 @@ angular
             network.on('click', onClick);
             network.on('doubleClick', onDoubleClick);
           }());
+          scope.hideContextMenu = function () {
+            angular.element('.popupMenu').remove();
+          };
           container.addEventListener('contextmenu', function(e) {
             if (popupMenu !== undefined) {
               popupMenu.parentNode.removeChild(popupMenu);
               popupMenu = undefined;
             }
-            console.log('context');
-
-            if (network.getSelection().nodes.length > 0) {
+            if (network.getSelection().nodes.length > 0 ) {
               var offsetLeft = container.offsetLeft;
               var offsetTop = container.offsetTop;
-
-              popupMenu = document.createElement("div");
-              popupMenu.className = 'popupMenu';
-              popupMenu.style.left = e.clientX - offsetLeft + 'px';
-              popupMenu.style.top = e.clientY - offsetTop +'px';
-              container.appendChild(popupMenu);
+              angular.element('.popupMenu').remove();
+              var markup = '<div class="popupMenu" click-outside="hideContextMenu()"><ul class="list-group"><li class="list-group-item">Show Details</li></ul></div>';
+              var $content = $compile(markup)(scope);
+              angular.element('body').append($content);
+              $content.css({left : e.clientX - offsetLeft + 'px'});
+              $content.css({top : e.clientY - offsetTop +'px'});
+              $content.find('li').on('click',function(){
+                scope.nodeClick(network.getSelection().nodes[0],true);
+              });
             }
             e.preventDefault()
 
@@ -348,6 +353,7 @@ angular
             if (!params.edges.length && !params.nodes.length) {
               // updateNodesImagesToBeInactive();
               scope.groundClick();
+              singleSelectedNodeId = null;
             }
           });
           (function imageManipulationFunctions() {
@@ -383,13 +389,14 @@ angular
           // scope.$on('closeSideMenu', function () {
           //   updateNodesImagesToBeInactive();
           // });
+          var singleSelectedNodeId;
           var nodeClick = function(id) {
             if (selectedObjects.indexOf(id) >=0 ){
               selectedObjects.splice(selectedObjects.indexOf(id),1);
-
             } else {
               selectedObjects.push(id);
             }
+            singleSelectedNodeId = id;
             updateNodesImagesToBeInactive();
             _.each(selectedObjects,function (id) {
               updateNodeToBeActive(id);
@@ -463,7 +470,14 @@ angular
                   ctx.fillText(d._label, (position.x + 13), (position.y - 4 ));
                 }
               }
-
+              if (singleSelectedNodeId === d.id){
+                var r = selectedObjects.indexOf(d.id) >=0 ? 16:14;
+                ctx.beginPath();
+                ctx.arc(position.x, position.y , r, 0, 2 * Math.PI, false);
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = '#aaaaaa';
+                ctx.stroke();
+              }
             });
           });
           var resizeNetworkAndReposition = function () {

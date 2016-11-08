@@ -32,9 +32,9 @@ angular.module('networkApp')
           updateNetworkData();
         });
       };
-      main.nodeClick = function (id) {
+      main.nodeClick = function (id,right) {
         // console.log("node", id);
-        $rootScope.$broadcast('nodeClicked', id);
+        $rootScope.$broadcast('nodeClicked', {id:id,right:right});
       };
       main.edgeClick = function (id) {
         // console.log("edge", id);

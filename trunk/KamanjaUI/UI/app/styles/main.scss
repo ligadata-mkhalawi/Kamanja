@@ -497,12 +497,16 @@ div.vis-network {
   }
 }
 
-
 div.popupMenu {
   position:fixed;
   top:0px;
   left:0px;
-  width:90px;
-  height:100px;
-  background-color:red;
+  .list-group-item{
+    color:white;
+    cursor:pointer;
+    background-color: #333333;
+    &:hover {
+      background-color: #666666;
+    }
+  }
 }

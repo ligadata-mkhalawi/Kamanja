@@ -56,11 +56,12 @@ angular.module('networkApp')
           });
         }
         $rootScope.$on('nodeClicked', function (event, data) {
+          var id = data.id;
           footer.selectedModels = [];
-          if (selectedModelIds.indexOf(data) === -1) {
-            selectedModelIds.push(data);
+          if (selectedModelIds.indexOf(id) === -1) {
+            selectedModelIds.push(id);
           } else {
-            selectedModelIds.splice(selectedModelIds.indexOf(data), 1);
+            selectedModelIds.splice(selectedModelIds.indexOf(id), 1);
           }
           _.each(selectedModelIds, function (d) {
             footer.selectedModels.push(_.find(serviceData.getSelectedViewData().result, {id: d}));
@@ -118,11 +119,15 @@ angular.module('networkApp')
         });
 
         $rootScope.$on('nodeClicked', function (event, data) {
+          var id = data.id;
+          var right = data.right;
           modelDetails.selectedModels = [];
-          if (selectedModelIds.indexOf(data) === -1) {
-            selectedModelIds.push(data);
-          } else {
-            selectedModelIds.splice(selectedModelIds.indexOf(data), 1);
+          if (!right) { //if it is rigth click, don't do
+            if (selectedModelIds.indexOf(id) === -1) {
+              selectedModelIds.push(id);
+            } else {
+              selectedModelIds.splice(selectedModelIds.indexOf(id), 1);
+            }
           }
           if (selectedModelIds.length === 0) {
             toggleModelDetails(false);
@@ -132,11 +137,11 @@ angular.module('networkApp')
             _.each(selectedModelIds, function (d) {
               modelDetails.selectedModels.push(_.find(serviceData.getSelectedViewData().result, {id: d}));
             });
-            data = selectedModelIds[selectedModelIds.length - 1];
-            modelDetails.currentNodeId = data;
+            id = selectedModelIds[selectedModelIds.length - 1];
+            modelDetails.currentNodeId = id;
             toggleModelDetails(true);
             modelDetails.modelInfo = [];
-            var nodeInfo = _.find(serviceData.getSelectedViewData().result, {id: data});
+            var nodeInfo = _.find(serviceData.getSelectedViewData().result, {id: id});
             if (nodeInfo.Type === 'V') {
               var type = serviceConfig.classImageColorMap[nodeInfo.class];
               modelDetails.headerColor = type.headerColor;
@@ -147,7 +152,7 @@ angular.module('networkApp')
             }
             serviceData.getProperties({
               "ViewName": serviceData.getSelectedViewName(),
-              "RID": data
+              "RID": id
             }, function (response) {
               //modelDetails.modelInfo = response;
               addProperties(response);
