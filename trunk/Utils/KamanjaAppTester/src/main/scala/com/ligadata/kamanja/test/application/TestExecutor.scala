@@ -1,5 +1,6 @@
 package com.ligadata.kamanja.test.application
 
+import com.ligadata.MetadataAPI.MetadataAPIImpl
 import com.ligadata.kamanja.test.application.metadata._
 import com.ligadata.test.embedded.kafka._
 import com.ligadata.test.utils.{Globals, TestUtils}
@@ -27,7 +28,6 @@ object TestExecutor {
           case e: ContainerElement => {
             println(s"[Kamanja Application Tester] ---> Adding container from file '${e.filename}'")
             result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant))
-            //TODO: If there is an associated KVFile, run KVInit
             e.kvFilename match {
               case Some(file) =>
                 println(s"[Kamanja Application Tester] -----> Key-Value filename associated with container ${e.name} found. Adding data from $file")
@@ -39,8 +39,12 @@ object TestExecutor {
                   "--optionsjson", """{"alwaysQuoteFields": false, "fieldDelimiter":",", "valueDelimiter":"~"}"""
                 )) != 0)
                   throw new TestExecutorException(s"[Kamanja Application Tester] ---> ***ERROR*** Failed to upload data from Key-Value file")
-                else
+                else {
                   println(s"[Kamanja Application Tester] -----> Successfully added Key-Value data")
+                  // KVInit calls MetadataAPIImpl.CloseDB after it loads container data.
+                  // Therefore, we need to call OpenDBStore in order to reopen it to avoid a nullpointer expceiont on future MetadataAPI calls.
+                  MetadataAPIImpl.OpenDbStore(MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(",").toSet, MetadataAPIImpl.GetMetadataAPIConfig.getProperty("METADATA_DATASTORE"))
+                }
               case None =>
             }
           }
