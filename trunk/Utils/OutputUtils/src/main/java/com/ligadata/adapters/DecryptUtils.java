@@ -31,107 +31,22 @@ import java.security.PublicKey;
 
 import javax.crypto.Cipher;
 import org.apache.logging.log4j.*;
-import java.util.Base64;
 
 import com.ligadata.adapters.AdapterConfiguration;
+import com.ligadata.EncryptUtils.EncryptionUtil;
 
 public class DecryptUtils{
     static String loggerName = "DecryptUtils";
     static Logger logger = LogManager.getLogger(loggerName);
 
     /**
-     * Convert given hex string to byte array
+     *  Get the original password from encrypted-base64-encoded password
      * 
-     * @param s
-     *          : a string containing hex characters
-     * @return byte array
+     * @param config
+     *          : AdapterConfiguraton contains property hash map
+     * @return password as plain text
      * @throws java.lang.Exception
      */
-
-    public static byte[] hexStringToByteArray(String s) throws Exception{
-	try{
-	    int len = s.length();
-	    byte[] data = new byte[len / 2];
-	    for (int i = 0; i < len; i += 2) {
-		data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-				      + Character.digit(s.charAt(i+1), 16));
-	    }
-	    return data;
-	} catch (Exception e) {
-	    logger.error("Failed to convert hexString to byte array",e);
-	    throw e;
-	}
-    }
-
-    /**
-     * Decode(Base64 decoding) given string to a byte array
-     * 
-     * @param s
-     *          : an encoded string 
-     * @return byte array
-     * @throws java.lang.Exception
-     */
-
-    public static byte[] decode(String s) throws Exception{
-	try{
-	    byte[] decoded = Base64.getDecoder().decode(s.getBytes());
-	    return decoded;
-	} catch (Exception e) {
-	    logger.error("Failed to decode a byte array",e);
-	    throw e;
-	}
-    }
-
-    /**
-     * Decode(Base64 decoding) given byte array to a string
-     * 
-     * @param bytes
-     *          : an array of bytes corresponding to string being decoded
-     * @return byte array
-     * @throws java.lang.Exception
-     */
-
-    public static String decode(byte[] bytes) throws Exception{
-	try{
-	    String decoded = new String(Base64.getDecoder().decode(bytes));
-	    return decoded;
-	} catch (Exception e) {
-	    logger.error("Failed to decode a byte array",e);
-	    throw e;
-	}
-    }
-
-    /**
-     * Decrypt text using private key.
-     * 
-     * @param algorithm
-     *          : algorithm used
-     * @param text
-     *          :encrypted text
-     * @param key
-     *          :The private key
-     * @return plain text
-     * @throws java.lang.Exception
-     */
-    public static String decrypt(String algorithm,byte[] text, String privateKeyFile) throws Exception {
-	byte[] dectyptedText = null;
-	try {
-	    ObjectInputStream inputStream = null;
-	    // Decrypt the cipher text using the private key.
-	    inputStream = new ObjectInputStream(new FileInputStream(privateKeyFile));
-	    final PrivateKey privateKey = (PrivateKey) inputStream.readObject();
-	    // get a cipher object and print the provider
-	    final Cipher cipher = Cipher.getInstance(algorithm);
-	    // decrypt the text using the private key
-	    cipher.init(Cipher.DECRYPT_MODE, privateKey);
-	    dectyptedText = cipher.doFinal(text);
-
-	} catch (Exception e) {
-	    logger.error("Failed to decrypt given password",e);
-	    throw e;
-	}
-	return new String(dectyptedText);
-    }
 
     private static String getDecryptedPassword(AdapterConfiguration config) throws Exception {
 	try{
@@ -155,14 +70,23 @@ public class DecryptUtils{
 		logger.info("algorithm      => " + algorithm);
 		logger.info("encryptedPass  => " + encryptedPass);
 		logger.info("privateKeyFile => " + privateKeyFile);
-		byte[] passBytes = decode(encryptedPass);
-		String pass = decrypt(algorithm,passBytes,privateKeyFile);
+		byte[] decodedBytes = EncryptionUtil.decode(encryptedPass);
+		String pass = EncryptionUtil.decrypt(algorithm,decodedBytes, privateKeyFile);
 		return pass;
 	    }
 	} catch (Exception e) {
 	    throw new Exception(e);
 	}
     }
+
+    /**
+     *  Get the original password from base64-encoded password
+     * 
+     * @param config
+     *          : AdapterConfiguraton contains property hash map
+     * @return password as plain text
+     * @throws java.lang.Exception
+     */
 
     private static String getDecodedPassword(AdapterConfiguration config) throws Exception {
 	try{
@@ -174,7 +98,7 @@ public class DecryptUtils{
 	    }
 	    else{
 		logger.info("encodedPass  => " + encodedPass);
-		String pass = new String(decode(encodedPass));
+		String pass = new String(EncryptionUtil.decode(encodedPass));
 		return pass;
 	    }
 	} catch (Exception e) {
