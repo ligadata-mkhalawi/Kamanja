@@ -42,6 +42,7 @@ angular.module('networkApp')
       };
       main.groundClick = function () {
         // console.log('ground');
+        $("#txtFilter").blur();
         $rootScope.$broadcast('closeSideMenu');
         $rootScope.$broadcast('groundSelected');
       };

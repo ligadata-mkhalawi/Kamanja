@@ -27,6 +27,7 @@
   }
   .list-inline > li {
     position: relative;
+    cursor: pointer;
     &.arrow {
       width: 30px;
       text-align: left;

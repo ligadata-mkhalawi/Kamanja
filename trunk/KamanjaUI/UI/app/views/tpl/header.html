@@ -76,13 +76,12 @@
     <div class="col-sm-4 col-xs-4 col-md-4">
       <form class="search-container">
         <span class="fa fa-search"></span>
-        <input type="search" ng-model="header.selectedSearch"
+        <input type="search" ng-model="header.selectedSearch" id="txtFilter"
                typeahead-popup-template-url="searchPopupTemplate.html"
                uib-typeahead="item as item.Name for item in header.selectedViewData | filter: {Name: $viewValue}"
                typeahead-on-select="header.onSearchSelectChange($item, $model, $label, $event)"
                ng-change="header.onTextChanged()"
-               class="form-control" placeholder="Search" ng-change="header.filterNodes()">
-        <button class="close-icon" type="reset"></button>
+               class="form-control search-box" placeholder="Search" ng-change="header.filterNodes()">
       </form>
     </div>
     <div class="col-sm-6 col-xs-6 col-md-6">
@@ -128,8 +127,6 @@
        style="display: block;"
        ng-show="isOpen() && !moveInProgress"
        aria-hidden="{{!isOpen()}}">
-    <p class="message">select from drop down.</p>
-
     <ul class="dropdown-menu" role="listbox">
       <li class="uib-typeahead-match" ng-repeat="match in matches track by $index"
           ng-class="{active: isActive($index) }"
