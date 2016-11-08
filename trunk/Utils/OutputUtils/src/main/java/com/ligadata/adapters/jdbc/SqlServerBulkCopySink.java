@@ -18,6 +18,8 @@ import org.json.simple.parser.JSONParser;
 import com.ligadata.adapters.AdapterConfiguration;
 import com.microsoft.sqlserver.jdbc.SQLServerBulkCSVFileRecord;
 import com.microsoft.sqlserver.jdbc.SQLServerBulkCopy;
+import com.ligadata.adapters.StatusCollectable;
+import com.ligadata.adapters.DecryptUtils;
 
 public class SqlServerBulkCopySink extends AbstractJDBCSink {
 	static Logger logger = LogManager.getLogger(SqlServerBulkCopySink.class);
@@ -37,12 +39,16 @@ public class SqlServerBulkCopySink extends AbstractJDBCSink {
 	}
 
 	@Override
-	public void init(AdapterConfiguration config) throws Exception {
-		super.init(config);
+	public void init(AdapterConfiguration config, StatusCollectable sw) throws Exception {
+		super.init(config, sw);
+
+		//connectionStr = config.getProperty(AdapterConfiguration.JDBC_URL) 
+		//		+ ";user=" + config.getProperty(AdapterConfiguration.JDBC_USER) 
+		//		+ ";password=" + config.getProperty(AdapterConfiguration.JDBC_PASSWORD);
 
 		connectionStr = config.getProperty(AdapterConfiguration.JDBC_URL) 
 				+ ";user=" + config.getProperty(AdapterConfiguration.JDBC_USER) 
-				+ ";password=" + config.getProperty(AdapterConfiguration.JDBC_PASSWORD);
+		    + ";password=" + DecryptUtils.getPassword(config,AdapterConfiguration.JDBC_PASSWORD);
 
 		dataTimeFormatStr = config.getProperty(AdapterConfiguration.INPUT_DATE_FORMAT, "yyyy-MM-dd'T'HH:mm:ss.SSS");
 		fieldSeperator = config.getProperty(AdapterConfiguration.FILE_FIELD_SEPERATOR, "\u0000");
@@ -151,7 +157,7 @@ public class SqlServerBulkCopySink extends AbstractJDBCSink {
 	}
 	
 	@Override
-	public void processAll() throws Exception {
+	public void processAll(long batchId, long retryNumber) throws Exception {
 		
 		try {
 			if(out!= null)

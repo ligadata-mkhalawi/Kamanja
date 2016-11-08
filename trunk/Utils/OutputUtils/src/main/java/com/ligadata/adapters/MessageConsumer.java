@@ -17,6 +17,8 @@ import org.apache.kafka.common.errors.WakeupException;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
+import com.ligadata.adapters.statusRecorders.KafkaStatusRecorder;
+
 public class MessageConsumer implements Runnable {
     // Implement Kafka heart beat to get around session timeout that causes rebalance
     // see issue: https://issues.apache.org/jira/browse/KAFKA-2985
@@ -70,11 +72,13 @@ public class MessageConsumer implements Runnable {
     private HashMap<Integer, Long> partitionOffsets = new HashMap<Integer, Long>();
     private Thread thisThread;
     private AtomicInteger shutdownTriggerCounter;
+    private StatusCollectable stats;
 
     public MessageConsumer(AdapterConfiguration config, AtomicInteger shutdownTriggerCounter) throws Exception {
         this.configuration = config;
         this.shutdownTriggerCounter = shutdownTriggerCounter;
         String classname = configuration.getProperty(AdapterConfiguration.MESSAGE_PROCESSOR);
+        stats = createStatusRecorder(config, classname);
         if (classname == null || "".equals(classname) || "null".equalsIgnoreCase(classname)) {
             logger.info("Message prcessor not specified for processing messages.");
             processor = new NullProcessor();
@@ -88,6 +92,8 @@ public class MessageConsumer implements Runnable {
         shutdownTriggerCounter.incrementAndGet();
         stop = true;
 
+        if (stats != null)
+            stats.close();
         if (processor != null)
             processor.close();
         processor = null;
@@ -105,6 +111,28 @@ public class MessageConsumer implements Runnable {
 //        if (processor != null)
 //            processor.close();
 //        processor = null;
+    }
+
+    private StatusCollectable createStatusRecorder(AdapterConfiguration config, String componentName) {
+        // What impl do they want to use
+        String implName = config.getProperty(AdapterConfiguration.STATUS_IMPL, "");
+        if (implName.length() > 0) {
+            // Set up Kafka stuff
+            logger.info("Initializing Kafka Status Recorder");
+            try {
+                StatusCollectable sc = (StatusCollectable) Class.forName(implName).newInstance();
+                sc.init(config.getProperty(AdapterConfiguration.STATUS_IMPL_INIT_PARMS, ""), componentName);
+                return sc;
+            } catch (Exception e) {
+                logger.warn("Error creating Status Recorder, unable to create status recorder due to ", e);
+                // Unknown value for Impl.. just return null and
+                return null;
+            }
+        }
+
+        logger.info("Unkown Status Recorder, desired implementation was not provided, using the dafault log4j");
+        // Unknown value for Impl.. just return null and
+        return null;
     }
 
     private void createKafkaConsumer() {
@@ -143,45 +171,45 @@ public class MessageConsumer implements Runnable {
                 return;
             } catch (Exception e) {
                 retry++;
-                if (retry <= 12) {
-                    logger.error("Error after " + retry + " retries : " + e.getMessage(), e);
-                    try {
-                        Thread.sleep(retryInterval * retry);
-                    } catch (InterruptedException e1) {
-                    }
-                } else
-                    try {
-                        Thread.sleep(60000);
-                    } catch (InterruptedException e1) {
-                    }
+                logger.error("Error after " + retry + " retries : " + e.getMessage(), e);
+                try {
+                    long tmpMaxRetry = retry;
+                    if (tmpMaxRetry > 10000)
+                        tmpMaxRetry = 10000;
+                    long waitInterval = retryInterval * tmpMaxRetry;
+                    if (waitInterval > 60000)
+                        waitInterval = 60000;
+                    Thread.sleep(waitInterval);
+                } catch (InterruptedException e1) {
+                }
             }
         }
 
         //return null;
     }
 
-    private void processWithRetry() {
+    private void processWithRetry(long batchId) {
         long retry = 0;
         long retryInterval = 5000;
         while (!stop) {
             try {
-                processor.processAll();
+                processor.processAll(batchId, retry);
                 if (retry > 0)
                     logger.info("Successfully processed messages after " + retry + " retries.");
                 return;
             } catch (Exception e) {
                 retry++;
-                if (retry <= 12) {
-                    logger.error("Error after " + retry + " retries : " + e.getMessage(), e);
-                    try {
-                        Thread.sleep(retryInterval * retry);
-                    } catch (InterruptedException e1) {
-                    }
-                } else
-                    try {
-                        Thread.sleep(60000);
-                    } catch (InterruptedException e1) {
-                    }
+                logger.error("Error after " + retry + " retries : " + e.getMessage(), e);
+                try {
+                    long tmpMaxRetry = retry;
+                    if (tmpMaxRetry > 10000)
+                        tmpMaxRetry = 10000;
+                    long waitInterval = retryInterval * tmpMaxRetry;
+                    if (waitInterval > 60000)
+                        waitInterval = 60000;
+                    Thread.sleep(waitInterval);
+                } catch (InterruptedException e1) {
+                }
             }
         }
     }
@@ -190,12 +218,13 @@ public class MessageConsumer implements Runnable {
     public void run() {
         logger.info("Kafka consumer started processing.");
         thisThread = Thread.currentThread();
+        java.util.concurrent.atomic.AtomicLong batchid = new java.util.concurrent.atomic.AtomicLong(1);
 
         long totalMessageCount = 0;
         long errorMessageCount = 0;
         try {
             logger.info("Using " + processor.getClass().getName() + " for processing messages.");
-            processor.init(configuration);
+            processor.init(configuration, stats);
 
         } catch (Exception e) {
             logger.error("Error initializing processor: " + e.getMessage(), e);
@@ -244,7 +273,7 @@ public class MessageConsumer implements Runnable {
                     executor.execute(new SimpleKafkaPoll(consumer, breaker));
 
                     // Save data here
-                    processWithRetry();
+                    processWithRetry(batchid.getAndIncrement());
 
                     breaker.incrementAndGet();
                     executor.shutdown();
