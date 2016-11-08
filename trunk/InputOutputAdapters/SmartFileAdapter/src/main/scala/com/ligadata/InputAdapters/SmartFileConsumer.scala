@@ -554,19 +554,6 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     }
   }
 
-  /*def saveFileRequestsQueue(requestQueue : List[String]) : Unit = {
-    requestQLock.synchronized {
-
-      val currentRequests = getFileRequestsQueue
-
-      val cacheData = requestQueue.mkString("|")
-      LOG.debug("Smart File Consumer - saving request queue. key={}, value={}", File_Requests_Cache_Key,
-        if (cacheData.length == 0) "(empty)" else cacheData)
-
-      envContext.saveConfigInClusterCache(File_Requests_Cache_Key, cacheData.getBytes)
-    }
-  }*/
-
   def addToRequestQueue(request : String, addToHead : Boolean = false): Unit = {
     requestQLock.synchronized {
 
@@ -634,14 +621,19 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       }
     }
   }
-  /*def saveFileProcessingQueue(requestQueue : List[String]) : Unit = {
-    //processingQChangeLock.synchronized {
+  def isInProcessingQueue(file : String) : Boolean = {
       processingQLock.synchronized {
-        val cacheData = requestQueue.mkString("|")
-        LOG.debug("Smart File Consumer - saving following value to processing queue: " + cacheData)
-        envContext.saveConfigInClusterCache(File_Processing_Cache_Key, cacheData.getBytes)
+        val processingQueue = getFileProcessingQueue
+        if(processingQueue == null || processingQueue.length == 0)
+          return false
+        else{
+          processingQueue.exists(item => {
+            val tokens = item.split(":")
+            if(tokens.length >= 2) tokens(1).equals(file) else false
+          })
+        }
       }
-  }*/
+  }
 
 
   def addToProcessingQueue(processingItem : String, addToHead : Boolean = false): Unit = {
@@ -997,18 +989,6 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
           //if (status == File_Processing_Status_Finished) {
           LOG.info("Smart File Consumer (Leader) - File ({}) processing finished", processingFilePath)
 
-          val correspondingRequestFileKeyPath = requestFilePath + "/" + processingNodeId //e.g. SmartFileCommunication/ToLeader/ProcessedFile/<nodeid>
-
-          //remove the file from processing queue
-          var processingQueue = getFileProcessingQueue
-          val valueInProcessingQueue = processingNodeId + "/" + processingThreadId + ":" + processingFilePath
-          LOG.debug("Smart File Consumer (Leader) - removing from processing queue: " + valueInProcessingQueue)
-          if (!isShutdown)
-            removeFromProcessingQueue(valueInProcessingQueue)
-
-          //since a file just got finished, a new one can be processed
-          assignFileProcessingIfPossible()
-
           if (status == File_Processing_Status_Finished || status == File_Processing_Status_Corrupted) {
             val procFileParentDir = MonitorUtils.getFileParentDir(processingFilePath, adapterConfig)
             val procFileLocationInfo = getDirLocationInfo(procFileParentDir)
@@ -1027,6 +1007,15 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
           }
           else if (status == File_Processing_Status_NotFound && !isShutdown)
             monitorController.markFileAsProcessed(processingFilePath)
+
+          //remove the file from processing queue
+          val valueInProcessingQueue = processingNodeId + "/" + processingThreadId + ":" + processingFilePath
+          LOG.debug("Smart File Consumer (Leader) - removing from processing queue: " + valueInProcessingQueue)
+          if (!isShutdown)
+            removeFromProcessingQueue(valueInProcessingQueue)
+
+          //since a file just got finished, a new one can be processed
+          assignFileProcessingIfPossible()
         }
       }
     }

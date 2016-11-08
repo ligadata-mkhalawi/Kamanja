@@ -244,7 +244,14 @@ class MonitorController {
           val currentFileParentDir = currentMonitoredFile.parent
           val currentFileLocationInfo = parentSmartFileConsumer.getDirLocationInfo(currentFileParentDir)
 
-          if (!bufferingQ_map.contains(currentMonitoredFile.path)) {
+
+          if (isEnqueued(filePath)) {
+            logger.info("SMART FILE CONSUMER (MonitorController):  File already enqueued " + filePath)
+          }
+          else if(parentSmartFileConsumer.isInProcessingQueue(filePath)){
+            logger.info("SMART FILE CONSUMER (MonitorController):  File already in processing queue " + filePath)
+          }
+          else  if (!bufferingQ_map.contains(filePath)) {
             enQBufferedFile(currentMonitoredFile, isFirstScan)
           }
           else {
