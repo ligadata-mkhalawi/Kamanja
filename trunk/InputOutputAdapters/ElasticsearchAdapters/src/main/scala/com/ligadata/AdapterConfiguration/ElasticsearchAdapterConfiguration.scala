@@ -65,6 +65,8 @@ object ElasticsearchAdapterConfiguration extends LogTrait {
     adapCfgValues.foreach(kv => {
       if (kv._1.compareToIgnoreCase("hostList") == 0) {
         adapterConfig.hostList = kv._2.toString.trim
+      } else if (kv._1.compareToIgnoreCase("ClusterName") == 0) {
+        adapterConfig.clusterName = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("scehmaName") == 0) {
         adapterConfig.scehmaName = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("tableName") == 0) {
