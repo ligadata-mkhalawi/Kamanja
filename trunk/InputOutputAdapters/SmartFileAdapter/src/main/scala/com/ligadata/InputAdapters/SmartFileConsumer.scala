@@ -1160,10 +1160,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       try{
         logger.info(">>>>>>>>>>> file finished. sending stats: " + stats)
         val statMsg: com.ligadata.KamanjaBase.KamanjaStatusEvent = envContext.getContainerInstance("com.ligadata.KamanjaBase.KamanjaStatusEvent").asInstanceOf[com.ligadata.KamanjaBase.KamanjaStatusEvent]
-        if(statMsg == null) logger.error("statMsg [com.ligadata.KamanjaBase.KamanjaStatusEvent] is null")
+        //if(statMsg == null) logger.error("statMsg [com.ligadata.KamanjaBase.KamanjaStatusEvent] is null")
         statMsg.statustype = "IAS" //input adapter stats
         statMsg.nodeid = envContext.getNodeId()
-        statMsg.statusstring = stats.toString
+        statMsg.statusstring = Array[String](stats.fileName, stats.recordsCount.toString, stats.startTs, stats.endTs).mkString("~")
         statMsg.eventtime = Utils.GetCurDtTmStrWithTZ
         envContext.postMessages(Array[ContainerInterface](statMsg))
       }
