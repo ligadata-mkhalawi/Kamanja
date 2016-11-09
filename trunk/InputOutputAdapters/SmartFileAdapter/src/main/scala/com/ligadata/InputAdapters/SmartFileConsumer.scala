@@ -1149,27 +1149,32 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       envContext.setListenerCacheKey(requestPathKey, requestData);
 
       //send status
-      /*logger.info("sending stat msg")
-      val statMsg: com.ligadata.InputAdapters.InputAdapterStatsMsg = envContext.getContainerInstance("com.ligadata.InputAdapters.InputAdapterStatsMsg").asInstanceOf[com.ligadata.InputAdapters.InputAdapterStatsMsg]
-      if(statMsg == null) logger.error("statMsg [com.ligadata.InputAdapters.InputAdapterStatsMsg] is null")
-      statMsg.filename = processingFilePath
-      statMsg.recordscount = 0
-      statMsg.starttime = Utils.GetCurDtTmStrWithTZ
-      statMsg.endtime = Utils.GetCurDtTmStrWithTZ
-      envContext.postMessages(Array[ContainerInterface](statMsg))*/
-      try{
-        logger.info(">>>>>>>>>>> file finished. sending stats: " + stats)
-        val statMsg: com.ligadata.KamanjaBase.KamanjaStatusEvent = envContext.getContainerInstance("com.ligadata.KamanjaBase.KamanjaStatusEvent").asInstanceOf[com.ligadata.KamanjaBase.KamanjaStatusEvent]
-        //if(statMsg == null) logger.error("statMsg [com.ligadata.KamanjaBase.KamanjaStatusEvent] is null")
-        statMsg.statustype = "IAS" //input adapter stats
-        statMsg.nodeid = envContext.getNodeId()
-        statMsg.statusstring = Array[String](stats.fileName, stats.recordsCount.toString, stats.startTs, stats.endTs).mkString("~")
-        statMsg.eventtime = Utils.GetCurDtTmStrWithTZ
-        envContext.postMessages(Array[ContainerInterface](statMsg))
+      logger.info("sending stat msg")
+      val statMsgStr = adapterConfig.statusMsgTypeName//"com.ligadata.messages.InputAdapterStatsMsg"
+      if (statMsgStr != null && statMsgStr.trim.size > 0) {
+        val statMsg  = envContext.getContainerInstance(statMsgStr)
+        if(statMsg != null) {
+          try {
+            // Set all my values
+            statMsg.set("msgtype", "FileInputAdapterStatusMsg")
+            statMsg.set("source", adapterConfig._type)
+            statMsg.set("filename", stats.fileName)
+            statMsg.set("recordscount", stats.recordsCount)
+            statMsg.set("starttime", stats.startTs)
+            statMsg.set("endtime", stats.endTs)
+            // Post the messgae
+            envContext.postMessages(Array[ContainerInterface](statMsg))
+          }
+          catch {
+            case e: Exception => {
+              logger.error("", e)
+            }
+          }
+        } else {
+          logger.error("Msg {} is not found in metadata", statMsgStr)
+        }
       }
-      catch{
-        case ex : Throwable => logger.error("error while sending status msg", ex)
-      }
+
     }
   }
 
