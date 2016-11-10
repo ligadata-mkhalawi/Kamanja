@@ -27,7 +27,8 @@ class ArchiveConfig {
   * Created by Yasser on 3/10/2016.
   */
 class SmartFileAdapterConfiguration extends AdapterConfiguration {
-  var _type: String = _ // FileSystem, hdfs, sftp
+  var _type: String = _ // das/nas , hdfs, sftp
+  var statusMsgTypeName = ""
 
   var connectionConfig: FileAdapterConnectionConfig = null
   var monitoringConfig: FileAdapterMonitoringConfig = null
@@ -118,6 +119,8 @@ class LocationInfo {
   def isMovingEnabled: Boolean = enableMoving == null || enableMoving.length == 0 || enableMoving.equalsIgnoreCase("on")
 }
 
+case class SmartFileAdapterGeneralConfig(sourceType : String, statusMsgTypeName : String)
+
 object SmartFileAdapterConfiguration {
 
   val defaultWaitingTimeMS = 1000
@@ -155,8 +158,9 @@ object SmartFileAdapterConfiguration {
 
     logger.debug("SmartFileAdapterConfiguration (getAdapterConfig)- inputConfig.adapterSpecificCfg==null is " +
       (inputConfig.adapterSpecificCfg == null))
-    val (_type, connectionConfig, monitoringConfig, archiveConfig) = parseSmartFileAdapterSpecificConfig(inputConfig.Name, inputConfig.adapterSpecificCfg)
-    adapterConfig._type = _type
+    val (generalConfig, connectionConfig, monitoringConfig, archiveConfig) = parseSmartFileAdapterSpecificConfig(inputConfig.Name, inputConfig.adapterSpecificCfg)
+    adapterConfig._type = generalConfig.sourceType
+    adapterConfig.statusMsgTypeName = generalConfig.statusMsgTypeName
     adapterConfig.connectionConfig = connectionConfig
     adapterConfig.monitoringConfig = monitoringConfig
     adapterConfig.archiveConfig = archiveConfig
@@ -164,7 +168,7 @@ object SmartFileAdapterConfiguration {
     adapterConfig
   }
 
-  def parseSmartFileAdapterSpecificConfig(adapterName: String, adapterSpecificCfgJson: String): (String, FileAdapterConnectionConfig, FileAdapterMonitoringConfig, ArchiveConfig) = {
+  def parseSmartFileAdapterSpecificConfig(adapterName: String, adapterSpecificCfgJson: String): (SmartFileAdapterGeneralConfig, FileAdapterConnectionConfig, FileAdapterMonitoringConfig, ArchiveConfig) = {
 
     val adapCfg = parse(adapterSpecificCfgJson)
 
@@ -180,6 +184,7 @@ object SmartFileAdapterConfiguration {
       throw new KamanjaException(err, null)
     }
     val _type = adapCfgValues.get("Type").get.toString
+    val statusMsgTypeName = adapCfgValues.getOrElse("StatusMsgTypeName", "").toString
 
     val connectionConfig = new FileAdapterConnectionConfig()
     val monitoringConfig = new FileAdapterMonitoringConfig()
@@ -470,7 +475,7 @@ object SmartFileAdapterConfiguration {
 
     //TODO : validation for FilesOrdering
 
-    (_type, connectionConfig, monitoringConfig, archiveConfig)
+    (SmartFileAdapterGeneralConfig(_type, statusMsgTypeName), connectionConfig, monitoringConfig, archiveConfig)
   }
 
 
