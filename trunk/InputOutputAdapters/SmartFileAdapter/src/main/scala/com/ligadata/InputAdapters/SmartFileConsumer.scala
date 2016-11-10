@@ -286,10 +286,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
               catch{
                 case ie: InterruptedException => {
                   LOG.debug("Smart File Consumer - interrupted " + ie)
-                  throw ie
                 }
                 case e : Throwable => {
-                  externalizeExceptionEvent(e)
                   LOG.debug("Smart File Consumer - unkown exception " + e)
                 }
               }
