@@ -1,6 +1,6 @@
 package com.ligadata.kamanja.test.application.logging
 
-import java.io.{File, PrintWriter}
+import java.io.{File, PrintWriter, StringWriter}
 import java.text.SimpleDateFormat
 import java.util.Calendar
 
@@ -11,8 +11,22 @@ case class KamanjaAppLoggerException(message: String, cause: Throwable = null) e
 object KamanjaAppLogger {
   private val logger: KamanjaAppLogger = new KamanjaAppLogger("logs")
 
-  def log(message: String): Unit = {
-    logger.log(message)
+  def info(message: String): Unit = {
+    logger.log(message, "000000")
+  }
+
+  def error(message:String): Unit = {
+    logger.log(message, "#FF0000")
+  }
+
+  def warn(message:String): Unit = {
+    logger.log(message, "FFFF00")
+  }
+
+  def getStackTraceAsString(cause: Throwable): String = {
+    val sw = new StringWriter
+    cause.printStackTrace(new PrintWriter(sw))
+    sw.toString
   }
 
   def close: Unit = {
@@ -65,22 +79,18 @@ class KamanjaAppLogger(logDirectory: String) {
     pw.append("<th>Time</th>")
     pw.append("<th>Message</th>")
     pw.append("</tr>")
-    //append("</body>")
-    //append("</html>")
-    //pw.close()
   }
 
-  private def log(message: String): Unit = {
+  private def log(message: String, foregroundColor: String): Unit = {
     val time = Calendar.getInstance().getTime()
     val dateTimeFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss")
     val currentDateTime = dateTimeFormat.format(time)
 
     println(message)
-    pw.append("<tr>")
-    pw.append(s"<td>$currentDateTime</td>")
-    pw.append(s"<td>$message</td>")
+    pw.append(s"""<tr>""")
+    pw.append(s"""<td bgcolor="B9B9B9"><font color="$foregroundColor">$currentDateTime</font></td>""")
+    pw.append(s"""<td bgcolor="B9B9B9"><font color="$foregroundColor">$message</font></td>""")
     pw.append("</tr>")
-    //pw.close()
   }
 
   private def close: Unit ={

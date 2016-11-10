@@ -4,6 +4,7 @@ import java.io.File
 
 import com.ligadata.kamanja.test.application.KamanjaApplication
 import com.ligadata.kamanja.test.application.data.DataSet
+import com.ligadata.kamanja.test.application.logging.KamanjaAppLogger
 import com.ligadata.kamanja.test.application.metadata._
 import com.ligadata.kamanja.test.application.metadata.interfaces.MetadataElement
 import org.json4s._
@@ -27,16 +28,16 @@ class KamanjaApplicationConfiguration {
 
     try {
       val appName = (json \ "Application" \ "Name").values.toString
-      println("[Kamanja Application Tester]: Initializing Application '" + appName + "'")
+      KamanjaAppLogger.info("[Kamanja Application Tester]: Initializing Application '" + appName + "'")
       return new KamanjaApplication(appName, applicationDirectory, parseMdElements(applicationDirectory, json), parseDataSets(applicationDirectory, json))
     }
     catch {
       case e: KamanjaApplicationConfigurationException => {
-        println("[Kamanja Application Tester]: ***ERROR*** Failed to initialize Kamanja Application", e)
+        KamanjaAppLogger.error("[Kamanja Application Tester]: ***ERROR*** Failed to initialize Kamanja Application\n" + KamanjaAppLogger.getStackTraceAsString(e))
         throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester]: ***ERROR*** Failed to initialize Kamanja Application", e)
       }
       case e: Exception => {
-        println("[Kamanja Application Tester]: ***ERROR*** Unexpected exception encountered. Failed to initialize Kamanja Application.", e)
+        KamanjaAppLogger.error("[Kamanja Application Tester]: ***ERROR*** Unexpected exception encountered. Failed to initialize Kamanja Application.\n" + KamanjaAppLogger.getStackTraceAsString(e))
         throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester]: ***ERROR*** Unexpected exception encountered. Failed to initialize Kamanja Application.", e)
       }
     }
@@ -50,7 +51,7 @@ class KamanjaApplicationConfiguration {
       elem("Type").toString.toLowerCase match {
         case "container" => {
           if (!elem.keySet.exists(_ == "Filename")) {
-            println("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Container' requires 'Filename' to be defined.")
+            KamanjaAppLogger.error("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Container' requires 'Filename' to be defined.")
             throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Container' requires 'Filename' to be defined.")
           }
           val kvFile: Option[String] = if (elem.keySet.exists(_ == "KVFile")) Some(s"$appDir/data/${elem("KVFile").toString}") else None
@@ -58,7 +59,7 @@ class KamanjaApplicationConfiguration {
         }
         case "message" => {
           if (!elem.keySet.exists(_ == "Filename")) {
-            println("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Message' requires 'Filename' to be defined.")
+            KamanjaAppLogger.error("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Message' requires 'Filename' to be defined.")
             throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Message' requires 'Filename' to be defined.")
           }
 
@@ -68,41 +69,41 @@ class KamanjaApplicationConfiguration {
           elem("ModelType").toString.toLowerCase match {
             case "java" =>
               if (!elem.keySet.exists(_ == "Filename")) {
-                println("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'Java' requires 'Filename' to be defined.")
+                KamanjaAppLogger.error("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'Java' requires 'Filename' to be defined.")
                 throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'Java' requires 'Filename' to be defined.")
               }
 
               if(!elem.keySet.exists(_ == "ModelConfiguration")) {
-                println("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'Java' requires 'ModelConfiguration' to be defined.")
+                KamanjaAppLogger.error("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'Java' requires 'ModelConfiguration' to be defined.")
                 throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'Java' requires 'ModelConfiguration' to be defined.")
               }
 
               metadataElements = metadataElements :+ new JavaModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("ModelConfiguration").toString)
             case "scala" => {
               if (!elem.keySet.exists(_ == "Filename")) {
-                println("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'Scala' requires 'Filename' to be defined.")
+                KamanjaAppLogger.error("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'Scala' requires 'Filename' to be defined.")
                 throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'Scala' requires 'Filename' to be defined.")
               }
               if(!elem.keySet.exists(_ == "ModelConfiguration")) {
-                println("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'Scala' requires 'ModelConfiguration' to be defined.")
+                KamanjaAppLogger.error("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'Scala' requires 'ModelConfiguration' to be defined.")
                 throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'Scala' requires 'ModelConfiguration' to be defined.")
               }
               metadataElements = metadataElements :+ new ScalaModelElement(appDir + "/metadata/model/" + elem("Filename").toString, elem("ModelConfiguration").toString)
             }
             case "kpmml" => {
               if (!elem.keySet.exists(_ == "Filename")) {
-                println("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'KPMML' requires 'Filename' to be defined.")
+                KamanjaAppLogger.error("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'KPMML' requires 'Filename' to be defined.")
                 throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'KPMML' requires 'Filename' to be defined.")
               }
               metadataElements = metadataElements :+ new KPmmlModelElement(appDir + "/metadata/model/" + elem("Filename").toString)
             }
             case "pmml" => {
               if (!elem.keySet.exists(_ == "Filename")) {
-                println("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'PMML' requires 'Filename' to be defined.")
+                KamanjaAppLogger.error("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'PMML' requires 'Filename' to be defined.")
                 throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'PMML' requires 'Filename' to be defined.")
               }
               if(!elem.keySet.exists(_ == "MessageConsumed")) {
-                println("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'PMML' requires 'MessageConsumed' to be defined.")
+                KamanjaAppLogger.error("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'PMML' requires 'MessageConsumed' to be defined.")
                 throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'Model' with ModelType 'PMML' requires 'MessageConsumed' to be defined.")
               }
               if (elem.keySet.exists(_ == "MessageProduced")) {
@@ -118,19 +119,19 @@ class KamanjaApplicationConfiguration {
         }
         case "modelconfiguration" => {
           if (!elem.keySet.exists(_ == "Filename")) {
-            println("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'ModelConfiguration' requires 'Filename' to be defined.")
+            KamanjaAppLogger.error("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'ModelConfiguration' requires 'Filename' to be defined.")
             throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'ModelConfiguration' requires 'Filename' to be defined.")
           }
           metadataElements = metadataElements :+ new ModelConfigurationElement(appDir + "/metadata/configuration/" + elem("Filename").toString)
         }
         case "adaptermessagebindings" => {
           if (!elem.keySet.exists(_ == "Filename")) {
-            println("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'AdapterMessageBindings' requires 'Filename' to be defined.")
+            KamanjaAppLogger.error("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'AdapterMessageBindings' requires 'Filename' to be defined.")
             throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester]: ***ERROR*** Metadata Element Type 'AdapterMessageBindings' requires 'Filename' to be defined.")
           }
           metadataElements = metadataElements :+ new AdapterMessageBindingElement(appDir + "/metadata/configuration/" + elem("Filename").toString)
         }
-        case _ => println(s"[Kamanja Application Tester]: ***WARN*** Unknown Metadata Element '${elem("Type")}' found. Ignoring.")
+        case _ => KamanjaAppLogger.warn(s"[Kamanja Application Tester]: ***WARN*** Unknown Metadata Element '${elem("Type")}' found. Ignoring.")
       }
     })
     return metadataElements
@@ -141,11 +142,11 @@ class KamanjaApplicationConfiguration {
     val data: List[Map[String, Any]] = (configStr \\ "DataSets").values.asInstanceOf[List[Map[String, Any]]]
     data.foreach(set => {
       if (!set.keySet.exists(_ == "InputDataFile")) {
-        println("[Kamanja Application Tester]: ***ERROR*** Data Set requires 'InputDataFile' to be defined.")
+        KamanjaAppLogger.error("[Kamanja Application Tester]: ***ERROR*** Data Set requires 'InputDataFile' to be defined.")
         throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester]: ***ERROR*** Data Set requires 'InputDataFile' to be defined.")
       }
       if (!set.keySet.exists(_ == "InputDataFormat")) {
-        println("[Kamanja Application Tester]: ***ERROR*** Data Set requires 'InputDataFormat' to be defined.")
+        KamanjaAppLogger.error("[Kamanja Application Tester]: ***ERROR*** Data Set requires 'InputDataFormat' to be defined.")
         throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester]: ***ERROR*** Data Set requires 'InputDataFormat' to be defined.")
       }
       else {
@@ -154,11 +155,11 @@ class KamanjaApplicationConfiguration {
         }
       }
       if (!set.keySet.exists(_ == "ExpectedResultsFile")) {
-        println("[Kamanja Application Tester]: ***ERROR*** Data Set requires 'ExpectedResultsFile' to be defined.")
+        KamanjaAppLogger.error("[Kamanja Application Tester]: ***ERROR*** Data Set requires 'ExpectedResultsFile' to be defined.")
         throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester]: ***ERROR*** Data Set requires 'ExpectedResultsFile' to be defined.")
       }
       if(!set.keySet.exists(_ == "ExpectedResultsFormat")) {
-        println("[Kamanja Application Tester]: ***ERROR*** Data Set requires 'ExpectedResultsFormat' to be defined.")
+        KamanjaAppLogger.error("[Kamanja Application Tester]: ***ERROR*** Data Set requires 'ExpectedResultsFormat' to be defined.")
         throw new KamanjaApplicationConfigurationException("[Kamanja Application Tester]: ***ERROR*** Data Set requires 'ExpectedResultsFormat' to be defined.")
       }
 

@@ -3,6 +3,7 @@ package com.ligadata.kamanja.test.application
 import java.io.File
 
 import com.ligadata.kamanja.test.application.configuration.KamanjaApplicationConfiguration
+import com.ligadata.kamanja.test.application.logging.KamanjaAppLogger
 
 import scala.collection.mutable.ListBuffer
 
@@ -40,7 +41,7 @@ class KamanjaApplicationManager(baseDir: String) {
 
         files.foreach(file => {
           if (file.getName.toLowerCase != "applicationconfiguration.json" && file.getName.toLowerCase != "appconfig.json") {
-            println(s"[Kamanja Application Tester - Application Manager]: ***WARN*** File '${file.getName}' is an unaccepted name for a configuration file, please use either 'ApplicationConfiguration.json' or 'AppConfig.json'")
+            KamanjaAppLogger.warn(s"***WARN*** File '${file.getName}' is an unaccepted name for a configuration file, please use either 'ApplicationConfiguration.json' or 'AppConfig.json'")
           }
           else {
             dirFiles = dirFiles :+ file
@@ -48,10 +49,10 @@ class KamanjaApplicationManager(baseDir: String) {
         })
 
         if (dirFiles.length == 0) {
-          println(s"[Kamanja ApplicationTester - Application Manager]: ***WARN*** Failed to discover any configuration files in application directory '${d.getName}'. This application will not be tested.")
+          KamanjaAppLogger.warn(s"***WARN*** Failed to discover any configuration files in application directory '${d.getName}'. This application will not be tested.")
         }
         else if (dirFiles.length > 1) {
-          println(s"[Kamanja Application Tester - Application Manager]: ***WARN*** Multiple configuration files found. Using the first file found '${dirFiles(0)}'")
+          KamanjaAppLogger.warn(s"***WARN*** Multiple configuration files found. Using the first file found '${dirFiles(0)}'")
         }
         else {
           applicationConfigFiles = applicationConfigFiles :+ dirFiles(0)
@@ -82,7 +83,8 @@ class KamanjaApplicationManager(baseDir: String) {
       return apps.toList
     }
     else {
-      throw new KamanjaApplicationException(s"[Kamanja Application Tester - Applicatio nManager]: ***ERROR*** Test Directory '$testDir' either doesn't exist or isn't a directory.")
+      KamanjaAppLogger.error("***ERROR*** Test Directory '$testDir' either doesn't exist or isn't a directory.")
+      throw new KamanjaApplicationException(s"***ERROR*** Test Directory '$testDir' either doesn't exist or isn't a directory.")
     }
   }
 }
