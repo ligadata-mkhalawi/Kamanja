@@ -156,7 +156,18 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
       root.imports.packages
     }
 
-    val imports1 = imports
+    val typesImports = ArrayBuffer[String]()
+    if(root.imports != null && root.imports.types != null && root.imports.types.size > 0){
+      root.imports.types.foreach(tuple => {
+        val physicalName = ResolveToVersionedClassname(md, tuple._2, resolveContainers = true)
+        val tokens = physicalName.split("\\.")
+        //replace base class name by {base class name => alias}
+        tokens(tokens.length - 1) = "{%s => %s}".format(tokens(tokens.length - 1), tuple._1)
+        typesImports.append(tokens.mkString("."))
+      })
+    }
+
+    val imports1 = imports ++ typesImports
 
     imports1.distinct
   }
@@ -199,6 +210,15 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
     val isReusable: Boolean = true
 
     val depJars = scala.collection.mutable.Set[String]()
+
+    if(root.imports != null && root.imports.types != null && root.imports.types.size > 0){
+      root.imports.types.foreach(tuple => {
+        ////val physicalName = ResolveToVersionedClassname(md, tuple._2, resolveContainers = true)
+        val jars = GetDepJars(md, tuple._2, resolveContainers = true)
+        //logger.error(">>>>>>>> going to add these jars: " + jars.mkString(","))
+        depJars ++= jars
+      })
+    }
 
     outmessages.foreach(outputType1 => {
       depJars ++=  GetDepJars(md, outputType1)
@@ -493,15 +513,21 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
     }
   }
 
-  def ResolveToVersionedClassname(mgr: MdMgr, classname: String): String = {
+  def ResolveToVersionedClassname(mgr: MdMgr, classname: String, resolveContainers: Boolean = false): String = {
     val classMd = md.Message(classname, 0, true)
     if(classMd.isEmpty) {
-      throw new Exception("Metadata: unable to find class %s".format(classname))
+      if (resolveContainers) {
+        val contClassMd = md.Container(classname, 0, true)
+        if(contClassMd.isEmpty) throw new Exception("Metadata: unable to find class %s".format(classname))
+        else return contClassMd.get.physicalName
+      }
+      else throw new Exception("Metadata: unable to find class %s".format(classname))
     }
-    classMd.get.physicalName
+    else
+      classMd.get.physicalName
   }
 
-  def GetDepJars(mgr: MdMgr, classname: String): Array[String] = {
+  def GetDepJars(mgr: MdMgr, classname: String, resolveContainers: Boolean = false): Array[String] = {
     var jars = ArrayBuffer[String]()
     val classMd = md.Message(classname, 0, true)
     if(!classMd.isEmpty)  {
@@ -509,6 +535,16 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
         jars += classMd.get.JarName.trim
       if (classMd.get.DependencyJarNames != null && classMd.get.DependencyJarNames.size > 0) {
         jars ++= classMd.get.DependencyJarNames.filter(j => (j != null && j.trim.size > 0)).map(j => j.trim)
+      }
+    }
+    else if(resolveContainers){
+      val contClassMd = md.Container(classname, 0, true)
+      if(!contClassMd.isEmpty)  {
+        if (contClassMd.get.JarName != null && contClassMd.get.JarName.trim.size > 0)
+          jars += contClassMd.get.JarName.trim
+        if (contClassMd.get.DependencyJarNames != null && contClassMd.get.DependencyJarNames.size > 0) {
+          jars ++= contClassMd.get.DependencyJarNames.filter(j => (j != null && j.trim.size > 0)).map(j => j.trim)
+        }
       }
     }
     jars.toArray
