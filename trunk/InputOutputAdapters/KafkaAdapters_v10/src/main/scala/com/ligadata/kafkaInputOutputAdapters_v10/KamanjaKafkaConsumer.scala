@@ -49,7 +49,6 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   private val qc = KafkaQueueAdapterConfiguration.GetAdapterConfig(inputConfig)
   private val LOG = LogManager.getLogger(getClass)
   LOG.info("Staring Kafka Consumer (0.9+) with the following paramters:\n" + qc.toString)
-  private var isShutdown = false
   private val lock = new Object()
   private var msgCount = new AtomicLong(0)
   private var sleepDuration = 500
@@ -618,7 +617,6 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     *
     */
   override def Shutdown(): Unit = lock.synchronized {
-    isQuiese = true
     StopProcessing
   }
 
@@ -667,7 +665,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     * Will stop all the running read threads only - a call to StartProcessing will restart the reading process
     */
   override def StopProcessing(): Unit = {
-    isShutdown = true
+    isQuiese = true
     terminateReaderTasks
   }
 
@@ -737,7 +735,12 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     // Give the threads to gracefully stop their reading cycles, and then execute them with extreme prejudice.
     Thread.sleep(qc.noDataSleepTimeInMs + 1)
     if (readExecutor != null) readExecutor.shutdownNow
-    while (readExecutor != null && readExecutor.isTerminated == false) {
+    var cntr = 0
+    while (readExecutor != null && readExecutor.isTerminated == false && cntr < 1001) {
+      cntr += 1
+      if (cntr % 1000 == 0) {
+        throw new Exception("KAFKA_ADAPTER - Failed to terminate reader executor from Kafka. Waited for 100 secs.")
+      }
       Thread.sleep(100)
     }
 

@@ -195,12 +195,14 @@ class MonitorController {
 
     if(genericFileHandler != null)
       genericFileHandler.disconnect()
+    genericFileHandler = null
 
     keepMontoringBufferingFiles = false
-    monitorsExecutorService.shutdownNow()
+    if (monitorsExecutorService != null)
+      monitorsExecutorService.shutdownNow()
+    monitorsExecutorService = null
 
     MonitorUtils.shutdownAndAwaitTermination(globalFileMonitorService, "MonitorController globalFileMonitorService")
-
   }
 
   private def enQBufferedFile(file : MonitoredFile, initiallyExists : Boolean): Unit = {
