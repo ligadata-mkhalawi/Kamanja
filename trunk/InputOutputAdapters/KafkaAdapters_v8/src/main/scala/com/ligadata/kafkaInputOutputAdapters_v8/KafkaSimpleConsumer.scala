@@ -65,7 +65,6 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
   private var isQuiesced = false
   private var startTime: Long = 0
   private var msgCount = new AtomicLong(0)
-  private var isShutdown = false
 
   private var metrics: collection.mutable.Map[String,Any] = collection.mutable.Map[String,Any]()
   private var partitonCounts: collection.mutable.Map[String,Long] = collection.mutable.Map[String,Long]()
@@ -108,7 +107,6 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
     * Will stop all the running read threads only - a call to StartProcessing will restart the reading process
     */
   def StopProcessing(): Unit = {
-    isShutdown = true
     terminateReaderTasks
   }
 
