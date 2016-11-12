@@ -14,7 +14,7 @@ import com.ligadata.test.embedded.zookeeper._
 import com.ligadata.kafkaInputOutputAdapters_v10.embedded._
 import com.ligadata.test.utils._
 import com.ligadata.MetadataAPI.test._
-import com.ligadata.kamanja.test.application.logging.KamanjaAppLogger
+import com.ligadata.kamanja.test.application.logging.{KamanjaAppLogger, KamanjaAppLoggerException}
 import com.ligadata.test.embedded.kafka._
 
 case class EmbeddedServicesException(message: String, cause: Throwable = null) extends Exception(message, cause)
@@ -29,6 +29,7 @@ object EmbeddedServicesManager {
   private var kamanjaInstallDir: String = _
   private var isInitialized: Boolean = false
   private var mdMan = new MetadataManager
+  private var logger: KamanjaAppLogger = _
   var kamanjaConfigFile: String = _
   var storageDir: String = _
 
@@ -69,6 +70,14 @@ object EmbeddedServicesManager {
 
   def init(kamanjaInstallDir: String): Unit = {
     isInitialized = true
+
+    try {
+      logger = KamanjaAppLogger.getKamanjaAppLogger
+    }
+    catch {
+      case e: KamanjaAppLoggerException => logger = KamanjaAppLogger.createKamanjaAppLogger(kamanjaInstallDir)
+    }
+
     try {
       sys.env("PYTHON_HOME")
     }
@@ -114,10 +123,10 @@ object EmbeddedServicesManager {
 
       val addConfigResult = mdMan.addConfig(clusterConfig)
       if (addConfigResult != 0) {
-        KamanjaAppLogger.error("***ERROR*** Attempted to upload cluster configuration but failed")
+        logger.error("***ERROR*** Attempted to upload cluster configuration but failed")
         return false
       }
-      KamanjaAppLogger.info("Cluster configuration successfully uploaded")
+      logger.info("Cluster configuration successfully uploaded")
 
       //val addSystemBindingsResult = mdMan.addBindings(this.getClass.getResource("/SystemMsgs_Adapter_Bindings.json").getPath)
       //val addSystemBindingsResult = mdMan.addBindings(kamanjaInstallDir + "/config/SystemMsgs_Adapter_Bindings.json")
@@ -201,20 +210,20 @@ object EmbeddedServicesManager {
 
     zkClient = new ZookeeperClient(embeddedZookeeper.getConnection)
     try {
-      KamanjaAppLogger.info(s"Starting Kamanja with configuration file $kamanjaConfigFile...")
+      logger.info(s"Starting Kamanja with configuration file $kamanjaConfigFile...")
       val startCode = embeddedKamanjaManager.startup(kamanjaConfigFile, clusterConfig.zookeeperConfig, zkClient)
       if (startCode != 0) {
-        KamanjaAppLogger.error("***ERROR*** Failed to start Kamanja")
+        logger.error("***ERROR*** Failed to start Kamanja")
         return false
       }
       else {
-        KamanjaAppLogger.info("Kamanja started")
+        logger.info("Kamanja started")
       }
       return true
     }
     catch {
       case e: Exception => {
-        KamanjaAppLogger.error("***ERROR*** Failed to start Kamanja\n" + KamanjaAppLogger.getStackTraceAsString(e))
+        logger.error("***ERROR*** Failed to start Kamanja\n" + logger.getStackTraceAsString(e))
         return false
       }
     }
@@ -222,20 +231,20 @@ object EmbeddedServicesManager {
 
   private def stopKamanja: Boolean = {
     try {
-      KamanjaAppLogger.info("Stopping Kamanja...")
+      logger.info("Stopping Kamanja...")
       val shutdownCode = embeddedKamanjaManager.shutdown(clusterConfig.zookeeperConfig, zkClient)
       if (shutdownCode != 0) {
-        KamanjaAppLogger.error("***ERROR*** Failed to stop Kamanja. Return code: " + shutdownCode)
+        logger.error("***ERROR*** Failed to stop Kamanja. Return code: " + shutdownCode)
         return false
       }
       else {
-        KamanjaAppLogger.info("Kamanja stopped")
+        logger.info("Kamanja stopped")
         return true
       }
     }
     catch {
       case e: Exception => {
-        KamanjaAppLogger.error("***ERROR*** Failed to stop Kamanja\n" + KamanjaAppLogger.getStackTraceAsString(e))
+        logger.error("***ERROR*** Failed to stop Kamanja\n" + logger.getStackTraceAsString(e))
         return false
       }
     }
@@ -246,14 +255,14 @@ object EmbeddedServicesManager {
       throw new Exception("***ERROR*** EmbeddedServicesManager has not been initialized. Please call def init first.")
     }
     try {
-      KamanjaAppLogger.info("Starting Zookeeper...")
+      logger.info("Starting Zookeeper...")
       embeddedZookeeper.startup
-      KamanjaAppLogger.info("Zookeeper started")
+      logger.info("Zookeeper started")
       return true
     }
     catch {
       case e: Exception => {
-        KamanjaAppLogger.error("***ERROR*** Failed to start Zookeeper\n" + KamanjaAppLogger.getStackTraceAsString(e))
+        logger.error("***ERROR*** Failed to start Zookeeper\n" + logger.getStackTraceAsString(e))
         return false
       }
     }
@@ -264,14 +273,14 @@ object EmbeddedServicesManager {
       throw new Exception("***ERROR*** EmbeddedServicesManager has not been initialized. Please call def init first.")
     }
     try {
-      KamanjaAppLogger.info("Stopping Zookeeper...")
+      logger.info("Stopping Zookeeper...")
       embeddedZookeeper.shutdown
-      KamanjaAppLogger.info("Zookeeper stopped")
+      logger.info("Zookeeper stopped")
       return true
     }
     catch {
       case e: Exception => {
-        KamanjaAppLogger.error("***ERROR* Failed to stop Zookeeper\n" + KamanjaAppLogger.getStackTraceAsString(e))
+        logger.error("***ERROR* Failed to stop Zookeeper\n" + logger.getStackTraceAsString(e))
         return false
       }
     }
@@ -282,14 +291,14 @@ object EmbeddedServicesManager {
       throw new Exception("***ERROR*** EmbeddedServicesManager has not been initialized. Please call def init first.")
     }
     try {
-      KamanjaAppLogger.info("Starting Kafka...")
+      logger.info("Starting Kafka...")
       kafkaCluster.startCluster
-      KamanjaAppLogger.info("Kafka started")
+      logger.info("Kafka started")
       return true
     }
     catch {
       case e: Exception => {
-        KamanjaAppLogger.error("***ERROR*** Failed to start Kafka\n" + KamanjaAppLogger.getStackTraceAsString(e))
+        logger.error("***ERROR*** Failed to start Kafka\n" + logger.getStackTraceAsString(e))
         return false
       }
     }
@@ -300,14 +309,14 @@ object EmbeddedServicesManager {
       throw new Exception("***ERROR*** EmbeddedServicesManager has not been initialized. Please call def init first.")
     }
     try {
-      KamanjaAppLogger.info("Stopping Kafka...")
+      logger.info("Stopping Kafka...")
       kafkaCluster.stopCluster
-      KamanjaAppLogger.info("Kafka stopped")
+      logger.info("Kafka stopped")
       return true
     }
     catch {
       case e: Exception => {
-        KamanjaAppLogger.error("***ERROR*** Failed to stop Kafka\n" + KamanjaAppLogger.getStackTraceAsString(e))
+        logger.error("***ERROR*** Failed to stop Kafka\n" + logger.getStackTraceAsString(e))
         return false
       }
     }
@@ -318,15 +327,15 @@ object EmbeddedServicesManager {
       throw new Exception("***ERROR*** EmbeddedServicesManager has not been initialized. Please call def init first.")
     }
     try {
-      KamanjaAppLogger.info(s"Starting Kafka consumer against topic '${getOutputKafkaAdapterConfig.adapterSpecificConfig.topicName}'...")
+      logger.info(s"Starting Kafka consumer against topic '${getOutputKafkaAdapterConfig.adapterSpecificConfig.topicName}'...")
       val kafkaConsumerThread = new Thread(kafkaConsumer)
       kafkaConsumerThread.start()
-      KamanjaAppLogger.info(s"Kafka consumer started against topic '${getOutputKafkaAdapterConfig.adapterSpecificConfig.topicName}'")
+      logger.info(s"Kafka consumer started against topic '${getOutputKafkaAdapterConfig.adapterSpecificConfig.topicName}'")
       return true
     }
     catch {
       case e: Exception => {
-        KamanjaAppLogger.error(s"***ERROR*** Failed to start kafka consumer against topic '${getOutputKafkaAdapterConfig.adapterSpecificConfig.topicName}'\n${KamanjaAppLogger.getStackTraceAsString(e)}")
+        logger.error(s"***ERROR*** Failed to start kafka consumer against topic '${getOutputKafkaAdapterConfig.adapterSpecificConfig.topicName}'\n${logger.getStackTraceAsString(e)}")
         throw new Exception(s"***ERROR*** Failed to start kafka consumer against topic '${getOutputKafkaAdapterConfig.adapterSpecificConfig.topicName}'", e)
       }
     }
@@ -338,15 +347,15 @@ object EmbeddedServicesManager {
     }
     if (kafkaConsumer != null) {
       try {
-        KamanjaAppLogger.info("Stopping Kafka consumer...")
+        logger.info("Stopping Kafka consumer...")
         kafkaConsumer.shutdown
 
-        KamanjaAppLogger.info("Kafka consumer stopped")
+        logger.info("Kafka consumer stopped")
         return true
       }
       catch {
         case e: Exception => {
-          KamanjaAppLogger.error("***ERROR*** Failed to stop Kafka consumer\n" + KamanjaAppLogger.getStackTraceAsString(e))
+          logger.error("***ERROR*** Failed to stop Kafka consumer\n" + logger.getStackTraceAsString(e))
           throw new Exception("***ERROR*** Failed to stop Kafka consumer", e)
         }
       }

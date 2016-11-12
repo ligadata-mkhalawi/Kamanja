@@ -3,7 +3,7 @@ package com.ligadata.kamanja.test.application
 import java.io.File
 
 import com.ligadata.kamanja.test.application.data.DataSet
-import com.ligadata.kamanja.test.application.logging.KamanjaAppLogger
+import com.ligadata.kamanja.test.application.logging.{KamanjaAppLogger, KamanjaAppLoggerException}
 import com.ligadata.test.configuration.cluster._
 import com.ligadata.test.configuration.cluster.adapters._
 import org.json4s._
@@ -19,6 +19,15 @@ case class MatchResult(messageNumber: Int, expectedResult: String, actualResult:
  */
 class ResultsManager(cluster: Cluster) {
 
+  private var logger = {
+    try {
+      KamanjaAppLogger.getKamanjaAppLogger
+    }
+    catch {
+      case e: KamanjaAppLoggerException => throw new Exception("Kamanja App Logger has not been created. Please call createKamanjaAppLogger first.")
+    }
+  }
+
   def compareResults(dataSet: DataSet, actualResults: List[String]): List[MatchResult] = {
     if(dataSet.expectedResultsFormat.toLowerCase == "csv") compareCsvResults(dataSet, actualResults)
     else compareJsonResults(dataSet, actualResults)
@@ -27,7 +36,7 @@ class ResultsManager(cluster: Cluster) {
   def parseExpectedResults(dataSet: DataSet): List[String] = {
     var source: Source = null
     if(!(new File(dataSet.expectedResultsFile).exists)) {
-      KamanjaAppLogger.error(s"***ERROR*** Expected results file '${dataSet.expectedResultsFile}' does not exist.")
+      logger.error(s"***ERROR*** Expected results file '${dataSet.expectedResultsFile}' does not exist.")
       throw new Exception(s"***ERROR*** Expected results file '${dataSet.expectedResultsFile}' does not exist.")
     }
     if(dataSet.expectedResultsFormat.toLowerCase == "csv") {
@@ -37,7 +46,7 @@ class ResultsManager(cluster: Cluster) {
       }
       catch {
         case e: Exception => {
-          KamanjaAppLogger.error(s"***ERROR*** Failed to read file '${dataSet.expectedResultsFile}'\n${KamanjaAppLogger.getStackTraceAsString(e)}")
+          logger.error(s"***ERROR*** Failed to read file '${dataSet.expectedResultsFile}'\n${logger.getStackTraceAsString(e)}")
           throw new Exception(s"***ERROR*** Failed to read file '${dataSet.expectedResultsFile}'", e)
         }
       }
@@ -66,10 +75,10 @@ class ResultsManager(cluster: Cluster) {
       }
       catch {
         case e: MappingException =>
-          KamanjaAppLogger.error(s"***ERROR*** Failed to parse json\n${KamanjaAppLogger.getStackTraceAsString(e)}")
+          logger.error(s"***ERROR*** Failed to parse json\n${logger.getStackTraceAsString(e)}")
           throw new Exception(s"***ERROR*** Failed to parse json", e)
         case e: Exception =>
-          KamanjaAppLogger.error(s"***ERROR*** Failed to read file '${dataSet.expectedResultsFile}'\n${KamanjaAppLogger.getStackTraceAsString(e)}")
+          logger.error(s"***ERROR*** Failed to read file '${dataSet.expectedResultsFile}'\n${logger.getStackTraceAsString(e)}")
           throw new Exception(s"***ERROR*** Failed to read file '${dataSet.expectedResultsFile}'", e)
       }
       finally {
@@ -100,7 +109,7 @@ class ResultsManager(cluster: Cluster) {
       return matchResults
     }
     else {
-      KamanjaAppLogger.error("***ERROR*** Failed to retrieve output results. Please ensure messages were processed correctly.")
+      logger.error("***ERROR*** Failed to retrieve output results. Please ensure messages were processed correctly.")
       throw new Exception("***ERROR*** Failed to retrieve output results. Please ensure messages were processed correctly.")
     }
   }
@@ -124,7 +133,7 @@ class ResultsManager(cluster: Cluster) {
       return matchResults
     }
     else {
-      KamanjaAppLogger.error("***ERROR*** Failed to retrieve output results. please ensure messages were processed correctly.")
+      logger.error("***ERROR*** Failed to retrieve output results. please ensure messages were processed correctly.")
       throw new Exception("***ERROR*** Failed to retrieve output results. please ensure messages were processed correctly.")
     }
   }

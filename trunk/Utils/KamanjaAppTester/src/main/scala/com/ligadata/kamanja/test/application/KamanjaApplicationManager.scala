@@ -3,13 +3,22 @@ package com.ligadata.kamanja.test.application
 import java.io.File
 
 import com.ligadata.kamanja.test.application.configuration.KamanjaApplicationConfiguration
-import com.ligadata.kamanja.test.application.logging.KamanjaAppLogger
+import com.ligadata.kamanja.test.application.logging.{KamanjaAppLogger, KamanjaAppLoggerException}
 
 import scala.collection.mutable.ListBuffer
 
 class KamanjaApplicationManager(baseDir: String) {
 
   lazy val kamanjaApplications = initializeApplications(baseDir)
+
+  private var logger: KamanjaAppLogger = {
+    try {
+      KamanjaAppLogger.getKamanjaAppLogger
+    }
+    catch {
+      case e: KamanjaAppLoggerException => throw new Exception("Kamanja App Logger has not been created. Please call createKamanjaAppLogger first.")
+    }
+  }
 
   /** Given a directory, this will return a list of directories contained with the baseDir/tests
     *
@@ -41,7 +50,7 @@ class KamanjaApplicationManager(baseDir: String) {
 
         files.foreach(file => {
           if (file.getName.toLowerCase != "applicationconfiguration.json" && file.getName.toLowerCase != "appconfig.json") {
-            KamanjaAppLogger.warn(s"***WARN*** File '${file.getName}' is an unaccepted name for a configuration file, please use either 'ApplicationConfiguration.json' or 'AppConfig.json'")
+            logger.warn(s"***WARN*** File '${file.getName}' is an unaccepted name for a configuration file, please use either 'ApplicationConfiguration.json' or 'AppConfig.json'")
           }
           else {
             dirFiles = dirFiles :+ file
@@ -49,10 +58,10 @@ class KamanjaApplicationManager(baseDir: String) {
         })
 
         if (dirFiles.length == 0) {
-          KamanjaAppLogger.warn(s"***WARN*** Failed to discover any configuration files in application directory '${d.getName}'. This application will not be tested.")
+          logger.warn(s"***WARN*** Failed to discover any configuration files in application directory '${d.getName}'. This application will not be tested.")
         }
         else if (dirFiles.length > 1) {
-          KamanjaAppLogger.warn(s"***WARN*** Multiple configuration files found. Using the first file found '${dirFiles(0)}'")
+          logger.warn(s"***WARN*** Multiple configuration files found. Using the first file found '${dirFiles(0)}'")
         }
         else {
           applicationConfigFiles = applicationConfigFiles :+ dirFiles(0)
@@ -83,7 +92,7 @@ class KamanjaApplicationManager(baseDir: String) {
       return apps.toList
     }
     else {
-      KamanjaAppLogger.error("***ERROR*** Test Directory '$testDir' either doesn't exist or isn't a directory.")
+      logger.error("***ERROR*** Test Directory '$testDir' either doesn't exist or isn't a directory.")
       throw new KamanjaApplicationException(s"***ERROR*** Test Directory '$testDir' either doesn't exist or isn't a directory.")
     }
   }

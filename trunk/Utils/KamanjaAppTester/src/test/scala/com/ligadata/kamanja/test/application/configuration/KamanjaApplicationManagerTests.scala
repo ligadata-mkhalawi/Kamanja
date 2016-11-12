@@ -1,11 +1,14 @@
 package com.ligadata.kamanja.test.application.configuration
 
 import com.ligadata.kamanja.test.application.KamanjaApplicationManager
+import com.ligadata.kamanja.test.application.logging.KamanjaAppLogger
 import com.ligadata.kamanja.test.application.metadata._
 import com.ligadata.kamanja.test.application.metadata.interfaces.ModelElement
 import org.scalatest._
 
 class KamanjaApplicationManagerTests extends FlatSpec {
+  val installDir: String = getClass.getResource("/kamanjaInstall").getPath
+  KamanjaAppLogger.createKamanjaAppLogger(installDir)
   private val kamanjaAppManager: KamanjaApplicationManager = new KamanjaApplicationManager(getClass.getResource("/kamanjaInstall/test").getPath)
   private val app1MdElems = kamanjaAppManager.kamanjaApplications(0).metadataElements
   private val app1DataSets = kamanjaAppManager.kamanjaApplications(0).dataSets

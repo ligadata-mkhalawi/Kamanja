@@ -2,6 +2,7 @@ package com.ligadata.kamanja.test.application.configuration.configuration
 
 import com.ligadata.kamanja.test.application.KamanjaApplication
 import com.ligadata.kamanja.test.application.configuration.KamanjaApplicationConfiguration
+import com.ligadata.kamanja.test.application.logging.KamanjaAppLogger
 import com.ligadata.kamanja.test.application.metadata._
 import org.scalatest._
 
@@ -9,9 +10,11 @@ class KamanjaApplicationConfigurationTests extends FlatSpec with BeforeAndAfterA
   var configFile: String = ""
   var appConfig: KamanjaApplicationConfiguration = _
   var app: KamanjaApplication = _
+  val installDir: String = getClass.getResource("/kamanjaInstall").getPath
   val testAppDir: String = getClass.getResource("/kamanjaInstall/test/TestApp1").getPath
 
   override def beforeAll {
+    KamanjaAppLogger.createKamanjaAppLogger(installDir)
     configFile = getClass.getResource("/KamanjaApplicationConfigurationTest/TestConfig.json").getPath
     appConfig = new KamanjaApplicationConfiguration
     app = appConfig.initializeApplication(testAppDir, configFile)
