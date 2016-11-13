@@ -58,7 +58,7 @@ assemblyMergeStrategy in assembly := {
 }
 
 excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
-  val excludes = Set("commons-beanutils-1.7.0.jar", "google-collections-1.0.jar", "commons-collections-4-4.0.jar", "scalatest_2.11-2.2.0.jar", "scala-reflect-2.11.0.jar", "akka-actor_2.11-2.3.2.jar", "scala-reflect-2.11.2.jar", "scalatest_2.11-2.2.4.jar", "joda-time-2.9.1-javadoc.jar", "voldemort-0.96.jar", "scala-compiler-2.11.0.jar", "guava-16.0.1.jar", "log4j-1.2.17.jar", "log4j-1.2.16.jar","jsp-2.1-6.1.14.jar","stax-api-1.0-2.jar","jersey-server-1.9.jar","jersey-json-1.8.jar","servlet-api-2.5-20081211.jar","servlet-api-2.5.jar","jsp-api-2.1-6.1.14.jar","stax-api-1.0.1.jar","hadoop-core-1.2.1.jar")
+  val excludes = Set("commons-beanutils-1.7.0.jar", "google-collections-1.0.jar", "commons-collections-4-4.0.jar", "scalatest_2.11-2.2.0.jar", "scala-reflect-2.11.0.jar", "akka-actor_2.11-2.3.2.jar", "scala-reflect-2.11.2.jar", "scalatest_2.11-2.2.4.jar", "joda-time-2.9.1-javadoc.jar", "voldemort-0.96.jar", "scala-compiler-2.11.0.jar", "guava-16.0.1.jar", "log4j-1.2.17.jar","log4j-1.2.16.jar","jsp-2.1-6.1.14.jar","stax-api-1.0-2.jar","jersey-server-1.9.jar","jersey-json-1.8.jar","servlet-api-2.5-20081211.jar","servlet-api-2.5.jar","jsp-api-2.1-6.1.14.jar","stax-api-1.0.1.jar","hadoop-core-1.2.1.jar")
   cp filter { jar => excludes(jar.data.getName) }
 }
 
@@ -88,6 +88,8 @@ libraryDependencies += "org.codemonkey.simplejavamail" % "simple-java-mail" % "2
 libraryDependencies += "org.antlr" % "ST4" % "4.0.8"
 libraryDependencies += "org.projectlombok" % "lombok" % "1.16.6"
 //libraryDependencies += "org.codehaus.jackson" % "jackson-mapper-asl" % "1.8.3"
+libraryDependencies += "org.apache.logging.log4j" % "log4j-core" % "2.4.1"
+libraryDependencies += "org.apache.logging.log4j" % "log4j-api" % "2.4.1"
 
 coverageMinimum := 80
 
