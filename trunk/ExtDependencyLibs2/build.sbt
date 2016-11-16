@@ -94,9 +94,9 @@ libraryDependencies := {
 
 
 /////////////////////// GetComponent
-libraryDependencies += "org.apache.hbase" % "hbase-client" % "1.0.2"
-libraryDependencies += "org.apache.hbase" % "hbase-common" % "1.0.2"
-libraryDependencies += "org.apache.hadoop" % "hadoop-common" % "2.7.1"
+libraryDependencies += "org.apache.hbase" % "hbase-client" % "1.2.3"
+libraryDependencies += "org.apache.hbase" % "hbase-common" % "1.2.3"
+libraryDependencies += "org.apache.hadoop" % "hadoop-common" % "2.7.3"
 libraryDependencies += "com.googlecode.json-simple" % "json-simple" % "1.1"
 libraryDependencies += "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.3"
 libraryDependencies += "log4j" % "log4j" % "1.2.17"

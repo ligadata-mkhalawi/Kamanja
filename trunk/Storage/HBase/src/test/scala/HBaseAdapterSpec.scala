@@ -545,21 +545,25 @@ class HBaseAdapterSpec extends FunSpec with BeforeAndAfter with BeforeAndAfterAl
 
       And("Test copy container with force")
       noException should be thrownBy {
+	logger.info("srcContainerName => " + srcContainerName + ",destContainerName => " + destContainerName);
         adapter.copyContainer(srcContainerName, destContainerName, true)
       }
 
       And("Test the existence of the source table")
       var srcTableName = hbaseAdapter.getTableName(srcContainerName)
-      exists = adapter.isTableExists(srcTableName)
+      logger.info("srcTableName => " + srcTableName)
+      var srcFullTableName = "unit_tests" + ":" + srcTableName
+      exists = adapter.isTableExists(srcFullTableName)
       assert(exists == true)
 
       And("Test the existence of the destination table")
       var destTableName = hbaseAdapter.getTableName(destContainerName)
-      exists = adapter.isTableExists(destTableName)
+      var destFullTableName = "unit_tests" + ":" + destTableName
+      exists = adapter.isTableExists(destFullTableName)
       assert(exists == true)
 
       And("Copy source table to destination table using force option")
-      adapter.copyTable(srcTableName, destTableName, true)
+      adapter.copyTable(srcFullTableName, destFullTableName, true)
 
       And("get all tables")
       var tbls = new Array[String](0)

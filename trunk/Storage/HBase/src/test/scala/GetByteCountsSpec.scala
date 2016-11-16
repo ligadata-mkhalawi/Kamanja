@@ -34,6 +34,7 @@ import com.ligadata.kamanja.metadata.AdapterInfo
 
 import com.ligadata.Exceptions._
 
+@Ignore
 class GetByteCountsSpec extends FunSpec with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
   var adapter: DataStore = null
   var serializer: Serializer = null
