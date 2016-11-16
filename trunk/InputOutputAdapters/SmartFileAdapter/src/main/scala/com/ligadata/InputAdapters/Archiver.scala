@@ -26,7 +26,8 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
 
-  val maximumAppendableSize = 10
+  val archiveRolloverInterval : Long = 60 //in minutes
+  val archiveRolloverCheckSleepMS = 1 * 60 * 1000
 
   private val currentAppendFiles =  scala.collection.mutable.LinkedHashMap[String, (String, Long, Long, Long)]()
 
@@ -264,7 +265,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
 
 
   def startArchiving(): Unit ={
-    archiveExecutor = Executors.newFixedThreadPool(archiveParallelism)
+    archiveExecutor = Executors.newFixedThreadPool(archiveParallelism + 1)
     for (i <- 0 until archiveParallelism) {
       val archiveThread = new Runnable() {
         override def run(): Unit = {
@@ -300,6 +301,59 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
       }
       archiveExecutor.execute(archiveThread)
     }
+
+    val rolloverCheckThread = new Runnable() {
+      override def run(): Unit = {
+        var interruptedVal = false
+        while (!interruptedVal) {
+          try {
+            checkRolloverDueFiles()
+            interruptedVal = smartFileConsumer.sleepMs(archiveRolloverCheckSleepMS)
+          } catch {
+            case e: InterruptedException => {
+              interruptedVal = true
+            }
+            case e: Throwable => {
+            }
+          }
+
+        }
+      }
+    }
+    archiveExecutor.execute(rolloverCheckThread)
+  }
+
+  private def checkRolloverDueFiles(): Unit ={
+    try{
+      val dirsToFlush = ArrayBuffer[String]()
+      val currentTs = System.currentTimeMillis
+      archiveDirsStatusMap_lock.synchronized {
+        archiveDirsStatusMap.foreach(tuple =>  {
+          if(!tuple._2.isActive && currentTs >= tuple._2.nextRolloverTime){
+            dirsToFlush.append(tuple._1)
+            tuple._2.isActive = true // lock the dir
+          }
+        })
+      }
+
+      dirsToFlush.foreach(dir => {
+        logger.info("Archiver: Flushing data for dir {} since rollover is due", dir)
+        val dirStatus = archiveDirsStatusMap.getOrElse(dir, null)
+        if(dirStatus != null){
+          //dir is already locked, no need to lock the map
+
+          flushArchiveDirStatus(dirStatus)
+
+          dirStatus.nextRolloverTime = System.currentTimeMillis + archiveRolloverInterval * 60 * 1000
+          dirStatus.isActive = false
+        }
+
+      })
+    }
+    catch{
+      case ex : Throwable => logger.error("", ex)
+    }
+
   }
 
   private def openStream(filePath : String): OutputStream ={
@@ -327,8 +381,9 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
       var currentFileDirStatus = archiveDirsStatusMap.getOrElse(dir, null)
       if (currentFileDirStatus == null) {
         logger.debug("no entry in dir status map for dir {}. adding new entry", dir)
+        val nextRolloverTime = System.currentTimeMillis + archiveRolloverInterval * 60 * 1000
         currentFileDirStatus = ArchiveDirStatus(dir, new ByteArrayOutputStream(), null,
-          getNewArchiveFileName, 0, -1, true)
+          getNewArchiveFileName, 0, -1, nextRolloverTime, "", ArrayBuffer[ArchiveFileIndexEntry](), true)
         archiveDirsStatusMap.put(dir, currentFileDirStatus)
         currentFileDirStatus
       }
@@ -354,9 +409,51 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
     else
       originalMemroyStream
   }
+
+  /**
+    * flushes in memory stream into disk and updates dir status
+    * @param archiveDirStatus
+    */
+  private def flushArchiveDirStatus(archiveDirStatus : ArchiveDirStatus) : Unit = {
+
+    val lastSrcFilePath = archiveDirStatus.lastSrcFilePath
+    if(lastSrcFilePath != null && lastSrcFilePath.length > 0) {
+      val archiveIndex = archiveDirStatus.archiveIndex
+      val diskOutputStream = openStream(archiveDirStatus.destFileFullPath)
+      archiveDirStatus.originalMemoryStream.writeTo(diskOutputStream)
+      diskOutputStream.close()
+      archiveDirStatus.originalMemoryStream.reset()
+
+      archiveDirStatus.destFileName = getNewArchiveFileName
+      logger.debug("new file name is " + archiveDirStatus.destFileName)
+      logger.debug("resetting currentFileSize to 0")
+      archiveDirStatus.destFileCurrentSize = 0
+
+
+      val previousEntry = if (archiveIndex.nonEmpty) archiveIndex.last else null
+      if (previousEntry != null && previousEntry.srcFile.equals(lastSrcFilePath)) {
+        previousEntry.destFileEndOffset = archiveDirStatus.destFileCurrentOffset
+        previousEntry.ArchiveTimestamp = getCurrentTimestamp
+      }
+      else {
+        logger.warn("file {} should already have an entry in archive index", lastSrcFilePath)
+      }
+      val newEntry = ArchiveFileIndexEntry(lastSrcFilePath, archiveDirStatus.destFileFullPath, 0, -1, "")
+      archiveIndex.append(newEntry)
+
+      archiveDirStatus.destFileCurrentOffset = -1
+      archiveDirStatus.nextRolloverTime = System.currentTimeMillis + archiveRolloverInterval * 60 * 1000
+
+      //archiveDirStatus.archiveIndex.clear() ????
+
+      //todo : need to update status map?
+    }
+  }
+
   private def archiveFile(archInfo: ArchiveFileInfo, archiveDirStatus : ArchiveDirStatus) : Boolean = {
 
     val srcFileToArchive = archInfo.srcFileDir + "/" + archInfo.srcFileBaseName
+    archiveDirStatus.lastSrcFilePath = srcFileToArchive
 
     logger.debug("srcFileToArchive={}", srcFileToArchive)
     logger.debug("appendFileName={}", archiveDirStatus.destFileFullPath)
@@ -366,7 +463,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
     if (archiveDirStatus.originalMemoryStream == null)
       archiveDirStatus.originalMemoryStream = new ByteArrayOutputStream()
 
-    val archiveIndex = ArrayBuffer[ArchiveFileIndexEntry]()
+    val archiveIndex = archiveDirStatus.archiveIndex
 
     val osWriter = new com.ligadata.OutputAdapters.OutputStreamWriter()
 
@@ -416,33 +513,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
               logger.debug("memory stream is almost full. cannot write leftover from last iteration of src file {}. saving to file {} and opening a new one",
                 srcFileHandler.getFullPath, archiveDirStatus.destFileName)
 
-              //copy from memory to dest archive file
-              val diskOutputStream = openStream(archiveDirStatus.destFileFullPath)
-              archiveDirStatus.originalMemoryStream.writeTo(diskOutputStream)
-              diskOutputStream.close()
-              archiveDirStatus.originalMemoryStream.reset()
-
-              archiveDirStatus.destFileName = getNewArchiveFileName
-              logger.debug("new file name is " + archiveDirStatus.destFileName)
-              logger.debug("resetting currentFileSize to 0")
-              archiveDirStatus.destFileCurrentSize = 0
-
-              val previousEntry = if (archiveIndex.nonEmpty) archiveIndex.last else null
-              if (previousEntry != null && previousEntry.srcFile.equals(srcFileHandler.getFullPath)) {
-                previousEntry.destFileEndOffset = archiveDirStatus.destFileCurrentOffset
-                previousEntry.ArchiveTimestamp = getCurrentTimestamp
-              }
-              else {
-                logger.warn("file {} should already have an entry in archive index", srcFileHandler.getFullPath)
-              }
-              val newEntry = ArchiveFileIndexEntry(srcFileToArchive, archiveDirStatus.destFileFullPath,
-                0, -1, "")
-              archiveIndex.append(newEntry)
-
-
-              archiveDirStatus.destFileCurrentOffset = -1
-              //todo : need to update status map?
-
+              flushArchiveDirStatus(archiveDirStatus)
             }
 
             else {
@@ -480,30 +551,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
                 if (remainingArchiveSpace < actualLenToWrite) {
                   logger.debug("file {} is full", archiveDirStatus.destFileFullPath)
                   //dest file is full
-                  //copy from memory to dest archive file
-                  val diskOutputStream = openStream(archiveDirStatus.destFileFullPath)
-                  archiveDirStatus.originalMemoryStream.writeTo(diskOutputStream)
-                  diskOutputStream.close()
-                  archiveDirStatus.originalMemoryStream.reset()
-
-                  archiveDirStatus.destFileName = getNewArchiveFileName
-                  logger.debug("resetting currentFileSize to 0")
-                  archiveDirStatus.destFileCurrentSize = 0
-
-                  val previousEntry = if (archiveIndex.nonEmpty) archiveIndex.last else null
-                  if (previousEntry != null && previousEntry.srcFile.equals(srcFileHandler.getFullPath)) {
-                    previousEntry.destFileEndOffset = archiveDirStatus.destFileCurrentOffset
-                    previousEntry.ArchiveTimestamp = getCurrentTimestamp
-                  }
-                  else {
-                    logger.warn("file {} should already have an entry in archive index", srcFileHandler.getFullPath)
-                  }
-                  val newEntry = ArchiveFileIndexEntry(srcFileToArchive, archiveDirStatus.destFileFullPath,
-                    0, -1, "")
-                  archiveIndex.append(newEntry)
-
-                  archiveDirStatus.destFileCurrentOffset = -1
-                  //todo : need to update status map?
+                  flushArchiveDirStatus(archiveDirStatus)
 
                 }
 
@@ -520,28 +568,8 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
                 //logger.debug("written:" + new String(byteBuffer.slice(0, actualLenToWrite)))
                 if(archiveDirStatus.originalMemoryStream.size >= adapterConfig.archiveConfig.consolidateThresholdBytes){
                   logger.debug("writing to disk since memory stream is full")
-                  //copy from memory to dest archive file
-                  val diskOutputStream = openStream(archiveDirStatus.destFileFullPath)
-                  archiveDirStatus.originalMemoryStream.writeTo(diskOutputStream)
-                  diskOutputStream.close()
-                  archiveDirStatus.originalMemoryStream.reset()
 
-                  archiveDirStatus.destFileName = getNewArchiveFileName
-                  archiveDirStatus.destFileCurrentSize = 0
-
-                  val previousEntry = if (archiveIndex.nonEmpty) archiveIndex.last else null
-                  if (previousEntry != null && previousEntry.srcFile.equals(srcFileHandler.getFullPath)) {
-                    previousEntry.destFileEndOffset = archiveDirStatus.destFileCurrentOffset
-                    previousEntry.ArchiveTimestamp = getCurrentTimestamp
-                  }
-                  else {
-                    logger.warn("file {} should already have an entry in archive index", srcFileHandler.getFullPath)
-                  }
-                  val newEntry = ArchiveFileIndexEntry(srcFileToArchive, archiveDirStatus.destFileFullPath,
-                    0, -1, "")
-                  archiveIndex.append(newEntry)
-
-                  archiveDirStatus.destFileCurrentOffset = -1
+                  flushArchiveDirStatus(archiveDirStatus)
                 }
 
                 //fix buffer and index for next reading
@@ -613,15 +641,15 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
     archiveIndex.foreach(a => logger.debug(a.toString))
 
     //TODO : when to really dump the archive
-    dumpArchiveIndex(osWriter, archiveDirStatus.dir, archiveIndex.toArray)
+    dumpArchiveIndex(osWriter, archiveDirStatus.dir, archiveIndex)
 
     true
   }
 
   def dumpArchiveIndex(osWriter : OutputStreamWriter,
-                       parentFolder : String, archiveIndex: Array[ArchiveFileIndexEntry]) : Unit = {
+                       parentFolder : String, archiveIndex: ArrayBuffer[ArchiveFileIndexEntry]) : Unit = {
     try {
-      if (archiveIndex == null || archiveIndex.length == 0)
+      if (archiveIndex == null || archiveIndex.isEmpty)
         return
       val path = parentFolder + "/" + archiveIndexFileName
       logger.info("dumping current archive index to file " + path)
@@ -632,6 +660,8 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
         os.write((lineAr.mkString(",") + "\n").getBytes())
       })
       os.close()
+
+      archiveIndex.clear()
     }
     catch{
       case ex : Throwable => //todo - retry?
@@ -695,7 +725,8 @@ case class ArchiveFileIndexEntry(var srcFile : String, var destFile : String,
 //actualMemroyStream could be originalMemoryStream or compressed stream created using originalMemoryStream
 case class ArchiveDirStatus(var dir : String, var originalMemoryStream : ByteArrayOutputStream, var actualMemoryStream : OutputStream,
                             var destFileName : String, var destFileCurrentSize : Long, var destFileCurrentOffset : Long,
-                            var isActive : Boolean){
+                            var nextRolloverTime : Long, var lastSrcFilePath : String,
+                            var archiveIndex : ArrayBuffer[ArchiveFileIndexEntry], var isActive : Boolean){
 
   def destFileFullPath = dir + "/" + destFileName
 }
