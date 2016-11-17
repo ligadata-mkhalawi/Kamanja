@@ -19,6 +19,8 @@ import org.apache.logging.log4j.LogManager;
 
 import com.ligadata.adapters.statusRecorders.KafkaStatusRecorder;
 
+import com.ligadata.ZooKeeper.*;
+
 public class MessageConsumer implements Runnable {
     // Implement Kafka heart beat to get around session timeout that causes rebalance
     // see issue: https://issues.apache.org/jira/browse/KAFKA-2985
@@ -74,6 +76,85 @@ public class MessageConsumer implements Runnable {
     private AtomicInteger shutdownTriggerCounter;
     private StatusCollectable stats;
 
+    private boolean prevIsThisNodeToProcess = false;
+    private ProcessComponentByWeight pcbw;
+    private boolean isLockAcquired = false;
+
+    private void PriorityNodeSetup(AdapterConfiguration config) throws Exception {
+	logger.info("Setup for node failure events..");
+        String zkConnectStr = config.getProperty(AdapterConfiguration.ZOOKEEPER_CONNECT);
+	if ( zkConnectStr == null ){
+	    throw new Exception("AdapterConfiguration should have the property " + AdapterConfiguration.ZOOKEEPER_CONNECT);
+	}
+	if( zkConnectStr.length() == 0 ){
+	    throw new Exception("AdapterConfiguration should have the non null property " + AdapterConfiguration.ZOOKEEPER_CONNECT);
+	}
+	int zkSessionTimeOut = 30000;
+	String zkSessionTimeOutStr = config.getProperty(AdapterConfiguration.ZOOKEEPER_SESSION_TIMEOUT_MS);
+	if( zkSessionTimeOutStr != null ){
+	    zkSessionTimeOut = Integer.parseInt(zkSessionTimeOutStr);
+	}
+	int zkConnectionTimeOut = 30000;
+	String zkConnectionTimeOutStr = config.getProperty(AdapterConfiguration.ZOOKEEPER_CONNECTION_TIMEOUT_MS);
+	if( zkConnectionTimeOutStr != null ){
+	    zkConnectionTimeOut = Integer.parseInt(zkConnectionTimeOutStr);
+	}
+	String zkLeaderPath = config.getProperty(AdapterConfiguration.ZOOKEEPER_LEADER_PATH);
+	if( zkLeaderPath == null ){
+	    zkLeaderPath = "/kamanja/adapters/leader";
+	}
+	logger.info("Create an instnce of ProcessComponentByWeight ...");
+
+	String component_name = config.getProperty(AdapterConfiguration.COMPONENT_NAME);
+	if( component_name == null ){
+	    component_name = "JDBCSink";
+	}
+
+	String node_id_prefix = config.getProperty(AdapterConfiguration.NODE_ID_PREFIX);
+	if( node_id_prefix == null ){
+	    node_id_prefix = "Node1";
+	}
+
+	int adapter_weight = 10;
+	String adapter_weight_str = config.getProperty(AdapterConfiguration.ADAPTER_WEIGHT);
+	if( adapter_weight_str != null ){
+	    adapter_weight = Integer.parseInt(adapter_weight_str);
+	}
+
+	logger.info("Create an instnce of ProcessComponentByWeight ...");
+	try{
+	    pcbw = new ProcessComponentByWeight(component_name,node_id_prefix,adapter_weight);
+	}catch (Throwable e) {
+            logger.error("Error : " + e.getMessage() + e);
+        }
+	    
+	logger.info("Call ProcessComponentByWeight.Init..");
+	pcbw.Init(zkConnectStr,zkLeaderPath,zkSessionTimeOut,zkConnectionTimeOut);
+    }
+
+    private void AcquireLock() throws Exception {
+	try{
+	    if( ! isLockAcquired ){
+		logger.info("Acquiring the lock ..");
+		pcbw.Acquire();
+		isLockAcquired = true;
+		logger.info("Acquired the lock ..");
+	    }
+	}catch (Exception e) {
+            logger.error("Error : " + e.getMessage() + e);
+	    throw e;
+        }
+    }
+
+    private void ReleaseLock() {
+	if( isLockAcquired ){
+	    logger.info("Releasing the lock ..");
+	    pcbw.Release();
+	    isLockAcquired = false;
+	    logger.info("Released the lock ..");
+	}
+    }
+	 
     public MessageConsumer(AdapterConfiguration config, AtomicInteger shutdownTriggerCounter) throws Exception {
         this.configuration = config;
         this.shutdownTriggerCounter = shutdownTriggerCounter;
@@ -86,9 +167,11 @@ public class MessageConsumer implements Runnable {
             logger.info("Loading class " + classname + " for processing messages.");
             processor = (BufferedMessageProcessor) Class.forName(classname).newInstance();
         }
+	PriorityNodeSetup(configuration);
     }
 
     public synchronized void shutdown() {
+	//ReleaseLock();
         shutdownTriggerCounter.incrementAndGet();
         stop = true;
 
@@ -105,6 +188,7 @@ public class MessageConsumer implements Runnable {
     }
 
     public synchronized void close() {
+	//ReleaseLock();
         shutdownTriggerCounter.incrementAndGet();
         if (consumer != null)
             consumer.close();
@@ -231,82 +315,105 @@ public class MessageConsumer implements Runnable {
             throw new RuntimeException(e);
         }
 
-        createKafkaConsumerRetry();
+	long syncMessageCount = Long.parseLong(configuration.getProperty(AdapterConfiguration.SYNC_MESSAGE_COUNT, "10000"));
+	long syncInterval = Long.parseLong(configuration.getProperty(AdapterConfiguration.SYNC_INTERVAL_SECONDS, "120")) * 1000;
+	long pollInterval = Long.parseLong(configuration.getProperty(AdapterConfiguration.KAFKA_POLL_INTERVAL, "100"));
+	
+	long messageCount = 0;
+	long nextSyncTime = System.currentTimeMillis() + syncInterval;
+	long start = System.currentTimeMillis();
 
-        long syncMessageCount = Long.parseLong(configuration.getProperty(AdapterConfiguration.SYNC_MESSAGE_COUNT, "10000"));
-        long syncInterval = Long.parseLong(configuration.getProperty(AdapterConfiguration.SYNC_INTERVAL_SECONDS, "120")) * 1000;
-        long pollInterval = Long.parseLong(configuration.getProperty(AdapterConfiguration.KAFKA_POLL_INTERVAL, "100"));
-
-        long messageCount = 0;
-        long nextSyncTime = System.currentTimeMillis() + syncInterval;
-        long start = System.currentTimeMillis();
-
-        while (!stop) {
+	while(!stop){
             try {
-                ConsumerRecords<String, String> records = consumer.poll(pollInterval);
-                for (ConsumerRecord<String, String> record : records) {
-                    Long lastOffset = partitionOffsets.get(record.partition());
-                    if (lastOffset == null || record.offset() > lastOffset) {
-                        logger.debug("Message from partition Id :" + record.partition() + " Message: " + record.value());
-                        if (processor.addMessage(record.value()))
-                            messageCount++;
-                        else
-                            errorMessageCount++;
+		boolean curIsThisNodeToProcess = pcbw.IsThisNodeToProcess();
+		if( curIsThisNodeToProcess ){
+		    if( ! prevIsThisNodeToProcess ) { // status flipped from false to true
+			AcquireLock();
+			prevIsThisNodeToProcess = curIsThisNodeToProcess;
+			createKafkaConsumerRetry();
+		    }
+		    else{
+			prevIsThisNodeToProcess = true;
+		    }
 
-                        partitionOffsets.put(record.partition(), record.offset());
-                    }
-                }
-            } catch (WakeupException e) {
+
+		    try{
+			ConsumerRecords<String, String> records = consumer.poll(pollInterval);
+			for (ConsumerRecord<String, String> record : records) {
+			    Long lastOffset = partitionOffsets.get(record.partition());
+			    if (lastOffset == null || record.offset() > lastOffset) {
+				logger.debug("Message from partition Id :" + record.partition() + " Message: " + record.value());
+				if (processor.addMessage(record.value()))
+				    messageCount++;
+				else
+				    errorMessageCount++;
+
+				partitionOffsets.put(record.partition(), record.offset());
+			    }
+			}
+		    } catch (WakeupException e) {
+			logger.debug("Came out of kafka queue polling...");
+		    } catch (Exception e) {
+			logger.error("Error reading from kafka: " + e.getMessage(), e);
+			createKafkaConsumerRetry();
+		    }
+
+		    if (messageCount > 0 && (messageCount >= syncMessageCount || System.currentTimeMillis() >= nextSyncTime)) {
+			try {
+			    long endRead = System.currentTimeMillis();
+			    logger.info("Saving " + messageCount + " messages. Read time " + (endRead - start) + " msecs.");
+
+			    AtomicInteger breaker = new AtomicInteger(0);
+			    ExecutorService executor = Executors.newFixedThreadPool(1);
+
+			    executor.execute(new SimpleKafkaPoll(consumer, breaker));
+
+			    // Save data here
+			    processWithRetry(batchid.getAndIncrement());
+
+			    breaker.incrementAndGet();
+			    executor.shutdown();
+			    try {
+				executor.awaitTermination(86400, TimeUnit.SECONDS);
+			    } catch (InterruptedException e) {
+			    }
+
+			    if (processor != null)
+				processor.clearAll();
+			    long endWrite = System.currentTimeMillis();
+			    if (consumer != null)
+				consumer.commitSync();
+			    totalMessageCount += messageCount;
+			    logger.info("Saved " + totalMessageCount + " messages. Write time " + (endWrite - endRead) + " msecs.");
+
+			    messageCount = 0;
+			    nextSyncTime = System.currentTimeMillis() + syncInterval;
+			    start = System.currentTimeMillis();
+			} catch (Exception e) {
+			    logger.error("Failed with: " + e.getMessage(), e);
+			    stop = true;
+			} catch (Throwable t) {
+			    logger.error("Failed with: " + t.getMessage(), t);
+			    stop = true;
+			}
+		    }
+		}
+		else{
+		    if( prevIsThisNodeToProcess ) { // status flipped from true to false
+			if (consumer != null)
+			    consumer.close();
+			ReleaseLock();
+			prevIsThisNodeToProcess = curIsThisNodeToProcess;
+		    }
+		}
             } catch (Exception e) {
-                logger.error("Error reading from kafka: " + e.getMessage(), e);
-                createKafkaConsumerRetry();
-            }
-
-            if (messageCount > 0 && (messageCount >= syncMessageCount || System.currentTimeMillis() >= nextSyncTime)) {
-                try {
-                    long endRead = System.currentTimeMillis();
-                    logger.info("Saving " + messageCount + " messages. Read time " + (endRead - start) + " msecs.");
-
-                    AtomicInteger breaker = new AtomicInteger(0);
-                    ExecutorService executor = Executors.newFixedThreadPool(1);
-
-                    executor.execute(new SimpleKafkaPoll(consumer, breaker));
-
-                    // Save data here
-                    processWithRetry(batchid.getAndIncrement());
-
-                    breaker.incrementAndGet();
-                    executor.shutdown();
-                    try {
-                        executor.awaitTermination(86400, TimeUnit.SECONDS);
-                    } catch (InterruptedException e) {
-                    }
-
-                    if (processor != null)
-                        processor.clearAll();
-                    long endWrite = System.currentTimeMillis();
-                    if (consumer != null)
-                        consumer.commitSync();
-                    totalMessageCount += messageCount;
-                    logger.info("Saved " + messageCount + " messages. Write time " + (endWrite - endRead) + " msecs.");
-
-                    messageCount = 0;
-                    nextSyncTime = System.currentTimeMillis() + syncInterval;
-                    start = System.currentTimeMillis();
-                } catch (Exception e) {
-                    logger.error("Failed with: " + e.getMessage(), e);
-                    stop = true;
-                } catch (Throwable t) {
-                    logger.error("Failed with: " + t.getMessage(), t);
-                    stop = true;
-                }
-            }
-        }
-
+		logger.error("Unexpected Exception: " + e.getMessage(), e);
+		throw new RuntimeException(e);
+	    }
+	}
         close();
-
-        logger.info("Shutting down after processing " + totalMessageCount + " messages with " + errorMessageCount
-                + " error messages.");
+        logger.info("Shutting down after processing " + totalMessageCount + 
+		    " messages with " + errorMessageCount  + " error messages.");
     }
 }
 

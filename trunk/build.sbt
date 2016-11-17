@@ -268,7 +268,7 @@ lazy val SimpleKafkaProducer_v9 = project.in(file("Utils/SimpleKafkaProducer/v9"
 
 lazy val SimpleKafkaProducer_v8 = project.in(file("Utils/SimpleKafkaProducer/v8")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, Exceptions)
 
-lazy val OutputUtils = project.in(file("Utils/OutputUtils")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(TestSettings.settings: _*).dependsOn(SaveContainerDataComponent % "provided")
+lazy val OutputUtils = project.in(file("Utils/OutputUtils")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(TestSettings.settings: _*).dependsOn(SaveContainerDataComponent % "provided", ZooKeeperLeaderLatch % "provided")
 
 /*
 val commonSettings = Seq(
