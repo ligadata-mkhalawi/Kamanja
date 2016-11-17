@@ -28,7 +28,7 @@ class MonitorController {
     this.newFileDetectedCallback = newFileDetectedCallback
     this.parentSmartFileConsumer = parentSmartFileConsumer
 
-    genericFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, "/")
+    commonFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, "/")
   }
 
   val NOT_RECOVERY_SITUATION = -1
@@ -40,7 +40,8 @@ class MonitorController {
   private val bufferingQ_map: scala.collection.mutable.Map[String, (MonitoredFile, Int, Boolean)] = scala.collection.mutable.Map[String, (MonitoredFile, Int, Boolean)]()
   private val bufferingQLock = new Object
 
-  private var genericFileHandler : SmartFileHandler = null
+  private var commonFileHandler : SmartFileHandler = null
+  private var monitoringThreadsFileHandlers : Array[SmartFileHandler] = null
 
   implicit def orderedEnqueuedFileHandler(f: EnqueuedFileHandler): Ordered[EnqueuedFileHandler] = new Ordered[EnqueuedFileHandler] {
     def compare(other: EnqueuedFileHandler) = {
@@ -78,7 +79,7 @@ class MonitorController {
 
     adapterConfig.monitoringConfig.detailedLocations.foreach(location => {
       //val srcHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, location.srcDir)
-      if(!genericFileHandler.exists(location.srcDir))
+      if(!commonFileHandler.exists(location.srcDir))
         throw new KamanjaException("Smart File Consumer - Dir to watch (" + location.srcDir + ") does not exist", null)
       /*else if(!srcHandler.isAccessible)
         throw new KamanjaException("Smart File Consumer - Dir to watch (" + location.srcDir + ") is not accessible. It must be readable and writable", null)
@@ -86,7 +87,7 @@ class MonitorController {
 
       if(location.isMovingEnabled) {
         //val targetHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, location.targetDir)
-        if (!genericFileHandler.exists(location.targetDir))
+        if (!commonFileHandler.exists(location.targetDir))
           throw new KamanjaException("Smart File Consumer - Target Dir (" + location.targetDir + ") does not exist", null)
         /*else if (!targetHandler.isAccessible)
           throw new KamanjaException("Smart File Consumer - Target Dir (" + location.targetDir + ") is not accessible. It must be readable and writable", null)
@@ -121,9 +122,14 @@ class MonitorController {
     logger.info("Smart File Monitor - running {} threads to monitor {} dirs",
       monitoringConf.monitoringThreadsCount.toString, monitoringConf.detailedLocations.length.toString)
 
+    monitoringThreadsFileHandlers = new Array[SmartFileHandler](maxThreadCount)
+    for (currentThreadId <- 0 until maxThreadCount){
+      monitoringThreadsFileHandlers(currentThreadId) = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, "/")
+    }
+
     val monitoredDirsQueue = new MonitoredDirsQueue()
     monitoredDirsQueue.init(monitoringConf.detailedLocations, monitoringConf.waitingTimeMS)
-    for (currentThreadId <- 1 to maxThreadCount) {
+    for (currentThreadId <- 0 until maxThreadCount) {
       val dirMonitorThread = new Runnable() {
         override def run() = {
           try {
@@ -151,7 +157,7 @@ class MonitorController {
                   val isFirstScan = dirQueuedInfo._3
                   val srcDir = location.srcDir
 
-                  monitorBufferingFiles(srcDir, location, isFirstScan)
+                  monitorBufferingFiles(currentThreadId, srcDir, location, isFirstScan)
 
                   val updateDirQueuedInfo = (dirQueuedInfo._1, dirQueuedInfo._2, false)//not first scan anymore
                   monitoredDirsQueue.reEnqueue(updateDirQueuedInfo) // so the folder gets monitored again
@@ -184,7 +190,7 @@ class MonitorController {
   }
 
   def listFiles(path: String): Array[String] ={
-    val files = genericFileHandler.listFiles(path, adapterConfig.monitoringConfig.dirMonitoringDepth)
+    val files = commonFileHandler.listFiles(path, adapterConfig.monitoringConfig.dirMonitoringDepth)
     if(files != null) files.map(file => file.path)
     else Array[String]()
   }
@@ -193,11 +199,22 @@ class MonitorController {
 
     logger.debug("MonitorController - shutting down")
 
-    if(genericFileHandler != null)
-      genericFileHandler.disconnect()
+    if(commonFileHandler != null)
+      commonFileHandler.disconnect()
 
     keepMontoringBufferingFiles = false
     monitorsExecutorService.shutdownNow()
+
+    if(monitoringThreadsFileHandlers != null){
+      monitoringThreadsFileHandlers.foreach(handler => {
+        try{
+          handler.disconnect()
+        }
+        catch{
+          case ex : Throwable =>
+        }
+      })
+    }
 
     MonitorUtils.shutdownAndAwaitTermination(globalFileMonitorService, "MonitorController globalFileMonitorService")
 
@@ -214,7 +231,7 @@ class MonitorController {
     *  Look at the files on the DEFERRED QUEUE... if we see that it stops growing, then move the file onto the READY
     *  to process QUEUE.
     */
-  private def monitorBufferingFiles(dir : String, locationInfo: LocationInfo, isFirstScan : Boolean): Unit = {
+  private def monitorBufferingFiles(currentThreadId : Int, dir : String, locationInfo: LocationInfo, isFirstScan : Boolean): Unit = {
     // This guys will keep track of when to exgernalize a WARNING Message.  Since this loop really runs every second,
     // we want to throttle the warning messages.
     logger.debug("SMART FILE CONSUMER (MonitorController):  monitorBufferingFiles")
@@ -229,7 +246,7 @@ class MonitorController {
       val removedEntries = ArrayBuffer[String]()
 
       //TODO : for now check direct children only
-      val currentAllChilds = genericFileHandler.listFiles(dir, adapterConfig.monitoringConfig.dirMonitoringDepth)
+      val currentAllChilds = monitoringThreadsFileHandlers(currentThreadId).listFiles(dir, adapterConfig.monitoringConfig.dirMonitoringDepth)
       //val (currentDirectFiles, currentDirectDirs) = separateFilesFromDirs(currentAllChilds)
 
       currentAllChilds.foreach(currentMonitoredFile => {
@@ -278,7 +295,7 @@ class MonitorController {
                     // If the length is > 0, we assume that the file completed transfer... (very problematic, but unless
                     // told otherwise by BofA, not sure what else we can do here.
 
-                    val isValid = MonitorUtils.isValidFile(genericFileHandler, filePath, false,
+                    val isValid = MonitorUtils.isValidFile(monitoringThreadsFileHandlers(currentThreadId), filePath, false,
                       adapterConfig.monitoringConfig.checkFileTypes)
 
                     if (thisFilePreviousLength > 0 && isValid) {
