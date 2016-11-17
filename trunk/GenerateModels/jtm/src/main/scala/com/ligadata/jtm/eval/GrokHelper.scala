@@ -48,11 +48,13 @@ object GrokHelper extends LogTrait {
     */
   def ConvertToGrokPattern( expression: String): String = {
 
-    val r = """\{[\s]*([A-Za-z][A-Za-z0-9]*)[\s]*:[\s]*([A-Za-z][A-Za-z0-9]*)[\s]*\}""".r
-    val m = r.findAllMatchIn(expression)
-    m.map(m => {
-       "%%{%s:%s}".format(m.group(1), m.group(2))
-    }).mkString(" ")
+// Defect1416: we expect a valid grok expression which is now not manipulated anymore
+//    val r = """\{[\s]*([A-Za-z][A-Za-z0-9]*)[\s]*:[\s]*([A-Za-z][A-Za-z0-9]*)[\s]*\}""".r
+//    val m = r.findAllMatchIn(expression)
+//    m.map(m => {
+//       "%%{%s:%s}".format(m.group(1), m.group(2))
+//    }).mkString(" ")
+    expression
   }
 
   /** Returns the list of files after validating

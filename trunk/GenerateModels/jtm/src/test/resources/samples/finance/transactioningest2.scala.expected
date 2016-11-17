@@ -24,10 +24,61 @@ import com.ligadata.runtime.Conversion
 class TransactionIngestFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
   // Factory code start
   // Factory code end
-  override def createModelInstance(txnCtxt: com.ligadata.KamanjaBase.TransactionContext): ModelInstance = return new TransactionIngest(this)
+  override def createModelInstance(): ModelInstance = return new TransactionIngest(this)
   override def getModelName: String = "com.ligadata.models.samples.finance.TransactionIngest"
   override def getVersion: String = "0.0.1"
   override def createResultObject(): ModelResultBase = new MappedModelResults()
+  override def isModelInstanceReusable(): Boolean = true;
+}
+class common_exeGenerated_transactionmsg_1(conversion: com.ligadata.runtime.Conversion,
+log: com.ligadata.runtime.Log,
+context: com.ligadata.runtime.JtmContext,
+msg1: com.ligadata.kamanja.samples.messages.V1000000.TransactionMsgIn) {
+  import log._
+  // Split the incoming data
+  val mapData: System.MapOfString = KeyValueMap(msg1.data, "|", "=")
+}
+class common_exeGenerated_transactionmsg_1_process_o1(conversion: com.ligadata.runtime.Conversion,
+log : com.ligadata.runtime.Log,
+context: com.ligadata.runtime.JtmContext,
+common: common_exeGenerated_transactionmsg_1,
+msg1: com.ligadata.kamanja.samples.messages.V1000000.TransactionMsgIn) {
+  import log._
+  import common._
+  val result: Array[MessageInterface]= try {
+    // extract the type
+    val typeName: String = mapData.typename
+    if (!("com.ligadata.kamanja.samples.messages.TransactionMsg" == typeName)) {
+      Debug("Filtered: transactionmsg@o1")
+      Array.empty[MessageInterface]
+    } else {
+      val result = com.ligadata.kamanja.samples.messages.V1000000.TransactionMsg.createInstance
+      result.branchid = conversion.ToInteger(mapData.get("branchid"))
+      result.custid = conversion.ToLong(mapData.get("custid"))
+      result.locationid = conversion.ToInteger(mapData.get("locationid"))
+      result.balance = conversion.ToDouble(mapData.get("balance"))
+      result.amount = conversion.ToDouble(mapData.get("amount"))
+      result.transtype = mapData.get("transtype")
+      result.accno = conversion.ToLong(mapData.get("accno"))
+      result.date = conversion.ToInteger(mapData.get("date"))
+      result.time = conversion.ToInteger(mapData.get("time"))
+      if (result.hasTimePartitionInfo) result.setTimePartitionData ;
+      if(context.CurrentErrors()==0) {
+        Array(result)
+      } else {
+        Array.empty[MessageInterface]
+      }
+    }
+  } catch {
+    case e: AbortOutputException => {
+      context.AddError(e.getMessage)
+      Array.empty[MessageInterface]
+    }
+    case e: Exception => {
+      Debug("Exception: o1:" + e.getMessage)
+      throw e
+    }
+  }
 }
 class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(factory) {
   val conversion = new com.ligadata.runtime.Conversion
@@ -37,6 +88,7 @@ class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(fac
   // Model code start
   // Model code end
   override def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
+    context.Reset(); // Resetting the JtmContext before executing the model
     if (isTraceEnabled)
     Trace(s"Model::execute transid=%d triggeredset=%d outputdefault=%s".format(txnCtxt.transId, triggerdSetIndex, outputDefault.toString))
     if(isDebugEnabled)
@@ -48,43 +100,12 @@ class TransactionIngest(factory: ModelInstanceFactory) extends ModelInstance(fac
     def exeGenerated_transactionmsg_1(msg1: com.ligadata.kamanja.samples.messages.V1000000.TransactionMsgIn): Array[MessageInterface] = {
       Debug("exeGenerated_transactionmsg_1")
       context.SetSection("transactionmsg")
-      // Split the incoming data
-      val mapData: System.MapOfString = KeyValueMap(msg1.data, "|", "=")
+      val common = new common_exeGenerated_transactionmsg_1(conversion, log, context, msg1)
       def process_o1(): Array[MessageInterface] = {
         Debug("exeGenerated_transactionmsg_1::process_o1")
         context.SetScope("o1")
-        try {
-          // extract the type
-          val typeName: String = mapData.typename
-          if (!("com.ligadata.kamanja.samples.messages.TransactionMsg" == typeName)) {
-            Debug("Filtered: transactionmsg@o1")
-            return Array.empty[MessageInterface]
-          }
-          val result = com.ligadata.kamanja.samples.messages.V1000000.TransactionMsg.createInstance
-          result.branchid = conversion.ToInteger(mapData.get("branchid"))
-          result.custid = conversion.ToLong(mapData.get("custid"))
-          result.locationid = conversion.ToInteger(mapData.get("locationid"))
-          result.balance = conversion.ToDouble(mapData.get("balance"))
-          result.amount = conversion.ToDouble(mapData.get("amount"))
-          result.transtype = mapData.get("transtype")
-          result.accno = conversion.ToLong(mapData.get("accno"))
-          result.date = conversion.ToInteger(mapData.get("date"))
-          result.time = conversion.ToInteger(mapData.get("time"))
-          if(context.CurrentErrors()==0) {
-            Array(result)
-          } else {
-            Array.empty[MessageInterface]
-          }
-        } catch {
-          case e: AbortOutputException => {
-            context.AddError(e.getMessage)
-            return Array.empty[MessageInterface]
-          }
-          case e: Exception => {
-            Debug("Exception: o1:" + e.getMessage)
-            throw e
-          }
-        }
+        val result = new common_exeGenerated_transactionmsg_1_process_o1(conversion, log, context, common, msg1)
+        result.result
       }
       try {
         process_o1()

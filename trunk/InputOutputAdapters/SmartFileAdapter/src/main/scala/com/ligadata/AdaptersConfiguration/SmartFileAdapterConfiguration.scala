@@ -31,7 +31,8 @@ class ArchiveConfig {
   * Created by Yasser on 3/10/2016.
   */
 class SmartFileAdapterConfiguration extends AdapterConfiguration {
-  var _type: String = _ // FileSystem, hdfs, sftp
+  var _type: String = _ // das/nas , hdfs, sftp
+  var statusMsgTypeName = ""
 
   var connectionConfig: FileAdapterConnectionConfig = null
   var monitoringConfig: FileAdapterMonitoringConfig = null
@@ -75,6 +76,11 @@ class FileAdapterMonitoringConfig {
   var messageSeparator: Char = 10
   var orderBy: Array[String] = Array.empty[String]
 
+  var checkFileTypes = false
+
+  //when reading a file, if type is unknown and this flag is false, an exception is thrown so that file is not processed
+  var considerUnknownFileTypesAsIs = true
+
   var enableMoving: String = "on"  //on, off - public
   def isMovingEnabled: Boolean = enableMoving == null || enableMoving.length == 0 || enableMoving.equalsIgnoreCase("on")
 
@@ -116,6 +122,8 @@ class LocationInfo {
   var enableMoving: String = ""  //on, off, empty means get it from public attribute
   def isMovingEnabled: Boolean = enableMoving == null || enableMoving.length == 0 || enableMoving.equalsIgnoreCase("on")
 }
+
+case class SmartFileAdapterGeneralConfig(sourceType : String, statusMsgTypeName : String)
 
 object SmartFileAdapterConfiguration {
 
@@ -182,8 +190,9 @@ object SmartFileAdapterConfiguration {
 
     logger.debug("SmartFileAdapterConfiguration (getAdapterConfig)- inputConfig.adapterSpecificCfg==null is " +
       (inputConfig.adapterSpecificCfg == null))
-    val (_type, connectionConfig, monitoringConfig, archiveConfig) = parseSmartFileAdapterSpecificConfig(inputConfig.Name, inputConfig.adapterSpecificCfg)
-    adapterConfig._type = _type
+    val (generalConfig, connectionConfig, monitoringConfig, archiveConfig) = parseSmartFileAdapterSpecificConfig(inputConfig.Name, inputConfig.adapterSpecificCfg)
+    adapterConfig._type = generalConfig.sourceType
+    adapterConfig.statusMsgTypeName = generalConfig.statusMsgTypeName
     adapterConfig.connectionConfig = connectionConfig
     adapterConfig.monitoringConfig = monitoringConfig
     adapterConfig.archiveConfig = archiveConfig
@@ -191,7 +200,7 @@ object SmartFileAdapterConfiguration {
     adapterConfig
   }
 
-  def parseSmartFileAdapterSpecificConfig(adapterName: String, adapterSpecificCfgJson: String): (String, FileAdapterConnectionConfig, FileAdapterMonitoringConfig, ArchiveConfig) = {
+  def parseSmartFileAdapterSpecificConfig(adapterName: String, adapterSpecificCfgJson: String): (SmartFileAdapterGeneralConfig, FileAdapterConnectionConfig, FileAdapterMonitoringConfig, ArchiveConfig) = {
 
     val adapCfg = parse(adapterSpecificCfgJson)
 
@@ -207,6 +216,7 @@ object SmartFileAdapterConfiguration {
       throw new KamanjaException(err, null)
     }
     val _type = adapCfgValues.get("Type").get.toString
+    val statusMsgTypeName = adapCfgValues.getOrElse("StatusMsgTypeName", "").toString
 
     val connectionConfig = new FileAdapterConnectionConfig()
     val monitoringConfig = new FileAdapterMonitoringConfig()
@@ -290,6 +300,12 @@ object SmartFileAdapterConfiguration {
       }
       else if (kv._1.compareToIgnoreCase("MessageSeparator") == 0) {
         monitoringConfig.messageSeparator = kv._2.asInstanceOf[String].trim.toInt.toChar
+      }
+      else if (kv._1.compareToIgnoreCase("CheckFileTypes") == 0) {
+        monitoringConfig.checkFileTypes = kv._2.asInstanceOf[String].trim.toBoolean
+      }
+      else if (kv._1.compareToIgnoreCase("ConsiderUnknownFileTypesAsIs") == 0) {
+        monitoringConfig.considerUnknownFileTypesAsIs = kv._2.asInstanceOf[String].trim.toBoolean
       }
       else if (kv._1.compareToIgnoreCase("OrderBy") == 0) {
         monitoringConfig.orderBy = kv._2.asInstanceOf[List[String]].toArray
@@ -491,7 +507,7 @@ object SmartFileAdapterConfiguration {
 
     //TODO : validation for FilesOrdering
 
-    (_type, connectionConfig, monitoringConfig, archiveConfig)
+    (SmartFileAdapterGeneralConfig(_type, statusMsgTypeName), connectionConfig, monitoringConfig, archiveConfig)
   }
 
 

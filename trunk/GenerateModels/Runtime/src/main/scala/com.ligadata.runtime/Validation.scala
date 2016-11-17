@@ -13,6 +13,25 @@ object Validation {
     else false
   }
 
+  // ToDo: added to make varscaling001 compiler, remove?
+  def isInt(value : String, fieldName : String,
+            errHandler : (String, String)=>Unit) : Boolean = {
+    if(value == null || value.length == 0) { //either value is allowed to have null or null check will be validated first
+      return true
+    }
+    val res = (
+      try{
+        Some(value.toInt)
+      }
+      catch{ case ex:NumberFormatException => None}
+      ).nonEmpty
+
+    if(!res)
+      errHandler(fieldName, "isInt")
+
+    res
+  }
+
   def isInt(value : String, fieldName : String, fieldIndex : Int, nullFlags : Array[Boolean],
             errHandler : (String, String)=>Unit) : Boolean = {
     if(value == null || value.length == 0) { //either value is allowed to have null or null check will be validated first
@@ -48,6 +67,25 @@ object Validation {
 
     if(!res)
       errHandler(fieldName, "isLong")
+
+    res
+  }
+
+  // ToDo: added to make varscaling001 compiler, remove?
+  def isDouble(value : String, fieldName : String,
+               errHandler : (String, String)=>Unit) : Boolean = {
+    if(value == null || value.length == 0) {
+      return true
+    }
+    val res = (
+      try{
+        Some(value.toDouble)
+      }
+      catch{ case ex:NumberFormatException => None}
+      ).nonEmpty
+
+    if(!res)
+      errHandler(fieldName, "isDouble")
 
     res
   }

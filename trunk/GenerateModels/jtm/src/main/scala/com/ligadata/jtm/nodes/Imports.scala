@@ -51,4 +51,10 @@ class Imports {
     */
   val factorycode: Array[String] = Array.empty[String]
 
+  /**
+    * map of message/container type with its alias
+    * these types will be resolved and imported
+    */
+  val types : scala.collection.Map[String, String] = scala.collection.Map.empty[String, String]
+
 }

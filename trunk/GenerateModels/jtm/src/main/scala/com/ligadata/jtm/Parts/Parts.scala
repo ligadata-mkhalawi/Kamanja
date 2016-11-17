@@ -68,9 +68,7 @@ object Parts {
        |  val log = new com.ligadata.runtime.Log(this.getClass.getName)
        |  val context = new com.ligadata.runtime.JtmContext
        |  import log._
-       |  // Model code start
-       |  {external.modelcode}
-       |  // Model code end
+
        |  override def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
        |    context.Reset(); // Resetting the JtmContext before executing the model
        |    if (isTraceEnabled)

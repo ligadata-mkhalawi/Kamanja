@@ -16,6 +16,7 @@ import scala.actors.threadpool.ExecutorService
 import scala.actors.threadpool.TimeUnit
 import FileType._
 import org.apache.commons.lang.StringUtils
+import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks._
 
 /**
@@ -29,35 +30,36 @@ object MonitorUtils {
   //Default allowed content types -
   val validContentTypes  = Set(PLAIN, GZIP, BZIP2, LZO) //might change to get that from some configuration
 
-  def isValidFile(fileHandler: SmartFileHandler): Boolean = {
+  def isValidFile(genericFileHandler: SmartFileHandler, filePath : String, checkExistence : Boolean, checkFileTypes: Boolean): Boolean = {
     try {
-      val filepathParts = fileHandler.getFullPath.split("/")
+      val filepathParts = filePath.split("/")
       val fileName = filepathParts(filepathParts.length - 1)
       if (fileName.startsWith("."))
         return false
 
-      val fileSize = fileHandler.length
+      //val fileSize = fileHandler.length
       //Check if the File exists
-      if (fileHandler.exists && fileSize > 0) {
+      if (!checkExistence || genericFileHandler.exists(filePath)) {
 
-        val contentType = CompressionUtil.getFileType(fileHandler, "")
-        if (validContentTypes contains contentType) {
-          return true
-        } else {
-          //Log error for invalid content type
-          logger.error("SMART FILE CONSUMER (MonitorUtils): Invalid content type " + contentType + " for file " + fileHandler.getFullPath)
+        if (!checkFileTypes) return true
+        else {
+          val contentType = CompressionUtil.getFileType(genericFileHandler, filePath, "")
+          if((validContentTypes contains contentType)) return true
+          else {
+            //Log error for invalid content type
+            logger.error("SMART FILE CONSUMER (MonitorUtils): Invalid content type " + contentType + " for file " + filePath)
+          }
         }
-      } else if (fileSize == 0) {
-        return true
-      } else {
+      }
+      else {
         //File doesnot exists - could be already processed
-        logger.warn("SMART FILE CONSUMER (MonitorUtils): File does not exist anymore " + fileHandler.getFullPath)
+        logger.warn("SMART FILE CONSUMER (MonitorUtils): File does not exist anymore " + filePath)
       }
       return false
     }
     catch{
       case e : Throwable =>
-        logger.debug("SMART FILE CONSUMER (MonitorUtils): Error while checking validity of file "+fileHandler.getDefaultInputStream, e)
+        logger.debug("SMART FILE CONSUMER (MonitorUtils): Error while checking validity of file "+filePath, e)
         false
     }
   }
@@ -130,17 +132,16 @@ object MonitorUtils {
     * compares two files not necessarily from same src folder
     * @param fileHandler1
     * @param fileHandler2
-    * @param locationInfo1
-    * @param locationInfo2
     * @return
     */
-  def compareFiles(fileHandler1: SmartFileHandler, locationInfo1 : LocationInfo, fileHandler2: SmartFileHandler, locationInfo2 : LocationInfo) : Int = {
+  def compareFiles(fileHandler1: EnqueuedFileHandler,
+                   fileHandler2: EnqueuedFileHandler) : Int = {
     //TODO : for now if different folders, compare based on parent folders
-    val parentDir1 = simpleDirPath(fileHandler1.getParentDir)
-    val parentDir2 = simpleDirPath(fileHandler2.getParentDir)
+    val parentDir1 = simpleDirPath(fileHandler1.fileHandler.getParentDir)
+    val parentDir2 = simpleDirPath(fileHandler2.fileHandler.getParentDir)
     if(parentDir1.compareTo(parentDir2) == 0)
-      compareFiles(fileHandler1, fileHandler2, locationInfo1)
-    else fileHandler1.lastModified().compareTo(fileHandler2.lastModified())
+      compareFilesSameLoc(fileHandler1, fileHandler2)
+    else fileHandler1.lastModifiedDate.compareTo(fileHandler2.lastModifiedDate)
 
   }
 
@@ -148,14 +149,14 @@ object MonitorUtils {
     * compares two files from same location
     * @param fileHandler1
     * @param fileHandler2
-    * @param locationInfo
     * @return
     */
-  def compareFiles(fileHandler1: SmartFileHandler, fileHandler2: SmartFileHandler, locationInfo : LocationInfo) : Int = {
+  def compareFilesSameLoc(fileHandler1: EnqueuedFileHandler, fileHandler2: EnqueuedFileHandler) : Int = {
 
-    val fileComponentsMap1 = getFileComponents(fileHandler1.getFullPath, locationInfo)
-    val fileComponentsMap2 = getFileComponents(fileHandler2.getFullPath, locationInfo)
+    val fileComponentsMap1 = fileHandler1.componentsMap//getFileComponents(fileHandler1.fileHandler.getFullPath, locationInfo)
+    val fileComponentsMap2 = fileHandler2.componentsMap//getFileComponents(fileHandler2.fileHandler.getFullPath, locationInfo)
 
+    val locationInfo = fileHandler1.locationInfo
 
     breakable{
       //loop order components, until values for one of them are not equal
@@ -165,13 +166,13 @@ object MonitorUtils {
         if(orderComponent.startsWith("$")){
           orderComponent match{
             case "$File_Name" =>
-              val tempCompreRes = getFileName(fileHandler1.getFullPath).compareTo(getFileName(fileHandler2.getFullPath))
+              val tempCompreRes = getFileName(fileHandler1.fileHandler.getFullPath).compareTo(getFileName(fileHandler2.fileHandler.getFullPath))
               if (tempCompreRes != 0)  return tempCompreRes
             case "$File_Full_Path" =>
-              val tempCompreRes =  fileHandler1.getFullPath.compareTo(fileHandler2.getFullPath)
+              val tempCompreRes =  fileHandler1.fileHandler.getFullPath.compareTo(fileHandler2.fileHandler.getFullPath)
               if (tempCompreRes != 0)  return tempCompreRes
             case "$FILE_MOD_TIME" =>
-              val tempCompreRes = fileHandler1.lastModified().compareTo(fileHandler2.lastModified())
+              val tempCompreRes = fileHandler1.lastModifiedDate.compareTo(fileHandler2.lastModifiedDate)
               if (tempCompreRes != 0)  return tempCompreRes
               //TODO : check for other predefined components
             case "_" => throw new Exception("Unsopported predefined file order component - " + orderComponent)
@@ -264,6 +265,24 @@ object MonitorUtils {
       processedFilesMap.remove(processedFilesMap.head._1)//remove first item to make place
 
     processedFilesMap.put(filePath, timeAsLong)
+  }
+
+  def getCallStack() : String = {
+    if(showStackTraceWithLogs) {
+      val callstack = Thread.currentThread().getStackTrace().drop(2).take(25).
+        map(s => s.getClassName + "." + s.getMethodName + "(" + s.getLineNumber + ")").mkString("\n")
+      " Callstack is: " + callstack
+    }
+    else ""
+  }
+  val showStackTraceWithLogs = true
+
+  //(array of files, array of dirs)
+  def separateFilesFromDirs (allFiles : Array[MonitoredFile]) : (Array[MonitoredFile], Array[MonitoredFile]) = {
+    val files = ArrayBuffer[MonitoredFile]()
+    val dirs = ArrayBuffer[MonitoredFile]()
+    allFiles.foreach(f => if(f.isDirectory) dirs.append(f) else files.append(f) )
+    (files.toArray, dirs.toArray)
   }
 }
 
@@ -388,27 +407,12 @@ object SmartFileHandlerFactory{
 
     val handler : SmartFileHandler =
       adapterConfig._type.toLowerCase() match {
-        case "das/nas" => new PosixFileHandler(fileFullPath, isBinary)
-        case "sftp" => new SftpFileHandler(fileFullPath, connectionConf, isBinary)
-        case "hdfs" => new HdfsFileHandler(fileFullPath, connectionConf, isBinary)
+        case "das/nas" => new PosixFileHandler(fileFullPath, monitoringConf, isBinary)
+        case "sftp" => new SftpFileHandler(fileFullPath, connectionConf, monitoringConf, isBinary)
+        case "hdfs" => new HdfsFileHandler(fileFullPath, connectionConf, monitoringConf, isBinary)
         case _ => throw new KamanjaException("Unsupported Smart file adapter type", null)
       }
 
     handler
-  }
-}
-
-object SmartFileMonitorFactory{
-  def createSmartFileMonitor(adapterName : String, adapterType : String, modifiedFileCallback:(SmartFileHandler, Boolean) => Unit) : SmartFileMonitor = {
-
-    val monitor : SmartFileMonitor =
-      adapterType.toLowerCase() match {
-        case "das/nas" => new PosixChangesMonitor(adapterName, modifiedFileCallback)
-        case "sftp" => new SftpChangesMonitor(adapterName, modifiedFileCallback)
-        case "hdfs" => new HdfsChangesMonitor(adapterName, modifiedFileCallback)
-        case _ => throw new KamanjaException("Unsupported Smart file adapter type", null)
-      }
-
-    monitor
   }
 }

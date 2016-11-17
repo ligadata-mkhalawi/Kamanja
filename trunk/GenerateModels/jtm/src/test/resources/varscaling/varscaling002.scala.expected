@@ -1,0 +1,183 @@
+/*
+* Copyright 2016 ligaDATA
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+package phoenix.tests.V1
+import com.ligadata.KamanjaBase._
+import com.ligadata.KvBase.TimeRange
+import com.ligadata.kamanja.metadata.ModelDef
+import com.ligadata.runtime._
+import com.ligadata.runtime.Conversion
+import com.ligadata.runtime.Validation._
+import com.ligadata.Utils._
+// Package code start
+object MsgConstants{
+  val conversion = new com.ligadata.runtime.Conversion
+}
+import MsgConstants._
+// Package code end
+class test_jtmFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
+  // Factory code start
+  // Factory code end
+  override def createModelInstance(): ModelInstance = return new test_jtm(this)
+  override def getModelName: String = "phoenix.tests.test_jtm"
+  override def getVersion: String = "0.0.1"
+  override def createResultObject(): ModelResultBase = new MappedModelResults()
+  override def isModelInstanceReusable(): Boolean = true;
+}
+class common_exeGenerated_AirRefillCS5_1_1(conversion: com.ligadata.runtime.Conversion,
+log: com.ligadata.runtime.Log,
+context: com.ligadata.runtime.JtmContext,
+msg1: com.ligadata.messages.V1000000.AirRefillCS5_input) {
+  import log._
+  val inpData: Array[String] = msg1.msg.split(",", -1)
+  val f1___val: Double = if(!isDouble(inpData(1), "localsequencenumber", HandleError )) 0  else { val fieldVal = conversion.ToDouble(inpData(1));fieldVal}
+  val f2___val: Double = if(!isDouble(inpData(2), "currentserviceclass", HandleError )) 0  else { val fieldVal = conversion.ToDouble(inpData(2));fieldVal}
+  val f3___val: Double = f2___val + 1
+}
+class common_exeGenerated_AirRefillCS5_1_1_process_o1(conversion: com.ligadata.runtime.Conversion,
+log : com.ligadata.runtime.Log,
+context: com.ligadata.runtime.JtmContext,
+common: common_exeGenerated_AirRefillCS5_1_1,
+msg1: com.ligadata.messages.V1000000.AirRefillCS5_input) {
+  import log._
+  import common._
+  val result: Array[MessageInterface]= try {
+    if (!((context.CurrentErrors()==0))) {
+      Debug("Filtered: AirRefillCS5_1@o1")
+      Array.empty[MessageInterface]
+    } else {
+      val result = com.ligadata.messages.V1000000.AirRefillCS5s.createInstance
+      result.originhostname = inpData(1)
+      result.originnodetype = inpData(0)
+      result.f2 = f2___val
+      result.f1 = f1___val - f3___val
+      if (result.hasTimePartitionInfo) result.setTimePartitionData ;
+      if(context.CurrentErrors()==0) {
+        Array(result)
+      } else {
+        Array.empty[MessageInterface]
+      }
+    }
+  } catch {
+    case e: AbortOutputException => {
+      context.AddError(e.getMessage)
+      Array.empty[MessageInterface]
+    }
+    case e: Exception => {
+      Debug("Exception: o1:" + e.getMessage)
+      throw e
+    }
+  }
+}
+class common_exeGenerated_AirRefillCS5_1_1_process_oo(conversion: com.ligadata.runtime.Conversion,
+log : com.ligadata.runtime.Log,
+context: com.ligadata.runtime.JtmContext,
+common: common_exeGenerated_AirRefillCS5_1_1,
+msg1: com.ligadata.messages.V1000000.AirRefillCS5_input) {
+  import log._
+  import common._
+  val result: Array[MessageInterface]= try {
+    if (!((context.CurrentErrors() > 0))) {
+      Debug("Filtered: AirRefillCS5_1@oo")
+      Array.empty[MessageInterface]
+    } else {
+      val result = com.ligadata.gen.V1000000.RejectedDataMsg.createInstance
+      result.reasons = context.CurrentErrorList()
+      result.origmsg = msg1.msg
+      if (result.hasTimePartitionInfo) result.setTimePartitionData ;
+      Array(result)
+    }
+  } catch {
+    case e: AbortOutputException => {
+      context.AddError(e.getMessage)
+      Array.empty[MessageInterface]
+    }
+    case e: Exception => {
+      Debug("Exception: oo:" + e.getMessage)
+      throw e
+    }
+  }
+}
+class test_jtm(factory: ModelInstanceFactory) extends ModelInstance(factory) {
+  val conversion = new com.ligadata.runtime.Conversion
+  val log = new com.ligadata.runtime.Log(this.getClass.getName)
+  val context = new com.ligadata.runtime.JtmContext
+  import log._
+  // Model code start
+  def HandleError(fieldName : String, checkName : String) : Unit = {
+    val err = fieldName + " - check (" + checkName + ") violated "
+    context.AddError(err)
+  }
+  // Model code end
+  override def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
+    context.Reset(); // Resetting the JtmContext before executing the model
+    if (isTraceEnabled)
+    Trace(s"Model::execute transid=%d triggeredset=%d outputdefault=%s".format(txnCtxt.transId, triggerdSetIndex, outputDefault.toString))
+    if(isDebugEnabled)
+    {
+      execMsgsSet.foreach(m => Debug( s"Input: %s -> %s".format(m.getFullTypeName, m.toString())))
+    }
+    // Grok parts
+    // Model methods
+    def exeGenerated_AirRefillCS5_1_1(msg1: com.ligadata.messages.V1000000.AirRefillCS5_input): Array[MessageInterface] = {
+      Debug("exeGenerated_AirRefillCS5_1_1")
+      context.SetSection("AirRefillCS5_1")
+      val common = new common_exeGenerated_AirRefillCS5_1_1(conversion, log, context, msg1)
+      def process_o1(): Array[MessageInterface] = {
+        Debug("exeGenerated_AirRefillCS5_1_1::process_o1")
+        context.SetScope("o1")
+        val result = new common_exeGenerated_AirRefillCS5_1_1_process_o1(conversion, log, context, common, msg1)
+        result.result
+      }
+      def process_oo(): Array[MessageInterface] = {
+        Debug("exeGenerated_AirRefillCS5_1_1::process_oo")
+        context.SetScope("oo")
+        val result = new common_exeGenerated_AirRefillCS5_1_1_process_oo(conversion, log, context, common, msg1)
+        result.result
+      }
+      try {
+        process_o1()++
+        process_oo()
+      } catch {
+        case e: AbortTransformationException => {
+          return Array.empty[MessageInterface]
+        }
+      }
+    }
+    // Evaluate messages
+    val msgs = execMsgsSet.map(m => m.getFullTypeName -> m).toMap
+    val msg1 = msgs.getOrElse("com.ligadata.messages.AirRefillCS5_input", null).asInstanceOf[com.ligadata.messages.V1000000.AirRefillCS5_input]
+    // Main dependency -> execution check
+    // Create result object
+    val results: Array[MessageInterface] =
+    try {
+      (if(msg1!=null) {
+        exeGenerated_AirRefillCS5_1_1(msg1)
+      } else {
+        Array.empty[MessageInterface]
+      }) ++
+      Array.empty[MessageInterface]
+    } catch {
+      case e: AbortExecuteException => {
+        Array.empty[MessageInterface]
+      }
+    }
+    if(isDebugEnabled)
+    {
+      results.foreach(m => Debug( s"Output: %s -> %s".format(m.getFullTypeName, m.toString())))
+    }
+    results.asInstanceOf[Array[ContainerOrConcept]]
+  }
+}

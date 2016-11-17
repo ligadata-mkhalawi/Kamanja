@@ -20,7 +20,7 @@
   "grok": {
       "name_grok_instance" : {
         "builtInDictionary": true,
-        "match": "{EMAIL: email}",
+        "match": "{EMAIL:email}",
         "file": ["path"],
         "patterns_dis": {
           "DOMAINTLD": "[a-zA-Z]+",
@@ -34,7 +34,7 @@
       "dependsOn": [ ["m1"] ],
 
       "grok match": {
-        "in1": "{EMAIL: email} {DOMAIN: domain} {USER: user}"
+        "in1": "%{EMAIL:email} %{DOMAIN:domain} %{USER:user}"
       },
 
       "outputs": {
