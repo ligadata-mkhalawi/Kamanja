@@ -130,6 +130,34 @@ object SmartFileAdapterConfiguration {
 
   def isValidMsgTag(tag: String) = tag != null && (validMsgTags contains tag)
 
+  //concerned about connection info only here
+  def outputConfigToInputConfig(outputConfig : SmartFileProducerConfiguration) : SmartFileAdapterConfiguration = {
+    val inputConfig = new SmartFileAdapterConfiguration()
+    //inputConfig.monitoringConfig.
+    inputConfig._type = if(outputConfig.uri.startsWith("hdfs://")) "HDFS" else "DAS/NAS"
+    val hosts =
+      if(outputConfig.uri.startsWith("hdfs://")){
+        val part = outputConfig.uri.substring(7)
+        val idx = part.indexOf("/")
+        if(idx > 0) "hdfs://" + part.substring(0, idx - 1)
+        else "hdfs://" + part
+      }
+      else ""
+
+    inputConfig.connectionConfig = new FileAdapterConnectionConfig
+    inputConfig.connectionConfig.hostsList = hosts.split(",")
+
+    if(outputConfig.kerberos != null){
+      inputConfig.connectionConfig.authentication = "kerberos"
+      inputConfig.connectionConfig.principal = outputConfig.kerberos.principal
+      inputConfig.connectionConfig.keytab = outputConfig.kerberos.keytab
+    }
+
+    inputConfig.connectionConfig.hadoopConfig = outputConfig.hadoopConfig
+
+    inputConfig
+  }
+
   def getAdapterConfig(inputConfig: AdapterConfiguration): SmartFileAdapterConfiguration = {
 
     if (inputConfig.adapterSpecificCfg == null || inputConfig.adapterSpecificCfg.size == 0) {

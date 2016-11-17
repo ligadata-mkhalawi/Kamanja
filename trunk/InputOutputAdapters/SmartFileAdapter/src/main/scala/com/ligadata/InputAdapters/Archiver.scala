@@ -3,7 +3,7 @@ package com.ligadata.InputAdapters
 import java.io.OutputStream
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
-import com.ligadata.AdaptersConfiguration.{LocationInfo, SmartFileAdapterConfiguration}
+import com.ligadata.AdaptersConfiguration._
 import com.ligadata.Exceptions.FatalAdapterException
 import com.ligadata.OutputAdapters.{OutputStreamWriter, PartitionStream}
 import org.apache.commons.compress.compressors.CompressorStreamFactory
@@ -781,6 +781,10 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
       val firstEntry = lastIndexEntrySet.head
       val lastEntry = lastIndexEntrySet.last
 
+      val archiveInputConfig = SmartFileAdapterConfiguration.outputConfigToInputConfig(adapterConfig.archiveConfig.outputConfig)
+      archiveInputConfig.monitoringConfig = adapterConfig.monitoringConfig
+      val archiveDirfileHandler = SmartFileHandlerFactory.createSmartFileHandler(archiveInputConfig, "/")
+
       //check if dest file exists and is valid and has lastEntry.destFileEndOffset
       var isIndexValid = true
       if(!isIndexValid){
@@ -790,6 +794,8 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
       }
     }
   }
+
+
   private def createIndexEntryFromString(line : String) : Option[ArchiveFileIndexEntry] = {
     val indexFieldsSeparator = ","
     val indexFieldsCount = 5
