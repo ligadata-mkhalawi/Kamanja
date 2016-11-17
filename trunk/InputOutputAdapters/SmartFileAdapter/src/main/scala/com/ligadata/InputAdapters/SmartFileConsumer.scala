@@ -77,7 +77,8 @@ case class ArchiveFileInfo(adapterConfig: SmartFileAdapterConfiguration, locatio
                            srcFileDir: String, srcFileBaseName: String,
                            componentsMap: scala.collection.immutable.Map[String, String],
                            var previousAttemptsCount : Int,
-                           var destArchiveDir : String = "")
+                           var destArchiveDir : String = "",
+                           var srcFileStartOffset : Long = 0)
 
 class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecContextFactory, val nodeContext: NodeContext) extends InputAdapter {
 
