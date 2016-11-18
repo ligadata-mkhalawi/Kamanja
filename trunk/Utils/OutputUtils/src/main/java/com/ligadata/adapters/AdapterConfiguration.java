@@ -29,7 +29,9 @@ public class AdapterConfiguration {
 	public static final String KAFKA_AUTO_OFFSET_RESET = "kafka.auto.offset.reset";
 	public static final String KAFKA_PROPERTY_PREFIX = "kafka.";
 	public static final String ZOOKEEPER_CONNECT = "zookeeper.connect";
-	public static final String ZOOKEEPER_SESSION_TIMEOUT = "zookeeper.session.timeout.ms";
+	public static final String ZOOKEEPER_SESSION_TIMEOUT_MS = "zookeeper.session.timeout.ms";
+	public static final String ZOOKEEPER_CONNECTION_TIMEOUT_MS = "zookeeper.connection.timeout.ms";
+	public static final String ZOOKEEPER_LEADER_PATH = "zookeeper.leader.path";
 	public static final String ZOOKEEPER_SYNC_TIME = "zookeeper.sync.time.ms";
 	public static final String FILE_COMPRESSION = "file.compression";
 	public static final String PARTITION_STRATEGY = "file.partition.strategy";
@@ -109,6 +111,10 @@ public class AdapterConfiguration {
 	public static final String PRIVATE_KEY_FILE = "private.key.file";
         public static final String ENCRYPT_DECRYPT_ALGORITHM = "encrypt.decrypt.algorithm";
         public static final String ENCODED_PASSWORD = "encoded.password";
+
+        public static final String COMPONENT_NAME = "component.name";
+        public static final String NODE_ID_PREFIX = "node.id.prefix";
+        public static final String ADAPTER_WEIGHT = "adapter.weight";
 
 	private Properties properties;
 
