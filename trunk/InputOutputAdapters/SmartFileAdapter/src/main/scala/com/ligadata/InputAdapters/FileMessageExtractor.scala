@@ -323,6 +323,14 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
 
   private def shutdownThreads(): Unit ={
     finished = true
+
+    try {
+      if (fileHandler != null) fileHandler.close()
+
+    } catch {
+      case et: Throwable =>
+    }
+    
     logger.debug("File message Extractor - shutting down updatExecutor")
     MonitorUtils.shutdownAndAwaitTermination(updatExecutor, "file message extracting status updator")
 
