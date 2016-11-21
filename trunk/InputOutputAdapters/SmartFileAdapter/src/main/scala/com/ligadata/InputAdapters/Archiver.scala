@@ -468,6 +468,9 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
           logger.warn("file {} should already have an entry in archive index", lastSrcFilePath)
         }
         dumpArchiveIndex(osWriter, archiveDirStatus.dir, archiveIndex)
+        /*logger.warn("archiveIndex len = {}", archiveIndex.length.toString)
+        logger.warn("archiveDirStatus.archiveIndex len = {}", archiveDirStatus.archiveIndex.length.toString)
+        logger.warn("archiveDirsStatusMap = {}", archiveDirsStatusMap)*/
 
         val expectedFileSize = archiveDirStatus.originalMemoryStream.size()
         //dump archive
@@ -514,6 +517,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
                 }
               }
             })
+            archiveDirStatus.srcFiles.clear()
           }
           else
             logger.warn("Archiver: archive file {} was supposed to have size {}. but actual size is {}",
@@ -754,24 +758,32 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
 
   def dumpArchiveIndex(osWriter : OutputStreamWriter,
                        parentFolder : String, archiveIndex: ArrayBuffer[ArchiveFileIndexEntry]) : Unit = {
+    var os : OutputStream = null
     try {
       if (archiveIndex == null || archiveIndex.isEmpty)
         return
       val path = parentFolder + "/" + archiveIndexFileName
       logger.info("dumping current archive index to file " + path)
       val fc = adapterConfig.archiveConfig.outputConfig
-      val os = osWriter.openFile(fc, path, canAppend = true)
+      os = osWriter.openFile(fc, path, canAppend = true)
       archiveIndex.foreach(ai => {
         val lineAr = Array(ai.srcFile, ai.destFile, ai.srcFileStartOffset, ai.srcFileEndOffset, ai.destFileStartOffset, ai.destFileEndOffset, ai.ArchiveTimestamp)
         os.write((lineAr.mkString(",") + "\n").getBytes())
       })
-      os.close()
 
       archiveIndex.clear()
     }
     catch{
       case ex : Throwable => //todo - retry?
         logger.error("Error while dumping archive index for dir " + parentFolder, ex)
+    }
+    finally{
+      if(os != null){
+        try{
+          os.close()
+        }
+        catch{case ex : Throwable => }
+      }
     }
   }
 
