@@ -734,18 +734,6 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
           logger.warn("file {} does not have an entry in archive index", srcFileHandler.getFullPath)
         }
 
-        /*try {
-          logger.info("file {} is finished, deleting", srcFileHandler.getFullPath)
-          srcFileHandler.deleteFile(srcFileHandler.getFullPath) // Deleting file after archive
-          srcFileHandler = null
-
-        }
-        catch {
-          case e: Throwable => {
-            logger.error("Failed to delete file " + archiveDirStatus.destFileFullPath, e)
-          }
-        }*/
-
       }
 
       releaseArchiveDirLock(archiveDirStatus.dir)
@@ -805,32 +793,52 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
   }
 
   private def checkTargetDirs(): Unit ={
-    val srcFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, "/")
-    adapterConfig.monitoringConfig.detailedLocations.foreach(location => {
-      val targetFiles = srcFileHandler.listFiles(location.targetDir, adapterConfig.monitoringConfig.dirMonitoringDepth)
-      val filesPerTargetDirMap = scala.collection.mutable.Map[String, ArrayBuffer[String]]()
-      targetFiles.foreach(file => {
-        if(!filesPerTargetDirMap.contains(file.parent))  filesPerTargetDirMap.put(file.parent, ArrayBuffer[String]())
-        filesPerTargetDirMap(file.parent).append(file.path)
-      })
+    var srcFileHandler : SmartFileHandler = null
+    try {
+      srcFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, "/")
+      adapterConfig.monitoringConfig.detailedLocations.foreach(location => {
+        val targetFiles = srcFileHandler.listFiles(location.targetDir, adapterConfig.monitoringConfig.dirMonitoringDepth)
+        val filesPerTargetDirMap = scala.collection.mutable.Map[String, ArrayBuffer[String]]()
+        targetFiles.foreach(file => {
+          if (!filesPerTargetDirMap.contains(file.parent)) filesPerTargetDirMap.put(file.parent, ArrayBuffer[String]())
+          filesPerTargetDirMap(file.parent).append(file.path)
+        })
 
-      if(filesPerTargetDirMap.size ==0)
-        logger.info("no files found under target dir {}. nothing to failover", location.targetDir)
-      filesPerTargetDirMap.foreach(tuple => {
-        checkAndFixTargetDirArchiveStatus(tuple._1, tuple._2.toArray, location)
-      })
+        if (filesPerTargetDirMap.size == 0)
+          logger.info("no files found under target dir {}. nothing to failover", location.targetDir)
+        filesPerTargetDirMap.foreach(tuple => {
+          checkAndFixTargetDirArchiveStatus(tuple._1, tuple._2.toArray, location)
+        })
 
-    })
+      })
+    }
+    catch{
+      case ex : Throwable =>
+        if(srcFileHandler != null){
+          try{
+            srcFileHandler.disconnect()
+          }
+          catch{ case ex : Throwable => }
+        }
+
+    }
   }
 
   private def getDirLatestIndexFile(archiveDir : String, fileHandler: SmartFileHandler) : Option[String] = {
 
-    val files = fileHandler.listFiles(archiveDir, 1)
-    val indexFiles = files.filter(file => MonitorUtils.getFileName(file.path).toLowerCase.startsWith("archiveindex")
-     && file.path.endsWith(".info"))
-    if(indexFiles.isEmpty) return None
-    else {
-      Some(indexFiles.maxBy(file => file.lastModificationTime).path)
+    try {
+      val files = fileHandler.listFiles(archiveDir, 1)
+      val indexFiles = files.filter(file => MonitorUtils.getFileName(file.path).toLowerCase.startsWith("archiveindex")
+        && file.path.endsWith(".info"))
+      if (indexFiles.isEmpty) return None
+      else {
+        Some(indexFiles.maxBy(file => file.lastModificationTime).path)
+      }
+    }
+    catch{
+      case ex : Throwable =>
+        logger.error("", ex)
+        None
     }
   }
 
@@ -838,40 +846,51 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
   private def parseIndexFile(archiveInputConfig : SmartFileAdapterConfiguration, indexFilePath : String, fileSize : Int):
   (String, Array[ArchiveFileIndexEntry], Int) ={
 
-    val buffer = new Array[Byte](fileSize)
-    val archiveDirFileHandler = SmartFileHandlerFactory.createSmartFileHandler(archiveInputConfig, indexFilePath)
-    archiveDirFileHandler.openForRead()
-    val readLen = archiveDirFileHandler.read(buffer, 0, fileSize)
-    val lastIndexEntrySet = ArrayBuffer[ArchiveFileIndexEntry]()
-    var currentEntryIdx = 0
-    var lastDestArchiveFile = ""
-    logger.debug("parseIndexFile - readLen={}", readLen.toString)
     var lastIndexEntrySetStartOffset : Int = 0
+    val lastIndexEntrySet = ArrayBuffer[ArchiveFileIndexEntry]()
+    var lastDestArchiveFile = ""
+    var archiveDirFileHandler : SmartFileHandler = null
 
-    for(idx <- 0 until readLen){
-      if (buffer(idx).asInstanceOf[Char] == archiveIndexSeparator || idx == readLen -1)  {
-        val entryStr = new String(buffer, currentEntryIdx, idx - currentEntryIdx)
-        logger.debug("parseIndexFile - record={}", entryStr)
-        if(entryStr != null && entryStr.trim.length > 0) {
-          val entryOpt = createIndexEntryFromString(entryStr)
-          if (entryOpt.isDefined) {
-            val entry = entryOpt.get
-            if (entry.destFile.equals(lastDestArchiveFile))
-              lastIndexEntrySet.append(entry)
-            else {
-              lastIndexEntrySet.clear()
-              lastDestArchiveFile = entry.destFile
-              lastIndexEntrySet.append(entry)
-              lastIndexEntrySetStartOffset = currentEntryIdx
+    try {
+      val buffer = new Array[Byte](fileSize)
+      archiveDirFileHandler = SmartFileHandlerFactory.createSmartFileHandler(archiveInputConfig, indexFilePath)
+      archiveDirFileHandler.openForRead()
+      val readLen = archiveDirFileHandler.read(buffer, 0, fileSize)
+      var currentEntryIdx = 0
+      logger.debug("parseIndexFile - readLen={}", readLen.toString)
+
+      for (idx <- 0 until readLen) {
+        if (buffer(idx).asInstanceOf[Char] == archiveIndexSeparator || idx == readLen - 1) {
+          val entryStr = new String(buffer, currentEntryIdx, idx - currentEntryIdx)
+          logger.debug("parseIndexFile - record={}", entryStr)
+          if (entryStr != null && entryStr.trim.length > 0) {
+            val entryOpt = createIndexEntryFromString(entryStr)
+            if (entryOpt.isDefined) {
+              val entry = entryOpt.get
+              if (entry.destFile.equals(lastDestArchiveFile))
+                lastIndexEntrySet.append(entry)
+              else {
+                lastIndexEntrySet.clear()
+                lastDestArchiveFile = entry.destFile
+                lastIndexEntrySet.append(entry)
+                lastIndexEntrySetStartOffset = currentEntryIdx
+              }
             }
           }
+          currentEntryIdx = idx + 1
         }
-        currentEntryIdx = idx + 1
-      }
 
+      }
+    }
+    catch{
+      case ex : Throwable => logger.error("", ex)
     }
 
-    archiveDirFileHandler.close()
+    try{
+      if(archiveDirFileHandler != null)
+        archiveDirFileHandler.close()
+    }
+    catch{ case ex: Throwable => }
 
     (lastDestArchiveFile, lastIndexEntrySet.toArray, lastIndexEntrySetStartOffset)
   }
@@ -929,138 +948,144 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
 
     logger.info("checkAndFixTargetDirArchiveStatus: check target dir {}", targetDir)
 
-    val failoverArchiveFilesInfo = ArrayBuffer[ArchiveFileInfo]()
+    try {
+      val failoverArchiveFilesInfo = ArrayBuffer[ArchiveFileInfo]()
 
-    val archiveInputConfig = SmartFileAdapterConfiguration.outputConfigToInputConfig(adapterConfig.archiveConfig.outputConfig)
-    archiveInputConfig.monitoringConfig = adapterConfig.monitoringConfig
-    val archiveDirFileHandler = SmartFileHandlerFactory.createSmartFileHandler(archiveInputConfig, "/")
+      val archiveInputConfig = SmartFileAdapterConfiguration.outputConfigToInputConfig(adapterConfig.archiveConfig.outputConfig)
+      archiveInputConfig.monitoringConfig = adapterConfig.monitoringConfig
+      val archiveDirFileHandler = SmartFileHandlerFactory.createSmartFileHandler(archiveInputConfig, "/")
 
-    val lastIndexEntrySet = ArrayBuffer[ArchiveFileIndexEntry]()
+      val lastIndexEntrySet = ArrayBuffer[ArchiveFileIndexEntry]()
 
-    val archiveDirPath = getDestArchiveDir(locationInfo, targetDir, "dummyFileBaseName", scala.collection.immutable.Map[String, String]())
-    logger.info("archive dir corresponding to target dir {} is {}", targetDir, archiveDirPath)
+      val archiveDirPath = getDestArchiveDir(locationInfo, targetDir, "dummyFileBaseName", scala.collection.immutable.Map[String, String]())
+      logger.info("archive dir corresponding to target dir {} is {}", targetDir, archiveDirPath)
 
-    val latestIndexFileOption = getDirLatestIndexFile(archiveDirPath, archiveDirFileHandler)
-    if(latestIndexFileOption.isDefined) {
+      val latestIndexFileOption = getDirLatestIndexFile(archiveDirPath, archiveDirFileHandler)
+      if (latestIndexFileOption.isDefined) {
 
-      val indexFilePath = latestIndexFileOption.get
+        val indexFilePath = latestIndexFileOption.get
 
-      logger.info("found latest archive index: {}", indexFilePath)
+        logger.info("found latest archive index: {}", indexFilePath)
 
-      val indexFileSize = archiveDirFileHandler.length(indexFilePath).toInt
-      val (lastDestArchiveFile, lastIndexEntrySetTmp, lastIndexEntrySetStartOffset) = parseIndexFile(archiveInputConfig, indexFilePath, indexFileSize)
-      lastIndexEntrySet.appendAll(lastIndexEntrySetTmp)
-      if (lastIndexEntrySet.nonEmpty) {
-        val firstEntry = lastIndexEntrySet.head
-        val lastEntry = lastIndexEntrySet.last
+        val indexFileSize = archiveDirFileHandler.length(indexFilePath).toInt
+        val (lastDestArchiveFile, lastIndexEntrySetTmp, lastIndexEntrySetStartOffset) = parseIndexFile(archiveInputConfig, indexFilePath, indexFileSize)
+        lastIndexEntrySet.appendAll(lastIndexEntrySetTmp)
+        if (lastIndexEntrySet.nonEmpty) {
+          val firstEntry = lastIndexEntrySet.head
+          val lastEntry = lastIndexEntrySet.last
 
-        val archiveFileExists = archiveDirFileHandler.exists(lastDestArchiveFile)
+          val archiveFileExists = archiveDirFileHandler.exists(lastDestArchiveFile)
 
-        //check if dest file exists and has lastEntry.destFileEndOffset
-        val isIndexValid = archiveFileExists && hasOffset(archiveInputConfig, lastDestArchiveFile, lastEntry.destFileEndOffset)
-        if(isIndexValid) {
-          logger.debug("archive file {} is valid", lastDestArchiveFile)
+          //check if dest file exists and has lastEntry.destFileEndOffset
+          val isIndexValid = archiveFileExists && hasOffset(archiveInputConfig, lastDestArchiveFile, lastEntry.destFileEndOffset)
+          if (isIndexValid) {
+            logger.debug("archive file {} is valid", lastDestArchiveFile)
 
-          //delete any existing src files that were successfully archived
-          val targetDirFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, "/")
-          lastIndexEntrySet.foreach(entry =>{
+            //delete any existing src files that were successfully archived
+            val targetDirFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, "/")
+            lastIndexEntrySet.foreach(entry => {
+              try {
+                logger.info("deleting file {} since it is successfully archived", entry.srcFile)
+                targetDirFileHandler.deleteFile(entry.srcFile)
+              }
+              catch {
+                case ex: Throwable => logger.error("", ex)
+              }
+            })
+            targetDirFileHandler.disconnect()
+          }
+
+          if (!isIndexValid) {
+
+            if (!archiveFileExists)
+              logger.info("archive file {}, as in index file {} does not exist", lastDestArchiveFile, indexFilePath)
+            else
+              logger.info("archive file {}, as in index file {} is invalid", lastDestArchiveFile, indexFilePath)
+
+            //if dest file exists, delete
             try {
-              logger.info("deleting file {} since it is successfully archived", entry.srcFile)
-              targetDirFileHandler.deleteFile(entry.srcFile)
+              if (archiveFileExists) {
+                logger.info("deleting archive file {}", lastDestArchiveFile)
+                archiveDirFileHandler.deleteFile(lastDestArchiveFile)
+              }
             }
-            catch{
-              case ex : Throwable => logger.error("", ex)
+            catch {
+              case ex: Throwable => logger.error("", ex)
             }
-          })
-          targetDirFileHandler.disconnect()
+
+            if (lastIndexEntrySet.nonEmpty) {
+              logger.info("removing last entry set from index file {}, since it is not saved into disk", indexFilePath)
+              removeLastIndexEntrySet(archiveInputConfig, indexFilePath, lastIndexEntrySetStartOffset)
+            }
+
+            //archive src files in lastIndexEntrySet,
+            // but check first one, need to skip destFileStartOffset -1 bytes
+
+            lastIndexEntrySet.foreach(entry => {
+
+              val srcFileTokens = entry.srcFile.split("/")
+              val flBaseName = srcFileTokens(srcFileTokens.length - 1)
+              val offset = if (entry.srcFile.equals(firstEntry.srcFile)) entry.srcFileStartOffset else 0
+              val componentsMap =
+                if (locationInfo != null && locationInfo.fileComponents != null)
+                  MonitorUtils.getFileComponents(targetDir + "/" + flBaseName, locationInfo)
+                else null
+
+              val archiveFileInfo = ArchiveFileInfo(adapterConfig,
+                locationInfo, targetDir, flBaseName, componentsMap, 0, archiveDirPath, offset)
+
+              //archiveFile(archiveFileInfo, archiveFileDirStatus)
+              logger.info("Adding failover archive info to archive queue for file {}, with offset {}",
+                targetDir + "/" + flBaseName, offset.toString)
+
+              failoverArchiveFilesInfo.append(archiveFileInfo)
+            })
+            //flushArchiveDirStatus(archiveFileDirStatus)
+
+          }
         }
 
-        if (!isIndexValid) {
-
-          if(!archiveFileExists)
-            logger.info("archive file {}, as in index file {} does not exist", lastDestArchiveFile, indexFilePath)
-          else
-            logger.info("archive file {}, as in index file {} is invalid", lastDestArchiveFile, indexFilePath)
-
-          //if dest file exists, delete
-          try {
-            if (archiveFileExists) {
-              logger.info("deleting archive file {}", lastDestArchiveFile)
-              archiveDirFileHandler.deleteFile(lastDestArchiveFile)
-            }
-          }
-          catch {
-            case ex: Throwable => logger.error("", ex)
-          }
-
-          if(lastIndexEntrySet.nonEmpty) {
-            logger.info("removing last entry set from index file {}, since it is not saved into disk", indexFilePath)
-            removeLastIndexEntrySet(archiveInputConfig, indexFilePath, lastIndexEntrySetStartOffset)
-          }
-
-          //archive src files in lastIndexEntrySet,
-          // but check first one, need to skip destFileStartOffset -1 bytes
-
-          lastIndexEntrySet.foreach(entry => {
-
-            val srcFileTokens = entry.srcFile.split("/")
-            val flBaseName = srcFileTokens(srcFileTokens.length - 1)
-            val offset = if (entry.srcFile.equals(firstEntry.srcFile)) entry.srcFileStartOffset else 0
-            val componentsMap =
-              if (locationInfo != null && locationInfo.fileComponents != null)
-                MonitorUtils.getFileComponents(targetDir + "/" + flBaseName, locationInfo)
-              else null
-
-            val archiveFileInfo = ArchiveFileInfo(adapterConfig,
-              locationInfo, targetDir, flBaseName, componentsMap, 0, archiveDirPath, offset)
-
-            //archiveFile(archiveFileInfo, archiveFileDirStatus)
-            logger.info("Adding failover archive info to archive queue for file {}, with offset {}",
-              targetDir + "/" + flBaseName, offset.toString)
-
-            failoverArchiveFilesInfo.append(archiveFileInfo)
-          })
-          //flushArchiveDirStatus(archiveFileDirStatus)
-
+        try {
+          archiveDirFileHandler.disconnect()
         }
+        catch {
+          case ex: Throwable => logger.error("", ex)
+        }
+
       }
+      else
+        logger.info("no archive index file in dir {}", archiveDirPath)
 
-      try {
-        archiveDirFileHandler.disconnect()
-      }
-      catch {
-        case ex: Throwable => logger.error("", ex)
-      }
-
-    }
-    else
-      logger.info("no archive index file in dir {}", archiveDirPath)
-
-    //get files in target folder that are not even in index file
-    val nonIndexedFiles = targetFiles.filter(file => !lastIndexEntrySet.exists(entry => entry.srcFile.equals(file))).
-      map(filePath => SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, filePath)).
-      map(handler => EnqueuedFileHandler(handler, 0, handler.lastModified(),
-        locationInfo, MonitorUtils.getFileComponents(handler.getFullPath, locationInfo)))
+      //get files in target folder that are not even in index file
+      val nonIndexedFiles = targetFiles.filter(file => !lastIndexEntrySet.exists(entry => entry.srcFile.equals(file))).
+        map(filePath => SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, filePath)).
+        map(handler => EnqueuedFileHandler(handler, 0, handler.lastModified(),
+          locationInfo, MonitorUtils.getFileComponents(handler.getFullPath, locationInfo)))
 
 
-    //val nextRolloverTime = System.currentTimeMillis + archiveRolloverInterval * 60 * 1000
-    //val archiveFileDirStatus = ArchiveDirStatus(archiveDirPath, new ByteArrayOutputStream(), null,
+      //val nextRolloverTime = System.currentTimeMillis + archiveRolloverInterval * 60 * 1000
+      //val archiveFileDirStatus = ArchiveDirStatus(archiveDirPath, new ByteArrayOutputStream(), null,
       //getNewArchiveFileName, 0, -1, nextRolloverTime, ArrayBuffer[String](), "", ArrayBuffer[ArchiveFileIndexEntry](), true)
-    val orderedFiles = nonIndexedFiles.sortWith(MonitorUtils.compareFiles(_,_) < 0)
-    orderedFiles.foreach(file => {
-      val archiveFileInfo = ArchiveFileInfo(adapterConfig,
-        locationInfo, targetDir, MonitorUtils.getFileName(file.fileHandler.getFullPath),file.componentsMap, 0, archiveDirPath, 0)
+      val orderedFiles = nonIndexedFiles.sortWith(MonitorUtils.compareFiles(_, _) < 0)
+      orderedFiles.foreach(file => {
+        val archiveFileInfo = ArchiveFileInfo(adapterConfig,
+          locationInfo, targetDir, MonitorUtils.getFileName(file.fileHandler.getFullPath), file.componentsMap, 0, archiveDirPath, 0)
 
-      //archiveFile(archiveFileInfo, archiveFileDirStatus)
-      logger.info("Adding failover archive info to archive queue for file {}, with offset {}",
-        file.fileHandler.getFullPath, "0")
-      failoverArchiveFilesInfo.append(archiveFileInfo)
-    })
-    //flushArchiveDirStatus(archiveFileDirStatus)
+        //archiveFile(archiveFileInfo, archiveFileDirStatus)
+        logger.info("Adding failover archive info to archive queue for file {}, with offset {}",
+          file.fileHandler.getFullPath, "0")
+        failoverArchiveFilesInfo.append(archiveFileInfo)
+      })
+      //flushArchiveDirStatus(archiveFileDirStatus)
 
-    if(failoverArchiveFilesInfo.length > 0)
-      addFailoverArchiveFilesInfo(failoverArchiveFilesInfo.toArray)
-    else logger.info("no failover files need to archive from target dir {}", targetDir)
+      if (failoverArchiveFilesInfo.length > 0)
+        addFailoverArchiveFilesInfo(failoverArchiveFilesInfo.toArray)
+      else logger.info("no failover files need to archive from target dir {}", targetDir)
+    }
+    catch{
+      case ex : Throwable =>
+        logger.error("Error while checking failover status for dir " + targetDir, ex)
+    }
   }
 
   //check if a file can be opened to read and has the provided offset
