@@ -26,7 +26,9 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
 
-  val archiveRolloverInterval : Long = 60 //in minutes
+  val archiveRolloverInterval : Long =
+    if(adapterConfig.archiveConfig == null || adapterConfig.archiveConfig.outputConfig == null) 60
+    else adapterConfig.archiveConfig.outputConfig.rolloverInterval //in minutes
   val archiveRolloverCheckSleepMS = 1 * 60 * 1000
 
   private val currentAppendFiles =  scala.collection.mutable.LinkedHashMap[String, (String, Long, Long, Long)]()
