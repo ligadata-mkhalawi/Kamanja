@@ -318,8 +318,8 @@ class OutputStreamWriter {
   }
 
   def mkdirs(fc : SmartFileProducerConfiguration, dirPath : String ) : Boolean = {
-    if (fc.uri.startsWith("hdfs://")) mkdirsFS(fc, dirPath)
-    else mkdirsHDFS(fc, dirPath)
+    if (fc.uri.startsWith("hdfs://")) mkdirsHDFS(fc, dirPath)
+    else mkdirsFS(fc, dirPath)
   }
 
   def mkdirsFS(fc : SmartFileProducerConfiguration, dirPath : String ) : Boolean = {
@@ -329,7 +329,7 @@ class OutputStreamWriter {
     }
     catch{
       case e : Throwable =>
-        LOG.error("Posix File Handler - Error while creating path " + dirPath, e)
+        LOG.error("OutputStreamWriter - Error while creating fs path " + dirPath, e)
         false
     }
   }

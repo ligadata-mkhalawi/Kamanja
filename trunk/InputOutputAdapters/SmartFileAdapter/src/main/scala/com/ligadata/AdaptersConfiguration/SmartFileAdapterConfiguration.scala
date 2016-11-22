@@ -15,12 +15,16 @@ class ArchiveConfig {
   var archiveParallelism: Int = 1
   var outputConfig: SmartFileProducerConfiguration = null
 
-  var consolidationMaxSizeGB : Double = 1
+  var consolidationMaxSizeMB : Double = 100
+
+  def consolidateThresholdBytes : Long = (consolidationMaxSizeMB * 1024 * 1024).toLong
 
   //whether to create a dir for each location under archive dir.
   //we are dealing with files not messages, so cannot use msg name
   //instead last part of configured location src dir path will be used as dir name
   var createDirPerLocation : Boolean = true
+
+  //var enforceDataOrder : Boolean = false
 }
 
 /**
@@ -133,6 +137,34 @@ object SmartFileAdapterConfiguration {
   val validMsgTags = Set("MsgType", "FileName", "FileFullPath")
 
   def isValidMsgTag(tag: String) = tag != null && (validMsgTags contains tag)
+
+  //concerned about connection info only here
+  def outputConfigToInputConfig(outputConfig : SmartFileProducerConfiguration) : SmartFileAdapterConfiguration = {
+    val inputConfig = new SmartFileAdapterConfiguration()
+    //inputConfig.monitoringConfig.
+    inputConfig._type = if(outputConfig.uri.startsWith("hdfs://")) "HDFS" else "DAS/NAS"
+    val hosts =
+      if(outputConfig.uri.startsWith("hdfs://")){
+        val part = outputConfig.uri.substring(7)
+        val idx = part.indexOf("/")
+        if(idx > 0) "hdfs://" + part.substring(0, idx - 1)
+        else "hdfs://" + part
+      }
+      else ""
+
+    inputConfig.connectionConfig = new FileAdapterConnectionConfig
+    inputConfig.connectionConfig.hostsList = hosts.split(",")
+
+    if(outputConfig.kerberos != null){
+      inputConfig.connectionConfig.authentication = "kerberos"
+      inputConfig.connectionConfig.principal = outputConfig.kerberos.principal
+      inputConfig.connectionConfig.keytab = outputConfig.kerberos.keytab
+    }
+
+    inputConfig.connectionConfig.hadoopConfig = outputConfig.hadoopConfig
+
+    inputConfig
+  }
 
   def getAdapterConfig(inputConfig: AdapterConfiguration): SmartFileAdapterConfiguration = {
 
@@ -459,8 +491,8 @@ object SmartFileAdapterConfiguration {
         archiveConfig.archiveSleepTimeInMs = if (connConf.contains("ArchiveSleepTimeInMs")) connConf.getOrElse("ArchiveSleepTimeInMs", "10").toString.trim.toInt else 10
         if (archiveConfig.archiveSleepTimeInMs < 0) archiveConfig.archiveSleepTimeInMs = 10
 
-        archiveConfig.consolidationMaxSizeGB = if (connConf.contains("ConsolidationMaxSizeGB")) connConf.getOrElse("ConsolidationMaxSizeGB", "1").toString.trim.toDouble else 1
-        if (archiveConfig.consolidationMaxSizeGB <= 0) archiveConfig.consolidationMaxSizeGB = 1
+        archiveConfig.consolidationMaxSizeMB = if (connConf.contains("ConsolidationMaxSizeMB")) connConf.getOrElse("ConsolidationMaxSizeMB", "100").toString.trim.toDouble else 100
+        if (archiveConfig.consolidationMaxSizeMB <= 0) archiveConfig.consolidationMaxSizeMB = 100
 
         archiveConfig.createDirPerLocation = if (connConf.contains("CreateDirPerLocation")) connConf.getOrElse("CreateDirPerLocation", "true").toString.trim.toBoolean else true
 
