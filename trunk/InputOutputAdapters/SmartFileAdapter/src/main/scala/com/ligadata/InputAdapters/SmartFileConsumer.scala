@@ -270,7 +270,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       if(initialized == false || ! clusterStatus.leaderNodeId.equals(prevRegLeader)){
         LOG.debug("Smart File Consumer - Leader is running on node " + clusterStatus.nodeId)
 
-        archiver = new Archiver(adapterConfig, this)
+        if(adapterConfig.archiveConfig != null)
+          archiver = new Archiver(adapterConfig, this)
 
         monitorController = new MonitorController(adapterConfig, this, newFileDetectedCallback)
         monitorController.checkConfigDirsAccessibility//throw an exception if a folder is not accissible
@@ -1501,7 +1502,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       archiveExecutor = Executors.newFixedThreadPool(archiveParallelism)
 
       val maxArchiveAttemptsCount = 3
-      if(archiver != null)
+      if(archiver != null && adapterConfig.archiveConfig != null)
         archiver.startArchiving()
 /*
       for (i <- 0 until archiveParallelism) {

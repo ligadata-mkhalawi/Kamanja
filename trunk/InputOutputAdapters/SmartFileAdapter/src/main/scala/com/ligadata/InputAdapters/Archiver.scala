@@ -224,13 +224,16 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
     }
   }
 
-  val archiveParallelism = if (adapterConfig.archiveConfig.archiveParallelism <= 0) 1 else adapterConfig.archiveConfig.archiveParallelism
-  val archiveSleepTimeInMs = if (adapterConfig.archiveConfig.archiveSleepTimeInMs < 0) 100 else adapterConfig.archiveConfig.archiveSleepTimeInMs
+  val archiveParallelism = if (adapterConfig.archiveConfig == null || adapterConfig.archiveConfig.archiveParallelism <= 0) 1 else adapterConfig.archiveConfig.archiveParallelism
+  val archiveSleepTimeInMs = if (adapterConfig.archiveConfig == null || adapterConfig.archiveConfig.archiveSleepTimeInMs < 0) 100 else adapterConfig.archiveConfig.archiveSleepTimeInMs
 
   private var archiveExecutor : ExecutorService = null
 
 
   def startArchiving(): Unit ={
+    if(adapterConfig.archiveConfig == null)
+      return
+
     //check all available target dirs
     //find already existing files and push to head of archive queue
     checkTargetDirs()
@@ -1092,6 +1095,9 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
   }
 
   def shutdown(): Unit ={
+
+    if(adapterConfig.archiveConfig == null)
+      return
 
     if (archiveExecutor != null)
       archiveExecutor.shutdownNow()
