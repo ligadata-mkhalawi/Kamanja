@@ -31,56 +31,6 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
     else adapterConfig.archiveConfig.outputConfig.rolloverInterval //in minutes
   val archiveRolloverCheckSleepMS = 1 * 60 * 1000
 
-  private val currentAppendFiles =  scala.collection.mutable.LinkedHashMap[String, (String, Long, Long, Long)]()
-
-  /**
-
-    * @param parentDestDir
-    * @param srcFileSize
-    * @return file name, size, byte offset, last mod timestamp
-    */
-  def getCurrentAppendFile(parentDestDir : String, srcFileSize : Long) : Option[(String, Long, Long, Long)] = {
-    this.synchronized {
-      //if (currentAppendFiles.contains(parentDir) && currentAppendFiles(parentDir).nonEmpty)
-      //  Some(currentAppendFiles(parentDir).head._1, currentAppendFiles(parentDir).head._2, currentAppendFiles(parentDir).head.._3)
-      //else None
-      if (currentAppendFiles.contains(parentDestDir) )
-        Some(currentAppendFiles(parentDestDir))
-      else None
-    }
-  }
-
-
-  def addToCurrentAppendFiles(parentDir : String, file : String, size : Long, byteOffset : Long, timestamp : Long) = {
-    this.synchronized {
-      currentAppendFiles.put(parentDir, (file, size, byteOffset, timestamp))
-    }
-  }
-
-  def removeCurrentAppendFile(parentDir : String) : Unit = {
-    if(currentAppendFiles.contains(parentDir))
-        currentAppendFiles.remove(parentDir)
-  }
-
-  def updateCurrentAppendFile(parentDir : String, file : String, newSize : Long, newByteOffset : Long, newTimestamp : Long) = {
-    this.synchronized {
-
-      val callstack = Thread.currentThread().getStackTrace().drop(1).take(2).
-        map(s => s.getClassName + "." + s.getMethodName + "(" + s.getLineNumber + ")").mkString("\n")
-      logger.debug("updating CurrentAppendFile with newByteOffset={}", newByteOffset.toString + ". "  + callstack)
-
-      //remove file info if too large to append to
-        //TODO : is it better to consider files that are larger than max*ratio (instead of max) unfit for appending?
-      if(currentAppendFiles.contains(parentDir)) {
-        if (newSize >= adapterConfig.archiveConfig.consolidateThresholdBytes)
-          currentAppendFiles.remove(parentDir)
-        else currentAppendFiles.put(parentDir, (file, newSize, newByteOffset, newTimestamp))
-      }
-      else
-        currentAppendFiles.put(parentDir, (file, newSize, newByteOffset, newTimestamp))
-    }
-  }
-
   private def trimFileFromLocalFileSystem(fileName: String): String = {
     if (fileName.startsWith("file://"))
       return fileName.substring("file://".length() - 1)
@@ -144,13 +94,6 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
       throw FatalAdapterException("Unsupported compression type " + adapterConfig.archiveConfig.outputConfig.compressionString + " for Smart File Producer: " + adapterConfig.archiveConfig.outputConfig.Name, new Exception("Invalid Parameters"))
 
   }
-
-  def clear() = {
-    currentAppendFiles.clear()
-  }
-
-
-
 
   /*************************************************************************************************************/
   //key is dest archive dir
@@ -281,10 +224,9 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
     }
   }
 
+  val archiveParallelism = if (adapterConfig.archiveConfig.archiveParallelism <= 0) 1 else adapterConfig.archiveConfig.archiveParallelism
+  val archiveSleepTimeInMs = if (adapterConfig.archiveConfig.archiveSleepTimeInMs < 0) 100 else adapterConfig.archiveConfig.archiveSleepTimeInMs
 
-
-  val archiveParallelism = 1// TODO
-  val archiveSleepTimeInMs = 2000//100
   private var archiveExecutor : ExecutorService = null
 
 
