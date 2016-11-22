@@ -192,8 +192,8 @@ public class MessageConsumer implements Runnable {
         shutdownTriggerCounter.incrementAndGet();
         if (consumer != null)
             consumer.close();
-//        if (processor != null)
-//            processor.close();
+       if (processor != null)
+            processor.close();
 //        processor = null;
     }
 
@@ -341,6 +341,7 @@ public class MessageConsumer implements Runnable {
 			ConsumerRecords<String, String> records = consumer.poll(pollInterval);
 			for (ConsumerRecord<String, String> record : records) {
 			    Long lastOffset = partitionOffsets.get(record.partition());
+			    logger.debug("lastOffset => " + lastOffset + ",partition => " + record.partition());
 			    if (lastOffset == null || record.offset() > lastOffset) {
 				logger.debug("Message from partition Id :" + record.partition() + " Message: " + record.value());
 				if (processor.addMessage(record.value()))

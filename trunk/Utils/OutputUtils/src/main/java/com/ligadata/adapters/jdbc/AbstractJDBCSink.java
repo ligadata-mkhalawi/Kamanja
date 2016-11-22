@@ -224,10 +224,12 @@ public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 
 	@Override
 	public void close() {
-		try {
-			if (dataSource != null)
-				dataSource.close();
-		} catch (SQLException e) {
-		}
+	    logger.info("Closing JDBCSink...");
+	    try {
+		if (dataSource != null)
+		    dataSource.close();
+	    } catch (SQLException e) {
+	    }
+	    logger.info("Closed JDBCSink...");
 	}
 }
