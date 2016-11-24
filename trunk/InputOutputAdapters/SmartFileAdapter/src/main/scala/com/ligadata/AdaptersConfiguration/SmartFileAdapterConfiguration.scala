@@ -311,7 +311,8 @@ object SmartFileAdapterConfiguration {
         monitoringConfig.orderBy = kv._2.asInstanceOf[List[String]].toArray
       }
       else if (kv._1.compareToIgnoreCase("TagDelimiter") == 0) {
-        monitoringConfig.tagDelimiter = kv._2.asInstanceOf[String]
+        monitoringConfig.tagDelimiter =
+          org.apache.commons.lang.StringEscapeUtils.unescapeJava(kv._2.asInstanceOf[String])
       }
       else if (kv._1.compareToIgnoreCase("MsgTagsKV") == 0) {
         monitoringConfig.msgTagsKV = kv._2.asInstanceOf[scala.collection.immutable.Map[String, String]]
@@ -364,7 +365,8 @@ object SmartFileAdapterConfiguration {
               locationInfo.msgTagsKV = kv._2.asInstanceOf[scala.collection.immutable.Map[String, String]]
             }
             else if (kv._1.compareToIgnoreCase("TagDelimiter") == 0) {
-              locationInfo.tagDelimiter = kv._2.asInstanceOf[String].trim
+              locationInfo.tagDelimiter = org.apache.commons.lang.StringEscapeUtils.unescapeJava(
+                kv._2.asInstanceOf[String].trim)
             }
             else if (kv._1.compareToIgnoreCase("MessageSeparator") == 0) {
               locationInfo.messageSeparator = kv._2.asInstanceOf[String].trim.toInt.toChar
