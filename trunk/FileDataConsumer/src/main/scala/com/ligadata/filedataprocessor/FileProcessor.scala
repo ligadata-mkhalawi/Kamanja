@@ -43,6 +43,7 @@ import net.sf.jmimemagic.MagicParseException
 import net.sf.jmimemagic.MagicMatchNotFoundException
 import net.sf.jmimemagic.MagicException
 
+import com.ligadata.ZooKeeper.ProcessComponentByWeight;
 
 case class BufferLeftoversArea(workerNumber: Int, leftovers: Array[Char], relatedChunk: Int)
 
@@ -143,6 +144,10 @@ object FileProcessor {
 
   val testRand = scala.util.Random
   private var isMontoringDirectories = true
+
+  private var prevIsThisNodeToProcess = false;
+  private var pcbw:ProcessComponentByWeight = null;
+  private var isLockAcquired = false;
 
   private def testFailure(thisCause: String) = {
     var bigCheck = FileProcessor.testRand.nextInt(100)
@@ -1222,6 +1227,59 @@ object FileProcessor {
     }
   }
 
+  private def PriorityNodeSetup(config: scala.collection.mutable.Map[String, String]): Unit = {
+    logger.info("Setup for node failure events..");
+    val zkConnectStr = config.getOrElse(SmartFileAdapterConstants.ZOOKEEPER_CONNECT,null);
+    if ( zkConnectStr == null || zkConnectStr.length() == 0 ){
+      logger.error("SMART_FILE_CONSUMER: ZOOKEEPER_CONNECT must be specified")
+      throw new MissingPropertyException("Missing Paramter: " + SmartFileAdapterConstants.ZOOKEEPER_CONNECT, null)
+    }
+    val zkSessionTimeOut   = config.getOrElse(SmartFileAdapterConstants.ZOOKEEPER_SESSION_TIMEOUT_MS,"30000").toInt;
+    val zkConnectionTimeOut = config.getOrElse(SmartFileAdapterConstants.ZOOKEEPER_CONNECTION_TIMEOUT_MS,"30000").toInt;
+    val zkLeaderPath = config.getOrElse(SmartFileAdapterConstants.ZOOKEEPER_LEADER_PATH,"/kamanja/adapters/leader");
+    val component_name = config.getOrElse(SmartFileAdapterConstants.COMPONENT_NAME,"FileConsumer");
+    val node_id_prefix = config.getOrElse(SmartFileAdapterConstants.NODE_ID_PREFIX,"Node1");
+    val adapter_weight = config.getOrElse(SmartFileAdapterConstants.ADAPTER_WEIGHT,"10").toInt;
+
+    logger.info("Create an instnce of ProcessComponentByWeight ...");
+    try{
+      pcbw = new ProcessComponentByWeight(component_name,node_id_prefix,adapter_weight);
+    }catch {
+      case e:Throwable => {
+        logger.error("Error : " + e.getMessage() + e);
+      }
+    }
+	    
+    logger.info("Call ProcessComponentByWeight.Init..");
+    pcbw.Init(zkConnectStr,zkLeaderPath,zkSessionTimeOut,zkConnectionTimeOut);
+  }
+   
+  private def AcquireLock() : Unit = {
+    try{
+      if( ! isLockAcquired ){
+	logger.info("Acquiring the lock ..");
+	pcbw.Acquire();
+	isLockAcquired = true;
+	logger.info("Acquired the lock ..");
+      }
+    } catch {
+      case e: Exception => {
+        logger.error("Error : " + e.getMessage() + e);
+	throw e;
+      }
+    }
+  }
+   
+  private def ReleaseLock() : Unit = {
+    if( isLockAcquired ){
+      logger.info("Releasing the lock ..");
+      pcbw.Release();
+      isLockAcquired = false;
+      logger.info("Released the lock ..");
+    }
+  }
+
+
   val externalizeStats = new Runnable {
     def run(): Unit = {
       try {
@@ -1410,6 +1468,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
 
       FileProcessor.setProperties(props, path)
       FileProcessor.startGlobalFileMonitor
+      FileProcessor.PriorityNodeSetup(props)
 
       if (logger.isInfoEnabled) logger.info("SMART_FILE_CONSUMER (" + partitionId + ") Initializing Kafka loading process")
       // Initialize threads
@@ -1484,6 +1543,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
     }
   }
 
+
   /**
     * Each worker bee will run this code... looking for work to do.
     *
@@ -1496,12 +1556,12 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
     var buffer: BufferToChunk = null;
     var fileNameToProcess: String = ""
     var isEofBuffer = false
+    var messages: scala.collection.mutable.LinkedHashSet[KafkaMessage] = null
+    var leftOvers: Array[Char] = new Array[Char](0)
+
 
     // basically, keep running until shutdown.
     while (isConsuming) {
-      var messages: scala.collection.mutable.LinkedHashSet[KafkaMessage] = null
-      var leftOvers: Array[Char] = new Array[Char](0)
-
       // Try to get a new file to process.
       buffer = deQBuffer(beeNumber)
 
@@ -1935,30 +1995,51 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
     */
   private def doSomeConsuming(): Unit = {
     while (isConsuming) {
-      val fileToProcess = FileProcessor.deQFile
+
       var curTimeStart: Long = 0
       var curTimeEnd: Long = 0
-      if (fileToProcess == null) {
-        Thread.sleep(500)
-      } else {
-        if (logger.isInfoEnabled) logger.info("SMART_FILE_CONSUMER partition " + partitionId + " Processing file " + fileToProcess)
+
+      val curIsThisNodeToProcess = FileProcessor.pcbw.IsThisNodeToProcess();
+      if( curIsThisNodeToProcess ){
+	if( ! FileProcessor.prevIsThisNodeToProcess ) { // status flipped from false to true
+	  FileProcessor.AcquireLock();
+	  FileProcessor.prevIsThisNodeToProcess = curIsThisNodeToProcess;
+	}
+	else{
+	  FileProcessor.prevIsThisNodeToProcess = true;
+	}
+
+	val fileToProcess = FileProcessor.deQFile
+	if (fileToProcess == null) {
+          Thread.sleep(500)
+	} else {
+          if (logger.isInfoEnabled) logger.info("SMART_FILE_CONSUMER partition " + partitionId + " Processing file " + fileToProcess)
 
         //val tokenName = fileToProcess.name.split("/")
         //FileProcessor.markFileProcessing(tokenName(tokenName.size - 1), fileToProcess.offset, fileToProcess.createDate)
-        FileProcessor.markFileProcessing(fileToProcess.name, fileToProcess.offset, fileToProcess.createDate)
+          FileProcessor.markFileProcessing(fileToProcess.name, fileToProcess.offset, fileToProcess.createDate)
 
-        curTimeStart = System.currentTimeMillis
-        try {
-          readBytesChunksFromFile(fileToProcess)
-        } catch {
-          case fnfe: Exception => {
-            logger.error("Exception Encountered, check the logs.", fnfe)
+          curTimeStart = System.currentTimeMillis
+
+
+          try {
+            readBytesChunksFromFile(fileToProcess)
+          } catch {
+            case fnfe: Exception => {
+              logger.error("Exception Encountered, check the logs.", fnfe)
+            }
+            case e: Throwable => {
+              logger.error("Exception Encountered, check the logs.", e)
+            }
           }
-          case e: Throwable => {
-            logger.error("Exception Encountered, check the logs.", e)
-          }
-        }
-        curTimeEnd = System.currentTimeMillis
+          curTimeEnd = System.currentTimeMillis
+	}
+      }
+      else{
+	if( FileProcessor.prevIsThisNodeToProcess ) { // status flipped from true to false
+	  FileProcessor.ReleaseLock();
+	  FileProcessor.prevIsThisNodeToProcess = curIsThisNodeToProcess;
+	}
       }
     }
   }
