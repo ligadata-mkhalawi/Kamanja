@@ -339,13 +339,15 @@ class HdfsFileHandler extends SmartFileHandler {
 
     try {
       val files = getHdFileSystem("listFiles").listStatus(new Path(path))
-      files.foreach(file => {
-        val monitoredFile = makeFileEntry(file, path)
-        if(monitoredFile != null) {
-          if (monitoredFile.isDirectory) currentDirectDirs.append(monitoredFile)
-          else currentDirectFiles.append(monitoredFile)
-        }
-      })
+      if(files != null) {
+        files.foreach(file => {
+          val monitoredFile = makeFileEntry(file, path)
+          if (monitoredFile != null) {
+            if (monitoredFile.isDirectory) currentDirectDirs.append(monitoredFile)
+            else currentDirectFiles.append(monitoredFile)
+          }
+        })
+      }
 
       val endTm = System.nanoTime
       val elapsedTm = endTm - startTm

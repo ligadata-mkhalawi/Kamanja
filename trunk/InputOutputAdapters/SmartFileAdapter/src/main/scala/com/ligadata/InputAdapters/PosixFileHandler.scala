@@ -320,13 +320,16 @@ class PosixFileHandler extends SmartFileHandler{
     val currentDirectDirs = ArrayBuffer[MonitoredFile]()
 
     try {
-      new File(path).listFiles.foreach(file => {
-        val monitoredFile = makeFileEntry(file, path)
-        if(monitoredFile != null) {
-          if (monitoredFile.isDirectory) currentDirectDirs.append(monitoredFile)
-          else currentDirectFiles.append(monitoredFile)
+      val files = new File(path).listFiles
+        if(files != null) {
+          files.foreach(file => {
+            val monitoredFile = makeFileEntry(file, path)
+            if (monitoredFile != null) {
+              if (monitoredFile.isDirectory) currentDirectDirs.append(monitoredFile)
+              else currentDirectFiles.append(monitoredFile)
+            }
+          })
         }
-      })
     }
     catch{
       case ex : Throwable =>

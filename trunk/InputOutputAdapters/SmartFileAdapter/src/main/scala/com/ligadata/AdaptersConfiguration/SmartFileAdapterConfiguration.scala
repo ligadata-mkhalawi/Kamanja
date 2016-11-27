@@ -121,6 +121,11 @@ class LocationInfo {
 
   var enableMoving: String = ""  //on, off, empty means get it from public attribute
   def isMovingEnabled: Boolean = enableMoving == null || enableMoving.length == 0 || enableMoving.equalsIgnoreCase("on")
+
+  //only if archiveConfig != null
+  //if has value, this folder will be used for archive files. it is relative to archiveConfig.outputConfig.uri
+  //else archive path will be inferred based on source path and attributes createInputStructureInTargetDirs, createDirPerLocation
+  var archiveRelativePath : String = ""
 }
 
 case class SmartFileAdapterGeneralConfig(sourceType : String, statusMsgTypeName : String)
@@ -378,6 +383,9 @@ object SmartFileAdapterConfiguration {
               val componentsMap = kv._2.asInstanceOf[Map[String, Any]]
               val fileComponents = extractFileComponents(componentsMap)
               locationInfo.fileComponents = fileComponents
+            }
+            else if (kv._1.compareToIgnoreCase("ArchiveRelativePath") == 0) {
+              locationInfo.archiveRelativePath = kv._2.asInstanceOf[String]
             }
 
           })
