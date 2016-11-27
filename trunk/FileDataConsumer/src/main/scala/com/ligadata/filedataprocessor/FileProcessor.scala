@@ -59,9 +59,9 @@ case class OffsetValue(lastGoodOffset: Int, partitionOffsets: Map[Int, Int])
 
 
 /**
-  * This is the global area for the File Processor.  It basically handles File Access and Distribution !!!!!
-  * the Individual File Processors ask here for what files it they should be processed.
-  */
+* This is the global area for the File Processor.  It basically handles File Access and Distribution !!!!!
+* the Individual File Processors ask here for what files it they should be processed.
+*/
 object FileProcessor {
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
@@ -130,8 +130,8 @@ object FileProcessor {
   private var activeFiles: scala.collection.mutable.Map[String, FileStatus] = scala.collection.mutable.Map[String, FileStatus]()
   private val activeFilesLock = new Object
   // READY TO PROCESS FILE QUEUES
-  private var fileQ: scala.collection.mutable.PriorityQueue[EnqueuedFile] = new scala.collection.mutable.PriorityQueue[EnqueuedFile]()(Ordering.by(OldestFile))
-  private val fileQLock = new Object
+  var fileQ: scala.collection.mutable.PriorityQueue[EnqueuedFile] = new scala.collection.mutable.PriorityQueue[EnqueuedFile]()(Ordering.by(OldestFile))
+  val fileQLock = new Object
   private val bufferingQ_map: scala.collection.mutable.Map[String, (Long, Long, Int)] = scala.collection.mutable.Map[String, (Long, Long, Int)]()
   private val bufferingQLock = new Object
   private val zkRecoveryLock = new Object
@@ -145,9 +145,9 @@ object FileProcessor {
   val testRand = scala.util.Random
   private var isMontoringDirectories = true
 
-  private var prevIsThisNodeToProcess = false;
-  private var pcbw:ProcessComponentByWeight = null;
-  private var isLockAcquired = false;
+  var prevIsThisNodeToProcess = false;
+  var pcbw:ProcessComponentByWeight = null;
+  var isLockAcquired = false;
 
   private def testFailure(thisCause: String) = {
     var bigCheck = FileProcessor.testRand.nextInt(100)
@@ -171,14 +171,14 @@ object FileProcessor {
     if (logger.isDebugEnabled)
       logger.debug("Reason:" + reasonToTrace + ". Timetaken:" + (endTS - startTS) / 1000000.0 + " ms")
     else if (logger.isInfoEnabled && ((endTS - startTS) / 1000000) > 10)
-      logger.info("Reason:" + reasonToTrace + ". Timetaken:" + (endTS - startTS) / 1000000.0 + " ms. Taken more than 10ms")
+	   logger.info("Reason:" + reasonToTrace + ". Timetaken:" + (endTS - startTS) / 1000000.0 + " ms. Taken more than 10ms")
     ret
 
   }
 
   /**
-    *
-    */
+  *
+  */
   def initZookeeper = {
     try {
       zkcConnectString = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("ZOOKEEPER_CONNECT_STRING")
@@ -426,11 +426,11 @@ object FileProcessor {
   }
 
   /**
-    * checkIfFileBeingProcessed - if for some reason a file name is queued twice... this will prevent it
-    *
-    * @param file
-    * @return
-    */
+  * checkIfFileBeingProcessed - if for some reason a file name is queued twice... this will prevent it
+  *
+  * @param file
+  * @return
+  */
   def checkIfFileBeingProcessed(file: String): Boolean = {
     fileCacheLock.synchronized {
       if (fileCache.contains(file)) {
@@ -567,6 +567,7 @@ object FileProcessor {
 
   private def enQFile(file: String, offset: Int, createDate: Long, partMap: scala.collection.mutable.Map[Int, Int] = scala.collection.mutable.Map[Int, Int]()): Unit = {
     fileQLock.synchronized {
+      logger.info("SMART FILE CONSUMER (global):  enq file " + file + " with priority " + createDate + " --- curretnly " + fileQ.size + " files on a QUEUE")
       if (logger.isInfoEnabled) logger.info("SMART FILE CONSUMER (global):  enq file " + file + " with priority " + createDate + " --- curretnly " + fileQ.size + " files on a QUEUE")
       fileQ += new EnqueuedFile(file, offset, createDate, partMap)
     }
@@ -578,6 +579,7 @@ object FileProcessor {
         return null
       }
       val ef = fileQ.dequeue()
+      logger.info("SMART FILE CONSUMER (global):  deq file " + ef.name + " with priority " + ef.createDate + " --- curretnly " + fileQ.size + " files left on a QUEUE")
       if (logger.isInfoEnabled) logger.info("SMART FILE CONSUMER (global):  deq file " + ef.name + " with priority " + ef.createDate + " --- curretnly " + fileQ.size + " files left on a QUEUE")
       return ef
 
@@ -655,9 +657,9 @@ object FileProcessor {
   }
 
   /**
-    * Look at the files on the DEFERRED QUEUE... if we see that it stops growing, then move the file onto the READY
-    * to process QUEUE.
-    */
+  * Look at the files on the DEFERRED QUEUE... if we see that it stops growing, then move the file onto the READY
+  * to process QUEUE.
+  */
   private def monitorBufferingFiles: Unit = {
     // This guys will keep track of when to exgernalize a WARNING Message.  Since this loop really runs every second,
     // we want to throttle the warning messages.
@@ -665,106 +667,121 @@ object FileProcessor {
     while (true) {
       // Scan all the files that we are buffering, if there is not difference in their file size.. move them onto
       // the FileQ, they are ready to process.
-      bufferingQLock.synchronized {
-        val iter = bufferingQ_map.iterator
-        iter.foreach(fileTuple => {
+      breakable {
+	var activeNode = true;
+	if( FileProcessor.pcbw != null ){
+          activeNode = FileProcessor.pcbw.IsThisNodeToProcess()
+	}
+	if( ! activeNode ){
+	  logger.info("Skip monitoring for incoming files, Do not dequeue any more files...")
+          Thread.sleep(1000)
+	  break
+	}
+        else{
+	  
+	  bufferingQLock.synchronized {
+            val iter = bufferingQ_map.iterator
+            iter.foreach(fileTuple => {
 
-          //TODO C&S - changes
-          var thisFileFailures: Int = fileTuple._2._3
-          var thisFileStarttime: Long = fileTuple._2._2
-          var thisFileOrigLength: Long = fileTuple._2._1
+              //TODO C&S - changes
+              var thisFileFailures: Int = fileTuple._2._3
+              var thisFileStarttime: Long = fileTuple._2._2
+              var thisFileOrigLength: Long = fileTuple._2._1
 
 
-          try {
-            val d = executeCallWithElapsed(new File(fileTuple._1), "Check file for buffering " + fileTuple._1)
-            // If the filesystem is accessible
-            if (d.exists) {
+              try {
+		val d = executeCallWithElapsed(new File(fileTuple._1), "Check file for buffering " + fileTuple._1)
+		// If the filesystem is accessible
+		if (d.exists) {
+		  logger.info("FileProcessor: monitorBufferingFiles: Processing the file " + fileTuple._1)
+		  //TODO C&S - Changes
+		  thisFileOrigLength = d.length
 
-              //TODO C&S - Changes
-              thisFileOrigLength = d.length
-
-              // If file hasn't grown in the past 2 seconds - either a delay OR a completed transfer.
-              if (fileTuple._2._1 == thisFileOrigLength) {
-                // If the length is > 0, we assume that the file completed transfer... (very problematic, but unless
-                // told otherwise by BofA, not sure what else we can do here.
-                if (thisFileOrigLength > 0 && FileProcessor.isValidFile(fileTuple._1)) {
-                  if (logger.isInfoEnabled) logger.info("SMART FILE CONSUMER (global):  File READY TO PROCESS " + d.toString)
-                  enQFile(fileTuple._1, FileProcessor.NOT_RECOVERY_SITUATION, d.lastModified)
-                  bufferingQRemove(fileTuple._1)
-                } else {
-                  // Here becayse either the file is sitll of len 0,or its deemed to be invalid.
-                  if (thisFileOrigLength == 0) {
-                    val diff = System.currentTimeMillis - thisFileStarttime //d.lastModified
-                    if (diff > bufferTimeout) {
-                      if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER (global): Detected that " + d.toString + " has been on the buffering queue longer then " + bufferTimeout / 1000 + " seconds - Cleaning up")
-                      moveFile(fileTuple._1) // This internally call fileCacheRemove
+		  // If file hasn't grown in the past 2 seconds - either a delay OR a completed transfer.
+		  if (fileTuple._2._1 == thisFileOrigLength) {
+                    // If the length is > 0, we assume that the file completed transfer... (very problematic), but unless
+                    // told otherwise by BofA, not sure what else we can do here.
+                    if (thisFileOrigLength > 0 && FileProcessor.isValidFile(fileTuple._1)) {
+		      logger.info("SMART FILE CONSUMER (global):  File READY TO PROCESS " + d.toString)
+                      if (logger.isInfoEnabled) logger.info("SMART FILE CONSUMER (global):  File READY TO PROCESS " + d.toString)
+                      enQFile(fileTuple._1, FileProcessor.NOT_RECOVERY_SITUATION, d.lastModified)
                       bufferingQRemove(fileTuple._1)
+                    } else {
+                      // Here becayse either the file is sitll of len 0,or its deemed to be invalid.
+                      if (thisFileOrigLength == 0) {
+			val diff = System.currentTimeMillis - thisFileStarttime //d.lastModified
+			if (diff > bufferTimeout) {
+			  if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER (global): Detected that " + d.toString + " has been on the buffering queue longer then " + bufferTimeout / 1000 + " seconds - Cleaning up")
+			  moveFile(fileTuple._1) // This internally call fileCacheRemove
+			  bufferingQRemove(fileTuple._1)
+			}
+                      } else {
+			//Invalid File - due to content type
+			logger.error("SMART FILE CONSUMER (global): Moving out " + fileTuple._1 + " with invalid file type ")
+			moveFile(fileTuple._1) // This internally call fileCacheRemove
+			bufferingQRemove(fileTuple._1)
+                      }
                     }
-                  } else {
-                    //Invalid File - due to content type
-                    logger.error("SMART FILE CONSUMER (global): Moving out " + fileTuple._1 + " with invalid file type ")
-                    moveFile(fileTuple._1) // This internally call fileCacheRemove
-                    bufferingQRemove(fileTuple._1)
-                  }
-                }
-              } else {
-                bufferingQLock.synchronized {
-                  bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures)
-                }
+		  } else {
+                    bufferingQLock.synchronized {
+                      bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures)
+                    }
+		  }
+		} else {
+		  // File System is not accessible.. issue a warning and go on to the next file.
+		  if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER (global): File on the buffering Q is not found " + fileTuple._1 + ", Removing from the buffering queue")
+		  fileCacheRemove(fileTuple._1) // No moveFile. So, we must need this.
+		  bufferingQRemove(fileTuple._1)
+		}
+              } catch {
+		case ioe: IOException => {
+		  thisFileFailures += 1
+		  if ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors) {
+                    if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER (global): Detected that a stuck file " + fileTuple._1 + " on the buffering queue", ioe)
+                    try {
+                      moveFile(fileTuple._1)
+                      bufferingQRemove(fileTuple._1)
+                    } catch {
+                      case e: Throwable => {
+			logger.error("SMART_FILE_CONSUMER: Failed to move file, retyring", e)
+                      }
+                    }
+		  } else {
+                    // Lock this before update
+                    bufferingQLock.synchronized {
+                      bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures)
+                    }
+                    if (logger.isWarnEnabled) logger.warn("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue for file " + fileTuple._1, ioe)
+		  }
+		}
+		case e: Throwable => {
+		  thisFileFailures += 1
+		  if ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors) {
+                    logger.error("SMART FILE CONSUMER (global): Detected that a stuck file " + fileTuple._1 + " on the buffering queue", e)
+                    try {
+                      moveFile(fileTuple._1)
+                      bufferingQRemove(fileTuple._1)
+                    } catch {
+                      case e: Throwable => {
+			logger.error("SMART_FILE_CONSUMER: Failed to move file, retyring", e)
+                      }
+                    }
+		  } else {
+                    bufferingQLock.synchronized {
+                      bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures)
+                    }
+                    logger.error("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue ", e)
+		  }
+		}
               }
-            } else {
-              // File System is not accessible.. issue a warning and go on to the next file.
-              if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER (global): File on the buffering Q is not found " + fileTuple._1 + ", Removing from the buffering queue")
-              fileCacheRemove(fileTuple._1) // No moveFile. So, we must need this.
-              bufferingQRemove(fileTuple._1)
-            }
-          } catch {
-            case ioe: IOException => {
-              thisFileFailures += 1
-              if ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors) {
-                if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER (global): Detected that a stuck file " + fileTuple._1 + " on the buffering queue", ioe)
-                try {
-                  moveFile(fileTuple._1)
-                  bufferingQRemove(fileTuple._1)
-                } catch {
-                  case e: Throwable => {
-                    logger.error("SMART_FILE_CONSUMER: Failed to move file, retyring", e)
-                  }
-                }
-              } else {
-                // Lock this before update
-                bufferingQLock.synchronized {
-                  bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures)
-                }
-                if (logger.isWarnEnabled) logger.warn("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue for file " + fileTuple._1, ioe)
-              }
-            }
-            case e: Throwable => {
-              thisFileFailures += 1
-              if ((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors) {
-                logger.error("SMART FILE CONSUMER (global): Detected that a stuck file " + fileTuple._1 + " on the buffering queue", e)
-                try {
-                  moveFile(fileTuple._1)
-                  bufferingQRemove(fileTuple._1)
-                } catch {
-                  case e: Throwable => {
-                    logger.error("SMART_FILE_CONSUMER: Failed to move file, retyring", e)
-                  }
-                }
-              } else {
-                bufferingQLock.synchronized {
-                  bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures)
-                }
-                logger.error("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue ", e)
-              }
-            }
-          }
 
-        })
+            })
+	  }
+	  // Give all the files a 1 second to add a few bytes to the contents
+	  //TODO C&S - make it to parameter
+	  Thread.sleep(refreshRate)
+	}
       }
-      // Give all the files a 1 second to add a few bytes to the contents
-      //TODO C&S - make it to parameter
-      Thread.sleep(refreshRate)
     }
   }
 
@@ -1254,7 +1271,7 @@ object FileProcessor {
     pcbw.Init(zkConnectStr,zkLeaderPath,zkSessionTimeOut,zkConnectionTimeOut);
   }
    
-  private def AcquireLock() : Unit = {
+  def AcquireLock() : Unit = {
     try{
       if( ! isLockAcquired ){
 	logger.info("Acquiring the lock ..");
@@ -1270,7 +1287,7 @@ object FileProcessor {
     }
   }
    
-  private def ReleaseLock() : Unit = {
+  def ReleaseLock() : Unit = {
     if( isLockAcquired ){
       logger.info("Releasing the lock ..");
       pcbw.Release();
@@ -1337,13 +1354,25 @@ object FileProcessor {
   }
 }
 
+class FileProcessorThread(val flProcessor: FileProcessor) extends Runnable {
+  override def run() = {
+    try {
+      if (flProcessor != null)
+        flProcessor.run()
+    } catch {
+      case e: Throwable => {
+
+      }
+    }
+  }
+}
+
 /**
   *
   * @param path
   * @param partitionId
   */
-//class FileProcessor(val path: Path, val partitionId: Int) extends Runnable {
-class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends Runnable {
+class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
 
   private var kml: KafkaMessageLoader = null
   private var zkc: CuratorFramework = null
@@ -1353,6 +1382,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
 
   //val inMemoryBuffersCntr = new java.util.concurrent.atomic.AtomicLong()
 
+  var stillConsuming = true
   var isConsuming = true
   var isProducing = true
 
@@ -1832,10 +1862,16 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
     try {
       FileProcessor.testFailure("TEST EXCEPTION... Doing a BIS")
 
-      if (isCompressed(fileName)) {
-        bis = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(fileName))))
-      } else {
-        bis = new BufferedReader(new InputStreamReader(new FileInputStream(fileName)))
+      if (Files.exists(Paths.get(fileName)) && (Paths.get(fileName).toFile().length() > 0)) {
+	if (isCompressed(fileName)) {
+          bis = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(fileName))))
+	} else {
+          bis = new BufferedReader(new InputStreamReader(new FileInputStream(fileName)))
+	}
+      }
+      else{
+	logger.warn("The compressed file " + fileName + " nolonger exists..")
+	return
       }
     } catch {
       // Ok, sooo if the file is not Found, either someone moved the file manually, or this specific destination is not reachable..
@@ -1872,7 +1908,8 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
     do {
       waitedCntr = 0
       val st = System.currentTimeMillis
-      //while ((BufferCounters.inMemoryBuffersCntr.get * 2 + partitionSelectionNumber + 2) * maxlen * 2 > maxBufAllowed) { // One counter for bufferQ and one for msgQ and also taken concurrentKafkaJobsRunning and 2 extra in memory
+      //while ((BufferCounters.inMemoryBuffersCntr.get * 2 + partitionSelectionNumber + 2) * maxlen * 2 > maxBufAllowed) 
+      // One counter for bufferQ and one for msgQ and also taken concurrentKafkaJobsRunning and 2 extra in memory
       while ((bufferQ.size + msgQ.size) >= bufferLimit) {
         if (waitedCntr == 0) {
           if (logger.isWarnEnabled) logger.warn("SMART FILE ADDAPTER (" + partitionId + ") : current size:%d (bufferQ:%d + msgQ:%d) exceed the MAX number of %d buffers. Halting for a free slot".format(bufferQ.size + msgQ.size, bufferQ.size, msgQ.size, bufferLimit))
@@ -1970,7 +2007,6 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
       } else {
         Thread.sleep(100)
       }
-
     }
     // Done with this file... mark is as closed
     try {
@@ -1987,27 +2023,15 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
         if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER: Check to make sure the input directory does not still contain this file " + e)
       }
     }
-
   }
-
   /**
     * This is the "FILE CONSUMER"
     */
   private def doSomeConsuming(): Unit = {
-    while (isConsuming) {
+    while (isConsuming && stillConsuming) {
 
       var curTimeStart: Long = 0
       var curTimeEnd: Long = 0
-
-      val curIsThisNodeToProcess = FileProcessor.pcbw.IsThisNodeToProcess();
-      if( curIsThisNodeToProcess ){
-	if( ! FileProcessor.prevIsThisNodeToProcess ) { // status flipped from false to true
-	  FileProcessor.AcquireLock();
-	  FileProcessor.prevIsThisNodeToProcess = curIsThisNodeToProcess;
-	}
-	else{
-	  FileProcessor.prevIsThisNodeToProcess = true;
-	}
 
 	val fileToProcess = FileProcessor.deQFile
 	if (fileToProcess == null) {
@@ -2034,13 +2058,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
           }
           curTimeEnd = System.currentTimeMillis
 	}
-      }
-      else{
-	if( FileProcessor.prevIsThisNodeToProcess ) { // status flipped from true to false
-	  FileProcessor.ReleaseLock();
-	  FileProcessor.prevIsThisNodeToProcess = curIsThisNodeToProcess;
-	}
-      }
+        stillConsuming = FileProcessor.pcbw.IsThisNodeToProcess()
     }
   }
 
@@ -2048,10 +2066,13 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
     * This is a "PUSHER" file.
     */
   private def doSomePushing(): Unit = {
-    while (isProducing) {
+    var contunueToWork = true
+    while (isProducing && contunueToWork) {
       var msg = deQMsg
       if (msg == null) {
-        Thread.sleep(250)
+        contunueToWork = stillConsuming
+        if (contunueToWork)
+          Thread.sleep(250)
       } else {
         kml.pushData(msg)
         msg = null
@@ -2063,7 +2084,10 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
   /**
     * The main directory watching thread
     */
-  override def run(): Unit = {
+  def run(): Unit = {
+    stillConsuming = true
+    isConsuming = true
+    isProducing = true
     // Initialize and launch the File Processor thread(s), and kafka producers
     fileConsumers.execute(new Runnable() {
       override def run() = {
@@ -2144,7 +2168,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
   /**
     *
     */
-  private def shutdown: Unit = {
+  def shutdown: Unit = {
     FileProcessor.shutdownInputWatchers
     isConsuming = false
     isProducing = false
@@ -2157,6 +2181,4 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
       zkc.close
     Thread.sleep(2000)
   }
-
-
 }

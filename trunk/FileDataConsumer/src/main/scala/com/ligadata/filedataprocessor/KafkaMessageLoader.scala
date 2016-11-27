@@ -299,7 +299,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
    */
   def pushData(messages: Array[KafkaMessage]): Unit = {
     // First, if we are handling failover, then the messages could be of size 0.
-    logger.debug("SMART FILE CONSUMER **** processing chunk of " + messages.size + " messages")
+    logger.info("SMART FILE CONSUMER **** processing chunk of " + messages.size + " messages")
     if (messages.size == 0) return
 
     // If we start processing a new file, then mark so in the zk.
@@ -429,6 +429,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
     })
 
     // Write to kafka
+    logger.info("KafkaMessageLoader: pushData: Sending " + numberOfValidEvents)
     if (isLast)
       sendToKafka(keyMessages, "msgPush1", numberOfValidEvents)
     else
@@ -441,7 +442,6 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
       //val fileTokens = fileBeingProcessed.split("/")
       //FileProcessor.addToZK(fileTokens(fileTokens.size - 1), numberOfValidEvents)
       FileProcessor.addToZK(fileBeingProcessed, numberOfValidEvents)
-      
     } else {
       // output the status message to the KAFAKA_STATUS_TOPIC
       writeStatusMsg(fileBeingProcessed, true)
@@ -477,6 +477,9 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
       var isFullySent = false
       var isRetry = false
       var failedPush = 0
+
+      logger.info("Sending " + messages.size + " messages to kafka ...")
+      
 
       while (!isFullySent) {
         if (isRetry) {
@@ -592,10 +595,15 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
 
       if(isResultOfCorruption) writeStatusMsg(fileName, true)
 
-      //Take care of multiple directories
-      logger.info("SMART FILE CONSUMER ("+partIdx+") Moving File" + fileName + " to " + inConfiguration(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO))
-      FileProcessor.executeCallWithElapsed(Files.move(Paths.get(fileName), Paths.get( inConfiguration(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO) + "/" + fileStruct(fileStruct.size - 1)),REPLACE_EXISTING),"Moving file " + fileName)
-      
+      if (Files.exists(Paths.get(fileName)) && (Paths.get(fileName).toFile().length() > 0)) {
+	//Take care of multiple directories
+	logger.info("SMART FILE CONSUMER ("+partIdx+") Moving File" + fileName + " to " + inConfiguration(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO))
+	FileProcessor.executeCallWithElapsed(Files.move(Paths.get(fileName), Paths.get( inConfiguration(SmartFileAdapterConstants.DIRECTORY_TO_MOVE_TO) + "/" + fileStruct(fileStruct.size - 1)),REPLACE_EXISTING),"Moving file " + fileName)
+      }
+      else{
+        logger.warn("SMART FILE CONSUMER (global): " + fileName + " may have been already moved ")
+      }
+
       //Use the full filename
       FileProcessor.removeFromZK(fileName)
       FileProcessor.markFileProcessingEnd(fileName)
