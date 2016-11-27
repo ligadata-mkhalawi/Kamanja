@@ -64,7 +64,10 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
     //val dstFileToArchive =  partitionFormatString.format(values: _*) + "/" + srcFileBaseName
 
     val dstDirToArchiveBase =
-      if(adapterConfig.archiveConfig.createDirPerLocation) {
+      if(locationInfo != null && locationInfo.archiveRelativePath != null && locationInfo.archiveRelativePath.length > 0){
+        adapterConfig.archiveConfig.outputConfig.uri + "/" + locationInfo.archiveRelativePath
+      }
+      else if(adapterConfig.archiveConfig.createDirPerLocation) {
         val srcDirStruct = locationInfo.srcDir.split("/")
         val srcDirOnly = srcDirStruct(srcDirStruct.length - 1) //last part of src dir
         partitionFormatString.format(values: _*) + "/" +  srcDirOnly
@@ -421,6 +424,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
 
         val expectedFileSize = archiveDirStatus.originalMemoryStream.size()
         //dump archive
+        logger.info("Archiver - dumping in memory data from dir {} to file {}", archiveDirStatus.dir, archiveDirStatus.destFileFullPath)
         val diskOutputStream = openStream(archiveDirStatus.destFileFullPath)
         archiveDirStatus.originalMemoryStream.writeTo(diskOutputStream)
         diskOutputStream.close()

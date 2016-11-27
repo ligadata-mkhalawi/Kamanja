@@ -542,11 +542,13 @@ class SftpFileHandler extends SmartFileHandler{
       val startTm = System.nanoTime
       val children = channelSftp.ls(path).iterator()
 
-      for (child <- children) {
-        val monitoredFile = makeFileEntry(child, path)
-        if(monitoredFile != null) {
-          if(monitoredFile.isDirectory) currentDirectDirs.append(monitoredFile)
-          else currentDirectFiles.append(monitoredFile)
+      if(children != null) {
+        for (child <- children) {
+          val monitoredFile = makeFileEntry(child, path)
+          if (monitoredFile != null) {
+            if (monitoredFile.isDirectory) currentDirectDirs.append(monitoredFile)
+            else currentDirectFiles.append(monitoredFile)
+          }
         }
       }
 
