@@ -1100,6 +1100,13 @@ object FileProcessor {
         fileDirectoryWatchers.shutdownNow()
         globalFileMonitorService.shutdownNow()
       }
+    } finally {
+      isMontoringDirectories = false
+      fileDirectoryWatchers.shutdownNow()
+      globalFileMonitorService.shutdownNow()
+      if (zkc != null)
+        zkc.close
+      zkc = null
     }
   }
 
