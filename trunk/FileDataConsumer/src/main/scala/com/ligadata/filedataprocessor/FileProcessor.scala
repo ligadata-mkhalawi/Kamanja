@@ -1296,7 +1296,7 @@ object FileProcessor {
     }
   }
 
-  private def PriorityNodeSetup(config: scala.collection.mutable.Map[String, String]): Unit = {
+  def PriorityNodeSetup(config: scala.collection.mutable.Map[String, String]): Unit = {
     logger.info("Setup for node failure events..");
     val zkConnectStr = config.getOrElse(SmartFileAdapterConstants.ZOOKEEPER_CONNECT, null);
     if (zkConnectStr == null || zkConnectStr.length() == 0) {
@@ -1551,7 +1551,6 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
 
       FileProcessor.setProperties(props, path)
       FileProcessor.startGlobalFileMonitor
-      FileProcessor.PriorityNodeSetup(props)
 
       if (logger.isInfoEnabled) logger.info("SMART_FILE_CONSUMER (" + partitionId + ") Initializing Kafka loading process")
       // Initialize threads

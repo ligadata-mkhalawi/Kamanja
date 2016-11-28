@@ -169,6 +169,7 @@ object LocationWatcher extends Observer {
     }
 
     var watchThreads: ExecutorService = scala.actors.threadpool.Executors.newFixedThreadPool(numberOfProcessors + 1)
+    FileProcessor.PriorityNodeSetup(properties)
 
     while (!shutdown) {
       val curIsThisNodeToProcess = FileProcessor.pcbw.IsThisNodeToProcess();
