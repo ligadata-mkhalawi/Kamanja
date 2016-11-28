@@ -59,7 +59,12 @@ class ProcessComponentByWeight(val componentName: String, val nodeIdPrefix: Stri
 
   def Init(zkConnectString: String, zkNodePath: String, zkSessionTimeoutMs: Int, zkConnectionTimeoutMs: Int): Unit = {
     _zkConnectString = zkConnectString
-    _zkNodePath = zkNodePath
+    var zPath = zkNodePath.trim()
+    val cName = componentName.trim.replaceAll(" ", "_").replaceAll("\t", "_").replaceAll("\n", "_")
+    if (zPath.length > 0 && zPath.charAt(zPath.length - 1) == '/')
+      _zkNodePath = zPath + cName
+    else
+      _zkNodePath = zPath + "/" + cName
     _zkSessionTimeoutMs = zkSessionTimeoutMs
     _zkConnectionTimeoutMs = zkConnectionTimeoutMs
 
