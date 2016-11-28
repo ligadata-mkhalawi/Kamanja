@@ -480,7 +480,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
       logger.info("Sending " + messages.size + " messages to kafka ...")
 
 
-      while (!isFullySent) {
+      while (!LocationWatcher.shutdown && !isFullySent) {
         if (isRetry) {
           Thread.sleep(getCurrentSleepTimer)
         }

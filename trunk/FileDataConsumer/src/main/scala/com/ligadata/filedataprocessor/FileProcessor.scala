@@ -259,7 +259,7 @@ object FileProcessor {
     var client: CuratorFramework = null
     zkRecoveryLock.synchronized {
       var isSuccess = false
-      while (!isSuccess) {
+      while (!LocationWatcher.shutdown && !isSuccess) {
         try {
           client = executeCallWithElapsed(CreateClient.createSimple(zkcConnectString), "Create ZK Client Connection")
           isSuccess = true
@@ -284,7 +284,7 @@ object FileProcessor {
 
   private def deleteData(zkPath: String): Unit = {
     var isSuccess = false
-    while (!isSuccess) {
+    while (!LocationWatcher.shutdown && !isSuccess) {
       try {
         if (doNodesExist(zkPath)) {
           executeCallWithElapsed(zkc.delete.forPath(zkPath), "Delete Data for path " + zkPath)
@@ -310,7 +310,7 @@ object FileProcessor {
   private def getData(zkPath: String): Array[Byte] = {
     var isSuccess = false
     var data: Array[Byte] = Array[Byte]()
-    while (!isSuccess) {
+    while (!LocationWatcher.shutdown && !isSuccess) {
       try {
         if (doNodesExist(zkPath)) {
           data = executeCallWithElapsed(zkc.getData.forPath(zkPath), "Get ZK Data for path " + zkPath)
@@ -336,7 +336,7 @@ object FileProcessor {
 
   private def setData(zkPath: String, data: Array[Byte]): Unit = {
     var isSuccess = false
-    while (!isSuccess) {
+    while (!LocationWatcher.shutdown && !isSuccess) {
       try {
         executeCallWithElapsed(zkc.setData().forPath(zkPath, data), "Set ZK Data for path" + zkPath)
         isSuccess = true
@@ -360,7 +360,7 @@ object FileProcessor {
   private def getNodes(zkPath: String): java.util.List[String] = {
     var data: java.util.List[String] = new java.util.ArrayList();
     var isSuccess = false
-    while (!isSuccess) {
+    while (!LocationWatcher.shutdown && !isSuccess) {
       try {
         if (doNodesExist(zkPath)) {
           data = executeCallWithElapsed(zkc.getChildren.forPath(zkPath), "Get ZK Children nodes for " + zkPath)
@@ -387,7 +387,7 @@ object FileProcessor {
   private def doNodesExist(zkPath: String): Boolean = {
     var isData: Boolean = true
     var isSuccess = false
-    while (!isSuccess) {
+    while (!LocationWatcher.shutdown && !isSuccess) {
       try {
         isData = true // just incae
         var retData = executeCallWithElapsed(zkc.checkExists().forPath(zkPath), "Check if ZK Node exists " + zkPath)
@@ -413,7 +413,7 @@ object FileProcessor {
 
   private def createNode(zkConnectString: String, zkPath: String): Unit = {
     var isSuccess = false
-    while (!isSuccess) {
+    while (!LocationWatcher.shutdown && !isSuccess) {
       try {
         executeCallWithElapsed(CreateClient.CreateNodeIfNotExists(zkcConnectString, zkPath), "Creating a ZK Node " + zkPath)
         isSuccess = true
@@ -685,7 +685,7 @@ object FileProcessor {
     // This guys will keep track of when to exgernalize a WARNING Message.  Since this loop really runs every second,
     // we want to throttle the warning messages.
     var specialWarnCounter: Int = 1
-    while (!LocationWatcher.shutdown && FileProcessor.pcbw != null && FileProcessor.pcbw.IsThisNodeToProcess()) {
+    while (!LocationWatcher.shutdown) {
       try {
         // Scan all the files that we are buffering, if there is not difference in their file size.. move them onto
         // the FileQ, they are ready to process.
@@ -788,14 +788,14 @@ object FileProcessor {
 
             })
           }
-          // Give all the files a 1 second to add a few bytes to the contents
-          //TODO C&S - make it to parameter
-          try {
-            Thread.sleep(refreshRate)
-          } catch {
-            case e: Throwable => {
-              logger.warn("SMART_FILE_CONSUMER: Thread sleep exception", e)
-            }
+        }
+        // Give all the files a 1 second to add a few bytes to the contents
+        //TODO C&S - make it to parameter
+        try {
+          Thread.sleep(refreshRate)
+        } catch {
+          case e: Throwable => {
+            logger.warn("SMART_FILE_CONSUMER: Thread sleep exception", e)
           }
         }
       } catch {
@@ -1093,6 +1093,7 @@ object FileProcessor {
 
       // On the way out...  clean up.
       fileDirectoryWatchers.shutdownNow()
+      globalFileMonitorService.shutdownNow()
       if (zkc != null)
         zkc.close
       zkc = null
@@ -1241,7 +1242,7 @@ object FileProcessor {
     var returnMap: Map[String, FileStatus] = Map[String, FileStatus]()
     activeFilesLock.synchronized {
       val iter = activeFiles.iterator
-      while (iter.hasNext) {
+      while (!LocationWatcher.shutdown && iter.hasNext) {
         var file = iter.next
         val cStatus = file._2
         if (cStatus.status == fileType) {
@@ -1737,7 +1738,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
             var isIncompleteLefovers = false
 
             // wait for the previous buffer to be processed..  first buffer in line will skip this.
-            while (!foundRelatedLeftovers && buffer.chunkNumber != 0) {
+            while (!foundRelatedLeftovers && buffer.chunkNumber != 0 && !LocationWatcher.shutdown) {
               myLeftovers = getLeftovers(beeNumber)
               if (myLeftovers.relatedChunk == (buffer.chunkNumber - 1)) {
                 // Leftovers from a prevous buffers, incorporate it to into the these messages
@@ -1956,7 +1957,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
       val st = System.currentTimeMillis
       //while ((BufferCounters.inMemoryBuffersCntr.get * 2 + partitionSelectionNumber + 2) * maxlen * 2 > maxBufAllowed) 
       // One counter for bufferQ and one for msgQ and also taken concurrentKafkaJobsRunning and 2 extra in memory
-      while ((bufferQ.size + msgQ.size) >= bufferLimit) {
+      while (!LocationWatcher.shutdown && (bufferQ.size + msgQ.size) >= bufferLimit) {
         if (waitedCntr == 0) {
           if (logger.isWarnEnabled) logger.warn("SMART FILE ADDAPTER (" + partitionId + ") : current size:%d (bufferQ:%d + msgQ:%d) exceed the MAX number of %d buffers. Halting for a free slot".format(bufferQ.size + msgQ.size, bufferQ.size, msgQ.size, bufferLimit))
         }
@@ -1977,7 +1978,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
         enQBuffer(BufferToChunk) // ????????? TODO, is this needed?????
         chunkNumber += 1
         foundIssue = true
-      } else {
+      } else if (!LocationWatcher.shutdown) {
         var isLastChunk = false // Initialize
         try {
           readlen = 0
@@ -1991,7 +1992,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
             readlen = curReadLen
           val minBuf = maxlen / 3; // We are expecting at least 1/3 of the buffer need to fill before
 
-          while (readlen < minBuf && curReadLen > 0) {
+          while (!LocationWatcher.shutdown && readlen < minBuf && curReadLen > 0) {
             // Re-reading some more data
             curReadLen = bis.read(buffer, readlen, maxlen - readlen - 1)
             if (curReadLen > 0)
@@ -2023,13 +2024,13 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
           }
         }
       }
-    } while (readlen > 0 && !foundIssue)
+    } while (readlen > 0 && !foundIssue && !LocationWatcher.shutdown)
 
     // Pass the leftovers..  - some may have been left by the last chunkBuffer... nothing else will pick it up...
     // make it a KamfkaMessage buffer.
     var myLeftovers: BufferLeftoversArea = null
     var foundRelatedLeftovers = false
-    while (!foundRelatedLeftovers) {
+    while (!foundRelatedLeftovers && !LocationWatcher.shutdown) {
       myLeftovers = getLeftovers(FileProcessor.DEBUG_MAIN_CONSUMER_THREAD_ACTION)
       // if this is for the last chunk written...
       if (myLeftovers.relatedChunk == (chunkNumber - 1)) {
@@ -2217,6 +2218,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
     */
   def shutdown: Unit = {
     FileProcessor.shutdownInputWatchers
+    FileProcessor.scheduledThreadPool.shutdownNow()
     isConsuming = false
     isProducing = false
     stillConsuming = false
@@ -2224,6 +2226,12 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
     if (fileConsumers != null) {
       fileConsumers.shutdown()
     }
+    fileConsumers = null
+
+    if (workerBees != null)
+      workerBees.shutdownNow()
+    workerBees = null
+
     MetadataAPIImpl.shutdown
     if (zkc != null)
       zkc.close
