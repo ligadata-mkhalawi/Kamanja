@@ -788,7 +788,13 @@ object FileProcessor {
           }
           // Give all the files a 1 second to add a few bytes to the contents
           //TODO C&S - make it to parameter
-          Thread.sleep(refreshRate)
+          try {
+            Thread.sleep(refreshRate)
+          } catch {
+            case e: Throwable => {
+              logger.warn("SMART_FILE_CONSUMER: Thread sleep exception", e)
+            }
+          }
         }
       }
     }
