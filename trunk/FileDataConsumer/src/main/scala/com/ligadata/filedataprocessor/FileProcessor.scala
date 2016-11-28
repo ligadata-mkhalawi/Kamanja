@@ -673,7 +673,7 @@ object FileProcessor {
     // This guys will keep track of when to exgernalize a WARNING Message.  Since this loop really runs every second,
     // we want to throttle the warning messages.
     var specialWarnCounter: Int = 1
-    while (!LocationWatcher.shutdown) {
+    while (true /* !LocationWatcher.shutdown */) {
       // Scan all the files that we are buffering, if there is not difference in their file size.. move them onto
       // the FileQ, they are ready to process.
       breakable {
@@ -945,7 +945,7 @@ object FileProcessor {
 
               fileToRecover = URLDecoder.decode(fileToReprocess.asInstanceOf[String], "UTF-8")
               var isFailedFileReprocessed = false
-              while (!isFailedFileReprocessed && !LocationWatcher.shutdown)
+              while (!isFailedFileReprocessed /* && !LocationWatcher.shutdown */)
                 try {
                   if (Files.exists(Paths.get(fileToRecover)) &&
                     !checkIfFileBeingProcessed(fileToRecover)) {
@@ -989,7 +989,7 @@ object FileProcessor {
                       Thread.sleep(500)
                     } catch {
                       case ie: InterruptedException => {
-                        if (!LocationWatcher.shutdown)
+                        // if (!LocationWatcher.shutdown)
                           throw ie
                       }
                     }
@@ -1018,14 +1018,14 @@ object FileProcessor {
             var errorWaitTime = 1000
             val dirThreadNumber: Int = dirNumber.getAndIncrement()
             val directorToWatch = dirArray(dirThreadNumber)
-            while (isMontoringDirectories && !LocationWatcher.shutdown) {
+            while (isMontoringDirectories /* && !LocationWatcher.shutdown */) {
               try {
                 if (logger.isDebugEnabled) logger.debug("\n " + dirThreadNumber + " = Watching directory " + directorToWatch + "\n")
 
                 // This is a throttle point.. will sleep in here until the number of file on an active queue drop below
                 // a treshhold..
                 var isfileProcessorBusy = if (FileProcessor.getFileQSize < FILE_Q_FULL_CONDITION) false else true
-                while (isfileProcessorBusy && !LocationWatcher.shutdown) {
+                while (isfileProcessorBusy /* && !LocationWatcher.shutdown */) {
                   try {
                     if (logger.isDebugEnabled) logger.debug("Too many files on the active queue... throttling to let File Processor threads catch up.  Sleep for " + (refreshRate / 3) + " ms")
                     Thread.sleep(refreshRate / 3)
@@ -1033,7 +1033,7 @@ object FileProcessor {
                     case e: InterruptedException => {
                       isMontoringDirectories = false
                       logger.error("Reading of " + directorToWatch + " has been interrupted")
-                      if (!LocationWatcher.shutdown)
+                      // if (!LocationWatcher.shutdown)
                         throw e
                     }
                   }
@@ -1061,7 +1061,7 @@ object FileProcessor {
                 case e: InterruptedException => {
                   isMontoringDirectories = false
                   logger.error("Reading of " + directorToWatch + " has been interrupted")
-                  if (!LocationWatcher.shutdown)
+                  // if (!LocationWatcher.shutdown)
                     throw e
                 }
               }
@@ -1071,7 +1071,7 @@ object FileProcessor {
       }
 
       // Suspend and wait for the shutdown
-      while (isMontoringDirectories && !LocationWatcher.shutdown) {
+      while (isMontoringDirectories /* && !LocationWatcher.shutdown */) {
         try {
           Thread.sleep(refreshRate)
         } catch {
@@ -1120,7 +1120,7 @@ object FileProcessor {
 
     var afterErrorConditions = false
 
-    while (!LocationWatcher.shutdown) {
+    while (true /*!LocationWatcher.shutdown */) {
       var isWatchedFileSystemAccesible = true
       var isTargetFileSystemAccesible = true
       var d1: File = null
@@ -1625,7 +1625,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
 
 
     // basically, keep running until shutdown.
-    while (isConsuming && !LocationWatcher.shutdown) {
+    while (isConsuming /* && !LocationWatcher.shutdown */) {
       // Try to get a new file to process.
       buffer = deQBuffer(beeNumber)
 
