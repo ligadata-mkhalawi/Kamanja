@@ -650,6 +650,15 @@ object FileProcessor {
     }
   }
 
+  def removeBufferedFilesAndEnqedFiles(): Unit = {
+    bufferingQLock.synchronized {
+      bufferingQ_map.clear
+    }
+    fileQLock.synchronized {
+      fileQ.clear
+    }
+  }
+
   private def enQBufferedFile(file: String): Unit = {
     bufferingQLock.synchronized {
       bufferingQ_map(file) = (0L, System.currentTimeMillis(), 0) // Initially, always set to 0.. this way we will ensure that it has time to be processed
