@@ -183,7 +183,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
 
   // create the producer object
   // val producer = new KafkaProducer[Array[Byte], Array[Byte]](new ProducerConfig(props))
-  val producer = new KafkaProducer[Array[Byte], Array[Byte]](props)
+  var producer = new KafkaProducer[Array[Byte], Array[Byte]](props)
   var numPartitionsForMainTopic = producer.partitionsFor(inConfiguration(SmartFileAdapterConstants.KAFKA_TOPIC))
 
   //  var delimiters = new DataDelimiters
@@ -931,10 +931,11 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
   /**
     *
     */
-  private def shutdown: Unit = {
+  def shutdown: Unit = {
     MetadataAPIImpl.shutdown
     if (producer != null)
       producer.close
+    producer = null
 
     Thread.sleep(2000)
   }
