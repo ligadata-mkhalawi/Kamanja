@@ -1,13 +1,10 @@
 package com.ligadata.filedataprocessor
 
-import java.io.{File, IOException, PrintWriter}
-import java.nio.file.{FileSystems, Path}
-import java.util.{Observable, Observer}
-
+import java.io.{IOException, File, PrintWriter}
+import java.nio.file.{Path, FileSystems}
 import com.ligadata.Exceptions.{InternalErrorException, MissingArgumentException}
-import org.apache.logging.log4j.{LogManager, Logger}
+import org.apache.logging.log4j.{Logger, LogManager}
 import com.ligadata.KamanjaVersion.KamanjaVersion
-
 import scala.collection.mutable.ArrayBuffer
 import scala.actors.threadpool.ExecutorService
 
@@ -18,30 +15,9 @@ class DirectoryListener {
 
 }
 
-object LocationWatcher extends Observer {
-  private class SignalHandler extends Observable with sun.misc.SignalHandler {
-    def handleSignal(signalName: String) {
-      sun.misc.Signal.handle(new sun.misc.Signal(signalName), this)
-    }
-
-    def handle(signal: sun.misc.Signal) {
-      setChanged()
-      notifyObservers(signal)
-    }
-  }
-
+object LocationWatcher {
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
-  var shutdown = false
-
-  def update(o: Observable, arg: AnyRef): Unit = {
-    val sig = arg.toString
-    logger.debug("Received signal: " + sig)
-    if (sig.compareToIgnoreCase("SIGTERM") == 0 || sig.compareToIgnoreCase("SIGINT") == 0 || sig.compareToIgnoreCase("SIGABRT") == 0) {
-      logger.warn("Got " + sig + " signal. Shutting down the process")
-      shutdown = true
-    }
-  }
 
   def main(args: Array[String]): Unit = {
 
@@ -154,29 +130,20 @@ object LocationWatcher extends Observer {
       }
     }
 
-    var sh: SignalHandler = null
-    try {
-      sh = new SignalHandler()
-      sh.addObserver(this)
-      sh.handleSignal("TERM")
-      sh.handleSignal("INT")
-      sh.handleSignal("ABRT")
-    } catch {
-      case e: Throwable => {
-        logger.error("Failed to add signal handler.", e)
-      }
-    }
 
     var watchThreads: ExecutorService = scala.actors.threadpool.Executors.newFixedThreadPool(numberOfProcessors + 1)
 
-    while (!shutdown) {
+    // BUGBUG:: How to come out of this while loop????? Kill -15 or CTRL + C should come out
+    while (true) {
       val curIsThisNodeToProcess = FileProcessor.pcbw.IsThisNodeToProcess();
       if (curIsThisNodeToProcess) {
         if (!FileProcessor.prevIsThisNodeToProcess) {
           // status flipped from false to true
           FileProcessor.AcquireLock();
-          // Cleanup all files from buffered queue & enqued files
-          FileProcessor.removeBufferedFilesAndEnqedFiles
+          // BUGBUG:: Cleanup all files also
+          FileProcessor.fileQLock.synchronized {
+            FileProcessor.fileQ.clear
+          }
           FileProcessor.prevIsThisNodeToProcess = curIsThisNodeToProcess;
         }
 
@@ -220,8 +187,6 @@ object LocationWatcher extends Observer {
             if (cntr % 30 == 0)
               logger.warn("SMART FILE CONSUMER:  Still waiting for threads to come out to release lock. Current counter:" + cntr)
           }
-          // Cleanup all files from buffered queue & enqued files
-          FileProcessor.removeBufferedFilesAndEnqedFiles
           // status flipped from true to false
           FileProcessor.ReleaseLock();
           FileProcessor.prevIsThisNodeToProcess = curIsThisNodeToProcess;
@@ -234,7 +199,7 @@ object LocationWatcher extends Observer {
       }
     }
 
-    // Release lock in case if it is holding
+    // BUGBUG:: Release lock in case if it is holding
     if (FileProcessor.prevIsThisNodeToProcess) {
       FileProcessor.ReleaseLock();
     }
@@ -251,6 +216,5 @@ object LocationWatcher extends Observer {
         }
       }
     }
-    FileProcessor.pcbw.Shutdown
   }
 }
