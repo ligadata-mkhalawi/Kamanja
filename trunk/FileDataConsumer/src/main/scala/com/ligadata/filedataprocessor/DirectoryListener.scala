@@ -19,6 +19,7 @@ class DirectoryListener {
 }
 
 object LocationWatcher extends Observer {
+
   private class SignalHandler extends Observable with sun.misc.SignalHandler {
     def handleSignal(signalName: String) {
       sun.misc.Signal.handle(new sun.misc.Signal(signalName), this)
@@ -177,6 +178,7 @@ object LocationWatcher extends Observer {
           FileProcessor.AcquireLock();
           // Cleanup all files from buffered queue & enqued files
           FileProcessor.removeBufferedFilesAndEnqedFiles
+          FileProcessor.isThisNodeReadyToProcess = true
           FileProcessor.prevIsThisNodeToProcess = curIsThisNodeToProcess;
 
           try {
@@ -206,6 +208,7 @@ object LocationWatcher extends Observer {
         }
       }
       else {
+        FileProcessor.isThisNodeReadyToProcess = false
         if (FileProcessor.prevIsThisNodeToProcess) {
           watchThreads.shutdown()
           // 1. Wait for all threads to come out
@@ -252,6 +255,7 @@ object LocationWatcher extends Observer {
         }
       }
     }
-    FileProcessor.pcbw.Shutdown
+    if (FileProcessor.pcbw != null)
+      FileProcessor.pcbw.Shutdown
   }
 }
