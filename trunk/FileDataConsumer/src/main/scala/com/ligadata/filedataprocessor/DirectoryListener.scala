@@ -243,6 +243,12 @@ object LocationWatcher extends Observer {
       FileProcessor.ReleaseLock();
     }
 
+    val pcbw = FileProcessor.pcbw
+    FileProcessor.pcbw = null
+    if (pcbw != null)
+      pcbw.Shutdown
+
+
     for (i <- 0 until numberOfProcessors) {
       try {
         processors(i).shutdown
@@ -255,7 +261,12 @@ object LocationWatcher extends Observer {
         }
       }
     }
-    if (FileProcessor.pcbw != null)
-      FileProcessor.pcbw.Shutdown
+
+    logger.warn("Waiting for final shutdown")
+    try {
+      Thread.sleep(1000)
+    } catch {
+      case e: Throwable => {}
+    }
   }
 }
