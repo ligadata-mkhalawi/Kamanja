@@ -1,10 +1,13 @@
 package com.ligadata.filedataprocessor
 
-import java.io.{IOException, File, PrintWriter}
-import java.nio.file.{Path, FileSystems}
+import java.io.{File, IOException, PrintWriter}
+import java.nio.file.{FileSystems, Path}
+import java.util.{Observable, Observer}
+
 import com.ligadata.Exceptions.{InternalErrorException, MissingArgumentException}
-import org.apache.logging.log4j.{Logger, LogManager}
+import org.apache.logging.log4j.{LogManager, Logger}
 import com.ligadata.KamanjaVersion.KamanjaVersion
+
 import scala.collection.mutable.ArrayBuffer
 import scala.actors.threadpool.ExecutorService
 
@@ -15,9 +18,30 @@ class DirectoryListener {
 
 }
 
-object LocationWatcher {
+object LocationWatcher extends Observer {
+  private class SignalHandler extends Observable with sun.misc.SignalHandler {
+    def handleSignal(signalName: String) {
+      sun.misc.Signal.handle(new sun.misc.Signal(signalName), this)
+    }
+
+    def handle(signal: sun.misc.Signal) {
+      setChanged()
+      notifyObservers(signal)
+    }
+  }
+
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
+  var shutdown = false
+
+  def update(o: Observable, arg: AnyRef): Unit = {
+    val sig = arg.toString
+    logger.debug("Received signal: " + sig)
+    if (sig.compareToIgnoreCase("SIGTERM") == 0 || sig.compareToIgnoreCase("SIGINT") == 0 || sig.compareToIgnoreCase("SIGABRT") == 0) {
+      logger.warn("Got " + sig + " signal. Shutting down the process")
+      shutdown = true
+    }
+  }
 
   def main(args: Array[String]): Unit = {
 
@@ -130,45 +154,54 @@ object LocationWatcher {
       }
     }
 
+    var sh: SignalHandler = null
+    try {
+      sh = new SignalHandler()
+      sh.addObserver(this)
+      sh.handleSignal("TERM")
+      sh.handleSignal("INT")
+      sh.handleSignal("ABRT")
+    } catch {
+      case e: Throwable => {
+        logger.error("Failed to add signal handler.", e)
+      }
+    }
 
     var watchThreads: ExecutorService = scala.actors.threadpool.Executors.newFixedThreadPool(numberOfProcessors + 1)
 
-    // BUGBUG:: How to come out of this while loop????? Kill -15 or CTRL + C should come out
-    while (true) {
+    while (!shutdown) {
       val curIsThisNodeToProcess = FileProcessor.pcbw.IsThisNodeToProcess();
       if (curIsThisNodeToProcess) {
         if (!FileProcessor.prevIsThisNodeToProcess) {
           // status flipped from false to true
           FileProcessor.AcquireLock();
-          // BUGBUG:: Cleanup all files also
-          FileProcessor.fileQLock.synchronized {
-            FileProcessor.fileQ.clear
-          }
+          // Cleanup all files from buffered queue & enqued files
+          FileProcessor.removeBufferedFilesAndEnqedFiles
           FileProcessor.prevIsThisNodeToProcess = curIsThisNodeToProcess;
-        }
 
-        try {
-          watchThreads = scala.actors.threadpool.Executors.newFixedThreadPool(numberOfProcessors + 1)
-          for (i <- 0 until numberOfProcessors) {
-            try {
-              watchThreads.execute(new FileProcessorThread(processors(i)))
-            } catch {
-              case e: Exception => {
-                logger.error("Failure", e)
-              }
-              case e: Throwable => {
-                logger.error("Failure", e)
+          try {
+            watchThreads = scala.actors.threadpool.Executors.newFixedThreadPool(numberOfProcessors + 1)
+            for (i <- 0 until numberOfProcessors) {
+              try {
+                watchThreads.execute(new FileProcessorThread(processors(i)))
+              } catch {
+                case e: Exception => {
+                  logger.error("Failure", e)
+                }
+                case e: Throwable => {
+                  logger.error("Failure", e)
+                }
               }
             }
-          }
-        } catch {
-          case e: Exception => {
-            logger.error("SMART FILE CONSUMER:  ERROR in starting SMART FILE CONSUMER ", e)
-            return
-          }
-          case e: Throwable => {
-            logger.error("SMART FILE CONSUMER:  ERROR in starting SMART FILE CONSUMER ", e)
-            return
+          } catch {
+            case e: Exception => {
+              logger.error("SMART FILE CONSUMER:  ERROR in starting SMART FILE CONSUMER ", e)
+              return
+            }
+            case e: Throwable => {
+              logger.error("SMART FILE CONSUMER:  ERROR in starting SMART FILE CONSUMER ", e)
+              return
+            }
           }
         }
       }
@@ -187,6 +220,8 @@ object LocationWatcher {
             if (cntr % 30 == 0)
               logger.warn("SMART FILE CONSUMER:  Still waiting for threads to come out to release lock. Current counter:" + cntr)
           }
+          // Cleanup all files from buffered queue & enqued files
+          FileProcessor.removeBufferedFilesAndEnqedFiles
           // status flipped from true to false
           FileProcessor.ReleaseLock();
           FileProcessor.prevIsThisNodeToProcess = curIsThisNodeToProcess;
@@ -199,7 +234,7 @@ object LocationWatcher {
       }
     }
 
-    // BUGBUG:: Release lock in case if it is holding
+    // Release lock in case if it is holding
     if (FileProcessor.prevIsThisNodeToProcess) {
       FileProcessor.ReleaseLock();
     }
@@ -216,5 +251,6 @@ object LocationWatcher {
         }
       }
     }
+    FileProcessor.pcbw.Shutdown
   }
 }
