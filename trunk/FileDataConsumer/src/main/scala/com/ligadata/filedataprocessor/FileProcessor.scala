@@ -673,7 +673,7 @@ object FileProcessor {
     // This guys will keep track of when to exgernalize a WARNING Message.  Since this loop really runs every second,
     // we want to throttle the warning messages.
     var specialWarnCounter: Int = 1
-    while (true) {
+    while (!LocationWatcher.shutdown) {
       // Scan all the files that we are buffering, if there is not difference in their file size.. move them onto
       // the FileQ, they are ready to process.
       breakable {
@@ -1062,7 +1062,7 @@ object FileProcessor {
       }
 
       // Suspend and wait for the shutdown
-      while (isMontoringDirectories) Thread.sleep(refreshRate)
+      while (isMontoringDirectories && !LocationWatcher.shutdown) Thread.sleep(refreshRate)
 
       // On the way out...  clean up.
       fileDirectoryWatchers.shutdownNow()
@@ -1095,7 +1095,7 @@ object FileProcessor {
 
     var afterErrorConditions = false
 
-    while (true) {
+    while (!LocationWatcher.shutdown) {
       var isWatchedFileSystemAccesible = true
       var isTargetFileSystemAccesible = true
       var d1: File = null
