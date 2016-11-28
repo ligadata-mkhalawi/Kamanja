@@ -251,5 +251,6 @@ object LocationWatcher extends Observer {
         }
       }
     }
+    FileProcessor.pcbw.Shutdown
   }
 }

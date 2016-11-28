@@ -939,7 +939,7 @@ object FileProcessor {
 
               fileToRecover = URLDecoder.decode(fileToReprocess.asInstanceOf[String], "UTF-8")
               var isFailedFileReprocessed = false
-              while (!isFailedFileReprocessed)
+              while (!isFailedFileReprocessed && !LocationWatcher.shutdown)
                 try {
                   if (Files.exists(Paths.get(fileToRecover)) &&
                     !checkIfFileBeingProcessed(fileToRecover)) {
@@ -983,7 +983,8 @@ object FileProcessor {
                       Thread.sleep(500)
                     } catch {
                       case ie: InterruptedException => {
-                        throw ie
+                        if (!LocationWatcher.shutdown)
+                          throw ie
                       }
                     }
 
@@ -1011,14 +1012,14 @@ object FileProcessor {
             var errorWaitTime = 1000
             val dirThreadNumber: Int = dirNumber.getAndIncrement()
             val directorToWatch = dirArray(dirThreadNumber)
-            while (isMontoringDirectories) {
+            while (isMontoringDirectories && !LocationWatcher.shutdown) {
               try {
                 if (logger.isDebugEnabled) logger.debug("\n " + dirThreadNumber + " = Watching directory " + directorToWatch + "\n")
 
                 // This is a throttle point.. will sleep in here until the number of file on an active queue drop below
                 // a treshhold..
                 var isfileProcessorBusy = if (FileProcessor.getFileQSize < FILE_Q_FULL_CONDITION) false else true
-                while (isfileProcessorBusy) {
+                while (isfileProcessorBusy && !LocationWatcher.shutdown) {
                   try {
                     if (logger.isDebugEnabled) logger.debug("Too many files on the active queue... throttling to let File Processor threads catch up.  Sleep for " + (refreshRate / 3) + " ms")
                     Thread.sleep(refreshRate / 3)
@@ -1026,7 +1027,8 @@ object FileProcessor {
                     case e: InterruptedException => {
                       isMontoringDirectories = false
                       logger.error("Reading of " + directorToWatch + " has been interrupted")
-                      throw e
+                      if (!LocationWatcher.shutdown)
+                        throw e
                     }
                   }
                   isfileProcessorBusy = if (FileProcessor.getFileQSize < FILE_Q_FULL_CONDITION) false else true
@@ -1053,7 +1055,8 @@ object FileProcessor {
                 case e: InterruptedException => {
                   isMontoringDirectories = false
                   logger.error("Reading of " + directorToWatch + " has been interrupted")
-                  throw e
+                  if (!LocationWatcher.shutdown)
+                    throw e
                 }
               }
             }
@@ -1062,12 +1065,21 @@ object FileProcessor {
       }
 
       // Suspend and wait for the shutdown
-      while (isMontoringDirectories && !LocationWatcher.shutdown) Thread.sleep(refreshRate)
+      while (isMontoringDirectories && !LocationWatcher.shutdown) {
+        try {
+          Thread.sleep(refreshRate)
+        } catch {
+          case e: Exception => {
+
+          }
+        }
+      }
 
       // On the way out...  clean up.
       fileDirectoryWatchers.shutdownNow()
       if (zkc != null)
         zkc.close
+      zkc = null
 
     } catch {
       case ie: InterruptedException => {
@@ -1600,7 +1612,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
 
 
     // basically, keep running until shutdown.
-    while (isConsuming) {
+    while (isConsuming && !LocationWatcher.shutdown) {
       // Try to get a new file to process.
       buffer = deQBuffer(beeNumber)
 
@@ -2183,6 +2195,10 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
     MetadataAPIImpl.shutdown
     if (zkc != null)
       zkc.close
+    zkc = null
+    if (kml != null)
+      kml.shutdown
+    kml = null
     Thread.sleep(2000)
   }
 }
