@@ -62,7 +62,7 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
   cp filter { jar => excludes(jar.data.getName) }
 }
 
-name := "OutputUtils"
+name := "KamanjaEndpointServices"
 
 scalacOptions := Seq("-unchecked", "-deprecation", "-encoding", "utf8")
 
