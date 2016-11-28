@@ -270,7 +270,8 @@ object FileProcessor {
               Thread.sleep(MAX_ZK_RETRY_MS)
             } catch {
               case e: InterruptedException => {
-                throw e
+                if (!LocationWatcher.shutdown)
+                  throw e
               }
             }
           }
@@ -296,7 +297,8 @@ object FileProcessor {
             zkc = getZkc(zkcConnectString)
           } catch {
             case e: InterruptedException => {
-              throw e
+              if (!LocationWatcher.shutdown)
+                throw e
             }
           }
         }
@@ -321,7 +323,8 @@ object FileProcessor {
             zkc = getZkc(zkcConnectString)
           } catch {
             case e: InterruptedException => {
-              throw e
+              if (!LocationWatcher.shutdown)
+                throw e
             }
           }
         }
@@ -344,7 +347,8 @@ object FileProcessor {
             zkc = getZkc(zkcConnectString)
           } catch {
             case e: InterruptedException => {
-              throw e
+              if (!LocationWatcher.shutdown)
+                throw e
             }
           }
         }
@@ -369,7 +373,8 @@ object FileProcessor {
             zkc = getZkc(zkcConnectString)
           } catch {
             case e: InterruptedException => {
-              throw e
+              if (!LocationWatcher.shutdown)
+                throw e
             }
           }
         }
@@ -395,7 +400,8 @@ object FileProcessor {
             zkc = getZkc(zkcConnectString)
           } catch {
             case e: InterruptedException => {
-              throw e
+              if (!LocationWatcher.shutdown)
+                throw e
             }
           }
         }
@@ -417,7 +423,8 @@ object FileProcessor {
             Thread.sleep(MAX_ZK_RETRY_MS)
           } catch {
             case e: InterruptedException => {
-              throw e
+              if (!LocationWatcher.shutdown)
+                throw e
             }
           }
         }
@@ -1212,11 +1219,17 @@ object FileProcessor {
           afterErrorConditions = true
           if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER (gloabal): Unable to access a watched directory, will try to shut it down and recreate")
         }
-        if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER (gloabal): File system is not accessible")
+        if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER (gloabal): File system is not accessible. targetMoveDir:" + targetMoveDir)
       }
-      Thread.sleep(HEALTHCHECK_TIMEOUT)
+      try {
+        Thread.sleep(HEALTHCHECK_TIMEOUT)
+      } catch {
+        case e: InterruptedException => {
+          if (!LocationWatcher.shutdown)
+            throw e
+        }
+      }
     }
-
   }
 
 
@@ -1379,7 +1392,8 @@ object FileProcessor {
             Thread.sleep(FileProcessor.RECOVERY_SLEEP_TIME)
           } catch {
             case e: InterruptedException => {
-              throw e
+              if (!LocationWatcher.shutdown)
+                throw e
             }
           }
         }
@@ -2057,7 +2071,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
     * This is the "FILE CONSUMER"
     */
   private def doSomeConsuming(): Unit = {
-    while (isConsuming && stillConsuming) {
+    while (isConsuming && stillConsuming && !LocationWatcher.shutdown) {
 
       var curTimeStart: Long = 0
       var curTimeEnd: Long = 0
@@ -2096,7 +2110,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
     */
   private def doSomePushing(): Unit = {
     var contunueToWork = true
-    while (isProducing && contunueToWork) {
+    while (isProducing && contunueToWork && !LocationWatcher.shutdown) {
       var msg = deQMsg
       if (msg == null) {
         contunueToWork = stillConsuming
@@ -2201,6 +2215,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) {
     FileProcessor.shutdownInputWatchers
     isConsuming = false
     isProducing = false
+    stillConsuming = false
 
     if (fileConsumers != null) {
       fileConsumers.shutdown()

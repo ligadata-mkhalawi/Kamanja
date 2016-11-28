@@ -236,6 +236,7 @@ object LocationWatcher extends Observer {
 
     // Release lock in case if it is holding
     if (FileProcessor.prevIsThisNodeToProcess) {
+      watchThreads.shutdownNow()
       FileProcessor.ReleaseLock();
     }
 
