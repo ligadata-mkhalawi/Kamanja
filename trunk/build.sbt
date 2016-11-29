@@ -133,7 +133,7 @@ lazy val GenerateMessage = project.in(file("Utils/GenerateMessage")).configs(Tes
 
 lazy val SimpleKafkaProducer = project.in(file("Utils/SimpleKafkaProducer")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, KafkaSimpleInputOutputAdapters, KafkaAdapters_v10, KafkaAdapters_v9, KafkaAdapters_v8, Exceptions)
 
-lazy val OutputUtils = project.in(file("Utils/OutputUtils")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(TestSettings.settings: _*).dependsOn(SaveContainerDataComponent % "provided", ZooKeeperLeaderLatch % "provided")
+lazy val OutputUtils = project.in(file("Utils/OutputUtils")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(TestSettings.settings: _*).dependsOn(ZooKeeperLeaderLatch % "provided")
 
 lazy val KVInit = project.in(file("Utils/KVInit")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, MetadataBootstrap, MetadataAPI, StorageManager, Exceptions, TransactionService)
 
