@@ -232,6 +232,8 @@ public class KafkaAdapter implements Observer {
             } else {
                 try {
                     if (adapter.prevIsThisNodeToProcess) { // status flipped from true to false
+                        // If adapter.shutdownTriggerCounter == 0 at this moment, just reset the counter at the end
+                        boolean canResetCounter = (adapter.shutdownTriggerCounter.get() == 0);
                         logger.info("Stopping before shutdown for switch to another node.");
                         adapter.stopBeforeShutdown();
                         logger.info("Sleeping 15000 ms before shutdown for switch to another node.");
@@ -251,6 +253,9 @@ public class KafkaAdapter implements Observer {
                         }
                         adapter.ReleaseLock();
                         adapter.prevIsThisNodeToProcess = curIsThisNodeToProcess;
+                        if (canResetCounter && adapter.shutdownTriggerCounter.get() > 0) {
+                            adapter.shutdownTriggerCounter.addAndGet(-1 * adapter.shutdownTriggerCounter.get());
+                        }
                     }
                 } catch (Exception e) {
                     logger.info("Main thread is interrupted.\n", e);
