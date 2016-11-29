@@ -22,6 +22,7 @@ public class KafkaAdapter implements Observer {
     private ArrayList<MessageConsumer> consumers;
     private ExecutorService executor;
     AtomicInteger shutdownTriggerCounter = new AtomicInteger(0);
+    boolean gotSignalToShutdown = false;
 
     private boolean prevIsThisNodeToProcess = false;
     private ProcessComponentByWeight pcbw;
@@ -39,6 +40,7 @@ public class KafkaAdapter implements Observer {
                 || sig.compareToIgnoreCase("SIGABRT") == 0) {
             logger.info("Got " + sig + " signal. Shutting down the process");
             shutdownTriggerCounter.incrementAndGet();
+            gotSignalToShutdown = true;
 //            shutdown();
 //            System.exit(0);
         }
@@ -212,7 +214,7 @@ public class KafkaAdapter implements Observer {
             System.exit(1);
         }
 
-        while (adapter.shutdownTriggerCounter.get() == 0) {
+        while (adapter.shutdownTriggerCounter.get() == 0 && !adapter.gotSignalToShutdown) {
             boolean curIsThisNodeToProcess = adapter.pcbw.IsThisNodeToProcess();
             if (curIsThisNodeToProcess) {
                 try {
