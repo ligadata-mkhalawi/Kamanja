@@ -70,6 +70,9 @@ class FileAdapterMonitoringConfig {
   var orderBy: Array[String] = Array.empty[String]
   var entireFileAsOneMessage = false
   var enableEmailAndAttachmentMode = false
+  var organizationName = ""
+  var checkFileTypes = true
+  var checkFileSize = true
 
   var enableMoving: String = "on"
 
@@ -77,6 +80,7 @@ class FileAdapterMonitoringConfig {
   def isMovingEnabled: Boolean = enableMoving == null || enableMoving.length == 0 || enableMoving.equalsIgnoreCase("on")
 
   val createInputStructureInTargetDirs = true
+
 }
 
 class Padding {
@@ -264,6 +268,12 @@ object SmartFileAdapterConfiguration {
       else if (kv._1.compareToIgnoreCase("EntireFileAsOneMessage") == 0) {
         monitoringConfig.entireFileAsOneMessage = kv._2.asInstanceOf[String].trim.toBoolean
       }
+      else if (kv._1.compareToIgnoreCase("CheckFileTypes") == 0) {
+        monitoringConfig.checkFileTypes = kv._2.asInstanceOf[String].trim.toBoolean
+      }
+      else if (kv._1.compareToIgnoreCase("CheckFileSize") == 0) {
+        monitoringConfig.checkFileSize = kv._2.asInstanceOf[String].trim.toBoolean
+      }
       else if (kv._1.compareToIgnoreCase("EnableEmailAndAttachmentMode") == 0) {
         monitoringConfig.enableEmailAndAttachmentMode = kv._2.asInstanceOf[String].trim.toBoolean
       }
@@ -272,6 +282,9 @@ object SmartFileAdapterConfiguration {
       }
       else if (kv._1.compareToIgnoreCase("TagDelimiter") == 0) {
         monitoringConfig.tagDelimiter = kv._2.asInstanceOf[String]
+      }
+      else if (kv._1.compareToIgnoreCase("OrganizationName") == 0) {
+        monitoringConfig.organizationName = kv._2.asInstanceOf[String]
       }
       else if (kv._1.compareToIgnoreCase("MsgTags") == 0) {
         monitoringConfig.msgTags = kv._2.asInstanceOf[List[String]].toArray

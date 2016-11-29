@@ -1,8 +1,9 @@
 package com.ligadata.ElasticsearchInputOutputAdapters
 
-import java.util.Arrays
+import java.text.SimpleDateFormat
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
+import java.util.{Arrays, Calendar}
 
 import com.ligadata.AdapterConfiguration.{ElasticsearchAdapterConfiguration, ElasticsearchConstants}
 import com.ligadata.HeartBeat.MonitorComponentInfo
@@ -15,6 +16,7 @@ import org.json4s.jackson.Serialization
 
 import scala.actors.threadpool.{ExecutorService, Executors}
 import scala.collection.mutable.ArrayBuffer
+import org.json.JSONObject;
 
 
 object ElasticsearchProducer extends OutputAdapterFactory {
@@ -170,6 +172,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     if (outputContainers.size == 0) return
 
     val dt = System.currentTimeMillis
+    var indexName = adapterConfig.TableName
     lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(dt))
     // Sanity checks
     if (isShutdown) {
@@ -178,10 +181,45 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       throw new Exception(szMsg)
     }
     val (outContainers, serializedContainerData, serializerNames) = serialize(tnxCtxt, outputContainers)
-    //    serializedContainerData.map(data => new String(data))
 
-    dataStore.putJson(adapterConfig.TableName, serializedContainerData.map(data => new String(data)))
-    // dataStore.put(tnxCtxt, data_list)
+    // check if we need the indexName to be change according to the current date
+    if (adapterConfig.rollIndexNameByCurrentDate) {
+      val dateFormat: SimpleDateFormat = new SimpleDateFormat("yyyyMMdd")
+      val currentDate = dateFormat.format(Calendar.getInstance().getTime())
+      indexName = indexName + "-" + currentDate
+    }
+
+    if (adapterConfig.rollIndexNameByDataDate) {
+      if (adapterConfig.dateFiledNameInOutputMessage.isEmpty) {
+        logger.error("Elasticsearch OutputAdapter : dateFiledNameInOutputMessage filed is empty")
+      } else {
+        val tmpData = serializedContainerData.map(data => new String(data))
+        tmpData.foreach(jsonData => {
+          try {
+            val jsonObj: JSONObject = new JSONObject(jsonData)
+            // assuming format is yyyy-MM-dd'T'hh:mm'Z'
+            val dateFiled: String = jsonObj.getString(adapterConfig.dateFiledNameInOutputMessage)
+            val dateFormatString: String = adapterConfig.dateFiledFormat
+            val sourceDateFormat: SimpleDateFormat = new SimpleDateFormat(dateFormatString)
+            val targetDateFormat: SimpleDateFormat = new SimpleDateFormat("yyyyMMdd")
+            val targetDate: String = targetDateFormat.format(sourceDateFormat.parse(dateFiled))
+
+            indexName = indexName + "-" + targetDate
+            //            dataStore.putJson(indexName, jsonData)
+          } catch {
+            case e => logger.error("Elasticsearch output adapter : error while retrieving date field from output message - " + e)
+          }
+        })
+      }
+    }
+
+    // check if we need to cteate the indexMapping beforehand.
+    if (adapterConfig.manuallyCreateIndexMapping) {
+      if ((adapterConfig.indexMapping.length > 0) && !dataStore.checkIndexExsists(indexName)) {
+        dataStore.createIndexForOutputAdapter(indexName, adapterConfig.indexMapping)
+      }
+    }
+    dataStore.putJsons(indexName, serializedContainerData.map(data => new String(data)))
   }
 
 
@@ -496,3 +534,4 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
 
 }
+

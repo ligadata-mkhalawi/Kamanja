@@ -28,6 +28,9 @@ import com.ligadata.Utils.KamanjaLoaderInfo
 import com.ligadata.kamanja.metadata.AdapterInfo
 import org.apache.commons.codec.binary.Base64
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
+import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse
+import org.elasticsearch.action.admin.indices.refresh.RefreshResponse
+import org.elasticsearch.client.IndicesAdminClient
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.common.transport.InetSocketTransportAddress
@@ -472,7 +475,54 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   }
 
 
-  def putJson(containerName: String, data_list: Array[(String)]): Unit = {
+  def checkIndexExsists(indexName: String): Boolean = {
+    var client: TransportClient = null
+    val fullIndexName = toFullTableName(indexName)
+    try {
+      client = getConnection
+
+      val indices: IndicesAdminClient = client.admin().indices()
+      val res: IndicesExistsResponse = indices.prepareExists(fullIndexName.toLowerCase).execute().actionGet()
+      if (res.isExists) {
+        return true
+      } else {
+        return false
+      }
+    } catch {
+      case e: Exception => {
+        throw CreateDDLException("Failed to check if Index exists " + fullIndexName, e)
+      }
+    } finally {
+      if (client != null) {
+        client.close
+      }
+    }
+  }
+
+
+  def createIndexForOutputAdapter(indexName: String, indexMapping: String): Unit = {
+    var client: TransportClient = null
+    val fullIndexName = toFullTableName(indexName)
+    try {
+      client = getConnection
+
+      val putMappingResponse = client.admin().indices().prepareCreate(fullIndexName)
+        .setSource(indexMapping)
+        .execute().actionGet()
+      val tmp: RefreshResponse = client.admin().indices().prepareRefresh(fullIndexName).get()
+    }
+    catch {
+      case e: Exception => {
+        throw CreateDDLException("Failed to create Index " + fullIndexName, e)
+      }
+    } finally {
+      if (client != null) {
+        client.close
+      }
+    }
+  }
+
+  def putJsons(containerName: String, data_list: Array[(String)]): Unit = {
     var client: TransportClient = null
     val tableName = toFullTableName(containerName)
     //    CheckTableExists(tableName)
@@ -480,11 +530,31 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       client = getConnection
       var bulkRequest = client.prepareBulk()
       data_list.foreach({ jsonData =>
-        // insert x to table tableName
         bulkRequest.add(client.prepareIndex(tableName, "type1").setSource(jsonData))
       })
-      logger.debug("Executing bulk insert...")
+      logger.debug("Executing bulk indexing...")
       val bulkResponse = bulkRequest.execute().actionGet()
+      //      client.admin().indices().prepareRefresh(tableName).get()
+    }
+    catch {
+      case e: Exception => {
+        throw CreateDMLException("Failed to save an object in the table " + tableName + ":", e)
+      }
+    } finally {
+      if (client != null) {
+        client.close
+      }
+    }
+  }
+
+  def putJson(containerName: String, dataJson: String): Unit = {
+    var client: TransportClient = null
+    val tableName = toFullTableName(containerName)
+    try {
+      client = getConnection
+      var bulkRequest = client.prepareBulk()
+      logger.debug("Executing index statement...")
+      val indexResponse = client.prepareIndex(tableName, "type1").setSource(dataJson).get()
     }
     catch {
       case e: Exception => {

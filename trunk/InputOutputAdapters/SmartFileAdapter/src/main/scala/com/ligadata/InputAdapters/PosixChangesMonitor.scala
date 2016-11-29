@@ -2,21 +2,15 @@ package com.ligadata.InputAdapters
 
 
 import java.io._
-import java.nio.file.Path
-import java.nio.file.Path
-import java.nio.file._
-import java.util
-import java.util.zip.GZIPInputStream
-import com.ligadata.Exceptions.{KamanjaException}
-import com.ligadata.InputOutputAdapterInfo.AdapterConfiguration
+import java.nio.file.{Path, _}
 
-import org.apache.logging.log4j.{ Logger, LogManager }
-
-import scala.actors.threadpool.{Executors, ExecutorService}
-import scala.collection.mutable.{MultiMap, ArrayBuffer, HashMap}
-import scala.util.control.Breaks._
 import com.ligadata.AdaptersConfiguration._
-import CompressionUtil._
+import com.ligadata.Exceptions.KamanjaException
+import org.apache.logging.log4j.LogManager
+
+import scala.actors.threadpool.{ExecutorService, Executors}
+import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.util.control.Breaks._
 
 /**
   * Created by Yasser on 1/14/2016.
@@ -433,7 +427,8 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
         validModifiedFiles.appendAll(newFiles)
 
       val newFileHandlers = validModifiedFiles.map(file => new PosixFileHandler(file.toString)).
-        sortWith(MonitorUtils.compareFiles(_,_,locationInfo) < 0).toArray
+        //sortWith(MonitorUtils.compareFiles(_,_,locationInfo) < 0).
+        toArray
       newFileHandlers.foreach(fileHandler =>{
         //call the callback for new files
         logger.info(s"Posix Changes Monitor - A new file found ${fileHandler.getFullPath}. initial = $isFirstScan")
