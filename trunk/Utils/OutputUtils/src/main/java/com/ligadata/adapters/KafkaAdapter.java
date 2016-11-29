@@ -131,15 +131,19 @@ public class KafkaAdapter implements Observer {
             c.shutdown(triggerShutdownCntr);
         consumers.clear();
 
-        if (executor != null) executor.shutdown();
-        try {
-            if (!executor.awaitTermination(30000, TimeUnit.MILLISECONDS)) {
-                logger.info("Timed out waiting for consumer threads to shut down, exiting uncleanly");
-            }
-        } catch (InterruptedException e) {
-            logger.info("Interrupted during shutdown, exiting uncleanly");
-        }
+        ExecutorService localExecutor = executor;
         executor = null;
+
+        if (localExecutor != null) {
+            localExecutor.shutdown();
+            try {
+                if (!localExecutor.awaitTermination(30000, TimeUnit.MILLISECONDS)) {
+                    logger.info("Timed out waiting for consumer threads to shut down, exiting uncleanly");
+                }
+            } catch (InterruptedException e) {
+                logger.info("Interrupted during shutdown, exiting uncleanly");
+            }
+        }
 
         logger.info("Shutdown complete.");
     }
