@@ -269,12 +269,13 @@ public class MessageConsumer implements Runnable {
                 }
 
                 if (!stop && messageCount > 0 && (messageCount >= syncMessageCount || System.currentTimeMillis() >= nextSyncTime)) {
+                    ExecutorService executor = null;
                     try {
                         long endRead = System.currentTimeMillis();
                         logger.info("Saving " + messageCount + " messages. Read time " + (endRead - start) + " msecs.");
 
                         AtomicInteger breaker = new AtomicInteger(0);
-                        ExecutorService executor = Executors.newFixedThreadPool(1);
+                        executor = Executors.newFixedThreadPool(1);
 
                         executor.execute(new SimpleKafkaPoll(consumer, breaker));
 
@@ -287,6 +288,7 @@ public class MessageConsumer implements Runnable {
                             executor.awaitTermination(86400, TimeUnit.SECONDS);
                         } catch (InterruptedException e) {
                         }
+                        executor = null;
 
                         if (processor != null)
                             processor.clearAll();
@@ -300,10 +302,16 @@ public class MessageConsumer implements Runnable {
                         nextSyncTime = System.currentTimeMillis() + syncInterval;
                         start = System.currentTimeMillis();
                     } catch (Exception e) {
+                        if (executor != null)
+                            executor.shutdownNow();
+                        executor = null;
                         logger.error("Failed with: " + e.getMessage(), e);
                         shutdownTriggerCounter.incrementAndGet();
                         stop = true;
                     } catch (Throwable t) {
+                        if (executor != null)
+                            executor.shutdownNow();
+                        executor = null;
                         logger.error("Failed with: " + t.getMessage(), t);
                         shutdownTriggerCounter.incrementAndGet();
                         stop = true;
