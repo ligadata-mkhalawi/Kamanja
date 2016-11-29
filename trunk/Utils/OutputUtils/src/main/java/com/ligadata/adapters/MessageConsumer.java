@@ -86,6 +86,10 @@ public class MessageConsumer implements Runnable {
         }
     }
 
+    public void stopBeforeShutdown() {
+        stop = true;
+    }
+
     public synchronized void shutdown(boolean triggerShutdownCntr) {
         if (triggerShutdownCntr)
             shutdownTriggerCounter.incrementAndGet();
@@ -264,7 +268,7 @@ public class MessageConsumer implements Runnable {
                     createKafkaConsumerRetry();
                 }
 
-                if (messageCount > 0 && (messageCount >= syncMessageCount || System.currentTimeMillis() >= nextSyncTime)) {
+                if (!stop && messageCount > 0 && (messageCount >= syncMessageCount || System.currentTimeMillis() >= nextSyncTime)) {
                     try {
                         long endRead = System.currentTimeMillis();
                         logger.info("Saving " + messageCount + " messages. Read time " + (endRead - start) + " msecs.");

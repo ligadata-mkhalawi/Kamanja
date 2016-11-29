@@ -121,6 +121,11 @@ public class KafkaAdapter implements Observer {
         }
     }
 
+    public void stopBeforeShutdown() {
+        for (MessageConsumer c : consumers)
+            c.stopBeforeShutdown();
+    }
+
     public void shutdown(boolean triggerShutdownCntr) {
         for (MessageConsumer c : consumers)
             c.shutdown(triggerShutdownCntr);
@@ -223,6 +228,16 @@ public class KafkaAdapter implements Observer {
             } else {
                 try {
                     if (adapter.prevIsThisNodeToProcess) { // status flipped from true to false
+                        logger.info("Stopping before shutdown for switch to another node.");
+                        adapter.stopBeforeShutdown();
+                        logger.info("Sleeping 15000 ms before shutdown for switch to another node.");
+                        try {
+                            Thread.sleep(15000);
+                        } catch (Exception e) {
+                            logger.info("Adpater shutdown failed.\n", e);
+                        } catch (Throwable t) {
+                            logger.info("Adpater shutdown failed.\n", t);
+                        }
                         try {
                             adapter.shutdown(false);
                         } catch (Exception e) {
