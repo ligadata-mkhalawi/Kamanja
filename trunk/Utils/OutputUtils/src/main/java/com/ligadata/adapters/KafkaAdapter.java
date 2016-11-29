@@ -117,7 +117,6 @@ public class KafkaAdapter implements Observer {
             logger.info("Releasing the lock ..");
             if (pcbw != null)
                 pcbw.Release();
-            pcbw = null;
             isLockAcquired = false;
             logger.info("Released the lock ..");
         }
