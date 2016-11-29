@@ -9,6 +9,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.ligadata.ZooKeeper.ProcessComponentByWeight;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
@@ -21,6 +22,10 @@ public class KafkaAdapter implements Observer {
     private ArrayList<MessageConsumer> consumers;
     private ExecutorService executor;
     AtomicInteger shutdownTriggerCounter = new AtomicInteger(0);
+
+    private boolean prevIsThisNodeToProcess = false;
+    private ProcessComponentByWeight pcbw;
+    private boolean isLockAcquired = false;
 
     public KafkaAdapter(AdapterConfiguration config) {
         this.configuration = config;
@@ -39,9 +44,87 @@ public class KafkaAdapter implements Observer {
         }
     }
 
-    public void shutdown() {
+    private void PriorityNodeSetup(AdapterConfiguration config) throws Exception {
+        logger.info("Setup for node failure events..");
+        String zkConnectStr = config.getProperty(AdapterConfiguration.ZOOKEEPER_CONNECT);
+        if (zkConnectStr == null) {
+            throw new Exception("AdapterConfiguration should have the property " + AdapterConfiguration.ZOOKEEPER_CONNECT);
+        }
+        if (zkConnectStr.length() == 0) {
+            throw new Exception("AdapterConfiguration should have the non null property " + AdapterConfiguration.ZOOKEEPER_CONNECT);
+        }
+        int zkSessionTimeOut = 30000;
+        String zkSessionTimeOutStr = config.getProperty(AdapterConfiguration.ZOOKEEPER_SESSION_TIMEOUT_MS);
+        if (zkSessionTimeOutStr != null) {
+            zkSessionTimeOut = Integer.parseInt(zkSessionTimeOutStr);
+        }
+        int zkConnectionTimeOut = 30000;
+        String zkConnectionTimeOutStr = config.getProperty(AdapterConfiguration.ZOOKEEPER_CONNECTION_TIMEOUT_MS);
+        if (zkConnectionTimeOutStr != null) {
+            zkConnectionTimeOut = Integer.parseInt(zkConnectionTimeOutStr);
+        }
+        String zkLeaderPath = config.getProperty(AdapterConfiguration.ZOOKEEPER_LEADER_PATH);
+        if (zkLeaderPath == null) {
+            zkLeaderPath = "/kamanja/adapters/leader";
+        }
+        logger.info("Create an instnce of ProcessComponentByWeight ...");
+
+        String component_name = config.getProperty(AdapterConfiguration.COMPONENT_NAME);
+        if (component_name == null) {
+            component_name = "JDBCSink";
+        }
+
+        String node_id_prefix = config.getProperty(AdapterConfiguration.NODE_ID_PREFIX);
+        if (node_id_prefix == null) {
+            node_id_prefix = "Node1";
+        }
+
+        int adapter_weight = 10;
+        String adapter_weight_str = config.getProperty(AdapterConfiguration.ADAPTER_WEIGHT);
+        if (adapter_weight_str != null) {
+            adapter_weight = Integer.parseInt(adapter_weight_str);
+        }
+
+        logger.info("Create an instnce of ProcessComponentByWeight ...");
+        try {
+            pcbw = new ProcessComponentByWeight(component_name, node_id_prefix, adapter_weight);
+        } catch (Throwable e) {
+            logger.error("Error : " + e.getMessage() + e);
+        }
+
+        logger.info("Call ProcessComponentByWeight.Init..");
+        pcbw.Init(zkConnectStr, zkLeaderPath, zkSessionTimeOut, zkConnectionTimeOut);
+    }
+
+    private void AcquireLock() throws Exception {
+        try {
+            if (!isLockAcquired) {
+                logger.info("Acquiring the lock ..");
+                pcbw.Acquire();
+                isLockAcquired = true;
+                logger.info("Acquired the lock ..");
+            }
+        } catch (Exception e) {
+            logger.error("Error : " + e.getMessage() + e);
+            throw e;
+        }
+    }
+
+    private void ReleaseLock() {
+        if (isLockAcquired) {
+            logger.info("Releasing the lock ..");
+            if (pcbw != null)
+                pcbw.Release();
+            pcbw = null;
+            isLockAcquired = false;
+            logger.info("Released the lock ..");
+        }
+    }
+
+    public void shutdown(boolean triggerShutdownCntr) {
         for (MessageConsumer c : consumers)
-            c.shutdown();
+            c.shutdown(triggerShutdownCntr);
+        consumers.clear();
 
         if (executor != null) executor.shutdown();
         try {
@@ -51,12 +134,13 @@ public class KafkaAdapter implements Observer {
         } catch (InterruptedException e) {
             logger.info("Interrupted during shutdown, exiting uncleanly");
         }
+        executor = null;
 
         logger.info("Shutdown complete.");
     }
 
     public void run() {
-        int numThreads = Integer.parseInt(configuration.getProperty(AdapterConfiguration.COUNSUMER_THREADS, "2"));
+        int numThreads = Integer.parseInt(configuration.getProperty(AdapterConfiguration.COUNSUMER_THREADS, "1"));
         executor = Executors.newFixedThreadPool(numThreads);
         consumers = new ArrayList<MessageConsumer>();
         try {
@@ -73,7 +157,6 @@ public class KafkaAdapter implements Observer {
         }
     }
 
-
     public static class AdapterSignalHandler extends Observable implements sun.misc.SignalHandler {
 
         @Override
@@ -88,7 +171,6 @@ public class KafkaAdapter implements Observer {
     }
 
     public static void main(String[] args) {
-
         AdapterConfiguration config = null;
         try {
             if (args.length == 0)
@@ -114,7 +196,7 @@ public class KafkaAdapter implements Observer {
             sh.handleSignal("INT");
             sh.handleSignal("ABRT");
 
-            adapter.run();
+            adapter.PriorityNodeSetup(adapter.configuration);
         } catch (Exception e) {
             logger.error("Error starting the adapater.\n", e);
             adapter.shutdownTriggerCounter.incrementAndGet();
@@ -122,17 +204,45 @@ public class KafkaAdapter implements Observer {
         }
 
         while (adapter.shutdownTriggerCounter.get() == 0) {
-            try {
-                Thread.sleep(100);
-            } catch (Exception e) {
-                logger.info("Main thread is interrupted.\n", e);
-                adapter.shutdownTriggerCounter.incrementAndGet();
-            } catch (Throwable t) {
-                logger.info("Main thread is interrupted.\n", t);
-                adapter.shutdownTriggerCounter.incrementAndGet();
+            boolean curIsThisNodeToProcess = adapter.pcbw.IsThisNodeToProcess();
+            if (curIsThisNodeToProcess) {
+                try {
+                    if (!adapter.prevIsThisNodeToProcess) { // status flipped from false to true
+                        adapter.AcquireLock();
+                        adapter.prevIsThisNodeToProcess = curIsThisNodeToProcess;
+                        adapter.run();
+                    }
+                    Thread.sleep(100);
+                } catch (Exception e) {
+                    logger.info("Main thread is interrupted.\n", e);
+                    adapter.shutdownTriggerCounter.incrementAndGet();
+                } catch (Throwable t) {
+                    logger.info("Main thread is interrupted.\n", t);
+                    adapter.shutdownTriggerCounter.incrementAndGet();
+                }
+            } else {
+                try {
+                    if (adapter.prevIsThisNodeToProcess) { // status flipped from true to false
+                        try {
+                            adapter.shutdown(false);
+                        } catch (Exception e) {
+                            logger.info("Adpater shutdown failed.\n", e);
+                        } catch (Throwable t) {
+                            logger.info("Adpater shutdown failed.\n", t);
+                        }
+                        adapter.ReleaseLock();
+                        adapter.prevIsThisNodeToProcess = curIsThisNodeToProcess;
+                    }
+                } catch (Exception e) {
+                    logger.info("Main thread is interrupted.\n", e);
+                    adapter.shutdownTriggerCounter.incrementAndGet();
+                } catch (Throwable t) {
+                    logger.info("Main thread is interrupted.\n", t);
+                    adapter.shutdownTriggerCounter.incrementAndGet();
+                }
             }
         }
 
-        adapter.shutdown();
+        adapter.shutdown(true);
     }
 }
