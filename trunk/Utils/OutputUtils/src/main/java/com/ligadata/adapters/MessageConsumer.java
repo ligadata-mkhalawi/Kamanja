@@ -290,16 +290,18 @@ public class MessageConsumer implements Runnable {
                         if (consumer != null)
                             consumer.commitSync();
                         totalMessageCount += messageCount;
-                        logger.info("Saved " + totalMessageCount + " messages. Write time " + (endWrite - endRead) + " msecs.");
+                        logger.info("Saved " + messageCount + " messages (Total:" + totalMessageCount + "). Write time " + (endWrite - endRead) + " msecs.");
 
                         messageCount = 0;
                         nextSyncTime = System.currentTimeMillis() + syncInterval;
                         start = System.currentTimeMillis();
                     } catch (Exception e) {
                         logger.error("Failed with: " + e.getMessage(), e);
+                        shutdownTriggerCounter.incrementAndGet();
                         stop = true;
                     } catch (Throwable t) {
                         logger.error("Failed with: " + t.getMessage(), t);
+                        shutdownTriggerCounter.incrementAndGet();
                         stop = true;
                     }
                 }
