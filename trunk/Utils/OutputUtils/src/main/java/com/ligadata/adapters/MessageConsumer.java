@@ -298,11 +298,11 @@ public class MessageConsumer implements Runnable {
                     } catch (Exception e) {
                         logger.error("Failed with: " + e.getMessage(), e);
                         shutdownTriggerCounter.incrementAndGet();
-                        stop = true;
+                        // stop = true;
                     } catch (Throwable t) {
                         logger.error("Failed with: " + t.getMessage(), t);
                         shutdownTriggerCounter.incrementAndGet();
-                        stop = true;
+                        // stop = true;
                     }
                 }
             } catch (Exception e) {
