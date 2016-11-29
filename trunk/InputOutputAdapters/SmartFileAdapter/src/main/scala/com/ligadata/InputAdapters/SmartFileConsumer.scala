@@ -1213,8 +1213,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       //shutdown will clear all queues
       val requestData = smartFileFromLeaderPath + "/" + context.nodeId + "/" + context.partitionId //listen to this SmartFileCommunication/FromLeader/<NodeId>/<partitionId id>
       val requestPathKey = requestFilePath + "/" + context.nodeId + "/" + context.partitionId
-      LOG.info("SMART FILE CONSUMER - participant ({}) - sending a file request to leader on partition ({})", context.nodeId, context.partitionId.toString)
-      LOG.debug("SMART FILE CONSUMER - sending the request using path ({}) using value ({})", requestPathKey, requestData)
+      LOG.info("SMART FILE CONSUMER - participant ({}) - sending a file request to leader on partition ({}) after finishing file {}",
+        context.nodeId, context.partitionId.toString, fileHandler.getFullPath)
+      LOG.debug("SMART FILE CONSUMER - sending the request using path ({}) using value ({}) ",
+        requestPathKey, requestData)
       envContext.setListenerCacheKey(requestPathKey, requestData);
 
       //send status
@@ -1304,7 +1306,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
             //send a file request to leader
             val fileRequestKeyPath = requestFilePath + "/" + nodeId+ "/" + partitionId
-            LOG.info ("SMART FILE CONSUMER - participant ({}) - sending a file request to leader on partition ({})", nodeId, partitionId.toString)
+            LOG.info ("SMART FILE CONSUMER - participant ({}) - sending a file request to leader (initial) on partition ({})", nodeId, partitionId.toString)
             LOG.debug("SMART FILE CONSUMER - sending the request using path ({}) using value ({})", fileRequestKeyPath, fileProcessingAssignementKeyPath)
             envContext.setListenerCacheKey(fileRequestKeyPath, fileProcessingAssignementKeyPath)
           }
