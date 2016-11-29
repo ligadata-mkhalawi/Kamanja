@@ -17,10 +17,6 @@ import org.apache.kafka.common.errors.WakeupException;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
-import com.ligadata.adapters.statusRecorders.KafkaStatusRecorder;
-
-import com.ligadata.ZooKeeper.*;
-
 public class MessageConsumer implements Runnable {
     // Implement Kafka heart beat to get around session timeout that causes rebalance
     // see issue: https://issues.apache.org/jira/browse/KAFKA-2985
@@ -234,6 +230,8 @@ public class MessageConsumer implements Runnable {
             throw new RuntimeException(e);
         }
 
+        createKafkaConsumerRetry();
+
         long syncMessageCount = Long.parseLong(configuration.getProperty(AdapterConfiguration.SYNC_MESSAGE_COUNT, "10000"));
         long syncInterval = Long.parseLong(configuration.getProperty(AdapterConfiguration.SYNC_INTERVAL_SECONDS, "120")) * 1000;
         long pollInterval = Long.parseLong(configuration.getProperty(AdapterConfiguration.KAFKA_POLL_INTERVAL, "100"));
@@ -248,7 +246,7 @@ public class MessageConsumer implements Runnable {
                     ConsumerRecords<String, String> records = consumer.poll(pollInterval);
                     for (ConsumerRecord<String, String> record : records) {
                         Long lastOffset = partitionOffsets.get(record.partition());
-                        logger.debug("lastOffset => " + lastOffset + ",partition => " + record.partition());
+                        if (logger.isDebugEnabled()) logger.debug("lastOffset => " + lastOffset + ",partition => " + record.partition());
                         if (lastOffset == null || record.offset() > lastOffset) {
                             logger.debug("Message from partition Id :" + record.partition() + " Message: " + record.value());
                             if (processor.addMessage(record.value()))
