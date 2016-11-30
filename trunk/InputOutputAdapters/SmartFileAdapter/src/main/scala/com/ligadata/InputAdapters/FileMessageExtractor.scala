@@ -61,7 +61,7 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
     fileProcessingStartTime = Utils.GetCurDtTmStrWithTZ
     
     if(!fileHandler.exists()){
-      finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_NOT_FOUND, getFileStats)
+      sendFinishFlag(SmartFileConsumer.FILE_STATUS_NOT_FOUND)
     }
 
     else {
@@ -121,25 +121,25 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
 
       case fio: java.io.FileNotFoundException => {
         logger.error("SMART_FILE_CONSUMER Exception accessing the file for processing the file - File is missing",fio)
-        finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_NOT_FOUND, getFileStats)
+        sendFinishFlag(SmartFileConsumer.FILE_STATUS_NOT_FOUND)
         shutdownThreads
         return
       }
       case fio: IOException => {
         logger.error("SMART_FILE_CONSUMER Exception accessing the file for processing ",fio)
-        finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_CORRUPT, getFileStats)
+        sendFinishFlag(SmartFileConsumer.FILE_STATUS_CORRUPT)
         shutdownThreads
         return
       }
       case ex : Exception => {
         logger.error("", ex)
-        finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_CORRUPT, getFileStats)
+        sendFinishFlag(SmartFileConsumer.FILE_STATUS_CORRUPT)
         shutdownThreads
         return
       }
       case ex : Throwable => {
         logger.error("", ex)
-        finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_CORRUPT, getFileStats)
+        sendFinishFlag(SmartFileConsumer.FILE_STATUS_CORRUPT)
         shutdownThreads
         return
       }
@@ -224,13 +224,13 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
 
             case ioe: IOException => {
               logger.error("Failed to read file " + fileName, ioe)
-              finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_CORRUPT, getFileStats)
+              sendFinishFlag(SmartFileConsumer.FILE_STATUS_CORRUPT)
               shutdownThreads
               return
             }
             case e: Throwable => {
               logger.error("Failed to read file, file corrupted " + fileName, e)
-              finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_CORRUPT, getFileStats)
+              sendFinishFlag(SmartFileConsumer.FILE_STATUS_CORRUPT)
               shutdownThreads
               return
             }
@@ -284,13 +284,13 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
     catch {
       case ioe: IOException => {
         logger.error("SMART FILE CONSUMER: Exception while accessing the file for processing " + fileName, ioe)
-        finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_CORRUPT, getFileStats)
+        sendFinishFlag(SmartFileConsumer.FILE_STATUS_CORRUPT)
         shutdownThreads
         return
       }
       case et: Throwable => {
         logger.error("SMART FILE CONSUMER: Throwable while accessing the file for processing " + fileName, et)
-        finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_CORRUPT, getFileStats)
+        sendFinishFlag(SmartFileConsumer.FILE_STATUS_CORRUPT)
         shutdownThreads
         return
       }
@@ -309,21 +309,21 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
       }
     }
     finally{
-      if(finishCallback != null) {
 
-        val endTm = System.nanoTime
-        val elapsedTm = endTm - fileProcessingStartTs
 
-        if(processingInterrupted) {
-          logger.debug("SMART FILE CONSUMER (FileMessageExtractor) - sending interrupting flag for file {}", fileName)
-          logger.warn("SMART FILE CONSUMER - finished reading file %s. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(fileName, elapsedTm/1000000.0, consumerContext.nodeId, consumerContext.partitionId.toString, fileProcessingStartTs, endTm))
-          finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_ProcessingInterrupted, getFileStats)
-        }
-        else {
-          logger.warn("SMART FILE CONSUMER - finished reading file %s. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(fileName, elapsedTm/1000000.0, consumerContext.nodeId, consumerContext.partitionId.toString, fileProcessingStartTs, endTm))
-          finishCallback(fileHandler, consumerContext, SmartFileConsumer.FILE_STATUS_FINISHED, getFileStats)
-        }
+      val endTm = System.nanoTime
+      val elapsedTm = endTm - fileProcessingStartTs
+
+      if(processingInterrupted) {
+        logger.debug("SMART FILE CONSUMER (FileMessageExtractor) - sending interrupting flag for file {}", fileName)
+        logger.warn("SMART FILE CONSUMER - finished reading file %s. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(fileName, elapsedTm/1000000.0, consumerContext.nodeId, consumerContext.partitionId.toString, fileProcessingStartTs, endTm))
+        sendFinishFlag(SmartFileConsumer.FILE_STATUS_ProcessingInterrupted)
       }
+      else {
+        logger.warn("SMART FILE CONSUMER - finished reading file %s. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(fileName, elapsedTm/1000000.0, consumerContext.nodeId, consumerContext.partitionId.toString, fileProcessingStartTs, endTm))
+        sendFinishFlag(SmartFileConsumer.FILE_STATUS_FINISHED)
+      }
+
 
       shutdownThreads()
     }
@@ -341,10 +341,10 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
     }
     
     logger.debug("File message Extractor - shutting down updatExecutor")
-    MonitorUtils.shutdownAndAwaitTermination(updatExecutor, "file message extracting status updator")
+    MonitorUtils.shutdownAndAwaitTermination(updatExecutor, "file message extracting status updator", 1)
 
     logger.debug("File message Extractor - shutting down extractExecutor")
-    MonitorUtils.shutdownAndAwaitTermination(extractExecutor, "file message extractor")
+    MonitorUtils.shutdownAndAwaitTermination(extractExecutor, "file message extractor", 1)
   }
 
   private def extractMessages(chunk : Array[Byte], len : Int) : Int = {
@@ -400,5 +400,18 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
     else
       chunk.slice(prevIndx, chunk.length)*/
     prevIndx
+  }
+
+  var finishFlagSent = false
+  val finishFlagSent_Lock = new Object()
+  def sendFinishFlag (status : Int) : Unit = {
+    finishFlagSent_Lock.synchronized{
+      if(!finishFlagSent){
+        if(finishCallback != null)
+          finishCallback(fileHandler, consumerContext, status, getFileStats)
+        finishFlagSent = true
+      }
+    }
+
   }
 }
