@@ -333,10 +333,10 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
   private def shutdownThreads(): Unit ={
     finished = true
     logger.debug("File message Extractor - shutting down updatExecutor")
-    MonitorUtils.shutdownAndAwaitTermination(updatExecutor, "file message extracting status updator")
+    MonitorUtils.shutdownAndAwaitTermination(updatExecutor, "file message extracting status updator", 1)
 
     logger.debug("File message Extractor - shutting down extractExecutor")
-    MonitorUtils.shutdownAndAwaitTermination(extractExecutor, "file message extractor")
+    MonitorUtils.shutdownAndAwaitTermination(extractExecutor, "file message extractor", 1)
   }
 
   private def extractMessages(chunk : Array[Byte], len : Int) : Int = {
