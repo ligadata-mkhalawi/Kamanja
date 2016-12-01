@@ -89,4 +89,23 @@ public class ReflectionUtil {
             ex.printStackTrace();
         }
     }
+
+    public void callInitStore(Object obj){
+        try{
+            Class pwclass = Class.forName("parquet.hadoop.ParquetWriter");
+            Field writerField = pwclass.getDeclaredField("writer");
+            writerField.setAccessible(true);
+            Object writerObj = writerField.get(obj);
+
+            Class aclass = Class.forName("parquet.hadoop.InternalParquetRecordWriter");
+            Method flushMethod = aclass.getDeclaredMethod("initStore");
+            flushMethod.setAccessible(true);
+            System.out.println(">>>>>>>>>>>>>>>invoking  initStore()");
+            flushMethod.invoke(writerObj);
+
+        }
+        catch(Exception ex){
+            ex.printStackTrace();
+        }
+    }
 }
