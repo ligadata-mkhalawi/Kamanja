@@ -382,6 +382,9 @@ class OutputStreamWriter {
 }
 
 class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeContext) extends OutputStreamWriter with OutputAdapter {
+
+  //new ReflectionUtil().setParquetMinRecCount(1)
+
   private[this] val LOG = LogManager.getLogger(getClass);
 
   private val _reent_lock = new ReentrantReadWriteLock(true)

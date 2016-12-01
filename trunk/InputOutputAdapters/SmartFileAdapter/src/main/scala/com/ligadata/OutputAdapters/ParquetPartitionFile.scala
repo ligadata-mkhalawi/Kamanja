@@ -72,6 +72,7 @@ class ParquetPartitionFile(fc : SmartFileProducerConfiguration, key : String, av
     throw new UnsupportedOperationException("Unsupported reopening parquet file")
   }
 
+  val reflectionUtil = new ReflectionUtil()
   def send(tnxCtxt: TransactionContext, record: ContainerInterface,
            serializer : SmartFileProducer) : Int = {
 
@@ -88,6 +89,8 @@ class ParquetPartitionFile(fc : SmartFileProducerConfiguration, key : String, av
               val recordData : Array[Any] = record.getAllAttributeValues.map(attr => attr.getValue)
               //avroSchemasMap(record.getFullTypeName)
               parquetWriter.write(recordData)
+
+              reflectionUtil.callFlush(parquetWriter)
 
               size += recordData.length // TODO : do we need to get actual size ?
               records += 1

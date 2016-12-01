@@ -191,6 +191,12 @@ object Utils {
     val parquetBlockSize = if(fc.parquetBlockSize > 0) fc.parquetBlockSize else  ParquetWriter.DEFAULT_BLOCK_SIZE
     val parquetPageSize = if(fc.parquetPageSize > 0) fc.parquetPageSize else  ParquetWriter.DEFAULT_PAGE_SIZE
 
+    println(">>>>>>>>>>>>>>>>>> parquetBlockSize="+parquetBlockSize)
+
+    val reflectionUtil = new ReflectionUtil()
+    //reflectionUtil.setParquetMinRecCount(1)
+    //reflectionUtil.setParquetMaxRecCount(1)
+
     val parquetWriter =
       if (writeToHdfs){
         val hadoopConf = createHdfsConfig(fc)
@@ -204,6 +210,8 @@ object Utils {
       else
         new ParquetWriter[Array[Any]](path, writeSupport, compression,
           parquetBlockSize, parquetPageSize)
+
+    //reflectionUtil.setParquetRecCount(parquetWriter, 1)
 
     parquetWriter
   }
