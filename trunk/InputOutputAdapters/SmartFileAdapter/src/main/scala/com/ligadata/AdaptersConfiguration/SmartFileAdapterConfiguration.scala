@@ -149,10 +149,10 @@ object SmartFileAdapterConfiguration {
     //inputConfig.monitoringConfig.
     inputConfig._type = if(outputConfig.uri.startsWith("hdfs://")) "HDFS" else "DAS/NAS"
     val hosts =
-      if(outputConfig.uri.startsWith("hdfs://")){
+      if(outputConfig.uri.toLowerCase.startsWith("hdfs://")){
         val part = outputConfig.uri.substring(7)
         val idx = part.indexOf("/")
-        if(idx > 0) "hdfs://" + part.substring(0, idx - 1)
+        if(idx > 0) "hdfs://" + part.substring(0, idx)
         else "hdfs://" + part
       }
       else ""
@@ -165,6 +165,8 @@ object SmartFileAdapterConfiguration {
       inputConfig.connectionConfig.principal = outputConfig.kerberos.principal
       inputConfig.connectionConfig.keytab = outputConfig.kerberos.keytab
     }
+    else
+      inputConfig.connectionConfig.authentication = "simple"
 
     inputConfig.connectionConfig.hadoopConfig = outputConfig.hadoopConfig
 

@@ -255,7 +255,7 @@ class HdfsFileHandler extends SmartFileHandler {
     }
     if (hdFileSystem != null) {
       logger.debug("Closing Hd File System object hdFileSystem")
-      hdFileSystem.close()
+      //hdFileSystem.close()
     }
   }
 
@@ -395,7 +395,7 @@ class HdfsFileHandler extends SmartFileHandler {
     if (hdFileSystem != null) {
       try {
         logger.debug("Closing Hd File System object hdFileSystem")
-        hdFileSystem.close()
+        //hdFileSystem.close()
       }
       catch{
         case ex: Throwable =>

@@ -3,6 +3,7 @@ package com.ligadata.OutputAdapters
 import java.io.{IOException}
 import com.ligadata.AdaptersConfiguration.SmartFileProducerConfiguration
 import com.ligadata.Exceptions.FatalAdapterException
+import com.ligadata.InputAdapters.SmartFileHandlerFactory
 import com.ligadata.KamanjaBase.{ContainerInterface, TransactionContext}
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.logging.log4j.LogManager
@@ -24,16 +25,29 @@ class ParquetPartitionFile(fc : SmartFileProducerConfiguration, key : String, av
   private var size: Long = 0
 
   //private var flushBufferSize: Long = 0
-  private var filePath : String = ""
+  private var finalFilePath : String = ""
   private var ugi : UserGroupInformation = null
   private var parquetCompression : CompressionCodecName = null
 
+
+  private var tmpDir = ""
+  private var tmpFileName = ""
+  def tmpFilePath = if(tmpDir == null || tmpDir.length ==0) "" else tmpDir + "/" + tmpFileName
+  private var actualActiveFilePath = ""
+  def finalFileDir = {
+    val idx = finalFilePath.lastIndexOf("/")
+    if(idx>=0) finalFilePath.substring(0, idx) else ""
+  }
 
   private var parquetWriter : ParquetWriter[Array[Any]] = null
 
   def init(filePath: String, flushBufferSize: Long) = {
     //this.flushBufferSize = flushBufferSize
-    this.filePath = filePath
+    this.finalFilePath = filePath
+    //tmpFileName = filePath.replaceAll("/", "_")
+    val filePathTokens = filePath.split("/")
+    tmpDir = filePathTokens.take(filePathTokens.length - 1).mkString("/")//use same folder
+    tmpFileName = "." + filePathTokens(filePathTokens.length - 1)
 
     parquetCompression = if(fc.parquetCompression == null || fc.parquetCompression.length == 0) null else CompressionCodecName.valueOf(fc.parquetCompression)
 
@@ -46,14 +60,15 @@ class ParquetPartitionFile(fc : SmartFileProducerConfiguration, key : String, av
       LOG.info(">>>>>>>>>>>>>>>>>> parquet schema : " + parquetSchema.toString)
       val writeSupport = new ParquetWriteSupport(parquetSchema)
 
-    parquetWriter = Utils.createParquetWriter(fc, filePath, writeSupport, parquetCompression)
+    actualActiveFilePath = if(tmpFilePath.length > 0) tmpFilePath else filePath
+    parquetWriter = Utils.createParquetWriter(fc, actualActiveFilePath, writeSupport, parquetCompression)
 
     var buffer: ArrayBuffer[ContainerInterface] = null
     if (flushBufferSize > 0)
       buffer = new ArrayBuffer[ContainerInterface]
   }
 
-  def getFilePath: String = filePath
+  def getFilePath: String = finalFilePath
 
   def getKey: String = key
 
@@ -64,8 +79,44 @@ class ParquetPartitionFile(fc : SmartFileProducerConfiguration, key : String, av
   def getFlushBufferSize: Long = 0
 
   def close() : Unit = {
-    if(parquetWriter != null)
-      parquetWriter.close()
+    if(parquetWriter != null) {
+      try {
+        LOG.info("closing parquetWriter for file " + actualActiveFilePath)
+        parquetWriter.close()
+      }
+      catch{
+        case ex : Throwable => LOG.error("Error while closing file " + actualActiveFilePath, ex)
+      }
+
+      if(!actualActiveFilePath.equals(finalFilePath)) {//move from tmp file to final dest
+        try {
+          val inputConfig = com.ligadata.AdaptersConfiguration.SmartFileAdapterConfiguration.outputConfigToInputConfig(fc)
+          val tmpFileDirNoProtocol = com.ligadata.InputAdapters.MonitorUtils.getFileParentDir(tmpFilePath, inputConfig)
+          val tmpFilePathNoProtocol = tmpFileDirNoProtocol + "/" + tmpFileName
+          val filePathTokens = finalFilePath.split("/")
+          val finalFileBaseName = filePathTokens(filePathTokens.length - 1)
+          val finalFullDirNoProtocol = com.ligadata.InputAdapters.MonitorUtils.getFileParentDir(finalFilePath, inputConfig)
+          val finalFullPathNoProtocol = finalFullDirNoProtocol + "/" + finalFileBaseName
+
+          val fileHandler = SmartFileHandlerFactory.createSmartFileHandler(inputConfig, tmpFilePathNoProtocol)
+          val osWriter = new OutputStreamWriter()
+          if (!osWriter.isFileExists(fc, finalFileDir))
+            osWriter.mkdirs(fc, finalFileDir)
+
+          LOG.info("parquet file closed. moving file {} to {}", tmpFilePathNoProtocol, finalFullPathNoProtocol)
+          val moved = fileHandler.moveTo(finalFullPathNoProtocol)
+          if (moved)
+            LOG.info("move successful")
+          else LOG.error("Move unsuccessful: could not move tmp parquet file {} to {}", tmpFilePathNoProtocol, finalFullPathNoProtocol)
+
+          //fileHandler.disconnect()
+        }
+        catch{
+          case ex : Throwable => LOG.error("Error while moving file " +
+            actualActiveFilePath + " to " +  finalFilePath, ex)
+        }
+      }
+    }
   }
 
   def reopen(): Unit ={
@@ -87,7 +138,7 @@ class ParquetPartitionFile(fc : SmartFileProducerConfiguration, key : String, av
           try {
             this.synchronized {//no need to buffer in parquet, writer already acts as a buffer
 
-              LOG.info("Smart File Producer " + fc.Name + ": writing record to file " + filePath)
+              LOG.info("Smart File Producer " + fc.Name + ": writing record to file " + actualActiveFilePath)
               val recordData : Array[Any] = record.getAllAttributeValues.map(attr => attr.getValue)
               //avroSchemasMap(record.getFullTypeName)
               flush_lock.synchronized {
@@ -105,9 +156,9 @@ class ParquetPartitionFile(fc : SmartFileProducerConfiguration, key : String, av
             return SendStatus.SUCCESS
           } catch {
             case fio: IOException => {
-              LOG.warn("Smart File Producer " + fc.Name + ": Unable to write to file " + filePath)
+              LOG.warn("Smart File Producer " + fc.Name + ": Unable to write to file " + actualActiveFilePath)
               if (numOfRetries == MAX_RETRIES) {
-                LOG.warn("Smart File Producer " + fc.Name + ": Unable to write to file destination after " + MAX_RETRIES + " tries.  Trying to reopen file " + filePath, fio)
+                LOG.warn("Smart File Producer " + fc.Name + ": Unable to write to file destination after " + MAX_RETRIES + " tries.  Trying to reopen file " + actualActiveFilePath, fio)
                 //TODO : what to do for parquet
               } else if (numOfRetries > MAX_RETRIES) {
                 LOG.error("Smart File Producer " + fc.Name + ": Unable to write to file destination after " + MAX_RETRIES + " tries.  Aborting.", fio)
@@ -121,7 +172,7 @@ class ParquetPartitionFile(fc : SmartFileProducerConfiguration, key : String, av
 
                 val messageStr =
                   if(record == null) "null"
-                  else record.getAllAttributeValues.map(attr => if(attr==null || attr.getValue == null) "null" else attr.getValue.toString).mkString(fc.messageSeparator)
+                  else record.getAllAttributeValues.map(attr => if(attr==null || attr.getValue == null) "null" else attr.getValue.toString).mkString(",")
                 LOG.error("Smart File Producer " + fc.Name + ": Unable to write output message: " + messageStr, e)
 
               throw e
@@ -133,8 +184,12 @@ class ParquetPartitionFile(fc : SmartFileProducerConfiguration, key : String, av
 
     } catch {
       case e: Exception => {
+        val messageStr =
+          if(record == null) "null"
+          else record.getAllAttributeValues.map(attr => if(attr==null || attr.getValue == null) "null" else attr.getValue.toString).mkString(",")
+
         LOG.error("Smart File Producer " + fc.Name + ": Failed to send", e)
-        throw FatalAdapterException("Unable to send message", e)
+        throw FatalAdapterException("Smart File Producer " + fc.Name + " is Unable to send message: " + messageStr, e)
       }
     }
   }
