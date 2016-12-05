@@ -3,6 +3,8 @@ package com.ligadata.InputAdapters.pst
 import org.apache.logging.log4j.LogManager
 import java.util.{UUID, Vector}
 
+import com.ligadata.InputAdapters.{SmartFileHandler, SmartFileMessage}
+
 import scala.collection.mutable.ListBuffer
 import com.pff._
 import org.apache.tika
@@ -15,15 +17,16 @@ class PSTReader {
   var alertID = 1
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
-
-  def readPSTFile(PSTfile: String, outputPath: String): Unit = {
+  val emailsList = ListBuffer[String]()
+  def readPSTFile(PSTfile: String, outputPath: String, smartFile: SmartFileHandler): ListBuffer[String] = {
     val pstFile: PSTFile = new PSTFile(PSTfile)
     logger.info(pstFile.getMessageStore.getDisplayName)
-    processFolder(pstFile.getRootFolder, outputPath)
+    processFolder(pstFile.getRootFolder, outputPath, smartFile)
     pstFile.getFileHandle.close
+    emailsList
   }
 
-  def processFolder(folder: PSTFolder, outputPath: String): Unit = {
+  def processFolder(folder: PSTFolder, outputPath: String, smartFile: SmartFileHandler): Unit = {
     depth = depth + 1
     if(depth > 0){
       printDepth
@@ -33,7 +36,7 @@ class PSTReader {
     if (folder.hasSubfolders) {
       val childFolders: Vector[PSTFolder] = folder.getSubFolders
       for ( childFolder <- childFolders) {
-        processFolder(childFolder, outputPath)
+        processFolder(childFolder, outputPath, smartFile)
       }
     }
 
@@ -44,7 +47,9 @@ class PSTReader {
       while (email != null) {
         printDepth
         logger.info("Email: " + email.getSubject)
-        createObject(email, outputPath);///change to return message to engine
+        val jsonString = createObject(email, outputPath);///change to return message to engine
+        emailsList.append(jsonString)
+        //val smartFileMessage = new SmartFileMessage(jsonString.getBytes(), 0, smartFile, 0)//change ofset
         email = folder.getNextChild.asInstanceOf[PSTMessage]
       }
       depth = depth - 1
@@ -59,36 +64,29 @@ class PSTReader {
     logger.info(" | ")
   }
 
-  def createObject(email: PSTMessage, outputPath: String): Unit = {
+  def createObject(email: PSTMessage, outputPath: String): String = {
     logger.info("Extracting header from email...");
     val tika: Tika = new Tika
- //   var  attachmentFilesList: ListBuffer[String] =  ListBuffer[String]()
     var attachmentsListTuple = List[(String, String)] ()
     val  numberOfAttachmentFile: Int = email.getNumberOfAttachments
     for(i <- 0 until numberOfAttachmentFile){
       val attach: PSTAttachment = email.getAttachment(i)
-     // attachmentFilesList
-//      attachmentFilesList += tika.parseToString(attach.getFileInputStream)
-//      attach.getFilename
       attachmentsListTuple :+= (attach.getFilename, tika.parseToString(attach.getFileInputStream))
     }
 
     val sender: String = email.getSenderEmailAddress
     val reciever: String = email.getDisplayTo
-   // var uniqueKey: UUID = UUID.randomUUID
     if (reciever.length() > 0 && sender.length() > 0) {
-      logger.info("Extracting email body..");
-      //outputPath = outputPath + uniqueKey.toString().replaceAll("-", "").replaceAll("_", "") + "a";
+      logger.info("Extracting email body..")
       val fs: FileSearch = new FileSearch
-      val content: String = fs.createMessageContent(email);
+      val content: String = fs.createMessageContent(email)
       var attachment: ListBuffer[String] = ListBuffer[String]()
-//      for (j <- 0 until attachmentFilesList.size ){
-//        attachment += (outputPath + "." + (j + 1) + ".txt")//  fs.createmessage(outputPath + "." + (j + 1) + ".txt", attachmentFilesList(j));
-//      }
-      fs.createMessage(outputPath + ".txt", content,  attachmentsListTuple);
-      logger.info("Done from extracting email body.");
+      val message: String= fs.createMessage(outputPath + ".txt", content,  attachmentsListTuple)
+      logger.info("Done from extracting email body.")
+      message
     } else {
-      logger.info("This message have not header.");
+      logger.info("This message have not header.")
+      null
     }
   }
 }
