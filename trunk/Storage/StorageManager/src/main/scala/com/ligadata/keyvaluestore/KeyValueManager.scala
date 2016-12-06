@@ -64,103 +64,103 @@ object KeyValueManager {
 
     val (className, jarName, dependencyJars) = getClassNameJarNameDepJarsFromJson(parsed_json)
     logger.debug("className:%s, jarName:%s, dependencyJars:%s".format(className, jarName, dependencyJars))
-    if (className != null && className.size > 0 && jarName != null && jarName.size > 0) {
-      var allJars: collection.immutable.Set[String] = null
-      if (dependencyJars != null && jarName != null) {
-        allJars = dependencyJars.toSet + jarName
-      } else if (dependencyJars != null) {
-        allJars = dependencyJars.toSet
-      } else if (jarName != null) {
-        allJars = collection.immutable.Set(jarName)
-      }
+    var allJars: collection.immutable.Set[String] = null
+    if (dependencyJars != null && jarName != null) {
+      allJars = dependencyJars.toSet + jarName
+    } else if (dependencyJars != null) {
+      allJars = dependencyJars.toSet
+    } else if (jarName != null) {
+      allJars = collection.immutable.Set(jarName)
+    }
 
-      val allJarsToBeValidated = scala.collection.mutable.Set[String]();
+    val allJarsToBeValidated = scala.collection.mutable.Set[String]();
 
-      if (allJars != null) {
-        allJarsToBeValidated ++= allJars.map(j => GetValidJarFile(jarPaths, j))
-      }
+    if (allJars != null && allJars.size > 0) {
+      allJarsToBeValidated ++= allJars.map(j => GetValidJarFile(jarPaths, j))
+    }
 
-      val nonExistsJars = CheckForNonExistanceJars(allJarsToBeValidated.toSet)
-      if (nonExistsJars.size > 0) {
-        logger.error("Not found jars in Storage Adapters Jars List : {" + nonExistsJars.mkString(", ") + "}")
-        return null
-      }
+    val nonExistsJars = CheckForNonExistanceJars(allJarsToBeValidated.toSet)
+    if (nonExistsJars.size > 0) {
+      logger.error("Not found jars in Storage Adapters Jars List : {" + nonExistsJars.mkString(", ") + "}")
+      return null
+    }
 
-      if (allJars != null) {
-        if (LoadJars(allJars.map(j => GetValidJarFile(jarPaths, j)).toArray, kvManagerLoader.loadedJars, kvManagerLoader.loader) == false)
-          throw new Exception("Failed to add Jars")
-      }
+    if (allJars != null && allJars.size > 0) {
+      if (LoadJars(allJars.map(j => GetValidJarFile(jarPaths, j)).toArray, kvManagerLoader.loadedJars, kvManagerLoader.loader) == false)
+        throw new Exception("Failed to add Jars")
+    }
 
-      val storeType = parsed_json.getOrElse("StoreType", "").toString.trim.toLowerCase
+    val storeType = parsed_json.getOrElse("StoreType", "").toString.trim.toLowerCase
 
-      storeType match {
+    storeType match {
 
-        // Other KV stores
-        case "cassandra" => return CassandraAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
-        case "hbase" => return HBaseAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
-        /*
-        // Simple file base implementations
-        case "redis" => return KeyValueRedis.CreateStorageAdapter(kvManagerLoader, datastoreConfig, tableName)
-        */
-        case "hashmap" => return HashMapAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
-        case "treemap" => return TreeMapAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
-        // Other relational stores such as sqlserver, mysql
-        case "sqlserver" => return SqlServerAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
-        case "h2db" => return H2dbAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
-        // case "mysql" => return MySqlAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig)
+      // Other KV stores
+      case "cassandra" => return CassandraAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+      case "hbase" => return HBaseAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+      /*
+      // Simple file base implementations
+      case "redis" => return KeyValueRedis.CreateStorageAdapter(kvManagerLoader, datastoreConfig, tableName)
+      */
+      case "hashmap" => return HashMapAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+      case "treemap" => return TreeMapAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+      // Other relational stores such as sqlserver, mysql
+      case "sqlserver" => return SqlServerAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+      case "h2db" => return H2dbAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+      // case "mysql" => return MySqlAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig)
 
-        // Default, Load it from Class
-        case _ => {
+      // Default, Load it from Class
+      case _ => {
+        try {
+          Class.forName(className, true, kvManagerLoader.loader)
+        } catch {
+          case e: Exception => {
+            logger.error("Failed to load Storage Adapter class %s".format(className), e)
+            throw e // Rethrow
+          }
+        }
+
+        // Convert class name into a class
+        val clz = Class.forName(className, true, kvManagerLoader.loader)
+
+        var isDs = false
+        var curClz = clz
+
+        while (curClz != null && isDs == false) {
+          isDs = isDerivedFrom(curClz, "com.ligadata.StorageBase.StorageAdapterFactory")
+          if (isDs == false)
+            curClz = curClz.getSuperclass()
+        }
+
+        if (isDs) {
           try {
-            Class.forName(className, true, kvManagerLoader.loader)
+            val module = kvManagerLoader.mirror.staticModule(className)
+            val obj = kvManagerLoader.mirror.reflectModule(module)
+
+            val objinst = obj.instance
+            if (objinst.isInstanceOf[StorageAdapterFactory]) {
+              val storageAdapterObj = objinst.asInstanceOf[StorageAdapterFactory]
+              return storageAdapterObj.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+            } else {
+              logger.error("Failed to instantiate Storage Adapter with configuration:" + adapterConfig)
+              return null
+            }
+
           } catch {
             case e: Exception => {
-              logger.error("Failed to load Storage Adapter class %s".format(className), e)
-              throw e // Rethrow
+              logger.error("Failed to instantiate Storage Adapter with configuration:" + adapterConfig, e)
+              return null
             }
           }
-
-          // Convert class name into a class
-          val clz = Class.forName(className, true, kvManagerLoader.loader)
-
-          var isDs = false
-          var curClz = clz
-
-          while (curClz != null && isDs == false) {
-            isDs = isDerivedFrom(curClz, "com.ligadata.StorageBase.StorageAdapterFactory")
-            if (isDs == false)
-              curClz = curClz.getSuperclass()
-          }
-
-          if (isDs) {
-            try {
-              val module = kvManagerLoader.mirror.staticModule(className)
-              val obj = kvManagerLoader.mirror.reflectModule(module)
-
-              val objinst = obj.instance
-              if (objinst.isInstanceOf[StorageAdapterFactory]) {
-                val storageAdapterObj = objinst.asInstanceOf[StorageAdapterFactory]
-                return storageAdapterObj.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
-              } else {
-                logger.error("Failed to instantiate Storage Adapter with configuration:" + adapterConfig)
-                return null
-              }
-
-            } catch {
-              case e: Exception => {
-                logger.error("Failed to instantiate Storage Adapter with configuration:" + adapterConfig, e)
-                return null
-              }
-            }
-          } else {
-            logger.error("Failed to instantiate Storage Adapter with configuration:" + adapterConfig)
-            return null
-          }
+        } else {
+          logger.error("Failed to instantiate Storage Adapter with configuration:" + adapterConfig)
+          return null
         }
       }
     }
+
     val errMsg = "Failed to instantiate Storage Adapter with configuration:" + adapterConfig
     logger.error(errMsg)
     throw new Exception(errMsg)
   }
+
 }
