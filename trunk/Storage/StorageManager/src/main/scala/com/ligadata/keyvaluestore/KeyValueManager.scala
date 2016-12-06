@@ -65,11 +65,11 @@ object KeyValueManager {
     val (className, jarName, dependencyJars) = getClassNameJarNameDepJarsFromJson(parsed_json)
     logger.debug("className:%s, jarName:%s, dependencyJars:%s".format(className, jarName, dependencyJars))
     var allJars: collection.immutable.Set[String] = null
-    if (dependencyJars != null && jarName != null) {
+    if (dependencyJars != null && jarName != null && jarName.trim.size > 0) {
       allJars = dependencyJars.toSet + jarName
-    } else if (dependencyJars != null) {
+    } else if (dependencyJars != null && dependencyJars.size > 0) {
       allJars = dependencyJars.toSet
-    } else if (jarName != null) {
+    } else if (jarName != null && jarName.trim.size > 0) {
       allJars = collection.immutable.Set(jarName)
     }
 
