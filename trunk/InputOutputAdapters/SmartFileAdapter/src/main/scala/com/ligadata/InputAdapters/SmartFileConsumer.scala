@@ -962,29 +962,32 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             }
           }
 
-          if (requestToAssign != null) {
+          if (requestToAssign != null && requestToAssign.length > 0) {
             //LOG.debug("Smart File Consumer - finished call to saveFileRequestsQueue, from assignInitialFiles")
             val fileToProcessFullPath = fileInfo._3
-
 
             removeFromRequestQueue(requestToAssign) //remove the current request
 
             val reqTokens = requestToAssign.split(":")
-            val fileAssignmentKeyPath = reqTokens(1)
-            val participantPathTokens = reqTokens(0).split("/")
-            val nodeId = participantPathTokens(0)
-            val partitionId = participantPathTokens(1).toInt
+            if(reqTokens.length >= 2) {
+              val fileAssignmentKeyPath = reqTokens(1)
+              val participantPathTokens = reqTokens(0).split("/")
+              if(participantPathTokens.length >= 2) {
+                val nodeId = participantPathTokens(0)
+                val partitionId = participantPathTokens(1).toInt
 
-            assignedFilesList.append(fileToProcessFullPath)
+                assignedFilesList.append(fileToProcessFullPath)
 
-            val newProcessingItem = nodeId + "/" + partitionId + ":" + fileToProcessFullPath
-            addToProcessingQueue(newProcessingItem) //add to processing queue
+                val newProcessingItem = nodeId + "/" + partitionId + ":" + fileToProcessFullPath
+                addToProcessingQueue(newProcessingItem) //add to processing queue
 
-            LOG.debug("Smart File Consumer - Initial files : Adding a file processing assignment of file (" + fileToProcessFullPath +
-              ") to Node " + nodeId + ", partition Id=" + partitionId)
-            val offset = fileInfo._4
-            val data = fileToProcessFullPath + "|" + offset
-            envContext.setListenerCacheKey(fileAssignmentKeyPath, data)
+                LOG.debug("Smart File Consumer - Initial files : Adding a file processing assignment of file (" + fileToProcessFullPath +
+                  ") to Node " + nodeId + ", partition Id=" + partitionId)
+                val offset = fileInfo._4
+                val data = fileToProcessFullPath + "|" + offset
+                envContext.setListenerCacheKey(fileAssignmentKeyPath, data)
+              }
+            }
           }
         }
       })

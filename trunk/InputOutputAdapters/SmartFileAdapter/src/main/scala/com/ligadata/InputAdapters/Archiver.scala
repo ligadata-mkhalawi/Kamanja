@@ -400,6 +400,12 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
   private def flushArchiveDirStatus(archiveDirStatus : ArchiveDirStatus) : Unit = {
 
     try {
+      if(archiveDirStatus == null || archiveDirStatus.destFileCurrentOffset <= 0 ||
+        archiveDirStatus.originalMemoryStream == null || archiveDirStatus.originalMemoryStream.size() <= 0)
+        return //nothing to flush
+      else
+        logger.debug("archive dir {} has nothing to flush", archiveDirStatus.dir)
+
       val lastSrcFilePath = archiveDirStatus.lastSrcFilePath
       if (lastSrcFilePath != null && lastSrcFilePath.length > 0) {
 
@@ -566,7 +572,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
           logger.debug("currentInMemorySize=" + currentInMemorySize)
           logger.debug("actualBufferLen=" + actualBufferLen)
 
-          val lengthToRead = Math.min(bufferSz,
+          val lengthToRead = Math.min(bufferSz - actualBufferLen,
             adapterConfig.archiveConfig.consolidateThresholdBytes - currentInMemorySize - actualBufferLen).toInt
           logger.debug("lengthToRead={}", lengthToRead.toString)
           if (lengthToRead > 0) {

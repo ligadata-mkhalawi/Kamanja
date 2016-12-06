@@ -80,15 +80,19 @@ class ParquetPartitionFile(fc : SmartFileProducerConfiguration, key : String, av
 
   def close() : Unit = {
     if(parquetWriter != null) {
-      try {
-        LOG.info("closing parquetWriter for file " + actualActiveFilePath)
-        parquetWriter.close()
-      }
-      catch{
-        case ex : Throwable => LOG.error("Error while closing file " + actualActiveFilePath, ex)
-      }
+      val isClosedProperly =
+        try {
+          LOG.info("closing parquetWriter for file " + actualActiveFilePath)
+          parquetWriter.close()
+          true
+        }
+        catch{
+          case ex : Throwable =>
+            LOG.error("Error while closing file " + actualActiveFilePath, ex)
+            false
+        }
 
-      if(!actualActiveFilePath.equals(finalFilePath)) {//move from tmp file to final dest
+      if(isClosedProperly && !actualActiveFilePath.equals(finalFilePath)) {//move from tmp file to final dest
         try {
           val inputConfig = com.ligadata.AdaptersConfiguration.SmartFileAdapterConfiguration.outputConfigToInputConfig(fc)
           val tmpFileDirNoProtocol = com.ligadata.InputAdapters.MonitorUtils.getFileParentDir(tmpFilePath, inputConfig)
