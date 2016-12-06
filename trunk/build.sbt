@@ -43,6 +43,8 @@ lazy val ExtDependencyLibs = project.in(file("ExtDependencyLibs")).configs(TestC
 
 lazy val ExtDependencyLibs2 = project.in(file("ExtDependencyLibs2")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild)
 
+lazy val HBaseExtDependencyLibs = project.in(file("HBaseExtDependencyLibs")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild)
+
 lazy val KamanjaInternalDeps = project.in(file("KamanjaInternalDeps")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", InputOutputAdapterBase, Exceptions, DataDelimiters, Metadata, KamanjaBase, MetadataBootstrap,
   Serialize, ZooKeeperListener, ZooKeeperLeaderLatch, KamanjaUtils, TransactionService, StorageManager, PmmlCompiler, ZooKeeperClient, OutputMsgDef, SecurityAdapterBase, HeartBeat,
   JpmmlFactoryOfModelInstanceFactory, JarFactoryOfModelInstanceFactory, KamanjaVersion, InstallDriverBase, BaseFunctions, FileSimpleInputOutputAdapters, SimpleEnvContextImpl,
@@ -168,7 +170,7 @@ lazy val StorageElasticsearch = project.in(file("Storage/Elasticsearch")).config
 
 lazy val StorageHashMap = project.in(file("Storage/HashMap")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageBase, Serialize, Exceptions, KamanjaUtils, KvBase)
 
-lazy val StorageHBase = project.in(file("Storage/HBase")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageBase, Serialize, Exceptions, KamanjaUtils, KvBase)
+lazy val StorageHBase = project.in(file("Storage/HBase")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", HBaseExtDependencyLibs % "provided", StorageBase, Serialize, Exceptions, KamanjaUtils, KvBase)
 
 lazy val StorageTreeMap = project.in(file("Storage/TreeMap")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageBase, Serialize, Exceptions, KamanjaUtils, KvBase)
 
