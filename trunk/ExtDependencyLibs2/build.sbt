@@ -173,8 +173,8 @@ libraryDependencies ++= {
     "jmimemagic" % "jmimemagic" % "0.1.2"
   )
 }
-libraryDependencies += "org.apache.hadoop" % "hadoop-client" % "2.7.1"
-libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % "2.7.1"
+libraryDependencies += "org.apache.hadoop" % "hadoop-client" % "2.7.3"
+libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % "2.7.3"
 libraryDependencies += "org.apache.commons" % "commons-vfs2" % "2.0"
 libraryDependencies += "org.apache.commons" % "commons-compress" % "1.5"
 libraryDependencies += "org.anarres.lzo" % "lzo-core" % "1.0.0"

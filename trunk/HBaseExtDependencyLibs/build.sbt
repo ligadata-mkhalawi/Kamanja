@@ -77,4 +77,8 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
 
 libraryDependencies += "org.apache.hbase" % "hbase-client" % "1.2.4"
 libraryDependencies += "org.apache.hbase" % "hbase-common" % "1.2.4"
-
+libraryDependencies += "org.apache.hadoop" % "hadoop-common" % "2.7.3"
+libraryDependencies += "org.apache.hadoop" % "hadoop-client" % "2.7.3"
+libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % "2.7.3"
+libraryDependencies += "org.apache.commons" % "commons-vfs2" % "2.0"
+libraryDependencies += "org.apache.commons" % "commons-compress" % "1.5"

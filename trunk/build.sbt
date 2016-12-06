@@ -35,6 +35,8 @@ val assembleDependencies = TaskKey[Unit]("assembleDependencies")
 assembleDependencies in Global := {
   (assembly in ExtDependencyLibs).value
   (assembly in ExtDependencyLibs2).value
+  (assembly in HBaseExtDependencyLibs).value
+  (assembly in KamanjaBaseDeps).value
   (assembly in KamanjaInternalDeps).value
 }
 
@@ -45,11 +47,13 @@ lazy val ExtDependencyLibs2 = project.in(file("ExtDependencyLibs2")).configs(Tes
 
 lazy val HBaseExtDependencyLibs = project.in(file("HBaseExtDependencyLibs")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild)
 
-lazy val KamanjaInternalDeps = project.in(file("KamanjaInternalDeps")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", InputOutputAdapterBase, Exceptions, DataDelimiters, Metadata, KamanjaBase, MetadataBootstrap,
-  Serialize, ZooKeeperListener, ZooKeeperLeaderLatch, KamanjaUtils, TransactionService, StorageManager, PmmlCompiler, ZooKeeperClient, OutputMsgDef, SecurityAdapterBase, HeartBeat,
+lazy val KamanjaBaseDeps = project.in(file("KamanjaBaseDeps")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", InputOutputAdapterBase, Exceptions, DataDelimiters, Metadata, KamanjaBase, MetadataBootstrap, SecurityAdapterBase, Cache)
+
+lazy val KamanjaInternalDeps = project.in(file("KamanjaInternalDeps")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KamanjaBaseDeps % "provided", 
+  Serialize, ZooKeeperListener, ZooKeeperLeaderLatch, KamanjaUtils, TransactionService, StorageManager, PmmlCompiler, ZooKeeperClient, OutputMsgDef, HeartBeat,
   JpmmlFactoryOfModelInstanceFactory, JarFactoryOfModelInstanceFactory, KamanjaVersion, InstallDriverBase, BaseFunctions, FileSimpleInputOutputAdapters, SimpleEnvContextImpl,
   GenericMsgCompiler, MethodExtractor, JsonDataGen, Controller, AuditAdapters, CustomUdfLib, UtilityService,
-  UtilsForModels, MessageCompiler, jtm, Dag, NodeInfoExtract, SmartFileAdapter, ElasticsearchAdapters, Cache, CacheImp, CsvSerDeser, JsonSerDeser, KBinarySerDeser)
+  UtilsForModels, MessageCompiler, jtm, Dag, NodeInfoExtract, SmartFileAdapter, ElasticsearchAdapters, CacheImp, CsvSerDeser, JsonSerDeser, KBinarySerDeser)
 
 ////////////////////////
 
@@ -170,7 +174,7 @@ lazy val StorageElasticsearch = project.in(file("Storage/Elasticsearch")).config
 
 lazy val StorageHashMap = project.in(file("Storage/HashMap")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageBase, Serialize, Exceptions, KamanjaUtils, KvBase)
 
-lazy val StorageHBase = project.in(file("Storage/HBase")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", HBaseExtDependencyLibs % "provided", StorageBase, Serialize, Exceptions, KamanjaUtils, KvBase)
+lazy val StorageHBase = project.in(file("Storage/HBase")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", HBaseExtDependencyLibs % "provided", StorageBase, Serialize, Exceptions, KamanjaUtils, KvBase)
 
 lazy val StorageTreeMap = project.in(file("Storage/TreeMap")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageBase, Serialize, Exceptions, KamanjaUtils, KvBase)
 
