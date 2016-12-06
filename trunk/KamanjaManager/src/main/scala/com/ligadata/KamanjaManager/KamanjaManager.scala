@@ -1232,15 +1232,18 @@ class KamanjaManager extends Observer {
 
         if (cia != null) {
           cia.Shutdown
-          KamanjaMdCfg.updateAdapter(adapter.asInstanceOf[AdapterInfo], false, inputAdapters, outputAdapters, storageAdapters)
+          KamanjaMdCfg.updateAdapter(adapter.asInstanceOf[AdapterInfo], false, inputAdapters,
+            inputAdapKamanjaLoaderInfo, outputAdapters, outputAdapKamanjaLoaderInfo, storageAdapters)
         }
         if (coa != null) {
           coa.Shutdown
-          KamanjaMdCfg.updateAdapter(adapter.asInstanceOf[AdapterInfo], false, inputAdapters, outputAdapters, storageAdapters)
+          KamanjaMdCfg.updateAdapter(adapter.asInstanceOf[AdapterInfo], false, inputAdapters,
+            inputAdapKamanjaLoaderInfo, outputAdapters, outputAdapKamanjaLoaderInfo, storageAdapters)
         }
         if (csa != null) {
           csa.Shutdown
-          KamanjaMdCfg.updateAdapter(adapter.asInstanceOf[AdapterInfo], false, inputAdapters, outputAdapters, storageAdapters)
+          KamanjaMdCfg.updateAdapter(adapter.asInstanceOf[AdapterInfo], false, inputAdapters,
+            inputAdapKamanjaLoaderInfo, outputAdapters, outputAdapKamanjaLoaderInfo, storageAdapters)
         }
         return true
       }
