@@ -97,6 +97,8 @@ object PersistenceUtils {
   val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
   // 646 - 676 Change ends
 
+  private val kvMgrLoader = new KamanjaLoaderInfo
+
   lazy val versionStr = s"${KamanjaVersion.getMajorVersion}.${KamanjaVersion.getMinorVersion}.${KamanjaVersion.getMicroVersion}"
   lazy val excludeSystemJars = Set(s"ExtDependencyLibs_2.11-${versionStr}.jar", s"ExtDependencyLibs2_2.11-${versionStr}.jar", s"KamanjaInternalDeps_2.11-${versionStr}.jar",
                                       s"ExtDependencyLibs_2.10-${versionStr}.jar", s"ExtDependencyLibs2_2.10-${versionStr}.jar", s"KamanjaInternalDeps_2.10-${versionStr}.jar")
@@ -776,7 +778,7 @@ object PersistenceUtils {
   private def GetDataStoreHandle(jarPaths: collection.immutable.Set[String], dataStoreInfo: String): DataStore = {
     try {
       logger.debug("Getting DB Connection for dataStoreInfo:%s".format(dataStoreInfo))
-      return KeyValueManager.Get(jarPaths, dataStoreInfo, null, null)
+      return KeyValueManager.Get(jarPaths, dataStoreInfo, null, null, kvMgrLoader)
     } catch {
       case e: Exception => {
         logger.debug("", e)

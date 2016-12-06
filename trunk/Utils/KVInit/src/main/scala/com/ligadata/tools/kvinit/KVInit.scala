@@ -571,7 +571,7 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
   private def GetDataStoreHandle(jarPaths: collection.immutable.Set[String], dataStoreInfo: String): DataStore = {
     try {
       logger.debug("Getting DB Connection for dataStoreInfo:%s".format(dataStoreInfo))
-      return KeyValueManager.Get(jarPaths, dataStoreInfo, null, null)
+      return KeyValueManager.Get(jarPaths, dataStoreInfo, null, null, null)
     } catch {
       case e: Exception => throw e
       case e: Throwable => throw e

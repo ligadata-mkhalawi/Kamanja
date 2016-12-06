@@ -22,21 +22,22 @@ import com.ligadata.kamanja.metadata.AdapterInfo
 import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
-import com.ligadata.StorageBase.{ DataStore }
+import com.ligadata.StorageBase.{DataStore}
 import org.apache.logging.log4j._
 import com.ligadata.keyvaluestore._
 import com.ligadata.Utils.Utils._
-import com.ligadata.Utils.{ KamanjaClassLoader, KamanjaLoaderInfo }
+import com.ligadata.Utils.{KamanjaClassLoader, KamanjaLoaderInfo}
 import com.ligadata.StorageBase.StorageAdapterFactory
 
 object KeyValueManager {
   private val loggerName = this.getClass.getName
   private val logger = LogManager.getLogger(loggerName)
-  private val kvManagerLoader = new KamanjaLoaderInfo
-  // We will add more implementations here 
+  private val kvMgrLoader = new KamanjaLoaderInfo
+
+  // We will add more implementations here
   // so we can test  the system characteristics
   //
-  def Get(jarPaths: collection.immutable.Set[String], datastoreConfig: String, nodeCtxt: NodeContext, adapterInfo: AdapterInfo): DataStore = {
+  def Get(jarPaths: collection.immutable.Set[String], datastoreConfig: String, nodeCtxt: NodeContext, adapterInfo: AdapterInfo, localStorageLoader: KamanjaLoaderInfo /* = null */): DataStore = {
     val adapterConfig = if (datastoreConfig != null) datastoreConfig.trim else ""
 
     if (adapterConfig.size == 0) {
@@ -59,55 +60,57 @@ object KeyValueManager {
       }
     }
 
-    val storeType = parsed_json.getOrElse("StoreType", "").toString.trim.toLowerCase
+    val kvManagerLoader = if (localStorageLoader != null) localStorageLoader else kvMgrLoader
 
-    storeType match {
+    val (className, jarName, dependencyJars) = getClassNameJarNameDepJarsFromJson(parsed_json)
+    logger.debug("className:%s, jarName:%s, dependencyJars:%s".format(className, jarName, dependencyJars))
+    if (className != null && className.size > 0 && jarName != null && jarName.size > 0) {
+      var allJars: collection.immutable.Set[String] = null
+      if (dependencyJars != null && jarName != null) {
+        allJars = dependencyJars.toSet + jarName
+      } else if (dependencyJars != null) {
+        allJars = dependencyJars.toSet
+      } else if (jarName != null) {
+        allJars = collection.immutable.Set(jarName)
+      }
 
-      // Other KV stores
-      case "cassandra" => return CassandraAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
-      case "hbase" => return HBaseAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
-      /*
-      // Simple file base implementations
-      case "redis" => return KeyValueRedis.CreateStorageAdapter(kvManagerLoader, datastoreConfig, tableName)
-      */
-      case "hashmap" => return HashMapAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
-      case "treemap" => return TreeMapAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
-      // Other relational stores such as sqlserver, mysql
-      case "sqlserver" => return SqlServerAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
-      case "h2db" => return H2dbAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
-      // case "mysql" => return MySqlAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig)
+      val allJarsToBeValidated = scala.collection.mutable.Set[String]();
 
-      // Default, Load it from Class
-      case _ => {
-        val (className, jarName, dependencyJars) = getClassNameJarNameDepJarsFromJson(parsed_json)
-        logger.debug("className:%s, jarName:%s, dependencyJars:%s".format(className, jarName, dependencyJars))
-        if (className != null && className.size > 0 && jarName != null && jarName.size > 0) {
-          var allJars: collection.immutable.Set[String] = null
-          if (dependencyJars != null && jarName != null) {
-            allJars = dependencyJars.toSet + jarName
-          } else if (dependencyJars != null) {
-            allJars = dependencyJars.toSet
-          } else if (jarName != null) {
-            allJars = collection.immutable.Set(jarName)
-          }
+      if (allJars != null) {
+        allJarsToBeValidated ++= allJars.map(j => GetValidJarFile(jarPaths, j))
+      }
 
-          val allJarsToBeValidated = scala.collection.mutable.Set[String]();
+      val nonExistsJars = CheckForNonExistanceJars(allJarsToBeValidated.toSet)
+      if (nonExistsJars.size > 0) {
+        logger.error("Not found jars in Storage Adapters Jars List : {" + nonExistsJars.mkString(", ") + "}")
+        return null
+      }
 
-          if (allJars != null) {
-            allJarsToBeValidated ++= allJars.map(j => GetValidJarFile(jarPaths, j))
-          }
+      if (allJars != null) {
+        if (LoadJars(allJars.map(j => GetValidJarFile(jarPaths, j)).toArray, kvManagerLoader.loadedJars, kvManagerLoader.loader) == false)
+          throw new Exception("Failed to add Jars")
+      }
 
-          val nonExistsJars = CheckForNonExistanceJars(allJarsToBeValidated.toSet)
-          if (nonExistsJars.size > 0) {
-            logger.error("Not found jars in Storage Adapters Jars List : {" + nonExistsJars.mkString(", ") + "}")
-            return null
-          }
+      val storeType = parsed_json.getOrElse("StoreType", "").toString.trim.toLowerCase
 
-          if (allJars != null) {
-            if (LoadJars(allJars.map(j => GetValidJarFile(jarPaths, j)).toArray, kvManagerLoader.loadedJars, kvManagerLoader.loader) == false)
-              throw new Exception("Failed to add Jars")
-          }
+      storeType match {
 
+        // Other KV stores
+        case "cassandra" => return CassandraAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+        case "hbase" => return HBaseAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+        /*
+        // Simple file base implementations
+        case "redis" => return KeyValueRedis.CreateStorageAdapter(kvManagerLoader, datastoreConfig, tableName)
+        */
+        case "hashmap" => return HashMapAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+        case "treemap" => return TreeMapAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+        // Other relational stores such as sqlserver, mysql
+        case "sqlserver" => return SqlServerAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+        case "h2db" => return H2dbAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+        // case "mysql" => return MySqlAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig)
+
+        // Default, Load it from Class
+        case _ => {
           try {
             Class.forName(className, true, kvManagerLoader.loader)
           } catch {

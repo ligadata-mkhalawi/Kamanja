@@ -164,7 +164,7 @@ echo "clean, package and assemble $srcPath ..."
 
 cd $srcPath/
 
-sbt clean '++ 2.10.4 package' '++ 2.10.4 ExtDependencyLibs/assembly' '++ 2.10.4 ExtDependencyLibs2/assembly' '++ 2.10.4 KamanjaInternalDeps/assembly' 
+sbt clean '++ 2.10.4 package' '++ 2.10.4 ExtDependencyLibs/assembly' '++ 2.10.4 ExtDependencyLibs2/assembly' '++ 2.10.4 HBaseExtDependencyLibs/assembly' '++ 2.10.4 KamanjaInternalDeps/assembly'
 sbt '++ 2.10.4 ClusterInstallerDriver/assembly' '++ 2.10.4 GetComponent/assembly' '++ 2.10.4 InstallDriver/assembly'
 #   '++ 2.10.4 NodeInfoExtract/assembly' '++ 2.10.4 MigrateManager/assembly'
 
@@ -217,6 +217,7 @@ cp $srcPath/Utils/NodeInfoExtract/target/scala-2.10/nodeinfoextract* $systemlib
 # copy jars used to reduce package size
 cp ExtDependencyLibs/target/scala-2.10/ExtDependencyLibs_2.10-${currentKamanjaVersion}.jar $systemlib
 cp ExtDependencyLibs2/target/scala-2.10/ExtDependencyLibs2_2.10-${currentKamanjaVersion}.jar $systemlib
+cp HBaseExtDependencyLibs/target/scala-2.10/HBaseExtDependencyLibs_2.10-${currentKamanjaVersion}.jar $systemlib
 cp KamanjaInternalDeps/target/scala-2.10/KamanjaInternalDeps_2.10-${currentKamanjaVersion}.jar $systemlib
 
 # Copy jars needed for Kafka
@@ -485,7 +486,7 @@ if [ "$migration2_10libsCopiesFor2_11" == "false" ]; then
 fi
 
 #Now do full build of 2.11
-sbt clean '++ 2.11.7 package' '++ 2.11.7 ExtDependencyLibs/assembly' '++ 2.11.7 ExtDependencyLibs2/assembly' '++ 2.11.7 KamanjaInternalDeps/assembly' 
+sbt clean '++ 2.11.7 package' '++ 2.11.7 ExtDependencyLibs/assembly' '++ 2.11.7 ExtDependencyLibs2/assembly' '++ 2.11.7 HBaseExtDependencyLibs/assembly' '++ 2.11.7 KamanjaInternalDeps/assembly'
 sbt '++ 2.11.7 ClusterInstallerDriver/assembly' '++ 2.11.7 GetComponent/assembly' '++ 2.11.7 InstallDriver/assembly' 
 #'++ 2.11.7 NodeInfoExtract/assembly' '++ 2.11.7 MigrateManager/assembly'
 
@@ -533,6 +534,7 @@ cp $ivyPath/cache/org.apache.commons/commons-pool2/jars/commons-pool2-2.4.2.jar 
 # copy jars used to reduce package size
 cp ExtDependencyLibs/target/scala-2.11/ExtDependencyLibs_2.11-${currentKamanjaVersion}.jar $systemlib
 cp ExtDependencyLibs2/target/scala-2.11/ExtDependencyLibs2_2.11-${currentKamanjaVersion}.jar $systemlib
+cp HBaseExtDependencyLibs/target/scala-2.11/HBaseExtDependencyLibs_2.11-${currentKamanjaVersion}.jar $systemlib
 cp KamanjaInternalDeps/target/scala-2.11/KamanjaInternalDeps_2.11-${currentKamanjaVersion}.jar $systemlib
 
 cp $ivyPath/cache/org.apache.kafka/kafka_2.11/jars/kafka_2.11-0.8.2.2.jar $systemlib

@@ -252,6 +252,9 @@ class KamanjaManager extends Observer {
   private val inputAdapters = new ArrayBuffer[InputAdapter]
   private val outputAdapters = new ArrayBuffer[OutputAdapter]
   private val storageAdapters = new ArrayBuffer[DataStore]
+  private val inputAdapKamanjaLoaderInfo = new ArrayBuffer[KamanjaLoaderInfo]
+  private val outputAdapKamanjaLoaderInfo = new ArrayBuffer[KamanjaLoaderInfo]
+  private val storageAdapKamanjaLoaderInfo = new ArrayBuffer[KamanjaLoaderInfo]
   //  private val adapterChangedCntr = new java.util.concurrent.atomic.AtomicLong(0)
   private var adapterChangedCntr: Long = 0
   //  private val statusAdapters = new ArrayBuffer[OutputAdapter]
@@ -515,6 +518,7 @@ class KamanjaManager extends Observer {
     })
 
     inputAdapters.clear
+    inputAdapKamanjaLoaderInfo.clear
 
     outputAdapters.foreach(oa => {
       try {
@@ -533,6 +537,7 @@ class KamanjaManager extends Observer {
     })
 
     outputAdapters.clear
+    outputAdapKamanjaLoaderInfo.clear
 
     storageAdapters.foreach(sa => {
       try {
@@ -551,6 +556,7 @@ class KamanjaManager extends Observer {
     })
 
     storageAdapters.clear
+    storageAdapKamanjaLoaderInfo.clear
 
     //
     //    statusAdapters.foreach(oa => {
@@ -757,7 +763,7 @@ class KamanjaManager extends Observer {
       LOG.debug("Loading Adapters")
       // Loading Adapters (Do this after loading metadata manager & models & Dimensions (if we are loading them into memory))
 
-      retval = KamanjaMdCfg.LoadAdapters(inputAdapters, outputAdapters, storageAdapters)
+      retval = KamanjaMdCfg.LoadAdapters(inputAdapters, inputAdapKamanjaLoaderInfo, outputAdapters, outputAdapKamanjaLoaderInfo, storageAdapters, storageAdapKamanjaLoaderInfo)
 
       if (retval) {
         LOG.debug("Initialize Metadata Manager")
@@ -1206,7 +1212,8 @@ class KamanjaManager extends Observer {
 
       // If this is an add - just call updateAdapter, he will figure out if its input or output
       if (action.equalsIgnoreCase("add")) {
-        KamanjaMdCfg.updateAdapter(adapter.asInstanceOf[AdapterInfo], true, inputAdapters, outputAdapters, storageAdapters)
+        KamanjaMdCfg.updateAdapter(adapter.asInstanceOf[AdapterInfo], true, inputAdapters, inputAdapKamanjaLoaderInfo,
+          outputAdapters, outputAdapKamanjaLoaderInfo, storageAdapters)
         return true
       }
 

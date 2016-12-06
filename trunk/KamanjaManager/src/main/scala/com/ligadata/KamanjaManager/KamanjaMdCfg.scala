@@ -211,7 +211,7 @@ object KamanjaMdCfg {
       allJars = collection.immutable.Set(jarName)
     }
 
-    val adaptersAndEnvCtxtLoader = new KamanjaLoaderInfo(KamanjaConfiguration.baseLoader, true, true)
+    val adaptersAndEnvCtxtLoader = new KamanjaLoaderInfo(KamanjaConfiguration.baseLoader, false, true)
 
     if (allJars != null) {
       if (Utils.LoadJars(allJars.map(j => Utils.GetValidJarFile(initConfigs.jarPaths, j)).toArray, adaptersAndEnvCtxtLoader.loadedJars, adaptersAndEnvCtxtLoader.loader) == false)
@@ -249,7 +249,7 @@ object KamanjaMdCfg {
         if (objinst.isInstanceOf[EnvContext]) {
           val envCtxt = objinst.asInstanceOf[EnvContext]
           // First time creating metadata loader here
-          val metadataLoader = new KamanjaLoaderInfo(KamanjaConfiguration.baseLoader, true, true)
+          val metadataLoader = new KamanjaLoaderInfo(KamanjaConfiguration.baseLoader, false, true)
           envCtxt.setNodeInfo(KamanjaConfiguration.nodeId.toString, KamanjaConfiguration.clusterId)
           envCtxt.setMetadataLoader(metadataLoader)
           envCtxt.setAdaptersAndEnvCtxtLoader(adaptersAndEnvCtxtLoader)
@@ -329,7 +329,7 @@ object KamanjaMdCfg {
     * @param storageAdapters
     * @return
     */
-  def updateAdapter(inAdapter: AdapterInfo, isNew: Boolean, inputAdapters: ArrayBuffer[InputAdapter], outputAdapters: ArrayBuffer[OutputAdapter], storageAdapters: ArrayBuffer[DataStore]): Boolean = {
+  def updateAdapter(inAdapter: AdapterInfo, isNew: Boolean, inputAdapters: ArrayBuffer[InputAdapter], inputAdapKamanjaLoaderInfo: ArrayBuffer[KamanjaLoaderInfo], outputAdapters: ArrayBuffer[OutputAdapter], outputAdapKamanjaLoaderInfo: ArrayBuffer[KamanjaLoaderInfo], storageAdapters: ArrayBuffer[DataStore]): Boolean = {
 
       val conf = new AdapterConfiguration  //BOOOYA
       conf.Name = inAdapter.Name.toLowerCase
@@ -342,8 +342,10 @@ object KamanjaMdCfg {
       try {
         LOG.debug("Updating ADAPTER " + inAdapter.Name + ": isNew = " + isNew)
         if (inAdapter.typeString.equalsIgnoreCase("input")) {
-          val adapter = CreateInputAdapterFromConfig(conf, ExecContextFactoryImpl, KamanjaMetadata.gNodeContext).asInstanceOf[InputAdapter]
-          if (adapter == null) return false
+          val retVal  = CreateInputAdapterFromConfig(conf, ExecContextFactoryImpl, KamanjaMetadata.gNodeContext)
+          if (retVal == null || retVal._1 == null) return false
+          val adapter = retVal._1
+          val kamanjaLoaderInfo = retVal._2
 
           // Set up all the Bindings for this new adapter
           adapter.setObjectResolver(KamanjaMetadata)
@@ -363,14 +365,18 @@ object KamanjaMdCfg {
             })
             LOG.warn("updating a new adater " + adapter.inputConfig.Name)
             inputAdapters.remove(pos)
+            inputAdapKamanjaLoaderInfo.remove(pos)
           }
           inputAdapters.append(adapter)
+          inputAdapKamanjaLoaderInfo.append(kamanjaLoaderInfo)
           LOG.warn("New Adapter added " + adapter.inputConfig.Name)
         }
 
         if (inAdapter.typeString.equalsIgnoreCase("output")) {
-          val adapter = CreateOutputAdapterFromConfig(conf, KamanjaMetadata.gNodeContext).asInstanceOf[OutputAdapter]
-          if (adapter == null) return false
+          val retVal = CreateOutputAdapterFromConfig(conf, KamanjaMetadata.gNodeContext)
+          if (retVal == null || retVal._1 == null) return false
+          val adapter = retVal._1
+          val kamanjaLoaderInfo = retVal._2
 
           adapter.setObjectResolver(KamanjaMetadata)
           val adapterLevelBinding = mdMgr.AllAdapterMessageBindings.values.groupBy(_.adapterName.trim.toLowerCase())
@@ -390,9 +396,11 @@ object KamanjaMdCfg {
               i += 1
             })
             outputAdapters.remove(pos)
+            outputAdapKamanjaLoaderInfo.remove(pos)
             LOG.warn("updating a new adater " + adapter.inputConfig.Name)
           }
           outputAdapters.append(adapter)
+          outputAdapKamanjaLoaderInfo.append(kamanjaLoaderInfo)
           LOG.warn("New Adapter added " + adapter.inputConfig.Name)
         }
 
@@ -412,7 +420,9 @@ object KamanjaMdCfg {
 
   }
 
-  def LoadAdapters(inputAdapters: ArrayBuffer[InputAdapter], outputAdapters: ArrayBuffer[OutputAdapter], storageAdapters: ArrayBuffer[DataStore]): Boolean = {
+  def LoadAdapters(inputAdapters: ArrayBuffer[InputAdapter], inputAdapKamanjaLoaderInfo: ArrayBuffer[KamanjaLoaderInfo],
+                   outputAdapters: ArrayBuffer[OutputAdapter], outputAdapKamanjaLoaderInfo: ArrayBuffer[KamanjaLoaderInfo],
+                   storageAdapters: ArrayBuffer[DataStore], storageAdapKamanjaLoaderInfo: ArrayBuffer[KamanjaLoaderInfo]): Boolean = {
     LOG.info("Loading Adapters started @ " + Utils.GetCurDtTmStr)
     val s0 = System.nanoTime
     val allAdapters = mdMgr.Adapters
@@ -439,7 +449,7 @@ object KamanjaMdCfg {
 
     // Get output adapter
     LOG.debug("Getting Storage Adapters")
-    if (!LoadStorageAdapsForCfg(storageAdaps, storageAdapters, KamanjaMetadata.gNodeContext))
+    if (!LoadStorageAdapsForCfg(storageAdaps, storageAdapters, storageAdapKamanjaLoaderInfo, KamanjaMetadata.gNodeContext))
       return false
 
     // Get status adapter
@@ -449,7 +459,7 @@ object KamanjaMdCfg {
 
     // Get output adapter
     LOG.debug("Getting Output Adapters")
-    if (!LoadOutputAdapsForCfg(outputAdaps, outputAdapters, KamanjaMetadata.gNodeContext))
+    if (!LoadOutputAdapsForCfg(outputAdaps, outputAdapters, outputAdapKamanjaLoaderInfo, KamanjaMetadata.gNodeContext))
       return false
 
     // Get output adapter
@@ -460,7 +470,7 @@ object KamanjaMdCfg {
     // Get input adapter
     LOG.debug("Getting Input Adapters")
 
-    if (LoadInputAdapsForCfg(inputAdaps, inputAdapters, KamanjaMetadata.gNodeContext) == false)
+    if (LoadInputAdapsForCfg(inputAdaps, inputAdapters, inputAdapKamanjaLoaderInfo, KamanjaMetadata.gNodeContext) == false)
       return false
 
     // Get input adapter
@@ -474,7 +484,7 @@ object KamanjaMdCfg {
     true
   }
 
-  private def CreateStorageAdapterFromConfig(adapterInfo: AdapterInfo, nodeContext: NodeContext): DataStore = {
+  private def CreateStorageAdapterFromConfig(adapterInfo: AdapterInfo, nodeContext: NodeContext): (DataStore, KamanjaLoaderInfo) = {
     if (adapterInfo == null || nodeContext == null) return null
 
     var allJars: collection.immutable.Set[String] = null
@@ -486,17 +496,28 @@ object KamanjaMdCfg {
       allJars = collection.immutable.Set(adapterInfo.jarName)
     }
 
-    KeyValueManager.Get(allJars, adapterInfo.FullAdapterConfig, nodeContext, adapterInfo)
+    val adaptersAndEnvCtxtLoader = nodeContext.getEnvCtxt().getAdaptersAndEnvCtxtLoader
+
+    val kamanjaLoaderInfo = new KamanjaLoaderInfo(adaptersAndEnvCtxtLoader, false, true)
+
+    val adapter = KeyValueManager.Get(allJars, adapterInfo.FullAdapterConfig, nodeContext, adapterInfo, kamanjaLoaderInfo)
+
+    (adapter, kamanjaLoaderInfo)
   }
 
-  private def LoadStorageAdapsForCfg(adaps: scala.collection.mutable.Map[String, AdapterInfo], storageAdapters: ArrayBuffer[DataStore], nodeContext: NodeContext): Boolean = {
+  private def LoadStorageAdapsForCfg(adaps: scala.collection.mutable.Map[String, AdapterInfo], storageAdapters: ArrayBuffer[DataStore],
+                                     storageAdapKamanjaLoaderInfo: ArrayBuffer[KamanjaLoaderInfo], nodeContext: NodeContext): Boolean = {
     // ConfigurationName
     adaps.foreach(ac => {
       try {
-        val adapter = CreateStorageAdapterFromConfig(ac._2, nodeContext)
-        if (adapter == null) return false
+        val retVal = CreateStorageAdapterFromConfig(ac._2, nodeContext)
+        if (retVal == null || retVal._1 == null) return false
+        val adapter = retVal._1
+        val kamanjaLoaderInfo = retVal._2
         adapter.setObjectResolver(KamanjaMetadata)
+
         storageAdapters += adapter
+        storageAdapKamanjaLoaderInfo += kamanjaLoaderInfo
         KamanjaManager.instance.incrAdapterChangedCntr()
       } catch {
         case e: Exception => {
@@ -512,7 +533,7 @@ object KamanjaMdCfg {
     return true
   }
 
-  private def CreateOutputAdapterFromConfig(statusAdapterCfg: AdapterConfiguration, nodeContext: NodeContext): OutputAdapter = {
+  private def CreateOutputAdapterFromConfig(statusAdapterCfg: AdapterConfiguration, nodeContext: NodeContext): (OutputAdapter, KamanjaLoaderInfo) = {
     if (statusAdapterCfg == null) return null
     var allJars: collection.immutable.Set[String] = null
     if (statusAdapterCfg.dependencyJars != null && statusAdapterCfg.jarName != null) {
@@ -525,9 +546,10 @@ object KamanjaMdCfg {
 
     val envContext = nodeContext.getEnvCtxt()
     val adaptersAndEnvCtxtLoader = envContext.getAdaptersAndEnvCtxtLoader
+    val kamanjaLoaderInfo = new KamanjaLoaderInfo(adaptersAndEnvCtxtLoader, false, true)
 
     if (allJars != null) {
-      if (Utils.LoadJars(allJars.map(j => Utils.GetValidJarFile(envContext.getJarPaths(), j)).toArray, adaptersAndEnvCtxtLoader.loadedJars, adaptersAndEnvCtxtLoader.loader) == false) {
+      if (Utils.LoadJars(allJars.map(j => Utils.GetValidJarFile(envContext.getJarPaths(), j)).toArray, kamanjaLoaderInfo.loadedJars, kamanjaLoaderInfo.loader) == false) {
         val szErrMsg = "Failed to load Jars:" + allJars.mkString(",")
         LOG.error(szErrMsg)
         throw new Exception(szErrMsg)
@@ -536,7 +558,7 @@ object KamanjaMdCfg {
 
     // Try for errors before we do real loading & processing
     try {
-      Class.forName(statusAdapterCfg.className, true, adaptersAndEnvCtxtLoader.loader)
+      Class.forName(statusAdapterCfg.className, true, kamanjaLoaderInfo.loader)
     } catch {
       case e: Exception => {
         val szErrMsg = "Failed to load Status/Output Adapter %s with class %s".format(statusAdapterCfg.Name, statusAdapterCfg.className)
@@ -551,7 +573,7 @@ object KamanjaMdCfg {
     }
 
     // Convert class name into a class
-    val clz = Class.forName(statusAdapterCfg.className, true, adaptersAndEnvCtxtLoader.loader)
+    val clz = Class.forName(statusAdapterCfg.className, true, kamanjaLoaderInfo.loader)
 
     var isOutputAdapter = false
     var curClz = clz
@@ -564,15 +586,15 @@ object KamanjaMdCfg {
 
     if (isOutputAdapter) {
       try {
-        val module = adaptersAndEnvCtxtLoader.mirror.staticModule(statusAdapterCfg.className)
-        val obj = adaptersAndEnvCtxtLoader.mirror.reflectModule(module)
+        val module = kamanjaLoaderInfo.mirror.staticModule(statusAdapterCfg.className)
+        val obj = kamanjaLoaderInfo.mirror.reflectModule(module)
 
         val objinst = obj.instance
         if (objinst.isInstanceOf[OutputAdapterFactory]) {
           val adapterObj = objinst.asInstanceOf[OutputAdapterFactory]
           val adapter = adapterObj.CreateOutputAdapter(statusAdapterCfg, nodeContext)
           LOG.info("Created Output Adapter for Name:" + statusAdapterCfg.Name + ", Class:" + statusAdapterCfg.className)
-          return adapter
+          return (adapter, kamanjaLoaderInfo)
         } else {
           LOG.error("Failed to instantiate output/status adapter object:" + statusAdapterCfg.className)
         }
@@ -590,7 +612,8 @@ object KamanjaMdCfg {
     null
   }
 
-  private def LoadOutputAdapsForCfg(adaps: scala.collection.mutable.Map[String, AdapterInfo], outputAdapters: ArrayBuffer[OutputAdapter], nodeContext: NodeContext): Boolean = {
+  private def LoadOutputAdapsForCfg(adaps: scala.collection.mutable.Map[String, AdapterInfo], outputAdapters: ArrayBuffer[OutputAdapter],
+                                    outputAdapKamanjaLoaderInfo: ArrayBuffer[KamanjaLoaderInfo], nodeContext: NodeContext): Boolean = {
     // ConfigurationName
     adaps.foreach(ac => {
       //BUGBUG:: Not yet validating required fields
@@ -612,10 +635,13 @@ object KamanjaMdCfg {
       conf.tenantId = adap.TenantId
 
       try {
-        val adapter = CreateOutputAdapterFromConfig(conf, nodeContext)
-        if (adapter == null) return false
+        val retVal = CreateOutputAdapterFromConfig(conf, nodeContext)
+        if (retVal == null || retVal._1 == null) return false
+        val adapter = retVal._1
+        val kamanjaLoaderInfo = retVal._2
         adapter.setObjectResolver(KamanjaMetadata)
         outputAdapters += adapter
+        outputAdapKamanjaLoaderInfo += kamanjaLoaderInfo
         KamanjaManager.instance.incrAdapterChangedCntr()
       } catch {
         case e: Exception => {
@@ -631,7 +657,7 @@ object KamanjaMdCfg {
     return true
   }
 
-  private def CreateInputAdapterFromConfig(statusAdapterCfg: AdapterConfiguration, execCtxtObj: ExecContextFactory, nodeContext: NodeContext): InputAdapter = {
+  private def CreateInputAdapterFromConfig(statusAdapterCfg: AdapterConfiguration, execCtxtObj: ExecContextFactory, nodeContext: NodeContext): (InputAdapter, KamanjaLoaderInfo) = {
     if (statusAdapterCfg == null) return null
     var allJars: collection.immutable.Set[String] = null
 
@@ -646,14 +672,16 @@ object KamanjaMdCfg {
     val envContext = nodeContext.getEnvCtxt()
     val adaptersAndEnvCtxtLoader = envContext.getAdaptersAndEnvCtxtLoader
 
+    val kamanjaLoaderInfo = new KamanjaLoaderInfo(adaptersAndEnvCtxtLoader, false, true)
+
     if (allJars != null) {
-      if (Utils.LoadJars(allJars.map(j => Utils.GetValidJarFile(nodeContext.getEnvCtxt().getJarPaths(), j)).toArray, adaptersAndEnvCtxtLoader.loadedJars, adaptersAndEnvCtxtLoader.loader) == false)
+      if (Utils.LoadJars(allJars.map(j => Utils.GetValidJarFile(nodeContext.getEnvCtxt().getJarPaths(), j)).toArray, kamanjaLoaderInfo.loadedJars, kamanjaLoaderInfo.loader) == false)
         throw new Exception("Failed to add Jars")
     }
 
     // Try for errors before we do real loading & processing
     try {
-      Class.forName(statusAdapterCfg.className, true, adaptersAndEnvCtxtLoader.loader)
+      Class.forName(statusAdapterCfg.className, true, kamanjaLoaderInfo.loader)
     } catch {
       case e: Exception => {
         LOG.error("Failed to load Validate/Input Adapter %s with class %s".format(statusAdapterCfg.Name, statusAdapterCfg.className), e)
@@ -666,7 +694,7 @@ object KamanjaMdCfg {
     }
 
     // Convert class name into a class
-    val clz = Class.forName(statusAdapterCfg.className, true, adaptersAndEnvCtxtLoader.loader)
+    val clz = Class.forName(statusAdapterCfg.className, true, kamanjaLoaderInfo.loader)
 
     var isInputAdapter = false
     var curClz = clz
@@ -679,15 +707,15 @@ object KamanjaMdCfg {
 
     if (isInputAdapter) {
       try {
-        val module = adaptersAndEnvCtxtLoader.mirror.staticModule(statusAdapterCfg.className)
-        val obj = adaptersAndEnvCtxtLoader.mirror.reflectModule(module)
+        val module = kamanjaLoaderInfo.mirror.staticModule(statusAdapterCfg.className)
+        val obj = kamanjaLoaderInfo.mirror.reflectModule(module)
 
         val objinst = obj.instance
         if (objinst.isInstanceOf[InputAdapterFactory]) {
           val adapterObj = objinst.asInstanceOf[InputAdapterFactory]
           val adapter = adapterObj.CreateInputAdapter(statusAdapterCfg, execCtxtObj, nodeContext)
           LOG.info("Created Input Adapter for Name:" + statusAdapterCfg.Name + ", Class:" + statusAdapterCfg.className)
-          return adapter
+          return (adapter, kamanjaLoaderInfo)
         } else {
           LOG.error("Failed to instantiate input adapter object:" + statusAdapterCfg.className)
         }
@@ -705,7 +733,7 @@ object KamanjaMdCfg {
     null
   }
 
-  private def PrepInputAdapsForCfg(adaps: scala.collection.mutable.Map[String, AdapterInfo], inputAdapters: ArrayBuffer[InputAdapter], nodeContext: NodeContext, execCtxtObj: ExecContextFactory): Boolean = {
+  private def PrepInputAdapsForCfg(adaps: scala.collection.mutable.Map[String, AdapterInfo], inputAdapters: ArrayBuffer[InputAdapter], inputAdapKamanjaLoaderInfo: ArrayBuffer[KamanjaLoaderInfo], nodeContext: NodeContext, execCtxtObj: ExecContextFactory): Boolean = {
     // ConfigurationName
     if (adaps.size == 0) {
       return true
@@ -732,10 +760,14 @@ object KamanjaMdCfg {
 //      conf.associatedMsg = adap.AssociatedMessage
 
       try {
-        val adapter = CreateInputAdapterFromConfig(conf, execCtxtObj, nodeContext)
-        if (adapter == null) return false
+        val retVal = CreateInputAdapterFromConfig(conf, execCtxtObj, nodeContext)
+        if (retVal == null || retVal._1 == null) return false
+        val adapter = retVal._1.asInstanceOf[InputAdapter]
+        val kamanjaLoaderInfo = retVal._2
+
         adapter.setObjectResolver(KamanjaMetadata)
         inputAdapters += adapter
+        inputAdapKamanjaLoaderInfo += kamanjaLoaderInfo
         KamanjaManager.instance.incrAdapterChangedCntr()
       } catch {
         case e: Exception => {
@@ -747,8 +779,8 @@ object KamanjaMdCfg {
     return true
   }
 
-  private def LoadInputAdapsForCfg(adaps: scala.collection.mutable.Map[String, AdapterInfo], inputAdapters: ArrayBuffer[InputAdapter], gNodeContext: NodeContext): Boolean = {
-    return PrepInputAdapsForCfg(adaps, inputAdapters, gNodeContext, ExecContextFactoryImpl)
+  private def LoadInputAdapsForCfg(adaps: scala.collection.mutable.Map[String, AdapterInfo], inputAdapters: ArrayBuffer[InputAdapter], inputAdapKamanjaLoaderInfo: ArrayBuffer[KamanjaLoaderInfo], gNodeContext: NodeContext): Boolean = {
+    return PrepInputAdapsForCfg(adaps, inputAdapters, inputAdapKamanjaLoaderInfo, gNodeContext, ExecContextFactoryImpl)
   }
 /*
   private def LoadValidateInputAdapsFromCfg(validate_adaps: scala.collection.mutable.Map[String, AdapterInfo], valInputAdapters: ArrayBuffer[InputAdapter], outputAdapters: Array[OutputAdapter], gNodeContext: NodeContext): Boolean = {

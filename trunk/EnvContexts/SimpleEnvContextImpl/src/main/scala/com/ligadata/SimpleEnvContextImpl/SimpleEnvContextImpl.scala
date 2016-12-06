@@ -61,7 +61,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
 
   case class CacheInfo(HostList: String, CachePort: Int, CacheSizePerNode: Long, ReplicateFactor: Int, TimeToIdleSeconds: Long, EvictionPolicy: String)
 
-  case class TenantEnvCtxtInfo(tenantInfo: TenantInfo, datastore: DataStore, cachedContainers: scala.collection.mutable.Map[String, MsgContainerInfo], containersNames: scala.collection.mutable.Set[String])
+  case class TenantEnvCtxtInfo(tenantInfo: TenantInfo, datastore: DataStore, kamanjaLoaderInfo: KamanjaLoaderInfo, cachedContainers: scala.collection.mutable.Map[String, MsgContainerInfo], containersNames: scala.collection.mutable.Set[String])
 
   val CLASSNAME = "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$"
   private var hbExecutor: ExecutorService = Executors.newFixedThreadPool(1)
@@ -660,12 +660,14 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
   private[this] var _sysCatalogDatastore: DataStore = null
   private[this] var _objectResolver: ObjectResolver = null
   private[this] var _enableEachTransactionCommit = true
-  private[this] var _jarPaths: collection.immutable.Set[String] = null // Jar paths where we can resolve all jars (including dependency jars).
+  private[this] var _jarPaths: collection.immutable.Set[String] = null
+  // Jar paths where we can resolve all jars (including dependency jars).
+  private[this] var _sysCatalogKamanjaLoaderInfo: KamanjaLoaderInfo = null
 
-  private def GetDataStoreHandle(jarPaths: collection.immutable.Set[String], dataStoreInfo: String): DataStore = {
+  private def GetDataStoreHandle(jarPaths: collection.immutable.Set[String], dataStoreInfo: String, kamanjaLoaderInfo: KamanjaLoaderInfo): DataStore = {
     try {
       logger.debug("Getting DB Connection for dataStoreInfo:%s".format(dataStoreInfo))
-      return KeyValueManager.Get(jarPaths, dataStoreInfo, null, null)
+      return KeyValueManager.Get(jarPaths, dataStoreInfo, null, null, kamanjaLoaderInfo)
     } catch {
       case e: Exception => throw e
       case e: Throwable => throw e
@@ -995,12 +997,17 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     allTenants.foreach(tenantInfo => {
       if (tenantInfo != null && tenantInfo.primaryDataStore != null && tenantInfo.primaryDataStore.trim.size > 0) {
         try {
-          val tenantPrimaryDatastore = GetDataStoreHandle(_jarPaths, tenantInfo.primaryDataStore)
+          val kamanjaLoaderInfo =
+            if (getAdaptersAndEnvCtxtLoader != null)
+              new KamanjaLoaderInfo(getAdaptersAndEnvCtxtLoader, false, true)
+            else
+              new KamanjaLoaderInfo
+          val tenantPrimaryDatastore = GetDataStoreHandle(_jarPaths, tenantInfo.primaryDataStore, kamanjaLoaderInfo)
           if (tenantPrimaryDatastore != null) {
             tenantPrimaryDatastore.setObjectResolver(_objectResolver)
             tenantPrimaryDatastore.setDefaultSerializerDeserializer("com.ligadata.kamanja.serializer.kbinaryserdeser", Map[String, Any]())
           }
-          _tenantIdMap(tenantInfo.tenantId.toLowerCase()) = TenantEnvCtxtInfo(tenantInfo, tenantPrimaryDatastore, scala.collection.mutable.Map[String, MsgContainerInfo](), scala.collection.mutable.Set[String]())
+          _tenantIdMap(tenantInfo.tenantId.toLowerCase()) = TenantEnvCtxtInfo(tenantInfo, tenantPrimaryDatastore, kamanjaLoaderInfo, scala.collection.mutable.Map[String, MsgContainerInfo](), scala.collection.mutable.Set[String]())
         } catch {
           case e: Throwable => {
             logger.error("Failed to connect to datastore for tenantId:%swith configuration:%s".format(tenantInfo.tenantId, tenantInfo.primaryDataStore), e)
@@ -1008,7 +1015,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
           }
         }
       } else {
-        _tenantIdMap(tenantInfo.tenantId.toLowerCase()) = TenantEnvCtxtInfo(tenantInfo, null, scala.collection.mutable.Map[String, MsgContainerInfo](), scala.collection.mutable.Set[String]())
+        _tenantIdMap(tenantInfo.tenantId.toLowerCase()) = TenantEnvCtxtInfo(tenantInfo, null, null, scala.collection.mutable.Map[String, MsgContainerInfo](), scala.collection.mutable.Set[String]())
       }
     })
   }
@@ -2120,7 +2127,11 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     if (_sysCatalogDatastore != null)
       _sysCatalogDatastore.Shutdown()
     _sysCatalogDatastore = null
-    _sysCatalogDatastore = GetDataStoreHandle(_jarPaths, _sysCatalogDsString)
+    if (getAdaptersAndEnvCtxtLoader != null)
+      _sysCatalogKamanjaLoaderInfo = new KamanjaLoaderInfo(getAdaptersAndEnvCtxtLoader, false, true)
+    else
+      _sysCatalogKamanjaLoaderInfo = new KamanjaLoaderInfo
+    _sysCatalogDatastore = GetDataStoreHandle(_jarPaths, _sysCatalogDsString, _sysCatalogKamanjaLoaderInfo)
     if (_sysCatalogDatastore != null) {
       _sysCatalogDatastore.setObjectResolver(_objectResolver)
       _sysCatalogDatastore.setDefaultSerializerDeserializer("com.ligadata.kamanja.serializer.kbinaryserdeser", Map[String, Any]())

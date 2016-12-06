@@ -60,6 +60,8 @@ class SaveContainerDataCompImpl extends LogTrait with ObjectResolver {
   val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
   // 646 - 676 Change ends
 
+  private val kvMgrLoader = new KamanjaLoaderInfo
+
   private def LoadJarIfNeeded(elem: BaseElem, loadedJars: TreeSet[String], loader: KamanjaClassLoader): Unit = {
     var retVal: Boolean = true
     var allJars: Array[String] = null
@@ -112,7 +114,7 @@ class SaveContainerDataCompImpl extends LogTrait with ObjectResolver {
   private def GetDataStoreHandle(jarPaths: collection.immutable.Set[String], dataStoreInfo: String): DataStore = {
     try {
       logger.debug("Getting DB Connection for dataStoreInfo:%s".format(dataStoreInfo))
-      return KeyValueManager.Get(jarPaths, dataStoreInfo, null, null)
+      return KeyValueManager.Get(jarPaths, dataStoreInfo, null, null, kvMgrLoader)
     } catch {
       case e: Exception => {
         logger.error("Failed to connect Database:" + dataStoreInfo, e)

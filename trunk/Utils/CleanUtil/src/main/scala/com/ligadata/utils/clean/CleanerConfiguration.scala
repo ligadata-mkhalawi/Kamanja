@@ -98,7 +98,7 @@ class CleanerConfiguration(metadataConfigFile: String) {
       val jarPaths: Set[String] = if (tmpJarPaths != null) tmpJarPaths.split(",").toSet else scala.collection.immutable.Set[String]()
 
       // Get DataStore storage adapter
-      dataStore = KeyValueManager.Get(jarPaths, clusterCfg.cfgMap("SystemCatalog"), null, null)
+      dataStore = KeyValueManager.Get(jarPaths, clusterCfg.cfgMap("SystemCatalog"), null, null, null)
 
       // Get MetadataStore storage adapter
       metadataStore = MetadataAPIImpl.GetMainDS

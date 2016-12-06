@@ -16,20 +16,20 @@
 
 package com.ligadata.transactions
 
-import com.ligadata.KamanjaBase.{ EnvContext }
-
-import org.apache.logging.log4j.{ Logger, LogManager }
+import com.ligadata.KamanjaBase.EnvContext
+import org.apache.logging.log4j.{LogManager, Logger}
 import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
-import scala.collection.mutable.ArrayBuffer
 
+import scala.collection.mutable.ArrayBuffer
 import com.ligadata.ZooKeeper._
 import org.apache.curator.framework.CuratorFramework
 import org.apache.curator.framework.recipes.locks.InterProcessMutex
-import com.ligadata.StorageBase.{ DataStore, Transaction }
+import com.ligadata.StorageBase.{DataStore, Transaction}
 import com.ligadata.keyvaluestore.KeyValueManager
-import com.ligadata.KvBase.{ Key, TimeRange, KvBaseDefalts }
+import com.ligadata.KvBase.{Key, KvBaseDefalts, TimeRange}
+import com.ligadata.Utils.KamanjaLoaderInfo
 
 object NodeLevelTransService {
   private[this] val LOG = LogManager.getLogger(getClass);
@@ -47,11 +47,12 @@ object NodeLevelTransService {
   private[this] var txnsDataStore: DataStore = null
   private[this] var jarPaths: collection.immutable.Set[String] = null
   private[this] var _serInfoBufBytes = 32
+  private[this] val kvMgrLoader = new KamanjaLoaderInfo
 
   private def GetDataStoreHandle(jarPaths: collection.immutable.Set[String], dataStoreInfo: String, tableName: String): DataStore = {
     try {
       LOG.debug("Getting DB Connection for dataStoreInfo:%s".format(dataStoreInfo))
-      return KeyValueManager.Get(jarPaths, dataStoreInfo, null, null)
+      return KeyValueManager.Get(jarPaths, dataStoreInfo, null, null, kvMgrLoader)
     } catch {
       case e: Exception => {
         LOG.error("", e)
