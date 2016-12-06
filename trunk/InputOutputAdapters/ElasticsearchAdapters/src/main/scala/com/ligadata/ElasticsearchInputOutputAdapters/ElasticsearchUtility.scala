@@ -6,16 +6,14 @@ import com.ligadata.Utils.KamanjaLoaderInfo
 import com.ligadata.kamanja.metadata.MdMgr._
 import com.ligadata.keyvaluestore.ElasticsearchAdapter
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.hbase.client._
-import org.apache.hadoop.security.UserGroupInformation
+// import org.apache.hadoop.security.UserGroupInformation
 
 
 class ElasticsearchUtility /*extends LogTrait*/ {
   var dataDataStoreInfo: String = null
   private val kvManagerLoader = new KamanjaLoaderInfo
   val elasticsearchConfig = new Configuration()
-  var ugi: UserGroupInformation = null
-  var conn: Connection = _
+  // var ugi: UserGroupInformation = null
   var _getOps: scala.collection.mutable.Map[String, Long] = new scala.collection.mutable.HashMap()
   var _getObjs: scala.collection.mutable.Map[String, Long] = new scala.collection.mutable.HashMap()
   var _getBytes: scala.collection.mutable.Map[String, Long] = new scala.collection.mutable.HashMap()
