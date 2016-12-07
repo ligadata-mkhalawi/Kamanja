@@ -28,6 +28,7 @@ import com.ligadata.kamanja.metadata._
 import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
+import com.ligadata.MetadataAPI.MetadataAPI
 
 import scala.util.control._
 import org.apache.logging.log4j._

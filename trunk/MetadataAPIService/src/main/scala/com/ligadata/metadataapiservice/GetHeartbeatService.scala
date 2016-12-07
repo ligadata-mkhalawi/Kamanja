@@ -27,6 +27,7 @@ import spray.client.pipelining._
 import scala.util.{ Success, Failure }
 
 import com.ligadata.MetadataAPI._
+import com.ligadata.MetadataAPI.MetadataAPI
 
 object GetHeartbeatService {
   case class Process(nodeIds:String, detailsLevel : DetailsLevel.DetailsLevel)

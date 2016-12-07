@@ -29,6 +29,7 @@ import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization
 import scala.io.Source
+import com.ligadata.MetadataAPI.MetadataAPI
 
 import com.ligadata.KvBase.{KvBaseDefalts, TimeRange, Key, Value}
 

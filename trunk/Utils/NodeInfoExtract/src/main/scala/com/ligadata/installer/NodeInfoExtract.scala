@@ -25,6 +25,7 @@ import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import com.ligadata.KamanjaVersion.KamanjaVersion
+import com.ligadata.MetadataAPI.MetadataAPI
 
 class NodeInfoExtract(val metadataAPIConfig: String, val nodeConfigPath: String, val clusterId: String, val installDir: String) {
 

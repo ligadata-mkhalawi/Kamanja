@@ -28,6 +28,7 @@ import scala.util.{ Success, Failure }
 
 import com.ligadata.MetadataAPI._
 import com.ligadata.AuditAdapterInfo.AuditConstants
+import com.ligadata.MetadataAPI.MetadataAPI
 
 object AddTypeService {
   case class Process(typeJson:String, formatType:String)

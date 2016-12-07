@@ -40,6 +40,7 @@ import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import com.ligadata.transactions.{ SimpleTransService, NodeLevelTransService }
+import com.ligadata.MetadataAPI.MetadataAPI
 
 trait LogTrait {
   val loggerName = this.getClass.getName()

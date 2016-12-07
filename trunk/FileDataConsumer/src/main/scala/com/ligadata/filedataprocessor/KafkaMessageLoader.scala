@@ -27,6 +27,7 @@ import org.json4s.{DefaultFormats, Formats}
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Promise
 import java.util.regex.Pattern
+import com.ligadata.MetadataAPI.MetadataAPI
 
 
 /**

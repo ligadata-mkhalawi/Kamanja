@@ -23,6 +23,7 @@ import com.ligadata.kamanja.metadata._
 import spray.routing.RequestContext
 import spray.httpx.SprayJsonSupport
 import spray.client.pipelining._
+import com.ligadata.MetadataAPI.MetadataAPI
 
 import scala.util.{ Success, Failure }
 

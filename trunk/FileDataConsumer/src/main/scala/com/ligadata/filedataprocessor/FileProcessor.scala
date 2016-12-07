@@ -41,6 +41,7 @@ import net.sf.jmimemagic.MagicMatch
 import net.sf.jmimemagic.MagicParseException
 import net.sf.jmimemagic.MagicMatchNotFoundException
 import net.sf.jmimemagic.MagicException
+import com.ligadata.MetadataAPI.MetadataAPI
 
 
 case class BufferLeftoversArea(workerNumber: Int, leftovers: Array[Char], relatedChunk: Int)

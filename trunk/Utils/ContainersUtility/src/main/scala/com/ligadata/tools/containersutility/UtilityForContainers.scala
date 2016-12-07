@@ -20,6 +20,7 @@ import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import scala.collection.immutable.Map
+import com.ligadata.MetadataAPI.MetadataAPI
 /**
   * Created by Yousef on 3/9/2016.
   */

@@ -27,6 +27,7 @@ import MediaTypes._
 import org.apache.logging.log4j._
 import com.ligadata.MetadataAPI._
 import com.ligadata.Serialize._
+import com.ligadata.MetadataAPI.MetadataAPI
 
 class MetadataAPIServiceActor extends Actor with MetadataAPIService {
 

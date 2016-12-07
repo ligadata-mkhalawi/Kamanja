@@ -27,6 +27,7 @@ import java.sql.Connection
 import org.json4s.DefaultFormats
 import org.json4s.native.JsonMethods._
 import shapeless.option
+import com.ligadata.MetadataAPI.MetadataAPI
 
 import scala.collection.mutable.ArrayBuffer
 

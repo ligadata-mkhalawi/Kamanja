@@ -45,6 +45,7 @@ import com.ligadata.keyvaluestore.KeyValueManager
 import scala.collection.mutable.{HashMap, ArrayBuffer}
 import com.ligadata.kamanja.metadata.ModelCompilationConstants
 import com.ligadata.Exceptions._
+import com.ligadata.MetadataAPI.MetadataAPI
 
 import java.util.concurrent.atomic._
 

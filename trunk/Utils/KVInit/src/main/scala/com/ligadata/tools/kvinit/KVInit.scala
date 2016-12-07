@@ -57,6 +57,7 @@ import com.ligadata.StorageBase.{DataStore, Transaction}
 import java.util.{Collection, Iterator, TreeMap}
 import com.ligadata.Exceptions._
 import com.ligadata.KamanjaVersion.KamanjaVersion
+import com.ligadata.MetadataAPI.MetadataAPI
 
 trait LogTrait {
   val loggerName = this.getClass.getName()

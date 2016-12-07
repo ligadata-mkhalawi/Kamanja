@@ -34,6 +34,7 @@ import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import com.ligadata.AuditAdapterInfo.AuditConstants
+import com.ligadata.MetadataAPI.MetadataAPI
 
 object GetAllObjectKeysService {
   case class Process(formatType:String)

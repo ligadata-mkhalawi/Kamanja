@@ -29,6 +29,7 @@ import com.ligadata.kamanja.metadataload.MetadataLoad
 import com.ligadata.MetadataAPI._
 import org.apache.logging.log4j._
 import com.ligadata.Utils._
+import com.ligadata.MetadataAPI.MetadataAPI
 
 object APIInit {
   val loggerName = this.getClass.getName

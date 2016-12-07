@@ -22,6 +22,7 @@ import java.security.KeyStore
 import javax.net.ssl.KeyManagerFactory
 import javax.net.ssl.TrustManagerFactory
 import spray.io._
+import com.ligadata.MetadataAPI.MetadataAPI
 
 // Must be enabled in the applicatin.conf
 trait LigadataSSLConfiguration {
@@ -29,9 +30,10 @@ trait LigadataSSLConfiguration {
     // if there is no SSLContext in scope implicitly the HttpServer uses the default SSLContext,
   // since we want non-default settings in this example we make a custom SSLContext available here
   implicit def sslContext: SSLContext = {
-    if(MetadataAPI.getMetadataApiInterface().isSslEnabled) {
-      val keyStoreResource = MetadataAPI.getMetadataApiInterface().getSSLCertificatePath
-      val kspass = MetadataAPI.getMetadataApiInterface().getSSLCertificatePasswd
+    val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
+    if(getMetadataAPI.isSslEnabled) {
+      val keyStoreResource = getMetadataAPI.getSSLCertificatePath
+      val kspass = getMetadataAPI.getSSLCertificatePasswd
 
       val ksp = new KeyStoreParameters()
       ksp.setResource(keyStoreResource);

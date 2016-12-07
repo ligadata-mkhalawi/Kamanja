@@ -31,6 +31,7 @@ import com.ligadata.utils.dag.{Dag, EdgeId}
 import scala.collection.mutable.TreeSet
 import scala.util.control.Breaks._
 import com.ligadata.KamanjaBase._
+import com.ligadata.MetadataAPI.MetadataAPI
 
 import scala.collection.mutable.HashMap
 import org.apache.logging.log4j._

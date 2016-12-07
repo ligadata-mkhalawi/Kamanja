@@ -29,6 +29,7 @@ import com.ligadata.kamanja.metadata._
 import com.ligadata.AuditAdapterInfo.AuditConstants
 import scala.util.control._
 import org.apache.logging.log4j._
+import com.ligadata.MetadataAPI.MetadataAPI
 
 object UpdateModelService {
   case class Process(pmmlStr: String)

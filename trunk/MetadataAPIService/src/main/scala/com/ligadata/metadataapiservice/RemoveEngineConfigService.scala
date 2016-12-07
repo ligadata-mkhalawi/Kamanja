@@ -28,6 +28,7 @@ import scala.util.{ Success, Failure }
 import org.json4s.jackson.JsonMethods._
 import com.ligadata.MetadataAPI._
 import com.ligadata.AuditAdapterInfo.AuditConstants
+import com.ligadata.MetadataAPI.MetadataAPI
 
 object RemoveEngineConfigService {
   case class Process(cfgJson:String)

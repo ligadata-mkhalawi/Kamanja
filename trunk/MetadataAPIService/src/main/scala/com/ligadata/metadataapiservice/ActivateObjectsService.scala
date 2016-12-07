@@ -30,6 +30,7 @@ import com.ligadata.AuditAdapterInfo.AuditConstants
 import scala.util.control._
 
 import org.apache.logging.log4j._
+import com.ligadata.MetadataAPI.MetadataAPI
 
 object ActivateObjectsService {
 	case class Process(apiArgListJson: String)

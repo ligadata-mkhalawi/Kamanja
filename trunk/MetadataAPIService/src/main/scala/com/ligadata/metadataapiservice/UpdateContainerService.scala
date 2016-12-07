@@ -25,6 +25,7 @@ import spray.httpx.SprayJsonSupport
 import spray.client.pipelining._
 import com.ligadata.kamanja.metadata._
 import scala.util.{ Success, Failure }
+import com.ligadata.MetadataAPI.MetadataAPI
 
 import com.ligadata.MetadataAPI._
 import com.ligadata.AuditAdapterInfo.AuditConstants

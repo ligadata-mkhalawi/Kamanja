@@ -23,6 +23,7 @@ import com.ligadata.keyvaluestore.KeyValueManager
 import com.ligadata.kamanja.metadata.{MdMgr, AdapterInfo, ClusterCfgInfo}
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
+import com.ligadata.MetadataAPI.MetadataAPI
 
 case class ZooKeeperInfo(nodeBasePath: String, connStr: String)
 

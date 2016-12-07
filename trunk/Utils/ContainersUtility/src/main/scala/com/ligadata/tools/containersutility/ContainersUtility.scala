@@ -17,6 +17,7 @@ import org.json4s.JsonDSL._
 import org.json4s.native.JsonMethods._
 import scala.collection.immutable.Map
 import java.text.SimpleDateFormat
+import com.ligadata.MetadataAPI.MetadataAPI
 
 trait LogTrait {
   val loggerName = this.getClass.getName()

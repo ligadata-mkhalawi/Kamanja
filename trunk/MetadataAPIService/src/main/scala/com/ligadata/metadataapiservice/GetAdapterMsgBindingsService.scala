@@ -32,6 +32,7 @@ import org.json4s.jackson.JsonMethods._
 import scala.util.control._
 import org.apache.logging.log4j._
 import com.ligadata.AuditAdapterInfo.AuditConstants
+import com.ligadata.MetadataAPI.MetadataAPI
 
 object GetAdapterMessageBindigsService {
   case class Process(objectType: String, objectKey: String)

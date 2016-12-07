@@ -32,6 +32,7 @@ import com.ligadata.MetadataAPI._
 import scala.util.control._
 import org.apache.logging.log4j._
 import com.ligadata.AuditAdapterInfo.AuditConstants
+import com.ligadata.MetadataAPI.MetadataAPI
 
 object AddModelService {
   case class Process(pmmlStr: String)

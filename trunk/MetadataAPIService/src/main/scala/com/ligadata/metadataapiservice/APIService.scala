@@ -37,6 +37,7 @@ import spray.can.server.ServerSettings
 import scala.util.control.Breaks._
 import com.ligadata.Exceptions._
 import com.ligadata.KamanjaVersion.KamanjaVersion
+import com.ligadata.MetadataAPI.MetadataAPI
 
 // $COVERAGE-OFF$
 class APIService extends LigadataSSLConfiguration with Runnable{
@@ -159,12 +160,13 @@ class APIService extends LigadataSSLConfiguration with Runnable{
 
       val sslEnabled = getIsSslEnabledFromConfig
       logger.warn("Setting ssl enabled to: "+sslEnabled)
-      MetadataAPI.getMetadataApiInterface().setSslEnabled(sslEnabled)
+      val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
+      getMetadataAPI.setSslEnabled(sslEnabled)
 
       val isValid = {
-        if(MetadataAPI.getMetadataApiInterface().isSslEnabled){
-          val keyStoreResource = MetadataAPI.getMetadataApiInterface().getSSLCertificatePath
-          val kspass = MetadataAPI.getMetadataApiInterface().getSSLCertificatePasswd
+        if(getMetadataAPI.isSslEnabled){
+          val keyStoreResource = getMetadataAPI.getSSLCertificatePath
+          val kspass = getMetadataAPI.getSSLCertificatePasswd
 
           if(keyStoreResource == null || keyStoreResource.trim.length==0){
             logger.error("SSL is enabled. please provide a value for SSL_CERTIFICATE file path in Metadata Api config ")
@@ -196,11 +198,12 @@ class APIService extends LigadataSSLConfiguration with Runnable{
         // that database connections were successfully made
         APIInit.SetDbOpen
 
-        logger.debug("API Properties => " + MetadataAPI.getMetadataApiInterface().GetMetadataAPIConfig)
+        val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
+        logger.debug("API Properties => " + getMetadataAPI.GetMetadataAPIConfig)
 
         // We will allow access to this web service from all the servers on the PORT # defined in the config file
         val serviceHost = "0.0.0.0"
-        val servicePort = MetadataAPI.getMetadataApiInterface().GetMetadataAPIConfig.getProperty("SERVICE_PORT").toInt
+        val servicePort = getMetadataAPI.GetMetadataAPIConfig.getProperty("SERVICE_PORT").toInt
 
         // create and start our service actor
         val callbackActor = actor(new Act {

@@ -45,6 +45,7 @@ import com.ligadata.StorageBase.{ DataStore, Transaction }
 import java.util.Date
 import java.text.SimpleDateFormat
 import com.ligadata.KamanjaVersion.KamanjaVersion
+import com.ligadata.MetadataAPI.MetadataAPI
 
 class ExcludeLogger extends ExclusionStrategy {
   override def shouldSkipField(f: FieldAttributes): Boolean = {

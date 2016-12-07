@@ -27,6 +27,7 @@ import com.ligadata.MetadataAPI._
 import com.ligadata.Serialize._
 import com.ligadata.kamanja.metadata._
 import scala.util.control._
+import com.ligadata.MetadataAPI.MetadataAPI
 
 import org.apache.logging.log4j._
 import com.ligadata.AuditAdapterInfo.AuditConstants

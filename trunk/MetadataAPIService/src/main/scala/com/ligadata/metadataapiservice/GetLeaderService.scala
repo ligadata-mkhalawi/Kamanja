@@ -25,6 +25,7 @@ import spray.client.pipelining._
 import scala.util.{ Success, Failure }
 import com.ligadata.MetadataAPI._
 import com.ligadata.Serialize._
+import com.ligadata.MetadataAPI.MetadataAPI
 
 import scala.util.control._
 import org.apache.logging.log4j._
