@@ -24,7 +24,6 @@ import com.ligadata.test.configuration.cluster.zookeeper.ZookeeperConfig
 
 import scala.collection.mutable.HashMap
 
-
 case class Cluster(var id: String,
                    var systemCatalog: StorageAdapter,
                    var tenants: Array[TenantConfiguration],
@@ -34,7 +33,13 @@ case class Cluster(var id: String,
                    var clusterCacheConfig: ClusterCacheConfig,
                    var nodes: Array[NodeConfiguration],
                    var adapters: Array[Adapter],
-                   var customCfg: Option[HashMap[String, String]]){
+                   var customCfg: Option[HashMap[String, String]]) {
+
+  def toCluster(clusterConfigString: String): Cluster = {
+
+    return this
+  }
+
   override def toString: String = {
     try {
       val builder = new StringBuilder

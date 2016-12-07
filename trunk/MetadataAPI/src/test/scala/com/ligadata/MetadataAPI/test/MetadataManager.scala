@@ -55,6 +55,10 @@ class MetadataManager extends KamanjaTestLogger {
     throw new MetadataManagerException("Environment Variable SCALA_HOME or JAVA_HOME not set")
   }
 
+  def initMetadataCfg(config: String): Unit = {
+    MetadataAPIImpl.InitMdMgrFromBootStrap(config, false)
+  }
+
   /// Init is kept separate rather than as a part of the construction of the class in order to prevent execution of certain operations too soon.
   def initMetadataCfg(config: MetadataAPIProperties): Unit = {
     if(scalaHome != null)

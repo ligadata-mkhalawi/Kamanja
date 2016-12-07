@@ -15,6 +15,11 @@ object TestExecutor {
 
   private val mdMan: MetadataManager = new MetadataManager
   private var logger: KamanjaAppLogger = _
+  private val usage: String = "The following arguments are accepted:\n\t" +
+    "--kamanja-dir (Required: the install directory of Kamanja\n\t" +
+    "--metadata-config (Optional: the metadata configuration file you'd like to use. If not given, an internal configuration will be generated automatically.\n\t" +
+    "--cluster-config (Optional: the cluster configuration file you'd like to use. If not given, an internal configuration will be generated automatically.\n\t" +
+    "--help (Optional: Displays help text)"
 
   private type OptionMap = Map[Symbol, Any]
 
@@ -99,36 +104,55 @@ object TestExecutor {
   def main(args: Array[String]): Unit = {
     if (args.length == 0) {
       println("***ERROR*** Kamanja installation directory must be specified. --kamanja-dir /path/to/Kamanja/install/directory")
+      println(usage)
       return
-    } else {
-      val options = nextOption(Map(), args.toList)
+    }
+    else if (args.length == 1) {
+      val options = optionMap(Map(), args.toList)
+      if(options == null) {
+        println(usage)
+        return
+      }
+      val help = options.getOrElse('help, null)
+      if(help != null) {
+        println(usage)
+        return
+      }
+    }
+    else {
+      val options = optionMap(Map(), args.toList)
       if (options == null) {
+        println(usage)
         return
       }
       val installDir: String = options('kamanjadir).asInstanceOf[String]
-      println("KAMANJA INSTALL DIR: " + installDir)
+      val metadataConfigFile: String = options.getOrElse('metadataconfig, null).asInstanceOf[String]
+      val clusterConfigFile: String = options.getOrElse('clusterconfig, null).asInstanceOf[String]
       logger = KamanjaAppLogger.createKamanjaAppLogger(installDir)
-      println("KAMANJA INSTALL DIR AFTER: " + installDir)
       val appManager = new KamanjaApplicationManager(installDir + "/test")
 
       appManager.kamanjaApplications.foreach(app => {
         logger.info(s"Beginning test for Kamanja Application '${app.name}'")
         logger.info(s"Starting Embedded Services...")
-        EmbeddedServicesManager.init(installDir)
-        if (!EmbeddedServicesManager.startServices) {
-          logger.error(s"***ERROR*** Failed to start embedded services")
-          EmbeddedServicesManager.stopServices
-          TestUtils.deleteFile(EmbeddedServicesManager.storageDir)
-          throw new Exception(s"***ERROR*** Failed to start embedded services")
+        if(clusterConfigFile == null) {
+          EmbeddedServicesManager.init(installDir, metadataConfigFile, clusterConfigFile)
+          if (!EmbeddedServicesManager.startServices) {
+            logger.error(s"***ERROR*** Failed to start embedded services")
+            EmbeddedServicesManager.stopServices
+            TestUtils.deleteFile(EmbeddedServicesManager.storageDir)
+            throw new Exception(s"***ERROR*** Failed to start embedded services")
+          }
         }
         else {
-          logger.info(s"Adding metadata...")
-          if (!addApplicationMetadata(app)) {
-            logger.error(s"***ERROR*** Failed to add metadata for application '${app.name}'")
-            throw new Exception(s"***ERROR*** Failed to add metadata for application '${app.name}'")
-          }
-          logger.info(s"All metadata successfully added")
+          mdMan
         }
+
+        logger.info(s"Adding metadata...")
+        if (!addApplicationMetadata(app)) {
+          logger.error(s"***ERROR*** Failed to add metadata for application '${app.name}'")
+          throw new Exception(s"***ERROR*** Failed to add metadata for application '${app.name}'")
+        }
+        logger.info(s"All metadata successfully added")
         var testResult = true
 
         val consumer = new TestKafkaConsumer(EmbeddedServicesManager.getOutputKafkaAdapterConfig)
@@ -237,14 +261,20 @@ object TestExecutor {
     }
   }
 
-  private def nextOption(map: OptionMap, list: List[String]): OptionMap = {
+  private def optionMap(map: OptionMap, list: List[String]): OptionMap = {
     def isSwitch(s: String) = (s(0) == '-')
     list match {
       case Nil => map
       case "--kamanja-dir" :: value :: tail =>
-        nextOption(map ++ Map('kamanjadir -> value), tail)
-      case option :: tail => {
-        logger.info("***ERROR*** Unknown option " + option)
+        optionMap(map ++ Map('kamanjadir -> value), tail)
+      case "--metadata-config" :: value :: tail =>
+        optionMap(map ++ Map('metadataconfig -> value), tail)
+      case "--cluster-config" :: value :: tail =>
+        optionMap(map ++ Map('clusterconfig -> value), tail)
+      case "--help" :: tail =>
+        optionMap(map ++ Map('help -> true), tail)
+      case opt => {
+        println("***ERROR*** Unknown option " + opt)
         return null
       }
     }

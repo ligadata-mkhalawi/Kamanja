@@ -1,6 +1,6 @@
 package com.ligadata.kamanja.test.application
 
-import java.io.PrintWriter
+import java.io.{File, PrintWriter}
 import java.util.NoSuchElementException
 
 import com.ligadata.KamanjaManager.embedded._
@@ -17,6 +17,11 @@ import com.ligadata.MetadataAPI.test._
 import com.ligadata.kamanja.test.application.logging.{KamanjaAppLogger, KamanjaAppLoggerException}
 import com.ligadata.test.embedded.kafka._
 
+import org.json4s._
+import org.json4s.native.JsonMethods._
+
+import scala.io.Source
+
 case class EmbeddedServicesException(message: String, cause: Throwable = null) extends Exception(message, cause)
 
 object EmbeddedServicesManager {
@@ -31,6 +36,8 @@ object EmbeddedServicesManager {
   private var mdMan = new MetadataManager
   private var logger: KamanjaAppLogger = _
   var kamanjaConfigFile: String = _
+  var clusterConfigFile: String = _
+  var metadataConfigFile: String = _
   var storageDir: String = _
 
   def getInputKafkaAdapterConfig: KafkaAdapterConfig = {
@@ -56,8 +63,8 @@ object EmbeddedServicesManager {
 
   def getEventKafkaAdapterConfig: KafkaAdapterConfig = {
     if (!isInitialized) {
-    throw new Exception("***ERROR*** EmbeddedServicesManager has not been initialized. Please call def init first.")
-  }
+      throw new Exception("***ERROR*** EmbeddedServicesManager has not been initialized. Please call def init first.")
+    }
     return clusterConfig.adapters.filter(_.asInstanceOf[KafkaAdapterConfig].adapterSpecificConfig.topicName.toLowerCase == "testmessageevents_1")(0).asInstanceOf[KafkaAdapterConfig]
   }
 
@@ -68,8 +75,13 @@ object EmbeddedServicesManager {
     return clusterConfig
   }
 
-  def init(kamanjaInstallDir: String): Unit = {
+  def init(kamanjaInstallDir: String, metadataConfigFile: String = null, clusterConfigFile: String = null): Unit = {
     isInitialized = true
+
+    if(metadataConfigFile != null && clusterConfigFile == null)
+      throw new EmbeddedServicesException("***ERROR*** A MetadataAPIConfig file has been provided but a Cluster Configuration file has not. Please pass in a Cluster Configuration file.")
+    else if(metadataConfigFile == null && clusterConfigFile != null)
+      throw new EmbeddedServicesException("***ERROR*** A Cluster Configuration file has been provided but a MetadataAPIConfig file has not. Please pass in a MetadataAPIConfig file.")
 
     try {
       logger = KamanjaAppLogger.getKamanjaAppLogger
@@ -92,9 +104,13 @@ object EmbeddedServicesManager {
     embeddedZookeeper = new EmbeddedZookeeper
     kafkaCluster = new EmbeddedKafkaCluster().
       withBroker(new KafkaBroker(1, embeddedZookeeper.getConnection))
-    clusterConfig = generateClusterConfiguration
+    if (clusterConfigFile == null) {
+      clusterConfig = generateClusterConfiguration
+    }
+    else {
+      clusterConfig = generateClusterConfigFromFile(clusterConfigFile)
+    }
     kafkaConsumer = new TestKafkaConsumer(getOutputKafkaAdapterConfig)
-
   }
 
   def startServices: Boolean = {
@@ -167,7 +183,7 @@ object EmbeddedServicesManager {
 
       mdMan.addBindingsFromString(systemAdapterBindings)
 
-      //Creating topics from the cluster config adapters`
+      //Creating topics from the cluster config adapters
       val kafkaTestClient = new KafkaTestClient(embeddedZookeeper.getConnection)
       clusterConfig.adapters.foreach(adapter => {
         kafkaTestClient.createTopic(adapter.asInstanceOf[KafkaAdapterConfig].adapterSpecificConfig.topicName, 1, 1)
@@ -181,7 +197,6 @@ object EmbeddedServicesManager {
   }
 
   def stopServices: Boolean = {
-
     // Sleeping between each to give each one time to properly shut down to avoid errors
     val stopKamanjaCode = stopKamanja
     //val stopKafkaConsumerCode = stopKafkaConsumer
@@ -363,7 +378,27 @@ object EmbeddedServicesManager {
     return true
   }
 
-  private def generateClusterConfiguration: Cluster = {
+  private def generateClusterConfigFromFile(clusterConfigFile: String) : Cluster = {
+    val file = new File(clusterConfigFile)
+    if (!file.exists())
+      throw new EmbeddedServicesException(s"Cluster Configuration file $clusterConfigFile does not exist")
+    val source = Source.fromFile(file)
+    val clusterCfgStr = source.getLines().mkString
+    source.close()
+
+    val json = parse(clusterCfgStr)
+    implicit val defaults = org.json4s.DefaultFormats
+    val expectedResultsList = json.extract[List[Map[String, Any]]]
+    expectedResultsList.foreach(map => {
+      map.keySet.foreach(key => {
+        println(s"Key => $key")
+        println(s"Value => ${map(key)}")
+      })
+    })
+    return null
+  }
+
+  private def generateClusterConfiguration(): Cluster = {
     val zkConfig: ZookeeperConfig = new ZookeeperConfig(zookeeperConnStr = embeddedZookeeper.getConnection)
 
     val pythonConfig: PythonConfiguration = new PythonConfiguration(kamanjaInstallDir = kamanjaInstallDir, pythonBinDir = sys.env("PYTHON_HOME") + "/bin")
