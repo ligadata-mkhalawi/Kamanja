@@ -191,6 +191,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     */
   override def StartProcessing(partitionIds: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = lock.synchronized {
 
+    isQuiese = false
     LOG.info("Start processing called on KamanjaKafkaAdapter for topic " + qc.topic)
     // This is the number of executors we will run - Heuristic, but will go with it
     // var numberOfThreads = availableThreads
@@ -667,6 +668,8 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   override def StopProcessing(): Unit = {
     isQuiese = true
     terminateReaderTasks
+    // Resettng isQuiese after terminating reader tasks. So, we can start getting partitions etc
+    isQuiese = false
   }
 
   /**
