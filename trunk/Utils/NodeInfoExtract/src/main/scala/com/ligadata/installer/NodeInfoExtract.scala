@@ -29,7 +29,7 @@ import com.ligadata.KamanjaVersion.KamanjaVersion
 class NodeInfoExtract(val metadataAPIConfig: String, val nodeConfigPath: String, val clusterId: String, val installDir: String) {
 
   // 646 - 676 Change begins - replace MetadataAPIImpl
-  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
   // 646 - 676 Change ends
 
   getMetadataAPI.InitMdMgrFromBootStrap(metadataAPIConfig, false)
@@ -162,7 +162,7 @@ NodeInfoExtract --MetadataAPIConfig  <MetadataAPI config file path>
     writeFileIps(s"$workDir/$ipFileName", ips)
     writeFilePairs(s"$workDir/$ipPathPairFileName", ipPathPairs)
     writeNodeIdConfigs(workDir, ipIdCfgTargPathQuartetFileName, extractor, ipIdTargPaths)
-    val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+    val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
     getMetadataAPI.CloseDbStore
   }
 
@@ -201,7 +201,7 @@ NodeInfoExtract --MetadataAPIConfig  <MetadataAPI config file path>
    *  @param ipIdTargs the (ip,id, targetPath) triple values for the cluster being processed
    */
   private def writeNodeIdConfigs(workDir: String, ipIdCfgTargPathQuartetFileName: String, extractor: NodeInfoExtract, ipIdTargs: Array[(String, String, String, String)]) {
-    val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+    val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
     val metadataDataStore: String =
       if (getMetadataAPI.GetMetadataAPIConfig.getProperty("METADATA_DATASTORE") != null) {
         getMetadataAPI.GetMetadataAPIConfig.getProperty("METADATA_DATASTORE")

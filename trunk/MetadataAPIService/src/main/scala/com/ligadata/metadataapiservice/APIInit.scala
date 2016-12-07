@@ -37,7 +37,7 @@ object APIInit {
   var configFile:String = _
   private[this] val lock = new Object()
   // 646 - 676 Change begins - replace MetadataAPIImpl
-  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
   // 646 - 676 Change ends
 
 

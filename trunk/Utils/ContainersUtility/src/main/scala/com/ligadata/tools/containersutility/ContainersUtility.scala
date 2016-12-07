@@ -11,7 +11,6 @@ import com.ligadata.KvBase.TimeRange
 import scala.collection.mutable._
 import org.apache.logging.log4j.LogManager
 import com.ligadata.Utils.Utils
-import com.ligadata.MetadataAPI.MetadataAPIImpl
 import com.ligadata.Exceptions._
 import org.json4s._
 import org.json4s.JsonDSL._
@@ -319,7 +318,7 @@ Sample uses:
           }
         }
       }
-      MetadataAPIImpl.getMetadataAPI.CloseDbStore
+      MetadataAPI.getMetadataApiInterface().CloseDbStore
 
     } else {
       logger.error("Illegal and/or missing arguments")

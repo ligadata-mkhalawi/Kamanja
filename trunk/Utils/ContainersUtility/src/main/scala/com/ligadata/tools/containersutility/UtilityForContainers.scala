@@ -6,7 +6,6 @@ import java.util.{TreeMap, Properties}
 import com.ligadata.Exceptions._
 import com.ligadata.KamanjaBase._
 import com.ligadata.KvBase._
-import com.ligadata.MetadataAPI.MetadataAPIImpl
 import com.ligadata.Serialize.JZKInfo
 import com.ligadata.StorageBase.DataStore
 import com.ligadata.Utils.{KamanjaClassLoader, Utils, KamanjaLoaderInfo}
@@ -33,7 +32,7 @@ class UtilityForContainers(val loadConfigs: Properties, val typename: String) ex
   val containerUtilityLoder = new KamanjaLoaderInfo
 
   // 646 - 676 Change begins - replace MetadataAPIImpl
-  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
   // 646 - 676 Change ends
 
   containersUtilityConfiguration.nodeId = loadConfigs.getProperty("nodeId".toLowerCase, "0").replace("\"", "").trim.toInt

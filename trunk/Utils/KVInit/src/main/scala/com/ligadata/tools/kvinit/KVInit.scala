@@ -35,7 +35,6 @@ import com.ligadata.KamanjaBase._
 import com.ligadata.kamanja.metadataload.MetadataLoad
 import com.ligadata.Utils.{Utils, KamanjaClassLoader, KamanjaLoaderInfo}
 import java.util.Properties
-import com.ligadata.MetadataAPI.MetadataAPIImpl
 import com.ligadata.kamanja.metadata.MdMgr._
 import com.ligadata.kamanja.metadata._
 import scala.reflect.runtime.{universe => ru}
@@ -67,7 +66,7 @@ trait LogTrait {
 object KVInit extends App with LogTrait {
 
   // 646 - 676 Change begins - replace MetadataAPIImpl
-  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
   // 646 - 676 Change ends
 
   def usage: String = {
@@ -288,7 +287,7 @@ Sample uses:
           dstore = null
         }
       }
-      MetadataAPIImpl.CloseDbStore
+      MetadataAPI.getMetadataApiInterface().CloseDbStore
 
     } else {
       logger.error("Illegal and/or missing arguments")
@@ -311,7 +310,7 @@ class KVInit(val loadConfigs: Properties, val typename: String, val dataFiles: A
   var zkcForSetData: CuratorFramework = null
   var totalCommittedMsgs: Int = 0
   // 646 - 676 Change begins - replace MetadataAPIImpl
-  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
     // 646 - 676 Change ends
   val kvInitLoader = new KamanjaLoaderInfo
 

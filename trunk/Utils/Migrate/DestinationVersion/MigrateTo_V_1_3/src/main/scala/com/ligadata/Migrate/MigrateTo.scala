@@ -22,7 +22,6 @@ import java.io.{File, PrintWriter}
 
 import com.ligadata.kamanja.metadata.MdMgr
 import com.ligadata.kamanja.metadataload.MetadataLoad
-import com.ligadata.MetadataAPI.MetadataAPIImpl
 import com.ligadata.MetadataAPI.MetadataAPI
 import com.ligadata.Serialize.JsonSerializer
 import org.json4s._
@@ -66,7 +65,7 @@ class MigrateTo_V_1_3 extends MigratableTo {
   private var _parallelDegree = 0
   private var _mergeContainerAndMessages = true
   // 646 - 676 Change begins - replace MetadataAPIImpl
-  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
     // 646 - 676 Change ends
   private val globalExceptions = ArrayBuffer[(String, Throwable)]()
 

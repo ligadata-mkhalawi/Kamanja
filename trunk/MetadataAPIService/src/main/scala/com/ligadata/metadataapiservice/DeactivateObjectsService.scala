@@ -43,7 +43,7 @@ class DeactivateObjectsService(requestContext: RequestContext, userid:Option[Str
   import system.dispatcher
   val log = Logging(system, getClass)
   // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
-  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
   // 646 - 676 Change ends
 
 

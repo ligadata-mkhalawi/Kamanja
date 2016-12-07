@@ -42,7 +42,7 @@ class AddFunctionService(requestContext: RequestContext, userid:Option[String], 
   val log = Logging(system, getClass)
    val APIName = "AddFunctionService"
   // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
-  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
   // 646 - 676 Change ends
 
   def receive = {

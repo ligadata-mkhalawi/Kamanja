@@ -42,7 +42,7 @@ class UpdateTypeService(requestContext: RequestContext, userid:Option[String], p
   val log = Logging(system, getClass)
   val APIName = "UpdateTypeService"
   // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
-  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
   // 646 - 676 Change ends
 
   def receive = {

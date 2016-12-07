@@ -50,7 +50,7 @@ class GetAuditLogService(requestContext: RequestContext, userid:Option[String], 
   val logger = LogManager.getLogger(loggerName)
 //  logger.setLevel(Level.TRACE);
 // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
-  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
   // 646 - 676 Change ends
 
   val APIName = "GetAuditLog"

@@ -24,7 +24,6 @@ import com.ligadata.KamanjaBase._
 import com.ligadata.kamanja.metadataload.MetadataLoad
 import com.ligadata.Utils.{ Utils, KamanjaClassLoader, KamanjaLoaderInfo }
 import java.util.Properties
-import com.ligadata.MetadataAPI.MetadataAPIImpl
 import com.ligadata.kamanja.metadata.MdMgr._
 import com.ligadata.kamanja.metadata._
 import scala.reflect.runtime.{ universe => ru }
@@ -57,7 +56,7 @@ class SaveContainerDataCompImpl extends LogTrait with ObjectResolver {
   private val _kamanjaLoader = new KamanjaLoaderInfo
   private var _transService: SimpleTransService = null
   // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
-  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
   // 646 - 676 Change ends
 
   private val kvMgrLoader = new KamanjaLoaderInfo

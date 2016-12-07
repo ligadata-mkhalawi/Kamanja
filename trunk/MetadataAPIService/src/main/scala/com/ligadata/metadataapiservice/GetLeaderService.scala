@@ -50,7 +50,7 @@ class GetLeaderService(requestContext: RequestContext, userid:Option[String], pa
   val logger = LogManager.getLogger(loggerName)
 
   // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
-  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
   // 646 - 676 Change ends
 
   val APIName = "GetLeader"

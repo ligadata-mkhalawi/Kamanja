@@ -8,7 +8,6 @@ import java.util.concurrent.{TimeUnit, Future}
 import java.util.{TimeZone, Properties, Date, Arrays}
 import com.ligadata.Exceptions._
 import com.ligadata.KamanjaBase._
-import com.ligadata.MetadataAPI.MetadataAPIImpl
 import com.ligadata.Utils.{ Utils, KamanjaLoaderInfo }
 import com.ligadata.ZooKeeper.CreateClient
 import com.ligadata.kamanja.metadata.MdMgr._
@@ -216,7 +215,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
   var errorTopic = inConfiguration.getOrElse(SmartFileAdapterConstants.KAFKA_ERROR_TOPIC, null)
   var statusTopic = inConfiguration.getOrElse(SmartFileAdapterConstants.KAFKA_STATUS_TOPIC, null)
 
-  val zkcConnectString = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("ZOOKEEPER_CONNECT_STRING")
+  val zkcConnectString = MetadataAPI.getMetadataApiInterface().GetMetadataAPIConfig.getProperty("ZOOKEEPER_CONNECT_STRING")
   logger.debug(partIdx + " SMART FILE CONSUMER Using zookeeper " + zkcConnectString)
   var (objInst, objFullName) = configureMessageDef
   if (objInst == null) {
@@ -829,8 +828,9 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
     var allJars = collection.mutable.Set[String]()
     allJars = allJars + msgDef.jarName
 
-    var jarPaths0 = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(",").toSet
-    jarPaths0 = jarPaths0 + MetadataAPIImpl.GetMetadataAPIConfig.getProperty("COMPILER_WORK_DIR")
+    val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
+    var jarPaths0 = getMetadataAPI.GetMetadataAPIConfig.getProperty("JAR_PATHS").split(",").toSet
+    jarPaths0 = jarPaths0 + getMetadataAPI.GetMetadataAPIConfig.getProperty("COMPILER_WORK_DIR")
 
     Utils.LoadJars(allJars.map(j => Utils.GetValidJarFile(jarPaths0, j)).toArray, loaderInfo.loadedJars, loaderInfo.loader)
     val jarName0 = Utils.GetValidJarFile(jarPaths0, msgDef.jarName)
@@ -921,7 +921,7 @@ class KafkaMessageLoader(partIdx: Int, inConfiguration: scala.collection.mutable
    *
    */
   private def shutdown: Unit = {
-    MetadataAPIImpl.shutdown
+    MetadataAPI.getMetadataApiInterface().shutdown
     if (producer != null)
       producer.close
 

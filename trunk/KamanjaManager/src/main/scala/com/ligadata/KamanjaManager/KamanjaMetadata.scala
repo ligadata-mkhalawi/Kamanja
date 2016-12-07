@@ -994,7 +994,7 @@ object KamanjaMetadata extends ObjectResolver {
   }
 
   def InitBootstrap: Unit = {
-    MetadataAPIImpl.InitMdMgrFromBootStrap(KamanjaConfiguration.configFile, false)
+    MetadataAPI.getMetadataApiInterface().InitMdMgrFromBootStrap(KamanjaConfiguration.configFile, false)
   }
 
   def InitMdMgr(zkConnectString: String, znodePath: String, zkSessionTimeoutMs: Int, zkConnectionTimeoutMs: Int, inputAdapters: ArrayBuffer[InputAdapter],
@@ -1128,9 +1128,10 @@ object KamanjaMetadata extends ObjectResolver {
         return
       }
 
-      MetadataAPIImpl.UpdateMdMgr(zkTransaction)
+      val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
+      getMetadataAPI.UpdateMdMgr(zkTransaction)
       val zkTxnId = zkTransaction.transactionId.getOrElse("0").toLong
-      previousProcessedTxn = if (zkTxnId != 0) zkTxnId else MetadataAPIImpl.getCurrentTranLevel
+      previousProcessedTxn = if (zkTxnId != 0) zkTxnId else getMetadataAPI.getCurrentTranLevel
 
       if (updMetadataExecutor.isShutdown)
         return

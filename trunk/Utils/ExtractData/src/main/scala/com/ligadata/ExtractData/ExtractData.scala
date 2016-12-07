@@ -33,7 +33,6 @@ import com.google.gson.ExclusionStrategy
 import com.google.gson.FieldAttributes
 import java.lang.reflect.Modifier
 import com.ligadata.Serialize._
-import com.ligadata.MetadataAPI.MetadataAPIImpl
 import com.ligadata.kamanja.metadata.MdMgr._
 import com.ligadata.kamanja.metadata._
 import com.ligadata.keyvaluestore._
@@ -70,7 +69,7 @@ object ExtractData extends ObjectResolver {
 
   private type OptionMap = Map[Symbol, Any]
   // 646 - 676 Change begins - replace MetadataAPIImpl
-  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
   // 646 - 676 Change ends
 
   private def PrintUsage(): Unit = {

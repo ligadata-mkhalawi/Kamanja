@@ -26,7 +26,6 @@ import java.io.{DataInputStream, ByteArrayInputStream, File, PrintWriter}
 
 import com.ligadata.kamanja.metadata._
 import com.ligadata.kamanja.metadataload.MetadataLoad
-import com.ligadata.MetadataAPI.MetadataAPIImpl
 import com.ligadata.MetadataAPI.MetadataAPISerialization
 import com.ligadata.MetadataAPI.MessageAndContainerUtils
 import com.ligadata.MetadataAPI.PersistenceUtils
@@ -59,7 +58,7 @@ class MigrateTo_V_1_5_0 extends MigratableTo {
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
   // 646 - 676 Change begins - replace MetadataAPIImpl
-  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
   // 646 - 676 Change ends
 
   class MdObjectRes(val mdMgr: MdMgr, val jarPaths: Set[String]) extends ObjectResolver {

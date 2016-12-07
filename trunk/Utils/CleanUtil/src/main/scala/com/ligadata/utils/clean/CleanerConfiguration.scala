@@ -36,7 +36,7 @@ class CleanerConfiguration(metadataConfigFile: String) {
 
   // Constructor
   try {
-    MetadataAPIImpl.InitMdMgrFromBootStrap(metadataConfigFile, false)
+    MetadataAPI.getMetadataApiInterface().InitMdMgrFromBootStrap(metadataConfigFile, false)
     initialize
   }
   catch {
@@ -94,14 +94,14 @@ class CleanerConfiguration(metadataConfigFile: String) {
       // End Zookeeper configuration
 
       // Retrieving the Jar Paths to be passed into KeyValueManager
-      val tmpJarPaths = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS")
+      val tmpJarPaths = MetadataAPI.getMetadataApiInterface().GetMetadataAPIConfig.getProperty("JAR_PATHS")
       val jarPaths: Set[String] = if (tmpJarPaths != null) tmpJarPaths.split(",").toSet else scala.collection.immutable.Set[String]()
 
       // Get DataStore storage adapter
       dataStore = KeyValueManager.Get(jarPaths, clusterCfg.cfgMap("SystemCatalog"), null, null, null)
 
       // Get MetadataStore storage adapter
-      metadataStore = MetadataAPIImpl.GetMainDS
+      metadataStore = MetadataAPI.getMetadataApiInterface().GetMainDS
 
       // Retrieving a list of Kafka topic names from configuration.
       // TODO: How to handle different input/output adapters. Right now I'm assuming kafka here.
@@ -110,7 +110,7 @@ class CleanerConfiguration(metadataConfigFile: String) {
   }
 
   def shutdown: Unit = {
-    MetadataAPIImpl.shutdown
+    MetadataAPI.getMetadataApiInterface().shutdown
     if(dataStore != null) dataStore.Shutdown
   }
 

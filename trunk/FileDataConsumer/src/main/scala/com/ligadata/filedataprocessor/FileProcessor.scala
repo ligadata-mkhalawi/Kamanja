@@ -4,7 +4,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{Executors, TimeUnit}
 import java.util.zip.{ZipException, GZIPInputStream}
 import com.ligadata.Exceptions.{ MissingPropertyException, StackTrace }
-import com.ligadata.MetadataAPI.MetadataAPIImpl
 import com.ligadata.ZooKeeper.CreateClient
 import com.ligadata.kamanja.metadata.MessageDef
 import org.apache.curator.framework.CuratorFramework
@@ -167,10 +166,11 @@ object FileProcessor {
    */
   def initZookeeper = {
     try {
-      zkcConnectString = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("ZOOKEEPER_CONNECT_STRING")
+      val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
+      zkcConnectString = getMetadataAPI.GetMetadataAPIConfig.getProperty("ZOOKEEPER_CONNECT_STRING")
       logger.info("SMART_FILE_CONSUMER (global) Using zookeeper " + zkcConnectString)
-      znodePath = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("ZNODE_PATH") + "/smartFileConsumer"
-      znodePath_Status = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("ZNODE_PATH") + "/smartFileConsumer_status"
+      znodePath = getMetadataAPI.GetMetadataAPIConfig.getProperty("ZNODE_PATH") + "/smartFileConsumer"
+      znodePath_Status = getMetadataAPI.GetMetadataAPIConfig.getProperty("ZNODE_PATH") + "/smartFileConsumer_status"
       createNode(zkcConnectString, znodePath) // CreateClient.CreateNodeIfNotExists(zkcConnectString, znodePath)
       createNode(zkcConnectString, znodePath_Status)
       zkc = getZkc(zkcConnectString) // CreateClient.createSimple(zkcConnectString)
@@ -591,7 +591,7 @@ object FileProcessor {
     // Default to 5 minutes (value given in secopnds
     bufferTimeout = 1000 * props.getOrElse(SmartFileAdapterConstants.FILE_BUFFERING_TIMEOUT, "300").toInt
     localMetadataConfig = props(SmartFileAdapterConstants.METADATA_CONFIG_FILE)
-    MetadataAPIImpl.InitMdMgrFromBootStrap(localMetadataConfig, false)
+    MetadataAPI.getMetadataApiInterface().InitMdMgrFromBootStrap(localMetadataConfig, false)
     initZookeeper
 
     isBufferMonitorRunning = true
@@ -895,10 +895,11 @@ object FileProcessor {
     var fileDirectoryWatchers = scala.actors.threadpool.Executors.newFixedThreadPool(path.size)
     try {
       // Lets see if we have failed previously on this partition Id, and need to replay some messages first.
-      logger.info(" SMART FILE CONSUMER (global): Recovery operations, checking  => " + MetadataAPIImpl.GetMetadataAPIConfig.getProperty("ZNODE_PATH") + "/smartFileConsumer")
-      //if (zkc.checkExists().forPath(MetadataAPIImpl.GetMetadataAPIConfig.getProperty("ZNODE_PATH") + "/smartFileConsumer") != null) {
-      if (doNodesExist(MetadataAPIImpl.GetMetadataAPIConfig.getProperty("ZNODE_PATH") + "/smartFileConsumer")) {
-        var priorFailures = getNodes(MetadataAPIImpl.GetMetadataAPIConfig.getProperty("ZNODE_PATH") + "/smartFileConsumer") //zkc.getChildren.forPath(MetadataAPIImpl.GetMetadataAPIConfig.getProperty("ZNODE_PATH") + "/smartFileConsumer")
+      val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
+      logger.info(" SMART FILE CONSUMER (global): Recovery operations, checking  => " + getMetadataAPI.GetMetadataAPIConfig.getProperty("ZNODE_PATH") + "/smartFileConsumer")
+      //if (zkc.checkExists().forPath(getMetadataAPI.GetMetadataAPIConfig.getProperty("ZNODE_PATH") + "/smartFileConsumer") != null) {
+      if (doNodesExist(getMetadataAPI.GetMetadataAPIConfig.getProperty("ZNODE_PATH") + "/smartFileConsumer")) {
+        var priorFailures = getNodes(getMetadataAPI.GetMetadataAPIConfig.getProperty("ZNODE_PATH") + "/smartFileConsumer") //zkc.getChildren.forPath(getMetadataAPI.GetMetadataAPIConfig.getProperty("ZNODE_PATH") + "/smartFileConsumer")
         if (priorFailures != null) {
           var map = priorFailures.toArray
           //var map = parse(new String(priorFailures)).values.asInstanceOf[Map[String, Any]]
@@ -2072,7 +2073,7 @@ class FileProcessor(val path: ArrayBuffer[Path], val partitionId: Int) extends R
     if (fileConsumers != null) {
       fileConsumers.shutdown()
     }
-    MetadataAPIImpl.shutdown
+    MetadataAPI.getMetadataApiInterface().shutdown
     if (zkc != null)
       zkc.close
     Thread.sleep(2000)

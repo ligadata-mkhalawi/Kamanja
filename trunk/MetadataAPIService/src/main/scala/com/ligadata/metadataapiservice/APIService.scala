@@ -31,7 +31,6 @@ import org.json4s.jackson.JsonMethods._
 import com.ligadata.kamanja.metadata.ObjType._
 import com.ligadata.kamanja.metadata._
 import com.ligadata.kamanja.metadataload.MetadataLoad
-import com.ligadata.MetadataAPI.MetadataAPIImpl
 import org.apache.logging.log4j._
 import com.ligadata.Utils._
 import spray.can.server.ServerSettings
@@ -53,7 +52,7 @@ class APIService extends LigadataSSLConfiguration with Runnable{
   lazy val logger = LogManager.getLogger(loggerName)
   var databaseOpen = false
   // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
-  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
   // 646 - 676 Change ends
 
   /**
@@ -98,7 +97,7 @@ class APIService extends LigadataSSLConfiguration with Runnable{
       system.shutdown()
 
     APIInit.Shutdown(0)
-    MetadataAPIImpl.shutdown
+    MetadataAPI.getMetadataApiInterface().shutdown
     //System.exit(0)
   }
 
@@ -160,12 +159,12 @@ class APIService extends LigadataSSLConfiguration with Runnable{
 
       val sslEnabled = getIsSslEnabledFromConfig
       logger.warn("Setting ssl enabled to: "+sslEnabled)
-      MetadataAPIImpl.setSslEnabled(sslEnabled)
+      MetadataAPI.getMetadataApiInterface().setSslEnabled(sslEnabled)
 
       val isValid = {
-        if(MetadataAPIImpl.isSslEnabled){
-          val keyStoreResource = MetadataAPIImpl.getSSLCertificatePath
-          val kspass = MetadataAPIImpl.getSSLCertificatePasswd
+        if(MetadataAPI.getMetadataApiInterface().isSslEnabled){
+          val keyStoreResource = MetadataAPI.getMetadataApiInterface().getSSLCertificatePath
+          val kspass = MetadataAPI.getMetadataApiInterface().getSSLCertificatePasswd
 
           if(keyStoreResource == null || keyStoreResource.trim.length==0){
             logger.error("SSL is enabled. please provide a value for SSL_CERTIFICATE file path in Metadata Api config ")
@@ -197,11 +196,11 @@ class APIService extends LigadataSSLConfiguration with Runnable{
         // that database connections were successfully made
         APIInit.SetDbOpen
 
-        logger.debug("API Properties => " + MetadataAPIImpl.GetMetadataAPIConfig)
+        logger.debug("API Properties => " + MetadataAPI.getMetadataApiInterface().GetMetadataAPIConfig)
 
         // We will allow access to this web service from all the servers on the PORT # defined in the config file
         val serviceHost = "0.0.0.0"
-        val servicePort = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("SERVICE_PORT").toInt
+        val servicePort = MetadataAPI.getMetadataApiInterface().GetMetadataAPIConfig.getProperty("SERVICE_PORT").toInt
 
         // create and start our service actor
         val callbackActor = actor(new Act {

@@ -826,10 +826,10 @@ object JsonSerializer {
         case o: AdapterMessageBinding => {
             /** FIXME: Hack Alert:
               * FIXME: For these we jam the FullBindingName in the name field and then restate the key in the
-              * FIXME: MetadataAPIImpl.updateThisKey(zkMessage: ZooKeeperNotification, tranId: Long) method to
+              * FIXME: MetadataAPI.getMetadataApiInterface().updateThisKey(zkMessage: ZooKeeperNotification, tranId: Long) method to
               * FIXME: val bindingKey : String = s"${zkMessage.ObjectType}.${zkMessage.Name}"...
               * FIXME: Except for the object type and operation, the other fields are there just to satisfy the
-              * FIXME: the usage pattern in MetadataAPIImpl.updateThisKey method.
+              * FIXME: the usage pattern in MetadataAPI.getMetadataApiInterface().updateThisKey method.
               * FIXME: This mechanism should be reconsidered.
               */
             val json = (("ObjectType" ->  "AdapterMessageBinding") ~

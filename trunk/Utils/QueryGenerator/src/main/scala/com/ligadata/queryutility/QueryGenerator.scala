@@ -18,7 +18,6 @@ package com.ligadata.queryutility
 
 import java.util.Properties
 
-import com.ligadata.MetadataAPI.MetadataAPIImpl
 import com.ligadata.Utils.{KamanjaLoaderInfo, Utils}
 import com.ligadata.kamanja.metadata.MdMgr._
 import com.ligadata.kamanja.metadata._
@@ -105,7 +104,7 @@ Usage:  bash $KAMANJA_HOME/bin/QueryGenerator.sh --metadataconfig $KAMANJA_HOME/
 
     // KamanjaConfiguration.allConfigs = loadConfigs
 
-    MetadataAPIImpl.InitMdMgrFromBootStrap(KamanjaConfiguration.configFile, false)
+    MetadataAPI.getMetadataApiInterface().InitMdMgrFromBootStrap(KamanjaConfiguration.configFile, false)
 
     val mdMgr = GetMdMgr
 

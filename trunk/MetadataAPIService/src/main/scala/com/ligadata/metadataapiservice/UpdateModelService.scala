@@ -43,7 +43,7 @@ class UpdateModelService(requestContext: RequestContext, userid: Option[String],
   val log = Logging(system, getClass)
   val APIName = "UpdateModelService"
   // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
-  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
+  val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
   // 646 - 676 Change ends
 
   val loggerName = this.getClass.getName
@@ -86,35 +86,35 @@ class UpdateModelService(requestContext: RequestContext, userid: Option[String],
 
         if (compileConfigTokens.size == 2) {
           if (!compileConfigTokens(0).equalsIgnoreCase("python") && !compileConfigTokens(0).equalsIgnoreCase("jython")) {
-            val apiResult = MetadataAPIImpl.UpdateModel(ModelType.PMML, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), None, None, None, None)
+            val apiResult = MetadataAPI.getMetadataApiInterface().UpdateModel(ModelType.PMML, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), None, None, None, None)
             requestContext.complete(apiResult)
           }
         } else if (compileConfigTokens.size == 3) {
 
           if (compileConfigTokens(0).equalsIgnoreCase("python")) {
-            val apiResult = MetadataAPIImpl.UpdateModel(ModelType.PYTHON, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), None, None, None, None)
+            val apiResult = MetadataAPI.getMetadataApiInterface().UpdateModel(ModelType.PYTHON, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), None, None, None, None)
             requestContext.complete(apiResult)
 
           } else if (compileConfigTokens(0).equalsIgnoreCase("jython")) {
-            val apiResult = MetadataAPIImpl.UpdateModel(ModelType.JYTHON, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), None, None, None, None)
+            val apiResult = MetadataAPI.getMetadataApiInterface().UpdateModel(ModelType.JYTHON, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), None, None, None, None)
             requestContext.complete(apiResult)
 
           } else if (compileConfigTokens(0).equalsIgnoreCase("pmml")) {
-            val apiResult = MetadataAPIImpl.UpdateModel(ModelType.PMML, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), None, None, None, None)
+            val apiResult = MetadataAPI.getMetadataApiInterface().UpdateModel(ModelType.PMML, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), None, None, None, None)
             requestContext.complete(apiResult)
 
           } else {
-            val apiResult = MetadataAPIImpl.UpdateModel(ModelType.PMML, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), None, None, None)
+            val apiResult = MetadataAPI.getMetadataApiInterface().UpdateModel(ModelType.PMML, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), None, None, None)
             requestContext.complete(apiResult)
           }
         } else if (compileConfigTokens.size == 4) {
 
           if (compileConfigTokens(0).equalsIgnoreCase("python")) {
-            val apiResult = MetadataAPIImpl.UpdateModel(ModelType.PYTHON, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), None, None, None)
+            val apiResult = MetadataAPI.getMetadataApiInterface().UpdateModel(ModelType.PYTHON, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), None, None, None)
             requestContext.complete(apiResult)
 
           } else if (compileConfigTokens(0).equalsIgnoreCase("jython")) {
-            val apiResult = MetadataAPIImpl.UpdateModel(ModelType.JYTHON, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), None, None, None)
+            val apiResult = MetadataAPI.getMetadataApiInterface().UpdateModel(ModelType.JYTHON, pmmlStr, userid, tenantId, Some(compileConfigTokens(0)), Some(compileConfigTokens(1)), Some(compileConfigTokens(2)), None, None, None)
             requestContext.complete(apiResult)
 
           }
