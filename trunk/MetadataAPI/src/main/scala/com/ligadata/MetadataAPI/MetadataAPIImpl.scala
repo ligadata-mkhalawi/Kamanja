@@ -24,6 +24,7 @@ import java.util.Date
 import java.text.ParseException
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType.ModelType
+import com.ligadata.MetadataAPI.*
 
 import scala.Enumeration
 import scala.io._
@@ -2161,8 +2162,8 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
       * @param zkMessage
      * @return
      */
-   def RemoveMessageFromCache(zkMessage: ZooKeeperNotification) = {
-    MessageAndContainerUtils.RemoveMessageFromCache(zkMessage)
+   def RemoveMessageFromCache(zkMessage: ZkNotification) = {
+    MessageAndContainerUtils.RemoveMessageFromCache(ZooKeeperNotification(zkMessage.ObjectType, zkMessage.Operation, zkMessage.NameSpace, zkMessage.Name, zkMessage.Version, zkMessage.PhysicalName, zkMessage.JarName, zkMessage.DependantJars, zkMessage.ConfigContnent))
   }
 
   /**
@@ -2171,8 +2172,8 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param zkMessage
     * @return
     */
-   def RemoveContainerFromCache(zkMessage: ZooKeeperNotification) = {
-    MessageAndContainerUtils.RemoveContainerFromCache(zkMessage)
+   def RemoveContainerFromCache(zkMessage: ZkNotification) = {
+    MessageAndContainerUtils.RemoveContainerFromCache(ZooKeeperNotification(zkMessage.ObjectType, zkMessage.Operation, zkMessage.NameSpace, zkMessage.Name, zkMessage.Version, zkMessage.PhysicalName, zkMessage.JarName, zkMessage.DependantJars, zkMessage.ConfigContnent))
   }
 
     /**

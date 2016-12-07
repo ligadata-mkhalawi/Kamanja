@@ -20,11 +20,12 @@ import java.util.{Date, Properties}
 
 // import com.ligadata.AuditAdapterInfo.AuditAdapter
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType
-// import com.ligadata.Serialize._
 import com.ligadata.kamanja.metadata.{BaseElemDef, MdMgr, MessageDef, ModelDef}
-// import org.json4s.JsonDSL._
-// import org.json4s.jackson.JsonMethods._
-// import com.ligadata.kamanja.metadata.MdMgr._
+import org.json4s.JsonDSL._
+import org.json4s.jackson.JsonMethods._
+import com.ligadata.kamanja.metadata.MdMgr._
+
+case class ZkNotification(ObjectType: String, Operation: String, NameSpace: String, Name: String, Version: String, PhysicalName: String, JarName: String, DependantJars: List[String], ConfigContnent: Option[String])
 
 /** A class that defines the result any of the API function uniformly
  * @constructor creates a new ApiResult with a statusCode,functionName,statusDescription,resultData
@@ -81,6 +82,11 @@ object MetadataAPI {
   	return null;
   }
 
+  def SerializeMapToJsonString(map: Map[String, Any]): String = {
+    implicit val formats = org.json4s.DefaultFormats
+    Serialization.write(map)
+  }
+
 }
 
 /**
@@ -100,7 +106,7 @@ class ApiResultComplex (var statusCode:Int, var functionName: String, var result
 
     var json = ("APIResults" -> ("Status Code" -> statusCode) ~
                                 ("Function Name" -> functionName) ~
-                                ("Result Data"  -> resultArray.map {nodeInfo => JsonSerializer.SerializeMapToJsonString(nodeInfo)}) ~
+                                ("Result Data"  -> resultArray.map {nodeInfo => MetadataAPI.SerializeMapToJsonString(nodeInfo)}) ~
                                 ("Result Description" -> description))
 
     pretty(render(json))
@@ -785,7 +791,7 @@ trait MetadataAPI {
     * @param zkMessage
     * @return
     */
-  def RemoveContainerFromCache(zkMessage: ZooKeeperNotification)
+  def RemoveContainerFromCache(zkMessage: ZkNotification)
 
 
   def GetAllFunctionDefs(formatType: String, userid: Option[String] = None) : (Int,String)
