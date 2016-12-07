@@ -93,7 +93,7 @@ object KeyValueManager {
     val storeType = parsed_json.getOrElse("StoreType", "").toString.trim.toLowerCase
 
     storeType match {
-
+/*
       // Other KV stores
       case "cassandra" => return CassandraAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
       case "hbase" => return HBaseAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
@@ -107,7 +107,7 @@ object KeyValueManager {
       case "sqlserver" => return SqlServerAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
       case "h2db" => return H2dbAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
       // case "mysql" => return MySqlAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig)
-
+*/
       // Default, Load it from Class
       case _ => {
         try {
