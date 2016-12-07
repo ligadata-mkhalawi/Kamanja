@@ -20,6 +20,7 @@ import java.util.{Date, Properties}
 
 import com.ligadata.AuditAdapterInfo.AuditAdapter
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType
+import com.ligadata.StorageBase.DataStore
 import com.ligadata.kamanja.metadata.{BaseElemDef, MdMgr, MessageDef, ModelDef}
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
@@ -1673,5 +1674,6 @@ trait MetadataAPI {
 
   def isSslEnabled: Boolean
 
+  def GetMainDS(): DataStore
 }
 // 646 - 674 Change ends

@@ -78,7 +78,7 @@ lazy val Exceptions = project.in(file("Exceptions")).configs(TestConfigs.all: _*
 
 lazy val KamanjaBase = project.in(file("KamanjaBase")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, Exceptions, KamanjaUtils, HeartBeat, KvBase, DataDelimiters, BaseTypes)
 
-lazy val MetadataAPIBase = project.in(file("MetadataAPIBase")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageManager, Metadata, ZooKeeperListener, Exceptions, KamanjaUtils, HeartBeat, KamanjaBase, AuditAdapterBase)
+lazy val MetadataAPIBase = project.in(file("MetadataAPIBase")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageBase, StorageManager, Metadata, ZooKeeperListener, Exceptions, KamanjaUtils, HeartBeat, KamanjaBase, AuditAdapterBase)
 
 lazy val DataDelimiters = project.in(file("DataDelimiters")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided")
 

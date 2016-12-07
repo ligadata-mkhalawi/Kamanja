@@ -129,7 +129,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     currentTranLevel = tranLevel
   }
 
-  def GetMainDS: DataStore = PersistenceUtils.GetMainDS
+  def GetMainDS(): DataStore = PersistenceUtils.GetMainDS
   var isCassandra = false
   private[this] val lock = new Object
   var startup = false
@@ -2163,7 +2163,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
       * @param zkMessage
      * @return
      */
-   def RemoveMessageFromCache(zkMessage: ZkNotification) = {
+   def RemoveMessageFromCache(zkNotification: ZkNotification) = {
     MessageAndContainerUtils.RemoveMessageFromCache(ZooKeeperNotification(zkNotification.ObjectType, zkNotification.Operation, zkNotification.NameSpace, zkNotification.Name, zkNotification.Version, zkNotification.PhysicalName, zkNotification.JarName, zkNotification.DependantJars, zkNotification.ConfigContnent))
   }
 
@@ -2173,7 +2173,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param zkMessage
     * @return
     */
-   def RemoveContainerFromCache(zkMessage: ZkNotification) = {
+   def RemoveContainerFromCache(zkNotification: ZkNotification) = {
     MessageAndContainerUtils.RemoveContainerFromCache(ZooKeeperNotification(zkNotification.ObjectType, zkNotification.Operation, zkNotification.NameSpace, zkNotification.Name, zkNotification.Version, zkNotification.PhysicalName, zkNotification.JarName, zkNotification.DependantJars, zkNotification.ConfigContnent))
   }
 
