@@ -41,7 +41,8 @@ class SmartFileConsumerContext{
   var inUse : Boolean = false
 }
 
-case class InputAdapterStatus(var fileName : String, var recordsCount : Long, var startTs : String, var endTs : String)
+case class InputAdapterStatus(var fileName : String, var recordsCount : Long, var startTs : String, var endTs : String,
+                              var bytesRead : Long, var nodeId : String, var status : String)
 
 /**
   * Counter of buffers used by the FileProcessors... there is a limit on how much memory File Consumer can use up.
@@ -227,7 +228,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   }*/
 
   //add the node callback
-  private def initializeNode: Unit ={
+  private def initializeNode: Unit = synchronized {
     LOG.debug("Max memeory = "+Runtime.getRuntime().maxMemory())
 
     if(nodeContext == null)
@@ -257,6 +258,35 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         envContext.createListenerForCacheKey(fileParallelismPath, filesParallelismCallback)
         filesParallelismCallback_initialized = true
       }
+    }
+
+    //previous leader but not current
+    if(!clusterStatus.isLeader && prevRegLeader.equals(clusterStatus.nodeId) &&
+      !clusterStatus.leaderNodeId.equals(clusterStatus.nodeId)){
+      //turn off leader functionality
+
+      if(monitorController!=null)
+        monitorController.stopMonitoring
+      monitorController = null
+      if(archiver != null){
+        archiver.shutdown()
+        archiver = null
+      }
+      if(leaderExecutor != null) {
+        LOG.debug("Smart File Consumer - shutting down leader executor service")
+        keepCheckingStatus = false
+        MonitorUtils.shutdownAndAwaitTermination(leaderExecutor, "Leader executor")
+      }
+
+      //clearProcessingQueue()
+      //clearRequestQueue()
+
+      if(allNodesStartInfo != null)
+        allNodesStartInfo.clear()
+
+      prevRegLeader = ""
+      filesParallelism = -1
+
     }
 
     if(clusterStatus.isLeader && clusterStatus.leaderNodeId.equals(clusterStatus.nodeId)){
@@ -325,6 +355,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       //envContext.setListenerCacheKey(filesParallelismPath, filesParallelism.toString)
     }
 
+    //
     initialized = true
   }
 
@@ -779,6 +810,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
             processingQLock.synchronized {
               //check if it is allowed to process one more file
+
               if (processingQueue.length < adapterConfig.monitoringConfig.consumersCount ) {
                 if(isPartitionInProcessingQueue(requestingThreadId.toInt)){
                   duplicateRequest = true
@@ -790,8 +822,9 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                   else monitorController.getNextFileToProcess
                   if (fileToProcessFullPath != null) {
 
-                    LOG.debug("Smart File Consumer - Adding a file processing assignment of file + " + fileToProcessFullPath +
-                      " to Node " + requestingNodeId + ", thread Id=" + requestingThreadId)
+                    LOG.warn("Smart File Consumer - Adding a file processing assignment of file + " + fileToProcessFullPath +
+                      " to Node " + requestingNodeId + ", thread Id=" + requestingThreadId +
+                      ". fileToProcessKeyPath=" + fileToProcessKeyPath)
 
                     //leave offset management to engine, usually this will be other than zero when calling startProcessing
                     val offset = 0L //getFileOffsetFromCache(fileToProcessFullPath)
@@ -803,6 +836,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                     addToProcessingQueue(newProcessingItem)
 
                     try {
+                      //logger.warn("")
                       envContext.setListenerCacheKey(fileToProcessKeyPath, data)
                     } catch {
                       case e: Throwable => {
@@ -1093,7 +1127,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       return
 
     envContext.setListenerCacheKey(eventPath, "") //TODO : so that it will not be read again. find a better way
-
+    LOG.warn("Smart File Consumer - eventType={}, eventPath={}, eventPathData={}",
+      eventType, eventPath, eventPathData)
     //data has format <file name>|offset
     val dataTokens = eventPathData.split("\\|")
     if(dataTokens.length >= 2) {
@@ -1113,8 +1148,6 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
         LOG.info("Smart File Consumer - Node Id = {}, Thread Id = {}, File ({}) was assigned",
           processingNodeId, processingThreadId.toString, fileToProcessName)
-
-
         val partitionId = processingThreadId.toInt
         var smartFileContext : SmartFileConsumerContext = null
 
@@ -1236,6 +1269,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             statMsg.set("recordscount", stats.recordsCount)
             statMsg.set("starttime", stats.startTs)
             statMsg.set("endtime", stats.endTs)
+            //todo: add new stats info
             // Post the messgae
             envContext.postMessages(Array[ContainerInterface](statMsg))
           }

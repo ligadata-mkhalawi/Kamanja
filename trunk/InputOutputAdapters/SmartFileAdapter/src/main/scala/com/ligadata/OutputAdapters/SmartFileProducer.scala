@@ -639,11 +639,20 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           val ts = new java.text.SimpleDateFormat("yyyyMMdd'T'HHmm").format(new java.util.Date(dt))
           val initialFileName = "%s/%s/%s%s-%d-%s.dat%s".format(fc.uri, path, fc.fileNamePrefix, nodeId, bucket, ts, extensions.getOrElse(defaultExtension, ""))
           val fileName =
-            if(isParquet && isFileExists(fc, initialFileName)){//cannot use already existing parquet file
-              val newDt = System.currentTimeMillis
-              nextRolloverTime = newDt + (fc.rolloverInterval * 60 * 1000)
-              val newTs = new java.text.SimpleDateFormat("yyyyMMdd'T'HHmm").format(new java.util.Date(newDt))
-              "%s/%s/%s%s-%d-%s.dat%s".format(fc.uri, path, fc.fileNamePrefix, nodeId, bucket, newTs, extensions.getOrElse(defaultExtension, ""))
+            if(isParquet ) {
+              //cannot use already existing parquet file
+              val filePathTokens = initialFileName.split("/")
+              val tmpFileDir = filePathTokens.take(filePathTokens.length - 1).mkString("/")
+              val tmpFileName = tmpFileDir + "/." + filePathTokens(filePathTokens.length - 1)
+
+              logger.info("checking if archive files already exists: {} or {}", initialFileName, tmpFileName)
+              if(isFileExists(fc, initialFileName) || isFileExists(fc, tmpFileName)) {
+                val newDt = System.currentTimeMillis
+                nextRolloverTime = newDt + (fc.rolloverInterval * 60 * 1000)
+                val newTs = new java.text.SimpleDateFormat("yyyyMMdd'T'HHmm").format(new java.util.Date(newDt))
+                "%s/%s/%s%s-%d-%s.dat%s".format(fc.uri, path, fc.fileNamePrefix, nodeId, bucket, newTs, extensions.getOrElse(defaultExtension, ""))
+              }
+              else initialFileName
             }
             else initialFileName
 

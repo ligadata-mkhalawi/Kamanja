@@ -585,7 +585,13 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
 
             else {
               logger.debug("reading {} to buffer with offset {}", lengthToRead.toString, actualBufferLen.toString)
-              lastReadLen = srcFileHandler.read(byteBuffer, actualBufferLen, lengthToRead)
+              try {
+                lastReadLen = srcFileHandler.read(byteBuffer, actualBufferLen, lengthToRead)
+              }
+              catch{
+                case e : Throwable =>
+                  lastReadLen = -1
+              }
               logger.debug("curReadLen={}", lastReadLen.toString)
 
               var lastSeparatorIdx = -1
