@@ -18,11 +18,12 @@ package com.ligadata.MetadataAPI
 
 import java.util.{Date, Properties}
 
-// import com.ligadata.AuditAdapterInfo.AuditAdapter
+import com.ligadata.AuditAdapterInfo.AuditAdapter
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType
 import com.ligadata.kamanja.metadata.{BaseElemDef, MdMgr, MessageDef, ModelDef}
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
+import org.json4s.jackson.Serialization
 import com.ligadata.kamanja.metadata.MdMgr._
 
 case class ZkNotification(ObjectType: String, Operation: String, NameSpace: String, Name: String, Version: String, PhysicalName: String, JarName: String, DependantJars: List[String], ConfigContnent: Option[String])
