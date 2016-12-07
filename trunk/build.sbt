@@ -125,11 +125,11 @@ lazy val MetadataAPI = project.in(file("MetadataAPI")).configs(TestConfigs.all: 
 lazy val MetadataBootstrap = project.in(file("MetadataBootstrap/Bootstrap")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, BaseTypes, Exceptions)
 
 
-lazy val MetadataAPIService = project.in(file("MetadataAPIService")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KamanjaBase, MetadataAPI, ZooKeeperLeaderLatch, Exceptions)
+lazy val MetadataAPIService = project.in(file("MetadataAPIService")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KamanjaBaseDeps % "provided", MetadataAPI)
 
-lazy val MetadataAPIServiceClient = project.in(file("MetadataAPIServiceClient")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Serialize, Exceptions, KamanjaBase)
+lazy val MetadataAPIServiceClient = project.in(file("MetadataAPIServiceClient")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Serialize, KamanjaBaseDeps % "provided")
 
-lazy val ContainersUtility = project.in(file("Utils/ContainersUtility")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, MetadataBootstrap, MetadataAPI, StorageManager, Exceptions, TransactionService)
+lazy val ContainersUtility = project.in(file("Utils/ContainersUtility")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KamanjaBaseDeps % "provided", MetadataAPI)
 
 lazy val JsonChecker = project.in(file("Utils/JsonChecker")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Exceptions)
 
@@ -212,7 +212,7 @@ lazy val KvBase = project.in(file("KvBase")).configs(TestConfigs.all: _*).settin
 
 lazy val FileDataConsumer = project.in(file("FileDataConsumer")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Exceptions, MetadataAPI)
 
-lazy val CleanUtil = project.in(file("Utils/CleanUtil")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", MetadataAPI)
+lazy val CleanUtil = project.in(file("Utils/CleanUtil")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KamanjaBaseDeps % "provided", MetadataAPI)
 
 lazy val SaveContainerDataComponent = project.in(file("Utils/SaveContainerDataComponent")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, MetadataBootstrap, MetadataAPI, StorageManager, Exceptions, TransactionService)
 
@@ -236,11 +236,11 @@ lazy val MigrateFrom_V_1_2 = project.in(file("Utils/Migrate/SourceVersion/Migrat
 
 lazy val MigrateFrom_V_1_3 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_3")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(MigrateBase)
 
-lazy val MigrateFrom_V_1_4 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_4")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(MigrateBase, MetadataAPI)
+lazy val MigrateFrom_V_1_4 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_4")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(MigrateBase, KamanjaBaseDeps % "provided", MetadataAPI)
 
-lazy val MigrateFrom_V_1_4_1 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_4_1")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(MigrateBase, MetadataAPI)
+lazy val MigrateFrom_V_1_4_1 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_4_1")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(MigrateBase, KamanjaBaseDeps % "provided", MetadataAPI)
 
-lazy val MigrateTo_V_1_5_0 = project.in(file("Utils/Migrate/DestinationVersion/MigrateTo_V_1_5_0")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(MigrateBase, KamanjaManager)
+lazy val MigrateTo_V_1_5_0 = project.in(file("Utils/Migrate/DestinationVersion/MigrateTo_V_1_5_0")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(MigrateBase, KamanjaBaseDeps % "provided", KamanjaManager)
 
 lazy val InstallDriverBase = project.in(file("Utils/ClusterInstaller/InstallDriverBase")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided")
 
