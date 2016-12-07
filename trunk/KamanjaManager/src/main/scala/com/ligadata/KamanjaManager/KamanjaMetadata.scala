@@ -38,7 +38,6 @@ import org.apache.logging.log4j._
 import scala.collection.mutable.ArrayBuffer
 import com.ligadata.Serialize._
 import com.ligadata.ZooKeeper._
-import com.ligadata.MetadataAPI.MetadataAPIImpl
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import com.ligadata.Utils.{KamanjaClassLoader, KamanjaLoaderInfo, Utils}

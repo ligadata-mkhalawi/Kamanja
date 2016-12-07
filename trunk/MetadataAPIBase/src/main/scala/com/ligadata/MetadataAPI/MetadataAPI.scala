@@ -18,13 +18,13 @@ package com.ligadata.MetadataAPI
 
 import java.util.{Date, Properties}
 
-import com.ligadata.AuditAdapterInfo.AuditAdapter
+// import com.ligadata.AuditAdapterInfo.AuditAdapter
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType
-import com.ligadata.Serialize._
+// import com.ligadata.Serialize._
 import com.ligadata.kamanja.metadata.{BaseElemDef, MdMgr, MessageDef, ModelDef}
-import org.json4s.JsonDSL._
-import org.json4s.jackson.JsonMethods._
-import com.ligadata.kamanja.metadata.MdMgr._
+// import org.json4s.JsonDSL._
+// import org.json4s.jackson.JsonMethods._
+// import com.ligadata.kamanja.metadata.MdMgr._
 
 /** A class that defines the result any of the API function uniformly
  * @constructor creates a new ApiResult with a statusCode,functionName,statusDescription,resultData
@@ -77,6 +77,9 @@ object MetadataAPI {
       }
   }
 
+  def getMetadataApiInterface() : MetadataAPI = {
+  	return null;
+  }
 
 }
 
