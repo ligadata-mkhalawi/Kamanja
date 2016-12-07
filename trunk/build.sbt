@@ -38,6 +38,7 @@ assembleDependencies in Global := {
   (assembly in HBaseExtDependencyLibs).value
   (assembly in KamanjaBaseDeps).value
   (assembly in KamanjaInternalDeps).value
+  (assembly in StorageDeps).value
 }
 
 //newly added
@@ -182,7 +183,7 @@ lazy val StorageSqlServer = project.in(file("Storage/SqlServer")).configs(TestCo
 
 lazy val StorageManager = project.in(file("Storage/StorageManager")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageBase, Exceptions, KamanjaBase, KamanjaUtils)
 
-lazy val StorageDeps = project.in(file("Storage/StorageManager")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageManager % "provided", StorageSqlServer, StorageCassandra, StorageHashMap, StorageTreeMap, StorageHBase, StorageH2DB, StorageElasticsearch)
+lazy val StorageDeps = project.in(file("Storage/StorageDeps")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageManager % "provided", StorageSqlServer, StorageCassandra, StorageHashMap, StorageTreeMap, StorageHBase, StorageH2DB, StorageElasticsearch)
 
 lazy val AuditAdapterBase = project.in(file("AuditAdapters/AuditAdapterBase")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Exceptions)
 

@@ -204,7 +204,7 @@ if [ "$cleanBuild" == "yes" ]; then
    sbt clean
 fi
 
-sbt '++ 2.10.4 package' '++ 2.10.4 ExtDependencyLibs/assembly' '++ 2.10.4 ExtDependencyLibs2/assembly' '++ 2.10.4 HBaseExtDependencyLibs/assembly' '++ 2.10.4 KamanjaBaseDeps/assembly' '++ 2.10.4 KamanjaInternalDeps/assembly' '++ 2.10.4 ClusterInstallerDriver/assembly' '++ 2.10.4 GetComponent/assembly' '++ 2.10.4 InstallDriver/assembly'
+sbt '++ 2.10.4 package' '++ 2.10.4 ExtDependencyLibs/assembly' '++ 2.10.4 ExtDependencyLibs2/assembly' '++ 2.10.4 HBaseExtDependencyLibs/assembly' '++ 2.10.4 KamanjaBaseDeps/assembly' '++ 2.10.4 KamanjaInternalDeps/assembly' '++ 2.10.4 ClusterInstallerDriver/assembly' '++ 2.10.4 GetComponent/assembly' '++ 2.10.4 InstallDriver/assembly' '++ 2.10.4 StorageDeps/assembly'
 #   '++ 2.10.4 NodeInfoExtract/assembly' '++ 2.10.4 MigrateManager/assembly'
 
 #sbt clean '++ 2.10.4 package' '++ 2.10.4 KamanjaManager/assembly' '++ 2.10.4 MetadataAPI/assembly' '++ 2.10.4 KVInit/assembly' '++ 2.10.4 SimpleKafkaProducer/assembly'
@@ -259,6 +259,7 @@ cp ExtDependencyLibs2/target/scala-2.10/ExtDependencyLibs2_2.10-${currentKamanja
 cp HBaseExtDependencyLibs/target/scala-2.10/HBaseExtDependencyLibs_2.10-${currentKamanjaVersion}.jar $systemlib
 cp KamanjaBaseDeps/target/scala-2.10/KamanjaBaseDeps_2.10-${currentKamanjaVersion}.jar $systemlib
 cp KamanjaInternalDeps/target/scala-2.10/KamanjaInternalDeps_2.10-${currentKamanjaVersion}.jar $systemlib
+cp StorageDeps/target/scala-2.10/StorageDeps_2.10-${currentKamanjaVersion}.jar $systemlib
 
 # Copy jars needed for Kafka
 cp $ivyPath/cache/org.apache.kafka/kafka_2.10/jars/kafka_2.10-0.8.2.2.jar $systemlib
@@ -539,7 +540,7 @@ fi
 
 #Now do full build of 2.11
 
-sbt '++ 2.11.7 package' '++ 2.11.7 ExtDependencyLibs/assembly' '++ 2.11.7 ExtDependencyLibs2/assembly' '++ 2.11.7 HBaseExtDependencyLibs/assembly' '++ 2.11.7 KamanjaBaseDeps/assembly' '++ 2.11.7 KamanjaInternalDeps/assembly' '++ 2.11.7 ClusterInstallerDriver/assembly' '++ 2.11.7 GetComponent/assembly' '++ 2.11.7 InstallDriver/assembly'
+sbt '++ 2.11.7 package' '++ 2.11.7 ExtDependencyLibs/assembly' '++ 2.11.7 ExtDependencyLibs2/assembly' '++ 2.11.7 HBaseExtDependencyLibs/assembly' '++ 2.11.7 KamanjaBaseDeps/assembly' '++ 2.11.7 KamanjaInternalDeps/assembly' '++ 2.11.7 ClusterInstallerDriver/assembly' '++ 2.11.7 GetComponent/assembly' '++ 2.11.7 InstallDriver/assembly' '++ 2.11.7 StorageDeps/assembly'
 #'++ 2.11.7 NodeInfoExtract/assembly' '++ 2.11.7 MigrateManager/assembly'
 
 #sbt clean '++ 2.11.7 package' '++ 2.11.7 KamanjaManager/assembly' '++ 2.11.7 MetadataAPI/assembly' '++ 2.11.7 KVInit/assembly' '++ 2.11.7 SimpleKafkaProducer/assembly'
@@ -589,6 +590,7 @@ cp ExtDependencyLibs2/target/scala-2.11/ExtDependencyLibs2_2.11-${currentKamanja
 cp HBaseExtDependencyLibs/target/scala-2.11/HBaseExtDependencyLibs_2.11-${currentKamanjaVersion}.jar $systemlib
 cp KamanjaBaseDeps/target/scala-2.11/KamanjaBaseDeps_2.11-${currentKamanjaVersion}.jar $systemlib
 cp KamanjaInternalDeps/target/scala-2.11/KamanjaInternalDeps_2.11-${currentKamanjaVersion}.jar $systemlib
+cp StorageDeps/target/scala-2.11/StorageDeps_2.11-${currentKamanjaVersion}.jar $systemlib
 
 cp $ivyPath/cache/org.apache.kafka/kafka_2.11/jars/kafka_2.11-0.8.2.2.jar $systemlib
 cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.9.0.1.jar $systemlib
