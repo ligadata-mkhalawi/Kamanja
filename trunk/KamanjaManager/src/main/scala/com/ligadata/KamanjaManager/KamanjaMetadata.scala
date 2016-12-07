@@ -19,7 +19,7 @@ package com.ligadata.KamanjaManager
 
 import java.io.File
 
-import com.ligadata.Exceptions.KamanjaException
+import com.ligadata.Exceptions.{Json4sParsingException, KamanjaException, ZkTransactionParsingException}
 import com.ligadata.InputOutputAdapterInfo.{InputAdapter, OutputAdapter}
 import com.ligadata.StorageBase.DataStore
 import com.ligadata.kamanja.metadata.{AttributeDef, BaseAttributeDef, BaseElem, ContainerDef, EntityType, MappedMsgTypeDef, MessageDef, ModelDef, StructTypeDef}
@@ -31,7 +31,7 @@ import com.ligadata.utils.dag.{Dag, EdgeId}
 import scala.collection.mutable.TreeSet
 import scala.util.control.Breaks._
 import com.ligadata.KamanjaBase._
-import com.ligadata.MetadataAPI.MetadataAPI
+import com.ligadata.MetadataAPI._
 
 import scala.collection.mutable.HashMap
 import org.apache.logging.log4j._
@@ -43,8 +43,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import com.ligadata.Utils.{KamanjaClassLoader, KamanjaLoaderInfo, Utils}
 import org.json4s._
+import org.json4s.jackson.JsonMethods.{parse => _, _}
 import org.json4s.native.JsonMethods._
-
 
 import scala.actors.threadpool.{ExecutorService, Executors}
 import scala.collection.immutable.Map
@@ -1066,6 +1066,31 @@ object KamanjaMetadata extends ObjectResolver {
     }
   }
 
+
+  @throws(classOf[Json4sParsingException])
+  @throws(classOf[ZkTransactionParsingException])
+  private def parseZkTransaction(zkTransactionJson: String, formatType: String): ZkTransaction = {
+    try {
+      implicit val jsonFormats: Formats = DefaultFormats
+      val json = parse(zkTransactionJson)
+
+      logger.debug("Parsed the json : " + zkTransactionJson)
+
+      val zkTransaction = json.extract[ZkTransaction]
+
+      zkTransaction
+    } catch {
+      case e: MappingException => {
+        logger.debug("", e)
+        throw Json4sParsingException(e.getMessage(), e)
+      }
+      case e: Exception => {
+        logger.debug("", e)
+        throw ZkTransactionParsingException(e.getMessage(), e)
+      }
+    }
+  }
+
   def UpdateMetadata(receivedJsonStr: String): Unit = {
 
     LOG.info("Process ZooKeeper notification " + receivedJsonStr)
@@ -1075,7 +1100,7 @@ object KamanjaMetadata extends ObjectResolver {
       return
     }
 
-    val zkTransaction = JsonSerializer.parseZkTransaction(receivedJsonStr, "JSON")
+    val zkTransaction = parseZkTransaction(receivedJsonStr, "JSON")
 
     if (zkTransaction == null || zkTransaction.Notifications.size == 0) {
       // nothing to do
@@ -1093,7 +1118,7 @@ object KamanjaMetadata extends ObjectResolver {
   }
 
   // Assuming mdMgr is locked at this moment for not to update while doing this operation
-  class MetadataUpdate(val zkTransaction: ZooKeeperTransaction) extends Runnable {
+  class MetadataUpdate(val zkTransaction: ZkTransaction) extends Runnable {
     def run() {
       var txnCtxt: TransactionContext = null
       var txnId = KamanjaConfiguration.nodeId.toString.hashCode()

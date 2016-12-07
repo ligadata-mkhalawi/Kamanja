@@ -19,7 +19,6 @@ package com.ligadata.installer
 import scala.collection.immutable.{ Set, HashMap }
 import scala.io.Source
 import java.io._
-import com.ligadata.MetadataAPI.{ MetadataAPIImpl }
 import com.ligadata.kamanja.metadata._
 import org.json4s._
 import org.json4s.JsonDSL._

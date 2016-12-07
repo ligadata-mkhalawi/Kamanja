@@ -22,9 +22,10 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.text.ParseException
+import com.ligadata.MetadataAPI._
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType.ModelType
-import com.ligadata.MetadataAPI.ZkNotification
+// import com.ligadata.MetadataAPI.ZkNotification
 
 import scala.Enumeration
 import scala.io._
@@ -483,7 +484,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     *
     * @param enable
     */
-  def setSslEnabled(enable: Boolean) = {
+  def setSslEnabled(enable: Boolean): Unit = {
     sslEnabled = enable
   }
 
@@ -2163,7 +2164,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
      * @return
      */
    def RemoveMessageFromCache(zkMessage: ZkNotification) = {
-    MessageAndContainerUtils.RemoveMessageFromCache(ZooKeeperNotification(zkMessage.ObjectType, zkMessage.Operation, zkMessage.NameSpace, zkMessage.Name, zkMessage.Version, zkMessage.PhysicalName, zkMessage.JarName, zkMessage.DependantJars, zkMessage.ConfigContnent))
+    MessageAndContainerUtils.RemoveMessageFromCache(ZooKeeperNotification(zkNotification.ObjectType, zkNotification.Operation, zkNotification.NameSpace, zkNotification.Name, zkNotification.Version, zkNotification.PhysicalName, zkNotification.JarName, zkNotification.DependantJars, zkNotification.ConfigContnent))
   }
 
   /**
@@ -2173,7 +2174,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @return
     */
    def RemoveContainerFromCache(zkMessage: ZkNotification) = {
-    MessageAndContainerUtils.RemoveContainerFromCache(ZooKeeperNotification(zkMessage.ObjectType, zkMessage.Operation, zkMessage.NameSpace, zkMessage.Name, zkMessage.Version, zkMessage.PhysicalName, zkMessage.JarName, zkMessage.DependantJars, zkMessage.ConfigContnent))
+    MessageAndContainerUtils.RemoveContainerFromCache(ZooKeeperNotification(zkNotification.ObjectType, zkNotification.Operation, zkNotification.NameSpace, zkNotification.Name, zkNotification.Version, zkNotification.PhysicalName, zkNotification.JarName, zkNotification.DependantJars, zkNotification.ConfigContnent))
   }
 
     /**
@@ -3227,6 +3228,10 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
       }
       case _ => { logger.error("Unknown objectType " + zkMessage.ObjectType + " in zookeeper notification, notification is not processed ..") }
     }
+  }
+
+  def UpdateMdMgr(zkTransaction: ZkTransaction): Unit = {
+    UpdateMdMgr(ZooKeeperTransaction(zkTransaction.Notifications.map(zkNotification => {ZooKeeperNotification(zkNotification.ObjectType, zkNotification.Operation, zkNotification.NameSpace, zkNotification.Name, zkNotification.Version, zkNotification.PhysicalName, zkNotification.JarName, zkNotification.DependantJars, zkNotification.ConfigContnent)}), zkTransaction.transactionId))
   }
 
     /**

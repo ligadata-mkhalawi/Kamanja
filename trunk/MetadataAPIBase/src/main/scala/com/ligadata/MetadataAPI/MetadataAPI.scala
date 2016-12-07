@@ -27,6 +27,7 @@ import org.json4s.jackson.Serialization
 import com.ligadata.kamanja.metadata.MdMgr._
 
 case class ZkNotification(ObjectType: String, Operation: String, NameSpace: String, Name: String, Version: String, PhysicalName: String, JarName: String, DependantJars: List[String], ConfigContnent: Option[String])
+case class ZkTransaction(Notifications: List[ZkNotification], transactionId: Option[String])
 
 /** A class that defines the result any of the API function uniformly
  * @constructor creates a new ApiResult with a statusCode,functionName,statusDescription,resultData
@@ -1666,5 +1667,11 @@ trait MetadataAPI {
     */
   def UpdateObjectInDB(obj: BaseElemDef)
 
-  }
+  def UpdateMdMgr(zkTransaction: ZkTransaction): Unit
+
+  def setSslEnabled(enable: Boolean): Unit
+
+  def isSslEnabled: Boolean
+
+}
 // 646 - 674 Change ends
