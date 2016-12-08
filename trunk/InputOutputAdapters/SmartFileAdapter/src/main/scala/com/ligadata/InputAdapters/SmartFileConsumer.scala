@@ -1819,7 +1819,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   }
 
   override def StopProcessing: Unit = {
-    LOG.debug("Smart File Consumer - shutting down the adapter")
+    LOG.warn("shutting down adapter - {}", adapterConfig.Name)
 
     initialized = false
     isShutdown = true
@@ -1829,29 +1829,35 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     archiveExecutor = null
     archiveInfo.clear()*/
 
-    if(monitorController!=null)
+    if(leaderExecutor != null) {
+      LOG.warn("shutting down adapter - {} . stopping leaderExecutor", adapterConfig.Name)
+      keepCheckingStatus = false
+      MonitorUtils.shutdownAndAwaitTermination(leaderExecutor, "Leader executor", 10)
+    }
+
+    if(monitorController!=null) {
+      LOG.warn("shutting down adapter - {} . stopping monitorController", adapterConfig.Name)
       monitorController.stopMonitoring
-    monitorController = null
+      monitorController = null
+    }
 
     if(archiver != null){
+      LOG.warn("shutting down adapter - {} . stopping archiver", adapterConfig.Name)
       archiver.shutdown()
       archiver = null
     }
 
-    if(leaderExecutor != null) {
-      LOG.debug("Smart File Consumer - shutting down leader executor service")
-      keepCheckingStatus = false
-      MonitorUtils.shutdownAndAwaitTermination(leaderExecutor, "Leader executor")
-    }
-
+    LOG.warn("shutting down adapter - {} . stopping terminateReaderTasks", adapterConfig.Name)
     terminateReaderTasks
 
+    LOG.warn("shutting down adapter - {} . clearing cache", adapterConfig.Name)
     clearCache
 
     prevRegParticipantPartitions = List()
     prevRegLeader = ""
     filesParallelism = -1
 
+    LOG.warn("finished shutting down adapter - {}", adapterConfig.Name)
   }
 
   private def clearCache(): Unit ={
