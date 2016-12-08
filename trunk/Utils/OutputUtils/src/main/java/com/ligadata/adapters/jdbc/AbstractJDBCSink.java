@@ -119,7 +119,7 @@ public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 
 				if (param.type == java.sql.Types.VARCHAR || param.type == java.sql.Types.LONGVARCHAR
 						|| param.type == java.sql.Types.CHAR || param.type == java.sql.Types.NVARCHAR
-						|| param.type == LONGNVARCHAR) {
+						|| param.type == java.sql.Types.LONGNVARCHAR) {
 					// String
 					statement.setString(paramIndex, value);
 				} else if (param.type == java.sql.Types.BIGINT || param.type == java.sql.Types.INTEGER
