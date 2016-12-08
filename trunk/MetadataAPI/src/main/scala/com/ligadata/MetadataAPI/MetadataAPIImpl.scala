@@ -2160,7 +2160,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     /**
      * Remove message with Message Name and Version Number based upon advice in supplied notification
       *
-      * @param zkMessage
+      * @param zkNotification
      * @return
      */
    def RemoveMessageFromCache(zkNotification: ZkNotification) = {
@@ -2170,7 +2170,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
   /**
     * RemoveContainerFromCache
     *
-    * @param zkMessage
+    * @param zkNotification
     * @return
     */
    def RemoveContainerFromCache(zkNotification: ZkNotification) = {

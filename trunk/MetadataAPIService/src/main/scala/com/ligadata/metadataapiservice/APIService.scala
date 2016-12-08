@@ -52,9 +52,6 @@ class APIService extends LigadataSSLConfiguration with Runnable{
   val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
   var databaseOpen = false
-  // 646 - 676 Change begins - replace MetadataAPIImpl with MetadataAPI
-  val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
-  // 646 - 676 Change ends
 
   /**
    *
@@ -152,6 +149,7 @@ class APIService extends LigadataSSLConfiguration with Runnable{
 
       APIInit.SetConfigFile(configFile.toString)
 
+      val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
       // Read properties file and Open db connection
       getMetadataAPI.InitMdMgrFromBootStrap(configFile, true)
       // APIInit deals with shutdown activity and it needs to know
@@ -160,7 +158,6 @@ class APIService extends LigadataSSLConfiguration with Runnable{
 
       val sslEnabled = getIsSslEnabledFromConfig
       logger.warn("Setting ssl enabled to: "+sslEnabled)
-      val getMetadataAPI = MetadataAPI.getMetadataApiInterface()
       getMetadataAPI.setSslEnabled(sslEnabled)
 
       val isValid = {
