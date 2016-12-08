@@ -84,7 +84,7 @@ lazy val DataDelimiters = project.in(file("DataDelimiters")).configs(TestConfigs
 
 lazy val SmartFileAdapter = project.in(file("InputOutputAdapters/SmartFileAdapter")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", InputOutputAdapterBase, Exceptions, DataDelimiters, JsonSerDeser % "test")
 
-lazy val ElasticsearchAdapters = project.in(file("InputOutputAdapters/ElasticsearchAdapters")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", InputOutputAdapterBase, Exceptions, DataDelimiters, JsonSerDeser % "test")
+lazy val ElasticsearchAdapters = project.in(file("InputOutputAdapters/ElasticsearchAdapters")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", InputOutputAdapterBase, Exceptions, DataDelimiters, JsonSerDeser % "test", StorageElasticsearch)
 
 lazy val MessageCompiler = project.in(file("MessageCompiler")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(Metadata, MetadataBootstrap, Exceptions).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided")
 
