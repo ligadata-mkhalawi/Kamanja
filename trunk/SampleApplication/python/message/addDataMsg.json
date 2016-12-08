@@ -1,0 +1,25 @@
+{
+  "Message": {
+    "NameSpace": "org.kamanja.arithmetic",
+    "Name": "simpleMsg",
+    "Version": "00.01.01",
+    "Description": "simple arithmetic test message",
+    "Fixed": "true",
+    "Persist": "false",
+    "Elements": [
+      {
+        "Field": {
+          "Name": "a",
+          "Type": "system.Float"
+        }
+      },
+      {
+        "Field": {
+          "Name": "b",
+          "Type": "system.Float"
+        }
+      }
+    ]
+  }
+}
+

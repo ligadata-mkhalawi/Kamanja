@@ -29,8 +29,9 @@ import scala.Enumeration
 import scala.io._
 import scala.collection.mutable.ArrayBuffer
 
+
 import scala.collection.mutable._
-import scala.reflect.runtime.{universe => ru}
+import scala.reflect.runtime.{ universe => ru }
 
 import com.ligadata.kamanja.metadata.ObjType._
 import com.ligadata.kamanja.metadata._
@@ -38,13 +39,14 @@ import com.ligadata.kamanja.metadata.MdMgr._
 
 import com.ligadata.kamanja.metadataload.MetadataLoad
 
+import scala.sys.process._
 // import com.ligadata.keyvaluestore._
-import com.ligadata.HeartBeat.{MonitoringContext, HeartBeatUtil}
-import com.ligadata.StorageBase.{DataStore, Transaction}
-import com.ligadata.KvBase.{Key, TimeRange}
+import com.ligadata.HeartBeat.{ MonitoringContext, HeartBeatUtil }
+import com.ligadata.StorageBase.{ DataStore, Transaction }
+import com.ligadata.KvBase.{ Key, TimeRange }
 
 import scala.util.parsing.json.JSON
-import scala.util.parsing.json.{JSONObject, JSONArray}
+import scala.util.parsing.json.{ JSONObject, JSONArray }
 import scala.collection.immutable.Map
 import scala.collection.immutable.HashMap
 import scala.collection.mutable.HashMap
@@ -89,15 +91,15 @@ object ModelUtils {
   // 646 - 676 Change ends
 
   /**
-    * Deactivate the model that presumably is active and waiting for input in the working set of the cluster engines.
-    *
-    * @param nameSpace namespace of the object
-    * @param name
-    * @param version   Version of the object
-    * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *                  method. If Security and/or Audit are configured, this value must be a value other than None.
-    * @return
-    */
+   * Deactivate the model that presumably is active and waiting for input in the working set of the cluster engines.
+   *
+   * @param nameSpace namespace of the object
+   * @param name
+   * @param version   Version of the object
+   * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *                  method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @return
+   */
   def DeactivateModel(nameSpace: String, name: String, version: Long, userid: Option[String] = None): String = {
     val dispkey = nameSpace + "." + name + "." + MdMgr.Pad0s2Version(version)
     getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.DEACTIVATEOBJECT, AuditConstants.MODEL, AuditConstants.SUCCESS, "", dispkey)
@@ -109,13 +111,13 @@ object ModelUtils {
   }
 
   /**
-    * Deactivate a model FIXME: Explain what it means to do this locally.
-    *
-    * @param nameSpace namespace of the object
-    * @param name
-    * @param version   Version of the object
-    * @return
-    */
+   * Deactivate a model FIXME: Explain what it means to do this locally.
+   *
+   * @param nameSpace namespace of the object
+   * @param name
+   * @param version   Version of the object
+   * @return
+   */
   private def DeactivateLocalModel(nameSpace: String, name: String, version: Long): Boolean = {
     var key = nameSpace + "." + name + "." + version
     val dispkey = nameSpace + "." + name + "." + MdMgr.Pad0s2Version(version)
@@ -148,15 +150,15 @@ object ModelUtils {
   }
 
   /**
-    * Activate the model with the supplied keys. The engine is notified and the model factory is loaded.
-    *
-    * @param nameSpace namespace of the object
-    * @param name
-    * @param version   Version of the object
-    * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *                  method. If Security and/or Audit are configured, this value must be a value other than None.
-    * @return
-    */
+   * Activate the model with the supplied keys. The engine is notified and the model factory is loaded.
+   *
+   * @param nameSpace namespace of the object
+   * @param name
+   * @param version   Version of the object
+   * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *                  method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @return
+   */
   def ActivateModel(nameSpace: String, name: String, version: Long, userid: Option[String] = None): String = {
     var key = nameSpace + "." + name + "." + version
     val dispkey = nameSpace + "." + name + "." + MdMgr.Pad0s2Version(version)
@@ -231,15 +233,15 @@ object ModelUtils {
   }
 
   /**
-    * Remove model with Model Name and Version Number
-    *
-    * @param nameSpace namespace of the object
-    * @param name
-    * @param version   Version of the object
-    * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *                  method. If Security and/or Audit are configured, this value must be a value other than None.
-    * @return
-    */
+   * Remove model with Model Name and Version Number
+   *
+   * @param nameSpace namespace of the object
+   * @param name
+   * @param version   Version of the object
+   * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *                  method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @return
+   */
   def RemoveModel(nameSpace: String, name: String, version: Long, userid: Option[String]): String = {
     var key = nameSpace + "." + name + "." + version
     if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.DELETEOBJECT, "Model", AuditConstants.SUCCESS, "", key)
@@ -274,20 +276,20 @@ object ModelUtils {
   }
 
   /**
-    * Remove model with Model Name and Version Number
-    *
-    * @param modelName the Namespace.Name of the given model to be removed
-    * @param version   Version of the given model.  The version should comply with the Kamanja version format.  For example,
-    *                  a value of "000001.000001.000001" shows the digits available for version.  All must be base 10 digits
-    *                  with up to 6 digits for major version, minor version and micro version sections.
-    *                  elper functions are available in MdMgr object for converting to/from strings and 0 padding the
-    *                  version sections if desirable.
-    * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *                  method. If Security and/or Audit are configured, this value must be a value other than None.
-    * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
-    *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
-    *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
-    */
+   * Remove model with Model Name and Version Number
+   *
+   * @param modelName the Namespace.Name of the given model to be removed
+   * @param version   Version of the given model.  The version should comply with the Kamanja version format.  For example,
+   *                  a value of "000001.000001.000001" shows the digits available for version.  All must be base 10 digits
+   *                  with up to 6 digits for major version, minor version and micro version sections.
+   *                  elper functions are available in MdMgr object for converting to/from strings and 0 padding the
+   *                  version sections if desirable.
+   * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *                  method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
+   *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
+   *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
+   */
   def RemoveModel(modelName: String, version: String, userid: Option[String] = None): String = {
 
     val reasonable: Boolean = modelName != null && modelName.length > 0
@@ -315,15 +317,14 @@ object ModelUtils {
     result
   }
 
-
   /**
-    * The ModelDef returned by the compilers is added to the metadata.
-    *
-    * @param model
-    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured,supply something other than None
-    * @return
-    */
+   * The ModelDef returned by the compilers is added to the metadata.
+   *
+   * @param model
+   * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *               method. If Security and/or Audit are configured,supply something other than None
+   * @return
+   */
   def AddModel(model: ModelDef, userid: Option[String]): String = {
     var key = model.FullNameWithVer
     val dispkey = model.FullName + "." + MdMgr.Pad0s2Version(model.Version)
@@ -354,8 +355,7 @@ object ModelUtils {
     // save the outMessage if any
     if (optMsgProduced != None) {
       modDef.outputMsgs = modDef.outputMsgs :+ optMsgProduced.get.toLowerCase
-    }
-    else {
+    } else {
       // no need to create a default output message if modelconfig defines an output message as well
       if (modDef.outputMsgs.length == 0) {
         val defaultMessage = MessageAndContainerUtils.createDefaultOutputMessage(modDef, userid)
@@ -364,17 +364,16 @@ object ModelUtils {
     }
   }
 
-
   /**
-    * AddModelFromSource - compiles and catalogs a custom Scala or Java model from source.
-    *
-    * @param sourceCode
-    * @param sourceLang
-    * @param modelName
-    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
-    * @return
-    */
+   * AddModelFromSource - compiles and catalogs a custom Scala or Java model from source.
+   *
+   * @param sourceCode
+   * @param sourceLang
+   * @param modelName
+   * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *               method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @return
+   */
   private def AddModelFromSource(sourceCode: String, sourceLang: String, modelName: String, userid: Option[String], tenantId: String, optMsgProduced: Option[String], pStr: Option[String]): String = {
     try {
       var compProxy = new CompilerProxy
@@ -395,7 +394,6 @@ object ModelUtils {
 
       }
       // 1119 Changes end
-
 
       logger.info("Begin uploading dependent Jars, please wait.")
       PersistenceUtils.UploadJarsToDB(modDef)
@@ -428,45 +426,39 @@ object ModelUtils {
     }
   }
 
-  /** Add model. Several model types are currently supported.  They describe the content of the "input" argument:
-    *
-    * - SCALA - a Scala source string
-    * - JAVA - a Java source string
-    * - PMML - a PMML source string
-    * - KPMML - a Kamanja Pmml source string
-    * - BINARY - the path to a jar containing the model
-    *
-    * The remaining arguments, while noted as optional, are required for some model types.  In particular,
-    * the ''modelName'', ''version'', and ''msgConsumed'' must be specified for the PMML model type.  The ''userid'' is
-    * required for systems that have been configured with a SecurityAdapter or AuditAdapter.
-    *
-    * @see [[http://kamanja.org/security/ security wiki]] for more information. The audit adapter, if configured,
-    *      will also be invoked to take note of this user's action.
-    * @see [[http://kamanja.org/auditing/ auditing wiki]] for more information about auditing.
-    *      NOTE: The BINARY model is not supported at this time.  The model submitted for this type will via a jar file.
-    * @param modelType      the type of the model submission (any {SCALA,JAVA,PMML,KPMML,BINARY})
-    * @param input          the text element to be added dependent upon the modelType specified.
-    * @param optUserid      the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *                       method.
-    * @param optModelName   the namespace.name of the PMML model to be added to the Kamanja metadata
-    * @param optVersion     the model version to be used to describe this PMML model
-    * @param optMsgConsumed the namespace.name of the message to be consumed by a PMML model
-    * @param optMsgVersion  the version of the message to be consumed. By default Some(-1)
-    * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
-    *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
-    *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
-    */
-  def AddModel(modelType: ModelType.ModelType
-               , input: String
-               , optUserid: Option[String] = None
-               , tenantId: Option[String] = None
-               , optModelName: Option[String] = None
-               , optVersion: Option[String] = None
-               , optMsgConsumed: Option[String] = None
-               , optMsgVersion: Option[String] = Some("-1")
-               , optMsgProduced: Option[String] = None
-               , pStr: Option[String]
-              ): String = {
+  /**
+   * Add model. Several model types are currently supported.  They describe the content of the "input" argument:
+   *
+   * - SCALA - a Scala source string
+   * - JAVA - a Java source string
+   * - PMML - a PMML source string
+   * - KPMML - a Kamanja Pmml source string
+   * - BINARY - the path to a jar containing the model
+   *
+   * The remaining arguments, while noted as optional, are required for some model types.  In particular,
+   * the ''modelName'', ''version'', and ''msgConsumed'' must be specified for the PMML model type.  The ''userid'' is
+   * required for systems that have been configured with a SecurityAdapter or AuditAdapter.
+   *
+   * @see [[http://kamanja.org/security/ security wiki]] for more information. The audit adapter, if configured,
+   *      will also be invoked to take note of this user's action.
+   * @see [[http://kamanja.org/auditing/ auditing wiki]] for more information about auditing.
+   *      NOTE: The BINARY model is not supported at this time.  The model submitted for this type will via a jar file.
+   * @param modelType      the type of the model submission (any {SCALA,JAVA,PMML,KPMML,BINARY})
+   * @param input          the text element to be added dependent upon the modelType specified.
+   * @param optUserid      the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *                       method.
+   * @param optModelName   the namespace.name of the PMML model to be added to the Kamanja metadata
+   * @param optVersion     the model version to be used to describe this PMML model
+   * @param optMsgConsumed the namespace.name of the message to be consumed by a PMML model
+   * @param optMsgVersion  the version of the message to be consumed. By default Some(-1)
+   * @param optMsgProduced the output message to be created when a model result is produced
+   * @param pStr Json string containing global information
+   * @param modelOptions model specific options used by model instance initialization
+   * @return the result as a JSON String of object ApiResult where ApiResult.statusCode
+   *         indicates success or failure of operation: 0 for success, Non-zero for failure. The Value of
+   *         ApiResult.statusDescription and ApiResult.resultData indicate the nature of the error in case of failure
+   */
+  def AddModel(modelType: ModelType.ModelType, input: String, optUserid: Option[String] = None, tenantId: Option[String] = None, optModelName: Option[String] = None, optVersion: Option[String] = None, optMsgConsumed: Option[String] = None, optMsgVersion: Option[String] = Some("-1"), optMsgProduced: Option[String] = None, pStr: Option[String], modelOptions: Option[String]): String = {
 
     // No Add Model is allowed without Tenant Id
     if (tenantId == None) {
@@ -480,8 +472,8 @@ object ModelUtils {
         logger.info("Unknown outputmsg " + optMsgProduced.get.toLowerCase);
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"Unknown Outmessage ${optMsgProduced.get.toLowerCase} error = ${ErrorCodeConstants.Add_Model_Failed}")
         return apiResult.toString
-      }
-      else {
+      } else {
+        logger.warn("optMsgProduced.get.toLowerCase " + optMsgProduced.get.toLowerCase);
         if (modelType == ModelType.KPMML && !MessageAndContainerUtils.IsMappedMessage(msg)) {
           logger.info("outputmsg " + optMsgProduced.get.toLowerCase + " not a mapped message ");
 
@@ -490,8 +482,7 @@ object ModelUtils {
         }
       }
       logger.info("A valid message type " + optMsgProduced.get.toLowerCase + " is already found in metadata");
-    }
-    else {
+    } else {
       logger.debug("We may create a default output message depending on whether they are supplied in ModelConfig object ..")
     }
 
@@ -515,24 +506,49 @@ object ModelUtils {
         val msgConsumed: String = optMsgConsumed.orNull
         val msgVer: String = optMsgVersion.getOrElse("-1")
         val result: String = if (modelName != null && version != null && msgConsumed != null) {
-          val res: String = AddPMMLModel(modelName
-            , version
-            , msgConsumed
-            , msgVer
-            , input
-            , optUserid
-            , tenantId.get
-            , optMsgProduced,
-            pStr)
+          val res: String = AddPMMLModel(modelName, version, msgConsumed, msgVer, input, optUserid, tenantId.get, optMsgProduced, pStr)
           res
         } else {
           val inputRep: String = if (input != null && input.size > 200) input.substring(0, 199)
           else if (input != null) input
           else "no model text"
-          val apiResult = new ApiResult(ErrorCodeConstants.Failure
-            , "AddModel"
-            , null
-            , s"One or more PMML arguments have not been specified... modelName = $modelName, version = $version, input = $inputRep error = ${ErrorCodeConstants.Add_Model_Failed}")
+          val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"One or more PMML arguments have not been specified... modelName = $modelName, version = $version, input = $inputRep error = ${ErrorCodeConstants.Add_Model_Failed}")
+          apiResult.toString
+        }
+        result
+      }
+
+      case ModelType.PYTHON => {
+        val modelName: String = optModelName.orNull
+        val version: String = optVersion.orNull
+        val msgConsumed: String = optMsgConsumed.orNull
+        val msgVer: String = optMsgVersion.getOrElse("-1")
+        val result: String = if (modelName != null && version != null && msgConsumed != null) {
+          val res: String = AddPYTHONModel(modelName, version, msgConsumed, msgVer, input, optUserid, tenantId.get, optMsgProduced, pStr, modelOptions)
+          res
+        } else {
+          val inputRep: String = if (input != null && input.size > 200) input.substring(0, 199)
+          else if (input != null) input
+          else "no model text"
+          val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"One or more PYTHON arguments have not been specified... modelName = $modelName, version = $version, input = $inputRep error = ${ErrorCodeConstants.Add_Model_Failed}")
+          apiResult.toString
+        }
+        result
+      }
+
+      case ModelType.JYTHON => {
+        val modelName: String = optModelName.orNull
+        val version: String = optVersion.orNull
+        val msgConsumed: String = optMsgConsumed.orNull
+        val msgVer: String = optMsgVersion.getOrElse("-1")
+        val result: String = if (modelName != null && version != null && msgConsumed != null) {
+          val res: String = AddJYTHONModel(modelName, version, msgConsumed, msgVer, input, optUserid, tenantId.get, optMsgProduced, pStr, modelOptions)
+          res
+        } else {
+          val inputRep: String = if (input != null && input.size > 200) input.substring(0, 199)
+          else if (input != null) input
+          else "no model text"
+          val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"One or more JYTHON arguments have not been specified... modelName = $modelName, version = $version, input = $inputRep error = ${ErrorCodeConstants.Add_Model_Failed}")
           apiResult.toString
         }
         result
@@ -549,36 +565,26 @@ object ModelUtils {
     modelResult
   }
 
-
   /**
-    * Add a PMML model to the metadata.
-    *
-    * PMML models are evaluated, not compiled. To create the model definition, an instance of the evaluator
-    * is obtained from the pmml-evaluator component and the ModelDef is constructed and added to the store.
-    *
-    * @see com.ligadata.MetadataAPI.JpmmlSupport for more information
-    * @param modelName   the namespace.name of the model to be injested.
-    * @param version     the version as string in the form "MMMMMM.mmmmmmmm.nnnnnn" (3 nodes .. could be fewer chars per node)
-    * @param msgConsumed the namespace.name of the message that this model is to consume.  NOTE: the
-    *                    fields used in the pmml model and the fields in the message must match.  If
-    *                    the message does not supply all input fields in the model, there should be a default
-    *                    specified for those not filled in that mining variable.
-    * @param msgVersion  the version of the message that this PMML model will consume
-    * @param pmmlText    the actual PMML (xml) that is submitted by the client.
-    * @param userid      the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *                    method. If Security and/or Audit are configured, this value must be a value other than None.
-    * @return json string result
-    */
-  private def AddPMMLModel(modelName: String
-                           , version: String
-                           , msgConsumed: String
-                           , msgVersion: String
-                           , pmmlText: String
-                           , userid: Option[String]
-                           , tenantId: String
-                           , optMsgProduced: Option[String]
-                           , pStr: Option[String]
-                          ): String = {
+   * Add a PMML model to the metadata.
+   *
+   * PMML models are evaluated, not compiled. To create the model definition, an instance of the evaluator
+   * is obtained from the pmml-evaluator component and the ModelDef is constructed and added to the store.
+   *
+   * @see com.ligadata.MetadataAPI.JpmmlSupport for more information
+   * @param modelName   the namespace.name of the model to be injested.
+   * @param version     the version as string in the form "MMMMMM.mmmmmmmm.nnnnnn" (3 nodes .. could be fewer chars per node)
+   * @param msgConsumed the namespace.name of the message that this model is to consume.  NOTE: the
+   *                    fields used in the pmml model and the fields in the message must match.  If
+   *                    the message does not supply all input fields in the model, there should be a default
+   *                    specified for those not filled in that mining variable.
+   * @param msgVersion  the version of the message that this PMML model will consume
+   * @param pmmlText    the actual PMML (xml) that is submitted by the client.
+   * @param userid      the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *                    method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @return json string result
+   */
+  private def AddPMMLModel(modelName: String, version: String, msgConsumed: String, msgVersion: String, pmmlText: String, userid: Option[String], tenantId: String, optMsgProduced: Option[String], pStr: Option[String]): String = {
     try {
       val buffer: StringBuilder = new StringBuilder
       val modelNameNodes: Array[String] = modelName.split('.')
@@ -591,16 +597,7 @@ object ModelUtils {
       msgNameNodes.take(msgNameNodes.size - 1).addString(buffer, ".")
       val msgNamespace: String = buffer.toString
       val ownerId: String = if (userid == None) "kamanja" else userid.get
-      val jpmmlSupport: JpmmlSupport = new JpmmlSupport(mdMgr
-        , modelNmSpace
-        , modelNm
-        , version
-        , msgNamespace
-        , msgName
-        , msgVersion
-        , pmmlText
-        , ownerId
-        , tenantId)
+      val jpmmlSupport: JpmmlSupport = new JpmmlSupport(mdMgr, modelNmSpace, modelNm, version, msgNamespace, msgName, msgVersion, pmmlText, ownerId, tenantId)
       val recompile: Boolean = false
       var modDef: ModelDef = jpmmlSupport.CreateModel(recompile)
 
@@ -640,48 +637,335 @@ object ModelUtils {
         }
         val modDefName: String = if (modDef != null) modDef.FullName else "(pmml compile failed)"
         val modDefVer: String = if (modDef != null) MdMgr.Pad0s2Version(modDef.Version) else MdMgr.UnknownVersion
-        var apiResult = new ApiResult(ErrorCodeConstants.Failure
-          , "AddModel"
-          , null
-          , s"$reasonForFailure : $modDefName.$modDefVer)")
+        var apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"$reasonForFailure : $modDefName.$modDefVer)")
         apiResult.toString()
       }
     } catch {
       case e: ModelCompilationFailedException => {
         logger.debug("", e)
-        val apiResult = new ApiResult(ErrorCodeConstants.Failure
-          , "AddModel"
-          , null
-          , s"Error : ${e.toString} + ${ErrorCodeConstants.Add_Model_Failed}")
+        val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Add_Model_Failed}")
         apiResult.toString()
       }
       case e: AlreadyExistsException => {
         logger.debug("", e)
-        val apiResult = new ApiResult(ErrorCodeConstants.Failure
-          , "AddModel"
-          , null
-          , s"Error : ${e.toString} + ${ErrorCodeConstants.Add_Model_Failed}")
+        val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Add_Model_Failed}")
         apiResult.toString()
       }
       case e: Exception => {
         logger.debug("", e)
-        val apiResult = new ApiResult(ErrorCodeConstants.Failure
-          , "AddModel"
-          , null
-          , s"Error : ${e.toString} + ${ErrorCodeConstants.Add_Model_Failed}")
+        val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Add_Model_Failed}")
+        apiResult.toString()
+      }
+    }
+  }
+
+
+  /**
+   *  Execute the supplied command sequence. Answer with the rc, the stdOut, and stdErr outputs from
+   *  the external command represented in the sequence.
+   *
+   *  Warning: This function will wait for the process to end.  It is **_not_** to be used to launch a daemon. Use
+   *  cmd.run instead. If this application is itself a server, you can run it with the ProcessLogger as done
+   *  here ... possibly with a different kind of underlying stream that writes to a log file or in some fashion
+   *  consumable with the program.
+   *
+   *  @param cmd external command sequence
+   *  @return (rc, stdout, stderr)
+   */
+  private def runCommand(cmd: Seq[String]): (Int, String, String) = {
+    if (logger.isDebugEnabled()) {
+      logger.debug("in runCmdCollectOutput cmd string is  " + cmd.mkString(" "))
+
+    }
+    val stdoutStream = new ByteArrayOutputStream
+    val stderrStream = new ByteArrayOutputStream
+    val stdoutWriter = new PrintWriter(stdoutStream)
+    val stderrWriter = new PrintWriter(stderrStream)
+    val exitValue = cmd.!(ProcessLogger(stdoutWriter.println, stderrWriter.println))
+    stdoutWriter.close()
+    stderrWriter.close()
+    if (logger.isDebugEnabled()) {
+      logger.debug("in runCmdCollectOutput result is   " + exitValue.toString + " stdout = " + stdoutStream.toString + ", stderr = " + stderrStream.toString)
+
+    }
+    (exitValue, stdoutStream.toString, stderrStream.toString)
+  }
+
+  /**
+   * This module checks the existence of python and its version. If python and it correction version is installed
+   * then the module returns true else false
+   *
+    **/
+  private def isPythonVerCorrect () : Int  = {
+
+    val cmdSeq: Seq[String] = Seq[String]("python", "-V")
+    try {
+      val (rc, stdoutResult, stderrResult): (Int, String, String) = runCommand(cmdSeq)
+      if (rc != 0) {
+         logger.error ("Unable to find python, please install python or python is not in the path") ;
+         return 1
+      }
+      if (logger.isDebugEnabled()) {
+        logger.debug("In PythonMdlSupport " + " the value of python version is " + stderrResult)
+      }
+      val versionDetails : Array [String]  = stderrResult.split(' ')(1).split('.')
+     if (logger.isDebugEnabled()) {
+       logger.debug("In PythonMdlSupport " + " the value of python version details are  " + versionDetails)
+     }
+     val version : Int = (versionDetails(0) + versionDetails(1)).toInt
+     if (logger.isDebugEnabled()) {
+        logger.debug("In PythonMdlSupport " + " the value of python version converted is " + version)
+     }
+     if (version >= 27) {
+        return 0
+     }
+     else  {
+       return 2
+    }
+  }
+  catch {
+    case e: IOException => {
+      1
+    }
+  }
+ }
+  
+
+  /**
+   * Add a PYTHON model to the metadata.
+   *
+   * PMML models are evaluated, not compiled. To create the model definition, an instance of the evaluator
+   * is obtained from the python-evaluator component and the ModelDef is constructed and added to the store.
+   *
+   * @see com.ligadata.MetadataAPI.JpmmlSupport for more information
+   * @param modelName   the namespace.name of the model to be injested.
+   * @param version     the version as string in the form "MMMMMM.mmmmmmmm.nnnnnn" (3 nodes .. could be fewer chars per node)
+   * @param msgConsumed the namespace.name of the message that this model is to consume.  NOTE: the
+   *                    fields used in the pmml model and the fields in the message must match.  If
+   *                    the message does not supply all input fields in the model, there should be a default
+   *                    specified for those not filled in that mining variable.
+   * @param msgVersion  the version of the message that this PMML model will consume
+   * @param srcText     the actual PYTHON that is submitted by the client.
+   * @param userid      the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *                    method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @param tenantId      the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *                    method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @param optMsgProduced the output message to be created when a model result is produced
+   * @param pStr Json string containing global information
+   * @param someModelOptions model specific options used by model instance initialization
+   * @return json string result
+   */
+  private def AddPYTHONModel(modelName: String, version: String, msgConsumed: String, msgVersion: String, srcText: String, userid: Option[String], tenantId: String, optMsgProduced: Option[String], pStr: Option[String], someModelOptions: Option[String]): String = {
+
+    val pythonCheck : Int = isPythonVerCorrect() ;
+
+    if (pythonCheck == 1) {
+         logger.error(" in AddPYTHONModel : Unable to find python compiler ")
+      val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"${ErrorCodeConstants.Add_Model_Failed} - Unable to find python")
+      return (apiResult.toString())
+   }
+   if (pythonCheck == 2) {
+        logger.error(" in AddPYTHONModel : Unable to find python compiler ")
+     val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"${ErrorCodeConstants.Add_Model_Failed} - Python version must be greater than 2.6")
+     return (apiResult.toString())
+  }
+	     
+    try {
+      val buffer: StringBuilder = new StringBuilder
+
+      val modelNameNodes: Array[String] = modelName.split('.')
+      val moduleName: String = modelNameNodes.head /** separate the module name prefix from rest of model name */
+      val modelNameNodesSansModule: Array[String] = modelNameNodes.tail
+      val modelNm: String = modelNameNodesSansModule.last
+      modelNameNodesSansModule.take(modelNameNodesSansModule.size - 1).addString(buffer, ".")
+      if (buffer.toString.trim == "") buffer.append("System")
+      val modelNmSpace: String = buffer.toString  /** this could be empty*/
+
+      buffer.clear
+      val msgNameNodes: Array[String] = msgConsumed.split('.')
+      val msgName: String = msgNameNodes.last
+      msgNameNodes.take(msgNameNodes.size - 1).addString(buffer, ".")
+      val msgNamespace: String = buffer.toString
+      val ownerId: String = if (userid == None) "kamanja" else userid.get
+      val modelOptions: String = someModelOptions.getOrElse("{}")
+
+      logger.info(s"The module name $moduleName will be used as the namespace for model $modelNm...")
+      val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, moduleName, modelNmSpace // modelNmSpace
+      , modelNm, version, msgNamespace, msgName, msgVersion, srcText, ownerId, tenantId, optMsgProduced, pStr, modelOptions, getMetadataAPI.GetMetadataAPIConfig)
+      val recompile: Boolean = false
+      val isPython: Boolean = true // when false JYTHON
+      var modDef: ModelDef = pythonMdlSupport.CreateModel(recompile, isPython)
+
+      /*
+       * For testing purpose call the Make Model and just create temp model def ...
+       */
+
+      // ModelDef may be null if the model evaluation failed
+      val latestVersion: Option[ModelDef] = if (modDef == null) None else GetLatestModel(modDef)
+      val isValid: Boolean = if (latestVersion.isDefined) MetadataAPIImpl.IsValidVersion(latestVersion.get, modDef) else true
+
+      if (isValid && modDef != null) {
+        val existingModel = MdMgr.GetMdMgr.Model(modDef.NameSpace, modDef.Name, -1, false) // Any version is fine. No need of active
+        modDef.uniqueId = MetadataAPIImpl.GetUniqueId
+        modDef.mdElementId = if (existingModel == None) MetadataAPIImpl.GetMdElementId else existingModel.get.MdElementId
+        MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, srcText, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
+
+        // save the outMessage
+        if (modDef.outputMsgs != null && modDef.outputMsgs.size == 0)
+          AddOutMsgToModelDef(modDef, ModelType.PYTHON, optMsgProduced, userid)
+
+        // save the jar file first
+        PersistenceUtils.UploadJarsToDB(modDef)
+        val apiResult = AddModel(modDef, userid)
+        logger.debug("Model is added..")
+        var objectsAdded = new Array[BaseElemDef](0)
+        objectsAdded = objectsAdded :+ modDef
+        val operations = for (op <- objectsAdded) yield "Add"
+        logger.debug("Notify engine via zookeeper")
+        MetadataAPIImpl.NotifyEngine(objectsAdded, operations)
+        apiResult
+      } else {
+        val reasonForFailure: String = if (modDef != null) {
+          ErrorCodeConstants.Add_Model_Failed_Higher_Version_Required
+        } else {
+          ErrorCodeConstants.Add_Model_Failed
+        }
+        val modDefName: String = if (modDef != null) modDef.FullName else "(python model - compile failed)"
+        val modDefVer: String = if (modDef != null) MdMgr.Pad0s2Version(modDef.Version) else MdMgr.UnknownVersion
+        var apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"$reasonForFailure : $modDefName.$modDefVer)")
+        apiResult.toString()
+      }
+    } catch {
+      case e: ModelCompilationFailedException => {
+        logger.debug("", e)
+        val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Add_Model_Failed}")
+        apiResult.toString()
+      }
+      case e: AlreadyExistsException => {
+        logger.debug("", e)
+        val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Add_Model_Failed}")
+        apiResult.toString()
+      }
+      case e: Exception => {
+        logger.debug("", e)
+        val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Add_Model_Failed}")
         apiResult.toString()
       }
     }
   }
 
   /**
-    * Add Kamanja PMML Model (format XML).  Kamanja Pmml models obtain their name and version from the header in the Pmml file.
-    *
-    * @param pmmlText
-    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
-    * @return json string result
-    */
+   * Add a JYTHON model to the metadata.
+   *
+   * Jython models are evaluated, not compiled. To create the model definition, an instance of the validator
+   * is obtained from the jython-evaluator component and the ModelDef is constructed and added to the store.
+   *
+   * @see com.ligadata.MetadataAPI.PythonSupport for more information
+   * @param modelName   the namespace.name of the model to be injested.
+   * @param version     the version as string in the form "MMMMMM.mmmmmmmm.nnnnnn" (3 nodes .. could be fewer chars per node)
+   * @param msgConsumed the namespace.name of the message that this model is to consume.  NOTE: the
+   *                    fields used in the pmml model and the fields in the message must match.  If
+   *                    the message does not supply all input fields in the model, there should be a default
+   *                    specified for those not filled in that mining variable.
+   * @param msgVersion  the version of the message that this PMML model will consume
+   * @param srcText     the actual JYTHON that is submitted by the client.
+   * @param userid      the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *                    method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @param optMsgProduced the output message to be created when a model result is produced
+   * @param pStr Json string containing global information
+   * @param someModelOptions model specific options used by model instance initialization
+   * @return json string result
+   */
+  private def AddJYTHONModel(modelName: String, version: String, msgConsumed: String, msgVersion: String, srcText: String, userid: Option[String], tenantId: String, optMsgProduced: Option[String], pStr: Option[String], someModelOptions: Option[String]): String = {
+    try {
+      val buffer: StringBuilder = new StringBuilder
+
+      val modelNameNodes: Array[String] = modelName.split('.')
+      val moduleName: String = modelNameNodes.head /** separate the module name prefix from rest of model name */
+      val modelNameNodesSansModule: Array[String] = modelNameNodes.tail
+      val modelNm: String = modelNameNodesSansModule.last
+      modelNameNodesSansModule.take(modelNameNodesSansModule.size - 1).addString(buffer, ".")
+      val modelNmSpace: String = buffer.toString /** this could be empty*/
+
+      buffer.clear
+      val msgNameNodes: Array[String] = msgConsumed.split('.')
+      val msgName: String = msgNameNodes.last
+      msgNameNodes.take(msgNameNodes.size - 1).addString(buffer, ".")
+      val msgNamespace: String = buffer.toString
+      val ownerId: String = if (userid == None) "kamanja" else userid.get
+      val modelOptions: String = someModelOptions.getOrElse("{}")
+
+      val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, moduleName, modelNmSpace, modelNm, version, msgNamespace, msgName, msgVersion, srcText, ownerId, tenantId, optMsgProduced, pStr, modelOptions, getMetadataAPI.GetMetadataAPIConfig)
+      val recompile: Boolean = false
+      val isPython: Boolean = true // when false JYTHON
+      val isJython: Boolean = !isPython
+      var modDef: ModelDef = pythonMdlSupport.CreateModel(recompile, isJython)
+
+      /*
+       * For testing purpose call the Make Model and just create temp model def ...
+       */
+
+      // ModelDef may be null if the model evaluation failed
+      val latestVersion: Option[ModelDef] = if (modDef == null) None else GetLatestModel(modDef)
+      val isValid: Boolean = if (latestVersion.isDefined) MetadataAPIImpl.IsValidVersion(latestVersion.get, modDef) else true
+
+      if (isValid && modDef != null) {
+        val existingModel = MdMgr.GetMdMgr.Model(modDef.NameSpace, modDef.Name, -1, false) // Any version is fine. No need of active
+        modDef.uniqueId = MetadataAPIImpl.GetUniqueId
+        modDef.mdElementId = if (existingModel == None) MetadataAPIImpl.GetMdElementId else existingModel.get.MdElementId
+        MetadataAPIImpl.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, srcText, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
+
+        // save the outMessage
+        AddOutMsgToModelDef(modDef, ModelType.JYTHON, optMsgProduced, userid)
+
+        // save the jar file first
+        PersistenceUtils.UploadJarsToDB(modDef)
+        val apiResult = AddModel(modDef, userid)
+        logger.debug("Model is added..")
+        var objectsAdded = new Array[BaseElemDef](0)
+        objectsAdded = objectsAdded :+ modDef
+        val operations = for (op <- objectsAdded) yield "Add"
+        logger.debug("Notify engine via zookeeper")
+        MetadataAPIImpl.NotifyEngine(objectsAdded, operations)
+        apiResult
+      } else {
+        val reasonForFailure: String = if (modDef != null) {
+          ErrorCodeConstants.Add_Model_Failed_Higher_Version_Required
+        } else {
+          ErrorCodeConstants.Add_Model_Failed
+        }
+        val modDefName: String = if (modDef != null) modDef.FullName else "(jython model - compile failed)"
+        val modDefVer: String = if (modDef != null) MdMgr.Pad0s2Version(modDef.Version) else MdMgr.UnknownVersion
+        var apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"$reasonForFailure : $modDefName.$modDefVer)")
+        apiResult.toString()
+      }
+    } catch {
+      case e: ModelCompilationFailedException => {
+        logger.debug("", e)
+        val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Add_Model_Failed}")
+        apiResult.toString()
+      }
+      case e: AlreadyExistsException => {
+        logger.debug("", e)
+        val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Add_Model_Failed}")
+        apiResult.toString()
+      }
+      case e: Exception => {
+        logger.debug("", e)
+        val apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Add_Model_Failed}")
+        apiResult.toString()
+      }
+    }
+  }
+
+  /**
+   * Add Kamanja PMML Model (format XML).  Kamanja Pmml models obtain their name and version from the header in the Pmml file.
+   *
+   * @param pmmlText
+   * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *               method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @return json string result
+   */
   private def AddKPMMLModel(pmmlText: String,
                             userid: Option[String], tenantId: String,
                             optMsgProduced: Option[String],
@@ -789,13 +1073,13 @@ object ModelUtils {
   }
 
   /**
-    * Add Kamanja JTM Model (format json).  Kamanja JTM models obtain their name and version from the header in the JTM s file.
-    *
-    * @param jsonText
-    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
-    * @return json string result
-    */
+   * Add Kamanja JTM Model (format json).  Kamanja JTM models obtain their name and version from the header in the JTM s file.
+   *
+   * @param jsonText
+   * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *               method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @return json string result
+   */
   private def AddJTMModel(jsonText: String, userid: Option[String], tenantId: String, optModelName: Option[String], pStr: Option[String]): String = {
     try {
       var compProxy = new CompilerProxy
@@ -877,25 +1161,26 @@ object ModelUtils {
   }
 
   /**
-    * Recompile the supplied model. Optionally the message definition is supplied that was just built.
-    *
-    * @param mod       the model definition that possibly needs to be reconstructed.
-    * @param userid    the user id that has invoked this command
-    * @param optMsgDef the MessageDef constructed, assuming it was a message def. If a container def has been rebuilt,
-    *                  this field will have a value of None.  This is only meaningful at this point when the model to
-    *                  be rebuilt is a PMML model.
-    * @return the result string reflecting what happened with this operation.
-    */
+   * Recompile the supplied model. Optionally the message definition is supplied that was just built.
+   *
+   * @param mod       the model definition that possibly needs to be reconstructed.
+   * @param userid    the user id that has invoked this command
+   * @param optMsgDef the MessageDef constructed, assuming it was a message def. If a container def has been rebuilt,
+   *                  this field will have a value of None.  This is only meaningful at this point when the model to
+   *                  be rebuilt is a PMML model.
+   * @return the result string reflecting what happened with this operation.
+   */
   def RecompileModel(mod: ModelDef, userid: Option[String], optMsgDef: Option[MessageDef]): String = {
     try {
-      /** FIXME: This should really handle BINARY models too.  When we start supporting them, we cannot recompile
-        * it but we can send notifications to consoles or some thing like this to help identify the need for
-        * a replacement to the prior binary model.  This needs to be discussed and documented how we are going to
-        * do this.
-        * FIXME: Actually an update to a message that supports BINARY models needs to be detected up front and
-        * a warning and rejection of the message update made. Perhaps adding a "force" flag to get the message
-        * to compile despite this obstacle is warranted.
-        */
+      /**
+       * FIXME: This should really handle BINARY models too.  When we start supporting them, we cannot recompile
+       * it but we can send notifications to consoles or some thing like this to help identify the need for
+       * a replacement to the prior binary model.  This needs to be discussed and documented how we are going to
+       * do this.
+       * FIXME: Actually an update to a message that supports BINARY models needs to be detected up front and
+       * a warning and rejection of the message update made. Perhaps adding a "force" flag to get the message
+       * to compile despite this obstacle is warranted.
+       */
       val isJpmml: Boolean = mod.modelRepresentation == ModelRepresentation.PMML
       val isJtm: Boolean = (mod.modelRepresentation == ModelRepresentation.JAR && mod.miningModelType == MiningModelType.JTM)
       val msgDef: MessageDef = optMsgDef.orNull
@@ -963,8 +1248,7 @@ object ModelUtils {
                                       })
                                     }
                   */
-                }
-                catch {
+                } catch {
                   case e: Throwable => {
                     logger.error("Failed to parse model config.", e)
                   }
@@ -995,6 +1279,7 @@ object ModelUtils {
             modDefTemp
           } else {
             val modelDef = parse(mod.modelConfig).values.asInstanceOf[Map[String, Any]]
+	    // model config name should be same as model name.
             val key = mod.ownerId + "." + mod.name
             val saveModelParms = modelDef.getOrElse(key, Map[String, Any]()).asInstanceOf[Map[String, Any]]
             val tmpInputMsgSets = saveModelParms.getOrElse(ModelCompilationConstants.INPUT_TYPES_SETS, null)
@@ -1033,7 +1318,7 @@ object ModelUtils {
               saveModelParms.getOrElse(ModelCompilationConstants.PHYSICALNAME, "").asInstanceOf[String],
               saveModelParms.getOrElse(ModelCompilationConstants.DEPENDENCIES, List[String]()).asInstanceOf[List[String]],
               saveModelParms.getOrElse(ModelCompilationConstants.TYPES_DEPENDENCIES, List[String]()).asInstanceOf[List[String]],
-              inputMsgSets, outputMsgs, ObjFormatType.asString(mod.objectFormat), userid, mod.TenantId, mod.modelConfig)
+              inputMsgSets, outputMsgs, ObjFormatType.asString(mod.objectFormat), userid, mod.TenantId, mod.modelConfig,key)
             custModDef
           }
         }
@@ -1065,16 +1350,7 @@ object ModelUtils {
           val modelName: String = mod.Name
           val modelVersion: String = MdMgr.ConvertLongVersionToString(mod.Version)
           val ownerId: String = if (userid == None) "kamanja" else userid.get
-          val jpmmlSupport: JpmmlSupport = new JpmmlSupport(mdMgr
-            , modelNmSpace
-            , modelName
-            , modelVersion
-            , msgNamespace
-            , msgName
-            , msgVersion
-            , mod.objectDefinition
-            , ownerId
-            , mod.TenantId)
+          val jpmmlSupport: JpmmlSupport = new JpmmlSupport(mdMgr, modelNmSpace, modelName, modelVersion, msgNamespace, msgName, msgVersion, mod.objectDefinition, ownerId, mod.TenantId)
           val recompile: Boolean = true
           val model: ModelDef = jpmmlSupport.CreateModel(recompile)
           // copy outputMsgs
@@ -1138,53 +1414,46 @@ object ModelUtils {
   }
 
   /**
-    * Update the model with new source of type modelType.
-    *
-    * Except for the modelType and the input, all fields are marked optional. Note, however, that for some of the
-    * model types all arguments should have meaningful values.
-    *
-    * @see AddModel for semantics.
-    *
-    *      Note that the message and message version (as seen in AddModel) are not used.  Should a message change that is being
-    *      used by one of the PMML models, it will be automatically be updated immediately when the message compilation and
-    *      metadata update has completed for it.
-    *
-    *      Currently only the most recent model cataloged with the name noted in the source file can be "updated".  It is not
-    *      possible to have a number of models with the same name differing only by version and be able to update one of them
-    *      explicitly.  This is a feature that is to be implemented.
-    *
-    *      If both the model and the message are changing, consider using AddModel to create a new PMML model and then remove the older
-    *      version if appropriate.
-    * @param modelType              the type of the model submission (any {SCALA,JAVA,PMML,KPMML,BINARY})
-    * @param input                  the text element to be added dependent upon the modelType specified.
-    * @param optUserid              the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *                               method.
-    * @param optModelName           the namespace.name of the PMML model to be added to the Kamanja metadata (Note: KPMML models extract this from
-    *                               the pmml source file header and for this reason is not required for the KPMML model types).
-    * @param optVersion             the model version to be used to describe this PMML model (for KPMML types this value is obtained from the source file)
-    * @param optVersionBeingUpdated not used .. reserved for future release where explicit modelnamespace.modelname.modelversion
-    *                               can be updated (not just the latest version)
-    * @return result string indicating success or failure of operation
-    */
-  def UpdateModel(modelType: ModelType.ModelType
-                  , input: String
-                  , optUserid: Option[String] = None
-                  , tenantId: Option[String] = None
-                  , optModelName: Option[String] = None
-                  , optVersion: Option[String] = None
-                  , optVersionBeingUpdated: Option[String] = None
-                  , optMsgProduced: Option[String] = None, pStr: Option[String]): String = {
+   * Update the model with new source of type modelType.
+   *
+   * Except for the modelType and the input, all fields are marked optional. Note, however, that for some of the
+   * model types all arguments should have meaningful values.
+   *
+   * @see AddModel for semantics.
+   *
+   *      Note that the message and message version (as seen in AddModel) are not used.  Should a message change that is being
+   *      used by one of the PMML models, it will be automatically be updated immediately when the message compilation and
+   *      metadata update has completed for it.
+   *
+   *      Currently only the most recent model cataloged with the name noted in the source file can be "updated".  It is not
+   *      possible to have a number of models with the same name differing only by version and be able to update one of them
+   *      explicitly.  This is a feature that is to be implemented.
+   *
+   *      If both the model and the message are changing, consider using AddModel to create a new PMML model and then remove the older
+   *      version if appropriate.
+   * @param modelType              the type of the model submission (any {SCALA,JAVA,PMML,KPMML,BINARY})
+   * @param input                  the text element to be added dependent upon the modelType specified.
+   * @param optUserid              the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *                               method.
+   * @param optModelName           the namespace.name of the PMML model to be added to the Kamanja metadata (Note: KPMML models extract this from
+   *                               the pmml source file header and for this reason is not required for the KPMML model types).
+   * @param optVersion             the model version to be used to describe this PMML model (for KPMML types this value is obtained from the source file)
+   * @param optVersionBeingUpdated not used .. reserved for future release where explicit modelnamespace.modelname.modelversion
+   *                               can be updated (not just the latest version)
+   * @return result string indicating success or failure of operation
+   */
+  def UpdateModel(modelType: ModelType.ModelType, input: String, optUserid: Option[String] = None, tenantId: Option[String] = None, optModelName: Option[String] = None, optVersion: Option[String] = None, optVersionBeingUpdated: Option[String] = None, optMsgProduced: Option[String] = None, pStr: Option[String], modelOptions: Option[String]): String = {
     /**
-      * FIXME: The current strategy is that only the most recent version can be updated.
-      * FIXME: This is not a satisfactory condition. It may be desirable to have 10 models all with
-      * FIXME: the same name but differing only in their version numbers. If someone wants to tune
-      * FIXME: #6 of the 10, that number six is not the latest.  It is just a unique model.
-      *
-      * For this reason, the version of the model that is to be changed should be supplied here and all of the
-      * associated handler functions that service update for the various model types should be amended to
-      * consider which model it is that is to be updated exactly.  The removal of the model being replaced
-      * must be properly handled to remove the one with the version supplied.
-      */
+     * FIXME: The current strategy is that only the most recent version can be updated.
+     * FIXME: This is not a satisfactory condition. It may be desirable to have 10 models all with
+     * FIXME: the same name but differing only in their version numbers. If someone wants to tune
+     * FIXME: #6 of the 10, that number six is not the latest.  It is just a unique model.
+     *
+     * For this reason, the version of the model that is to be changed should be supplied here and all of the
+     * associated handler functions that service update for the various model types should be amended to
+     * consider which model it is that is to be updated exactly.  The removal of the model being replaced
+     * must be properly handled to remove the one with the version supplied.
+     */
 
     if (tenantId == None) return (new ApiResult(ErrorCodeConstants.Failure, "UpdateModel", null, s"Tenant ID is required to perform a UPDATE MODEL operation")).toString
 
@@ -1206,6 +1475,16 @@ object ModelUtils {
         val result: String = UpdatePMMLModel(modelType, input, optUserid, tenantId.get, optModelName, optVersion, optVersionBeingUpdated, optMsgProduced, pStr)
         result
       }
+      case ModelType.PYTHON => {
+        //1.1.3
+        val result: String = UpdatePythonModel(modelType, input, optUserid, tenantId.get, optModelName, optVersion, optVersionBeingUpdated, optMsgProduced, pStr, modelOptions)
+        result
+      }
+      case ModelType.JYTHON => {
+        //1.1.3
+        val result: String = UpdateJythonModel(modelType, input, optUserid, tenantId.get, optModelName, optVersion, optVersionBeingUpdated, optMsgProduced, pStr, modelOptions)
+        result
+      }
       case ModelType.BINARY =>
         new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"BINARY model type NOT SUPPORTED YET ...${ErrorCodeConstants.Add_Model_Failed}").toString
       case _ => {
@@ -1217,28 +1496,21 @@ object ModelUtils {
   }
 
   /**
-    * Update a PMML model with the supplied inputs.  The input is presumed to be a new version of a PMML model that
-    * is currently cataloged.  The user id should be supplied for any installation that is using the security or audit
-    * plugins. The model namespace.name and its new version are supplied.  The message ingested by the current version
-    * is used by the for the update.
-    *
-    * @param modelType              the type of the model... PMML in this case
-    * @param input                  the new source to ingest for the model being updated/replaced
-    * @param optUserid              the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *                               method. If Security and/or Audit are configured, this value must be a value other than None.
-    * @param optModelName           the name of the model to be ingested (only relevant for PMML ingestion)
-    * @param optModelVersion        the version number of the model to be updated (only relevant for PMML ingestion)
-    * @param optVersionBeingUpdated not used... reserved
-    * @return result string indicating success or failure of operation
-    */
-  private def UpdatePMMLModel(modelType: ModelType.ModelType
-                              , input: String
-                              , optUserid: Option[String] = None
-                              , tenantId: String = ""
-                              , optModelName: Option[String] = None
-                              , optModelVersion: Option[String] = None
-                              , optVersionBeingUpdated: Option[String]
-                              , optMsgProduced: Option[String], pStr: Option[String]): String = {
+   * Update a PMML model with the supplied inputs.  The input is presumed to be a new version of a PMML model that
+   * is currently cataloged.  The user id should be supplied for any installation that is using the security or audit
+   * plugins. The model namespace.name and its new version are supplied.  The message ingested by the current version
+   * is used by the for the update.
+   *
+   * @param modelType              the type of the model... PMML in this case
+   * @param input                  the new source to ingest for the model being updated/replaced
+   * @param optUserid              the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *                               method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @param optModelName           the name of the model to be ingested (only relevant for PMML ingestion)
+   * @param optModelVersion        the version number of the model to be updated (only relevant for PMML ingestion)
+   * @param optVersionBeingUpdated not used... reserved
+   * @return result string indicating success or failure of operation
+   */
+  private def UpdatePMMLModel(modelType: ModelType.ModelType, input: String, optUserid: Option[String] = None, tenantId: String = "", optModelName: Option[String] = None, optModelVersion: Option[String] = None, optVersionBeingUpdated: Option[String], optMsgProduced: Option[String], pStr: Option[String]): String = {
 
     val modelName: String = optModelName.orNull
     val version: String = optModelVersion.getOrElse("-1")
@@ -1251,7 +1523,8 @@ object ModelUtils {
         val modelNmSpace: String = buffer.toString
 
         val currentVer: Long = -1
-        val onlyActive: Boolean = false /** allow active or inactive models to be updated */
+        val onlyActive: Boolean = false
+        /** allow active or inactive models to be updated */
         val optCurrent: Option[ModelDef] = mdMgr.Model(modelNmSpace, modelNm, currentVer, onlyActive)
         val currentModel: ModelDef = optCurrent.orNull
 
@@ -1279,7 +1552,7 @@ object ModelUtils {
           null
         }
 
-        /** look up the message referred to by the inputMsgSets first element... the message only has namespace and name */
+        /** look up the message referred to by the inputMsgSets first element... the message only has namespace and name*/
         val nameparts: Array[String] = if (currentMsg.contains(".")) currentMsg.split('.') else Array[String]("system", currentMsg)
         val msgnamespace: String = nameparts.dropRight(1).mkString(".")
         val msgname: String = nameparts.last
@@ -1288,16 +1561,7 @@ object ModelUtils {
         val (currMsgNmSp, currMsgNm, currMsgVer): (String, String, String) = MdMgr.SplitFullNameWithVersion(key)
 
         val ownerId: String = if (optUserid == None) "kamanja" else optUserid.get
-        val jpmmlSupport: JpmmlSupport = new JpmmlSupport(mdMgr
-          , modelNmSpace
-          , modelNm
-          , version
-          , currMsgNmSp
-          , currMsgNm
-          , currMsgVer
-          , input
-          , ownerId
-          , tenantId)
+        val jpmmlSupport: JpmmlSupport = new JpmmlSupport(mdMgr, modelNmSpace, modelNm, version, currMsgNmSp, currMsgNm, currMsgVer, input, ownerId, tenantId)
 
         val modDef: ModelDef = jpmmlSupport.UpdateModel
         // copy optMsgProduced to outputMsgs
@@ -1306,14 +1570,14 @@ object ModelUtils {
         }
 
         /**
-          * FIXME: The current strategy is that only the most recent version can be updated.
-          * FIXME: This is not a satisfactory condition. It may be desirable to have 10 models all with
-          * FIXME: the same name but differing only in their version numbers. If someone wants to tune
-          * FIXME: #6 of the 10, that number six is not the latest.  It is just a unique model.
-          *
-          * For this reason, the version of the model that is to be changed should be supplied here and in the
-          * more generic interface implementation that calls here.
-          */
+         * FIXME: The current strategy is that only the most recent version can be updated.
+         * FIXME: This is not a satisfactory condition. It may be desirable to have 10 models all with
+         * FIXME: the same name but differing only in their version numbers. If someone wants to tune
+         * FIXME: #6 of the 10, that number six is not the latest.  It is just a unique model.
+         *
+         * For this reason, the version of the model that is to be changed should be supplied here and in the
+         * more generic interface implementation that calls here.
+         */
 
         //def Model(nameSpace: String, name: String, ver: Long, onlyActive: Boolean): Option[ModelDef]
         val tentativeVersionBeingUpdated: String = optVersionBeingUpdated.orNull
@@ -1389,45 +1653,30 @@ object ModelUtils {
           }
           val modDefName: String = if (modDef != null) modDef.FullName else "(pmml compile failed)"
           val modDefVer: String = if (modDef != null) MdMgr.Pad0s2Version(modDef.Version) else MdMgr.UnknownVersion
-          var apiResult = new ApiResult(ErrorCodeConstants.Failure
-            , "AddModel"
-            , null
-            , s"$reasonForFailure : $modDefName.$modDefVer)")
+          var apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"$reasonForFailure : $modDefName.$modDefVer)")
           apiResult.toString()
         }
       } catch {
         case e: ModelCompilationFailedException => {
           logger.debug("", e)
-          val apiResult = new ApiResult(ErrorCodeConstants.Failure
-            , s"UpdateModel(type = PMML)"
-            , null
-            , s"Error : ${e.toString} + ${ErrorCodeConstants.Update_Model_Failed}")
+          val apiResult = new ApiResult(ErrorCodeConstants.Failure, s"UpdateModel(type = PMML)", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Update_Model_Failed}")
           apiResult.toString()
         }
         case e: AlreadyExistsException => {
 
           logger.debug("", e)
-          val apiResult = new ApiResult(ErrorCodeConstants.Failure
-            , s"UpdateModel(type = PMML)"
-            , null
-            , s"Error : ${e.toString} + ${ErrorCodeConstants.Update_Model_Failed}")
+          val apiResult = new ApiResult(ErrorCodeConstants.Failure, s"UpdateModel(type = PMML)", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Update_Model_Failed}")
           apiResult.toString()
         }
         case e: Exception => {
 
           logger.debug("", e)
-          val apiResult = new ApiResult(ErrorCodeConstants.Failure
-            , s"UpdateModel(type = PMML)"
-            , null
-            , s"Error : ${e.toString} + ${ErrorCodeConstants.Update_Model_Failed}")
+          val apiResult = new ApiResult(ErrorCodeConstants.Failure, s"UpdateModel(type = PMML)", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Update_Model_Failed}")
           apiResult.toString()
         }
       }
     } else {
-      val apiResult = new ApiResult(ErrorCodeConstants.Failure
-        , s"UpdateModel(type = PMML)"
-        , null
-        , s"The model name and new version was not supplied for this PMML model : name=$modelName version=$version\nOptionally one should consider supplying the exact version of the model being updated, especially important when you are maintaining multiple versions with the same model name and tweaking versions of same for your 'a/b/c...' score comparisons.")
+      val apiResult = new ApiResult(ErrorCodeConstants.Failure, s"UpdateModel(type = PMML)", null, s"The model name and new version was not supplied for this PMML model : name=$modelName version=$version\nOptionally one should consider supplying the exact version of the model being updated, especially important when you are maintaining multiple versions with the same model name and tweaking versions of same for your 'a/b/c...' score comparisons.")
       apiResult.toString()
 
     }
@@ -1435,23 +1684,411 @@ object ModelUtils {
   }
 
   /**
-    * Update the java or scala model with new source.
-    *
-    * @param modelType the type of the model... JAVA | SCALA in this case
-    * @param input     the source of the model to ingest
-    * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *                  method. If Security and/or Audit are configured, this value must be a value other than None.
-    * @param modelName the name of the model to be ingested (PMML)
-    *                  or the model's config for java and scala
-    * @param version   the version number of the model to be updated (only relevant for PMML ingestion)
-    * @return result string indicating success or failure of operation
-    */
-  private def UpdateCustomModel(modelType: ModelType.ModelType
-                                , input: String
-                                , userid: Option[String] = None
-                                , tenantId: String = ""
-                                , modelName: Option[String] = None
-                                , version: Option[String] = None, pStr: Option[String]): String = {
+   * Update a Python model with the supplied inputs.  The input is presumed to be a new version of a Python model that
+   * is currently cataloged.  The user id should be supplied for any installation that is using the security or audit
+   * plugins. The model namespace.name and its new version are supplied.  The message ingested by the current version
+   * is used by the for the update.
+   *
+   * @param modelType              the type of the model... Python in this case
+   * @param input                  the new source to ingest for the model being updated/replaced
+   * @param optUserid              the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *                               method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @param optModelName           the name of the model to be ingested (only relevant for Python ingestion)
+   * @param optModelVersion        the version number of the model to be updated (only relevant for Python ingestion)
+   * @param optVersionBeingUpdated not used... reserved
+   * @param optMsgProduced not used... reserved
+   * @param pStr an optional JSON map with global parameters in it.
+   * @param someModelOptions model specific options
+   * @return result string indicating success or failure of operation
+   */
+  private def UpdatePythonModel(modelType: ModelType.ModelType, input: String, optUserid: Option[String] = None, tenantId: String = "", optModelName: Option[String] = None, optModelVersion: Option[String] = None, optVersionBeingUpdated: Option[String], optMsgProduced: Option[String], pStr: Option[String], someModelOptions: Option[String]): String = {
+
+    val modelName: String = optModelName.orNull
+    val version: String = optModelVersion.getOrElse("-1")
+    if (logger.isDebugEnabled()) {
+        logger.debug ("In UpdatePython Model  " + modelName + ", version = " + version)
+    }
+		 
+    val result: String = if (modelName != null && version != null) {
+      try {
+        val buffer: StringBuilder = new StringBuilder
+        val modelNameNodes: Array[String] = modelName.split('.')
+        val moduleName: String = modelNameNodes.head /** separate the module name prefix from rest of model name */
+        val modelNameNodesSansModule: Array[String] = modelNameNodes.tail
+        val modelNm: String = modelNameNodesSansModule.last
+        modelNameNodesSansModule.take(modelNameNodesSansModule.size - 1).addString(buffer, ".")
+        if(buffer.toString().trim() == "") buffer.append("System")
+        val modelNmSpace: String = buffer.toString /** this could be empty*/
+
+        val currentVer: Long = -1
+        val onlyActive: Boolean = false /** allow active or inactive models to be updated */
+       
+        val optCurrent: Option[ModelDef] = mdMgr.Model(modelNmSpace, modelNm, currentVer, onlyActive)
+        val currentModel: ModelDef = optCurrent.orNull
+        if (logger.isDebugEnabled()) {
+           logger.debug ("In UpdatePython Model  " + currentVer + ", modelNm = " + modelNm)
+	}
+
+        // See if we get the same tenant Id
+        if (currentModel != null && !tenantId.equalsIgnoreCase(currentModel.tenantId)) {
+          return (new ApiResult(ErrorCodeConstants.Failure, "UpdatePythonModel", null, s"Tenant ID is different from the one in the existing object.")).toString
+        }
+
+        val currentMsg: String = if (currentModel != null) {
+          //FIXME: Getting only the first one for now
+          var msgConsumed: String = null
+          if (currentModel.inputMsgSets != null && currentModel.inputMsgSets.size > 0) {
+            if (msgConsumed == null) {
+              currentModel.inputMsgSets.foreach(set => {
+                set.foreach(msgInfo => {
+                  if (msgConsumed == null && msgInfo != null && msgInfo.message != null && msgInfo.message.trim.nonEmpty) {
+                    msgConsumed = msgInfo.message
+                  }
+                })
+              })
+            }
+          }
+          msgConsumed
+        } else {
+          null
+        }
+
+        val currentOutputMsg : Option[String ] = if (currentModel != null) {
+          //FIXME: Getting only the first one for now
+          var msgProduced: Option[String] = None
+          if (currentModel.outputMsgs != null && currentModel.outputMsgs.size > 0) {
+            if (msgProduced == None) {
+
+             if (logger.isDebugEnabled()) {
+	     	logger.debug ("The size of output msg queue is give here " + currentModel.outputMsgs.size)
+	     }
+              msgProduced = Some(currentModel.outputMsgs.head)
+            }
+          }
+          msgProduced
+        } else {
+          None
+        }
+
+
+
+        /** look up the message referred to by the inputMsgSets first element... the message only has namespace and name*/
+        val nameparts: Array[String] = if (currentMsg.contains(".")) currentMsg.split('.') else Array[String]("system", currentMsg)
+        val msgnamespace: String = nameparts.dropRight(1).mkString(".")
+        val msgname: String = nameparts.last
+        val msgDef: MessageDef = mdMgr.ActiveMessage(msgnamespace, msgname)
+        val key: String = if (msgDef != null) msgDef.FullNameWithVer else s"$msgnamespace.$msgname.000000000001000000"
+        val (currMsgNmSp, currMsgNm, currMsgVer): (String, String, String) = MdMgr.SplitFullNameWithVersion(key)
+
+        val ownerId: String = if (optUserid == None) "kamanja" else optUserid.get
+        val modelOptions: String = someModelOptions.getOrElse("{}")
+       
+        val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, moduleName, modelNmSpace, modelNm, version, currMsgNmSp, currMsgNm, currMsgVer, input, ownerId, tenantId, currentOutputMsg, pStr, modelOptions, getMetadataAPI.GetMetadataAPIConfig)
+        val isPython: Boolean = true // when false JYTHON
+        val modDef: ModelDef = pythonMdlSupport.UpdateModel(true)
+
+        // copy optMsgProduced to outputMsgs
+        if (currentOutputMsg != None) {
+          modDef.outputMsgs = modDef.outputMsgs :+ currentOutputMsg.get.toLowerCase
+        }
+
+        /**
+         * FIXME: The current strategy is that only the most recent version can be updated.
+         * FIXME: This is not a satisfactory condition. It may be desirable to have 10 models all with
+         * FIXME: the same name but differing only in their version numbers. If someone wants to tune
+         * FIXME: #6 of the 10, that number six is not the latest.  It is just a unique model.
+         *
+         * For this reason, the version of the model that is to be changed should be supplied here and in the
+         * more generic interface implementation that calls here.
+         */
+
+        //def Model(nameSpace: String, name: String, ver: Long, onlyActive: Boolean): Option[ModelDef]
+        val tentativeVersionBeingUpdated: String = optVersionBeingUpdated.orNull
+        val versionBeingUpdated: String = if (tentativeVersionBeingUpdated != null) tentativeVersionBeingUpdated else "-1"
+        val versionLong: Long = MdMgr.ConvertVersionToLong(version)
+        val optVersionUpdated: Option[ModelDef] = MdMgr.GetMdMgr.Model(modelNmSpace, modelNm, versionLong, onlyActive)
+        val versionUpdated: ModelDef = optVersionUpdated.orNull
+
+        // ModelDef may be null if the model evaluation failed
+        // old .... val latestVersion: Option[ModelDef] = if (modDef == null) None else GetLatestModel(modDef) was compared
+        // with modeDef in MetadataAPIImpl.IsValidVersion
+        //val isValid: Boolean = if (latestVersion.isDefined) MetadataAPIImpl.IsValidVersion(latestVersion.get, modDef) else true
+        val isValid: Boolean = if (optVersionUpdated.isDefined) MetadataAPIImpl.IsValidVersion(versionUpdated, modDef) else true
+
+        if (isValid && modDef != null) {
+          // save the outMessage
+          AddOutMsgToModelDef(modDef, ModelType.PYTHON, optMsgProduced, optUserid)
+
+          val existingModel = MdMgr.GetMdMgr.Model(modDef.NameSpace, modDef.Name, -1, false) // Any version is fine. No need of active
+          modDef.uniqueId = MetadataAPIImpl.GetUniqueId
+          modDef.mdElementId = if (existingModel == None) MetadataAPIImpl.GetMdElementId else existingModel.get.MdElementId
+          MetadataAPIImpl.logAuditRec(optUserid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, input, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
+
+          /*
+           * FIXME: Considering the design goal of NON-STOP cluster model management, it seems that the window
+           * FIXME: for something to go wrong is too likely with this current approach.  The old model is being
+           * FIXME: deleted before the engine is notified.  Should the engine ask for metadata on that model
+           * FIXME: after the model being updated is removed but before the new version has been added, there
+           * FIXME: is likelihood that unpredictable behavior that would be difficult to diagnose could occur.
+           *
+           * FIXME: Furthermore, who is to say that the user doesn't want the model to be updated all right, but
+           * FIXME: but that they are not sure that they want the old version to be removed.  In other words,
+           * FIXME: "the model is to be updated" means add the modified version of the model, and atomically
+           * FIXME: swap the old active version (deactivate it) and the new version (activate it)?
+           *
+           * FIXME: We need to think it through... what the semantics of the Update is.  In fact we might want
+           * FIXME: to deprecate it altogether.  There should be just Add model, Activate model, Deactivate model,
+           * FIXME: Swap Models (activate and deactivate same model/different versions atomically), and Remove
+           * FIXME: model. Removes would fail if they are active; they need to be deactivated before removal.
+           *
+           * FIXME: The design goals are to not stop the cluster and to not miss an incoming message. The windows
+           * FIXME: of opportunity for calamity are measured by how long it takes to swap inactive/active.  Everything
+           * FIXME: else is "offline" as it were.
+           */
+
+          val rmModelResult: String = if (versionUpdated != null) {
+            RemoveModel(versionUpdated.NameSpace, versionUpdated.Name, versionUpdated.Version, None)
+          } else {
+            logger.info("versionUpdated is not null, Can't remove the model")
+            ""
+          }
+          logger.info("Begin uploading dependent Jars, please wait...")
+          PersistenceUtils.UploadJarsToDB(modDef)
+          logger.info("uploading dependent Jars complete")
+
+          val addResult = AddModel(modDef, optUserid)
+          logger.debug("Model is added..")
+          var objectsAdded = new Array[BaseElemDef](0)
+          objectsAdded = objectsAdded :+ modDef
+          val operations = for (op <- objectsAdded) yield "Add"
+          logger.debug("Notify engine via zookeeper")
+          MetadataAPIImpl.NotifyEngine(objectsAdded, operations)
+          s"UpdateModel version $version of $modelNmSpace.$modelNm results:\n$rmModelResult\n$addResult"
+        } else {
+          val reasonForFailure: String = if (modDef != null) {
+            ErrorCodeConstants.Update_Model_Failed_Higher_Version_Required
+          } else {
+            ErrorCodeConstants.Update_Model_Failed
+          }
+          val modDefName: String = if (modDef != null) modDef.FullName else "(python model compile failed)"
+          val modDefVer: String = if (modDef != null) MdMgr.Pad0s2Version(modDef.Version) else MdMgr.UnknownVersion
+          var apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"$reasonForFailure : $modDefName.$modDefVer)")
+          apiResult.toString()
+        }
+      } catch {
+        case e: ModelCompilationFailedException => {
+          logger.debug("", e)
+          val apiResult = new ApiResult(ErrorCodeConstants.Failure, s"UpdateModel(type = PYTHON)", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Update_Model_Failed}")
+          apiResult.toString()
+        }
+        case e: AlreadyExistsException => {
+
+          logger.debug("", e)
+          val apiResult = new ApiResult(ErrorCodeConstants.Failure, s"UpdateModel(type = PYTHON)", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Update_Model_Failed}")
+          apiResult.toString()
+        }
+        case e: Exception => {
+
+          logger.debug("", e)
+          val apiResult = new ApiResult(ErrorCodeConstants.Failure, s"UpdateModel(type = PYTHON)", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Update_Model_Failed}")
+          apiResult.toString()
+        }
+      }
+    } else {
+      val apiResult = new ApiResult(ErrorCodeConstants.Failure, s"UpdateModel(type = PYTHON)", null, s"The model name and new version was not supplied for this PYTHON model : name=$modelName version=$version\nOptionally one should consider supplying the exact version of the model being updated, especially important when you are maintaining multiple versions with the same model name and tweaking versions of same for your 'a/b/c...' score comparisons.")
+      apiResult.toString()
+
+    }
+    result
+  }
+
+  /**
+   * Update a Jython model with the supplied inputs.  The input is presumed to be a new version of a Python model that
+   * is currently cataloged.  The user id should be supplied for any installation that is using the security or audit
+   * plugins. The model namespace.name and its new version are supplied.  The message ingested by the current version
+   * is used by the for the update.
+   *
+   * @param modelType              the type of the model... Python in this case
+   * @param input                  the new source to ingest for the model being updated/replaced
+   * @param optUserid              the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *                               method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @param optModelName           the name of the model to be ingested (only relevant for Python ingestion)
+   * @param optModelVersion        the version number of the model to be updated (only relevant for Jython ingestion)
+   * @param optVersionBeingUpdated not used... reserved
+   * @return result string indicating success or failure of operation
+   */
+  private def UpdateJythonModel(modelType: ModelType.ModelType, input: String, optUserid: Option[String] = None, tenantId: String = "", optModelName: Option[String] = None, optModelVersion: Option[String] = None, optVersionBeingUpdated: Option[String], optMsgProduced: Option[String], pStr: Option[String], someModelOptions: Option[String]): String = {
+
+    val modelName: String = optModelName.orNull
+    val version: String = optModelVersion.getOrElse("-1")
+    val result: String = if (modelName != null && version != null) {
+      try {
+        val buffer: StringBuilder = new StringBuilder
+        val modelNameNodes: Array[String] = modelName.split('.')
+        val moduleName: String = modelNameNodes.head /** separate the module name prefix from rest of model name */
+        val modelNameNodesSansModule: Array[String] = modelNameNodes.tail
+        val modelNm: String = modelNameNodesSansModule.last
+        modelNameNodesSansModule.take(modelNameNodesSansModule.size - 1).addString(buffer, ".")
+        val modelNmSpace: String = buffer.toString /** this could be empty*/
+
+        val currentVer: Long = -1
+        val onlyActive: Boolean = false
+        /** allow active or inactive models to be updated */
+        val optCurrent: Option[ModelDef] = mdMgr.Model(modelNmSpace, modelNm, currentVer, onlyActive)
+        val currentModel: ModelDef = optCurrent.orNull
+
+        // See if we get the same tenant Id
+        if (!tenantId.equalsIgnoreCase(currentModel.tenantId)) {
+          return (new ApiResult(ErrorCodeConstants.Failure, "UpdateJythonModel", null, s"Tenant ID is different from the one in the existing object.")).toString
+        }
+
+        val currentMsg: String = if (currentModel != null) {
+          //FIXME: Getting only the first one for now
+          var msgConsumed: String = null
+          if (currentModel.inputMsgSets != null && currentModel.inputMsgSets.size > 0) {
+            if (msgConsumed == null) {
+              currentModel.inputMsgSets.foreach(set => {
+                set.foreach(msgInfo => {
+                  if (msgConsumed == null && msgInfo != null && msgInfo.message != null && msgInfo.message.trim.nonEmpty) {
+                    msgConsumed = msgInfo.message
+                  }
+                })
+              })
+            }
+          }
+          msgConsumed
+        } else {
+          null
+        }
+
+        /** look up the message referred to by the inputMsgSets first element... the message only has namespace and name*/
+        val nameparts: Array[String] = if (currentMsg.contains(".")) currentMsg.split('.') else Array[String]("system", currentMsg)
+        val msgnamespace: String = nameparts.dropRight(1).mkString(".")
+        val msgname: String = nameparts.last
+        val msgDef: MessageDef = mdMgr.ActiveMessage(msgnamespace, msgname)
+        val key: String = if (msgDef != null) msgDef.FullNameWithVer else s"$msgnamespace.$msgname.000000000001000000"
+        val (currMsgNmSp, currMsgNm, currMsgVer): (String, String, String) = MdMgr.SplitFullNameWithVersion(key)
+
+        val ownerId: String = if (optUserid == None) "kamanja" else optUserid.get
+        val modelOptions: String = someModelOptions.getOrElse("{}")
+
+        /**
+         * *******************************************************************
+         * Fix Me - Get the Python Validator to validate the Python Model ...
+         * ******************************************************************
+         */
+        val pythonMdlSupport: PythonMdlSupport = new PythonMdlSupport(mdMgr, moduleName, modelNmSpace, modelNm, version, currMsgNmSp, currMsgNm, currMsgVer, input, ownerId, tenantId, optMsgProduced, pStr, modelOptions, getMetadataAPI.GetMetadataAPIConfig)
+
+        val isPython: Boolean = true // when false JYTHON
+        val modDef: ModelDef = pythonMdlSupport.UpdateModel(!isPython)
+
+        // copy optMsgProduced to outputMsgs
+        if (optMsgProduced != None) {
+          modDef.outputMsgs = modDef.outputMsgs :+ optMsgProduced.get.toLowerCase
+        }
+
+        /**
+         * FIXME: The current strategy is that only the most recent version can be updated.
+         * FIXME: This is not a satisfactory condition. It may be desirable to have 10 models all with
+         * FIXME: the same name but differing only in their version numbers. If someone wants to tune
+         * FIXME: #6 of the 10, that number six is not the latest.  It is just a unique model.
+         *
+         * For this reason, the version of the model that is to be changed should be supplied here and in the
+         * more generic interface implementation that calls here.
+         */
+
+        //def Model(nameSpace: String, name: String, ver: Long, onlyActive: Boolean): Option[ModelDef]
+        val tentativeVersionBeingUpdated: String = optVersionBeingUpdated.orNull
+        val versionBeingUpdated: String = if (tentativeVersionBeingUpdated != null) tentativeVersionBeingUpdated else "-1"
+        val versionLong: Long = MdMgr.ConvertVersionToLong(version)
+        val optVersionUpdated: Option[ModelDef] = MdMgr.GetMdMgr.Model(modelNmSpace, modelNm, versionLong, onlyActive)
+        val versionUpdated: ModelDef = optVersionUpdated.orNull
+
+        // ModelDef may be null if the model evaluation failed
+        // old .... val latestVersion: Option[ModelDef] = if (modDef == null) None else GetLatestModel(modDef) was compared
+        // with modeDef in MetadataAPIImpl.IsValidVersion
+        //val isValid: Boolean = if (latestVersion.isDefined) MetadataAPIImpl.IsValidVersion(latestVersion.get, modDef) else true
+        val isValid: Boolean = if (optVersionUpdated.isDefined) MetadataAPIImpl.IsValidVersion(versionUpdated, modDef) else true
+
+        if (isValid && modDef != null) {
+          // save the outMessage
+          AddOutMsgToModelDef(modDef, ModelType.JYTHON, optMsgProduced, optUserid)
+
+          val existingModel = MdMgr.GetMdMgr.Model(modDef.NameSpace, modDef.Name, -1, false) // Any version is fine. No need of active
+          modDef.uniqueId = MetadataAPIImpl.GetUniqueId
+          modDef.mdElementId = if (existingModel == None) MetadataAPIImpl.GetMdElementId else existingModel.get.MdElementId
+          MetadataAPIImpl.logAuditRec(optUserid, Some(AuditConstants.WRITE), AuditConstants.INSERTOBJECT, input, AuditConstants.SUCCESS, "", modDef.FullNameWithVer)
+
+          val rmModelResult: String = if (versionUpdated != null) {
+            RemoveModel(versionUpdated.NameSpace, versionUpdated.Name, versionUpdated.Version, None)
+          } else {
+            logger.info("versionUpdated is not null, Can't remove the model")
+            ""
+          }
+          logger.info("Begin uploading dependent Jars, please wait...")
+          PersistenceUtils.UploadJarsToDB(modDef)
+          logger.info("uploading dependent Jars complete")
+
+          val addResult = AddModel(modDef, optUserid)
+          logger.debug("Model is added..")
+          var objectsAdded = new Array[BaseElemDef](0)
+          objectsAdded = objectsAdded :+ modDef
+          val operations = for (op <- objectsAdded) yield "Add"
+          logger.debug("Notify engine via zookeeper")
+          MetadataAPIImpl.NotifyEngine(objectsAdded, operations)
+          s"UpdateModel version $version of $modelNmSpace.$modelNm results:\n$rmModelResult\n$addResult"
+        } else {
+          val reasonForFailure: String = if (modDef != null) {
+            ErrorCodeConstants.Update_Model_Failed_Higher_Version_Required
+          } else {
+            ErrorCodeConstants.Update_Model_Failed
+          }
+          val modDefName: String = if (modDef != null) modDef.FullName else "(pmml compile failed)"
+          val modDefVer: String = if (modDef != null) MdMgr.Pad0s2Version(modDef.Version) else MdMgr.UnknownVersion
+          var apiResult = new ApiResult(ErrorCodeConstants.Failure, "AddModel", null, s"$reasonForFailure : $modDefName.$modDefVer)")
+          apiResult.toString()
+        }
+      } catch {
+        case e: ModelCompilationFailedException => {
+          logger.debug("", e)
+          val apiResult = new ApiResult(ErrorCodeConstants.Failure, s"UpdateModel(type = Jython)", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Update_Model_Failed}")
+          apiResult.toString()
+        }
+        case e: AlreadyExistsException => {
+
+          logger.debug("", e)
+          val apiResult = new ApiResult(ErrorCodeConstants.Failure, s"UpdateModel(type = PMML)", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Update_Model_Failed}")
+          apiResult.toString()
+        }
+        case e: Exception => {
+
+          logger.debug("", e)
+          val apiResult = new ApiResult(ErrorCodeConstants.Failure, s"UpdateModel(type = PMML)", null, s"Error : ${e.toString} + ${ErrorCodeConstants.Update_Model_Failed}")
+          apiResult.toString()
+        }
+      }
+    } else {
+      val apiResult = new ApiResult(ErrorCodeConstants.Failure, s"UpdateModel(type = PMML)", null, s"The model name and new version was not supplied for this PMML model : name=$modelName version=$version\nOptionally one should consider supplying the exact version of the model being updated, especially important when you are maintaining multiple versions with the same model name and tweaking versions of same for your 'a/b/c...' score comparisons.")
+      apiResult.toString()
+
+    }
+    result
+  }
+
+  /**
+   * Update the java or scala model with new source.
+   *
+   * @param modelType the type of the model... JAVA | SCALA in this case
+   * @param input     the source of the model to ingest
+   * @param userid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *                  method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @param modelName the name of the model to be ingested (PMML)
+   *                  or the model's config for java and scala
+   * @param version   the version number of the model to be updated (only relevant for PMML ingestion)
+   * @param pStr JSON property map given to model.
+   * @return result string indicating success or failure of operation
+   */
+  private def UpdateCustomModel(modelType: ModelType.ModelType, input: String, userid: Option[String] = None, tenantId: String = "", modelName: Option[String] = None, version: Option[String] = None, pStr: Option[String]): String = {
     val sourceLang: String = modelType.toString
 
     /** to get here it is either 'java' or 'scala' */
@@ -1462,18 +2099,18 @@ object ModelUtils {
       val modDef: ModelDef = compProxy.compileModelFromSource(input, modelNm, sourceLang, userid, tenantId)
 
       /**
-        * FIXME: The current strategy is that only the most recent version can be updated.
-        * FIXME: This is not a satisfactory condition. It may be desirable to have 10 models all with
-        * FIXME: the same name but differing only in their version numbers. If someone wants to tune
-        * FIXME: #6 of the 10, that number six is not the latest.  It is just a unique model.
-        *
-        * For this reason, the version of the model that is to be changed should be supplied here and in the
-        * more generic interface implementation that calls here.
-        */
+       * FIXME: The current strategy is that only the most recent version can be updated.
+       * FIXME: This is not a satisfactory condition. It may be desirable to have 10 models all with
+       * FIXME: the same name but differing only in their version numbers. If someone wants to tune
+       * FIXME: #6 of the 10, that number six is not the latest.  It is just a unique model.
+       *
+       * For this reason, the version of the model that is to be changed should be supplied here and in the
+       * more generic interface implementation that calls here.
+       */
 
       val latestVersion = if (modDef == null) None else GetLatestModel(modDef)
       // 1118 Changes begin - checks model existence before update
-      if (modDef == null  || DoesModelAlreadyExist(modDef) == false  ) {
+      if (modDef == null || DoesModelAlreadyExist(modDef) == false) {
         return (new ApiResult(ErrorCodeConstants.Failure, "UpdateCustomModel", null, s"$modelType model must exist to perform update")).toString
 
       }
@@ -1537,28 +2174,22 @@ object ModelUtils {
   }
 
   /**
-    * UpdateModel - Update a Kamanja Pmml model
-    *
-    * Current semantics are that the source supplied in pmmlText is compiled and a new model is reproduced. The Kamanja
-    * PMML version is specified in the KPMML source itself in the header's Version attribute. The version of the updated
-    * model must be > the most recent cataloged one that is being updated. With this strategy ONLY the most recent
-    * version can be updated.
-    *
-    * @param modelType    the type of the model submission... PMML in this case
-    * @param pmmlText     the text element to be added dependent upon the modelType specified.
-    * @param optUserid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *                     method.
-    * @param optModelName the model's namespace.name (ignored in this implementation of the UpdatePmmlModel... only used in PMML updates)
-    * @param optVersion   the model's version (ignored in this implementation of the UpdatePmmlModel... only used in PMML updates)
-    * @return result string indicating success or failure of operation
-    */
-  private def UpdateKPMMLModel(modelType: ModelType.ModelType
-                               , pmmlText: String
-                               , optUserid: Option[String] = None
-                               , tenantId: String = ""
-                               , optModelName: Option[String] = None
-                               , optVersion: Option[String] = None
-                               , optMsgProduced: Option[String], pStr: Option[String]): String = {
+   * UpdateModel - Update a Kamanja Pmml model
+   *
+   * Current semantics are that the source supplied in pmmlText is compiled and a new model is reproduced. The Kamanja
+   * PMML version is specified in the KPMML source itself in the header's Version attribute. The version of the updated
+   * model must be > the most recent cataloged one that is being updated. With this strategy ONLY the most recent
+   * version can be updated.
+   *
+   * @param modelType    the type of the model submission... PMML in this case
+   * @param pmmlText     the text element to be added dependent upon the modelType specified.
+   * @param optUserid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *                     method.
+   * @param optModelName the model's namespace.name (ignored in this implementation of the UpdatePmmlModel... only used in PMML updates)
+   * @param optVersion   the model's version (ignored in this implementation of the UpdatePmmlModel... only used in PMML updates)
+   * @return result string indicating success or failure of operation
+   */
+  private def UpdateKPMMLModel(modelType: ModelType.ModelType, pmmlText: String, optUserid: Option[String] = None, tenantId: String = "", optModelName: Option[String] = None, optVersion: Option[String] = None, optMsgProduced: Option[String], pStr: Option[String]): String = {
     try {
       var compProxy = new CompilerProxy
       //compProxy.setLoggerLevel(Level.TRACE)
@@ -1566,20 +2197,20 @@ object ModelUtils {
       var (classStr, modDef) = compProxy.compilePmml(pmmlText, ownerId, tenantId)
       val optLatestVersion = if (modDef == null) None else GetLatestModel(modDef)
       val latestVersion: ModelDef = optLatestVersion.orNull
-      
+
       /**
-        * FIXME: The current strategy is that only the most recent version can be updated.
-        * FIXME: This is not a satisfactory condition. It may be desirable to have 10 PMML models all with
-        * FIXME: the same name but differing only in their version numbers. If someone wants to tune
-        * FIXME: #6 of the 10, that number six is not the latest.  It is just a unique model.
-        *
-        * For this reason, the version of the model that is to be changed should be supplied here and in the
-        * more generic interface implementation that calls here.
-        */
+       * FIXME: The current strategy is that only the most recent version can be updated.
+       * FIXME: This is not a satisfactory condition. It may be desirable to have 10 PMML models all with
+       * FIXME: the same name but differing only in their version numbers. If someone wants to tune
+       * FIXME: #6 of the 10, that number six is not the latest.  It is just a unique model.
+       *
+       * For this reason, the version of the model that is to be changed should be supplied here and in the
+       * more generic interface implementation that calls here.
+       */
 
       val isValid: Boolean = (modDef != null && latestVersion != null && latestVersion.Version < modDef.Version)
       // 1118 Changes begin - checks model existence before update
-      if (modDef == null || DoesModelAlreadyExist(modDef) == false  ) {
+      if (modDef == null || DoesModelAlreadyExist(modDef) == false) {
         return (new ApiResult(ErrorCodeConstants.Failure, "UpdateKPMMLModel", null, s"KPMML model must exist to perform update")).toString
 
       }
@@ -1641,24 +2272,19 @@ object ModelUtils {
   }
 
   /**
-    * UpdateModel - Update a Json Transformation Model (JTM)
-    *
-    * Current semantics are that the source supplied in jtmText is compiled and a new model is reproduced.
-    *
-    * @param modelType    the type of the model submission... PMML in this case
-    * @param jtmText      the text element to be added dependent upon the modelType specified.
-    * @param optUserid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *                     method.
-    * @param optModelName the model's namespace.name (ignored in this implementation of the UpdatePmmlModel... only used in PMML updates)
-    * @param optVersion   the model's version (ignored in this implementation of the UpdatePmmlModel... only used in PMML updates)
-    * @return result string indicating success or failure of operation
-    */
-  private def UpdateJTMModel(modelType: ModelType.ModelType
-                             , jtmText: String
-                             , optUserid: Option[String] = None
-                             , tenantId: String = ""
-                             , optModelName: Option[String] = None
-                             , optVersion: Option[String] = None, pStr: Option[String]): String = {
+   * UpdateModel - Update a Json Transformation Model (JTM)
+   *
+   * Current semantics are that the source supplied in jtmText is compiled and a new model is reproduced.
+   *
+   * @param modelType    the type of the model submission... PMML in this case
+   * @param jtmText      the text element to be added dependent upon the modelType specified.
+   * @param optUserid    the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *                     method.
+   * @param optModelName the model's namespace.name (ignored in this implementation of the UpdatePmmlModel... only used in PMML updates)
+   * @param optVersion   the model's version (ignored in this implementation of the UpdatePmmlModel... only used in PMML updates)
+   * @return result string indicating success or failure of operation
+   */
+  private def UpdateJTMModel(modelType: ModelType.ModelType, jtmText: String, optUserid: Option[String] = None, tenantId: String = "", optModelName: Option[String] = None, optVersion: Option[String] = None, pStr: Option[String]): String = {
     try {
       var compProxy = new CompilerProxy
       var compileConfig = ""
@@ -1685,19 +2311,19 @@ object ModelUtils {
       val latestVersion: ModelDef = optLatestVersion.orNull
 
       /**
-        * FIXME: The current strategy is that only the most recent version can be updated.
-        * FIXME: This is not a satisfactory condition. It may be desirable to have 10 PMML models all with
-        * FIXME: the same name but differing only in their version numbers. If someone wants to tune
-        * FIXME: #6 of the 10, that number six is not the latest.  It is just a unique model.
-        *
-        * For this reason, the version of the model that is to be changed should be supplied here and in the
-        * more generic interface implementation that calls here.
-        */
+       * FIXME: The current strategy is that only the most recent version can be updated.
+       * FIXME: This is not a satisfactory condition. It may be desirable to have 10 PMML models all with
+       * FIXME: the same name but differing only in their version numbers. If someone wants to tune
+       * FIXME: #6 of the 10, that number six is not the latest.  It is just a unique model.
+       *
+       * For this reason, the version of the model that is to be changed should be supplied here and in the
+       * more generic interface implementation that calls here.
+       */
 
       val isValid: Boolean = (modDef != null && latestVersion != null && latestVersion.Version < modDef.Version)
 
       // 1118 Changes begin - checks model existence before update
-      if (modDef == null  ||  DoesModelAlreadyExist(modDef) == false  ) {
+      if (modDef == null || DoesModelAlreadyExist(modDef) == false) {
         return (new ApiResult(ErrorCodeConstants.Failure, "UpdateJTMModel", null, s"JTM model must exist to perform update")).toString
       }
       // 1118 Changes end
@@ -1759,25 +2385,25 @@ object ModelUtils {
   }
 
   /**
-    * GetDependentModels
-    *
-    * @param msgNameSpace
-    * @param msgName
-    * @param msgVer
-    * @return
-    */
+   * GetDependentModels
+   *
+   * @param msgNameSpace
+   * @param msgName
+   * @param msgVer
+   * @return
+   */
   def GetDependentModels(msgNameSpace: String, msgName: String, msgVer: Long): Array[ModelDef] = {
     MessageAndContainerUtils.GetDependentModels(msgNameSpace, msgName, msgVer)
   }
 
   /**
-    * Get all available models (format JSON or XML) as string.
-    *
-    * @param formatType format of the return value, either JSON or XML
-    * @param userid     the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *                   method. If Security and/or Audit are configured, this value must be a value other than None
-    * @return string representation in specified format.
-    */
+   * Get all available models (format JSON or XML) as string.
+   *
+   * @param formatType format of the return value, either JSON or XML
+   * @param userid     the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *                   method. If Security and/or Audit are configured, this value must be a value other than None
+   * @return string representation in specified format.
+   */
   def GetAllModelDefs(formatType: String, userid: Option[String] = None): String = {
     try {
       val modDefs = MdMgr.GetMdMgr.Models(true, true)
@@ -1803,13 +2429,13 @@ object ModelUtils {
   }
 
   /**
-    * GetAllModelsFromCache
-    *
-    * @param active
-    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
-    * @return
-    */
+   * GetAllModelsFromCache
+   *
+   * @param active
+   * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *               method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @return
+   */
   def GetAllModelsFromCache(active: Boolean, userid: Option[String] = None, tid: Option[String] = None): Array[String] = {
     var modelList: Array[String] = new Array[String](0)
     if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETKEYS, AuditConstants.MODEL, AuditConstants.SUCCESS, "", AuditConstants.MODEL)
@@ -1831,8 +2457,7 @@ object ModelUtils {
           }
           if (newModelList.isEmpty) {
             modelList
-          }
-          else {
+          } else {
             (newModelList map (_.toString)).toArray
           }
       }
@@ -1845,17 +2470,16 @@ object ModelUtils {
     }
   }
 
-
   // Specific models (format JSON or XML) as an array of strings using modelName(without version) as the key
   /**
-    *
-    * @param nameSpace  namespace of the object
-    * @param objectName name of the desired object, possibly namespace qualified
-    * @param formatType format of the return value, either JSON or XML
-    * @param userid     the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *                   method. If Security and/or Audit are configured, this value must be a value other than None.
-    * @return
-    */
+   *
+   * @param nameSpace  namespace of the object
+   * @param objectName name of the desired object, possibly namespace qualified
+   * @param formatType format of the return value, either JSON or XML
+   * @param userid     the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *                   method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @return
+   */
   def GetModelDef(nameSpace: String, objectName: String, formatType: String, userid: Option[String]): String = {
     try {
       val modDefs = MdMgr.GetMdMgr.Models(nameSpace, objectName, true, true)
@@ -1881,27 +2505,27 @@ object ModelUtils {
   }
 
   /**
-    * Get a specific models (format JSON or XML) as an array of strings using modelName(without version) as the key
-    *
-    * @param objectName name of the desired object, possibly namespace qualified
-    * @param formatType format of the return value, either JSON or XML
-    * @return
-    */
+   * Get a specific models (format JSON or XML) as an array of strings using modelName(without version) as the key
+   *
+   * @param objectName name of the desired object, possibly namespace qualified
+   * @param formatType format of the return value, either JSON or XML
+   * @return
+   */
   def GetModelDef(objectName: String, formatType: String, userid: Option[String] = None): String = {
     GetModelDef(sysNS, objectName, formatType, userid)
   }
 
   /**
-    * Get a specific model (format JSON or XML) as a String using modelName(with version) as the key
-    *
-    * @param nameSpace  namespace of the object
-    * @param name
-    * @param formatType format of the return value, either JSON or XML
-    * @param version    Version of the object
-    * @param userid     the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *                   method. If Security and/or Audit are configured, this value must be a value other than None.
-    * @return
-    */
+   * Get a specific model (format JSON or XML) as a String using modelName(with version) as the key
+   *
+   * @param nameSpace  namespace of the object
+   * @param name
+   * @param formatType format of the return value, either JSON or XML
+   * @param version    Version of the object
+   * @param userid     the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *                   method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @return
+   */
   def GetModelDefFromCache(nameSpace: String, name: String, formatType: String, version: String, userid: Option[String] = None, tid: Option[String] = None): String = {
     val dispkey = nameSpace + "." + name + "." + MdMgr.Pad0s2Version(version.toLong)
     if (userid != None) getMetadataAPI.logAuditRec(userid, Some(AuditConstants.WRITE), AuditConstants.GETOBJECT, AuditConstants.MODEL, AuditConstants.SUCCESS, "", dispkey)
@@ -1919,8 +2543,7 @@ object ModelUtils {
             logger.debug("model found => " + m.asInstanceOf[ModelDef].FullName + "." + MdMgr.Pad0s2Version(m.asInstanceOf[ModelDef].Version))
             val apiResult = new ApiResult(ErrorCodeConstants.Success, "GetModelDefFromCache", JsonSerializer.SerializeObjectToJson(m), ErrorCodeConstants.Get_Model_From_Cache_Successful + ":" + dispkey)
             apiResult.toString()
-          }
-          else {
+          } else {
             logger.debug("model with tenantid not found => " + dispkey + " tid ")
             val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetModelDefFromCache", null, ErrorCodeConstants.Get_Model_From_Cache_Failed_Not_Active + ":" + dispkey + " model with tenant id  " + tid)
             apiResult.toString()
@@ -1938,42 +2561,36 @@ object ModelUtils {
 
   // Specific models (format JSON or XML) as an array of strings using modelName(without version) as the key
   /**
-    *
-    * @param nameSpace  namespace of the object
-    * @param objectName name of the desired object, possibly namespace qualified
-    * @param formatType format of the return value, either JSON or XML
-    * @param version    Version of the object
-    * @param userid     the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *                   method. If Security and/or Audit are configured, this value must be a value other than None.
-    * @return
-    */
+   *
+   * @param nameSpace  namespace of the object
+   * @param objectName name of the desired object, possibly namespace qualified
+   * @param formatType format of the return value, either JSON or XML
+   * @param version    Version of the object
+   * @param userid     the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *                   method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @return
+   */
   def GetModelDef(nameSpace: String, objectName: String, formatType: String, version: String, userid: Option[String]): String = {
-    getMetadataAPI.logAuditRec(userid
-      , Some(AuditConstants.READ)
-      , AuditConstants.GETOBJECT
-      , AuditConstants.MODEL
-      , AuditConstants.SUCCESS
-      , ""
-      , nameSpace + "." + objectName + "." + version)
+    getMetadataAPI.logAuditRec(userid, Some(AuditConstants.READ), AuditConstants.GETOBJECT, AuditConstants.MODEL, AuditConstants.SUCCESS, "", nameSpace + "." + objectName + "." + version)
     GetModelDefFromCache(nameSpace, objectName, formatType, version, None)
   }
 
   /**
-    * Check whether model already exists in metadata manager. Ideally,
-    * we should never add the model into metadata manager more than once
-    * and there is no need to use this function in main code flow
-    * This is just a utility function being used during these initial phases
-    *
-    * @param modDef the model def to be tested
-    * @return
-    */
+   * Check whether model already exists in metadata manager. Ideally,
+   * we should never add the model into metadata manager more than once
+   * and there is no need to use this function in main code flow
+   * This is just a utility function being used during these initial phases
+   *
+   * @param modDef the model def to be tested
+   * @return
+   */
   def DoesModelAlreadyExist(modDef: ModelDef): Boolean = {
     try {
       var key = modDef.nameSpace + "." + modDef.name + "." + modDef.ver
       val dispkey = modDef.nameSpace + "." + modDef.name + "." + MdMgr.Pad0s2Version(modDef.ver)
       val o = MdMgr.GetMdMgr.Model(modDef.nameSpace.toLowerCase,
         modDef.name.toLowerCase,
-        -1,
+        -1, //modDef.ver,
         false)
       o match {
         case None =>
@@ -1995,14 +2612,14 @@ object ModelUtils {
 
   // 1119 Changes begin
   /**
-    * Check whether model already exists in metadata manager. Ideally,
-    * we should never add the model into metadata manager more than once
-    * and there is no need to use this function in main code flow
-    * This is just a utility function being used during these initial phases
-    *
-    * @param modDef the model def to be tested
-    * @return
-    */
+   * Check whether model already exists in metadata manager. Ideally,
+   * we should never add the model into metadata manager more than once
+   * and there is no need to use this function in main code flow
+   * This is just a utility function being used during these initial phases
+   *
+   * @param modDef the model def to be tested
+   * @return
+   */
   def DoesAnyModelExist(modDef: ModelDef): Boolean = {
     try {
 
@@ -2027,16 +2644,14 @@ object ModelUtils {
       }
     }
   }
-
   // 1119 Changes end
 
-
   /**
-    * Get the latest model for a given FullName
-    *
-    * @param modDef
-    * @return
-    */
+   * Get the latest model for a given FullName
+   *
+   * @param modDef
+   * @return
+   */
   def GetLatestModel(modDef: ModelDef): Option[ModelDef] = {
     try {
       var key = modDef.nameSpace + "." + modDef.name + "." + modDef.ver
@@ -2066,11 +2681,11 @@ object ModelUtils {
 
   //
   /**
-    * Get the latest cataloged models from the supplied set
-    *
-    * @param modelSet
-    * @return
-    */
+   * Get the latest cataloged models from the supplied set
+   *
+   * @param modelSet
+   * @return
+   */
   def GetLatestModelFromModels(modelSet: Set[ModelDef]): ModelDef = {
     var model: ModelDef = null
     var verList: List[Long] = List[Long]()
@@ -2091,16 +2706,16 @@ object ModelUtils {
   }
 
   /**
-    * Get a specific model definition from persistent store
-    *
-    * @param nameSpace  namespace of the object
-    * @param objectName name of the desired object, possibly namespace qualified
-    * @param formatType format of the return value, either JSON or XML
-    * @param version    Version of the object
-    * @param userid     the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *                   method. If Security and/or Audit are configured, this value must be a value other than None.
-    * @return
-    */
+   * Get a specific model definition from persistent store
+   *
+   * @param nameSpace  namespace of the object
+   * @param objectName name of the desired object, possibly namespace qualified
+   * @param formatType format of the return value, either JSON or XML
+   * @param version    Version of the object
+   * @param userid     the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *                   method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @return
+   */
   def GetModelDefFromDB(nameSpace: String, objectName: String, formatType: String, version: String, userid: Option[String] = None): String = {
     var key = "ModelDef" + "." + nameSpace + '.' + objectName + "." + version.toLong
     val dispkey = "ModelDef" + "." + nameSpace + '.' + objectName + "." + MdMgr.Pad0s2Version(version.toLong)
@@ -2120,8 +2735,8 @@ object ModelUtils {
   }
 
   /**
-    * LoadAllModelConfigsIntoChache
-    */
+   * LoadAllModelConfigsIntoChache
+   */
   private def LoadAllModelConfigsIntoCache: Unit = {
     val maxTranId = PersistenceUtils.GetTranId
     getMetadataAPI.setCurrentTranLevel(maxTranId)
@@ -2129,11 +2744,12 @@ object ModelUtils {
 
     var processed: Long = 0L
     val storeInfo = PersistenceUtils.GetContainerNameAndDataStore("model_config_objects")
-    storeInfo._2.get(storeInfo._1, { (k: Key, v: Any, serType: String, typ: String, ver: Int) => {
-      processed += 1
-      val conf = serializer.DeserializeObjectFromByteArray(v.asInstanceOf[Array[Byte]]).asInstanceOf[Map[String, List[String]]]
-      MdMgr.GetMdMgr.AddModelConfig(k.bucketKey.mkString("."), conf)
-    }
+    storeInfo._2.get(storeInfo._1, (k: Key, v: Any, serType: String, typ: String, ver: Int) => {
+      {
+        processed += 1
+        val conf = serializer.DeserializeObjectFromByteArray(v.asInstanceOf[Array[Byte]]).asInstanceOf[Map[String, List[String]]]
+        MdMgr.GetMdMgr.AddModelConfig(k.bucketKey.mkString("."), conf)
+      }
     })
 
     if (processed == 0) {
@@ -2143,12 +2759,11 @@ object ModelUtils {
     MdMgr.GetMdMgr.DumpModelConfigs
   }
 
-
   /**
-    * LoadModelIntoCache
-    *
-    * @param key
-    */
+   * LoadModelIntoCache
+   *
+   * @param key
+   */
   def LoadModelIntoCache(key: String) {
     try {
       logger.debug("Fetch the object " + key + " from database ")
@@ -2169,14 +2784,14 @@ object ModelUtils {
   }
 
   /**
-    * Answer the model compilation dependencies
-    * FIXME: Which ones? input or output?
-    *
-    * @param modelConfigName
-    * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
-    *               method. If Security and/or Audit are configured, this value must be a value other than None.
-    * @return
-    */
+   * Answer the model compilation dependencies
+   * FIXME: Which ones? input or output?
+   *
+   * @param modelConfigName
+   * @param userid the identity to be used by the security adapter to ascertain if this user has access permissions for this
+   *               method. If Security and/or Audit are configured, this value must be a value other than None.
+   * @return
+   */
   def getModelDependencies(modelConfigName: String, userid: Option[String] = None): List[String] = {
     var config = MdMgr.GetMdMgr.GetModelConfig(modelConfigName)
     val tmpDeps = config.getOrElse(ModelCompilationConstants.DEPENDENCIES, null)

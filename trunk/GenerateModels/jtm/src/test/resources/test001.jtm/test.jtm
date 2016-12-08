@@ -26,6 +26,8 @@
 
       "outputs": {
         "o1": {
+          "onerror": "ignore",
+          "exception": "catch",
           "mapping": {
             "out1": "in1",
             "out2": "t1",
