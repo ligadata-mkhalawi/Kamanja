@@ -1790,6 +1790,13 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     }
   }
 
+  class DummyCacheListenerCallback extends CacheCallback {
+    @throws(classOf[Exception])
+    override def call(callbackData: CacheCallbackData): Unit = {
+      // Not doing anythin
+    }
+  }
+
   class CacheListenerCallback extends CacheCallback {
     @throws(classOf[Exception])
     override def call(callbackData: CacheCallbackData): Unit = {
@@ -1822,9 +1829,10 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     }).mkString(",")
     val cacheCfg = _cacheConfigTemplate.format("EnvCtxtConfigClusterCache", hosts, conf.CacheStartPort, conf.CacheSizePerNode / 2, conf.TimeToIdleSeconds, conf.TimeToIdleSeconds, conf.EvictionPolicy.toUpperCase, "true")
 
+    val listenCallback = new DummyCacheListenerCallback()
     val aclass = Class.forName("com.ligadata.cache.MemoryDataCacheImp").newInstance
     _listenerConfigClusterCache = aclass.asInstanceOf[DataCache]
-    _listenerConfigClusterCache.init(cacheCfg, null)
+    _listenerConfigClusterCache.init(cacheCfg, listenCallback)
     _listenerConfigClusterCache.start()
   }
 
