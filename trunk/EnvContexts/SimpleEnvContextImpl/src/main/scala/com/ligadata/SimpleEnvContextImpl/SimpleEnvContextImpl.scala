@@ -1794,6 +1794,9 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     @throws(classOf[Exception])
     override def call(callbackData: CacheCallbackData): Unit = {
       // Not doing anythin
+      if (logger.isDebugEnabled && callbackData != null) {
+        logger.debug("DummyCacheListenerCallback callback called with eventtype:" + callbackData.eventType + ", key:" + callbackData.key + ", value:" + callbackData.value)
+      }
     }
   }
 
