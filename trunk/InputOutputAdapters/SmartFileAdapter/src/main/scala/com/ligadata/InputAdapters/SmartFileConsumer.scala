@@ -462,7 +462,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         val partitionId = pathTokens(1)
 
         val cacheKey = Status_Check_Cache_KeyParent + "/" + nodeId + "/" + partitionId
-        val statusData = envContext.getConfigFromClusterCache(cacheKey) // filename~offset~timestamp
+        val statusData = envContext.getConfigFromClusterCache(cacheKey) // filename~offset~timestamp~donestatus
         val statusDataStr: String = if (statusData == null) null else new String(statusData)
 
         var failedCheckCount = 0
@@ -496,36 +496,43 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         else {
           LOG.debug("Smart File Consumer - current participants status in cache is {}", statusDataStr)
 
-          val statusDataTokens = statusDataStr.split("~")
+          val statusDataTokens = statusDataStr.split("~", -1)
           fileInStatus = statusDataTokens(0)
           val currentTimeStamp = statusDataTokens(2).toLong
+          val doneStatus = if (statusDataTokens.size >= 4) statusDataTokens(3) else ""
 
-          if (previousStatusMap != null && !fileInStatus.equals(fileInProcess)) {
-            LOG.info("Smart File Consumer - file {} is supposed to be processed by partition {} on node {} but found this file {} in node updated status",
-              fileInProcess, partitionId, nodeId, fileInStatus) //could this happen?
-          }
-          else {
-
-            if (previousStatusMap != null && previousStatusMap.contains(fileInStatus)) {
-              previousTimestamp = previousStatusMap(fileInStatus)._1
-              failedCheckCount = previousStatusMap(fileInStatus)._2
-
-              if (currentTimeStamp > previousTimestamp) {//no problems here
-                failedCheckCount = 0
-                currentStatusMap.put(fileInStatus, (currentTimeStamp, failedCheckCount ))
-              }
-              else if (currentTimeStamp == previousTimestamp) {
-                LOG.error("Smart File Consumer - file {} is being processed by partition {} on node {}, but status hasn't been updated for {} ms. where currentTimeStamp={} - previousTimestamp={}, failedCheckCount={}",
-                  fileInStatus, partitionId, nodeId, ((currentTimeStamp - previousTimestamp)/1000).toString,currentTimeStamp.toString, previousTimestamp.toString, failedCheckCount.toString)
-
-                failedCheckCount += 1
-                currentStatusMap.put(fileInStatus, (currentTimeStamp, failedCheckCount ))
-              }
+          if (! doneStatus.equals("done")) {
+            if (previousStatusMap != null && !fileInStatus.equals(fileInProcess)) {
+              LOG.info("Smart File Consumer - file {} is supposed to be processed by partition {} on node {} but found this file {} in node updated status",
+                fileInProcess, partitionId, nodeId, fileInStatus) //could this happen?
             }
             else {
-              failedCheckCount += 1
-              currentStatusMap.put(fileInStatus, (currentTimeStamp, failedCheckCount))
+
+              if (previousStatusMap != null && previousStatusMap.contains(fileInStatus)) {
+                previousTimestamp = previousStatusMap(fileInStatus)._1
+                failedCheckCount = previousStatusMap(fileInStatus)._2
+
+                if (currentTimeStamp > previousTimestamp) {
+                  //no problems here
+                  failedCheckCount = 0
+                  currentStatusMap.put(fileInStatus, (currentTimeStamp, failedCheckCount))
+                }
+                else if (currentTimeStamp == previousTimestamp) {
+                  LOG.error("Smart File Consumer - file {} is being processed by partition {} on node {}, but status hasn't been updated for {} ms. where currentTimeStamp={} - previousTimestamp={}, failedCheckCount={}",
+                    fileInStatus, partitionId, nodeId, ((currentTimeStamp - previousTimestamp) / 1000).toString, currentTimeStamp.toString, previousTimestamp.toString, failedCheckCount.toString)
+
+                  failedCheckCount += 1
+                  currentStatusMap.put(fileInStatus, (currentTimeStamp, failedCheckCount))
+                }
+              }
+              else {
+                failedCheckCount += 1
+                currentStatusMap.put(fileInStatus, (currentTimeStamp, failedCheckCount))
+              }
             }
+          } else {
+            // Keeping the previous one as it is.
+            currentStatusMap.put(fileInStatus, (currentTimeStamp, failedCheckCount))
           }
         }
 

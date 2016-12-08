@@ -84,7 +84,7 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
           try {
             while (!finished) {
               //put filename~offset~timestamp
-              val data = fileHandler.getFullPath + "~" + currentMsgNum + "~" + System.nanoTime
+              val data = fileHandler.getFullPath + "~" + currentMsgNum + "~" + System.nanoTime + "~in-progress"
               logger.debug("SMART FILE CONSUMER - Node {} with partition {} is updating status to value {}",
                 consumerContext.nodeId, consumerContext.partitionId.toString, data)
               consumerContext.envContext.saveConfigInClusterCache(consumerContext.statusUpdateCacheKey, data.getBytes)
@@ -437,6 +437,8 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
   var finishFlagSent = false
   val finishFlagSent_Lock = new Object()
   def sendFinishFlag (status : Int) : Unit = {
+    val data = fileHandler.getFullPath + "~" + currentMsgNum + "~" + System.nanoTime + "~done"
+    consumerContext.envContext.saveConfigInClusterCache(consumerContext.statusUpdateCacheKey, data.getBytes)
     finishFlagSent_Lock.synchronized{
       if(!finishFlagSent){
         if(finishCallback != null)
