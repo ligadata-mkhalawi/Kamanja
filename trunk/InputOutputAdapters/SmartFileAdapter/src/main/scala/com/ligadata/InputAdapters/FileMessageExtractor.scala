@@ -438,7 +438,19 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
   val finishFlagSent_Lock = new Object()
   def sendFinishFlag (status : Int) : Unit = {
     val data = fileHandler.getFullPath + "~" + currentMsgNum + "~" + System.nanoTime + "~done"
+    logger.warn("Node {} before sending done status for file processing key={} , value={}",
+      consumerContext.nodeId, consumerContext.statusUpdateCacheKey, data)
     consumerContext.envContext.saveConfigInClusterCache(consumerContext.statusUpdateCacheKey, data.getBytes)
+    logger.warn("Node {} after sending done status for file processing key={} , value={}",
+      consumerContext.nodeId, consumerContext.statusUpdateCacheKey, data)
+
+
+    val savedStatusData = consumerContext.envContext.getConfigFromClusterCache(consumerContext.statusUpdateCacheKey)
+    val statusDataStr: String = if (savedStatusData == null) null else new String(savedStatusData)
+    logger.warn("Node {} checking saved done status for file processing key={} ,saved value={}",
+      consumerContext.nodeId, consumerContext.statusUpdateCacheKey, statusDataStr)
+
+
     finishFlagSent_Lock.synchronized{
       if(!finishFlagSent){
         if(finishCallback != null)
