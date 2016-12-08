@@ -12,14 +12,17 @@ import com.ligadata.adapters.BufferedMessageProcessor;
 import com.ligadata.adapters.mail.pojo.Constants;
 import com.ligadata.adapters.mail.pojo.SimpleMailBean;
 
+import com.ligadata.adapters.StatusCollectable;
+
 public class BufferedMailProcessor implements BufferedMessageProcessor {
 	static Logger logger = LogManager.getLogger(BufferedMailProcessor.class);
 	private ArrayList<JSONObject> buffer;
 	private AdapterConfiguration conf;
+    protected StatusCollectable statusWriter = null;
 
 	@Override
-	public void init(AdapterConfiguration config) throws Exception {
-
+	public void init(AdapterConfiguration config, StatusCollectable sw) throws Exception {
+        statusWriter = sw;
 		// Create a safe collection for access by multiple threads
 		buffer = new ArrayList<JSONObject>();
 		conf = config;
@@ -40,7 +43,7 @@ public class BufferedMailProcessor implements BufferedMessageProcessor {
 	}
 
 	@Override
-	public void processAll() throws Exception {
+	public void processAll(long batchId, long retryNumber) throws Exception {
 		MailProcessor mailProcessor = MailProcessor.getInstance(conf);
 
 		for (JSONObject item : buffer) {

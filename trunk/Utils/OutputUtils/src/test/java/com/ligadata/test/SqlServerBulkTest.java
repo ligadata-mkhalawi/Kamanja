@@ -14,11 +14,11 @@ public class SqlServerBulkTest {
 		try {
 			config = new AdapterConfiguration("src/main/resources/copsbulkinsert.properties");
 			SqlServerBulkCopySink processor = new SqlServerBulkCopySink();
-			processor.init(config);
+			processor.init(config, null);
 			processor.addMessage(message1);
 			processor.addMessage(message2);
 			processor.addMessage(message3);
-			processor.processAll();
+			processor.processAll(0,0);
 			processor.close();
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
