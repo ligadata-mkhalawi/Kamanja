@@ -168,7 +168,8 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
     do{
       lengthToRead = Math.min(maxlen, startOffset - totalReadLen).toInt
       curReadLen = fileHandler.read(byteBuffer, 0, lengthToRead)
-      totalReadLen += curReadLen
+      if(curReadLen > 0)
+        totalReadLen += curReadLen
       logger.debug("SMART FILE CONSUMER - reading {} bytes from file {} but got only {} bytes",
         lengthToRead.toString, fileHandler.getFullPath, curReadLen.toString)
     }while(totalReadLen < startOffset && curReadLen >0)
