@@ -62,6 +62,7 @@ class CacheCustomConfig(val jsonconfig:Config, val listenCallback: CacheCallback
   properties.setProperty(Config.REPLICATE_UPDATES_VIA_COPY,(jsonconfig.getvalue(Config.REPLICATE_UPDATES_VIA_COPY).getOrElse("false")).toString)
   properties.setProperty(Config.REPLICATE_REMOVALS,(jsonconfig.getvalue(Config.REPLICATE_REMOVALS).getOrElse("false")).toString)
   properties.setProperty(Config.REPLICATE_ASYNCHRONOUSLY,(jsonconfig.getvalue(Config.REPLICATE_ASYNCHRONOUSLY).getOrElse("false")).toString)
+  properties.setProperty(Config.ASYNCHMILLIS,"10")
 
   //ADD BOOTSTRAP PROPERTIES
   propertiesBootStrap.setProperty(CacheCustomConfig.BOOTSTRAPASYNCHRONOUSLY,(values.getOrElse(CacheCustomConfig.BOOTSTRAPASYNCHRONOUSLY,"false")).toString)

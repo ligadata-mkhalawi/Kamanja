@@ -16,6 +16,7 @@ object Config {
   val UDPADD:String = "jgroups.udp.add"
   val PORT:String = "jgroups.port"
   val NUMBEROFKETOWNERS: String = "numOfKeyOwners"
+  val ASYNCHMILLIS:String="asynchronousReplicationIntervalMillis"
 }
 
 
