@@ -1278,7 +1278,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             statMsg.set("recordscount", stats.recordsCount)
             statMsg.set("starttime", stats.startTs)
             statMsg.set("endtime", stats.endTs)
-            //todo: add new stats info
+            /*statMsg.set("bytesRead", stats.bytesRead)
+            statMsg.set("nodeId", stats.nodeId)
+            statMsg.set("status", stats.status)*/
+
             // Post the messgae
             envContext.postMessages(Array[ContainerInterface](statMsg))
           }

@@ -209,6 +209,7 @@ class FileMessageExtractor(parentSmartFileConsumer : SmartFileConsumer,
             if(!processingInterrupted) {
               var curReadLen = fileHandler.read(byteBuffer, readlen, maxlen - readlen - 1)
               lastReadLen = curReadLen
+              totalReadLen += curReadLen
 
               logger.debug("SMART FILE CONSUMER - reading {} bytes from file {}. got actually {} bytes ",
                 (maxlen - readlen - 1).toString, fileHandler.getFullPath, curReadLen.toString)
