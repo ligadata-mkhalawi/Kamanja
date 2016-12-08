@@ -494,7 +494,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
           currentStatusMap.put(fileInProcess, (System.nanoTime, failedCheckCount))
         }
         else {
-          LOG.debug("Smart File Consumer - current participants status in cache is {}", statusDataStr)
+          LOG.warn("Smart File Consumer - current participants status in cache is {}", statusDataStr)
 
           val statusDataTokens = statusDataStr.split("~", -1)
           fileInStatus = statusDataTokens(0)
@@ -1208,6 +1208,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                                               status : Int, stats : InputAdapterStatus) : Unit = {
 
     val actualThreadId = Thread.currentThread().getThreadGroup.getName + ">" + Thread.currentThread().getId
+    logger.warn("SmartFileConsumer : context {} ready to free, partition id={}, actualThreadId={}, file={}",
+      context, context.partitionId.toString, actualThreadId, fileHandler.getFullPath)
     if(context.inUse) {
       logger.debug("SmartFileConsumer : context {} ready to free, partition id={}, actualThreadId={}, file={}",
         context, context.partitionId.toString, actualThreadId, fileHandler.getFullPath)
