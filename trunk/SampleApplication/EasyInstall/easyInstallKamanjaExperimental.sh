@@ -259,7 +259,7 @@ cp ExtDependencyLibs2/target/scala-2.10/ExtDependencyLibs2_2.10-${currentKamanja
 cp HBaseExtDependencyLibs/target/scala-2.10/HBaseExtDependencyLibs_2.10-${currentKamanjaVersion}.jar $systemlib
 cp KamanjaBaseDeps/target/scala-2.10/KamanjaBaseDeps_2.10-${currentKamanjaVersion}.jar $systemlib
 cp KamanjaInternalDeps/target/scala-2.10/KamanjaInternalDeps_2.10-${currentKamanjaVersion}.jar $systemlib
-cp StorageDeps/target/scala-2.10/StorageDeps_2.10-${currentKamanjaVersion}.jar $systemlib
+cp Storage/StorageDeps/target/scala-2.10/StorageDeps_2.10-${currentKamanjaVersion}.jar $systemlib
 
 # Copy jars needed for Kafka
 cp $ivyPath/cache/org.apache.kafka/kafka_2.10/jars/kafka_2.10-0.8.2.2.jar $systemlib
@@ -590,7 +590,7 @@ cp ExtDependencyLibs2/target/scala-2.11/ExtDependencyLibs2_2.11-${currentKamanja
 cp HBaseExtDependencyLibs/target/scala-2.11/HBaseExtDependencyLibs_2.11-${currentKamanjaVersion}.jar $systemlib
 cp KamanjaBaseDeps/target/scala-2.11/KamanjaBaseDeps_2.11-${currentKamanjaVersion}.jar $systemlib
 cp KamanjaInternalDeps/target/scala-2.11/KamanjaInternalDeps_2.11-${currentKamanjaVersion}.jar $systemlib
-cp StorageDeps/target/scala-2.11/StorageDeps_2.11-${currentKamanjaVersion}.jar $systemlib
+cp Storage/StorageDeps/target/scala-2.11/StorageDeps_2.11-${currentKamanjaVersion}.jar $systemlib
 
 cp $ivyPath/cache/org.apache.kafka/kafka_2.11/jars/kafka_2.11-0.8.2.2.jar $systemlib
 cp $ivyPath/cache/org.apache.kafka/kafka-clients/jars/kafka-clients-0.9.0.1.jar $systemlib
