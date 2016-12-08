@@ -137,6 +137,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
     logger.debug("releasing map lock for dir {}", dir)
     archiveDirsStatusMap_lock.synchronized {
       try {
+        if(archiveDirsStatusMap != null && archiveDirsStatusMap.contains(dir))
         archiveDirsStatusMap(dir).isActive = false
       }
       catch {
@@ -252,7 +253,13 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
                 val archInfo = getNextArchiveFileInfo
                 if (archInfo != null && archInfo._1 != null && archInfo._2 != null) {
                   logger.debug("got file to archive from queue: {}", archInfo._1.srcFileBaseName)
-                  archiveFile(archInfo._1, archInfo._2)
+                  try {
+                    archiveFile(archInfo._1, archInfo._2)
+                  }
+                  catch{
+                    case e : Throwable => logger.error("Error while archiving file " +
+                      archInfo._1.srcFileDir + "/" + archInfo._1.srcFileBaseName, e)
+                  }
                 }
                 else {
                   logger.debug("no files in archive queue")
@@ -697,6 +704,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
           logger.warn("file {} does not have an entry in archive index", srcFileHandler.getFullPath)
         }
 
+        logger.warn("finished archiving file {} into memory", srcFileHandler.getFullPath)
       }
 
       releaseArchiveDirLock(archiveDirStatus.dir)
@@ -1122,7 +1130,10 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
 
     archiveExecutor = null
     archiveInfoList.clear()
-    archiveDirsStatusMap.clear()
+    archiveDirsStatusMap_lock.synchronized {
+      if(archiveDirsStatusMap != null)
+        archiveDirsStatusMap.clear()
+    }
   }
 
 }

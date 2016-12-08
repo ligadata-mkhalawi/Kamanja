@@ -1389,7 +1389,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       }
 
       isFileMoved = moveFile(smartFileHandler)
-      if (isFileMoved && adapterConfig.archiveConfig != null && adapterConfig.archiveConfig.outputConfig != null) {
+      if (!isShutdown && archiver!= null && isFileMoved && adapterConfig.archiveConfig != null &&
+        adapterConfig.archiveConfig.outputConfig != null) {
         archiver.addArchiveFileInfo(ArchiveFileInfo(adapterConfig, locationInfo, targetMoveDir, flBaseName, componentsMap, 0))
       }
     } catch {
