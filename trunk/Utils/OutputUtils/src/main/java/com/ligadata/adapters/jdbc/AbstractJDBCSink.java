@@ -118,7 +118,8 @@ public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 						+ param.typeName + "]");
 
 				if (param.type == java.sql.Types.VARCHAR || param.type == java.sql.Types.LONGVARCHAR
-						|| param.type == java.sql.Types.CHAR) {
+						|| param.type == java.sql.Types.CHAR || param.type == java.sql.Types.NVARCHAR
+						|| param.type == LONGNVARCHAR) {
 					// String
 					statement.setString(paramIndex, value);
 				} else if (param.type == java.sql.Types.BIGINT || param.type == java.sql.Types.INTEGER
@@ -156,6 +157,12 @@ public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 						ts = new Timestamp(date.getTime());
 						statement.setTimestamp(paramIndex, ts);
 					}
+				} else if (param.type == java.sql.Types.BIT) {
+					// Boolean
+					if (value == null || "".equals(value))
+						statement.setNull(paramIndex, java.sql.Types.BIT);
+					else
+						statement.setBoolean(paramIndex, Boolean.parseBoolean(value));
 				} else {
 					throw new Exception("Unsupported sql data type " + param.typeName + " [" + param.type + "]");
 				}
