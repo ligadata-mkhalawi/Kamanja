@@ -97,13 +97,15 @@ class SftpFileHandler extends SmartFileHandler{
       session.connect()
 
 
-      logger.info("new sftp session is opened." + MonitorUtils.getCallStack())
+      //logger.warn("new sftp session is opened session=" + session + ". " + MonitorUtils.getCallStack())
     }
 
     if(channelSftp == null || !channelSftp.isConnected || channelSftp.isClosed){
       val channel = session.openChannel("sftp")
       channel.connect()
       channelSftp = channel.asInstanceOf[ChannelSftp]
+
+      //logger.warn("new channelSftp is opened channelSftp=" + channelSftp + ". " + MonitorUtils.getCallStack())
     }
   }
 
@@ -385,7 +387,7 @@ class SftpFileHandler extends SmartFileHandler{
     try {
       logger.info("Sftp File Handler - checking existence for file " + hashPath(file))
       val startTm = System.nanoTime
-      val att = getRemoteFileAttrs(logError = false)
+      val att = getRemoteFileAttrs(file, logError = false)
       val exists = att != null
 
       val endTm = System.nanoTime
@@ -613,7 +615,8 @@ class SftpFileHandler extends SmartFileHandler{
   def disconnect() : Unit = {
     try{
 
-      logger.info("Closing SFTP session from disconnect(). original file path is %s.".format(getFullPath) + MonitorUtils.getCallStack())
+      //logger.warn("Closing SFTP session from disconnect(). original file path is %s. channel=%s , session=%s".
+        //format(getFullPath , channelSftp, session) + MonitorUtils.getCallStack())
 
       if(channelSftp != null) channelSftp.exit()
       if(session != null) session.disconnect()

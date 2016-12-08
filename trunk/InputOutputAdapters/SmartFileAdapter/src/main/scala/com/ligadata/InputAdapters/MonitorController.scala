@@ -63,7 +63,7 @@ class MonitorController {
   private var maxBufferErrors = 5
 
   private var keepMontoringBufferingFiles = false
-  var globalFileMonitorService: ExecutorService = Executors.newFixedThreadPool(2)
+  //var globalFileMonitorService: ExecutorService = Executors.newFixedThreadPool(2)
 
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
@@ -101,17 +101,8 @@ class MonitorController {
   }
 
   def startMonitoring(): Unit ={
-
     keepMontoringBufferingFiles = true
-
-    globalFileMonitorService.execute(new Runnable() {
-      override def run() = {
-        logger.debug("SMART FILE CONSUMER (MonitorController):  buffering files monitoring thread run")
-        //while(true) {
-        monitor()
-        //}
-      }
-    })
+    monitor()
   }
 
   private var monitorsExecutorService: ExecutorService = null
@@ -199,9 +190,6 @@ class MonitorController {
 
     logger.debug("MonitorController - shutting down")
 
-    if(commonFileHandler != null)
-      commonFileHandler.disconnect()
-    commonFileHandler = null
 
     keepMontoringBufferingFiles = false
     if (monitorsExecutorService != null)
@@ -219,7 +207,10 @@ class MonitorController {
       })
     }
 
-    MonitorUtils.shutdownAndAwaitTermination(globalFileMonitorService, "MonitorController globalFileMonitorService")
+    if(commonFileHandler != null)
+      commonFileHandler.disconnect()
+    commonFileHandler = null
+
   }
 
   private def enQBufferedFile(file : MonitoredFile, initiallyExists : Boolean): Unit = {
@@ -239,6 +230,9 @@ class MonitorController {
     logger.debug("SMART FILE CONSUMER (MonitorController):  monitorBufferingFiles")
 
     var specialWarnCounter: Int = 1
+
+    if(!keepMontoringBufferingFiles)
+      return
 
     // Scan all the files that we are buffering, if there is not difference in their file size.. move them onto
     // the FileQ, they are ready to process.
