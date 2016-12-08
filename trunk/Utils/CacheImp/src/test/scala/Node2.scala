@@ -9,13 +9,24 @@ object Node2 {
     val aclass = Class.forName("com.ligadata.cache.MemoryDataCacheImp").newInstance
     val node = aclass.asInstanceOf[DataCache]
 
-    node.init("""{"name":"CacheCluster","diskSpoolBufferSizeMB":"20","jgroups.tcpping.initial_hosts":"192.168.1.137[7800],192.168.1.137[7800]","jgroups.port":"7800","replicatePuts":"true","replicateUpdates":"true","replicateUpdatesViaCopy":"false","replicateRemovals":"true","replicateAsynchronously":"true","CacheConfig":{"maxBytesLocalHeap":"20971520","eternal":"false","bootstrapAsynchronously":"false","timeToIdleSeconds":"3000","timeToLiveSeconds":"3000","memoryStoreEvictionPolicy":"LFU","transactionalMode":"off","class":"net.sf.ehcache.distribution.jgroups.JGroupsCacheManagerPeerProviderFactory","separator":"::","peerconfig":"channelName=EH_CACHE::file=jgroups_tcp.xml","enableListener":"true"}}""", null)
+    node.init("""{"name":"CacheCluster","diskSpoolBufferSizeMB":"20","jgroups.tcpping.initial_hosts":"192.168.1.140[7800],192.168.1.140[7800]","jgroups.port":"7800","replicatePuts":"true","replicateUpdates":"true","replicateUpdatesViaCopy":"false","replicateRemovals":"true","replicateAsynchronously":"true","CacheConfig":{"maxBytesLocalHeap":"20971520","eternal":"false","bootstrapAsynchronously":"false","timeToIdleSeconds":"3000","timeToLiveSeconds":"3000","memoryStoreEvictionPolicy":"LFU","transactionalMode":"off","class":"net.sf.ehcache.distribution.jgroups.JGroupsCacheManagerPeerProviderFactory","separator":"::","peerconfig":"channelName=EH_CACHE::file=jgroups_tcp.xml","enableListener":"true"}}""", null)
     node.start()
 //    println(node.get("1").toString)
     val test = node.get("1").asInstanceOf[Array[Byte]]
     test.foreach(k=>System.out.println(k.toChar))
 
-//    System.out.println(node.get("70").toString)
+    val tt = node.getAll.get("1").asInstanceOf[Array[Byte]]
+    println(tt)
+    tt.foreach(k=>System.out.println(k.toChar))
+
+
+    val t2 = node.get(Array("1")).get("1").asInstanceOf[Array[Byte]]
+    t2.foreach(k=>System.out.println(k.toChar))
+
+    val t3 = node.get("2")
+    println(t3)
+
+    //    System.out.println(node.get("70").toString)
 
 //    var i = 0
 //    while(true){
