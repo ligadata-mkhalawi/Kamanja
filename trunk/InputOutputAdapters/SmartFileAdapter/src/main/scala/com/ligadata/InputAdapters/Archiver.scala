@@ -307,11 +307,21 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
 
     val rolloverCheckThread = new Runnable() {
       override def run(): Unit = {
+        // Trying to sleep maximum 1sec intervals
         var interruptedVal = false
-        while (!interruptedVal) {
+        val nSleepSecs = archiveRolloverCheckSleepMS / 1000
+        val nSleepMilliSecs = archiveRolloverCheckSleepMS % 1000
+        while (!interruptedVal && !isShutdown) {
           try {
             checkRolloverDueFiles()
-            interruptedVal = smartFileConsumer.sleepMs(archiveRolloverCheckSleepMS)
+            var cntr = 0
+            while (cntr < nSleepSecs && !interruptedVal && !isShutdown) {
+              cntr += 1
+              interruptedVal = smartFileConsumer.sleepMs(1000)
+            }
+            if (nSleepMilliSecs > 0 && !interruptedVal && !isShutdown) {
+              interruptedVal = smartFileConsumer.sleepMs(nSleepMilliSecs)
+            }
           } catch {
             case e: InterruptedException => {
               interruptedVal = true
