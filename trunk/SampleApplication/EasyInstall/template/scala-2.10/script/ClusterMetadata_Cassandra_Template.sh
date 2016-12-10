@@ -4,7 +4,7 @@
 # debugger. As a pre-requisite, make sure your cassandra instance is running.
 
 ipport="8998"
-currentKamanjaVersion=1.5.3
+currentKamanjaVersion=1.6.1
 
 if [ "$1" != "debug" ]; then
 	java -Dlog4j.configurationFile=file:{InstallDirectory}/config/log4j.properties -cp $KAMANJA_HOME/lib/system/jarfactoryofmodelinstancefactory_2.10-${currentKamanjaVersion}.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.10-${currentKamanjaVersion}.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.10-${currentKamanjaVersion}.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.10-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/metadataapi_2.10-${currentKamanjaVersion}.jar com.ligadata.MetadataAPI.StartMetadataAPI --config {InstallDirectory}/config/ClusterCfgMetadataAPIConfig_Cassandra.properties

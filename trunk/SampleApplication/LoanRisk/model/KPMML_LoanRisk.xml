@@ -1,0 +1,154 @@
+<?xml version="1.0"?>
+<PMML version="4.2" xmlns="http://www.dmg.org/PMML-4_2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.dmg.org/PMML-4_2 http://www.dmg.org/v4-2/pmml-4-2.xsd">
+ <Header copyright="Copyright (c) 2016 gregmakowski" description="Generalized Linear Regression Model">
+  <Extension name="user" value="gregmakowski" extender="Rattle/PMML"/>
+  <Application name="Rattle/PMML" version="1.4"/>
+  <Timestamp>2016-07-28 13:10:34</Timestamp>
+ </Header>
+ <DataDictionary numberOfFields="22">
+  <DataField name="BAD" optype="continuous" dataType="double"/>
+  <DataField name="TIN_IMO_REASON_DebtCon" optype="continuous" dataType="double"/>
+  <DataField name="TIN_IMO_REASON_HomeImp" optype="continuous" dataType="double"/>
+  <DataField name="TIN_IZR_JOB_Mgr" optype="continuous" dataType="double"/>
+  <DataField name="TIN_IZR_JOB_Office" optype="continuous" dataType="double"/>
+  <DataField name="TIN_IZR_JOB_Other" optype="continuous" dataType="double"/>
+  <DataField name="TIN_IZR_JOB_ProfExe" optype="continuous" dataType="double"/>
+  <DataField name="TIN_IZR_JOB_Sales" optype="continuous" dataType="double"/>
+  <DataField name="TIN_IZR_JOB_Self" optype="continuous" dataType="double"/>
+  <DataField name="TIN_IZR_JOB_Missing" optype="continuous" dataType="double"/>
+  <DataField name="R01_LOAN" optype="continuous" dataType="double"/>
+  <DataField name="IMN_R01_MORTDUE" optype="continuous" dataType="double"/>
+  <DataField name="IMN_R01_VALUE" optype="continuous" dataType="double"/>
+  <DataField name="IMN_R01_YOJ" optype="continuous" dataType="double"/>
+  <DataField name="IMN_R01_DEROG" optype="continuous" dataType="double"/>
+  <DataField name="IMN_R01_DELINQ" optype="continuous" dataType="double"/>
+  <DataField name="IMN_R01_CLAGE" optype="continuous" dataType="double"/>
+  <DataField name="IMN_R01_NINQ" optype="continuous" dataType="double"/>
+  <DataField name="IMN_R01_CLNO" optype="continuous" dataType="double"/>
+  <DataField name="LOG6_DEROG" optype="continuous" dataType="double"/>
+  <DataField name="LOG5_DELINQ" optype="continuous" dataType="double"/>
+  <DataField name="LOG_VALUE" optype="continuous" dataType="double"/>
+ </DataDictionary>
+ <GeneralRegressionModel modelName="General_Regression_Model" modelType="generalizedLinear" functionName="regression" algorithmName="glm" distribution="binomial" linkFunction="logit">
+  <MiningSchema>
+   <MiningField name="BAD" usageType="predicted"/>
+   <MiningField name="TIN_IMO_REASON_DebtCon" usageType="active"/>
+   <MiningField name="TIN_IMO_REASON_HomeImp" usageType="active"/>
+   <MiningField name="TIN_IZR_JOB_Mgr" usageType="active"/>
+   <MiningField name="TIN_IZR_JOB_Office" usageType="active"/>
+   <MiningField name="TIN_IZR_JOB_Other" usageType="active"/>
+   <MiningField name="TIN_IZR_JOB_ProfExe" usageType="active"/>
+   <MiningField name="TIN_IZR_JOB_Sales" usageType="active"/>
+   <MiningField name="TIN_IZR_JOB_Self" usageType="active"/>
+   <MiningField name="TIN_IZR_JOB_Missing" usageType="active"/>
+   <MiningField name="R01_LOAN" usageType="active"/>
+   <MiningField name="IMN_R01_MORTDUE" usageType="active"/>
+   <MiningField name="IMN_R01_VALUE" usageType="active"/>
+   <MiningField name="IMN_R01_YOJ" usageType="active"/>
+   <MiningField name="IMN_R01_DEROG" usageType="active"/>
+   <MiningField name="IMN_R01_DELINQ" usageType="active"/>
+   <MiningField name="IMN_R01_CLAGE" usageType="active"/>
+   <MiningField name="IMN_R01_NINQ" usageType="active"/>
+   <MiningField name="IMN_R01_CLNO" usageType="active"/>
+   <MiningField name="LOG6_DEROG" usageType="active"/>
+   <MiningField name="LOG5_DELINQ" usageType="active"/>
+   <MiningField name="LOG_VALUE" usageType="active"/>
+  </MiningSchema>
+  <Output>
+   <OutputField name="Predicted_BAD" feature="predictedValue"/>
+  </Output>
+  <ParameterList>
+   <Parameter name="p0" label="(Intercept)"/>
+   <Parameter name="p1" label="TIN_IMO_REASON_DebtCon"/>
+   <Parameter name="p2" label="TIN_IMO_REASON_HomeImp"/>
+   <Parameter name="p3" label="TIN_IZR_JOB_Mgr"/>
+   <Parameter name="p4" label="TIN_IZR_JOB_Office"/>
+   <Parameter name="p5" label="TIN_IZR_JOB_Other"/>
+   <Parameter name="p6" label="TIN_IZR_JOB_ProfExe"/>
+   <Parameter name="p7" label="TIN_IZR_JOB_Sales"/>
+   <Parameter name="p8" label="TIN_IZR_JOB_Self"/>
+   <Parameter name="p9" label="TIN_IZR_JOB_Missing"/>
+   <Parameter name="p10" label="R01_LOAN"/>
+   <Parameter name="p11" label="IMN_R01_MORTDUE"/>
+   <Parameter name="p12" label="IMN_R01_VALUE"/>
+   <Parameter name="p13" label="IMN_R01_YOJ"/>
+   <Parameter name="p14" label="IMN_R01_DEROG"/>
+   <Parameter name="p15" label="IMN_R01_DELINQ"/>
+   <Parameter name="p16" label="IMN_R01_CLAGE"/>
+   <Parameter name="p17" label="IMN_R01_NINQ"/>
+   <Parameter name="p18" label="IMN_R01_CLNO"/>
+   <Parameter name="p19" label="LOG6_DEROG"/>
+   <Parameter name="p20" label="LOG5_DELINQ"/>
+   <Parameter name="p21" label="LOG_VALUE"/>
+  </ParameterList>
+  <FactorList/>
+  <CovariateList>
+   <Predictor name="TIN_IMO_REASON_DebtCon"/>
+   <Predictor name="TIN_IMO_REASON_HomeImp"/>
+   <Predictor name="TIN_IZR_JOB_Mgr"/>
+   <Predictor name="TIN_IZR_JOB_Office"/>
+   <Predictor name="TIN_IZR_JOB_Other"/>
+   <Predictor name="TIN_IZR_JOB_ProfExe"/>
+   <Predictor name="TIN_IZR_JOB_Sales"/>
+   <Predictor name="TIN_IZR_JOB_Self"/>
+   <Predictor name="TIN_IZR_JOB_Missing"/>
+   <Predictor name="R01_LOAN"/>
+   <Predictor name="IMN_R01_MORTDUE"/>
+   <Predictor name="IMN_R01_VALUE"/>
+   <Predictor name="IMN_R01_YOJ"/>
+   <Predictor name="IMN_R01_DEROG"/>
+   <Predictor name="IMN_R01_DELINQ"/>
+   <Predictor name="IMN_R01_CLAGE"/>
+   <Predictor name="IMN_R01_NINQ"/>
+   <Predictor name="IMN_R01_CLNO"/>
+   <Predictor name="LOG6_DEROG"/>
+   <Predictor name="LOG5_DELINQ"/>
+   <Predictor name="LOG_VALUE"/>
+  </CovariateList>
+  <PPMatrix>
+   <PPCell value="1" predictorName="TIN_IMO_REASON_DebtCon" parameterName="p1"/>
+   <PPCell value="1" predictorName="TIN_IMO_REASON_HomeImp" parameterName="p2"/>
+   <PPCell value="1" predictorName="TIN_IZR_JOB_Mgr" parameterName="p3"/>
+   <PPCell value="1" predictorName="TIN_IZR_JOB_Office" parameterName="p4"/>
+   <PPCell value="1" predictorName="TIN_IZR_JOB_Other" parameterName="p5"/>
+   <PPCell value="1" predictorName="TIN_IZR_JOB_ProfExe" parameterName="p6"/>
+   <PPCell value="1" predictorName="TIN_IZR_JOB_Sales" parameterName="p7"/>
+   <PPCell value="1" predictorName="TIN_IZR_JOB_Self" parameterName="p8"/>
+   <PPCell value="1" predictorName="TIN_IZR_JOB_Missing" parameterName="p9"/>
+   <PPCell value="1" predictorName="R01_LOAN" parameterName="p10"/>
+   <PPCell value="1" predictorName="IMN_R01_MORTDUE" parameterName="p11"/>
+   <PPCell value="1" predictorName="IMN_R01_VALUE" parameterName="p12"/>
+   <PPCell value="1" predictorName="IMN_R01_YOJ" parameterName="p13"/>
+   <PPCell value="1" predictorName="IMN_R01_DEROG" parameterName="p14"/>
+   <PPCell value="1" predictorName="IMN_R01_DELINQ" parameterName="p15"/>
+   <PPCell value="1" predictorName="IMN_R01_CLAGE" parameterName="p16"/>
+   <PPCell value="1" predictorName="IMN_R01_NINQ" parameterName="p17"/>
+   <PPCell value="1" predictorName="IMN_R01_CLNO" parameterName="p18"/>
+   <PPCell value="1" predictorName="LOG6_DEROG" parameterName="p19"/>
+   <PPCell value="1" predictorName="LOG5_DELINQ" parameterName="p20"/>
+   <PPCell value="1" predictorName="LOG_VALUE" parameterName="p21"/>
+  </PPMatrix>
+  <ParamMatrix>
+   <PCell parameterName="p0" df="1" beta="-1.49786052275209"/>
+   <PCell parameterName="p1" df="1" beta="-0.239668692936379"/>
+   <PCell parameterName="p3" df="1" beta="1.37932908138322"/>
+   <PCell parameterName="p4" df="1" beta="0.775391491255473"/>
+   <PCell parameterName="p5" df="1" beta="1.44907154775426"/>
+   <PCell parameterName="p6" df="1" beta="1.40707813621254"/>
+   <PCell parameterName="p7" df="1" beta="2.38272021895632"/>
+   <PCell parameterName="p8" df="1" beta="1.97738454381451"/>
+   <PCell parameterName="p10" df="1" beta="-1.98016770987421"/>
+   <PCell parameterName="p11" df="1" beta="-1.70893083156384"/>
+   <PCell parameterName="p12" df="1" beta="46.8834972899893"/>
+   <PCell parameterName="p13" df="1" beta="-0.610183852644824"/>
+   <PCell parameterName="p14" df="1" beta="4.47856184348009"/>
+   <PCell parameterName="p15" df="1" beta="7.37620839328494"/>
+   <PCell parameterName="p16" df="1" beta="-6.85708989347486"/>
+   <PCell parameterName="p17" df="1" beta="2.89418521536115"/>
+   <PCell parameterName="p18" df="1" beta="-0.296037079316927"/>
+   <PCell parameterName="p19" df="1" beta="0.390988196099627"/>
+   <PCell parameterName="p20" df="1" beta="1.8255237489947"/>
+   <PCell parameterName="p21" df="1" beta="-35.3593065292401"/>
+  </ParamMatrix>
+ </GeneralRegressionModel>
+</PMML>

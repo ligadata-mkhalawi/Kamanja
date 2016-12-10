@@ -27,6 +27,12 @@ SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 KAMANJA_HOME="$(dirname "$SCRIPT_DIR")"
 export KAMANJA_HOME=$KAMANJA_HOME
 INPUT=$@
+IS_START=`echo $1 | tr -s " "`
+IS_VERBOSE=false
+
+if [ "$2" == "-v" ]; then
+    IS_VERBOSE=true
+fi
 
 if [ "$1" == "debug" ]; then
     attachDebugger="true"
@@ -76,45 +82,57 @@ if [ "${array[0] }" = "edit" ]; then
   exit 0
 fi
 
+if [ ! -d "$KAMANJA_HOME/python/logs" ]; then
+    mkdir -p $KAMANJA_HOME/python/logs
+else
+    now=$(date +"%m_%d_%Y")
+    if [ ! -d $KAMANJA_HOME/python/logs/$now ]; then
+	mkdir -p $KAMANJA_HOME/python/logs/$now
+    fi
+    cnt=`ls $KAMANJA_HOME/python/logs/pythonserver.log* 2>/dev/null | wc -l`
+    if [ "$cnt" != "0" ]; then
+	mv -f $KAMANJA_HOME/python/logs/pythonserver.*  $KAMANJA_HOME/python/logs/$now
+    fi
+fi
+
 if [ "$INPUT" = "start webservice" ]; then
-echo "Starting web service . . . ."
+  echo "Starting web service . . . ."
+  java -Dlog4j.configurationFile=file:$KAMANJA_HOME/config/log4j2.xml -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.10-1.6.1.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.10-1.6.1.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.10-1.6.1.jar:$KAMANJA_HOME/lib/system/metadataapiservice_2.10-1.6.1.jar com.ligadata.metadataapiservice.APIService
 
-#java -jar $KAMANJA_HOME/bin/MetadataAPIService-1.0
-java -Dlog4j.configurationFile=file:$KAMANJA_HOME/config/log4j2.xml -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.10-1.5.3.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.10-1.5.3.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.10-1.5.3.jar:$KAMANJA_HOME/lib/system/metadataapiservice_2.10-1.5.3.jar com.ligadata.metadataapiservice.APIService
-elif [ "$INPUT" = "start -v" ]; then
-   $KAMANJA_HOME/bin/StartEngine.sh
+elif [ "$IS_START" == "start" ] && [ "$IS_VERBOSE" == true ]; then
+  $KAMANJA_HOME/bin/StartEngine.sh "$3"
 
-elif [ "$INPUT" = "start" ]; then
+elif [ "$IS_START" == "start" ] && [ "$IS_VERBOSE" == false ]; then
   if [ -f /tmp/kamanjastart.log ]; then
     rm /tmp/kamanjastart.log
     touch /tmp/kamanjastart.log
   fi
 
- nohup $KAMANJA_HOME/bin/StartEngine.sh >> $HOME/kamanjastart.log &
- echo "Kamanja engine started in background. Please check the engine log at /tmp/kamanjastart.log"
+  nohup $KAMANJA_HOME/bin/StartEngine.sh "$2" >> $HOME/kamanjastart.log &
+  echo "Kamanja engine started in background. Please check the engine log at /tmp/kamanjastart.log"
 elif [ "$INPUT" = "stop" ]; then
+  ID=`ps -ef | grep -i java | grep "com.ligadata.KamanjaManager.KamanjaManager" | tr -s " " | xargs | cut -d" " -f2`
+  echo "Stopping Kamanja with process id: $ID"
+  kill $ID
+  #  1063 Change begins - Ensure kamanja process killed
+  #    sleep 2
+  echo -n "Waiting Kamanja with process id: $ID to gracefully exit"
+  tries=0
+  while sleep 5; do
+    echo -n "."
     ID=`ps -ef | grep -i java | grep "com.ligadata.KamanjaManager.KamanjaManager" | tr -s " " | xargs | cut -d" " -f2`
-    echo "Stopping Kamanja with process id: $ID"
-    kill $ID
-    #  1063 Change begins - Ensure kamanja process killed
-    #    sleep 2
-    echo -n "Waiting Kamanja with process id: $ID to gracefully exit"
-    tries=0
-    while sleep 5; do
-        echo -n "."
-        ID=`ps -ef | grep -i java | grep "com.ligadata.KamanjaManager.KamanjaManager" | tr -s " " | xargs | cut -d" " -f2`
-        if [ "$ID" = "" ]; then
-            echo "."
-            echo "Kamanja successfully stopped"
-            exit 0
-        fi
-        tries=`expr $tries + 1`
-        if [ "$tries" -gt 11 ] ; then
-            kill -9 $ID
-            echo "Kamanja stopped"
-            exit 0
-        fi
-    done
+    if [ "$ID" = "" ]; then
+      echo "."
+      echo "Kamanja successfully stopped"
+      exit 0
+    fi
+    tries=`expr $tries + 1`
+    if [ "$tries" -gt 11 ] ; then
+      kill -9 $ID
+      echo "Kamanja stopped"
+      exit 0
+    fi
+  done
     #  1063 Change ends
     # The following code should never execute but let it be there for defensive reasons.
     ID=`ps -ef | grep -i java | grep "com.ligadata.KamanjaManager.KamanjaManager" | tr -s " " | xargs | cut -d" " -f2`
@@ -134,7 +152,7 @@ elif [ "$INPUT" = "watch output queue" ]; then
 elif [ "$INPUT" = "watch failed events queue" ]; then
   $KAMANJA_HOME/bin/WatchFailedEventQueue.sh
 elif [ "$INPUT" = "--version" ]; then
-  java -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.10-1.5.3.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.10-1.5.3.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.10-1.5.3.jar:$KAMANJA_HOME/lib/system/metadataapi_2.10-1.5.3.jar com.ligadata.MetadataAPI.StartMetadataAPI --version
+  java -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.10-1.6.1.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.10-1.6.1.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.10-1.6.1.jar:$KAMANJA_HOME/lib/system/metadataapi_2.10-1.6.1.jar com.ligadata.MetadataAPI.StartMetadataAPI --version
 elif [ "$INPUT" = "help" ]; then
 cat $KAMANJA_HOME/input/HelpMenu.txt
     echo ""
@@ -161,9 +179,9 @@ else
     if [ -n "$attachDebugger" ]; then
         ipport="8998"
 
-        java -Xdebug -Xrunjdwp:transport=dt_socket,address="$ipport",server=y -Dlog4j.configurationFile=file:$KAMANJA_HOME/config/log4j2.xml -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.10-1.5.3.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.10-1.5.3.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.10-1.5.3.jar:$KAMANJA_HOME/lib/system/metadataapi_2.10-1.5.3.jar com.ligadata.MetadataAPI.StartMetadataAPI "$@"
+        java -Xdebug -Xrunjdwp:transport=dt_socket,address="$ipport",server=y -Dlog4j.configurationFile=file:$KAMANJA_HOME/config/log4j2.xml -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.10-1.6.1.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.10-1.6.1.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.10-1.6.1.jar:$KAMANJA_HOME/lib/system/metadataapi_2.10-1.6.1.jar com.ligadata.MetadataAPI.StartMetadataAPI "$@"
     else
-        java -Dlog4j.configurationFile=file:$KAMANJA_HOME/config/log4j2.xml -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.10-1.5.3.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.10-1.5.3.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.10-1.5.3.jar:$KAMANJA_HOME/lib/system/metadataapi_2.10-1.5.3.jar com.ligadata.MetadataAPI.StartMetadataAPI "$@"
+        java -Dlog4j.configurationFile=file:$KAMANJA_HOME/config/log4j2.xml -cp $KAMANJA_HOME/lib/system/ExtDependencyLibs2_2.10-1.6.1.jar:$KAMANJA_HOME/lib/system/ExtDependencyLibs_2.10-1.6.1.jar:$KAMANJA_HOME/lib/system/KamanjaInternalDeps_2.10-1.6.1.jar:$KAMANJA_HOME/lib/system/metadataapi_2.10-1.6.1.jar com.ligadata.MetadataAPI.StartMetadataAPI "$@"
 
     fi
 fi

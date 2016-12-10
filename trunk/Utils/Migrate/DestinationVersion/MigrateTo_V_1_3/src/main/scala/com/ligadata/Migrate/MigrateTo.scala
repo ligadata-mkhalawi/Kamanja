@@ -1345,7 +1345,10 @@ class MigrateTo_V_1_3 extends MigratableTo {
   }
 
   override def createMetadataTables(): Unit = {
-    logger.info("Not applicable for 1.3 migration")
+    throw new Exception("Not applicable when migrating to 1.3")
   }
 
+  override def uploadClusterConfig(): Unit = {
+    throw new Exception("Not applicable when migrating to 1.3")
+  }
 }

@@ -1,4 +1,4 @@
-name := "MigrateTo_V_1_5_0"
+name := "MigrateTo_V_1_5"
 
 resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 
@@ -34,5 +34,5 @@ libraryDependencies ++= Seq(
   "org.apache.curator" % "curator-recipes" % "2.6.0"
 )
 
-coverageExcludedPackages := "com.ligadata.Migrate.MigrateTo_V_1_5_0"
+coverageExcludedPackages := "com.ligadata.Migrate.MigrateTo_V_1_5"
 

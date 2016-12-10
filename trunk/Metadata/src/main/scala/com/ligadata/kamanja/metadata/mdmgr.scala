@@ -2192,7 +2192,8 @@ class MdMgr {
     * @param supportsInstanceSerialization when true, instances of this model are serialized and persisted in the metadata store, saving startup costs
     *                                      required to prepare new instances.  NOTE: this feature is **not** implemented, but will prove useful for reducing
     *                                      cluster startup costs for PMML models in particular when it **is**.
-    * @param modelConfig                   - Any extract configuration for this model (like config for JAVA/SCALA models etc)
+    * @param modelConfig                   Any extract configuration for this model (like config for JAVA/SCALA models etc)
+    * @param moduleName                    For Python and Jython, the names of the module file (the stem of it) sans .py
     * @return the ModelDef instance
     *
     */
@@ -2212,7 +2213,8 @@ class MdMgr {
                    , depJars: Array[String] = null
                    , recompile: Boolean = false
                    , supportsInstanceSerialization: Boolean = false
-                   , modelConfig: String = ""
+                   , modelConfig: String = "{}"
+                   , moduleName: String = ""
                    , depContainers: Array[String] = null): ModelDef = {
 
     /** Determine model existence constraints and throw exception if they are not met */
@@ -2247,6 +2249,7 @@ class MdMgr {
       , isReusable
       , supportsInstanceSerialization
       , modelConfig
+      , moduleName
       , depContainers)
 
     /** FIXME: All of the statements down to the return of the ModelDef instance really should be just arguments
@@ -2266,6 +2269,7 @@ class MdMgr {
       */
     if (mdl.modelRepresentation == ModelRepresentation.PMML)
       mdl.ObjectFormat(ObjFormatType.fPMML)
+
     mdl.PhysicalName(physicalName)
     mdl.tenantId = tenantId
     SetBaseElem(mdl, nameSpace, name, ver, jarNm, dJars, ownerId, tenantId, uniqueId, mdElementId)
@@ -2985,12 +2989,33 @@ class MdMgr {
     * @param ver                           - a long... the version number assigned to this model ... by default '1'
     * @param jarNm                         - the name of the jar sans path.  The path is prescribed by the engine configuration
     * @param depJars                       - the jars upon which the jarNm depends in order to execute
+    * @param modelConfig                   - model specific options that are utilized by model instance at intialiazation and during exec as needed
+    * @param moduleName                    - for python/jython models, the module name of the model
+    * @param depContainers                 - the containers that are required by the model
     * @return the ModelDef instance as a measure of convenience
     *
     */
-  def AddModelDef(nameSpace: String, name: String, physicalName: String, modelRep: ModelRepresentation.ModelRepresentation, inputMsgSets: Array[Array[MessageAndAttributes]], outputMsgs: Array[String],
-                  isReusable: Boolean, objectDefStr: String, miningModelType: MiningModelType.MiningModelType, ownerId: String, tenantId: String, uniqueId: Long, mdElementId: Long, ver: Long = 1, jarNm: String = null, depJars: Array[String] = Array[String](), modelConfig: String = "",depContainers: Array[String] = Array[String]()): Unit = {
-    AddModelDef(MakeModelDef(nameSpace, name, physicalName, ownerId, tenantId, uniqueId, mdElementId, modelRep,  inputMsgSets, outputMsgs, isReusable, objectDefStr, miningModelType, ver, jarNm, depJars, false, false, modelConfig,depContainers), false)
+  def AddModelDef(nameSpace: String
+                  , name: String
+                  , physicalName: String
+                  , modelRep: ModelRepresentation.ModelRepresentation
+                  , inputMsgSets: Array[Array[MessageAndAttributes]]
+                  , outputMsgs: Array[String]
+                  , isReusable: Boolean
+                  , objectDefStr: String
+                  , miningModelType: MiningModelType.MiningModelType
+                  , ownerId: String
+                  , tenantId: String
+                  , uniqueId: Long
+                  , mdElementId: Long
+                  , ver: Long = 1
+                  , jarNm: String = null
+                  , depJars: Array[String] = Array[String]()
+                  , modelConfig: String = ""
+                  , moduleName: String = ""
+                  , depContainers: Array[String] = Array[String]()
+                 ): Unit = {
+    AddModelDef(MakeModelDef(nameSpace, name, physicalName, ownerId, tenantId, uniqueId, mdElementId, modelRep,  inputMsgSets, outputMsgs, isReusable, objectDefStr, miningModelType, ver, jarNm, depJars, false, false, modelConfig, moduleName, depContainers), false)
   }
 
   def AddModelDef(mdl: ModelDef, allowLatestVersion: Boolean): Unit = {
@@ -3126,7 +3151,7 @@ class MdMgr {
   def GetUserProperty(clusterId: String, key: String): String = {
     if (configurations.contains(clusterId)) {
       val upi: scala.collection.mutable.HashMap[String, String] = configurations(clusterId).Props
-      return upi.get(key).getOrElse("")
+      return (upi.get(key).getOrElse("")).asInstanceOf[String]
     }
     return ""
   }
@@ -3179,7 +3204,8 @@ class MdMgr {
 
   /**
       * Construct a SerializeDeserializeConfig instance and add it to the metadata.
-      * @param nameSpace the namespace for this SerializeDeserializeConfig
+    *
+    * @param nameSpace the namespace for this SerializeDeserializeConfig
       * @param name its serializer name
       * @param version its serializer version
       * @param serializerType the serializer type
@@ -3219,6 +3245,7 @@ class MdMgr {
 
     /**
       * Add a SerializeDeserializeConfig instance to the map designated to hold them.
+      *
       * @param config the prepared SerializeDeserializeConfig object
       * @return true if the object was added to the map (exception is thrown if one exists with this name)
       */
@@ -3235,6 +3262,7 @@ class MdMgr {
 
     /**
       * Construct a SerializeDeserializeConfig from the supplied arguments.
+      *
       * @param nameSpace the namespace for this SerializeDeserializeConfig
       * @param name its serializer name
       * @param version its serializer version
@@ -3323,6 +3351,7 @@ class MdMgr {
 
     /**
       * Make an AdapterMessageBinding instance
+      *
       * @param adapterName the adapter's name
       * @param namespaceMsgName the message that can be consumed by the specified serializer
       * @param namespaceSerializerName the serializer that can deserialize and serialize the message
@@ -3441,6 +3470,7 @@ class MdMgr {
 
   /**
     * GetUserProperty - return a String value of a User Property
+    *
     * @param key: String
     */
   def GetUserProperty(key: String): UserPropertiesInfo = {
