@@ -182,6 +182,32 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     }
   }
 
+  private def removeCacheListener(listenPath: String): Unit = {
+    if (listenPath == null || listenPath.size == 0 /* || listenPath.trim.size == 0 */ ) {
+      return
+    }
+
+    WriteLock(_cacheListener_reent_lock)
+    try {
+      if (_listenerCache != null) {
+        var i = 0
+        var prevListener: ReturnCacheListenerCallback = null
+        while (i < _cacheListeners.size && prevListener == null) {
+          if (_cacheListeners(i).listenPath.compareTo(listenPath) == 0) {
+            prevListener = _cacheListeners.remove(i)
+          }
+          i += 1
+        }
+      }
+    } catch {
+      case e: Throwable => {
+        throw e
+      }
+    } finally {
+      WriteUnlock(_cacheListener_reent_lock)
+    }
+  }
+
   private def getMatchedCacheListeners(key: String): Array[ReturnCacheListenerCallback] = {
     var matchedListerners = Array[ReturnCacheListenerCallback]()
     ReadLock(_cacheListener_reent_lock)
@@ -1997,6 +2023,10 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     */
   }
 
+  override def removeListenerForCacheKey(listenPath: String): Unit = {
+    removeCacheListener(listenPath)
+  }
+
   // listenPath is the Path where it has to listen and its children
   //    Ex: If we start watching /kamanja/nodification/ all the following puts/updates/removes/etc will notify callback
   //    /kamanja/nodification/node1/1 or /kamanja/nodification/node1/2 or /kamanja/nodification/node1 or /kamanja/nodification/node2 or /kamanja/nodification/node3 or /kamanja/nodification/node4
@@ -2013,6 +2043,10 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
         }
         createZkPathChildrenCacheListener(listenPath, false, sendOne)
     */
+  }
+
+  override def removeListenerForCacheChildern(listenPath: String): Unit = {
+    removeCacheListener(listenPath)
   }
 
   override def getClusterInfo(): ClusterStatus = _clusterStatusInfo

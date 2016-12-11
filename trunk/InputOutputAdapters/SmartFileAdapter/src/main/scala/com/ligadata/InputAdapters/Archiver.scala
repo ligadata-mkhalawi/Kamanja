@@ -1170,7 +1170,6 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
   var isShutdown = false
 
   def shutdown(): Unit ={
-
     isShutdown = true
 
     if(adapterConfig.archiveConfig == null)
