@@ -113,7 +113,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
       |  "replicateUpdates": "true",
       |  "replicateUpdatesViaCopy": "true",
       |  "replicateRemovals": "true",
-      |  "replicateAsynchronously": "true",
+      |  "replicateAsynchronously": "false",
       |  "CacheConfig": {
       |    "maxBytesLocalHeap": "%d",
       |    "eternal": "false",
