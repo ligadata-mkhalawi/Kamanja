@@ -1020,6 +1020,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
 
     if (_simpleEnvContextActorSystem != null)
       _simpleEnvContextActorSystem.shutdown()
+    _simpleEnvContextActorSystem = null
 
     if (_listenerCache != null) {
       try {
