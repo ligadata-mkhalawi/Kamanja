@@ -385,17 +385,18 @@ class KamanjaManager extends Observer {
         override def run() {
           val tp = execCtxtsCommitPartitionOffsetPool
           val commitOffsetsTimeInterval = KamanjaConfiguration.commitOffsetsTimeInterval
-          while (! tp.isShutdown) {
+          while (! tp.isShutdown && ! tp.isTerminated) {
             try {
               Thread.sleep(commitOffsetsTimeInterval + 1000) // Sleeping 1000ms more than given interval
             } catch {
+              case e: InterruptedException => {}
               case e: Throwable => {}
             }
             if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
               val envCtxts = GetEnvCtxts
               if (LOG.isDebugEnabled()) LOG.debug("Running CommitPartitionOffsetIfNeeded for " + envCtxts.length + " envCtxts")
               var idx = 0
-              while (idx < envCtxts.length && ! tp.isShutdown) {
+              while (idx < envCtxts.length && ! tp.isShutdown && ! tp.isTerminated) {
                 try {
                   envCtxts(idx).CommitPartitionOffsetIfNeeded
                 } catch {
