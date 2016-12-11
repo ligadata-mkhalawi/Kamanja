@@ -229,7 +229,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
   }
 
   val archiveParallelism = if (adapterConfig.archiveConfig == null || adapterConfig.archiveConfig.archiveParallelism <= 0) 1 else adapterConfig.archiveConfig.archiveParallelism
-  val archiveSleepTimeInMs = if (adapterConfig.archiveConfig == null || adapterConfig.archiveConfig.archiveSleepTimeInMs < 0) 100 else adapterConfig.archiveConfig.archiveSleepTimeInMs
+  val archiveSleepTimeInMs = if (adapterConfig.archiveConfig == null || adapterConfig.archiveConfig.archiveSleepTimeInMs < 0) 500 else adapterConfig.archiveConfig.archiveSleepTimeInMs
 
   private var archiveExecutor : ExecutorService = null
 
@@ -284,7 +284,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
                 }
                 else {
                   logger.debug("no files in archive queue")
-                  if (archiveSleepTimeInMs > 0)
+                  if (archiveSleepTimeInMs > 0 && !isInterrupted)
                     interruptedVal = smartFileConsumer.sleepMs(archiveSleepTimeInMs)
                 }
               } catch {
@@ -311,7 +311,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
         var interruptedVal = false
         val nSleepSecs = archiveRolloverCheckSleepMS / 1000
         val nSleepMilliSecs = archiveRolloverCheckSleepMS % 1000
-        while (!interruptedVal && !isShutdown) {
+        while (!interruptedVal && !isInterrupted) {
           try {
             checkRolloverDueFiles()
             var cntr = 0
@@ -1226,9 +1226,10 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
     if (archiveExecutor != null)
       archiveExecutor.shutdownNow()
 
+    archiveExecutor = null
+
     forceFlushAllArchiveDirs()
 
-    archiveExecutor = null
     archiveInfoList.clear()
     archiveDirsStatusMap_lock.synchronized {
       if(archiveDirsStatusMap != null)
