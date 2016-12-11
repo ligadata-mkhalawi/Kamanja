@@ -222,7 +222,7 @@ public class KafkaAdapter implements Observer {
                         adapter.prevIsThisNodeToProcess = curIsThisNodeToProcess;
                         adapter.run();
                     }
-                    Thread.sleep(100);
+                    Thread.sleep(1000);
                 } catch (Exception e) {
                     logger.info("Main thread is interrupted.\n", e);
                     adapter.shutdownTriggerCounter.incrementAndGet();
@@ -258,6 +258,7 @@ public class KafkaAdapter implements Observer {
                             adapter.shutdownTriggerCounter.addAndGet(-1 * adapter.shutdownTriggerCounter.get());
                         }
                     }
+                    Thread.sleep(1000);
                 } catch (Exception e) {
                     logger.info("Main thread is interrupted.\n", e);
                     adapter.shutdownTriggerCounter.incrementAndGet();
