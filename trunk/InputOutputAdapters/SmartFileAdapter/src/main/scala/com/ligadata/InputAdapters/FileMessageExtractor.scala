@@ -409,7 +409,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
             val msgOffset = globalOffset + newMsg.length + message_separator_len //byte offset of next message in the file
             //println(">>>>>>>>>>>>>msg found:" + new String(newMsg))
 
-            val smartFileMessage = new SmartFileMessage(newMsg, msgOffset, fileHandler, currentMsgNum)
+            val smartFileMessage = new SmartFileMessage(newMsg, msgOffset, fileHandler, currentMsgNum, globalOffset)
             messageFoundCallback(smartFileMessage, consumerContext)
 
             //}
