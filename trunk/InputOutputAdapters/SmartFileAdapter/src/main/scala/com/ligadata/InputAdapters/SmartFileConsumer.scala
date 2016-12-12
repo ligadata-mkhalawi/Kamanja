@@ -1008,7 +1008,6 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   //   and if there is file needs processing
   //if all conditions met then assign a file to first request in the queue
   private def assignFileProcessingIfPossible(): Unit = {
-
     if (isShutdown || !IsLeaderNode)
       return
 
@@ -1017,7 +1016,9 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       if (hasPendingFileRequestsInQueue) {
         processingQLock.synchronized {
           var canAssignedReq = true
-          while (canAssignedReq && hasPendingFileRequestsInQueue && getFileProcessingQSize < adapterConfig.monitoringConfig.consumersCount) {
+          var loopCntr = 0
+          while (canAssignedReq && hasPendingFileRequestsInQueue && getFileProcessingQSize < adapterConfig.monitoringConfig.consumersCount && loopCntr < 128) {
+            loopCntr += 1
             val request = getNextFileRequestFromQueue //take first request
             if (request != null) {
               LOG.debug("Smart File Consumer - finished call to saveFileRequestsQueue, from assignFileProcessingIfPossible")
