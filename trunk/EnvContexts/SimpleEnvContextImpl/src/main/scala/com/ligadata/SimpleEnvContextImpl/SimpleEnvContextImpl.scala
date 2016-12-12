@@ -76,7 +76,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
       |    log-dead-letters = 0
       |    log-dead-letters-during-shutdown = off
       |
-      |    loglevel = "WARN"
+      |    loglevel = "INFO"
       |    actor
       |    {
       |        provider = "akka.remote.RemoteActorRefProvider"
@@ -1973,7 +1973,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     _listenerConfigClusterCache = aclass.asInstanceOf[DataCache]
     _listenerConfigClusterCache.init(cacheCfg, listenCallback)
     _listenerConfigClusterCache.start()
-
+/*
     if (_cacheConfigWorkerPool == null) {
       var foundLocalNodeId = false
       var NodeIp: String = ""
@@ -1998,6 +1998,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     }
     if (_cacheConfigWorkerPool != null)
       _cacheConfigWorkerPool.SetListenerConfigClusterCache(_listenerConfigClusterCache)
+    */
   }
 
   override def setDataToZNode(zNodePath: String, value: Array[Byte]): Unit = {

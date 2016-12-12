@@ -442,11 +442,11 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                 }
               })
 
-              logger.warn("assignFilesToRequestThread: leaderCallbackRequests:%d, ReqQ:%d, ProcessingQ:%d".format(leaderCallbackRequests.size, fileRequestsQueue.size, processingFilesQueue.size));
+              if (logger.isDebugEnabled) logger.debug("assignFilesToRequestThread: leaderCallbackRequests:%d, ReqQ:%d, ProcessingQ:%d".format(leaderCallbackRequests.size, fileRequestsQueue.size, processingFilesQueue.size));
 
               assignFileProcessingIfPossible()
               try {
-                Thread.sleep(100)
+                Thread.sleep(5)
               } catch {
                 case e: Throwable => {
                 }
@@ -953,7 +953,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       val startTm = System.currentTimeMillis
       envContext.setListenerCacheKey(eventPath, "") //clear it. TODO : find a better way
       addLeaderCallbackRequest(0, eventType, eventPath, eventPathData)
-      LOG.warn("requestFileLeaderCallback took:%d ms for eventType:%s, eventPath:%s, eventPathData:%s".format(System.currentTimeMillis - startTm, eventType, eventPath, eventPathData))
+      if (LOG.isDebugEnabled) LOG.debug("requestFileLeaderCallback took:%d ms for eventType:%s, eventPath:%s, eventPathData:%s".format(System.currentTimeMillis - startTm, eventType, eventPath, eventPathData))
       //should do anything for remove?
     }
   }
@@ -1244,7 +1244,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     if (eventPathData != null && !isShutdown && IsLeaderNode) {
       val startTm = System.currentTimeMillis
       addLeaderCallbackRequest(1, eventType, eventPath, eventPathData)
-      LOG.warn("fileProcessingLeaderCallback took:%d ms for eventType:%s, eventPath:%s, eventPathData:%s".format(System.currentTimeMillis - startTm, eventType, eventPath, eventPathData))
+      if (LOG.isDebugEnabled) LOG.debug("fileProcessingLeaderCallback took:%d ms for eventType:%s, eventPath:%s, eventPathData:%s".format(System.currentTimeMillis - startTm, eventType, eventPath, eventPathData))
     }
   }
 
