@@ -133,7 +133,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
       val host = leaderNodeIp + ":" + leaderNodePort
       val curTime = System.currentTimeMillis
       val runner = context.actorSelection("akka.tcp://SimpleEnvContextActorSystem@" + host + "/user/SimpleEnvContextWorkerPool")
-      if (logger.isDebugEnabled) logger.debug("AKKA::::SendingKey:" + key + " at:" + curTime)
+      if (logger.isWarnEnabled) logger.warn("AKKA::::SendingKey:" + key + " at:" + curTime)
       runner ! PutCacheConfig(key, value, curTime)
     }
 
@@ -147,7 +147,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
             var timeTaken = curTime - sentTime
             if (timeTaken < 0)
               timeTaken = 0
-            if (timeTaken > 5000 && logger.isWarnEnabled())
+            if (/* timeTaken > 5000 && */ logger.isWarnEnabled())
               logger.warn("AKKA::::ReceivedKey:" + key + " at:" + curTime + " which is sent at:" + sentTime + ", TimeTaken:" + timeTaken)
             else if (logger.isDebugEnabled)
               logger.debug("AKKA::::ReceivedKey:" + key + " at:" + curTime + " which is sent at:" + sentTime + ", TimeTaken:" + timeTaken)
