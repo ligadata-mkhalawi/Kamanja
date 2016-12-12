@@ -784,6 +784,15 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     }
   }
 
+  def getNextFileRequestFromQueue: String = {
+    requestQLock.synchronized {
+      if (fileRequestsQueue.size == 0) return null
+      val retVal = fileRequestsQueue(0)
+      fileRequestsQueue.remove(0)
+      retVal
+    }
+  }
+
   def addToRequestQueue(request: String, addToHead: Boolean = false): Unit = {
     requestQLock.synchronized {
 
@@ -864,6 +873,13 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         List()
       }
       */
+    }
+  }
+
+  //value for file processing queue in cache has the format <node1>/<thread1>:<filename>|<node2>/<thread1>:<filename>
+  def getFileProcessingQSize: Int = {
+    processingQLock.synchronized {
+      processingFilesQueue.size
     }
   }
 
@@ -999,34 +1015,27 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
     if (initialFilesHandled) {
       LOG.debug("Smart File Consumer - Leader is checking if it is possible to assign a new file to process")
-
       if (hasPendingFileRequestsInQueue) {
-        requestQLock.synchronized {
-          if (hasPendingFileRequestsInQueue) {
-            var processingQueue = getFileProcessingQueue
-            val requestQueue = getFileRequestsQueue
+        processingQLock.synchronized {
+          while (hasPendingFileRequestsInQueue && getFileProcessingQSize < adapterConfig.monitoringConfig.consumersCount) {
+            val request = getNextFileRequestFromQueue //take first request
+            if (request != null) {
+              LOG.debug("Smart File Consumer - finished call to saveFileRequestsQueue, from assignFileProcessingIfPossible")
+              var requestAssigned = false
+              var duplicateRequest = false
 
-            //there are ndoes/threads ready to process
-            val request = requestQueue.head //take first request
-            removeFromRequestQueue(request)
-            LOG.debug("Smart File Consumer - finished call to saveFileRequestsQueue, from assignFileProcessingIfPossible")
-            var requestAssigned = false
-            var duplicateRequest = false
+              //since a request in cache has the format <node1>/<thread1>:<path to receive files>|<node2>/<thread1>:<path to receive files>
+              val requestTokens = request.split(":")
+              val fileToProcessKeyPath = requestTokens(1) //something like SmartFileCommunication/FromLeader/<NodeId>/<thread id>
+              val requestNodeInfoTokens = requestTokens(0).split("/")
+              val requestingNodeId = requestNodeInfoTokens(0)
+              val requestingThreadId = requestNodeInfoTokens(1)
 
-            //since a request in cache has the format <node1>/<thread1>:<path to receive files>|<node2>/<thread1>:<path to receive files>
-            val requestTokens = request.split(":")
-            val fileToProcessKeyPath = requestTokens(1) //something like SmartFileCommunication/FromLeader/<NodeId>/<thread id>
-            val requestNodeInfoTokens = requestTokens(0).split("/")
-            val requestingNodeId = requestNodeInfoTokens(0)
-            val requestingThreadId = requestNodeInfoTokens(1)
-
-            LOG.info("Smart File Consumer - currently " + processingQueue.length + " File(s) are being processed")
-            LOG.info("Smart File Consumer - Maximum processing ops is " + adapterConfig.monitoringConfig.consumersCount)
-
-            processingQLock.synchronized {
+              LOG.info("Smart File Consumer - currently " + getFileProcessingQSize + " File(s) are being processed")
+              LOG.info("Smart File Consumer - Maximum processing ops is " + adapterConfig.monitoringConfig.consumersCount)
               //check if it is allowed to process one more file
 
-              if (processingQueue.length < adapterConfig.monitoringConfig.consumersCount) {
+              if (getFileProcessingQSize < adapterConfig.monitoringConfig.consumersCount) {
                 if (isPartitionInProcessingQueue(requestingThreadId.toInt)) {
                   duplicateRequest = true
                   logger.info("assignFileProcessingIfPossible : Partition {} is requesting to process file {} but already in processing queue",
@@ -1071,12 +1080,12 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                 LOG.info("Smart File Consumer - Cannot assign anymore files to process")
               }
 
-            }
 
-            //if request was not handled, must get it back to request queue
-            //FIXME : find a better way to sync instead of removing and adding back
-            if (!requestAssigned && !duplicateRequest)
-              addToRequestQueue(request, true)
+              //if request was not handled, must get it back to request queue
+              //FIXME : find a better way to sync instead of removing and adding back
+              if (!requestAssigned && !duplicateRequest)
+                addToRequestQueue(request, true)
+            }
           }
         }
       }
