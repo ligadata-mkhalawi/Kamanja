@@ -496,7 +496,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
               }
             }
           }
-          logger.warn("Done assignFilesToRequestThread"));
+          logger.warn("Done assignFilesToRequestThread");
         }
       }
       keepCheckingStatus = true
