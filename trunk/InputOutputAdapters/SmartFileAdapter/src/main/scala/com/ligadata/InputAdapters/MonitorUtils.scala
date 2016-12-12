@@ -27,6 +27,9 @@ object MonitorUtils {
   lazy val logger = LogManager.getLogger(loggerName)
 
 
+  var adaptersSessions = scala.collection.mutable.Map[String, scala.collection.mutable.Map[Int, String]]()
+  var adaptersChannels = scala.collection.mutable.Map[String, scala.collection.mutable.Map[Int, String]]()
+
   //Default allowed content types -
   val validContentTypes  = Set(PLAIN, GZIP, BZIP2, LZO) //might change to get that from some configuration
 
@@ -274,7 +277,7 @@ object MonitorUtils {
 
   def getCallStack() : String = {
     if(showStackTraceWithLogs) {
-      val callstack = Thread.currentThread().getStackTrace().drop(2).take(25).
+      val callstack = Thread.currentThread().getStackTrace().drop(2).take(5).
         map(s => s.getClassName + "." + s.getMethodName + "(" + s.getLineNumber + ")").mkString("\n")
       " Callstack is: " + callstack
     }
@@ -413,7 +416,7 @@ object SmartFileHandlerFactory{
     val handler : SmartFileHandler =
       adapterConfig._type.toLowerCase() match {
         case "das/nas" => new PosixFileHandler(fileFullPath, monitoringConf, isBinary)
-        case "sftp" => new SftpFileHandler(fileFullPath, connectionConf, monitoringConf, isBinary)
+        case "sftp" => new SftpFileHandler(adapterConfig.Name, fileFullPath, connectionConf, monitoringConf, isBinary)
         case "hdfs" => new HdfsFileHandler(fileFullPath, connectionConf, monitoringConf, isBinary)
         case _ => throw new KamanjaException("Unsupported Smart file adapter type", null)
       }

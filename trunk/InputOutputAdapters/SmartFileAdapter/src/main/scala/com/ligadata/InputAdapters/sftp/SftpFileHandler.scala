@@ -57,17 +57,19 @@ class SftpFileHandler extends SmartFileHandler{
   private var jsch : JSch = null
   private var isShutdown = false
 
+  private var adapterName = ""
   private var ui : SftpUserInfo = null
 
   private var isBinary: Boolean = false
 
   private var fileType : String = null
 
-  def this(path : String, connectionConfig : FileAdapterConnectionConfig, monitoringConfig: FileAdapterMonitoringConfig){
+  def this(adapterName : String, path : String, connectionConfig : FileAdapterConnectionConfig, monitoringConfig: FileAdapterMonitoringConfig){
     this()
     this.remoteFullPath = path
     this.connectionConfig = connectionConfig
     this.monitoringConfig = monitoringConfig
+    this.adapterName = adapterName
 
     passphrase = if (connectionConfig.keyFile != null && connectionConfig.keyFile.length > 0)
       connectionConfig.passphrase else null
@@ -84,9 +86,9 @@ class SftpFileHandler extends SmartFileHandler{
     ui = new SftpUserInfo(connectionConfig.password, passphrase)
   }
 
-  def this(fullPath : String, connectionConfig : FileAdapterConnectionConfig,
+  def this(adapterName : String, fullPath : String, connectionConfig : FileAdapterConnectionConfig,
            monitoringConfig: FileAdapterMonitoringConfig, isBin: Boolean) {
-    this(fullPath, connectionConfig, monitoringConfig)
+    this(adapterName, fullPath, connectionConfig, monitoringConfig)
     isBinary = isBin
 
   }
@@ -96,8 +98,9 @@ class SftpFileHandler extends SmartFileHandler{
       session = jsch.getSession(connectionConfig.userId, host, port)
       session.setUserInfo(ui)
       session.connect()
-
-
+      if(!MonitorUtils.adaptersSessions.contains(adapterName))
+        MonitorUtils.adaptersSessions.put(adapterName, scala.collection.mutable.Map[Int, String]())
+      MonitorUtils.adaptersSessions(adapterName).put(session.hashCode(), MonitorUtils.getCallStack())
       //logger.warn("new sftp session is opened session=" + session + ". " + MonitorUtils.getCallStack())
     }
 
@@ -106,6 +109,9 @@ class SftpFileHandler extends SmartFileHandler{
       channel.connect()
       channelSftp = channel.asInstanceOf[ChannelSftp]
 
+      if(!MonitorUtils.adaptersChannels.contains(adapterName))
+        MonitorUtils.adaptersChannels.put(adapterName, scala.collection.mutable.Map[Int, String]())
+      MonitorUtils.adaptersChannels(adapterName).put(channelSftp.hashCode(), MonitorUtils.getCallStack())
       //logger.warn("new channelSftp is opened channelSftp=" + channelSftp + ". " + MonitorUtils.getCallStack())
     }
   }
@@ -626,8 +632,21 @@ class SftpFileHandler extends SmartFileHandler{
       //logger.warn("Closing SFTP session from disconnect(). original file path is %s. channel=%s , session=%s".
         //format(getFullPath , channelSftp, session) + MonitorUtils.getCallStack())
 
-      if(channelSftp != null) channelSftp.exit()
-      if(session != null) session.disconnect()
+      if(channelSftp != null) {
+        channelSftp.exit()
+
+        if(!MonitorUtils.adaptersChannels.contains(adapterName))
+          logger.error("no registered channels for adapter {} though it is expected", adapterName)
+        else
+          MonitorUtils.adaptersChannels(adapterName).remove(channelSftp.hashCode())
+      }
+      if(session != null) {
+        session.disconnect()
+        if(!MonitorUtils.adaptersSessions.contains(adapterName))
+          logger.error("no registered sessions for adapter {} though it is expected", adapterName)
+        else
+          MonitorUtils.adaptersSessions(adapterName).remove(session.hashCode())
+      }
 
       channelSftp = null
       session = null

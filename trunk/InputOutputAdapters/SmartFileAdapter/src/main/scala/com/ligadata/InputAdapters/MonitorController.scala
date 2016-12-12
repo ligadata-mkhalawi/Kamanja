@@ -324,8 +324,12 @@ class MonitorController {
                           if (diff > bufferTimeout) {
                             logger.warn("SMART FILE CONSUMER (MonitorController): Detected that " + filePath + " has been on the buffering queue longer then " + bufferTimeout / 1000 + " seconds - Cleaning up")
 
-                            if (currentFileLocationInfo.isMovingEnabled)
-                              parentSmartFileConsumer.moveFile(filePath)
+                            if (!isShutdown &&(currentFileLocationInfo == null ||currentFileLocationInfo.isMovingEnabled)) {
+                              try {
+                                parentSmartFileConsumer.moveFile(filePath)
+                              }
+                              catch{case e : Exception => }
+                            }
                             else
                               logger.info("SMART FILE CONSUMER (MonitorController): File {} will not be moved since moving is disabled for folder {} - Adapter {}",
                                 filePath, currentFileParentDir, adapterConfig.Name)
@@ -335,9 +339,12 @@ class MonitorController {
                           }
                         } else {
                           //Invalid File - due to content type
-                          if (currentFileLocationInfo.isMovingEnabled) {
+                          if (!isShutdown &&(currentFileLocationInfo == null || currentFileLocationInfo.isMovingEnabled)) {
                             logger.error("SMART FILE CONSUMER (MonitorController): Moving out " + filePath + " with invalid file type ")
-                            parentSmartFileConsumer.moveFile(filePath)
+                            try {
+                              parentSmartFileConsumer.moveFile(filePath)
+                            }
+                            catch{case e : Exception => }
                           }
                           else {
                             logger.info("SMART FILE CONSUMER (MonitorController): File {} has invalid file type but will not be moved since moving is disabled for folder {} - Adapter {}",
@@ -361,43 +368,49 @@ class MonitorController {
                   removedEntries += filePath
                 }
                 case ioe: IOException => {
-                  thisFileFailures += 1
-                  if (((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
-                    logger.warn("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + filePath + " on the buffering queue", ioe)
-                    try {
-                      if (currentFileLocationInfo.isMovingEnabled)
-                        parentSmartFileConsumer.moveFile(filePath)
-                      // bufferingQ_map.remove(fileTuple._1)
-                      removedEntries += filePath
-                    } catch {
-                      case e: Throwable => {
-                        logger.error("SMART_FILE_CONSUMER: Failed to move file, retyring", e)
+                  if(!isShutdown) {
+                    thisFileFailures += 1
+                    if (((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
+                      logger.warn("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + filePath + " on the buffering queue", ioe)
+                      try {
+                        removedEntries += filePath
+
+                        if (currentFileLocationInfo == null || currentFileLocationInfo.isMovingEnabled)
+                          parentSmartFileConsumer.moveFile(filePath)
+                        // bufferingQ_map.remove(fileTuple._1)
+                      } catch {
+                        case e: Throwable => {
+                          logger.error("SMART_FILE_CONSUMER: Failed to move file, retyring", e)
+                        }
                       }
+                    } else {
+                      //bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
+                      bufferingQ_map(filePath) = (currentMonitoredFile, thisFileFailures, isFirstScan)
+                      logger.warn("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue ", ioe)
                     }
-                  } else {
-                    //bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
-                    bufferingQ_map(filePath) = (currentMonitoredFile, thisFileFailures, isFirstScan)
-                    logger.warn("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue ", ioe)
                   }
                 }
                 case e: Throwable => {
-                  thisFileFailures += 1
-                  if (((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
-                    logger.error("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + filePath + " on the buffering queue", e)
-                    try {
-                      if (currentFileLocationInfo.isMovingEnabled)
-                        parentSmartFileConsumer.moveFile(filePath)
-                      // bufferingQ_map.remove(fileTuple._1)
-                      removedEntries += filePath
-                    } catch {
-                      case e: Throwable => {
-                        logger.error("SMART_FILE_CONSUMER (MonitorController): Failed to move file, retyring", e)
+                  if(!isShutdown) {
+                    thisFileFailures += 1
+                    if (((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
+                      logger.error("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + filePath + " on the buffering queue", e)
+                      try {
+                        removedEntries += filePath
+
+                        if (currentFileLocationInfo == null || currentFileLocationInfo.isMovingEnabled)
+                          parentSmartFileConsumer.moveFile(filePath)
+
+                      } catch {
+                        case ee: Throwable => {
+                          logger.error("SMART_FILE_CONSUMER (MonitorController): Failed to move file, retyring", ee)
+                        }
                       }
+                    } else {
+                      //bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
+                      bufferingQ_map(filePath) = (currentMonitoredFile, thisFileFailures, isFirstScan)
+                      logger.error("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue ", e)
                     }
-                  } else {
-                    //bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
-                    bufferingQ_map(filePath) = (currentMonitoredFile, thisFileFailures, isFirstScan)
-                    logger.error("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue ", e)
                   }
                 }
               }

@@ -540,6 +540,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
     //now run the monitor
     if (!isShutdown) {
+      logger.warn("adapter {} is starting monitor", adapterConfig.Name)
       monitorController.init(initialFileNames.toList)
       monitorController.startMonitoring()
     }
@@ -1400,39 +1401,40 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       LOG.debug("SMART FILE CONSUMER - sending the request using path ({}) using value ({}) ",
         requestPathKey, requestData)
       envContext.setListenerCacheKey(requestPathKey, requestData);
-
-      //send status
-      logger.info("sending stat msg")
-      val statMsgStr = adapterConfig.statusMsgTypeName //"com.ligadata.messages.InputAdapterStatsMsg"
-      if (statMsgStr != null && statMsgStr.trim.size > 0) {
+    }
+    //send status
+    logger.info("sending stat msg")
+    val statMsgStr = adapterConfig.statusMsgTypeName //"com.ligadata.messages.InputAdapterStatsMsg"
+    if (statMsgStr != null && statMsgStr.trim.size > 0) {
+      try {
         val statMsg = envContext.getContainerInstance(statMsgStr)
         if (statMsg != null) {
-          try {
-            // Set all my values
-            statMsg.set("msgtype", "FileInputAdapterStatusMsg")
-            statMsg.set("source", adapterConfig._type)
-            statMsg.set("filename", stats.fileName)
-            statMsg.set("recordscount", stats.recordsCount)
-            statMsg.set("starttime", stats.startTs)
-            statMsg.set("endtime", stats.endTs)
-            /*statMsg.set("bytesRead", stats.bytesRead)
-            statMsg.set("nodeId", stats.nodeId)
-            statMsg.set("status", stats.status)*/
+          // Set all my values
+          statMsg.set("msgtype", "FileInputAdapterStatusMsg")
+          statMsg.set("source", adapterConfig._type)
+          statMsg.set("filename", stats.fileName)
+          statMsg.set("recordscount", stats.recordsCount)
+          statMsg.set("starttime", stats.startTs)
+          statMsg.set("endtime", stats.endTs)
+          statMsg.set("bytesRead", stats.bytesRead)
+          statMsg.set("nodeId", stats.nodeId)
+          statMsg.set("status", stats.status)
 
-            // Post the messgae
-            envContext.postMessages(Array[ContainerInterface](statMsg))
-          }
-          catch {
-            case e: Exception => {
-              logger.error("", e)
-            }
-          }
-        } else {
-          logger.error("Msg {} is not found in metadata", statMsgStr)
+          // Post the messgae
+          envContext.postMessages(Array[ContainerInterface](statMsg))
         }
       }
-
+      catch
+      {
+        case e: Exception => {
+          logger.error("", e)
+        }
+      }
     }
+    else{
+      logger.error("Msg {} is not found in metadata", statMsgStr)
+    }
+
   }
 
   //what a participant should do parallelism value changes
@@ -1720,6 +1722,13 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   }
 
   override def StartProcessing(partitionIds: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = {
+    if(MonitorUtils.adaptersChannels.contains(adapterConfig.Name)){
+      MonitorUtils.adaptersChannels.clear()
+    }
+    if(MonitorUtils.adaptersSessions.contains(adapterConfig.Name)){
+      MonitorUtils.adaptersSessions.clear()
+    }
+
     isShutdown = false
     _leaderCallbackRequests.clear
 
@@ -1727,7 +1736,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     var lastHb: Long = 0
     startHeartBeat = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
 
-    LOG.info("SMART_FILE_ADAPTER - START_PROCESSING CALLED")
+    LOG.warn("SMART_FILE_ADAPTER {} - START_PROCESSING CALLED", adapterConfig.Name)
 
     // Check to see if this already started
     if (startTime > 0) {
@@ -1764,87 +1773,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       archiveExecutor = Executors.newFixedThreadPool(archiveParallelism)
 
       val maxArchiveAttemptsCount = 3
-      if (archiver != null && adapterConfig.archiveConfig != null)
+      if (archiver != null && adapterConfig.archiveConfig != null) {
+        logger.warn("adapter {} is starting archiver", adapterConfig.Name)
         archiver.startArchiving()
-      /*
-            for (i <- 0 until archiveParallelism) {
-              val archiveThread = new Runnable() {
-                override def run(): Unit = {
-                  var interruptedVal = false
-                  while (!interruptedVal) {
-                    try {
-                      if (archiver != null && hasNextArchiveFileInfo) {
-                        val archInfo = getNextArchiveFileInfo
-                        if (archInfo != null) {
-                          if(archInfo.previousAttemptsCount < maxArchiveAttemptsCount) {
-                            try {
-                              val status = archiver.archiveFile(archInfo.locationInfo, archInfo.srcFileDir, archInfo.srcFileBaseName, archInfo.componentsMap)
-                              if (!status) {
-                                archInfo.previousAttemptsCount = archInfo.previousAttemptsCount + 1
-                                addArchiveFileInfo(archInfo)
-                              }
-                            } catch {
-                              case e: Throwable => {
-                                archInfo.previousAttemptsCount = archInfo.previousAttemptsCount + 1
-                                addArchiveFileInfo(archInfo)
-                                logger.error("Failed to archive file:" + archInfo.srcFileDir + "/" + archInfo.srcFileBaseName, e)
-                              }
-                            }
-                          }
-                          else{
-                            logger.warn("File {} failed to archive {} times. Ignoring", archInfo.srcFileDir + "/" + archInfo.srcFileBaseName,
-                              maxArchiveAttemptsCount.toString)
-                          }
-                        } else {
-                          if (archiveSleepTimeInMs > 0)
-                            interruptedVal = sleepMs(archiveSleepTimeInMs)
-                        }
-                      } else {
-                        if (archiveSleepTimeInMs > 0)
-                          interruptedVal = sleepMs(archiveSleepTimeInMs)
-                      }
-                    } catch {
-                      case e: InterruptedException => {
-                        interruptedVal = true
-                      }
-                      case e: Throwable => {
-                        ///
-                      }
-                    }
-                  }
-                }
-              }
-              archiveExecutor.execute(archiveThread)
-            }*/
-
-      /*
-            //check all files that are already on target dirs and add to be archived
-            if (locationTargetMoveDirsMap != null) {
-              val processedDirs = scala.collection.mutable.Set[String]()
-              val tmpMonitorController = new MonitorController(adapterConfig, this, DummyCallback)
-              locationTargetMoveDirsMap.foreach(kv => {
-                val srcDir = kv._1.trim
-                val tgtDir = kv._2.trim
-                logger.info("Collecting files to archive from : " + tgtDir)
-                if (!processedDirs.contains(srcDir)) {
-                  val flsLst = tmpMonitorController.listFiles(tgtDir)
-                  if (flsLst != null) {
-                    var smartFileHandler: SmartFileHandler = null
-                    logger.info("Files list from: " + flsLst.mkString(","))
-                    flsLst.foreach(f => {
-                      if (smartFileHandler != null)
-                        smartFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, tgtDir + "/" + f)
-                      var componentsMap = scala.collection.immutable.Map[String, String]()
-                      val locationInfo = getDirLocationInfo(srcDir)
-                      if (locationInfo != null && locationInfo.fileComponents != null)
-                        componentsMap = MonitorUtils.getFileComponents(tgtDir + "/" + f, locationInfo)
-                      addArchiveFileInfo(ArchiveFileInfo(adapterConfig, locationInfo, tgtDir, f, componentsMap, 0))
-                    })
-                  }
-                  processedDirs += srcDir
-                }
-              })
-            }*/
+      }
     }
 
     //(1,file1,0,true)~(2,file2,0,true)~(3,file3,1000,true)
@@ -2018,6 +1950,19 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     filesParallelism = -1
 
     LOG.warn("finished shutting down adapter - {}", adapterConfig.Name)
+
+    /*if(MonitorUtils.adaptersChannels.contains(adapterConfig.Name)){
+      MonitorUtils.adaptersChannels(adapterConfig.Name).foreach(tuple => {
+        logger.error("adapter {} still have channel with hashcode {} and call stack {}",
+          adapterConfig.Name, tuple._1.toString, tuple._2)
+      })
+    }
+    if(MonitorUtils.adaptersSessions.contains(adapterConfig.Name)){
+      MonitorUtils.adaptersSessions(adapterConfig.Name).foreach(tuple => {
+        logger.error("adapter {} still have session with hashcode {} and call stack {}",
+          adapterConfig.Name, tuple._1.toString, tuple._2)
+      })
+    }*/
   }
 
   private def clearCache(): Unit = {

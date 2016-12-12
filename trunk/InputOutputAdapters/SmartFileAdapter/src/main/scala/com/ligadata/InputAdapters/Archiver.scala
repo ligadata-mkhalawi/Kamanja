@@ -252,7 +252,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
         //find already existing files and push to head of archive queue
         checkTargetDirs()
         initialTargetDirsCheckingDone = true
-        logger.warn("finished checkTargetDirs()")
+        logger.warn("adapter {} finished checkTargetDirs()", adapterConfig.Name)
       }
     }
     archiveExecutor.execute(initialTargetDirsChecker)
@@ -265,9 +265,9 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
           while (!interruptedVal && !isInterrupted) {
             if(initialTargetDirsCheckingDone) {
               try {
-                if (hasNextArchiveFileInfo) {
+                if (!isInterrupted && hasNextArchiveFileInfo) {
                   val archInfo = getNextArchiveFileInfo
-                  if (archInfo != null && archInfo._1 != null && archInfo._2 != null) {
+                  if (!isInterrupted && archInfo != null && archInfo._1 != null && archInfo._2 != null) {
                     logger.debug("got file to archive from queue: {}", archInfo._1.srcFileBaseName)
                     try {
                       archiveFile(archInfo._1, archInfo._2)
