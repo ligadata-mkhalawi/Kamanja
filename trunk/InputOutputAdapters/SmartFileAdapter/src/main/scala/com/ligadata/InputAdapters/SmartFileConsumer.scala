@@ -1016,7 +1016,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       LOG.debug("Smart File Consumer - Leader is checking if it is possible to assign a new file to process")
       if (hasPendingFileRequestsInQueue) {
         processingQLock.synchronized {
-          while (hasPendingFileRequestsInQueue && getFileProcessingQSize < adapterConfig.monitoringConfig.consumersCount) {
+          var canAssignedReq = true
+          while (canAssignedReq && hasPendingFileRequestsInQueue && getFileProcessingQSize < adapterConfig.monitoringConfig.consumersCount) {
             val request = getNextFileRequestFromQueue //take first request
             if (request != null) {
               LOG.debug("Smart File Consumer - finished call to saveFileRequestsQueue, from assignFileProcessingIfPossible")
@@ -1074,16 +1075,19 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                   }
 
                 }
+                canAssignedReq = true
               }
               else {
+                canAssignedReq = false
                 LOG.info("Smart File Consumer - Cannot assign anymore files to process")
               }
-
 
               //if request was not handled, must get it back to request queue
               //FIXME : find a better way to sync instead of removing and adding back
               if (!requestAssigned && !duplicateRequest)
                 addToRequestQueue(request, true)
+            } else {
+              canAssignedReq = false
             }
           }
         }
