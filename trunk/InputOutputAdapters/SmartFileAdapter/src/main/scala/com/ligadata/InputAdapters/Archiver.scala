@@ -311,7 +311,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
         var interruptedVal = false
         val nSleepSecs = archiveRolloverCheckSleepMS / 1000
         val nSleepMilliSecs = archiveRolloverCheckSleepMS % 1000
-        while (!interruptedVal && !isInterrupted) {
+        while (!interruptedVal && !isInterrupted && !isShutdown) {
           try {
             checkRolloverDueFiles()
             var cntr = 0

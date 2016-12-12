@@ -122,7 +122,8 @@ class MonitorController {
 
     monitoringThreadsFileHandlers = new Array[SmartFileHandler](maxThreadCount)
     for (currentThreadId <- 0 until maxThreadCount) {
-      monitoringThreadsFileHandlers(currentThreadId) = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, "/")
+      if (! isShutdown)
+        monitoringThreadsFileHandlers(currentThreadId) = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, "/")
     }
 
     val monitoredDirsQueue = new MonitoredDirsQueue()
@@ -132,7 +133,7 @@ class MonitorController {
         override def run() = {
           try {
 
-            while (keepMontoringBufferingFiles) {
+            while (keepMontoringBufferingFiles && !isShutdown) {
               logger.debug("waitingFilesToProcessCount={}, dirCheckThreshold={}",
                 waitingFilesToProcessCount.toString, adapterConfig.monitoringConfig.dirCheckThreshold.toString)
 
@@ -196,7 +197,7 @@ class MonitorController {
   def stopMonitoring(): Unit = {
     isShutdown = true
 
-    logger.debug("MonitorController - shutting down")
+    logger.warn("MonitorController - shutting down")
 
 
     keepMontoringBufferingFiles = false
