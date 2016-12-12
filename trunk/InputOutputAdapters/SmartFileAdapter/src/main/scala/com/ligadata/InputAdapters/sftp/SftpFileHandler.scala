@@ -620,7 +620,8 @@ class SftpFileHandler extends SmartFileHandler{
 
   def disconnect() : Unit = {
     try{
-      isShutdown = true
+      //BUGBUG:: If we set isShutdown to true it is failing to process anything. Need to revisit why should we call openForRead when isShutdown = true
+      // isShutdown = true
 
       //logger.warn("Closing SFTP session from disconnect(). original file path is %s. channel=%s , session=%s".
         //format(getFullPath , channelSftp, session) + MonitorUtils.getCallStack())
