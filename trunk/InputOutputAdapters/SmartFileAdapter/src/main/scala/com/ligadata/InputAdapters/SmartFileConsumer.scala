@@ -551,10 +551,6 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   def nodeChangeCallback(newClusterStatus: ClusterStatus): Unit = {
     //action for participant nodes:
     clusterStatus = newClusterStatus
-
-    if (initialized)
-      initializeNode // Immediately Changing if participents change. Do we need to wait for engine to do it?
-
   }
 
   //will be useful when leader has requests from all nodes but no more files are available. then leader should be notified when new files are detected
