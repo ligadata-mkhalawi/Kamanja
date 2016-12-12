@@ -55,6 +55,7 @@ class SftpFileHandler extends SmartFileHandler{
   private var channelSftp : ChannelSftp = null
   private var session : Session = null
   private var jsch : JSch = null
+  private var isShutdown = false
 
   private var ui : SftpUserInfo = null
 
@@ -91,7 +92,7 @@ class SftpFileHandler extends SmartFileHandler{
   }
 
   private def getNewSession() : Unit = {
-    if(session == null || !session.isConnected) {
+    if (! isShutdown && (session == null || !session.isConnected)) {
       session = jsch.getSession(connectionConfig.userId, host, port)
       session.setUserInfo(ui)
       session.connect()
@@ -100,7 +101,7 @@ class SftpFileHandler extends SmartFileHandler{
       //logger.warn("new sftp session is opened session=" + session + ". " + MonitorUtils.getCallStack())
     }
 
-    if(channelSftp == null || !channelSftp.isConnected || channelSftp.isClosed){
+    if (! isShutdown && (channelSftp == null || !channelSftp.isConnected || channelSftp.isClosed)) {
       val channel = session.openChannel("sftp")
       channel.connect()
       channelSftp = channel.asInstanceOf[ChannelSftp]
@@ -539,27 +540,30 @@ class SftpFileHandler extends SmartFileHandler{
     val currentDirectDirs = ArrayBuffer[MonitoredFile]()
 
     try {
-      getNewSession()
+      if (! isShutdown) {
+        getNewSession()
 
-      val startTm = System.nanoTime
-      val children = channelSftp.ls(path).iterator()
+        val startTm = System.nanoTime
+        val children = channelSftp.ls(path).iterator()
 
-      if(children != null) {
-        for (child <- children) {
-          val monitoredFile = makeFileEntry(child, path)
-          if (monitoredFile != null) {
-            if (monitoredFile.isDirectory) currentDirectDirs.append(monitoredFile)
-            else currentDirectFiles.append(monitoredFile)
+        if (children != null && ! isShutdown) {
+          for (child <- children) {
+            if (!isShutdown) {
+              val monitoredFile = makeFileEntry(child, path)
+              if (monitoredFile != null) {
+                if (monitoredFile.isDirectory) currentDirectDirs.append(monitoredFile)
+                else currentDirectFiles.append(monitoredFile)
+              }
+            }
           }
         }
+
+        val endTm = System.nanoTime
+        val elapsedTm = endTm - startTm
+
+        logger.debug("Sftp File Handler - finished listing dir %s. Operation took %fms. StartTime:%d, EndTime:%d.".
+          format(path, elapsedTm / 1000000.0, elapsedTm, endTm))
       }
-
-      val endTm = System.nanoTime
-      val elapsedTm = endTm - startTm
-
-      logger.debug("Sftp File Handler - finished listing dir %s. Operation took %fms. StartTime:%d, EndTime:%d.".
-        format(path, elapsedTm / 1000000.0, elapsedTm, endTm))
-
     }
     catch {
       case ex : Throwable =>
@@ -577,18 +581,20 @@ class SftpFileHandler extends SmartFileHandler{
     dirsToCheck.append((srcDir, 1))
 
     while (dirsToCheck.nonEmpty) {
-      val currentDirInfo = dirsToCheck.head
-      val currentDir = currentDirInfo._1
-      val currentDirDepth = currentDirInfo._2
-      dirsToCheck.remove(0)
+      if (! isShutdown) {
+        val currentDirInfo = dirsToCheck.head
+        val currentDir = currentDirInfo._1
+        val currentDirDepth = currentDirInfo._2
+        dirsToCheck.remove(0)
 
-      val (currentDirectFiles, currentDirectDirs) = listDirectFiles(currentDir)
-      //val (currentDirectFiles, currentDirectDirs) = MonitorUtils.separateFilesFromDirs(currentAllChilds)
-      files.appendAll(currentDirectFiles)
+        val (currentDirectFiles, currentDirectDirs) = listDirectFiles(currentDir)
+        //val (currentDirectFiles, currentDirectDirs) = MonitorUtils.separateFilesFromDirs(currentAllChilds)
+        if (! isShutdown)
+          files.appendAll(currentDirectFiles)
 
-      if(maxDepth <= 0 || currentDirDepth < maxDepth)
-        dirsToCheck.appendAll(currentDirectDirs.map(dir => (dir.path, currentDirDepth + 1)))
-
+        if (! isShutdown && (maxDepth <= 0 || currentDirDepth < maxDepth))
+          dirsToCheck.appendAll(currentDirectDirs.map(dir => (dir.path, currentDirDepth + 1)))
+      }
     }
 
     files.toArray
@@ -614,6 +620,7 @@ class SftpFileHandler extends SmartFileHandler{
 
   def disconnect() : Unit = {
     try{
+      isShutdown = true
 
       //logger.warn("Closing SFTP session from disconnect(). original file path is %s. channel=%s , session=%s".
         //format(getFullPath , channelSftp, session) + MonitorUtils.getCallStack())
