@@ -477,15 +477,13 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                 }
               })
 
-              if (appliedReq > 0) {
-                assignFileProcessingIfPossible()
-              }
-              else {
-                try {
-                  Thread.sleep(10)
-                } catch {
-                  case e: Throwable => {
-                  }
+              logger.warn("assignFilesToRequestThread: leaderCallbackRequests:%d, fileProcessingCallbackRequests:%d, ReqQ:%d, ProcessingQ:%d".format(leaderCallbackRequests.size, fileProcessingCallbackRequests.size, fileRequestsQueue.size, processingFilesQueue.size));
+
+              assignFileProcessingIfPossible()
+              try {
+                Thread.sleep(100)
+              } catch {
+                case e: Throwable => {
                 }
               }
             }
@@ -498,6 +496,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
               }
             }
           }
+          logger.warn("Done assignFilesToRequestThread"));
         }
       }
       keepCheckingStatus = true
