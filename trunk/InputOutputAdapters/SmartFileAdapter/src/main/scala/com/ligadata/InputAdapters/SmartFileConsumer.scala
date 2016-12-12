@@ -402,35 +402,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         override def run(): Unit = {
           while (!isShutdown) {
             try {
-              val leaderCallbackRequests = getLeaderCallbackRequestsAndClear
               var appliedReq = 0
-
-              leaderCallbackRequests.foreach(req => {
-                val eventType = req.eventType
-                val eventPath = req.eventPath
-                val eventPathData = req.eventPathData
-                if ((!isShutdown) && (eventType.equalsIgnoreCase("put") || eventType.equalsIgnoreCase("update") ||
-                  eventType.equalsIgnoreCase("CHILD_UPDATED") || eventType.equalsIgnoreCase("CHILD_ADDED"))) {
-                  val keyTokens = eventPath.split("/")
-                  val requestingNodeId = keyTokens(keyTokens.length - 2)
-                  val requestingThreadId = keyTokens(keyTokens.length - 1)
-                  val fileToProcessKeyPath = eventPathData //from leader
-
-                  LOG.info("Smart File Consumer - Leader has received a request from Node {}, Thread {}", requestingNodeId, requestingThreadId)
-
-                  //just add to request queue
-                  val newRequest = requestingNodeId + "/" + requestingThreadId + ":" + fileToProcessKeyPath
-                  if (!isShutdown) {
-                    if (isPartitionInProcessingQueue(requestingThreadId.toInt))
-                      logger.info("Partition {} is requesting to process file {} but already in processing queue",
-                        requestingThreadId, fileToProcessKeyPath)
-                    else
-                      addToRequestQueue(newRequest)
-                  }
-                  appliedReq += 1
-                }
-              })
-
+              val leaderCallbackRequests = getLeaderCallbackRequestsAndClear
               val fileProcessingCallbackRequests = getFileProcessingCallbackRequestsAndClear
               leaderCallbackRequests.foreach(req => {
                 val eventType = req.eventType
@@ -474,6 +447,32 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                       removeFromProcessingQueue(valueInProcessingQueue)
                     appliedReq += 1
                   }
+                }
+              })
+
+              leaderCallbackRequests.foreach(req => {
+                val eventType = req.eventType
+                val eventPath = req.eventPath
+                val eventPathData = req.eventPathData
+                if ((!isShutdown) && (eventType.equalsIgnoreCase("put") || eventType.equalsIgnoreCase("update") ||
+                  eventType.equalsIgnoreCase("CHILD_UPDATED") || eventType.equalsIgnoreCase("CHILD_ADDED"))) {
+                  val keyTokens = eventPath.split("/")
+                  val requestingNodeId = keyTokens(keyTokens.length - 2)
+                  val requestingThreadId = keyTokens(keyTokens.length - 1)
+                  val fileToProcessKeyPath = eventPathData //from leader
+
+                  LOG.info("Smart File Consumer - Leader has received a request from Node {}, Thread {}", requestingNodeId, requestingThreadId)
+
+                  //just add to request queue
+                  val newRequest = requestingNodeId + "/" + requestingThreadId + ":" + fileToProcessKeyPath
+                  if (!isShutdown) {
+                    if (isPartitionInProcessingQueue(requestingThreadId.toInt))
+                      logger.info("Partition {} is requesting to process file {} but already in processing queue",
+                        requestingThreadId, fileToProcessKeyPath)
+                    else
+                      addToRequestQueue(newRequest)
+                  }
+                  appliedReq += 1
                 }
               })
 
@@ -966,16 +965,6 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   def removeFromProcessingQueue(processingItem: String): Unit = {
     processingQLock.synchronized {
       processingFilesQueue -= processingItem
-      /*
-      val currentProcesses = getFileProcessingQueue
-      val cacheData = (currentProcesses diff List(processingItem)).mkString("|")
-
-      LOG.debug("Smart File Consumer - removing ({}) from processing queue", processingItem)
-      LOG.debug("Smart File Consumer - saving processing queue. key={}, value={}", File_Requests_Cache_Key,
-        if (cacheData.length == 0) "(empty)" else cacheData)
-
-      envContext.saveConfigInClusterCache(File_Processing_Cache_Key, cacheData.getBytes)
-*/
     }
   }
 
