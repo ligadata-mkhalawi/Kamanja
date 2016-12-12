@@ -1991,7 +1991,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
         val root = ConfigFactory.load()
         val actorconf = ConfigFactory.parseString(akkaConfigStr).withFallback(root);
         _simpleEnvContextActorSystem = ActorSystem("SimpleEnvContextActorSystem", actorconf)
-        _cacheConfigWorkerPool = new EnvContextWorkerPool(_simpleEnvContextActorSystem, 4)
+        _cacheConfigWorkerPool = new EnvContextWorkerPool(_simpleEnvContextActorSystem, 1)
       } else {
         logger.error("Not found local NodeId:" + _nodeId + " in CacheConfig HostList. Not stating EnvContextWorkerPool for cache config")
       }
