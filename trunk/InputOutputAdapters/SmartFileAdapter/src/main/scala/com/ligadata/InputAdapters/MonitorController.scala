@@ -156,7 +156,8 @@ class MonitorController {
                   val isFirstScan = dirQueuedInfo._3
                   val srcDir = location.srcDir
 
-                  monitorBufferingFiles(currentThreadId, srcDir, location, isFirstScan)
+                  if (keepMontoringBufferingFiles && !isShutdown)
+                    monitorBufferingFiles(currentThreadId, srcDir, location, isFirstScan)
 
                   val updateDirQueuedInfo = (dirQueuedInfo._1, dirQueuedInfo._2, false) //not first scan anymore
                   monitoredDirsQueue.reEnqueue(updateDirQueuedInfo) // so the folder gets monitored again
@@ -243,7 +244,7 @@ class MonitorController {
 
     var specialWarnCounter: Int = 1
 
-    if (!keepMontoringBufferingFiles)
+    if (!keepMontoringBufferingFiles || isShutdown)
       return
 
     // Scan all the files that we are buffering, if there is not difference in their file size.. move them onto
@@ -258,7 +259,7 @@ class MonitorController {
       //val (currentDirectFiles, currentDirectDirs) = separateFilesFromDirs(currentAllChilds)
 
       currentAllChilds.foreach(currentMonitoredFile => {
-        if (!isShutdown) {
+        if (!isShutdown && keepMontoringBufferingFiles) {
           val filePath = currentMonitoredFile.path
           try {
             var thisFileNewLength: Long = 0

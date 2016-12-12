@@ -161,39 +161,41 @@ object MonitorUtils {
 
     val locationInfo = fileHandler1.locationInfo
 
-    breakable{
-      //loop order components, until values for one of them are not equal
-      for(orderComponent <- locationInfo.orderBy){
+    if (locationInfo != null) {
+      breakable{
+        //loop order components, until values for one of them are not equal
+        for(orderComponent <- locationInfo.orderBy){
 
-        //predefined components
-        if(orderComponent.startsWith("$")){
-          orderComponent match{
-            case "$File_Name" =>
-              val tempCompreRes = getFileName(fileHandler1.fileHandler.getFullPath).compareTo(getFileName(fileHandler2.fileHandler.getFullPath))
-              if (tempCompreRes != 0)  return tempCompreRes
-            case "$File_Full_Path" =>
-              val tempCompreRes =  fileHandler1.fileHandler.getFullPath.compareTo(fileHandler2.fileHandler.getFullPath)
-              if (tempCompreRes != 0)  return tempCompreRes
-            case "$FILE_MOD_TIME" =>
-              val tempCompreRes = fileHandler1.lastModifiedDate.compareTo(fileHandler2.lastModifiedDate)
-              if (tempCompreRes != 0)  return tempCompreRes
+          //predefined components
+          if(orderComponent.startsWith("$")){
+            orderComponent match{
+              case "$File_Name" =>
+                val tempCompreRes = getFileName(fileHandler1.fileHandler.getFullPath).compareTo(getFileName(fileHandler2.fileHandler.getFullPath))
+                if (tempCompreRes != 0)  return tempCompreRes
+              case "$File_Full_Path" =>
+                val tempCompreRes =  fileHandler1.fileHandler.getFullPath.compareTo(fileHandler2.fileHandler.getFullPath)
+                if (tempCompreRes != 0)  return tempCompreRes
+              case "$FILE_MOD_TIME" =>
+                val tempCompreRes = fileHandler1.lastModifiedDate.compareTo(fileHandler2.lastModifiedDate)
+                if (tempCompreRes != 0)  return tempCompreRes
               //TODO : check for other predefined components
-            case "_" => throw new Exception("Unsopported predefined file order component - " + orderComponent)
+              case "_" => throw new Exception("Unsopported predefined file order component - " + orderComponent)
+            }
           }
-        }
-        else {
-          val fileCompVal1 = if (fileComponentsMap1.contains(orderComponent))
-            fileComponentsMap1(orderComponent)
-          else "" //TODO : check if this can happen
-          val fileCompVal2 = if (fileComponentsMap2.contains(orderComponent))
-            fileComponentsMap2(orderComponent)
-          else ""
+          else {
+            val fileCompVal1 = if (fileComponentsMap1.contains(orderComponent))
+              fileComponentsMap1(orderComponent)
+            else "" //TODO : check if this can happen
+            val fileCompVal2 = if (fileComponentsMap2.contains(orderComponent))
+              fileComponentsMap2(orderComponent)
+            else ""
 
-          //println(s"fileCompVal1 $fileCompVal1 , fileCompVal2 $fileCompVal2")
+            //println(s"fileCompVal1 $fileCompVal1 , fileCompVal2 $fileCompVal2")
 
-          val tempCompreRes = fileCompVal1.compareTo(fileCompVal2)
-          if (tempCompreRes != 0)
-            return tempCompreRes
+            val tempCompreRes = fileCompVal1.compareTo(fileCompVal2)
+            if (tempCompreRes != 0)
+              return tempCompreRes
+          }
         }
       }
     }
