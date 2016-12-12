@@ -332,8 +332,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
       LOG.debug("Smart File Consumer - Leader is running on node " + clusterStatus.nodeId)
 
-      if (adapterConfig.archiveConfig != null)
+      if (adapterConfig.archiveConfig != null) {
+        logger.warn("Adapter {} {} is creating new instance of archiver", adapterConfig.Name, this)
         archiver = new Archiver(adapterConfig, this)
+      }
 
       monitorController = new MonitorController(adapterConfig, this, newFileDetectedCallback)
       monitorController.checkConfigDirsAccessibility //throw an exception if a folder is not accissible
@@ -1933,14 +1935,14 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       monitorController = null
     }
 
+    LOG.warn("shutting down adapter - {} . stopping terminateReaderTasks", adapterConfig.Name)
+    terminateReaderTasks
+
     if (archiver != null) {
       LOG.warn("shutting down adapter - {} . stopping archiver", adapterConfig.Name)
       archiver.shutdown()
       archiver = null
     }
-
-    LOG.warn("shutting down adapter - {} . stopping terminateReaderTasks", adapterConfig.Name)
-    terminateReaderTasks
 
     LOG.warn("shutting down adapter - {} . clearing cache", adapterConfig.Name)
     clearCache

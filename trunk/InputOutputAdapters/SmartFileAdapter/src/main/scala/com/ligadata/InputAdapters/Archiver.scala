@@ -252,7 +252,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
         //find already existing files and push to head of archive queue
         checkTargetDirs()
         initialTargetDirsCheckingDone = true
-        logger.warn("adapter {} finished checkTargetDirs()", adapterConfig.Name)
+        logger.warn("adapter {} - finished checkTargetDirs()", adapterConfig.Name)
       }
     }
     archiveExecutor.execute(initialTargetDirsChecker)
@@ -560,7 +560,8 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
       return false
 
     val srcFileToArchive = archInfo.srcFileDir + "/" + archInfo.srcFileBaseName
-    logger.warn("start archiving file {}", srcFileToArchive)
+    logger.warn("Adapter {} {} - archiver {} - start archiving file {} . isShutdown={}",
+      adapterConfig.Name, smartFileConsumer, this, srcFileToArchive, isShutdown.toString)
 
     val byteBuffer = new Array[Byte](bufferSz)
 
@@ -814,7 +815,9 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
       try {
 
         if(archiveDirStatus.originalMemoryStream.size() > 0) {
+          logger.warn("adapter {} - archiver is flushing to dir {}", adapterConfig.Name, archiveDirStatus.dir)
           flushArchiveDirStatus(archiveDirStatus, isForced = true)
+          logger.warn("adapter {} - archiver done flushing to dir {}", adapterConfig.Name, archiveDirStatus.dir)
         }
 
       }
@@ -1219,6 +1222,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
   def shutdown(): Unit ={
 
     isShutdown = true
+    logger.warn("adapter {} {} -  archiver {} - setting isShutdown to true", adapterConfig.Name, smartFileConsumer, this)
 
     if(adapterConfig.archiveConfig == null)
       return

@@ -586,8 +586,8 @@ class SftpFileHandler extends SmartFileHandler{
     val dirsToCheck = new ArrayBuffer[(String, Int)]()
     dirsToCheck.append((srcDir, 1))
 
-    while (dirsToCheck.nonEmpty) {
-      if (! isShutdown) {
+    while (!isShutdown && dirsToCheck.nonEmpty) {
+      if (!isShutdown) {
         val currentDirInfo = dirsToCheck.head
         val currentDir = currentDirInfo._1
         val currentDirDepth = currentDirInfo._2

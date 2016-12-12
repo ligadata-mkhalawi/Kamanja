@@ -198,7 +198,7 @@ class MonitorController {
   def stopMonitoring(): Unit = {
     isShutdown = true
 
-    logger.warn("MonitorController - shutting down")
+    logger.warn("Adapter {} - MonitorController - shutting down called", adapterConfig.Name)
 
 
     keepMontoringBufferingFiles = false
@@ -224,6 +224,7 @@ class MonitorController {
     }
     commonFileHandler = null
 
+    logger.warn("Adapter {} - MonitorController - shutting down finished", adapterConfig.Name)
   }
 
   private def enQBufferedFile(file: MonitoredFile, initiallyExists: Boolean): Unit = {
@@ -254,8 +255,17 @@ class MonitorController {
       val newlyAdded = ArrayBuffer[String]()
       val removedEntries = ArrayBuffer[String]()
 
-      //TODO : for now check direct children only
-      val currentAllChilds = monitoringThreadsFileHandlers(currentThreadId).listFiles(dir, adapterConfig.monitoringConfig.dirMonitoringDepth)
+      val currentAllChilds =
+        try {
+          if(!isShutdown)
+            monitoringThreadsFileHandlers(currentThreadId).listFiles(dir, adapterConfig.monitoringConfig.dirMonitoringDepth)
+          else Array[MonitoredFile]()
+        }
+        catch{
+          case ex : Throwable =>
+            logger.error("", ex)
+            Array[MonitoredFile]()
+        }
       //val (currentDirectFiles, currentDirectDirs) = separateFilesFromDirs(currentAllChilds)
 
       currentAllChilds.foreach(currentMonitoredFile => {
@@ -291,7 +301,7 @@ class MonitorController {
                   logger.debug("SMART FILE CONSUMER (MonitorController): now initialFiles = {}", initialFiles)
                 }
                 else {
-                  if (currentMonitoredFile.isFile) {
+                  if (currentMonitoredFile.isFile && !isShutdown) {
 
                     thisFileNewLength = currentMonitoredFile.lastReportedSize
                     val previousMonitoredFile = bufferingQ_map(filePath)
@@ -320,22 +330,26 @@ class MonitorController {
                       } else {
                         // Here becayse either the file is sitll of len 0,or its deemed to be invalid.
                         if (thisFilePreviousLength == 0) {
-                          val diff = System.currentTimeMillis - thisFileStarttime //d.lastModified
-                          if (diff > bufferTimeout) {
-                            logger.warn("SMART FILE CONSUMER (MonitorController): Detected that " + filePath + " has been on the buffering queue longer then " + bufferTimeout / 1000 + " seconds - Cleaning up")
+                          if(!isShutdown) {
+                            val diff = System.currentTimeMillis - thisFileStarttime //d.lastModified
+                            if (diff > bufferTimeout) {
+                              logger.warn("SMART FILE CONSUMER (MonitorController): Detected that " + filePath + " has been on the buffering queue longer then " + bufferTimeout / 1000 + " seconds - Cleaning up")
 
-                            if (!isShutdown &&(currentFileLocationInfo == null ||currentFileLocationInfo.isMovingEnabled)) {
-                              try {
-                                parentSmartFileConsumer.moveFile(filePath)
+                              if (!isShutdown && (currentFileLocationInfo == null || currentFileLocationInfo.isMovingEnabled)) {
+                                try {
+                                  parentSmartFileConsumer.moveFile(filePath)
+                                }
+                                catch {
+                                  case e: Exception =>
+                                }
                               }
-                              catch{case e : Exception => }
-                            }
-                            else
-                              logger.info("SMART FILE CONSUMER (MonitorController): File {} will not be moved since moving is disabled for folder {} - Adapter {}",
-                                filePath, currentFileParentDir, adapterConfig.Name)
+                              else
+                                logger.info("SMART FILE CONSUMER (MonitorController): File {} will not be moved since moving is disabled for folder {} - Adapter {}",
+                                  filePath, currentFileParentDir, adapterConfig.Name)
 
-                            // bufferingQ_map.remove(fileTuple._1)
-                            removedEntries += filePath
+                              // bufferingQ_map.remove(fileTuple._1)
+                              removedEntries += filePath
+                            }
                           }
                         } else {
                           //Invalid File - due to content type
