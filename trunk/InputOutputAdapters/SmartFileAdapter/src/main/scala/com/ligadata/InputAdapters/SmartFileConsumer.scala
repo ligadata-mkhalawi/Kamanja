@@ -803,6 +803,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       eventType, eventPath, eventPathData)
 
     if (eventPathData != null && eventPathData.length > 0 && IsLeaderNode) {
+      val startTm = System.currentTimeMillis
       envContext.setListenerCacheKey(eventPath, "") //clear it. TODO : find a better way
 
       var addRequestToQueue = false
@@ -826,6 +827,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
         assignFileProcessingIfPossible()
       }
+      LOG.warn("requestFileLeaderCallback took:%d ms for eventType:%s, eventPath:%s, eventPathData:%s".format(System.currentTimeMillis - startTm, eventType, eventPath, eventPathData))
       //should do anything for remove?
     }
   }
