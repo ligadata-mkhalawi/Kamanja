@@ -367,6 +367,9 @@ class PosixFileHandler extends SmartFileHandler{
   def disconnect() : Unit = {
 
   }
+
+  def shutdown(): Unit = {
+  }
 }
 
 

@@ -639,4 +639,8 @@ class SftpFileHandler extends SmartFileHandler{
         logger.error("",ex)
     }
   }
+
+  def shutdown(): Unit = {
+    isShutdown = true
+  }
 }

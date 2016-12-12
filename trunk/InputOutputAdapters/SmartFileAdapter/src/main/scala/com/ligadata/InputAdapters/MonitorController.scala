@@ -208,6 +208,7 @@ class MonitorController {
     if (monitoringThreadsFileHandlers != null) {
       monitoringThreadsFileHandlers.foreach(handler => {
         try {
+          handler.shutdown()
           handler.disconnect()
         }
         catch {
@@ -216,8 +217,10 @@ class MonitorController {
       })
     }
 
-    if (commonFileHandler != null)
+    if (commonFileHandler != null) {
+      commonFileHandler.shutdown()
       commonFileHandler.disconnect()
+    }
     commonFileHandler = null
 
   }
