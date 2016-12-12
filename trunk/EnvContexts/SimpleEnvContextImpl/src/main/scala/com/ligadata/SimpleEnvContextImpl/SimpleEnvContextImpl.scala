@@ -133,7 +133,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
       val host = leaderNodeIp + ":" + leaderNodePort
       val curTime = System.currentTimeMillis
       val runner = context.actorSelection("akka.tcp://SimpleEnvContextActorSystem@" + host + "/user/SimpleEnvContextWorkerPool")
-      if (logger.isWarnEnabled) logger.warn("AKKA::::SendingKey:" + key + " at:" + curTime)
+      if (logger.isWarnEnabled) logger.warn("AKKA::::SendingKey:" + key + " at:" + curTime + ", value:" + new String(value))
       runner ! PutCacheConfig(key, value, curTime)
     }
 
@@ -148,9 +148,9 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
             if (timeTaken < 0)
               timeTaken = 0
             if (/* timeTaken > 5000 && */ logger.isWarnEnabled())
-              logger.warn("AKKA::::ReceivedKey:" + key + " at:" + curTime + " which is sent at:" + sentTime + ", TimeTaken:" + timeTaken)
+              logger.warn("AKKA::::ReceivedKey:" + key + " at:" + curTime + " which is sent at:" + sentTime + ", TimeTaken:" + timeTaken + ", value:" + new String(value))
             else if (logger.isDebugEnabled)
-              logger.debug("AKKA::::ReceivedKey:" + key + " at:" + curTime + " which is sent at:" + sentTime + ", TimeTaken:" + timeTaken)
+              logger.debug("AKKA::::ReceivedKey:" + key + " at:" + curTime + " which is sent at:" + sentTime + ", TimeTaken:" + timeTaken + ", value:" + new String(value))
           }
           catch {
             case e: Exception => { logger.error("Process: Caught exception " + e.getMessage()) }
