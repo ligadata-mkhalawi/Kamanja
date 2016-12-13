@@ -385,27 +385,33 @@ class KamanjaManager extends Observer {
         override def run() {
           val tp = execCtxtsCommitPartitionOffsetPool
           val commitOffsetsTimeInterval = KamanjaConfiguration.commitOffsetsTimeInterval
-          while (! tp.isShutdown && ! tp.isTerminated) {
-            try {
-              Thread.sleep(commitOffsetsTimeInterval + 1000) // Sleeping 1000ms more than given interval
-            } catch {
-              case e: InterruptedException => {}
-              case e: Throwable => {}
+          while (!KamanjaConfiguration.shutdown && ! tp.isShutdown && ! tp.isTerminated) {
+            // Sleeping upto 1000ms more than given interval
+            val tmMs = commitOffsetsTimeInterval + 1000
+            val nSecs = tmMs / 1000
+            var itr = 0
+            while (!KamanjaConfiguration.shutdown && itr < nSecs) {
+              itr += 1
+              try {
+                Thread.sleep(1000)
+              } catch {
+                case e: InterruptedException => {}
+                case e: Throwable => {}
+              }
             }
-            if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
+            if (!KamanjaConfiguration.shutdown && KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
               val envCtxts = GetEnvCtxts
               if (LOG.isDebugEnabled()) LOG.debug("Running CommitPartitionOffsetIfNeeded for " + envCtxts.length + " envCtxts")
-              var idx = 0
-              while (idx < envCtxts.length && ! tp.isShutdown && ! tp.isTerminated) {
+              envCtxts.map(ctxt => {
                 try {
-                  envCtxts(idx).CommitPartitionOffsetIfNeeded
+                  if (!KamanjaConfiguration.shutdown && !tp.isShutdown && !tp.isTerminated && ctxt != null)
+                    ctxt.CommitPartitionOffsetIfNeeded(false)
                 } catch {
                   case e: Throwable => {
                     LOG.error("Failed to commit partitions offsets", e)
                   }
                 }
-                idx += 1
-              }
+              })
             }
           }
         }
@@ -430,11 +436,29 @@ class KamanjaManager extends Observer {
 */
     if (execCtxtsCommitPartitionOffsetPool != null)
       execCtxtsCommitPartitionOffsetPool.shutdownNow()
+
+    val envCtxts = GetEnvCtxts
+
     ClearExecContext
     KamanjaLeader.Shutdown
     KamanjaMetadata.Shutdown
     ShutdownAdapters
     PostMessageExecutionQueue.shutdown
+
+    if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
+      LOG.warn("Running CommitPartitionOffsetIfNeeded for " + envCtxts.length + " envCtxts")
+      envCtxts.map(ctxt => {
+        try {
+          if (ctxt != null)
+            ctxt.CommitPartitionOffsetIfNeeded(true)
+        } catch {
+          case e: Throwable => {
+            LOG.error("Failed to commit partitions offsets", e)
+          }
+        }
+      })
+    }
+    
     if (KamanjaMetadata.envCtxt != null)
       KamanjaMetadata.envCtxt.Shutdown
     if (serviceObj != null)

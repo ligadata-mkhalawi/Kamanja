@@ -70,11 +70,11 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
       reent_lock.writeLock().unlock()
   }
 
-  def CommitPartitionOffsetIfNeeded: Unit = {
-    if (lastEventOrigin.key != null && lastEventOrigin.value != null && lastEventOrigin.key.trim.size > 0 && lastEventOrigin.value.trim.size > 0 && !nodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0 && ((lastTimeCommitOffsets + KamanjaConfiguration.commitOffsetsTimeInterval) <= System.currentTimeMillis)) {
+  def CommitPartitionOffsetIfNeeded(forceTime: Boolean): Unit = {
+    if (lastEventOrigin.key != null && lastEventOrigin.value != null && lastEventOrigin.key.trim.size > 0 && lastEventOrigin.value.trim.size > 0 && !nodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0 && (forceTime || ((lastTimeCommitOffsets + KamanjaConfiguration.commitOffsetsTimeInterval) <= System.currentTimeMillis))) {
       WriteLock(execCtxt_reent_lock)
       try {
-        if (lastEventOrigin.key != null && lastEventOrigin.value != null && lastEventOrigin.key.trim.size > 0 && lastEventOrigin.value.trim.size > 0 && !nodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0 && ((lastTimeCommitOffsets + KamanjaConfiguration.commitOffsetsTimeInterval) <= System.currentTimeMillis)) {
+        if (lastEventOrigin.key != null && lastEventOrigin.value != null && lastEventOrigin.key.trim.size > 0 && lastEventOrigin.value.trim.size > 0 && !nodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0 && (forceTime || ((lastTimeCommitOffsets + KamanjaConfiguration.commitOffsetsTimeInterval) <= System.currentTimeMillis))) {
           val prevTimeCommitOffsets = lastTimeCommitOffsets
           val prevEventsCntr = eventsCntr
           val prevEventOrigin = lastEventOrigin
@@ -82,10 +82,10 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
             lastEventOrigin = nullEventOrigin
             lastTimeCommitOffsets = System.currentTimeMillis
             eventsCntr = 0
-            nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(lastEventOrigin.key, lastEventOrigin.value)
+            nodeContext.getEnvCtxt().setAdapterUniqueKeyValue(prevEventOrigin.key, prevEventOrigin.value)
           } catch {
             case e: Throwable => {
-              lastEventOrigin = lastEventOrigin
+              lastEventOrigin = prevEventOrigin
               lastTimeCommitOffsets = prevTimeCommitOffsets
               eventsCntr = prevEventsCntr
             }
@@ -393,7 +393,7 @@ class ExecContextImpl(val input: InputAdapter, val curPartitionKey: PartitionUni
               }
             }
           } else {
-            lastEventOrigin = txnCtxt.origin
+            lastEventOrigin = EventOriginInfo(txnCtxt.origin.key, txnCtxt.origin.value)
           }
         }
       }

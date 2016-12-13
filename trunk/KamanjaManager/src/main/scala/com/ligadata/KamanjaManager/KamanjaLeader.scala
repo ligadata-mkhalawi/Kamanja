@@ -745,6 +745,20 @@ object KamanjaLeader {
             }
 
             if (KamanjaManager.instance != null) {
+              if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {
+                val envCtxts = KamanjaManager.instance.GetEnvCtxts
+                LOG.warn("Running CommitPartitionOffsetIfNeeded for " + envCtxts.length + " envCtxts while doing stop")
+                envCtxts.map(ctxt => {
+                  try {
+                    if (ctxt != null)
+                      ctxt.CommitPartitionOffsetIfNeeded(true)
+                  } catch {
+                    case e: Throwable => {
+                      LOG.error("Failed to commit partitions offsets", e)
+                    }
+                  }
+                })
+              }
               KamanjaManager.instance.ClearExecContext()
               KamanjaManager.instance.RecreateExecCtxtsCommitPartitionOffsetPool()
             }
