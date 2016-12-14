@@ -1243,7 +1243,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     if (eventPathData != null && !isShutdown && IsLeaderNode) {
       val startTm = System.currentTimeMillis
       addLeaderCallbackRequest(1, eventType, eventPath, eventPathData)
-      if (LOG.isDebugEnabled) LOG.debug("fileProcessingLeaderCallback took:%d ms for eventType:%s, eventPath:%s, eventPathData:%s".format(System.currentTimeMillis - startTm, eventType, eventPath, eventPathData))
+      if (LOG.isWarnEnabled) LOG.warn("fileProcessingLeaderCallback took:%d ms for eventType:%s, eventPath:%s, eventPathData:%s".format(System.currentTimeMillis - startTm, eventType, eventPath, eventPathData))
     }
   }
 
