@@ -10,9 +10,9 @@ import parquet.hadoop.ParquetWriter
 import parquet.hadoop.metadata.CompressionCodecName
 import org.apache.hadoop.fs.Path
 import org.apache.avro.generic.{GenericRecordBuilder, GenericRecord}
-;
 import org.apache.avro.file.DataFileWriter;
 import parquet.avro.AvroParquetWriter;
+import scala.collection.JavaConversions._
 
 /**
   * Created by Yasser on 9/11/2016.
