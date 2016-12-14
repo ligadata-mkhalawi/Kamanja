@@ -391,7 +391,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                       if (valueTokens.length >= 2) {
                         val processingFilePath = valueTokens(0)
                         val status = valueTokens(1)
-                        LOG.info("Smart File Consumer (Leader) - File ({}) processing finished", processingFilePath)
+                        LOG.warn("Smart File Consumer (Leader) - File ({}) processing finished", processingFilePath)
 
                         if (status == File_Processing_Status_Finished || status == File_Processing_Status_Corrupted) {
                           val procFileParentDir = MonitorUtils.getFileParentDir(processingFilePath, adapterConfig)
@@ -431,13 +431,13 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                       val requestingThreadId = keyTokens(keyTokens.length - 1)
                       val fileToProcessKeyPath = eventPathData //from leader
 
-                      LOG.info("Smart File Consumer - Leader has received a request from Node {}, Thread {}", requestingNodeId, requestingThreadId)
+                      LOG.warn("Smart File Consumer - Leader has received a request from Node {}, Thread {}", requestingNodeId, requestingThreadId)
 
                       //just add to request queue
                       val newRequest = requestingNodeId + "/" + requestingThreadId + ":" + fileToProcessKeyPath
                       if (!isShutdown) {
                         if (isPartitionInProcessingQueue(requestingThreadId.toInt))
-                          logger.info("Partition {} is requesting to process file {} but already in processing queue",
+                          logger.warn("Partition {} is requesting to process file {} but already in processing queue",
                             requestingThreadId, fileToProcessKeyPath)
                         else
                           addToRequestQueue(newRequest)
