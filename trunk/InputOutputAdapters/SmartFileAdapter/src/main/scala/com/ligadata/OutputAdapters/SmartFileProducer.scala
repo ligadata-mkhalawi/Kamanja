@@ -670,7 +670,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           }
 
           // By default we are ignoring partition key & null flags
-          var ignorePartitionKey = true;
+          var ignorePartitionKey = false;
           var ignoreNullFlags = true;
 
           val ignoreFields = ArrayBuffer[String]()
