@@ -151,7 +151,7 @@ class ParquetPartitionFile(fc: SmartFileProducerConfiguration, key: String, avro
             //no need to buffer in parquet, writer already acts as a buffer
 
             LOG.info("Smart File Producer " + fc.Name + ": writing record to file " + actualActiveFilePath)
-            val recordData: Array[Any] = record.getAllAttributeValues.filter(attr => !ignoreFields.contains(attr.valueType.getName())).map(attr => attr.getValue)
+            val recordData: Array[Any] = record.getAllAttributeValues.filter(attr => !ignoreFields.contains(attr.getValueType().getName())).map(attr => attr.getValue)
             //avroSchemasMap(record.getFullTypeName)
             flush_lock.synchronized {
               parquetWriter.write(recordData)

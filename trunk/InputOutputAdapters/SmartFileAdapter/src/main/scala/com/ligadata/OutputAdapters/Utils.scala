@@ -54,12 +54,7 @@ object Utils {
 
     val finalAvroSchemaStr =
       if (ignoreFields != null && ignoreFields.size > 0) {
-        val ignoreKeys =
-          if (ignoreFields.length) {
-            ignoreFields.toSet
-          } else {
-            Array[String]().toSet
-          }
+        val ignoreKeys = ignoreFields.toSet
         val avroSchemaMap = parse(modifiedAvroSchemaStr).values.asInstanceOf[scala.collection.immutable.Map[String, Any]]
         val modAvroSchemaMap =
           avroSchemaMap.map(mfld =>
