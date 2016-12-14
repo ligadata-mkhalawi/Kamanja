@@ -13,7 +13,7 @@ import parquet.hadoop.metadata.CompressionCodecName
 import scala.collection.mutable.ArrayBuffer
 
 
-class ParquetPartitionFile(fc : SmartFileProducerConfiguration, key : String, avroSchemaStr : String) extends PartitionFile {
+class ParquetPartitionFile(fc : SmartFileProducerConfiguration, key : String, avroSchemaStr : String, recPartKeys: Array[String]) extends PartitionFile {
 
   private[this] val LOG = LogManager.getLogger(getClass)
   private val FAIL_WAIT = 2000
@@ -55,8 +55,8 @@ class ParquetPartitionFile(fc : SmartFileProducerConfiguration, key : String, av
               avroSchemasMap.put(typeName, Utils.getAvroSchema(record))
             val parquetWriter = Utils.createAvroParquetWriter(fc, avroSchemasMap(typeName), fileName, parquetCompression)*/
 
-      LOG.info(">>>>>>>>>>>>>>>>>> Avro schema : " + avroSchemaStr)
-      val parquetSchema = Utils.getParquetSchema(avroSchemaStr)
+      LOG.info(">>>>>>>>>>>>>>>>>> Avro schema : " + avroSchemaStr + ", recPartKeys:" + recPartKeys.mkString(","))
+      val parquetSchema = Utils.getParquetSchema(avroSchemaStr, recPartKeys)
       LOG.info(">>>>>>>>>>>>>>>>>> parquet schema : " + parquetSchema.toString)
       val writeSupport = new ParquetWriteSupport(parquetSchema)
 

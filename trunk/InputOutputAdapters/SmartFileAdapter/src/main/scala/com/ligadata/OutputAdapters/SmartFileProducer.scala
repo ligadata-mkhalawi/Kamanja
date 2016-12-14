@@ -58,8 +58,8 @@ object SmartFileProducer extends OutputAdapterFactory {
 }
 
 object PartitionFileFactory{
-  def createPartitionFile(fc : SmartFileProducerConfiguration, key : String, avroSchema : Option[String]) : PartitionFile = {
-    if(fc.isParquet) new ParquetPartitionFile(fc, key, avroSchema.get)
+  def createPartitionFile(fc : SmartFileProducerConfiguration, key : String, avroSchema : Option[String], recPartKeys: Array[String]) : PartitionFile = {
+    if(fc.isParquet) new ParquetPartitionFile(fc, key, avroSchema.get, recPartKeys)
     else new StreamPartitionFile(fc, key)
 
   }
@@ -668,8 +668,9 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
             }*/
           }
 
+          val recPartKeys = if (record != null) record.getPartitionKeyNames else Array[String]()
           partKey = //new PartitionFile(key, fileName, new PartitionStream(os, originalStream), parquetWriter, 0, 0, null, buffer, 0, fileBufferSize)
-            PartitionFileFactory.createPartitionFile(fc, key, Some(record.getAvroSchema))
+            PartitionFileFactory.createPartitionFile(fc, key, Some(record.getAvroSchema), recPartKeys)
           partKey.init(fileName, fileBufferSize)
 
           LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile adding key - [" + key + "]")

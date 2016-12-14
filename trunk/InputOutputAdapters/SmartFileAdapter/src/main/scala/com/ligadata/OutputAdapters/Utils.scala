@@ -37,7 +37,10 @@ object Utils {
     hdfsConf
   }
   
-  def getAvroSchema(avroSchemaStr : String): org.apache.avro.Schema ={
+  def getAvroSchema(avroSchemaStr : String, recPartKeys: Array[String]): org.apache.avro.Schema ={
+    val ignorePartitionKey = true;
+    val ignoreNullFlags = true;
+    val nullFlagsFieldName = "kamanja_system_null_flags";
 
     //replace basic types with Union type to allow nulls => optional in parquet,
     // otherwise generated parquet fields will be required
@@ -51,7 +54,28 @@ object Utils {
 
     val avroSchema = new org.apache.avro.Schema.Parser().parse(finalAvroSchemaStr)
 
-    avroSchema
+    if (ignorePartitionKey || ignoreNullFlags) {
+      val ignoreKeys =
+        if (ignorePartitionKey && ignoreNullFlags) {
+          (recPartKeys ++ Array(nullFlagsFieldName)).toSet
+        } else if (ignorePartitionKey) {
+          recPartKeys.toSet
+        } else if (ignoreNullFlags) {
+          Array(nullFlagsFieldName).toSet
+        } else {
+          Array[String]().toSet
+        }
+
+      if (ignoreKeys.size > 0) {
+        LOG.info("removing fields from avro schema: " + ignoreKeys.mkString(","))
+        val flds = avroSchema.getFields().filter(fld => (!ignoreKeys.contains(fld.name())))
+        org.apache.avro.Schema.createRecord(flds)
+      } else {
+        avroSchema
+      }
+    } else {
+      avroSchema
+    }
   }
 
   /****************************************************************/
@@ -169,8 +193,8 @@ object Utils {
   /********Parquet Writer*********/
 
 
-  def getParquetSchema(avroSchemaStr : String): parquet.schema.MessageType ={
-    val avroSchema :  org.apache.avro.Schema = getAvroSchema(avroSchemaStr)
+  def getParquetSchema(avroSchemaStr : String, recPartKeys: Array[String]): parquet.schema.MessageType ={
+    val avroSchema :  org.apache.avro.Schema = getAvroSchema(avroSchemaStr, recPartKeys)
     val avroSchemaConverter = new parquet.avro.AvroSchemaConverter()
     val parquetSchema = avroSchemaConverter.convert(avroSchema)
     parquetSchema
