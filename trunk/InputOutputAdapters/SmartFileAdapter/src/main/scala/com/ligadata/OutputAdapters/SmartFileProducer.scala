@@ -57,9 +57,9 @@ object SmartFileProducer extends OutputAdapterFactory {
   def CreateOutputAdapter(inputConfig: AdapterConfiguration, nodeContext: NodeContext): OutputAdapter = new SmartFileProducer(inputConfig, nodeContext)
 }
 
-object PartitionFileFactory{
-  def createPartitionFile(fc : SmartFileProducerConfiguration, key : String, avroSchema : Option[String], recPartKeys: Array[String]) : PartitionFile = {
-    if(fc.isParquet) new ParquetPartitionFile(fc, key, avroSchema.get, recPartKeys)
+object PartitionFileFactory {
+  def createPartitionFile(fc: SmartFileProducerConfiguration, key: String, avroSchema: Option[String], ignoreFields: Array[String]): PartitionFile = {
+    if (fc.isParquet) new ParquetPartitionFile(fc, key, avroSchema.get, ignoreFields)
     else new StreamPartitionFile(fc, key)
 
   }
@@ -78,26 +78,26 @@ object SendStatus {
                          var recordsInBuffer: Long, var flushBufferSize: Long)*/
 
 case class PartitionStream(val compressStream: OutputStream, val originalStream: Any) extends OutputStream {
-  override def	close() = {
+  override def close() = {
     compressStream.close();
   }
-  
-  override def	flush() = {
+
+  override def flush() = {
     compressStream.flush();
-    if(originalStream.isInstanceOf[FSDataOutputStream] ) {
+    if (originalStream.isInstanceOf[FSDataOutputStream]) {
       val hdfsOs = originalStream.asInstanceOf[FSDataOutputStream]
       hdfsOs.getWrappedStream.asInstanceOf[DFSOutputStream].hsync(java.util.EnumSet.of(SyncFlag.UPDATE_LENGTH))
     }
   }
-  
-  override def	write(b: Array[Byte]) = {
+
+  override def write(b: Array[Byte]) = {
     compressStream.write(b)
   }
-  
-  override def	write(b: Array[Byte], off: Int, len: Int) = {
+
+  override def write(b: Array[Byte], off: Int, len: Int) = {
     compressStream.write(b, off, len)
   }
-  
+
   override def write(b: Int) = {
     compressStream.write(b)
   }
@@ -283,9 +283,9 @@ class OutputStreamWriter {
   final def openFile(fc: SmartFileProducerConfiguration, fileName: String, canAppend: Boolean = true): OutputStream = if (fc.uri.startsWith("hdfs://")) openHdfsFile(fc, fileName, canAppend) else openFsFile(fc, fileName, canAppend)
 
 
-  def getFileSize(fc : SmartFileProducerConfiguration, fileName: String) : Long = if (fc.uri.startsWith("hdfs://")) getHdfsFileSize(fc, fileName) else getFSFileSize(fc, fileName)
+  def getFileSize(fc: SmartFileProducerConfiguration, fileName: String): Long = if (fc.uri.startsWith("hdfs://")) getHdfsFileSize(fc, fileName) else getFSFileSize(fc, fileName)
 
-  def getHdfsFileSize(fc : SmartFileProducerConfiguration, fileName: String) : Long = {
+  def getHdfsFileSize(fc: SmartFileProducerConfiguration, fileName: String): Long = {
     try {
       val hdfsConf: Configuration = new Configuration()
       if (fc.kerberos != null) {
@@ -305,36 +305,36 @@ class OutputStreamWriter {
       val fs: FileSystem = FileSystem.get(uri, hdfsConf)
       fs.getFileStatus(path).getLen
     }
-    catch{
-      case ex : Throwable =>
+    catch {
+      case ex: Throwable =>
         LOG.warn("", ex)
         0
     }
   }
 
-  def getFSFileSize(fc : SmartFileProducerConfiguration, fileName: String) : Long = {
+  def getFSFileSize(fc: SmartFileProducerConfiguration, fileName: String): Long = {
     val file = new File(trimFileFromLocalFileSystem(fileName))
     file.length()
   }
 
-  def mkdirs(fc : SmartFileProducerConfiguration, dirPath : String ) : Boolean = {
+  def mkdirs(fc: SmartFileProducerConfiguration, dirPath: String): Boolean = {
     if (fc.uri.startsWith("hdfs://")) mkdirsHDFS(fc, dirPath)
     else mkdirsFS(fc, dirPath)
   }
 
-  def mkdirsFS(fc : SmartFileProducerConfiguration, dirPath : String ) : Boolean = {
+  def mkdirsFS(fc: SmartFileProducerConfiguration, dirPath: String): Boolean = {
     LOG.info("OutputStreamWriter - mkdirs for path " + dirPath)
     try {
       new File(dirPath).mkdirs()
     }
-    catch{
-      case e : Throwable =>
+    catch {
+      case e: Throwable =>
         LOG.error("OutputStreamWriter - Error while creating fs path " + dirPath, e)
         false
     }
   }
 
-  def mkdirsHDFS(fc : SmartFileProducerConfiguration, dirPath : String) : Boolean = {
+  def mkdirsHDFS(fc: SmartFileProducerConfiguration, dirPath: String): Boolean = {
     LOG.info("OutputStreamWriter - mkdirs for path " + dirPath)
     try {
       val hdfsConf: Configuration = new Configuration()
@@ -355,8 +355,8 @@ class OutputStreamWriter {
       val fs: FileSystem = FileSystem.get(uri, hdfsConf)
       fs.mkdirs(path)
     }
-    catch{
-      case ex : Throwable =>
+    catch {
+      case ex: Throwable =>
         LOG.warn("", ex)
         false
     }
@@ -432,7 +432,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       }).toList
       partitionFormatString = partitionVariable.replaceAllIn(formatStr, "%s")
     }
-    
+
     (partitionFormatString, partitionFormatObjects)
   }
 
@@ -460,12 +460,12 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     fc.uri = fc.uri.substring("file://".length() - 1)
 
   val isParquet = fc.isParquet
-  val parquetCompression = if(fc.parquetCompression == null || fc.parquetCompression.length == 0) null else CompressionCodecName.valueOf(fc.parquetCompression)
-  if(isParquet)
-    LOG.info(">>>>>>>>> using parquet with compression: "+ parquetCompression)
+  val parquetCompression = if (fc.parquetCompression == null || fc.parquetCompression.length == 0) null else CompressionCodecName.valueOf(fc.parquetCompression)
+  if (isParquet)
+    LOG.info(">>>>>>>>> using parquet with compression: " + parquetCompression)
   else LOG.info(">>>>>>>>> compression: " + fc.compressionString)
 
-  val defaultExtension = if(isParquet) "" else fc.compressionString
+  val defaultExtension = if (isParquet) "" else fc.compressionString
 
   val compress = (fc.compressionString != null && !isParquet)
   if (compress) {
@@ -478,15 +478,15 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     else
       throw FatalAdapterException("Unsupported compression type " + fc.compressionString + " for Smart File Producer: " + fc.Name, new Exception("Invalid Parameters"))
   }
-  
+
   if (fc.partitionFormat == null && fc.timePartitionFormat != null) {
     // for backward compatibility if timePartitionFormat given and not partitionFormat then use it
     fc.partitionFormat = fc.timePartitionFormat.replace("${", "${time:")
   }
 
   val (glbPartitionFormatString, glbPartitionFormatObjects) = parsePartitionFormat(fc.partitionFormat)
-  for((typeName, tlcfg) <- fc.typeLevelConfig) {
-    if(tlcfg != null) {
+  for ((typeName, tlcfg) <- fc.typeLevelConfig) {
+    if (tlcfg != null) {
       val (pfs, pfo) = parsePartitionFormat(tlcfg.partitionFormat)
       tlcfg.partitionFormatString = pfs
       tlcfg.partitionFormatObjects = pfo
@@ -583,17 +583,17 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     var fileBufferSize = fc.flushBufferSize;
     var partitionFormatString = glbPartitionFormatString
     var partitionFormatObjects = glbPartitionFormatObjects
-    if(tlcfg != null) {
+    if (tlcfg != null) {
       fileBufferSize = tlcfg.flushBufferSize
       partitionFormatString = tlcfg.partitionFormatString
       partitionFormatObjects = tlcfg.partitionFormatObjects
     }
 
     var key = record.getTypeName()
-    if(fc.useTypeFullNameForPartition) {
-      key = if(fc.replaceSeparator) typeName.replace(".", fc.separatorCharForTypeName) else typeName
+    if (fc.useTypeFullNameForPartition) {
+      key = if (fc.replaceSeparator) typeName.replace(".", fc.separatorCharForTypeName) else typeName
     }
-    
+
     val pk = record.getPartitionKey()
     var bucket: Int = 0
     if (pk != null && pk.length > 0 && fc.partitionBuckets > 1) {
@@ -605,7 +605,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile time partion data for the record - [" + dateTime + "]")
       val dtTm = new java.util.Date(dateTime)
       val values = partitionFormatObjects.map(fmt => {
-        if(fmt.isInstanceOf[SimpleDateFormat])
+        if (fmt.isInstanceOf[SimpleDateFormat])
           fmt.asInstanceOf[SimpleDateFormat].format(dtTm)
         else
           record.getOrElse(fmt.asInstanceOf[String], "").toString
@@ -639,14 +639,14 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           val ts = new java.text.SimpleDateFormat("yyyyMMdd'T'HHmm").format(new java.util.Date(dt))
           val initialFileName = "%s/%s/%s%s-%d-%s.dat%s".format(fc.uri, path, fc.fileNamePrefix, nodeId, bucket, ts, extensions.getOrElse(defaultExtension, ""))
           val fileName =
-            if(isParquet ) {
+            if (isParquet) {
               //cannot use already existing parquet file
               val filePathTokens = initialFileName.split("/")
               val tmpFileDir = filePathTokens.take(filePathTokens.length - 1).mkString("/")
               val tmpFileName = tmpFileDir + "/." + filePathTokens(filePathTokens.length - 1)
 
               logger.info("checking if archive files already exists: {} or {}", initialFileName, tmpFileName)
-              if(isFileExists(fc, initialFileName) || isFileExists(fc, tmpFileName)) {
+              if (isFileExists(fc, initialFileName) || isFileExists(fc, tmpFileName)) {
                 val newDt = System.currentTimeMillis
                 nextRolloverTime = newDt + (fc.rolloverInterval * 60 * 1000)
                 val newTs = new java.text.SimpleDateFormat("yyyyMMdd'T'HHmm").format(new java.util.Date(newDt))
@@ -657,7 +657,8 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
             else initialFileName
 
 
-          if(isParquet){//TODO : is it better to cache parsed schemas in a map ?
+          if (isParquet) {
+            //TODO : is it better to cache parsed schemas in a map ?
             /*if(!writeSupportsMap.contains(record.getFullTypeName)){
               LOG.info(">>>>>>>>>>>>>>>>>> Avro schema : " + record.getAvroSchema)
               val parquetSchema = Utils.getParquetSchema(record.getAvroSchema)
@@ -668,9 +669,22 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
             }*/
           }
 
+          val ignorePartitionKey = true;
+          val ignoreNullFlags = true;
+
           val recPartKeys = if (record != null) record.getPartitionKeyNames else Array[String]()
+          val ignoreFields =
+            if (ignorePartitionKey && ignoreNullFlags) {
+              (recPartKeys ++ Array(SmartFileProducer.nullFlagsFieldName))
+            } else if (ignorePartitionKey) {
+              recPartKeys
+            } else if (ignoreNullFlags) {
+              Array(SmartFileProducer.nullFlagsFieldName)
+            } else {
+              Array[String]()
+            }
           partKey = //new PartitionFile(key, fileName, new PartitionStream(os, originalStream), parquetWriter, 0, 0, null, buffer, 0, fileBufferSize)
-            PartitionFileFactory.createPartitionFile(fc, key, Some(record.getAvroSchema), recPartKeys)
+            PartitionFileFactory.createPartitionFile(fc, key, Some(record.getAvroSchema), ignoreFields)
           partKey.init(fileName, fileBufferSize)
 
           LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile adding key - [" + key + "]")
@@ -729,7 +743,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
         pf.synchronized {
           val status = pf.send(tnxCtxt, record, this)
 
-          if(status == SendStatus.SUCCESS)
+          if (status == SendStatus.SUCCESS)
             metrics("MessagesProcessed").asInstanceOf[AtomicLong].incrementAndGet()
         }
 
