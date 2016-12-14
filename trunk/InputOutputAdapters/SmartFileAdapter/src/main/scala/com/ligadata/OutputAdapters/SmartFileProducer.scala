@@ -669,22 +669,30 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
             }*/
           }
 
-          val ignorePartitionKey = true;
-          val ignoreNullFlags = true;
+          // By default we are ignoring partition key & null flags
+          var ignorePartitionKey = true;
+          var ignoreNullFlags = true;
 
-          val recPartKeys = if (record != null) record.getPartitionKeyNames else Array[String]()
-          val ignoreFields =
-            if (ignorePartitionKey && ignoreNullFlags) {
-              (recPartKeys ++ Array(SmartFileProducer.nullFlagsFieldName))
-            } else if (ignorePartitionKey) {
-              recPartKeys
-            } else if (ignoreNullFlags) {
-              Array(SmartFileProducer.nullFlagsFieldName)
-            } else {
-              Array[String]()
-            }
+          val ignoreFields = ArrayBuffer[String]()
+
+          if (adapterConfig.otherConfig.contains("IgnorePartitionKey"))
+            ignorePartitionKey = adapterConfig.otherConfig.getOrElse("IgnorePartitionKey", "true").toString.trim.toBoolean
+
+          if (ignorePartitionKey && record != null)
+            ignoreFields ++= record.getPartitionKeyNames
+
+          if (adapterConfig.otherConfig.contains("IgnoreNullFlags"))
+            ignoreNullFlags = adapterConfig.otherConfig.getOrElse("IgnoreNullFlags", "true").toString.trim.toBoolean
+
+          if (ignoreNullFlags)
+            ignoreFields += SmartFileProducer.nullFlagsFieldName
+
+          if (adapterConfig.otherConfig.contains("IgnoreFields")) {
+            ignoreFields ++= adapterConfig.otherConfig.getOrElse("IgnoreFields", "").toString.trim.split(",").map(fld => fld.trim).filter(fld => fld.size > 0)
+          }
+
           partKey = //new PartitionFile(key, fileName, new PartitionStream(os, originalStream), parquetWriter, 0, 0, null, buffer, 0, fileBufferSize)
-            PartitionFileFactory.createPartitionFile(fc, key, Some(record.getAvroSchema), ignoreFields)
+            PartitionFileFactory.createPartitionFile(fc, key, Some(record.getAvroSchema), ignoreFields.toSet.toArray)
           partKey.init(fileName, fileBufferSize)
 
           LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile adding key - [" + key + "]")
