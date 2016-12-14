@@ -675,20 +675,20 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
 
           val ignoreFields = ArrayBuffer[String]()
 
-          if (adapterConfig.otherConfig.contains("IgnorePartitionKey"))
-            ignorePartitionKey = adapterConfig.otherConfig.getOrElse("IgnorePartitionKey", "true").toString.trim.toBoolean
+          if (fc.otherConfig.contains("IgnorePartitionKey"))
+            ignorePartitionKey = fc.otherConfig.getOrElse("IgnorePartitionKey", "true").toString.trim.toBoolean
 
           if (ignorePartitionKey && record != null)
             ignoreFields ++= record.getPartitionKeyNames
 
-          if (adapterConfig.otherConfig.contains("IgnoreNullFlags"))
-            ignoreNullFlags = adapterConfig.otherConfig.getOrElse("IgnoreNullFlags", "true").toString.trim.toBoolean
+          if (fc.otherConfig.contains("IgnoreNullFlags"))
+            ignoreNullFlags = fc.otherConfig.getOrElse("IgnoreNullFlags", "true").toString.trim.toBoolean
 
           if (ignoreNullFlags)
             ignoreFields += SmartFileProducer.nullFlagsFieldName
 
-          if (adapterConfig.otherConfig.contains("IgnoreFields")) {
-            ignoreFields ++= adapterConfig.otherConfig.getOrElse("IgnoreFields", "").toString.trim.split(",").map(fld => fld.trim).filter(fld => fld.size > 0)
+          if (fc.otherConfig.contains("IgnoreFields")) {
+            ignoreFields ++= fc.otherConfig.getOrElse("IgnoreFields", "").toString.trim.split(",").map(fld => fld.trim).filter(fld => fld.size > 0)
           }
 
           partKey = //new PartitionFile(key, fileName, new PartitionStream(os, originalStream), parquetWriter, 0, 0, null, buffer, 0, fileBufferSize)
