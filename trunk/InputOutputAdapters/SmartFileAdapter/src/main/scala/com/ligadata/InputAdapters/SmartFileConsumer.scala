@@ -263,12 +263,12 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
   private def getLeaderCallbackRequestsAndClear: Array[LeaderCallbackRequest] = {
     var retVals: Array[LeaderCallbackRequest] = null
-    ReadLock(_leaderCallbackReqsLock)
+    WriteLock(_leaderCallbackReqsLock)
     try {
       retVals = _leaderCallbackRequests.toArray
       _leaderCallbackRequests.clear
     } finally {
-      ReadUnlock(_leaderCallbackReqsLock)
+      WriteUnlock(_leaderCallbackReqsLock)
     }
     retVals
   }
@@ -411,7 +411,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
                       //remove the file from processing queue
                       val valueInProcessingQueue = processingNodeId + "/" + processingThreadId + ":" + processingFilePath
-                      LOG.debug("Smart File Consumer (Leader) - removing from processing queue: " + valueInProcessingQueue)
+                      LOG.warn("Smart File Consumer (Leader) - removing from processing queue: " + valueInProcessingQueue)
                       if (!isShutdown)
                         removeFromProcessingQueue(valueInProcessingQueue)
                       appliedReq += 1
@@ -952,7 +952,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       val startTm = System.currentTimeMillis
       envContext.setListenerCacheKey(eventPath, "") //clear it. TODO : find a better way
       addLeaderCallbackRequest(0, eventType, eventPath, eventPathData)
-      if (LOG.isDebugEnabled) LOG.debug("requestFileLeaderCallback took:%d ms for eventType:%s, eventPath:%s, eventPathData:%s".format(System.currentTimeMillis - startTm, eventType, eventPath, eventPathData))
+      if (LOG.isWarnEnabled) LOG.warn("requestFileLeaderCallback took:%d ms for eventType:%s, eventPath:%s, eventPathData:%s".format(System.currentTimeMillis - startTm, eventType, eventPath, eventPathData))
       //should do anything for remove?
     }
   }
