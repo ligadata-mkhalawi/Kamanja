@@ -84,8 +84,10 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
               val data = fileHandler.getFullPath + "~" + currentMsgNum + "~" + System.nanoTime + "~in-progress"
               logger.debug("SMART FILE CONSUMER - Node {} with partition {} is updating status to value {}",
                 consumerContext.nodeId, consumerContext.partitionId.toString, data)
-              consumerContext.envContext.saveConfigInClusterCache(consumerContext.statusUpdateCacheKey, data.getBytes)
-              Thread.sleep(consumerContext.statusUpdateInterval)
+              if(!finished) {
+                consumerContext.envContext.saveConfigInClusterCache(consumerContext.statusUpdateCacheKey, data.getBytes)
+                Thread.sleep(consumerContext.statusUpdateInterval)
+              }
             }
           }
           catch {
@@ -448,6 +450,8 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
   val finishFlagSent_Lock = new Object()
 
   def sendFinishFlag(status: Int): Unit = {
+    finished = true
+
     val data = fileHandler.getFullPath + "~" + currentMsgNum + "~" + System.nanoTime + "~done"
     logger.warn("Node {} before sending done status for file processing key={} , value={}",
       consumerContext.nodeId, consumerContext.statusUpdateCacheKey, data)

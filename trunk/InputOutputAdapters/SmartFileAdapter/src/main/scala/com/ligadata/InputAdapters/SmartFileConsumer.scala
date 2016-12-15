@@ -354,10 +354,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             }
             catch {
               case ie: InterruptedException => {
-                LOG.debug("Smart File Consumer - interrupted " + ie)
+                LOG.warn("Smart File Consumer - interrupted " + ie)
               }
               case e: Throwable => {
-                LOG.debug("Smart File Consumer - unkown exception " + e)
+                LOG.error("Smart File Consumer - unkown exception " + e)
               }
             }
           }
@@ -597,12 +597,18 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         if (!isShutdown) {
           val processStrTokens = processStr.split(":")
           val pathTokens = processStrTokens(0).split("/")
-          val fileInProcess = processStrTokens(1)
+          val fileInProcess = processStrTokens.tail.mkString(":")
           val nodeId = pathTokens(0)
           val partitionId = pathTokens(1)
 
+          var statusData : Array[Byte] = null
           val cacheKey = Status_Check_Cache_KeyParent + "/" + nodeId + "/" + partitionId
-          val statusData = envContext.getConfigFromClusterCache(cacheKey) // filename~offset~timestamp~donestatus
+          try {
+            statusData = envContext.getConfigFromClusterCache(cacheKey) // filename~offset~timestamp~donestatus
+          }
+          catch{
+            case ex : Throwable => logger.error("", ex)
+          }
           val statusDataStr: String = if (statusData == null) null else new String(statusData)
 
           var failedCheckCount = 0
@@ -614,7 +620,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             failedCheckCount = previousStatusMap(fileInProcess)._2
           }
 
-          if (!isShutdown && (previousStatusMap != null && statusDataStr == null || statusDataStr.trim.length == 0)) {
+          if (!isShutdown && previousStatusMap != null && (statusDataStr == null || statusDataStr.trim.length == 0)) {
             LOG.debug("Smart File Consumer - current participants status in cache key {} is {}", cacheKey, statusDataStr)
 
             LOG.error("Smart File Consumer - file {} is supposed to be processed by partition {} on node {} but not found in node updated status. used key is {}",
@@ -627,7 +633,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
           else if (!isShutdown && (statusDataStr == null || statusDataStr.trim.length == 0)) {
             LOG.debug("Smart File Consumer - current participants status in cache is {}", statusDataStr)
 
-            LOG.debug("Smart File Consumer - file {} is supposed to be processed by partition {} on node {} but not found in node updated status",
+            LOG.error("Smart File Consumer - file {} is supposed to be processed by partition {} on node {} but not found in node updated status",
               fileInProcess, partitionId, nodeId)
 
             failedCheckCount += 1
@@ -643,7 +649,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
             if (!doneStatus.equals("done")) {
               if (previousStatusMap != null && !fileInStatus.equals(fileInProcess)) {
-                LOG.info("Smart File Consumer - file {} is supposed to be processed by partition {} on node {} but found this file {} in node updated status",
+                LOG.warn("Smart File Consumer - file {} is supposed to be processed by partition {} on node {} but found this file {} in node updated status",
                   fileInProcess, partitionId, nodeId, fileInStatus) //could this happen?
               }
               else {
@@ -671,8 +677,14 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                 }
               }
             } else {
-              // Keeping the previous one as it is.
-              currentStatusMap.put(fileInStatus, (currentTimeStamp, failedCheckCount))
+              if (previousStatusMap != null && !fileInStatus.equals(fileInProcess)) {
+                LOG.warn("Smart File Consumer - file {} is supposed to be processed by partition {} on node {} but found this file {} in node updated status",
+                  fileInProcess, partitionId, nodeId, fileInStatus) //could this happen?
+              }
+              else {
+                // Keeping the previous one as it is.
+                currentStatusMap.put(fileInStatus, (currentTimeStamp, failedCheckCount))
+              }
             }
           }
 
@@ -855,7 +867,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     processingQLock.synchronized {
       processingFilesQueue.exists(item => {
         val tokens = item.split(":")
-        if (tokens.length >= 2) tokens(1).equals(file) else false
+        if (tokens.length >= 2) tokens.tail.mkString(":").equals(file) else false
       })
       /*
       val processingQueue = getFileProcessingQueue
@@ -1021,6 +1033,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
                     try {
                       //logger.warn("")
+                      val cacheKey = Status_Check_Cache_KeyParent + "/" + requestingNodeId + "/" + requestingThreadId
+                      envContext.saveConfigInClusterCache(cacheKey, "".getBytes)
                       envContext.setListenerCacheKey(fileToProcessKeyPath, data)
                     } catch {
                       case e: Throwable => {
