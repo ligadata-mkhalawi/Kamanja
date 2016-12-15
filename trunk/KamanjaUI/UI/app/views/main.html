@@ -1,10 +1,15 @@
-<ui-home-vis-demo
-                  ng-if="main.networkData"
-                  data="main.networkData"
-                  view-name = "{{main.selectedViewName}}"
-                  node-click = "main.nodeClick"
-                  node-double-click = "main.nodeDoubleClick"
-                  edge-click = "main.edgeClick"
-                  ground-click = "main.groundClick"
-                  show-status="{{main.getShowStatus()}}">
-</ui-home-vis-demo>
+<model-details class="modelDetails"></model-details>
+<header></header>
+<div class="mainContent">
+  <ui-home-vis-demo
+    ng-if="main.networkData"
+    data="main.networkData"
+    view-name="{{main.selectedViewName}}"
+    node-click="main.nodeClick"
+    node-double-click="main.nodeDoubleClick"
+    edge-click="main.edgeClick"
+    ground-click="main.groundClick"
+    show-status="{{main.getShowStatus()}}">
+  </ui-home-vis-demo>
+</div>
+<footer class="pageFooter"></footer>

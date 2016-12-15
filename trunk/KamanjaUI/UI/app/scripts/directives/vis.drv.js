@@ -15,12 +15,14 @@ angular
         edgeClick: '<',
         groundClick: '<'
       },
-      template: '<div><div id="visJsDiv"></div>' ,
+      template: '<div class="visJsDiv"></div>' ,
       replace: true,
-      link: function (scope) {
+      link: function (scope, element) {
         var isNodeActive, updateNodesImagesToBeInactive, updateNodeToBeActive;
-        var container = document.getElementById('visJsDiv');
+        console.log();
+        var container = element[0];
         var data = {nodes: new vis.DataSet([]), edges: new vis.DataSet([])};
+        var selectedNodes = [];
         var options = {
           'edges': {
             'smooth': {
@@ -96,7 +98,6 @@ angular
                 node.number = model.In;
               }
             });
-            resizeNetworkAndReposition();
           }
         });
 
@@ -232,11 +233,16 @@ angular
         network.on('click', function (params) {
           var id = params.nodes[0];
           if (id) {
-            var alreadyActive = isNodeActive(id);
-            updateNodesImagesToBeInactive();
-            if (!alreadyActive) {
-              updateNodeToBeActive(id);
+            if (selectedNodes.indexOf(id) >=0 ){
+              selectedNodes.splice(selectedNodes.indexOf(id),1);
+            } else {
+              selectedNodes.push(id);
             }
+            updateNodesImagesToBeInactive();
+            _.each(selectedNodes,function (id) {
+              updateNodeToBeActive(id);
+            });
+
           }
         });
         network.on('afterDrawing', function (ctx) {
@@ -305,26 +311,29 @@ angular
           });
         });
         var resizeNetworkAndReposition = function () {
-          var windowHeight = $window.outerHeight;
-          if (windowHeight >= 768) {
-            var height = windowHeight.toString() + 'px';
-            network.setOptions({height: height});
-            container.style.height = height;
-          }
-          var windowWidth = $window.innerWidth;
-          if (windowWidth >= 1024) {
-            var width = windowWidth.toString() + 'px';
-            network.setOptions({width: width});
-            container.style.width = width;
-          }
+          // return;
+          // var windowHeight = $window.outerHeight;
+          // if (windowHeight >= 768) {
+          //   var height = windowHeight.toString() + 'px';
+          //   network.setOptions({height: height});
+          //   container.style.height = height;
+          // }
+          // var windowWidth = $window.innerWidth;
+          // if (windowWidth >= 1024) {
+          //   var width = windowWidth.toString() + 'px';
+          //   network.setOptions({width: width});
+          //   container.style.width = width;
+          // }
           network.moveTo(
             {
-              position: {x: 0, y: 0},
+              offset: {x: 50, y: 50},
               scale: 1.5
             }
           );
         };
-        $window.onresize = resizeNetworkAndReposition;
+        //$window.onresize = resizeNetworkAndReposition;
+        resizeNetworkAndReposition();
+
         scope.$watch('data', function () {
           data.nodes.removeAll();
           data.nodes.add((function () {
