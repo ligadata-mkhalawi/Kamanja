@@ -108,11 +108,27 @@ object CreateClient {
     // retry will wait 1 second - the second will wait up to 2 seconds - the
     // third will wait up to 4 seconds.
     val retryPolicy = new ExponentialBackoffRetry(1000, 3)
+    var curatorZookeeperClient: CuratorFramework = null
 
     // The simplest way to get a CuratorFramework instance. This will use default values.
     // The only required arguments are the connection string and the retry policy
-    val curatorZookeeperClient = CuratorFrameworkFactory.newClient(connectionString, retryPolicy);
-    curatorZookeeperClient.start
+    try {
+      curatorZookeeperClient = CuratorFrameworkFactory.newClient(connectionString, retryPolicy);
+      curatorZookeeperClient.start
+    } catch {
+      case e: Exception => {
+        if (curatorZookeeperClient != null)
+          curatorZookeeperClient.close()
+        curatorZookeeperClient = null
+        throw e
+      }
+      case e: Throwable => {
+        if (curatorZookeeperClient != null)
+          curatorZookeeperClient.close()
+        curatorZookeeperClient = null
+        throw e
+      }
+    }
     var retry = true
     while (retry) {
       retry = false

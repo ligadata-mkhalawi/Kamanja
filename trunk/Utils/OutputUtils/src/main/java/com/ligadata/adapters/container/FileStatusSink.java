@@ -10,8 +10,10 @@ import java.util.ArrayList;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
+import com.ligadata.adapters.StatusCollectable;
 import com.ligadata.adapters.AdapterConfiguration;
 import com.ligadata.adapters.jdbc.AbstractJDBCSink;
+
 
 public class FileStatusSink extends AbstractJDBCSink {
 	static Logger logger = LogManager.getLogger(FileStatusSink.class);
@@ -20,8 +22,8 @@ public class FileStatusSink extends AbstractJDBCSink {
 	private ArrayList<String[]> buffer = new ArrayList<String[]>();
 
 	@Override
-	public void init(AdapterConfiguration config) throws Exception {
-		super.init(config);
+	public void init(AdapterConfiguration config,  StatusCollectable sw) throws Exception {
+		super.init(config, sw);
 
 		sqlStr = config.getProperty(AdapterConfiguration.JDBC_INSERT_STATEMENT);
 		if(sqlStr == null)
@@ -59,7 +61,7 @@ public class FileStatusSink extends AbstractJDBCSink {
 	}
 
 	@Override
-	public void processAll() throws Exception {		
+	public void processAll(long batchid, long retryNumber) throws Exception {
 		Connection connection = dataSource.getConnection();
 		PreparedStatement statement = connection.prepareStatement(sqlStr);
 
