@@ -3,7 +3,7 @@ package com.ligadata.adapters;
 public class NullProcessor implements BufferedMessageProcessor {
 
 	@Override
-	public void init(AdapterConfiguration config) throws Exception {
+	public void init(AdapterConfiguration config, StatusCollectable stats) throws Exception {
 
 	}
 
@@ -13,7 +13,7 @@ public class NullProcessor implements BufferedMessageProcessor {
 	}
 
 	@Override
-	public void processAll() throws Exception {
+	public void processAll(long batchId, long retryNumber) throws Exception {
 
 	}
 

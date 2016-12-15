@@ -39,6 +39,8 @@ import java.sql.Timestamp
 import java.util.Properties
 import org.apache.commons.dbcp2.BasicDataSource
 
+import com.ligadata.Utils.EncryptDecryptUtils
+
 class JdbcClassLoader(urls: Array[URL], parent: ClassLoader) extends URLClassLoader(urls, parent) {
   override def addURL(url: URL) {
     super.addURL(url)
@@ -183,10 +185,31 @@ class SqlServerAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConf
   }
 
   var password: String = null;
-  if (parsed_json.contains("password")) {
+  if ( parsed_json.contains("encryptedEncodedPassword")) {
+      val encryptedPassword = parsed_json.get("encryptedEncodedPassword").get.toString.trim
+      if ( parsed_json.contains("privateKeyFile")) {
+	val privateKeyFile = parsed_json.get("privateKeyFile").get.toString.trim
+	if ( parsed_json.contains("encryptDecryptAlgorithm")) {
+	  val algorithm = parsed_json.get("encryptDecryptAlgorithm").get.toString.trim
+	  password = EncryptDecryptUtils.getDecryptedPassword(encryptedPassword,privateKeyFile,algorithm);
+	}
+	else{
+	  throw CreateConnectionException("Unable to find encryptDecryptAlgorithm in adapterConfig ", new Exception("Invalid adapterConfig"))
+	}
+      }
+      else{
+	throw CreateConnectionException("Unable to find privateKeyFile in adapterConfig ", new Exception("Invalid adapterConfig"))
+      }
+  }
+  else if ( parsed_json.contains("encodedPassword")) {
+    val encodedPassword = parsed_json.get("encodedPassword").get.toString.trim
+    password = EncryptDecryptUtils.decode(encodedPassword.getBytes);
+  }
+  else if (parsed_json.contains("password")) {
     password = parsed_json.get("password").get.toString.trim
-  } else {
-    throw CreateConnectionException("Unable to find password in adapterConfig ", new Exception("Invalid adapterConfig"))
+  } 
+  else{
+    throw CreateConnectionException("Unable to find encrypted or encoded or text password in adapterConfig ", new Exception("Invalid adapterConfig"))
   }
 
   var jarpaths: String = null;

@@ -3,6 +3,7 @@ package com.ligadata.AdaptersConfiguration
 import com.ligadata.Exceptions.KamanjaException
 import com.ligadata.InputAdapters.MonitorUtils
 import com.ligadata.InputOutputAdapterInfo._
+import com.ligadata.Utils.EncryptDecryptUtils
 import org.apache.logging.log4j.LogManager
 import org.json4s._
 import org.json4s.JsonDSL._
@@ -174,6 +175,30 @@ object SmartFileAdapterConfiguration {
 
     val connConf = adapCfgValues.get("ConnectionConfig").get.asInstanceOf[Map[String, Any]]
     //val connConfValues = connConf.values.asInstanceOf[Map[String, String]]
+
+
+    // Checking for encrypted, encoded password first, then for encoded password, then a regular password if neither of the first two are found.
+    if(connConf.exists(_._1.equalsIgnoreCase("Encrypted.Encoded.Password"))) {
+      val encryptedEncodedPassword = connConf("Encrypted.Encoded.Password").asInstanceOf[String]
+      if(!connConf.exists(_._1 == "PrivateKeyFile")) {
+        throw new KamanjaException("Configuration Encrypted.Encoded.Password was specified but PrivateKeyFile was not. Please specify PrivateKeyFile in configuration.", null)
+      }
+      val privateKeyFile = connConf("PrivateKeyFile").asInstanceOf[String]
+      if(!connConf.exists(_._1.equalsIgnoreCase("EncryptionAlgorithm"))) {
+        throw new KamanjaException("Configuration Encrypted.Encoded.Password was specified but EncryptionAlgorithm was not. Please specify EncryptionAlgorithm in configuration (i.e. RSA).", null)
+      }
+      val encryptionAlgorithm = connConf("EncryptionAlgorithm").asInstanceOf[String]
+      connectionConfig.password = EncryptDecryptUtils.getDecryptedPassword(encryptedEncodedPassword, privateKeyFile, encryptionAlgorithm)
+    }
+    else if (connConf.exists(_._1.equalsIgnoreCase("Encoded.Password"))) {
+      val encodedPassword = connConf("Encoded.Password").asInstanceOf[String]
+      connectionConfig.password = EncryptDecryptUtils.getDecodedPassword(encodedPassword)
+    }
+    else if (connConf.exists(_._1.equalsIgnoreCase("Password"))) {
+      val password = connConf("Password").asInstanceOf[String]
+      connectionConfig.password = password
+    }
+
     connConf.foreach(kv => {
       if (kv._1.compareToIgnoreCase("HostLists") == 0) {
         val hostLists = kv._2.asInstanceOf[String]
@@ -181,9 +206,10 @@ object SmartFileAdapterConfiguration {
       } else if (kv._1.compareToIgnoreCase("UserId") == 0) {
         val userID = kv._2.asInstanceOf[String]
         connectionConfig.userId = userID.trim
-      } else if (kv._1.compareToIgnoreCase("Password") == 0) {
-        val password = kv._2.asInstanceOf[String]
-        connectionConfig.password = password.trim
+      // Commented out the below block handling password in deference to the above block of code. That will handle decryption and decoding if necessary.
+      //} else if (kv._1.compareToIgnoreCase("Password") == 0) {
+      //  val password = kv._2.asInstanceOf[String]
+      //  connectionConfig.password = password.trim
       } else if (kv._1.compareToIgnoreCase("Authentication") == 0) {
         val authentication = kv._2.asInstanceOf[String]
         connectionConfig.authentication = authentication.trim
