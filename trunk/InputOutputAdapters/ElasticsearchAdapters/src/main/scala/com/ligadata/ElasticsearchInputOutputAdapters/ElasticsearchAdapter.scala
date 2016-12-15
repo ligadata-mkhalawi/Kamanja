@@ -111,37 +111,13 @@ class ElasticsearchAdapter(val inputConfig: AdapterConfiguration, val nodeContex
       indexName = indexName + "-" + currentDate
     }
 
-    if (adapterConfig.rollIndexNameByDataDate) {
-      if (adapterConfig.dateFiledNameInOutputMessage.isEmpty) {
-        logger.error("Elasticsearch Adapter : dateFiledNameInOutputMessage filed is empty")
-      } else {
-        val tmpData = serializedContainerData.map(data => new String(data))
-        tmpData.foreach(jsonData => {
-          try {
-            val jsonObj: JSONObject = new JSONObject(jsonData)
-            // assuming format is yyyy-MM-dd'T'hh:mm'Z'
-            val dateFiled: String = jsonObj.getString(adapterConfig.dateFiledNameInOutputMessage)
-            val dateFormatString: String = adapterConfig.dateFiledFormat
-            val sourceDateFormat: SimpleDateFormat = new SimpleDateFormat(dateFormatString)
-            val targetDateFormat: SimpleDateFormat = new SimpleDateFormat("yyyyMMdd")
-            val targetDate: String = targetDateFormat.format(sourceDateFormat.parse(dateFiled))
-
-            indexName = indexName + "-" + targetDate
-            //            dataStore.putJson(indexName, jsonData)
-          } catch {
-            case e => logger.error("Elasticsearch Adapter : error while retrieving date field from output message - " + e)
-          }
-        })
-      }
-    }
-
     // check if we need to cteate the indexMapping beforehand.
     if (adapterConfig.manuallyCreateIndexMapping) {
       if ((adapterConfig.indexMapping.length > 0) && !dataStore.checkIndexExsists(indexName)) {
         dataStore.createIndexForOutputAdapter(indexName, adapterConfig.indexMapping)
       }
     }
-    dataStore.putJsons(indexName, serializedContainerData.map(data => new String(data)))
+    dataStore.putJsonsWithMetadata(indexName, serializedContainerData.map(data => new String(data)))
   }
 
 
@@ -397,5 +373,3 @@ class ElasticsearchAdapter(val inputConfig: AdapterConfiguration, val nodeContex
     }
   }
 }
-
-

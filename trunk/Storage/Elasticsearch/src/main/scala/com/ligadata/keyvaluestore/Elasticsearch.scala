@@ -35,6 +35,7 @@ import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.common.transport.InetSocketTransportAddress
 import org.elasticsearch.common.xcontent.{XContentBuilder, XContentFactory}
+import org.elasticsearch.index.VersionType
 import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.search.sort.{SortOrder, SortParseElement}
 import org.elasticsearch.search.{SearchHit, SearchHits}
@@ -206,6 +207,11 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     autoCreateTables = parsed_json.get("autoCreateTables").get.toString.trim
   }
 
+  var properties = Map[String, Any]()
+  if (parsed_json.contains("properties")) {
+    properties = parsed_json.get("properties").get.asInstanceOf[Map[String, Any]]
+  }
+
   logger.info("SchemaName => " + SchemaName)
   logger.info("autoCreateTables  => " + autoCreateTables)
 
@@ -333,7 +339,18 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
   private def getConnection: TransportClient = {
     try {
-      val settings = Settings.settingsBuilder().put("cluster.name", clusterName).build()
+      var settings = Settings.settingsBuilder()
+      settings.put("cluster.name", clusterName)
+
+      // add by saleh 15/12/2016
+      val it = properties.keySet.iterator
+      while (it.hasNext) {
+        val key = it.next()
+        logger.info("ElasticSearch - properties [%s] - [%s]".format(key, properties.get(key).get.toString))
+        settings.put(key, properties.get(key).get.toString)
+      }
+
+      settings.build()
       var client = TransportClient.builder().settings(settings).build().addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(location), portNumber.toInt))
       client
     } catch {
@@ -535,6 +552,51 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       logger.debug("Executing bulk indexing...")
       val bulkResponse = bulkRequest.execute().actionGet()
       //      client.admin().indices().prepareRefresh(tableName).get()
+    }
+    catch {
+      case e: Exception => {
+        throw CreateDMLException("Failed to save an object in the table " + tableName + ":", e)
+      }
+    } finally {
+      if (client != null) {
+        client.close
+      }
+    }
+  }
+
+  def putJsonsWithMetadata(containerName: String, data_list: Array[(String)]): Unit = {
+    var client: TransportClient = null
+    val tableName = toFullTableName(containerName)
+    //    CheckTableExists(tableName)
+    try {
+      client = getConnection
+      var bulkRequest = client.prepareBulk()
+      data_list.foreach({ jsonData =>
+        //added by saleh 15/12/2016
+        val root = parse(jsonData).values.asInstanceOf[Map[String, String]]
+        if (root.get("metadata") != None) {
+          val metadata = root.get("metadata").get.asInstanceOf[Map[String, Any]]
+
+          val index = if (metadata.get("index") == None) tableName else metadata.get("index").get.toString
+          val metadata_type = if (metadata.get("type") == None) "type1" else metadata.get("type").get.toString
+
+          val bulk = client.prepareIndex(index, metadata_type)
+
+          if (metadata.get("id") != None) bulk.setId(metadata.get("id").get.toString)
+          if (metadata.get("version") != None) bulk.setVersionType(VersionType.FORCE).setVersion(metadata.get("version").get.asInstanceOf[BigInt].toLong)
+
+          bulk.setSource(jsonData)
+          bulkRequest.add(bulk)
+        }
+      })
+      logger.debug("Executing bulk indexing...")
+      val bulkResponse = bulkRequest.execute().actionGet()
+
+      //added by saleh 15/12/2016
+      if (bulkResponse.hasFailures) {
+        logger.warn(bulkResponse.buildFailureMessage())
+      }
+
     }
     catch {
       case e: Exception => {
