@@ -437,18 +437,22 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
     * @param archiveDirStatus
     * @param addNewIndexEntry - if archive file is flushed while src file is not finished yet, add new entry for that src file starting with new offset to read from
     */
-  private def flushArchiveDirStatus(archiveDirStatus : ArchiveDirStatus, addNewIndexEntry : Boolean, isForced : Boolean = false) : Unit = {
+  private def flushArchiveDirStatus(archiveDirStatus : ArchiveDirStatus, addNewIndexEntry : Boolean, isForced : Boolean = false) : Boolean = {
     //files were already read into memory, flush into disk after shutdown signal
-    if(isShutdown && !isForced)
-      return
+    if(isShutdown && !isForced) {
+      logger.warn("flushArchiveDirStatus - isShutdown = true. skipping")
+      return false
+    }
 
     var targetDirFileHandler : SmartFileHandler = null
     try {
       if(archiveDirStatus == null || archiveDirStatus.destFileCurrentOffset <= 0 ||
-        archiveDirStatus.originalMemoryStream == null || archiveDirStatus.originalMemoryStream.size() <= 0)
-        return //nothing to flush
-      else
-        logger.debug("archive dir {} has nothing to flush", archiveDirStatus.dir)
+        archiveDirStatus.originalMemoryStream == null || archiveDirStatus.originalMemoryStream.size() <= 0) {
+        logger.warn("flushArchiveDirStatus - archive dir {} has nothing to flush", archiveDirStatus.dir)
+        return false //nothing to flush
+      }
+
+      var success = true
 
       val lastSrcFilePath = archiveDirStatus.lastSrcFilePath
       if (lastSrcFilePath != null && lastSrcFilePath.length > 0) {
@@ -509,7 +513,9 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
 
               if (actualSize == expectedFileSize) {
                 logger.debug("disk and in memory sizes match")
-
+                logger.warn("archive file {} dumped successfully. last src file is {} . other finished src files are ({})", lastWrittenDestFile,
+                  archiveDirStatus.lastSrcFilePath, archiveDirStatus.srcFiles.mkString(",")
+                )
                 //now delete src files
                 archiveDirStatus.srcFiles.foreach(file => {
                   try {
@@ -522,33 +528,40 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
                     }
                   }
                 })
-                archiveDirStatus.srcFiles.clear()
               }
-              else
+              else {
+                success = false
                 logger.warn("Adapter {} - Archiver: archive file {} was supposed to have size {}. but actual size is {}",
                   adapterConfig.Name, lastWrittenDestFile, actualSize.toString, expectedFileSize.toString)
-
+              }
             }
-            else
+            else {
+              success = false
               logger.warn("Adapter {} - Archiver: archive file {} was written. but does not exist anymore",
                 adapterConfig.Name, lastWrittenDestFile)
+            }
+            archiveDirStatus.srcFiles.clear()
           }
           else{
+            success = false
             //already an error is raised in dumpArchiveIndex()
           }
         }
         else {
+
           logger.warn("Adapter {} - file {} should already have an entry in archive index", adapterConfig.Name, lastSrcFilePath)
           //TODO : how can we get here
         }
 
       }
+      success
     }
     catch{
       case ex : Throwable =>
         val msg = "Error while saving archive file into dir (%s) corresponding to src files (%s)".format(
           archiveDirStatus.destFileFullPath, archiveDirStatus.srcFiles.mkString(","))
         logger.error(msg, ex)
+        false
     }
     finally{
       try{
@@ -602,6 +615,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
 
     var totalReadLen = 0
     var srcFileHandler: SmartFileHandler = null
+    var flushError = false
     try {
 
       srcFileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, srcFileToArchive, isBinary = false)
@@ -671,7 +685,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
                 logger.debug("memory stream is almost full. cannot write leftover from last iteration of src file {}. saving to file {} and opening a new one",
                   srcFileHandler.getFullPath, archiveDirStatus.destFileName)
 
-                flushArchiveDirStatus(archiveDirStatus, addNewIndexEntry = true)
+                flushError = !flushArchiveDirStatus(archiveDirStatus, addNewIndexEntry = true)
               }
 
               else {
@@ -717,7 +731,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
                   if (remainingArchiveSpace < actualLenToWrite) {
                     logger.debug("file {} is full", archiveDirStatus.destFileFullPath)
                     //dest file is full
-                    flushArchiveDirStatus(archiveDirStatus, addNewIndexEntry = true)
+                    flushError = !flushArchiveDirStatus(archiveDirStatus, addNewIndexEntry = true)
 
                   }
 
@@ -736,7 +750,7 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
                     nextActualBufferLen >= adapterConfig.archiveConfig.consolidateThresholdBytes) {
                     logger.debug("writing to disk since memory stream is full or almost")
 
-                    flushArchiveDirStatus(archiveDirStatus, addNewIndexEntry = true)
+                    flushError = !flushArchiveDirStatus(archiveDirStatus, addNewIndexEntry = true)
                   }
 
                   //fix buffer and index for next reading
@@ -761,9 +775,14 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
             logger.debug("lastReadLen=" + lastReadLen)
 
 
-          } while (lastReadLen > 0 && !isInterrupted)
+          } while (lastReadLen > 0 && !isInterrupted && !flushError)
 
-          if (!isInterrupted) {
+          if(flushError){
+            logger.error("Adapter {} - An error occurred while archiving file {} . Not going to be deleted",
+            adapterConfig.Name, srcFileToArchive)
+          }
+
+          if (!isInterrupted && !flushError) {
             archiveDirStatus.srcFiles.append(srcFileToArchive) //to be deleted when archive is dumped to disk
           }
         }

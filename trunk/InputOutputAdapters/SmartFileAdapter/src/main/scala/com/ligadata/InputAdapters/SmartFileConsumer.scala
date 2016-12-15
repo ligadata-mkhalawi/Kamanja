@@ -391,7 +391,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                       if (valueTokens.length >= 2) {
                         val processingFilePath = valueTokens(0)
                         val status = valueTokens(1)
-                        LOG.warn("Smart File Consumer (Leader) - File ({}) processing finished", processingFilePath)
+                        LOG.warn("Smart File Consumer (Leader) - File ({}) processing finished by node {} , partition {} , status={}",
+                          processingFilePath, processingNodeId, processingThreadId.toString, status)
 
                         if (status == File_Processing_Status_Finished || status == File_Processing_Status_Corrupted) {
                           val procFileParentDir = MonitorUtils.getFileParentDir(processingFilePath, adapterConfig)
