@@ -1,0 +1,261 @@
+
+
+.. _message-def-config-ref:
+
+Message definition
+==================
+
+[TODO: Edit/restructure to do core, input, output, storage]
+
+Define the structure of a :ref:`message<messages-term>`.
+
+File structure -- Input message
+-------------------------------
+
+::
+
+  {
+      "Message": {
+      	"NameSpace": "<namespace>",
+      	"Name": "<name>",
+        "Type": inpupt | output | storage
+      	"Version": "<version>",
+      	"Description": "<description of product",
+      	"Persist": "true" | "false",
+      	"Fixed": "true" | "false",
+      	"Fields": [{
+      		"Name": "<attribute-name>",
+      		"Type": "<type>"
+      	}, {
+                ...
+      	}],
+      	"PartitionKey": ["Id"],
+      	"PrimaryKey": ["Id ", " Name"],
+      	"TimePartitionInfo": {
+      		"Key": "Id ",
+      		"Format": "epochtime",
+      		"Type": "Daily"
+      	}
+      }
+  }
+
+File structure -- Output message
+--------------------------------
+
+::
+
+  {
+    "OutputMessage": {
+          "NameSpace": "System",
+          "Name": "BeneficiaryOutput",
+          "Version": "00.01.00",
+          "Description": "Beneficiary Output",
+          "Queue": "testout_1",
+          "PartitionKey": [
+              "${System.Beneficiary.desynpuf_id}"
+          ],
+          "Defaults": [
+              {
+                  "Name": "System.COPDRiskAssessment.COPDSeverity ",
+                  "Default": "true"
+              }
+          ],
+          "DataDeclaration": [
+              {
+                  "Name": "Delim",
+                  "Default": ","
+              }
+          ],
+          "OutputFormat": "{ "Beneficiary.Desynpuf_Id":
+      "${System.Beneficiary.Desynpuf_Id}",
+      "Beneficiary.Bene_Birth_Dt":
+      "${System.Beneficiary.Bene_Birth_Dt}",
+      "COPDRiskAssessment.COPDSymptoms":
+      "${System.COPDRiskAssessment.COPDSymptoms}",
+      "COPDRiskAssessment.COPDSeverity":
+      "${System.COPDRiskAssessment.COPDSeverity}",
+      "COPDRiskAssessment.ChronicSputum":
+      "${System.COPDRiskAssessment.ChronicSputum}",
+      "COPDRiskAssessment.AYearAgo":
+      "${System.COPDRiskAssessment.AYearAgo}",
+      "COPDRiskAssessment.Age":
+      "${System.COPDRiskAssessment.Age}",
+      "COPDRiskAssessment.inPatientClaimCostsByDate":
+      "${System.COPDRiskAssessment.inPatientClaimCostsByDate}",
+      "COPDRiskAssessment.Dyspnoea":
+      "${System.COPDRiskAssessment.Dyspnoea}",
+      "COPDRiskAssessment.AATDeficiency":
+      "${System.COPDRiskAssessment.AATDeficiency}"}"
+      }
+  }
+
+Parameters -- input message
+---------------------------
+
+- **NameSpace** – namespace of the message.
+- **Name** – name of the message.
+- **Version** – version of the message.
+- **Description** – (optional) description of the message.
+- **Fixed** – if set to TRUE, this is a fixed message;
+  if set to FALSE, it is a mapped messages.
+  See :ref:`Fixed and mapped messages<messages-fix-map-term>`.
+- **Fields/elements** – schema definition for the data included
+  in this message.  This is a list of attribute names
+  and the :ref:`type<types-term>` of each attribute.
+- **Persist** – (optional) If set to TRUE, data processed as this message type
+  is saved to the data store.  See :ref:`persist-term`.
+- **PartitionKey** – (optional) partition keys for the message.
+- **PrimaryKey** – (optional) primary keys for the message.
+- **TimePartitionInfo** – (optional) time partition information,
+  which includes attribute name, time partition format,
+  and time partition type.
+
+
+Parameters -- output message
+----------------------------
+
+
+- **NameSpace** – namespace of the output adapter.
+- **Name** – name of the output adapter.
+- **Version** – version of the output adapter.
+- **Description** – description of the output adapter.
+- **Queue** – logical name of the output adapter.
+  The name can either be a file adapter, Kafka queue or MQ queue.
+  The name is wherever the output message is pushed.
+- **PartitionKey** – partition key information
+  that is sent to the output adapter.
+- **Defaults** – if the key is not present in the model results,
+  then this default data is placed in the Defaults field
+  mentioned in the output message definition.
+- **DataDeclaration** – local variable declaration
+  where the variables can be declared in the output message definition
+  and the value of that variable is used in the output format.
+- **OutputFormat** – format of the output message
+  that is generated with the data and pushed to the output adapter.
+
+
+
+Usage
+-----
+
+Output messages
+~~~~~~~~~~~~~~~
+
+Kamanja supports a particular format for the output message definition.
+Use the following instructions to add an output message definition
+to the metadata API.
+
+#. Verify that the output message definition exists in the correct folder:
+
+   ::
+
+    $KAMANJA_HOME/input/SampleApplications/metadata/outputmsg/
+
+#. Use the following command to add the output message definition
+   to the metadata API:
+
+   ::
+
+     $KAMANJA_HOME/bin/kamanja \
+     $KAMANJA_HOME/input/SampleApplications/metadata/config/MetadataAPIConfig_Medical.properties add outputmessage \
+     $KAMANJA_HOME/input/SampleApplications/metadata/outputmsg/sampleOutputMsg.json
+
+After running the engine, the output should exist in the output queue
+specified in the output message definition.
+
+Examples
+--------
+
+Output message -- Sample 1
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This is the JSON definition of the output message:
+
+::
+
+  {
+      "OutputMessage": {
+          "NameSpace": "System",
+          "Name": "OutputMsgName",
+          "Version": "00.01.00",
+          "Description": "Output Msg Name",
+          "Queue": "outputQueueName",
+          "PartitionKey": [
+              "${Namespace.MessageName.partionKeyattribute}"
+          ],
+          "OutputFormat": "{ "MessageAttribute1":
+                             "${Namespace.MessageName.attribute1}",
+                             "ModelAttribute1":
+                             "${Namespace.ModelName.attribute1}",
+                             "MessageAttribute2":
+                             "${Namespace.MessageName.attribute2}",
+                             "MessageAttribute3":
+                             "${Namespace.MessageName.attribute3}",
+                             "<wbr />MessageAttribute4":
+                             "${Namespace.MessageName.attribute4}",  
+                             "ModelAttribute2":
+                             "${Namespace.ModelName.attribute2}",
+                             "<wbr />ModelAttribute3":
+                             "${Namespace.ModelName.attribute3}"}"
+      }
+  }
+
+This is the output message that exists in the queue:
+
+::
+
+  "ExecutionTime":"2015-01-26T16: 53: 42.656-08: 00",
+  "EventDate":1422259242656,
+  "TxnId":100000000000021,
+  "ModelName":"com.ligadata.pmml.System_COPDRiskAssessment_100",
+  "uniqKey":"{
+      "Version": 1,
+      "Type": "Kafka",
+      "Name": "testin_1",
+      "TopicName": "testin_1",
+      "PartitionId": 0
+  }",
+  "uniqVal":"{
+      "Version": 1,
+      "Offset": 1393
+  }",
+  "ModelVersion":"100",
+  "DataReadTime":"2015-01-2616: 53: 42.620",
+  "xformCntr":1,
+  "ElapsedTimeFromDataRead":35994
+  }
+
+
+The meaning of the fields is:
+
+
+- **ExecutionTime and EventDate** – time the output message was emitted.
+- **TxnId** – transaction identifier associated with
+  the model instance that processed the incoming message.
+- **ModelName** – model name itself.
+- **uniqKey** – incoming queue from which the input to the model originated.
+- **uniqVal** – bookkeeping offset information
+  from where in the queue that incoming message was found.
+- **ModelVersion** – model version.
+- **DataReadTime** – time the incoming message was read.
+- **xformCntr** – transformation counter.
+  The input message can transform into multiple messages
+  in the engine to process. xformCntr tells which message
+  (transformed internal message) this output belongs to.
+- **xformCntr, uniqKey and uniqVal** – used exactly once
+  to detect whether output is pushed to this adapter or not.
+
+  For example: If the input message transforms into three internal messages
+  and after processing two of them the engine crashes,
+  it is necessary to track how many messages are processed
+  and how many messages are output.
+  Only the third transformed message is output
+  when the engine restarts or the workload is distributed.
+- **ElapsedTimeFromDataRead** – ElapsedTime from DataRead until
+  the message emitted is presumably in micro-seconds.
+
+
+See also
+--------
+
+
