@@ -6,12 +6,56 @@
 Welcome to Kamanja's documentation! (Under construction)
 ========================================================
 
-Contents:
+Ligapedia
+---------
 
 .. toctree::
-   :maxdepth: 2
 
-   config-file-ref
+   ligapedia
+
+Reference Pages
+---------------
+
+.. toctree::
+
+   config-ref
+   command-ref
+
+
+
+API Reference Pages
+
+Machine Learning Guides
+-----------------------
+
+.. toctree::
+
+   models
+   java-scala-model
+   adapters
+
+Tutorials
+---------
+
+.. toctree::
+
+   simple-scala-model
+   jtm
+   python
+
+Administration Guides
+---------------------
+
+.. toctree::
+
+   install-plan
+
+About this Product
+------------------
+
+.. toctree::
+
+   architecture
 
 
 
