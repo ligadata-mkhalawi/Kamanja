@@ -154,13 +154,11 @@ object Validation {
                       fieldName : String, errHandler : (String, String)=>Unit
                      )
                      (implicit comp: Ordering[T]) : Boolean = {
-    /*value match {
-      case _ : Int =>
-        val cond1 = if (startRange.isDefined) (value.asInstanceOf[Int]) >= (startRange.get.asInstanceOf[Int]) else true
-        val cond2 = if (endRange.isDefined) (value.asInstanceOf[Int]) <= (endRange.get.asInstanceOf[Int]) else true
-        cond1 && cond2
-      case _ : String =>
-    }*/
+
+    if(value == null || value.toString.length == 0) {
+      return true
+    }
+
     val cond1 = if (startRange.isDefined) (comp.compare(value,  startRange.get) >= 0) else true
     val cond2 = if (endRange.isDefined) (comp.compare(value,  endRange.get) <= 0) else true
 
@@ -250,6 +248,10 @@ object Validation {
   def isValidLength(value : String, length : Int,
                     fieldName : String, errHandler : (String, String)=>Unit): Boolean = {
 
+    if(value == null || value.length == 0) {
+      return true
+    }
+
     val valid = if(length > 0) value.length <= length else true
     if (!valid)
       errHandler(fieldName, "isValidLength")
@@ -259,6 +261,11 @@ object Validation {
 
   def isValidDatePattern(value : String, format : java.text.SimpleDateFormat,
                          fieldName : String, errHandler : (String, String)=>Unit): Boolean = {
+
+    if(value == null || value.length == 0) {
+      return true
+    }
+
     val valid =
       try {
         format.parse(value)
@@ -299,10 +306,13 @@ object Validation {
   }*/
 
   def isValidNumberPattern(value : String, pattern : String,
-                    fieldName : String, errHandler : (String, String)=>Unit): Boolean = {
+                           fieldName : String, errHandler : (String, String)=>Unit): Boolean = {
 
     //val formatter = new java.text.DecimalFormat("#.###")
     //formatter.format(10.123456)
+    if(value == null || value.length == 0) {
+      return true
+    }
 
     //TODO : should we use decimal formats or regex ??
     val valid = true
@@ -315,6 +325,10 @@ object Validation {
   def isValidStringPattern(value : String, pattern : scala.util.matching.Regex,
                            fieldName : String, errHandler : (String, String)=>Unit): Boolean = {
 
+    if(value == null || value.length == 0) {
+      return true
+    }
+
     val valid = isPatternMatch(value, pattern)
     if (!valid)
       errHandler(fieldName, "isValidStringPattern")
@@ -323,7 +337,11 @@ object Validation {
   }
 
   def isFromList(value : String, lov : String,
-                       fieldName : String, errHandler : (String, String)=>Unit): Boolean = {
+                 fieldName : String, errHandler : (String, String)=>Unit): Boolean = {
+
+    if(value == null || value.length == 0) {
+      return true
+    }
 
     val validValues = lov.split(",").toSet
     val valid = validValues contains value
@@ -335,7 +353,7 @@ object Validation {
   }
 
   def fieldsExist(primaryFieldValue : String, dependentFieldsValues : Array[String],
-                 fieldName : String, errHandler : (String, String)=>Unit): Boolean = {
+                  fieldName : String, errHandler : (String, String)=>Unit): Boolean = {
 
     val valid =
       if(primaryFieldValue == null || primaryFieldValue.length == 0) true
