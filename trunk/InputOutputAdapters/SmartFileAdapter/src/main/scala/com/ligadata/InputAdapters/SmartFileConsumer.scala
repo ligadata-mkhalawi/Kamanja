@@ -1288,6 +1288,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     if (eventPathData == null || eventPathData.length == 0)
       return
 
+    val startTm = System.currentTimeMillis
+
     envContext.setListenerCacheKey(eventPath, "") //TODO : so that it will not be read again. find a better way
     LOG.warn("Smart File Consumer - eventType={}, eventPath={}, eventPathData={}",
       eventType, eventPath, eventPathData)
@@ -1355,6 +1357,11 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         fileMessageExtractor.extractMessages()
       }
     }
+
+    if (LOG.isWarnEnabled) LOG.warn("fileAssignmentFromLeaderCallback took:%d ms for eventType:%s, eventPath:%s, eventPathData:%s".format(System.currentTimeMillis - startTm,
+      if (eventType == null) "" else eventType,
+      if (eventPath == null) "" else eventPath,
+      if (eventPathData == null) "" else eventPathData))
   }
 
   //key: SmartFileCommunication/FileProcessing/<node>/<threadId>
