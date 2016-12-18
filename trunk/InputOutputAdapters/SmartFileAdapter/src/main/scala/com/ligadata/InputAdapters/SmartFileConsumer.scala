@@ -196,7 +196,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   val statusUpdateInterval = 5000
   //ms
   //val maxWaitingTimeForNodeStatus = 10 * 1000000000L;//10 seconds, value is in nanoseconds.
-  val maxFailedCheckCounts = 24
+  val maxFailedCheckCounts = 721
 
   private var keepCheckingStatus = false
 
