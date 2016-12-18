@@ -87,6 +87,8 @@ case class SmartFileExceptionInfo(Last_Failure: String, Last_Recovery: String)
 // typ == 0 is LeaderCallbackRequest, typ == 1 is FileProcessingCallbackRequest
 case class LeaderCallbackRequest(typ: Int, eventType: String, eventPath: String, eventPathData: String)
 
+case class FileAssignmentsCallbackRequest(eventType: String, eventPath: String, eventPathData: String)
+
 case class ArchiveFileInfo(adapterConfig: SmartFileAdapterConfiguration, locationInfo: LocationInfo,
                            srcFileDir: String, srcFileBaseName: String,
                            componentsMap: scala.collection.immutable.Map[String, String],
@@ -170,6 +172,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   private var archiveExecutor: ExecutorService = null
   private var archiveInfo = new scala.collection.mutable.Queue[ArchiveFileInfo]()
   private var participantExecutor: ExecutorService = null
+  private var participantsFilesAssignmentExecutor: ExecutorService = null
   private var leaderExecutor: ExecutorService = null
   private var filesParallelism: Int = -1
   private var monitorController: MonitorController = null
@@ -186,6 +189,9 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
   private val _leaderCallbackRequests = ArrayBuffer[LeaderCallbackRequest]()
   private val _leaderCallbackReqsLock = new ReentrantReadWriteLock(true)
+
+  private val _fileAssignmentsCallbackRequests = ArrayBuffer[FileAssignmentsCallbackRequest]()
+  private val _fileAssignmentsCallbackReqsLock = new ReentrantReadWriteLock(true)
 
   val statusUpdateInterval = 5000
   //ms
@@ -279,6 +285,39 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       _leaderCallbackRequests += LeaderCallbackRequest(typ, eventType, eventPath, eventPathData)
     } finally {
       WriteUnlock(_leaderCallbackReqsLock)
+    }
+  }
+
+  private def getFileAssignmentsCallbackRequests: Array[FileAssignmentsCallbackRequest] = {
+    var retVals: Array[FileAssignmentsCallbackRequest] = null
+    ReadLock(_fileAssignmentsCallbackReqsLock)
+    try {
+      retVals = _fileAssignmentsCallbackRequests.toArray
+    } finally {
+      ReadUnlock(_fileAssignmentsCallbackReqsLock)
+    }
+    retVals
+  }
+
+  private def getFileAssignmentsCallbackRequestsAndClear: Array[FileAssignmentsCallbackRequest] = {
+    var retVals: Array[FileAssignmentsCallbackRequest] = null
+    WriteLock(_fileAssignmentsCallbackReqsLock)
+    try {
+      retVals = _fileAssignmentsCallbackRequests.toArray
+      _fileAssignmentsCallbackRequests.clear
+    } finally {
+      WriteUnlock(_fileAssignmentsCallbackReqsLock)
+    }
+    retVals
+  }
+
+  private def addFileAssignmentsCallbackRequest(eventType: String, eventPath: String, eventPathData: String): Unit = {
+    if (isShutdown) return
+    WriteLock(_fileAssignmentsCallbackReqsLock)
+    try {
+      _fileAssignmentsCallbackRequests += FileAssignmentsCallbackRequest(eventType, eventPath, eventPathData)
+    } finally {
+      WriteUnlock(_fileAssignmentsCallbackReqsLock)
     }
   }
 
@@ -1282,14 +1321,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     nodesPartitionsMap
   }
 
-  //what a participant should do when receiving file to process (from leader)
-  def fileAssignmentFromLeaderCallback(eventType: String, eventPath: String, eventPathData: String): Unit = {
-
-    if (eventPathData == null || eventPathData.length == 0)
-      return
-
-    val startTm = System.currentTimeMillis
-
+  def fileAssignmentFromLeaderFn(eventType: String, eventPath: String, eventPathData: String): Unit = {
+    // val startTm = System.currentTimeMillis
     envContext.setListenerCacheKey(eventPath, "") //TODO : so that it will not be read again. find a better way
     LOG.warn("Smart File Consumer - eventType={}, eventPath={}, eventPathData={}",
       eventType, eventPath, eventPathData)
@@ -1358,6 +1391,21 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       }
     }
 
+    /*
+    if (LOG.isWarnEnabled) LOG.warn("fileAssignmentFromLeaderFn took:%d ms for eventType:%s, eventPath:%s, eventPathData:%s".format(System.currentTimeMillis - startTm,
+      if (eventType == null) "" else eventType,
+      if (eventPath == null) "" else eventPath,
+      if (eventPathData == null) "" else eventPathData))
+    */
+  }
+
+  //what a participant should do when receiving file to process (from leader)
+  def fileAssignmentFromLeaderCallback(eventType: String, eventPath: String, eventPathData: String): Unit = {
+    if (eventPathData == null || eventPathData.length == 0)
+      return
+
+    val startTm = System.currentTimeMillis
+    addFileAssignmentsCallbackRequest(eventType, eventPath, eventPathData)
     if (LOG.isWarnEnabled) LOG.warn("fileAssignmentFromLeaderCallback took:%d ms for eventType:%s, eventPath:%s, eventPathData:%s".format(System.currentTimeMillis - startTm,
       if (eventType == null) "" else eventType,
       if (eventPath == null) "" else eventPath,
@@ -1753,8 +1801,52 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       MonitorUtils.adaptersSessions.clear()
     }
 
+    if (participantsFilesAssignmentExecutor != null)
+      participantsFilesAssignmentExecutor.shutdownNow()
+    participantsFilesAssignmentExecutor = null
+
     isShutdown = false
     _leaderCallbackRequests.clear
+    _fileAssignmentsCallbackRequests.clear
+
+    participantsFilesAssignmentExecutor = Executors.newFixedThreadPool(1)
+
+    val fileAssignmentFromLeaderThread = new Runnable() {
+      val exec = participantsFilesAssignmentExecutor
+      override def run(): Unit = {
+        while (!isShutdown && exec != null && !exec.isShutdown && !exec.isTerminated) {
+          try {
+            val requests = getFileAssignmentsCallbackRequestsAndClear
+            var i = 0
+            while (i < requests.size && !isShutdown && exec != null && !exec.isShutdown && !exec.isTerminated) {
+              val req = requests(i)
+              i += 1
+              fileAssignmentFromLeaderFn(req.eventType, req.eventPath, req.eventPathData)
+            }
+            // Wait only if we don't have any requests to process
+            if (requests.size == 0 && !isShutdown && exec != null && !exec.isShutdown && !exec.isTerminated) {
+              try {
+                Thread.sleep(5)
+              } catch {
+                case e: Throwable => {
+                }
+              }
+            }
+          }
+          catch {
+            case ie: InterruptedException => {
+              LOG.debug("Smart File Consumer - interrupted " + ie)
+            }
+            case e: Throwable => {
+              LOG.error("Smart File Consumer - unkown exception ", e)
+            }
+          }
+
+        }
+      }
+    }
+
+    participantsFilesAssignmentExecutor.execute(fileAssignmentFromLeaderThread)
 
     _ignoreFirstMsg = ignoreFirstMsg
     var lastHb: Long = 0
@@ -1922,7 +2014,13 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
     initialized = false
     isShutdown = true
+
+    if (participantsFilesAssignmentExecutor != null)
+      participantsFilesAssignmentExecutor.shutdownNow()
+    participantsFilesAssignmentExecutor = null
+
     _leaderCallbackRequests.clear
+    _fileAssignmentsCallbackRequests.clear
 
     /*if (archiveExecutor != null)
       archiveExecutor.shutdownNow()
