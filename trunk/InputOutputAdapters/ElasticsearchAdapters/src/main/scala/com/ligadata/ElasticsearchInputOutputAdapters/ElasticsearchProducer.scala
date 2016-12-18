@@ -1,10 +1,13 @@
 package com.ligadata.ElasticsearchInputOutputAdapters
 
+import java.net.InetAddress
 import java.text.SimpleDateFormat
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 import java.util.{Arrays, Calendar}
 
+import org.json4s._
+import org.json4s.jackson.JsonMethods._
 import com.ligadata.AdapterConfiguration.{ElasticsearchAdapterConfiguration, ElasticsearchConstants}
 import com.ligadata.HeartBeat.MonitorComponentInfo
 import com.ligadata.InputOutputAdapterInfo._
@@ -12,6 +15,10 @@ import com.ligadata.KamanjaBase.{ContainerInterface, NodeContext, TransactionCon
 import com.ligadata.Utils.KamanjaLoaderInfo
 import com.ligadata.keyvaluestore.ElasticsearchAdapter
 import org.apache.logging.log4j.LogManager
+import org.elasticsearch.client.transport.TransportClient
+import org.elasticsearch.common.settings.Settings
+import org.elasticsearch.common.transport.InetSocketTransportAddress
+import org.elasticsearch.index.VersionType
 import org.json4s.jackson.Serialization
 
 import scala.actors.threadpool.{ExecutorService, Executors}
@@ -189,19 +196,114 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       indexName = indexName + "-" + currentDate
     }
 
+    if (adapterConfig.rollIndexNameByDataDate) {
+      if (adapterConfig.dateFiledNameInOutputMessage.isEmpty) {
+        LOG.error("Elasticsearch OutputAdapter : dateFiledNameInOutputMessage filed is empty")
+      } else {
+        val tmpData = serializedContainerData.map(data => new String(data))
+        tmpData.foreach(jsonData => {
+          try {
+            val jsonObj: JSONObject = new JSONObject(jsonData)
+            // assuming format is yyyy-MM-dd'T'hh:mm'Z'
+            val dateFiled: String = jsonObj.getString(adapterConfig.dateFiledNameInOutputMessage)
+            val dateFormatString: String = adapterConfig.dateFiledFormat
+            val sourceDateFormat: SimpleDateFormat = new SimpleDateFormat(dateFormatString)
+            val targetDateFormat: SimpleDateFormat = new SimpleDateFormat("yyyyMMdd")
+            val targetDate: String = targetDateFormat.format(sourceDateFormat.parse(dateFiled))
+
+            indexName = indexName + "-" + targetDate
+            //            dataStore.putJson(indexName, jsonData)
+          } catch {
+            case e: Exception => LOG.error("Elasticsearch output adapter : error while retrieving date field from output message - ", e)
+          }
+        })
+      }
+    }
+
     // check if we need to cteate the indexMapping beforehand.
     if (adapterConfig.manuallyCreateIndexMapping) {
       if ((adapterConfig.indexMapping.length > 0) && !dataStore.checkIndexExsists(indexName)) {
         dataStore.createIndexForOutputAdapter(indexName, adapterConfig.indexMapping)
       }
     }
-    dataStore.putJsonsWithMetadata(indexName, serializedContainerData.map(data => new String(data)))
+    putJsonsWithMetadata(indexName, serializedContainerData.map(data => new String(data)))
   }
 
+  def putJsonsWithMetadata(containerName: String, data_list: Array[(String)]): Unit = {
+    var client: TransportClient = null
+    val tableName = toFullTableName(containerName)
+    //    CheckTableExists(tableName)
+    try {
+      client = getConnection
+      var bulkRequest = client.prepareBulk()
+      data_list.foreach({ jsonData =>
+        //added by saleh 15/12/2016
+        val root = parse(jsonData).values.asInstanceOf[Map[String, String]]
+        //if (root.get("metadata") != None) {
+        val metadata = if (root.get("metadata") == None) Map[String, Any]() else parse(root.get("metadata").get).values.asInstanceOf[Map[String, Any]]
+
+        val index = if (metadata.get("index") == None) tableName else metadata.get("index").get.toString
+        val metadata_type = if (metadata.get("type") == None) "type1" else metadata.get("type").get.toString
+
+        val bulk = client.prepareIndex(index, metadata_type)
+
+        if (metadata.get("id") != None) bulk.setId(metadata.get("id").get.toString)
+        if (metadata.get("version") != None) bulk.setVersionType(VersionType.FORCE).setVersion(metadata.get("version").get.asInstanceOf[BigInt].toLong)
+
+        //}
+        bulk.setSource(jsonData)
+        bulkRequest.add(bulk)
+      })
+      LOG.debug("Executing bulk indexing...")
+      val bulkResponse = bulkRequest.execute().actionGet()
+
+      //added by saleh 15/12/2016
+      if (bulkResponse.hasFailures) {
+        LOG.warn(bulkResponse.buildFailureMessage())
+      }
+
+    }
+    catch {
+      case e: Exception => {
+        LOG.error("Failed to save an object in the table " + tableName + ":", e)
+      }
+    } finally {
+      if (client != null) {
+        client.close
+      }
+    }
+  }
+
+  private def getConnection: TransportClient = {
+    try {
+      var settings = Settings.settingsBuilder()
+      settings.put("cluster.name", adapterConfig.clusterName)
+
+      // add by saleh 15/12/2016
+      val it = adapterConfig.properties.keySet.iterator
+      while (it.hasNext) {
+        val key = it.next()
+        LOG.info("ElasticSearch - properties [%s] - [%s]".format(key, adapterConfig.properties.get(key).get.toString))
+        settings.put(key, adapterConfig.properties.get(key).get.toString)
+      }
+
+      settings.build()
+      val client = TransportClient.builder().settings(settings).build().addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(adapterConfig.location), adapterConfig.portNumber.toInt))
+      return client
+    } catch {
+      case ex: Exception => LOG.error("Adapter getConnection ", ex)
+    }
+
+    return null
+  }
 
   override def getComponentStatusAndMetrics: MonitorComponentInfo = {
     implicit val formats = org.json4s.DefaultFormats
     return new MonitorComponentInfo(AdapterConfiguration.TYPE_OUTPUT, adapterConfig.Name, ElasticsearchProducer.ADAPTER_DESCRIPTION, startTime, lastSeen, Serialization.write(metrics).toString)
+  }
+
+  def toFullTableName(containerName: String): String = {
+    (adapterConfig.scehmaName + "." + containerName).toLowerCase()
   }
 
   /**

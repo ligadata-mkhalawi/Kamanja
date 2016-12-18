@@ -564,51 +564,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     }
   }
 
-  def putJsonsWithMetadata(containerName: String, data_list: Array[(String)]): Unit = {
-    var client: TransportClient = null
-    val tableName = toFullTableName(containerName)
-    //    CheckTableExists(tableName)
-    try {
-      client = getConnection
-      var bulkRequest = client.prepareBulk()
-      data_list.foreach({ jsonData =>
-        //added by saleh 15/12/2016
-        val root = parse(jsonData).values.asInstanceOf[Map[String, String]]
-        if (root.get("metadata") != None) {
-          val metadata = root.get("metadata").get.asInstanceOf[Map[String, Any]]
-
-          val index = if (metadata.get("index") == None) tableName else metadata.get("index").get.toString
-          val metadata_type = if (metadata.get("type") == None) "type1" else metadata.get("type").get.toString
-
-          val bulk = client.prepareIndex(index, metadata_type)
-
-          if (metadata.get("id") != None) bulk.setId(metadata.get("id").get.toString)
-          if (metadata.get("version") != None) bulk.setVersionType(VersionType.FORCE).setVersion(metadata.get("version").get.asInstanceOf[BigInt].toLong)
-
-          bulk.setSource(jsonData)
-          bulkRequest.add(bulk)
-        }
-      })
-      logger.debug("Executing bulk indexing...")
-      val bulkResponse = bulkRequest.execute().actionGet()
-
-      //added by saleh 15/12/2016
-      if (bulkResponse.hasFailures) {
-        logger.warn(bulkResponse.buildFailureMessage())
-      }
-
-    }
-    catch {
-      case e: Exception => {
-        throw CreateDMLException("Failed to save an object in the table " + tableName + ":", e)
-      }
-    } finally {
-      if (client != null) {
-        client.close
-      }
-    }
-  }
-
   def putJson(containerName: String, dataJson: String): Unit = {
     var client: TransportClient = null
     val tableName = toFullTableName(containerName)
