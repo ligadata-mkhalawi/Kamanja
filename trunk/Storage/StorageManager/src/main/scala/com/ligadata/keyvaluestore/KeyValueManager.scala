@@ -65,7 +65,7 @@ object KeyValueManager {
     val kvManagerLoader = if (localStorageLoader != null) localStorageLoader else kvMgrLoader
 
     val (className1, jarName, dependencyJars) = getClassNameJarNameDepJarsFromJson(parsed_json)
-    logger.debug("className:%s, jarName:%s, dependencyJars:%s".format(className1, jarName, dependencyJars))
+    if (logger.isDebugEnabled) logger.debug("className:%s, jarName:%s, dependencyJars:%s".format(className1, jarName, dependencyJars.mkString(",")))
     var allJars: collection.immutable.Set[String] = null
     if (dependencyJars != null && jarName != null && jarName.trim.size > 0) {
       allJars = dependencyJars.toSet + jarName
@@ -160,7 +160,8 @@ object KeyValueManager {
       }
     })
 
-    allJarsToBeValidated ++= resolveFiles.filter(info => info.isResolved).map(info => info.resolvedFullFilePath)
+    val resolvedFiles = resolveFiles.filter(info => info.isResolved).map(info => info.resolvedFullFilePath).toArray
+    allJarsToBeValidated ++= resolvedFiles
 
     val nonExistsJars = CheckForNonExistanceJars(allJarsToBeValidated.toSet)
     if (nonExistsJars.size > 0) {
@@ -168,10 +169,14 @@ object KeyValueManager {
       return null
     }
 
-    if (allJars != null && allJars.size > 0) {
-      if (LoadJars(allJars.map(j => GetValidJarFile(jarPaths, j)).toArray, kvManagerLoader.loadedJars, kvManagerLoader.loader) == false)
+    val loadJars = allJars ++ resolvedFiles
+
+    if (loadJars != null && loadJars.size > 0) {
+      if (LoadJars(loadJars.map(j => GetValidJarFile(jarPaths, j)).toArray, kvManagerLoader.loadedJars, kvManagerLoader.loader) == false)
         throw new Exception("Failed to add Jars")
     }
+
+    if (logger.isDebugEnabled) logger.debug("Jars Loaded:" + loadJars.mkString(", "))
 
     try {
       Class.forName(className, true, kvManagerLoader.loader)
