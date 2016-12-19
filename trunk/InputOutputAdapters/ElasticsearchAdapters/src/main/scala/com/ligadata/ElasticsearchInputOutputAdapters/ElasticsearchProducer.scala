@@ -240,7 +240,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
         //added by saleh 15/12/2016
         val root = parse(jsonData).values.asInstanceOf[Map[String, String]]
         //if (root.get("metadata") != None) {
-        val metadata = if (root.get("metadata") == None) Map[String, Any]() else parse(root.get("metadata").get).values.asInstanceOf[Map[String, Any]]
+        val metadata = if (root.get("metadata") == None) Map[String, Any]() else root.get("metadata").get.asInstanceOf[Map[String, Any]]
 
         val index = if (metadata.get("index") == None) tableName else metadata.get("index").get.toString
         val metadata_type = if (metadata.get("type") == None) "type1" else metadata.get("type").get.toString
