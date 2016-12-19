@@ -48,7 +48,7 @@ assemblyMergeStrategy in assembly := {
   case x if x contains "StaticMarkerBinder.class" => MergeStrategy.first
   case x if x contains "package-info.class" => MergeStrategy.first
   case x if x contains "HTMLDOMImplementation.class" => MergeStrategy.first
-  ////  
+  ////
   case x if x contains "io/netty" => MergeStrategy.first
   case x if x contains "org/apache/commons/logging" => MergeStrategy.first
   case x if x contains "io.netty.versions.properties" => MergeStrategy.first
@@ -186,7 +186,7 @@ libraryDependencies += "com.jcraft" % "jsch" % "0.1.53"
 //libraryDependencies += "net.jcip" % "jcip-annotations" % "1.0"
 libraryDependencies += "net.sf.ehcache" % "ehcache-core" % "2.6.5"
 libraryDependencies += "net.sf.ehcache" % "ehcache-jgroupsreplication" % "1.7"
-libraryDependencies += "org.jgroups" % "jgroups" % "3.6.7.Final"
+libraryDependencies += "org.jgroups" % "jgroups" % "3.6.11.Final"
 // libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.2.9"
 // libraryDependencies += "org.json4s" %% "json4s-native" % "3.2.9"
 libraryDependencies += "org.slf4j" % "slf4j-api" % "1.7.12"
