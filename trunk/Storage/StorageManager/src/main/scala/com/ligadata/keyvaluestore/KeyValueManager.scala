@@ -169,14 +169,12 @@ object KeyValueManager {
       return null
     }
 
-    val loadJars = allJars ++ resolvedFiles
-
-    if (loadJars != null && loadJars.size > 0) {
-      if (LoadJars(loadJars.map(j => GetValidJarFile(jarPaths, j)).toArray, kvManagerLoader.loadedJars, kvManagerLoader.loader) == false)
+    if (allJarsToBeValidated != null && allJarsToBeValidated.size > 0) {
+      if (LoadJars(allJarsToBeValidated.toArray, kvManagerLoader.loadedJars, kvManagerLoader.loader) == false)
         throw new Exception("Failed to add Jars")
     }
 
-    if (logger.isDebugEnabled) logger.debug("Jars Loaded:" + loadJars.mkString(", "))
+    if (logger.isDebugEnabled) logger.debug("Jars Loaded:" + allJarsToBeValidated.mkString(", "))
 
     try {
       Class.forName(className, true, kvManagerLoader.loader)
