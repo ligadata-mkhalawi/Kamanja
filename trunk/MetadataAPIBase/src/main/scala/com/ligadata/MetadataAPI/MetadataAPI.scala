@@ -21,11 +21,15 @@ import java.util.{Date, Properties}
 import com.ligadata.AuditAdapterInfo.AuditAdapter
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType
 import com.ligadata.StorageBase.DataStore
+import com.ligadata.Utils.Utils
 import com.ligadata.kamanja.metadata.{BaseElemDef, MdMgr, MessageDef, ModelDef}
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 import org.json4s.jackson.Serialization
 import com.ligadata.kamanja.metadata.MdMgr._
+
+import scala.reflect.runtime._
+import scala.reflect.runtime.{ universe => ru }
 
 case class ZkNotification(ObjectType: String, Operation: String, NameSpace: String, Name: String, Version: String, PhysicalName: String, JarName: String, DependantJars: List[String], ConfigContnent: Option[String])
 case class ZkTransaction(Notifications: List[ZkNotification], transactionId: Option[String])
@@ -82,14 +86,64 @@ object MetadataAPI {
   }
 
   def getMetadataApiInterface() : MetadataAPI = {
-  	return null;
+    val className = "com.ligadata.MetadataAPI.MetadataAPIImpl$"
+    val loader = getClass().getClassLoader()
+
+    // Try for errors before we do real loading & processing
+    try {
+      Class.forName(className, true, loader)
+    } catch {
+      case e: Exception => {
+        logger.error("Failed to load class %s".format(className), e)
+        return null
+      }
+    }
+
+    // Convert class name into a class
+    val clz = Class.forName(className, true, loader)
+
+    var isClassFnd = false
+    var curClz = clz
+    val baseClass = "com.ligadata.MetadataAPI.MetadataAPI"
+
+    while (curClz != null && isClassFnd == false) {
+      isClassFnd = Utils.isDerivedFrom(curClz, baseClass)
+      if (isClassFnd == false)
+        curClz = curClz.getSuperclass()
+    }
+
+    var retVal: MetadataAPI = null
+    if (isClassFnd) {
+      try {
+        val mirror: reflect.runtime.universe.Mirror = ru.runtimeMirror(loader)
+        val module = mirror.staticModule(className)
+        val obj = mirror.reflectModule(module)
+
+        val objinst = obj.instance
+        if (objinst.isInstanceOf[MetadataAPI]) {
+          retVal = objinst.asInstanceOf[MetadataAPI]
+        } else {
+          val objtypStr = "obj:" + obj + ", objinst:" + objinst
+          logger.error("Failed to load class %s. Found %s, but not matching with MetadataAPI base type".format(className, objtypStr))
+        }
+      } catch {
+        case e: Throwable => {
+          logger.error("Failed to load class %s ".format(className), e)
+        }
+      }
+    }
+
+    if (retVal == null) {
+      logger.error("Class %s not found which derived from %s".format(className, baseClass))
+    }
+
+    retVal
   }
 
   def SerializeMapToJsonString(map: Map[String, Any]): String = {
     implicit val formats = org.json4s.DefaultFormats
     Serialization.write(map)
   }
-
 }
 
 /**
