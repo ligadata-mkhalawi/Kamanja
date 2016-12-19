@@ -91,27 +91,33 @@ object KeyValueManager {
       case "cassandra" => {
         className = "com.ligadata.keyvaluestore.CassandraAdapter$"
         resolveFiles += ResolveFileInfo("KamanjaInternalDeps_", "", "", false)
+        resolveFiles += ResolveFileInfo("StorageDeps_", "", "", false)
       }
       case "hbase" => {
         className = "com.ligadata.keyvaluestore.HBaseAdapter$"
         resolveFiles += ResolveFileInfo("KamanjaInternalDeps_", "", "", false)
+        resolveFiles += ResolveFileInfo("StorageDeps_", "", "", false)
         resolveFiles += ResolveFileInfo("HBaseExtDependencyLibs_", "", "", false)
       }
       case "hashmap" => {
         className = "com.ligadata.keyvaluestore.HashMapAdapter$"
         resolveFiles += ResolveFileInfo("KamanjaInternalDeps_", "", "", false)
+        resolveFiles += ResolveFileInfo("StorageDeps_", "", "", false)
       }
       case "treemap" => {
         className = "com.ligadata.keyvaluestore.TreeMapAdapter$"
         resolveFiles += ResolveFileInfo("KamanjaInternalDeps_", "", "", false)
+        resolveFiles += ResolveFileInfo("StorageDeps_", "", "", false)
       }
       case "sqlserver" => {
         className = "com.ligadata.keyvaluestore.SqlServerAdapter$"
         resolveFiles += ResolveFileInfo("KamanjaInternalDeps_", "", "", false)
+        resolveFiles += ResolveFileInfo("StorageDeps_", "", "", false)
       }
       case "h2db" => {
         className = "com.ligadata.keyvaluestore.H2dbAdapter$"
         resolveFiles += ResolveFileInfo("KamanjaInternalDeps_", "", "", false)
+        resolveFiles += ResolveFileInfo("StorageDeps_", "", "", false)
       }
       case _ => {
         className = className1
