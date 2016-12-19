@@ -50,6 +50,7 @@ class SmartFileProducerConfiguration extends AdapterConfiguration {
   var typeLevelConfig: collection.mutable.Map[String, TypeLevelConfiguration] = collection.mutable.Map[String, TypeLevelConfiguration]() // inline type level override configuration
   var parquetBlockSize : Int = 0 //in bytes, when 0 use default : 134217728=(128 * 1024 * 1024) - used for parquet only
   var parquetPageSize : Int = 0  //in bytes, when 0 use default :   1048576=(  1 * 1024 * 1024).- used for parquet only
+  val otherConfig = scala.collection.mutable.Map[String, Any]()
 
   var kerberos: KerberosConfig = null
 
@@ -168,6 +169,8 @@ object SmartFileProducerConfiguration {
       }
       else if (kv._1.compareToIgnoreCase("ParquetPageSize") == 0) {
         adapterConfig.parquetPageSize = kv._2.toString.toInt
+      } else {
+        adapterConfig.otherConfig(kv._1) = kv._2
       }
     })
 

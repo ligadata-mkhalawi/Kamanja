@@ -11,7 +11,7 @@ import org.json4s.native.JsonMethods._
 import scala.collection.mutable.{ArrayBuffer, MutableList}
 
 class ArchiveConfig {
-  var archiveSleepTimeInMs: Int = 10
+  var archiveSleepTimeInMs: Int = 500
   var archiveParallelism: Int = 1
   var outputConfig: SmartFileProducerConfiguration = null
 

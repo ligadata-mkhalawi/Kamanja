@@ -55,18 +55,21 @@ class SftpFileHandler extends SmartFileHandler{
   private var channelSftp : ChannelSftp = null
   private var session : Session = null
   private var jsch : JSch = null
+  private var isShutdown = false
 
+  private var adapterName = ""
   private var ui : SftpUserInfo = null
 
   private var isBinary: Boolean = false
 
   private var fileType : String = null
 
-  def this(path : String, connectionConfig : FileAdapterConnectionConfig, monitoringConfig: FileAdapterMonitoringConfig){
+  def this(adapterName : String, path : String, connectionConfig : FileAdapterConnectionConfig, monitoringConfig: FileAdapterMonitoringConfig){
     this()
     this.remoteFullPath = path
     this.connectionConfig = connectionConfig
     this.monitoringConfig = monitoringConfig
+    this.adapterName = adapterName
 
     passphrase = if (connectionConfig.keyFile != null && connectionConfig.keyFile.length > 0)
       connectionConfig.passphrase else null
@@ -83,27 +86,33 @@ class SftpFileHandler extends SmartFileHandler{
     ui = new SftpUserInfo(connectionConfig.password, passphrase)
   }
 
-  def this(fullPath : String, connectionConfig : FileAdapterConnectionConfig,
+  def this(adapterName : String, fullPath : String, connectionConfig : FileAdapterConnectionConfig,
            monitoringConfig: FileAdapterMonitoringConfig, isBin: Boolean) {
-    this(fullPath, connectionConfig, monitoringConfig)
+    this(adapterName, fullPath, connectionConfig, monitoringConfig)
     isBinary = isBin
 
   }
 
   private def getNewSession() : Unit = {
-    if(session == null || !session.isConnected) {
+    if (! isShutdown && (session == null || !session.isConnected)) {
       session = jsch.getSession(connectionConfig.userId, host, port)
       session.setUserInfo(ui)
       session.connect()
-
-
-      logger.info("new sftp session is opened." + MonitorUtils.getCallStack())
+      if(!MonitorUtils.adaptersSessions.contains(adapterName))
+        MonitorUtils.adaptersSessions.put(adapterName, scala.collection.mutable.Map[Int, String]())
+      MonitorUtils.adaptersSessions(adapterName).put(session.hashCode(), MonitorUtils.getCallStack())
+      //logger.warn("new sftp session is opened session=" + session + ". " + MonitorUtils.getCallStack())
     }
 
-    if(channelSftp == null || !channelSftp.isConnected || channelSftp.isClosed){
+    if (! isShutdown && (channelSftp == null || !channelSftp.isConnected || channelSftp.isClosed)) {
       val channel = session.openChannel("sftp")
       channel.connect()
       channelSftp = channel.asInstanceOf[ChannelSftp]
+
+      if(!MonitorUtils.adaptersChannels.contains(adapterName))
+        MonitorUtils.adaptersChannels.put(adapterName, scala.collection.mutable.Map[Int, String]())
+      MonitorUtils.adaptersChannels(adapterName).put(channelSftp.hashCode(), MonitorUtils.getCallStack())
+      //logger.warn("new channelSftp is opened channelSftp=" + channelSftp + ". " + MonitorUtils.getCallStack())
     }
   }
 
@@ -385,7 +394,7 @@ class SftpFileHandler extends SmartFileHandler{
     try {
       logger.info("Sftp File Handler - checking existence for file " + hashPath(file))
       val startTm = System.nanoTime
-      val att = getRemoteFileAttrs(logError = false)
+      val att = getRemoteFileAttrs(file, logError = false)
       val exists = att != null
 
       val endTm = System.nanoTime
@@ -537,27 +546,30 @@ class SftpFileHandler extends SmartFileHandler{
     val currentDirectDirs = ArrayBuffer[MonitoredFile]()
 
     try {
-      getNewSession()
+      if (! isShutdown) {
+        getNewSession()
 
-      val startTm = System.nanoTime
-      val children = channelSftp.ls(path).iterator()
+        val startTm = System.nanoTime
+        val children = channelSftp.ls(path).iterator()
 
-      if(children != null) {
-        for (child <- children) {
-          val monitoredFile = makeFileEntry(child, path)
-          if (monitoredFile != null) {
-            if (monitoredFile.isDirectory) currentDirectDirs.append(monitoredFile)
-            else currentDirectFiles.append(monitoredFile)
+        if (children != null && ! isShutdown) {
+          for (child <- children) {
+            if (!isShutdown) {
+              val monitoredFile = makeFileEntry(child, path)
+              if (monitoredFile != null) {
+                if (monitoredFile.isDirectory) currentDirectDirs.append(monitoredFile)
+                else currentDirectFiles.append(monitoredFile)
+              }
+            }
           }
         }
+
+        val endTm = System.nanoTime
+        val elapsedTm = endTm - startTm
+
+        logger.debug("Sftp File Handler - finished listing dir %s. Operation took %fms. StartTime:%d, EndTime:%d.".
+          format(path, elapsedTm / 1000000.0, elapsedTm, endTm))
       }
-
-      val endTm = System.nanoTime
-      val elapsedTm = endTm - startTm
-
-      logger.debug("Sftp File Handler - finished listing dir %s. Operation took %fms. StartTime:%d, EndTime:%d.".
-        format(path, elapsedTm / 1000000.0, elapsedTm, endTm))
-
     }
     catch {
       case ex : Throwable =>
@@ -574,19 +586,21 @@ class SftpFileHandler extends SmartFileHandler{
     val dirsToCheck = new ArrayBuffer[(String, Int)]()
     dirsToCheck.append((srcDir, 1))
 
-    while (dirsToCheck.nonEmpty) {
-      val currentDirInfo = dirsToCheck.head
-      val currentDir = currentDirInfo._1
-      val currentDirDepth = currentDirInfo._2
-      dirsToCheck.remove(0)
+    while (!isShutdown && dirsToCheck.nonEmpty) {
+      if (!isShutdown) {
+        val currentDirInfo = dirsToCheck.head
+        val currentDir = currentDirInfo._1
+        val currentDirDepth = currentDirInfo._2
+        dirsToCheck.remove(0)
 
-      val (currentDirectFiles, currentDirectDirs) = listDirectFiles(currentDir)
-      //val (currentDirectFiles, currentDirectDirs) = MonitorUtils.separateFilesFromDirs(currentAllChilds)
-      files.appendAll(currentDirectFiles)
+        val (currentDirectFiles, currentDirectDirs) = listDirectFiles(currentDir)
+        //val (currentDirectFiles, currentDirectDirs) = MonitorUtils.separateFilesFromDirs(currentAllChilds)
+        if (! isShutdown)
+          files.appendAll(currentDirectFiles)
 
-      if(maxDepth <= 0 || currentDirDepth < maxDepth)
-        dirsToCheck.appendAll(currentDirectDirs.map(dir => (dir.path, currentDirDepth + 1)))
-
+        if (! isShutdown && (maxDepth <= 0 || currentDirDepth < maxDepth))
+          dirsToCheck.appendAll(currentDirectDirs.map(dir => (dir.path, currentDirDepth + 1)))
+      }
     }
 
     files.toArray
@@ -612,11 +626,27 @@ class SftpFileHandler extends SmartFileHandler{
 
   def disconnect() : Unit = {
     try{
+      //BUGBUG:: If we set isShutdown to true it is failing to process anything. Need to revisit why should we call openForRead when isShutdown = true
+      // isShutdown = true
 
-      logger.info("Closing SFTP session from disconnect(). original file path is %s.".format(getFullPath) + MonitorUtils.getCallStack())
+      //logger.warn("Closing SFTP session from disconnect(). original file path is %s. channel=%s , session=%s".
+        //format(getFullPath , channelSftp, session) + MonitorUtils.getCallStack())
 
-      if(channelSftp != null) channelSftp.exit()
-      if(session != null) session.disconnect()
+      if(channelSftp != null) {
+        channelSftp.exit()
+
+        if(!MonitorUtils.adaptersChannels.contains(adapterName))
+          logger.error("no registered channels for adapter {} though it is expected", adapterName)
+        else
+          MonitorUtils.adaptersChannels(adapterName).remove(channelSftp.hashCode())
+      }
+      if(session != null) {
+        session.disconnect()
+        if(!MonitorUtils.adaptersSessions.contains(adapterName))
+          logger.error("no registered sessions for adapter {} though it is expected", adapterName)
+        else
+          MonitorUtils.adaptersSessions(adapterName).remove(session.hashCode())
+      }
 
       channelSftp = null
       session = null
@@ -627,5 +657,9 @@ class SftpFileHandler extends SmartFileHandler{
       case ex : Throwable =>
         logger.error("",ex)
     }
+  }
+
+  def shutdown(): Unit = {
+    isShutdown = true
   }
 }

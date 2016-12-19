@@ -403,4 +403,7 @@ class HdfsFileHandler extends SmartFileHandler {
       }
     }
   }
+
+  def shutdown(): Unit = {
+  }
 }
