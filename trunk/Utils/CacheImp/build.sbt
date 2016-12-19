@@ -9,5 +9,5 @@ name := "CacheImp"
 // libraryDependencies += "org.slf4j" % "slf4j-log4j12" % "1.7.12"
 // libraryDependencies += "org.slf4j" % "slf4j-nop" % "1.7.12"
 // libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.0"
-
-
+// libraryDependencies += "org.infinispan" % "infinispan-core" % "7.2.5.Final"
+// libraryDependencies += "org.infinispan" % "infinispan-tree" % "7.2.5.Final"
