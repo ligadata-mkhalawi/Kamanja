@@ -149,9 +149,9 @@ object KeyValueManager {
           }
 
           if (recvFlIdx > 0) {
-            resolveFiles(i).resolvedFile = resolvedFl
-            resolveFiles(i).resolvedFullFilePath = recvdFlPath
-            resolveFiles(i).isResolved = true
+            resolveFiles(recvFlIdx).resolvedFile = resolvedFl
+            resolveFiles(recvFlIdx).resolvedFullFilePath = recvdFlPath
+            resolveFiles(recvFlIdx).isResolved = true
             yetToBeResolved -= 1
           }
 
