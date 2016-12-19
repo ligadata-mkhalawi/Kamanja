@@ -108,6 +108,7 @@ class KafkaSimpleConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj
     */
   def StopProcessing(): Unit = {
     terminateReaderTasks
+    isQuiesced = false
   }
 
   private def getTimeoutTimer: Long = {

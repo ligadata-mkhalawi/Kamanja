@@ -45,4 +45,6 @@ public interface SmartFileHandler {
     com.ligadata.InputAdapters.MonitoredFile[] listFiles(String dirPath, int maxDirDepth);
 
     void disconnect();
+
+    void shutdown();
 }

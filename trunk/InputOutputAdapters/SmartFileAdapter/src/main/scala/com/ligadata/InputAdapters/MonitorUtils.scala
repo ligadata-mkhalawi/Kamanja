@@ -27,6 +27,9 @@ object MonitorUtils {
   lazy val logger = LogManager.getLogger(loggerName)
 
 
+  var adaptersSessions = scala.collection.mutable.Map[String, scala.collection.mutable.Map[Int, String]]()
+  var adaptersChannels = scala.collection.mutable.Map[String, scala.collection.mutable.Map[Int, String]]()
+
   //Default allowed content types -
   val validContentTypes  = Set(PLAIN, GZIP, BZIP2, LZO) //might change to get that from some configuration
 
@@ -161,39 +164,41 @@ object MonitorUtils {
 
     val locationInfo = fileHandler1.locationInfo
 
-    breakable{
-      //loop order components, until values for one of them are not equal
-      for(orderComponent <- locationInfo.orderBy){
+    if (locationInfo != null) {
+      breakable{
+        //loop order components, until values for one of them are not equal
+        for(orderComponent <- locationInfo.orderBy){
 
-        //predefined components
-        if(orderComponent.startsWith("$")){
-          orderComponent match{
-            case "$File_Name" =>
-              val tempCompreRes = getFileName(fileHandler1.fileHandler.getFullPath).compareTo(getFileName(fileHandler2.fileHandler.getFullPath))
-              if (tempCompreRes != 0)  return tempCompreRes
-            case "$File_Full_Path" =>
-              val tempCompreRes =  fileHandler1.fileHandler.getFullPath.compareTo(fileHandler2.fileHandler.getFullPath)
-              if (tempCompreRes != 0)  return tempCompreRes
-            case "$FILE_MOD_TIME" =>
-              val tempCompreRes = fileHandler1.lastModifiedDate.compareTo(fileHandler2.lastModifiedDate)
-              if (tempCompreRes != 0)  return tempCompreRes
+          //predefined components
+          if(orderComponent.startsWith("$")){
+            orderComponent match{
+              case "$File_Name" =>
+                val tempCompreRes = getFileName(fileHandler1.fileHandler.getFullPath).compareTo(getFileName(fileHandler2.fileHandler.getFullPath))
+                if (tempCompreRes != 0)  return tempCompreRes
+              case "$File_Full_Path" =>
+                val tempCompreRes =  fileHandler1.fileHandler.getFullPath.compareTo(fileHandler2.fileHandler.getFullPath)
+                if (tempCompreRes != 0)  return tempCompreRes
+              case "$FILE_MOD_TIME" =>
+                val tempCompreRes = fileHandler1.lastModifiedDate.compareTo(fileHandler2.lastModifiedDate)
+                if (tempCompreRes != 0)  return tempCompreRes
               //TODO : check for other predefined components
-            case "_" => throw new Exception("Unsopported predefined file order component - " + orderComponent)
+              case "_" => throw new Exception("Unsopported predefined file order component - " + orderComponent)
+            }
           }
-        }
-        else {
-          val fileCompVal1 = if (fileComponentsMap1.contains(orderComponent))
-            fileComponentsMap1(orderComponent)
-          else "" //TODO : check if this can happen
-          val fileCompVal2 = if (fileComponentsMap2.contains(orderComponent))
-            fileComponentsMap2(orderComponent)
-          else ""
+          else {
+            val fileCompVal1 = if (fileComponentsMap1.contains(orderComponent))
+              fileComponentsMap1(orderComponent)
+            else "" //TODO : check if this can happen
+            val fileCompVal2 = if (fileComponentsMap2.contains(orderComponent))
+              fileComponentsMap2(orderComponent)
+            else ""
 
-          //println(s"fileCompVal1 $fileCompVal1 , fileCompVal2 $fileCompVal2")
+            //println(s"fileCompVal1 $fileCompVal1 , fileCompVal2 $fileCompVal2")
 
-          val tempCompreRes = fileCompVal1.compareTo(fileCompVal2)
-          if (tempCompreRes != 0)
-            return tempCompreRes
+            val tempCompreRes = fileCompVal1.compareTo(fileCompVal2)
+            if (tempCompreRes != 0)
+              return tempCompreRes
+          }
         }
       }
     }
@@ -208,7 +213,7 @@ object MonitorUtils {
     * @return
     */
   def getFileComponents(fileFullPath: String, locationInfo : LocationInfo) : Map[String, String] = {
-    if(locationInfo.fileComponents == null)
+    if(locationInfo == null || locationInfo.fileComponents == null)
       return Map[String, String]()
 
     val fileName = getFileName(fileFullPath)
@@ -272,7 +277,7 @@ object MonitorUtils {
 
   def getCallStack() : String = {
     if(showStackTraceWithLogs) {
-      val callstack = Thread.currentThread().getStackTrace().drop(2).take(25).
+      val callstack = Thread.currentThread().getStackTrace().drop(2).take(5).
         map(s => s.getClassName + "." + s.getMethodName + "(" + s.getLineNumber + ")").mkString("\n")
       " Callstack is: " + callstack
     }
@@ -411,7 +416,7 @@ object SmartFileHandlerFactory{
     val handler : SmartFileHandler =
       adapterConfig._type.toLowerCase() match {
         case "das/nas" => new PosixFileHandler(fileFullPath, monitoringConf, isBinary)
-        case "sftp" => new SftpFileHandler(fileFullPath, connectionConf, monitoringConf, isBinary)
+        case "sftp" => new SftpFileHandler(adapterConfig.Name, fileFullPath, connectionConf, monitoringConf, isBinary)
         case "hdfs" => new HdfsFileHandler(fileFullPath, connectionConf, monitoringConf, isBinary)
         case _ => throw new KamanjaException("Unsupported Smart file adapter type", null)
       }

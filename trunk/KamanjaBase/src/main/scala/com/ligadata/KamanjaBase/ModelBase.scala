@@ -444,6 +444,8 @@ trait EnvContext /* extends Monitorable */  {
   // eventPathData is the data of that path
   def createListenerForCacheKey(listenPath: String, ListenCallback: (String, String, String) => Unit): Unit
 
+  def removeListenerForCacheKey(listenPath: String): Unit
+
   // listenPath is the Path where it has to listen and its children
   //    Ex: If we start watching /kamanja/nodification/ all the following puts/updates/removes/etc will notify callback
   //    /kamanja/nodification/node1/1 or /kamanja/nodification/node1/2 or /kamanja/nodification/node1 or /kamanja/nodification/node2 or /kamanja/nodification/node3 or /kamanja/nodification/node4
@@ -453,6 +455,8 @@ trait EnvContext /* extends Monitorable */  {
   // eventPathData is the data of that path
   // eventType: String, eventPath: String, eventPathData: Array[Byte]
   def createListenerForCacheChildern(listenPath: String, ListenCallback: (String, String, String) => Unit): Unit
+
+  def removeListenerForCacheChildern(listenPath: String): Unit
 
   // Leader Information
   def getClusterInfo(): ClusterStatus
