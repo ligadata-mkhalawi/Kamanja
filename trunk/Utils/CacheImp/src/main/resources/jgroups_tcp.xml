@@ -41,7 +41,7 @@
              max_interval="30000"/>
     <FD_SOCK/>
     <FD timeout="3000" max_tries="10" />
-    <VERIFY_SUSPECT timeout="15000"  />
+    <VERIFY_SUSPECT timeout="2000"  />
     <BARRIER />
     <pbcast.NAKACK2 use_mcast_xmit="false" log_discard_msgs="true"
                     discard_delivered_msgs="true"/>
