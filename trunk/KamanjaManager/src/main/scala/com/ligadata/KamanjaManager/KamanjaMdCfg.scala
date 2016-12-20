@@ -500,7 +500,7 @@ object KamanjaMdCfg {
 
     val kamanjaLoaderInfo = new KamanjaLoaderInfo(adaptersAndEnvCtxtLoader, false, true)
 
-    val adapter = KeyValueManager.Get(allJars, adapterInfo.FullAdapterConfig, nodeContext, adapterInfo, kamanjaLoaderInfo)
+    val adapter = KeyValueManager.Get(nodeContext.getEnvCtxt().getJarPaths(), adapterInfo.FullAdapterConfig, nodeContext, adapterInfo, kamanjaLoaderInfo)
 
     (adapter, kamanjaLoaderInfo)
   }
