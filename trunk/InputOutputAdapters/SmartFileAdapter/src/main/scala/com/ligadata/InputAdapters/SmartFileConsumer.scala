@@ -541,7 +541,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
               } finally {
                 moveWaitingTime = System.currentTimeMillis
                 if (moveExecutor != null) {
-                  if (logger.isWarnEnabled()) logger.warn("Waiting for files to move");
+                  if (logger.isInfoEnabled()) logger.info("Waiting for files to move");
                   MonitorUtils.shutdownAndAwaitTermination(moveExecutor, "Move executor", 86400000L)
                 }
                 moveExecutor = null
@@ -552,8 +552,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
               assignFileProcessingIfPossible()
               val afrterAssignFilesTime = System.currentTimeMillis
 
-              if (logger.isWarnEnabled()) logger.warn("Time Assignments. Process Requests:%d ms, Move took:%d ms, AssignFiles:%d ms".format(
-                moveWaitingTime - startTime, beforeAssignFilesTime - moveWaitingTime, afrterAssignFilesTime - beforeAssignFilesTime));
+              if (appliedReq > 0 && logger.isWarnEnabled()) logger.warn("Time Assignments. Process Requests:%d ms, Move took:%d ms, AssignFiles:%d ms, ReqQ:%d, appliedReq:%d".format(
+                moveWaitingTime - startTime, beforeAssignFilesTime - moveWaitingTime, afrterAssignFilesTime - beforeAssignFilesTime, leaderCallbackRequests.size, appliedReq));
 
               if (appliedReq == 0) {
                 try {
