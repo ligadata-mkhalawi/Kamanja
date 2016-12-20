@@ -529,6 +529,27 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                       }
                     }
                   })
+
+                  if (reqTypeId == 1) {
+                    moveWaitingTime = System.currentTimeMillis
+                    if (moveExecutor != null) {
+                      if (logger.isWarnEnabled()) logger.warn("Waiting for files to move");
+                      var cntr = 0
+                      moveExecutor.shutdown()
+                      val tm = System.currentTimeMillis
+                      while (!moveExecutor.isTerminated && cntr < 17280000) {
+                        Thread.sleep(5) // sleep 5ms and then check
+                        cntr += 1
+                        if ((cntr % 2) == 0) {
+                          assignFileProcessingIfPossible()
+                        }
+                        if ((cntr % 12000) == 0) {
+                          if (logger.isWarnEnabled()) logger.warn("Waiting for files to move from past %d ms".format(System.currentTimeMillis - tm));
+                        }
+                      }
+                    }
+                    moveExecutor = null
+                  }
                 })
               }
               catch {
@@ -539,8 +560,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                   LOG.error("Smart File Consumer - unkown exception ", e)
                 }
               } finally {
-                moveWaitingTime = System.currentTimeMillis
                 if (moveExecutor != null) {
+                  moveWaitingTime = System.currentTimeMillis
                   if (logger.isWarnEnabled()) logger.warn("Waiting for files to move");
                   var cntr = 0
                   moveExecutor.shutdown()
