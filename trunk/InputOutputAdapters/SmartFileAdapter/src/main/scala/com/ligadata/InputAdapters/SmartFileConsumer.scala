@@ -457,7 +457,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                                         val valueInProcessingQueue = processingNodeId + "/" + processingThreadId + ":" + processingFilePath
                                         if (!isShutdown) {
                                           val flProcessTime = removeFromProcessingQueue(valueInProcessingQueue)
-                                          LOG.warn("Smart File Consumer (Leader) - removing from processing queue: " + valueInProcessingQueue + ", this file took: " + flProcessTime + " ms")
+                                          if (LOG.isInfoEnabled) LOG.info("Smart File Consumer (Leader) - removing from processing queue: " + valueInProcessingQueue + ", this file took: " + flProcessTime + " ms")
                                         }
                                       }
                                       doneMove = moved
@@ -533,7 +533,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                   if (reqTypeId == 1) {
                     moveWaitingTime = System.currentTimeMillis
                     if (moveExecutor != null) {
-                      if (logger.isWarnEnabled()) logger.warn("Waiting for files to move");
+                      if (logger.isInfoEnabled) logger.info("Waiting for files to move");
                       var cntr = 0
                       moveExecutor.shutdown()
                       val tm = System.currentTimeMillis
@@ -562,7 +562,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
               } finally {
                 if (moveExecutor != null) {
                   moveWaitingTime = System.currentTimeMillis
-                  if (logger.isWarnEnabled()) logger.warn("Waiting for files to move");
+                  if (logger.isInfoEnabled()) logger.info("Waiting for files to move");
                   var cntr = 0
                   moveExecutor.shutdown()
                   val tm = System.currentTimeMillis
@@ -585,7 +585,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
               assignFileProcessingIfPossible()
               val afrterAssignFilesTime = System.currentTimeMillis
 
-              if (logger.isWarnEnabled()) logger.warn("Time Assignments. Process Requests:%d ms, Move took:%d ms, AssignFiles:%d ms, ReqQ:%d, appliedReq:%d".format(
+              if (appliedReq > 0 && logger.isInfoEnabled()) logger.info("Time Assignments. Process Requests:%d ms, Move took:%d ms, AssignFiles:%d ms, ReqQ:%d, appliedReq:%d".format(
                 moveWaitingTime - startTime, beforeAssignFilesTime - moveWaitingTime, afrterAssignFilesTime - beforeAssignFilesTime, leaderCallbackRequests.size, appliedReq));
 
               if (appliedReq == 0) {
