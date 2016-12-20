@@ -164,6 +164,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   //  val File_Processing_Cache_Key = "Smart_File_Adapter/" + adapterConfig.Name + "/" + "FileProcessing"
 
   private val processingFilesQueue = ArrayBuffer[String]()
+  private val processingFilesQStartTime = scala.collection.mutable.Map[String, Long]()
 
   private var nextQueueDumptime = 0L
 
@@ -414,6 +415,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
               val leaderCallbackRequests = getLeaderCallbackRequestsAndClear
               var appliedReq = 0
 
+              val startTime = System.currentTimeMillis
               reqTypesProcessingOrder.foreach(reqTypeId => {
                 leaderCallbackRequests.foreach(req => {
                   if (reqTypeId == req.typ && req.typ == 1) {
@@ -454,9 +456,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
                         //remove the file from processing queue
                         val valueInProcessingQueue = processingNodeId + "/" + processingThreadId + ":" + processingFilePath
-                        LOG.warn("Smart File Consumer (Leader) - removing from processing queue: " + valueInProcessingQueue)
-                        if (!isShutdown)
-                          removeFromProcessingQueue(valueInProcessingQueue)
+                        if (!isShutdown) {
+                          val flProcessTime = removeFromProcessingQueue(valueInProcessingQueue)
+                          LOG.warn("Smart File Consumer (Leader) - removing from processing queue: " + valueInProcessingQueue + ", this file took: " + flProcessTime + " ms")
+                        }
                         appliedReq += 1
                       }
                     }
@@ -490,11 +493,18 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
               if (logger.isDebugEnabled) logger.debug("assignFilesToRequestThread: leaderCallbackRequests:%d, ReqQ:%d, ProcessingQ:%d".format(leaderCallbackRequests.size, fileRequestsQueue.size, processingFilesQueue.size));
 
+              val beforeAssignFilesTime = System.currentTimeMillis
               assignFileProcessingIfPossible()
-              try {
-                Thread.sleep(5)
-              } catch {
-                case e: Throwable => {
+              val afrterAssignFilesTime = System.currentTimeMillis
+
+              if (logger.isWarnEnabled()) logger.warn("Time Assignments. Process Requests:%d ms, AssignFiles:%d ms".format(beforeAssignFilesTime - startTime, afrterAssignFilesTime - beforeAssignFilesTime));
+
+              if (appliedReq == 0) {
+                try {
+                  Thread.sleep(5)
+                } catch {
+                  case e: Throwable => {
+                  }
                 }
               }
             }
@@ -640,13 +650,13 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
           val nodeId = pathTokens(0)
           val partitionId = pathTokens(1)
 
-          var statusData : Array[Byte] = null
+          var statusData: Array[Byte] = null
           val cacheKey = Status_Check_Cache_KeyParent + "/" + nodeId + "/" + partitionId
           try {
             statusData = envContext.getConfigFromClusterCache(cacheKey) // filename~offset~timestamp~donestatus
           }
-          catch{
-            case ex : Throwable => logger.error("", ex)
+          catch {
+            case ex: Throwable => logger.error("", ex)
           }
           val statusDataStr: String = if (statusData == null) null else new String(statusData)
 
@@ -965,6 +975,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       else
         processingFilesQueue.append(processingItem)
 
+      processingFilesQStartTime(processingItem) = System.currentTimeMillis
+
       /*
             val currentProcesses = getFileProcessingQueue
 
@@ -983,15 +995,20 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     }
   }
 
-  def removeFromProcessingQueue(processingItem: String): Unit = {
+  def removeFromProcessingQueue(processingItem: String): Long = {
     processingQLock.synchronized {
       processingFilesQueue -= processingItem
+      val startTime = processingFilesQStartTime.getOrElse(processingItem, 0L)
+      processingFilesQStartTime.remove(processingItem)
+      val timeTaken = System.currentTimeMillis - startTime
+      timeTaken
     }
   }
 
   def clearProcessingQueue(): Unit = {
     processingQLock.synchronized {
       processingFilesQueue.clear()
+      processingFilesQStartTime.clear
       /*
       val cacheData = ""
       envContext.saveConfigInClusterCache(File_Processing_Cache_Key, cacheData.getBytes)
@@ -1496,14 +1513,13 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
           envContext.postMessages(Array[ContainerInterface](statMsg))
         }
       }
-      catch
-      {
+      catch {
         case e: Exception => {
           logger.error("", e)
         }
       }
     }
-    else{
+    else {
       logger.error("Msg {} is not found in metadata", statMsgStr)
     }
 
@@ -1794,10 +1810,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   }
 
   override def StartProcessing(partitionIds: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = {
-    if(MonitorUtils.adaptersChannels.contains(adapterConfig.Name)){
+    if (MonitorUtils.adaptersChannels.contains(adapterConfig.Name)) {
       MonitorUtils.adaptersChannels.clear()
     }
-    if(MonitorUtils.adaptersSessions.contains(adapterConfig.Name)){
+    if (MonitorUtils.adaptersSessions.contains(adapterConfig.Name)) {
       MonitorUtils.adaptersSessions.clear()
     }
 
@@ -1813,6 +1829,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
     val fileAssignmentFromLeaderThread = new Runnable() {
       val exec = participantsFilesAssignmentExecutor
+
       override def run(): Unit = {
         while (!isShutdown && exec != null && !exec.isShutdown && !exec.isTerminated) {
           try {
