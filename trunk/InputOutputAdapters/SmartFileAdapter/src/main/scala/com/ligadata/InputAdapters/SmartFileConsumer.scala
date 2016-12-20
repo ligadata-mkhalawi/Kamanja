@@ -415,89 +415,134 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
               val leaderCallbackRequests = getLeaderCallbackRequestsAndClear
               var appliedReq = 0
 
+              var moveExecutor = Executors.newFixedThreadPool(32)
+
               val startTime = System.currentTimeMillis
-              reqTypesProcessingOrder.foreach(reqTypeId => {
-                leaderCallbackRequests.foreach(req => {
-                  if (reqTypeId == req.typ && req.typ == 1) {
-                    val eventType = req.eventType
-                    val eventPath = req.eventPath
-                    val eventPathData = req.eventPathData
-                    if ((!isShutdown) && (eventType.equalsIgnoreCase("put") || eventType.equalsIgnoreCase("update") ||
-                      eventType.equalsIgnoreCase("CHILD_UPDATED") || eventType.equalsIgnoreCase("CHILD_ADDED"))) {
-                      val keyTokens = eventPath.split("/")
-                      val processingThreadId = keyTokens(keyTokens.length - 1)
-                      val processingNodeId = keyTokens(keyTokens.length - 2)
-                      //value for file processing has the format <file-name>|<status>
-                      val valueTokens = eventPathData.split("\\|")
-                      if (valueTokens.length >= 2) {
-                        val processingFilePath = valueTokens(0)
-                        val status = valueTokens(1)
-                        LOG.warn("Smart File Consumer (Leader) - File ({}) processing finished by node {} , partition {} , status={}",
-                          processingFilePath, processingNodeId, processingThreadId.toString, status)
+              var moveWaitingTime: Long = 0
+              try {
+                reqTypesProcessingOrder.foreach(reqTypeId => {
+                  leaderCallbackRequests.foreach(req => {
+                    if (reqTypeId == req.typ && req.typ == 1) {
+                      val eventType = req.eventType
+                      val eventPath = req.eventPath
+                      val eventPathData = req.eventPathData
+                      if ((!isShutdown) && (eventType.equalsIgnoreCase("put") || eventType.equalsIgnoreCase("update") ||
+                        eventType.equalsIgnoreCase("CHILD_UPDATED") || eventType.equalsIgnoreCase("CHILD_ADDED"))) {
+                        val keyTokens = eventPath.split("/")
+                        val processingThreadId = keyTokens(keyTokens.length - 1)
+                        val processingNodeId = keyTokens(keyTokens.length - 2)
+                        //value for file processing has the format <file-name>|<status>
+                        val valueTokens = eventPathData.split("\\|")
+                        if (valueTokens.length >= 2) {
+                          val processingFilePath = valueTokens(0)
+                          val status = valueTokens(1)
+                          LOG.warn("Smart File Consumer (Leader) - File ({}) processing finished by node {} , partition {} , status={}",
+                            processingFilePath, processingNodeId, processingThreadId.toString, status)
 
-                        if (status == File_Processing_Status_Finished || status == File_Processing_Status_Corrupted) {
-                          val procFileParentDir = MonitorUtils.getFileParentDir(processingFilePath, adapterConfig)
-                          val procFileLocationInfo = getDirLocationInfo(procFileParentDir)
-                          if (procFileLocationInfo.isMovingEnabled) {
-                            val moved = moveFile(processingFilePath)
-                            if (moved && !isShutdown)
-                              monitorController.markFileAsProcessed(processingFilePath)
-                          }
-                          else {
-                            logger.info("File {} will not be moved since moving is disabled for folder {} - Adapter {}",
-                              processingFilePath, procFileParentDir, adapterConfig.Name)
+                          if (status == File_Processing_Status_Finished || status == File_Processing_Status_Corrupted) {
+                            val procFileParentDir = MonitorUtils.getFileParentDir(processingFilePath, adapterConfig)
+                            val procFileLocationInfo = getDirLocationInfo(procFileParentDir)
+                            if (procFileLocationInfo.isMovingEnabled) {
+                              val moveThread = new Runnable() {
+                                override def run(): Unit = {
+                                  val flPath = processingFilePath
+                                  var doneMove = false
+                                  while (! doneMove && !isShutdown) {
+                                    try {
+                                      val moved = moveFile(flPath)
+                                      if (moved && !isShutdown)
+                                        monitorController.markFileAsProcessed(flPath)
+                                      doneMove = moved
+                                    } catch {
+                                      case e: Throwable => {
+                                        // BUGBUG:: What happens if file failed to move. We are keep on retrying
+                                        LOG.error("Failed to move file:" + flPath)
+                                      }
+                                    }
+                                    if (! doneMove && !isShutdown) {
+                                      try {
+                                        LOG.error("Failed to move file:" + flPath + ", waiting for 1 secs and retry")
+                                        Thread.sleep(1000)
+                                      } catch {
+                                        case e: Throwable => { }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                              moveExecutor.execute(moveThread)
+                            }
+                            else {
+                              logger.info("File {} will not be moved since moving is disabled for folder {} - Adapter {}",
+                                processingFilePath, procFileParentDir, adapterConfig.Name)
 
-                            if (!isShutdown)
-                              monitorController.markFileAsProcessed(processingFilePath)
+                              if (!isShutdown)
+                                monitorController.markFileAsProcessed(processingFilePath)
+                            }
                           }
+                          else if (status == File_Processing_Status_NotFound && !isShutdown)
+                            monitorController.markFileAsProcessed(processingFilePath)
+
+                          //remove the file from processing queue
+                          val valueInProcessingQueue = processingNodeId + "/" + processingThreadId + ":" + processingFilePath
+                          if (!isShutdown) {
+                            val flProcessTime = removeFromProcessingQueue(valueInProcessingQueue)
+                            LOG.warn("Smart File Consumer (Leader) - removing from processing queue: " + valueInProcessingQueue + ", this file took: " + flProcessTime + " ms")
+                          }
+                          appliedReq += 1
                         }
-                        else if (status == File_Processing_Status_NotFound && !isShutdown)
-                          monitorController.markFileAsProcessed(processingFilePath)
+                      }
+                    } else if (reqTypeId == req.typ && req.typ == 0) {
+                      val eventType = req.eventType
+                      val eventPath = req.eventPath
+                      val eventPathData = req.eventPathData
+                      if ((!isShutdown) && (eventType.equalsIgnoreCase("put") || eventType.equalsIgnoreCase("update") ||
+                        eventType.equalsIgnoreCase("CHILD_UPDATED") || eventType.equalsIgnoreCase("CHILD_ADDED"))) {
+                        val keyTokens = eventPath.split("/")
+                        val requestingNodeId = keyTokens(keyTokens.length - 2)
+                        val requestingThreadId = keyTokens(keyTokens.length - 1)
+                        val fileToProcessKeyPath = eventPathData //from leader
 
-                        //remove the file from processing queue
-                        val valueInProcessingQueue = processingNodeId + "/" + processingThreadId + ":" + processingFilePath
+                        LOG.warn("Smart File Consumer - Leader has received a request from Node {}, Thread {}", requestingNodeId, requestingThreadId)
+
+                        //just add to request queue
+                        val newRequest = requestingNodeId + "/" + requestingThreadId + ":" + fileToProcessKeyPath
                         if (!isShutdown) {
-                          val flProcessTime = removeFromProcessingQueue(valueInProcessingQueue)
-                          LOG.warn("Smart File Consumer (Leader) - removing from processing queue: " + valueInProcessingQueue + ", this file took: " + flProcessTime + " ms")
+                          if (isPartitionInProcessingQueue(requestingThreadId.toInt))
+                            logger.warn("Partition {} is requesting to process file {} but already in processing queue",
+                              requestingThreadId, fileToProcessKeyPath)
+                          else
+                            addToRequestQueue(newRequest)
                         }
                         appliedReq += 1
                       }
                     }
-                  } else if (reqTypeId == req.typ && req.typ == 0) {
-                    val eventType = req.eventType
-                    val eventPath = req.eventPath
-                    val eventPathData = req.eventPathData
-                    if ((!isShutdown) && (eventType.equalsIgnoreCase("put") || eventType.equalsIgnoreCase("update") ||
-                      eventType.equalsIgnoreCase("CHILD_UPDATED") || eventType.equalsIgnoreCase("CHILD_ADDED"))) {
-                      val keyTokens = eventPath.split("/")
-                      val requestingNodeId = keyTokens(keyTokens.length - 2)
-                      val requestingThreadId = keyTokens(keyTokens.length - 1)
-                      val fileToProcessKeyPath = eventPathData //from leader
-
-                      LOG.warn("Smart File Consumer - Leader has received a request from Node {}, Thread {}", requestingNodeId, requestingThreadId)
-
-                      //just add to request queue
-                      val newRequest = requestingNodeId + "/" + requestingThreadId + ":" + fileToProcessKeyPath
-                      if (!isShutdown) {
-                        if (isPartitionInProcessingQueue(requestingThreadId.toInt))
-                          logger.warn("Partition {} is requesting to process file {} but already in processing queue",
-                            requestingThreadId, fileToProcessKeyPath)
-                        else
-                          addToRequestQueue(newRequest)
-                      }
-                      appliedReq += 1
-                    }
-                  }
+                  })
                 })
-              })
-
+              }
+              catch {
+                case ie: InterruptedException => {
+                  LOG.error("Smart File Consumer - interrupted " + ie)
+                }
+                case e: Throwable => {
+                  LOG.error("Smart File Consumer - unkown exception ", e)
+                }
+              } finally {
+                moveWaitingTime = System.currentTimeMillis
+                if (moveExecutor != null) {
+                  if (logger.isWarnEnabled()) logger.warn("Waiting for files to move");
+                  MonitorUtils.shutdownAndAwaitTermination(moveExecutor, "Move executor", 86400000L)
+                }
+                moveExecutor = null
+              }
               if (logger.isDebugEnabled) logger.debug("assignFilesToRequestThread: leaderCallbackRequests:%d, ReqQ:%d, ProcessingQ:%d".format(leaderCallbackRequests.size, fileRequestsQueue.size, processingFilesQueue.size));
 
               val beforeAssignFilesTime = System.currentTimeMillis
               assignFileProcessingIfPossible()
               val afrterAssignFilesTime = System.currentTimeMillis
 
-              if (logger.isWarnEnabled()) logger.warn("Time Assignments. Process Requests:%d ms, AssignFiles:%d ms".format(beforeAssignFilesTime - startTime, afrterAssignFilesTime - beforeAssignFilesTime));
+              if (logger.isWarnEnabled()) logger.warn("Time Assignments. Process Requests:%d ms, Move took:%d ms, AssignFiles:%d ms".format(
+                moveWaitingTime - startTime, beforeAssignFilesTime - moveWaitingTime, afrterAssignFilesTime - beforeAssignFilesTime));
 
               if (appliedReq == 0) {
                 try {
