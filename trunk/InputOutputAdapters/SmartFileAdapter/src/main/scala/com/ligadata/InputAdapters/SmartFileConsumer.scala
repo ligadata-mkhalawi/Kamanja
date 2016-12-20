@@ -540,9 +540,9 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                       while (!moveExecutor.isTerminated && cntr < 17280000) {
                         Thread.sleep(5) // sleep 5ms and then check
                         cntr += 1
-                        if ((cntr % 2) == 0) {
-                          assignFileProcessingIfPossible()
-                        }
+//                        if ((cntr % 2) == 0) {
+//                          assignFileProcessingIfPossible()
+//                        }
                         if ((cntr % 12000) == 0) {
                           if (logger.isWarnEnabled()) logger.warn("Waiting for files to move from past %d ms".format(System.currentTimeMillis - tm));
                         }
@@ -569,9 +569,9 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                   while (!moveExecutor.isTerminated && cntr < 17280000) {
                     Thread.sleep(5) // sleep 5ms and then check
                     cntr += 1
-                    if ((cntr % 2) == 0) {
-                      assignFileProcessingIfPossible()
-                    }
+//                    if ((cntr % 2) == 0) {
+//                      assignFileProcessingIfPossible()
+//                    }
                     if ((cntr % 12000) == 0) {
                       if (logger.isWarnEnabled()) logger.warn("Waiting for files to move from past %d ms".format(System.currentTimeMillis - tm));
                     }
@@ -759,7 +759,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
           }
 
           if (!isShutdown && previousStatusMap != null && (statusDataStr == null || statusDataStr.trim.length == 0)) {
-            LOG.debug("Smart File Consumer - current participants status in cache key {} is {}", cacheKey, statusDataStr)
+            if (LOG.isDebugEnabled) LOG.debug("Smart File Consumer - current participants status in cache key {} is {}", cacheKey, statusDataStr)
 
             LOG.error("Smart File Consumer - file {} is supposed to be processed by partition {} on node {} but not found in node updated status. used key is {}",
               fileInProcess, partitionId, nodeId, cacheKey)
@@ -769,7 +769,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             currentStatusMap.put(fileInProcess, (System.nanoTime, failedCheckCount))
           }
           else if (!isShutdown && (statusDataStr == null || statusDataStr.trim.length == 0)) {
-            LOG.debug("Smart File Consumer - current participants status in cache is {}", statusDataStr)
+            if (LOG.isDebugEnabled) LOG.debug("Smart File Consumer - current participants status in cache is {}", statusDataStr)
 
             LOG.error("Smart File Consumer - file {} is supposed to be processed by partition {} on node {} but not found in node updated status",
               fileInProcess, partitionId, nodeId)
@@ -778,7 +778,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             currentStatusMap.put(fileInProcess, (System.nanoTime, failedCheckCount))
           }
           else if (!isShutdown) {
-            LOG.warn("Smart File Consumer - current participants status in cache is {} , key is {}", statusDataStr, cacheKey)
+            if (LOG.isInfoEnabled) LOG.info("Smart File Consumer - current participants status in cache is {} , key is {}", statusDataStr, cacheKey)
 
             val statusDataTokens = statusDataStr.split("~", -1)
             fileInStatus = statusDataTokens(0)
@@ -1064,7 +1064,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       else
         processingFilesQueue.append(processingItem)
 
-      processingFilesQStartTime(processingItem) = System.currentTimeMillis
+//      processingFilesQStartTime(processingItem) = System.currentTimeMillis
 
       /*
             val currentProcesses = getFileProcessingQueue
@@ -1087,10 +1087,11 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   def removeFromProcessingQueue(processingItem: String): Long = {
     processingQLock.synchronized {
       processingFilesQueue -= processingItem
-      val startTime = processingFilesQStartTime.getOrElse(processingItem, 0L)
-      processingFilesQStartTime.remove(processingItem)
-      val timeTaken = System.currentTimeMillis - startTime
-      timeTaken
+//      val startTime = processingFilesQStartTime.getOrElse(processingItem, 0L)
+//      processingFilesQStartTime.remove(processingItem)
+//      val timeTaken = System.currentTimeMillis - startTime
+//      timeTaken
+      0
     }
   }
 
@@ -1114,7 +1115,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       val startTm = System.currentTimeMillis
       envContext.setListenerCacheKey(eventPath, "") //clear it. TODO : find a better way
       addLeaderCallbackRequest(0, eventType, eventPath, eventPathData)
-      if (LOG.isWarnEnabled) LOG.warn("requestFileLeaderCallback took:%d ms for eventType:%s, eventPath:%s, eventPathData:%s".format(System.currentTimeMillis - startTm, eventType, eventPath, eventPathData))
+      if (LOG.isInfoEnabled) LOG.info("requestFileLeaderCallback took:%d ms for eventType:%s, eventPath:%s, eventPathData:%s".format(System.currentTimeMillis - startTm, eventType, eventPath, eventPathData))
       //should do anything for remove?
     }
   }
@@ -1407,7 +1408,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     if (eventPathData != null && !isShutdown && IsLeaderNode) {
       val startTm = System.currentTimeMillis
       addLeaderCallbackRequest(1, eventType, eventPath, eventPathData)
-      if (LOG.isWarnEnabled) LOG.warn("fileProcessingLeaderCallback took:%d ms for eventType:%s, eventPath:%s, eventPathData:%s".format(System.currentTimeMillis - startTm, eventType, eventPath, eventPathData))
+      if (LOG.isInfoEnabled) LOG.info("fileProcessingLeaderCallback took:%d ms for eventType:%s, eventPath:%s, eventPathData:%s".format(System.currentTimeMillis - startTm, eventType, eventPath, eventPathData))
     }
   }
 
@@ -1512,7 +1513,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
     val startTm = System.currentTimeMillis
     addFileAssignmentsCallbackRequest(eventType, eventPath, eventPathData)
-    if (LOG.isWarnEnabled) LOG.warn("fileAssignmentFromLeaderCallback took:%d ms for eventType:%s, eventPath:%s, eventPathData:%s".format(System.currentTimeMillis - startTm,
+    if (LOG.isInfoEnabled) LOG.info("fileAssignmentFromLeaderCallback took:%d ms for eventType:%s, eventPath:%s, eventPathData:%s".format(System.currentTimeMillis - startTm,
       if (eventType == null) "" else eventType,
       if (eventPath == null) "" else eventPath,
       if (eventPathData == null) "" else eventPathData))
