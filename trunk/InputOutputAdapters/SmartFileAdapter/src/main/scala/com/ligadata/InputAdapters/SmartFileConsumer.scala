@@ -439,6 +439,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                           LOG.warn("Smart File Consumer (Leader) - File ({}) processing finished by node {} , partition {} , status={}",
                             processingFilePath, processingNodeId, processingThreadId.toString, status)
 
+                          var handledInnMoveThread = false
                           if (status == File_Processing_Status_Finished || status == File_Processing_Status_Corrupted) {
                             val procFileParentDir = MonitorUtils.getFileParentDir(processingFilePath, adapterConfig)
                             val procFileLocationInfo = getDirLocationInfo(procFileParentDir)
@@ -450,8 +451,15 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                                   while (! doneMove && !isShutdown) {
                                     try {
                                       val moved = moveFile(flPath)
-                                      if (moved && !isShutdown)
+                                      if (moved && !isShutdown) {
                                         monitorController.markFileAsProcessed(flPath)
+                                        //remove the file from processing queue
+                                        val valueInProcessingQueue = processingNodeId + "/" + processingThreadId + ":" + processingFilePath
+                                        if (!isShutdown) {
+                                          val flProcessTime = removeFromProcessingQueue(valueInProcessingQueue)
+                                          LOG.warn("Smart File Consumer (Leader) - removing from processing queue: " + valueInProcessingQueue + ", this file took: " + flProcessTime + " ms")
+                                        }
+                                      }
                                       doneMove = moved
                                     } catch {
                                       case e: Throwable => {
@@ -471,6 +479,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                                 }
                               }
                               moveExecutor.execute(moveThread)
+                              handledInnMoveThread = true
                             }
                             else {
                               logger.info("File {} will not be moved since moving is disabled for folder {} - Adapter {}",
@@ -483,11 +492,13 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                           else if (status == File_Processing_Status_NotFound && !isShutdown)
                             monitorController.markFileAsProcessed(processingFilePath)
 
-                          //remove the file from processing queue
-                          val valueInProcessingQueue = processingNodeId + "/" + processingThreadId + ":" + processingFilePath
-                          if (!isShutdown) {
-                            val flProcessTime = removeFromProcessingQueue(valueInProcessingQueue)
-                            LOG.warn("Smart File Consumer (Leader) - removing from processing queue: " + valueInProcessingQueue + ", this file took: " + flProcessTime + " ms")
+                          if (! handledInnMoveThread) {
+                            //remove the file from processing queue
+                            val valueInProcessingQueue = processingNodeId + "/" + processingThreadId + ":" + processingFilePath
+                            if (!isShutdown) {
+                              val flProcessTime = removeFromProcessingQueue(valueInProcessingQueue)
+                              LOG.warn("Smart File Consumer (Leader) - removing from processing queue: " + valueInProcessingQueue + ", this file took: " + flProcessTime + " ms")
+                            }
                           }
                           appliedReq += 1
                         }
