@@ -242,12 +242,12 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
         //if (root.get("metadata") != None) {
         val metadata = if (root.get("metadata") == None) Map[String, Any]() else root.get("metadata").get.asInstanceOf[Map[String, Any]]
 
-        val index = if (metadata.get("index") == None) tableName else metadata.get("index").get.toString
-        val metadata_type = if (metadata.get("type") == None) "type1" else metadata.get("type").get.toString
+        val index = if (metadata.get("index") == None || metadata.get("index").get.toString.trim.length == 0) tableName else metadata.get("index").get.toString
+        val metadata_type = if (metadata.get("type") == None || metadata.get("index").get.toString.trim.length == 0) "type1" else metadata.get("type").get.toString
 
         val bulk = client.prepareIndex(index, metadata_type)
 
-        if (metadata.get("id") != None) bulk.setId(metadata.get("id").get.toString)
+        if (metadata.get("id") != None && metadata.get("id").get.toString.trim.length > 0) bulk.setId(metadata.get("id").get.toString)
         if (metadata.get("version") != None) bulk.setVersionType(VersionType.FORCE).setVersion(metadata.get("version").get.asInstanceOf[BigInt].toLong)
 
         //}
