@@ -1,6 +1,6 @@
 {
   "header": {
-    "namespace": "com.ligadata.jtm.test.filter1",
+    "namespace": "com.ligadata.jtm.test.v2.filter",
     "version": "0.0.1",
     "language" : "scala",
     "minVersion" : "2.11"

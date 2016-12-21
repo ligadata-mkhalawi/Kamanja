@@ -81,6 +81,8 @@ case class ModelInfo(NameSpace: String
                      , DependencyJars: List[String]
                      , Recompile: Boolean
                      , SupportsInstanceSerialization: Boolean
+                     , modelConfig : String
+                     , moduleName : String
                      , DepContainers: Option[List[String]])
 
 case class ModelDefinition(Model: ModelInfo)
@@ -602,7 +604,8 @@ object JsonSerializer {
         , ModDefInst.Model.DependencyJars.toArray
         , ModDefInst.Model.Recompile
         , ModDefInst.Model.SupportsInstanceSerialization
-	, ""
+	    , ModDefInst.Model.modelConfig
+        , ModDefInst.Model.moduleName
         , depContainers.toArray)
 
       modDef.ObjectDefinition(ModDefInst.Model.ObjectDefinition)

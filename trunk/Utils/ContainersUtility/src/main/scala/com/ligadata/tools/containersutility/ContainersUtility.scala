@@ -31,9 +31,6 @@ case class container(begintime: String, endtime: String, keys: Array[Array[Strin
 object ContainersUtility extends App with LogTrait {
 
   case class data(key: String, value: String)
-  // 646 - 676 Change begins - replace MetadataAPIImpl
-  val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
-  // 646 - 676 Change ends
 
   def usage: String = {
     """
@@ -322,7 +319,7 @@ Sample uses:
           }
         }
       }
-      getMetadataAPI.CloseDbStore
+      MetadataAPIImpl.getMetadataAPI.CloseDbStore
 
     } else {
       logger.error("Illegal and/or missing arguments")

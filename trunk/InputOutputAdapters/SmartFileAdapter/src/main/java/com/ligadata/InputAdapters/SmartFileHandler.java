@@ -4,11 +4,11 @@ import com.ligadata.Exceptions.KamanjaException;
 
 import java.io.InputStream;
 
-/**
- * Created by Yasser on 3/10/2016.
- */
+
 public interface SmartFileHandler {
     String getFullPath();
+    String getParentDir();
+
     //gets input stream based on the fs type (das/nas, hdfs, sft), usually used for file type detecting purposes
     InputStream getDefaultInputStream() throws KamanjaException;
     //prepares input stream based on the fs type and also file type itself (plain, gzip, bz2, lzo), so data can be read directly
@@ -18,6 +18,7 @@ public interface SmartFileHandler {
     void close();
     boolean moveTo(String newPath) throws KamanjaException;
     boolean delete() throws KamanjaException;
+    boolean deleteFile(String fileName) throws KamanjaException;
     long length() throws KamanjaException;
     long lastModified() throws KamanjaException;
     boolean exists() throws KamanjaException;
@@ -25,4 +26,6 @@ public interface SmartFileHandler {
     boolean isDirectory() throws KamanjaException;
 
     boolean isAccessible();
+
+    boolean mkdirs();
 }
