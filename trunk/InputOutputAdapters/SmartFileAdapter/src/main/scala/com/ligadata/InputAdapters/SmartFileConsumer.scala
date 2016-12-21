@@ -664,16 +664,21 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       if (fileName.length > 0 && !fileName.equals("null")) {
         if (!initialFileNames.contains(fileName.trim)) {
           val fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, fileName)
-          if (fileHandler.exists()) {
-            //no need to assign deleted files or files with size less than initial offset
+          val locConf = getFileLocationConfig(fileHandler)
+          if(locConf == null)
+            logger.error("Adapter {} - Ignoring initial file {} since it has no location config",
+              adapterConfig.Name, fileName)
+          else{
+            if (fileHandler.exists()) {
+              //no need to assign deleted files or files with size less than initial offset
 
-            initialFilesToProcess.append((nodeStartInfo._1, nodePartitionInfo._1, fileName, nodePartitionInfo._3))
-            initialFileNames.append(fileName)
+              initialFilesToProcess.append((nodeStartInfo._1, nodePartitionInfo._1, fileName, nodePartitionInfo._3))
+              initialFileNames.append(fileName)
+            }
+            else {
+              LOG.warn("Smart File Consumer - File ({}) does not exist", fileName)
+            }
           }
-          else {
-            LOG.warn("Smart File Consumer - File ({}) does not exist", fileName)
-          }
-
         }
       }
       //(node, partitionId, file name, offset)
@@ -2051,6 +2056,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     val fileName = smartMessage.relatedFileHandler.getFullPath
     val offset = smartMessage.offsetInFile
     val message = getFinalMsg(smartMessage)
+    if(message == null)
+      return
 
 
     // Create a new EngineMessage and call the engine.
@@ -2077,11 +2084,12 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     */
   def getFinalMsg(smartMessage: SmartFileMessage): Array[Byte] = {
 
-    val parentDir = smartMessage.relatedFileHandler.getParentDir
     val parentDirLocationConfig = getFileLocationConfig(smartMessage.relatedFileHandler)
-    if (parentDirLocationConfig == null)
-      throw new Exception(s"Dir ${parentDir} has no entry in adapter config location section")
-
+    if (parentDirLocationConfig == null) {
+      logger.error("Adapter {} - file {} has no entry in adapter config location section. ignoring msg",
+        adapterConfig.Name, smartMessage.relatedFileHandler.getFullPath)
+      return null
+    }
     if (parentDirLocationConfig.msgTagsKV == null || parentDirLocationConfig.msgTagsKV.size == 0)
       return smartMessage.msg
 

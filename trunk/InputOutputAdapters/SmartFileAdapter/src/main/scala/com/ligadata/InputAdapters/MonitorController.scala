@@ -335,7 +335,7 @@ class MonitorController {
                             if (diff > bufferTimeout) {
                               logger.warn("SMART FILE CONSUMER (MonitorController): Detected that " + filePath + " has been on the buffering queue longer then " + bufferTimeout / 1000 + " seconds - Cleaning up")
 
-                              if (!isShutdown && (currentFileLocationInfo == null || currentFileLocationInfo.isMovingEnabled)) {
+                              if (!isShutdown && (currentFileLocationInfo != null && currentFileLocationInfo.isMovingEnabled)) {
                                 try {
                                   parentSmartFileConsumer.moveFile(filePath)
                                 }
@@ -353,7 +353,7 @@ class MonitorController {
                           }
                         } else {
                           //Invalid File - due to content type
-                          if (!isShutdown &&(currentFileLocationInfo == null || currentFileLocationInfo.isMovingEnabled)) {
+                          if (!isShutdown &&(currentFileLocationInfo != null && currentFileLocationInfo.isMovingEnabled)) {
                             logger.error("SMART FILE CONSUMER (MonitorController): Moving out " + filePath + " with invalid file type ")
                             try {
                               parentSmartFileConsumer.moveFile(filePath)
@@ -389,7 +389,7 @@ class MonitorController {
                       try {
                         removedEntries += filePath
 
-                        if (currentFileLocationInfo == null || currentFileLocationInfo.isMovingEnabled)
+                        if (currentFileLocationInfo != null && currentFileLocationInfo.isMovingEnabled)
                           parentSmartFileConsumer.moveFile(filePath)
                         // bufferingQ_map.remove(fileTuple._1)
                       } catch {
@@ -412,7 +412,7 @@ class MonitorController {
                       try {
                         removedEntries += filePath
 
-                        if (currentFileLocationInfo == null || currentFileLocationInfo.isMovingEnabled)
+                        if (currentFileLocationInfo != null && currentFileLocationInfo.isMovingEnabled)
                           parentSmartFileConsumer.moveFile(filePath)
 
                       } catch {
@@ -466,15 +466,27 @@ class MonitorController {
 
   private def enQFile(file: String, offset: Int, createDate: Long): Unit = {
     if (isShutdown) return
-    fileQLock.synchronized {
-      logger.info("SMART FILE CONSUMER (MonitorController):  enq file " + file + " with priority " + createDate + " --- curretnly " + fileQ.size + " files on a QUEUE")
-      if (!isShutdown) {
-        val fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, file, false)
-        val locationInfo = parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(fileHandler.getParentDir))
-        val components = MonitorUtils.getFileComponents(fileHandler.getFullPath, locationInfo)
-        if (!isShutdown)
-          fileQ += new EnqueuedFileHandler(fileHandler, offset, createDate, locationInfo, components)
+    try {
+      fileQLock.synchronized {
+        logger.info("SMART FILE CONSUMER (MonitorController):  enq file " + file + " with priority " + createDate + " --- curretnly " + fileQ.size + " files on a QUEUE")
+        if (!isShutdown) {
+          val fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, file, false)
+          val locationInfo = parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(fileHandler.getParentDir))
+          if (locationInfo == null)
+            logger.error("Adapter {} - file {} has no location config. not going to enqueue in file queue",
+              adapterConfig.Name, file)
+          else {
+            val components = MonitorUtils.getFileComponents(fileHandler.getFullPath, locationInfo)
+            if (!isShutdown)
+              fileQ += new EnqueuedFileHandler(fileHandler, offset, createDate, locationInfo, components)
+          }
+        }
       }
+    }
+    catch{
+      case ex : Throwable =>
+        logger.error("Adapter {} - Error: ", ex)
+        throw  ex //todo : remove throwing exception, but how to keep error from showing repeatedly
     }
   }
 

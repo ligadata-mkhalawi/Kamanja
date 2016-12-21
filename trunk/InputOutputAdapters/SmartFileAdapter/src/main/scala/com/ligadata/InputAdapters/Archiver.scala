@@ -1108,18 +1108,23 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
                   }
                 }
                 else {
-                  val fileTokens = entry.srcFile.split("/")
-                  val flBaseName = fileTokens(fileTokens.length - 1)
-                  val componentsMap =
-                    if (locationInfo != null && locationInfo.fileComponents != null)
-                      MonitorUtils.getFileComponents(targetDir + "/" + flBaseName, locationInfo)
-                    else null
-                  val archiveFileInfo = ArchiveFileInfo(adapterConfig,
-                    locationInfo, targetDir, flBaseName, componentsMap, 0, archiveDirPath, nextOffset)
-                  //archiveFile(archiveFileInfo, archiveFileDirStatus)
-                  logger.info("Adding failover archive info to archive queue for file {}, with offset {}",
-                    targetDir + "/" + flBaseName, (nextOffset).toString)
-                  failoverArchiveFilesInfo.append(archiveFileInfo)
+                  try {
+                    val fileTokens = entry.srcFile.split("/")
+                    val flBaseName = fileTokens(fileTokens.length - 1)
+                    val componentsMap =
+                      if (locationInfo != null && locationInfo.fileComponents != null)
+                        MonitorUtils.getFileComponents(targetDir + "/" + flBaseName, locationInfo)
+                      else null
+                    val archiveFileInfo = ArchiveFileInfo(adapterConfig,
+                      locationInfo, targetDir, flBaseName, componentsMap, 0, archiveDirPath, nextOffset)
+                    //archiveFile(archiveFileInfo, archiveFileDirStatus)
+                    logger.info("Adding failover archive info to archive queue for file {}, with offset {}",
+                      targetDir + "/" + flBaseName, (nextOffset).toString)
+                    failoverArchiveFilesInfo.append(archiveFileInfo)
+                  }
+                  catch{
+                    case ex : Throwable => logger.error("", ex)
+                  }
                 }
               }
               else {
@@ -1165,22 +1170,27 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
 
             lastIndexEntrySet.foreach(entry => {
 
-              val srcFileTokens = entry.srcFile.split("/")
-              val flBaseName = srcFileTokens(srcFileTokens.length - 1)
-              val offset = if (entry.srcFile.equals(firstEntry.srcFile)) entry.srcFileStartOffset else 0
-              val componentsMap =
-                if (locationInfo != null && locationInfo.fileComponents != null)
-                  MonitorUtils.getFileComponents(targetDir + "/" + flBaseName, locationInfo)
-                else null
+              try {
+                val srcFileTokens = entry.srcFile.split("/")
+                val flBaseName = srcFileTokens(srcFileTokens.length - 1)
+                val offset = if (entry.srcFile.equals(firstEntry.srcFile)) entry.srcFileStartOffset else 0
+                val componentsMap =
+                  if (locationInfo != null && locationInfo.fileComponents != null)
+                    MonitorUtils.getFileComponents(targetDir + "/" + flBaseName, locationInfo)
+                  else null
 
-              val archiveFileInfo = ArchiveFileInfo(adapterConfig,
-                locationInfo, targetDir, flBaseName, componentsMap, 0, archiveDirPath, offset)
+                val archiveFileInfo = ArchiveFileInfo(adapterConfig,
+                  locationInfo, targetDir, flBaseName, componentsMap, 0, archiveDirPath, offset)
 
-              //archiveFile(archiveFileInfo, archiveFileDirStatus)
-              logger.info("Adding failover archive info to archive queue for file {}, with offset {}",
-                targetDir + "/" + flBaseName, offset.toString)
+                //archiveFile(archiveFileInfo, archiveFileDirStatus)
+                logger.info("Adding failover archive info to archive queue for file {}, with offset {}",
+                  targetDir + "/" + flBaseName, offset.toString)
 
-              failoverArchiveFilesInfo.append(archiveFileInfo)
+                failoverArchiveFilesInfo.append(archiveFileInfo)
+              }
+              catch{
+                case ex : Throwable => logger.error("", ex)
+              }
             })
             //flushArchiveDirStatus(archiveFileDirStatus)
 
@@ -1194,10 +1204,21 @@ class Archiver(adapterConfig: SmartFileAdapterConfiguration, smartFileConsumer: 
       //get files in target folder that are not even in index file
       //smart file handlers since sorting files functionality requires that. these objects will not do anything
       //  so no need to disconnect
-      val nonIndexedFiles = targetFiles.filter(file => !lastIndexEntrySet.exists(entry => entry.srcFile.equals(file))).
-        map(filePath => SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, filePath)).
-        map(handler => EnqueuedFileHandler(handler, 0, targetDirFileHandler.lastModified(handler.getFullPath),
-          locationInfo, MonitorUtils.getFileComponents(handler.getFullPath, locationInfo)))
+      val nonIndexedHandlers = targetFiles.filter(file => !lastIndexEntrySet.exists(entry => entry.srcFile.equals(file))).
+        map(filePath => SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, filePath))
+
+      val nonIndexedFiles = ArrayBuffer[EnqueuedFileHandler]()
+      nonIndexedHandlers.foreach(handler =>{
+        try {
+          val lastModified = targetDirFileHandler.lastModified(handler.getFullPath)
+          val fileComps = MonitorUtils.getFileComponents(handler.getFullPath, locationInfo)
+          nonIndexedFiles.append(EnqueuedFileHandler(handler, 0, lastModified, locationInfo, fileComps))
+        }
+        catch{
+          case ex : Throwable => logger.error("", ex)
+        }
+      })
+
 
 
       //val nextRolloverTime = System.currentTimeMillis + archiveRolloverInterval * 60 * 1000
