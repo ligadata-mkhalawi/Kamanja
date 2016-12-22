@@ -1,10 +1,13 @@
 package com.ligadata.ElasticsearchInputOutputAdapters
 
+import java.net.InetAddress
 import java.text.SimpleDateFormat
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 import java.util.{Arrays, Calendar}
 
+import org.json4s._
+import org.json4s.jackson.JsonMethods._
 import com.ligadata.AdapterConfiguration.{ElasticsearchAdapterConfiguration, ElasticsearchConstants}
 import com.ligadata.HeartBeat.MonitorComponentInfo
 import com.ligadata.InputOutputAdapterInfo._
@@ -12,6 +15,10 @@ import com.ligadata.KamanjaBase.{ContainerInterface, NodeContext, TransactionCon
 import com.ligadata.Utils.KamanjaLoaderInfo
 import com.ligadata.keyvaluestore.ElasticsearchAdapter
 import org.apache.logging.log4j.LogManager
+import org.elasticsearch.client.transport.TransportClient
+import org.elasticsearch.common.settings.Settings
+import org.elasticsearch.common.transport.InetSocketTransportAddress
+import org.elasticsearch.index.VersionType
 import org.json4s.jackson.Serialization
 
 import scala.actors.threadpool.{ExecutorService, Executors}
@@ -176,7 +183,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(dt))
     // Sanity checks
     if (isShutdown) {
-      val szMsg = adapterConfig.Name + " Elasticsearch PRODUCER: Producer is not available for processing"
+      val szMsg = adapterConfig.Name + " Elasticsearch Adapter: Adapter is not available for processing"
       LOG.error(szMsg)
       throw new Exception(szMsg)
     }
@@ -191,7 +198,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
     if (adapterConfig.rollIndexNameByDataDate) {
       if (adapterConfig.dateFiledNameInOutputMessage.isEmpty) {
-        logger.error("Elasticsearch OutputAdapter : dateFiledNameInOutputMessage filed is empty")
+        LOG.error("Elasticsearch OutputAdapter : dateFiledNameInOutputMessage filed is empty")
       } else {
         val tmpData = serializedContainerData.map(data => new String(data))
         tmpData.foreach(jsonData => {
@@ -207,7 +214,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
             indexName = indexName + "-" + targetDate
             //            dataStore.putJson(indexName, jsonData)
           } catch {
-            case e => logger.error("Elasticsearch output adapter : error while retrieving date field from output message - " + e)
+            case e: Exception => LOG.error("Elasticsearch output adapter : error while retrieving date field from output message - ", e)
           }
         })
       }
@@ -219,13 +226,84 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
         dataStore.createIndexForOutputAdapter(indexName, adapterConfig.indexMapping)
       }
     }
-    dataStore.putJsons(indexName, serializedContainerData.map(data => new String(data)))
+    putJsonsWithMetadata(indexName, serializedContainerData.map(data => new String(data)))
   }
 
+  def putJsonsWithMetadata(containerName: String, data_list: Array[(String)]): Unit = {
+    var client: TransportClient = null
+    val tableName = toFullTableName(containerName)
+    //    CheckTableExists(tableName)
+    try {
+      client = getConnection
+      var bulkRequest = client.prepareBulk()
+      data_list.foreach({ jsonData =>
+        //added by saleh 15/12/2016
+        val root = parse(jsonData).values.asInstanceOf[Map[String, String]]
+        //if (root.get("metadata") != None) {
+        val metadata = if (root.get("metadata") == None) Map[String, Any]() else root.get("metadata").get.asInstanceOf[Map[String, Any]]
+
+        val index = if (metadata.get("index") == None || metadata.get("index").get.toString.trim.length == 0) tableName else metadata.get("index").get.toString
+        val metadata_type = if (metadata.get("_type") == None || metadata.get("index").get.toString.trim.length == 0) "type1" else metadata.get("_type").get.toString
+
+        val bulk = client.prepareIndex(index, metadata_type)
+
+        if (metadata.get("id") != None && metadata.get("id").get.toString.trim.length > 0) bulk.setId(metadata.get("id").get.toString)
+        if (metadata.get("version") != None) bulk.setVersionType(VersionType.FORCE).setVersion(metadata.get("version").get.asInstanceOf[BigInt].toLong)
+
+        //}
+        bulk.setSource(jsonData)
+        bulkRequest.add(bulk)
+      })
+      LOG.debug("Executing bulk indexing...")
+      val bulkResponse = bulkRequest.execute().actionGet()
+
+      //added by saleh 15/12/2016
+      if (bulkResponse.hasFailures) {
+        LOG.warn(bulkResponse.buildFailureMessage())
+      }
+
+    }
+    catch {
+      case e: Exception => {
+        LOG.error("Failed to save an object in the table " + tableName + ":", e)
+      }
+    } finally {
+      if (client != null) {
+        client.close
+      }
+    }
+  }
+
+  private def getConnection: TransportClient = {
+    try {
+      var settings = Settings.settingsBuilder()
+      settings.put("cluster.name", adapterConfig.clusterName)
+
+      // add by saleh 15/12/2016
+      val it = adapterConfig.properties.keySet.iterator
+      while (it.hasNext) {
+        val key = it.next()
+        LOG.info("ElasticSearch - properties [%s] - [%s]".format(key, adapterConfig.properties.get(key).get.toString))
+        settings.put(key, adapterConfig.properties.get(key).get.toString)
+      }
+
+      settings.build()
+      val client = TransportClient.builder().settings(settings).build().addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(adapterConfig.location), adapterConfig.portNumber.toInt))
+      return client
+    } catch {
+      case ex: Exception => LOG.error("Adapter getConnection ", ex)
+    }
+
+    return null
+  }
 
   override def getComponentStatusAndMetrics: MonitorComponentInfo = {
     implicit val formats = org.json4s.DefaultFormats
     return new MonitorComponentInfo(AdapterConfiguration.TYPE_OUTPUT, adapterConfig.Name, ElasticsearchProducer.ADAPTER_DESCRIPTION, startTime, lastSeen, Serialization.write(metrics).toString)
+  }
+
+  def toFullTableName(containerName: String): String = {
+    (adapterConfig.scehmaName + "." + containerName).toLowerCase()
   }
 
   /**
@@ -534,4 +612,3 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
 
 }
-

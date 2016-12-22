@@ -119,6 +119,11 @@ object KeyValueManager {
         resolveFiles += ResolveFileInfo("KamanjaInternalDeps_", "", "", false)
         resolveFiles += ResolveFileInfo("StorageDeps_", "", "", false)
       }
+      case "elasticsearch" => {
+        className = "com.ligadata.keyvaluestore.ElasticsearchAdapter$"
+        resolveFiles += ResolveFileInfo("KamanjaInternalDeps_", "", "", false)
+        resolveFiles += ResolveFileInfo("StorageDeps_", "", "", false)
+      }
       case _ => {
         className = className1
       }

@@ -35,6 +35,7 @@ import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.common.transport.InetSocketTransportAddress
 import org.elasticsearch.common.xcontent.{XContentBuilder, XContentFactory}
+import org.elasticsearch.index.VersionType
 import org.elasticsearch.index.query.QueryBuilders
 import org.elasticsearch.search.sort.{SortOrder, SortParseElement}
 import org.elasticsearch.search.{SearchHit, SearchHits}
@@ -206,6 +207,11 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     autoCreateTables = parsed_json.get("autoCreateTables").get.toString.trim
   }
 
+  var properties = Map[String, Any]()
+  if (parsed_json.contains("properties")) {
+    properties = parsed_json.get("properties").get.asInstanceOf[Map[String, Any]]
+  }
+
   logger.info("SchemaName => " + SchemaName)
   logger.info("autoCreateTables  => " + autoCreateTables)
 
@@ -333,7 +339,18 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
   private def getConnection: TransportClient = {
     try {
-      val settings = Settings.settingsBuilder().put("cluster.name", clusterName).build()
+      var settings = Settings.settingsBuilder()
+      settings.put("cluster.name", clusterName)
+
+      // add by saleh 15/12/2016
+      val it = properties.keySet.iterator
+      while (it.hasNext) {
+        val key = it.next()
+        logger.info("ElasticSearch - properties [%s] - [%s]".format(key, properties.get(key).get.toString))
+        settings.put(key, properties.get(key).get.toString)
+      }
+
+      settings.build()
       var client = TransportClient.builder().settings(settings).build().addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(location), portNumber.toInt))
       client
     } catch {

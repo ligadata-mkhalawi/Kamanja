@@ -16,6 +16,9 @@ class ElasticsearchAdapterConfiguration extends AdapterConfiguration {
   var TableName: String = ""
   // optional separator inserted between messages
   var clusterName: String = ""
+  var portNumber: String = ""
+  var location: String = ""
+  var properties = Map[String, Any]()
   // optional
   //  var serializerName: String =""
   var rollIndexNameByCurrentDate = false
@@ -65,8 +68,14 @@ object ElasticsearchAdapterConfiguration extends LogTrait {
     adapCfgValues.foreach(kv => {
       if (kv._1.compareToIgnoreCase("hostList") == 0) {
         adapterConfig.hostList = kv._2.toString.trim
-      } else if (kv._1.compareToIgnoreCase("ClusterName") == 0) {
+      } else if (kv._1.compareToIgnoreCase("clustername") == 0) {
         adapterConfig.clusterName = kv._2.toString.trim
+      } else if (kv._1.compareToIgnoreCase("properties") == 0) {
+        adapterConfig.properties = kv._2.asInstanceOf[Map[String, Any]]
+      } else if (kv._1.compareToIgnoreCase("location") == 0) {
+        adapterConfig.location = kv._2.toString.trim
+      } else if (kv._1.compareToIgnoreCase("portnumber") == 0) {
+        adapterConfig.portNumber = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("scehmaName") == 0) {
         adapterConfig.scehmaName = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("tableName") == 0) {
