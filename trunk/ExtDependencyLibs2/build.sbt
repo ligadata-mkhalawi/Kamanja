@@ -68,6 +68,10 @@ assemblyMergeStrategy in assembly := {
 
 }
 
+// We already have these dependencies in ExtDependencyLibs
+// This forbids including Scala related libraries into the dependency
+autoScalaLibrary := false
+
 excludeFilter in unmanagedJars := s"${name.value}_${scalaBinaryVersion.value}-${version.value}.jar"
 
 excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
