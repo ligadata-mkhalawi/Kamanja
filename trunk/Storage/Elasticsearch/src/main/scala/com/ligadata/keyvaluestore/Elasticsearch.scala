@@ -805,7 +805,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   }
 
   override def del(containerName: String, time: TimeRange, keys: Array[Array[String]]): Unit = {
-    var client: TransportClient = null
+    var client: TransportClient = getConnection
     var bulkRequest = client.prepareBulk()
     var deleteCount = 0
     var tableName = toFullTableName(containerName)
@@ -813,8 +813,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       logger.info("begin time => " + dateFormat.format(time.beginTime))
       logger.info("end time => " + dateFormat.format(time.endTime))
       CheckTableExists(containerName)
-
-      client = getConnection
 
       keys.foreach(keyList => {
         var keyStr = keyList.mkString(",").toLowerCase
@@ -864,7 +862,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
   // Added by Yousef Abu Elbeh at 2016-03-13 from here
   override def del(containerName: String, time: TimeRange /*, keys: Array[Array[String]]*/): Unit = {
-    var client: TransportClient = null
+    var client: TransportClient = getConnection
     var bulkRequest = client.prepareBulk()
     var deleteCount = 0
     var tableName = toFullTableName(containerName)
@@ -873,7 +871,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       logger.info("end time => " + dateFormat.format(time.endTime))
       CheckTableExists(containerName)
 
-      client = getConnection
 
       val response = client
         .prepareSearch(tableName)
