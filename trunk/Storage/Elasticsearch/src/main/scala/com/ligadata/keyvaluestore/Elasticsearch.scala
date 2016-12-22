@@ -1030,7 +1030,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
         .setSize(5)
         .execute().actionGet()
 
-      val results: SearchHits = response.getHits
+      var results: SearchHits = response.getHits
       val hit: SearchHit = null
       breakable {
         while (true) {
@@ -1056,12 +1056,12 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             }
           })
 
-
           response = client.prepareSearchScroll(response.getScrollId()).setScroll(timeToLive).execute().actionGet()
           //Break condition: No hits are returned
           if (response.getHits().getHits().length == 0) {
             break
           }
+          results = response.getHits
         }
       }
 
@@ -1138,11 +1138,12 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       .prepareSearch(tableName)
       .setTypes("type1")
       .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId"), null)
+      .setScroll(timeToLive)
       .execute().actionGet()
 
     updateOpStats("get", tableName, 1)
 
-    val results: SearchHits = response.getHits
+    var results: SearchHits = response.getHits
     val hit: SearchHit = null
 
     breakable {
@@ -1164,6 +1165,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
         if (response.getHits().getHits().length == 0) {
           break
         }
+        results = response.getHits
       }
     }
     updateByteStats("get", tableName, byteCount)
@@ -1196,11 +1198,12 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             .must(QueryBuilders.termQuery("rowId", key.rowId))
           )
           .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId"), null)
+          .setScroll(timeToLive)
           .execute().actionGet()
 
         updateOpStats("get", tableName, 1)
 
-        val results: SearchHits = response.getHits
+        var results: SearchHits = response.getHits
         val hit: SearchHit = null
         breakable {
           while (true) {
@@ -1222,6 +1225,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             if (response.getHits().getHits().length == 0) {
               break
             }
+            results = response.getHits
           }
         }
       })
@@ -1269,12 +1273,11 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
         updateOpStats("get", tableName, 1)
 
-        val results: SearchHits = response.getHits
+        var results: SearchHits = response.getHits
         val hit: SearchHit = null
 
         breakable {
           while (true) {
-
             response.getHits.getHits.foreach((hit: SearchHit) => {
               val schemaId = hit.getSource.get("schemaId").toString.toInt
               val st = hit.getSource.get("serializerType").toString
@@ -1292,6 +1295,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             if (response.getHits().getHits().length == 0) {
               break
             }
+            results = response.getHits
           }
         }
       })
@@ -1333,7 +1337,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           .setSize(5)
           .execute().actionGet()
 
-        val results: SearchHits = response.getHits
+        var results: SearchHits = response.getHits
         val hit: SearchHit = null
         breakable {
           while (true) {
@@ -1363,6 +1367,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             if (response.getHits().getHits().length == 0) {
               break
             }
+            results = response.getHits
           }
         }
 
@@ -1403,11 +1408,12 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
         //            QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime),
         //            QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
         .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId"), null)
+        .setScroll(timeToLive)
         .execute().actionGet()
 
       updateOpStats("get", tableName, 1)
 
-      val results: SearchHits = response.getHits
+      var results: SearchHits = response.getHits
       val hit: SearchHit = null
 
 
@@ -1430,6 +1436,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           if (response.getHits().getHits().length == 0) {
             break
           }
+          results = response.getHits
         }
       }
       updateByteStats("get", tableName, byteCount)
@@ -1469,7 +1476,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             .setSize(5)
             .execute().actionGet()
 
-          val results: SearchHits = response.getHits
+          var results: SearchHits = response.getHits
           val hit: SearchHit = null
           breakable {
             while (true) {
@@ -1498,6 +1505,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
               if (response.getHits().getHits().length == 0) {
                 break
               }
+              results = response.getHits
             }
           }
 
@@ -1545,10 +1553,11 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             //              QueryBuilders.andQuery(
             //                QueryBuilders.rangeQuery("timePartition").gte(time_range.beginTime),
             //                QueryBuilders.rangeQuery("timePartition").lte(time_range.endTime)))
+            .setScroll(timeToLive)
             .execute().actionGet()
           updateOpStats("get", tableName, 1)
 
-          val results: SearchHits = response.getHits
+          var results: SearchHits = response.getHits
           val hit: SearchHit = null
 
           breakable {
@@ -1570,6 +1579,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
               if (response.getHits().getHits().length == 0) {
                 break
               }
+              results = response.getHits
             }
           }
         })
@@ -1612,7 +1622,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
 
         updateOpStats("get", tableName, 1)
 
-        val results: SearchHits = response.getHits
+        var results: SearchHits = response.getHits
         val hit: SearchHit = null
         breakable {
           while (true) {
@@ -1641,6 +1651,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             if (response.getHits().getHits().length == 0) {
               break
             }
+            results = response.getHits
           }
         }
       })
@@ -1677,11 +1688,12 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
           .setQuery(QueryBuilders
             .boolQuery().must(QueryBuilders.termQuery("timePartition", bucketKey.mkString(","))))
           .setFetchSource(Array("timePartition", "bucketKey", "transactionId", "rowId"), null)
+          .setScroll(timeToLive)
           .execute().actionGet()
 
         updateOpStats("get", tableName, 1)
 
-        val results: SearchHits = response.getHits
+        var results: SearchHits = response.getHits
         val hit: SearchHit = null
 
         breakable {
@@ -1708,6 +1720,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
             if (response.getHits().getHits().length == 0) {
               break
             }
+            results = response.getHits
           }
         }
       })
