@@ -33,12 +33,35 @@ object MonitorUtils {
   //Default allowed content types -
   val validContentTypes  = Set(PLAIN, GZIP, BZIP2, LZO) //might change to get that from some configuration
 
-  def isValidFile(genericFileHandler: SmartFileHandler, filePath : String, checkExistence : Boolean, checkFileTypes: Boolean): Boolean = {
+  def isValidFile(adapterName : String, genericFileHandler: SmartFileHandler, filePath : String,
+                  locationInfo : LocationInfo, ignoredFilesMap : scala.collection.mutable.Map[String, Long],
+                  checkExistence : Boolean, checkFileTypes: Boolean): Boolean = {
     try {
-      val filepathParts = filePath.split("/")
-      val fileName = filepathParts(filepathParts.length - 1)
-      if (fileName.startsWith("."))
+      val filePathParts = filePath.split("/")
+      val fileName = filePathParts(filePathParts.length - 1)
+      if (fileName.startsWith(".")) {
+        logger.debug("Adapter {} - file {} starts with (.)", adapterName, filePath)
         return false
+      }
+
+      if(locationInfo == null) {
+        logger.debug("Adapter {} - file {} has no location config", adapterName, filePath)
+        return false
+      }
+
+      if(locationInfo.fileComponents != null && locationInfo.fileComponents.regex != null &&
+        locationInfo.fileComponents.regex.trim.length > 0) {
+        val pattern = locationInfo.fileComponents.regex.r
+        val matchList = pattern.findAllIn(fileName).matchData.toList
+        if (matchList.isEmpty) {
+          if (!ignoredFilesMap.contains(filePath)) {
+            logger.warn("Adapter {} - File name ({}) does not follow configured pattern ({})",
+              adapterName, filePath, pattern)
+            ignoredFilesMap.put(filePath, System.currentTimeMillis())
+          }
+          return false
+        }
+      }
 
       //val fileSize = fileHandler.length
       //Check if the File exists
@@ -49,14 +72,17 @@ object MonitorUtils {
           val contentType = CompressionUtil.getFileType(genericFileHandler, filePath, "")
           if((validContentTypes contains contentType)) return true
           else {
-            //Log error for invalid content type
-            logger.error("SMART FILE CONSUMER (MonitorUtils): Invalid content type " + contentType + " for file " + filePath)
+            if (!ignoredFilesMap.contains(filePath)) {
+              //Log error for invalid content type
+              logger.warn("Adapter " + adapterName + " -  Invalid content type " + contentType + " for file " + filePath)
+              ignoredFilesMap.put(filePath, System.currentTimeMillis())
+            }
           }
         }
       }
       else {
-        //File doesnot exists - could be already processed
-        logger.warn("SMART FILE CONSUMER (MonitorUtils): File does not exist anymore " + filePath)
+        //File does not exists - could be already processed
+        logger.warn("Adapter " + adapterName + " - File does not exist anymore " + filePath)
       }
       return false
     }
@@ -222,8 +248,8 @@ object MonitorUtils {
     //println("orderingInfo.fileComponents.regex="+orderingInfo.fileComponents.regex)
     val matchList = pattern.findAllIn(fileName).matchData.toList
     //println("matchList.length="+matchList.length)
-    if(matchList.isEmpty)
-      throw new Exception(s"File name (${fileFullPath}) does not follow configured pattern ($pattern)")
+    if(matchList.isEmpty)//file name does not conform with regex, should not get here
+      return Map[String, String]()
 
     val firstMatch = matchList.head
     if(firstMatch.groupCount < locationInfo.fileComponents.components.length)
