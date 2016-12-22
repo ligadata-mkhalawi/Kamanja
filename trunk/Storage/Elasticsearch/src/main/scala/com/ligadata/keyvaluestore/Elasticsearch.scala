@@ -871,7 +871,6 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       logger.info("end time => " + dateFormat.format(time.endTime))
       CheckTableExists(containerName)
 
-
       val response = client
         .prepareSearch(tableName)
         .setTypes("type1")

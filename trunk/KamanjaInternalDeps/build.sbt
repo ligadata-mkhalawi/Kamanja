@@ -27,6 +27,10 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
   cp filter { jar => (excludes(jar.data.getName) || jar.data.getName.startsWith("KamanjaInternalDeps_2.10-") || jar.data.getName.startsWith("KamanjaInternalDeps_2.11-")) }
 }
 
+// We already have these dependencies in ExtDependencyLibs
+// This forbids including Scala related libraries into the dependency
+autoScalaLibrary := false
+
 unmanagedBase <<= baseDirectory { base => base / "custom_lib" }
 
 unmanagedJars in Compile <<= baseDirectory map { base => (base ** "*.jar").classpath }
