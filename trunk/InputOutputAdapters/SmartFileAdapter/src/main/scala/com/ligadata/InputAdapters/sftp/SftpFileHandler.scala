@@ -234,7 +234,8 @@ class SftpFileHandler extends SmartFileHandler{
 
       if(!fileExists(channelSftp,getFullPath )) {
         logger.warn("Source file {} does not exists", getFullPath)
-        return false
+        // For now if file does not exists, we are making move successful
+        return true
       }
       else
 

@@ -322,6 +322,19 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     }
   }
 
+  def isFileExists(originalFilePath: String): Boolean = {
+    try {
+      val fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, originalFilePath)
+      return fileHandler.exists()
+    } catch {
+      case e: Throwable => {
+        LOG.error("Failed to check Exists for file:" + originalFilePath, e)
+      }
+    }
+
+    false
+  }
+
   //add the node callback
   private def initializeNode: Unit = synchronized {
     LOG.debug("Max memeory = " + Runtime.getRuntime().maxMemory())
@@ -448,31 +461,43 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                                 override def run(): Unit = {
                                   val flPath = processingFilePath
                                   var doneMove = false
-                                  while (! doneMove && !isShutdown) {
+                                  var tryNo = 0
+                                  val maxTrys = 10
+                                  while (!doneMove && !isShutdown && tryNo < maxTrys) {
                                     try {
-                                      val moved = moveFile(flPath)
-                                      if (moved && !isShutdown) {
-                                        monitorController.markFileAsProcessed(flPath)
-                                        //remove the file from processing queue
-                                        val valueInProcessingQueue = processingNodeId + "/" + processingThreadId + ":" + processingFilePath
-                                        if (!isShutdown) {
-                                          val flProcessTime = removeFromProcessingQueue(valueInProcessingQueue)
-                                          if (LOG.isInfoEnabled) LOG.info("Smart File Consumer (Leader) - removing from processing queue: " + valueInProcessingQueue + ", this file took: " + flProcessTime + " ms")
-                                        }
+                                      tryNo += 1
+                                      if ((tryNo % 5) == 0 && !isFileExists(flPath)) {
+                                        doneMove = true
                                       }
-                                      doneMove = moved
+                                      if (!doneMove) {
+                                        val moved = moveFile(flPath)
+                                        if (moved && !isShutdown) {
+                                          monitorController.markFileAsProcessed(flPath)
+                                          //remove the file from processing queue
+                                          val valueInProcessingQueue = processingNodeId + "/" + processingThreadId + ":" + processingFilePath
+                                          if (!isShutdown) {
+                                            val flProcessTime = removeFromProcessingQueue(valueInProcessingQueue)
+                                            if (LOG.isInfoEnabled) LOG.info("Smart File Consumer (Leader) - removing from processing queue: " + valueInProcessingQueue + ", this file took: " + flProcessTime + " ms")
+                                          }
+                                        }
+                                        doneMove = moved
+                                      }
                                     } catch {
                                       case e: Throwable => {
                                         // BUGBUG:: What happens if file failed to move. We are keep on retrying
                                         LOG.error("Failed to move file:" + flPath)
                                       }
                                     }
-                                    if (! doneMove && !isShutdown) {
+                                    if (!doneMove && !isShutdown) {
                                       try {
-                                        LOG.error("Failed to move file:" + flPath + ", waiting for 1 secs and retry")
-                                        Thread.sleep(1000)
+                                        if (tryNo == maxTrys) {
+                                          LOG.error("Failed to move file:" + flPath + ", Try:" + tryNo + ", giving up")
+                                        } else {
+                                          LOG.error("Failed to move file:" + flPath + ", Try:" + tryNo + ", waiting for 1 secs and retry")
+                                          Thread.sleep(1000)
+                                        }
                                       } catch {
-                                        case e: Throwable => { }
+                                        case e: Throwable => {}
                                       }
                                     }
                                   }
@@ -492,7 +517,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                           else if (status == File_Processing_Status_NotFound && !isShutdown)
                             monitorController.markFileAsProcessed(processingFilePath)
 
-                          if (! handledInnMoveThread) {
+                          if (!handledInnMoveThread) {
                             //remove the file from processing queue
                             val valueInProcessingQueue = processingNodeId + "/" + processingThreadId + ":" + processingFilePath
                             if (!isShutdown) {
@@ -540,9 +565,9 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                       while (!moveExecutor.isTerminated && cntr < 17280000) {
                         Thread.sleep(5) // sleep 5ms and then check
                         cntr += 1
-//                        if ((cntr % 2) == 0) {
-//                          assignFileProcessingIfPossible()
-//                        }
+                        //                        if ((cntr % 2) == 0) {
+                        //                          assignFileProcessingIfPossible()
+                        //                        }
                         if ((cntr % 12000) == 0) {
                           if (logger.isWarnEnabled()) logger.warn("Waiting for files to move from past %d ms".format(System.currentTimeMillis - tm));
                         }
@@ -569,9 +594,9 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                   while (!moveExecutor.isTerminated && cntr < 17280000) {
                     Thread.sleep(5) // sleep 5ms and then check
                     cntr += 1
-//                    if ((cntr % 2) == 0) {
-//                      assignFileProcessingIfPossible()
-//                    }
+                    //                    if ((cntr % 2) == 0) {
+                    //                      assignFileProcessingIfPossible()
+                    //                    }
                     if ((cntr % 12000) == 0) {
                       if (logger.isWarnEnabled()) logger.warn("Waiting for files to move from past %d ms".format(System.currentTimeMillis - tm));
                     }
@@ -665,10 +690,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         if (!initialFileNames.contains(fileName.trim)) {
           val fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, fileName)
           val locConf = getFileLocationConfig(fileHandler)
-          if(locConf == null)
+          if (locConf == null)
             logger.error("Adapter {} - Ignoring initial file {} since it has no location config",
               adapterConfig.Name, fileName)
-          else{
+          else {
             if (fileHandler.exists()) {
               //no need to assign deleted files or files with size less than initial offset
 
@@ -1071,7 +1096,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       else
         processingFilesQueue.append(processingItem)
 
-//      processingFilesQStartTime(processingItem) = System.currentTimeMillis
+      //      processingFilesQStartTime(processingItem) = System.currentTimeMillis
 
       /*
             val currentProcesses = getFileProcessingQueue
@@ -1094,10 +1119,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   def removeFromProcessingQueue(processingItem: String): Long = {
     processingQLock.synchronized {
       processingFilesQueue -= processingItem
-//      val startTime = processingFilesQStartTime.getOrElse(processingItem, 0L)
-//      processingFilesQStartTime.remove(processingItem)
-//      val timeTaken = System.currentTimeMillis - startTime
-//      timeTaken
+      //      val startTime = processingFilesQStartTime.getOrElse(processingItem, 0L)
+      //      processingFilesQStartTime.remove(processingItem)
+      //      val timeTaken = System.currentTimeMillis - startTime
+      //      timeTaken
       0
     }
   }
@@ -2056,7 +2081,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     val fileName = smartMessage.relatedFileHandler.getFullPath
     val offset = smartMessage.offsetInFile
     val message = getFinalMsg(smartMessage)
-    if(message == null)
+    if (message == null)
       return
 
 
