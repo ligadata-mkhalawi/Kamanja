@@ -3,9 +3,9 @@ import sbt._
 
 sbtPlugin := true
 
-version := "1.5.3"
+version := "1.5.4"
 
-version in ThisBuild := "1.5.3"
+version in ThisBuild := "1.5.4"
 
 //scalaVersion := "2.11.7"
 

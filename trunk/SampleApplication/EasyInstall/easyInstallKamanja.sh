@@ -7,7 +7,7 @@ srcPath=$2
 ivyPath=$3
 KafkaRootDir=$4
 
-currentKamanjaVersion=1.5.3
+currentKamanjaVersion=1.5.4
 
 ver210=${currentKamanjaVersion}_2.10
 ver211=${currentKamanjaVersion}_2.11

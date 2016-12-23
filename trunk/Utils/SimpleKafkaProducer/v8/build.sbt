@@ -10,7 +10,7 @@ assemblyOption in assembly ~= {
   _.copy(prependShellScript = Some(defaultShellScript))
 }
 
-val kamanjaVersion = "1.5.3"
+val kamanjaVersion = "1.5.4"
 
 assemblyJarName in assembly := {
   s"${name.value}_${scalaBinaryVersion.value}-${kamanjaVersion}.jar"
@@ -46,7 +46,7 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
 name := "SimpleKafkaProducer_v8"
 
 
-version := "1.5.3"
+version := "1.5.4"
 
 //resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 //
