@@ -375,6 +375,12 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
         // This is teh guy that keeps running processing each group of partitions.
         override def run(): Unit = {
           LOG.debug("Starting to POLL ")
+
+          var partitionId = -1
+          var offsetValue: Long = -1
+          var nextLogtime = 0L
+          var lessOffsetErrors = 0
+
           while (!isQuiese && !isShutdown) {
             try {
               var poll_records = (kafkaConsumer.poll(KamanjaKafkaConsumer.POLLING_INTERVAL))
@@ -399,8 +405,35 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
 
                       msgCount.incrementAndGet()
                       incrementCountForPartition(record.partition)
-                      execContexts(record.partition).execute(message, uniqueVals(record.partition), uniqueVal, readTmMs)
-                      localReadOffsets(record.partition) = (record.offset)
+
+                      var sendThisMsg = true
+
+                      if (partitionId == -1) {
+                        partitionId = record.partition
+                        offsetValue = record.offset
+                      } else if (partitionId == record.partition) {
+                        if (record.offset < offsetValue) {
+                          if (lessOffsetErrors < 10) {
+                            LOG.error("For Partition:%d now we got offset:%d and previously we got %d".format(partitionId, record.offset, offsetValue))
+                            lessOffsetErrors += 1
+                          }
+                          sendThisMsg = false
+                        } else {
+                          offsetValue = record.offset
+                        }
+                      }
+
+                      val curTm = System.currentTimeMillis
+                      if (nextLogtime == 0 || nextLogtime < curTm) {
+                        LOG.warn("For Partition:%d now we are processing offset:%d".format(partitionId, record.offset))
+                        nextLogtime = curTm + 60 * 1000
+                        lessOffsetErrors = 0 // This is reset to 0 after we print this (for every min i mean)
+                      }
+
+                      if (sendThisMsg) {
+                        execContexts(record.partition).execute(message, uniqueVals(record.partition), uniqueVal, readTmMs)
+                        localReadOffsets(record.partition) = (record.offset)
+                      }
                       resetSleepTimer
                     }
 
