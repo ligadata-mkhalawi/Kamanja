@@ -1,6 +1,7 @@
 package com.ligadata.InputAdapters
 
 import java.io.IOException
+import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import com.ligadata.Exceptions.KamanjaException
 
@@ -113,7 +114,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   private var isShutdown = false
   private var isQuiesced = false
   private var startTime: Long = 0
-  private var msgCount = 0
+  private val msgCount = new AtomicLong(0)
 
   private val smartFileContextMap_lock = new Object()
   private val smartFileContextMap: collection.mutable.Map[Int, SmartFileConsumerContext] = collection.mutable.Map[Int, SmartFileConsumerContext]()
@@ -2098,7 +2099,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
     LOG.debug("Smart File Consumer - Node {} is sending a msg to engine. partition id= {}. msg={}. file={}. offset={}. uniqueKey={}, uniqueVal={}, smartFileConsumerContext.execThread={},smartFileConsumerContext={}",
       smartFileConsumerContext.nodeId, smartFileConsumerContext.partitionId.toString, new String(message), fileName, offset.toString, uniqueKey, uniqueVal, smartFileConsumerContext.execThread, smartFileConsumerContext)
-    msgCount += 1
+    msgCount.incrementAndGet()
     smartFileConsumerContext.execThread.execute(message, uniqueKey, uniqueVal, readTmMs)
 
   }
@@ -2349,7 +2350,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   }
 
   override def getComponentSimpleStats: String = {
-    return "Input/" + adapterConfig.Name + "/evtCnt" + "->" + msgCount
+    return "Input/" + adapterConfig.Name + "/evtCnt" + "->" + msgCount.get()
   }
 
   private def incrementCountForPartition(pid: Int): Unit = {
