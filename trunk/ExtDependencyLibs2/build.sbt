@@ -201,4 +201,3 @@ libraryDependencies += "org.slf4j" % "slf4j-nop" % "1.7.12"
 libraryDependencies += "com.google.guava" % "guava" % "20.0"
 dependencyOverrides += "com.google.guava" % "guava" % "20.0"
 
-

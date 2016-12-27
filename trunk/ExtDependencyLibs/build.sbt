@@ -93,11 +93,9 @@ libraryDependencies += "org.json4s" %% "json4s-native" % "3.2.9"
 libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.2.9"
 libraryDependencies += "org.apache.zookeeper" % "zookeeper" % "3.4.6"
 libraryDependencies += "org.apache.curator" % "apache-curator" % "2.0.0-incubating"
-libraryDependencies += "com.google.guava" % "guava" % "20.0"
 //libraryDependencies += "org.jpmml" % "pmml-evaluator" % "1.2.4"                               // another version exists
 //libraryDependencies += "org.jpmml" % "pmml-model" % "1.2.5"
 //libraryDependencies += "org.jpmml" % "pmml-schema" % "1.2.5"
-dependencyOverrides += "com.google.guava" % "guava" % "20.0"
 libraryDependencies += "commons-codec" % "commons-codec" % "1.10"
 libraryDependencies += "commons-io" % "commons-io" % "2.4"
 libraryDependencies ++= Seq(
@@ -410,3 +408,8 @@ libraryDependencies += "net.jcip" % "jcip-annotations" % "1.0"
 
 // QueryGenerator
 // libraryDependencies += "com.orientechnologies" % "orientdb-jdbc" % "2.1.19"
+
+
+libraryDependencies += "com.google.guava" % "guava" % "20.0"
+dependencyOverrides += "com.google.guava" % "guava" % "20.0"
+
