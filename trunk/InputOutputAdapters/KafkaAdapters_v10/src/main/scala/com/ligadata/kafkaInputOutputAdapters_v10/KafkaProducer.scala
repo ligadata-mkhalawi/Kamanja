@@ -55,6 +55,16 @@ object KafkaProducer extends OutputAdapterFactory {
 class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeContext) extends OutputAdapter {
   private[this] val LOG = LogManager.getLogger(getClass);
 
+  class KafkaErrorCallback extends Callback {
+    override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
+      if (exception != null) {
+        LOG.error(qc.Name + " Failed to send message into " + metadata.topic(), exception)
+      }
+    }
+  }
+
+  private[this] val kafkaErrorCallback = new KafkaErrorCallback
+
   //BUGBUG:: Not Checking whether inputConfig is really QueueAdapterConfiguration or not.
   private[this] var qc: com.ligadata.AdaptersConfiguration.KafkaQueueAdapterConfiguration = null
   if(!inputConfig.isInstanceOf[com.ligadata.AdaptersConfiguration.KafkaQueueAdapterConfiguration])
@@ -666,7 +676,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
             }
           }
         } else {
-          null
+          kafkaErrorCallback
         }
 
         producer.send(msgAndCntr.msg, callback)
