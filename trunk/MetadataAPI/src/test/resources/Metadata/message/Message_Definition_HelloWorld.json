@@ -1,0 +1,23 @@
+{
+  "Message": {
+    "NameSpace": "com.ligadata.kamanja.samples.messages",
+    "Name": "msg1",
+    "Version": "00.01.00",
+    "Description": "Hello World Processing Message",
+    "Fixed": "true",
+    "Fields": [
+      {
+        "Name": "Id",
+        "Type": "System.Int"
+      },
+      {
+        "Name": "Name",
+        "Type": "System.String"
+      },
+      {
+        "Name": "Score",
+        "Type": "System.Int"
+      }
+    ]
+  }
+}
