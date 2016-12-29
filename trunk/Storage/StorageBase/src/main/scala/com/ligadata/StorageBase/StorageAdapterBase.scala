@@ -15,6 +15,11 @@ import com.ligadata.kamanja.metadata.AdapterInfo
 
 import scala.collection.mutable.ArrayBuffer
 
+import org.json4s._
+import org.json4s.JsonDSL._
+import org.json4s.jackson.JsonMethods._
+import org.json4s.jackson.{Json, Serialization}
+
 trait DataStoreOperations extends AdaptersSerializeDeserializers {
   // update operations, add & update semantics are different for relational databases
 
@@ -292,25 +297,18 @@ trait DataStore extends DataStoreOperations with AdaptersSerializeDeserializers 
 
   override def getComponentSimpleStats: String = {
     var s:String = ""
-    _getOps.keys.foreach( k => { 
-      s = s + "Storage/"+getAdapterName+"/getOps" + "->" + "("+ k + ":" + _getOps(k) +")"
+    val json = ( "Storage Adapter " + getAdapterName ->  _getOps.keys.map { k => 
+      (
+        ("Table Name" -> k ) ~
+	("Read Operations performed" -> _getOps(k)) ~
+	("Write Operations performed" -> _putOps(k)) ~
+	("Objects Read " -> _getObjs(k)) ~
+	("Objects Written " -> _putObjs(k)) ~
+	("Bytes Read " -> _getBytes(k)) ~
+	("Bytes Written " -> _putBytes(k))
+      )
     })
-    _putOps.keys.foreach( k => { 
-      s = s + ",Storage/"+getAdapterName+"/putOps" + "->" + "("+ k + ":" + _putOps(k) +")"
-    })
-    _getObjs.keys.foreach( k => { 
-      s = s + "Storage/"+getAdapterName+"/getObjs" + "->" + "("+ k + ":" + _getObjs(k) +")"
-    })
-    _putObjs.keys.foreach( k => { 
-      s = s + ",Storage/"+getAdapterName+"/putObjs" + "->" + "("+ k + ":" + _putObjs(k) +")"
-    })
-    _getBytes.keys.foreach( k => { 
-      s =s + ",Storage/"+getAdapterName+"/getBytes" + "->" + "("+ k + ":" + _getBytes(k) +")"
-    })
-    _putBytes.keys.foreach( k => { 
-      s= s + ",Storage/"+getAdapterName+"/putBytes" + "->" + "("+ k + ":" + _putBytes(k) +")"
-    })
-    s
+    pretty(render(json))
   }
 
   def beginTx(): Transaction
