@@ -102,6 +102,7 @@ class CompilerProxy {
       var modCfgJson = JsonSerializer.SerializeModelConfigToJson(modelConfigName, config)
       
       logger.info("modCfgJson => " + modCfgJson)
+      logger.info("sourceCode => " + sourceCode)
 
       val ((modelNamespace, modelName, modelVersion, pname, mdlFactory, loaderInfo, modConfigName), repackagedCode, tempPackage) = parseSourceForMetadata(sourceCode, modelConfigName, sourceLang, msgDefClassFilePath, classPath, elements, userid)
       var inputMsgSets =
@@ -112,6 +113,8 @@ class CompilerProxy {
         else {
           inMsgSets
         }
+
+      logger.info("modelNamespace => %s,modelName => %s, modelVersion => %s".format(modelNamespace,modelName, modelVersion));
 
       // Get Model info and decide the mdElementId
       val existingModel = MdMgr.GetMdMgr.Model(modelNamespace, modelName, -1, false) // Any version is fine. No need of active
@@ -424,6 +427,8 @@ class CompilerProxy {
       var r_classStrVerJava = replacePackageNameInSource(classStrVerJava, tPackageName.toLowerCase)
       var r_classStrNoVer = replacePackageNameInSource(classStrNoVer, tPackageNameNoVer.toLowerCase)
       var r_classStrNoVerJava = replacePackageNameInSource(classStrNoVerJava, tPackageNameNoVer.toLowerCase)
+
+      logger.info("PackageName => %s,PackageNameNoVer => %s".format(tPackageName,tPackageNameNoVer));
 
       // Save the message.scala, messageFactory.java and message_local.scala in the work directory
       val msgDefClassFilePath = compiler_work_dir + "/" + realClassName + ".scala"
@@ -742,24 +747,12 @@ class CompilerProxy {
       val depJars = getJarsFromClassPath(classPath)
 
       // figure out the Physical Model Name
-      var (dummy1, dummy2, dummy3, pName, mdlFactory, loaderInfo, modConfigName) = getModelMetadataFromJar(jarFileName, elements, depJars, sourceLang, userid, modelConfigName)
+      var (nameSpace, name, version, pName, mdlFactory, loaderInfo, modConfigName) = getModelMetadataFromJar(jarFileName, elements, depJars, sourceLang, userid, modelConfigName)
 
-      /* Create the ModelDef object
-
-        def MakeModelDef(nameSpace: String
-                   , name: String
-                   , physicalName: String
-                   , mdlType: String
-                   , inputVars: List[(String, String, String, String, Boolean, String)]
-                   , outputVars: List[(String, String, String)]
-                   , ver: Long
-                   , jarNm: String
-                   , depJars: Array[String]
-                   , recompile: Boolean
-                   , supportsInstanceSerialization: Boolean): ModelDef = {
-
-       */
-
+      if( ! packageName.contains(nameSpace) ){
+	logger.error("COMPILER_PROXY: Error compiling model source. package name(%s) should contain nameSpace(%s) of ModelName as returned by getModelName() function of the model source ".format(packageName,nameSpace));
+	throw MsgCompilationFailedException(modelConfigName, null)
+      }
 
       val inpM =
         if (inMsgSets != null && inMsgSets.length > 0) {
@@ -907,6 +900,7 @@ class CompilerProxy {
     var packageName = extractPackageNameFromSource(sourceCode)
     var repackagedCode = replacePackageNameInSource(sourceCode, packageName, ".V0;\n")
 
+    logger.info("parseSourceForMetadata.packageName => %s,repackagedCode => %s".format(packageName,repackagedCode));
     // We need to add the imports to the actual TypeDependency Jars...  All the Message,Container, etc Elements
     // have been passed into this def.
     var typeNamespace: Array[String] = null
@@ -982,7 +976,13 @@ class CompilerProxy {
 
     val depJars = getJarsFromClassPath(classPath)
 
-    (getModelMetadataFromJar(jarFileName, elements, depJars, sourceLang, userid, modelConfigName), finalSourceCode, packageName)
+    var (nameSpace, name, version, pName, mdlFactory, loaderInfo, modConfigName) = getModelMetadataFromJar(jarFileName, elements, depJars, sourceLang, userid, modelConfigName);
+
+    if( ! packageName.contains(nameSpace) ){
+      logger.error("COMPILER_PROXY: Error compiling model source. package name(%s) should contain the nameSpace(%s) of ModelName as returned by getModelName() function of the model source ".format(packageName,nameSpace));
+      throw MsgCompilationFailedException(modelConfigName, null)
+    }
+    ((nameSpace, name, version, pName,mdlFactory, loaderInfo, modConfigName),finalSourceCode, packageName);
 
   }
 
@@ -1399,9 +1399,16 @@ class CompilerProxy {
             , false, false)
           val mdlFactory = PrepareModelFactory(loaderInfo, jarPaths0, mdlDef)
 
+	  logger.info("mdlFactory.getModelName => %s".format(mdlFactory.getModelName))
+
           if (mdlFactory != null) {
             var fullName = mdlFactory.getModelName.split('.')
-            return (fullName.dropRight(1).mkString("."), fullName(fullName.length - 1),
+	    // take care of special scenario where nameSpace is not provided in the model name
+	    var nameSpace = MetadataAPIImpl.sysNS;
+	    if( fullName.length > 1 ){
+	      nameSpace = fullName.dropRight(1).mkString(".")
+	    }
+            return (nameSpace, fullName(fullName.length - 1),
               mdlFactory.getVersion, clsName, mdlFactory, loaderInfo, modelConfigName)
           }
 

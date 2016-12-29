@@ -451,7 +451,7 @@ class AddHelloWorldModelSpec extends FunSpec with LocalTestFixtures with BeforeA
       })
     }
 
-    it("Add HelloWorld Java Models") {
+    it("Add com.ligadata.kamanja.samples.models.HelloWorld Java Models") {
       And("Check whether MODEL_FILES_DIR defined as property")
       dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
       assert(null != dirName)
@@ -511,6 +511,285 @@ class AddHelloWorldModelSpec extends FunSpec with LocalTestFixtures with BeforeA
 	var version = "0000000000000000001"
 	res = MetadataAPIImpl.GetModelDef(nameSpace, objName, "XML", version, userid)
 	res should include regex ("\"Status Code\" : 0")
+
+	modStr = modStr.replaceFirst("0.0.1", "0.0.2")
+	assert(modStr.indexOf("0.0.2") >= 0)
+
+	logger.info("modStr => " + modStr);
+
+	// Update the model and catch the exception
+	res = MetadataAPIImpl.UpdateModel(ModelType.JAVA, // modelType
+					 modStr, // input
+					 userid,   // optUserid
+					 Some("testTenantId"),  // tenantId
+					 Some("kamanja.helloworldmodel"),   // optModelName
+					 None,   // optVersion
+					 None,   // optMsgConsumed
+					 None,   // optMsgVersion
+					 None,
+					 None
+				       )
+	res should include regex ("\"Status Code\" : 0")
+
+	nameSpace = "com.ligadata.kamanja.samples.models"
+	objName = "HelloWorldModel"
+	logger.info("ModelName => " + objName)
+	version = "0000000000000000002"
+	res = MetadataAPIImpl.GetModelDef(nameSpace, objName, "XML", version, userid)
+	res should include regex ("\"Status Code\" : 0")
+      })
+    }
+
+    it("Add com.ligadata.kamanja.samples.models.HelloWorld Java Model where packageName is different from className") {
+      And("Check whether MODEL_FILES_DIR defined as property")
+      dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
+      assert(null != dirName)
+
+      And("Check Directory Path")
+      iFile = new File(dirName)
+      assert(true == iFile.exists)
+
+      And("Check whether " + dirName + " is a directory ")
+      assert(true == iFile.isDirectory)
+
+      And("Make sure there are few java model files in " + dirName);
+      val modFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith(".java"))
+      assert(0 != modFiles.length)
+
+      // Scala Models
+      fileList = List("HelloWorld.java")
+      fileList.foreach(f1 => {
+	And("Add the Model From " + f1)
+	And("Make Sure " + f1 + " exist")
+	var exists = false
+	var file: java.io.File = null
+	breakable {
+	  modFiles.foreach(f2 => {
+	    if (f2.getName() == f1) {
+	      exists = true
+	      file = f2
+	      break
+	    }
+	  })
+	}
+	assert(true == exists)
+
+	And("Call AddModel MetadataAPI Function to add Model from " + file.getPath)
+	var modStr = Source.fromFile(file).mkString
+	logger.info("scala model => " + modStr)
+
+	// Change the packageName so it doesn't contain the nameSpace of
+	// modelName(as defined by getModelName() ) function of java model
+
+	modStr = modStr.replaceFirst("com.ligadata.kamanja.samples.models", "com.ligadata1.kamanja.samples.models")
+	assert(modStr.indexOf("com.ligadata1.kamanja.samples.models") >= 0)
+
+	logger.info("modStr => " + modStr);
+
+	// Add the model and catch the exception
+	res = MetadataAPIImpl.AddModel(ModelType.JAVA, // modelType
+					 modStr, // input
+					 userid,   // optUserid
+					 Some("testTenantId"),  // tenantId
+					 Some("kamanja.helloworldmodel"),   // optModelName
+					 None,   // optVersion
+					 None,   // optMsgConsumed
+					 None,   // optMsgVersion
+					 None,
+					 None
+				       )
+	res should include regex ("\"Status Code\" : -1")
+      })
+    }
+
+
+    it("Update com.ligadata.kamanja.samples.models.HelloWorld Java Model where packageName is different from className") {
+      And("Check whether MODEL_FILES_DIR defined as property")
+      dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
+      assert(null != dirName)
+
+      And("Check Directory Path")
+      iFile = new File(dirName)
+      assert(true == iFile.exists)
+
+      And("Check whether " + dirName + " is a directory ")
+      assert(true == iFile.isDirectory)
+
+      And("Make sure there are few java model files in " + dirName);
+      val modFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith(".java"))
+      assert(0 != modFiles.length)
+
+      // Scala Models
+      fileList = List("HelloWorld.java")
+      fileList.foreach(f1 => {
+	And("Add the Model From " + f1)
+	And("Make Sure " + f1 + " exist")
+	var exists = false
+	var file: java.io.File = null
+	breakable {
+	  modFiles.foreach(f2 => {
+	    if (f2.getName() == f1) {
+	      exists = true
+	      file = f2
+	      break
+	    }
+	  })
+	}
+	assert(true == exists)
+
+	And("Call AddModel MetadataAPI Function to add Model from " + file.getPath)
+	var modStr = Source.fromFile(file).mkString
+	logger.info("scala model => " + modStr)
+
+	// Change the packageName so it doesn't contain the nameSpace of
+	// modelName(as defined by getModelName() ) function of java model
+
+	modStr = modStr.replaceFirst("com.ligadata.kamanja.samples.models", "com.ligadata1.kamanja.samples.models")
+	assert(modStr.indexOf("com.ligadata1.kamanja.samples.models") >= 0)
+
+	modStr = modStr.replaceFirst("0.0.1", "0.0.2")
+	assert(modStr.indexOf("0.0.2") >= 0)
+
+	logger.info("modStr => " + modStr);
+
+	// Update the model and catch the exception
+	res = MetadataAPIImpl.UpdateModel(ModelType.JAVA, // modelType
+					 modStr, // input
+					 userid,   // optUserid
+					 Some("testTenantId"),  // tenantId
+					 Some("kamanja.helloworldmodel"),   // optModelName
+					 None,   // optVersion
+					 None,   // optMsgConsumed
+					 None,   // optMsgVersion
+					 None,
+					 None
+				       )
+	res should include regex ("\"Status Code\" : -1")
+      })
+    }
+
+    it("Add System.HelloWorld Java Models") {
+      And("Check whether MODEL_FILES_DIR defined as property")
+      dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
+      assert(null != dirName)
+
+      And("Check Directory Path")
+      iFile = new File(dirName)
+      assert(true == iFile.exists)
+
+      And("Check whether " + dirName + " is a directory ")
+      assert(true == iFile.isDirectory)
+
+      And("Make sure there are few java model files in " + dirName);
+      val modFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith(".java"))
+      assert(0 != modFiles.length)
+
+      // Scala Models
+      fileList = List("System.HelloWorld.java")
+      fileList.foreach(f1 => {
+	And("Add the Model From " + f1)
+	And("Make Sure " + f1 + " exist")
+	var exists = false
+	var file: java.io.File = null
+	breakable {
+	  modFiles.foreach(f2 => {
+	    if (f2.getName() == f1) {
+	      exists = true
+	      file = f2
+	      break
+	    }
+	  })
+	}
+	assert(true == exists)
+
+	And("Call AddModel MetadataAPI Function to add Model from " + file.getPath)
+	var modStr = Source.fromFile(file).mkString
+	logger.info("scala model => " + modStr)
+	res = MetadataAPIImpl.AddModel(ModelType.JAVA, // modelType
+				       modStr, // input
+				       userid,   // optUserid
+				       Some("testTenantId"),  // tenantId
+				       Some("kamanja.helloworldmodel"),   // optModelName
+				       None,   // optVersion
+				       None,   // optMsgConsumed
+				       None,   // optMsgVersion
+				       //Some("system.helloworld_msg_output_def") // optMsgProduced
+				       None,
+				       None
+				     )
+	res should include regex ("\"Status Code\" : 0")
+
+	And("GetModelDef API to fetch the model that was just added")
+	// Unable to use fileName to identify the name of the object
+	// Use this function to extract the name of the model
+	var nameSpace = "System"
+	var objName = "HelloWorldModel"
+	logger.info("ModelName => " + objName)
+	var version = "0000000000000000001"
+	res = MetadataAPIImpl.GetModelDef(nameSpace, objName, "XML", version, userid)
+	res should include regex ("\"Status Code\" : 0")
+      })
+    }
+
+    it("Add System.HelloWorld Java Model where packageName is different from className") {
+      And("Check whether MODEL_FILES_DIR defined as property")
+      dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MODEL_FILES_DIR")
+      assert(null != dirName)
+
+      And("Check Directory Path")
+      iFile = new File(dirName)
+      assert(true == iFile.exists)
+
+      And("Check whether " + dirName + " is a directory ")
+      assert(true == iFile.isDirectory)
+
+      And("Make sure there are few java model files in " + dirName);
+      val modFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith(".java"))
+      assert(0 != modFiles.length)
+
+      // Scala Models
+      fileList = List("System.HelloWorld.java")
+      fileList.foreach(f1 => {
+	And("Add the Model From " + f1)
+	And("Make Sure " + f1 + " exist")
+	var exists = false
+	var file: java.io.File = null
+	breakable {
+	  modFiles.foreach(f2 => {
+	    if (f2.getName() == f1) {
+	      exists = true
+	      file = f2
+	      break
+	    }
+	  })
+	}
+	assert(true == exists)
+
+	And("Call AddModel MetadataAPI Function to add Model from " + file.getPath)
+	var modStr = Source.fromFile(file).mkString
+	logger.info("scala model => " + modStr)
+
+	// Change the packageName so it doesn't contain the nameSpace of
+	// modelName(as defined by getModelName() ) function of java model
+
+	modStr = modStr.replaceFirst("System", "system1")
+	assert(modStr.indexOf("system1") >= 0)
+
+	logger.info("modStr => " + modStr);
+
+	// Add the model and catch the exception
+	res = MetadataAPIImpl.AddModel(ModelType.JAVA, // modelType
+					 modStr, // input
+					 userid,   // optUserid
+					 Some("testTenantId"),  // tenantId
+					 Some("kamanja.helloworldmodel"),   // optModelName
+					 None,   // optVersion
+					 None,   // optMsgConsumed
+					 None,   // optMsgVersion
+					 None,
+					 None
+				       )
+	res should include regex ("\"Status Code\" : -1")
       })
     }
 
