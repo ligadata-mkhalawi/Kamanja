@@ -298,14 +298,15 @@ trait DataStore extends DataStoreOperations with AdaptersSerializeDeserializers 
   override def getComponentSimpleStats: String = {
     var s:String = ""
     val json = ( "Storage Adapter " + getAdapterName ->  _getOps.keys.map { k => 
-      (
-        ("Table Name" -> k ) ~
-	("Read Operations performed" -> _getOps(k)) ~
-	("Write Operations performed" -> _putOps(k)) ~
-	("Objects Read " -> _getObjs(k)) ~
-	("Objects Written " -> _putObjs(k)) ~
-	("Bytes Read " -> _getBytes(k)) ~
-	("Bytes Written " -> _putBytes(k))
+      ( "Metrics" -> (
+         ("Table Name" -> k ) ~
+	 ("Read Operations performed" -> _getOps(k)) ~
+	 ("Write Operations performed" -> _putOps(k)) ~
+	 ("Objects Read " -> _getObjs(k)) ~
+	 ("Objects Written " -> _putObjs(k)) ~
+	 ("Bytes Read " -> _getBytes(k)) ~
+	 ("Bytes Written " -> _putBytes(k))
+       )
       )
     })
     pretty(render(json))
