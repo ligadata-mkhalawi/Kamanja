@@ -1928,7 +1928,6 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
   def isInProcessingQueue(file: String): Boolean = {
     logger.debug("isInProcessingQueue: checking if the file exists in the ProcessingQueue " + file)
-    var fileNamesList: List[String] = ()
     var revisedTokensString: String = ""
     processingQLock.synchronized {
       val processingQueue = getFileProcessingQueue
@@ -1936,6 +1935,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         return false
       else {
         processingQueue.exists(item => {
+          var fileNamesList: List[String] = List[String]()
           logger.debug("isInProcessingQueue: inside processingQueue.exists() ")
           // <node1>/<thread1>:<groupOfFileNamesSeperatedBy"~~">|<node2>/<thread1>:<groupOfFileNamesSeperatedBy"~~">
           val tokens1 = item.split("|")
@@ -1954,7 +1954,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
               val fileNamesToken = revisedTokensString.split("~~")
               // hdfs:file1   hdfs:file1
               fileNamesToken.foreach(fileName => {
-                fileNamesList ++ fileName
+                // fileNamesList ++ fileName
+                fileNamesList = fileName :: fileNamesList
               })
               //              if (tokens.length == 1) {
               //                fileNamesList ++ tokens(1)
