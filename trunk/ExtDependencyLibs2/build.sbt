@@ -56,6 +56,7 @@ assemblyMergeStrategy in assembly := {
   case x if x contains "com\\fasterxml\\jackson\\core" => MergeStrategy.first
   case x if x contains "commons-logging" => MergeStrategy.first
   case "log4j.properties" => MergeStrategy.first
+  case "ScalaTestBundle.properties" => MergeStrategy.first
   case "unwanted.txt" => MergeStrategy.discard
   case "DEPENDENCIES.txt" => MergeStrategy.discard
   case "META-INF/DEPENDENCIES.txt" => MergeStrategy.discard
@@ -138,7 +139,7 @@ libraryDependencies ++= Seq(
   "uk.co.bigbeeconsultants" %% "bee-client" % "0.28.0",
   "org.apache.httpcomponents" % "httpclient" % "4.1.2"
 )
-resolvers += "Big Bee Consultants" at "http://repo.bigbeeconsultants.co.uk/repo"
+resolvers += "Big Bee Consultants" at "http://repo.bigbeeconsultants.co.uk/"
 
 ////////////////////// H2DB / StorageH2DB
 // http://mvnrepository.com/artifact/com.h2database/h2
