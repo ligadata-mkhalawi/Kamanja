@@ -367,25 +367,26 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
                     // add code to ignore checking file size
                     // If file hasn't grown in the past 2 seconds - either a delay OR a completed transfer.
 
-                    if (adapterConfig.monitoringConfig.checkFileSize) {
-                      if (fileTuple._2._1 == thisFileOrigLength) {
-                        // If the length is > 0, we assume that the file completed transfer... (very problematic, but unless
-                        // told otherwise by BofA, not sure what else we can do here.
-                        if (thisFileOrigLength > 0 && MonitorUtils.isValidFile(fileHandler, adapterConfig.monitoringConfig.checkFileTypes)) {
-                          if (isEnqueued(fileTuple._1)) {
-                            logger.debug("SMART FILE CONSUMER (MonitorController):  File already enqueued " + fileHandler.getFullPath)
-                          } else if (parentSmartFileConsumer.isInProcessingQueue(fileHandler.getFullPath)) {
-                            logger.info("SMART FILE CONSUMER (MonitorController):  File already in processing queue " + fileHandler.getFullPath)
-                          } else {
-                            logger.info("SMART FILE CONSUMER (MonitorController):  File READY TO PROCESS " + fileHandler.getFullPath)
-                            canProcessFiles = canProcessFiles + 1
-                            //                          enQFile(fileTuple._1, NOT_RECOVERY_SITUATION, fileHandler.lastModified)
-                            //                          newlyAdded.append(fileHandler)
-                          }
-                          // bufferingQ_map.remove(fileTuple._1)
-                          removedEntries += fileTuple._1
+                    //                    if (adapterConfig.monitoringConfig.checkFileSize) {
+                    if (fileTuple._2._1 == thisFileOrigLength) {
+                      // If the length is > 0, we assume that the file completed transfer... (very problematic, but unless
+                      // told otherwise by BofA, not sure what else we can do here.
+                      if (thisFileOrigLength > 0 && MonitorUtils.isValidFile(fileHandler, adapterConfig.monitoringConfig.checkFileTypes)) {
+                        if (isEnqueued(fileTuple._1)) {
+                          logger.info("SMART FILE CONSUMER (MonitorController):  File already enqueued " + fileHandler.getFullPath)
+                        } else if (parentSmartFileConsumer.isInProcessingQueue(fileHandler.getFullPath)) {
+                          logger.info("SMART FILE CONSUMER (MonitorController):  File already in processing queue " + fileHandler.getFullPath)
                         } else {
-                          // Here becayse either the file is sitll of len 0,or its deemed to be invalid.
+                          logger.info("SMART FILE CONSUMER (MonitorController):  File READY TO PROCESS " + fileHandler.getFullPath)
+                          canProcessFiles = canProcessFiles + 1
+                          //                          enQFile(fileTuple._1, NOT_RECOVERY_SITUATION, fileHandler.lastModified)
+                          //                          newlyAdded.append(fileHandler)
+                        }
+                        // bufferingQ_map.remove(fileTuple._1)
+                        removedEntries += fileTuple._1
+                      } else {
+                        // Here becayse either the file is sitll of len 0,or its deemed to be invalid.
+                        if (adapterConfig.monitoringConfig.checkFileSize) {
                           if (thisFileOrigLength == 0) {
                             val diff = System.currentTimeMillis - thisFileStarttime //d.lastModified
                             if (diff > bufferTimeout) {
@@ -417,15 +418,21 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
                             removedEntries += fileTuple._1
                           }
                         }
-                      } else {
-                        logger.debug("SMART FILE CONSUMER (MonitorController):  File {} size changed from {} to {}",
-                          fileHandler.getFullPath, thisFileOrigLength.toString, fileTuple._2._1.toString)
-                        bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
+                        else {
+                          canProcessFiles = canProcessFiles + 1
+                        }
                       }
                     } else {
-                      canProcessFiles = canProcessFiles + 1
+                      logger.debug("SMART FILE CONSUMER (MonitorController):  File {} size changed from {} to {}",
+                        fileHandler.getFullPath, thisFileOrigLength.toString, fileTuple._2._1.toString)
+                      bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
                     }
-                  } else {
+                    //                  }
+                    //                      else {
+                    //                      canProcessFiles = canProcessFiles + 1
+                    //                    }
+                  }
+                  else {
                     // File System is not accessible.. issue a warning and go on to the next file.
                     logger.warn("SMART FILE CONSUMER (MonitorController): File on the buffering Q is not found " + fileHandler.getFullPath)
                     // bufferingQ_map.remove(fileTuple._1)
@@ -502,7 +509,8 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
             newlyAddedGroupsCount += 1
 
           }
-        })
+        }
+        )
 
 
         if (newlyAddedGroupsCount > 0) {
