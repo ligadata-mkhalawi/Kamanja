@@ -424,7 +424,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         val partitionId = pathTokens(1)
 
         val cacheKey = Status_Check_Cache_KeyParent + "/" + nodeId + "/" + partitionId
-        val statusData = envContext.getConfigFromClusterCache(cacheKey) // filename~offset~timestamp
+        val statusData = envContext.getConfigFromClusterCache(cacheKey)
+        // filename~offset~timestamp
         val statusDataStr: String = if (statusData == null) null else new String(statusData)
 
         var failedCheckCount = 0
@@ -753,7 +754,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
             //since a request in cache has the format <node1>/<thread1>:<path to receive files>|<node2>/<thread1>:<path to receive files>
             val requestTokens = request.split(":")
-            val fileToProcessKeyPath = requestTokens(1) //something like SmartFileCommunication/FromLeader/<NodeId>/<thread id>
+            val fileToProcessKeyPath = requestTokens(1)
+            //something like SmartFileCommunication/FromLeader/<NodeId>/<thread id>
             val requestNodeInfoTokens = requestTokens(0).split("/")
             val requestingNodeId = requestNodeInfoTokens(0)
             val requestingThreadId = requestNodeInfoTokens(1)
@@ -771,7 +773,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
               if (groupToProcessFullPath != null) {
 
                 val fileToProcessFullPath = groupToProcessFullPath.split("~~")(0)
-                LOG.debug("Smart File Consumer - Adding a group processing assignment of group + " + fileToProcessFullPath +
+                LOG.warn("Smart File Consumer - Adding a group processing assignment of group + " + fileToProcessFullPath +
                   " to Node " + requestingNodeId + ", thread Id=" + requestingThreadId)
 
                 //leave offset management to engine, usually this will be other than zero when calling startProcessing
@@ -958,7 +960,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
             //LOG.debug("Smart File Consumer - finished call to saveFileRequestsQueue, from assignInitialFiles")
             val fileToProcessFullPath = fileInfo._3
             //            logger.error("==============> HaithamLog => inside assignInitialFiles : requestToAssign =" + requestToAssign)
-            removeFromRequestQueue(requestToAssign) //remove the current request
+            removeFromRequestQueue(requestToAssign)
+            //remove the current request
             // might need to add if ( reqTokens.size>0)
             val reqTokens = requestToAssign.split(":")
             if (reqTokens.size >= 2) {
@@ -1004,7 +1007,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     //(1,file1,0,true)~(2,file2,0,true)~(3,file3,1000,true)
     val dataAr = eventPathData.split("~")
     val sendingNodeStartInfo = dataAr.map(dataItem => {
-      val trimmedItem = dataItem.substring(1, dataItem.length - 1) // remove parenthesis
+      val trimmedItem = dataItem.substring(1, dataItem.length - 1)
+      // remove parenthesis
       val itemTokens = trimmedItem.split(",")
       (itemTokens(0).toInt, itemTokens(1), itemTokens(2).toLong, itemTokens(3).toBoolean)
     }).toList
@@ -1105,8 +1109,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     //data has format <file name>|offset~~<file name2>|offset2
     // how to do the split "~~" , then  filename and offset "|"
 
-    var filesToProcessNames: ArrayBuffer[String] = ArrayBuffer() // All all files list here
-    var offsets: ArrayBuffer[Long] = ArrayBuffer() // All all files list here
+    var filesToProcessNames: ArrayBuffer[String] = ArrayBuffer()
+    // All all files list here
+    var offsets: ArrayBuffer[Long] = ArrayBuffer()
+    // All all files list here
     var smartFileContexts: ArrayBuffer[SmartFileConsumerContext] = ArrayBuffer() // All all files list here
 
 
@@ -1219,7 +1225,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       //send a new file request to leader
       if (!isShutdown) {
         //shutdown will clear all queues
-        val requestData = smartFileFromLeaderPath + "/" + context.nodeId + "/" + context.partitionId //listen to this SmartFileCommunication/FromLeader/<NodeId>/<partitionId id>
+        val requestData = smartFileFromLeaderPath + "/" + context.nodeId + "/" + context.partitionId
+        //listen to this SmartFileCommunication/FromLeader/<NodeId>/<partitionId id>
         val requestPathKey = requestFilePath + "/" + context.nodeId + "/" + context.partitionId
         LOG.info("SMART FILE CONSUMER - participant ({}) - sending a file request to leader on partition ({})", context.nodeId, context.partitionId.toString)
         LOG.debug("SMART FILE CONSUMER - sending the request using path ({}) using value ({})", requestPathKey, requestData)
@@ -1367,9 +1374,9 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
         //base target dir already exists, but might need to build sub-dirs corresponding to input dir structure
         val targetDirExists =
-        if (!targetDirHandler.exists())
-          targetDirHandler.mkdirs()
-        else true
+          if (!targetDirHandler.exists())
+            targetDirHandler.mkdirs()
+          else true
 
         if (targetDirExists)
           fileHandler.moveTo(targetMoveDir + "/" + flBaseName)
@@ -1917,4 +1924,55 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     val parentDir = fileHandler.getParentDir
     getDirLocationInfo(parentDir)
   }
+
+
+  def isInProcessingQueue(file: String): Boolean = {
+    logger.debug("isInProcessingQueue: checking if the file exists in the ProcessingQueue " + file)
+    var fileNamesList: List[String] = ()
+    var revisedTokensString: String = ""
+    processingQLock.synchronized {
+      val processingQueue = getFileProcessingQueue
+      if (processingQueue == null || processingQueue.length == 0)
+        return false
+      else {
+        processingQueue.exists(item => {
+          logger.debug("isInProcessingQueue: inside processingQueue.exists() ")
+          // <node1>/<thread1>:<groupOfFileNamesSeperatedBy"~~">|<node2>/<thread1>:<groupOfFileNamesSeperatedBy"~~">
+          val tokens1 = item.split("|")
+          if (tokens1.length >= 1) {
+            tokens1.foreach(oneToken => {
+              // node1/thread1:hdfs:file1~~hdfs:file1
+              var tokens = oneToken.split(":")
+              // node1/thread1   hdfs   file1~~hdfs  file1
+              // handle case if we have ":" in file name
+              if (tokens.length >= 2) {
+                revisedTokensString = tokens.tail.mkString(":")
+              } else {
+                revisedTokensString = tokens.toString
+              }
+              // hdfs:file1~~hdfs:file1
+              val fileNamesToken = revisedTokensString.split("~~")
+              // hdfs:file1   hdfs:file1
+              fileNamesToken.foreach(fileName => {
+                fileNamesList ++ fileName
+              })
+              //              if (tokens.length == 1) {
+              //                fileNamesList ++ tokens(1)
+              //              } else if (tokens.length >= 2) {
+              //                fileNamesList ++ tokens.tail.mkString(":")
+              //              }
+            })
+          }
+          logger.debug("isInProcessingQueue: looking for " + file + " in list :" + fileNamesList.mkString("//"))
+          if (fileNamesList.contains(file)) {
+            true
+          } else {
+            false
+          }
+        })
+      }
+    }
+  }
+
+
 }

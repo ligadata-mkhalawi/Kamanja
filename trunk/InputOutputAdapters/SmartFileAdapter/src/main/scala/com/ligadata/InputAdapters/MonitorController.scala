@@ -374,6 +374,8 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
                         if (thisFileOrigLength > 0 && MonitorUtils.isValidFile(fileHandler, adapterConfig.monitoringConfig.checkFileTypes)) {
                           if (isEnqueued(fileTuple._1)) {
                             logger.debug("SMART FILE CONSUMER (MonitorController):  File already enqueued " + fileHandler.getFullPath)
+                          } else if (parentSmartFileConsumer.isInProcessingQueue(fileHandler.getFullPath)) {
+                            logger.info("SMART FILE CONSUMER (MonitorController):  File already in processing queue " + fileHandler.getFullPath)
                           } else {
                             logger.info("SMART FILE CONSUMER (MonitorController):  File READY TO PROCESS " + fileHandler.getFullPath)
                             canProcessFiles = canProcessFiles + 1

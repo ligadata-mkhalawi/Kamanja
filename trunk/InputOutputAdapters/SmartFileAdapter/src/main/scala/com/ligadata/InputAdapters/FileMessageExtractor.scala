@@ -283,7 +283,8 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
         }
         else {
           currentMsgNum += 1
-          val msgOffset = globalOffset + lastMsg.length + message_separator_len //byte offset of next message in the file
+          val msgOffset = globalOffset + lastMsg.length + message_separator_len
+          //byte offset of next message in the file
           val smartFileMessage = new SmartFileMessage(lastMsg, msgOffset, fileHandler, currentMsgNum)
           messageFoundCallback(smartFileMessage, consumerContexts(0))
         }
@@ -353,6 +354,8 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
     //    logger.error("==============> HaithamLog => inside readWholeFiles")
 
     try {
+      logger.warn("Smart File Consumer - Starting reading messages from file {} , on Node {} , PartitionId {}",
+        fileHandlers(0).getFullPath, consumerContexts(0).nodeId, consumerContexts(0).partitionId.toString)
       val msgBody = readWholeFile(fileHandlers(0))
       val attachments = ArrayBuffer[String]()
 
@@ -457,7 +460,8 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
           if (newMsg.length > 0) {
             currentMsgNum += 1
             //if(globalOffset >= startOffset) {//send messages that are only after startOffset
-            val msgOffset = globalOffset + newMsg.length + message_separator_len //byte offset of next message in the file
+            val msgOffset = globalOffset + newMsg.length + message_separator_len
+            //byte offset of next message in the file
             val smartFileMessage = new SmartFileMessage(newMsg, msgOffset, fileHandlers(0), currentMsgNum)
             messageFoundCallback(smartFileMessage, consumerContexts(0))
 
