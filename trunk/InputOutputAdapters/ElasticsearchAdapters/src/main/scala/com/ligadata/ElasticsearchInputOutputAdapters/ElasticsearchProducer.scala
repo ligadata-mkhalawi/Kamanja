@@ -24,6 +24,7 @@ import org.json4s.jackson.Serialization
 import scala.actors.threadpool.{ExecutorService, Executors}
 import scala.collection.mutable.ArrayBuffer
 import org.json.JSONObject;
+import org.elasticsearch.shield.ShieldPlugin
 
 
 object ElasticsearchProducer extends OutputAdapterFactory {
@@ -288,7 +289,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       }
 
       settings.build()
-      val client = TransportClient.builder().settings(settings).build().addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(adapterConfig.location), adapterConfig.portNumber.toInt))
+      val client = TransportClient.builder().addPlugin(classOf[ShieldPlugin]).settings(settings).build().addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(adapterConfig.location), adapterConfig.portNumber.toInt))
       return client
     } catch {
       case ex: Exception => LOG.error("Adapter getConnection ", ex)

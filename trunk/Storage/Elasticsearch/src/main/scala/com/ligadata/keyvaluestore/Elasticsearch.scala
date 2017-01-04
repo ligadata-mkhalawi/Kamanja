@@ -44,6 +44,7 @@ import org.json4s.jackson.JsonMethods._
 
 import scala.collection.mutable.TreeSet
 import scala.util.control.Breaks._
+import org.elasticsearch.shield.ShieldPlugin
 
 
 class JdbcClassLoader(urls: Array[URL], parent: ClassLoader) extends URLClassLoader(urls, parent) {
@@ -351,7 +352,7 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       }
 
       settings.build()
-      var client = TransportClient.builder().settings(settings).build().addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(location), portNumber.toInt))
+      var client = TransportClient.builder().addPlugin(classOf[ShieldPlugin]).settings(settings).build().addTransportAddress(new InetSocketTransportAddress(InetAddress.getByName(location), portNumber.toInt))
       client
     } catch {
       case e: Exception => {
