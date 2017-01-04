@@ -279,14 +279,6 @@ object MonitorUtils {
 
     //println(s"componentsMap for file $fileName is " + componentsMap)
 
-    //for testing only
-    val orderFieldValueTemplate = locationInfo.orderBy.mkString("-")
-    val finalFieldVal =
-      componentsMap.foldLeft(orderFieldValueTemplate)((value, mapTuple) => {
-        value.replaceAllLiterally(mapTuple._1, mapTuple._2)
-      })
-    logger.debug(s"finalFieldVal for file $fileName : " + finalFieldVal)
-
     componentsMap
   }
 
