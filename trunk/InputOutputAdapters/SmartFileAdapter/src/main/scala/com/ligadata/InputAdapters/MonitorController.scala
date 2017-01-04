@@ -420,6 +420,7 @@ class MonitorController(adapterConfig: SmartFileAdapterConfiguration, parentSmar
                         }
                         else {
                           canProcessFiles = canProcessFiles + 1
+                          removedEntries += fileTuple._1
                         }
                       }
                     } else {
