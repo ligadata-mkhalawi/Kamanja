@@ -261,18 +261,25 @@ object MonitorUtils {
     for(i <- 0 to firstMatch.groupCount - 1){
       val componentName = locationInfo.fileComponents.components(i)
       //group(0) contains whole exp
-      val componentValNoPad = firstMatch.group(i + 1)
+      val componentValNoPad =
+        try {
+          firstMatch.group(i + 1)
+        }
+        catch{
+          case ex : Throwable => ""
+        }
 
       val componentVal =
-      if(locationInfo.fileComponents.paddings != null && locationInfo.fileComponents.paddings.contains(componentName)){
-        val padInfo = locationInfo.fileComponents.paddings(componentName)
-        padInfo.padPos.toLowerCase match{
-          case "left" => StringUtils.leftPad(componentValNoPad, padInfo.padSize, padInfo.padStr)
-          case "right" => StringUtils.rightPad(componentValNoPad, padInfo.padSize, padInfo.padStr)
-          case _ => throw new Exception("Unsopported padding position config - " + padInfo.padPos)
+        if(componentValNoPad == null) ""
+        else if(locationInfo.fileComponents.paddings != null && locationInfo.fileComponents.paddings.contains(componentName)){
+          val padInfo = locationInfo.fileComponents.paddings(componentName)
+          padInfo.padPos.toLowerCase match{
+            case "left" => StringUtils.leftPad(componentValNoPad, padInfo.padSize, padInfo.padStr)
+            case "right" => StringUtils.rightPad(componentValNoPad, padInfo.padSize, padInfo.padStr)
+            case _ => throw new Exception("Unsopported padding position config - " + padInfo.padPos)
+          }
         }
-      }
-      else componentValNoPad
+        else componentValNoPad
 
       componentsMap += (componentName -> componentVal)
     }
