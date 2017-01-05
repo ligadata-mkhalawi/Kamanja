@@ -9,6 +9,7 @@ Command Reference Pages
    command-ref/createqueues
    command-ref/ClusterInstallerDriver
    command-ref/easyInstallKamanja
+   command-ref/FileDataConsumer
    command-ref/kamanja
    command-ref/SimplePmlTestTool
    command-ref/WatchInputQueue

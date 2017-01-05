@@ -18,4 +18,27 @@ Currently supported collection types in Kamanja PMML models include
 Array, ArrayBuffer, Set, ImmutableSet, Map, ImmutableMap,
 SortedSet, TreeSet, and Queue.
 
+A Kamanja :ref:`message<message-term>` or :ref:`container<container-term>`
+can have fields with the following types:
+
+- Int
+- Long
+- Float
+- Double
+- Boolean
+- String
+- Char
+
+In addition, all of these types can serve as a member type
+of either array or map collections.
+
+Kamanja Messages and Containers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Kamanja’s message (and container) compiler
+not only produces type information for the message or container being added,
+but also create array and map collection types automatically
+that have these message and container types as their member element.
+
+For maps, permissible key values are currently limited to String.
 

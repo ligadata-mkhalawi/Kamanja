@@ -62,8 +62,9 @@ Here are the contents of DAGAddition.scala:
   output.integer3 = result
  
   return Array(output)
+    }
   }
-}
+
 
 DAGMultiplication.scala
 -----------------------

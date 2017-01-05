@@ -20,6 +20,7 @@ Ligapedia
    ligapedia/a-f/feature-extraction
    ligapedia/a-f/feature-selection
    ligapedia/a-f/features
+   ligapedia/g-m/hbase
    ligapedia/g-m/jar
    ligapedia/g-m/java
    ligapedia/g-m/json
@@ -39,13 +40,9 @@ Ligapedia
    ligapedia/n-r/numby
    ligapedia/n-r/persist
    ligapedia/n-r/preprocessing
-<<<<<<< HEAD
    ligapedia/n-r/properties-param
    ligapedia/n-r/python
    ligapedia/n-r/r
-=======
-   ligapedia/n-r/python
->>>>>>> d4c9e5fb9d9d64e6e72eb2faad5201af0f0583cc
    ligapedia/n-r/rdd
    ligapedia/s-z/scala
    ligapedia/s-z/scikit-learn

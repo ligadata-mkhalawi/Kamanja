@@ -14,6 +14,9 @@ There are two general types of adapters:
 
 For more information:
 
+- :ref:`adapters-input` provides more details about how to implement
+  input adapters.
+
 - Adapters are defined in
   the :ref:`ClusterConfig<clusterconfig-config-ref>` file.
 

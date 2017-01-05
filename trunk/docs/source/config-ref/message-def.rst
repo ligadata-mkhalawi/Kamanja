@@ -138,6 +138,17 @@ Parameters -- output message
 Usage
 -----
 
+How the engine handles input messages
+that do not match the message definition:
+
+- If a message input is defined as fixed,
+  the message fails entirely.
+  CSV must be fixed in length and order.
+
+- If a message input is defined as mapped,
+  as long as the message type is declared correctly,
+  the correct fields are selected and unknown fields are ignored.
+
 Output messages
 ~~~~~~~~~~~~~~~
 

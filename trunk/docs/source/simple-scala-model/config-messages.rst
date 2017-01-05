@@ -53,12 +53,14 @@ you can look at the *APIResult* file for that command
 to see whether the command was successful.
 The file looks something like this:
 
-	Result: {
-		"APIResults": {
-			"Status Code": 0,
-			"Function Name": "AddMessageDef",
-			"Result Data": null,
-			"Result Description": "Message Added 	Successfully:com.ligadata.test.dag.numbermessage.000000000001000000"
-		}
-	}
+::
+
+  Result: {
+    "APIResults": {
+        "Status Code": 0,
+      	"Function Name": "AddMessageDef",
+        "Result Data": null,
+        "Result Description": "Message Added 	Successfully:com.ligadata.test.dag.numbermessage.000000000001000000"
+      }
+   }
 

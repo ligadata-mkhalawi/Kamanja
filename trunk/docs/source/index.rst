@@ -17,6 +17,7 @@ Reference Pages
 ---------------
 
 .. toctree::
+   :maxdepth: 1
 
    config-ref
    command-ref
@@ -32,10 +33,7 @@ Machine Learning Guides
 
    models
    java-scala-model
-<<<<<<< HEAD
    pmml
-=======
->>>>>>> d4c9e5fb9d9d64e6e72eb2faad5201af0f0583cc
    adapters
 
 Tutorials
@@ -46,10 +44,7 @@ Tutorials
    simple-scala-model
    jtm
    python
-<<<<<<< HEAD
    r-rattle
-=======
->>>>>>> d4c9e5fb9d9d64e6e72eb2faad5201af0f0583cc
 
 Administration Guides
 ---------------------
