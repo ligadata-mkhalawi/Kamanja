@@ -23,7 +23,18 @@ tremendously increases the value of these applications.
 For more information:
 
 - :ref:`How Kamanja Python Works<python-arch>`
+- :ref:`python-guide-top`
 
 See also:
+
+- `scikit-learn home page <http://scikit-learn.org/stable/index.html>`_.
+
+- `TensorFlow home page <https://www.tensorflow.org/>`_.
+
+- `Theano 0.8.2 Documentation
+  <http://deeplearning.net/software/theano/introduction.html>`_.
+  LISA Lab, University of Montreal, 2008-2016.
+  Web. 23 Sep 2016.
+
 
 

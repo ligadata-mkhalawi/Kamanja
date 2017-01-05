@@ -1,9 +1,9 @@
 
 .. _python-guide-top:
 
-=============
-Python models
-=============
+===================
+Python models guide
+===================
 
 .. toctree::
 

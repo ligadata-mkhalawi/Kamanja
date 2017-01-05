@@ -17,11 +17,10 @@ Reference Pages
 ---------------
 
 .. toctree::
+   :maxdepth: 1
 
    config-ref
    command-ref
-
-
 
 API Reference Pages
 
@@ -32,24 +31,13 @@ Machine Learning Guides
 
    models
    java-scala-model
-<<<<<<< HEAD
-   pmml
-=======
->>>>>>> d4c9e5fb9d9d64e6e72eb2faad5201af0f0583cc
-   adapters
-
-Tutorials
----------
-
-.. toctree::
-
    simple-scala-model
    jtm
    python
-<<<<<<< HEAD
    r-rattle
-=======
->>>>>>> d4c9e5fb9d9d64e6e72eb2faad5201af0f0583cc
+   pmml
+   adapters
+
 
 Administration Guides
 ---------------------
@@ -57,6 +45,7 @@ Administration Guides
 .. toctree::
 
    install-plan
+   admin
 
 About this Product
 ------------------

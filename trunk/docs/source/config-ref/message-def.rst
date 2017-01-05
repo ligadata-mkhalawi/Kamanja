@@ -5,12 +5,22 @@
 Message definition
 ==================
 
-[TODO: Edit/restructure to do core, input, output, storage]
+All :ref:`message<messages-term>` objects
+used in the cluster are defined in the
+:ref:`ClusterConfig.json<clusterconfig-config-ref>` JSON file.
+Each input, output, or storage message used in the cluster
+has its own "Message" section,
+identified by a unique "Name".
 
-Define the structure of a :ref:`message<messages-term>`.
+Message definitions include some core parameters
+that are used for all message types
+plus some parameters that are specific to each message type.
 
-File structure -- Input message
--------------------------------
+File structure
+--------------
+
+Input message file structure
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ::
 
@@ -18,11 +28,12 @@ File structure -- Input message
       "Message": {
       	"NameSpace": "<namespace>",
       	"Name": "<name>",
-        "Type": inpupt | output | storage
+        "Type": input | output | storage
       	"Version": "<version>",
       	"Description": "<description of product",
       	"Persist": "true" | "false",
       	"Fixed": "true" | "false",
+        "CaseSensitive" : "true" | "false",
       	"Fields": [{
       		"Name": "<attribute-name>",
       		"Type": "<type>"
@@ -33,14 +44,14 @@ File structure -- Input message
       	"PrimaryKey": ["Id ", " Name"],
       	"TimePartitionInfo": {
       		"Key": "Id ",
-      		"Format": "epochtime",
-      		"Type": "Daily"
+      		"Format": "epochtime" | "epochtimeInMillis" | "epochtimeInSeconds" | SimpleDateFormat 
+      		"Type": "Daily" | "Monthly" | "Yearly"
       	}
       }
   }
 
-File structure -- Output message
---------------------------------
+Output message file structure
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ::
 
@@ -89,8 +100,14 @@ File structure -- Output message
       }
   }
 
-Parameters -- input message
----------------------------
+Storage message file structure
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Parameters
+----------
+
+Input message parameters
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 - **NameSpace** – namespace of the message.
 - **Name** – name of the message.
@@ -99,6 +116,14 @@ Parameters -- input message
 - **Fixed** – if set to TRUE, this is a fixed message;
   if set to FALSE, it is a mapped messages.
   See :ref:`Fixed and mapped messages<messages-fix-map-term>`.
+- **CaseSensitive** -- if set to TRUE, fields in the message definition
+  are case-sensitive.
+  The variables in the generated message are the same case
+  as given in the message definition.
+  If set to FALSE, the fields in the message definition
+  are considered lower case
+  and the field variables in the message are generated as lower case.
+  Default value is FALSE.
 - **Fields/elements** – schema definition for the data included
   in this message.  This is a list of attribute names
   and the :ref:`type<types-term>` of each attribute.
@@ -106,13 +131,20 @@ Parameters -- input message
   is saved to the data store.  See :ref:`persist-term`.
 - **PartitionKey** – (optional) partition keys for the message.
 - **PrimaryKey** – (optional) primary keys for the message.
-- **TimePartitionInfo** – (optional) time partition information,
-  which includes attribute name, time partition format,
-  and time partition type.
+- **TimePartitionInfo** – (optional) time partition information.
+  The attributes are:
+
+  - **Key** – should be one of the fields from the message definition.
+  - **Format** – The format of the data in the input message.
+    The value of the format in the message definition
+    can be one of the following: epochTime, epochtimeInMillis,
+    epochtimeInSeconds, or java SimpleDateFormat pattern.
+  - **Type** – can be Yearly or Monthly or Daily.
 
 
-Parameters -- output message
-----------------------------
+
+Output message parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
 - **NameSpace** – namespace of the output adapter.
@@ -134,9 +166,23 @@ Parameters -- output message
   that is generated with the data and pushed to the output adapter.
 
 
+Storage message parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 Usage
 -----
+
+How the engine handles input messages
+that do not match the message definition:
+
+- If a message input is defined as fixed,
+  the message fails entirely.
+  CSV must be fixed in length and order.
+
+- If a message input is defined as mapped,
+  as long as the message type is declared correctly,
+  the correct fields are selected and unknown fields are ignored.
 
 Output messages
 ~~~~~~~~~~~~~~~
@@ -225,9 +271,7 @@ This is the output message that exists in the queue:
   "ElapsedTimeFromDataRead":35994
   }
 
-
-The meaning of the fields is:
-
+This is the meaning of the parameters in the output message:
 
 - **ExecutionTime and EventDate** – time the output message was emitted.
 - **TxnId** – transaction identifier associated with
@@ -246,9 +290,9 @@ The meaning of the fields is:
   to detect whether output is pushed to this adapter or not.
 
   For example: If the input message transforms into three internal messages
-  and after processing two of them the engine crashes,
-  it is necessary to track how many messages are processed
-  and how many messages are output.
+  and, after processing two of them, the engine crashes,
+  it is necessary to track how many messages have been processed
+  and how many messages have been output.
   Only the third transformed message is output
   when the engine restarts or the workload is distributed.
 - **ElapsedTimeFromDataRead** – ElapsedTime from DataRead until
@@ -257,5 +301,7 @@ The meaning of the fields is:
 
 See also
 --------
+
+- :ref:`GenerateMessage.sh<generatemessage-command-ref>`
 
 

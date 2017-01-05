@@ -32,3 +32,9 @@ Containers are more like descriptions of information
 that the model may want to maintain in order to interpret future messages.
 Containers have state information that the model needs.
 
+For more information:
+
+-
+- Use the :ref:`JdbcDataCollector.sh<jdbcdatacollector-command-ref>` command
+  to extract data from an external relational database
+  into a local file that can then be loaded into a container.

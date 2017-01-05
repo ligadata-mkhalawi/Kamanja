@@ -58,17 +58,17 @@ Install Scala
 ~~~~~~~~~~~~~
 
 Download and install :ref:`Scala<scala-term>` 2.11 from the
-`Scala 2.11 download site <http://www.scala-lang.org/download/2.11.7.html>`.
+`Scala 2.11 download site <http://www.scala-lang.org/download/2.11.7.html>`-.
 
 Kamanja can instead use Scala 2.10, which can be downloaded from
-`the Scala 2.10 download site <http://www.scala-lang.org/download/2.10.2.html>`.
+`the Scala 2.10 download site <http://www.scala-lang.org/download/2.10.2.html>`-.
 
 
 Install ZooKeeper
 ~~~~~~~~~~~~~~~~~
 
 Download and install :ref:`ZooKeeper<zookeeper-term>` 3.4.6 from the
-`Zookeeper download page <http://www.apache.org/dyn/closer.cgi/zookeeper/>`.
+`Zookeeper download page <http://www.apache.org/dyn/closer.cgi/zookeeper/>`_.
 
 After adding $ZOOKEEPER_HOME to your .bashrc or .bash_profile file,
 issue the following commands to complete the ZooKeeper installation:
@@ -84,7 +84,7 @@ Install Kafka
 ~~~~~~~~~~~~~
 
 Download :ref:`Kafka<kafka-term>` 0.10 from the
-`Kafka download site <http://kafka.apache.org/downloads.html>`.
+`Kafka download site <http://kafka.apache.org/downloads.html>`_.
 Note that separate files are provided to run with Scala 2.11 or 2.10;
 be sure to get the version that matches the version of Scala you installed.
 

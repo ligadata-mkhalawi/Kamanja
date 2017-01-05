@@ -12,4 +12,6 @@ and configuration information.
 
 See also:
 
-- <link to metadata API reference pages>
+- :ref:`MetadataAPIConfig.properties<metadataapiconfig-config-ref>`
+
+

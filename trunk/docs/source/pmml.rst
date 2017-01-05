@@ -12,6 +12,7 @@ PMML on Kamanja
    pmml/produce
    pmml/websites
    pmml/add-remove
-   pmml/missingvalue.rst
+   pmml/missingvalue
+   pmml/modelresults
    pmml/test
 

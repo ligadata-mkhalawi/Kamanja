@@ -110,6 +110,10 @@ are explained and illustrated.
 Python Model using ModelInstance
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+Model DivideTuple divides msg["a"] by msg["b"].
+A real implementation would use the output fields
+to determine what should be returned.
+
 ::
 
   import abc
@@ -118,24 +122,23 @@ Python Model using ModelInstance
   import logging
 
   class DivideTuple(ModelInstance):
-  """ Model DivideTuple will divide msg["a"] by msg["b"] """
        def execute(self, msg):
-￼
-       """
-       A real implementation would use the output fields to
-       determine what should be returned.
-       """
+
        a = int(msg["a"])
        b = int(msg["b"])
        if (a > b):
+
             qutotientofTup = a/b
             outMsg = json.dumps({'a' : msg["a"], 'b' : msg["b"],
                  'operator' : '/', 'result' : qutotientofTup})
+
        else :
             outMsg = ""
+
        return outMsg
 
-The Python example can either return output or NULL as shown in the above program.
+
+The Python example can return either output or NULL as shown in the above program.
 The model can install external libraries and use them in the Python program.
 The models are stored in $KAMANJA_HOME/python/model once they are compiled.
 MODELNAME in the command-line is given the name of the <modulename>.<classname>.
@@ -276,4 +279,5 @@ see HMEQ-mortgage-applic-SAS-data-doc.pdf and HMEQ-Sta6704-Data-Mining-Methods.p
 Bibliography
 ~~~~~~~~~~~~
 
-Theano 0.8.2 Documentation. LISA Lab, University of Montreal, 2008-2016. Web. 23 Sep 2016. (http://deeplearning.net/software/theano/introduction.html)
+Theano 0.8.2 Documentation. LISA Lab, University of Montreal, 2008-2016.
+Web. 23 Sep 2016. (`<http://deeplearning.net/software/theano/introduction.html>`_)

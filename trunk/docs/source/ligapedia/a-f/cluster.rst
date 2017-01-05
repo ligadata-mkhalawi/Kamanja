@@ -5,7 +5,7 @@ Cluster (Kamanja)
 -----------------
 
 In a Kamanja environment,
-a cluster is a group of one or more Kamanja nodes
+a cluster is a group of one or more Kamanja :ref:`nodes<node-term>`
 that work together on the same task;
 typically, clusters do not overlap.
 

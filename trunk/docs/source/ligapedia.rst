@@ -10,21 +10,27 @@ Ligapedia
    ligapedia/a-f/adapter
    ligapedia/a-f/audit-adapter
    ligapedia/a-f/audit-log
+   ligapedia/a-f/avro
    ligapedia/a-f/bashrc
    ligapedia/a-f/cluster
-   ligapedia/a-f/csv
+   ligapedia/a-f/cluster-analysis
+   ligapedia/a-f/com-ligadata-keyvaluestore-datastore
+   ligapedia/a-f/com-ligadata-keyvaluestore-transaction
    ligapedia/a-f/concepts
    ligapedia/a-f/container
+   ligapedia/a-f/csv
    ligapedia/a-f/deep-learning
    ligapedia/a-f/etl
    ligapedia/a-f/feature-extraction
    ligapedia/a-f/feature-selection
    ligapedia/a-f/features
+   ligapedia/g-m/hbase
    ligapedia/g-m/jar
    ligapedia/g-m/java
    ligapedia/g-m/json
    ligapedia/g-m/jtm
    ligapedia/g-m/kafka
+   ligapedia/g-m/kbinary
    ligapedia/g-m/kv
    ligapedia/g-m/machine-learning
    ligapedia/g-m/messages
@@ -36,19 +42,21 @@ Ligapedia
    ligapedia/n-r/naive-bayes
    ligapedia/n-r/neural-networks
    ligapedia/n-r/nlp
+   ligapedia/n-r/node
    ligapedia/n-r/numby
+   ligapedia/n-r/partition
    ligapedia/n-r/persist
+   ligapedia/n-r/pmml
    ligapedia/n-r/preprocessing
-<<<<<<< HEAD
    ligapedia/n-r/properties-param
    ligapedia/n-r/python
    ligapedia/n-r/r
-=======
-   ligapedia/n-r/python
->>>>>>> d4c9e5fb9d9d64e6e72eb2faad5201af0f0583cc
    ligapedia/n-r/rdd
+   ligapedia/n-r/reserved-words
    ligapedia/s-z/scala
    ligapedia/s-z/scikit-learn
+   ligapedia/s-z/serial-deserial
+   ligapedia/s-z/sql
    ligapedia/s-z/supervised-learning
    ligapedia/s-z/tensorflow
    ligapedia/s-z/tenancy
