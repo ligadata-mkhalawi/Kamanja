@@ -74,8 +74,9 @@ excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
 
 /////////////////////// StorageElasticsearch
 // https://mvnrepository.com/artifact/org.elasticsearch/elasticsearch
-//libraryDependencies += "org.elasticsearch" % "elasticsearch" % "2.3.5"
-libraryDependencies += "org.elasticsearch" % "elasticsearch" % "2.4.0"
+libraryDependencies += "org.elasticsearch" % "elasticsearch" % "2.3.5"
+//libraryDependencies += "org.elasticsearch" % "elasticsearch" % "2.4.0"
+libraryDependencies += "org.elasticsearch.plugin" % "shield" % "2.3.5" from "http://maven.elasticsearch.org/releases/org/elasticsearch/plugin/shield/2.3.5/shield-2.3.5.jar"
 /////////////////////// KamanjaManager
 resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
 libraryDependencies += "org.apache.logging.log4j" % "log4j-1.2-api" % "2.4.1"
