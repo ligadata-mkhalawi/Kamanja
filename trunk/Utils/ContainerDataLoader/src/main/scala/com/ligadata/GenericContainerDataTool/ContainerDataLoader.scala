@@ -1,23 +1,12 @@
 package com.ligadata.GenericContainerDataTool
 
-import com.ligadata.KamanjaBase.{ContainerInterface, RDDObject, RddDate}
+import com.ligadata.KamanjaBase.{ContainerInterface, RDDObject}
 
 import scala.collection.mutable
 import scala.reflect.runtime.{universe => ru}
 
 
 class ContainerDataLoader {
-
-  def function1(containerName: String, partitionFieldName: String, partitionValue: Array[String]): Map[String, Any] = {
-    val curDtTmInMs = RddDate.currentGmtDateTime
-
-    //    // Get current values of aggregatedUsage
-    //    val subAggrUsage = SubscriberAggregatedUsage.getRecentOrNew(Array(subInfo.msisdn.toString))
-    //    val actAggrUsage = AccountAggregatedUsage.getRecentOrNew(Array(actInfo.actno))
-
-    return null
-  }
-
 
   def getContainerData(containerName: String, partitionFieldName: String, partitionValue: Array[String]): mutable.HashMap[String, Any] = {
 
