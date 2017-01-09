@@ -1,20 +1,38 @@
 package com.ligadata.GenericContainerDataTool
 
-import com.ligadata.KamanjaBase.{ContainerInterface, RDDObject}
+import com.ligadata.KamanjaBase.{ContainerInterface, RDD, RDDObject}
+import org.apache.logging.log4j.LogManager
 
 import scala.collection.mutable
 import scala.reflect.runtime.{universe => ru}
 
 
-class ContainerDataLoader {
+class ContainerDataLoader[T <: ContainerInterface](getRddFunc: Array[String] => RDD[T]) {
 
-  def getContainerData(containerName: String, partitionFieldName: String, partitionValue: Array[String]): mutable.HashMap[String, Any] = {
+
+  var mapData = Map[String, T]()
+
+  lazy val loggerName = this.getClass.getName
+  lazy val logger = LogManager.getLogger(loggerName)
+
+  def getFullContainerData(keyValues: Array[String]): Map[String, T] = {
+    logger.info("ContainerDataLoader.getFullContainerData : keyValues = " + keyValues.mkString("||"))
+    //val rdd = R.getRDD.map(x => x.asInstanceOf[T]).toArray
+
+    mapData = getRddFunc(keyValues).map(rdd => rdd.getPartitionKey()(0) -> rdd).toArray.toMap //TODO : what if we have multiple key names ? concat ?
+    logger.info("ContainerDataLoader.getFullContainerData : returning RDD ")
+    return mapData
+  }
+
+
+  def getContainerData(containerName: String, partitionValue: Array[String]): mutable.HashMap[String, Any] = {
+    logger.info("ContainerDataLoader.getContainerData : containerName = " + containerName)
+    logger.info("ContainerDataLoader.getContainerData : partitionValue = " + partitionValue.mkString("||"))
 
     var retValues: mutable.HashMap[String, Any] = new mutable.HashMap[String, Any]()
 
     try {
       val classLoader = getClass.getClassLoader
-      //      val className = "tests.DT_LOCATONS$"
       val className = containerName
       // This throws an exception if we don't find className in classLoader. This is just to check whether this class loader has this class name or not
       val clz = Class.forName(className, true, classLoader)
@@ -24,12 +42,14 @@ class ContainerDataLoader {
       val module = mirror.staticModule(className)
       val obj = mirror.reflectModule(module)
 
-      val objinst = obj.instance
-      if (objinst.isInstanceOf[RDDObject[ContainerInterface]]) {
-        val container: RDDObject[ContainerInterface] = objinst.asInstanceOf[RDDObject[ContainerInterface]]
+      val objInst = obj.instance
+      if (objInst.isInstanceOf[RDDObject[ContainerInterface]]) {
+        val container: RDDObject[ContainerInterface] = objInst.asInstanceOf[RDDObject[ContainerInterface]]
+        logger.info("ContainerDataLoader.getContainerData : calling container.getRDD(partitionValue) ")
         val containerData = container.getRDD(partitionValue)
 
         var iterator = containerData.iterator
+        logger.info("ContainerDataLoader.getContainerData : gathering data in retValues map")
         while (iterator.hasNext) {
           var next = iterator.next()
           next.getAllAttributeValues.foreach(attr => {
@@ -41,10 +61,11 @@ class ContainerDataLoader {
       }
       else {
         println("not instance")
+        logger.error("ContainerDataLoader.getContainerData : objInst is not an instance of RDDObject[ContainerInterface]")
       }
     }
     catch {
-      case ex: Throwable => ex.printStackTrace()
+      case ex: Throwable => logger.error(ex)
     }
     return retValues
   }
