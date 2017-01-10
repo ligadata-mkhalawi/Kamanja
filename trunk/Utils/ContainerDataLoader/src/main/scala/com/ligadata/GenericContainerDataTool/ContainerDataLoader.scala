@@ -10,16 +10,23 @@ import scala.reflect.runtime.{universe => ru}
 class ContainerDataLoader[T <: ContainerInterface](getRddFunc: Array[String] => RDD[T]) {
 
 
-  var mapData = Map[String, T]()
+  var mapData = mutable.Map[Array[String], T]()
 
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
 
-  def getFullContainerData(keyValues: Array[String]): Map[String, T] = {
+  def getFullContainerData(keyValues: Array[Array[String]]): mutable.Map[Array[String], T] = {
     logger.info("ContainerDataLoader.getFullContainerData : keyValues = " + keyValues.mkString("||"))
     //val rdd = R.getRDD.map(x => x.asInstanceOf[T]).toArray
 
-    mapData = getRddFunc(keyValues).map(rdd => rdd.getPartitionKey()(0) -> rdd).toArray.toMap //TODO : what if we have multiple key names ? concat ?
+    keyValues.foreach(keyValue => {
+      //      mapData = getRddFunc(keyValues).map(rdd => rdd.getPartitionKey()(0) -> rdd).toArray.toMap
+      var temp = getRddFunc(keyValues).foreach(rdd => {
+        val key = rdd.getPartitionKey()
+        mapData.put(key, rdd)
+      })
+
+    })
     logger.info("ContainerDataLoader.getFullContainerData : returning RDD ")
     return mapData
   }
