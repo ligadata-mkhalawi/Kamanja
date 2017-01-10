@@ -16,18 +16,21 @@ class ContainerDataLoader[T <: ContainerInterface](getRddFunc: Array[String] => 
   lazy val logger = LogManager.getLogger(loggerName)
 
   def getFullContainerData(keyValues: Array[Array[String]]): mutable.Map[Array[String], T] = {
-    logger.info("ContainerDataLoader.getFullContainerData : keyValues = " + keyValues.mkString("||"))
+
     //val rdd = R.getRDD.map(x => x.asInstanceOf[T]).toArray
 
     keyValues.foreach(keyValue => {
       //      mapData = getRddFunc(keyValues).map(rdd => rdd.getPartitionKey()(0) -> rdd).toArray.toMap
-      var temp = getRddFunc(keyValue).foreach(rdd => {
+      logger.info("ContainerDataLoader.getFullContainerData :inside Outer foreach ")
+
+      var temp = getRddFunc(keyValue)
+      temp.foreach(rdd => {
+        logger.info("ContainerDataLoader.getFullContainerData :inside Inner foreach ")
         val key = rdd.getPartitionKey()
         mapData.put(key, rdd)
       })
-
     })
-    logger.info("ContainerDataLoader.getFullContainerData : returning RDD ")
+    logger.info("ContainerDataLoader.getFullContainerData : returning values of size " + mapData.size)
     return mapData
   }
 
