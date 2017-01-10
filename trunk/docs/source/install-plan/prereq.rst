@@ -39,6 +39,7 @@ The following table shows the system requirement recommendations
 for production performance.
 Development systems can have a minimum required hardware capacity of 16GB RAM.
 
+<<<<<<< HEAD
 .. list-table::
    :widths: 20 30 20 30
    :header-rows: 1
@@ -71,6 +72,35 @@ Development systems can have a minimum required hardware capacity of 16GB RAM.
      - 5 GB
      - 5 GB (not including any database indexes)
      - 100 GB (not including any database indexes)
+=======
+Table 1 Hardware Specifications
+
+* - Platform
+  - Minimum for a Development or Prototyping System
+  - Minimum Supported Hardware Capacity
+  - Minimum Hardware Capacity for Optimum Capacity
+* - Architecture
+  - 32-bit, 64-bit
+  - 32-bit, 64-bit
+  - 64-bit
+* - Hard Drive
+  - 200 GB or as per needs of the test data      
+  - 500 GB, SSD, or non-SSD      
+  - 1 Terabyte, SSD recommended
+* - Non-Windows Platforms processors
+  - 8 GB RAM
+  - 1.14 GHz, 32 GB RAM      
+  - 2x six-core, 2-GHz CPU, 128-192 GB RAM, Redundant Array of Independent Disks (RAID) 0 or 1-0, with a 64-bit OS installed
+* - The following VMs on Windows Platforms:
+    Ubuntu/Debian, CentOS, RedHat, Fedora
+  - 8 GB RAM
+  - Intel Nehalem CPU or equivalent at 2 GHz, 32 GB RAM
+  - 2x six-core, 2-GHz CPU, 128-192 GB RAM, RAID 0 or 1-0, with a 64-bit OS installed
+* - Available HD space
+  - 5 GB
+  - 5 GB (not including any database indexes)
+  - 100 GB (not including any database indexes)
+>>>>>>> b17dbbe01a24d89797d5e4e9c25f4497a200559b
 
 Data Formats
 ------------

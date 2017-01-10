@@ -31,13 +31,18 @@ Machine Learning Guides
 
    models
    java-scala-model
+   pmml
+   adapters
+
+Tutorials
+---------
+
+.. toctree::
+
    simple-scala-model
    jtm
    python
    r-rattle
-   pmml
-   adapters
-
 
 Administration Guides
 ---------------------

@@ -1,8 +1,15 @@
 
+<<<<<<< HEAD
 .. _adapters-input-guide:
 
 Creating custom input adapters
 ==============================
+=======
+.. _adapters-input:
+
+Input Adapters
+==============
+>>>>>>> b17dbbe01a24d89797d5e4e9c25f4497a200559b
 
 An input adapter is a way of getting streams of data/events
 into the Kamanja server.
@@ -142,8 +149,13 @@ in the com.ligadata.KamanjaBase.InputAdapter trait.
   it issues the StartProcessing method.
 - **StartProcessing** – starts processing the specified partitions.
 
+<<<<<<< HEAD
   - **maxParts** – maximum partitions that the Kamanja engine wants to monitor.
   - **partitionInfo** – information about the sources of the messages,
+=======
+  - ** maxParts** – maximum partitions that the Kamanja engine wants to monitor.
+  - ** partitionInfo** – information about the sources of the messages,
+>>>>>>> b17dbbe01a24d89797d5e4e9c25f4497a200559b
     with each array element representing a message source,
     for example a Kafka partition or a file.
 
