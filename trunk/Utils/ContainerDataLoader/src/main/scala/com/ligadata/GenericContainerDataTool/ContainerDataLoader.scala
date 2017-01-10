@@ -21,7 +21,7 @@ class ContainerDataLoader[T <: ContainerInterface](getRddFunc: Array[String] => 
 
     keyValues.foreach(keyValue => {
       //      mapData = getRddFunc(keyValues).map(rdd => rdd.getPartitionKey()(0) -> rdd).toArray.toMap
-      var temp = getRddFunc(keyValues).foreach(rdd => {
+      var temp = getRddFunc(keyValue).foreach(rdd => {
         val key = rdd.getPartitionKey()
         mapData.put(key, rdd)
       })
