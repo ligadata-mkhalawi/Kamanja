@@ -1,15 +1,8 @@
 
-<<<<<<< HEAD
 .. _adapters-input-guide:
 
 Creating custom input adapters
 ==============================
-=======
-.. _adapters-input:
-
-Input Adapters
-==============
->>>>>>> b17dbbe01a24d89797d5e4e9c25f4497a200559b
 
 An input adapter is a way of getting streams of data/events
 into the Kamanja server.

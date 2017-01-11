@@ -16,11 +16,11 @@ There are two general types of adapters:
 
 For more information:
 
-- :ref:`adapters-input` provides details about how to implement
+- :ref:`adapters-input-guide` provides details about how to implement
   input adapters.
-- :ref:`adapters-output` provides details about how to implement
+- :ref:`adapters-output-guide` provides details about how to implement
   output adapters.
-- :ref:`adapters-storage` provides details about how to implement
+- :ref:`adapters-storage-guide` provides details about how to implement
   storage adapters.
 
 - Adapters are defined in

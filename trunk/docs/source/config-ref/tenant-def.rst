@@ -17,7 +17,7 @@ used in the cluster are defined in the
 :ref:`ClusterConfig.json<clusterconfig-config-ref>` JSON file.
 Each tenant used in the cluster
 has its own "Tenant" section,
-identified by a unique "Name".
+identified by a unique "TenantId".
 
 
 File structure

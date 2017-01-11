@@ -25,6 +25,9 @@ Tools are provided for monitoring the Kamanja cluster:
    * - :ref:`failure-tracking-admin`
      - Understand the exception message Kamanja produces
        when it encounters an error during execution.
+   * - :ref:`RecentLogErrorsFromKamanjaCluster.sh<recentlogerrorsfromkamanjacluster-admin>`,
+       :ref:`LogErrorsFromKamanjaCluster.sh<logerrorsfromkamanjacluster-admin>`
+     - Find ERROR messages in system logs
 
 .. _gethealthcheck-admin:
 
@@ -811,6 +814,142 @@ These are the expected execution failures:
    }]
    }
   }
+
+
+.. _status-message-admin:
+
+Kamanja status messages
+-----------------------
+
+Status messages are actually output adapters. For example:
+
+::
+
+  Status Messages
+
+  {
+   "Name": "TestStatus_1",
+   "TypeString": "Output",
+   "TenantId": "System",
+   "ClassName": "com.ligadata.OutputAdapters.KafkaProducer$",
+   "JarName": "kafkasimpleinputoutputadapters_2.10-1.0.jar",
+   "DependencyJars": [
+   "jopt-simple-3.2.jar",
+   "kafka_2.10-0.8.2.2.jar",
+   "kafka-clients-0.8.2.2.jar",
+   "metrics-core-2.2.0.jar",
+   "zkclient-0.3.jar",
+   "kamanjabase_2.10-1.0.jar",
+   "kvbase_2.10-0.1.0.jar"
+   ],
+   "AdapterSpecificCfg": {
+   "HostList": "localhost:9092",
+   "TopicName": "teststatus_1"
+   }
+  }
+
+
+.. monitor-logs-admin:
+
+Monitor Kamanja logs
+--------------------
+
+System logs are found on each node in a given cluster.
+There are two log scraper tools.
+Both look for ERROR messages in the logs on a given cluster.
+
+.. _logerrorsfromkamanjacluster-admin:
+
+LogErrorsFromKamanjaCluster.sh
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+LogErrorsFromKamanjaCluster.sh searches an entire log.
+The syntax is:
+
+::
+
+    LogErrorsFromKamanjaCluster.sh
+    --ClusterId < cluster name identifer >
+    --MetadataAPIConfig < metadataAPICfgPath >
+    --KamanjaLogPath < Kamanja system log path > [--ErrLogPath < where errors are collected > ]
+
+
+NOTES: Logs for the cluster specified by the cluster identifier parameter
+found in the metadata api configuration.
+The default error log path is "/tmp/errorLog.log"
+errors collected in this file.
+
+
+To roll logs every hour, use this script.
+The error log path receives the error lines found in the log.
+Because the system log can be moved about with log4j configuration options,
+the script requires the location of the Kamanja logs.
+As written, only the current log is searched.
+When scheduling a job that runs every five minutes,
+the script nominally runs 12 times before log rollover.
+The errors are repeatedly emitted for each of the runs during the hour.
+However, this is satisfactory behavior
+for simple console dashboard applications.
+Note that errors from all nodes
+are logged to the error log on the administration machine
+that has issued the script.
+The output currently looks similar to this:
+
+::
+
+    Node 1 (Errors detected at 2015-04-17 21:16:47) : file /tmp/drdigital/logs/testlog.log    not found No ERRORs found for this period Node 2 (Errors detected at 2015-04-17    21:16:47) : 2015-04-17 21:12:44,467 - com.ligadata.MetadataAPI.MetadataAPIImpl$    - ERROR - Closing datastore failed 2015-04-17 23:22:41,484 - com.ligadata.MetadataAPI.MetadataAPIImpl$    - ERROR - metdatastore is corrupt 2015-04-17 24:02:14,493 - com.ligadata.MetadataAPI.MetadataAPIImpl$    - ERROR - transStore died 2015-04-17 24:12:34,500 - com.ligadata.MetadataAPI.MetadataAPIImpl$    - ERROR - jarStore has no beans 2015-04-17 24:22:54,508 - com.ligadata.MetadataAPI.MetadataAPIImpl$    - ERROR - configStore hammered
+
+
+In this example, there is no log found for Node 1.
+Node 2 has logs for five different errors.
+
+.. _recentlogerrorsfromkamanjacluster-admin:
+
+RecentLogErrorsFromKamanjaCluster.sh
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The RecentLogErrorsFromKamanjaCluster.sh script
+produces the same sort of output as the other.
+It, however, is designed not to read the entire log.
+Instead the script invocation can be configured
+to only examine log records written to the log in the last InLast units,
+
+Use this script instead of LogErrorsFromKamanjaCluster
+in the following cases:
+
+- The Kamanja clusters are heavily used with many transactions
+  both in terms of metadata and model processing traffic.
+- The high volume dictates more frequent log queries
+  for the administration screen updates.
+- The logrolling is dictated by logs reaching
+  a substantial size before rolling;
+  this would either make log scanning prohibitively expensive
+  or cause too much output to be provided to the admin screen
+  to be manageable to monitor (if not both).
+
+The syntax is
+
+::
+
+    RecentLogErrorsFromKamanjaCluster.sh--ClusterId <cluster-name-identifer>
+    --MetadataAPIConfig < metadataAPICfgPath >
+    --InLast < unit count >
+    --KamanjaLogPath < Kamanja system log path >
+    [--ErrLogPath <where-errors-are-collected>]
+    [--Unit < time unit...any of {
+         minute,
+         second,
+         hour,
+         day
+         } > ]
+
+
+Start the cluster specified by the cluster identifier parameter.
+Use the metadata api configuration to locate the appropriate
+metadata store.Default time unit is "minute".
+Default error log path is "/tmp/errorLog.log"..errors
+collected in this file
 
 
 

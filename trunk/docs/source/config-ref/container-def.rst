@@ -2,8 +2,8 @@
 
 .. _container-def-config-ref:
 
-Tenant definition
-=================
+Container definition
+====================
 
 All :ref:`container<container-term>` objects
 used in the cluster are defined in the
