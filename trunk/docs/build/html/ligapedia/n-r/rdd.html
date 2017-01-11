@@ -1,0 +1,145 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>RDD &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="rdd">
+<span id="rdd-term"></span><h1>RDD<a class="headerlink" href="#rdd" title="Permalink to this headline">¶</a></h1>
+<p>[Brief definition of RDD and how it is used in Kamanja]</p>
+<p>These are the basic methods to use from Java or Scala programs
+to interface with the Kamanja history.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Scala</span>
+<span class="k">def</span> <span class="nf">build</span><span class="p">:</span> <span class="n">T</span> <span class="o">=</span> <span class="n">rddObj</span><span class="o">.</span><span class="n">build</span>
+<span class="k">def</span> <span class="nf">build</span><span class="p">(</span><span class="n">from</span><span class="p">:</span> <span class="n">T</span><span class="p">):</span> <span class="n">T</span> <span class="o">=</span> <span class="n">rddObj</span><span class="o">.</span><span class="n">build</span><span class="p">(</span><span class="n">from</span><span class="p">)</span>
+
+<span class="o">//</span> <span class="n">First</span> <span class="n">group</span> <span class="n">of</span> <span class="n">functions</span> <span class="n">retrieve</span> <span class="n">one</span> <span class="nb">object</span> <span class="p">(</span><span class="n">either</span> <span class="n">recent</span> <span class="ow">or</span> <span class="k">for</span> <span class="n">a</span> <span class="n">given</span> <span class="n">key</span> <span class="o">&amp;</span><span class="n">amp</span><span class="p">;</span> <span class="nb">filter</span><span class="p">)</span>
+<span class="o">//</span> <span class="n">Get</span> <span class="n">recent</span> <span class="n">entry</span> <span class="k">for</span> <span class="n">the</span> <span class="n">Current</span> <span class="n">Key</span>
+<span class="k">def</span> <span class="nf">getRecent</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">T</span><span class="p">]</span> <span class="o">=</span> <span class="n">Utils</span><span class="o">.</span><span class="n">optionToOptional</span><span class="p">(</span><span class="n">rddObj</span><span class="o">.</span><span class="n">getRecent</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">getRecentOrNew</span><span class="p">:</span> <span class="n">T</span> <span class="o">=</span> <span class="n">rddObj</span><span class="o">.</span><span class="n">getRecentOrNew</span>
+
+<span class="o">//</span> <span class="n">Get</span> <span class="n">recent</span> <span class="n">entry</span> <span class="k">for</span> <span class="n">the</span> <span class="n">given</span> <span class="n">key</span>
+<span class="k">def</span> <span class="nf">getRecent</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n">Array</span><span class="p">[</span><span class="n">String</span><span class="p">]):</span> <span class="n">Optional</span><span class="p">[</span><span class="n">T</span><span class="p">]</span> <span class="o">=</span> <span class="n">Utils</span><span class="o">.</span><span class="n">optionToOptional</span><span class="p">(</span><span class="n">rddObj</span><span class="o">.</span><span class="n">getRecent</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+<span class="k">def</span> <span class="nf">getRecentOrNew</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n">Array</span><span class="p">[</span><span class="n">String</span><span class="p">]):</span> <span class="n">T</span> <span class="o">=</span> <span class="n">rddObj</span><span class="o">.</span><span class="n">getRecentOrNew</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">getOne</span><span class="p">(</span><span class="n">tmRange</span><span class="p">:</span> <span class="n">TimeRange</span><span class="p">,</span> <span class="n">f</span><span class="p">:</span> <span class="n">Function1</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">java</span><span class="o">.</span><span class="n">lang</span><span class="o">.</span><span class="n">Boolean</span><span class="p">]):</span> <span class="n">Optional</span><span class="p">[</span><span class="n">T</span><span class="p">]</span> <span class="o">=</span> <span class="n">null</span>
+<span class="k">def</span> <span class="nf">getOne</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n">Array</span><span class="p">[</span><span class="n">String</span><span class="p">],</span> <span class="n">tmRange</span><span class="p">:</span> <span class="n">TimeRange</span><span class="p">,</span> <span class="n">f</span><span class="p">:</span> <span class="n">Function1</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">java</span><span class="o">.</span><span class="n">lang</span><span class="o">.</span><span class="n">Boolean</span><span class="p">]):</span> <span class="n">Optional</span><span class="p">[</span><span class="n">T</span><span class="p">]</span> <span class="o">=</span> <span class="n">null</span>
+<span class="k">def</span> <span class="nf">getOneOrNew</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n">Array</span><span class="p">[</span><span class="n">String</span><span class="p">],</span> <span class="n">tmRange</span><span class="p">:</span> <span class="n">TimeRange</span><span class="p">,</span> <span class="n">f</span><span class="p">:</span> <span class="n">Function1</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">java</span><span class="o">.</span><span class="n">lang</span><span class="o">.</span><span class="n">Boolean</span><span class="p">]):</span> <span class="n">T</span> <span class="o">=</span> <span class="n">rddObj</span><span class="o">.</span><span class="n">build</span>
+<span class="k">def</span> <span class="nf">getOneOrNew</span><span class="p">(</span><span class="n">tmRange</span><span class="p">:</span> <span class="n">TimeRange</span><span class="p">,</span> <span class="n">f</span><span class="p">:</span> <span class="n">Function1</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">java</span><span class="o">.</span><span class="n">lang</span><span class="o">.</span><span class="n">Boolean</span><span class="p">]):</span> <span class="n">T</span> <span class="o">=</span> <span class="n">rddObj</span><span class="o">.</span><span class="n">build</span>
+
+<span class="o">//</span> <span class="n">This</span> <span class="n">group</span> <span class="n">of</span> <span class="n">functions</span> <span class="n">retrieve</span> <span class="n">collection</span> <span class="n">of</span> <span class="n">objects</span>
+<span class="k">def</span> <span class="nf">getRDDForCurrKey</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="n">Function1</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">java</span><span class="o">.</span><span class="n">lang</span><span class="o">.</span><span class="n">Boolean</span><span class="p">]):</span> <span class="n">JavaRDD</span><span class="p">[</span><span class="n">T</span><span class="p">]</span> <span class="o">=</span> <span class="n">null</span>
+<span class="k">def</span> <span class="nf">getRDDForCurrKey</span><span class="p">(</span><span class="n">tmRange</span><span class="p">:</span> <span class="n">TimeRange</span><span class="p">,</span> <span class="n">f</span><span class="p">:</span> <span class="n">Function1</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">java</span><span class="o">.</span><span class="n">lang</span><span class="o">.</span><span class="n">Boolean</span><span class="p">]):</span> <span class="n">JavaRDD</span><span class="p">[</span><span class="n">T</span><span class="p">]</span> <span class="o">=</span> <span class="n">null</span>
+
+<span class="o">//</span> <span class="n">With</span> <span class="n">too</span> <span class="n">many</span> <span class="n">messages</span><span class="p">,</span> <span class="n">these</span> <span class="n">may</span> <span class="n">fail</span> <span class="o">-</span> <span class="n">mostly</span> <span class="n">useful</span> <span class="k">for</span> <span class="n">message</span> <span class="n">types</span> <span class="n">where</span> <span class="n">number</span> <span class="n">of</span> <span class="n">messages</span> <span class="n">are</span> <span class="n">relatively</span> <span class="n">small</span>
+<span class="k">def</span> <span class="nf">getRDD</span><span class="p">():</span> <span class="n">JavaRDD</span><span class="p">[</span><span class="n">T</span><span class="p">]</span> <span class="o">=</span> <span class="n">null</span>
+<span class="k">def</span> <span class="nf">getRDD</span><span class="p">(</span><span class="n">tmRange</span><span class="p">:</span> <span class="n">TimeRange</span><span class="p">,</span> <span class="n">f</span><span class="p">:</span> <span class="n">Function1</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">java</span><span class="o">.</span><span class="n">lang</span><span class="o">.</span><span class="n">Boolean</span><span class="p">]):</span> <span class="n">JavaRDD</span><span class="p">[</span><span class="n">T</span><span class="p">]</span> <span class="o">=</span> <span class="n">null</span>
+<span class="k">def</span> <span class="nf">getRDD</span><span class="p">(</span><span class="n">tmRange</span><span class="p">:</span> <span class="n">TimeRange</span><span class="p">):</span> <span class="n">JavaRDD</span><span class="p">[</span><span class="n">T</span><span class="p">]</span> <span class="o">=</span> <span class="n">rddObj</span><span class="o">.</span><span class="n">getRDD</span><span class="p">(</span><span class="n">tmRange</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">getRDD</span><span class="p">(</span><span class="n">f</span><span class="p">:</span> <span class="n">Function1</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">java</span><span class="o">.</span><span class="n">lang</span><span class="o">.</span><span class="n">Boolean</span><span class="p">]):</span> <span class="n">JavaRDD</span><span class="p">[</span><span class="n">T</span><span class="p">]</span> <span class="o">=</span> <span class="n">null</span>
+
+<span class="k">def</span> <span class="nf">getRDD</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n">Array</span><span class="p">[</span><span class="n">String</span><span class="p">],</span> <span class="n">tmRange</span><span class="p">:</span> <span class="n">TimeRange</span><span class="p">,</span> <span class="n">f</span><span class="p">:</span> <span class="n">Function1</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">java</span><span class="o">.</span><span class="n">lang</span><span class="o">.</span><span class="n">Boolean</span><span class="p">]):</span> <span class="n">JavaRDD</span><span class="p">[</span><span class="n">T</span><span class="p">]</span> <span class="o">=</span> <span class="n">null</span>
+<span class="k">def</span> <span class="nf">getRDD</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n">Array</span><span class="p">[</span><span class="n">String</span><span class="p">],</span> <span class="n">f</span><span class="p">:</span> <span class="n">Function1</span><span class="p">[</span><span class="n">T</span><span class="p">,</span> <span class="n">java</span><span class="o">.</span><span class="n">lang</span><span class="o">.</span><span class="n">Boolean</span><span class="p">]):</span> <span class="n">JavaRDD</span><span class="p">[</span><span class="n">T</span><span class="p">]</span> <span class="o">=</span> <span class="n">null</span>
+<span class="k">def</span> <span class="nf">getRDD</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n">Array</span><span class="p">[</span><span class="n">String</span><span class="p">],</span> <span class="n">tmRange</span><span class="p">:</span> <span class="n">TimeRange</span><span class="p">):</span> <span class="n">JavaRDD</span><span class="p">[</span><span class="n">T</span><span class="p">]</span> <span class="o">=</span> <span class="n">rddObj</span><span class="o">.</span><span class="n">getRDD</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">tmRange</span><span class="p">)</span>
+
+<span class="o">//</span> <span class="n">Saving</span> <span class="n">data</span>
+<span class="k">def</span> <span class="nf">saveOne</span><span class="p">(</span><span class="n">inst</span><span class="p">:</span> <span class="n">T</span><span class="p">):</span> <span class="n">Unit</span> <span class="o">=</span> <span class="n">rddObj</span><span class="o">.</span><span class="n">saveOne</span><span class="p">(</span><span class="n">inst</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">saveOne</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n">Array</span><span class="p">[</span><span class="n">String</span><span class="p">],</span> <span class="n">inst</span><span class="p">:</span> <span class="n">T</span><span class="p">):</span> <span class="n">Unit</span> <span class="o">=</span> <span class="n">rddObj</span><span class="o">.</span><span class="n">saveOne</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">inst</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">saveRDD</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">RDD</span><span class="p">[</span><span class="n">T</span><span class="p">]):</span> <span class="n">Unit</span> <span class="o">=</span> <span class="n">rddObj</span><span class="o">.</span><span class="n">saveRDD</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>See:</p>
+<ul class="simple">
+<li><cite>Spark Quick Start
+&lt;http://spark.apache.org/docs/latest/quick-start.html&gt;</cite>
+for a quick tutorial about RDD.</li>
+<li><a class="reference external" href="http://spark.apache.org/docs/latest/api.html">Spark API Documentation</a></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/ligapedia/n-r/rdd.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../../_sources/ligapedia/n-r/rdd.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

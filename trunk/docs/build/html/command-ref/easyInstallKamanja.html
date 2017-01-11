@@ -1,0 +1,169 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>easyInstallKamanja.sh &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="easyinstallkamanja-sh">
+<span id="easyinstallkamanja-command-ref"></span><h1>easyInstallKamanja.sh<a class="headerlink" href="#easyinstallkamanja-sh" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="syntax">
+<h2>Syntax<a class="headerlink" href="#syntax" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span>
+<span class="n">mkdir</span> <span class="n">installKamanja</span>
+
+<span class="n">cd</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">Kamanja</span><span class="o">-</span><span class="n">version_number</span><span class="o">/</span><span class="n">trunk</span><span class="o">/</span><span class="n">SampleApplication</span><span class="o">/</span><span class="n">EasyInstall</span>
+
+<span class="o">./</span><span class="n">easyInstallKamanja</span><span class="o">.</span><span class="n">sh</span> <span class="o">&lt;</span><span class="n">install</span> <span class="n">path</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">src</span> <span class="n">tree</span> <span class="n">trunk</span> <span class="n">directory</span><span class="o">&gt;</span> \
+  <span class="o">&lt;</span><span class="n">ivy</span> <span class="n">directory</span> <span class="n">path</span> <span class="k">for</span> <span class="n">dependencies</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">kafka</span> <span class="n">installation</span> <span class="n">path</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="options-and-arguments">
+<h2>Options and arguments<a class="headerlink" href="#options-and-arguments" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="error-messages">
+<h2>Error messages<a class="headerlink" href="#error-messages" title="Permalink to this headline">¶</a></h2>
+<ul>
+<li><p class="first">[error] java.util.concurrent.ExecutionException:
+java.lang.OutOfMemoryError: GC overhead limit exceeded error</p>
+<p>Add the following line to the <em>sbtopts</em> file in
+the <em>/etc/sbt-launcher-packaging/</em>
+or</p>
+</li>
+</ul>
+</div>
+<div class="section" id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">bash</span> <span class="o">/</span><span class="n">Users</span><span class="o">/&lt;</span><span class="n">userid</span><span class="o">&gt;/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">Kamanja</span><span class="o">-&lt;</span><span class="n">version</span><span class="o">-</span><span class="n">number</span><span class="o">&gt;/</span><span class="n">trunk</span><span class="o">/</span><span class="n">SampleApplication</span><span class="o">/</span><span class="n">EasyInstall</span><span class="o">/</span><span class="n">easyInstallKamanja</span><span class="o">.</span><span class="n">sh</span> \
+    <span class="o">/</span><span class="n">Users</span><span class="o">/&lt;</span><span class="n">userid</span><span class="o">&gt;/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">installKamanja</span> \
+    <span class="o">/</span><span class="n">Users</span><span class="o">/&lt;</span><span class="n">userid</span><span class="o">&gt;/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">Kamanja</span><span class="o">-&lt;</span><span class="n">version</span><span class="o">-</span><span class="n">number</span><span class="o">&gt;/</span><span class="n">trunk</span> <span class="o">~/.</span><span class="n">ivy2</span> \
+    <span class="o">/</span><span class="n">Users</span><span class="o">/&lt;</span><span class="n">userid</span><span class="o">&gt;/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">kafka_2</span><span class="o">.</span><span class="mi">11</span><span class="o">-</span><span class="mf">0.9</span><span class="o">.</span><span class="mf">0.0</span>
+</pre></div>
+</div>
+<p>The expected output is similar to the following:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">installKamanja</span>
+<span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">Kamanja</span><span class="o">-</span><span class="n">version</span><span class="o">-</span><span class="n">number</span><span class="o">/</span><span class="n">trunk</span>
+<span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">installKamanja</span><span class="o">/</span><span class="nb">bin</span>
+<span class="o">...</span>
+<span class="p">[</span><span class="n">success</span><span class="p">]</span> <span class="n">Total</span> <span class="n">time</span><span class="p">:</span> <span class="mi">11</span> <span class="n">s</span><span class="p">,</span> <span class="n">completed</span> <span class="n">Nov</span> <span class="mi">19</span><span class="p">,</span> <span class="mi">2015</span> <span class="mi">4</span><span class="p">:</span><span class="mi">02</span><span class="p">:</span><span class="mi">09</span> <span class="n">PM</span>
+<span class="n">copy</span> <span class="n">the</span> <span class="n">fat</span> <span class="n">jars</span> <span class="n">to</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">installKamanja</span> <span class="o">...</span>
+<span class="n">copy</span> <span class="nb">all</span> <span class="n">Kamanja</span> <span class="n">jars</span> <span class="ow">and</span> <span class="n">the</span> <span class="n">jars</span> <span class="n">upon</span> <span class="n">which</span> <span class="n">they</span> <span class="n">depend</span>
+      <span class="n">to</span> <span class="n">the</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">installKamanja</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">system</span>
+<span class="n">Prepare</span> <span class="n">test</span> <span class="n">messages</span> <span class="ow">and</span> <span class="n">copy</span> <span class="n">them</span> <span class="n">into</span> <span class="n">place</span><span class="o">...</span>
+<span class="n">Setting</span> <span class="n">up</span> <span class="n">paths</span>
+<span class="n">Kamanja</span> <span class="n">install</span> <span class="n">complete</span><span class="o">...</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="see-also">
+<h2>See also<a class="headerlink" href="#see-also" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="../install-plan/directory-struct.html#dir-struct-install"><span class="std std-ref">Directory structure after installation</span></a> describes the directory tree that
+is created by the <strong>easyInstallKamanja.sh</strong> command.</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">easyInstallKamanja.sh</a><ul>
+<li><a class="reference internal" href="#syntax">Syntax</a></li>
+<li><a class="reference internal" href="#options-and-arguments">Options and arguments</a></li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#error-messages">Error messages</a></li>
+<li><a class="reference internal" href="#example">Example</a></li>
+<li><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/command-ref/easyInstallKamanja.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/command-ref/easyInstallKamanja.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

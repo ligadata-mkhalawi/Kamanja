@@ -1,0 +1,379 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>JTM by example &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="jtm-by-example">
+<span id="jtm-examples"></span><h1>JTM by example<a class="headerlink" href="#jtm-by-example" title="Permalink to this headline">¶</a></h1>
+<p>This section presents annotated examples of the JTM section maps and their content.</p>
+<div class="section" id="header">
+<h2>Header<a class="headerlink" href="#header" title="Permalink to this headline">¶</a></h2>
+<p>The header provides the identification information for the JTM.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="s2">&quot;header&quot;</span><span class="p">:</span> <span class="p">{</span>
+<span class="s2">&quot;namespace&quot;</span><span class="p">:</span> <span class="s2">&quot;com.ligadata.jtm.test.filter&quot;</span><span class="p">,</span>
+<span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;0.0.1&quot;</span><span class="p">,</span>
+<span class="s2">&quot;language&quot;</span> <span class="p">:</span> <span class="s2">&quot;scala&quot;</span><span class="p">,</span>
+<span class="s2">&quot;minVersion&quot;</span> <span class="p">:</span> <span class="s2">&quot;2.11&quot;</span>
+<span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Add a short description here&quot;</span>
+<span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;className&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The meaning of these fields is:</p>
+<ul class="simple">
+<li><strong>namespace</strong> and <strong>name</strong> identify the fully-qualified class name
+that is generated in the target language.</li>
+<li><strong>language</strong> is the target language for this JTM model.
+Scala is the only language that is supported at this time.</li>
+<li><strong>minVersion</strong> describes the minimum Scala version that is acceptable.
+In other words, in this example, the Scala compiler running on the system
+should be 2.11.</li>
+<li><strong>description</strong> should contain a meaningful description of this model.</li>
+<li><strong>version</strong> is supplied to the metadata ingestion
+when the JTM is built and cataloged
+although it is not directly used in the computation.
+Should another model with the same namespace.name exist,
+the model version must be of a higher value
+when the digits of the version are considered as a long value.</li>
+</ul>
+</div>
+<div class="section" id="imports">
+<h2>Imports<a class="headerlink" href="#imports" title="Permalink to this headline">¶</a></h2>
+<p>The imports: packages array specifies additional packages/libraries
+that are used by the expressions declared in the JTM.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="s2">&quot;imports&quot;</span><span class="p">:</span> <span class="p">{</span>
+<span class="s2">&quot;packages&quot;</span><span class="p">:</span> <span class="p">[</span>
+<span class="s2">&quot;com.ligadata.Utils._&quot;</span><span class="p">,</span>
+<span class="s2">&quot;com.ligadata.runtime._&quot;</span>
+<span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>In this example, all classes and objects found
+in the com.ligadata.Utils and com.ligadata.runtime
+are available for use in the JTM.</p>
+<p>Note that is not necessary to include the org.aicer.grok._ libraries
+(explained in the next section).
+These are included automatically by the JTM compiler.</p>
+</div>
+<div class="section" id="grok">
+<h2>Grok<a class="headerlink" href="#grok" title="Permalink to this headline">¶</a></h2>
+<p>The grok JSON dictionary declares the characteristics
+of the grok pattern dictionary that presumably are used
+on string variables/field values in the transformations section that follows.
+Any matches extracted with grok patterns are by definition of type String.
+Only String inputs can be searched with the current implementation.
+There currently can be only one grok declaration in the JTM source.
+This is really not a limitation in that many patterns
+may be declared in the grok instance.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>&quot;grok&quot;: {
+&quot;myGrokPatterns&quot; : {
+&quot;builtInDictionary&quot;: true,
+&quot;match&quot;: &quot;[
+\“{EMAIL: email}\&quot;,
+\“{IP: ipaddr}\&quot;
+],
+&quot;file&quot;: [&quot;path&quot;],
+&quot;patterns_dis&quot;: {
+&quot;DOMAINTLD&quot;: &quot;[a-zA-Z]+&quot;,
+&quot;EMAIL&quot;: &quot;%{NOTSPACE}@%{WORD}\\.%{DOMAINTLD}&quot;
+}
+}
+}
+</pre></div>
+</div>
+<p>In the example, the name of the grok instance is myGrokPatterns.</p>
+<ul class="simple">
+<li><strong>builtinDictionary</strong> tells the JTM compiler to include
+the built-in patterns supplied in the <a class="reference external" href="https://github.com/aicer/grok">aicer</a> library.</li>
+<li>The <strong>match</strong> is the list of patterns from the supplied patterns
+(in the built-in dictionary, from the file path or declared in-line)
+that is used in the transformations section expressions.
+It may be either a list of aicer patterns or a single pattern.</li>
+<li><strong>patterns</strong> can be composed of other patterns in grok,
+so specify a file path containing custom patterns
+that may be used in the transformations section.
+If desired, it is also possible to declare custom patterns
+in the grok declaration itself in the <strong>patterns_dis</strong> field.</li>
+</ul>
+<p>When the built-in patterns contain a pattern that has the same name
+as a pattern that is included in this file,
+the version in this file takes precedence.
+Similarly, should a pattern that shares a name
+with a pattern defined either in this file
+or in the builtInDictionary
+be explicitly added in the <strong>patterns_dis</strong> declaration,
+the <strong>patterns_dis</strong> declaration takes precedence.</p>
+</div>
+<div class="section" id="aliases">
+<h2>Aliases<a class="headerlink" href="#aliases" title="Permalink to this headline">¶</a></h2>
+<p>The aliases provides a short-hand way to refer to the fully-qualified messages,
+concepts, and general variables that may be used.
+Instead of using the full name in the transformations section expressions,
+the aliases can be used to shorten the expressions, making them less verbose.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>  <span class="p">{</span>
+  <span class="s2">&quot;aliases&quot;</span><span class="p">:</span> <span class="p">{</span>
+  <span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">{</span>
+  <span class="s2">&quot;m1&quot;</span><span class="p">:</span> <span class="s2">&quot;com.ligadata.kamanja.test.msg5&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;o1&quot;</span><span class="p">:</span> <span class="s2">&quot;com.ligadata.kamanja.test.msg2&quot;</span>
+  <span class="p">},</span>
+  <span class="s2">&quot;concepts&quot;</span><span class="p">:</span> <span class="p">{</span>
+  <span class="s2">&quot;cm1&quot;</span><span class="p">:</span> <span class="s2">&quot;com.ligadata.kamanja.test.msg5&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;co1&quot;</span><span class="p">:</span> <span class="s2">&quot;com.ligadata.kamanja.test.msg2&quot;</span>
+  <span class="p">},</span>
+  <span class="s2">&quot;variables&quot;</span><span class="p">:</span> <span class="p">{</span>
+  <span class="s2">&quot;cm1&quot;</span><span class="p">:</span> <span class="s2">&quot;com.ligadata.kamanja.test.msg5&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;co1&quot;</span><span class="p">:</span> <span class="s2">&quot;com.ligadata.kamanja.test.msg2&quot;</span>
+<span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>There are four types: messages, containers, concepts, and variables.</p>
+<p>It is not necessary to use the aliases; full names can be used if desired.</p>
+</div>
+<div class="section" id="transformations">
+<h2>Transformations<a class="headerlink" href="#transformations" title="Permalink to this headline">¶</a></h2>
+<p>One or more named transformation maps can appear in the transformations section.
+As introduced in the JTM Language Elements section,
+each transformation has a number of elements describing the input messages,
+output messages, and transformations done to produce those output messages.
+They are:</p>
+<ul class="simple">
+<li>dependsOn</li>
+<li>computes</li>
+<li>grok match</li>
+<li>outputs</li>
+</ul>
+<p>The following annotated snippets illustrate their use.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="s2">&quot;bankTransactionTransform&quot;</span><span class="p">:</span> <span class="p">{</span>
+
+<span class="s2">&quot;dependsOn&quot;</span><span class="p">:</span> <span class="p">[</span>
+<span class="p">[</span>
+<span class="s2">&quot;m1&quot;</span>
+<span class="p">]</span>
+<span class="p">],</span>
+</pre></div>
+</div>
+<p>The transformation has a name. In the example, it is bankTransactionTransform.
+Following it is the <strong>dependOn</strong> list that contains one or more aliases
+referring to the incoming message(s) to be transformed.</p>
+<p>The <strong>dependsOn</strong> list is followed by the JSON map of computes expressions.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="s2">&quot;computes&quot;</span><span class="p">:</span> <span class="p">{</span>
+<span class="s2">&quot;inputFields&quot;</span><span class="p">:</span> <span class="p">{</span>
+<span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;Array[String]&quot;</span><span class="p">,</span>
+<span class="s2">&quot;val&quot;</span><span class="p">:</span> <span class="s2">&quot;$m1.split(</span><span class="se">\&quot;</span><span class="s2">,</span><span class="se">\&quot;</span><span class="s2">, -1)&quot;</span><span class="p">,</span>
+<span class="s2">&quot;comment&quot;</span><span class="p">:</span> <span class="s2">&quot;Split the incoming data into fields&quot;</span>
+<span class="p">},</span>
+<span class="s2">&quot;preferencesTable&quot;</span><span class="p">:</span> <span class="p">{</span>
+<span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;Map[String, Any]&quot;</span><span class="p">,</span>
+<span class="s2">&quot;val&quot;</span><span class="p">:</span> <span class="s2">&quot;Preferences.fetch(inputFields(1).trim, Map[String,Any]())&quot;</span><span class="p">,</span>
+<span class="s2">&quot;comment&quot;</span><span class="p">:</span> <span class="s2">&quot;for this transaction, get the user&#39;s online bank preferences&quot;</span>
+<span class="p">},</span>
+<span class="s2">&quot;connectString&quot;</span><span class="p">:</span> <span class="p">{</span>
+<span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;String&quot;</span><span class="p">,</span>
+<span class="s2">&quot;val&quot;</span><span class="p">:</span> <span class="s2">&quot;inputFields(3).trim&quot;</span><span class="p">,</span>
+<span class="s2">&quot;comment&quot;</span><span class="p">:</span> <span class="s2">&quot;connection string with email and ip addresses&quot;</span>
+<span class="p">}</span>
+<span class="p">},</span>
+</pre></div>
+</div>
+<p>In this snippet, three variables are created:
+inputFields, preferencesTable, and connectString.
+The first is an array of all of the incoming fields that are created
+by splitting the (presumably) comma-delimited input that has been supplied.
+The second uses the second field value
+(imagine this is the account ID for this transaction).
+It calls the object Preferences method, fetch(String),
+that has been included in the includes section previously.
+It answers a Map[String,String] of preferences for the person with this account,
+or if the account is new and there are no preferences for this ID,
+an empty map is returned.</p>
+<p>Notice that the exact type can be declared in the type value.
+The expression executed (included in the compiler’s generation of Scala)
+is found in the <strong>val</strong> value.
+It is a good idea to comment every compute declaration.</p>
+<p>When the values to be emitted are embedded in one or more fields of the input,
+one uses a grok match expression:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>&quot;grok match&quot;: {
+&quot;m1&quot;: &quot;{EMAIL: email} {DOMAIN: domain} {USER: user}&quot;,
+&quot;${inputFields(2)}&quot;: &quot;{IP: ipAddr1}&quot;,
+“${connectString}” : “{IP: ipAddr2}”
+},
+</pre></div>
+</div>
+<p>Three match patterns are supplied:</p>
+<ul class="simple">
+<li>The first searches the entirety of input message referred by alias m1.
+It sets three variables: email, domain, and user,
+which may then be used for other computations or emission in the outputs section.
+The respective patterns used for the search are EMAIL, DOMAIN, and USER.
+These patterns and the patterns that may have been used to construct them
+are found in the patterns_dis, input, or built-in patterns
+described in the grok declaration.</li>
+<li>The second pattern searches the second field with the IP pattern
+to produce ipAddr1. The third pattern does the same except it uses
+a trimmed version of the third field stored in variable connectString.
+The extracted string is saved in ipAddr2.</li>
+</ul>
+<p>Following the computes and/or grok declarations
+are one or more output declarations found nested in the outputs JSON map.
+The output map members are keyed by the name of
+either the alias of an output message from the alias section
+or the explicit package-qualified class name that is to be used.</p>
+<p>An output JSON map provides the necessary transformations and assignments
+to fill in an instance of the output message that has the given alias name as key.</p>
+<p>Here is an example of an output message specification
+that illustrates how JTM output formation works:</p>
+<dl class="docutils">
+<dt>::</dt>
+<dd><p class="first">&#8220;outputs&#8221;: {
+&#8220;o1&#8221;: {
+&#8220;mapbypositionb&#8221;: {
+&#8220;inputFields&#8221;: [ “-”, &#8220;in2&#8221;, &#8220;-&#8220;]
+},</p>
+<p>&#8220;mapping&#8221;: {
+&#8220;out1&#8221;: &#8220;in1&#8221;,
+&#8220;out2&#8221;: &#8220;t1&#8221;,
+&#8220;out4&#8221;: &#8220;in3&#8221;
+},</p>
+<p>&#8220;where&#8221;: &#8221;!($in2 != -1 &amp;amp;&amp;amp; $in2 &amp;lt; 100)&#8221;,</p>
+<p class="last">&#8220;computes&#8221;: {
+&#8220;t1&#8221;: { &#8220;type&#8221;: &#8220;String&#8221;, &#8220;val&#8221;: &#8220;&#8221;s:&#8221; + ($in2).toString()&#8221; }
+}
+}
+}</p>
+</dd>
+</dl>
+<p>The o1 output message is comprised of a field (in2) from the inputFields array
+followed by a field from the original input message (in1),
+a computed field from the computes clause in this scope (t1),
+followed by another input message field (in3).</p>
+<p>In the example, two techniques are illustrated.
+The <strong>mapbypositionb</strong> accesses the in2 of the inputFields by position.
+Recall that the inputFields was the split of the incoming data.
+The first field and the field after field in2 are ignored.
+The compiler determines the ordinal of the in2 field
+using the associated m1 message type information.</p>
+<p>The second mechanism is a mapping where the m1 metadata
+again is used to determine which field to select for output,
+but this time the selection is by name.
+Any Scala expression can be used for the value side (rhs)
+in order to produce the value to be assigned to the named output field in the lhs.
+This would include the use of a function library
+that has been imported to derive these values.</p>
+<p>This example also illustrates how a value can be computed
+in this output scope and included in the output message.
+Variable t1 in the computes clause is used as the fourth field.</p>
+<p>Finally, there is the where clause in the example.
+Using the where clause allows files to be split
+between several output specifications found in the outputs JSON map
+by using the appropriate Boolean expression in the where value.
+In the example above, in2 values less than 100 are selected.
+If those whose in2 value &gt;= 100 was captured,
+this where clause could be used in another output specification:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="s2">&quot;where&quot;</span><span class="p">:</span> <span class="s2">&quot;!($in2 != -1 &amp;amp;&amp;amp; $in2 &amp;gt;= 100)&quot;</span><span class="p">,</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">JTM by example</a><ul>
+<li><a class="reference internal" href="#header">Header</a></li>
+<li><a class="reference internal" href="#imports">Imports</a></li>
+<li><a class="reference internal" href="#grok">Grok</a></li>
+<li><a class="reference internal" href="#aliases">Aliases</a></li>
+<li><a class="reference internal" href="#transformations">Transformations</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/jtm/examples.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/jtm/examples.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

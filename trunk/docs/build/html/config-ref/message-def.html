@@ -1,0 +1,364 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Message definition &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="message-definition">
+<span id="message-def-config-ref"></span><h1>Message definition<a class="headerlink" href="#message-definition" title="Permalink to this headline">¶</a></h1>
+<p>[TODO: Edit/restructure to do core, input, output, storage]</p>
+<p>Define the structure of a <a class="reference internal" href="../ligapedia/g-m/messages.html#messages-term"><span class="std std-ref">message</span></a>.</p>
+<div class="section" id="file-structure-input-message">
+<h2>File structure &#8211; Input message<a class="headerlink" href="#file-structure-input-message" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;Message&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">&quot;NameSpace&quot;</span><span class="p">:</span> <span class="s2">&quot;&lt;namespace&gt;&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;Name&quot;</span><span class="p">:</span> <span class="s2">&quot;&lt;name&gt;&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;Type&quot;</span><span class="p">:</span> <span class="n">inpupt</span> <span class="o">|</span> <span class="n">output</span> <span class="o">|</span> <span class="n">storage</span>
+      <span class="s2">&quot;Version&quot;</span><span class="p">:</span> <span class="s2">&quot;&lt;version&gt;&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;Description&quot;</span><span class="p">:</span> <span class="s2">&quot;&lt;description of product&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;Persist&quot;</span><span class="p">:</span> <span class="s2">&quot;true&quot;</span> <span class="o">|</span> <span class="s2">&quot;false&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;Fixed&quot;</span><span class="p">:</span> <span class="s2">&quot;true&quot;</span> <span class="o">|</span> <span class="s2">&quot;false&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;Fields&quot;</span><span class="p">:</span> <span class="p">[{</span>
+              <span class="s2">&quot;Name&quot;</span><span class="p">:</span> <span class="s2">&quot;&lt;attribute-name&gt;&quot;</span><span class="p">,</span>
+              <span class="s2">&quot;Type&quot;</span><span class="p">:</span> <span class="s2">&quot;&lt;type&gt;&quot;</span>
+      <span class="p">},</span> <span class="p">{</span>
+              <span class="o">...</span>
+      <span class="p">}],</span>
+      <span class="s2">&quot;PartitionKey&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Id&quot;</span><span class="p">],</span>
+      <span class="s2">&quot;PrimaryKey&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Id &quot;</span><span class="p">,</span> <span class="s2">&quot; Name&quot;</span><span class="p">],</span>
+      <span class="s2">&quot;TimePartitionInfo&quot;</span><span class="p">:</span> <span class="p">{</span>
+              <span class="s2">&quot;Key&quot;</span><span class="p">:</span> <span class="s2">&quot;Id &quot;</span><span class="p">,</span>
+              <span class="s2">&quot;Format&quot;</span><span class="p">:</span> <span class="s2">&quot;epochtime&quot;</span><span class="p">,</span>
+              <span class="s2">&quot;Type&quot;</span><span class="p">:</span> <span class="s2">&quot;Daily&quot;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="file-structure-output-message">
+<h2>File structure &#8211; Output message<a class="headerlink" href="#file-structure-output-message" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;OutputMessage&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;NameSpace&quot;</span><span class="p">:</span> <span class="s2">&quot;System&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Name&quot;</span><span class="p">:</span> <span class="s2">&quot;BeneficiaryOutput&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Version&quot;</span><span class="p">:</span> <span class="s2">&quot;00.01.00&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Description&quot;</span><span class="p">:</span> <span class="s2">&quot;Beneficiary Output&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Queue&quot;</span><span class="p">:</span> <span class="s2">&quot;testout_1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;PartitionKey&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">&quot;$</span><span class="si">{System.Beneficiary.desynpuf_id}</span><span class="s2">&quot;</span>
+        <span class="p">],</span>
+        <span class="s2">&quot;Defaults&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;Name&quot;</span><span class="p">:</span> <span class="s2">&quot;System.COPDRiskAssessment.COPDSeverity &quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Default&quot;</span><span class="p">:</span> <span class="s2">&quot;true&quot;</span>
+            <span class="p">}</span>
+        <span class="p">],</span>
+        <span class="s2">&quot;DataDeclaration&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;Name&quot;</span><span class="p">:</span> <span class="s2">&quot;Delim&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Default&quot;</span><span class="p">:</span> <span class="s2">&quot;,&quot;</span>
+            <span class="p">}</span>
+        <span class="p">],</span>
+        <span class="s2">&quot;OutputFormat&quot;</span><span class="p">:</span> <span class="s2">&quot;{ &quot;</span><span class="n">Beneficiary</span><span class="o">.</span><span class="n">Desynpuf_Id</span><span class="s2">&quot;:</span>
+    <span class="s2">&quot;$</span><span class="si">{System.Beneficiary.Desynpuf_Id}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Beneficiary.Bene_Birth_Dt&quot;</span><span class="p">:</span>
+    <span class="s2">&quot;$</span><span class="si">{System.Beneficiary.Bene_Birth_Dt}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;COPDRiskAssessment.COPDSymptoms&quot;</span><span class="p">:</span>
+    <span class="s2">&quot;$</span><span class="si">{System.COPDRiskAssessment.COPDSymptoms}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;COPDRiskAssessment.COPDSeverity&quot;</span><span class="p">:</span>
+    <span class="s2">&quot;$</span><span class="si">{System.COPDRiskAssessment.COPDSeverity}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;COPDRiskAssessment.ChronicSputum&quot;</span><span class="p">:</span>
+    <span class="s2">&quot;$</span><span class="si">{System.COPDRiskAssessment.ChronicSputum}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;COPDRiskAssessment.AYearAgo&quot;</span><span class="p">:</span>
+    <span class="s2">&quot;$</span><span class="si">{System.COPDRiskAssessment.AYearAgo}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;COPDRiskAssessment.Age&quot;</span><span class="p">:</span>
+    <span class="s2">&quot;$</span><span class="si">{System.COPDRiskAssessment.Age}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;COPDRiskAssessment.inPatientClaimCostsByDate&quot;</span><span class="p">:</span>
+    <span class="s2">&quot;$</span><span class="si">{System.COPDRiskAssessment.inPatientClaimCostsByDate}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;COPDRiskAssessment.Dyspnoea&quot;</span><span class="p">:</span>
+    <span class="s2">&quot;$</span><span class="si">{System.COPDRiskAssessment.Dyspnoea}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;COPDRiskAssessment.AATDeficiency&quot;</span><span class="p">:</span>
+    <span class="s2">&quot;$</span><span class="si">{System.COPDRiskAssessment.AATDeficiency}</span><span class="s2">&quot;</span><span class="p">}</span><span class="s2">&quot;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="parameters-input-message">
+<h2>Parameters &#8211; input message<a class="headerlink" href="#parameters-input-message" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><strong>NameSpace</strong> – namespace of the message.</li>
+<li><strong>Name</strong> – name of the message.</li>
+<li><strong>Version</strong> – version of the message.</li>
+<li><strong>Description</strong> – (optional) description of the message.</li>
+<li><strong>Fixed</strong> – if set to TRUE, this is a fixed message;
+if set to FALSE, it is a mapped messages.
+See <a class="reference internal" href="../ligapedia/g-m/messages-fix-map.html#messages-fix-map-term"><span class="std std-ref">Fixed and mapped messages</span></a>.</li>
+<li><strong>Fields/elements</strong> – schema definition for the data included
+in this message.  This is a list of attribute names
+and the <a class="reference internal" href="../ligapedia/s-z/types.html#types-term"><span class="std std-ref">type</span></a> of each attribute.</li>
+<li><strong>Persist</strong> – (optional) If set to TRUE, data processed as this message type
+is saved to the data store.  See <a class="reference internal" href="../ligapedia/n-r/persist.html#persist-term"><span class="std std-ref">Persistence</span></a>.</li>
+<li><strong>PartitionKey</strong> – (optional) partition keys for the message.</li>
+<li><strong>PrimaryKey</strong> – (optional) primary keys for the message.</li>
+<li><strong>TimePartitionInfo</strong> – (optional) time partition information,
+which includes attribute name, time partition format,
+and time partition type.</li>
+</ul>
+</div>
+<div class="section" id="parameters-output-message">
+<h2>Parameters &#8211; output message<a class="headerlink" href="#parameters-output-message" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><strong>NameSpace</strong> – namespace of the output adapter.</li>
+<li><strong>Name</strong> – name of the output adapter.</li>
+<li><strong>Version</strong> – version of the output adapter.</li>
+<li><strong>Description</strong> – description of the output adapter.</li>
+<li><strong>Queue</strong> – logical name of the output adapter.
+The name can either be a file adapter, Kafka queue or MQ queue.
+The name is wherever the output message is pushed.</li>
+<li><strong>PartitionKey</strong> – partition key information
+that is sent to the output adapter.</li>
+<li><strong>Defaults</strong> – if the key is not present in the model results,
+then this default data is placed in the Defaults field
+mentioned in the output message definition.</li>
+<li><strong>DataDeclaration</strong> – local variable declaration
+where the variables can be declared in the output message definition
+and the value of that variable is used in the output format.</li>
+<li><strong>OutputFormat</strong> – format of the output message
+that is generated with the data and pushed to the output adapter.</li>
+</ul>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="output-messages">
+<h3>Output messages<a class="headerlink" href="#output-messages" title="Permalink to this headline">¶</a></h3>
+<p>Kamanja supports a particular format for the output message definition.
+Use the following instructions to add an output message definition
+to the metadata API.</p>
+<ol class="arabic">
+<li><p class="first">Verify that the output message definition exists in the correct folder:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$KAMANJA_HOME/input/SampleApplications/metadata/outputmsg/
+</pre></div>
+</div>
+</li>
+<li><p class="first">Use the following command to add the output message definition
+to the metadata API:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$KAMANJA_HOME/bin/kamanja \
+$KAMANJA_HOME/input/SampleApplications/metadata/config/MetadataAPIConfig_Medical.properties add outputmessage \
+$KAMANJA_HOME/input/SampleApplications/metadata/outputmsg/sampleOutputMsg.json
+</pre></div>
+</div>
+</li>
+</ol>
+<p>After running the engine, the output should exist in the output queue
+specified in the output message definition.</p>
+</div>
+</div>
+<div class="section" id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="output-message-sample-1">
+<h3>Output message &#8211; Sample 1<a class="headerlink" href="#output-message-sample-1" title="Permalink to this headline">¶</a></h3>
+<p>This is the JSON definition of the output message:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;OutputMessage&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;NameSpace&quot;</span><span class="p">:</span> <span class="s2">&quot;System&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Name&quot;</span><span class="p">:</span> <span class="s2">&quot;OutputMsgName&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Version&quot;</span><span class="p">:</span> <span class="s2">&quot;00.01.00&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Description&quot;</span><span class="p">:</span> <span class="s2">&quot;Output Msg Name&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Queue&quot;</span><span class="p">:</span> <span class="s2">&quot;outputQueueName&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;PartitionKey&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">&quot;$</span><span class="si">{Namespace.MessageName.partionKeyattribute}</span><span class="s2">&quot;</span>
+        <span class="p">],</span>
+        <span class="s2">&quot;OutputFormat&quot;</span><span class="p">:</span> <span class="s2">&quot;{ &quot;</span><span class="n">MessageAttribute1</span><span class="s2">&quot;:</span>
+                           <span class="s2">&quot;$</span><span class="si">{Namespace.MessageName.attribute1}</span><span class="s2">&quot;</span><span class="p">,</span>
+                           <span class="s2">&quot;ModelAttribute1&quot;</span><span class="p">:</span>
+                           <span class="s2">&quot;$</span><span class="si">{Namespace.ModelName.attribute1}</span><span class="s2">&quot;</span><span class="p">,</span>
+                           <span class="s2">&quot;MessageAttribute2&quot;</span><span class="p">:</span>
+                           <span class="s2">&quot;$</span><span class="si">{Namespace.MessageName.attribute2}</span><span class="s2">&quot;</span><span class="p">,</span>
+                           <span class="s2">&quot;MessageAttribute3&quot;</span><span class="p">:</span>
+                           <span class="s2">&quot;$</span><span class="si">{Namespace.MessageName.attribute3}</span><span class="s2">&quot;</span><span class="p">,</span>
+                           <span class="s2">&quot;&lt;wbr /&gt;MessageAttribute4&quot;</span><span class="p">:</span>
+                           <span class="s2">&quot;$</span><span class="si">{Namespace.MessageName.attribute4}</span><span class="s2">&quot;</span><span class="p">,</span>
+                           <span class="s2">&quot;ModelAttribute2&quot;</span><span class="p">:</span>
+                           <span class="s2">&quot;$</span><span class="si">{Namespace.ModelName.attribute2}</span><span class="s2">&quot;</span><span class="p">,</span>
+                           <span class="s2">&quot;&lt;wbr /&gt;ModelAttribute3&quot;</span><span class="p">:</span>
+                           <span class="s2">&quot;$</span><span class="si">{Namespace.ModelName.attribute3}</span><span class="s2">&quot;</span><span class="p">}</span><span class="s2">&quot;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>This is the output message that exists in the queue:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="s2">&quot;ExecutionTime&quot;</span><span class="p">:</span><span class="s2">&quot;2015-01-26T16: 53: 42.656-08: 00&quot;</span><span class="p">,</span>
+<span class="s2">&quot;EventDate&quot;</span><span class="p">:</span><span class="mi">1422259242656</span><span class="p">,</span>
+<span class="s2">&quot;TxnId&quot;</span><span class="p">:</span><span class="mi">100000000000021</span><span class="p">,</span>
+<span class="s2">&quot;ModelName&quot;</span><span class="p">:</span><span class="s2">&quot;com.ligadata.pmml.System_COPDRiskAssessment_100&quot;</span><span class="p">,</span>
+<span class="s2">&quot;uniqKey&quot;</span><span class="p">:</span><span class="s2">&quot;{</span>
+    <span class="s2">&quot;Version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;Type&quot;</span><span class="p">:</span> <span class="s2">&quot;Kafka&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Name&quot;</span><span class="p">:</span> <span class="s2">&quot;testin_1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;TopicName&quot;</span><span class="p">:</span> <span class="s2">&quot;testin_1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;PartitionId&quot;</span><span class="p">:</span> <span class="mi">0</span>
+<span class="p">}</span><span class="s2">&quot;,</span>
+<span class="s2">&quot;uniqVal&quot;</span><span class="p">:</span><span class="s2">&quot;{</span>
+    <span class="s2">&quot;Version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;Offset&quot;</span><span class="p">:</span> <span class="mi">1393</span>
+<span class="p">}</span><span class="s2">&quot;,</span>
+<span class="s2">&quot;ModelVersion&quot;</span><span class="p">:</span><span class="s2">&quot;100&quot;</span><span class="p">,</span>
+<span class="s2">&quot;DataReadTime&quot;</span><span class="p">:</span><span class="s2">&quot;2015-01-2616: 53: 42.620&quot;</span><span class="p">,</span>
+<span class="s2">&quot;xformCntr&quot;</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+<span class="s2">&quot;ElapsedTimeFromDataRead&quot;</span><span class="p">:</span><span class="mi">35994</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The meaning of the fields is:</p>
+<ul>
+<li><p class="first"><strong>ExecutionTime and EventDate</strong> – time the output message was emitted.</p>
+</li>
+<li><p class="first"><strong>TxnId</strong> – transaction identifier associated with
+the model instance that processed the incoming message.</p>
+</li>
+<li><p class="first"><strong>ModelName</strong> – model name itself.</p>
+</li>
+<li><p class="first"><strong>uniqKey</strong> – incoming queue from which the input to the model originated.</p>
+</li>
+<li><p class="first"><strong>uniqVal</strong> – bookkeeping offset information
+from where in the queue that incoming message was found.</p>
+</li>
+<li><p class="first"><strong>ModelVersion</strong> – model version.</p>
+</li>
+<li><p class="first"><strong>DataReadTime</strong> – time the incoming message was read.</p>
+</li>
+<li><p class="first"><strong>xformCntr</strong> – transformation counter.
+The input message can transform into multiple messages
+in the engine to process. xformCntr tells which message
+(transformed internal message) this output belongs to.</p>
+</li>
+<li><p class="first"><strong>xformCntr, uniqKey and uniqVal</strong> – used exactly once
+to detect whether output is pushed to this adapter or not.</p>
+<p>For example: If the input message transforms into three internal messages
+and after processing two of them the engine crashes,
+it is necessary to track how many messages are processed
+and how many messages are output.
+Only the third transformed message is output
+when the engine restarts or the workload is distributed.</p>
+</li>
+<li><p class="first"><strong>ElapsedTimeFromDataRead</strong> – ElapsedTime from DataRead until
+the message emitted is presumably in micro-seconds.</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="see-also">
+<h2>See also<a class="headerlink" href="#see-also" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Message definition</a><ul>
+<li><a class="reference internal" href="#file-structure-input-message">File structure &#8211; Input message</a></li>
+<li><a class="reference internal" href="#file-structure-output-message">File structure &#8211; Output message</a></li>
+<li><a class="reference internal" href="#parameters-input-message">Parameters &#8211; input message</a></li>
+<li><a class="reference internal" href="#parameters-output-message">Parameters &#8211; output message</a></li>
+<li><a class="reference internal" href="#usage">Usage</a><ul>
+<li><a class="reference internal" href="#output-messages">Output messages</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#examples">Examples</a><ul>
+<li><a class="reference internal" href="#output-message-sample-1">Output message &#8211; Sample 1</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/config-ref/message-def.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/config-ref/message-def.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

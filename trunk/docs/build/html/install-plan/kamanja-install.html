@@ -1,0 +1,442 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Install Kamanja software &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="install-kamanja-software">
+<span id="kamanja-install-top"></span><h1>Install Kamanja software<a class="headerlink" href="#install-kamanja-software" title="Permalink to this headline">¶</a></h1>
+<p>The installation process can be summarized as:</p>
+<ol class="arabic simple">
+<li>Install external software components that are required
+for the Kamanja engine and set environment variables to identify
+the root directory where each is installed.</li>
+<li>Install the Kamanja engine</li>
+<li>Install additional external software components that are required
+for the Flare Email Surveillance product.</li>
+<li>Install the Flare Email Surveillance product.</li>
+</ol>
+<div class="section" id="creating-the-kamanja-user">
+<h2>Creating the kamanja user<a class="headerlink" href="#creating-the-kamanja-user" title="Permalink to this headline">¶</a></h2>
+<p>These instructions use the <strong>sudo</strong> command for a number of steps.
+If you prefer, you can instead set up the kamanja user
+and use that ID to install and configure the Kamanja software.
+The commands to do this are:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">useradd</span> <span class="n">kamanja</span>
+<span class="n">sudo</span> <span class="n">passwd</span> <span class="n">kamanja</span>
+</pre></div>
+</div>
+<p>For non-production systems, you can delete the password for the kamanja user:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">passwd</span> <span class="o">--</span><span class="n">delete</span> <span class="n">kamanja</span>
+</pre></div>
+</div>
+<p>For production systems, you should always use a password for the kamanja user.</p>
+</div>
+<div class="section" id="install-kamanja-prerequisites">
+<h2>Install Kamanja Prerequisites<a class="headerlink" href="#install-kamanja-prerequisites" title="Permalink to this headline">¶</a></h2>
+<p>A number of third-party products must be installed
+before installing the Flare software.</p>
+<div class="section" id="install-java-1-8">
+<h3>Install Java 1.8<a class="headerlink" href="#install-java-1-8" title="Permalink to this headline">¶</a></h3>
+<p>Download the latest Oracle Java binaries from
+<a class="reference external" href="http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html">Oracle Java download site</a>.
+We do not recommend running Flare on top of OpenJDK.</p>
+<p>We recommend choosing the most recent release.
+Java 1.8 is necessary to support the password encryption feature;
+if you are not using that feature, you can use Java 1.7.</p>
+</div>
+<div class="section" id="install-scala">
+<h3>Install Scala<a class="headerlink" href="#install-scala" title="Permalink to this headline">¶</a></h3>
+<p>Download and install <a class="reference internal" href="../ligapedia/s-z/scala.html#scala-term"><span class="std std-ref">Scala</span></a> 2.11 from the
+<cite>Scala 2.11 download site &lt;http://www.scala-lang.org/download/2.11.7.html&gt;</cite>.</p>
+<p>Kamanja can instead use Scala 2.10, which can be downloaded from
+<cite>the Scala 2.10 download site &lt;http://www.scala-lang.org/download/2.10.2.html&gt;</cite>.</p>
+</div>
+<div class="section" id="install-zookeeper">
+<h3>Install ZooKeeper<a class="headerlink" href="#install-zookeeper" title="Permalink to this headline">¶</a></h3>
+<p>Download and install <a class="reference internal" href="../ligapedia/s-z/zookeeper.html#zookeeper-term"><span class="std std-ref">ZooKeeper</span></a> 3.4.6 from the
+<cite>Zookeeper download page &lt;http://www.apache.org/dyn/closer.cgi/zookeeper/&gt;</cite>.</p>
+<p>After adding $ZOOKEEPER_HOME to your .bashrc or .bash_profile file,
+issue the following commands to complete the ZooKeeper installation:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>cd $ZOOKEEPER_HOME/conf
+cp zoo_sample.cfg zoo.cfg
+</pre></div>
+</div>
+</div>
+<div class="section" id="install-kafka">
+<span id="kafka-install"></span><h3>Install Kafka<a class="headerlink" href="#install-kafka" title="Permalink to this headline">¶</a></h3>
+<p>Download <a class="reference internal" href="../ligapedia/g-m/kafka.html#kafka-term"><span class="std std-ref">Kafka</span></a> 0.10 from the
+<cite>Kafka download site &lt;http://kafka.apache.org/downloads.html&gt;</cite>.
+Note that separate files are provided to run with Scala 2.11 or 2.10;
+be sure to get the version that matches the version of Scala you installed.</p>
+<p>Note that Kamanja 1.6.x has not been tested with Kafka 0.10.* .</p>
+<p>Untar the .tgz file to install the software.  NEED TO CHECK THIS!!!</p>
+</div>
+<div class="section" id="define-environment-variables">
+<h3>Define environment variables<a class="headerlink" href="#define-environment-variables" title="Permalink to this headline">¶</a></h3>
+<p>Before proceeding, you must define the environment variables
+for the root directory of each add-on software component.
+Do this by editing the <em>.bashrc</em> file (Linux) or the <em>.bash_profile</em> (Mac):</p>
+<ul>
+<li><p class="first">Issue the <strong>sudo -v command</strong> to confirm that you have admin privileges.
+If you get a Password prompt and it accepts your password,
+you can edit the file.</p>
+</li>
+<li><p class="first">Issue the <strong>sudo vim ~/.bash_profile</strong> (Mac) command
+or <strong>sudo vim ~/.bashrc</strong> (Linux) command to edit the file.</p>
+<p>Alternately, you can make yourself (instead of root)
+the owner of the file by issuing the
+<strong>sudo chown user_name ~/.bash_profile</strong> (Mac)
+or <strong>sudo chown user_name ~/.bashrc</strong> (Linux) command.</p>
+</li>
+<li><p class="first">Add the appropriate lines to the <em>.bash_profile</em> or <em>.bashrc</em> file.</p>
+</li>
+<li><p class="first">Run the ** source ~/bash_profile** (Mac)
+or <strong>source ~/.bashrc</strong> (Linux) command.</p>
+</li>
+<li><p class="first">Verify that the environment variables have been set
+by issuing commands such as echo $SCALA_HOME.</p>
+</li>
+</ul>
+<p>Use the following lines to define the root path for each component
+and then export that information into $PATH:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>export JAVA_HOME=&lt;Java-install-path&gt;
+export PATH=$JAVA_HOME/bin:$PATH
+
+export SCALA_HOME=&lt;Scala-install-path&gt;
+export PATH=$SCALA_HOME/bin:$PATH
+
+export ZOOKEEPER_HOME=&lt;ZooKeeper-install-path&gt;
+export PATH=$ZOOKEEPER_HOME/bin:$PATH
+
+export KAFKA_HOME=&lt;Kafka-install-path&gt;
+export PATH=$KAFKA_HOME/bin:$PATH
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.8.0_72.jdk/Contents/Home
+export PATH=$JAVA_HOME/bin:$PATH
+
+export SCALA_HOME=/usr/local/scala-2.11.7
+export PATH=$SCALA_HOME/bin:$PATH
+
+export ZOOKEEPER_HOME=/usr/local/zookeeper-3.4.6
+export PATH=$ZOOKEEPER_HOME/bin:$PATH
+
+export KAFKA_HOME=/usr/local/kafka_2.11-0.9.0.0
+export PATH=$KAFKA_HOME/bin:$PATH
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="install-kamanja-engine">
+<h2>Install Kamanja engine<a class="headerlink" href="#install-kamanja-engine" title="Permalink to this headline">¶</a></h2>
+<p>The Kamanja software is packaged using the RedHat RPM utility.
+It can be installed with the <strong>sudo</strong> utility
+or you can create the kamanja user and install the software as the kamanja user.</p>
+<p>Download the RPM that corresponds to the version of Scala you are using:</p>
+<ul class="simple">
+<li>URL for 2.10-1.6.1</li>
+<li>URL for 2.11-1.6.1</li>
+</ul>
+<div class="section" id="basic-installation">
+<h3>Basic installation<a class="headerlink" href="#basic-installation" title="Permalink to this headline">¶</a></h3>
+<p>To do a fresh install of Kamanja 1.6.1, issue the following command:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>sudo rpm –ivh &lt;kamanja rpm&gt;
+</pre></div>
+</div>
+<p>The Kamanja binaries are installed in <em>/usr</em> by default.</p>
+</div>
+<div class="section" id="basic-upgrade-to-1-6-1">
+<h3>Basic upgrade to 1.6.1<a class="headerlink" href="#basic-upgrade-to-1-6-1" title="Permalink to this headline">¶</a></h3>
+<p>To upgrade to Release 1.6.1 from an earlier Kamanja release,
+issue the following command:</p>
+<blockquote>
+<div>sudo rpm –Uvh &lt;kamanja rpm&gt;</div></blockquote>
+</div>
+<div class="section" id="installing-in-a-different-location">
+<h3>Installing in a different location<a class="headerlink" href="#installing-in-a-different-location" title="Permalink to this headline">¶</a></h3>
+<p>The Kamanja binaries are installed in <em>/usr</em> by default.
+Use the <strong>&#8211;prefix</strong> option to specify an alternate installation location:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>sudo rpm –ivh &lt;kamanja rpm&gt; [--prefix &lt;install-path&gt;] \
+     [--dbpath &lt;new-rpmdb-path&gt;] [--nodeps]
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">rpm</span> <span class="o">-</span><span class="n">ivh</span> <span class="n">kamanja_1</span><span class="o">.</span><span class="mf">6.0</span><span class="n">_2</span><span class="o">.</span><span class="mf">11.</span><span class="n">rpm</span> <span class="o">--</span><span class="n">prefix</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span> \
+     <span class="o">--</span><span class="n">dbpath</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">rpmdb</span><span class="o">/</span> <span class="o">-</span><span class="n">nodeps</span>
+</pre></div>
+</div>
+<p>When you do this,
+a soft link is created at <em>/usr/kamanja</em> that points to
+the actual location where the software is located.</p>
+<p>The <strong>&#8211;dbpath</strong> option tells the <strong>rpm</strong> command to use
+a different RPM database.
+This is useful when testing a complete system install,
+where the RPM database needs to be changed.</p>
+<p>You can use a similar command to upgrade from an earlier Kamanja release
+but install into a location other the <em>/usr</em>:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>sudo pm –Uvh &lt;kamanja rpm&gt; --prefix &lt;custom location&gt; \
+     --dbpath &lt;location of new rpmdb&gt; --nodeps
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">pm</span> <span class="o">-</span><span class="n">Uvh</span> <span class="n">kamanja_1</span><span class="o">.</span><span class="mf">6.0</span><span class="n">_2</span><span class="o">.</span><span class="mf">11.</span><span class="n">rpm</span> <span class="o">--</span><span class="n">prefix</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span> \
+     <span class="o">--</span><span class="n">dbpath</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">rpmdb</span><span class="o">/</span> <span class="o">--</span><span class="n">nodeps</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="running-multiple-kamanja-releases-on-one-system">
+<h2>Running multiple Kamanja releases on one system<a class="headerlink" href="#running-multiple-kamanja-releases-on-one-system" title="Permalink to this headline">¶</a></h2>
+<p>TODO: rewrite</p>
+<p>Type:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>sudo rpm –ivh &lt;kamanja version 1&gt;
+</pre></div>
+</div>
+<p>This installs the Kamanja version 1 at /usr (or the prefix location)
+and the /usr/bin/kamanja soft link (or the prefix where Kamanja is installed)
+points to the Kamanja version.</p>
+<p>To install a higher version without removing the old one,
+run the following command:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>sudo rpm –ivh &lt;kamanja version 2&gt;
+</pre></div>
+</div>
+<p>This creates another Kamanja version 2 directory at the location /usr
+(or the prefix location) without removing the old directory.</p>
+<p>However, the /usr/kamanja soft link
+(or the prefix path where Kamanja is installed)
+now points to the latest Kamanja version 2.
+Also, if a custom database and prefix is used for a previous version,
+use the same custom database location and the prefix path.</p>
+<p>Note that if a higher version of Kamanja is present,
+a lower version is not be installed. It gives the following error:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">package</span> <span class="n">kamanja</span><span class="o">-</span><span class="n">version2</span> <span class="p">(</span><span class="n">which</span> <span class="ow">is</span> <span class="n">newer</span> <span class="n">than</span> <span class="n">kamanja</span><span class="o">-</span><span class="n">version1</span><span class="p">)</span> <span class="ow">is</span> <span class="n">already</span> <span class="n">installed</span>
+</pre></div>
+</div>
+<div class="section" id="more-about-the-dbpath-option">
+<h3>More about the &#8211;dbpath option<a class="headerlink" href="#more-about-the-dbpath-option" title="Permalink to this headline">¶</a></h3>
+<p>The <strong>&#8211;dbpath</strong> option tells the <strong>rpm</strong> command
+to use a different RPM database.
+This is useful when testing a complete system install,
+where the RPM database needs to be changed.</p>
+<p>In this case, use a different RPM database.</p>
+<p>The basic syntax for this option is:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">--</span><span class="n">dbpath</span> <span class="n">directory_name</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">sudo</span><span class="o">&gt;</span> <span class="n">rpm</span> <span class="o">-</span><span class="n">ivh</span> <span class="o">&lt;</span><span class="n">kamanja</span><span class="o">.</span><span class="n">rpm</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">dbpath</span> <span class="o">&lt;</span><span class="n">location</span> <span class="n">of</span> <span class="n">new</span> <span class="n">rpmdb</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>Some systems may give the following error:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">error</span><span class="p">:</span> <span class="n">Failed</span> <span class="n">dependencies</span><span class="p">:</span>
+<span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">sh</span> <span class="ow">is</span> <span class="n">needed</span> <span class="n">by</span> <span class="n">XXX</span>
+</pre></div>
+</div>
+<p>This happens because bash rpm is not available in the new rpmdb path.
+Use the following to install RPM:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">sudo</span><span class="o">&gt;</span> <span class="n">rpm</span> <span class="o">--</span><span class="n">dbpath</span> <span class="o">&lt;</span><span class="n">location</span> <span class="n">of</span> <span class="n">new</span> <span class="n">rpmdb</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">nodeps</span> <span class="o">-</span><span class="n">ivh</span> <span class="o">&lt;</span><span class="n">kamanja</span><span class="o">.</span><span class="n">rpm</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>This is recommended for non-sudo users and to be used
+with the custom installation path. The command for non-sudo users is:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">rpm</span> <span class="o">--</span><span class="n">dbpath</span> <span class="o">&lt;</span><span class="n">location</span> <span class="n">of</span> <span class="n">new</span> <span class="n">rpmdb</span><span class="o">&gt;</span> <span class="o">-</span><span class="n">nodeps</span> <span class="o">-</span><span class="n">ivh</span> <span class="o">&lt;</span><span class="n">kamanja</span><span class="o">.</span><span class="n">rpm</span><span class="o">&gt;</span> <span class="o">--</span><span class="n">prefix</span> <span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span>
+</pre></div>
+</div>
+<p>If dbpath is used for previous versions,
+use the same dbpath for the higher version installation.</p>
+<p>Refer to <a class="reference external" href="https://docs.fedoraproject.org/en-US/Fedora_Draft_Documentation/0.1/html/RPM_Guide/ch04s05s03.html">Fedora documentation</a>
+for information about creating a custom database.</p>
+</div>
+<div class="section" id="post-installation-steps-and-verification">
+<h3>Post-installation Steps and Verification<a class="headerlink" href="#post-installation-steps-and-verification" title="Permalink to this headline">¶</a></h3>
+<p>TODO: Verify and rewrite</p>
+<p>To set all the paths to the current installed location of Kamanja,
+run the following command:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>cd $KAMANJA_HOME/bin
+SetPaths.sh $KAFKA_HOME
+</pre></div>
+</div>
+<p>Query the RMP database to verify the installation:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>rpm –qa | grep –i &lt;package name&gt;
+</pre></div>
+</div>
+<p>This lists all package names; check this list
+to ensure that it contains the installed packages (old and new version).</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">rpm</span> <span class="o">-</span><span class="n">q</span> <span class="o">&lt;</span><span class="n">package</span> <span class="n">name</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>This checks if the package is installed.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">rpm</span> <span class="o">-</span><span class="n">ql</span> <span class="o">&lt;</span><span class="n">package</span> <span class="n">name</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>This lists the files in the installed package.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>rpm –qs &lt;package name&gt;
+</pre></div>
+</div>
+<p>The <strong>–s</strong> option to the <strong>rpm –q</strong> command lists the state of each file
+in a package:</p>
+<table border="1" class="colwidths-given docutils">
+<colgroup>
+<col width="25%" />
+<col width="75%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">State</th>
+<th class="head">Usage</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td>Normal</td>
+<td>The file has been installed</td>
+</tr>
+<tr class="row-odd"><td>Not installed</td>
+<td>The file from the package is not installed.</td>
+</tr>
+<tr class="row-even"><td>Replaced</td>
+<td>The file has been replaced</td>
+</tr>
+</tbody>
+</table>
+<p><strong>ls –l /usr/kamanja</strong> (or the prefix location where Kamanja is installed)
+points to &lt;path to the latest kamanja folder/bin/kamanja&gt;.</p>
+</div>
+<div class="section" id="uninstall-or-rollback">
+<h3>Uninstall or Rollback<a class="headerlink" href="#uninstall-or-rollback" title="Permalink to this headline">¶</a></h3>
+<p>The uninstall process has the following scenarios:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>sudo rpm –e &lt;kamanja.rpm&gt; &lt;--dbpath (if it is a custom database)&gt;
+</pre></div>
+</div>
+<p>If there is only one version of Kamanja, this command uninstalls
+the Kamanja software from the system entirely.
+However, if a higher version is uninstalled,
+then the /usr/kamanja Kamanja soft link now points to
+the lower version of Kamanja and deletes the higher version.
+Also, if a lower version is uninstalled,
+then it removes that lower version from the system
+and the Kamanja soft link keeps pointing to the higher version.
+If the custom database option, &#8211;dbpath, is used,
+add it for the delete command as well.</p>
+<p>During uninstall, Kamanja is completely removed from the system
+along with the working directory, configuration, and storage.
+Back up Kamanja before deleting, if it is required for future reference.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Install Kamanja software</a><ul>
+<li><a class="reference internal" href="#creating-the-kamanja-user">Creating the kamanja user</a></li>
+<li><a class="reference internal" href="#install-kamanja-prerequisites">Install Kamanja Prerequisites</a><ul>
+<li><a class="reference internal" href="#install-java-1-8">Install Java 1.8</a></li>
+<li><a class="reference internal" href="#install-scala">Install Scala</a></li>
+<li><a class="reference internal" href="#install-zookeeper">Install ZooKeeper</a></li>
+<li><a class="reference internal" href="#install-kafka">Install Kafka</a></li>
+<li><a class="reference internal" href="#define-environment-variables">Define environment variables</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#install-kamanja-engine">Install Kamanja engine</a><ul>
+<li><a class="reference internal" href="#basic-installation">Basic installation</a></li>
+<li><a class="reference internal" href="#basic-upgrade-to-1-6-1">Basic upgrade to 1.6.1</a></li>
+<li><a class="reference internal" href="#installing-in-a-different-location">Installing in a different location</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#running-multiple-kamanja-releases-on-one-system">Running multiple Kamanja releases on one system</a><ul>
+<li><a class="reference internal" href="#more-about-the-dbpath-option">More about the &#8211;dbpath option</a></li>
+<li><a class="reference internal" href="#post-installation-steps-and-verification">Post-installation Steps and Verification</a></li>
+<li><a class="reference internal" href="#uninstall-or-rollback">Uninstall or Rollback</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/install-plan/kamanja-install.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/install-plan/kamanja-install.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

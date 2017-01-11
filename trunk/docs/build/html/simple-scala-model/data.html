@@ -1,0 +1,164 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Create the data to present to Kamanja &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="create-the-data-to-present-to-kamanja">
+<h1>Create the data to present to Kamanja<a class="headerlink" href="#create-the-data-to-present-to-kamanja" title="Permalink to this headline">¶</a></h1>
+<p>Kamanja leverages the capabilities of Kafka to read and write messages.
+So, now it is time to create a single message and push it into Kafka.
+Place the following (very simple) line into a file:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">NumberMessageData</span><span class="o">.</span><span class="n">csv</span>
+
+<span class="mi">27</span><span class="p">,</span><span class="mi">54</span>
+</pre></div>
+</div>
+<p>That’s right, place two numbers, 27 and 54, separated by a comma,
+into a text file and place it into the SimpleMathDAG directory.
+Because the adapter message binding indicates
+NumberMessage should be consumed from that adapter,
+and NumberMessage is defined to have two integers,
+the numbers 27 and 54 are taken in the same order
+as the fields defined and are used to create a NumberMessage
+for Kamanja to use and pass into the first model, DAGAddition.</p>
+<div class="section" id="presenting-numbermessagedata-to-kamanja">
+<h2>Presenting NumberMessageData to Kamanja<a class="headerlink" href="#presenting-numbermessagedata-to-kamanja" title="Permalink to this headline">¶</a></h2>
+<p>To push the message into Kafka,
+simply navigate to the Kafka installation directory:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>cd &lt;KamanjaInstallationDirectory&gt;
+
+java -cp &lt;KamanjaInstallationDirectory&gt;/lib/system/ExtDependencyLibs2_2.11-1.4.0.jar:&lt;KamanjaInstallationDirectory&gt;/lib/system/ExtDependencyLibs_2.11-1.4.0.jar:&lt;KamanjaInstallationDirectory&gt;/lib/system/KamanjaInternalDeps_2.11-1.4.0.jar:&lt;KamanjaInstallationDirectory&gt;/lib/system/simplekafkaproducer_2.11-1.4.0.jar \
+   com.ligadata.tools.SimpleKafkaProducer –gz false –topics “testin_1” \
+   –threads 1 –topicpartitions 1 –brokerlist “localhost:9092” \
+   –files /path/to/SimpleMathDAG/NumberMessageData.csv \
+   –partitionkeyidxs “1” –format CSV
+</pre></div>
+</div>
+<p>Now that the data has been pushed into Kafka,
+Kamanja picks up the data from Kafka, and treats it as a NumberMessage.
+Kamanja takes NumberMessage, passes it in to DAGAddition
+and all subsequent messages are generated and passed on down the line.
+To make sure it has all worked, look at Kafka’s output queue,
+where the result of the work of the ensemble can be seen.
+Run the following commands:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">&lt;</span><span class="n">KamanjaInstallationDirectory</span><span class="o">&gt;</span>
+
+<span class="n">bash</span> <span class="nb">bin</span><span class="o">/</span><span class="n">kamanja</span> <span class="n">watch</span> <span class="n">output</span> <span class="n">queue</span>
+</pre></div>
+</div>
+<p>Expected Output</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;@@SchemaId&quot;</span><span class="p">:</span> <span class="mi">2000005</span><span class="p">,</span>
+        <span class="s2">&quot;integer1&quot;</span><span class="p">:</span> <span class="mi">27</span><span class="p">,</span>
+        <span class="s2">&quot;integer2&quot;</span><span class="p">:</span> <span class="mi">54</span><span class="p">,</span>
+        <span class="s2">&quot;integer3&quot;</span><span class="p">:</span> <span class="mi">81</span><span class="p">,</span>
+    <span class="s2">&quot;integer4&quot;</span><span class="p">:</span> <span class="mi">118098</span><span class="p">,</span>
+    <span class="s2">&quot;double&quot;</span><span class="p">:</span> <span class="mf">5.226878953219224E-8</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>&#64;&#64;SchemaId corresponds to the unique ID of the message,
+in this case, the output, DividedMessage.
+See that the original 27 and 54 have been preserved –
+integer3 is the sum of 1 and 2 integers,
+integer4 is the product of 1, 2 and 3 integers,
+and double is the dividend of 1, 2, 3 and 4 integers.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Create the data to present to Kamanja</a><ul>
+<li><a class="reference internal" href="#presenting-numbermessagedata-to-kamanja">Presenting NumberMessageData to Kamanja</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/simple-scala-model/data.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/simple-scala-model/data.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

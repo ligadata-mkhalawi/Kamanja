@@ -1,0 +1,233 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>ClusterConfig.json &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="clusterconfig-json">
+<span id="clusterconfig-config-ref"></span><h1>ClusterConfig.json<a class="headerlink" href="#clusterconfig-json" title="Permalink to this headline">¶</a></h1>
+<p>The <em>/config/ClusterConfig.json</em> file configures all objects in a cluster,
+including input and output adapters.</p>
+<div class="section" id="file-structure-clusters-section">
+<h2>File structure &#8211; Clusters section<a class="headerlink" href="#file-structure-clusters-section" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default"><div class="highlight"><pre><span></span>  <span class="s2">&quot;Clusters&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="s2">&quot;ClusterId&quot;</span><span class="p">:</span> <span class="s2">&quot;cluster1&quot;</span><span class="p">,</span>
+      <span class="o">...</span> <span class="p">{</span><span class="n">some</span> <span class="n">config</span><span class="p">}</span>
+      <span class="s2">&quot;Adapters&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="o">...</span> <span class="p">{</span><span class="n">some</span> <span class="n">config</span><span class="p">}</span>
+        <span class="p">{</span>
+          <span class="s2">&quot;Name&quot;</span><span class="p">:</span> <span class="s2">&quot;NEW_ADAPTER_NAME&quot;</span><span class="p">,</span>
+          <span class="s2">&quot;TypeString&quot;</span><span class="p">:</span> <span class="s2">&quot;Input&quot;</span><span class="p">,</span>
+          <span class="s2">&quot;TenantId&quot;</span><span class="p">:</span> <span class="s2">&quot;tenant1&quot;</span><span class="p">,</span>
+          <span class="s2">&quot;ClassName&quot;</span><span class="p">:</span> <span class="s2">&quot;com.ligadata.InputAdapters.KafkaSimpleConsumer$&quot;</span><span class="p">,</span>
+          <span class="s2">&quot;JarName&quot;</span><span class="p">:</span> <span class="s2">&quot;KamanjaInternalDeps_2.11-1.4.0.jar&quot;</span><span class="p">,</span>
+          <span class="s2">&quot;DependencyJars&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">&quot;ExtDependencyLibs_2.11-1.4.0.jar&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;ExtDependencyLibs2_2.11-1.4.0.jar&quot;</span>
+          <span class="p">],</span>
+          <span class="s2">&quot;AdapterSpecificCfg&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;HostList&quot;</span><span class="p">:</span> <span class="s2">&quot;localhost:9092&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;TopicName&quot;</span><span class="p">:</span> <span class="s2">&quot;testin_1&quot;</span>
+          <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="o">....</span> <span class="p">{</span><span class="n">some</span> <span class="n">config</span><span class="p">}</span>
+      <span class="p">],</span>
+      <span class="o">...</span> <span class="p">{</span><span class="n">some</span> <span class="n">config</span><span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><strong>ClusterId</strong> -</li>
+<li><strong>Adapters</strong><ul>
+<li><strong>Name</strong> - (Required)</li>
+<li><strong>TypeString</strong> - (Required) Type of this adapter.
+Valid values are <strong>input</strong>, <strong>Output</strong>, and <strong>Storage</strong>.</li>
+<li><strong>TenantId</strong> -</li>
+<li><strong>ClassName</strong> -</li>
+<li><strong>DependencyJars</strong></li>
+<li><strong>AdapterSPecificCfg</strong><ul>
+<li><strong>HostList</strong> - IP address and port number</li>
+<li><strong>TopicName</strong> -</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>To add a new adapter to the cluster, create or modify a JSON file.
+To add an object, add a new ADAPTER object to the configuration file
+and submit it to the metadata using
+the <a class="reference internal" href="../command-ref/kamanja.html#kamanja-command-ref"><span class="std std-ref">kamanja</span></a> upload cluster config command.</p>
+<p>To update an existing object, update an existing property;
+if the adapter object already exists in the system,
+then uploading a cluster configuration results in an update operation.</p>
+<p>An example command to add or update the cluster config:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">kamanja</span> <span class="n">upload</span> <span class="n">cluster</span> <span class="n">config</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">kamanjaInstall</span><span class="o">/</span><span class="n">cong</span><span class="o">/</span><span class="n">ClusterConfig</span><span class="o">.</span><span class="n">json</span>
+</pre></div>
+</div>
+<p>To remove an object (in this case an input adapter),
+upload the file with a desired object using
+the <a class="reference internal" href="../command-ref/kamanja.html#kamanja-command-ref"><span class="std std-ref">kamanja</span></a> remove engine config command.
+Any objects present in the JSON dcoument are removed.</p>
+<p>Example for removing configuration objects:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">kamanja</span> <span class="n">remove</span> <span class="n">engine</span> <span class="n">config</span> <span class="o">/</span><span class="n">tmp</span><span class="o">/</span><span class="n">kamanjaInstall</span><span class="o">/</span><span class="n">cong</span><span class="o">/</span><span class="n">objectsToRemove</span><span class="o">.</span><span class="n">json</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="file-structure-tenants">
+<h2>File structure &#8211; Tenants<a class="headerlink" href="#file-structure-tenants" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="s2">&quot;Tenants&quot;</span><span class="p">:[</span>
+<span class="p">{</span>
+<span class="s2">&quot;TenantId&quot;</span><span class="p">:</span><span class="s2">&quot;tenant1&quot;</span><span class="p">,</span>
+<span class="s2">&quot;Description&quot;</span><span class="p">:</span><span class="s2">&quot;tenant1&quot;</span><span class="p">,</span>
+<span class="s2">&quot;PrimaryDataStore&quot;</span><span class="p">:{</span>
+<span class="s2">&quot;StoreType&quot;</span><span class="p">:</span><span class="s2">&quot;hbase&quot;</span><span class="p">,</span>
+<span class="s2">&quot;SchemaName&quot;</span><span class="p">:</span><span class="s2">&quot;tenant1_default&quot;</span><span class="p">,</span>
+<span class="s2">&quot;Location&quot;</span><span class="p">:</span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span>
+<span class="s2">&quot;authentication&quot;</span><span class="p">:</span><span class="s2">&quot;kerberos&quot;</span><span class="p">,</span>
+<span class="s2">&quot;regionserver_principal&quot;</span><span class="p">:</span><span class="s2">&quot;hbase/_HOST@INTRANET.LIGADATA.COM&quot;</span><span class="p">,</span>
+<span class="s2">&quot;master_principal&quot;</span><span class="p">:</span><span class="s2">&quot;hbase/_HOST@INTRANET.LIGADATA.COM&quot;</span><span class="p">,</span>
+<span class="s2">&quot;principal&quot;</span><span class="p">:</span><span class="s2">&quot;ligadata@INTRANET.LIGADATA.COM&quot;</span><span class="p">,</span>
+<span class="s2">&quot;keytab&quot;</span><span class="p">:</span><span class="s2">&quot;/home/ligadata/keytab/ligadata.keytab&quot;</span>
+<span class="p">},</span>
+<span class="s2">&quot;CacheConfig&quot;</span><span class="p">:{</span>
+<span class="s2">&quot;MaxSizeInMB&quot;</span><span class="p">:</span><span class="mi">256</span>
+<span class="p">}</span>
+<span class="p">}</span>
+<span class="p">],</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="usage-tenants">
+<h2>Usage &#8211; Tenants<a class="headerlink" href="#usage-tenants" title="Permalink to this headline">¶</a></h2>
+<p>This means that, for each tenant, a TenantId must be specified,
+along with its PrimaryDataStore, using the StoreType, SchemaName,
+and Location described below.</p>
+<ul class="simple">
+<li>StoreType – indicates the type of database to use.
+Valid options are Cassandra and HBase for noSQL options
+(recommended for cluster configurations).</li>
+<li>SchemaName – indicates the schema under which all tables
+concerning the metadata is held.
+In the case of Cassandra, it searches for a keyspace for the tables.
+In the case of HBase, it searches for a namespace.</li>
+<li>Location – indicates the location of the database.
+For Cassandra and HBase, Location should be the name
+of the server(s) where these databases exist.</li>
+</ul>
+<p>Each adapter specifies a TenantID.</p>
+</div>
+<div class="section" id="see-also">
+<h2>See also<a class="headerlink" href="#see-also" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference internal" href="../command-ref/kamanja.html#kamanja-command-ref"><span class="std std-ref">kamanja</span></a></p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">ClusterConfig.json</a><ul>
+<li><a class="reference internal" href="#file-structure-clusters-section">File structure &#8211; Clusters section</a></li>
+<li><a class="reference internal" href="#parameters">Parameters</a></li>
+<li><a class="reference internal" href="#usage">Usage</a></li>
+<li><a class="reference internal" href="#file-structure-tenants">File structure &#8211; Tenants</a></li>
+<li><a class="reference internal" href="#usage-tenants">Usage &#8211; Tenants</a></li>
+<li><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/config-ref/ClusterConfig.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/config-ref/ClusterConfig.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

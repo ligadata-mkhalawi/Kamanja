@@ -1,0 +1,231 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Create Scala models &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="create-scala-models">
+<h1>Create Scala models<a class="headerlink" href="#create-scala-models" title="Permalink to this headline">¶</a></h1>
+<p>Write the models that actually execute good logic.
+First, DAGAddition. Be surprised to learn at this point,
+that DAGAddition performs (<em>gasp</em>) addition.
+The interfaces used in this model are required
+to compile this model for use in Kamanja.</p>
+<p>Note: Models may also be written in Java, PMML
+or Kamanja’s own special brand of PMML called kPMML.
+Read more about model development in the models section.</p>
+<p>The logic of these models is straightforward.
+DAGAddition takes NumberMessage, adds its values together,
+then produces the AddedMessage message with the sum stored as the third number.
+DAGMultiplication takes AddedMessage, multiplies its values together,
+then produces the MultipliedMessage message
+with the product stored as the fourth number.
+Finally, DAGDivision takes MultipliedMessage, divides its values,
+then produces the DividedMessage message
+with the dividend stored as the fifth number.
+Once DividedMessage is produced, it is sent to the output topic.</p>
+<div class="section" id="dagaddition-scala">
+<h2>DAGAddition.scala<a class="headerlink" href="#dagaddition-scala" title="Permalink to this headline">¶</a></h2>
+<p>Here are the contents of DAGAddition.scala:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">package</span> <span class="n">com</span><span class="o">.</span><span class="n">ligadata</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">dag</span>
+
+<span class="kn">import</span> <span class="nn">com.ligadata.KamanjaBase._</span>
+<span class="kn">import</span> <span class="nn">com.ligadata.kamanja.metadata.ModelDef</span>
+
+<span class="k">class</span> <span class="nc">DAGAdditionFactory</span><span class="p">(</span><span class="n">modelDef</span><span class="p">:</span> <span class="n">ModelDef</span><span class="p">,</span> <span class="n">nodeContext</span><span class="p">:</span> <span class="n">NodeContext</span><span class="p">)</span> <span class="n">extends</span> <span class="n">ModelInstanceFactory</span><span class="p">(</span><span class="n">modelDef</span><span class="p">,</span> <span class="n">nodeContext</span><span class="p">)</span> <span class="p">{</span>
+<span class="n">override</span> <span class="k">def</span> <span class="nf">createModelInstance</span><span class="p">():</span> <span class="n">ModelInstance</span> <span class="o">=</span> <span class="k">return</span> <span class="n">new</span> <span class="n">DAGAddition</span><span class="p">(</span><span class="n">this</span><span class="p">)</span>
+<span class="n">override</span> <span class="k">def</span> <span class="nf">getModelName</span><span class="p">:</span> <span class="n">String</span> <span class="o">=</span> <span class="s2">&quot;DAGAddition&quot;</span>
+<span class="n">override</span> <span class="k">def</span> <span class="nf">getVersion</span><span class="p">:</span> <span class="n">String</span> <span class="o">=</span> <span class="s2">&quot;0.0.1&quot;</span>
+<span class="n">override</span> <span class="k">def</span> <span class="nf">createResultObject</span><span class="p">():</span> <span class="n">ModelResultBase</span> <span class="o">=</span> <span class="n">new</span> <span class="n">MappedModelResults</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="k">class</span> <span class="nc">DAGAddition</span><span class="p">(</span><span class="n">factory</span><span class="p">:</span> <span class="n">ModelInstanceFactory</span><span class="p">)</span> <span class="n">extends</span> <span class="n">ModelInstance</span><span class="p">(</span><span class="n">factory</span><span class="p">)</span> <span class="p">{</span>
+<span class="n">override</span> <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="n">txnCtxt</span><span class="p">:</span> <span class="n">TransactionContext</span><span class="p">,</span> <span class="n">execMsgsSet</span><span class="p">:</span> <span class="n">Array</span><span class="p">[</span><span class="n">ContainerOrConcept</span><span class="p">],</span> <span class="n">triggerdSetIndex</span><span class="p">:</span> <span class="n">Int</span><span class="p">,</span> <span class="n">outputDefault</span><span class="p">:</span> <span class="n">Boolean</span><span class="p">):</span> <span class="n">Array</span><span class="p">[</span><span class="n">ContainerOrConcept</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+
+<span class="o">//</span><span class="n">Here</span> <span class="n">we</span> <span class="n">are</span> <span class="n">expecting</span> <span class="n">a</span> <span class="n">single</span> <span class="n">message</span> <span class="n">of</span> <span class="nb">type</span> <span class="n">NumberMessage</span>
+<span class="n">val</span> <span class="n">additionMsg</span><span class="p">:</span> <span class="n">NumberMessage</span> <span class="o">=</span> <span class="n">execMsgsSet</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">asInstanceOf</span><span class="p">[</span><span class="n">NumberMessage</span><span class="p">]</span>
+
+<span class="n">val</span> <span class="n">result</span> <span class="o">=</span> <span class="n">additionMsg</span><span class="o">.</span><span class="n">integer1</span> <span class="o">+</span> <span class="n">additionMsg</span><span class="o">.</span><span class="n">integer2</span>
+
+<span class="o">//</span> <span class="n">Here</span> <span class="n">we</span> <span class="n">are</span> <span class="n">creating</span> <span class="n">output</span><span class="p">,</span> <span class="n">which</span> <span class="ow">is</span> <span class="n">a</span> <span class="nb">type</span> <span class="n">of</span> <span class="n">AddedMessage</span><span class="p">,</span> <span class="n">which</span> <span class="n">we</span> <span class="n">want</span> <span class="n">to</span> <span class="n">present</span>
+<span class="o">//</span><span class="k">as</span> <span class="n">the</span> <span class="n">output</span> <span class="n">of</span> <span class="n">this</span> <span class="n">model</span>
+<span class="n">val</span> <span class="n">output</span> <span class="o">=</span> <span class="n">AddedMessage</span><span class="o">.</span><span class="n">createInstance</span><span class="p">()</span><span class="o">.</span><span class="n">asInstanceOf</span><span class="p">[</span><span class="n">AddedMessage</span><span class="p">]</span>
+
+<span class="n">output</span><span class="o">.</span><span class="n">integer1</span> <span class="o">=</span> <span class="n">additionMsg</span><span class="o">.</span><span class="n">integer1</span>
+<span class="n">output</span><span class="o">.</span><span class="n">integer2</span> <span class="o">=</span> <span class="n">additionMsg</span><span class="o">.</span><span class="n">integer2</span>
+<span class="n">output</span><span class="o">.</span><span class="n">integer3</span> <span class="o">=</span> <span class="n">result</span>
+
+<span class="k">return</span> <span class="n">Array</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>}</p>
+</div>
+<div class="section" id="dagmultiplication-scala">
+<h2>DAGMultiplication.scala<a class="headerlink" href="#dagmultiplication-scala" title="Permalink to this headline">¶</a></h2>
+<p>Here are the contents of DATMultiplication.scala:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">package</span> <span class="n">com</span><span class="o">.</span><span class="n">ligadata</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">dag</span>
+
+<span class="kn">import</span> <span class="nn">com.ligadata.KamanjaBase._</span>
+<span class="kn">import</span> <span class="nn">com.ligadata.kamanja.metadata.ModelDef</span>
+
+<span class="k">class</span> <span class="nc">DAGMultiplicationFactory</span><span class="p">(</span><span class="n">modelDef</span><span class="p">:</span> <span class="n">ModelDef</span><span class="p">,</span> <span class="n">nodeContext</span><span class="p">:</span> <span class="n">NodeContext</span><span class="p">)</span> <span class="n">extends</span> <span class="n">ModelInstanceFactory</span><span class="p">(</span><span class="n">modelDef</span><span class="p">,</span> <span class="n">nodeContext</span><span class="p">)</span> <span class="p">{</span>
+<span class="n">override</span> <span class="k">def</span> <span class="nf">createModelInstance</span><span class="p">():</span> <span class="n">ModelInstance</span> <span class="o">=</span> <span class="k">return</span> <span class="n">new</span> <span class="n">DAGMultiplication</span><span class="p">(</span><span class="n">this</span><span class="p">)</span>
+<span class="n">override</span> <span class="k">def</span> <span class="nf">getModelName</span><span class="p">:</span> <span class="n">String</span> <span class="o">=</span> <span class="s2">&quot;DAGMultiplication&quot;</span>
+<span class="n">override</span> <span class="k">def</span> <span class="nf">getVersion</span><span class="p">:</span> <span class="n">String</span> <span class="o">=</span> <span class="s2">&quot;0.0.1&quot;</span>
+<span class="n">override</span> <span class="k">def</span> <span class="nf">createResultObject</span><span class="p">():</span> <span class="n">ModelResultBase</span> <span class="o">=</span> <span class="n">new</span> <span class="n">MappedModelResults</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="k">class</span> <span class="nc">DAGMultiplication</span><span class="p">(</span><span class="n">factory</span><span class="p">:</span> <span class="n">ModelInstanceFactory</span><span class="p">)</span> <span class="n">extends</span> <span class="n">ModelInstance</span><span class="p">(</span><span class="n">factory</span><span class="p">)</span> <span class="p">{</span>
+<span class="n">override</span> <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="n">txnCtxt</span><span class="p">:</span> <span class="n">TransactionContext</span><span class="p">,</span> <span class="n">execMsgsSet</span><span class="p">:</span> <span class="n">Array</span><span class="p">[</span><span class="n">ContainerOrConcept</span><span class="p">],</span> <span class="n">triggerdSetIndex</span><span class="p">:</span> <span class="n">Int</span><span class="p">,</span> <span class="n">outputDefault</span><span class="p">:</span> <span class="n">Boolean</span><span class="p">):</span> <span class="n">Array</span><span class="p">[</span><span class="n">ContainerOrConcept</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+<span class="n">val</span> <span class="n">msg</span><span class="p">:</span> <span class="n">AddedMessage</span> <span class="o">=</span> <span class="n">execMsgsSet</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">asInstanceOf</span><span class="p">[</span><span class="n">AddedMessage</span><span class="p">]</span>
+
+<span class="n">val</span> <span class="n">result</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">integer1</span> <span class="o">*</span> <span class="n">msg</span><span class="o">.</span><span class="n">integer2</span> <span class="o">*</span> <span class="n">msg</span><span class="o">.</span><span class="n">integer3</span>
+
+<span class="n">val</span> <span class="n">output</span> <span class="o">=</span> <span class="n">MultipliedMessage</span><span class="o">.</span><span class="n">createInstance</span><span class="p">()</span><span class="o">.</span><span class="n">asInstanceOf</span><span class="p">[</span><span class="n">MultipliedMessage</span><span class="p">]</span>
+
+<span class="n">output</span><span class="o">.</span><span class="n">integer1</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">integer1</span>
+<span class="n">output</span><span class="o">.</span><span class="n">integer2</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">integer2</span>
+<span class="n">output</span><span class="o">.</span><span class="n">integer3</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">integer3</span>
+<span class="n">output</span><span class="o">.</span><span class="n">integer4</span> <span class="o">=</span> <span class="n">result</span>
+
+<span class="k">return</span> <span class="n">Array</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="dagdivision-scala">
+<h2>DAGDivision.scala<a class="headerlink" href="#dagdivision-scala" title="Permalink to this headline">¶</a></h2>
+<p>Here are the contents of the DAGDivision.scala model:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">package</span> <span class="n">com</span><span class="o">.</span><span class="n">ligadata</span><span class="o">.</span><span class="n">test</span><span class="o">.</span><span class="n">dag</span>
+
+<span class="kn">import</span> <span class="nn">com.ligadata.KamanjaBase._</span>
+<span class="kn">import</span> <span class="nn">com.ligadata.kamanja.metadata.ModelDef</span>
+
+<span class="k">class</span> <span class="nc">DAGDivisionFactory</span><span class="p">(</span><span class="n">modelDef</span><span class="p">:</span> <span class="n">ModelDef</span><span class="p">,</span> <span class="n">nodeContext</span><span class="p">:</span> <span class="n">NodeContext</span><span class="p">)</span> <span class="n">extends</span> <span class="n">ModelInstanceFactory</span><span class="p">(</span><span class="n">modelDef</span><span class="p">,</span> <span class="n">nodeContext</span><span class="p">)</span> <span class="p">{</span>
+<span class="n">override</span> <span class="k">def</span> <span class="nf">createModelInstance</span><span class="p">():</span> <span class="n">ModelInstance</span> <span class="o">=</span> <span class="k">return</span> <span class="n">new</span> <span class="n">DAGDivision</span><span class="p">(</span><span class="n">this</span><span class="p">)</span>
+<span class="n">override</span> <span class="k">def</span> <span class="nf">getModelName</span><span class="p">:</span> <span class="n">String</span> <span class="o">=</span> <span class="s2">&quot;DAGDivision&quot;</span>
+<span class="n">override</span> <span class="k">def</span> <span class="nf">getVersion</span><span class="p">:</span> <span class="n">String</span> <span class="o">=</span> <span class="s2">&quot;0.0.1&quot;</span>
+<span class="n">override</span> <span class="k">def</span> <span class="nf">createResultObject</span><span class="p">():</span> <span class="n">ModelResultBase</span> <span class="o">=</span> <span class="n">new</span> <span class="n">MappedModelResults</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="k">class</span> <span class="nc">DAGDivision</span><span class="p">(</span><span class="n">factory</span><span class="p">:</span> <span class="n">ModelInstanceFactory</span><span class="p">)</span> <span class="n">extends</span> <span class="n">ModelInstance</span><span class="p">(</span><span class="n">factory</span><span class="p">)</span> <span class="p">{</span>
+<span class="n">override</span> <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="n">txnCtxt</span><span class="p">:</span> <span class="n">TransactionContext</span><span class="p">,</span> <span class="n">execMsgsSet</span><span class="p">:</span> <span class="n">Array</span><span class="p">[</span><span class="n">ContainerOrConcept</span><span class="p">],</span> <span class="n">triggerdSetIndex</span><span class="p">:</span> <span class="n">Int</span><span class="p">,</span> <span class="n">outputDefault</span><span class="p">:</span> <span class="n">Boolean</span><span class="p">):</span> <span class="n">Array</span><span class="p">[</span><span class="n">ContainerOrConcept</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+<span class="n">val</span> <span class="n">msg</span><span class="p">:</span> <span class="n">MultipliedMessage</span> <span class="o">=</span> <span class="n">execMsgsSet</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">asInstanceOf</span><span class="p">[</span><span class="n">MultipliedMessage</span><span class="p">]</span>
+
+<span class="n">val</span> <span class="n">result</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">integer1</span><span class="o">.</span><span class="n">toFloat</span> <span class="o">/</span> <span class="n">msg</span><span class="o">.</span><span class="n">integer2</span><span class="o">.</span><span class="n">toFloat</span> <span class="o">/</span> <span class="n">msg</span><span class="o">.</span><span class="n">integer3</span><span class="o">.</span><span class="n">toFloat</span> <span class="o">/</span> <span class="n">msg</span><span class="o">.</span><span class="n">integer4</span><span class="o">.</span><span class="n">toFloat</span>
+
+<span class="n">val</span> <span class="n">output</span> <span class="o">=</span> <span class="n">DividedMessage</span><span class="o">.</span><span class="n">createInstance</span><span class="p">()</span><span class="o">.</span><span class="n">asInstanceOf</span><span class="p">[</span><span class="n">DividedMessage</span><span class="p">]</span>
+
+<span class="n">output</span><span class="o">.</span><span class="n">integer1</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">integer1</span>
+<span class="n">output</span><span class="o">.</span><span class="n">integer2</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">integer2</span>
+<span class="n">output</span><span class="o">.</span><span class="n">integer3</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">integer3</span>
+<span class="n">output</span><span class="o">.</span><span class="n">integer4</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">integer4</span>
+<span class="n">output</span><span class="o">.</span><span class="n">float</span> <span class="o">=</span> <span class="n">result</span>
+
+<span class="k">return</span> <span class="n">Array</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Create Scala models</a><ul>
+<li><a class="reference internal" href="#dagaddition-scala">DAGAddition.scala</a></li>
+<li><a class="reference internal" href="#dagmultiplication-scala">DAGMultiplication.scala</a></li>
+<li><a class="reference internal" href="#dagdivision-scala">DAGDivision.scala</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/simple-scala-model/models.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/simple-scala-model/models.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,389 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Generating Message/Container Sources and the Corresponding JARs &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="generating-message-container-sources-and-the-corresponding-jars">
+<span id="java-scala-guide-message-container"></span><h1>Generating Message/Container Sources and the Corresponding JARs<a class="headerlink" href="#generating-message-container-sources-and-the-corresponding-jars" title="Permalink to this headline">¶</a></h1>
+<p>The first thing to do is to create the messages and containers
+needed for model execution.
+Then, when the JSON messages are submitted to the metadata API,
+the API creates the JAR files.</p>
+<div class="section" id="creating-json-files">
+<h2>Creating JSON Files<a class="headerlink" href="#creating-json-files" title="Permalink to this headline">¶</a></h2>
+<p>The developer needs to create the messages and containers
+that are added to the engine.
+This section has some JSON files that are examples of the kinds
+of messages and containers that need to be created.</p>
+<p>Look at the
+/Users/userid/Downloads/installKamanja/input/SampleApplications/metadata/container directory.
+Notice the following files in this directory:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">AccountAggregatedUsage_Telecom</span><span class="o">.</span><span class="n">json</span>
+<span class="n">AccountInfo_Telecom</span><span class="o">.</span><span class="n">json</span>
+<span class="n">CoughCodes_Medical</span><span class="o">.</span><span class="n">json</span>
+<span class="n">CustAlertHistory_Finance</span><span class="o">.</span><span class="n">json</span>
+<span class="n">CustPreferences_Finance</span><span class="o">.</span><span class="n">json</span>
+<span class="n">CustomerInfo_Finance</span><span class="o">.</span><span class="n">json</span>
+<span class="n">DyspnoeaCodes_Medical</span><span class="o">.</span><span class="n">json</span>
+<span class="n">EnvCodes_Medical</span><span class="o">.</span><span class="n">json</span>
+<span class="n">GlobalPreferences_Finance</span><span class="o">.</span><span class="n">json</span>
+<span class="n">SmokeCodes_Medical</span><span class="o">.</span><span class="n">json</span>
+<span class="n">SputumCodes_Medical</span><span class="o">.</span><span class="n">json</span>
+<span class="n">SubscriberAggregatedUsage_Telecom</span><span class="o">.</span><span class="n">json</span>
+<span class="n">SubscriberGlobalPreferences_Telecom</span><span class="o">.</span><span class="n">json</span>
+<span class="n">SubscriberInfo_Telecom</span><span class="o">.</span><span class="n">json</span>
+<span class="n">SubscriberPlans_Telecom</span><span class="o">.</span><span class="n">json</span>
+</pre></div>
+</div>
+<p>To implement the above rule, take a look at the following JSON objects:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">CustAlertHistory_Finance</span><span class="o">.</span><span class="n">json</span>
+<span class="n">CustPreferences_Finance</span><span class="o">.</span><span class="n">json</span>
+<span class="n">CustomerInfo_Finance</span><span class="o">.</span><span class="n">json</span>
+<span class="n">GlobalPreferences_Finance</span><span class="o">.</span><span class="n">json</span>
+</pre></div>
+</div>
+<p>To learn more about how to create messages and containers,
+see Messages and Containers.</p>
+<p>Now take a look at the /Users/userid/Downloads/installKamanja/input/SampleApplications/metadata/message directory.
+The following files are in this directory:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Message_Definition_HelloWorld</span><span class="o">.</span><span class="n">json</span>    <span class="n">inpatientclaim_Medical</span><span class="o">.</span><span class="n">json</span>
+<span class="n">SubscriberUsage_Telecom</span><span class="o">.</span><span class="n">json</span>          <span class="n">log</span><span class="o">-</span><span class="n">cleaner</span><span class="o">.</span><span class="n">log</span>
+<span class="n">TransactionMsg_Finance</span><span class="o">.</span><span class="n">json</span>           <span class="n">outpatientclaim_Medical</span><span class="o">.</span><span class="n">json</span>
+<span class="n">beneficiary_Medical</span><span class="o">.</span><span class="n">json</span>              <span class="n">zookeeper</span><span class="o">.</span><span class="n">out</span>
+<span class="n">hl7_Medical</span><span class="o">.</span><span class="n">json</span>
+</pre></div>
+</div>
+<p>To further implement the above rule, take a look at the following JSON object:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">TransactionMsg_Finance</span><span class="o">.</span><span class="n">json</span>
+</pre></div>
+</div>
+<p>Again, the developer does not need to implement the source code
+for these objects.
+He/she just has to provide JSON-formatted message/containers
+and the Kamanja compiler generates the source code
+and creates the correct JAR files for him/her.</p>
+<p>The following are definitions for the JSON properties
+in TransactionMsg_Finance.json:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>Message – means it’s the message (it can be either Message or Container).
+NameSpace – namespace of the message/container.
+Name – name of the message/container.
+Version – version of the message/container.
+Description – description about the message/container.
+Fixed – message type (if Fixed is TRUE then it is a fixed message.
+  If Fixed is FALSE then it is a mapped message).
+</pre></div>
+</div>
+<div class="section" id="compiling-message-container-definitions-into-jars">
+<h3>Compiling Message/Container Definitions into JARs<a class="headerlink" href="#compiling-message-container-definitions-into-jars" title="Permalink to this headline">¶</a></h3>
+<p>Five message/container documents need to be compiled
+by adding them to the engine.
+The metadata API then generates the proper code/JAR files.
+This can be done via either through the Kamanja CLI (metadataAPI-1.0)
+or a REST service.</p>
+<p>The Kafka topics have already been created.
+The next step is to add the containers.</p>
+<p>For example, run the kamanja add container command.</p>
+<p>Type:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>&gt; bash $KAMANJA_HOME/bin/kamanja
+  $KAMANJA_HOME/config/MetadataAPIConfig.properties add container
+  $KAMANJA_HOME/input/SampleApplications/metadata/container/CustAlertHistory_Finance.json
+  TENANTID tenant1
+</pre></div>
+</div>
+<p>Note: Kamanja has basic multi-tenancy (new in v1.4).
+Therefore, every time a container, message, or model is added or updated,
+specify the tenant ID.
+Multi-tenancy allows deployment of more than one use case to a cluster.
+Multiple use cases can exist on the same cluster.</p>
+<p>Expected output:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;APIResults&quot;</span> <span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;Status Code&quot;</span> <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s2">&quot;Function Name&quot;</span> <span class="p">:</span> <span class="s2">&quot;AddContainerDef&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Result Data&quot;</span> <span class="p">:</span> <span class="n">null</span><span class="p">,</span>
+    <span class="s2">&quot;Result Description&quot;</span> <span class="p">:</span> <span class="s2">&quot;Container Added Successfully:system.custalerthistory.000000000001000000&quot;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Now run:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>&gt; bash $KAMANJA_HOME/bin/kamanja
+  $KAMANJA_HOME/config/MetadataAPIConfig.properties add container
+  $KAMANJA_HOME/input/SampleApplications/metadata/container/CustomerInfo_Finance.json
+  TENANTID tenant1
+</pre></div>
+</div>
+<p>Expected output:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;APIResults&quot;</span> <span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;Status Code&quot;</span> <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s2">&quot;Function Name&quot;</span> <span class="p">:</span> <span class="s2">&quot;AddContainerDef&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Result Data&quot;</span> <span class="p">:</span> <span class="n">null</span><span class="p">,</span>
+    <span class="s2">&quot;Result Description&quot;</span> <span class="p">:</span> <span class="s2">&quot;Container Added Successfully:system.customerinfo.000000000001000000&quot;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Now run:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>&gt; bash $KAMANJA_HOME/bin/kamanja \
+  $KAMANJA_HOME/config/MetadataAPIConfig.properties add container \
+  $KAMANJA_HOME/input/SampleApplications/metadata/container/CustPreferences_Finance.json \
+  TENANTID tenant1
+</pre></div>
+</div>
+<p>Expected output:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;APIResults&quot;</span> <span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;Status Code&quot;</span> <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s2">&quot;Function Name&quot;</span> <span class="p">:</span> <span class="s2">&quot;AddContainerDef&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Result Data&quot;</span> <span class="p">:</span> <span class="n">null</span><span class="p">,</span>
+    <span class="s2">&quot;Result Description&quot;</span> <span class="p">:</span> <span class="s2">&quot;Container Added Successfully:system.custpreferences.000000000001000000&quot;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Now run:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>&gt; bash $KAMANJA_HOME/bin/kamanja \
+  $KAMANJA_HOME/config/MetadataAPIConfig.properties add container \
+  $KAMANJA_HOME/input/SampleApplications/metadata/container/GlobalPreferences_Finance.json \
+  TENANTID tenant1
+</pre></div>
+</div>
+<p>Expected output:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;APIResults&quot;</span> <span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;Status Code&quot;</span> <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s2">&quot;Function Name&quot;</span> <span class="p">:</span> <span class="s2">&quot;AddContainerDef&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Result Data&quot;</span> <span class="p">:</span> <span class="n">null</span><span class="p">,</span>
+    <span class="s2">&quot;Result Description&quot;</span> <span class="p">:</span> <span class="s2">&quot;Container Added Successfully:system.globalpreferences.000000000001000000&quot;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Ignore the warnings for now.
+The results from the kamanja add container command
+are that all four containers were successfully added.</p>
+<p>The next step is to add the message.</p>
+<p>For example, run the kamanja add message command.</p>
+<p>Type:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>&gt; bash $KAMANJA_HOME/bin/kamanja
+  $KAMANJA_HOME/config/MetadataAPIConfig.properties add message
+  $KAMANJA_HOME/input/SampleApplications/metadata/message/TransactionMsg_Finance.json
+  TENANTID tenant1
+</pre></div>
+</div>
+<p>Expected output:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Result</span><span class="p">:</span> <span class="p">{</span>
+  <span class="s2">&quot;APIResults&quot;</span> <span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;Status Code&quot;</span> <span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s2">&quot;Function Name&quot;</span> <span class="p">:</span> <span class="s2">&quot;AddMessageDef&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Result Data&quot;</span> <span class="p">:</span> <span class="n">null</span><span class="p">,</span>
+    <span class="s2">&quot;Result Description&quot;</span> <span class="p">:</span> <span class="s2">&quot;Message Added Successfully:system.transactionmsg.000000000001000000&quot;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The process (code generation, code compilation, JAR generation, JAR upload)
+occurred successfully. Here are the results you should expect to see.</p>
+<ul class="simple">
+<li>The three generated source codes are in workingdir
+(as defined in the configuration file for the metadata API).</li>
+<li>The two generated JARs are in the JAR_TARGET directory
+(as defined in the configuration file for the metadata API).</li>
+<li>The JAR files have been uploaded to the metadata storage.</li>
+</ul>
+<p>The configuration file (MetadataAPIConfig.properties)
+is located in /Users/userid/Downloads/installKamanja/config.</p>
+</div>
+<div class="section" id="metadataapiconfig-properties">
+<h3>MetadataAPIConfig.properties<a class="headerlink" href="#metadataapiconfig-properties" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="c1">#MetadataStore information</span>
+<span class="n">MetadataDataStore</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;StoreType&quot;</span><span class="p">:</span> <span class="s2">&quot;hbase&quot;</span><span class="p">,</span><span class="s2">&quot;SchemaName&quot;</span><span class="p">:</span> <span class="s2">&quot;metadata&quot;</span><span class="p">,</span><span class="s2">&quot;Location&quot;</span><span class="p">:</span> <span class="s2">&quot;localhost&quot;</span><span class="p">}</span>
+<span class="n">ROOT_DIR</span><span class="o">=/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">installKamanja</span>
+<span class="n">GIT_ROOT</span><span class="o">=/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">installKamanja</span>
+<span class="n">JAR_TARGET_DIR</span><span class="o">=/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">installKamanja</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">application</span>
+<span class="n">SCALA_HOME</span><span class="o">=/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">Cellar</span><span class="o">/</span><span class="n">scala</span><span class="o">/</span><span class="mf">2.11</span><span class="o">.</span><span class="mi">7</span>
+<span class="n">JAVA_HOME</span><span class="o">=/</span><span class="n">Library</span><span class="o">/</span><span class="n">Java</span><span class="o">/</span><span class="n">JavaVirtualMachines</span><span class="o">/</span><span class="n">jdk1</span><span class="o">.</span><span class="mf">7.0</span><span class="n">_79</span><span class="o">.</span><span class="n">jdk</span><span class="o">/</span><span class="n">Contents</span><span class="o">/</span><span class="n">Home</span>
+<span class="n">MANIFEST_PATH</span><span class="o">=/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">installKamanja</span><span class="o">/</span><span class="n">config</span><span class="o">/</span><span class="n">manifest</span><span class="o">.</span><span class="n">mf</span>
+<span class="o">...</span>
+<span class="n">TYPE_FILES_DIR</span><span class="o">=/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">installKamanja</span><span class="o">/</span><span class="nb">input</span><span class="o">/</span><span class="n">SampleApplications</span><span class="o">/</span><span class="n">metadata</span><span class="o">/</span><span class="nb">type</span><span class="o">/</span>
+<span class="n">FUNCTION_FILES_DIR</span><span class="o">=/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">installKamanja</span><span class="o">/</span><span class="nb">input</span><span class="o">/</span><span class="n">SampleApplications</span><span class="o">/</span><span class="n">metadata</span><span class="o">/</span><span class="n">function</span><span class="o">/</span>
+<span class="n">CONCEPT_FILES_DIR</span><span class="o">=/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">installKamanja</span><span class="o">/</span><span class="nb">input</span><span class="o">/</span><span class="n">SampleApplications</span><span class="o">/</span><span class="n">metadata</span><span class="o">/</span><span class="n">concept</span><span class="o">/</span>
+<span class="n">MESSAGE_FILES_DIR</span><span class="o">=/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">installKamanja</span><span class="o">/</span><span class="nb">input</span><span class="o">/</span><span class="n">SampleApplications</span><span class="o">/</span><span class="n">metadata</span><span class="o">/</span><span class="n">message</span><span class="o">/</span>
+<span class="n">CONTAINER_FILES_DIR</span><span class="o">=/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">installKamanja</span><span class="o">/</span><span class="nb">input</span><span class="o">/</span><span class="n">SampleApplications</span><span class="o">/</span><span class="n">metadata</span><span class="o">/</span><span class="n">container</span><span class="o">/</span>
+<span class="n">CONFIG_FILES_DIR</span><span class="o">=/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">installKamanja</span><span class="o">/</span><span class="n">config</span><span class="o">/</span>
+<span class="n">MODEL_EXEC_LOG</span><span class="o">=</span><span class="n">false</span>
+<span class="n">JarPaths</span><span class="o">=/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">installKamanja</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">system</span><span class="p">,</span><span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">installKamanja</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">application</span>
+<span class="n">SECURITY_IMPL_JAR</span><span class="o">=/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">installKamanja</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">system</span><span class="o">/</span><span class="n">simpleapacheshiroadapter_2</span><span class="o">.</span><span class="mi">10</span><span class="o">-</span><span class="mf">1.0</span><span class="o">.</span><span class="n">jar</span>
+<span class="n">SECURITY_IMPL_CLASS</span><span class="o">=</span><span class="n">com</span><span class="o">.</span><span class="n">ligadata</span><span class="o">.</span><span class="n">Security</span><span class="o">.</span><span class="n">SimpleApacheShiroAdapter</span>
+<span class="n">AUDIT_IMPL_JAR</span><span class="o">=/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">installKamanja</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">system</span><span class="o">/</span><span class="n">auditadapters_2</span><span class="o">.</span><span class="mi">10</span><span class="o">-</span><span class="mf">1.0</span><span class="o">.</span><span class="n">jar</span>
+<span class="n">AUDIT_IMPL_CLASS</span><span class="o">=</span><span class="n">com</span><span class="o">.</span><span class="n">ligadata</span><span class="o">.</span><span class="n">audit</span><span class="o">.</span><span class="n">adapters</span><span class="o">.</span><span class="n">AuditCassandraAdapter</span>
+<span class="n">DO_AUDIT</span><span class="o">=</span><span class="n">NO</span>
+<span class="n">DO_AUTH</span><span class="o">=</span><span class="n">NO</span>
+<span class="n">SSL_CERTIFICATE</span><span class="o">=/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">installKamanja</span><span class="o">/</span><span class="n">config</span><span class="o">/</span><span class="n">keystore</span><span class="o">.</span><span class="n">jks</span>
+</pre></div>
+</div>
+<p>Go to /Users/userid/Downloads/installKamanja/workingdir
+and see if there are three generated source code files there:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&gt;</span> <span class="n">cd</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">userid</span><span class="o">/</span><span class="n">Downloads</span><span class="o">/</span><span class="n">installKamanja</span><span class="o">/</span><span class="n">workingdir</span>
+</pre></div>
+</div>
+<p>Run ls in the workingdir directory.
+The expected output is:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">CustAlertHistory</span>              <span class="n">CustomerInfo_local</span>
+<span class="n">CustAlertHistory</span><span class="o">.</span><span class="n">scala</span>                <span class="n">CustomerInfo_local</span><span class="o">.</span><span class="n">scala</span>
+<span class="n">CustAlertHistoryFactory</span><span class="o">.</span><span class="n">java</span>  <span class="n">GlobalPreferences</span>
+<span class="n">CustAlertHistory_local</span>                <span class="n">GlobalPreferences</span><span class="o">.</span><span class="n">scala</span>
+<span class="n">CustAlertHistory_local</span><span class="o">.</span><span class="n">scala</span>  <span class="n">GlobalPreferencesFactory</span><span class="o">.</span><span class="n">java</span>
+<span class="n">CustPreferences</span>                       <span class="n">GlobalPreferences_local</span>
+<span class="n">CustPreferences</span><span class="o">.</span><span class="n">scala</span>         <span class="n">GlobalPreferences_local</span><span class="o">.</span><span class="n">scala</span>
+<span class="n">CustPreferencesFactory</span><span class="o">.</span><span class="n">java</span>   <span class="n">TransactionMsg</span>
+<span class="n">CustPreferences_local</span>         <span class="n">TransactionMsg</span><span class="o">.</span><span class="n">scala</span>
+<span class="n">CustPreferences_local</span><span class="o">.</span><span class="n">scala</span>   <span class="n">TransactionMsgFactory</span><span class="o">.</span><span class="n">java</span>
+<span class="n">CustomerInfo</span>                  <span class="n">TransactionMsg_local</span>
+<span class="n">CustomerInfo</span><span class="o">.</span><span class="n">scala</span>            <span class="n">TransactionMsg_local</span><span class="o">.</span><span class="n">scala</span>
+<span class="n">CustomerInfoFactory</span><span class="o">.</span><span class="n">java</span>
+</pre></div>
+</div>
+<p>Each of the five JSON files mentioned earlier generated three source code files.</p>
+<p>The three generated source code files are:</p>
+<ul class="simple">
+<li>&lt;msgName&gt;.scala – actual source code that is compiled into a deployable JAR.
+The package name has a version in it.</li>
+<li>&lt;msgName&gt;_local.scala – source code that can be downloaded
+and used as part of later model development.
+No version is inserted into the _local.scala file,
+so the model can import packages that are shown in here for model testing.</li>
+<li>&lt;msgName&gt;Factory.java – provides methods for models written in Java
+to create JavaRDD and JavaRDDObject objects
+(Refer here for a quick tutorial of RDD usage.
+Full API documentation can be found here).</li>
+</ul>
+<p>For example, see the fully-generated code
+of the TransactionMsg.json message here:</p>
+<ul class="simple">
+<li>TransactionMsg.scala</li>
+<li>TransactionMsg_local.scala</li>
+<li>TransactionMsgFactory.java</li>
+</ul>
+<p>Go to /Users/userid/Downloads/installKamanja/lib/application
+(this is the JAR_TARGET_DIR directory) and see the two generated JAR files.</p>
+<p>Run ls on the JAR_TARGET_DIR directory.
+The expected output is:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">system_CustAlertHistory</span><span class="o">.</span><span class="n">jar</span>
+<span class="n">system_CustAlertHistory_1000000_1448927644430</span><span class="o">.</span><span class="n">jar</span>
+<span class="n">system_CustPreferences</span><span class="o">.</span><span class="n">jar</span>
+<span class="n">system_CustPreferences_1000000_1448927675635</span><span class="o">.</span><span class="n">jar</span>
+<span class="n">system_CustomerInfo</span><span class="o">.</span><span class="n">jar</span>
+<span class="n">system_CustomerInfo_1000000_1448927661143</span><span class="o">.</span><span class="n">jar</span>
+<span class="n">system_GlobalPreferences</span><span class="o">.</span><span class="n">jar</span>
+<span class="n">system_GlobalPreferences_1000000_1448927695756</span><span class="o">.</span><span class="n">jar</span>
+<span class="n">system_TransactionMsg</span><span class="o">.</span><span class="n">jar</span>
+<span class="n">system_TransactionMsg_1000000_1448927750168</span><span class="o">.</span><span class="n">jar</span>
+</pre></div>
+</div>
+<p>Each of the five JSON files mentioned earlier generated two JAR files.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Generating Message/Container Sources and the Corresponding JARs</a><ul>
+<li><a class="reference internal" href="#creating-json-files">Creating JSON Files</a><ul>
+<li><a class="reference internal" href="#compiling-message-container-definitions-into-jars">Compiling Message/Container Definitions into JARs</a></li>
+<li><a class="reference internal" href="#metadataapiconfig-properties">MetadataAPIConfig.properties</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/java-scala/message-container.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/java-scala/message-container.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

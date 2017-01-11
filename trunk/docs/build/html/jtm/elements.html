@@ -1,0 +1,230 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>JTM Language Elements &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="jtm-language-elements">
+<span id="jtm-elements"></span><h1>JTM Language Elements<a class="headerlink" href="#jtm-language-elements" title="Permalink to this headline">¶</a></h1>
+<p>The following list describes the basic language elements:</p>
+<ul>
+<li><p class="first"><strong>header section</strong> contains identifying information about the model
+including its namespace, name, version, and language used.
+The variable identifiers that are not otherwise qualified in the model
+are treated as elements of the declared namespace.</p>
+</li>
+<li><p class="first"><strong>imports section</strong> declares the Scala/Java packages that are used in the model
+and is used to generate the import statements in the Scala-generated source.
+This is no different from what a standard Scala or Java source file would declare
+and serves the same purpose when the generated Scala is compiled
+by the Scala compiler.</p>
+</li>
+<li><p class="first"><strong>aliases section</strong> is used to assign handles to the messages and containers
+that are used in the model.
+Kamanja messages are all namespace-qualified and can be quite long
+when used in an expression.
+The alias can be used in place of the long name in the model expressions.</p>
+</li>
+<li><p class="first"><strong>transformations section</strong> contains a map of the transformations available
+in the JTM. Each transformation has a name.</p>
+<ul>
+<li><p class="first">Each named transformation in the transformations section
+contains the following elements inside it.
+For most, one or more instances of each can occur except as noted:</p>
+<ul>
+<li><p class="first"><strong>dependsOn</strong> (one) describes the input message or messages
+that the transformation section depends on and uses in its transformations.</p>
+</li>
+<li><p class="first"><strong>computes</strong> (one or more) describes a computation of some sort
+that transforms the incoming value or values in some way
+to an output variable that can be emitted
+to one of the output messages as needed.
+They are scoped to the section they are declared
+as denoted by the parent’s enclosing braces.</p>
+<p>Of particular interest is the value member in the map.
+It is a Scala expression and can be as simple as a message field reference
+or some complex map expression that creates a collection of some type
+that is to be used for the output message generation.
+Examples of this are presented in the next section.</p>
+<ul class="simple">
+<li><strong>grok</strong> (currently one) describes a set of patterns
+that extract values from the specified variable.
+The JTM compiler uses the Grok library for pattern matching support.
+See <cite>&lt;https://github.com/aicer/grok&gt;</cite> for more information.
+It was inspired by the grok functionality found in Elastic’s logstash
+and developed by the American Institute for Computing Education and Research
+(hence the ‘aicer’ moniker).<ul>
+<li><strong>outputs</strong> can describe one or more named output specifications
+in its JSON map, where each output in the outputs section contains
+the following elements inside of it:<ul>
+<li>a computes (one or more) – scoped to the output message.</li>
+<li>a join on key.</li>
+<li>a filter expression (zero or one) – similar to the where clause
+in an SQL query. An arbitrary Boolean expression can be used
+to decide whether this particular output message should be emitted.
+An output message is only generated when the Boolean expression
+evaluates to TRUE. Note that the value of the filter
+(that is, the right-hand side after the ‘:’) is a Scala code snippet
+that refers to the input message.
+Complex Boolean expressions, use of function libraries, table lookups,
+and other Scala constructions can be used to compute the Boolean value.</li>
+<li>a projection from the inputs and computed expression variables
+to assign to the output fields.
+These can be currently derived in two ways,
+depending on the nature of the input message being processed:<ul>
+<li>by mapbyposition – available when the input message
+is a fixed message where all fields are ordered.
+It is a form of shorthand for assigning input message values
+to the output message.
+This is not available when an input message is a mapped type
+used in sparse data applications.</li>
+<li>by mapping – used to make output variable assignments
+either by index or by name as desired.
+Note that assignments from mapped messages always need to be
+in the form of ${alias.element}
+because the key-value pairs of mapped messages are unordered.
+Indexed references are not supported in this case.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p class="first">Dereferencing identifiers are found in the current namespace:</p>
+<ul class="simple">
+<li>An identifier (or variable) prefixed with a $ (for example, $element)
+refers to the value of the identifier.</li>
+<li>A message field is dereferenced with an expression such as this:
+${msg1.fieldname}. The msg1 is the alias of the message
+declared in the aliases section and fieldname is a field in that message.</li>
+<li>An $element or ${element} references a variable in the current name space
+such as an alias or a generated variable.
+If the element doesn’t exist in the current context,
+it is sought in the surrounding context that encloses it.
+The referenced element must be unique.
+It is scoped to the enclosing braces of the parent object
+in which it is contained.<ul>
+<li>An example is variables computed by transformations
+declared as child elements of the transformations section.
+Variables can also be scoped to
+the declaration of an output message transformation.
+In that case, they are only known to that output transformation context.<ul>
+<li>If an expression needs to reference an external element,
+it needs to be marked with a $element.</li>
+<li>Variable names are case-sensitive
+because the target language (that is, Scala) being generated
+has case-sensitive identifiers.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p class="first">The comment or comments section makes it possible
+to document the JTM source file with comment items.
+These are ignored by the JTM compiler,
+but quite useful in understanding what the JTM does.
+Single and multiple line comment types are supported:</p>
+<dl class="docutils">
+<dt>::</dt>
+<dd><p class="first last">{ comment: &#8220;single line comment&#8221; }
+{ comments: [&#8220;multiple&#8221;, &#8220;line&#8221;, &#8220;comment&#8221;] }</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/jtm/elements.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/jtm/elements.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>PMML Producers &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="pmml-producers">
+<span id="pmml-guide-produce"></span><h1>PMML Producers<a class="headerlink" href="#pmml-producers" title="Permalink to this headline">¶</a></h1>
+<p>See this summary table, last updated 5/20/2016:</p>
+<p>Here is the list of the companies and software products mentioned
+on the left margin of the table above.</p>
+<ul class="simple">
+<li>Alpine Data, Alpine – <a class="reference external" href="http://alpinedata.com/products/">http://alpinedata.com/products/</a></li>
+<li>Angoss, Knowledge Studio – <a class="reference external" href="http://www.angoss.com/predictive-analytics-software/software/">http://www.angoss.com/predictive-analytics-software/software/</a></li>
+<li>BigML, BigML Public API – <a class="reference external" href="https://bigml.com">https://bigml.com</a></li>
+<li>Experian, PowerCurve – <a class="reference external" href="http://www.experian.com/strategy-management/powercurve.html">http://www.experian.com/strategy-management/powercurve.html</a></li>
+<li>FICO, Model Builder (others) – <a class="reference external" href="http://www.experian.com/strategy-management/powercurve.html">http://www.experian.com/strategy-management/powercurve.html</a></li>
+<li>IBM, SPSS Modeler, InfoSphere – <a class="reference external" href="http://www-01.ibm.com/software/analytics/spss/products/modeler/">http://www-01.ibm.com/software/analytics/spss/products/modeler/</a>, <a class="reference external" href="http://www-01.ibm.com/software/data/infosphere/">http://www-01.ibm.com/software/data/infosphere/</a></li>
+<li>KNIME, KNIME – <a class="reference external" href="https://www.knime.org/server-products">https://www.knime.org/server-products</a></li>
+<li>KXEN, Analytic Framework – acquired by SAP – <a class="reference external" href="http://go.sap.com/product/analytics/predictive-analytics.html">http://go.sap.com/product/analytics/predictive-analytics.html</a></li>
+<li>Microsoft, SQL Server – <a class="reference external" href="https://www.microsoft.com/en-us/server-cloud/products/sql-server/">https://www.microsoft.com/en-us/server-cloud/products/sql-server/</a></li>
+<li>MicroStrategy, Data Mining Services</li>
+<li>Open Data, Augustus – <a class="reference external" href="http://opendatagroup.com">http://opendatagroup.com</a></li>
+<li>Opera, Signal Hub – <a class="reference external" href="http://operasolutions.com/signal-hub/">http://operasolutions.com/signal-hub/</a></li>
+<li>Pervasive Data Rush – <a class="reference external" href="http://www.pervasive.com/galaxy/Products/Product.aspx?id=424">http://www.pervasive.com/galaxy/Products/Product.aspx?id=424</a></li>
+<li>RapidMiner, RapidMiner Server – <a class="reference external" href="https://rapidminer.com">https://rapidminer.com</a></li>
+<li>R, Rattle, PMML Package</li>
+<li>Salford Systems – <a class="reference external" href="https://www.salford-systems.com/products">https://www.salford-systems.com/products</a></li>
+<li>SAS, Enterprise Miner – <a class="reference external" href="http://www.sas.com/en_us/software/analytics/enterprise-miner.html">http://www.sas.com/en_us/software/analytics/enterprise-miner.html</a></li>
+<li>Spark, Mllib – <a class="reference external" href="https://spark.apache.org/docs/1.1.0/mllib-guide.html">https://spark.apache.org/docs/1.1.0/mllib-guide.html</a></li>
+<li>Tibco, Spotfire, Ent Runtime – <a class="reference external" href="http://spotfire.tibco.com/products/spotfire-platform">http://spotfire.tibco.com/products/spotfire-platform</a>, <a class="reference external" href="http://spotfire.tibco.com/discover-spotfire/what-does-spotfire-do/predictive-analytics/tibco-enterprise-runtime-for-r-terr">http://spotfire.tibco.com/discover-spotfire/what-does-spotfire-do/predictive-analytics/tibco-enterprise-runtime-for-r-terr</a></li>
+<li>Zementis, Python2PMML – <a class="reference external" href="http://zementis.com">http://zementis.com</a></li>
+<li>Java, Bayes Net libs</li>
+<li>Java, Mahout (math, big data) – <a class="reference external" href="http://mahout.apache.org">http://mahout.apache.org</a></li>
+<li>Java, Stanford NLP – <a class="reference external" href="http://nlp.stanford.edu">http://nlp.stanford.edu</a></li>
+<li>Python, TensorFlow deep lrn – <a class="reference external" href="https://www.tensorflow.org">https://www.tensorflow.org</a></li>
+<li>Python, SciKit-Learn – <a class="reference external" href="http://scikit-learn.org/stable/">http://scikit-learn.org/stable/</a></li>
+<li>R (not limited by PMML)</li>
+</ul>
+<p>The R integration was added on the bottom row
+(which shows how broad the non-PMML limited R is).
+This can show how much more to get out of Kamanja with that integration.</p>
+<p>Python is broader than listed.</p>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pmml/produce.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/pmml/produce.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

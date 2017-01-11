@@ -1,0 +1,170 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Creating a Scala Model &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="creating-a-scala-model">
+<span id="java-scala-guide-scala"></span><h1>Creating a Scala Model<a class="headerlink" href="#creating-a-scala-model" title="Permalink to this headline">¶</a></h1>
+<p>This section covers the actual logic of creating a Kamanja model,
+which can be very complicated.
+To keep track, here are some important steps to follow:</p>
+<ol class="arabic simple">
+<li>Make sure the model has the objects and classes
+that are required for Scala models.</li>
+<li>To access the history of messages and container values
+or add the messages and containers to the data store, use RDD methods.</li>
+<li>Encapsulate the model in a single file (.scala).</li>
+</ol>
+<p>Look at the model provided for the purposes of the example.</p>
+<p>See the entire source code of a model here:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">LowBalanceAlert_Finance</span><span class="o">.</span><span class="n">scala</span>
+</pre></div>
+</div>
+<p>Every Scala model must have the following:</p>
+<ol class="arabic simple">
+<li>An object that extends a BaseModelObj trait.
+This is a singleton class used by the engine
+in the lifecycle of the instantiated model objects.</li>
+<li>A class that extends a ModelBase trait.
+This is a class that executes actual logic.</li>
+<li>A class that extends a ModelResultBase trait.
+MappedModelResult helper class implements a ModelResultBase
+to quickly output key/value results,
+but a developer may want to implement his/her own.</li>
+</ol>
+<p>See the actual Scala code:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="nb">object</span> <span class="n">LowBalanceAlert</span> <span class="n">extends</span> <span class="n">ModelBaseObj</span> <span class="p">{</span>
+  <span class="n">override</span> <span class="k">def</span> <span class="nf">IsValidMessage</span><span class="p">(</span><span class="n">msg</span><span class="p">:</span> <span class="n">MessageContainerBase</span><span class="p">):</span> <span class="n">Boolean</span> <span class="o">=</span> <span class="k">return</span> <span class="n">msg</span><span class="o">.</span><span class="n">isInstanceOf</span><span class="p">[</span><span class="n">TransactionMsg</span><span class="p">]</span>
+  <span class="n">override</span> <span class="k">def</span> <span class="nf">CreateNewModel</span><span class="p">(</span><span class="n">mdlCtxt</span><span class="p">:</span> <span class="n">ModelContext</span><span class="p">):</span> <span class="n">ModelBase</span> <span class="o">=</span> <span class="k">return</span> <span class="n">new</span> <span class="n">LowBalanceAlert</span><span class="p">(</span><span class="n">mdlCtxt</span><span class="p">)</span>
+  <span class="n">override</span> <span class="k">def</span> <span class="nf">ModelName</span><span class="p">():</span> <span class="n">String</span> <span class="o">=</span> <span class="s2">&quot;System.LowBalanceAlert&quot;</span> <span class="o">//</span> <span class="n">Model</span> <span class="n">Name</span>
+  <span class="n">override</span> <span class="k">def</span> <span class="nf">Version</span><span class="p">():</span> <span class="n">String</span> <span class="o">=</span> <span class="s2">&quot;0.0.1&quot;</span> <span class="o">//</span> <span class="n">Model</span> <span class="n">Version</span>
+  <span class="n">override</span> <span class="k">def</span> <span class="nf">CreateResultObject</span><span class="p">():</span> <span class="n">ModelResultBase</span> <span class="o">=</span> <span class="n">new</span> <span class="n">LowBalanceAlertResult</span><span class="p">()</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>When an engine gets a message from an adapter,
+it checks all the registered models to see
+if that model wants to process that specific message.
+The engine calls the IsValidMessage method and if TRUE is returned,
+it instantiates the actual class by calling the CreateNewModel method.</p>
+<p>The class that has the executable logic looks like this:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">Executable</span> <span class="n">Logic</span>
+<span class="k">class</span> <span class="nc">LowBalanceAlert</span><span class="p">(</span><span class="n">mdlCtxt</span><span class="p">:</span> <span class="n">ModelContext</span><span class="p">)</span> <span class="n">extends</span> <span class="n">ModelBase</span><span class="p">(</span><span class="n">mdlCtxt</span><span class="p">,</span> <span class="n">LowBalanceAlert</span><span class="p">){</span>
+  <span class="n">private</span><span class="p">[</span><span class="n">this</span><span class="p">]</span><span class="n">valLOG</span><span class="o">=</span><span class="n">Logger</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">getClass</span><span class="p">);</span>
+  <span class="n">override</span> <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="n">emitAllResults</span><span class="p">:</span> <span class="n">Boolean</span><span class="p">):</span><span class="n">ModelResultBase</span><span class="o">=</span><span class="p">{</span>
+    <span class="o">//</span><span class="n">First</span> <span class="n">check</span> <span class="n">the</span> <span class="n">preferences</span> <span class="ow">and</span> <span class="n">decide</span> <span class="n">whether</span> <span class="n">to</span> <span class="k">continue</span> <span class="ow">or</span>
+    <span class="o">//</span><span class="ow">not</span>
+    <span class="n">valgPref</span><span class="o">=</span><span class="n">GlobalPreferences</span><span class="o">.</span><span class="n">getRecentOrNew</span><span class="p">(</span><span class="n">Array</span><span class="p">(</span><span class="s2">&quot;Type1&quot;</span><span class="p">))</span><span class="n">valpref</span><span class="o">=</span><span class="n">CustPreferences</span><span class="o">.</span><span class="n">getRecentOrNewif</span><span class="p">(</span><span class="n">pref</span><span class="o">.</span><span class="n">minbalancealertoptout</span><span class="o">==</span><span class="n">true</span><span class="p">){</span>
+      <span class="n">returnnull</span>
+    <span class="p">}</span><span class="o">//</span><span class="n">Check</span> <span class="k">if</span> <span class="n">at</span> <span class="n">least</span> <span class="nb">min</span> <span class="n">number</span> <span class="n">of</span> <span class="n">hours</span> <span class="n">elapsed</span> <span class="n">since</span> <span class="n">last</span> <span class="n">alert</span>
+      <span class="n">valcurDtTmInMs</span><span class="o">=</span><span class="n">RddDate</span><span class="o">.</span><span class="n">currentGmtDateTimevalalertHistory</span><span class="o">=</span><span class="n">CustAlertHistory</span><span class="o">.</span><span class="n">getRecentOrNewif</span><span class="p">(</span>
+      <span class="n">curDtTmInMs</span><span class="o">.</span><span class="n">timeDiffInHrs</span><span class="p">(</span><span class="n">RddDate</span><span class="p">(</span><span class="n">alertHistory</span><span class="o">.</span><span class="n">alertdttminms</span><span class="p">))</span><span class="o">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">gPref</span><span class="o">.</span><span class="n">minalertdurationinhrs</span><span class="p">){</span>
+    <span class="n">returnnull</span>
+    <span class="p">}</span><span class="o">//</span><span class="k">continue</span> <span class="k">with</span> <span class="n">alert</span> <span class="n">generation</span> <span class="n">only</span> <span class="k">if</span> <span class="n">balance</span> <span class="kn">from</span> <span class="nn">current</span>
+    <span class="o">//</span><span class="n">transaction</span> <span class="ow">is</span> <span class="n">less</span> <span class="n">than</span> <span class="n">threshold</span>
+    <span class="n">valrcntTxn</span><span class="o">=</span><span class="n">TransactionMsg</span><span class="o">.</span><span class="n">getRecentif</span><span class="p">(</span><span class="n">rcntTxn</span><span class="o">.</span><span class="n">isEmpty</span><span class="p">){</span>
+      <span class="n">returnnull</span>
+    <span class="p">}</span><span class="k">if</span><span class="p">(</span><span class="n">rcntTxn</span><span class="o">.</span><span class="n">isEmpty</span><span class="o">||</span><span class="n">rcntTxn</span><span class="o">.</span><span class="n">get</span><span class="o">.</span><span class="n">balance</span><span class="o">&amp;</span><span class="n">gt</span><span class="p">;</span><span class="o">=</span><span class="n">gPref</span><span class="o">.</span><span class="n">minalertbalance</span><span class="p">){</span>
+      <span class="n">returnnull</span>
+    <span class="p">}</span><span class="n">valcurTmInMs</span><span class="o">=</span><span class="n">urDtTmInMs</span><span class="o">.</span><span class="n">getDateTimeInMs</span>
+    <span class="o">//</span><span class="n">create</span> <span class="n">new</span> <span class="n">alert</span> <span class="n">history</span> <span class="n">record</span> <span class="ow">and</span> <span class="n">persist</span>
+    <span class="o">//</span><span class="p">(</span><span class="k">if</span> <span class="n">policy</span> <span class="ow">is</span> <span class="n">to</span> <span class="n">keep</span> <span class="n">only</span> <span class="n">one</span><span class="p">,</span> <span class="n">this</span> <span class="n">will</span> <span class="n">replace</span> <span class="n">existing</span> <span class="n">one</span><span class="p">)</span>
+    <span class="o">//</span><span class="n">CustAlertHistory</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">withalertdttminms</span><span class="p">(</span>
+    <span class="n">curTmInMs</span><span class="p">)</span><span class="o">.</span><span class="n">withalerttype</span><span class="p">(</span><span class="s2">&quot;lowbalancealert&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">Save</span>
+    <span class="o">//</span><span class="n">results</span>
+    <span class="n">newLowBalanceAlertResult</span><span class="p">()</span><span class="o">.</span><span class="n">withCustId</span><span class="p">(</span><span class="n">rcntTxn</span><span class="o">.</span><span class="n">get</span><span class="o">.</span><span class="n">custid</span><span class="p">)</span><span class="o">.</span><span class="n">withBranchId</span><span class="p">(</span><span class="n">rcntTxn</span><span class="o">.</span><span class="n">get</span><span class="o">.</span><span class="n">branchid</span><span class="p">)</span><span class="o">.</span><span class="n">withAccNo</span><span class="p">(</span>
+          <span class="n">rcntTxn</span><span class="o">.</span><span class="n">get</span><span class="o">.</span><span class="n">accno</span><span class="p">)</span><span class="o">.</span><span class="n">withCurBalance</span><span class="p">(</span><span class="n">rcntTxn</span><span class="o">.</span><span class="n">get</span><span class="o">.</span><span class="n">balance</span><span class="p">)</span><span class="o">.</span><span class="n">withAlertType</span><span class="p">(</span><span class="s2">&quot;lowBalanceAlert&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">withTriggerTime</span><span class="p">(</span><span class="n">curTmInMs</span><span class="p">)</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/java-scala/scala-model.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/java-scala/scala-model.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
