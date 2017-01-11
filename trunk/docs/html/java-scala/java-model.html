@@ -1,0 +1,391 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Creating a Java Model &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="creating-a-java-model">
+<span id="java-scala-guide-java"></span><h1>Creating a Java Model<a class="headerlink" href="#creating-a-java-model" title="Permalink to this headline">¶</a></h1>
+<p>A model written in Java has some structural differences
+because of the inherent differences between
+the Scala and Java programming languages,
+and the fact that the engine is implemented in Scala.
+To keep track, here are some important steps to follow:</p>
+<ol class="arabic simple">
+<li>Make sure the model has the objects and classes that are required for Java models.</li>
+<li>To access the history of messages and container values or add the messages and containers to the data store, use JavaRDD methods.</li>
+<li>Encapsulate the model in a single file (.java).</li>
+</ol>
+<div class="section" id="sample-java-model">
+<h2>Sample Java model<a class="headerlink" href="#sample-java-model" title="Permalink to this headline">¶</a></h2>
+<p>An example of a Java model can be seen here:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">package</span> <span class="n">com</span><span class="o">.</span><span class="n">ligadata</span><span class="o">.</span><span class="n">kamanja</span><span class="o">.</span><span class="n">financial</span><span class="p">;</span>
+
+<span class="kn">import</span> <span class="nn">scala.Option</span><span class="p">;</span>
+
+<span class="kn">import</span> <span class="nn">com.ligadata.KamanjaBase.</span><span class="o">*</span><span class="p">;</span>
+<span class="kn">import</span> <span class="nn">System.</span><span class="o">*</span><span class="p">;</span>
+<span class="n">public</span> <span class="k">class</span> <span class="nc">LowBalanceAlertModel</span> <span class="n">extends</span> <span class="n">ModelBase</span> <span class="p">{</span>
+  <span class="n">static</span> <span class="n">LowBalanceAlertModelObj</span> <span class="n">objSingleton</span> <span class="o">=</span> <span class="n">new</span> <span class="n">LowBalanceAlertModelObj</span><span class="p">();</span>
+  <span class="n">ModelContext</span> <span class="n">mdlCntxt</span><span class="p">;</span>
+
+  <span class="n">public</span> <span class="n">LowBalanceAlertModel</span><span class="p">(</span><span class="n">ModelContext</span> <span class="n">mdlContext</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nb">super</span><span class="p">(</span><span class="n">mdlContext</span><span class="p">,</span> <span class="n">objSingleton</span><span class="p">);</span>
+    <span class="n">mdlCntxt</span> <span class="o">=</span> <span class="n">mdlContext</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="nd">@Override</span>
+  <span class="n">public</span> <span class="n">ModelBaseObj</span> <span class="n">factory</span><span class="p">()</span> <span class="p">{</span>
+    <span class="o">//</span> <span class="n">TODO</span> <span class="n">Auto</span><span class="o">-</span><span class="n">generated</span> <span class="n">method</span> <span class="n">stub</span>
+      <span class="k">return</span> <span class="n">objSingleton</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="nd">@Override</span>
+  <span class="n">public</span> <span class="n">ModelContext</span> <span class="n">modelContext</span><span class="p">()</span> <span class="p">{</span>
+    <span class="o">//</span> <span class="n">TODO</span> <span class="n">Auto</span><span class="o">-</span><span class="n">generated</span> <span class="n">method</span> <span class="n">stub</span>
+    <span class="k">return</span> <span class="n">mdlCntxt</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="n">public</span> <span class="n">ModelResultBase</span> <span class="n">execute</span><span class="p">(</span><span class="n">boolean</span> <span class="n">emitAllResults</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">GlobalPreferences</span> <span class="n">gPref</span> <span class="o">=</span> <span class="p">(</span><span class="n">GlobalPreferences</span><span class="p">)</span> <span class="n">GlobalPreferences</span><span class="o">.</span><span class="n">getRecentOrNew</span><span class="p">(</span><span class="n">new</span> <span class="n">String</span><span class="p">[]{</span><span class="s2">&quot;Type1&quot;</span><span class="p">});</span>  <span class="o">//</span><span class="p">(</span><span class="n">new</span> <span class="n">String</span><span class="p">[]{</span><span class="s2">&quot;Type1&quot;</span><span class="p">});</span>
+    <span class="n">CustPreferences</span> <span class="n">cPref</span> <span class="o">=</span> <span class="p">(</span><span class="n">CustPreferences</span><span class="p">)</span> <span class="n">CustPreferences</span><span class="o">.</span><span class="n">getRecentOrNew</span><span class="p">();</span>
+
+    <span class="k">if</span><span class="p">(</span><span class="n">cPref</span><span class="o">.</span><span class="n">minbalancealertoptout</span><span class="p">())</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="n">null</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="n">RddDate</span> <span class="n">curDtTmInMs</span> <span class="o">=</span> <span class="n">RddDate</span><span class="o">.</span><span class="n">currentGmtDateTime</span><span class="p">();</span>
+    <span class="n">CustAlertHistory</span> <span class="n">alertHistory</span> <span class="o">=</span> <span class="p">(</span><span class="n">CustAlertHistory</span><span class="p">)</span> <span class="n">CustAlertHistory</span><span class="o">.</span><span class="n">getRecentOrNew</span><span class="p">();</span>
+    <span class="k">if</span><span class="p">(</span><span class="n">curDtTmInMs</span><span class="o">.</span><span class="n">timeDiffInHrs</span><span class="p">(</span><span class="n">new</span> <span class="n">RddDate</span><span class="p">(</span><span class="n">alertHistory</span><span class="o">.</span><span class="n">alertdttminms</span><span class="p">()))</span> <span class="o">&lt;</span> <span class="n">gPref</span><span class="o">.</span><span class="n">minalertdurationinhrs</span><span class="p">())</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="n">null</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="n">TransactionMsg</span> <span class="n">rcntTxn</span> <span class="o">=</span> <span class="p">(</span><span class="n">TransactionMsg</span><span class="p">)</span> <span class="n">this</span><span class="o">.</span><span class="n">modelContext</span><span class="p">()</span><span class="o">.</span><span class="n">msg</span><span class="p">();</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">rcntTxn</span><span class="o">.</span><span class="n">balance</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="n">gPref</span><span class="o">.</span><span class="n">minalertbalance</span><span class="p">())</span>
+      <span class="k">return</span> <span class="n">null</span><span class="p">;</span>
+
+    <span class="n">long</span> <span class="n">curTmInMs</span> <span class="o">=</span> <span class="n">curDtTmInMs</span><span class="o">.</span><span class="n">getDateTimeInMs</span><span class="p">();</span>
+    <span class="o">//</span> <span class="n">create</span> <span class="n">new</span> <span class="n">alert</span> <span class="n">history</span> <span class="n">record</span> <span class="ow">and</span> <span class="n">persist</span> <span class="p">(</span><span class="k">if</span> <span class="n">policy</span> <span class="ow">is</span> <span class="n">to</span> <span class="n">keep</span> <span class="n">only</span> <span class="n">one</span><span class="p">,</span> <span class="n">this</span> <span class="n">will</span> <span class="n">replace</span> <span class="n">existing</span> <span class="n">one</span><span class="p">)</span>
+    <span class="n">CustAlertHistory</span><span class="o">.</span><span class="n">build</span><span class="p">()</span><span class="o">.</span><span class="n">withalertdttminms</span><span class="p">(</span><span class="n">curTmInMs</span><span class="p">)</span><span class="o">.</span><span class="n">withalerttype</span><span class="p">(</span><span class="s2">&quot;lowbalancealert&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">Save</span><span class="p">();</span>
+
+    <span class="n">Result</span><span class="p">[]</span> <span class="n">actualResult</span> <span class="o">=</span> <span class="p">{</span><span class="n">new</span> <span class="n">Result</span><span class="p">(</span><span class="s2">&quot;Customer ID&quot;</span><span class="p">,</span><span class="n">rcntTxn</span><span class="o">.</span><span class="n">custid</span><span class="p">()),</span>
+      <span class="n">new</span> <span class="n">Result</span><span class="p">(</span><span class="s2">&quot;Branch ID&quot;</span><span class="p">,</span><span class="n">rcntTxn</span><span class="o">.</span><span class="n">branchid</span><span class="p">()),</span><span class="n">new</span> <span class="n">Result</span><span class="p">(</span><span class="s2">&quot;Account No.&quot;</span><span class="p">,</span><span class="n">rcntTxn</span><span class="o">.</span><span class="n">accno</span><span class="p">()),</span>
+      <span class="n">new</span> <span class="n">Result</span><span class="p">(</span><span class="s2">&quot;Current Balance&quot;</span><span class="p">,</span><span class="n">rcntTxn</span><span class="o">.</span><span class="n">balance</span><span class="p">()),</span><span class="n">new</span> <span class="n">Result</span><span class="p">(</span><span class="s2">&quot;Alert Type&quot;</span><span class="p">,</span><span class="s2">&quot;lowbalancealert&quot;</span><span class="p">),</span>
+      <span class="n">new</span> <span class="n">Result</span><span class="p">(</span><span class="s2">&quot;Trigger Time&quot;</span><span class="p">,</span><span class="n">new</span> <span class="n">RddDate</span><span class="p">(</span><span class="n">curTmInMs</span><span class="p">)</span><span class="o">.</span><span class="n">toString</span><span class="p">())</span>
+  <span class="p">};</span>
+  <span class="k">return</span> <span class="n">new</span> <span class="n">MappedModelResults</span><span class="p">()</span><span class="o">.</span><span class="n">withResults</span><span class="p">(</span><span class="n">actualResult</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="o">/**</span>
+<span class="o">*</span> <span class="nd">@param</span> <span class="n">inTxnContext</span>
+<span class="o">*/</span>
+
+<span class="n">public</span> <span class="n">boolean</span> <span class="n">minBalanceAlertOptout</span><span class="p">(</span><span class="n">JavaRDD</span><span class="o">&lt;</span><span class="n">custPreferences</span><span class="o">&gt;</span> <span class="n">pref</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="n">public</span> <span class="n">static</span> <span class="k">class</span> <span class="nc">LowBalanceAlertModelObj</span> <span class="n">implements</span> <span class="n">ModelBaseObj</span> <span class="p">{</span>
+  <span class="n">public</span> <span class="n">boolean</span> <span class="n">IsValidMessage</span><span class="p">(</span><span class="n">MessageContainerBase</span> <span class="n">msg</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">msg</span> <span class="n">instanceof</span> <span class="n">TransactionMsg</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="n">public</span> <span class="n">ModelBase</span> <span class="n">CreateNewModel</span><span class="p">(</span><span class="n">ModelContext</span> <span class="n">mdlContext</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">new</span> <span class="n">LowBalanceAlertModel</span><span class="p">(</span><span class="n">mdlContext</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="n">public</span> <span class="n">String</span> <span class="n">ModelName</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="s2">&quot;LowBalanceAlert&quot;</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="n">public</span> <span class="n">String</span> <span class="n">Version</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="s2">&quot;0.0.1&quot;</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="n">public</span> <span class="n">ModelResultBase</span> <span class="n">CreateResultObject</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">new</span> <span class="n">MappedModelResults</span><span class="p">();</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>A Java custom model has the following:</p>
+<ul class="simple">
+<li>A class that extends a ModelBase trait –
+a class that executes actual logic.
+The entry point into the logic is the execute method.</li>
+<li>A class that extends a ModelResultBase trait –
+a MappedModelResult helper class implements a ModelResultBase
+to quickly output key/value results,
+but a developer may want to implement his/her own.</li>
+<li>An object that extends a BaseModelObj trait –
+a singleton class used by the engine
+in the lifecycle of the instantiated model objects;
+in Java, this is an inner static class within the main model class.</li>
+</ul>
+<p>This model uses a MappedModelResult class to simplify the code.</p>
+</div>
+<div class="section" id="accessing-rdd-factories-from-java-custom-models">
+<h2>Accessing RDD Factories from Java Custom Models<a class="headerlink" href="#accessing-rdd-factories-from-java-custom-models" title="Permalink to this headline">¶</a></h2>
+<p>Because all the code is generated in Scala,
+a message factory Java class was generated
+to assist Java programmers in accessing its history.
+For example, for the TransactionMsg message in the example,
+a TransactionMsgFactory.java was created
+that wraps around the Scala RDD factories
+in the TransactionMsg.scala Scala class.
+Here is the example.
+To get a JavaRDD, call the following method in the TransactionMsgFactory.java.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>public static JavaRDD getRDD(TimeRange tmRange) {
+  return TransactionMsg$.MODULE$.getRDD(tmRange).toJavaRDD();
+}
+</pre></div>
+</div>
+</div>
+<div class="section" id="passing-explicit-functions-to-rdd-methods">
+<h2>Passing Explicit Functions to RDD Methods<a class="headerlink" href="#passing-explicit-functions-to-rdd-methods" title="Permalink to this headline">¶</a></h2>
+<p>This is not currently supported in Java 7
+(will be available in Java 8 once it is certified for the product).
+So, a number of interfaces have been provided
+that can be implemented by an inner Java class (contained within the model),
+and then an instantiated object of that class is passed to the RDD method.</p>
+<p>The interfaces that are provided are listed here
+and the developer must choose the appropriate interface to implement
+based on the RDD method that he/she wishes to use.</p>
+<p>All the interfaces are defined in the
+com.ligadata.KamanjaBase.api.java.function package:</p>
+<ul class="simple">
+<li>Function1.java</li>
+<li>Function2.java</li>
+<li>Function3.java</li>
+<li>FlatMapFunction1.java</li>
+<li>FlatMapFunction2.java</li>
+<li>FlatMapFunction3.java</li>
+<li>PairFunction.java</li>
+</ul>
+<p>For example, a FlatMapFunction1.java interface is used
+to pass in a function to an RDD method
+that evaluates an input of type and returns a collection of type.</p>
+<p>Here is the definition:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">public</span> <span class="n">interface</span> <span class="n">FlatMapFunction1</span><span class="o">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">T</span><span class="p">,</span> <span class="n">R</span><span class="o">&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="p">{</span>
+  <span class="n">public</span> <span class="n">Iterable</span> <span class="n">call</span><span class="p">(</span><span class="n">T</span> <span class="n">t</span><span class="p">)</span> <span class="n">throws</span> <span class="ne">Exception</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="modelinstance-factory">
+<h2>ModelInstance/Factory<a class="headerlink" href="#modelinstance-factory" title="Permalink to this headline">¶</a></h2>
+<p>Kamanja has enhancements to the way model instantiation is handled
+when processing messages (new in v1.2).
+This includes the ability to define a Java/Scala model as reusable.</p>
+<p>Take a look at COPDRiskAssessment.java for these enhancements.</p>
+</div>
+<div class="section" id="once-per-node-initialization">
+<h2>Once-per-node Initialization<a class="headerlink" href="#once-per-node-initialization" title="Permalink to this headline">¶</a></h2>
+<p>Kamanja uses a factory, called ModelInstanceFactory,
+in order to maintain the creation of model instances
+(called ModelInstance).
+The init function of the ModelInstanceFactory
+is called only one time per Kamanja node when the model is first invoked,
+regardless of the number of partitions being used by Kamanja
+or the number of ModelInstances being created.</p>
+<p>Leveraging this once-only initialization is best used
+when large amounts of static (unchanging) data
+is being referenced from the database
+or expensive operations that need to only be performed once are being executed.
+This initialization happens only once
+when the engine loads the ModelInstanceFactory
+(COPDRiskAssessmentFactory.init(txnCtxt)
+is invoked only one time (per node in the cluster)).</p>
+<p>In this particular example,
+a collection of medical codes exists belonging to five different categories:
+smoking, chronic cough, dyspnea, chronic sputum, and environmental exposure.
+The init function calls getRDD to retrieve the codes
+followed by several iterators going through each RDD object
+and collecting the medical codes from the RDD objects.</p>
+<p>Below is a modified example of the medical sample application in Java:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">public</span> <span class="n">static</span> <span class="k">class</span> <span class="nc">COPDRiskAssessmentFactory</span> <span class="n">extends</span> <span class="n">ModelInstanceFactory</span> <span class="p">{</span>
+  <span class="o">//</span> <span class="n">Lookup</span> <span class="n">Arrays</span>
+  <span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">coughCodes</span> <span class="o">=</span> <span class="n">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+  <span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">dyspnoeaCodes</span> <span class="o">=</span> <span class="n">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+  <span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">envCodes</span> <span class="o">=</span> <span class="n">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+  <span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">smokeCodes</span> <span class="o">=</span> <span class="n">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+  <span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">sputumCodes</span> <span class="o">=</span> <span class="n">new</span> <span class="n">ArrayList</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+
+  <span class="n">public</span> <span class="n">COPDRiskAssessmentFactory</span><span class="p">(</span><span class="n">ModelDef</span> <span class="n">modelDef</span><span class="p">,</span> <span class="n">NodeContext</span> <span class="n">nodeContext</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nb">super</span><span class="p">(</span><span class="n">modelDef</span><span class="p">,</span> <span class="n">nodeContext</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="n">public</span> <span class="n">void</span> <span class="n">init</span><span class="p">(</span><span class="n">TransactionContext</span> <span class="n">txnContext</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">System</span><span class="o">.</span><span class="n">out</span><span class="o">.</span><span class="n">println</span><span class="p">(</span><span class="s2">&quot;==============================&gt;Factory is initializing&quot;</span><span class="p">);</span>
+
+    <span class="o">//</span> <span class="n">Getting</span> <span class="n">container</span> <span class="n">RDD</span> <span class="n">objects</span>
+    <span class="n">JavaRDD</span><span class="o">&lt;</span><span class="n">coughCodes</span><span class="o">&gt;</span> <span class="n">coughCodesRDD</span> <span class="o">=</span> <span class="n">CoughCodesFactory</span><span class="o">.</span><span class="n">rddObject</span><span class="o">.</span><span class="n">getRDD</span><span class="p">();</span>
+    <span class="n">JavaRDD</span><span class="o">&lt;</span><span class="n">dyspnoeaCodes</span><span class="o">&gt;</span> <span class="n">dyspnoeaCodesRDD</span> <span class="o">=</span> <span class="n">DyspnoeaCodesFactory</span><span class="o">.</span><span class="n">rddObject</span><span class="o">.</span><span class="n">getRDD</span><span class="p">();</span>
+    <span class="n">JavaRDD</span><span class="o">&lt;</span><span class="n">envCodes</span><span class="o">&gt;</span> <span class="n">envCodesRDD</span> <span class="o">=</span> <span class="n">EnvCodesFactory</span><span class="o">.</span><span class="n">rddObject</span><span class="o">.</span><span class="n">getRDD</span><span class="p">();</span>
+    <span class="n">JavaRDD</span><span class="o">&lt;</span><span class="n">smokeCodes</span><span class="o">&gt;</span> <span class="n">smokeCodesRDD</span> <span class="o">=</span> <span class="n">SmokeCodesFactory</span><span class="o">.</span><span class="n">rddObject</span><span class="o">.</span><span class="n">getRDD</span><span class="p">();</span>
+    <span class="n">JavaRDD</span><span class="o">&lt;</span><span class="n">sputumCodes</span><span class="o">&gt;</span> <span class="n">sputumCodesRDD</span> <span class="o">=</span> <span class="n">SputumCodesFactory</span><span class="o">.</span><span class="n">rddObject</span><span class="o">.</span><span class="n">getRDD</span><span class="p">();</span>
+
+    <span class="o">//</span> <span class="n">Taking</span> <span class="nb">all</span> <span class="n">icd9</span> <span class="n">codes</span> <span class="kn">from</span> <span class="nn">the</span> <span class="n">containers</span> <span class="ow">and</span> <span class="n">placing</span> <span class="n">them</span> <span class="ow">in</span> <span class="n">an</span> <span class="n">ArrayList</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">Iterator</span><span class="o">&lt;</span><span class="n">coughCodes</span><span class="o">&gt;</span> <span class="n">coughCodeIt</span> <span class="o">=</span> <span class="n">coughCodesRDD</span><span class="o">.</span><span class="n">iterator</span><span class="p">();</span> <span class="n">coughCodeIt</span><span class="o">.</span><span class="n">hasNext</span><span class="p">();</span> <span class="p">)</span> <span class="p">{</span>
+      <span class="n">coughCodes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">coughCodeIt</span><span class="o">.</span><span class="n">next</span><span class="p">()</span><span class="o">.</span><span class="n">icd9code</span><span class="p">());</span>
+    <span class="p">}</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="n">Iterator</span><span class="o">&lt;</span><span class="n">dyspnoeaCodes</span><span class="o">&gt;</span> <span class="n">dyspCodeIt</span> <span class="o">=</span> <span class="n">dyspnoeaCodesRDD</span><span class="o">.</span><span class="n">iterator</span><span class="p">();</span> <span class="n">dyspCodeIt</span><span class="o">.</span><span class="n">hasNext</span><span class="p">();</span> <span class="p">)</span> <span class="p">{</span>
+      <span class="n">dyspnoeaCodes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">dyspCodeIt</span><span class="o">.</span><span class="n">next</span><span class="p">()</span><span class="o">.</span><span class="n">icd9code</span><span class="p">());</span>
+    <span class="p">}</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="n">Iterator</span><span class="o">&lt;</span><span class="n">envCodes</span><span class="o">&gt;</span> <span class="n">envCodeIt</span> <span class="o">=</span> <span class="n">envCodesRDD</span><span class="o">.</span><span class="n">iterator</span><span class="p">();</span> <span class="n">envCodeIt</span><span class="o">.</span><span class="n">hasNext</span><span class="p">();</span> <span class="p">)</span> <span class="p">{</span>
+      <span class="n">envCodes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">envCodeIt</span><span class="o">.</span><span class="n">next</span><span class="p">()</span><span class="o">.</span><span class="n">icd9code</span><span class="p">());</span>
+    <span class="p">}</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="n">Iterator</span><span class="o">&lt;</span><span class="n">smokeCodes</span><span class="o">&gt;</span> <span class="n">smokeCodeIt</span> <span class="o">=</span> <span class="n">smokeCodesRDD</span><span class="o">.</span><span class="n">iterator</span><span class="p">();</span> <span class="n">smokeCodeIt</span><span class="o">.</span><span class="n">hasNext</span><span class="p">();</span> <span class="p">)</span> <span class="p">{</span>
+      <span class="n">smokeCodes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">smokeCodeIt</span><span class="o">.</span><span class="n">next</span><span class="p">()</span><span class="o">.</span><span class="n">icd9code</span><span class="p">());</span>
+    <span class="p">}</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="n">Iterator</span><span class="o">&lt;</span><span class="n">sputumCodes</span><span class="o">&gt;</span> <span class="n">sputumCodeIt</span> <span class="o">=</span> <span class="n">sputumCodesRDD</span><span class="o">.</span><span class="n">iterator</span><span class="p">();</span> <span class="n">sputumCodeIt</span><span class="o">.</span><span class="n">hasNext</span><span class="p">();</span> <span class="p">)</span> <span class="p">{</span>
+      <span class="n">sputumCodes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">sputumCodeIt</span><span class="o">.</span><span class="n">next</span><span class="p">()</span><span class="o">.</span><span class="n">icd9code</span><span class="p">());</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+              <span class="o">...</span>
+</pre></div>
+</div>
+<p>ModelInstances are created by the engine through ModelInstanceFactory
+when the engine requires ModelInstances.
+ModelInstances are created and initialized
+when the engine gets the first message for each partition.
+If ModelInstanceFactory.isModelInstanceReusable() returns true,
+the engine reuses the same ModelInstances partition
+for all incomining messages for that partition.
+If ModelInstanceFactory.isModelInstanceReusable() returns false,
+the engine creates and initializes the new ModelInstances
+for each incomining message.</p>
+<p>The following block of code shows an example
+of retrieving the codes that were initialized by the Factory:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">public</span> <span class="k">class</span> <span class="nc">COPDRiskAssessment</span> <span class="n">extends</span> <span class="n">ModelInstance</span> <span class="p">{</span>
+  <span class="n">public</span> <span class="n">COPDRiskAssessment</span><span class="p">(</span><span class="n">ModelInstanceFactory</span> <span class="n">factory</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nb">super</span><span class="p">(</span><span class="n">factory</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="n">public</span> <span class="n">void</span> <span class="n">init</span><span class="p">(</span><span class="n">String</span> <span class="n">instanceMetadata</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">System</span><span class="o">.</span><span class="n">out</span><span class="o">.</span><span class="n">println</span><span class="p">(</span><span class="s2">&quot;~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~&gt;Model instance initializing&quot;</span> <span class="o">+</span> <span class="n">instanceMetadata</span><span class="p">);</span>
+    <span class="n">COPDRiskAssessmentFactory</span> <span class="n">fact</span> <span class="o">=</span> <span class="p">(</span><span class="n">COPDRiskAssessmentFactory</span><span class="p">)</span> <span class="n">getModelInstanceFactory</span><span class="p">();</span>
+    <span class="n">coughCodes</span> <span class="o">=</span> <span class="n">fact</span><span class="o">.</span><span class="n">coughCodes</span><span class="p">;</span>
+    <span class="n">dyspnoeaCodes</span> <span class="o">=</span> <span class="n">fact</span><span class="o">.</span><span class="n">dyspnoeaCodes</span><span class="p">;</span>
+    <span class="n">envCodes</span> <span class="o">=</span> <span class="n">fact</span><span class="o">.</span><span class="n">envCodes</span><span class="p">;</span>
+    <span class="n">smokeCodes</span> <span class="o">=</span> <span class="n">fact</span><span class="o">.</span><span class="n">smokeCodes</span><span class="p">;</span>
+    <span class="n">sputumCodes</span> <span class="o">=</span> <span class="n">fact</span><span class="o">.</span><span class="n">sputumCodes</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="o">...</span>
+</pre></div>
+</div>
+<p>In the init function shown,
+COPDRiskAssessmentFactory fact = (COPDRiskAssessmentFactory)
+getModelInstanceFactory();, is being used to retrieve the factory class.
+Local collections are set that are defined elsewhere
+in COPDRiskAssessment to hold the codes that were initialized by the factory.
+Now, whenever those codes are needed by future ModelInstances,
+they can simply refer to the factory
+that was previously created and access the codes that were already initialized.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Creating a Java Model</a><ul>
+<li><a class="reference internal" href="#sample-java-model">Sample Java model</a></li>
+<li><a class="reference internal" href="#accessing-rdd-factories-from-java-custom-models">Accessing RDD Factories from Java Custom Models</a></li>
+<li><a class="reference internal" href="#passing-explicit-functions-to-rdd-methods">Passing Explicit Functions to RDD Methods</a></li>
+<li><a class="reference internal" href="#modelinstance-factory">ModelInstance/Factory</a></li>
+<li><a class="reference internal" href="#once-per-node-initialization">Once-per-node Initialization</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/java-scala/java-model.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/java-scala/java-model.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

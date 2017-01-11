@@ -1,0 +1,661 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>kamanja &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="kamanja">
+<span id="kamanja-command-ref"></span><h1>kamanja<a class="headerlink" href="#kamanja" title="Permalink to this headline">¶</a></h1>
+<p>The <strong>kamanja</strong> command is used to manage metadata
+and other Kamanja engine maintenance tasks.</p>
+<div class="section" id="syntax">
+<h2>Syntax<a class="headerlink" href="#syntax" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">kamanja</span> <span class="o">&lt;</span><span class="n">config</span> <span class="n">file</span> <span class="n">path</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">command</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">command</span> <span class="n">arguments</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<div class="section" id="message-operations">
+<h3>Message operations<a class="headerlink" href="#message-operations" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">kamanja</span> <span class="n">add</span> <span class="n">message</span> <span class="nb">input</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span> <span class="n">TENANTID</span>   <span class="n">Properties</span><span class="o">/</span><span class="n">PropertiesFile</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">update</span> <span class="n">message</span> <span class="nb">input</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span> <span class="n">TENANTID</span>  <span class="n">Properties</span><span class="o">/</span><span class="n">PropertiesFile</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">get</span> <span class="n">message</span> <span class="nb">input</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span> <span class="n">TENANTID</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">get</span> <span class="nb">all</span> <span class="n">messages</span> <span class="n">TENANTID</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">remove</span> <span class="n">message</span> <span class="nb">input</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="model-operations">
+<h3>Model operations<a class="headerlink" href="#model-operations" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">kamanja</span> <span class="n">add</span> <span class="n">model</span> <span class="n">kpmml</span> <span class="nb">input</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span> <span class="n">TENANTID</span>   <span class="n">Properties</span><span class="o">/</span><span class="n">PropertiesFile</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">add</span> <span class="n">model</span> <span class="n">pmml</span> <span class="nb">input</span> <span class="n">MODELNAME</span> <span class="n">namespace</span><span class="o">.</span><span class="n">name</span> <span class="n">MODELVERSION</span> <span class="n">nn</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">nn</span> <span class="n">MESSAGENAME</span> <span class="n">namespace</span><span class="o">.</span><span class="n">name</span> <span class="n">TENANTID</span>  <span class="n">Properties</span><span class="o">/</span><span class="n">PropertiesFile</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">add</span> <span class="n">model</span> <span class="n">java</span> <span class="nb">input</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>  <span class="n">TENANTID</span>  <span class="n">Properties</span><span class="o">/</span><span class="n">PropertiesFile</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">add</span> <span class="n">model</span> <span class="n">scala</span> <span class="nb">input</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span> <span class="n">TENANTID</span>  <span class="n">Properties</span><span class="o">/</span><span class="n">PropertiesFile</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">add</span> <span class="n">model</span> <span class="n">jtm</span> <span class="nb">input</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span> <span class="n">TENANTID</span>  <span class="n">Properties</span><span class="o">/</span><span class="n">PropertiesFile</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">get</span> <span class="n">model</span> <span class="nb">input</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span> <span class="n">TENANTID</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">get</span> <span class="nb">all</span> <span class="n">models</span> <span class="n">TENANTID</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">remove</span> <span class="n">model</span> <span class="nb">input</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">update</span> <span class="n">model</span> <span class="n">kpmml</span> <span class="nb">input</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span> <span class="n">TENANTID</span>  <span class="n">Properties</span><span class="o">/</span><span class="n">PropertiesFile</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">update</span> <span class="n">model</span> <span class="n">pmml</span> <span class="nb">input</span> <span class="n">MODELNAME</span> <span class="n">namespace</span><span class="o">.</span><span class="n">name</span> <span class="n">MODELVERSION</span> <span class="n">nn</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">nn</span> <span class="n">TENANTID</span>  <span class="n">Properties</span><span class="o">/</span><span class="n">PropertiesFile</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">update</span> <span class="n">model</span> <span class="n">scala</span> <span class="nb">input</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span> <span class="n">TENANTID</span>  <span class="n">Properties</span><span class="o">/</span><span class="n">PropertiesFile</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">update</span> <span class="n">model</span> <span class="n">java</span> <span class="nb">input</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span> <span class="n">TENANTID</span>  <span class="n">Properties</span><span class="o">/</span><span class="n">PropertiesFile</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">update</span> <span class="n">model</span> <span class="n">jtm</span> <span class="nb">input</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span> <span class="n">TENANTID</span>  <span class="n">Properties</span><span class="o">/</span><span class="n">PropertiesFile</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">deactivate</span> <span class="n">model</span> <span class="nb">input</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">activate</span> <span class="n">model</span> <span class="nb">input</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="container-operations">
+<h3>Container operations<a class="headerlink" href="#container-operations" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">kamanja</span> <span class="n">add</span> <span class="n">container</span> <span class="nb">input</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span> <span class="n">TENANTID</span>  <span class="n">Properties</span><span class="o">/</span><span class="n">PropertiesFile</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">update</span> <span class="n">container</span> <span class="nb">input</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span> <span class="n">TENANTID</span>  <span class="n">Properties</span><span class="o">/</span><span class="n">PropertiesFile</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">get</span> <span class="n">container</span> <span class="nb">input</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span> <span class="n">TENANTID</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">get</span> <span class="nb">all</span> <span class="n">containers</span> <span class="n">TENANTID</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">remove</span> <span class="n">container</span> <span class="nb">input</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="congurations-operations">
+<h3>Congurations operations<a class="headerlink" href="#congurations-operations" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">kamanja</span> <span class="n">upload</span> <span class="n">cluster</span> <span class="n">config</span> <span class="nb">input</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">upload</span> <span class="nb">compile</span> <span class="n">config</span> <span class="nb">input</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">dump</span> <span class="nb">all</span> <span class="n">cfg</span> <span class="n">objects</span>
+<span class="n">kamanja</span> <span class="n">remove</span> <span class="n">engine</span> <span class="n">config</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="jar-operations">
+<h3>Jar operations<a class="headerlink" href="#jar-operations" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">kamanja</span> <span class="n">upload</span> <span class="n">jar</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="cluster-metadata-and-adapter-operations">
+<h3>Cluster, metadata and adapter operations<a class="headerlink" href="#cluster-metadata-and-adapter-operations" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">kamanja</span> <span class="n">dump</span> <span class="n">metadata</span>
+<span class="n">kamanja</span> <span class="n">dump</span> <span class="nb">all</span> <span class="n">nodes</span>
+<span class="n">kamanja</span> <span class="n">dump</span> <span class="nb">all</span> <span class="n">clusters</span>
+<span class="n">kamanja</span> <span class="n">dump</span> <span class="nb">all</span> <span class="n">cluster</span> <span class="n">cfgs</span>
+<span class="n">kamanja</span> <span class="n">dump</span> <span class="nb">all</span> <span class="n">adapters</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="kamanja-engine-operations">
+<h3>Kamanja engine operations<a class="headerlink" href="#kamanja-engine-operations" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">kamanja</span> <span class="n">start</span> <span class="n">jvmoptions</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span> <span class="n">Properties</span><span class="o">/</span><span class="n">PropertiesFile</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+<span class="n">kamanja</span> <span class="n">start</span> <span class="o">-</span><span class="n">v</span> <span class="p">(</span><span class="k">for</span> <span class="n">verbose</span><span class="p">)</span> <span class="n">jvmoptions</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span> <span class="n">Properties</span><span class="o">/</span><span class="n">PropertiesFile</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="topic-operations">
+<h3>Topic operations<a class="headerlink" href="#topic-operations" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">kamanja</span> <span class="n">watch</span> <span class="n">status</span> <span class="n">queue</span>
+<span class="n">kamanja</span> <span class="n">push</span> <span class="n">data</span>
+<span class="n">kamanja</span> <span class="n">create</span> <span class="n">queues</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="web-service">
+<h3>Web service<a class="headerlink" href="#web-service" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">kamanja</span> <span class="n">start</span> <span class="n">jvmoptions</span><span class="p">(</span><span class="n">optional</span><span class="p">)</span> <span class="n">webservice</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="adapter-message-bindings">
+<h3>Adapter Message Bindings<a class="headerlink" href="#adapter-message-bindings" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">kamanja</span> <span class="n">add</span> <span class="n">adaptermessagebinding</span> <span class="n">FROMFILE</span> <span class="nb">input</span>
+<span class="n">kamanja</span> <span class="n">add</span> <span class="n">adaptermessagebinding</span> <span class="n">FROMSTRING</span> <span class="nb">input</span>
+<span class="n">kamanja</span> <span class="n">remove</span> <span class="n">adaptermessagebinding</span> <span class="n">KEY</span> <span class="s1">&#39;,,&#39;</span>
+<span class="n">kamanja</span> <span class="nb">list</span> <span class="n">adaptermessagebindings</span>
+<span class="n">kamanja</span> <span class="nb">list</span> <span class="n">adaptermessagebindings</span> <span class="n">ADAPTERFILTER</span>
+<span class="n">kamanja</span> <span class="nb">list</span> <span class="n">adaptermessagebindings</span> <span class="n">MESSAGEFILTER</span>
+<span class="n">kamanja</span> <span class="nb">list</span> <span class="n">adaptermessagebindings</span> <span class="n">SERIALIZERFILTER</span>
+<span class="n">kamanja</span> <span class="n">get</span> <span class="n">typebyschemaid</span> <span class="n">SCHEMAID</span>
+<span class="n">kamanja</span> <span class="n">get</span> <span class="n">typebyelementid</span> <span class="n">ELEMENTID</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="general-operations">
+<h3>General operations<a class="headerlink" href="#general-operations" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">kamanja</span> <span class="o">--</span><span class="n">version</span>
+<span class="n">bash</span> <span class="n">kamanja</span> <span class="n">stop</span>
+<span class="n">kamanja</span> <span class="n">watch</span> <span class="nb">input</span> <span class="n">queue</span>
+<span class="n">kamanja</span> <span class="n">watch</span> <span class="n">output</span> <span class="n">queue</span>
+<span class="n">kamanja</span> <span class="n">watch</span> <span class="n">failed</span> <span class="n">events</span> <span class="n">queue</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="options-and-arguments">
+<h2>Options and arguments<a class="headerlink" href="#options-and-arguments" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<p>The config file refers to the MetadataAPI configuration properties file
+that describes the Kamanja metadata store and associated values
+needed by the MetadataAPI instance.
+This file, by default, is $KAMANJA_HOME/config/MetadataAPIConfig.properties.
+The command describes the operation requested.
+The remaining values on the Kamanja command-line
+are appropriate arguments for the command specified.</p>
+<p>An example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja add message \
+    $KAMANJA_HOME/input/SampleApplications/metadata/message/beneficiary_Medical.json TENANTID &lt;id&gt;
+</pre></div>
+</div>
+<p>Note Kamanja has basic multi-tenancy (new in v1.4).
+Therefore, every time a container, message, or model is added or updated,
+specify the tenant ID.
+Multi-tenancy allows deployment of more than one use case to a cluster.
+Multiple use cases can exist on the same cluster.</p>
+<div class="section" id="installing-an-application-order-matters">
+<h3>Installing an Application – Order Matters<a class="headerlink" href="#installing-an-application-order-matters" title="Permalink to this headline">¶</a></h3>
+<p>The Kamanja utility typically installs one thing at a time.
+To build an application that is useful, however,
+many things are typically required.
+For a simple custom Java/Scala application,
+configuration files are installed in the following order:</p>
+<ul class="simple">
+<li>Create queues</li>
+<li>Containers</li>
+<li>Messages</li>
+<li>Compile instructions</li>
+<li>Scala/Java model</li>
+</ul>
+<p>Should a container have another container or collection of other containers
+as a field, the field’s type must be added
+before it can be used in the enclosing container declaration.</p>
+<p>For Kamanja PMML applications,
+other kinds of objects may be needed, including function definitions.</p>
+</div>
+</div>
+<div class="section" id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="create-queues">
+<h3>Create queues<a class="headerlink" href="#create-queues" title="Permalink to this headline">¶</a></h3>
+<p>This command creates topics that contain the containers
+and messages to add later:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja create queues
+</pre></div>
+</div>
+</div>
+<div class="section" id="add-commands">
+<h3>Add commands<a class="headerlink" href="#add-commands" title="Permalink to this headline">¶</a></h3>
+<p>The next command adds a container definition (either JSON or XML) from a file.
+When no path argument is supplied,
+a list of the files found at the default location is offered
+and the user may choose one.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; add container \
+  &lt;Container definition path&gt; TENANTID &lt;id&gt;
+</pre></div>
+</div>
+<p>This message adds a message definition (either JSON or XML) from a file.
+When no path argument is supplied,
+a list of the files found at the default location is offered
+and the user may choose one:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; add message \
+  &lt;Message definition path&gt; TENANTID &lt;id&gt;
+</pre></div>
+</div>
+<p>To add a Kamanja kPMML definition from a file:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; add model
+  kpmml &lt;Kamanja kPMML model path&gt; TENANTID &lt;id&gt;
+</pre></div>
+</div>
+<p>This command adds a Kamanja PMML definition (XML) from a file.
+When no path argument is supplied,
+a list of the files found at the default location is offered
+and the user may choose one:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; add model pmml \
+  &lt;Kamanja PMML model path&gt; MODELNAME &lt;model name&gt; \
+  MODELVERSION &lt;model version&gt; MESSAGENAME &lt;message name&gt; TENANTID &lt;id&gt;
+</pre></div>
+</div>
+<p>This command adds a Java model to the metadata.
+When no path argument is supplied,
+a list of the files found at the default location is offered
+and the user may choose one.
+See Java Models for details about Java models.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; add model java
+  &lt;Java model path&gt; TENANTID &lt;id&gt;
+</pre></div>
+</div>
+<p>This command adds a Scala model to the metadata.
+When no path argument is supplied,
+a list of the files found at the default location is offered
+and the user may choose one.
+See Scala Models for details about Scala models.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; add model scala
+  &lt;Scala model path&gt; TENANTID &lt;id&gt;
+</pre></div>
+</div>
+<p>This command adds a <a class="reference internal" href="../ligapedia/g-m/jtm.html#jtm-term"><span class="std std-ref">JTM</span></a>.</p>
+<p>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; add model jtm &lt;JTM path&gt; TENANTID &lt;id&gt;</p>
+<p>Add a cluster configuration file:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; \
+  upload cluster config &lt;Cluster configuration path&gt;
+</pre></div>
+</div>
+<p>Note: The upload command word is used for historical reasons.
+The <span class="xref std std-ref">ClusterConfig.json</span> file
+is not actually copied to any other servers.
+The JSON is loaded in the local data store.
+When Kamanja is started,
+it checks for the config information in the local data store.</p>
+<p>This command adds a Java or Scala compile metadata configuration.
+Note that the compile configuration metadata must exist
+before a compile of the corresponding model is attempted.
+When no path argument is supplied,
+a list of the files found at the default location is offered
+and the user may choose one:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; upload compile \
+  config &lt;Compile configuration path&gt;
+</pre></div>
+</div>
+<p>Add the function definition found in the supplied string:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; add function &lt;Function definition string&gt;
+</pre></div>
+</div>
+<p>Add an adapter message binding from a file.
+See message bindings for details about adapter message bindings.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja add adaptermessagebinding FROMFILE &lt;Adapter binding JSON&gt;
+</pre></div>
+</div>
+<p>Add an adapter message binding from a string.
+See message bindings for details about adapter message bindings.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja add adaptermessagebinding FROMSTRING &lt;Adapter binding string&gt;
+</pre></div>
+</div>
+</div>
+<div class="section" id="remove-commands">
+<h3>Remove Commands<a class="headerlink" href="#remove-commands" title="Permalink to this headline">¶</a></h3>
+<p>Remove a message.
+A list of messages is presented from which to choose
+which message should be removed.
+Alternatively, a fully-qualified name (namespace.name.version)
+may be specified on the command-line.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; remove message
+</pre></div>
+</div>
+<p>Remove a model.
+A list of models is presented from which to choose
+which model should be removed.
+Alternatively, a fully-qualified name (namespace.name.version)
+may be specified on the command-line.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; remove model
+</pre></div>
+</div>
+<p>Remove a container.
+A list of containers is presented from which to choose
+which container should be removed.
+Alternatively, a fully-qualified name (namespace.name.version)
+may be specified on the command-line.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; remove container
+</pre></div>
+</div>
+<p>Remove a function.
+A list of functions is presented from which to choose
+which function should be removed.
+Alternatively, a fully-qualified name (namespace.name.version)
+may be specified on the command-line.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; remove function
+</pre></div>
+</div>
+<p>Remove an engine configuration.
+A list of configurations is presented from which to choose
+which node configuration is to be removed.
+Alternatively a fully-qualified name (namespace.name.version)
+may be specified on the command-line.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; remove engine config
+</pre></div>
+</div>
+<p>Remove an adapter message binding.
+See message bindings for details about adapter message bindings.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; \
+  remove adaptermessagebinding
+  KEY ‘&lt;adapter name&gt;,&lt;namespace.msgname&gt;,&lt;namespace.serializername&gt;’
+</pre></div>
+</div>
+</div>
+<div class="section" id="update-commands">
+<h3>Update Commands<a class="headerlink" href="#update-commands" title="Permalink to this headline">¶</a></h3>
+<p>Update a message.
+A list of messages is presented from which to choose
+which message should be updated.
+Alternatively, a message definition file path may be supplied explicitly
+bypassing the menu selection process.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; \
+  update message &lt;command parameters&gt; TENANTID &lt;id&gt;
+</pre></div>
+</div>
+<p>Update a container.
+A list of containers is presented from which to choose
+which container should be updated.
+Alternatively, a container definition file path
+may be supplied explicitly bypassing the menu selection process.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; \
+  update container &lt;command parameters&gt; TENANTID &lt;id&gt;
+</pre></div>
+</div>
+<p>Update a model.
+A list of models is presented from which to choose
+which model should be updated.
+Alternatively, a model definition file path may be supplied explicitly
+bypassing the menu selection process.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; \
+  update model &lt;command parameters&gt; TENANTID &lt;id&gt;
+</pre></div>
+</div>
+<p>Note: If you execute an update model command
+and the does not match the existing , an error message is returned.</p>
+<p>Update a function.  A list of functions is presented
+from which to choose which message should be updated.
+Alternatively, a function definition file path
+may be supplied explicitly bypassing the menu selection process.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; \
+  update function &lt;command parameters&gt;
+</pre></div>
+</div>
+</div>
+<div class="section" id="query-commands">
+<h3>Query Commands<a class="headerlink" href="#query-commands" title="Permalink to this headline">¶</a></h3>
+<p>List message(s).  A list of messages is presented
+from which to choose which message should be listed.
+Alternatively, a message name or part of a message name
+(namespace.name.version) can be supplied
+on the command-line and used to filter the messages.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; get message
+</pre></div>
+</div>
+<p>Get all messages.  List all messages.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; get all messages
+</pre></div>
+</div>
+<p>List model(s).  A list of models is presented
+from which to choose which model should be listed.
+Alternatively, a model name or part of a model name
+(namespace.name.version) can be supplied on the command-line
+and used to filter the models.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; get model
+</pre></div>
+</div>
+<p>Get all models.  List all models.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; get all models
+</pre></div>
+</div>
+<p>List container(s).  A list of containers is presented
+from which to choose which container should be listed.
+Alternatively, a container name or part of a container name
+(namespace.name.version) can be supplied on the command-line
+and used to filter the containers.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; get container
+</pre></div>
+</div>
+<p>Get all containers.  List all containers.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; get all containers
+</pre></div>
+</div>
+<p>List function(s).  A list of functions is presented
+from which to choose which function should be listed.
+Alternatively, a function name or part of a function name
+(namespace.name.version) can be supplied on the command-line
+and used to filter the containers.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; get function
+</pre></div>
+</div>
+<p>Retrieve the message/container of that particular schema ID.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$KAMANJA_HOME/bin/kamanja $KAMANJA_HOME/config/MetadataAPIConfig.properties \
+  get typebyschemaid SCHEMAID 2000001
+</pre></div>
+</div>
+<p>Retrieve message/container/model of the element ID.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$KAMANJA_HOME/bin/kamanja $KAMANJA_HOME/config/MetadataAPIConfig.properties \
+  get typebyelementid ELEMENTID 2000002
+</pre></div>
+</div>
+<p>Retrieves list of adapter message bindings.
+See message bindings for details about adapter message bindings.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja list adaptermessagebindings
+</pre></div>
+</div>
+<p>Retrieves all bindings per adapter name.
+See message bindings for details about adapter message bindings.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja list adaptermessagebindings \
+  ADAPTERFILTER &lt;adapter name&gt;
+</pre></div>
+</div>
+<p>Retrieve all bindings per message name.
+See message bindings for details about adapter message bindings.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja list adaptermessagebindings
+  MESSAGEFILTER &lt;message name&gt;
+</pre></div>
+</div>
+<p>Retrieve all bindings per serializer name.
+See message bindings for details about adapter message bindings.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja list adaptermessagebindings \
+  SERIALIZERFILTER &lt;serializer name&gt;
+</pre></div>
+</div>
+<p>Get the Kamanja version.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja --version
+</pre></div>
+</div>
+</div>
+<div class="section" id="dump-commands">
+<h3>Dump Commands<a class="headerlink" href="#dump-commands" title="Permalink to this headline">¶</a></h3>
+<p>Dump all functions known in the metadata.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; dump all functions
+</pre></div>
+</div>
+<p>Dump all metadata information configurations
+for custom Java/Scala models known in the metadata.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; dump all cfg objects
+</pre></div>
+</div>
+<p>Dump all metadata.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; dump metadata
+</pre></div>
+</div>
+<p>Dump all nodes in some cluster configuration.
+A list of configurations is presented from which to choose.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; dump all nodes
+</pre></div>
+</div>
+<p>Dump all clusters known in the system,
+including their cluster node configurations.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; dump all clusters
+</pre></div>
+</div>
+<p>Similar to dump all clusters but excludes the cluster node information.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; dump all cluster cfgs
+</pre></div>
+</div>
+<p>Dump the adapter metadata for every adapter known in the system.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; dump all adapters
+</pre></div>
+</div>
+</div>
+<div class="section" id="administrative-commands">
+<h3>Administrative Commands<a class="headerlink" href="#administrative-commands" title="Permalink to this headline">¶</a></h3>
+<p>Activate a model.
+A list of the inactive models described in the system
+is presented so that the user can choose.
+Alternatively, the name of the model to activate
+may be supplied on the command-line.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; activate model
+</pre></div>
+</div>
+<p>Deactivate a model.
+A list of the active models is presented for consideration.
+One of these active models can be selected for deactivation.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; deactivate model
+</pre></div>
+</div>
+<p>Upload an arbitrary JAR that may be needed
+by an arbitrary component in the cluster.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja &lt;config file path&gt; upload jar
+</pre></div>
+</div>
+<p>Start the Kamanja engine.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja start
+</pre></div>
+</div>
+<p>Start the Kamanja engine in verbose mode.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja start -v
+</pre></div>
+</div>
+<p>Watch the status queue after starting the Kamanja engine.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja watch status queue
+</pre></div>
+</div>
+<p>Push sample data to the Kamanja engine.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja push data
+</pre></div>
+</div>
+<p>Start the web service.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>bash $KAMANJA_HOME/bin/kamanja start web service
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="output">
+<h2>Output<a class="headerlink" href="#output" title="Permalink to this headline">¶</a></h2>
+<p>Executing any of these commands returns an APIResult,
+which contains a message that indicates the proper input
+that is required to retrieve a model.</p>
+<p>If an informative APIResult is not returned,
+post the issue on The Kamanja Forums
+and a LigaData engineer will look into it.</p>
+</div>
+<div class="section" id="see-also">
+<h2>See also<a class="headerlink" href="#see-also" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="../config-ref/MetadataAPIConfig-properties.html#metadataapiconfig-config-ref"><span class="std std-ref">MetadataAPIConfig.properties</span></a>
+configuration file reference</li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">kamanja</a><ul>
+<li><a class="reference internal" href="#syntax">Syntax</a><ul>
+<li><a class="reference internal" href="#message-operations">Message operations</a></li>
+<li><a class="reference internal" href="#model-operations">Model operations</a></li>
+<li><a class="reference internal" href="#container-operations">Container operations</a></li>
+<li><a class="reference internal" href="#congurations-operations">Congurations operations</a></li>
+<li><a class="reference internal" href="#jar-operations">Jar operations</a></li>
+<li><a class="reference internal" href="#cluster-metadata-and-adapter-operations">Cluster, metadata and adapter operations</a></li>
+<li><a class="reference internal" href="#kamanja-engine-operations">Kamanja engine operations</a></li>
+<li><a class="reference internal" href="#topic-operations">Topic operations</a></li>
+<li><a class="reference internal" href="#web-service">Web service</a></li>
+<li><a class="reference internal" href="#adapter-message-bindings">Adapter Message Bindings</a></li>
+<li><a class="reference internal" href="#general-operations">General operations</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#options-and-arguments">Options and arguments</a></li>
+<li><a class="reference internal" href="#usage">Usage</a><ul>
+<li><a class="reference internal" href="#installing-an-application-order-matters">Installing an Application – Order Matters</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#examples">Examples</a><ul>
+<li><a class="reference internal" href="#create-queues">Create queues</a></li>
+<li><a class="reference internal" href="#add-commands">Add commands</a></li>
+<li><a class="reference internal" href="#remove-commands">Remove Commands</a></li>
+<li><a class="reference internal" href="#update-commands">Update Commands</a></li>
+<li><a class="reference internal" href="#query-commands">Query Commands</a></li>
+<li><a class="reference internal" href="#dump-commands">Dump Commands</a></li>
+<li><a class="reference internal" href="#administrative-commands">Administrative Commands</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#output">Output</a></li>
+<li><a class="reference internal" href="#see-also">See also</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/command-ref/kamanja.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/command-ref/kamanja.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

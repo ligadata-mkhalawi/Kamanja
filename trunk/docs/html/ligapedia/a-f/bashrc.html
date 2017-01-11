@@ -1,0 +1,153 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>.bashrc and .bash_profile &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="bashrc-and-bash-profile">
+<span id="bashrc-term"></span><h1>.bashrc and .bash_profile<a class="headerlink" href="#bashrc-and-bash-profile" title="Permalink to this headline">¶</a></h1>
+<p>The Linux <em>.bashrc</em> and the Mac <em>.bash_profile</em> files
+are the scripts that are executed every time
+a new <strong>bash</strong> shell is started interactively.
+When installing Kamanja, you must modify this file
+to define the $KAMANJA_HOME environment variable
+as well as environment variables for other components
+that are required by Kamanja.</p>
+<p>To customize the <em>.bash_profile</em> file on a Mac,
+do the following:</p>
+<ol class="arabic">
+<li><p class="first">Verify that you have admin privleges:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="o">-</span><span class="n">v</span>
+</pre></div>
+</div>
+<p>If the Password prompt is returned,
+You have admin privileges.</p>
+</li>
+<li><p class="first">Edit the file with the sudo command:</p>
+<p>:: sudo vim ~/.bash_profile</p>
+<p>You could instead modify the owner (UID) of the file
+to make yourself owner of the file;
+since the file permissions allow the owner to modify the file,
+this grants you access
+although it does incur some security vulerabilities:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">chown</span> <span class="o">&lt;</span><span class="n">your</span><span class="o">-</span><span class="n">username</span><span class="o">&gt;</span> <span class="o">~/.</span><span class="n">bash_profile</span>
+</pre></div>
+</div>
+</li>
+<li><p class="first">Define the full path that corresponds ot $KAMANJA_HOME
+and export the environment variable:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>export KAMANJA_HOME=&lt;top-directory-of-Kamanja-tree&gt;
+export PATH=$KAMANJA_HOME/bin:$PATH
+</pre></div>
+</div>
+</li>
+</ol>
+<p>For example:</p>
+<blockquote>
+<div><div class="highlight-default"><div class="highlight"><pre><span></span>export KAMANJA_HOME=/Users/userid/Downloads/installKamanja/Kamanja-1.6.0_2.11
+export PATH=$KAMANJA_HOME/bin:$PATH
+</pre></div>
+</div>
+</div></blockquote>
+<p>The new definitions in the file take effect the next time
+you open a new bash shell interactively.
+To force the current shell to recognize the new definitions,
+issue the following command:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">source</span> <span class="o">.</span><span class="n">bash_profile</span>
+</pre></div>
+</div>
+<p>To verify that the $KAMANJA_HOME is set correctly,
+issue the following command and check the output:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>echo $KAMANJA_HOME
+/Users/userid/Downloads/installKamanja/Kamanja-1.6.0_2.11
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/ligapedia/a-f/bashrc.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../../_sources/ligapedia/a-f/bashrc.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

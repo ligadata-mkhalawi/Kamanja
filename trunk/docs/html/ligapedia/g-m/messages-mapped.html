@@ -1,0 +1,261 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Messages, mapped &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="messages-mapped">
+<span id="messages-mapped-term"></span><h1>Messages, mapped<a class="headerlink" href="#messages-mapped" title="Permalink to this headline">¶</a></h1>
+<p>[define mapped messages]</p>
+<p>To use mapped messages:</p>
+<ol class="arabic simple">
+<li>In the message definition, set Fixed:false to indicate a mapped message.</li>
+<li>In the :ref:<a href="#id1"><span class="problematic" id="id2">`</span></a>ClusterConfig.json&lt;clusterconfig-config-ref&gt;,
+under the Adapters section of the configuration,
+change the DataFormat to JSON if using JSON data messages.
+Change the DataFormat to KV if using KV data messages.
+(This configures the input adapter to process data properly).</li>
+</ol>
+<p>So, for example, in the cluster configuration file,
+the following fields may exist if the data format is in KV:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="s2">&quot;DataFormat&quot;</span><span class="p">:</span> <span class="s2">&quot;KV&quot;</span>
+<span class="s2">&quot;AssociatedMessage&quot;</span><span class="p">:</span> <span class="s2">&quot;System.TestMsg&quot;</span>
+<span class="s2">&quot;KeyAndValueDelimiter&quot;</span> <span class="p">:</span> <span class="s2">&quot;x01&quot;</span>
+<span class="s2">&quot;FieldDelimiter&quot;</span> <span class="p">:</span> <span class="s2">&quot;x01&quot;</span>
+<span class="s2">&quot;ValueDelimiter&quot;</span> <span class="p">:</span> <span class="s2">&quot;;&quot;</span>
+
+<span class="s2">&quot;DataFormat&quot;</span><span class="p">:</span> <span class="s2">&quot;KV&quot;</span>
+<span class="s2">&quot;AssociatedMessage&quot;</span><span class="p">:</span> <span class="s2">&quot;System.TestMsg&quot;</span>
+<span class="s2">&quot;KeyAndValueDelimiter&quot;</span> <span class="p">:</span> <span class="s2">&quot;x01&quot;</span>
+<span class="s2">&quot;FieldDelimiter&quot;</span> <span class="p">:</span> <span class="s2">&quot;x01&quot;</span>
+<span class="s2">&quot;ValueDelimiter&quot;</span> <span class="p">:</span> <span class="s2">&quot;;&quot;</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="3">
+<li>Message data must be changed from CSV to either JSON or KV.</li>
+</ol>
+<p>Look at an example mapped message definition in JSON.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;Message&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;NameSpace&quot;</span><span class="p">:</span> <span class="s2">&quot;System&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Name&quot;</span><span class="p">:</span> <span class="s2">&quot;Customer&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;PhysicalName&quot;</span><span class="p">:</span> <span class="s2">&quot;Customer&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Version&quot;</span><span class="p">:</span> <span class="s2">&quot;00.01.00&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Description&quot;</span><span class="p">:</span> <span class="s2">&quot;Basic Customer information&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Fixed&quot;</span><span class="p">:</span> <span class="s2">&quot;false&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Elements&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;Field&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;NameSpace&quot;</span><span class="p">:</span> <span class="s2">&quot;System&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Name&quot;</span><span class="p">:</span> <span class="s2">&quot;CustomerID&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Type&quot;</span><span class="p">:</span> <span class="s2">&quot;System.string&quot;</span>
+                <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;Field&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;NameSpace&quot;</span><span class="p">:</span> <span class="s2">&quot;System&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Name&quot;</span><span class="p">:</span> <span class="s2">&quot;first_name&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Type&quot;</span><span class="p">:</span> <span class="s2">&quot;System.string&quot;</span>
+                <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;Field&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;NameSpace&quot;</span><span class="p">:</span> <span class="s2">&quot;System&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Name&quot;</span><span class="p">:</span> <span class="s2">&quot;last_name&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Type&quot;</span><span class="p">:</span> <span class="s2">&quot;System.string&quot;</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">],</span>
+        <span class="s2">&quot;PartitionKey&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">&quot;CustomerID&quot;</span>
+        <span class="p">],</span>
+        <span class="s2">&quot;PrimaryKey&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">&quot;CustomerID&quot;</span>
+        <span class="p">]</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+<span class="p">{</span>
+    <span class="s2">&quot;Message&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;NameSpace&quot;</span><span class="p">:</span> <span class="s2">&quot;System&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Name&quot;</span><span class="p">:</span> <span class="s2">&quot;Customer&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;PhysicalName&quot;</span><span class="p">:</span> <span class="s2">&quot;Customer&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Version&quot;</span><span class="p">:</span> <span class="s2">&quot;00.01.00&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Description&quot;</span><span class="p">:</span> <span class="s2">&quot;Basic Customer information&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Fixed&quot;</span><span class="p">:</span> <span class="s2">&quot;false&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Elements&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;Field&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;NameSpace&quot;</span><span class="p">:</span> <span class="s2">&quot;System&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Name&quot;</span><span class="p">:</span> <span class="s2">&quot;CustomerID&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Type&quot;</span><span class="p">:</span> <span class="s2">&quot;System.string&quot;</span>
+                <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;Field&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;NameSpace&quot;</span><span class="p">:</span> <span class="s2">&quot;System&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Name&quot;</span><span class="p">:</span> <span class="s2">&quot;first_name&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Type&quot;</span><span class="p">:</span> <span class="s2">&quot;System.string&quot;</span>
+                <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;Field&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;NameSpace&quot;</span><span class="p">:</span> <span class="s2">&quot;System&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Name&quot;</span><span class="p">:</span> <span class="s2">&quot;last_name&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Type&quot;</span><span class="p">:</span> <span class="s2">&quot;System.string&quot;</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">],</span>
+        <span class="s2">&quot;PartitionKey&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">&quot;CustomerID&quot;</span>
+        <span class="p">],</span>
+        <span class="s2">&quot;PrimaryKey&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">&quot;CustomerID&quot;</span>
+          <span class="p">]</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The JSON message data is similar to:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="s2">&quot;System.Customer&quot;</span><span class="p">:</span> <span class="p">{</span>
+  <span class="s2">&quot;CustomerID&quot;</span><span class="p">:</span><span class="s2">&quot;a654ab&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;first_name&quot;</span><span class="p">:</span><span class="s2">&quot;John&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;last_name&quot;</span><span class="p">:</span><span class="s2">&quot;Doe&quot;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="p">{</span>
+<span class="s2">&quot;System.Customer&quot;</span><span class="p">:</span> <span class="p">{</span>
+  <span class="s2">&quot;CustomerID&quot;</span><span class="p">:</span><span class="s2">&quot;a654ab&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;first_name&quot;</span><span class="p">:</span><span class="s2">&quot;John&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;last_name&quot;</span><span class="p">:</span><span class="s2">&quot;Doe&quot;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The KV message data is similar to:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">field1data1field2data2field3data3field4data4field5data5field6data6</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="4">
+<li>The command for SimpleKafkaProducer needs to be changed slightly
+to make inputting of JSON work.
+In the following example, assume the CustomerInfo.json file
+contains some basic customer data:</li>
+</ol>
+<div class="highlight-default"><div class="highlight"><pre><span></span>java -jar SimpleKafkaProducer-0.1.0
+--gz false
+--format json
+--topics “testin_1”
+--threads 1 --topicpartitions 8
+--brokerlist “localhost:9092”
+--files /location/of/CustomerInfo.json
+--partitionkeyidxs “System.Customer:CustomerID”
+</pre></div>
+</div>
+<p>Where:</p>
+<dl class="docutils">
+<dt>— <strong>format &lt;DataFormat&gt;</strong> indicates the format of the data</dt>
+<dd>(either CSV or JSON).</dd>
+<dt>— <strong>partitionkeyidxs &lt;System.MessageName&gt;:&lt;PartitionKey&gt;</strong></dt>
+<dd>indicates the message name and the partition key
+by which to aggregate other messages in the message history.</dd>
+</dl>
+<p>Note: —partitionkeyidxs can be comma-delimited
+if the file contains multiple message types.</p>
+<p>For example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>-partitionkeyidxs “System.Customer:CustomerID,
+System.CustomerAddress:CustomerID,
+System.CustomerPreferences:CustomerID”.
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/ligapedia/g-m/messages-mapped.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../../_sources/ligapedia/g-m/messages-mapped.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

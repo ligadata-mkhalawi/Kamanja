@@ -1,0 +1,207 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Using missingValueReplacement &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="using-missingvaluereplacement">
+<span id="pmml-guide-missingvalue"></span><h1>Using missingValueReplacement<a class="headerlink" href="#using-missingvaluereplacement" title="Permalink to this headline">¶</a></h1>
+<p>The <strong>missingValueReplacement</strong> parameter
+provides default values to PMML model variables
+that remain unset after execution completes.
+DataField and DerivedField element values
+that are intended to be emitted as part of the model output
+should have some value,
+even when the model execution did not set the field explicitly.
+In PMML, the DMG language designers offer
+the <strong>missingValueReplacement</strong> mining field attribute for this purpose.</p>
+<p>Kamanja supports this mechanism for
+the scalars, Boolean, string, date, dateTime, and time types.
+Initialization of more complex types
+that are possible in Kamanja-based PMML is also possible.
+This includes the initialization of collections of arbitrary types.</p>
+<div class="section" id="motivation">
+<h2>Motivation<a class="headerlink" href="#motivation" title="Permalink to this headline">¶</a></h2>
+<p>It is always prudent to supply a meaningful typed value
+for each field that is going to be emitted and consumed by other applications.
+Depending upon the consumer of the model output,
+not all values are workable.
+For example, can the consuming application handle a NULL value
+when it expects an array of strings?</p>
+<p>To this end, Kamanja has implemented
+the basic <strong>missingValueReplacement</strong> semantics
+as described in the <a class="reference external" href="http://www.dmg.org/v4-2-1/pmml-4-2.xsd">DMG specification</a>
+and offers some extensions that help provide initialization service
+to more complex types that Kamanja supports.</p>
+</div>
+<div class="section" id="missingvaluereplacement-example">
+<h2>missingValueReplacement example<a class="headerlink" href="#missingvaluereplacement-example" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">miningField</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Age&quot;</span>
+  <span class="n">usageType</span><span class="o">=</span><span class="s2">&quot;supplementary&quot;</span>
+  <span class="n">missingValueReplacement</span><span class="o">=</span><span class="s2">&quot;29&quot;</span><span class="o">/&gt;</span>
+<span class="o">&lt;</span><span class="n">miningField</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Today&quot;</span>
+  <span class="n">usageType</span><span class="o">=</span><span class="s2">&quot;supplementary&quot;</span>
+  <span class="n">missingValueReplacement</span><span class="o">=</span><span class="s2">&quot;20150401&quot;</span><span class="o">/&gt;</span>
+<span class="o">&lt;</span><span class="n">miningField</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;AYearAgo&quot;</span>
+  <span class="n">usageType</span><span class="o">=</span><span class="s2">&quot;supplementary&quot;</span>
+  <span class="n">missingValueReplacement</span><span class="o">=</span><span class="s2">&quot;20140101&quot;</span><span class="o">/&gt;</span>
+<span class="o">&lt;</span><span class="n">miningField</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;COPDSymptoms&quot;</span>
+  <span class="n">usageType</span><span class="o">=</span><span class="s2">&quot;supplementary&quot;</span>
+  <span class="n">missingValueReplacement</span><span class="o">=</span><span class="s2">&quot;false&quot;</span><span class="o">/&gt;</span>
+<span class="o">&lt;</span><span class="n">miningField</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;outPatientClaimCostsByDate&quot;</span>
+  <span class="n">usageType</span><span class="o">=</span><span class="s2">&quot;supplementary&quot;</span>
+  <span class="n">missingValueReplacement</span><span class="o">=</span><span class="s2">&quot;!compile:Map[Int,Double]()&quot;</span><span class="o">/&gt;</span>
+<span class="o">&lt;</span><span class="n">miningField</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;someCostsByDate&quot;</span>
+  <span class="n">usageType</span><span class="o">=</span><span class="s2">&quot;supplementary&quot;</span>
+  <span class="n">missingValueReplacement</span><span class="o">=</span><span class="s2">&quot;!compile:Map[Int,Double]()&quot;</span><span class="o">/&gt;</span>
+<span class="o">&lt;</span><span class="n">miningField</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;inPatientClaimTotalCostEachDate&quot;</span>
+  <span class="n">usageType</span><span class="o">=</span><span class="s2">&quot;supplementary&quot;</span>
+  <span class="n">missingValueReplacement</span><span class="o">=</span><span class="s2">&quot;!compile:Array[Double]()&quot;</span><span class="o">/&gt;</span>
+<span class="o">&lt;</span><span class="n">miningField</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;yyyyMMddDateMs&quot;</span>
+  <span class="n">usageType</span><span class="o">=</span><span class="s2">&quot;supplementary&quot;</span>
+  <span class="n">missingValueReplacement</span><span class="o">=</span><span class="s2">&quot;2015-04-01&quot;</span><span class="o">/&gt;</span>
+<span class="o">&lt;</span><span class="n">miningField</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;yyyyMMddDate&quot;</span>
+  <span class="n">usageType</span><span class="o">=</span><span class="s2">&quot;supplementary&quot;</span><span class="o">/&gt;</span>
+<span class="o">&lt;</span><span class="n">miningField</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;yyyyMMddHHmmssSSSDateTimeMs&quot;</span>
+  <span class="n">usageType</span><span class="o">=</span><span class="s2">&quot;supplementary&quot;</span>
+  <span class="n">missingValueReplacement</span><span class="o">=</span><span class="s2">&quot;2015-04-01 23:59:59:999&quot;</span><span class="o">/&gt;</span>
+<span class="o">&lt;</span><span class="n">miningField</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;yyyyMMddHHmmssSSSDateTime&quot;</span>
+  <span class="n">usageType</span><span class="o">=</span><span class="s2">&quot;supplementary&quot;</span><span class="o">/&gt;</span>
+<span class="o">&lt;</span><span class="n">miningField</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;milDateTimeMs&quot;</span>
+  <span class="n">usageType</span><span class="o">=</span><span class="s2">&quot;supplementary&quot;</span>
+  <span class="n">missingValueReplacement</span><span class="o">=</span><span class="s2">&quot;15-Apr-2015 23:59:59&quot;</span><span class="o">/&gt;</span>
+<span class="o">&lt;</span><span class="n">miningField</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;morningTimeMs&quot;</span>
+  <span class="n">usageType</span><span class="o">=</span><span class="s2">&quot;supplementary&quot;</span>
+  <span class="n">missingValueReplacement</span><span class="o">=</span><span class="s2">&quot;3:59:59 AM&quot;</span><span class="o">/&gt;</span>
+  <span class="o">&lt;</span><span class="n">miningField</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;eveningTimeMs&quot;</span>
+  <span class="n">usageType</span><span class="o">=</span><span class="s2">&quot;supplementary&quot;</span>
+  <span class="n">missingValueReplacement</span><span class="o">=</span><span class="s2">&quot;6:59:59 PM&quot;</span><span class="o">/&gt;</span>
+<span class="o">&lt;</span><span class="n">miningField</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;milTimeMs&quot;</span>
+  <span class="n">usageType</span><span class="o">=</span><span class="s2">&quot;supplementary&quot;</span>
+  <span class="n">missingValueReplacement</span><span class="o">=</span><span class="s2">&quot;16:59:59&quot;</span><span class="o">/&gt;</span>
+<span class="o">&lt;</span><span class="n">miningField</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;milTime&quot;</span>
+  <span class="n">usageType</span><span class="o">=</span><span class="s2">&quot;supplementary&quot;</span><span class="o">/&gt;</span>
+</pre></div>
+</div>
+<p>In the above example, the new wrinkle is the use of the !compile:expr syntax.
+When the missingValueReplacement begins with !compile:,
+the expression immediately following is used
+to instantiate a value that is used as the default value
+should the corresponding field not be set by other means during execution.</p>
+<p>For example, consider the <strong>outPatientClaimCostsByDate</strong> mining field.
+The code generated for this mining field is:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">ruleSetModel</span><span class="o">.</span><span class="n">AddMiningField</span><span class="p">(</span>
+    <span class="s2">&quot;outPatientClaimCostsByDate&quot;</span><span class="p">,</span>
+  <span class="n">new</span> <span class="n">MiningField</span><span class="p">(</span><span class="s2">&quot;outPatientClaimCostsByDate&quot;</span><span class="p">,</span>
+<span class="s2">&quot;supplementary&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span>
+<span class="n">DataValue</span><span class="o">.</span><span class="n">make</span><span class="p">(</span><span class="n">Map</span><span class="p">[</span><span class="n">Int</span><span class="p">,</span><span class="n">Double</span><span class="p">]()),</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>This snippet from the Scala produced by the PMML compiler
+simply adds a MiningField to the ruleSetModel‘s mining schema dictionary.
+The compiler uses the the expression part
+of the missingValueReplacement value
+(the expr in !compile:expr) as an argument
+to a runtime library’s factory method,
+<strong>DataValue.make(Map[Int,Double]())</strong>.
+Were the default value required,
+an empty Map[Int,Double] would be returned for outPatientClaimCostsByDate.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Using missingValueReplacement</a><ul>
+<li><a class="reference internal" href="#motivation">Motivation</a></li>
+<li><a class="reference internal" href="#missingvaluereplacement-example">missingValueReplacement example</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/pmml/missingvalue.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/pmml/missingvalue.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

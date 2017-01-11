@@ -1,0 +1,356 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Adapter Message Bindings &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="adapter-message-bindings">
+<span id="message-bindings-guide"></span><h1>Adapter Message Bindings<a class="headerlink" href="#adapter-message-bindings" title="Permalink to this headline">¶</a></h1>
+<p>Adapter message bindings are
+independently cataloged metadata objects
+that associate three other metadata objects together:</p>
+<ul class="simple">
+<li>an adapter (input, output, or storage).</li>
+<li>a message that this adapter either deserializes
+from its source or serializes to send to its sink.</li>
+<li>the serializer to use that understands
+how to serialize and deserialize the message.</li>
+</ul>
+<p>These bindings provide a flexible way
+to describe the input, output, and storage streams
+flowing to/from the adapter’s sink/source.
+Being able to dial in the sort of serialization expected
+or provided to others gives the Kamanja system administrator
+a lot of flexibility to satisfy his/her objectives.</p>
+<p>There are currently three builtin serializers provided
+in the Kamanja distribution that can be used:
+a JSON serializer, a CSV serializer, and a KBinary serializer.
+The KBinary is used principally by the Kamanja platform
+to manage data in its stores and caches.</p>
+<p>The adapter message bindings can be ingested one at a time.
+If there are multiple messages that are managed by an adapter
+that all share the same serializer,
+a compact representation is possible.
+It is also possible to organize
+one or more adapter message binding specifications
+in a file and have the Kamanja ingestion tools consume that.</p>
+<p>Note that adapters, messages, and serializers
+must already be cataloged in the metadata
+before a user can add a binding for them.
+A rather comprehensive list of errors is returned if that is not the case.</p>
+<div class="section" id="adapter-message-binding-examples">
+<h2>Adapter Message Binding Examples<a class="headerlink" href="#adapter-message-binding-examples" title="Permalink to this headline">¶</a></h2>
+<p>What follows is a number of annotated examples
+that illustrate the bindings and how a user might use them
+to configure a cluster. The local kamanja command is used here.</p>
+<p>First, the pretty-printed JSON is presented
+that is submitted followed by the
+<a class="reference internal" href="../command-ref/kamanja.html#kamanja-command-ref"><span class="std std-ref">kamanja</span></a> command
+that ingests a flattened version of the same JSON
+presented as the value to the FROMSTRING named parameter.
+Where appropriate, commentary is presented
+that further explains details about the JSON and/or the ingestion command.</p>
+<p>For the commands, a number of symbolic references are used
+to make the locations abstract.
+Build ENV variables for them in the console session.
+Briefly, their meanings are:</p>
+<ul class="simple">
+<li>KAMANJA_HOME – root directory of the Kamanja installation.</li>
+<li>APICONFIGPROPERTIES – file path that describes
+the MetadataAPI configuration file used in the command.</li>
+<li>METADATAROOT – directory that contains
+the organized set of configuration, model, and message source
+to deploy on the Kamanja cluster.</li>
+</ul>
+<div class="section" id="input-adapter-message-binding">
+<h3>Input Adapter Message Binding<a class="headerlink" href="#input-adapter-message-binding" title="Permalink to this headline">¶</a></h3>
+<p>To create the following binding:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;AdapterName&quot;</span><span class="p">:</span> <span class="s2">&quot;kafkaAdapterInput1&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;MessageName&quot;</span><span class="p">:</span> <span class="s2">&quot;com.botanical.json.ordermsg&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;Serializer&quot;</span><span class="p">:</span> <span class="s2">&quot; com.ligadata.kamanja.serializer.JsonSerDeser&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Run this command:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$KAMANJA_HOME/bin/kamanja $APICONFIGPROPERTIES add adaptermessagebinding \
+  FROMSTRING ‘{“AdapterName”:
+  “kafkaAdapterInput1”, “MessageName”: “com.botanical.json.ordermsg”,
+  “Serializer”: ” com.ligadata.kamanja.serializer.JsonSerDeser”}’
+</pre></div>
+</div>
+<p>The keys in the JSON specification are case-sensitive.
+For example, use AdapterName, not ADAPTERname or adapter name.</p>
+<p>Note that the adapter message binding sent to the Kamanja script
+is just a flattened version of the JSON map structure presented.</p>
+<p>The serializer used in this case is the name of the builtin CSV deserializer.
+Note, too, that it has an options map that is used to configure it.</p>
+<p>Notice that the MessageName key is used in the example.
+It allows a single message to be specified.
+It is also possible to specify multiple messages.
+See the examples below.</p>
+</div>
+<div class="section" id="output-adapter-message-binding">
+<h3>Output Adapter Message Binding<a class="headerlink" href="#output-adapter-message-binding" title="Permalink to this headline">¶</a></h3>
+<p>To create the following binding:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;AdapterName&quot;</span><span class="p">:</span> <span class="s2">&quot;kafkaAdapterOutput2&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;MessageNames&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;com.botanical.csv.emailmsg&quot;</span><span class="p">],</span>
+  <span class="s2">&quot;Serializer&quot;</span><span class="p">:</span> <span class="s2">&quot;com.ligadata.kamanja.serializer.csvserdeser&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;Options&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s2">&quot;lineDelimiter&quot;</span><span class="p">:</span> <span class="s2">&quot;rn&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;fieldDelimiter&quot;</span><span class="p">:</span> <span class="s2">&quot;,&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;produceHeader&quot;</span><span class="p">:</span> <span class="n">true</span><span class="p">,</span>
+    <span class="s2">&quot;alwaysQuoteFields&quot;</span><span class="p">:</span> <span class="n">false</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Run this command:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$KAMANJA_HOME/bin/kamanja $APICONFIGPROPERTIES add adaptermessagebinding \
+  FROMSTRING ‘{“AdapterName”: “kafkaAdapterOutput2”, “MessageNames”: \
+  [“com.botanical.csv.emailmsg”], “Serializer”: \
+  “com.ligadata.kamanja.serializer.csvserdeser”, \
+  “Options”: {“lineDelimiter”: “rn”, “fieldDelimiter”: “,”, \
+  “produceHeader”: true, “alwaysQuoteFields”: false } }’
+</pre></div>
+</div>
+<p>This output adapter uses the delimitedserdeser (CSV for short) builtin adapter,
+but notice too that there is one message mentioned
+in the MessageNames key value.
+What actually happens is that binding metadata is built
+for each adapter/message/serializer combination.
+Think of this as shorthand.</p>
+<p>If the key for the message is MessageName,
+then only the message name is given.
+If MessageNames (plural), an array of names is expected.</p>
+</div>
+<div class="section" id="storage-adapter-message-binding">
+<h3>Storage Adapter Message Binding<a class="headerlink" href="#storage-adapter-message-binding" title="Permalink to this headline">¶</a></h3>
+<p>To create the following binding:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">{</span>
+  <span class="s2">&quot;AdapterName&quot;</span><span class="p">:</span> <span class="s2">&quot;hBaseStore1&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;MessageNames&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;com.botanical.json.audit.ordermsg&quot;</span><span class="p">,</span> <span class="s2">&quot;com.botanical.json.audit.shippingmsg&quot;</span><span class="p">],</span>
+  <span class="s2">&quot;Serializer&quot;</span><span class="p">:</span> <span class="s2">&quot;com.ligadata.kamanja.serializer.JsonSerDeser&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Run this command:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$KAMANJA_HOME/bin/kamanja $APICONFIGPROPERTIES add adaptermessagebinding
+  FROMSTRING ‘{“AdapterName”: “hBaseStore1”, “MessageNames”: \
+  [“com.botanical.json.audit.ordermsg”, \
+  “com.botanical.json.audit.shippingmsg”], \
+  “Serializer”: “com.ligadata.kamanja.serializer.JsonSerDeser”}’
+</pre></div>
+</div>
+<p>In this storage adapter binding,
+the use of the builtin JSON adapter is illustrated.
+Again, there are multiple messages specified.
+The JSON serializer doesn’t currently have any options, so it can be omitted.</p>
+</div>
+<div class="section" id="storage-adapter-message-binding-specifications-in-a-file">
+<h3>Storage Adapter Message Binding Specifications in a File<a class="headerlink" href="#storage-adapter-message-binding-specifications-in-a-file" title="Permalink to this headline">¶</a></h3>
+<p>File ingestion of the adapter message bindings is also possible.
+With a file, multiple binding specifications can be specified in it.
+For example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="p">[</span>
+  <span class="p">{</span>
+  <span class="s2">&quot;AdapterName&quot;</span><span class="p">:</span> <span class="s2">&quot;kafkaAdapterInput1&quot;</span><span class="p">,</span>
+  <span class="s2">&quot;MessageNames&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;com.botanical.json.ordermsg&quot;</span><span class="p">,</span> <span class="s2">&quot;com.botanical.json.shippingmsg&quot;</span><span class="p">],</span>
+  <span class="s2">&quot;Serializer&quot;</span><span class="p">:</span> <span class="s2">&quot;com.ligadata.kamanja.serializer.JsonSerDeser&quot;</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">&quot;AdapterName&quot;</span><span class="p">:</span> <span class="s2">&quot;kafkaAdapterOutput2&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;MessageNames&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;com.botanical.csv.emailmsg&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;Serializer&quot;</span><span class="p">:</span> <span class="s2">&quot;com.ligadata.kamanja.serializer.csvserdeser&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Options&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="s2">&quot;lineDelimiter&quot;</span><span class="p">:</span> <span class="s2">&quot;rn&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;fieldDelimiter&quot;</span><span class="p">:</span> <span class="s2">&quot;,&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;produceHeader&quot;</span><span class="p">:</span> <span class="s2">&quot;true&quot;</span><span class="p">,</span>
+      <span class="s2">&quot;alwaysQuoteFields&quot;</span><span class="p">:</span> <span class="s2">&quot;false&quot;</span>
+    <span class="p">}</span>
+  <span class="p">},</span>
+  <span class="p">{</span>
+    <span class="s2">&quot;AdapterName&quot;</span><span class="p">:</span> <span class="s2">&quot;hBaseStore1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;MessageNames&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;com.botanical.json.audit.ordermsg&quot;</span><span class="p">,</span> <span class="s2">&quot;com.botanical.json.audit.shippingmsg&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;Serializer&quot;</span><span class="p">:</span> <span class="s2">&quot;com.ligadata.kamanja.serializer.JsonSerDeser&quot;</span>
+  <span class="p">}</span>
+</pre></div>
+</div>
+<p>]</p>
+<p>There are a total of five bindings specified here.
+This is a practical way to establish a new cluster.</p>
+<p>A binding is prepared for the adapter/message/serializers in each map.
+As can be seen in the kafkaAdapterOutput2 and hBaseStore1 adapters,
+the multiple message shorthand is used
+that causes a binding for each unique triple.</p>
+<p>If the above file was called
+$METADATAROOT/config/AdapterMessageBindingsForClusterConfig1.5.0.json,
+the following Kamanja command can ingest it:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$KAMANJA_HOME/bin/kamanja $APICONFIGPROPERTIES add adaptermessagebinding \
+  FROMFILE \
+  $METADATAROOT/config/AdapterMessageBindingsForClusterConfig1.5.0.json
+</pre></div>
+</div>
+<p>Like the other examples,
+this can be pushed directly on the command-line
+as a FROMSTRING parameter value.
+It is helpful to have an editor that can pretty-print/flatten
+the JSON text to do these more complicated structures for the command-line:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$KAMANJA_HOME/bin/kamanja $APICONFIGPROPERTIES add adaptermessagebinding \
+  FROMSTRING ‘[{“AdapterName”: “kafkaAdapterInput1”, \
+  “MessageNames”: [“com.botanical.json.ordermsg”, “com.botanical.json.shippingmsg”], \
+  “Serializer”: “com.ligadata.kamanja.serializer.JsonSerDeser”}, \
+  {“AdapterName”: “kafkaAdapterOutput2”, “MessageNames”: \
+  [“com.botanical.csv.emailmsg”], “Serializer”:
+  “com.ligadata.kamanja.serializer.csvserdeser”, “Options”:
+  {“lineDelimiter”: “rn”, “fieldDelimiter”: “,”, “produceHeader”: “true”,
+  “alwaysQuoteFields”: “false”} }, {“AdapterName”: “hBaseStore1”,
+  “MessageNames”: [“com.botanical.json.audit.ordermsg”,
+  “com.botanical.json.audit.shippingmsg”],
+  “Serializer”: “com.ligadata.kamanja.serializer.JsonSerDeser”} ]’
+</pre></div>
+</div>
+</div>
+<div class="section" id="list-adapter-message-bindings">
+<h3>List Adapter Message Bindings<a class="headerlink" href="#list-adapter-message-bindings" title="Permalink to this headline">¶</a></h3>
+<p>The following list of commands are supported:</p>
+<p>List them all:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$KAMANJA_HOME/bin/kamanja $APICONFIGPROPERTIES list adaptermessagebindings
+</pre></div>
+</div>
+<p>List bindings for the supplied adapter:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$KAMANJA_HOME/bin/kamanja $APICONFIGPROPERTIES list adaptermessagebindings \
+  ADAPTERFILTER hBaseStore1
+</pre></div>
+</div>
+<p>List bindings for a given message:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$KAMANJA_HOME/bin/kamanja $APICONFIGPROPERTIES list adaptermessagebindings \
+  MESSAGEFILTER com.botanical.csv.emailmsg
+</pre></div>
+</div>
+<p>List bindings for a given serializer:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$KAMANJA_HOME/bin/kamanja $APICONFIGPROPERTIES list adaptermessagebindings \
+  SERIALIZERFILTER com.ligadata.kamanja.serializer.JsonSerDeser
+</pre></div>
+</div>
+</div>
+<div class="section" id="remove-adapter-message-binding">
+<h3>Remove Adapter Message Binding<a class="headerlink" href="#remove-adapter-message-binding" title="Permalink to this headline">¶</a></h3>
+<p>Removal of a binding is accomplished with this command.</p>
+<p>Remove the supplied binding key:</p>
+<p>The binding key, the parameter KEY’s value,
+consists of the names of the three components of the binding,
+namely the adapter name, the fully-qualified message name,
+and the fully-qualified serializer name – comma separated:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$KAMANJA_HOME/bin/kamanja $APICONFIGPROPERTIES remove adaptermessagebinding \
+  KEY ‘hBaseStore1,com.botanical.json.audit.ordermsg,com.ligadata.kamanja.serializer.JsonSerDeser’
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Adapter Message Bindings</a><ul>
+<li><a class="reference internal" href="#adapter-message-binding-examples">Adapter Message Binding Examples</a><ul>
+<li><a class="reference internal" href="#input-adapter-message-binding">Input Adapter Message Binding</a></li>
+<li><a class="reference internal" href="#output-adapter-message-binding">Output Adapter Message Binding</a></li>
+<li><a class="reference internal" href="#storage-adapter-message-binding">Storage Adapter Message Binding</a></li>
+<li><a class="reference internal" href="#storage-adapter-message-binding-specifications-in-a-file">Storage Adapter Message Binding Specifications in a File</a></li>
+<li><a class="reference internal" href="#list-adapter-message-bindings">List Adapter Message Bindings</a></li>
+<li><a class="reference internal" href="#remove-adapter-message-binding">Remove Adapter Message Binding</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/models/message-bindings.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/models/message-bindings.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

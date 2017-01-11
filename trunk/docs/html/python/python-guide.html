@@ -1,0 +1,370 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Running Python Models on Kamanja &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="running-python-models-on-kamanja">
+<h1>Running Python Models on Kamanja<a class="headerlink" href="#running-python-models-on-kamanja" title="Permalink to this headline">¶</a></h1>
+<p><a class="reference internal" href="../ligapedia/n-r/python.html#python-term"><span class="std std-ref">Python</span></a> models can be run on Kamanja
+much as other types of models are run.
+Standard metadata commands are used to add/remove/update models.
+In the next section, these commands are illustrated.</p>
+<div class="section" id="limitations">
+<h2>Limitations<a class="headerlink" href="#limitations" title="Permalink to this headline">¶</a></h2>
+<p>Kamanja is currently tested and supported for Python version 2.7.
+Future releases may include support for higher versions of Python
+(Python 3 and above).</p>
+</div>
+<div class="section" id="kamanja-python-metadata-commands">
+<h2>Kamanja Python Metadata Commands<a class="headerlink" href="#kamanja-python-metadata-commands" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="add-model">
+<h3>Add Model<a class="headerlink" href="#add-model" title="Permalink to this headline">¶</a></h3>
+<p>The following command illustrates how a model can be added to the Kamanja system:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$KAMANJA_HOME/bin/kamanja add model python
+$KAMANJA_HOME/input/SampleApplications/metadata/model/subtract.py \
+    MODELNAME subtract.SubtractTuple MESSAGENAME \
+    org.kamanja.arithmetic.arithmeticMsg OUTMESSAGE \
+    org.kamanja.arithmetic.arithmeticOutMsg TENANTID tenant1 \
+    MODELVERSION 0.00001 \
+    MODELOPTIONS ’{”InputTypeInfo”: {”a” : ”Float”, ”b” : ” Float”}}’
+</pre></div>
+</div>
+<p>or</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$KAMANJA_HOME/bin/kamanja add model python
+$KAMANJA_HOME/input/SampleApplications/metadata/model/subtract.py \
+    MODELNAME subtract.SubtractTuple MESSAGENAME \
+    org.kamanja.arithmetic.arithmeticMsg OUTMESSAGE \
+    org.kamanja.arithmetic.arithmeticOutMsg TENANTID tenant1 \
+    MODELVERSION 0.00001
+</pre></div>
+</div>
+<p>where</p>
+<ul class="simple">
+<li>MODELNAME &lt;modulename&gt;.&lt;classname&gt; – name of the module name
+without .py.Classname is the name of the class inside the module
+that contains the execute method.</li>
+<li>MESSAGENAME – name of the input message for the consumption of the input message.</li>
+<li>OUTMESSAGE – name of the output queue where produced messages are sent.</li>
+<li>MODELOPTIONS – (optional) contains the active input fields
+from the consumed input message in JSON format.</li>
+</ul>
+<p>For Python models, a user may also specify model options
+in the form of a JSON string (or a file path containing JSON may also be given).
+The options can be quite complex,
+including JSON dictionaries and JSON lists of dictionaries.</p>
+<p>Note that this information is strictly for the consumption and use
+of the model being catalogued.
+It is saved in the Kamanja metadata model definition
+associated with the model being added.</p>
+<p>The MODELOPTIONS JSON string is supplied to the model
+whenever it is added to a server.
+The information it contains can be used to complete
+initialization of the model in some way.</p>
+</div>
+<div class="section" id="update-model">
+<h3>Update Model<a class="headerlink" href="#update-model" title="Permalink to this headline">¶</a></h3>
+<p>Updates are similar to the add model:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>kamanja update model python
+$KAMANJA_HOME/input/SampleApplications/metadata/model/subtract.py
+   MODELNAME subtract.SubtractTuple MESSAGENAME
+   org.kamanja.arithmetic.arithmeticMsg OUTMESSAGE
+   org.kamanja.arithmetic.arithmeticOutMsg TENANTID tenant1
+   MODELVERSION 0.00003
+   MODELOPTIONS ’{”InputTypeInfo”: {”a” : ”Float”, ”b” : ” Float”}}’
+</pre></div>
+</div>
+<p>In the example, the model options have had a number of their values changed.
+The filters from the instrusionFilters2 directory are to be used
+and the port to the spark.ml cluster has been changed.
+An upgraded version of the Python model has also been chosen
+to replace the current one.</p>
+</div>
+<div class="section" id="remove-model">
+<h3>Remove Model<a class="headerlink" href="#remove-model" title="Permalink to this headline">¶</a></h3>
+<p>All Kamanja remove model commands are similar:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">kamanja</span> <span class="o">&lt;</span><span class="n">metadata</span> <span class="n">api</span> <span class="n">properties</span> <span class="n">file</span><span class="o">&gt;</span> <span class="n">remove</span> <span class="n">model</span> <span class="o">&lt;</span><span class="n">namespace</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">version</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="kamanja-python-program-structure">
+<h2>Kamanja Python Program Structure<a class="headerlink" href="#kamanja-python-program-structure" title="Permalink to this headline">¶</a></h2>
+<p>In this section, the structure and semantics of a Kamanja Python model
+are explained and illustrated.</p>
+<div class="section" id="python-model-using-modelinstance">
+<h3>Python Model using ModelInstance<a class="headerlink" href="#python-model-using-modelinstance" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">abc</span>
+<span class="kn">from</span> <span class="nn">common.ModelInstance</span> <span class="k">import</span> <span class="n">ModelInstance</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+
+<span class="k">class</span> <span class="nc">DivideTuple</span><span class="p">(</span><span class="n">ModelInstance</span><span class="p">):</span>
+<span class="sd">&quot;&quot;&quot; Model DivideTuple will divide msg[&quot;a&quot;] by msg[&quot;b&quot;] &quot;&quot;&quot;</span>
+     <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>￼</dt>
+<dd><p class="first">&#8220;&#8221;&#8221;
+A real implementation would use the output fields to
+determine what should be returned.
+&#8220;&#8221;&#8221;
+a = int(msg[&#8220;a&#8221;])
+b = int(msg[&#8220;b&#8221;])
+if (a &gt; b):</p>
+<blockquote>
+<div><p>qutotientofTup = a/b
+outMsg = json.dumps({&#8216;a&#8217; : msg[&#8220;a&#8221;], &#8216;b&#8217; : msg[&#8220;b&#8221;],</p>
+<blockquote>
+<div>&#8216;operator&#8217; : &#8216;/&#8217;, &#8216;result&#8217; : qutotientofTup})</div></blockquote>
+</div></blockquote>
+<dl class="docutils">
+<dt>else :</dt>
+<dd>outMsg = &#8220;&#8221;</dd>
+</dl>
+<p class="last">return outMsg</p>
+</dd>
+</dl>
+<p>The Python example can either return output or NULL as shown in the above program.
+The model can install external libraries and use them in the Python program.
+The models are stored in $KAMANJA_HOME/python/model once they are compiled.
+MODELNAME in the command-line is given the name of the &lt;modulename&gt;.&lt;classname&gt;.
+The divide.py MODELNAME is divide.DivideTuple.</p>
+</div>
+<div class="section" id="theano-model-using-modelinstance">
+<h3>Theano Model using ModelInstance<a class="headerlink" href="#theano-model-using-modelinstance" title="Permalink to this headline">¶</a></h3>
+<p>The following code gives another example using a third-party library called Theano.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">abc</span>
+<span class="kn">from</span> <span class="nn">common.ModelInstance</span> <span class="k">import</span> <span class="n">ModelInstance</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">theano</span>
+<span class="kn">from</span> <span class="nn">theano</span> <span class="k">import</span> <span class="n">tensor</span>
+
+<span class="k">class</span> <span class="nc">AddTheanoTuple</span><span class="p">(</span><span class="n">ModelInstance</span><span class="p">):</span>
+     <span class="sd">&quot;&quot;&quot; Model AddTheanoTuple will sum msg[&quot;a&quot;] and msg[&quot;b&quot;] &quot;&quot;&quot;</span>
+     <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">):</span>
+          <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">          A real implementation would use the output fields to</span>
+<span class="sd">          determine what should be returned.</span>
+<span class="sd">          &quot;&quot;&quot;</span>
+          <span class="n">a</span> <span class="o">=</span> <span class="n">tensor</span><span class="o">.</span><span class="n">dscalar</span> <span class="p">()</span>
+          <span class="n">b</span> <span class="o">=</span> <span class="n">tensor</span><span class="o">.</span><span class="n">dscalar</span><span class="p">()</span>
+          <span class="n">c</span> <span class="o">=</span> <span class="n">a</span><span class="o">+</span> <span class="n">b</span>
+          <span class="n">f</span> <span class="o">=</span> <span class="n">theano</span><span class="o">.</span><span class="n">function</span><span class="p">([</span><span class="n">a</span><span class="p">,</span><span class="n">b</span><span class="p">],</span> <span class="n">c</span><span class="p">)</span>
+          <span class="n">sumofTup</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">msg</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">])</span> <span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">msg</span><span class="p">[</span><span class="s2">&quot;b&quot;</span><span class="p">])</span> <span class="p">)</span>
+
+          <span class="n">outMsg</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s1">&#39;a&#39;</span> <span class="p">:</span> <span class="n">msg</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">],</span> <span class="s1">&#39;b&#39;</span> <span class="p">:</span> <span class="n">msg</span><span class="p">[</span><span class="s2">&quot;b&quot;</span><span class="p">],</span>
+               <span class="s1">&#39;operator&#39;</span> <span class="p">:</span> <span class="s1">&#39;+&#39;</span><span class="p">,</span> <span class="s1">&#39;result&#39;</span> <span class="p">:</span> <span class="n">sumofTup</span><span class="o">.</span><span class="n">item</span><span class="p">(</span><span class="mi">0</span><span class="p">)})</span>
+          <span class="k">return</span> <span class="n">outMsg</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>The Kamanja distribution comes with a few Python examples
+in the following directory:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>$KAMANJA_HOME/input/SampleApplications
+</pre></div>
+</div>
+<div class="section" id="simple-example">
+<h3>Simple Example<a class="headerlink" href="#simple-example" title="Permalink to this headline">¶</a></h3>
+<p>Steps to run the sample:</p>
+<ol class="arabic simple">
+<li>Start Zookeeper, Kafka</li>
+<li>Call CreateQueues</li>
+<li>Run the Python_Simple.sh script in $KAMANJA_HOME/input/SampleApplications/bin.
+The step loads all messages, models, and adapter bindings.</li>
+<li>Start Kamanja.</li>
+<li>Run PushSimpleData.sh in $KAMANJA_HOME/input/SampleApplications/bin.</li>
+<li>Watch the output queue.</li>
+</ol>
+<p>The simple example consists of four models which
+1) add, 2)subract, 3)multiply, and 4) divide two numbers.</p>
+<p>Sample input and output are given below.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span>Type of Data  Actual Data     Description of Actual Data
+Input         880, 235        csv input (a,b)
+Output        {“a”:880,”b”:235,”operator”:”+”,”result”:1115}
+{“a”:880,”b”:235,”operator”:”-“,”result”:645}
+{“a”:880,”b”:235,”operator”:”*”,”result”:206800}
+{“a”:941,”b”:372,”operator”:”:”,”result”:2}   Add, subtrract, multiply, divide
+</pre></div>
+</div>
+</div>
+<div class="section" id="example-using-python-libraries">
+<h3>Example Using Python Libraries<a class="headerlink" href="#example-using-python-libraries" title="Permalink to this headline">¶</a></h3>
+<p>The example shows the use of a third-party library called Theano.
+Theano is a Python scientific library.
+It is designed to take advantage of underlying hardware
+(that includes recent graphics processing units (GPUs))
+and hence has high performance that is comparable to C implementations.</p>
+<p>The example is just a simple floating point addition
+done functionally using Theano.
+Future versions include real examples.</p>
+<p>Steps to run the sample:</p>
+<ol class="arabic simple">
+<li>Start Zookeeper, Kafka</li>
+<li>Call CreateQueues</li>
+<li>Run the Python_Tensor.sh script in $KAMANJA_HOME/input/SampleApplications/bin. The step loads all messages, models, and adapter bindings.</li>
+<li>Start Kamanja.</li>
+<li>Run PushSimpleData.sh in $KAMANJA_HOME/input/SampleApplications/bin.</li>
+<li>Watch the output queue.</li>
+</ol>
+<div class="highlight-default"><div class="highlight"><pre><span></span>Type of Data  Actual Data     Description of Actual Data
+Input         22, 802         csv input (a,b)
+Output        {“a”:22.0,”b”:803.0,”operator”:”+”,”result”:825.0} (addf.py)
+{“a”:22.0,”b”:803.0,”operator”:”+”,”result”:825.0} (Theano)   Add
+</pre></div>
+</div>
+</div>
+<div class="section" id="multiple-logistic-regression-example">
+<h3>Multiple Logistic Regression Example<a class="headerlink" href="#multiple-logistic-regression-example" title="Permalink to this headline">¶</a></h3>
+<p>The script calculates the risk score for a given customer
+using his/her job, payment, and mortgage history.</p>
+<p>Steps to run the example:</p>
+<ol class="arabic simple">
+<li>Start Zookeeper, Kafka</li>
+<li>Call CreateQueues</li>
+<li>Run the Python_Reg.sh script in $KAMANJA_HOME/input/SampleApplications/bin. The step loads all messages, models, and adapter bindings.</li>
+<li>Start Kamanja.</li>
+<li>Run PushHmeqData.sh in $KAMANJA_HOME/input/SampleApplications/bin.</li>
+<li>Watch the output queue.</li>
+</ol>
+<div class="highlight-default"><div class="highlight"><pre><span></span>Type of Data  Actual Data     Description of Actual Data
+Input         53,0,0,1,1,0,0,0,0,0,0,0.0236,0.165,
+0.0785,0.243,0.025,0.0666,0.176,
+0,0.352,0.0896,0.189,0.109    csv input “REC ID”,
+“LOAN”,”MORTDUE”,
+“VALUE”,”REASON”,
+“JOB”,”YOJ”,
+“DEROG”,”DELINQ”,
+“CLAGE”,”NINQ”,
+“CLNO”,”DEBTINC”
+Output        {“rec id”: 53,”python risk score”: 0.2493699}   Predict risk
+</pre></div>
+</div>
+<p>To understand the terms in this table,
+see HMEQ-mortgage-applic-SAS-data-doc.pdf and HMEQ-Sta6704-Data-Mining-Methods.pdf.</p>
+</div>
+<div class="section" id="bibliography">
+<h3>Bibliography<a class="headerlink" href="#bibliography" title="Permalink to this headline">¶</a></h3>
+<p>Theano 0.8.2 Documentation. LISA Lab, University of Montreal, 2008-2016. Web. 23 Sep 2016. (<a class="reference external" href="http://deeplearning.net/software/theano/introduction.html">http://deeplearning.net/software/theano/introduction.html</a>)</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Running Python Models on Kamanja</a><ul>
+<li><a class="reference internal" href="#limitations">Limitations</a></li>
+<li><a class="reference internal" href="#kamanja-python-metadata-commands">Kamanja Python Metadata Commands</a><ul>
+<li><a class="reference internal" href="#add-model">Add Model</a></li>
+<li><a class="reference internal" href="#update-model">Update Model</a></li>
+<li><a class="reference internal" href="#remove-model">Remove Model</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#kamanja-python-program-structure">Kamanja Python Program Structure</a><ul>
+<li><a class="reference internal" href="#python-model-using-modelinstance">Python Model using ModelInstance</a></li>
+<li><a class="reference internal" href="#theano-model-using-modelinstance">Theano Model using ModelInstance</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#examples">Examples</a><ul>
+<li><a class="reference internal" href="#simple-example">Simple Example</a></li>
+<li><a class="reference internal" href="#example-using-python-libraries">Example Using Python Libraries</a></li>
+<li><a class="reference internal" href="#multiple-logistic-regression-example">Multiple Logistic Regression Example</a></li>
+<li><a class="reference internal" href="#bibliography">Bibliography</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/python/python-guide.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/python/python-guide.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

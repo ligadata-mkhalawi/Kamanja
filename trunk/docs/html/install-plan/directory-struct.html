@@ -1,0 +1,141 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Directory structure after installation &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="directory-structure-after-installation">
+<span id="dir-struct-install"></span><h1>Directory structure after installation<a class="headerlink" href="#directory-structure-after-installation" title="Permalink to this headline">¶</a></h1>
+<p>Running the <a class="reference internal" href="../command-ref/easyInstallKamanja.html#easyinstallkamanja-command-ref"><span class="std std-ref">easyInstallKamanja.sh</span></a> command
+creates the following directory structure under the
+$KAMANJA_HOME directory that represents the top-level directory
+that is installed.
+See <a class="reference internal" href="../ligapedia/a-f/bashrc.html#bashrc-term"><span class="std std-ref">bashrc and bash_profile</span></a>
+for instructions about defining $KAMANJA_HOME.</p>
+<ul class="simple">
+<li>bin - contains command scripts such as
+<a class="reference internal" href="../command-ref/createqueues.html#createqueues-command-ref"><span class="std std-ref">CreateQueues.sh</span></a>
+and <span class="xref std std-ref">WatchInputQueue.sh</span>.</li>
+<li>config - contains configuration files such as
+<a class="reference internal" href="../config-ref/ClusterConfig.html#clusterconfig-config-ref"><span class="std std-ref">ClusterConfig.json</span></a>
+and <span class="xref std std-ref">MetadataAPIConfig.properties</span></li>
+<li>documentation - contains the KamanjaAPIdocs directory
+that contains the Readme.txt file
+and the built HTML files for the API documentation;
+point your browser to the index.html file in this directory
+to view those documents.</li>
+<li>input<ul>
+<li>HelpMenu.txt</li>
+<li>SampleApplications<ul>
+<li>bin - command scripts for the sample applications
+such as InitKvStores_Medical.sh and PushSampleDataToKafka_Medical.sh</li>
+<li>data</li>
+<li>metadata
+- config
+- container
+- function
+- message
+- model
+- script
+- type</li>
+<li>template</li>
+<li>lib</li>
+<li>logs</li>
+<li>output</li>
+<li>storage</li>
+<li>template</li>
+<li>workingdir - default working directory.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/install-plan/directory-struct.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/install-plan/directory-struct.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

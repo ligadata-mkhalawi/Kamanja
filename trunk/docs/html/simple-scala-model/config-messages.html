@@ -1,0 +1,152 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Add message definitions to Kamanja &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="add-message-definitions-to-kamanja">
+<h1>Add message definitions to Kamanja<a class="headerlink" href="#add-message-definitions-to-kamanja" title="Permalink to this headline">¶</a></h1>
+<p>Now that the messages have been written for use by Kamanja,
+they must be added to Kamanja.
+For each message definition written above,
+run a command that takes the message definition,
+generates Scala code out of it,
+and compiles it into a JAR to be used by Kamanja.
+To do this, on the command-line, run the following:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">&lt;</span><span class="n">KamanjaInstallDirectory</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>For example:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">/</span><span class="n">opt</span><span class="o">/</span><span class="n">Kamanja</span><span class="o">-</span><span class="mf">1.4</span><span class="o">.</span><span class="mi">0</span><span class="n">_2</span><span class="o">.</span><span class="mi">11</span><span class="o">/</span>
+</pre></div>
+</div>
+<p>You must also upload the cluster configuration from the
+<a class="reference internal" href="../config-ref/ClusterConfig.html#clusterconfig-config-ref"><span class="std std-ref">ClusterConfig.json</span></a> file
+if you have not previously done this:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">bash</span> <span class="nb">bin</span><span class="o">/</span><span class="n">kamanja</span> <span class="n">upload</span> <span class="n">cluster</span> <span class="n">config</span> <span class="o">/</span><span class="n">config</span><span class="o">/</span><span class="n">ClusterConfig</span><span class="o">.</span><span class="n">json</span>
+</pre></div>
+</div>
+<p>Then, call the <strong>kamanja add message</strong> command to add the messages.
+Note that all of these commands define <a class="reference internal" href="../ligapedia/s-z/tenancy.html#tenancy-term"><span class="std std-ref">tenancy</span></a>
+for the message.</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">bash</span> <span class="nb">bin</span><span class="o">/</span><span class="n">kamanja</span> <span class="n">add</span> <span class="n">message</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">SimpleMathDAG</span><span class="o">/</span><span class="n">NumberMessage</span><span class="o">.</span><span class="n">json</span> \
+   <span class="n">TENANTID</span> <span class="n">tenant1</span>
+
+<span class="n">bash</span> <span class="nb">bin</span><span class="o">/</span><span class="n">kamanja</span> <span class="n">add</span> <span class="n">message</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">SimpleMathDAG</span><span class="o">/</span><span class="n">AddedMessage</span><span class="o">.</span><span class="n">json</span> \
+   <span class="n">TENANTID</span> <span class="n">tenant1</span>
+
+<span class="n">bash</span> <span class="nb">bin</span><span class="o">/</span><span class="n">kamanja</span> <span class="n">add</span> <span class="n">message</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">SimpleMathDAG</span><span class="o">/</span><span class="n">MultipliedMessage</span><span class="o">.</span><span class="n">json</span> \
+   <span class="n">TENANTID</span> <span class="n">tenant1</span>
+
+<span class="n">bash</span> <span class="nb">bin</span><span class="o">/</span><span class="n">kamanja</span> <span class="n">add</span> <span class="n">message</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">SimpleMathDAG</span><span class="o">/</span><span class="n">DividedMessage</span><span class="o">.</span><span class="n">json</span> \
+   <span class="n">TENANTID</span> <span class="n">tenant1</span>
+</pre></div>
+</div>
+<p>After each of the above commands executes,
+you can look at the <em>APIResult</em> file for that command
+to see whether the command was successful.
+The file looks something like this:</p>
+<blockquote>
+<div><dl class="docutils">
+<dt>Result: {</dt>
+<dd><dl class="first docutils">
+<dt>&#8220;APIResults&#8221;: {</dt>
+<dd>&#8220;Status Code&#8221;: 0,
+&#8220;Function Name&#8221;: &#8220;AddMessageDef&#8221;,
+&#8220;Result Data&#8221;: null,
+&#8220;Result Description&#8221;: &#8220;Message Added    Successfully:com.ligadata.test.dag.numbermessage.000000000001000000&#8221;</dd>
+</dl>
+<p class="last">}</p>
+</dd>
+</dl>
+<p>}</p>
+</div></blockquote>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/simple-scala-model/config-messages.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/simple-scala-model/config-messages.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

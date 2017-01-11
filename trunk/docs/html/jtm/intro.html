@@ -1,0 +1,168 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Introduction &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="introduction">
+<span id="jtm-intro"></span><h1>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h1>
+<p>JTM (JSON Transformation Model) is a modeling language
+that is based on JSON map and list (or array) expressions.
+JTM is particularly useful for preparing data for analysis by other models.</p>
+<p>Like all other Kamanja models,
+JTMs accept one or more input messages and create one or more output messages.
+Current capabilities include:</p>
+<ul>
+<li><p class="first">transform an incoming field to another type. Examples:</p>
+<ul class="simple">
+<li>A timestamp represented as a Long integer in the input can be formatted
+as a string using a formatting function
+from one of the date packages available for Scala and/or Java.</li>
+</ul>
+<blockquote>
+<div><ul class="simple">
+<li>A comma-delimited string from the input can be split
+to form an array of strings for an output message.</li>
+<li>An incoming field can serve as a key to a table or map lookup
+using the value found in an output message.</li>
+</ul>
+</div></blockquote>
+</li>
+<li><p class="first">perform an operation or series of operations on one or more input fields
+to create a new field for an output message.
+Virtually any Java or Scala library can be used
+to perform arbitrary transformations.</p>
+</li>
+<li><p class="first">project a subset of the incoming message fields to an output message.</p>
+</li>
+<li><p class="first">join an incoming message with fields from another message,
+using one or more field values as keys.</p>
+</li>
+<li><p class="first">doing time- and key-based aggregations
+where the {count, sum, avg, mean, mode} field values
+run over a rolling time window.</p>
+</li>
+</ul>
+<div class="section" id="how-jtm-works">
+<h2>How JTM Works<a class="headerlink" href="#how-jtm-works" title="Permalink to this headline">¶</a></h2>
+<p>The JTMs:</p>
+<ul class="simple">
+<li>compiles strings of JSON found in a file</li>
+<li>translates them to Scala source</li>
+<li>compiles the Scala source</li>
+<li>creates a model definition that is cataloged in the Kamanja metadata store</li>
+<li>generates a JAR file that contains the executable model</li>
+</ul>
+<p>After successfully ingesting the model,
+The Kamanja engine processes a JTM the same way it handles
+any other model:</p>
+<ul class="simple">
+<li>When a new model that is added, the Kamanja engine is notified
+and loads it.</li>
+<li>At boot time, the Kamanja engine consults the metadata store
+and loads all the models found there, including this one.</li>
+</ul>
+<p>Use the following commands to add, update, and remove a model to the cluster:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">kamanja</span> <span class="o">&lt;</span><span class="n">metadata</span><span class="o">-</span><span class="n">api</span><span class="o">-</span><span class="n">properties</span><span class="o">-</span><span class="n">file</span><span class="o">&gt;</span> <span class="n">add</span> <span class="n">model</span> <span class="n">jtm</span> <span class="o">&lt;</span><span class="n">jtm</span><span class="o">-</span><span class="n">spec</span><span class="o">-</span><span class="n">file</span><span class="o">&gt;</span> <span class="n">TENANTID</span>
+<span class="n">kamanja</span> <span class="o">&lt;</span><span class="n">metadata</span><span class="o">-</span><span class="n">api</span><span class="o">-</span><span class="n">properties</span><span class="o">-</span><span class="n">file</span><span class="o">&gt;</span> <span class="n">update</span> <span class="n">model</span> <span class="n">jtm</span> <span class="o">&lt;</span><span class="n">jtm</span><span class="o">-</span><span class="n">spec</span><span class="o">-</span><span class="n">file</span><span class="o">&gt;</span> <span class="n">TENANTID</span>
+<span class="n">kamanja</span> <span class="o">&lt;</span><span class="n">metadata</span><span class="o">-</span><span class="n">api</span><span class="o">-</span><span class="n">properties</span><span class="o">-</span><span class="n">file</span><span class="o">&gt;</span> <span class="n">remove</span> <span class="n">model</span> <span class="o">&lt;</span><span class="n">namespace</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">version</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Introduction</a><ul>
+<li><a class="reference internal" href="#how-jtm-works">How JTM Works</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/jtm/intro.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/jtm/intro.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

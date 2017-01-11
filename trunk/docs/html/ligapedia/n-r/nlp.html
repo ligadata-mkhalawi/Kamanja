@@ -1,0 +1,184 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Natural Language Processing (NLP) &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="natural-language-processing-nlp">
+<span id="nlp-term"></span><h1>Natural Language Processing (NLP)<a class="headerlink" href="#natural-language-processing-nlp" title="Permalink to this headline">¶</a></h1>
+<p>Natural Language Processing (NLP) is a component of
+<a class="reference internal" href="../g-m/machine-learning.html#machine-learning-term"><span class="std std-ref">machine learning</span></a>
+that uses computers to analyze and understand
+human language in an intelligent way.
+It is classified as a hard problem in computer science
+because of the vagaries of human speech
+and the difficulties involved in extracting useful information
+out of imprecise text.
+NLP is being used for language translation, speech recognition,
+topic segmentation,
+automatic summarization of trends and sentiments in social media,
+and many other projects.</p>
+<p>This article gives an overview of some of the major techniques
+used for NLP.</p>
+<div class="section" id="keyword-statistics">
+<h2>Keyword statistics<a class="headerlink" href="#keyword-statistics" title="Permalink to this headline">¶</a></h2>
+<p>Keyword statistics draw inference
+by counting the frequency of certain keywords in the text being studied.
+For most text classification problems,
+keywords statistics is sufficient to determine a class;
+they can determine the topic of a text or document,
+such as software vs hardware, or pop rock vs punk.
+However, some classification problems have distinct classes
+that share the same keywords, and document phrasing;
+style and other kinds of text structure information
+must also be used
+to perform text classification in such domains.</p>
+</div>
+<div class="section" id="anaphora-resolution">
+<h2>Anaphora resolution<a class="headerlink" href="#anaphora-resolution" title="Permalink to this headline">¶</a></h2>
+<p>In NLP, anaphora resolution is
+the process of associating a word (or words) with its antecedents.
+For example, in the sentence,
+&#8220;The Queen has just arrived with Prince Phillip at her side,&#8221;
+her is an anaphora that resolves to indicate the Queen as its antecedent.
+As another example, in the sentences
+&#8220;The heads of state have arrived for a conference about climate change.
+The participants are expected to agree on some proposals
+and disagree on others,&#8221;
+participants is an anaphora that resolves to the antecedent &#8220;heads of state&#8221;.
+Anaphora resolution is a complicated computational task
+that is not always successful.
+For example, in the sentence, &#8220;The mother hugged her daughter tightly;
+I was stunned by her beauty,&#8221;
+it is ambiguous whether the anaphora her refers to the mother or the daughter.</p>
+</div>
+<div class="section" id="rhetorical-structure-theory-rst">
+<h2>Rhetorical Structure Theory (RST)<a class="headerlink" href="#rhetorical-structure-theory-rst" title="Permalink to this headline">¶</a></h2>
+<p>Rhetorical Structure Theory (RST) evaluates
+the rhetorical function of each phrase in a text
+and the relationship of different phrases to each other.
+Some of the relationships used are Elaboration, Evaluation,
+Contrast, Condition and Concession.
+The theory was originally developed for computer-based authoring
+but has proved to be a very useful component in natural language analysis,
+providing a way to look at the structure of a text
+rather than just the lexical and grammatical forms that comprise the text.
+For example, consider the following text;
+text segments are numbered for reference:</p>
+<ol class="arabic simple">
+<li>Vitamin D is an important nutrient;</li>
+</ol>
+<p>(2) inadequate amounts are correlated with
+an increased risk of several diseases, including osteoporosis,
+cancer, and diabetes.
+(3) Humans can synthesize Vitamin D from the sun
+(4) although too much exposure to the sun can cause other health problems.
+(5) In many cases, taking Vitamin D supplements is the best solution.</p>
+<p>Fragment (1) is characterized as Background.
+Fragment (2) is Elaboration.  Fragment (3) is Circumstance.
+Fragment 4 is Contrast. Fragment 5 is Evaluation.</p>
+<p>Full RST analysis includes many more elements than discussed here.
+RST processing involves constructing large, compex tree structures
+with branches and leaves that represent each text element
+and its classification and show the rhetorical relations
+between the text elements.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Natural Language Processing (NLP)</a><ul>
+<li><a class="reference internal" href="#keyword-statistics">Keyword statistics</a></li>
+<li><a class="reference internal" href="#anaphora-resolution">Anaphora resolution</a></li>
+<li><a class="reference internal" href="#rhetorical-structure-theory-rst">Rhetorical Structure Theory (RST)</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/ligapedia/n-r/nlp.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../../_sources/ligapedia/n-r/nlp.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

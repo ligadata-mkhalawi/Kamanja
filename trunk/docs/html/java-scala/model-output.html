@@ -1,0 +1,225 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Creating Model Output &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="creating-model-output">
+<span id="java-scala-guide-model-output"></span><h1>Creating Model Output<a class="headerlink" href="#creating-model-output" title="Permalink to this headline">¶</a></h1>
+<p>There are two ways of creating model output:</p>
+<ul class="simple">
+<li>Implementing ModelResultBase</li>
+<li>Using a simple result object.</li>
+</ul>
+<div class="section" id="implementing-modelresultbase">
+<h2>Implementing ModelResultBase<a class="headerlink" href="#implementing-modelresultbase" title="Permalink to this headline">¶</a></h2>
+<p>First, the hard way – implementing ModelResultBase:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">LowBalanceAlertResult</span> <span class="n">extends</span> <span class="n">ModelResultBase</span> <span class="p">{</span>
+  <span class="n">var</span> <span class="n">custId</span><span class="p">:</span> <span class="n">Long</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="n">var</span> <span class="n">branchId</span><span class="p">:</span> <span class="n">Int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="n">var</span> <span class="n">accNo</span><span class="p">:</span> <span class="n">Long</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="n">var</span> <span class="n">curBalance</span><span class="p">:</span> <span class="n">Double</span> <span class="o">=</span> <span class="mi">0</span>
+  <span class="n">var</span> <span class="n">alertType</span><span class="p">:</span> <span class="n">String</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+  <span class="n">var</span> <span class="n">triggerTime</span><span class="p">:</span> <span class="n">Long</span> <span class="o">=</span> <span class="mi">0</span>
+
+  <span class="k">def</span> <span class="nf">withCustId</span><span class="p">(</span><span class="n">cId</span><span class="p">:</span> <span class="n">Long</span><span class="p">):</span> <span class="n">LowBalanceAlertResult</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">custId</span> <span class="o">=</span> <span class="n">cId</span>
+    <span class="n">this</span>
+  <span class="p">}</span>
+
+  <span class="k">def</span> <span class="nf">withBranchId</span><span class="p">(</span><span class="n">bId</span><span class="p">:</span> <span class="n">Int</span><span class="p">):</span> <span class="n">LowBalanceAlertResult</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">branchId</span> <span class="o">=</span> <span class="n">bId</span>
+    <span class="n">this</span>
+  <span class="p">}</span>
+
+  <span class="k">def</span> <span class="nf">withAccNo</span><span class="p">(</span><span class="n">aNo</span><span class="p">:</span> <span class="n">Long</span><span class="p">):</span> <span class="n">LowBalanceAlertResult</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">accNo</span> <span class="o">=</span> <span class="n">aNo</span>
+    <span class="n">this</span>
+  <span class="p">}</span>
+
+  <span class="k">def</span> <span class="nf">withCurBalance</span><span class="p">(</span><span class="n">curBal</span><span class="p">:</span> <span class="n">Double</span><span class="p">):</span> <span class="n">LowBalanceAlertResult</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">curBalance</span> <span class="o">=</span> <span class="n">curBal</span>
+    <span class="n">this</span>
+  <span class="p">}</span>
+
+  <span class="k">def</span> <span class="nf">withAlertType</span><span class="p">(</span><span class="n">alertTyp</span><span class="p">:</span> <span class="n">String</span><span class="p">):</span> <span class="n">LowBalanceAlertResult</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">alertType</span> <span class="o">=</span> <span class="n">alertTyp</span>
+    <span class="n">this</span>
+  <span class="p">}</span>
+
+  <span class="k">def</span> <span class="nf">withTriggerTime</span><span class="p">(</span><span class="n">triggerTm</span><span class="p">:</span> <span class="n">Long</span><span class="p">):</span> <span class="n">LowBalanceAlertResult</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">triggerTime</span> <span class="o">=</span> <span class="n">triggerTm</span>
+    <span class="n">this</span>
+  <span class="p">}</span>
+
+  <span class="n">override</span> <span class="k">def</span> <span class="nf">toJson</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">org</span><span class="o">.</span><span class="n">json4s</span><span class="o">.</span><span class="n">JsonAST</span><span class="o">.</span><span class="n">JObject</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">val</span> <span class="n">json</span> <span class="o">=</span> <span class="n">List</span><span class="p">(</span>
+    <span class="p">(</span><span class="s2">&quot;CustId&quot;</span> <span class="o">-&amp;</span><span class="n">amp</span><span class="p">;</span><span class="n">gt</span><span class="p">;</span> <span class="n">custId</span><span class="p">)</span> <span class="o">~</span>
+    <span class="p">(</span><span class="s2">&quot;BranchId&quot;</span> <span class="o">-&amp;</span><span class="n">amp</span><span class="p">;</span><span class="n">gt</span><span class="p">;</span> <span class="n">branchId</span><span class="p">)</span> <span class="o">~</span>
+    <span class="p">(</span><span class="s2">&quot;AccNo&quot;</span> <span class="o">-&amp;</span><span class="n">amp</span><span class="p">;</span><span class="n">gt</span><span class="p">;</span> <span class="n">accNo</span><span class="p">)</span> <span class="o">~</span>
+    <span class="p">(</span><span class="s2">&quot;CurBalance&quot;</span> <span class="o">-&amp;</span><span class="n">amp</span><span class="p">;</span><span class="n">gt</span><span class="p">;</span> <span class="n">curBalance</span><span class="p">)</span> <span class="o">~</span>
+    <span class="p">(</span><span class="s2">&quot;AlertType&quot;</span> <span class="o">-&amp;</span><span class="n">amp</span><span class="p">;</span><span class="n">gt</span><span class="p">;</span> <span class="n">alertType</span><span class="p">)</span> <span class="o">~</span>
+    <span class="p">(</span><span class="s2">&quot;TriggerTime&quot;</span> <span class="o">-&amp;</span><span class="n">amp</span><span class="p">;</span><span class="n">gt</span><span class="p">;</span> <span class="n">triggerTime</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">json</span>
+  <span class="p">}</span>
+
+  <span class="n">override</span> <span class="k">def</span> <span class="nf">toString</span><span class="p">:</span> <span class="n">String</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">compact</span><span class="p">(</span><span class="n">render</span><span class="p">(</span><span class="n">toJson</span><span class="p">))</span>
+  <span class="p">}</span>
+
+  <span class="n">override</span> <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n">String</span><span class="p">):</span> <span class="n">Any</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">compareToIgnoreCase</span><span class="p">(</span><span class="s2">&quot;custId&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="k">return</span> <span class="n">custId</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">compareToIgnoreCase</span><span class="p">(</span><span class="s2">&quot;branchId&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="k">return</span> <span class="n">branchId</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">compareToIgnoreCase</span><span class="p">(</span><span class="s2">&quot;accNo&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="k">return</span> <span class="n">accNo</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">compareToIgnoreCase</span><span class="p">(</span><span class="s2">&quot;curBalance&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="k">return</span> <span class="n">curBalance</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">compareToIgnoreCase</span><span class="p">(</span><span class="s2">&quot;alertType&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="k">return</span> <span class="n">alertType</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">compareToIgnoreCase</span><span class="p">(</span><span class="s2">&quot;triggerTime&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="k">return</span>  <span class="n">triggerTime</span>
+    <span class="k">return</span> <span class="n">null</span>
+  <span class="p">}</span>
+
+  <span class="n">override</span> <span class="k">def</span> <span class="nf">asKeyValuesMap</span><span class="p">:</span> <span class="n">Map</span><span class="p">[</span><span class="n">String</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">val</span> <span class="nb">map</span> <span class="o">=</span> <span class="n">scala</span><span class="o">.</span><span class="n">collection</span><span class="o">.</span><span class="n">mutable</span><span class="o">.</span><span class="n">Map</span><span class="p">[</span><span class="n">String</span><span class="p">,</span> <span class="n">Any</span><span class="p">]()</span>
+    <span class="nb">map</span><span class="p">(</span><span class="s2">&quot;custid&quot;</span><span class="p">)</span> <span class="o">=</span> <span class="n">custId</span>
+    <span class="nb">map</span><span class="p">(</span><span class="s2">&quot;branchid&quot;</span><span class="p">)</span> <span class="o">=</span> <span class="n">branchId</span>
+    <span class="nb">map</span><span class="p">(</span><span class="s2">&quot;accno&quot;</span><span class="p">)</span> <span class="o">=</span> <span class="n">accNo</span>
+    <span class="nb">map</span><span class="p">(</span><span class="s2">&quot;curbalance&quot;</span><span class="p">)</span> <span class="o">=</span> <span class="n">curBalance</span>
+    <span class="nb">map</span><span class="p">(</span><span class="s2">&quot;alerttype&quot;</span><span class="p">)</span> <span class="o">=</span> <span class="n">alertType</span>
+    <span class="nb">map</span><span class="p">(</span><span class="s2">&quot;triggertime&quot;</span><span class="p">)</span> <span class="o">=</span> <span class="n">triggerTime</span>
+    <span class="nb">map</span><span class="o">.</span><span class="n">toMap</span>
+  <span class="p">}</span>
+
+  <span class="n">override</span> <span class="k">def</span> <span class="nf">Deserialize</span><span class="p">(</span><span class="n">dis</span><span class="p">:</span> <span class="n">DataInputStream</span><span class="p">):</span> <span class="n">Unit</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="o">//</span> <span class="n">BUGBUG</span><span class="p">::</span> <span class="n">Yet</span> <span class="n">to</span> <span class="n">implement</span>
+  <span class="p">}</span>
+
+  <span class="n">override</span> <span class="k">def</span> <span class="nf">Serialize</span><span class="p">(</span><span class="n">dos</span><span class="p">:</span> <span class="n">DataOutputStream</span><span class="p">):</span> <span class="n">Unit</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="o">//</span> <span class="n">BUGBUG</span><span class="p">::</span> <span class="n">Yet</span> <span class="n">to</span> <span class="n">implement</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>...</p>
+</div>
+<div class="section" id="using-a-simple-result-object">
+<h2>Using a simple result object<a class="headerlink" href="#using-a-simple-result-object" title="Permalink to this headline">¶</a></h2>
+<p>An easier way is to use the com.ligadata.KamanjaBase.MappedModelResultClass
+that implements the withResults method.
+Create an array of com.ligadata.KamanjaBase.Result objects
+(Key[String]/Value[Any]):</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">withResults</span><span class="p">(</span><span class="n">res</span><span class="p">:</span> <span class="n">Array</span><span class="p">[</span><span class="n">Result</span><span class="p">]):</span> <span class="n">MappedModelResults</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">res</span> <span class="o">!=</span> <span class="n">null</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">res</span><span class="o">.</span><span class="n">foreach</span><span class="p">(</span><span class="n">r</span> <span class="o">=&gt;</span> <span class="p">{</span>
+      <span class="n">results</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">name</span><span class="p">)</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">result</span>
+    <span class="p">})</span>
+
+  <span class="p">}</span>
+  <span class="n">this</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>Create an array of com.ligadata.KamanjaBase.Result objects
+(simple Key[String]/Value[Any]) and use this array
+to build the output as follows:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">var</span> <span class="n">resultArray</span> <span class="o">=</span> <span class="n">Array</span><span class="p">[</span><span class="n">Result</span><span class="p">]()</span><span class="o">......</span>
+  <span class="n">new</span> <span class="n">LowBalanceAlertResult</span><span class="p">()</span><span class="o">.</span> <span class="n">withResults</span><span class="p">(</span><span class="n">resultArray</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Creating Model Output</a><ul>
+<li><a class="reference internal" href="#implementing-modelresultbase">Implementing ModelResultBase</a></li>
+<li><a class="reference internal" href="#using-a-simple-result-object">Using a simple result object</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/java-scala/model-output.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/java-scala/model-output.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

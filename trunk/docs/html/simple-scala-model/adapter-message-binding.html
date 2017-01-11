@@ -1,0 +1,185 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Write adapter message bindings &#8212; Kamanja 1.6.1 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '1.6.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true,
+        SOURCELINK_SUFFIX: '.txt'
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="write-adapter-message-bindings">
+<h1>Write adapter message bindings<a class="headerlink" href="#write-adapter-message-bindings" title="Permalink to this headline">¶</a></h1>
+<p>Add something referred to as an adapter message binding.
+Adapter message bindings are required to tell the input adapter
+(see more about adapters in the adapters section)
+what message type the messages are treated as when read from the input adapter.</p>
+<p>When a message is read by Kamanja, it treats all messages,
+regardless of type, as the message defined in the adapter message binding.
+If multiple message types are required to be read from the same input adapter,
+see documentation about JSON Transformation Models (JTMs).</p>
+<p>Adapter message bindings are also required
+to indicate what message types should be sent to the output adapter.
+Unlike the input adapter, this can be as many messages as preferred.</p>
+<p>There is only have one message type that is read in from the input adapter,
+NumberMessage, so there is no need to complicate the simple ensemble with a JTM.
+In later walkthroughs, take a look at JTMs
+and how they interact with messages and adapters.
+For now, take a look at the adapter message binding:</p>
+<p>Here are the contents of DAGMathAdapterBindings.json</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">DAGMathAdapterBindings</span><span class="o">.</span><span class="n">json</span>
+<span class="p">[{</span>
+<span class="s2">&quot;AdapterName&quot;</span><span class="p">:</span> <span class="s2">&quot;testin_1&quot;</span><span class="p">,</span>
+<span class="s2">&quot;MessageName&quot;</span><span class="p">:</span> <span class="s2">&quot;com.ligadata.test.dag.NumberMessage&quot;</span><span class="p">,</span>
+<span class="s2">&quot;Serializer&quot;</span><span class="p">:</span> <span class="s2">&quot;com.ligadata.kamanja.serializer.csvserdeser&quot;</span><span class="p">,</span>
+<span class="s2">&quot;Options&quot;</span><span class="p">:</span> <span class="p">{</span>
+<span class="s2">&quot;alwaysQuoteFields&quot;</span><span class="p">:</span> <span class="n">false</span><span class="p">,</span>
+<span class="s2">&quot;fieldDelimiter&quot;</span><span class="p">:</span> <span class="s2">&quot;,&quot;</span>
+<span class="p">}</span>
+<span class="p">},</span> <span class="p">{</span>
+<span class="s2">&quot;AdapterName&quot;</span><span class="p">:</span> <span class="s2">&quot;testout_1&quot;</span><span class="p">,</span>
+<span class="s2">&quot;MessageNames&quot;</span><span class="p">:</span> <span class="p">[</span>
+<span class="s2">&quot;com.ligadata.test.dag.DividedMessage&quot;</span>
+<span class="p">],</span>
+<span class="s2">&quot;Serializer&quot;</span><span class="p">:</span> <span class="s2">&quot;com.ligadata.kamanja.serializer.jsonserdeser&quot;</span><span class="p">,</span>
+<span class="s2">&quot;Options&quot;</span><span class="p">:</span> <span class="p">{}</span>
+<span class="p">}]</span>
+</pre></div>
+</div>
+<p>The above shows an adapter message binding
+for both the input adapter and the output adapter.
+Here are the elements of the adapters.</p>
+<ul class="simple">
+<li>AdapterName is the name of the adapter that is defined in
+Kamanja’s cluster configuration
+(find an example in /config/ClusterConfig.json).
+For more info about configuration, click the message bindings section.
+This is essentially binding some message(s) to that adapter.</li>
+<li>MessageName is the full namespace and name of the message
+to bind to the aforementioned AdapterName.
+For input adapters (as defined in ClusterConfig.json),
+this means Kamanja treats every message, regardless of type,
+as what is listed in MessageName.
+In this case, make it NumberMessage,
+because that is the only message that is presented to Kamanja.</li>
+<li>Serializer defines the format that the message is received in or produced as.
+csvserdeser, as shown in the input adapter message binding,
+indicates Kamanja should expect all messages from the testin_1 adapter
+to be in a CSV – or some form of delimited – data.
+jsonserdeser, as shown in the testout_1 adapter,
+indicates that messages should be in JSON format.
+In this case, it means the contents of the DividedMessage message type
+is outputted as JSON into the testout_1 adapter.</li>
+<li>Options are simply additional options
+applied to any particular adapter’s Serializer.
+For the testin_1 adapter,
+the quotes are not accounted for in the field
+(and no quotes written in the case of an output adapter),
+and the fieldDelimiter tells Kamanja what delimiter to expect,
+in this case, the standard comma.</li>
+</ul>
+<div class="section" id="adding-adapter-message-bindings">
+<h2>Adding Adapter Message Bindings<a class="headerlink" href="#adding-adapter-message-bindings" title="Permalink to this headline">¶</a></h2>
+<p>Hopefully, there is a decent understanding of the adapter message bindings now.
+For more information, click the message bindings section.
+Now, add the final piece of metadata with the following command:</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="o">&lt;</span><span class="n">KamanjaInstallDirectory</span><span class="o">&gt;</span>
+
+<span class="n">bash</span> <span class="nb">bin</span><span class="o">/</span><span class="n">kamanja</span> <span class="n">add</span> <span class="n">adaptermessagebinding</span> \
+   <span class="n">FROMFILE</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">SimpleMathDAG</span><span class="o">/</span><span class="n">DAGMathAdapterBindings</span><span class="o">.</span><span class="n">json</span>
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Write adapter message bindings</a><ul>
+<li><a class="reference internal" href="#adding-adapter-message-bindings">Adding Adapter Message Bindings</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/simple-scala-model/adapter-message-binding.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, LigaData Inc..
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.9</a>
+      
+      |
+      <a href="../_sources/simple-scala-model/adapter-message-binding.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
