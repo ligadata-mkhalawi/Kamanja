@@ -383,10 +383,10 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
     }
 
     logger.debug("File message Extractor - shutting down updatExecutor")
-    MonitorUtils.shutdownAndAwaitTermination(updatExecutor, "file message extracting status updator", 1)
+    MonitorUtils.shutdownAndAwaitTermination(updatExecutor, "file message extracting status updator")
 
     logger.debug("File message Extractor - shutting down extractExecutor")
-    MonitorUtils.shutdownAndAwaitTermination(extractExecutor, "file message extractor", 1)
+    MonitorUtils.shutdownAndAwaitTermination(extractExecutor, "file message extractor")
   }
 
   private def extractMessages(chunk: Array[Byte], len: Int): Int = {

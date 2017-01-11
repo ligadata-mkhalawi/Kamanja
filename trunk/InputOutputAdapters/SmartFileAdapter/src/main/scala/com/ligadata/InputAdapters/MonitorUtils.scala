@@ -129,9 +129,9 @@ object MonitorUtils {
   }
 
   def shutdownAndAwaitTermination(pool : ExecutorService, id : String) : Unit = {
-    shutdownAndAwaitTermination(pool, id, 2000)
+    shutdownAndAwaitTermination(pool, id, 10000)
   }
-  def shutdownAndAwaitTermination(pool : ExecutorService, id : String, waitInMs : Long) : Unit = {
+  private def shutdownAndAwaitTermination(pool : ExecutorService, id : String, waitInMs : Long) : Unit = {
     pool.shutdown(); // Disable new tasks from being submitted
     try {
       // Wait a while for existing tasks to terminate
@@ -148,8 +148,8 @@ object MonitorUtils {
         logger.info("InterruptedException for " + id, ie)
         // (Re-)Cancel if current thread also interrupted
         pool.shutdownNow();
-        // Preserve interrupt status
-        Thread.currentThread().interrupt()
+
+        //Thread.currentThread().interrupt()
       }
     }
   }

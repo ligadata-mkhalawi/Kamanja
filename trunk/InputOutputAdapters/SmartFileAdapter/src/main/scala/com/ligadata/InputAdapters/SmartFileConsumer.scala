@@ -2173,7 +2173,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     if (leaderExecutor != null) {
       LOG.warn("shutting down adapter - {} . stopping leaderExecutor", adapterConfig.Name)
       keepCheckingStatus = false
-      MonitorUtils.shutdownAndAwaitTermination(leaderExecutor, "Leader executor", 10)
+      MonitorUtils.shutdownAndAwaitTermination(leaderExecutor, "Leader executor")
       leaderExecutor = null
     }
 
