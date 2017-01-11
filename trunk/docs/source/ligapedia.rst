@@ -24,6 +24,7 @@ Ligapedia
    ligapedia/a-f/feature-extraction
    ligapedia/a-f/feature-selection
    ligapedia/a-f/features
+   ligapedia/a-f/functions
    ligapedia/g-m/hbase
    ligapedia/g-m/jar
    ligapedia/g-m/java
@@ -38,6 +39,7 @@ Ligapedia
    ligapedia/g-m/messages-fix-map
    ligapedia/g-m/messages-mapped
    ligapedia/g-m/metadata
+   ligapedia/g-m/metadata-api
    ligapedia/g-m/model
    ligapedia/n-r/naive-bayes
    ligapedia/n-r/neural-networks

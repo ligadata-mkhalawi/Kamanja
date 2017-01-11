@@ -1,5 +1,5 @@
 
-.. _avro-rst:
+.. _avro-term:
 
 AVRO
 ----

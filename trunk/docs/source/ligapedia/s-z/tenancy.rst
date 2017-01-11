@@ -15,4 +15,17 @@ Each tenant has its own input adapter, output adapter,
 and storage adapter, as well as default storage.
 This allows multiple use cases on the same cluster.
 
-Basic multi-tenancy is defined in the :ref:`clusterconfig-config-ref` file.
+For details about implementing multi-tenancy:
+
+- Each tenant in the system is defined in a
+  :ref:`tenant definition<tenant-def-config-ref>` section
+  of the the :ref:`clusterconfig-config-ref` file.
+
+- Each :ref:`adapter<adapter-term>` can be assigned to a tenant
+  in the :ref:`adapter definition<adapter-def-config-ref>` section
+  of the the :ref:`clusterconfig-config-ref` file.
+  Only users who are members of that tenant
+  can access the :ref:`models<model-term>`,
+  :ref:`messages<messages-term>`, and :ref:`containers<container-term>`
+  that are controlled by that adapter.
+

@@ -34,7 +34,8 @@ Containers have state information that the model needs.
 
 For more information:
 
--
+- :ref:`container-def-config-ref` shows the structure used
+  to define a container
 - Use the :ref:`JdbcDataCollector.sh<jdbcdatacollector-command-ref>` command
   to extract data from an external relational database
   into a local file that can then be loaded into a container.

@@ -1,0 +1,7 @@
+
+.. -metadataapi-term:
+
+Metadata API
+------------
+
+
