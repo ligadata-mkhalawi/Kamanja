@@ -231,6 +231,8 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   Thread.currentThread().setContextClassLoader(tempContext);
 
   var topicPartitionsCount = producer.partitionsFor(qc.topic).size()
+  if (topicPartitionsCount < 0)
+    topicPartitionsCount = 1
 
   var partitionsGetTm = System.currentTimeMillis
   val refreshPartitionTime = 60 * 1000 // 60 secs
@@ -455,22 +457,22 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   }
 
   private def getPartition(key: Array[Byte], numPartitions: Int): Int = {
-    if (numPartitions == 0) return 0
+    if (numPartitions <= 0) return 0
     if (key != null) {
       try {
-        return (scala.math.abs(Arrays.hashCode(key)) % numPartitions)
+        return scala.math.abs(scala.math.abs(Arrays.hashCode(key)) % numPartitions)
       } catch {
         case e: Exception => {
           externalizeExceptionEvent(e)
-          throw e
+          return scala.math.abs(randomPartitionCntr.nextInt(numPartitions))
         }
         case e: Throwable => {
           externalizeExceptionEvent(e)
-          throw e
+          return scala.math.abs(randomPartitionCntr.nextInt(numPartitions))
         }
       }
     }
-    return randomPartitionCntr.nextInt(numPartitions)
+    return scala.math.abs(randomPartitionCntr.nextInt(numPartitions))
   }
 
 
@@ -530,7 +532,10 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
     // Refreshing Partitions for every refreshPartitionTime.
     // BUGBUG:: This may execute multiple times from multiple threads. For now it does not hard too much.
     if ((System.currentTimeMillis - partitionsGetTm) > refreshPartitionTime) {
+      // val prevPartsCount = topicPartitionsCount
       topicPartitionsCount = producer.partitionsFor(qc.topic).size()
+      if (topicPartitionsCount < 0)
+        topicPartitionsCount = 1 // Can we restored prevPartsCount?
       partitionsGetTm = System.currentTimeMillis
     }
 
@@ -538,7 +543,16 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       var partitionsMsgMap = scala.collection.mutable.Map[Int, ArrayBuffer[MsgDataRecievedCnt]]();
 
       for (i <- 0 until messages.size) {
-        val partId = getPartition(partitionKeys(i), topicPartitionsCount)
+        val partitionId = getPartition(partitionKeys(i), topicPartitionsCount)
+        val partId =
+          if (partitionId < 0) {
+            val partKey = if (partitionKeys(i) == null) "" else new String(partitionKeys(i))
+            LOG.error("%s => Got PartitionId:%d for key:%s".format(qc.Name, partitionId, partKey))
+            0
+          }
+          else {
+            partitionId
+          }
         var ab = partitionsMsgMap.getOrElse(partId, null)
         if (ab == null) {
           ab = new ArrayBuffer[MsgDataRecievedCnt](256)
