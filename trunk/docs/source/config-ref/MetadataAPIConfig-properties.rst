@@ -44,6 +44,34 @@ File structure
 Parameters
 ----------
 
+- **MetaDataStore** -
+
+  - **StoreType** -
+  - **SchemaName** -
+  - **Location** -
+
+- **ROOT_DIR** -
+- **GIT_ROOT** -
+- **JAR_TARGET_DIR** -
+- **SCALA_HOME** -
+- **JAVA_HOME** -
+- **MANIFEST_PATH** -
+- **TYPE_FILES_DIR** -
+- **FUNCTION_FILES_DIR** -
+- **CONCEPT_FILES_DIR** -
+- **MESSAGE_FILES_DIR** 8
+- **CONTAINER_FILES_DIR** -
+- **CONFIG_FILES** -
+- **MODEL_EXEC_LOG** -
+- **JarPaths** -
+- **SECURITY_IMP_JAR** -
+- **SECURITY_IMP_CLASS** -
+- **AUDIT_IMPL_JAR** -
+- **AUDIT_IMPL_CLASS** -
+- **DO_AUDIT** -
+- **DO_AUTH** -
+- **SSL_CERTIFICATE** -
+
 Usage
 -----
 

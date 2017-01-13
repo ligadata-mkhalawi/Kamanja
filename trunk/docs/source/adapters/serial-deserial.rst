@@ -25,6 +25,33 @@ so that messages can be formatted and encoded to meet business requirements.
 In the next section is a description of the serializers available
 in this release.
 
+.. _serial-internal-cols-guide:
+
+Handling internal columns in objects
+------------------------------------
+
+Each object, such as a message or a container,
+has header information containing internal system columns
+that can be output as part of code generation.
+System columns have information associated with the object, such as
+version number, class ID, and schema ID.
+These are internal fields used by Kamanja during internal store
+or to internally communicate from one node to another node.
+The **emitSystemColumns** parameter in the :ref:`adapter-def-config-ref`
+controls whether those internal columns are included in the output.
+
+If system columns are stored,
+the storage serializer needs to preserve that information in the storage.
+Otherwise, that information may not be able to be restored properly.
+If **emitSystemColumns** is set to "true",
+the serializer class includes the internal columns
+as part of the output mechanism.
+
+System columns must be excluded in cases where serialization occurs
+for consumption by external systems with no knowledge of internal columns.
+When **emitSystemColumns** is set to "false",
+the internal columns are not included in the serialization.
+
 .. _kbinary-guide:
 
 Built-in Kamanja Serialization and Deserialization

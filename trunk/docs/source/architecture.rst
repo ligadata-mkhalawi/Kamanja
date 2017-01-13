@@ -12,6 +12,7 @@ Kamanja Architecture
    architecture/engine-dag
    architecture/metadata-mgr
    architecture/kamanja-components
+   architecture/model-validation
    architecture/python
 
 

@@ -142,6 +142,18 @@ General operations
 Options and arguments
 ---------------------
 
+- **MODELNAME** - specify the name of the module
+  (in the format <modulename>.<classname>)
+  that contains the execute method.
+
+- **MESSAGENAME** - name of the input message
+  for the consumption of the input message.
+
+- **OUTMESSAGE** – name of the output queue where produced messages are sent.
+
+- **MODELOPTIONS** – (optional) contains the active input fields
+  from the consumed input message, in JSON format.
+
 Usage
 -----
 

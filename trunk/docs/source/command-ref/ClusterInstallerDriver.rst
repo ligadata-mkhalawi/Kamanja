@@ -12,39 +12,16 @@ or upgrade to Kamanja 1.6.0 from Releases
 Syntax
 ------
 
-Fresh install:
-
 ::
 
   java -Dlog4j.configurationFile=file:$KAMANJA_HOME/config/log4j2.xml
-    -jar $KAMANJA_HOME/bin/ClusterInstallerDriver-1.6.0 -install
+    -jar $KAMANJA_HOME/bin/ClusterInstallerDriver-1.6.0 -install|upgrade
     -apiConfig <path-to-MetadataAPIConfig.properties>
     -clusterConfig <path-to-ClusterConfig.json>
     -tarballPath <tarball-path>
     -toScala "2.11" | "2.10"
     -tenantID <tenantID>
     -adapterMessageBindings <path-to-adapterMessageBindings-file>
-    [-workingDir <workingdirectory>]
-    [-clusterId <id>]
-    [-logDir <logDir>]
-    [-migrationTemplate <MigrationTemplate>]
-    [-skipPrerequisites "scala,java,hbase,kafka,zookeeper,all"]
-    [-preRequisitesCheckOnly]
-
-Upgrade:
-
-::
-
-  java -Dlog4j.configurationFile=file:$KAMANJA_HOME/config/log4j2.xml
-    -jar $KAMANJA_HOME/bin/ClusterInstallerDriver-1.6.0 -upgrade
-    -apiConfig <path-to-MetadataAPIConfig.properties>
-    -clusterConfig <path-to-ClusterConfig.json>
-    -tarballPath <tarball-path>
-    -toScala "2.11" | "2.10"
-    -tenantID <tenantID>
-    -adapterMessageBindings <path-to-adapterMessageBindings-file>
-    -fromKamanja "1.1" | "1.2" | "1.3" | "1.4" | "1.4.1" | "1.5.0"
-    -fromScala "2.10"
     [-workingDir <workingdirectory>]
     [-clusterId <id>]
     [-logDir <logDir>]

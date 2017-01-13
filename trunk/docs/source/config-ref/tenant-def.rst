@@ -50,16 +50,32 @@ File structure
 Parameters
 ----------
 
-- StoreType – indicates the type of database to use.
-  Valid options are Cassandra and HBase for noSQL options
-  (recommended for cluster configurations).
-- SchemaName – indicates the schema under which all tables
-  concerning the metadata are held.
-  In the case of Cassandra, it searches for a keyspace for the tables.
-  In the case of HBase, it searches for a namespace.
-- Location – indicates the location of the database.
-  For Cassandra and HBase, Location should be the name
-  of the server(s) where these databases exist.
+- **TenantID** -- unique identifier for this tenant.
+  The :ref:Adapter<adapter-def-config-ref>` section of this file
+  uses this ID to define its tenancy.
+- **Description** -- human-readable description of this tenant
+- **PrimaryDataStore** -- describe the default data store
+  associated with this tenant:
+
+  - **StoreType** – indicates the type of database to use.
+    Valid options are Cassandra and HBase for noSQL options
+    (recommended for cluster configurations).
+  - **SchemaName** – indicates the schema under which all tables
+    concerning the metadata are held.
+    In the case of Cassandra, it searches for a keyspace for the tables.
+    In the case of HBase, it searches for a namespace.
+  - **Location** – indicates the location of the database.
+    For Cassandra and HBase, Location should be the name
+    of the server(s) where these databases exist.
+  - **authentication** -
+  - **regionserver_principal** -
+  - **master_principal** -
+  - **principal** -
+  - **keytab** -
+
+- **CacheConfig**
+
+  - **MaxSizeInMB** --
 
 
 

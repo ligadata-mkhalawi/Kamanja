@@ -113,6 +113,8 @@ Input message parameters
 - **Name** – name of the message.
 - **Version** – version of the message.
 - **Description** – (optional) description of the message.
+- **Persist** – (optional) If set to TRUE, data processed as this message type
+  is saved to the data store.  See :ref:`persist-term`.
 - **Fixed** – if set to TRUE, this is a fixed message;
   if set to FALSE, it is a mapped messages.
   See :ref:`Fixed and mapped messages<messages-fix-map-term>`.
@@ -127,8 +129,6 @@ Input message parameters
 - **Fields/elements** – schema definition for the data included
   in this message.  This is a list of attribute names
   and the :ref:`type<types-term>` of each attribute.
-- **Persist** – (optional) If set to TRUE, data processed as this message type
-  is saved to the data store.  See :ref:`persist-term`.
 - **PartitionKey** – (optional) partition keys for the message.
 - **PrimaryKey** – (optional) primary keys for the message.
 - **TimePartitionInfo** – (optional) time partition information.

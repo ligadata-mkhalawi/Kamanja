@@ -63,6 +63,7 @@ Download and install :ref:`Scala<scala-term>` 2.11 from the
 Kamanja can instead use Scala 2.10, which can be downloaded from
 `the Scala 2.10 download site <http://www.scala-lang.org/download/2.10.2.html>`-.
 
+.. _zookeeper-install:
 
 Install ZooKeeper
 ~~~~~~~~~~~~~~~~~
