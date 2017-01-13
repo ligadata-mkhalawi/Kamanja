@@ -38,6 +38,13 @@ assembleDependencies in Global := {
   (assembly in KamanjaInternalDeps).value
 }
 
+// sbt-site scaladoc plugin for generating api documentation
+//enablePlugins(SiteScaladocPlugin)
+
+enablePlugins(SphinxPlugin)
+
+sourceDirectory in Sphinx := baseDirectory.value / "docs" / "source"
+
 //newly added
 lazy val ExtDependencyLibs = project.in(file("ExtDependencyLibs")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild )
 
@@ -263,19 +270,122 @@ lazy val PythonModelPrototype = project.in(file("FactoriesOfModelInstanceFactory
 lazy val SimpleKafkaProducer_v9 = project.in(file("Utils/SimpleKafkaProducer/v9")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, Exceptions)
 
 lazy val SimpleKafkaProducer_v8 = project.in(file("Utils/SimpleKafkaProducer/v8")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, Exceptions)
+
 /*
 val commonSettings = Seq(
-    scalaVersion := "2.11.7",
+    scalaVersion := scalaVersion.value,
     autoAPIMappings := true
   )
-val root = (project in file(".")).
-  settings(commonSettings: _*).
-  settings(unidocSettings: _*).
-  settings(
-    name := "KamanjaManager",
-    unidocProjectFilter in (ScalaUnidoc, unidoc) := inAnyProject -- inProjects(MigrateFrom_V_1_1, MigrateFrom_V_1_2)
-  ).
-
-  aggregate(BaseTypes, BaseFunctions, Serialize, ZooKeeperClient, ZooKeeperListener, Exceptions, KamanjaBase, DataDelimiters, KamanjaManager, InputOutputAdapterBase, KafkaSimpleInputOutputAdapters, FileSimpleInputOutputAdapters, SimpleEnvContextImpl, StorageBase, Metadata, MessageCompiler, PmmlRuntime, PmmlCompiler, PmmlUdfs, MethodExtractor, MetadataAPI, MetadataBootstrap, MetadataAPIService, MetadataAPIServiceClient, SimpleKafkaProducer, KVInit, ZooKeeperLeaderLatch, JsonDataGen, NodeInfoExtract, Controller, SimpleApacheShiroAdapter, AuditAdapters, CustomUdfLib, JdbcDataCollector, ExtractData, StorageCassandra, StorageHashMap, StorageHBase, StorageTreeMap, StorageSqlServer, StorageManager, AuditAdapterBase, SecurityAdapterBase, KamanjaUtils, UtilityService, HeartBeat, TransactionService, KvBase, FileDataConsumer, CleanUtil, SaveContainerDataComponent, UtilsForModels, JarFactoryOfModelInstanceFactory, JpmmlFactoryOfModelInstanceFactory, MigrateBase, MigrateManager)
-
 */
+/*
+lazy val scaladocSiteSettings = scaladocSiteProjects.flatMap { project =>
+  SiteScaladocPlugin.scaladocSettings(
+    config(project.id),
+    mappings in (Compile, packageDoc) in project,
+    s"api/${project.id}"
+  )
+}
+
+val siteWithScaladoc = project.in(file("site/scaladoc"))
+  .settings(scaladocSiteSettings)
+
+//val root = (project in file(".")).
+//  configs(TestConfigs.all: _*).
+//  settings(scaladocSiteSettings)
+//  aggregate(scalaDocSiteProjects)
+
+lazy val scaladocSiteProjects = List(
+  ExtDependencyLibs,
+  ExtDependencyLibs2,
+  KamanjaInternalDeps,
+  BaseTypes,
+  Cache,
+  CacheImp,
+  BaseFunctions,
+  Serialize,
+  ZooKeeperClient,
+  ZooKeeperListener,
+  Exceptions,
+  KamanjaBase,
+  DataDelimiters,
+  SmartFileAdapter,
+  MessageCompiler,
+  KamanjaManager,
+  InputOutputAdapterBase,
+  KafkaSimpleInputOutputAdapters,
+  FileSimpleInputOutputAdapters,
+  SimpleEnvContextImpl,
+  StorageBase,
+  Metadata,
+  OutputMsgDef,
+  MessageDef,
+  GenericMsgCompiler,
+  PmmlRuntime,
+  PmmlCompiler,
+  PmmlUdfs,
+  MethodExtractor,
+  MetadataAPI,
+  MetadataBootstrap,
+  MetadataAPIService,
+  MetadataAPIServiceClient,
+  ContainersUtility,
+  JsonChecker,
+  QueryGenerator,
+  GenerateMessage,
+  SimpleKafkaProducer,
+  KVInit,
+  ZooKeeperLeaderLatch,
+  JsonDataGen,
+  NodeInfoExtract,
+  Controller,
+  SimpleApacheShiroAdapter,
+  AuditAdapters,
+  CustomUdfLib,
+  JdbcDataCollector,
+  ExtractData,
+  StorageCassandra,
+  StorageH2DB,
+  StorageHashMap,
+  StorageHBase,
+  StorageTreeMap,
+  StorageSqlServer,
+  StorageManager,
+  AuditAdapterBase,
+  SecurityAdapterBase,
+  KamanjaUtils,
+  UtilityService,
+  HeartBeat,
+  TransactionService,
+  jtm,
+  runtime,
+  Dag,
+  JsonSerDeser,
+  CsvSerDeser,
+  KBinarySerDeser,
+  KvBase,
+  FileDataConsumer,
+  CleanUtil,
+  SaveContainerDataComponent,
+  UtilsForModels,
+  JarFactoryOfModelInstanceFactory,
+  JpmmlFactoryOfModelInstanceFactory,
+  PythonFactoryOfModelInstanceFactory,
+  MigrateBase,
+  MigrateManager,
+  InstallDriverBase,
+  InstallDriver,
+  ClusterInstallerDriver,
+  GetComponent,
+  PmmlTestTool,
+  GenerateAdapterBindings,
+  HttpEndpoint,
+  KamanjaUIREST,
+  KafkaAdapters_v8,
+  KafkaAdapters_v9,
+  KafkaAdapters_v10,
+  SimpleKafkaProducer_v10,
+  PythonModelPrototype,
+  SimpleKafkaProducer_v9,
+  SimpleKafkaProducer_v8
+  )
+  */
