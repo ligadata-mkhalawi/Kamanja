@@ -1069,21 +1069,36 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     }
   }
 
+  private def copySytemFields(src: ContainerInterface, dst: ContainerInterface): Unit = {
+    if (src != null && dst != null) {
+      dst.setTimePartitionData(src.getTimePartitionData)
+      dst.setTransactionId(src.getTransactionId)
+      dst.setRowNumber(src.getRowNumber)
+    }
+  }
+
   private def Clone(vals: Array[ContainerInterface]): Array[ContainerInterface] = {
     if (vals == null) return null
     return vals.map(v => {
-      if (v == null) null else v.Clone().asInstanceOf[ContainerInterface]
+      val cObj = if (v == null) null else v.Clone().asInstanceOf[ContainerInterface]
+      copySytemFields(v, cObj)
+      cObj
     })
   }
 
   private def Clone(v: ContainerInterface): ContainerInterface = {
     if (v == null) return null
-    return v.Clone().asInstanceOf[ContainerInterface]
+    val cObj = v.Clone().asInstanceOf[ContainerInterface]
+    copySytemFields(v, cObj)
+    return cObj
   }
 
   private def Clone(ov: Option[ContainerInterface]): Option[ContainerInterface] = {
     if (ov == None) return ov
-    Some(ov.get.Clone().asInstanceOf[ContainerInterface])
+    val v = ov.get
+    val cObj = v.Clone().asInstanceOf[ContainerInterface]
+    copySytemFields(v, cObj)
+    Some(cObj)
   }
 
   override def getAllObjects(tenantId: String, containerName: String): Array[ContainerInterface] = {
@@ -1244,7 +1259,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
       if (cacheContainer != null) {
         val inMemoryRecent = TxnContextCommonFunctions.getRecent(cacheContainer, partKey, tmRange, null, f)
         if (inMemoryRecent != null && inMemoryRecent._1 != null)
-          Some(inMemoryRecent._1)
+          return Some(inMemoryRecent._1)
         else
           None
       }
