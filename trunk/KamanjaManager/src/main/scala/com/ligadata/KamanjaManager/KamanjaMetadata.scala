@@ -733,7 +733,12 @@ object KamanjaMetadata extends ObjectResolver {
       val prevCnt = modelObjs.size
       removedModels.foreach(mdl => {
         val elemName = (mdl._1.trim + "." + mdl._2.trim).toLowerCase
-        modelObjs -= elemName
+        val optMdlInfo = modelObjs.remove(elemName)
+        if (optMdlInfo != None) {
+          val mdlInfo = optMdlInfo.get
+          if (mdlInfo != null && mdlInfo.mdl != null)
+            mdlInfo.mdl.shutdown()
+        }
       })
       mdlsChanged = (prevCnt != modelObjs.size)
     }
@@ -911,7 +916,7 @@ object KamanjaMetadata extends ObjectResolver {
         val bindsInfo = adapterLevelBinding.getOrElse(adap.getAdapterName.toLowerCase, null)
         if (bindsInfo != null) {
           // Message Name, Serializer Name & options.
-          adap.addMessageBinding(bindsInfo.map(bind => (bind.messageName ->(bind.serializer, bind.options))).toMap)
+          adap.addMessageBinding(bindsInfo.map(bind => (bind.messageName -> (bind.serializer, bind.options))).toMap)
         }
       })
 
@@ -920,7 +925,7 @@ object KamanjaMetadata extends ObjectResolver {
         val bindsInfo = adapterLevelBinding.getOrElse(adap.getAdapterName.toLowerCase, null)
         if (bindsInfo != null) {
           // Message Name, Serializer Name & options.
-          adap.addMessageBinding(bindsInfo.map(bind => (bind.messageName ->(bind.serializer, bind.options))).toMap)
+          adap.addMessageBinding(bindsInfo.map(bind => (bind.messageName -> (bind.serializer, bind.options))).toMap)
         }
       })
 
@@ -929,7 +934,7 @@ object KamanjaMetadata extends ObjectResolver {
         val bindsInfo = adapterLevelBinding.getOrElse(adap.getAdapterName.toLowerCase, null)
         if (bindsInfo != null) {
           // Message Name, Serializer Name & options.
-          adap.addMessageBinding(bindsInfo.map(bind => (bind.messageName ->(bind.serializer, bind.options))).toMap)
+          adap.addMessageBinding(bindsInfo.map(bind => (bind.messageName -> (bind.serializer, bind.options))).toMap)
         }
       })
     } catch {
@@ -1597,5 +1602,30 @@ object KamanjaMetadata extends ObjectResolver {
     (masterDag, nodeIdModlsObj.toMap, mdlsChangedCntr)
   }
 
+  def ShutdownMetadata: Unit = {
+    // For now we are shutting down only Models
+    LOG.warn("Called ShutdownMetadata. modelObjs:%d, nodeIdModlsObj:%d".format(modelObjs.size, nodeIdModlsObj.size))
+    reent_lock.readLock().lock();
+    try {
+      val mdls = modelObjs.toMap
+      nodeIdModlsObj.clear
+      modelObjs.clear()
+      mdls.foreach(kv => {
+        LOG.debug("About to shutdown model:" + kv._1)
+        val mdlInfo = kv._2
+        if (mdlInfo != null && mdlInfo.mdl != null) {
+          LOG.warn("Calling shutdown model:" + kv._1)
+          mdlInfo.mdl.shutdown()
+        }
+      })
+    } catch {
+      case e: Exception => {
+        LOG.debug("", e)
+      }
+    } finally {
+      reent_lock.readLock().unlock();
+    }
+    LOG.warn("Done ShutdownMetadata")
+  }
 }
 

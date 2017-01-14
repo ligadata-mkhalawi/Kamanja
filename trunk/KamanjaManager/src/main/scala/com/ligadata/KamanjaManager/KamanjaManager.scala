@@ -433,6 +433,7 @@ class KamanjaManager extends Observer {
     KamanjaLeader.Shutdown
     KamanjaMetadata.Shutdown
     ShutdownAdapters
+    KamanjaMetadata.ShutdownMetadata
     PostMessageExecutionQueue.shutdown
     if (KamanjaMetadata.envCtxt != null)
       KamanjaMetadata.envCtxt.Shutdown
