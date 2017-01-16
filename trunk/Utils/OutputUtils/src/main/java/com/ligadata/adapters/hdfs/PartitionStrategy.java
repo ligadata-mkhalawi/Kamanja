@@ -7,10 +7,13 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 import org.apache.avro.generic.GenericData.Record;
 
 public class PartitionStrategy {
+	static Logger logger = LogManager.getLogger(PartitionStrategy.class); 
 	private class PartitionKey {
 		String attribute;
 		DateFormat format;
@@ -77,6 +80,8 @@ public class PartitionStrategy {
 			Object[] values = new Object[keys.size()];
 			for (int i = 0; i < keys.size(); i++) {
 				PartitionKey key = keys.get(i);
+				logger.debug("PartitionKey.attribute => " + key.attribute);
+				logger.debug("PartitionKey.format => " + key.format);
 				String value = "";
 				if(key.format == null)
 					value = rec.get(key.attribute).toString();

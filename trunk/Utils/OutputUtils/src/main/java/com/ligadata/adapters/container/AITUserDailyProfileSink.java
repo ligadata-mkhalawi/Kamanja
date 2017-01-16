@@ -10,6 +10,7 @@ import com.ligadata.KamanjaBase.ContainerInterface;
 import com.ligadata.adapters.AdapterConfiguration;
 import com.ligadata.adapters.BufferedMessageProcessor;
 import com.ligadata.tools.SaveContainerDataComponent;
+import com.ligadata.adapters.StatusCollectable;
 
 public class AITUserDailyProfileSink implements BufferedMessageProcessor {
 	static Logger logger = LogManager.getLogger(AITUserDailyProfileSink.class);
@@ -21,11 +22,13 @@ public class AITUserDailyProfileSink implements BufferedMessageProcessor {
 	private String[] fieldNames;	
 	private String[] collectionFieldNames;	
 	private int[] sumFields = null;
+
+	protected StatusCollectable statusWriter = null;
 	
 	private SaveContainerDataComponent writer = null;
 	
 	private int[] csvToArrayOfInt(String str) {
-		String[] stringArray = str.split(",");
+		String[] stringArray = str.split(",", -1);
 		int[] intArray = new int[stringArray.length];
 		for (int i = 0; i < stringArray.length; i++) {
 			intArray[i] = Integer.parseInt(stringArray[i]);
@@ -42,7 +45,8 @@ public class AITUserDailyProfileSink implements BufferedMessageProcessor {
 	}
 
 	@Override
-	public void init(AdapterConfiguration config) throws Exception {
+	public void init(AdapterConfiguration config, StatusCollectable sw) throws Exception {
+		statusWriter = sw;
 		writer = new SaveContainerDataComponent();
 		String configFile = config.getProperty(AdapterConfiguration.METADATA_CONFIG_FILE);
 		if(configFile == null)
@@ -57,17 +61,17 @@ public class AITUserDailyProfileSink implements BufferedMessageProcessor {
 		String fieldNamesStr = config.getProperty(AdapterConfiguration.MESSAGE_FIELD_NAMES);
 		if(fieldNamesStr == null)
 			throw new Exception("Field names not specified for container " + containerName);
-		fieldNames = fieldNamesStr.split(",");
+		fieldNames = fieldNamesStr.split(",", -1);
 
 		String collectionFieldNamesStr = config.getProperty(AdapterConfiguration.COLLECTION_FIELD_NAMES);
 		if(collectionFieldNamesStr == null)
 			throw new Exception("Collection field names not specified for container " + containerName);
-		collectionFieldNames = collectionFieldNamesStr.split(",");
+		collectionFieldNames = collectionFieldNamesStr.split(",", -1);
 
 		String collectionContainerNamesStr = config.getProperty(AdapterConfiguration.COLLECTION_CONTAINER_NAMES);
 		if(collectionContainerNamesStr == null)
 			throw new Exception("Collection container names not specified for container " + containerName);
-		collectionContainerNames = collectionContainerNamesStr.split(",");
+		collectionContainerNames = collectionContainerNamesStr.split(",", -1);
 
 		String sumFieldsStr = config.getProperty(AdapterConfiguration.MESSAGE_SUM_FIELDS);
 		if(sumFieldsStr == null)
@@ -80,7 +84,7 @@ public class AITUserDailyProfileSink implements BufferedMessageProcessor {
 	@Override
 	public boolean addMessage(String message) {
 		try {
-			String[] fields = message.split(fieldDelimiter);
+			String[] fields = message.split(fieldDelimiter, -1);
 			if(fields.length < fieldNames.length) {
 				logger.error("Incorrect message. Expecting " + fieldNames.length + " fields. Message: " + message);
 				return false;
@@ -88,13 +92,22 @@ public class AITUserDailyProfileSink implements BufferedMessageProcessor {
 
 			String partitionKey = fields[0]+":"+fields[1];
 			String groupKey = fields[2]+":"+fields[3];
-			Object[] newRecord = new Object[fields.length];
+			int len = fields.length;
+			if (len > fieldNames.length)
+				len = fieldNames.length;
+			Object[] newRecord = new Object[len];
 			
 			newRecord[0] = new Integer(fields[0]);
 			newRecord[1] = new Long(fields[1]);
-			for(int i = 2; i < fields.length; i++) {
-				if(checkIfExists(sumFields, i))
-					newRecord[i] = new Long(fields[i]);
+			for(int i = 2; i < len; i++) {
+				if(checkIfExists(sumFields, i)) {
+					try {
+						newRecord[i] = new Long(fields[i]);
+					} catch (Exception e) {
+						logger.error("Parse Error for idx:" + i + " in message:" + message, e);
+						throw e;
+					}
+				}
 				else
 					newRecord[i] = fields[i];
 			}
@@ -121,7 +134,7 @@ public class AITUserDailyProfileSink implements BufferedMessageProcessor {
 	}
 
 	@Override
-	public void processAll() throws Exception {
+	public void processAll(long batchId, long retryNumber) throws Exception {
 			ArrayList<ContainerInterface> data = new ArrayList<ContainerInterface>();
 			for( HashMap<String, Object[]> record : buffer.values()) {
 				ArrayList<ContainerInterface> uaList = new ArrayList<ContainerInterface>();
@@ -135,7 +148,7 @@ public class AITUserDailyProfileSink implements BufferedMessageProcessor {
 			       	profileRec.set(fieldNames[4], fields[4]); // jobcode
 
 			       	ContainerInterface counters = writer.GetContainerInterface(collectionContainerNames[1]);
-			       	for(int i = 5; i < fields.length; i++) {
+			       	for(int i = 5; i < fields.length && i < fieldNames.length; i++) {
 						counters.set(fieldNames[i], fields[i]);
 					}
 			       	profileRec.set(collectionFieldNames[1], counters);

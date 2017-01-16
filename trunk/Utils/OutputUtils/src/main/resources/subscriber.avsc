@@ -1,0 +1,28 @@
+{
+  "type": "record",
+  "name": "subscriber",
+  "namespace": "cops.datalake",
+  "doc": "Instrumentation Log record in HDFS datalake",
+  "fields": [
+    {
+      "name": "msisdn",
+      "type": "string"
+    },
+    {
+      "name": "acc_num",
+      "type": "string"
+    },
+    {
+      "name": "plan_name",
+      "type": "string"
+    },
+    {
+      "name": "active_date",
+      "type": "string"
+    },
+    {
+      "name": "timestamp",
+      "type": "string"
+    }
+  ]
+}

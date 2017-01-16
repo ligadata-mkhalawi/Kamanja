@@ -6,6 +6,9 @@
   position: absolute;
   z-index: 999999;
   background: linear-gradient(to right, rgba(0, 0, 0, 0.5), rgba(0,0,0,0.3));
+  .modelHeaderWrapper{
+    height: 100vh;
+  }
   .modelHeader {
     width: 275px;
     height: 65px;

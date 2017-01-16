@@ -9,10 +9,10 @@
   "Arguments" : [ ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -32,10 +32,10 @@
   } ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -55,10 +55,10 @@
   } ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -78,10 +78,10 @@
   } ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -101,10 +101,10 @@
   } ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -124,10 +124,10 @@
   } ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -147,10 +147,10 @@
   } ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -166,10 +166,10 @@
   } ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -193,10 +193,10 @@
   } ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -220,10 +220,10 @@
   } ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -247,10 +247,10 @@
   } ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -274,10 +274,10 @@
   } ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -301,10 +301,10 @@
   } ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -328,10 +328,10 @@
   } ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -355,10 +355,10 @@
   } ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -382,10 +382,10 @@
   } ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -413,10 +413,10 @@
   } ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -432,10 +432,10 @@
   } ],
   "Features" : [ "HAS_INDEFINITE_ARITY" ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -459,10 +459,10 @@
   } ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -482,10 +482,10 @@
   } ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -497,10 +497,10 @@
   "Arguments" : [ ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -520,10 +520,10 @@
   } ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -543,10 +543,10 @@
   } ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 },
 {
@@ -570,10 +570,10 @@
   } ],
   "Features" : [ ],
   "Version" : "000000000001000001",
-  "JarName" : "KamanjaInternalDeps_2.11-1.6.0.jar",
+  "JarName" : "KamanjaInternalDeps_2.11-1.6.1.jar",
   
   
-  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.0.jar","KamanjaInternalDeps_2.11-1.6.0.jar","ExtDependencyLibs2_2.11-1.6.0.jar"],
+  "DependantJars" : ["ExtDependencyLibs_2.11-1.6.1.jar","KamanjaInternalDeps_2.11-1.6.1.jar","ExtDependencyLibs2_2.11-1.6.1.jar"],
   "OwnerId" : "test_spec",  "TenantId" : "testTenantId", "UniqueId" : 1,  "MdElementId" : 1
 } ]
 

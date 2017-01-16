@@ -964,7 +964,7 @@ class MigrateTo_V_1_6 extends MigratableTo {
     return (statusCode != 0)
   }
 
-  val curVersion = "1.6.0"
+  val curVersion = "1.6.1"
 
   private def DepJars(depJars1: List[String]): List[String] = {
 
