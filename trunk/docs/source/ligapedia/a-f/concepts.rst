@@ -24,11 +24,14 @@ These can be referenced as fields in Kamanja
 
 
 The concept and derived concept is a computed field.
-For example, the models run and they accept messages.
-They filter a message – they determine that this is a message of interest.
-The model does computations on the message that, for example,
-compare the message with a table.
-It then creates some sort of an output and it can publish that output.
+For example:
+
+- The models run and they accept messages.
+- They filter a message and determine that this is a message of interest.
+- The model does computations on the message that, for example,
+  compare the message with a table.
+- It then creates some sort of an output and it can publish that output.
+
 When a model is defined, both the inputs that the model needs
 as well as the outputs that the model offers need to be described.
 That’s part of the metadata.

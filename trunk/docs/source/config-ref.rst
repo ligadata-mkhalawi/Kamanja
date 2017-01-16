@@ -7,6 +7,7 @@ Configuration File Reference Pages
 
 
     config-ref/adapter-def
+    config-ref/adapter-binding
     config-ref/container-def
     config-ref/ClusterConfig
     config-ref/EngineConfig-properties

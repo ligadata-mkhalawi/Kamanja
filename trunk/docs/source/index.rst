@@ -31,7 +31,9 @@ Machine Learning Guides
 
    models
    java-scala-model
+   simple-scala-model
    pmml
+   jtm
    adapters
 
 Tutorials
@@ -39,8 +41,6 @@ Tutorials
 
 .. toctree::
 
-   simple-scala-model
-   jtm
    python
    r-rattle
 

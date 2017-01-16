@@ -12,6 +12,11 @@ Each input, output, or storage adapter used in the cluster
 has its own "Adapter" section,
 identified by a unique "Name".
 
+Application pipelines define 
+:ref:`adapter message bindings<adapter-binding-config-ref>`
+that define how to process messages in the pipeline.
+Each adapter message binding defines the adapter it is using.
+
 To implement a custom adapter:
 
 - Code the adapter
@@ -92,6 +97,8 @@ Parameters
 All adapter definitions include the following Core parameters:
 
 - **Name** – name of the adapter.
+  This is the name that :ref:`adapter bindings<adapter-binding-config-ref>`
+  use to identify the adapter they are using.
 
 - **TypeString** - (Required) Type of this adapter.
    Valid values are **input**, **Output**, and **Storage**.

@@ -4,11 +4,14 @@
 Introduction
 ============
 
-This tutorial illustrates how to create a model ensemble
-that leverages DAG to control the order of execution.
+This tutorial illustrates how to create
+a :ref:`model<model-term>` ensemble
+that leverages :ref:`DAG<dag-term>` to control the order of execution.
 The characteristics of this example are:
 
-- Collection of three models, written in Scala and executed sequentially.
+This application is a collection of three models,
+written in Scala and executed sequentially.
+
 - The first model performs a mathematical operation
   and writes the results to an output message.
 - The second model takes that message as an input message
@@ -28,3 +31,4 @@ click on https://s3.amazonaws.com/kamanja/samples/1.4.0/SimpleMathDAG.zip.
 Before actually creating any of the pieces to the ensemble,
 create a directory (in any directory)
 called SimpleMathDAG to store everything to be written.
+

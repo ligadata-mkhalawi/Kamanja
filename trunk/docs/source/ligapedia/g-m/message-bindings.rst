@@ -5,7 +5,7 @@ Message bindings
 ----------------
 
 Adapter message bindings are independently cataloged
-:ref:`metadata<metadata-term> objects
+:ref:`metadata<metadata-term>` objects
 that associate three other metadata objects together:
 
 - an adapter (input, output, or storage).
@@ -21,8 +21,7 @@ Being able to dial in the sort of serialization expected
 or provided to others gives the Kamanja system administrator
 a lot of flexibility to satisfy his/her objectives.
 
-There are currently three builtin serializers provided
-in the Kamanja distribution that can be used:
+The Kamanja platform currently provides three builtin serializers:
 a JSON serializer, a CSV serializer, and a KBinary serializer.
 The KBinary is used principally by the Kamanja platform
 to manage data in its stores and caches.
@@ -41,6 +40,6 @@ A rather comprehensive list of errors is returned if that is not the case.
 
 For more information, see:
 
-- :ref:`Message Bindings Guide<message-binding-guide>`
+- :ref:`Message Bindings Guide<message-bindings-guide>`
 
 
