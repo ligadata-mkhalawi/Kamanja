@@ -43,6 +43,10 @@ For more information:
 - See :ref:`kafka-install` for information about installing Kafka
   before installing the Kamanja software.
 
+For more information:
+
+- :ref:`java-guide-kafka`
+
 See also:
 
 - `Kafka home page <https://kafka.apache.org/>`_

@@ -16,7 +16,7 @@ Command Reference Pages
    command-ref/JsonChecker
    command-ref/kafka-server-start
    command-ref/kamanja
-   command-ref/KVinit
+   command-ref/KVInit
    command-ref/SetPaths
    command-ref/SimplePmlTestTool
    command-ref/WatchInputQueue

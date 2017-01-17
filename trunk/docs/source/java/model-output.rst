@@ -98,7 +98,7 @@ First, the hard way – implementing ModelResultBase:
     // BUGBUG:: Yet to implement
     }
   }
-...
+  ...
 	
 Using a simple result object
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -30,8 +30,8 @@ Machine Learning Guides
 .. toctree::
 
    models
-   java-scala-model
-   simple-scala-model
+   java
+   scala
    pmml
    jtm
    adapters

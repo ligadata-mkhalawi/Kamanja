@@ -1,10 +1,11 @@
 
-.. _java-scala-guide-kafka:
+.. _java-guide-kafka:
 
 Creating Kafka topics
 =====================
 
-First, create the Kafka topics by running the following command:
+First, create the :ref:`Kafka<kafka-term>` :ref:`topics<topic-term>`
+by running the following command:
 
 ::
 

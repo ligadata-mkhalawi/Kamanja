@@ -1,7 +1,7 @@
 
-.. _java-scala-guide-scala:
+.. _scala-logic:
 
-Creating a Scala Model
+Logic of a Scala model
 ======================
 
 This section covers the actual logic of creating a Kamanja model,

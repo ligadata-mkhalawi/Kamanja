@@ -7,6 +7,7 @@ Working with Models
 
    models/intro.rst
    models/languages.rst
+   models/ingest-data.rst
    models/message-bindings.rst
 
 
