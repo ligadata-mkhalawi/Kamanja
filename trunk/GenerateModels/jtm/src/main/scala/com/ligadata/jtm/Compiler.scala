@@ -611,6 +611,19 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
     var mapping = mapping_in
     var wheres = wheres_in
     var computes = computes_in
+    var conditional_compute_groups = conditional_compute_groups_in
+
+    //(compute name, compute, group name, condition)
+    var conditionalComputes = ArrayBuffer[(String, Compute, String, String)]()
+    if(conditional_compute_groups != null){
+      conditional_compute_groups.foreach(group =>{
+        println(">>>>>>>>group "+ group._1)
+        group._2.computes.foreach(c => {
+          println(">>>>>>>>conditionalCompute "+ c._1)
+          conditionalComputes.append((c._1, c._2, group._1, group._2.condition))
+        })
+      })
+    }
 
     var cnt1 = wheres.length + computes.size + groks.size + mapping.size
     var cnt2 = -1
@@ -670,6 +683,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
     var scopesopened = 0
 
     while (cnt1 != cnt2) {
+      println("--------cnt1="+cnt1+", cnt2="+cnt2 )
 
       cnt2 = cnt1
 
@@ -852,6 +866,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
 
       // filters
       val wheres1 = wheres.filter(f => {
+        println(">>>>>>filter: " + f)
         val list = Expressions.ExtractColumnNames(f)
         val rList = ResolveNames(list, aliaseMessages)
         val open = rList.filter(f => !innerMapping.contains(f._2)).filter(f => {
@@ -887,6 +902,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
         }
       })
 
+      println(">>>>>>>>>>checking computes")
       // computes
       val computes1 = computes.filter(c => {
 
@@ -938,6 +954,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
           })
         }
 
+        println(">>>>>>>>>>>>>>>>>>>>compute " + c._1 + " open.isEmpty=" + open.isEmpty)
         if (open.isEmpty) {
 
           innerTracking ++= list.map(m => innerMapping.get(m._2).get.variableName).toSet
@@ -988,17 +1005,9 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
 
 
       //*************************************************************
-
+      println(">>>>>>>>>>checking conditional computes")
       // conditional computes
-      //(compute name, compute, group name, condition)
-      val conditionalComputes = ArrayBuffer[(String, Compute, String, String)]()
-      if(conditional_compute_groups_in != null){
-        conditional_compute_groups_in.foreach(group =>{
-          group._2.computes.foreach(c => {
-            conditionalComputes.append((c._1, c._2, group.toString(), group._2.condition))
-          })
-        })
-      }
+
       val conditionalComputes1 = conditionalComputes.filter(c => {
 
         // Check if the compute if determind
@@ -1049,6 +1058,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
           })
         }
 
+        println(">>>>>>>>>>>>>>>>>>>>compute " + c._1 + " open.isEmpty=" + open.isEmpty)
         if (open.isEmpty) {
 
           innerTracking ++= list.map(m => innerMapping.get(m._2).get.variableName).toSet
@@ -1061,8 +1071,16 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
           collect :+= c._2.Comment
           if (c._2.typename.length > 0) {
 
+            /*val callstack = Thread.currentThread().getStackTrace().drop(1).take(10).
+              map(s => s.getClassName + "." + s.getMethodName + "(" + s.getLineNumber + ")").mkString("\n")
+            println(">>> building var for conditional compute "+c._1+". Callstack is: " + callstack)*/
+
             val defaultValue = Datatypes.getTypeDefaultVal(c._2.typename.trim)
             val condition = c._4
+
+            val newCondition = Expressions.FixupColumnNames(condition, innerMapping, aliaseMessages)
+            println("newCondition= "+newCondition)
+
 
             // Check if we track the type or need a type coercion
             val isVariable = Expressions.IsExpressionVariable(expression, innerMapping)
@@ -1076,21 +1094,21 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
                 {
                   val conversionExpr = Conversion.builtin.get(rt.typeName).get.get(c._2.typename).get
                   collect ++= Array("val %s: %s = if(%s) { conversion.%s(%s) } else %s\n".
-                    format(c._1, c._2.typename, condition, conversionExpr, newExpression, defaultValue))
+                    format(c._1, c._2.typename, newCondition, conversionExpr, newExpression, defaultValue))
                 }
                 else
                 {
                   collect ++= Array("val %s: %s = if(%s){ %s } else %s\n".
-                    format(c._1, c._2.typename, condition, newExpression, defaultValue))
+                    format(c._1, c._2.typename, newCondition, newExpression, defaultValue))
                 }
               } else {
                 collect ++= Array("val %s: %s = if(%s){ %s } else %s\n".
-                  format(c._1, c._2.typename, condition, newExpression, defaultValue))
+                  format(c._1, c._2.typename, newCondition, newExpression, defaultValue))
               }
 
             }
             else {
-              collect ++= Array("val %s: %s = %s\n".format(c._1, c._2.typename, newExpression))
+              collect ++= Array("val %s: %s = if(%s){ %s } else %s\n".format(c._1, c._2.typename, newCondition, newExpression, defaultValue))
             }
           } else {
             //collect ++= Array("val %s = %s\n".format(c._1, newExpression))
@@ -1111,6 +1129,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
       cnt1 = wheres1.length + computes1.size + groks1.size + mapping1.size
       wheres = wheres1
       computes = computes1
+      conditionalComputes = conditionalComputes1
       mapping = mapping1
       groks = groks1
 
@@ -1341,6 +1360,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
 
         // Common computes section
         //
+        println("======calling Generate on trans level, trans name = " + t)
         val (collectOuter, methodsOuter, outerMapping, outerTracking, outerScopesOpened) = {
 
           Generate(transformation.grokMatch,
@@ -1404,6 +1424,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
               })._1
             })
 
+            println("======calling Generate on output level, output name = " + o._1)
             Generate(transformation.grokMatch,
               outputmapping,
               if (o._2.where.nonEmpty) Array(o._2.where) else Array.empty[String],
