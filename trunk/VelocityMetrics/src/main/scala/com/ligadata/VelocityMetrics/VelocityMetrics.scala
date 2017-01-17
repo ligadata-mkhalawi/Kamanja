@@ -13,7 +13,7 @@ object VelocityMetrics {
     override def hashCode() = (key + "," + metricsTime).hashCode()
 
     override def equals(other: Any): Boolean = {
-      if (!metricsTime.isInstanceOf[IntervalAndKey]) return false
+      if (!other.isInstanceOf[IntervalAndKey]) return false
       val o = other.asInstanceOf[IntervalAndKey]
       if (metricsTime != o.metricsTime) return false
       (key == o.key)
