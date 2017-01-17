@@ -12,15 +12,18 @@ angular.module('networkApp')
       'use strict';
       var main = this;
       main.networkData = null;
+      main.showFirst = true;
+      main.tabs = [{title: 'tab 1',show:false},{title: 'tab 2',show:true}];
       main.getShowStatus = function () {
         return $rootScope.showStatus;
       };
 
-      function updateNetworkData() {
+      function updateNetworkData(data) {
         main.selectedViewName = serviceData.getSelectedViewName();
         main.networkData = servicePrepare.viewToVis(serviceData.getSelectedViewData());
-
-
+        if (data) {
+          main.symbolClasses = data.SymbolClasses;
+        }
       }
 
       $rootScope.$on('viewChanged', function (event, data) {

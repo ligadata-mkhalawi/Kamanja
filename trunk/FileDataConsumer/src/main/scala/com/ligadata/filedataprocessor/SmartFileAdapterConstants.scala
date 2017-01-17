@@ -77,4 +77,12 @@ object SmartFileAdapterConstants {
   val SASL_MECHANISM = "sasl.mechanism"
   val SASL_KERBEROS_TICKET_RENEW_JITER = "sasl.kerberos.ticket.renew.jiter"
   val SASL_KERBEROS_TICKET_RENEW_WINDOW_FACTOR = "sasl.kerberos.ticket.renew.window.factor"
+
+  val ZOOKEEPER_CONNECT = "zookeeper.connect";
+  val ZOOKEEPER_SESSION_TIMEOUT_MS = "zookeeper.session.timeout.ms";
+  val ZOOKEEPER_CONNECTION_TIMEOUT_MS = "zookeeper.connection.timeout.ms";
+  val ZOOKEEPER_LEADER_PATH = "zookeeper.leader.path";
+  val COMPONENT_NAME = "component.name";
+  val NODE_ID_PREFIX = "node.id.prefix";
+  val ADAPTER_WEIGHT = "adapter.weight";
 }
