@@ -419,7 +419,7 @@ class KBinarySerDeser extends SerializeDeserialize {
     */
   def deserialize(b: Array[Byte], containerName: String): ContainerInterface = {
     var dis = new DataInputStream(new ByteArrayInputStream(b));
-    val container = ReadContainer(dis)
+    val container = ReadContainer(dis, containerName)
     // Set TransactionId, TimePartitioinKey & RowNumber
     if (container != null) {
       container.setTransactionId(dis.readLong)
@@ -439,13 +439,36 @@ class KBinarySerDeser extends SerializeDeserialize {
   @throws(classOf[com.ligadata.Exceptions.MissingPropertyException])
   @throws(classOf[com.ligadata.Exceptions.UnsupportedObjectException])
   @throws(classOf[IOException])
-  private def ReadContainer(dis: DataInputStream): ContainerInterface = {
+  private def ReadContainer(dis: DataInputStream, containerName: String): ContainerInterface = {
     val hdr = ReadContainerHeader(dis)
     Debug(s"ReadContainer -> cnt: ${hdr.fieldCnt}, isFixed: ${hdr.isFixed}, schemaId: ${hdr.schemaId}, dataSize: ${hdr.dataSize}")
-    val ci = _objResolver.getInstance(hdr.schemaId)
-    if (ci == null) {
-      throw new ObjectNotFoundException(s"KBinary ReadContainer - schemaid ${hdr.schemaId} could not be resolved for deserialize", null)
+    var ci: ContainerInterface = null
+    val nonNullContainerName = if (containerName != null) containerName else ""
+    var possibleException: Throwable = null
+    try {
+      ci = _objResolver.getInstance(hdr.schemaId)
+      if (ci == null) {
+        possibleException = new ObjectNotFoundException(s"KBinary ReadContainer - schemaid ${hdr.schemaId} & ContainerName ${nonNullContainerName} could not be resolved for deserialize", null)
+      }
+    } catch {
+      case e: Exception => {
+        possibleException = e
+      }
+      case e: Throwable => {
+        possibleException = e
+      }
     }
+
+    if (ci == null && containerName != null) {
+      ci = _objResolver.getInstance(containerName)
+    }
+
+    if (ci == null) {
+      if (possibleException != null)
+        throw possibleException
+      throw new ObjectNotFoundException(s"KBinary ReadContainer - schemaid ${hdr.schemaId} & ContainerName ${nonNullContainerName} could not be resolved for deserialize", null)
+    }
+
     val attribs = ci.getAttributeTypes
     for (idx <- 0 until hdr.fieldCnt) {
       var attribType: TypeCategory = NONE
@@ -463,7 +486,7 @@ class KBinarySerDeser extends SerializeDeserialize {
       val fld = attribType match {
         case MAP => ReadMap(dis)
         case ARRAY => ReadArray(dis)
-        case (MESSAGE | CONTAINER) => ReadContainer(dis)
+        case (MESSAGE | CONTAINER) => ReadContainer(dis, null) // BUGBUG:: Get container type and pass it instead of NULL
         case (BOOLEAN | BYTE | CHAR | LONG | DOUBLE | FLOAT | INT | STRING) => ReadVal(dis, attribType)
         case _ => throw new UnsupportedObjectException(s"container type ${attribType.name} not currently serializable", null)
       }
@@ -501,7 +524,7 @@ class KBinarySerDeser extends SerializeDeserialize {
       case INT => ReadMapT(dis, hdr.cnt, { d: DataInputStream => (ReadVal(d, hdr.keyType), d.readInt) })
       case STRING => ReadMapT(dis, hdr.cnt, { d: DataInputStream => (ReadVal(d, hdr.keyType), ReadStrVal(d)) })
       case MAP => ReadMapT(dis, hdr.cnt, { d: DataInputStream => (ReadVal(d, hdr.keyType), ReadMap(d)) })
-      case (MESSAGE | CONTAINER) => ReadMapT(dis, hdr.cnt, { d: DataInputStream => (ReadVal(d, hdr.keyType), ReadContainer(d)) })
+      case (MESSAGE | CONTAINER) => ReadMapT(dis, hdr.cnt, { d: DataInputStream => (ReadVal(d, hdr.keyType), ReadContainer(d, null)) }) // BUGBUG:: Get Type and pass it here instead of null
       case ARRAY => ReadMapT(dis, hdr.cnt, { d: DataInputStream => (ReadVal(d, hdr.keyType), ReadArray(d)) })
       case _ => throw new UnsupportedObjectException(s"Unsupported value type while loading array, valType: ${hdr.valType}", null)
     }
@@ -522,7 +545,7 @@ class KBinarySerDeser extends SerializeDeserialize {
       case FLOAT => ReadArrayT(dis, new Array[Float](hdr.cnt), hdr.cnt, { d: DataInputStream => d.readFloat })
       case INT => ReadArrayT(dis, new Array[Int](hdr.cnt), hdr.cnt, { d: DataInputStream => d.readInt })
       case STRING => ReadArrayT(dis, new Array[String](hdr.cnt), hdr.cnt, { d: DataInputStream => ReadStrVal(d) })
-      case (MESSAGE | CONTAINER) => ReadArrayT(dis, new Array[ContainerInterface](hdr.cnt), hdr.cnt, { d: DataInputStream => ReadContainer(d) })
+      case (MESSAGE | CONTAINER) => ReadArrayT(dis, new Array[ContainerInterface](hdr.cnt), hdr.cnt, { d: DataInputStream => ReadContainer(d, null) }) // BUGBUG:: Get Container Name from type and pass it here instead of null
       case ARRAY => ReadArrayT(dis, new Array[Any](hdr.cnt), hdr.cnt, { d: DataInputStream => ReadArray(d) })
       case _ => throw new UnsupportedObjectException(s"Unsupported value type while loading array, itmType: ${hdr.itmType}", null)
     }
