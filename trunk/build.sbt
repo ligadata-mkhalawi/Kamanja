@@ -47,9 +47,11 @@ lazy val KamanjaInternalDeps = project.in(file("KamanjaInternalDeps")).configs(T
   Serialize, ZooKeeperListener, ZooKeeperLeaderLatch, KamanjaUtils, TransactionService, StorageManager, PmmlCompiler, ZooKeeperClient, OutputMsgDef, SecurityAdapterBase, HeartBeat,
   PythonFactoryOfModelInstanceFactory, JpmmlFactoryOfModelInstanceFactory, JarFactoryOfModelInstanceFactory, KamanjaVersion, InstallDriverBase, BaseFunctions, KafkaSimpleInputOutputAdapters, FileSimpleInputOutputAdapters, SimpleEnvContextImpl,
   GenericMsgCompiler, MethodExtractor, JsonDataGen, Controller, AuditAdapters, CustomUdfLib, UtilityService,
-  UtilsForModels, MessageCompiler, jtm, Dag, NodeInfoExtract, SmartFileAdapter, Cache, CacheImp, CsvSerDeser, JsonSerDeser, KBinarySerDeser, EncryptUtils)
+  UtilsForModels, MessageCompiler, jtm, Dag, NodeInfoExtract, SmartFileAdapter, Cache, CacheImp, CsvSerDeser, JsonSerDeser, KBinarySerDeser, EncryptUtils, VelocityMetrics)
 
 ////////////////////////
+
+lazy val VelocityMetrics = project.in(file("VelocityMetrics")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided")
 
 lazy val BaseTypes = project.in(file("BaseTypes")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, Exceptions)
 
