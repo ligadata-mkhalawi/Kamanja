@@ -20,7 +20,7 @@ object VelocityMetrics {
     }
   }
 
-  private[VelocityMetrics] class IntervalAndKeyVelocityCounts(intervalAndKey: IntervalAndKey, countersNames: Array[String]) {
+  private[VelocityMetrics] class IntervalAndKeyVelocityCounts(val intervalAndKey: IntervalAndKey, val countersNames: Array[String]) {
     val counters: Array[Long] = new Array[Long](countersNames.size)
     var firstOccured: Long = 0L
     var lastOccured: Long = 0L
@@ -51,7 +51,7 @@ object VelocityMetrics {
     }
   }
 
-  private[VelocityMetrics] class VelocityMetricsInstanceImpl(intervalRoundingInMs: Long, countersNames: Array[String]) extends VelocityMetricsInstanceInterface {
+  private[VelocityMetrics] class VelocityMetricsInstanceImpl(val intervalRoundingInMs: Long, val countersNames: Array[String]) extends VelocityMetricsInstanceInterface {
     var firstOccured: Long = 0L
     var lastOccured: Long = 0L
     var intervalAndKeyVelocityCounts = scala.collection.mutable.Map[IntervalAndKey, IntervalAndKeyVelocityCounts]()
@@ -123,12 +123,38 @@ object VelocityMetrics {
       m
     }
 
+    private def resetCounter(): Unit = {
+      firstOccured = 0L
+      lastOccured = 0L
+      // loop thru intervalAndKeyVelocityCounts and clear. Do we really need it?
+      intervalAndKeyVelocityCounts.clear()
+    }
+
+    def duplicate(reset: Boolean): VelocityMetricsInstanceInterface = synchronized {
+      val m = new VelocityMetricsInstanceImpl(intervalRoundingInMs, countersNames)
+      try {
+        m.firstOccured = this.firstOccured
+        m.lastOccured = this.lastOccured
+        intervalAndKeyVelocityCounts.foreach(kv => {
+          m.intervalAndKeyVelocityCounts(kv._1) = kv._2.duplicate
+        })
+
+        if (reset) {
+          resetCounter
+        }
+      } catch {
+        case e1: Exception => logger.error("Failed to duplicate", e1)
+        case e2: Throwable => logger.error("Failed to duplicate", e2)
+      }
+      m
+    }
+
     override def addTo(metrics: VelocityMetricsInstanceInterface, reset: Boolean): Unit = synchronized {
       if (!metrics.isInstanceOf[VelocityMetricsInstanceImpl]) return
       val m = metrics.asInstanceOf[VelocityMetricsInstanceImpl]
       try {
-        if (m.firstOccured > this.firstOccured) m.firstOccured = this.firstOccured
-        if (m.lastOccured < this.lastOccured) m.lastOccured = this.lastOccured
+        if (m.firstOccured == 0 || m.firstOccured > this.firstOccured) m.firstOccured = this.firstOccured
+        if (m.lastOccured == 0 || m.lastOccured < this.lastOccured) m.lastOccured = this.lastOccured
 
         intervalAndKeyVelocityCounts.foreach(kv => {
           val key = kv._1
@@ -142,10 +168,7 @@ object VelocityMetrics {
         })
 
         if (reset) {
-          firstOccured = 0L
-          lastOccured = 0L
-          // loop thru intervalAndKeyVelocityCounts and clear. Do we really need it?
-          intervalAndKeyVelocityCounts.clear()
+          resetCounter
         }
       } catch {
         case e1: Exception => logger.error("Failed to addTo", e1)
@@ -155,7 +178,7 @@ object VelocityMetrics {
     }
   }
 
-  private[VelocityMetrics] class ComponentVelocityMetrics(nodeId: String, componentKey: String, intervalRoundingInMs: Long, countersNames: Array[String]) {
+  private[VelocityMetrics] class ComponentVelocityMetrics(val nodeId: String, val componentKey: String, intervalRoundingInMs: Long, countersNames: Array[String]) {
     private val instanceMetrics = ArrayBuffer[VelocityMetricsInstanceImpl]()
 
     def GetVelocityMetricsInstance(): VelocityMetricsInstanceInterface = synchronized {
@@ -227,84 +250,83 @@ object VelocityMetrics {
     private var isTerminated = false
 
     private def EmitMetrics(reset: Boolean): Unit = synchronized {
-      val allComponents = GetAllMetricsComponents
+      try {
+        val allComponents = GetAllMetricsComponents
 
-      allComponents.map(comp => {
+        val finalComponentsMetrics = ArrayBuffer[ComponentMetrics]()
+        allComponents.foreach(comp => {
+          val allMetricInstances = comp.getVelocityMetricsInstanceInterfaces()
+          if (allMetricInstances.size > 0) {
+            val finalMetrics = allMetricInstances(0).duplicate(reset)
+            for (i <- 1 until allMetricInstances.size) {
+              allMetricInstances(i).addTo(finalMetrics, reset)
+            }
 
-      })
-/*
-      val allInstaceInterfaces = ArrayBuffer[VelocityMetricsInstanceImpl]()
-      allComponents.foreach(comp => {
-        allInstaceInterfaces ++= comp.getVelocityMetricsInstanceInterfaces()
-      })
-*/
-      // allInstaceInterfaces.groupBy(inst => inst.)
+            val compMetrics = new ComponentMetrics
+            compMetrics.componentKey = comp.componentKey
+            compMetrics.nodeId = comp.nodeId
+            compMetrics.keyMetrics = finalMetrics.asInstanceOf[VelocityMetricsInstanceImpl].intervalAndKeyVelocityCounts.values.map(velocityCounts => {
+              val keyMetrics = new ComponentKeyMetrics
+              keyMetrics.key = velocityCounts.intervalAndKey.key
+              keyMetrics.metricsTime = velocityCounts.intervalAndKey.metricsTime
+              keyMetrics.firstOccured = velocityCounts.firstOccured
+              keyMetrics.lastOccured = velocityCounts.lastOccured
+              keyMetrics.metricValues = new Array[MetricValue](velocityCounts.counters.size)
 
+              for (i <- 0 until velocityCounts.counters.size) {
+                keyMetrics.metricValues(i) = new MetricValue(velocityCounts.countersNames(i), velocityCounts.counters(i))
+              }
+              keyMetrics
+            }).toArray
 
-      /*
-                  allComponents.map(comp => {
-                    // val dup = comp.
-                  })
-
-                  for (m <- mdlInstanceMetrics) {
-                    m.addTo(metrics, reset)
-                  }
-                  var dailyMetrics = Array.ofDim[ContainerInterface](metrics.dailyVelocityCounts.size)
-                  var idx = 0
-                  for ((key, value) <- metrics.dailyVelocityCounts) {
-                    var v = value
-                    var m = DailyVelocityMetrics.createInstance()
-                    m.set("event_date", v.dataDate)
-                    m.set("msg_in_cnt", v.input)
-                    m.set("msg_out_cnt", v.output)
-                    m.set("msg_dedup_cnt", v.dedup)
-                    dailyMetrics(idx) = m
-                    idx += 1
-                  }
-                  var finalMetrics = VelocityMetrics.createInstance()
-                  finalMetrics.set("log_id", local_guid)
-                  finalMetrics.set("node_id", nodeId)
-                  finalMetrics.set("eventtype", eventtype)
-                  finalMetrics.set("timestampinmilliseconds", curTime)
-                  finalMetrics.set("msg_in_cnt", metrics.totalInput)
-                  finalMetrics.set("msg_out_cnt", metrics.totaloutput)
-                  finalMetrics.set("msg_dedup_cnt", metrics.totaldedup)
-                  finalMetrics.set("msg_error_cnt", metrics.exceptions)
-                  finalMetrics.set("dailymetrics", dailyMetrics)
-                  var msg = Array.ofDim[ContainerInterface](1)
-                  msg(0) = finalMetrics
-      */
-      val metrics: Metrics = null
-      val callbacks = callbackListeners.toArray
-      callbacks.foreach(cb => {
-        try {
-          if (cb != null)
-            cb.call(metrics)
-        } catch {
-          case e: Exception => {
-            logger.error("Failed to callback with velocity metrics", e)
+            finalComponentsMetrics += compMetrics
           }
-          case e: Throwable => {
-            logger.error("Failed to callback with velocity metrics", e)
+        })
+
+        val metrics = new Metrics
+        metrics.metricsGeneratedTimeInMs = System.currentTimeMillis()
+        metrics.compMetrics = finalComponentsMetrics.toArray
+
+        val callbacks = getAllEmitListeners
+        callbacks.foreach(cb => {
+          try {
+            if (cb != null)
+              cb.call(metrics)
+          } catch {
+            case e: Exception => {
+              logger.error("Failed to callback with velocity metrics", e)
+            }
+            case e: Throwable => {
+              logger.error("Failed to callback with velocity metrics", e)
+            }
           }
+        })
+      } catch {
+        case e: Exception => {
+          logger.error("Failed to send velocity metrics", e)
         }
-      })
+        case e: Throwable => {
+          logger.error("Failed to send velocity metrics", e)
+        }
+      }
     }
 
     val externalizeMetrics = new Runnable() {
       def run() {
         try {
-          var local_guid = guid
-          var local_guidCreatedTime = guidCreatedTime
-          var curTime = System.currentTimeMillis()
-          var nextSendRotationIdx = (curTime + emitTmInSecs * 1000) / rotationTimeInMilliSecs
-          var reset = (curSendRotationIdx != nextSendRotationIdx)
-          if (logger.isDebugEnabled) logger.debug("About to send metrics message. guid:" + local_guid + ", guidCreatedTime:" +
-            local_guidCreatedTime + ", curTime:" + curTime + ", nextSendRotationIdx:" +
-            nextSendRotationIdx + ", curSendRotationIdx:" + curSendRotationIdx + ", reset:" + reset)
-          EmitMetrics(reset)
-          curSendRotationIdx = nextSendRotationIdx
-          if (reset) setGuid(curTime)
+          if (!isTerminated) {
+            var local_guid = guid
+            var local_guidCreatedTime = guidCreatedTime
+            var curTime = System.currentTimeMillis()
+            var nextSendRotationIdx = (curTime + emitTmInSecs * 1000) / rotationTimeInMilliSecs
+            var reset = (curSendRotationIdx != nextSendRotationIdx)
+            if (logger.isDebugEnabled) logger.debug("About to send metrics message. guid:" + local_guid + ", guidCreatedTime:" +
+              local_guidCreatedTime + ", curTime:" + curTime + ", nextSendRotationIdx:" +
+              nextSendRotationIdx + ", curSendRotationIdx:" + curSendRotationIdx + ", reset:" + reset)
+            EmitMetrics(reset)
+            curSendRotationIdx = nextSendRotationIdx
+            if (reset) setGuid(curTime)
+          }
         } catch {
           case e1: Exception => logger.error("Failed to send metrics", e1)
           case e2: Throwable => logger.error("Failed to send metrics", e2)
@@ -348,6 +370,10 @@ object VelocityMetrics {
     override def addEmitListener(velocityMetricsCallback: VelocityMetricsCallback): Unit = synchronized {
       if (velocityMetricsCallback != null)
         callbackListeners += velocityMetricsCallback
+    }
+
+    private def getAllEmitListeners(): Array[VelocityMetricsCallback] = synchronized {
+      callbackListeners.toArray
     }
   }
 
