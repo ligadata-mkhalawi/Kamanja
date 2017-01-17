@@ -366,6 +366,8 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
         })
       })._2
 
+      //todo - validate conditional computes
+
       val onErrorConstants = Array("abort", "ignore", "exception")
       val r3 = t._2.outputs.foldLeft(r._1 + t._1, Map.empty[String, String])( (r, o) => {
         if(!onErrorConstants.find(_ == o._2.onerror).isDefined) {
@@ -591,6 +593,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
                mapping_in: scala.collection.Map[String, String],
                wheres_in: Array[String],
                computes_in: scala.collection.Map[String, Compute],
+               conditional_compute_groups_in: scala.collection.Map[String, ConditionalComputesGroup],
                output_in: String,
                mappingset_in: Map[String, eval.Tracker],
                trackingset_in: Set[String],
@@ -983,6 +986,127 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
         }
       })
 
+
+      //*************************************************************
+
+      // conditional computes
+      //(compute name, compute, group name, condition)
+      val conditionalComputes = ArrayBuffer[(String, Compute, String, String)]()
+      if(conditional_compute_groups_in != null){
+        conditional_compute_groups_in.foreach(group =>{
+          group._2.computes.foreach(c => {
+            conditionalComputes.append((c._1, c._2, group.toString(), group._2.condition))
+          })
+        })
+      }
+      val conditionalComputes1 = conditionalComputes.filter(c => {
+
+        // Check if the compute if determind
+        val (open, expression, list) = if (c._2.expression.length > 0) {
+
+          val list = Expressions.ExtractColumnNames(c._2.expression)
+          val rList = ResolveNames(list, aliaseMessages)
+          val open = rList.filter(f => !innerMapping.contains(f._2)).filter(f => {
+            val (c, v) = splitNamespaceClass(f._2)
+            if(dictMessages.contains(c)) {
+              val expression = "%s.get(\"%s\")".format(dictMessages.get(c).get, v)
+              val variableName = "%s.%s".format(dictMessages.get(c).get, v)
+              innerMapping ++= Map(f._2 -> eval.Tracker(variableName, c, "Any", true, v, expression))
+              false
+            } else  {
+              true
+            }
+          })
+          AmbiguousCheck(rList, c._2.expression)
+          (open, c._2.expression, rList)
+        } else {
+          val evaluate = c._2.expressions.map(expression => {
+            val list = Expressions.ExtractColumnNames(expression)
+            val rList = ResolveNames(list, aliaseMessages)
+            val open = rList.filter(f => !innerMapping.contains(f._2)).filter(f => {
+              val (c, v) = splitNamespaceClass(f._2)
+              if (dictMessages.contains(c)) {
+                val expression = "%s.get(\"%s\")".format(dictMessages.get(c).get, v)
+                val variableName = "%s.%s".format(dictMessages.get(c).get, v)
+                innerMapping ++= Map(f._2 -> eval.Tracker(variableName, c, "Any", true, v, expression))
+                false
+              } else {
+                true
+              }
+            })
+
+            if (open.isEmpty)
+              AmbiguousCheck(rList, expression)
+
+            (open, expression, rList)
+          })
+
+          evaluate.foldLeft(evaluate.head)((r, e) => {
+            if (e._1.size < r._1.size)
+              e
+            else
+              r
+          })
+        }
+
+        if (open.isEmpty) {
+
+          innerTracking ++= list.map(m => innerMapping.get(m._2).get.variableName).toSet
+
+          // Sub names to
+          val newExpression = Expressions.FixupColumnNames(expression, innerMapping, aliaseMessages)
+          logger.trace("Matched compute expression {} -> {}", newExpression, c._1)
+
+
+          collect :+= c._2.Comment
+          if (c._2.typename.length > 0) {
+
+            val defaultValue = Datatypes.getTypeDefaultVal(c._2.typename.trim)
+            val condition = c._4
+
+            // Check if we track the type or need a type coercion
+            val isVariable = Expressions.IsExpressionVariable(expression, innerMapping)
+            if(isVariable) {
+              val cols = Expressions.ExtractColumnNames(expression)
+              val cols1 = Expressions.ResolveName(cols.head, aliaseMessages)
+              val rt = innerMapping.get(cols1).get
+              if(rt.typeName!=c._2.typename && rt.typeName.nonEmpty) {
+                // Find the conversion and wrap the call
+                if(Conversion.builtin.contains(rt.typeName) && Conversion.builtin.get(rt.typeName).get.contains(c._2.typename))
+                {
+                  val conversionExpr = Conversion.builtin.get(rt.typeName).get.get(c._2.typename).get
+                  collect ++= Array("val %s: %s = if(%s) { conversion.%s(%s) } else %s\n".
+                    format(c._1, c._2.typename, condition, conversionExpr, newExpression, defaultValue))
+                }
+                else
+                {
+                  collect ++= Array("val %s: %s = if(%s){ %s } else %s\n".
+                    format(c._1, c._2.typename, condition, newExpression, defaultValue))
+                }
+              } else {
+                collect ++= Array("val %s: %s = if(%s){ %s } else %s\n".
+                  format(c._1, c._2.typename, condition, newExpression, defaultValue))
+              }
+
+            }
+            else {
+              collect ++= Array("val %s: %s = %s\n".format(c._1, c._2.typename, newExpression))
+            }
+          } else {
+            //collect ++= Array("val %s = %s\n".format(c._1, newExpression))
+            val m = "Type name for conditional compute cannot be empty: %s".format(currentPath)
+            logger.trace(m)
+            throw new Exception(m)
+          }
+          outputSet --= Set(c._1)
+          innerMapping ++= Map(c._1 -> eval.Tracker(c._1, "", c._2.typename, false, "", c._1))
+          false
+        } else {
+          true
+        }
+      })
+      //*************************************************************
+
       // Update state
       cnt1 = wheres1.length + computes1.size + groks1.size + mapping1.size
       wheres = wheres1
@@ -1223,6 +1347,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
             Map.empty[String, String],
             Array.empty[String],
             transformation.computes,
+            transformation.conditionalComputes,
             "",
             uniqueInputs ++ qualifiedInputs ++ messageAccessors ++ systemVariables, // Mapping
             Set.empty[String], // Tracking
@@ -1283,6 +1408,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
               outputmapping,
               if (o._2.where.nonEmpty) Array(o._2.where) else Array.empty[String],
               o._2.computes,
+              null,
               o._1,
               outerMapping, // Mapping
               outerTracking, // Tracking
