@@ -228,6 +228,10 @@ object VelocityMetrics {
 
     private def EmitMetrics(reset: Boolean): Unit = synchronized {
       val allComponents = GetAllMetricsComponents
+
+      allComponents.map(comp => {
+
+      })
 /*
       val allInstaceInterfaces = ArrayBuffer[VelocityMetricsInstanceImpl]()
       allComponents.foreach(comp => {
