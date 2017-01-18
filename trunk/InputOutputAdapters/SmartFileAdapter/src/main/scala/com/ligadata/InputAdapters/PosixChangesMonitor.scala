@@ -2,20 +2,15 @@ package com.ligadata.InputAdapters
 
 
 import java.io._
-import java.nio.file.Path
-import java.nio.file._
-import java.util
-import java.util.zip.GZIPInputStream
-import com.ligadata.Exceptions.{KamanjaException}
-import com.ligadata.InputOutputAdapterInfo.AdapterConfiguration
+import java.nio.file.{Path, _}
 
-import org.apache.logging.log4j.{ Logger, LogManager }
-
-import scala.actors.threadpool.{Executors, ExecutorService}
-import scala.collection.mutable.{MultiMap, ArrayBuffer, HashMap}
-import scala.util.control.Breaks._
 import com.ligadata.AdaptersConfiguration._
-import CompressionUtil._
+import com.ligadata.Exceptions.KamanjaException
+import org.apache.logging.log4j.LogManager
+
+import scala.actors.threadpool.{ExecutorService, Executors}
+import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.util.control.Breaks._
 
 /**
   * Created by Yasser on 1/14/2016.
@@ -228,6 +223,18 @@ class PosixFileHandler extends SmartFileHandler{
     val file = new File(fileFullPath)
     file.exists() && file.canRead && file.canWrite
   }
+
+  override def mkdirs() : Boolean = {
+    logger.info("Posix File Handler - mkdirs for path " + getFullPath)
+    try {
+      new File(fileFullPath).mkdirs()
+    }
+    catch{
+      case e : Throwable =>
+        logger.error("Posix File Handler - Error while creating path " + fileFullPath, e)
+        false
+    }
+  }
 }
 
 
@@ -331,7 +338,9 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
 
                         val dir = new File(dirToCheck)
                         checkExistingFiles(dir, isFirstScan, location)
-                        //dir.listFiles.filter(_.isDirectory).foreach(d => dirsToCheck += d.toString)
+
+                        //get subdirectories
+                        dir.listFiles.filter(_.isDirectory).foreach(d => dirsToCheck += d.toString)
 
                         errorWaitTime = 1000
                       }
@@ -418,7 +427,8 @@ class PosixChangesMonitor(adapterName : String, modifiedFileCallback:(SmartFileH
         validModifiedFiles.appendAll(newFiles)
 
       val newFileHandlers = validModifiedFiles.map(file => new PosixFileHandler(file.toString)).
-        sortWith(MonitorUtils.compareFiles(_,_,locationInfo) < 0).toArray
+        //sortWith(MonitorUtils.compareFiles(_,_,locationInfo) < 0).
+        toArray
       newFileHandlers.foreach(fileHandler =>{
         //call the callback for new files
         logger.info(s"Posix Changes Monitor - A new file found ${fileHandler.getFullPath}. initial = $isFirstScan")

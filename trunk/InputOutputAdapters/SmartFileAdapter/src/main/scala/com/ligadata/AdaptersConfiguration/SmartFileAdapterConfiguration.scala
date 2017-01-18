@@ -5,11 +5,12 @@ import com.ligadata.InputAdapters.MonitorUtils
 import com.ligadata.InputOutputAdapterInfo._
 import com.ligadata.Utils.EncryptDecryptUtils
 import org.apache.logging.log4j.LogManager
-import org.json4s._
 import org.json4s.JsonDSL._
+import org.json4s._
 import org.json4s.native.JsonMethods._
 
-import scala.collection.mutable.{ArrayBuffer, MutableList}
+import scala.collection.mutable.ArrayBuffer
+
 
 class ArchiveConfig {
   var archiveSleepTimeInMs: Int = 10
@@ -50,27 +51,44 @@ class FileAdapterMonitoringConfig {
 
   var detailedLocations: Array[LocationInfo] = Array.empty[LocationInfo] //folders to monitor, with other info
 
-  var fileBufferingTimeout = 300 // in seconds
+
+  var fileBufferingTimeout = 300
+  // in seconds
   //folders to move consumed files to. either one directory for all input (locations) or same number as (locations)
   //var targetMoveDirs : Array[String] = Array.empty[String]
-  var consumersCount: Int = _ //number of threads to read files
-  var monitoringThreadsCount: Int = 1 //number of threads to monitor src dirs
+  var consumersCount: Int = _
+  //number of threads to read files
+  var monitoringThreadsCount: Int = 1
+  //number of threads to monitor src dirs
   var workerBufferSize: Int = 4 //buffer size in MB to read messages from files
 
 
-  var msgTags: Array[String] = Array.empty[String]  //public
+  var msgTags: Array[String] = Array.empty[String] //public
+
   var tagDelimiter: String = "," //public
 
   var messageSeparator: Char = 10
   var orderBy: Array[String] = Array.empty[String]
+  var entireFileAsOneMessage = false
+  var enableEmailAndAttachmentMode = false
+  var organizationName = ""
+  var checkFileTypes = true
+  var checkFileSize = true
 
-  var enableMoving: String = "on"  //on, off - public
+  var enableMoving: String = "on"
+
+  //on, off - public
   def isMovingEnabled: Boolean = enableMoving == null || enableMoving.length == 0 || enableMoving.equalsIgnoreCase("on")
+
+  val createInputStructureInTargetDirs = true
+
 }
 
 class Padding {
   //var componentName : String = ""
-  var padPos: String = "left"  //left, right
+
+  var padPos: String = "left"
+  //left, right
   var padSize: Int = 0
   var padStr: String = ""
 }
@@ -91,10 +109,14 @@ class LocationInfo {
   var msgTags: Array[String] = Array.empty[String]
   var tagDelimiter: String = "" //if empty get public one
 
-  var messageSeparator: Char = 0  //0 this means separator is not set, so get it from public attributes
+
+  var messageSeparator: Char = 0
+  //0 this means separator is not set, so get it from public attributes
   var orderBy: Array[String] = Array.empty[String]
 
-  var enableMoving: String = ""  //on, off, empty means get it from public attribute
+  var enableMoving: String = ""
+
+  //on, off, empty means get it from public attribute
   def isMovingEnabled: Boolean = enableMoving == null || enableMoving.length == 0 || enableMoving.equalsIgnoreCase("on")
 }
 
@@ -233,7 +255,7 @@ object SmartFileAdapterConfiguration {
         val hadoopConfig = kv._2.asInstanceOf[Map[String, String]]
         connectionConfig.hadoopConfig = List[(String, String)]()
         hadoopConfig.foreach(hconf => {
-          connectionConfig.hadoopConfig ::=(hconf._1, hconf._2)
+          connectionConfig.hadoopConfig ::= (hconf._1, hconf._2)
         })
       }
     })
@@ -269,11 +291,26 @@ object SmartFileAdapterConfiguration {
       else if (kv._1.compareToIgnoreCase("MessageSeparator") == 0) {
         monitoringConfig.messageSeparator = kv._2.asInstanceOf[String].trim.toInt.toChar
       }
+      else if (kv._1.compareToIgnoreCase("EntireFileAsOneMessage") == 0) {
+        monitoringConfig.entireFileAsOneMessage = kv._2.asInstanceOf[String].trim.toBoolean
+      }
+      else if (kv._1.compareToIgnoreCase("CheckFileTypes") == 0) {
+        monitoringConfig.checkFileTypes = kv._2.asInstanceOf[String].trim.toBoolean
+      }
+      else if (kv._1.compareToIgnoreCase("CheckFileSize") == 0) {
+        monitoringConfig.checkFileSize = kv._2.asInstanceOf[String].trim.toBoolean
+      }
+      else if (kv._1.compareToIgnoreCase("EnableEmailAndAttachmentMode") == 0) {
+        monitoringConfig.enableEmailAndAttachmentMode = kv._2.asInstanceOf[String].trim.toBoolean
+      }
       else if (kv._1.compareToIgnoreCase("OrderBy") == 0) {
         monitoringConfig.orderBy = kv._2.asInstanceOf[List[String]].toArray
       }
       else if (kv._1.compareToIgnoreCase("TagDelimiter") == 0) {
         monitoringConfig.tagDelimiter = kv._2.asInstanceOf[String]
+      }
+      else if (kv._1.compareToIgnoreCase("OrganizationName") == 0) {
+        monitoringConfig.organizationName = kv._2.asInstanceOf[String]
       }
       else if (kv._1.compareToIgnoreCase("MsgTags") == 0) {
         monitoringConfig.msgTags = kv._2.asInstanceOf[List[String]].toArray
@@ -500,17 +537,19 @@ case class SmartFileKeyData(Version: Int, Type: String, Name: String, PartitionI
 
 class SmartFilePartitionUniqueRecordKey extends PartitionUniqueRecordKey {
   val Version: Int = 1
-  var Name: String = _  // Name
+
+  var Name: String = _
+  // Name
   val Type: String = "SmartFile"
   var PartitionId: Int = _ // Partition Id
 
   override def Serialize: String = {
     // Making String from key
     val json =
-      ("Version" -> Version) ~
-        ("Type" -> Type) ~
-        ("Name" -> Name) ~
-        ("PartitionId" -> PartitionId)
+    ("Version" -> Version) ~
+      ("Type" -> Type) ~
+      ("Name" -> Name) ~
+      ("PartitionId" -> PartitionId)
     compact(render(json))
   }
 
@@ -536,9 +575,9 @@ class SmartFilePartitionUniqueRecordValue extends PartitionUniqueRecordValue {
   override def Serialize: String = {
     // Making String from Value
     val json =
-      ("Version" -> Version) ~
-        ("Offset" -> Offset) ~
-        ("FileName" -> FileName)
+    ("Version" -> Version) ~
+      ("Offset" -> Offset) ~
+      ("FileName" -> FileName)
     compact(render(json))
   }
 

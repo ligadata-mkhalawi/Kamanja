@@ -139,7 +139,7 @@ libraryDependencies ++= Seq(
   "uk.co.bigbeeconsultants" %% "bee-client" % "0.28.0",
   "org.apache.httpcomponents" % "httpclient" % "4.1.2"
 )
-resolvers += "Big Bee Consultants" at "http://repo.bigbeeconsultants.co.uk/repo"
+resolvers += "Big Bee Consultants" at "http://repo.bigbeeconsultants.co.uk"
 
 ////////////////////// H2DB / StorageH2DB
 // http://mvnrepository.com/artifact/com.h2database/h2
