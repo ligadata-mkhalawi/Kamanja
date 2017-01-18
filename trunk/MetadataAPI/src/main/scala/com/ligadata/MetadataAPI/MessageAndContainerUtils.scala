@@ -1995,4 +1995,110 @@ object MessageAndContainerUtils {
     }
   }
 
+  private def GetMsgAttributes(mdObj: Any): String = {
+    var outputJson = ""
+    try{
+      mdObj match {
+	case m:MessageDef => {
+          val o = m.asInstanceOf[ContainerDef]
+          logger.debug("container found => " + o.FullName + "." + MdMgr.Pad0s2Version(o.Version))
+          val containerDef = o.cType.asInstanceOf[ContainerTypeDef]
+          val attribs =
+            if (containerDef.IsFixed) {
+              containerDef.asInstanceOf[StructTypeDef].memberDefs.toList
+            } else {
+              containerDef.asInstanceOf[MappedMsgTypeDef].attrMap.map(kv => kv._2).toList
+            }
+	  val json =  ("MsgAttributes" -> attribs.map(a =>
+                  ("Name" -> a.Name) ~
+                  ("Type" -> (a.typeDef.NameSpace + "." + a.typeDef.Name))))
+	  outputJson = compact(render(json))
+	}
+	case m:ContainerDef => {
+          val o = m.asInstanceOf[ContainerDef]
+          logger.debug("container found => " + o.FullName + "." + MdMgr.Pad0s2Version(o.Version))
+          val containerDef = o.cType.asInstanceOf[ContainerTypeDef]
+          val attribs =
+            if (containerDef.IsFixed) {
+              containerDef.asInstanceOf[StructTypeDef].memberDefs.toList
+            } else {
+              containerDef.asInstanceOf[MappedMsgTypeDef].attrMap.map(kv => kv._2).toList
+            }
+	  val json =  ("MsgAttributes" -> attribs.map(a =>
+                  ("Name" -> a.Name) ~
+                  ("Type" -> (a.typeDef.NameSpace + "." + a.typeDef.Name))))
+	  outputJson = compact(render(json))
+	}
+        case _ => {
+          throw new Exception("GetMsgAttributes doesn't support the objects of type " + mdObj.getClass().getName() + " yet.")
+        }
+      }
+      logger.debug("serialized object : ", outputJson)
+      outputJson 
+    } catch {
+      case e: Exception => {
+        logger.debug("Failed to serialize", e)
+        throw e
+      }
+    }
+  }
+
+  def GetEntityAttribs(key: String): String = {
+    try{
+      var o = MdMgr.GetMdMgr.Container(key, -1, true);
+      o match {
+        case None =>
+          logger.debug("Not a container, Check whether it is a message? => " + key)
+	  var m = MdMgr.GetMdMgr.Message(key, -1, true);
+	  m match {
+            case None => {
+              logger.error("Neither  a message nor container: key => " + key)
+              val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetEntityAttribs", null, "Error :" + "Neither a message nor a container " + ErrorCodeConstants.Get_Entity_Attribs_Failed + ":" + key)
+              apiResult.toString()
+	    }
+            case Some(m1) =>
+              val o1 = m1.asInstanceOf[MessageDef]
+	      GetMsgAttributes(o1)
+	  }
+        case Some(c) =>
+          val o1 = c.asInstanceOf[ContainerDef]
+	  GetMsgAttributes(o1)
+      }
+    } catch {
+      case e: Exception => {
+        logger.debug("", e)
+        val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetEntityAttribs", null, "Error :" + e.toString() + ErrorCodeConstants.Get_Entity_Attribs_Failed + ":" + key)
+        apiResult.toString()
+      }
+    }
+  }
+
+  private def dummy(attribData: ListBuffer[(String, String,String)],t:(String, String,String)): Unit = {
+    attribData += t
+  }
+
+  def GetEntityData(containerName:String, selectList: Array[String], filterMap: scala.collection.mutable.Map[String, String] ) : String = {
+    var attribData:ListBuffer[(String, String,String)] = ListBuffer()
+    val getObjFn = (key: String, attribName: String, attribValue: String) => {
+      var t = (key,attribName,attribValue)
+      dummy(attribData,t)
+    }
+
+    try{
+      val store = PersistenceUtils.GetMainDS
+      store.get(containerName, selectList, filterMap, getObjFn)
+      val json =  ("Results" -> attribData.map(a =>
+                  ("key" -> a._1) ~
+                  ("attribName" -> a._2) ~
+                  ("attribValue" -> a._3)))
+      compact(render(json))
+    }
+    catch {
+      case e: Exception => {
+        logger.debug("General Exception", e)
+        val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetEntityData", null, "Error :" + e.toString() + ErrorCodeConstants.Get_Entity_Data_Failed + ":" + containerName)
+        apiResult.toString()
+      }
+    }
+  }
 }

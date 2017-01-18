@@ -231,6 +231,14 @@ trait DataStoreOperations extends AdaptersSerializeDeserializers {
   def isTableExists(tableName: String): Boolean // here tableName is full qualified name (including namespace)
   def isTableExists(tableNamespace: String, tableName: String): Boolean
   def getTableName(containerName: String): String
+
+  def put(containerName: String, keyValue: String, fieldValues: scala.collection.mutable.Map[String, String]): Unit = {
+    throw new KamanjaException("Not a valid operation for this adapter", null)
+  }
+
+  def get(containerName: String, selectList: Array[String], filterMap:scala.collection.mutable.Map[String, String], callbackFunction: (String, String, String) => Unit): Unit = {
+    throw new KamanjaException("Not a valid operation for this adapter", null)
+  }
 }
 
 trait DataStore extends DataStoreOperations with AdaptersSerializeDeserializers with Monitorable  {
@@ -324,6 +332,11 @@ trait DataStore extends DataStoreOperations with AdaptersSerializeDeserializers 
   def DropContainer(containerNames: Array[String]): Unit
   def CreateContainer(containerNames: Array[String]): Unit
   def CreateMetadataContainer(containerNames: Array[String]): Unit
+
+  def createAnyTable(containerName: String, fieldList: Array[String], apiType:String): Unit = {
+    throw new KamanjaException("Not a valid operation for this adapter", null)
+  }
+
 }
 
 trait Transaction extends DataStoreOperations {

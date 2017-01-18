@@ -4442,5 +4442,26 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     MessageAndContainerUtils.GetTypeByElementId(elementId, userid)
   }
 
+  /**
+   * GetEntityFields
+   *
+   * @param key
+   * return fields as json string
+   */
+  override def GetEntityAttribs(key: String): String = {
+    MessageAndContainerUtils.GetEntityAttribs(key);
+  }
+
+  /**
+   * GetEntityData
+   *
+   * @param containerName
+   * @param selectList list of attributes being selected
+   * @param filterMap a map of attribute/value pairs on which data is filtered
+   * return data values as json string
+   */
+  def GetEntityData(containerName:String, selectList: Array[String], filterMap: scala.collection.mutable.Map[String, String] ) : String = {
+    MessageAndContainerUtils.GetEntityData(containerName,selectList,filterMap);
+  }
 
 }

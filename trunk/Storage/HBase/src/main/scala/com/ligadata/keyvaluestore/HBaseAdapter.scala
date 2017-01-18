@@ -402,6 +402,46 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
     }
   }
 
+  override def createAnyTable(containerName: String, fieldList: Array[String], apiType:String): Unit = {
+    var tableName = toFullTableName(containerName)
+    try {
+      relogin
+      if (!admin.tableExists(TableName.valueOf(tableName))) {
+        if (autoCreateTables.equalsIgnoreCase("NO")) {
+          apiType match {
+            case "dml" => {
+              throw new Exception("The option autoCreateTables is set to NO, So Can't create non-existent table automatically to support the requested DML operation")
+            }
+            case _ => {
+              logger.info("proceed with creating table..")
+            }
+          }
+        }
+        val tableDesc = new HTableDescriptor(TableName.valueOf(tableName));
+        var colDesc = new HColumnDescriptor("key".getBytes())
+        tableDesc.addFamily(colDesc)
+	fieldList.foreach(f => {
+          colDesc = new HColumnDescriptor(f.getBytes())
+          tableDesc.addFamily(colDesc)
+	})
+        createTableFromDescriptor(tableDesc)
+	// update local cache
+        containerList.add(containerName)
+	isMetadataMap(containerName) = false
+      }
+      else{
+	// update local cache
+        containerList.add(containerName)
+	isMetadataMap(containerName) = false
+      }	
+    } catch {
+      case e: Exception => {
+        externalizeExceptionEvent(e)
+        throw CreateDDLException("Failed to create table " + tableName, e)
+      }
+    }
+  }
+
   private def dropTable(tableName: String): Unit = {
     try {
       relogin
@@ -894,6 +934,32 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
     }
   }
 
+  override def put(containerName: String, keyValue: String, fieldValues: scala.collection.mutable.Map[String, String]): Unit = {
+    var tableName = toFullTableName(containerName)
+    var tableHBase: Table = null
+    try {
+      relogin
+      val isMetadata = CheckTableExists(containerName)
+      tableHBase = getTableFromConnection(tableName);
+      var kba = keyValue.getBytes()
+      var p = new Put(kba)
+      fieldValues.map( x => {
+	p.addColumn(x._1.getBytes(), baseStrBytes, Bytes.toBytes(x._2))
+      })
+      tableHBase.put(p)
+    } catch {
+      case e: Exception => {
+        externalizeExceptionEvent(e)
+        throw CreateDMLException("Failed to save an object in table " + tableName, e)
+      }
+    } finally {
+      if (tableHBase != null) {
+        tableHBase.close()
+      }
+    }
+  }
+
+
   // delete operations
   override def del(containerName: String, keys: Array[Key]): Unit = {
     var tableName = toFullTableName(containerName)
@@ -1136,6 +1202,19 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
     }
   }
 
+  private def processCell(k: Array[Byte], fieldName: String, fieldValue: String,callbackFunction: (String, String, String) => Unit) {
+    try {
+      var key = new String(k);
+      if (callbackFunction != null)
+        (callbackFunction)(key, fieldName,fieldValue)
+    } catch {
+      case e: Exception => {
+        externalizeExceptionEvent(e)
+        throw e
+      }
+    }
+  }
+
   private def processRow(k: Array[Byte], isMetadata: Boolean, schemaId: Int, st: String, si: Array[Byte], callbackFunction: (Key, Value) => Unit) {
     try {
       var key = GetKeyFromCompositeKey(k,isMetadata)
@@ -1150,6 +1229,7 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       }
     }
   }
+
 
   private def processRow(key: Key, schemaId: Int, st: String, si: Array[Byte], callbackFunction: (Key, Value) => Unit) {
     try {
@@ -1210,6 +1290,64 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
         val si = r.getValue(siStrBytes, baseStrBytes)
         val schemaId = Bytes.toInt(r.getValue(schemaIdStrBytes, baseStrBytes))
         processRow(r.getRow(), isMetadata, schemaId, st, si, callbackFunction)
+      }
+      updateByteStats("get",tableName,byteCount)
+      updateObjStats("get",tableName,recCount)
+    } catch {
+      case e: Exception => {
+        externalizeExceptionEvent(e)
+        throw CreateDMLException("Failed to fetch data from the table " + tableName, e)
+      }
+    } finally {
+      if (tableHBase != null) {
+        tableHBase.close()
+      }
+    }
+  }
+
+
+  override def get(containerName: String, fieldList: Array[String], filterMap:scala.collection.mutable.Map[String, String], callbackFunction: (String, String, String) => Unit): Unit = {
+    var tableName = toFullTableName(containerName)
+    var tableHBase: Table = null
+    var valueList: scala.collection.mutable.Map[String, String] = new scala.collection.mutable.HashMap()
+    try {
+      relogin
+      val isMetadata = CheckTableExists(containerName)
+      tableHBase = getTableFromConnection(tableName);
+
+      var scan = new Scan();
+      // construct filter maps
+      val filters = new java.util.ArrayList[Filter]()
+      if ( filterMap.size > 0 ){
+	filterMap.foreach(x => {
+	  val filter = new SingleColumnValueFilter(Bytes.toBytes(x._1), Bytes.toBytes("base"),
+						CompareOp.EQUAL, Bytes.toBytes(x._2))
+	  filters.add(filter);
+	})
+	val filterList = new FilterList(filters);  
+	scan.setFilter(filterList)
+      }
+      var rs = tableHBase.getScanner(scan);
+      updateOpStats("get",tableName,1)
+      val it = rs.iterator()
+      var byteCount = 0
+      var recCount = 0
+      val fieldListMap = fieldList.map(x => x -> x).toMap
+      while (it.hasNext()) {
+        val r = it.next()
+	byteCount = byteCount + getRowSize(r)
+	recCount = recCount + 1
+	val kvit = r.list().iterator()
+	while( kvit.hasNext() ){
+	  val kv = kvit.next()
+	  val q = Bytes.toString(kv.getFamily())
+	  if( fieldListMap.contains(q) ){
+	    valueList(q) = Bytes.toString(r.getValue(q.getBytes(), baseStrBytes))
+	  }
+	}
+	valueList.foreach(x => {
+          processCell(r.getRow(), x._1, x._2, callbackFunction)
+	})
       }
       updateByteStats("get",tableName,byteCount)
       updateObjStats("get",tableName,recCount)
@@ -1628,6 +1766,9 @@ class HBaseAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: 
       }
     }
   }
+
+
+
 
   override def beginTx(): Transaction = {
     new HBaseAdapterTx(this)

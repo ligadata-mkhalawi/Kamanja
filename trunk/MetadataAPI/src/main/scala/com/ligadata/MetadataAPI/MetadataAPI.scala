@@ -1656,5 +1656,24 @@ trait MetadataAPI {
     */
   def UpdateObjectInDB(obj: BaseElemDef)
 
+  /**
+   * GetEntityFields
+   *
+   * @param key
+   * return fields as json string
+   */
+  def GetEntityAttribs(key: String): String
+
+  /**
+   * GetEntityData
+   *
+   * @param containerName
+   * @param selectList list of attributes being selected
+   * @param filterMap a map of attribute/value pairs on which data is filtered
+   * return data values as json string
+   */
+  def GetEntityData(containerName:String, selectList: Array[String], filterMap: scala.collection.mutable.Map[String, String] ) : String
+
+
   }
 // 646 - 674 Change ends

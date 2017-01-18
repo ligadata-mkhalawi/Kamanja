@@ -242,5 +242,8 @@ object ErrorCodeConstants {
    val Get_Type_By_SchemaId_Failed = "Failed to fetch message/container from cache";
    val Get_Type_By_ElementId_Failed = "Failed to fetch message/container/model from Cache";
 
-
+   // GetEntityAttribs
+   val Get_Entity_Attribs_Failed = "Failed to fetch attributes of message/container from Cache";
+   // GetEntityData
+   val Get_Entity_Data_Failed = "Failed to fetch attribute values of message/container from Cache";
 }
