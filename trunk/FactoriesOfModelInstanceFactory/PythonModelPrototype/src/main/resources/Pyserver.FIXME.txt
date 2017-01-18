@@ -1,0 +1,41 @@
+Pyserver.FIXME.txt
+
+1)new cmdline arguments to server: pid, max memory 
+2) don't pass host, port , et al ... put those in at model instantiation time
+3) simplify next msg 
+4) 
+5)
+
+
+
+
+{
+  "Cmd": "addModel",
+  "CmdVer": 1,
+  "CmdOptions": {
+    "ModelFile": "add.py",
+    "ModelName": "AddTuple"
+  },
+  "ModelOptions": {
+    "TypeInfo": {
+      "a": "Int",
+      "b": "Int"
+    }
+  }
+}
+
+{
+  "InputFields": {
+    "a": "Int",
+    "b": "Int"
+  },
+  "Cmd": "addModel",
+  "Server": "pepper.fishpuppy.com",
+  "OutputFields": {
+    "a": "Int",
+    "b": "Int",
+    "result": "Int"
+  },
+  "Result": "model multiply.MultiplyTuple added",
+  "Port": "9999"
+}

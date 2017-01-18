@@ -49,11 +49,11 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   private val qc = KafkaQueueAdapterConfiguration.GetAdapterConfig(inputConfig)
   private val LOG = LogManager.getLogger(getClass)
   LOG.info("Staring Kafka Consumer (0.9+) with the following paramters:\n" + qc.toString)
-  private var isShutdown = false
   private val lock = new Object()
   private var msgCount = new AtomicLong(0)
   private var sleepDuration = 500
   private var isQuiese = false
+  private var isShutdown = false
   private val kvs = scala.collection.mutable.Map[Int, (KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue)]()
 
   private var readExecutor: ExecutorService = _
@@ -180,6 +180,23 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     Thread.currentThread().setContextClassLoader(tempContext);
     return consumer
   }
+  
+  val kafkaConsumers = ArrayBuffer[org.apache.kafka.clients.consumer.KafkaConsumer[String,String]]()
+  
+  def addConsumers(kafkaConsumer: org.apache.kafka.clients.consumer.KafkaConsumer[String,String]): Unit = synchronized {
+    if (kafkaConsumer != null)
+      kafkaConsumers += kafkaConsumer
+  }
+
+  def getConsumers: Array[org.apache.kafka.clients.consumer.KafkaConsumer[String,String]] = synchronized {
+    kafkaConsumers.toArray
+  }
+
+  def getConsumersAndClear: Array[org.apache.kafka.clients.consumer.KafkaConsumer[String,String]] = synchronized {
+    val retVal = kafkaConsumers.toArray
+    kafkaConsumers.clear
+    retVal
+  }
 
   /**
     * Start processing - will start a number of threads to read the Kafka queues for a topic.  The list of Hosts servicing a
@@ -192,6 +209,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     */
   override def StartProcessing(partitionIds: Array[StartProcPartInfo], ignoreFirstMsg: Boolean): Unit = lock.synchronized {
 
+    isQuiese = false
     LOG.info("Start processing called on KamanjaKafkaAdapter for topic " + qc.topic)
     // This is the number of executors we will run - Heuristic, but will go with it
     // var numberOfThreads = availableThreads
@@ -214,7 +232,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     })
 
     val partitionGroups: scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue )]]
-    = scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue )]]()
+                                 = scala.collection.mutable.Map[Int, scala.collection.mutable.Set[(KafkaPartitionUniqueRecordKey, KafkaPartitionUniqueRecordValue, KafkaPartitionUniqueRecordValue )]]()
 
     // Create a Map of all the partiotion Ids.  We use a MOD for all the partition numbers to allocate each partition into
     // a bucket.
@@ -261,7 +279,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
         }
 
         // Create the connection for this thread to use and SEEK the appropriate offsets.
-        while (!isSeekSuccessful && !isQuiese) {
+        while (!isSeekSuccessful && !isQuiese && !isShutdown) {
           try {
             kafkaConsumer = createConsumerWithInputProperties
             var partitionsToMonitor: java.util.List[TopicPartition] = new util.ArrayList[TopicPartition]()
@@ -271,33 +289,36 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
             partitionExceptions("Partitions-"+group._2.map(p => {p._1.asInstanceOf[KafkaPartitionUniqueRecordKey].PartitionId.toString}).toArray[String].mkString(",")) = new ExceptionInfo("n/a","n/a")
             //intitialize and seek each partition
             group._2.foreach(partitionInfo => {
-              var thisPartitionNumber: Int = partitionInfo._1.asInstanceOf[KafkaPartitionUniqueRecordKey].PartitionId
-              var thisTopicPartition: org.apache.kafka.common.TopicPartition = null
-              LOG.debug("Seeking to requested point for topic " + qc.topic + " for partition " + thisPartitionNumber)
+              if (!isQuiese && !isShutdown) {
+                var thisPartitionNumber: Int = partitionInfo._1.asInstanceOf[KafkaPartitionUniqueRecordKey].PartitionId
+                var thisTopicPartition: org.apache.kafka.common.TopicPartition = null
+                LOG.debug("Seeking to requested point for topic " + qc.topic + " for partition " + thisPartitionNumber)
 
-              // Initialize the monitoring status
-              partitonCounts(thisPartitionNumber.toString) = 0
-              partitonDepths(thisPartitionNumber.toString) = 0
+                // Initialize the monitoring status
+                partitonCounts(thisPartitionNumber.toString) = 0
+                partitonDepths(thisPartitionNumber.toString) = 0
 
-              // Create an execution context for this partition
-              if (execContexts(thisPartitionNumber) != null) {
-                LOG.warn("KamanjaKafkaConsumer is creating a duplicate ExecutionContext for partition " + KamanjaKafkaConsumer)
-              } else {
-                val uniqueKey = new KafkaPartitionUniqueRecordKey
-                thisTopicPartition = new TopicPartition(qc.topic, thisPartitionNumber)
-                uniqueKey.Name = qc.Name
-                uniqueKey.TopicName = qc.topic
-                uniqueKey.PartitionId = thisPartitionNumber
+                // Create an execution context for this partition
+                if (execContexts(thisPartitionNumber) != null) {
+                  LOG.warn("KamanjaKafkaConsumer is creating a duplicate ExecutionContext for partition " + KamanjaKafkaConsumer)
+                } else {
+                  val uniqueKey = new KafkaPartitionUniqueRecordKey
+                  thisTopicPartition = new TopicPartition(qc.topic, thisPartitionNumber)
+                  uniqueKey.Name = qc.Name
+                  uniqueKey.TopicName = qc.topic
+                  uniqueKey.PartitionId = thisPartitionNumber
 
-                uniqueVals(thisPartitionNumber) = uniqueKey
-                execContexts(thisPartitionNumber) = execCtxtObj.CreateExecContext(input, uniqueKey, nodeContext)
-                topicPartitions(thisPartitionNumber) = thisTopicPartition
-                initialOffsets(thisPartitionNumber) = partitionInfo._2.asInstanceOf[KafkaPartitionUniqueRecordValue].Offset.toLong
+                  uniqueVals(thisPartitionNumber) = uniqueKey
+                  execContexts(thisPartitionNumber) = execCtxtObj.CreateExecContext(input, uniqueKey, nodeContext)
+                  topicPartitions(thisPartitionNumber) = thisTopicPartition
+                  initialOffsets(thisPartitionNumber) = partitionInfo._2.asInstanceOf[KafkaPartitionUniqueRecordValue].Offset.toLong
+                }
+
+                // Seek to the desired offset for this partition
+                if (thisTopicPartition != null) partitionsToMonitor.add(thisTopicPartition)
               }
-
-              // Seek to the desired offset for this partition
-              if (thisTopicPartition != null) partitionsToMonitor.add(thisTopicPartition)
             })
+            addConsumers(kafkaConsumer)
             kafkaConsumer.assign(partitionsToMonitor)
 
             // Ok, the partitions have been assigned, seek all the right offsets
@@ -354,10 +375,11 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
         // This is teh guy that keeps running processing each group of partitions.
         override def run(): Unit = {
           LOG.debug("Starting to POLL ")
-          while (!isQuiese) {
+          while (!isQuiese && !isShutdown) {
             try {
-              var records = (kafkaConsumer.poll(KamanjaKafkaConsumer.POLLING_INTERVAL)).iterator
-              while (records.hasNext && !isQuiese) {
+              var poll_records = (kafkaConsumer.poll(KamanjaKafkaConsumer.POLLING_INTERVAL))
+              var records = poll_records.iterator
+              while (records.hasNext && !isQuiese && !isShutdown) {
                 val readTmMs = System.currentTimeMillis
 
                 // Process this record.
@@ -365,7 +387,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
                 var isRecordSentToKamanja = false
 
                 // Process this record (keep doing it until success
-                while (!isRecordSentToKamanja && !isQuiese) {
+                while (!isRecordSentToKamanja && !isQuiese && !isShutdown) {
                   try {
                     val message: Array[Byte] = record.value.getBytes()
 
@@ -384,6 +406,9 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
 
                     isRecordSentToKamanja = true
                   } catch {
+                    case ie: org.apache.kafka.common.errors.WakeupException => {
+                      throw ie
+                    }
                     // This covers errors for each record... it must succeed!
                     case e: Throwable => {
                       externalizeExceptionEvent(e)
@@ -393,6 +418,9 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
                       try {
                         Thread.sleep(internalGetSleep)
                       } catch {
+                        case ie: org.apache.kafka.common.errors.WakeupException => {
+                          throw ie
+                        }
                         case ie: InterruptedException => {
                           externalizeExceptionEvent(ie)
                           LOG.warn("KamanjaKafkaConsumer - sleep interrupted, shutting donw ")
@@ -413,6 +441,8 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
                 } // While still sending a record to Kamanja
               } // While there are still records in the iterator
             } catch {
+              case ie: org.apache.kafka.common.errors.WakeupException => {
+              }
               // This will cover the case when we get an exception from the POLL call.... just turn around and do another POLL.
               case ie: InterruptedException => {
                 // We are catching a cotrolC or similar interrup exception from the inner try-catch... we dont want to retry that!
@@ -427,6 +457,9 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
                 try {
                   Thread.sleep(internalGetSleep)
                 } catch {
+                  case ie: org.apache.kafka.common.errors.WakeupException => {
+                    throw ie
+                  }
                   case ie: InterruptedException => {
                     externalizeExceptionEvent(ie)
                     LOG.warn("KamanjaKafkaConsumer - sleep interrupted, shutting down ", e)
@@ -478,7 +511,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
 
     // Create Consumer object and issue a request for known partitions.
     // per Kamanja design, we will continue trying until we success.  The retry will throttle back to 60 sec
-    while (!isSuccessfulConnection && !isQuiese) {
+    while (!isSuccessfulConnection && !isQuiese && !isShutdown) {
       try {
         kafkaConsumer = createConsumerWithInputProperties()
         results = kafkaConsumer.partitionsFor(qc.topic)
@@ -513,7 +546,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     }
 
     resetSleepTimer
-    if (isQuiese) {
+    if (isQuiese|| isShutdown) {
       // return the info back to the Engine.  if quiesing
       LOG.warn("Quiese request is receive during GetAllPartitionUniqueRecordKey for topic " + qc.topic)
       partitionNames.toArray
@@ -527,7 +560,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
 
     // Successful fetch of metadata.. return the values to the engine.
     var iter = results.iterator
-    while(iter.hasNext && !isQuiese) {
+    while(iter.hasNext && !isQuiese && !isShutdown) {
       var thisRes = iter.next()
       var newVal = new KafkaPartitionUniqueRecordKey
       newVal.TopicName = thisRes.topic
@@ -571,7 +604,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
       var results = kafkaConsumer.partitionsFor(qc.topic)
       var iter = results.iterator
       var partitionNames: scala.collection.mutable.ListBuffer[Int] = scala.collection.mutable.ListBuffer()
-      while(iter.hasNext && !isQuiese) {
+      while(iter.hasNext && !isQuiese && !isShutdown) {
         var thisRes = iter.next()
         // var newVal = new KafkaPartitionUniqueRecordKey
         // newVal.TopicName = thisRes.topic
@@ -587,18 +620,20 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
 
       // Figure out what the end values are
       partitionNames.foreach(part => {
-        val tp = new TopicPartition(qc.topic, part)
-        var tempCollection: java.util.ArrayList[org.apache.kafka.common.TopicPartition] = new java.util.ArrayList[org.apache.kafka.common.TopicPartition]()
-        tempCollection.add(tp)
-        kafkaConsumer.seekToEnd(tempCollection)
-        var end = kafkaConsumer.position(tp)
-        val rKey = new KafkaPartitionUniqueRecordKey
-        val rValue = new KafkaPartitionUniqueRecordValue
-        rKey.PartitionId = part
-        rKey.Name = qc.Name
-        rKey.TopicName = qc.topic
-        rValue.Offset = end
-        infoList = (rKey, rValue) :: infoList
+        if (!isQuiese && !isShutdown) {
+          val tp = new TopicPartition(qc.topic, part)
+          var tempCollection: java.util.ArrayList[org.apache.kafka.common.TopicPartition] = new java.util.ArrayList[org.apache.kafka.common.TopicPartition]()
+          tempCollection.add(tp)
+          kafkaConsumer.seekToEnd(tempCollection)
+          var end = kafkaConsumer.position(tp)
+          val rKey = new KafkaPartitionUniqueRecordKey
+          val rValue = new KafkaPartitionUniqueRecordValue
+          rKey.PartitionId = part
+          rKey.Name = qc.Name
+          rKey.TopicName = qc.topic
+          rValue.Offset = end
+          infoList = (rKey, rValue) :: infoList
+        }
       })
 
     } catch {
@@ -618,7 +653,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     *
     */
   override def Shutdown(): Unit = lock.synchronized {
-    isQuiese = true
+    isShutdown = true
     StopProcessing
   }
 
@@ -667,8 +702,11 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     * Will stop all the running read threads only - a call to StartProcessing will restart the reading process
     */
   override def StopProcessing(): Unit = {
-    isShutdown = true
+    LOG.warn("StopProcessing")
+    isQuiese = true
     terminateReaderTasks
+    // Resettng isQuiese after terminating reader tasks. So, we can start getting partitions etc
+    isQuiese = false
   }
 
   /**
@@ -732,13 +770,38 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     *  terminateReaderTasks - well, just what it says
     */
   private def terminateReaderTasks(): Unit = {
+    val kafkaConsumers = getConsumersAndClear
+    kafkaConsumers.foreach(kConsumer => {
+      try {
+        if (kConsumer != null)
+          kConsumer.wakeup();
+      } catch {
+        case e: Throwable => {
+        }
+      }
+    })
+
     if (readExecutor == null) return
 
     // Give the threads to gracefully stop their reading cycles, and then execute them with extreme prejudice.
-    Thread.sleep(qc.noDataSleepTimeInMs + 1)
+    try {
+      Thread.sleep(qc.noDataSleepTimeInMs + 1)
+    } catch {
+      case e: Throwable => {}
+    }
+
     if (readExecutor != null) readExecutor.shutdownNow
-    while (readExecutor != null && readExecutor.isTerminated == false) {
-      Thread.sleep(100)
+    var cntr = 0
+    while (readExecutor != null && readExecutor.isTerminated == false && cntr < 1001) {
+      cntr += 1
+      if (cntr % 1000 == 0) {
+        throw new Exception("KAFKA_ADAPTER - Failed to terminate reader executor from Kafka. Waited for 100 secs.")
+      }
+      try {
+        Thread.sleep(100)
+      } catch {
+        case e: Throwable => {}
+      }
     }
 
     LOG.debug("KAFKA_ADAPTER - Shutdown Complete")

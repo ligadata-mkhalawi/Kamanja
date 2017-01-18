@@ -62,6 +62,7 @@ assemblyMergeStrategy in assembly := {
   case "blueprint.xml" => MergeStrategy.discard
   case "OSGI-INF/blueprint/blueprint.xml" => MergeStrategy.discard
   case "features.xml" => MergeStrategy.discard
+  case "ScalaTestBundle.properties" => MergeStrategy.discard
   case x =>
     val oldStrategy = (assemblyMergeStrategy in assembly).value
     oldStrategy(x)
@@ -186,6 +187,7 @@ libraryDependencies += "com.jcraft" % "jsch" % "0.1.53"
 //libraryDependencies += "net.jcip" % "jcip-annotations" % "1.0"
 libraryDependencies += "net.sf.ehcache" % "ehcache-core" % "2.6.5"
 libraryDependencies += "net.sf.ehcache" % "ehcache-jgroupsreplication" % "1.7"
+
 libraryDependencies += "org.jgroups" % "jgroups" % "3.6.7.Final"
 // libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.2.9"
 // libraryDependencies += "org.json4s" %% "json4s-native" % "3.2.9"

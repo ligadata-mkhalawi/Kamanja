@@ -3,9 +3,9 @@ import sbt._
 
 sbtPlugin := true
 
-version := "1.5.3"
+version := "1.6.1"
 
-version in ThisBuild := "1.5.3"
+version in ThisBuild := "1.6.1"
 
 //scalaVersion := "2.11.7"
 
@@ -45,9 +45,13 @@ lazy val ExtDependencyLibs2 = project.in(file("ExtDependencyLibs2")).configs(Tes
 
 lazy val KamanjaInternalDeps = project.in(file("KamanjaInternalDeps")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", InputOutputAdapterBase, Exceptions, DataDelimiters, Metadata, KamanjaBase, MetadataBootstrap,
   Serialize, ZooKeeperListener, ZooKeeperLeaderLatch, KamanjaUtils, TransactionService, StorageManager, PmmlCompiler, ZooKeeperClient, OutputMsgDef, SecurityAdapterBase, HeartBeat,
-  JpmmlFactoryOfModelInstanceFactory, JarFactoryOfModelInstanceFactory, KamanjaVersion, InstallDriverBase, BaseFunctions, FileSimpleInputOutputAdapters, SimpleEnvContextImpl,
+  PythonFactoryOfModelInstanceFactory, JpmmlFactoryOfModelInstanceFactory, JarFactoryOfModelInstanceFactory, KamanjaVersion, InstallDriverBase, BaseFunctions, KafkaSimpleInputOutputAdapters, FileSimpleInputOutputAdapters, SimpleEnvContextImpl,
   GenericMsgCompiler, MethodExtractor, JsonDataGen, Controller, AuditAdapters, CustomUdfLib, UtilityService,
+<<<<<<< HEAD
   UtilsForModels, MessageCompiler, jtm, Dag, NodeInfoExtract, SmartFileAdapter, ElasticsearchAdapters, Cache, CacheImp, CsvSerDeser, JsonSerDeser, KBinarySerDeser)
+=======
+  UtilsForModels, MessageCompiler, jtm, Dag, NodeInfoExtract, SmartFileAdapter, Cache, CacheImp, CsvSerDeser, JsonSerDeser, KBinarySerDeser, EncryptUtils)
+>>>>>>> origin/1.6.1
 
 ////////////////////////
 
@@ -117,10 +121,16 @@ lazy val MetadataAPI = project.in(file("MetadataAPI")).configs(TestConfigs.all: 
 //test in MetadataAPI <<= (test in MetadataAPI) dependsOn ((assembly in KamanjaInternalDeps), (assembly in ExtDependencyLibs), (assembly in ExtDependencyLibs2))
 //parallelExecution in Test in MetadataAPI := false
 
+<<<<<<< HEAD
 lazy val MetadataBootstrap = project.in(file("MetadataBootstrap/Bootstrap")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, BaseTypes, Exceptions)
 
 
 lazy val MetadataAPIService = project.in(file("MetadataAPIService")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KamanjaBase, MetadataAPI, ZooKeeperLeaderLatch, Exceptions)
+=======
+lazy val MetadataBootstrap = project.in(file("MetadataBootstrap/Bootstrap")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, BaseTypes, Exceptions)
+
+lazy val MetadataAPIService = project.in(file("MetadataAPIService")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KamanjaBase, MetadataAPI, ZooKeeperLeaderLatch, Exceptions)
+>>>>>>> origin/1.6.1
 
 lazy val MetadataAPIServiceClient = project.in(file("MetadataAPIServiceClient")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Serialize, Exceptions, KamanjaBase)
 
@@ -136,7 +146,13 @@ lazy val GenerateMessage = project.in(file("Utils/GenerateMessage")).configs(Tes
 
 lazy val SimpleKafkaProducer = project.in(file("Utils/SimpleKafkaProducer")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, KafkaSimpleInputOutputAdapters, KafkaAdapters_v10, KafkaAdapters_v9, KafkaAdapters_v8, Exceptions)
 
+<<<<<<< HEAD
 lazy val KVInit = project.in(file("Utils/KVInit")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, MetadataBootstrap, MetadataAPI, StorageManager, Exceptions, TransactionService)
+=======
+lazy val OutputUtils = project.in(file("Utils/OutputUtils")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(TestSettings.settings: _*).dependsOn(SaveContainerDataComponent, ZooKeeperLeaderLatch % "provided")
+
+lazy val KVInit = project.in(file("Utils/KVInit")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, MetadataBootstrap, MetadataAPI, StorageManager, Exceptions, TransactionService)
+>>>>>>> origin/1.6.1
 
 lazy val ZooKeeperLeaderLatch = project.in(file("Utils/ZooKeeper/CuratorLeaderLatch")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", ZooKeeperClient, Exceptions, KamanjaUtils)
 
@@ -148,7 +164,13 @@ lazy val Controller = project.in(file("Utils/Controller")).configs(TestConfigs.a
 
 lazy val SimpleApacheShiroAdapter = project.in(file("Utils/Security/SimpleApacheShiroAdapter")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, Exceptions, SecurityAdapterBase)
 
+<<<<<<< HEAD
 lazy val AuditAdapters = project.in(file("Utils/Audit")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageManager, Exceptions, AuditAdapterBase, Serialize)
+=======
+lazy val EncryptUtils = project.in(file("Utils/EncryptUtils")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided")
+
+lazy val AuditAdapters = project.in(file("Utils/Audit")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageManager, Exceptions, AuditAdapterBase, Serialize)
+>>>>>>> origin/1.6.1
 
 lazy val CustomUdfLib = project.in(file("SampleApplication/CustomUdfLib")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", PmmlUdfs, Exceptions)
 // no external dependencies
@@ -213,11 +235,15 @@ lazy val UtilsForModels = project.in(file("Utils/UtilsForModels")).configs(TestC
 
 lazy val JarFactoryOfModelInstanceFactory = project.in(file("FactoriesOfModelInstanceFactory/JarFactoryOfModelInstanceFactory")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, Exceptions)
 
+<<<<<<< HEAD
 lazy val JpmmlFactoryOfModelInstanceFactory = project.in(file("FactoriesOfModelInstanceFactory/JpmmlFactoryOfModelInstanceFactory")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, Exceptions)
 
 lazy val MigrateBase = project.in(file("Utils/Migrate/MigrateBase")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided") // Remove ExtDependencyLibs2 ??
+=======
+lazy val PythonFactoryOfModelInstanceFactory =  project.in(file("FactoriesOfModelInstanceFactory/PythonFactoryOfModelInstanceFactory")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, Exceptions, JsonSerDeser)
+>>>>>>> origin/1.6.1
 
-lazy val PythonFactoryOfModelInstanceFactory =  project.in(file("FactoriesOfModelInstanceFactory/PythonFactoryOfModelInstanceFactory")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, Exceptions)
+lazy val MigrateBase = project.in(file("Utils/Migrate/MigrateBase")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided") // Remove ExtDependencyLibs2 ??
 
 // no external dependencies
 
@@ -233,7 +259,15 @@ lazy val MigrateFrom_V_1_4 = project.in(file("Utils/Migrate/SourceVersion/Migrat
 
 lazy val MigrateFrom_V_1_4_1 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_4_1")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(MigrateBase, MetadataAPI)
 
+<<<<<<< HEAD
 lazy val MigrateTo_V_1_5_0 = project.in(file("Utils/Migrate/DestinationVersion/MigrateTo_V_1_5_0")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(MigrateBase, KamanjaManager)
+=======
+lazy val MigrateFrom_V_1_5 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_5")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(MigrateBase,MetadataAPI)
+
+lazy val MigrateFrom_V_1_6 = project.in(file("Utils/Migrate/SourceVersion/MigrateFrom_V_1_6")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(MigrateBase,MetadataAPI)
+
+lazy val MigrateTo_V_1_6 = project.in(file("Utils/Migrate/DestinationVersion/MigrateTo_V_1_6")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings( version <<= version in ThisBuild ).dependsOn(MigrateBase, KamanjaManager)
+>>>>>>> origin/1.6.1
 
 lazy val InstallDriverBase = project.in(file("Utils/ClusterInstaller/InstallDriverBase")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided")
 
@@ -259,6 +293,13 @@ lazy val KafkaAdapters_v9 = project.in(file("InputOutputAdapters/KafkaAdapters_v
 
 lazy val KafkaAdapters_v10 = project.in(file("InputOutputAdapters/KafkaAdapters_v10")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KafkaSimpleInputOutputAdapters % "provided")
 
+lazy val SimpleKafkaProducer_v10 = project.in(file("Utils/SimpleKafkaProducer/v10")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, Exceptions)
+
+lazy val PythonModelPrototype = project.in(file("FactoriesOfModelInstanceFactory/PythonModelPrototype")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KamanjaVersion)
+
+lazy val SimpleKafkaProducer_v9 = project.in(file("Utils/SimpleKafkaProducer/v9")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, Exceptions)
+
+lazy val SimpleKafkaProducer_v8 = project.in(file("Utils/SimpleKafkaProducer/v8")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Metadata, KamanjaBase, Exceptions)
 /*
 val commonSettings = Seq(
     scalaVersion := "2.11.7",

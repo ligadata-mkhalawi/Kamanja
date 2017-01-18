@@ -2,7 +2,7 @@
 
 KAMANJA_HOME={InstallDirectory}
 
-currentKamanjaVersion=1.5.3
+currentKamanjaVersion=1.6.1
 if [ "$KAMANJA_SEC_CONFIG" ]; then
   JAAS_CLIENT_OPT="-Djava.security.auth.login.config="$KAMANJA_SEC_CONFIG
   echo "Using java.security.auth.login.config="$JAAS_CLIENT_OPT

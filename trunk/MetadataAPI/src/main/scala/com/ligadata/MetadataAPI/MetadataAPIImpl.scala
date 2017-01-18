@@ -342,7 +342,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     // Load the location and name of the implementing class froms the
     val implJarName = if (metadataAPIConfig.getProperty("AUDIT_IMPL_JAR") == null) "" else metadataAPIConfig.getProperty("AUDIT_IMPL_JAR").trim
     val implClassName = if (metadataAPIConfig.getProperty("AUDIT_IMPL_CLASS") == null) "" else metadataAPIConfig.getProperty("AUDIT_IMPL_CLASS").trim
-    logger.debug("Using " + implClassName + ", from the " + implJarName + " jar file")
+    logger.info("Using " + implClassName + ", from the " + implJarName + " jar file")
     if (implClassName == null) {
       logger.error("Audit Adapter Class is not specified")
       return
@@ -367,6 +367,10 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
   }
 
   def GetAuditObj: AuditAdapter = auditObj
+  def SetAuditObj(ao:AuditAdapter) : Unit = {
+    auditObj = ao
+  }
+
     /**
      * loadJar- load the specified jar into the classLoader
       *
@@ -2308,7 +2312,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
                            , optMsgProduced: Option[String] = None
                            , pStr : Option[String]
                            , modelOptions : Option[String]
-		       ): String  = {
+		       ): String  = {      
     ModelUtils.AddModel(modelType, input, optUserid, optTenantid, optModelName, optVersion, optMsgConsumed, optMsgVersion, optMsgProduced, pStr, modelOptions)
   }
 
@@ -2367,7 +2371,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
                             , optVersionBeingUpdated : Option[String] = None
                             , optMsgProduced: Option[String] = None
                             , pStr: Option[String]
-                            , modelOptions : Option[String]): String = {
+                            , modelOptions : Option[String]): String = {       
       ModelUtils.UpdateModel(modelType, input, optUserid, tenantid, optModelName, optVersion, optVersionBeingUpdated, optMsgProduced, pStr, modelOptions)
     }
 
@@ -3071,7 +3075,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
           case _ => { logger.error("Unknown Operation " + zkMessage.Operation + " in zookeeper notification, notification is not processed ..") }
         }
       }
-      case "adapterDef" | "nodeDef" | "clusterInfoDef" | "clusterDef" | "upDef"=> {
+      case "adapterDef" | "nodeDef" | "clusterInfoDef" | "clusterDef" | "upDef" | "TenantDef" => {
           zkMessage.Operation match {
               case "Add" | "Update" | "Remove" => {
                 updateClusterConfigForKey(zkMessage.ObjectType, zkMessage.Name, zkMessage.NameSpace, zkMessage.Operation)
@@ -4145,6 +4149,25 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
       }
       return
     }
+    if (elemType.equalsIgnoreCase("TenantDef")) {
+      //val obj = GetObject("userproperties."+key.toLowerCase, "config_objects")
+      if (operation.equalsIgnoreCase("add")) {
+        val storedInfo = MetadataAPISerialization.deserializeMetadata(new String(GetObject("tenantinfo."+key.toLowerCase, "config_objects")._2.asInstanceOf[Array[Byte]])).asInstanceOf[TenantInfo]
+        MdMgr.GetMdMgr.AddTenantInfo(storedInfo)
+        MdMgr.GetMdMgr.addConfigChange((elemType +"."+"add"+"."+storedInfo.tenantId.toLowerCase, storedInfo))
+        return
+      }
+      if (operation.equalsIgnoreCase("update")) {
+        val storedInfo = MetadataAPISerialization.deserializeMetadata(new String(GetObject("tenantinfo."+key.toLowerCase, "config_objects")._2.asInstanceOf[Array[Byte]])).asInstanceOf[TenantInfo]
+        MdMgr.GetMdMgr.AddTenantInfo(storedInfo)
+        MdMgr.GetMdMgr.addConfigChange((elemType + "." + "update" + "." + storedInfo.tenantId.toLowerCase, storedInfo))
+        return
+      }
+      if (operation.equalsIgnoreCase("Remove")) {
+        logger.warn("Remove TenantDef - not supported")
+      }
+      return
+    }
   }
   /**
     * All available clusters(format JSON) as a String
@@ -4209,8 +4232,8 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     */
   @throws(classOf[MissingPropertyException])
   @throws(classOf[InvalidPropertyException])
-  def readMetadataAPIConfigFromPropertiesFile(configFile: String): Unit = {
-    ConfigUtils.readMetadataAPIConfigFromPropertiesFile(configFile)
+  def readMetadataAPIConfigFromPropertiesFile(configFile: String,setDefaults:Boolean): Unit = {
+    ConfigUtils.readMetadataAPIConfigFromPropertiesFile(configFile,setDefaults)
   }
 
     /**
@@ -4239,7 +4262,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     if (configFile.endsWith(".json")) {
       MetadataAPIImpl.readMetadataAPIConfigFromJsonFile(configFile)
     } else {
-      MetadataAPIImpl.readMetadataAPIConfigFromPropertiesFile(configFile)
+      MetadataAPIImpl.readMetadataAPIConfigFromPropertiesFile(configFile,true)
     }
     val tmpJarPaths = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("JAR_PATHS")
     val jarPaths = if (tmpJarPaths != null) tmpJarPaths.split(",").toSet else scala.collection.immutable.Set[String]()
@@ -4261,7 +4284,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     * @param configFile the MetadataAPI configuration file
     * @param startHB
     */
-  def InitMdMgrFromBootStrap(configFile: String, startHB: Boolean) {
+  def InitMdMgrFromBootStrap(configFile: String, startHB: Boolean, setDefaults: Boolean = true) {
 
     MdMgr.GetMdMgr.truncate
     val mdLoader = new MetadataLoad(MdMgr.mdMgr, "", "", "", "")
@@ -4269,7 +4292,7 @@ object MetadataAPIImpl extends MetadataAPI with LogTrait {
     if (configFile.endsWith(".json")) {
       MetadataAPIImpl.readMetadataAPIConfigFromJsonFile(configFile)
     } else {
-      MetadataAPIImpl.readMetadataAPIConfigFromPropertiesFile(configFile)
+      MetadataAPIImpl.readMetadataAPIConfigFromPropertiesFile(configFile,setDefaults)
     }
 
     initZkListeners(startHB)

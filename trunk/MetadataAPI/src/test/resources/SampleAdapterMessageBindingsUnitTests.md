@@ -30,7 +30,6 @@ First the pretty-printed JSON is presented that will be submitted followed by th
   "MessageName": "com.botanical.json.ordermsg",
   "Serializer": " com.ligadata.kamanja.serializer.JsonSerDeser"
 }
-
 	$KAMANJA_HOME/bin/kamanja $apiConfigProperties add adaptermessagebinding FROMSTRING '{"AdapterName": "kafkaAdapterInput1", "MessageName": "com.botanical.json.ordermsg", "Serializer": " com.ligadata.kamanja.serializer.JsonSerDeser"}'
 
 

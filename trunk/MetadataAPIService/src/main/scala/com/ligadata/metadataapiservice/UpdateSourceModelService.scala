@@ -77,7 +77,7 @@ class UpdateSourceModelService(requestContext: RequestContext, userid:Option[Str
     }
     else {
 
-      val apiResult = getMetadataAPI.UpdateModel(ModelType.SCALA, pmmlStr, userid, tid, Some(usersModelName), None, None, None, None, None)
+      val apiResult = getMetadataAPI.UpdateModel(ModelType.SCALA, pmmlStr, userid, tid, Some(usersModelName), None, None, None, None, Some("{}"))
       requestContext.complete(apiResult)
     }
   }
@@ -95,7 +95,7 @@ class UpdateSourceModelService(requestContext: RequestContext, userid:Option[Str
       requestContext.complete(new ApiResult(ErrorCodeConstants.Failure, APIName, null,  "Failed to add model. No model configuration name supplied. Please specify in the header the model configuration name where the key is 'modelname' and the value is the name of the configuration.").toString )
     }
     else {
-      val apiResult = getMetadataAPI.UpdateModel(ModelType.JAVA, pmmlStr,userid, tid, Some(usersModelName), None, None, None, None, None)
+      val apiResult = getMetadataAPI.UpdateModel(ModelType.JAVA, pmmlStr,userid, tid, Some(usersModelName), None, None, None, None, Some("{}"))
       requestContext.complete(apiResult)
     }
   }

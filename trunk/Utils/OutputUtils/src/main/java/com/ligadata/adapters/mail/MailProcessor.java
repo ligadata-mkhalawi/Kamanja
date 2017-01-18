@@ -12,6 +12,7 @@ import org.codemonkey.simplejavamail.Mailer;
 import com.ligadata.adapters.AdapterConfiguration;
 import com.ligadata.adapters.mail.pojo.SimpleMailBean;
 import com.ligadata.adapters.mail.util.SecretKeyFactoryImpl;
+import com.ligadata.adapters.DecryptUtils;
 
 @Log4j
 public class MailProcessor {
@@ -24,7 +25,8 @@ public class MailProcessor {
 	private static String password;
 	private static Mailer mailer;
 	
-	private MailProcessor(AdapterConfiguration configs){
+	private MailProcessor(AdapterConfiguration configs) throws Exception {
+	    try{
 		conf = configs;
 		
 		mailServerProperties = System.getProperties();
@@ -39,17 +41,22 @@ public class MailProcessor {
 	    skf = SecretKeyFactoryImpl.getInstance(conf);
 	    skf.createKey();
 	    password = skf.decoder(conf.getProperty(AdapterConfiguration.MAIL_PROP_PWD.trim()).toString());
-	    */
 	    password = conf.getProperty(AdapterConfiguration.MAIL_PROP_PWD.trim()).toString();
+	    */
+	    password = DecryptUtils.getPassword(configs,AdapterConfiguration.MAIL_PROP_PWD);
 	    
 	    mailer = new Mailer(conf.getProperty(AdapterConfiguration.MAIL_PROP_HOST), 
 	    		Integer.parseInt(conf.getProperty(AdapterConfiguration.MAIL_PROP_PORT)), 
 	    		conf.getProperty(AdapterConfiguration.MAIL_FROM), password);
 	    mailer.setDebug(true);
 	    mailer.applyProperties(mailServerProperties);
+	    } catch (Exception e) {
+		throw new Exception(e);
+	    }
 	}
 	
-	public static MailProcessor getInstance(AdapterConfiguration configs){
+	public static MailProcessor getInstance(AdapterConfiguration configs) throws Exception{
+	    try{
 		if(processor == null){
 			synchronized (MailProcessor.class) {
 				if(processor == null)
@@ -57,9 +64,13 @@ public class MailProcessor {
 			}
 		}
 		return processor;
+	    } catch (Exception e) {
+		throw new Exception(e);
+	    }
 	}
 	
-	public void processBean(SimpleMailBean bean){
+	public void processBean(SimpleMailBean bean) throws Exception{
+	    try{
 		log.debug("Bean Values..."+bean.toString());
 		
 		final Email email = new Email();
@@ -81,6 +92,8 @@ public class MailProcessor {
 		email.setFromAddress(bean.getFrom(), bean.getFrom());
 		
 		mailer.sendMail(email);
+	    } catch (Exception e) {
+		throw new Exception(e);
+	    }
 	}
-	
 }

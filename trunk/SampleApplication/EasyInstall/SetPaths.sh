@@ -64,6 +64,7 @@ sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/File
 sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/ExtractData_Template.sh > $install_dir/bin/ExtractData.sh
 sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/JdbcDataCollector_Template.sh > $install_dir/bin/JdbcDataCollector.sh
 sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/GenerateMessage_Template.sh > $install_dir/bin/GenerateMessage.sh
+sed "s/{InstallDirectory}/$install_dir_repl/g" $install_dir/template/script/GenerateKeys_Template.sh > $install_dir/bin/GenerateKeys.sh
 
 #new one
 #HelloWorld
@@ -88,6 +89,14 @@ sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_h
 sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_home_repl/g;s/{JavaInstallDirectory}/$java_home_repl/g" $install_dir/input/SampleApplications/template/script/InitKvStores_Template_Finance.sh > $install_dir/input/SampleApplications/bin/InitKvStores_Finance.sh
 sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_home_repl/g;s/{JavaInstallDirectory}/$java_home_repl/g" $install_dir/input/SampleApplications/template/script/PushSampleDataToKafka_Template_Finance.sh > $install_dir/input/SampleApplications/bin/PushSampleDataToKafka_Finance.sh
 #Finance
+
+#Python
+sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_home_repl/g;s/{JavaInstallDirectory}/$java_home_repl/g" $install_dir/input/SampleApplications/template/script/Python_Simple_Template.sh > $install_dir/input/SampleApplications/bin/Python_Simple.sh
+sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_home_repl/g;s/{JavaInstallDirectory}/$java_home_repl/g" $install_dir/input/SampleApplications/template/script/Python_Tensor_Template.sh > $install_dir/input/SampleApplications/bin/Python_Tensor.sh
+sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_home_repl/g;s/{JavaInstallDirectory}/$java_home_repl/g" $install_dir/input/SampleApplications/template/script/PushSimpleData_Template.sh > $install_dir/input/SampleApplications/bin/PushSimpleData.sh
+sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_home_repl/g;s/{JavaInstallDirectory}/$java_home_repl/g" $install_dir/input/SampleApplications/template/script/Python_Reg_Template.sh > $install_dir/input/SampleApplications/bin/Python_Reg.sh
+sed "s/{InstallDirectory}/$install_dir_repl/g;s/{ScalaInstallDirectory}/$scala_home_repl/g;s/{JavaInstallDirectory}/$java_home_repl/g" $install_dir/input/SampleApplications/template/script/PushHmeqData_Template.sh > $install_dir/input/SampleApplications/bin/PushHmeqData.sh
+#Python
 
 #new one
 

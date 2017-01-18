@@ -201,7 +201,7 @@ class MigrateFrom_V_1_4 extends MigratableFrom {
     _flReadFailures.println("Key:\n" + keyStr)
     _flReadFailures.println("Record:")
     _flReadFailures.println("SerializeType:\n" + v.serializerType + "\nSerializedInfo:")
-    _flReadFailures.println(v.serializedInfo)
+    _flReadFailures.println(new String(v.serializedInfo))
     _flReadFailures.flush()
   }
 
@@ -781,11 +781,11 @@ class MigrateFrom_V_1_4 extends MigratableFrom {
             val typeName = strKey.substring(i + 1)
             val js = new String(v.serializedInfo)
 	    logger.info("strKey => " + strKey + ",objType => " + objType + ",typeName => " + typeName + ",object json => " + js)
-            val conf = js.asInstanceOf[Map[String, Any]]
+            //val conf = js.asInstanceOf[Map[String, Any]]
             val (nameSpace, name) = SplitFullName(k.bucketKey(0))
 
             implicit val jsonFormats: Formats = DefaultFormats
-            val str = "{\"" + name + "\" :" + Serialization.write(conf) + "}"
+            val str = "{\"" + name + "\" :" + Serialization.write(js) + "}"
 
             val json = (("ObjectType" -> "ConfigDef") ~
               ("IsActive" -> "true") ~
