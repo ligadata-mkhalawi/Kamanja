@@ -87,3 +87,5 @@ case class DeprecatedException(msg: String, cause: Throwable) extends KamanjaExc
 // 646 - Change begins
 case class TenantIdNotFoundException(msg: String, cause: Throwable) extends KamanjaException(msg, cause)
 // 646 Change ends
+
+case class MetadataConfigurationException(msg: String, cause: Throwable) extends KamanjaException(msg, cause)

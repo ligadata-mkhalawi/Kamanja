@@ -39,8 +39,8 @@ angular.module('networkApp')
       controllerAs: 'modelDetails',
       controller: function ($rootScope,$filter, serviceData, serviceConfig) {
         var modelDetails = this;
+        var selectedModelIds = [];
         modelDetails.modelInfo = [];
-
         modelDetails.currentNodeId = '';
 
         modelDetails.closeSideMenu = function(){
@@ -57,29 +57,42 @@ angular.module('networkApp')
         });
 
         $rootScope.$on('nodeSelected', function (event, data) {
-          if(modelDetails.currentNodeId === data) {
+          modelDetails.selectedModels = [];
+          if (selectedModelIds.indexOf(data) === -1){
+            selectedModelIds.push(data);
+          } else {
+            //remove data from array
+            selectedModelIds.splice(selectedModelIds.indexOf(data),1);
+          }
+          if(selectedModelIds.length === 0) {
             toggleModelDetails(false);
             modelDetails.currentNodeId = '';
           }
-          else{
+          else if(selectedModelIds.length === 1) {
+            data = selectedModelIds[0];
             modelDetails.currentNodeId = data;
             toggleModelDetails(true);
-          }
-          modelDetails.modelInfo = [];
-          var nodeInfo = _.find(serviceData.getSelectedViewData().result, {id: data});
-          if (nodeInfo.Type === 'V') {
-            var type = serviceConfig.classImageColorMap[nodeInfo.class];
-            modelDetails.headerColor = type.headerColor;
-            modelDetails.imageName = type.image + '.' + type.extension;
-            modelDetails.headerName = nodeInfo.Name;
-            modelDetails.imageWidth = type.widthProperties;
-            modelDetails.imageHeight = type.heightProperties;
-          }
-          serviceData.getProperties({"ViewName": serviceData.getSelectedViewName(), "RID": data}, function (response) {
-            //modelDetails.modelInfo = response;
-            addProperties(response);
+            modelDetails.modelInfo = [];
+            var nodeInfo = _.find(serviceData.getSelectedViewData().result, {id: data});
+            if (nodeInfo.Type === 'V') {
+              var type = serviceConfig.classImageColorMap[nodeInfo.class];
+              modelDetails.headerColor = type.headerColor;
+              modelDetails.imageName = type.image + '.' + type.extension;
+              modelDetails.headerName = nodeInfo.Name;
+              modelDetails.imageWidth = type.widthProperties;
+              modelDetails.imageHeight = type.heightProperties;
+            }
+            serviceData.getProperties({"ViewName": serviceData.getSelectedViewName(), "RID": data}, function (response) {
+              //modelDetails.modelInfo = response;
+              addProperties(response);
 
-          });
+            });
+          }
+          else {
+            _.each(selectedModelIds, function (d) {
+              modelDetails.selectedModels.push(_.find(serviceData.getSelectedViewData().result, {id: d}));
+            });
+          }
         });
 
         $rootScope.$on('edgeSelected', function (event, data) {
