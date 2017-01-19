@@ -26,11 +26,8 @@ import scala.collection.mutable.ArrayBuffer
 import org.json.JSONObject;
 import org.elasticsearch.shield.ShieldPlugin
 
-
 object ElasticsearchProducer extends OutputAdapterFactory {
   def CreateOutputAdapter(inputConfig: AdapterConfiguration, nodeContext: NodeContext): OutputAdapter = new ElasticsearchProducer(inputConfig, nodeContext)
-
-  val HB_PERIOD = 5000
 
   // Statistics Keys
   val ADAPTER_DESCRIPTION = "Elasticsearch Producer Client"
@@ -41,16 +38,13 @@ object ElasticsearchProducer extends OutputAdapterFactory {
 }
 
 class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeContext) extends OutputAdapter {
-
   private[this] val LOG = LogManager.getLogger(getClass);
-
-  private var shutDown: Boolean = false
   private val nodeId = if (nodeContext == null || nodeContext.getEnvCtxt() == null) "1" else nodeContext.getEnvCtxt().getNodeId()
   private val FAIL_WAIT = 2000
   private var numOfRetries = 0
   private var MAX_RETRIES = 3
   private var startTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
-  private var lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
+  private var lastSeenTime = System.currentTimeMillis
   private var metrics: scala.collection.mutable.Map[String, Any] = scala.collection.mutable.Map[String, Any]()
   metrics("MessagesProcessed") = new AtomicLong(0)
   private var isShutdown = false
@@ -59,8 +53,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   private var msgCount = 0
   val default_outstanding_messages = "2048"
   val max_outstanding_messages = default_outstanding_messages.toString.trim().toInt
-  private var retryExecutor: ExecutorService = Executors.newFixedThreadPool(1)
-  private var heartBeatThread: ExecutorService = Executors.newFixedThreadPool(1)
+  private var commitExecutor: ExecutorService = Executors.newFixedThreadPool(1)
   val counterLock = new Object
   var tempContext = Thread.currentThread().getContextClassLoader
   Thread.currentThread().setContextClassLoader(null);
@@ -94,7 +87,6 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
   // Getting first transaction. It may get wasted if we don't have any lines to save.
 
-
   case class MsgDataRecievedCnt(cntrToOrder: Long, msg: Array[(Array[Byte], Array[Byte])])
 
   val partitionsMap = new ConcurrentHashMap[Int, ConcurrentHashMap[Long, MsgDataRecievedCnt]](128);
@@ -104,11 +96,44 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   var dataStoreInfo = elaticsearchutil.createDataStorageInfo(adapterConfig)
   var dataStore = elaticsearchutil.GetDataStoreHandle(dataStoreInfo).asInstanceOf[ElasticsearchAdapter]
 
+  private val producer = this
+
+  // Start the heartbeat.
+  commitExecutor.execute(new Runnable() {
+    override def run(): Unit = {
+      while (!isShutdown) {
+        try {
+          val dt = System.currentTimeMillis
+          if (IsTimeToWrite(dt)) {
+            producer.synchronized {
+              if (IsTimeToWrite(dt)) {
+                if (LOG.isInfoEnabled) LOG.info("Going to write records now. Current time:%d, next write time:%d, current records to write:%d, batch size:%d".format(dt, nextWrite, recsToWrite, writeRecsBatch))
+                putJsonsWithMetadata(true)
+                nextWrite = System.currentTimeMillis + timeToWriteRecs
+              }
+            }
+          }
+        } catch {
+          case e: Throwable => {
+            if (!isShutdown)
+              logger.warn("Failed to commit.", e)
+          }
+        }
+
+        try {
+          Thread.sleep(1000)
+        } catch {
+          case e: Throwable => { }
+        }
+      }
+    }
+  })
+
   override def send(messages: Array[Array[Byte]], partitionKeys: Array[Array[Byte]]): Unit = {
     throw new Exception("send with data is not yet implemented")
   }
 
-  private def addData(data: Map[String, Array[String]]): Unit = synchronized {
+  private def addData(data: Map[String, Array[String]]): Unit = producer.synchronized {
     data.foreach(kv => {
       val existingData = sendData.getOrElse(kv._1, null)
       if (existingData != null) {
@@ -122,20 +147,24 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     })
   }
 
+  private def IsTimeToWrite(dt: Long): Boolean = {
+    (dt > nextWrite || recsToWrite > writeRecsBatch)
+  }
+
   override def send(tnxCtxt: TransactionContext, outputContainers: Array[ContainerInterface]): Unit = {
     if (outputContainers.size == 0) return
 
     val dt = System.currentTimeMillis
     var indexName = adapterConfig.TableName
-    lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(dt))
+    lastSeenTime = dt
 
-    this.synchronized {
-      if (dt > nextWrite || recsToWrite > writeRecsBatch) {
-        if (LOG.isInfoEnabled) LOG.info("Going to write records now. Current time:%d, next write time:%d, current records to write:%d, batch size:%d".format(dt, nextWrite, recsToWrite, writeRecsBatch))
-        putJsonsWithMetadata(true)
-        nextWrite = System.currentTimeMillis + timeToWriteRecs
-      } else {
-        if (LOG.isTraceEnabled) LOG.trace("Not yet writing. Current time:%d, next write time:%d, current records to write:%d, batch size:%d".format(dt, nextWrite, recsToWrite, writeRecsBatch))
+    if (IsTimeToWrite(dt)) {
+      producer.synchronized {
+        if (IsTimeToWrite(dt)) {
+          if (LOG.isInfoEnabled) LOG.info("Going to write records now. Current time:%d, next write time:%d, current records to write:%d, batch size:%d".format(dt, nextWrite, recsToWrite, writeRecsBatch))
+          putJsonsWithMetadata(true)
+          nextWrite = System.currentTimeMillis + timeToWriteRecs
+        }
       }
     }
 
@@ -193,13 +222,14 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       addData(map)
       if (LOG.isDebugEnabled) LOG.debug("Added %d records to cached data in %d indices".format(strDataRecords.size, map.size))
     }
+    metrics("MessagesProcessed").asInstanceOf[AtomicLong].addAndGet(strDataRecords.size)
   }
 
   private def canConsiderShutdown(considerShutdown: Boolean): Boolean = {
     isShutdown && considerShutdown
   }
 
-  private def putJsonsWithMetadata(considerShutdown: Boolean): Unit = synchronized {
+  private def putJsonsWithMetadata(considerShutdown: Boolean): Unit = producer.synchronized {
     if (sendData.size == 0) return
     //   containerName: String, data_list: Array[String]
     var client: TransportClient = null
@@ -397,6 +427,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
   override def getComponentStatusAndMetrics: MonitorComponentInfo = {
     implicit val formats = org.json4s.DefaultFormats
+    val lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(lastSeenTime))
     return new MonitorComponentInfo(AdapterConfiguration.TYPE_OUTPUT, adapterConfig.Name, ElasticsearchProducer.ADAPTER_DESCRIPTION, startTime, lastSeen, Serialization.write(metrics).toString)
   }
 
@@ -417,297 +448,14 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
     if (LOG.isWarnEnabled) LOG.warn(adapterConfig.Name + " Shutdown detected")
 
-    // Shutdown HB
     isShutdown = true
 
+    if (commitExecutor != null)
+      commitExecutor.shutdownNow
+
     putJsonsWithMetadata(false)
-
-    heartBeatThread.shutdownNow
-    while (!heartBeatThread.isTerminated) {
-      try {
-        Thread.sleep(100)
-      } catch {
-        case e: Exception => {
-          // Don't do anything, because it is shutting down
-        }
-        case e: Throwable => {
-          // Don't do anything, because it is shutting down
-        }
-      }
-    }
-
-    // First shutdown retry executor
-    if (retryExecutor != null) {
-      retryExecutor.shutdownNow
-      while (!retryExecutor.isTerminated) {
-        try {
-          Thread.sleep(100)
-        } catch {
-          case e: Exception => {
-            // Don't do anything, because it is shutting down
-          }
-          case e: Throwable => {
-            // Don't do anything, because it is shutting down
-          }
-        }
-      }
-    }
 
     if (dataStore != null)
       dataStore.Shutdown()
   }
-
-  private def updateMetricValue(key: String, value: Any): Unit = {
-    counterLock.synchronized {
-      if (key.equalsIgnoreCase(ElasticsearchProducer.LAST_FAILURE_TIME) ||
-        key.equalsIgnoreCase(ElasticsearchProducer.LAST_RECOVERY_TIME)) {
-        metrics(key) = value.toString
-      } else {
-        // This is an aggregated Long value
-        val cur = metrics.getOrElse(key, "0").toString
-        val longCur = cur.toLong
-        metrics(key) = longCur + value.toString.toLong
-      }
-    }
-  }
-
-  private def runHeartBeat: Unit = {
-    heartBeatThread.execute(new Runnable() {
-      override def run(): Unit = {
-        try {
-          isHeartBeating = true
-          while (!isShutdown) {
-            if (!isInError) {
-              lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
-            }
-            Thread.sleep(ElasticsearchProducer.HB_PERIOD)
-          }
-          isHeartBeating = false
-        } catch {
-          case e: Exception => {
-            externalizeExceptionEvent(e)
-            isHeartBeating = false
-            if (isShutdown == false && LOG.isWarnEnabled)
-              LOG.warn(adapterConfig.Name + " Heartbeat Interrupt detected", e)
-          }
-        }
-        if (LOG.isInfoEnabled) LOG.info(adapterConfig.Name + " Heartbeat is shutting down")
-      }
-    })
-  }
-
-  private def getPartition(key: Array[Byte], numPartitions: Int): Int = {
-    if (numPartitions == 0) return 0
-    if (key != null) {
-      try {
-        return (scala.math.abs(Arrays.hashCode(key)) % numPartitions)
-      } catch {
-        case e: Exception => {
-          externalizeExceptionEvent(e)
-          throw e
-        }
-        case e: Throwable => {
-          externalizeExceptionEvent(e)
-          throw e
-        }
-      }
-    }
-    return randomPartitionCntr.nextInt(numPartitions)
-  }
-
-  private def outstandingMsgCount: Int = {
-    var outstandingMsgs = 0
-    val allPartitions = partitionsMap.elements()
-    while (allPartitions.hasMoreElements()) {
-      val nxt = allPartitions.nextElement();
-      outstandingMsgs += nxt.size()
-    }
-    outstandingMsgs
-  }
-
-  private def addMsgsToMap(partId: Int, keyMessages: ArrayBuffer[MsgDataRecievedCnt]): Unit = {
-    var msgMap = partitionsMap.get(partId)
-    if (msgMap == null) {
-      partitionsMap.synchronized {
-        msgMap = partitionsMap.get(partId)
-        if (msgMap == null) {
-          val tmpMsgMap = new ConcurrentHashMap[Long, MsgDataRecievedCnt](1024);
-          partitionsMap.put(partId, tmpMsgMap)
-          msgMap = tmpMsgMap
-        }
-      }
-    }
-
-    if (msgMap != null) {
-      try {
-        val allKeys = new java.util.HashMap[Long, MsgDataRecievedCnt]()
-        keyMessages.foreach(m => {
-          allKeys.put(m.cntrToOrder, m)
-        })
-        msgMap.putAll(allKeys)
-      } catch {
-        case e: Exception => {
-          externalizeExceptionEvent(e)
-          // Failed to insert into Map
-          throw e
-        }
-      }
-    }
-  }
-
-  private def failedMsgCount: Int = {
-    var failedMsgs = 0
-
-    val allFailedPartitions = failedMsgsMap.elements()
-    while (allFailedPartitions.hasMoreElements()) {
-      val nxt = allFailedPartitions.nextElement();
-      failedMsgs += nxt.size()
-    }
-    failedMsgs
-  }
-
-  class RetryFailedMessages extends Runnable {
-    def run() {
-      val statusPrintTm = 60000 // for every 1 min
-      var nextPrintTimeCheck = System.currentTimeMillis + statusPrintTm
-      while (isShutdown == false) {
-        try {
-          Thread.sleep(5000) // Sleeping for 5Sec
-        } catch {
-          case e: Exception => {
-            externalizeExceptionEvent(e)
-            if (!isShutdown) LOG.warn("", e)
-          }
-          case e: Throwable => {
-            externalizeExceptionEvent(e)
-            if (!isShutdown) LOG.warn("", e)
-          }
-        }
-        if (isShutdown == false) {
-          var outstandingMsgs = outstandingMsgCount
-          var allFailedMsgs = failedMsgCount
-          if (outstandingMsgs > 0 || allFailedMsgs > 0 || nextPrintTimeCheck < System.currentTimeMillis) {
-            //     LOG.warn("KAFKA PRODUCER: Topic: %s - current outstanding messages:%d & failed messages:%d".format(adapterConfig.topic, outstandingMsgs, allFailedMsgs))
-            nextPrintTimeCheck = System.currentTimeMillis + statusPrintTm
-          }
-          // Get all failed records and resend for each partitions
-          val keysIt = failedMsgsMap.keySet().iterator()
-
-          while (keysIt.hasNext() && isShutdown == false) {
-            val partId = keysIt.next();
-
-            val failedMsgs = failedMsgsMap.get(partId)
-            val sz = failedMsgs.size()
-            if (sz > 0) {
-              val keyMessages = new ArrayBuffer[MsgDataRecievedCnt](sz)
-
-              val allmsgsit = failedMsgs.entrySet().iterator()
-              while (allmsgsit.hasNext() && isShutdown == false) {
-                val ent = allmsgsit.next();
-                keyMessages += ent.getValue
-              }
-              if (isShutdown == false) {
-                val km = keyMessages.sortWith(_.cntrToOrder < _.cntrToOrder) // Sending in the same order as inserted before.
-                sendInfinitely(km, true)
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  private def sendInfinitely(keyMessages: ArrayBuffer[MsgDataRecievedCnt], removeFromFailedMap: Boolean): Unit = {
-    var sendStatus = ElasticsearchConstants.ELASTICSEARCH_NOT_SEND
-    var retryCount = 0
-    var waitTm = 15000
-
-    // We keep on retry until we succeed on this thread
-    while (sendStatus != ElasticsearchConstants.ELASTICSEARCH_SEND_SUCCESS && isShutdown == false) {
-      try {
-        //     sendStatus = doSend(keyMessages, removeFromFailedMap)   //check this
-      } catch {
-        case e: Exception => {
-          externalizeExceptionEvent(e)
-          LOG.error(adapterConfig.Name + " Elasticsearch PRODUCER: Error sending to kafka, Retrying after %dms. Retry count:%d".format(waitTm, retryCount), e)
-          try {
-            Thread.sleep(waitTm)
-          } catch {
-            case e: Exception => {
-              externalizeExceptionEvent(e)
-              throw e
-            }
-            case e: Throwable => {
-              externalizeExceptionEvent(e)
-              throw e
-            }
-          }
-          if (waitTm < 60000) {
-            waitTm = waitTm * 2
-            if (waitTm > 60000)
-              waitTm = 60000
-          }
-        }
-      }
-    }
-  }
-
-  //  private def doSend(keyMessages: ArrayBuffer[MsgDataRecievedCnt], removeFromFailedMap: Boolean): Int = {
-  //    var sentMsgsCntr = 0
-  //    var lastAccessRec: MsgDataRecievedCnt = null
-  //    try {
-  //      updateMetricValue(HbaseProducer.SEND_MESSAGE_COUNT_KEY,keyMessages.size)
-  //      updateMetricValue(HbaseProducer.SEND_CALL_COUNT_KEY,1)
-  //
-  //      // We already populated partitionsMap before we really send. So that callback is guaranteed to find the message in partitionsMap
-  //      keyMessages.map(msgAndCntr => {
-  //        if (isShutdown)
-  //          throw new Exception(adapterConfig.Name + " is shutting down")
-  //        lastAccessRec = msgAndCntr
-  //        if (removeFromFailedMap)
-  //          removeMsgFromFailedMap(lastAccessRec)
-  //        // Send the request to Kafka
-  //        producer.send(msgAndCntr.msg, new Callback {
-  //          override def onCompletion(metadata: RecordMetadata, exception: Exception): Unit = {
-  //            val localMsgAndCntr = msgAndCntr
-  //            msgCount += 1
-  //            if (exception != null) {
-  //              LOG.warn(adapterConfig.Name + " Failed to send message into " + localMsgAndCntr.msg.topic, exception)
-  //              addToFailedMap(localMsgAndCntr)
-  //              if (!isInError) updateMetricValue(HbaseProducer.LAST_FAILURE_TIME, new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis)))
-  //              isInError = true
-  //            } else {
-  //              // Succeed - also click the heartbeat here... just to be more accurate.
-  //              if (isInError) updateMetricValue(HbaseProducer.LAST_RECOVERY_TIME, new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis)))
-  //              lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
-  //              removeMsgFromMap(localMsgAndCntr)
-  //              isInError = false
-  //
-  //            }
-  //          }
-  //        })
-  //        lastAccessRec = null
-  //        sentMsgsCntr += 1
-  //      })
-  //
-  //      keyMessages.clear()
-  //    } catch {
-  //      case e: Exception  => {
-  //        externalizeExceptionEvent(e)
-  //        if (sentMsgsCntr > 0) keyMessages.remove(0, sentMsgsCntr)
-  //        addBackFailedToSendRec(lastAccessRec)
-  //        LOG.warn(adapterConfig.Name + " unknown exception encountered ", e)
-  //        throw new FatalAdapterException("Unknown exception", e)
-  //      }
-  //      case e: Throwable => {
-  //        externalizeExceptionEvent(e)
-  //        if (sentMsgsCntr > 0) keyMessages.remove(0, sentMsgsCntr)
-  //        addBackFailedToSendRec(lastAccessRec)
-  //        LOG.warn(adapterConfig.Name + " unknown exception encountered ", e)
-  //        throw new FatalAdapterException("Unknown exception", e) }
-  //    }
-  //    return HbaseConstants.HBASE_SEND_SUCCESS
-  //  }
-
-
 }
