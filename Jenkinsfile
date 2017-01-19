@@ -4,9 +4,8 @@ node {
     try {
         notifyBuild('STARTED')
         stage('Build')  {
+            checkout scm
             // Navigating to the trunk directory, building the package and generating the documentation.
-            def workspace = pwd()
-            sh "echo Current Directory: ${workspace}"
             sh "cd trunk; sbt '++ 2.11.7 package' makeSite"
             // This publishes the documentation generated on that branch so anyone with Jenkins access may review it.
             publishHTML([
