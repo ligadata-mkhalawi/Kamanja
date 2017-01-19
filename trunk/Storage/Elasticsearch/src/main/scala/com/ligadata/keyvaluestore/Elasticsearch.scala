@@ -87,19 +87,19 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
   private var containerList: scala.collection.mutable.Set[String] = scala.collection.mutable.Set[String]()
   private var msg: String = ""
 
-  private def CreateConnectionException(msg: String, ie: Exception): StorageConnectionException = {
+  private def CreateConnectionException(msg: String, ie: Throwable): StorageConnectionException = {
     logger.error(msg, ie)
     val ex = new StorageConnectionException("Failed to connect to Database", ie)
     ex
   }
 
-  private def CreateDMLException(msg: String, ie: Exception): StorageDMLException = {
+  private def CreateDMLException(msg: String, ie: Throwable): StorageDMLException = {
     logger.error(msg, ie)
     val ex = new StorageDMLException("Failed to execute select/insert/delete/update operation on Database", ie)
     ex
   }
 
-  private def CreateDDLException(msg: String, ie: Exception): StorageDDLException = {
+  private def CreateDDLException(msg: String, ie: Throwable): StorageDDLException = {
     logger.error(msg, ie)
     val ex = new StorageDDLException("Failed to execute create/drop operations on Database", ie)
     ex
@@ -492,13 +492,9 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     toFullTableName(containerName)
   }
 
-
-  def checkIndexExsists(indexName: String): Boolean = {
-    var client: TransportClient = null
+  private def checkIndexExsists(indexName: String, client: TransportClient): Boolean = {
     val fullIndexName = toFullTableName(indexName)
     try {
-      client = getConnection
-
       val indices: IndicesAdminClient = client.admin().indices()
       val res: IndicesExistsResponse = indices.prepareExists(fullIndexName.toLowerCase).execute().actionGet()
       if (res.isExists) {
@@ -510,6 +506,18 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
       case e: Exception => {
         throw CreateDDLException("Failed to check if Index exists " + fullIndexName, e)
       }
+    }
+  }
+
+  def checkIndexExsists(indexName: String): Boolean = {
+    var client: TransportClient = null
+    try {
+      client = getConnection
+      return checkIndexExsists(indexName, client)
+    } catch {
+      case e: Exception => {
+        throw CreateDDLException("Failed to check if Index exists " + indexName, e)
+      }
     } finally {
       if (client != null) {
         client.close
@@ -517,21 +525,65 @@ class ElasticsearchAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastore
     }
   }
 
-
   def createIndexForOutputAdapter(indexName: String, indexMapping: String): Unit = {
-    var client: TransportClient = null
-    val fullIndexName = toFullTableName(indexName)
-    try {
-      client = getConnection
+    createIndexForOutputAdapter(Array(indexName), indexMapping, false)
+  }
 
-      val putMappingResponse = client.admin().indices().prepareCreate(fullIndexName)
-        .setSource(indexMapping)
-        .execute().actionGet()
-      val tmp: RefreshResponse = client.admin().indices().prepareRefresh(fullIndexName).get()
+  def createIndexForOutputAdapter(client: TransportClient, indexNames: Array[String], indexMapping: String, onlyNonExistIndices: Boolean): Unit = {
+    var exp: Throwable = null
+    try {
+      indexNames.foreach(indexName => {
+        val fullIndexName = toFullTableName(indexName)
+        var tryNo = 0
+        var haveValidIndex = false
+
+        while (tryNo < 2 && !haveValidIndex) {
+          tryNo += 1
+          val createIndex =
+            if (onlyNonExistIndices) {
+              (!(checkIndexExsists(indexName, client)))
+            } else {
+              true
+            }
+          if (createIndex) {
+            try {
+              val putMappingResponse = client.admin().indices().prepareCreate(fullIndexName)
+                .setSource(indexMapping)
+                .execute().actionGet()
+              val tmp: RefreshResponse = client.admin().indices().prepareRefresh(fullIndexName).get()
+              haveValidIndex = true
+            } catch {
+              case e: Throwable => {
+                if (exp != null && tryNo == 2)
+                  exp = CreateDDLException("Failed to create Index " + fullIndexName, e)
+              }
+            }
+          } else {
+            haveValidIndex = true
+          }
+        }
+      })
     }
     catch {
       case e: Exception => {
-        throw CreateDDLException("Failed to create Index " + fullIndexName, e)
+        throw CreateDDLException("Failed to create Index", e)
+      }
+    }
+
+    if (exp != null)
+      throw exp
+  }
+
+  def createIndexForOutputAdapter(indexNames: Array[String], indexMapping: String, onlyNonExistIndices: Boolean): Unit = {
+    var client: TransportClient = null
+    var exp: Throwable = null
+    try {
+      client = getConnection
+      createIndexForOutputAdapter(client, indexNames, indexMapping, onlyNonExistIndices)
+    }
+    catch {
+      case e: Exception => {
+        throw CreateDDLException("Failed to create Index", e)
       }
     } finally {
       if (client != null) {

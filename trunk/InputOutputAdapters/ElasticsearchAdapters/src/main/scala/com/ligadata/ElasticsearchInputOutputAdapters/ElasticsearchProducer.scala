@@ -82,6 +82,13 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   // 60 secs
   var timePartition = System.currentTimeMillis()
   var transService = new com.ligadata.transactions.SimpleTransService
+  val sendData = scala.collection.mutable.Map[String, ArrayBuffer[String]]()
+  var recsToWrite = 0
+  // For now hard coded to 60secs
+  val timeToWriteRecs = 60000
+  val writeRecsBatch = 1000
+  var nextWrite = System.currentTimeMillis + timeToWriteRecs
+
   transService.init(1)
   transId = transService.getNextTransId
 
@@ -98,83 +105,22 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   var dataStore = elaticsearchutil.GetDataStoreHandle(dataStoreInfo).asInstanceOf[ElasticsearchAdapter]
 
   override def send(messages: Array[Array[Byte]], partitionKeys: Array[Array[Byte]]): Unit = {
-    //    if (!isHeartBeating) runHeartBeat
-    //
-    //    // Refreshing Partitions for every refreshPartitionTime.
-    //    // BUGBUG:: This may execute multiple times from multiple threads. For now it does not hard too much.
-    //    if ((System.currentTimeMillis - partitionsGetTm) > refreshPartitionTime) {
-    //      //topicPartitionsCount = producer.partitionsFor(qc.topic).size()
-    //      partitionsGetTm = System.currentTimeMillis
-    //    }
-    //
-    //    try {
-    //      var partitionsMsgMap = scala.collection.mutable.Map[Int, ArrayBuffer[MsgDataRecievedCnt]]();
-    //      timePartition = System.currentTimeMillis()
-    //      transId = transService.getNextTransId
-    //
-    //
-    //      for (i <- 0 until messages.size) {
-    //      /////////////////////  hbaseutil.put("","","")
-    ////        val partId = getPartition(partitionKeys(i), topicPartitionsCount)
-    ////        var ab = partitionsMsgMap.getOrElse(partId, null)
-    ////        if (ab == null) {
-    ////          ab = new ArrayBuffer[MsgDataRecievedCnt](256)
-    ////          partitionsMsgMap(partId) = ab
-    ////        }
-    ////        val pr = new ProducerRecord(qc.topic, partId, partitionKeys(i), messages(i))
-    ////        ab += MsgDataRecievedCnt(msgInOrder.getAndIncrement, pr)
-    //      }
-    //
-    //      var outstandingMsgs = outstandingMsgCount
-    //      // LOG.debug("KAFKA PRODUCER: current outstanding messages for topic %s are %d".format(qc.topic, outstandingMsgs))
-    //
-    //      var osRetryCount = 0
-    //      var osWaitTm = 5000
-    //      while (outstandingMsgs > max_outstanding_messages) {
-    //        LOG.warn(adapterConfig.Name + " Hbase PRODUCER: %d outstanding messages in queue to write. Waiting for them to flush before we write new messages. Retrying after %dms. Retry count:%d".format(outstandingMsgs, osWaitTm, osRetryCount))
-    //        try {
-    //          Thread.sleep(osWaitTm)
-    //        } catch {
-    //          case e: Exception => {
-    //            externalizeExceptionEvent(e)
-    //            throw e
-    //          }
-    //          case e: Throwable => {
-    //            externalizeExceptionEvent(e)
-    //            throw e
-    //          }
-    //        }
-    //        outstandingMsgs = outstandingMsgCount
-    //      }
-    //
-    //      partitionsMsgMap.foreach(partIdAndRecs => {
-    //        val partId = partIdAndRecs._1
-    //        val keyMessages = partIdAndRecs._2
-    //
-    //        // first push all messages to partitionsMap before we really send. So that callback is guaranteed to find the message in partitionsMap
-    //        addMsgsToMap(partId, keyMessages)
-    //        sendInfinitely(keyMessages, false)
-    //      })
-    //
-    //    } catch {
-    //      case e: java.lang.InterruptedException => {
-    //        // Not doing anythign for now
-    //        LOG.warn(adapterConfig.Name + " Hbase PRODUCER: Got java.lang.InterruptedException. isShutdown:" + isShutdown)
-    //      }
-    //      case fae: FatalAdapterException => {
-    //        externalizeExceptionEvent(fae)
-    //        throw fae
-    //      }
-    //      case e: Exception               => {
-    //        externalizeExceptionEvent(e)
-    //        throw FatalAdapterException("Unknown exception", e)
-    //      }
-    //      case e: Throwable               => {
-    //        externalizeExceptionEvent(e)
-    //        throw FatalAdapterException("Unknown exception", e)
-    //      }
-    //    }
-  } ///////not implemented yet
+    throw new Exception("send with data is not yet implemented")
+  }
+
+  private def addData(data: Map[String, Array[String]]): Unit = synchronized {
+    data.foreach(kv => {
+      val existingData = sendData.getOrElse(kv._1, null)
+      if (existingData != null) {
+        existingData ++= kv._2
+      } else {
+        val ab = ArrayBuffer[String]()
+        ab ++= kv._2
+        sendData(kv._1) = ab
+      }
+      recsToWrite += kv._2.size
+    })
+  }
 
   override def send(tnxCtxt: TransactionContext, outputContainers: Array[ContainerInterface]): Unit = {
     if (outputContainers.size == 0) return
@@ -182,6 +128,14 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     val dt = System.currentTimeMillis
     var indexName = adapterConfig.TableName
     lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(dt))
+
+    this.synchronized {
+      if (dt > nextWrite || recsToWrite > writeRecsBatch) {
+        putJsonsWithMetadata(true)
+        nextWrite = System.currentTimeMillis + timeToWriteRecs
+      }
+    }
+
     // Sanity checks
     if (isShutdown) {
       val szMsg = adapterConfig.Name + " Elasticsearch Adapter: Adapter is not available for processing"
@@ -190,6 +144,8 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     }
     val (outContainers, serializedContainerData, serializerNames) = serialize(tnxCtxt, outputContainers)
 
+    // BUGBUG::Just make sure all serializerNames must be JSONs. For now we support only JSON output here.
+
     // check if we need the indexName to be change according to the current date
     if (adapterConfig.rollIndexNameByCurrentDate) {
       val dateFormat: SimpleDateFormat = new SimpleDateFormat("yyyyMMdd")
@@ -197,12 +153,16 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       indexName = indexName + "-" + currentDate
     }
 
+    val strDataRecords = serializedContainerData.map(data => new String(data))
+
     if (adapterConfig.rollIndexNameByDataDate) {
       if (adapterConfig.dateFiledNameInOutputMessage.isEmpty) {
         LOG.error("Elasticsearch OutputAdapter : dateFiledNameInOutputMessage filed is empty")
       } else {
-        val tmpData = serializedContainerData.map(data => new String(data))
-        tmpData.foreach(jsonData => {
+        val indexBaseName = indexName
+        // BUGBUG:: Why are we using jsonData even though we have outContainers corresponding to them. The is very less expensive
+        val idxNameAndData = strDataRecords.map(jsonData => {
+          var idxName = indexBaseName + "-unknown"
           try {
             val jsonObj: JSONObject = new JSONObject(jsonData)
             // assuming format is yyyy-MM-dd'T'hh:mm'Z'
@@ -211,68 +171,187 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
             val sourceDateFormat: SimpleDateFormat = new SimpleDateFormat(dateFormatString)
             val targetDateFormat: SimpleDateFormat = new SimpleDateFormat("yyyyMMdd")
             val targetDate: String = targetDateFormat.format(sourceDateFormat.parse(dateFiled))
-
-            indexName = indexName + "-" + targetDate
-            //            dataStore.putJson(indexName, jsonData)
+            idxName = indexBaseName + "-" + targetDate
           } catch {
             case e: Exception => LOG.error("Elasticsearch output adapter : error while retrieving date field from output message - ", e)
           }
+          ((idxName, jsonData))
         })
+        val map = idxNameAndData.groupBy(idxAndData => idxAndData._1).map(kv => (kv._1, kv._2.map(idxData => idxData._2)))
       }
     }
-
-    // check if we need to cteate the indexMapping beforehand.
-    if (adapterConfig.manuallyCreateIndexMapping) {
-      if ((adapterConfig.indexMapping.length > 0) && !dataStore.checkIndexExsists(indexName)) {
-        dataStore.createIndexForOutputAdapter(indexName, adapterConfig.indexMapping)
-      }
-    }
-    putJsonsWithMetadata(indexName, serializedContainerData.map(data => new String(data)))
   }
 
-  def putJsonsWithMetadata(containerName: String, data_list: Array[(String)]): Unit = {
+  private def canConsiderShutdown(considerShutdown: Boolean): Boolean = {
+    isShutdown && considerShutdown
+  }
+
+  private def putJsonsWithMetadata(considerShutdown: Boolean): Unit = synchronized {
+    //   containerName: String, data_list: Array[String]
     var client: TransportClient = null
-    val tableName = toFullTableName(containerName)
+    var connectedTime = 0L
     //    CheckTableExists(tableName)
     try {
       client = getConnection
-      var bulkRequest = client.prepareBulk()
-      data_list.foreach({ jsonData =>
-        //added by saleh 15/12/2016
-        val root = parse(jsonData).values.asInstanceOf[Map[String, String]]
-        //if (root.get("metadata") != None) {
-        val metadata = if (root.get("metadata") == None) Map[String, Any]() else root.get("metadata").get.asInstanceOf[Map[String, Any]]
+      connectedTime = System.currentTimeMillis
 
-        val index = if (metadata.get("index") == None || metadata.get("index").get.toString.trim.length == 0) tableName else metadata.get("index").get.toString
-        val metadata_type = if (metadata.get("_type") == None || metadata.get("_type").get.toString.trim.length == 0) "type1" else metadata.get("_type").get.toString
+      var exec = true
+      var curWaitTm = 5000
 
-        val bulk = client.prepareIndex(index, metadata_type)
-
-        if (metadata.get("id") != None && metadata.get("id").get.toString.trim.length > 0) bulk.setId(metadata.get("id").get.toString)
-        if (metadata.get("version") != None) bulk.setVersionType(VersionType.FORCE).setVersion(metadata.get("version").get.asInstanceOf[BigInt].toLong)
-
-        //}
-        bulk.setSource(jsonData)
-        bulkRequest.add(bulk)
-      })
-      LOG.debug("Executing bulk indexing...")
-      val bulkResponse = bulkRequest.execute().actionGet()
-
-      //added by saleh 15/12/2016
-      if (bulkResponse.hasFailures) {
-        LOG.warn(bulkResponse.buildFailureMessage())
+      // BUGBUG:: Do we need to do every time?
+      // check if we need to cteate the indexMapping beforehand.
+      if (adapterConfig.manuallyCreateIndexMapping && adapterConfig.indexMapping.length > 0) {
+        val allKeys = sendData.map(kv => kv._1).toArray
+        exec = true
+        curWaitTm = 5000
+        while (!canConsiderShutdown(considerShutdown) && exec) {
+          exec = false
+          try {
+            if (client == null) {
+              client = getConnection
+              connectedTime = System.currentTimeMillis
+            }
+            dataStore.createIndexForOutputAdapter(client, allKeys, adapterConfig.indexMapping, true)
+          } catch {
+            case e: Throwable => {
+              if ((System.currentTimeMillis - connectedTime) > 10000) {
+                try {
+                  if (client != null)
+                    client.close
+                } catch {
+                  case e: Throwable => {
+                    LOG.error("Failed to close connection", e)
+                  }
+                }
+                client = null
+              }
+              exec = true
+              LOG.error("Failed to create indices. Going to retry after %dms".format(curWaitTm), e)
+              val nSecs = curWaitTm / 1000
+              for (i <- 0 until nSecs) {
+                try {
+                  if (!canConsiderShutdown(considerShutdown))
+                    Thread.sleep(1000)
+                } catch {
+                  case e: Throwable => {}
+                }
+              }
+              curWaitTm = curWaitTm * 2
+              if (curWaitTm > 60000)
+                curWaitTm = 60000
+            }
+          }
+        }
       }
 
+      exec = true
+      curWaitTm = 5000
+      while (!canConsiderShutdown(considerShutdown) && exec) {
+        exec = false
+        try {
+          if (client == null) {
+            client = getConnection
+            connectedTime = System.currentTimeMillis
+          }
+          var gotException: Throwable = null
+          var addedKeys = ArrayBuffer[String]()
+          sendData.foreach(kv => {
+            if (gotException == null) {
+              val containerName = kv._1
+              val data_list = kv._2
+              try {
+                val tableName = toFullTableName(containerName)
+                var bulkRequest = client.prepareBulk()
+                data_list.foreach({ jsonData =>
+                  //added by saleh 15/12/2016
+                  val root = parse(jsonData).values.asInstanceOf[Map[String, String]]
+                  //if (root.get("metadata") != None) {
+                  val metadata = if (root.get("metadata") == None) Map[String, Any]() else root.get("metadata").get.asInstanceOf[Map[String, Any]]
+
+                  val index = if (metadata.get("index") == None || metadata.get("index").get.toString.trim.length == 0) tableName else metadata.get("index").get.toString
+                  val metadata_type = if (metadata.get("_type") == None || metadata.get("_type").get.toString.trim.length == 0) "type1" else metadata.get("_type").get.toString
+
+                  val bulk = client.prepareIndex(index, metadata_type)
+
+                  if (metadata.get("id") != None && metadata.get("id").get.toString.trim.length > 0) bulk.setId(metadata.get("id").get.toString)
+                  if (metadata.get("version") != None) bulk.setVersionType(VersionType.FORCE).setVersion(metadata.get("version").get.asInstanceOf[BigInt].toLong)
+
+                  //}
+                  bulk.setSource(jsonData)
+                  bulkRequest.add(bulk)
+                })
+                LOG.debug("Executing bulk indexing...")
+                val bulkResponse = bulkRequest.execute().actionGet()
+
+                // BUGBUG:: If we have errors do we treat this data is added ???????
+                //added by saleh 15/12/2016
+                if (bulkResponse.hasFailures) {
+                  LOG.warn(bulkResponse.buildFailureMessage())
+                }
+                recsToWrite -= kv._2.size
+                kv._2.clear
+                addedKeys += containerName
+              } catch {
+                case e: Throwable => {
+                  LOG.error("Failed to add data to index:" + containerName, e)
+                  gotException = e
+                }
+              }
+            }
+          })
+          addedKeys.foreach(key => {
+            sendData.remove(key)
+          })
+          if (gotException != null) {
+            throw gotException
+          }
+          // No Exceptions and everything is written
+          if (sendData.size == 0)
+            recsToWrite = 0
+        } catch {
+          case e: Throwable => {
+            if ((System.currentTimeMillis - connectedTime) > 10000) {
+              try {
+                if (client != null)
+                  client.close
+              } catch {
+                case e: Throwable => {
+                  LOG.error("Failed to close connection", e)
+                }
+              }
+              client = null
+            }
+            exec = true
+            LOG.error("Failed to create indices. Going to retry after %dms".format(curWaitTm), e)
+            val nSecs = curWaitTm / 1000
+            for (i <- 0 until nSecs) {
+              try {
+                if (!canConsiderShutdown(considerShutdown))
+                  Thread.sleep(1000)
+              } catch {
+                case e: Throwable => {}
+              }
+            }
+            curWaitTm = curWaitTm * 2
+            if (curWaitTm > 60000)
+              curWaitTm = 60000
+          }
+        }
+      }
     }
     catch {
       case e: Exception => {
-        LOG.error("Failed to save an object in the table " + tableName + ":", e)
+        LOG.error("Failed to save an object in the table", e)
       }
     } finally {
       if (client != null) {
         client.close
+        client = null
       }
     }
+
+    if (client != null)
+      client.close
   }
 
   private def getConnection: TransportClient = {
@@ -322,6 +401,8 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
     // Shutdown HB
     isShutdown = true
+
+    putJsonsWithMetadata(false)
 
     heartBeatThread.shutdownNow
     while (!heartBeatThread.isTerminated) {
