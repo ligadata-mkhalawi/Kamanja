@@ -14,8 +14,8 @@ The installation process can be summarized as:
    for the Flare Email Surveillance product.
 #. Install the Flare Email Surveillance product.
 
-Creating the kamanja user
--------------------------
+Create the kamanja user
+-----------------------
 
 These instructions use the **sudo** command for a number of steps.
 If you prefer, you can instead set up the kamanja user

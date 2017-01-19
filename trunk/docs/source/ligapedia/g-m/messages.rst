@@ -5,7 +5,7 @@ Messages
 --------
 
 Messages contain the data that flows into and out of the
-:sh:`models<model-term>	in a pipeline that executes on Kamanja.
+:sh:`models<model-term>`	in a pipeline that executes on Kamanja.
 Three types of model are supported:
 
 - input messages -- data flowing into a model

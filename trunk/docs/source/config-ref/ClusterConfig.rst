@@ -80,7 +80,7 @@ File structure
          }
        ],
         "Adapters": [
-            ... {some config}
+            ... see :ref:`adapter-def-config-ref`
         ],
         ... {some config}
       }

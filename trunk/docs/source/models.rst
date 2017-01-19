@@ -5,9 +5,12 @@ Working with Models
 
 .. toctree::
 
-   models/intro.rst
-   models/languages.rst
-   models/ingest-data.rst
-   models/message-bindings.rst
+   models/intro
+   models/languages
+   models/app-struct
+   models/ingest-data
+   models/preprocess-data
+   models/message-bindings
+   models/monitor-exec
 
 

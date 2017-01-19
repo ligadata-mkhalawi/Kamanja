@@ -12,6 +12,7 @@ Ligapedia
    ligapedia/a-f/audit-log
    ligapedia/a-f/avro
    ligapedia/a-f/bashrc
+   ligapedia/a-f/caching
    ligapedia/a-f/cluster
    ligapedia/a-f/cluster-analysis
    ligapedia/a-f/com-ligadata-keyvaluestore-datastore
@@ -22,6 +23,7 @@ Ligapedia
    ligapedia/a-f/dag
    ligapedia/a-f/deep-learning
    ligapedia/a-f/engine
+   ligapedia/a-f/error-capture
    ligapedia/a-f/etl
    ligapedia/a-f/feature-extraction
    ligapedia/a-f/feature-selection
@@ -35,6 +37,7 @@ Ligapedia
    ligapedia/g-m/kafka
    ligapedia/g-m/kbinary
    ligapedia/g-m/kv
+   ligapedia/g-m/log4j2
    ligapedia/g-m/machine-learning
    ligapedia/g-m/messages
    ligapedia/g-m/message-bindings
@@ -61,6 +64,7 @@ Ligapedia
    ligapedia/s-z/scikit-learn
    ligapedia/s-z/serial-deserial
    ligapedia/s-z/sql
+   ligapedia/s-z/smart-input-adapter
    ligapedia/s-z/supervised-learning
    ligapedia/s-z/tensorflow
    ligapedia/s-z/tenancy

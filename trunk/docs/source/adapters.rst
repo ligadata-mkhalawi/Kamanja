@@ -13,6 +13,5 @@ Working with Adapters
    adapters/output-adapters
    adapters/storage-adapters
    adapters/serial-deserial
-   adapters/message-bindings
 
 
