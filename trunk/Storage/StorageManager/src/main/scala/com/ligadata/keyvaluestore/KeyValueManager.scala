@@ -153,7 +153,7 @@ object KeyValueManager {
             i += 1
           }
 
-          if (recvFlIdx > 0) {
+          if (recvFlIdx >= 0) {
             resolveFiles(recvFlIdx).resolvedFile = resolvedFl
             resolveFiles(recvFlIdx).resolvedFullFilePath = recvdFlPath
             resolveFiles(recvFlIdx).isResolved = true
@@ -212,7 +212,7 @@ object KeyValueManager {
           val storageAdapterObj = objinst.asInstanceOf[StorageAdapterFactory]
           return storageAdapterObj.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
         } else {
-          logger.error("Failed to instantiate Storage Adapter with configuration:" + adapterConfig)
+          logger.error("Failed to instantiate Storage Adapter with configuration:" + adapterConfig + ", objinst:" + objinst + " is not type of StorageAdapterFactory")
           return null
         }
 
@@ -223,7 +223,7 @@ object KeyValueManager {
         }
       }
     } else {
-      logger.error("Failed to instantiate Storage Adapter with configuration:" + adapterConfig)
+      logger.error("Failed to instantiate Storage Adapter with configuration:" + adapterConfig + ". " + className + " not found as derived from com.ligadata.StorageBase.StorageAdapterFactory")
       return null
     }
 

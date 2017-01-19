@@ -97,7 +97,8 @@ object PersistenceUtils {
   val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
   // 646 - 676 Change ends
 
-  private val kvMgrLoader = new KamanjaLoaderInfo
+  private val kvMgrBaseLoader = new KamanjaLoaderInfo
+  private val kvMgrLoader = new KamanjaLoaderInfo(kvMgrBaseLoader, false, true)
 
   lazy val versionStr = s"${KamanjaVersion.getMajorVersion}.${KamanjaVersion.getMinorVersion}.${KamanjaVersion.getMicroVersion}"
   lazy val excludeSystemJars = Set(s"ExtDependencyLibs_2.11-${versionStr}.jar", s"ExtDependencyLibs2_2.11-${versionStr}.jar", s"KamanjaInternalDeps_2.11-${versionStr}.jar",
@@ -777,8 +778,10 @@ object PersistenceUtils {
     */
   private def GetDataStoreHandle(jarPaths: collection.immutable.Set[String], dataStoreInfo: String): DataStore = {
     try {
-      logger.debug("Getting DB Connection for dataStoreInfo:%s".format(dataStoreInfo))
-      return KeyValueManager.Get(jarPaths, dataStoreInfo, null, null, kvMgrLoader)
+      if (logger.isDebugEnabled) logger.debug("Getting DB Connection for dataStoreInfo:%s".format(dataStoreInfo))
+      val store = KeyValueManager.Get(jarPaths, dataStoreInfo, null, null, kvMgrLoader)
+      if (logger.isDebugEnabled) logger.debug("store:" + store + ", dataStoreInfo:" + dataStoreInfo)
+      return store
     } catch {
       case e: Exception => {
         logger.debug("", e)
@@ -797,6 +800,8 @@ object PersistenceUtils {
     try {
       logger.debug("Opening datastore")
       mainDS = GetDataStoreHandle(jarPaths, dataStoreInfo)
+
+      if (logger.isDebugEnabled) logger.debug("mainDS:" + mainDS)
 
       tableStoreMap = Map("metadata_objects" ->("metadata_objects", mainDS),
         "models" ->("metadata_objects", mainDS),

@@ -16,9 +16,9 @@
 
 package com.ligadata.ZooKeeper
 
-import com.ligadata.Serialize._
-//import com.ligadata.MetadataAPI._
-import com.ligadata.kamanja.metadata._
+// import com.ligadata.Serialize._
+// import com.ligadata.MetadataAPI._
+// import com.ligadata.kamanja.metadata._
 import org.apache.curator.RetryPolicy
 import org.apache.curator.framework._
 import org.apache.curator.framework.recipes.cache._
@@ -35,7 +35,7 @@ import java.io._
 import scala.io._
 import java.util.concurrent._
 import scala.collection.JavaConverters._
-import com.ligadata.KamanjaVersion.KamanjaVersion
+// import com.ligadata.KamanjaVersion.KamanjaVersion
 
 class ZooKeeperListener {
   val loggerName = this.getClass.getName

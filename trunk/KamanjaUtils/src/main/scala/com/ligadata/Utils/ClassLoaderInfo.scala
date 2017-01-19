@@ -17,9 +17,9 @@
 package com.ligadata.Utils
 
 import scala.collection.mutable.TreeSet
-import scala.reflect.runtime.{ universe => ru }
-import java.net.{ URL, URLClassLoader }
-import org.apache.logging.log4j.{ Logger, LogManager }
+import scala.reflect.runtime.{universe => ru}
+import java.net.{URL, URLClassLoader}
+import org.apache.logging.log4j.{Logger, LogManager}
 import scala.collection.mutable.ArrayBuffer
 
 /*
@@ -29,26 +29,51 @@ import scala.collection.mutable.ArrayBuffer
  *     with parent last it gets the most recent loaded class.
  */
 class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: KamanjaClassLoader, val currentClassClassLoader: ClassLoader, val parentLast: Boolean)
-  extends URLClassLoader(if (systemClassLoader != null) systemClassLoader.getURLs() else Array[URL](), if (parentLast == false && parent != null) parent else currentClassClassLoader) {
+  extends URLClassLoader(if (parentLast == false && parent == null && systemClassLoader != null) systemClassLoader.getURLs() else Array[URL](),
+    if (parentLast == false && parent != null) parent else if (parentLast && parent != null) null else currentClassClassLoader) {
   private val LOG = LogManager.getLogger(getClass)
 
+  if (LOG.isDebugEnabled()) {
+    // Printing invokation stack trace
+    try {
+      val s: String = null
+      s.length
+    } catch {
+      case e: Throwable => {
+        val urls = if (parentLast == false && parent == null && systemClassLoader != null) systemClassLoader.getURLs() else Array[URL]()
+        LOG.debug("Created KamanjaClassLoader. this:" + this + ", parentLast:" + parentLast + ", URLS:" + urls.map(u => u.getFile()).mkString(","), e)
+      }
+    }
+  }
+
   override def addURL(url: URL) {
-    LOG.debug("Adding URL:" + url.getPath + " to default class loader")
+    if (LOG.isDebugEnabled()) LOG.debug("Adding URL:" + url.getPath + " to default class loader for this:" + this)
     super.addURL(url)
   }
 
   protected override def loadClass(className: String, resolve: Boolean): Class[_] = this.synchronized {
-    LOG.debug("Trying to load class:" + className + ", resolve:" + resolve)
+    if (LOG.isDebugEnabled()) LOG.debug("Trying to load class:" + className + ", resolve:" + resolve + ", parentLast:" + parentLast + ", parent:" + parent + ", classloader:" + this)
 
     if (parentLast) {
       try {
         return super.loadClass(className, resolve) // First try in local
       } catch {
         case e: ClassNotFoundException => {
-          if (parent != null)
-            return parent.loadClass(className) // If not found, go to Parent
-          else
+          if (parent != null) {
+            try {
+              return parent.loadClass(className) // If not found, go to Parent
+            } catch {
+              case e: ClassNotFoundException => {
+                if (parentLast && parent != null && currentClassClassLoader != null) {
+                  return currentClassClassLoader.loadClass(className)
+                } else {
+                  throw e
+                }
+              }
+            }
+          } else {
             throw e
+          }
         }
       }
     } else {
@@ -58,7 +83,7 @@ class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: Kama
 
   override def getResource(name: String): URL = {
     var url: URL = null;
-    LOG.debug("Trying to getResource:" + name)
+    if (LOG.isDebugEnabled()) LOG.debug("Trying to getResource:" + name)
 
     // This call to getResource may eventually call findResource again, in case the parent doesn't find anything.
 
@@ -70,13 +95,13 @@ class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: Kama
       url = super.getResource(name)
     }
 
-    LOG.debug("URL is:" + url)
+    if (LOG.isDebugEnabled()) LOG.debug("URL is:" + url)
     url
   }
 
   override def getResources(name: String): java.util.Enumeration[URL] = {
     var systemUrls: java.util.Enumeration[URL] = null
-    LOG.debug("Trying to getResources:" + name)
+    if (LOG.isDebugEnabled()) LOG.debug("Trying to getResources:" + name)
 
     var urls = ArrayBuffer[URL]()
 
@@ -99,10 +124,12 @@ class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: Kama
       }
     }
 
-    LOG.debug("Found %d URLs".format(urls.size))
+    if (LOG.isDebugEnabled()) LOG.debug("Found %d URLs".format(urls.size))
     new java.util.Enumeration[URL]() {
       var iter = urls.iterator
+
       def hasMoreElements(): Boolean = iter.hasNext
+
       def nextElement(): URL = iter.next()
     }
   }

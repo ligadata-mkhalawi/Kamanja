@@ -86,3 +86,6 @@ libraryDependencies += "org.apache.hadoop" % "hadoop-client" % "2.7.3"
 libraryDependencies += "org.apache.hadoop" % "hadoop-hdfs" % "2.7.3"
 libraryDependencies += "org.apache.commons" % "commons-vfs2" % "2.0"
 libraryDependencies += "org.apache.commons" % "commons-compress" % "1.5"
+
+libraryDependencies += "com.google.guava" % "guava" % "16.0.1"
+dependencyOverrides += "com.google.guava" % "guava" % "16.0.1"
