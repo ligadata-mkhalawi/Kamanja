@@ -252,6 +252,7 @@ object VelocityMetrics {
     private def EmitMetrics(reset: Boolean): Unit = synchronized {
       try {
         val allComponents = GetAllMetricsComponents
+        val uuid = guid
 
         val finalComponentsMetrics = ArrayBuffer[ComponentMetrics]()
         allComponents.foreach(comp => {
@@ -285,6 +286,7 @@ object VelocityMetrics {
 
         val metrics = new Metrics
         metrics.metricsGeneratedTimeInMs = System.currentTimeMillis()
+        metrics.uuid = uuid
         metrics.compMetrics = finalComponentsMetrics.toArray
 
         val callbacks = getAllEmitListeners
@@ -399,9 +401,7 @@ object VelocityMetrics {
   def addEmitListener(velocityMetricsCallback: VelocityMetricsCallback): Unit = synchronized {
     if (factory != null)
       factory.addEmitListener(velocityMetricsCallback)
-    factory = null
   }
-
 }
 
 
