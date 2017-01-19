@@ -84,9 +84,9 @@ lazy val SecurityAdapterBase = project.in(file("SecurityAdapters/SecurityAdapter
 
 lazy val StorageBase = project.in(file("Storage/StorageBase")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Exceptions % "provided", KamanjaUtils % "provided", KvBase % "provided", KamanjaBase % "provided", HeartBeat % "provided", Metadata % "provided")
 
-lazy val StorageManager = project.in(file("Storage/StorageManager")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageBase % "provided", Exceptions % "provided", KamanjaBase % "provided", KamanjaUtils % "provided", Metadata % "provided")
+lazy val StorageManager = project.in(file("Storage/StorageManager")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageBase % "provided", Exceptions % "provided", KamanjaBase % "provided", KamanjaUtils % "provided", Metadata % "provided", HeartBeat % "provided")
 
-lazy val TransactionService = project.in(file("TransactionService")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Exceptions % "provided", KamanjaBase % "provided", ZooKeeperClient % "provided", StorageBase % "provided", StorageManager % "provided", KvBase % "provided", KamanjaUtils % "provided")
+lazy val TransactionService = project.in(file("TransactionService")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Exceptions % "provided", KamanjaBase % "provided", ZooKeeperClient % "provided", StorageBase % "provided", StorageManager % "provided", KvBase % "provided", KamanjaUtils % "provided", Metadata % "provided", HeartBeat % "provided")
 
 lazy val Dag = project.in(file("Utils/Dag")) dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", KamanjaUtils % "provided", Exceptions % "provided")
 

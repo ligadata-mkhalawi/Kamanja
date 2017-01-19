@@ -24,7 +24,7 @@ import scala.collection.mutable.ArrayBuffer
 import com.ligadata.KvBase.{Key, Value, TimeRange}
 import com.ligadata.StorageBase._
 import com.ligadata.keyvaluestore.KeyValueManager
-import com.ligadata.Serialize._
+// import com.ligadata.Serialize._
 import com.ligadata.kamanja.metadata._
 import org.json4s._
 import org.json4s.JsonDSL._
@@ -34,8 +34,7 @@ import com.ligadata.KamanjaBase._
 import scala.util.control.Breaks._
 import scala.reflect.runtime.{universe => ru}
 import com.ligadata.Exceptions._
-
-import com.ligadata.MetadataAPI._
+// import com.ligadata.MetadataAPI._
 
 // import scala.collection.JavaConversions._
 
