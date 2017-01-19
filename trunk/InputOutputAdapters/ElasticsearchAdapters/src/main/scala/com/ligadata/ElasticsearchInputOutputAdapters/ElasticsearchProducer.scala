@@ -131,11 +131,11 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
     this.synchronized {
       if (dt > nextWrite || recsToWrite > writeRecsBatch) {
-        LOG.warn("WriteTest=>Going to write records now. Current time:%d, next write time:%d, current records to write:%d, batch size:%d".format(dt, nextWrite, recsToWrite, writeRecsBatch))
+        if (LOG.isInfoEnabled) LOG.info("Going to write records now. Current time:%d, next write time:%d, current records to write:%d, batch size:%d".format(dt, nextWrite, recsToWrite, writeRecsBatch))
         putJsonsWithMetadata(true)
         nextWrite = System.currentTimeMillis + timeToWriteRecs
       } else {
-        LOG.warn("WriteTest=>Not yet writing. Current time:%d, next write time:%d, current records to write:%d, batch size:%d".format(dt, nextWrite, recsToWrite, writeRecsBatch))
+        if (LOG.isTraceEnabled) LOG.trace("Not yet writing. Current time:%d, next write time:%d, current records to write:%d, batch size:%d".format(dt, nextWrite, recsToWrite, writeRecsBatch))
       }
     }
 
@@ -183,7 +183,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
         })
         val map = idxNameAndData.groupBy(idxAndData => idxAndData._1).map(kv => (kv._1, kv._2.map(idxData => idxData._2)))
         addData(map)
-        LOG.warn("WriteTest=>Added %d records to cached data in %d indices".format(strDataRecords.size, map.size))
+        if (LOG.isDebugEnabled) LOG.debug("Added %d records to cached data in %d indices".format(strDataRecords.size, map.size))
         addedData = true
       }
     }
@@ -191,7 +191,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     if (!addedData) {
       val map = Map[String, Array[String]](indexName -> strDataRecords)
       addData(map)
-      LOG.warn("WriteTest=>Added %d records to cached data in %d indices".format(strDataRecords.size, map.size))
+      if (LOG.isDebugEnabled) LOG.debug("Added %d records to cached data in %d indices".format(strDataRecords.size, map.size))
     }
   }
 
@@ -216,7 +216,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       // check if we need to cteate the indexMapping beforehand.
       if (adapterConfig.manuallyCreateIndexMapping && adapterConfig.indexMapping.length > 0) {
         val allKeys = sendData.map(kv => kv._1).toArray
-        LOG.warn("WriteTest=>Validating whether indices {%s} exists or not".format(allKeys.mkString(",")))
+        if (LOG.isInfoEnabled) LOG.info("Validating whether indices {%s} exists or not".format(allKeys.mkString(",")))
         exec = true
         curWaitTm = 5000
         while (!canConsiderShutdown(considerShutdown) && exec) {
@@ -260,7 +260,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
         }
       }
 
-      LOG.warn("WriteTest=>About to write %d records".format(recsToWrite))
+      if (LOG.isInfoEnabled) LOG.info("About to write %d records".format(recsToWrite))
       exec = true
       curWaitTm = 5000
       while (!canConsiderShutdown(considerShutdown) && exec) {
@@ -297,12 +297,12 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
                   bulk.setSource(jsonData)
                   bulkRequest.add(bulk)
                 })
-                LOG.debug("Executing bulk indexing...")
+                if (LOG.isDebugEnabled) LOG.debug("Executing bulk indexing...")
                 val bulkResponse = bulkRequest.execute().actionGet()
 
                 // BUGBUG:: If we have errors do we treat this data is added ???????
                 //added by saleh 15/12/2016
-                if (bulkResponse.hasFailures) {
+                if (bulkResponse.hasFailures && LOG.isWarnEnabled) {
                   LOG.warn(bulkResponse.buildFailureMessage())
                 }
                 recsToWrite -= kv._2.size
@@ -381,7 +381,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       val it = adapterConfig.properties.keySet.iterator
       while (it.hasNext) {
         val key = it.next()
-        LOG.info("ElasticSearch - properties [%s] - [%s]".format(key, adapterConfig.properties.get(key).get.toString))
+        if (LOG.isInfoEnabled) LOG.info("ElasticSearch - properties [%s] - [%s]".format(key, adapterConfig.properties.get(key).get.toString))
         settings.put(key, adapterConfig.properties.get(key).get.toString)
       }
 
@@ -415,7 +415,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
   override def Shutdown(): Unit = {
 
-    LOG.info(adapterConfig.Name + " Shutdown detected")
+    if (LOG.isWarnEnabled) LOG.warn(adapterConfig.Name + " Shutdown detected")
 
     // Shutdown HB
     isShutdown = true
@@ -487,12 +487,11 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
           case e: Exception => {
             externalizeExceptionEvent(e)
             isHeartBeating = false
-            if (isShutdown == false)
+            if (isShutdown == false && LOG.isWarnEnabled)
               LOG.warn(adapterConfig.Name + " Heartbeat Interrupt detected", e)
           }
         }
-        LOG.info(adapterConfig.Name + " Heartbeat is shutting down")
-        LOG.info(adapterConfig.Name + " Heartbeat is shutting down")
+        if (LOG.isInfoEnabled) LOG.info(adapterConfig.Name + " Heartbeat is shutting down")
       }
     })
   }
