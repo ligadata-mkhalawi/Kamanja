@@ -131,8 +131,11 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
     this.synchronized {
       if (dt > nextWrite || recsToWrite > writeRecsBatch) {
+        LOG.warn("WriteTest=>Going to write records now. Current time:%d, next write time:%d, current records to write:%d, batch size:%d".format(dt, nextWrite, recsToWrite, writeRecsBatch))
         putJsonsWithMetadata(true)
         nextWrite = System.currentTimeMillis + timeToWriteRecs
+      } else {
+        LOG.warn("WriteTest=>Not yet writing. Current time:%d, next write time:%d, current records to write:%d, batch size:%d".format(dt, nextWrite, recsToWrite, writeRecsBatch))
       }
     }
 
@@ -155,6 +158,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
     val strDataRecords = serializedContainerData.map(data => new String(data))
 
+    var addedData = false
     if (adapterConfig.rollIndexNameByDataDate) {
       if (adapterConfig.dateFiledNameInOutputMessage.isEmpty) {
         LOG.error("Elasticsearch OutputAdapter : dateFiledNameInOutputMessage filed is empty")
@@ -178,7 +182,16 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
           ((idxName, jsonData))
         })
         val map = idxNameAndData.groupBy(idxAndData => idxAndData._1).map(kv => (kv._1, kv._2.map(idxData => idxData._2)))
+        addData(map)
+        LOG.warn("WriteTest=>Added %d records to cached data in %d indices".format(strDataRecords.size, map.size))
+        addedData = true
       }
+    }
+
+    if (!addedData) {
+      val map = Map[String, Array[String]](indexName -> strDataRecords)
+      addData(map)
+      LOG.warn("WriteTest=>Added %d records to cached data in %d indices".format(strDataRecords.size, map.size))
     }
   }
 
@@ -187,6 +200,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   }
 
   private def putJsonsWithMetadata(considerShutdown: Boolean): Unit = synchronized {
+    if (sendData.size == 0) return
     //   containerName: String, data_list: Array[String]
     var client: TransportClient = null
     var connectedTime = 0L
@@ -202,6 +216,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       // check if we need to cteate the indexMapping beforehand.
       if (adapterConfig.manuallyCreateIndexMapping && adapterConfig.indexMapping.length > 0) {
         val allKeys = sendData.map(kv => kv._1).toArray
+        LOG.warn("WriteTest=>Validating whether indices {%s} exists or not".format(allKeys.mkString(",")))
         exec = true
         curWaitTm = 5000
         while (!canConsiderShutdown(considerShutdown) && exec) {
@@ -224,6 +239,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
                   }
                 }
                 client = null
+                connectedTime = 0L
               }
               exec = true
               LOG.error("Failed to create indices. Going to retry after %dms".format(curWaitTm), e)
@@ -244,6 +260,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
         }
       }
 
+      LOG.warn("WriteTest=>About to write %d records".format(recsToWrite))
       exec = true
       curWaitTm = 5000
       while (!canConsiderShutdown(considerShutdown) && exec) {
@@ -319,6 +336,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
                   LOG.error("Failed to close connection", e)
                 }
               }
+              connectedTime = 0L
               client = null
             }
             exec = true
