@@ -40,10 +40,10 @@ import com.ligadata.Serialize._
 
 import com.ligadata.Exceptions._
 import com.ligadata.KvBase.{ Key, TimeRange }
-
+import com.ligadata.keyvaluestore.HBaseAdapter
 import com.ligadata.kamanja.metadataload.MetadataLoad
 
-class GetEntityAttribsSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
+class GetEntityDataSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen {
   var res: String = null;
   var statusCode: Int = -1;
   var apiResKey: String = "\"Status Code\" : 0"
@@ -91,6 +91,13 @@ class GetEntityAttribsSpec extends FunSpec with LocalTestFixtures with BeforeAnd
 	logger.info("DropDbStore is not supported for database " + db)
       }
     }
+  }
+
+  def readCallBack(key: String, attribName: String, attribValue: String) {
+    logger.info("key => " + key)
+    logger.info("attribName => " + attribName)
+    logger.info("attribValue => " + attribValue)
+    logger.info("----------------------------------------------------")
   }
 
   override def beforeAll = {
@@ -158,7 +165,7 @@ class GetEntityAttribsSpec extends FunSpec with LocalTestFixtures with BeforeAnd
     }
   }
 
-  describe("Get Entity Attributes") {
+  describe("Test GetEntityData API") {
 
     // validate property setup
     it("Validate properties for MetadataAPI") {
@@ -251,125 +258,50 @@ class GetEntityAttribsSpec extends FunSpec with LocalTestFixtures with BeforeAnd
       assert(null != sc)
     }
 
-    it("Add Sample Containers") {
-      And("Check whether CONTAINER_FILES_DIR defined as property")
-      dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CONTAINER_FILES_DIR")
-      assert(null != dirName)
+    it("Test GetEntityData on tables ") {
+      val store = PersistenceUtils.GetMainDS
 
-      And("Check Directory Path")
-      iFile = new File(dirName)
-      assert(true == iFile.exists)
+      // Create a random table
+      val containerName = "customer1"
+      val hbaseAdapter = store.asInstanceOf[HBaseAdapter]
+      val adapter = store
+      val tableName = hbaseAdapter.toTableName(containerName)
 
-      And("Check whether " + dirName + " is a directory ")
-      assert(true == iFile.isDirectory)
+      val attribList = Array("name","address","cellNumber")
 
-      And("Make sure there are few JSON container files in " + dirName);
-      val contFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith(".json"))
-      assert(0 != contFiles.length)
+      And("Create Random Table ")
+      noException should be thrownBy {
+        adapter.createAnyTable(containerName,attribList,"ddl")
+      }
 
-      //fileList = List("CoughCodes.json","EnvCodes.json","DyspnoeaCodes.json","SmokeCodes.json","SputumCodes.json")  
-      fileList = List("EnvCodes.json")
-      fileList.foreach(f1 => {
-	And("Add the Container From " + f1)
-	And("Make Sure " + f1 + " exist")
-	var exists = false
-	var file: java.io.File = null
-	breakable {
-	  contFiles.foreach(f2 => {
-	    if (f2.getName() == f1) {
-	      exists = true
-	      file = f2
-	      break
-	    }
-	  })
-	}
-	assert(true == exists)
-
-	And("AddContainer from " + file.getPath)
-	contStr = Source.fromFile(file).mkString
-	res = MetadataAPIImpl.AddContainer(contStr, "JSON", None, tenantId,None)
-	res should include regex ("\"Status Code\" : 0")
-
-	And("GetContainerDef API to fetch the container that was just added")
-	var objName = f1.stripSuffix(".json").toLowerCase
-	var version = "0000000000001000000"
-	res = MetadataAPIImpl.GetContainerDef("com.ligadata.kamanja.samples.containers", objName, "JSON", version, None,None)
-	res should include regex ("\"Status Code\" : 0")
-
-      })
-    }
-
-    it("Add Sample Messages") {
-      And("Check whether MESSAGE_FILES_DIR defined as property")
-      dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("MESSAGE_FILES_DIR")
-      assert(null != dirName)
-
-      And("Check Directory Path")
-      iFile = new File(dirName)
-      assert(true == iFile.exists)
-
-      And("Check whether " + dirName + " is a directory ")
-      assert(true == iFile.isDirectory)
-
-      And("Make sure there are few JSON message files in " + dirName);
-      val msgFiles = new java.io.File(dirName).listFiles.filter(_.getName.endsWith(".json"))
-      assert(0 != msgFiles.length)
-
-      //fileList = List("outpatientclaim.json","inpatientclaim.json","hl7.json","beneficiary.json","COPDInputMessage.json","COPDOutputMessage.json")
-      fileList = List("outpatientclaim.json")
-      fileList.foreach(f1 => {
-	And("Add the Message From " + f1)
-	And("Make Sure " + f1 + " exist")
-	var exists = false
-	var file: java.io.File = null
-	breakable {
-	  msgFiles.foreach(f2 => {
-	    if (f2.getName() == f1) {
-	      exists = true
-	      file = f2
-	      break
-	    }
-	  })
-	}
-	assert(true == exists)
-
-	And("AddMessage first time from " + file.getPath)
-	var msgStr = Source.fromFile(file).mkString
-	res = MetadataAPIImpl.AddMessage(msgStr, "JSON", None,tenantId,None)
-	res should include regex ("\"Status Code\" : 0")
-
-	And("GetMessageDef API to fetch the message that was just added")
-	var objName = f1.stripSuffix(".json").toLowerCase
-	var version = "0000000000001000000"
-	res = MetadataAPIImpl.GetMessageDef("com.ligadata.kamanja.samples.messages", objName, "JSON", version, None,None)
-	res should include regex ("\"Status Code\" : 0")
-      })
-    }
-
-    it("Test GetEntityAttribs API on Metadata Objects") {
-      val storeInfo = PersistenceUtils.GetContainerNameAndDataStore("metadata_objects")
-      storeInfo._2.get(storeInfo._1, { (k: Key, v: Any, serType: String, typ: String, ver:Int) =>
-        {
-          val strKey = k.bucketKey.mkString(".")
-          var i = strKey.indexOf(".")
-          val objType = strKey.substring(0, i)
-          val typeName = strKey.substring(i + 1)
-
-          i = typeName.lastIndexOf(".")
-	  val objName = typeName.substring(0,i)
-
-	  logger.info("objType => %s,typeName => %s, objName => %s".format(objType,typeName,objName))
-          objType match {
-            case "messagedef" | "containerdef" => {
-              var result = MetadataAPIImpl.GetEntityAttribs(objName);
-	      logger.info("The json value of object %s => %s".format(k,result))
-	    }
-            case _ => {
-              logger.info("Ignoring objectType " + objType)
-            }
-          }
+      And("Add sample rows to the container")
+      var attribValues:scala.collection.mutable.Map[String,String] = scala.collection.mutable.HashMap()
+      for (i <- 1 to 10) {
+        var custName = "customer-" + i
+        var custAddress = "1000" + i + ",Main St, Redmond WA 98052"
+        var custNumber = "425666777" + i
+	attribValues("name") = custName
+	attribValues("address") = custAddress
+	attribValues("cellNumber") = custNumber
+        noException should be thrownBy {
+	  adapter.put(containerName,custName,attribValues)
         }
-      })
+      }
+
+      And("Get all the rows that were just added")
+      var attribSubset = Array("name","cellNumber")
+      var attribMap:scala.collection.mutable.Map[String, String] = new scala.collection.mutable.HashMap()
+      attribMap("name") = "customer-5"
+      noException should be thrownBy {
+        adapter.get(containerName, attribSubset, attribMap, readCallBack _)
+      }
+
+      And("Use MetadataAPI GetEntityData to retrieve the same data")
+      noException should be thrownBy {
+	val results = MetadataAPIImpl.GetEntityData(containerName,attribSubset,attribMap);
+	logger.info("results => " + results);
+      }
+      
     }
   }
 
