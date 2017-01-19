@@ -5,6 +5,8 @@
 easyInstallKamanja.sh
 =====================
 
+Build a Java or Scala model.
+
 Syntax
 ------
 
@@ -23,6 +25,10 @@ Options and arguments
 
 Usage
 -----
+
+Note that **wget** is required to run **easyInstallKamanja.sh**.
+See :ref:`develop-install-top` for more details
+about setting up the Kamanja development environment.
 
 
 Error messages

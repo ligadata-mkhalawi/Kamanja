@@ -5,11 +5,14 @@
 Message definition
 ==================
 
-All :ref:`message<messages-term>` objects
-used in the cluster are defined in the
-:ref:`ClusterConfig.json<clusterconfig-config-ref>` JSON file.
+The :ref:`message<messages-term>` definition structure provides
+design-time definitions of incoming data and interfaces
+that makes it easy for Kamanja to process input messages.
+Custom message definitions can be created
+to control which input messages are sent to Kamanja.
+
 Each input, output, or storage message used in the cluster
-has its own "Message" section,
+has its own "Message" definition,
 identified by a unique "Name".
 
 Message definitions include some core parameters
@@ -113,11 +116,15 @@ Input message parameters
 - **Name** – name of the message.
 - **Version** – version of the message.
 - **Description** – (optional) description of the message.
-- **Persist** – (optional) If set to TRUE, data processed as this message type
+- **Persist** – (optional) If set to TRUE,
+  data processed as this message type
   is saved to the data store.  See :ref:`persist-term`.
 - **Fixed** – if set to TRUE, this is a fixed message;
   if set to FALSE, it is a mapped messages.
-  See :ref:`Fixed and mapped messages<messages-fix-map-term>`.
+
+  Use fixed messages when all fields are available
+  in the incoming data stream and they are presented to the model.
+  They are represented as a Scala class instance at runtime.
 - **CaseSensitive** -- if set to TRUE, fields in the message definition
   are case-sensitive.
   The variables in the generated message are the same case
@@ -129,7 +136,24 @@ Input message parameters
 - **Fields/elements** – schema definition for the data included
   in this message.  This is a list of attribute names
   and the :ref:`type<types-term>` of each attribute.
+
+  The message definition schema attribute value type
+  can be a primitive data type such as int, long, float, double,
+  Boolean, or string; or a complex data type such as an array,
+  map, or container.
+
 - **PartitionKey** – (optional) partition keys for the message.
+  Choosing a good and relevant partition key is important
+  and has implications on model complexity and performance.
+
+  - All the messages with same partition key value
+    are routed and processed on the same node in the cluster.
+    This makes any aggregate computations
+    on the partition key easy and efficient.
+  - It is also important to have a good distribution
+    on the values of the key
+    so that all the resources in the cluster are used.
+
 - **PrimaryKey** – (optional) primary keys for the message.
 - **TimePartitionInfo** – (optional) time partition information.
   The attributes are:

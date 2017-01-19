@@ -10,7 +10,6 @@ This is a very efficient model
 that reduces the time it takes for a packet of data
 to get from one point to another.
 
-
 Here is a description of a simple DAG.
 The models change to take/consume messages and produce messages.
 Here are two models.

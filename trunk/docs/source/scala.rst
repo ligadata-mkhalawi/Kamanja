@@ -1,5 +1,5 @@
 
-.. scala-models-top:
+.. _scala-models-top:
 
 ============
 Scala Models
