@@ -21,6 +21,9 @@ val excludes = Set("commons-beanutils-1.7.0.jar", "google-collections-1.0.jar", 
   , "scala-reflect-2.11.0.jar", "akka-actor_2.11-2.3.2.jar", "scala-reflect-2.11.2.jar", "scalatest_2.11-2.2.4.jar", "joda-time-2.9.1-javadoc.jar", "voldemort-0.96.jar", "scala-compiler-2.11.0.jar", "guava-16.0.1.jar"
   , "minlog-1.2.jar")
 
+// We already have these dependencies in ExtDependencyLibs
+// This forbids including Scala related libraries into the dependency
+autoScalaLibrary := false
 
 excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
   cp filter { jar => (excludes(jar.data.getName) || jar.data.getName.startsWith("KamanjaBaseDeps_2.10-") || jar.data.getName.startsWith("KamanjaBaseDeps_2.11-")) }
