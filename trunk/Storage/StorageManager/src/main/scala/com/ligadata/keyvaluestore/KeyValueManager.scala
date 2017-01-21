@@ -28,11 +28,12 @@ import com.ligadata.keyvaluestore._
 import com.ligadata.Utils.Utils._
 import com.ligadata.Utils.{ KamanjaClassLoader, KamanjaLoaderInfo }
 import com.ligadata.StorageBase.StorageAdapterFactory
+import scala.collection.mutable.ArrayBuffer
 
 object KeyValueManager {
   private val loggerName = this.getClass.getName
   private val logger = LogManager.getLogger(loggerName)
-  private val kvManagerLoader = new KamanjaLoaderInfo
+  private val kvManagerLoaders = ArrayBuffer[KamanjaLoaderInfo]()
   // We will add more implementations here
   // so we can test  the system characteristics
   //
@@ -61,6 +62,12 @@ object KeyValueManager {
 
     val storeType = parsed_json.getOrElse("StoreType", "").toString.trim.toLowerCase
 
+    val isElastic = storeType.equalsIgnoreCase("elasticsearch")
+
+    val kvManagerLoader = new KamanjaLoaderInfo(null, false, isElastic, isElastic)
+
+    kvManagerLoaders += kvManagerLoader
+
     storeType match {
 
       // Other KV stores
@@ -75,7 +82,7 @@ object KeyValueManager {
       // Other relational stores such as sqlserver, mysql
       case "sqlserver" => return SqlServerAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
       case "h2db" => return H2dbAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
-      case "elasticsearch" => return ElasticsearchAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+      // case "elasticsearch" => return ElasticsearchAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
       // case "mysql" => return MySqlAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig)
 
       // Default, Load it from Class

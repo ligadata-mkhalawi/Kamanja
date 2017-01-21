@@ -39,6 +39,7 @@ case class JCacheConfig(CacheStartPort: Int, CacheSizePerNodeInMB: Long, Replica
 object KamanjaMdCfg {
   private[this] val LOG = LogManager.getLogger(getClass);
   private[this] val mdMgr = GetMdMgr
+  private[this] val loaders = ArrayBuffer[KamanjaLoaderInfo]()
 
   def InitConfigInfo: InitConfigs = {
     val nd = mdMgr.Nodes.getOrElse(KamanjaConfiguration.nodeId.toString, null)
@@ -524,10 +525,14 @@ object KamanjaMdCfg {
     }
 
     val envContext = nodeContext.getEnvCtxt()
-    val adaptersAndEnvCtxtLoader = envContext.getAdaptersAndEnvCtxtLoader
+    // val adaptersAndEnvCtxtLoader = envContext.getAdaptersAndEnvCtxtLoader
+
+    val isElastic = statusAdapterCfg.className.equals("com.ligadata.ElasticsearchInputOutputAdapters.ElasticsearchProducer$") || statusAdapterCfg.className.equals("com.ligadata.ElasticsearchInputOutputAdapters.ElasticsearchProducer")
+    val loader = new KamanjaLoaderInfo(null, false, isElastic, isElastic)
+    loaders += loader
 
     if (allJars != null) {
-      if (Utils.LoadJars(allJars.map(j => Utils.GetValidJarFile(envContext.getJarPaths(), j)).toArray, adaptersAndEnvCtxtLoader.loadedJars, adaptersAndEnvCtxtLoader.loader) == false) {
+      if (Utils.LoadJars(allJars.map(j => Utils.GetValidJarFile(envContext.getJarPaths(), j)).toArray, loader.loadedJars, loader.loader) == false) {
         val szErrMsg = "Failed to load Jars:" + allJars.mkString(",")
         LOG.error(szErrMsg)
         throw new Exception(szErrMsg)
@@ -536,7 +541,7 @@ object KamanjaMdCfg {
 
     // Try for errors before we do real loading & processing
     try {
-      Class.forName(statusAdapterCfg.className, true, adaptersAndEnvCtxtLoader.loader)
+      Class.forName(statusAdapterCfg.className, true, loader.loader)
     } catch {
       case e: Exception => {
         val szErrMsg = "Failed to load Status/Output Adapter %s with class %s".format(statusAdapterCfg.Name, statusAdapterCfg.className)
@@ -551,7 +556,7 @@ object KamanjaMdCfg {
     }
 
     // Convert class name into a class
-    val clz = Class.forName(statusAdapterCfg.className, true, adaptersAndEnvCtxtLoader.loader)
+    val clz = Class.forName(statusAdapterCfg.className, true, loader.loader)
 
     var isOutputAdapter = false
     var curClz = clz
@@ -564,8 +569,8 @@ object KamanjaMdCfg {
 
     if (isOutputAdapter) {
       try {
-        val module = adaptersAndEnvCtxtLoader.mirror.staticModule(statusAdapterCfg.className)
-        val obj = adaptersAndEnvCtxtLoader.mirror.reflectModule(module)
+        val module = loader.mirror.staticModule(statusAdapterCfg.className)
+        val obj = loader.mirror.reflectModule(module)
 
         val objinst = obj.instance
         if (objinst.isInstanceOf[OutputAdapterFactory]) {
