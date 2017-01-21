@@ -2,7 +2,7 @@
 .. _preprocess-data:
 
 Data Transformation and Enrichment (Pre-processing)
----------------------------------------------------
+===================================================
 
 After the data is ingested to the system,
 it may require some transformation and enrichment
@@ -54,8 +54,8 @@ The Wikipedia `Extract, Transform, load
 discusses additional data preparation tasks that might be required.
 
 
-How it works
-------------
+Implementing preprocessing in the pipeline
+------------------------------------------
 
 - The data flows into each model in the pipeline as an input message,
   then the model creates an output message

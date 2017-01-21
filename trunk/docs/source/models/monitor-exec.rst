@@ -18,7 +18,7 @@ These include:
 - Use :ref:`message-level tracking<message-tracking-admin>`
   to implement event-level tracking
   for any destination specified in the
-  :ref:`ClusterConfig.json<cluster-config-ref>` file.
+  :ref:`ClusterConfig.json<clusterconfig-config-ref>` file.
 - Kamanja does not currently provide tools
   for analyzing the execution speed of a model or an application,
   nor for identifying I/O bottlenecks in the application execution.

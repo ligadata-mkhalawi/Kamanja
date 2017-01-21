@@ -1,8 +1,8 @@
 
 .. _intro-simple-scala-tut:
 
-Introduction
-============
+Introduction to the Simple Scala Model
+======================================
 
 This tutorial illustrates how to create
 a :ref:`model<model-term>` ensemble

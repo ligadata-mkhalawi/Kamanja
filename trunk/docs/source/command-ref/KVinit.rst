@@ -24,7 +24,7 @@ Options and arguments
 - **version** - version of the command to use.
   Currently, only 1.0 is recognized
 - **typename** - fully qualified path to the :ref:`container<container-term>`
-  or :ref:`message<message-term>`
+  or :ref:`message<messages-term>`
 - **config** - full pathname of the configuration file
   that defines the jarpaths, metadata store information,
   and data store information.

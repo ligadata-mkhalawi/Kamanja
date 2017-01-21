@@ -5,7 +5,7 @@ Messages
 --------
 
 Messages contain the data that flows into and out of the
-:sh:`models<model-term>`	in a pipeline that executes on Kamanja.
+:ref:`models<model-term>` in a pipeline that executes on Kamanja.
 Three types of model are supported:
 
 - input messages -- data flowing into a model
@@ -13,8 +13,8 @@ Three types of model are supported:
   the output message of one model can be the input message of another model.
 - storage messages -- 
 
-The message (message data) can be formatted as
-:ref:`CSV<csv-term>`, :ref:`JSON<json-ref>`,
+The message data can be formatted as
+:ref:`CSV<csv-term>`, :ref:`JSON<json-term>`,
 :ref:`XML<xml-term>`, or :ref:`KV<kv-term>`.
 It is processed as a :ref:`Kafka<kafka-term>` message.
 

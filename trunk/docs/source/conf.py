@@ -52,7 +52,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Kamanja'
-copyright = u'2017, Meg McRoberts'
+copyright = u'2017, LigaData, Inc.'
 author = u'Meg McRoberts'
 
 # The version info for the project you're documenting, acts as replacement for

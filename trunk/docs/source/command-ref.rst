@@ -11,6 +11,7 @@ Command Reference Pages
    command-ref/ClusterInstallerDriver
    command-ref/easyInstallKamanja
    command-ref/FileDataConsumer
+   command-ref/GenerateKeys
    command-ref/GenerateMessage
    command-ref/JdbcDataCollector
    command-ref/JsonChecker

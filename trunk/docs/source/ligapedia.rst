@@ -53,6 +53,7 @@ Ligapedia
    ligapedia/n-r/numby
    ligapedia/n-r/partition
    ligapedia/n-r/persist
+   ligapedia/n-r/password-encrypt
    ligapedia/n-r/pmml
    ligapedia/n-r/preprocessing
    ligapedia/n-r/properties-param

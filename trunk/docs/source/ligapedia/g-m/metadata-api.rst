@@ -1,5 +1,5 @@
 
-.. -metadataapi-term:
+.. _metadataapi-term:
 
 Metadata API
 ------------

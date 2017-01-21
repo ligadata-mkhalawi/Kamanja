@@ -16,6 +16,10 @@ Syntax
     -jar $KAMANJA_HOME/bin/FileDataConsumer-0.1.0
     $KAMANJA_HOME/config/fileProcessor.conf
 
+Options and arguments
+---------------------
+
+
 Configuration file
 ------------------
 
@@ -94,10 +98,6 @@ Configuration file
   # is processed in the same time interval. The default value is 300 (new in v1.5.2).
   fileQueueFullValue
 
-
-Options and arguments
----------------------
-
 Usage
 -----
 
@@ -124,6 +124,6 @@ FileDataConsumer-X.X.X fat JAR located in the /bin directory.
 See also
 --------
 
-:ref:`adapters-input`
+:ref:`adapters-input-guide`
 
 

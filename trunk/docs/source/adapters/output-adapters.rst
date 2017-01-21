@@ -87,6 +87,8 @@ Example:
   It is the adapter’s responsibility to understand
   the given string and get whatever is required for it.
 
+.. _smart-file-adapter:
+
 Smart File Output Adapter
 -------------------------
 
@@ -112,17 +114,17 @@ The smart file output adapter is defined in ClusterConfig.json:
   "JarName": "KamanjaInternalDeps_2.10-1.5.0.jar",
   "DependencyJars": [],
   "AdapterSpecificCfg": {
-  "Uri": "hdfs://nameservice/folder/to/save",
-  "FileNamePrefix": "Data",
-  "MessageSeparator": "\n",
-  "Compression": "gz",
-  "RolloverInterval": "60",
-  "TimePartitionFormat": "${yyyy}/${MM}/${dd}",
-  "PartitionBuckets": "10",
-  "Kerberos": {
-  "Principal": "user@domain.com",
-  "Keytab": "/path/to/keytab/user.keytab"
-  }
+      "Uri": "hdfs://nameservice/folder/to/save",
+      "FileNamePrefix": "Data",
+      "MessageSeparator": "\n",
+      "Compression": "gz",
+      "RolloverInterval": "60",
+      "TimePartitionFormat": "${yyyy}/${MM}/${dd}",
+      "PartitionBuckets": "10",
+      "Kerberos": {
+          "Principal": "user@domain.com",
+          "Keytab": "/path/to/keytab/user.keytab"
+      }
   }
   }
 

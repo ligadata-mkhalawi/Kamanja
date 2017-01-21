@@ -18,7 +18,7 @@ Currently supported collection types in Kamanja PMML models include
 Array, ArrayBuffer, Set, ImmutableSet, Map, ImmutableMap,
 SortedSet, TreeSet, and Queue.
 
-A Kamanja :ref:`message<message-term>` or :ref:`container<container-term>`
+A Kamanja :ref:`message<messages-term>` or :ref:`container<container-term>`
 can have fields with the following types:
 
 - Int
