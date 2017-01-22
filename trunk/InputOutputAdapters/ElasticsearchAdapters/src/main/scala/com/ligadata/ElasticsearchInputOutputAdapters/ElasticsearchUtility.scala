@@ -52,7 +52,7 @@ class ElasticsearchUtility /*extends LogTrait*/ {
     elasticsearchConfig.setInt("elasticsearch.client.retries.number", 1)
     elasticsearchConfig.setInt("elasticsearch.client.pause", 10000)
     elasticsearchConfig.set("elasticsearch.zookeeper.quorum", adapterConfig.hostList)
-//    if (adapterConfig.kerberos != null) {
+    if (adapterConfig.kerberos != null) {
       //      elasticsearchConfig.set("hadoop.security.authorization", "true")
       //      elasticsearchConfig.set("hadoop.proxyuser.hdfs.groups", "*")
       //      elasticsearchConfig.set("hadoop.security.authentication", "kerberos")
@@ -62,7 +62,7 @@ class ElasticsearchUtility /*extends LogTrait*/ {
       //      org.apache.hadoop.security.UserGroupInformation.setConfiguration(elasticsearchConfig)
       //      UserGroupInformation.loginUserFromKeytab(adapterConfig.kerberos.principal, adapterConfig.kerberos.keytab)
       //      ugi = UserGroupInformation.getLoginUser()
- //   }
+    }
     elasticsearchConfig
   }
 
@@ -90,11 +90,11 @@ class ElasticsearchUtility /*extends LogTrait*/ {
   }
 
   def createDataStorageInfo(adapterConfig: ElasticsearchAdapterConfiguration): String = {
-//    if (adapterConfig.kerberos != null) {
-//      dataDataStoreInfo = """{"StoreType": "elasticsearch","SchemaName": "%s","Location":"%s","clusterName":"%s", "authentication": "kerberos", "regionserver_principal": %s", "master_principal": "%s", "principal": "%s", "keytab": "%s"}""".format(adapterConfig.scehmaName, adapterConfig.hostList, adapterConfig.clusterName, adapterConfig.kerberos.regionServer, adapterConfig.kerberos.masterPrincipal, adapterConfig.kerberos.principal, adapterConfig.kerberos.keytab)
-//    } else {
-//      dataDataStoreInfo = """{"StoreType": "elasticsearch","SchemaName": "%s","Location":"%s","clusterName":"%s"}""".format(adapterConfig.scehmaName, adapterConfig.hostList, adapterConfig.clusterName)
-//    }
+    if (adapterConfig.kerberos != null) {
+      dataDataStoreInfo = """{"StoreType": "elasticsearch","SchemaName": "%s","Location":"%s","clusterName":"%s", "authentication": "kerberos", "regionserver_principal": %s", "master_principal": "%s", "principal": "%s", "keytab": "%s"}""".format(adapterConfig.scehmaName, adapterConfig.hostList, adapterConfig.clusterName, adapterConfig.kerberos.regionServer, adapterConfig.kerberos.masterPrincipal, adapterConfig.kerberos.principal, adapterConfig.kerberos.keytab)
+    } else {
+      dataDataStoreInfo = """{"StoreType": "elasticsearch","SchemaName": "%s","Location":"%s","clusterName":"%s"}""".format(adapterConfig.scehmaName, adapterConfig.hostList, adapterConfig.clusterName)
+    }
     dataDataStoreInfo
   }
 }
