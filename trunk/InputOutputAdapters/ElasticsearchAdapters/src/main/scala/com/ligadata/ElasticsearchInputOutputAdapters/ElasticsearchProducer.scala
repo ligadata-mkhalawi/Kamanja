@@ -178,50 +178,13 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
     // BUGBUG::Just make sure all serializerNames must be JSONs. For now we support only JSON output here.
 
-    // check if we need the indexName to be change according to the current date
-    if (adapterConfig.rollIndexNameByCurrentDate) {
-      val dateFormat: SimpleDateFormat = new SimpleDateFormat("yyyyMMdd")
-      val currentDate = dateFormat.format(Calendar.getInstance().getTime())
-      indexName = indexName + "-" + currentDate
-    }
 
     val strDataRecords = serializedContainerData.map(data => new String(data))
 
-    var addedData = false
-    if (adapterConfig.rollIndexNameByDataDate) {
-      if (adapterConfig.dateFiledNameInOutputMessage.isEmpty) {
-        LOG.error("Elasticsearch OutputAdapter : dateFiledNameInOutputMessage filed is empty")
-      } else {
-        val indexBaseName = indexName
-        // BUGBUG:: Why are we using jsonData even though we have outContainers corresponding to them. The is very less expensive
-        val idxNameAndData = strDataRecords.map(jsonData => {
-          var idxName = indexBaseName + "-unknown"
-          try {
-            val jsonObj: JSONObject = new JSONObject(jsonData)
-            // assuming format is yyyy-MM-dd'T'hh:mm'Z'
-            val dateFiled: String = jsonObj.getString(adapterConfig.dateFiledNameInOutputMessage)
-            val dateFormatString: String = adapterConfig.dateFiledFormat
-            val sourceDateFormat: SimpleDateFormat = new SimpleDateFormat(dateFormatString)
-            val targetDateFormat: SimpleDateFormat = new SimpleDateFormat("yyyyMMdd")
-            val targetDate: String = targetDateFormat.format(sourceDateFormat.parse(dateFiled))
-            idxName = indexBaseName + "-" + targetDate
-          } catch {
-            case e: Exception => LOG.error("Elasticsearch output adapter : error while retrieving date field from output message - ", e)
-          }
-          ((idxName, jsonData))
-        })
-        val map = idxNameAndData.groupBy(idxAndData => idxAndData._1).map(kv => (kv._1, kv._2.map(idxData => idxData._2)))
-        addData(map)
-        if (LOG.isDebugEnabled) LOG.debug("Added %d records to cached data in %d indices".format(strDataRecords.size, map.size))
-        addedData = true
-      }
-    }
-
-    if (!addedData) {
       val map = Map[String, Array[String]](indexName -> strDataRecords)
       addData(map)
       if (LOG.isDebugEnabled) LOG.debug("Added %d records to cached data in %d indices".format(strDataRecords.size, map.size))
-    }
+
     metrics("MessagesProcessed").asInstanceOf[AtomicLong].addAndGet(strDataRecords.size)
   }
 
