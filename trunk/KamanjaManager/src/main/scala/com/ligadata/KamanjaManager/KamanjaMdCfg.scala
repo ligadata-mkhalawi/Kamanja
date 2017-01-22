@@ -337,6 +337,7 @@ object KamanjaMdCfg {
       conf.jarName = inAdapter.JarName
       conf.dependencyJars = if (inAdapter.DependencyJars != null) inAdapter.DependencyJars.map(str => str.trim).filter(str => str.size > 0).toSet else null
       conf.adapterSpecificCfg = inAdapter.AdapterSpecificCfg
+      conf.fullAdapterConfig = inAdapter.FullAdapterConfig
       conf.tenantId = inAdapter.TenantId
 
       try {
@@ -609,6 +610,7 @@ object KamanjaMdCfg {
 //      conf.associatedMsg = adap.AssociatedMessage
       conf.dependencyJars = if (adap.DependencyJars != null) adap.DependencyJars.map(str => str.trim).filter(str => str.size > 0).toSet else null
       conf.adapterSpecificCfg = adap.AdapterSpecificCfg
+      conf.fullAdapterConfig = adap.FullAdapterConfig
       conf.tenantId = adap.TenantId
 
       try {
@@ -725,6 +727,7 @@ object KamanjaMdCfg {
       conf.jarName = adap.JarName
       conf.dependencyJars = if (adap.DependencyJars != null) adap.DependencyJars.map(str => str.trim).filter(str => str.size > 0).toSet else null
       conf.adapterSpecificCfg = adap.AdapterSpecificCfg
+      conf.fullAdapterConfig = adap.FullAdapterConfig
       conf.tenantId = adap.TenantId
 //      conf.keyAndValueDelimiter = adap.KeyAndValueDelimiter
 //      conf.fieldDelimiter = adap.FieldDelimiter

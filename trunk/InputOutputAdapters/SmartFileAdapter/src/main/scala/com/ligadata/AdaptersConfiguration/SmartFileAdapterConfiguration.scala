@@ -141,6 +141,8 @@ object SmartFileAdapterConfiguration {
     adapterConfig.monitoringConfig = monitoringConfig
     adapterConfig.archiveConfig = archiveConfig
 
+    adapterConfig.fullAdapterConfig = inputConfig.fullAdapterConfig
+    
     adapterConfig
   }
 
