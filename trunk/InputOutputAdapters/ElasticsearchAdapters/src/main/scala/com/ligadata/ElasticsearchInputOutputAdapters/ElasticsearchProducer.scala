@@ -13,6 +13,9 @@ import com.ligadata.HeartBeat.MonitorComponentInfo
 import com.ligadata.InputOutputAdapterInfo._
 import com.ligadata.KamanjaBase.{ContainerInterface, NodeContext, TransactionContext}
 import com.ligadata.Utils.KamanjaLoaderInfo
+import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse
+import org.elasticsearch.client.IndicesAdminClient
+import org.elasticsearch.action.admin.indices.refresh.RefreshResponse
 import com.ligadata.keyvaluestore.ElasticsearchAdapter
 import org.apache.logging.log4j.LogManager
 import org.elasticsearch.client.transport.TransportClient
@@ -81,7 +84,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   val timeToWriteRecs = adapterConfig.timeToWriteRecs
   val writeRecsBatch = adapterConfig.writeRecsBatch
   var nextWrite = System.currentTimeMillis + timeToWriteRecs
-
+  var flagindex = false
   transService.init(1)
   transId = transService.getNextTransId
 
@@ -93,8 +96,8 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   val failedMsgsMap = new ConcurrentHashMap[Int, ConcurrentHashMap[Long, MsgDataRecievedCnt]](128);
   // We just need Array Buffer as Innser value. But the only issue is we need to make sure we handle it for multiple threads.
 
-  var dataStoreInfo = elaticsearchutil.createDataStorageInfo(adapterConfig)
-  var dataStore = elaticsearchutil.GetDataStoreHandle(dataStoreInfo).asInstanceOf[ElasticsearchAdapter]
+  //  var dataStoreInfo = elaticsearchutil.createDataStorageInfo(adapterConfig)
+  //  var dataStore = elaticsearchutil.GetDataStoreHandle(dataStoreInfo).asInstanceOf[ElasticsearchAdapter]
 
   private val producer = this
 
@@ -123,7 +126,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
         try {
           Thread.sleep(1000)
         } catch {
-          case e: Throwable => { }
+          case e: Throwable => {}
         }
       }
     }
@@ -181,9 +184,9 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
     val strDataRecords = serializedContainerData.map(data => new String(data))
 
-      val map = Map[String, Array[String]](indexName -> strDataRecords)
-      addData(map)
-      if (LOG.isDebugEnabled) LOG.debug("Added %d records to cached data in %d indices".format(strDataRecords.size, map.size))
+    val map = Map[String, Array[String]](indexName -> strDataRecords)
+    addData(map)
+    if (LOG.isDebugEnabled) LOG.debug("Added %d records to cached data in %d indices".format(strDataRecords.size, map.size))
 
     metrics("MessagesProcessed").asInstanceOf[AtomicLong].addAndGet(strDataRecords.size)
   }
@@ -207,50 +210,53 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
 
       // BUGBUG:: Do we need to do every time?
       // check if we need to cteate the indexMapping beforehand.
-      if (adapterConfig.manuallyCreateIndexMapping && adapterConfig.indexMapping.length > 0) {
-        val allKeys = sendData.map(kv => kv._1).toArray
-        if (LOG.isInfoEnabled) LOG.info("Validating whether indices {%s} exists or not".format(allKeys.mkString(",")))
-        exec = true
-        curWaitTm = 5000
-        while (!canConsiderShutdown(considerShutdown) && exec) {
-          exec = false
-          try {
-            if (client == null) {
-              client = getConnection
-              connectedTime = System.currentTimeMillis
-            }
-            dataStore.createIndexForOutputAdapter(client, allKeys, adapterConfig.indexMapping, true)
-          } catch {
-            case e: Throwable => {
-              if ((System.currentTimeMillis - connectedTime) > 10000) {
-                try {
-                  if (client != null)
-                    client.close
-                } catch {
-                  case e: Throwable => {
-                    LOG.error("Failed to close connection", e)
+      if (!flagindex) {
+        if (adapterConfig.manuallyCreateIndexMapping && adapterConfig.indexMapping.length > 0) {
+          val allKeys = sendData.map(kv => kv._1).toArray
+          if (LOG.isInfoEnabled) LOG.info("Validating whether indices {%s} exists or not".format(allKeys.mkString(",")))
+          exec = true
+          curWaitTm = 5000
+          while (!canConsiderShutdown(considerShutdown) && exec) {
+            exec = false
+            try {
+              if (client == null) {
+                client = getConnection
+                connectedTime = System.currentTimeMillis
+              }
+              createIndexForOutputAdapter(client, allKeys, adapterConfig.indexMapping, true)
+            } catch {
+              case e: Throwable => {
+                if ((System.currentTimeMillis - connectedTime) > 10000) {
+                  try {
+                    if (client != null)
+                      client.close
+                  } catch {
+                    case e: Throwable => {
+                      LOG.error("Failed to close connection", e)
+                    }
+                  }
+                  client = null
+                  connectedTime = 0L
+                }
+                exec = true
+                LOG.error("Failed to create indices. Going to retry after %dms".format(curWaitTm), e)
+                val nSecs = curWaitTm / 1000
+                for (i <- 0 until nSecs) {
+                  try {
+                    if (!canConsiderShutdown(considerShutdown))
+                      Thread.sleep(1000)
+                  } catch {
+                    case e: Throwable => {}
                   }
                 }
-                client = null
-                connectedTime = 0L
+                curWaitTm = curWaitTm * 2
+                if (curWaitTm > 60000)
+                  curWaitTm = 60000
               }
-              exec = true
-              LOG.error("Failed to create indices. Going to retry after %dms".format(curWaitTm), e)
-              val nSecs = curWaitTm / 1000
-              for (i <- 0 until nSecs) {
-                try {
-                  if (!canConsiderShutdown(considerShutdown))
-                    Thread.sleep(1000)
-                } catch {
-                  case e: Throwable => {}
-                }
-              }
-              curWaitTm = curWaitTm * 2
-              if (curWaitTm > 60000)
-                curWaitTm = 60000
             }
           }
         }
+        flagindex = true
       }
 
       if (LOG.isInfoEnabled) LOG.info("About to write %d records".format(recsToWrite))
@@ -398,6 +404,92 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     (adapterConfig.scehmaName + "." + containerName).toLowerCase()
   }
 
+  private def createIndexForOutputAdapter(indexName: String, indexMapping: String): Unit = {
+    createIndexForOutputAdapter(Array(indexName), indexMapping, false)
+  }
+
+  private def createIndexForOutputAdapter(client: TransportClient, indexNames: Array[String], indexMapping: String, onlyNonExistIndices: Boolean): Unit = {
+    var exp: Throwable = null
+    try {
+      indexNames.foreach(indexName => {
+        val fullIndexName = toFullTableName(indexName)
+        var tryNo = 0
+        var haveValidIndex = false
+
+        while (tryNo < 2 && !haveValidIndex) {
+          tryNo += 1
+          val createIndex =
+            if (onlyNonExistIndices) {
+              (!(checkIndexExsists(indexName, client)))
+            } else {
+              true
+            }
+          if (createIndex) {
+            try {
+              val putMappingResponse = client.admin().indices().prepareCreate(fullIndexName)
+                .setSource(indexMapping)
+                .execute().actionGet()
+              val tmp: RefreshResponse = client.admin().indices().prepareRefresh(fullIndexName).get()
+              haveValidIndex = true
+            } catch {
+              case e: Throwable => {
+                if (exp != null && tryNo == 2)
+                  exp = new Exception("Failed to create Index " + fullIndexName, e)
+              }
+            }
+          } else {
+            haveValidIndex = true
+          }
+        }
+      })
+    }
+    catch {
+      case e: Exception => {
+        LOG.error("Failed to create Index", e)
+      }
+    }
+
+    if (exp != null)
+      throw exp
+  }
+
+  private def createIndexForOutputAdapter(indexNames: Array[String], indexMapping: String, onlyNonExistIndices: Boolean): Unit = {
+    var client: TransportClient = null
+    var exp: Throwable = null
+    try {
+      client = getConnection
+      createIndexForOutputAdapter(client, indexNames, indexMapping, onlyNonExistIndices)
+    }
+    catch {
+      case e: Exception => {
+        LOG.error("Failed to create Index", e)
+      }
+    } finally {
+      if (client != null) {
+        client.close
+      }
+    }
+  }
+
+  private def checkIndexExsists(indexName: String, client: TransportClient): Boolean = {
+    val fullIndexName = toFullTableName(indexName)
+    try {
+      val indices: IndicesAdminClient = client.admin().indices()
+      val res: IndicesExistsResponse = indices.prepareExists(fullIndexName.toLowerCase).execute().actionGet()
+      if (res.isExists) {
+        return true
+      } else {
+        return false
+      }
+    } catch {
+      case e: Exception => {
+        LOG.error("Failed to check if Index exists " + fullIndexName, e)
+        return false
+      }
+    }
+  }
+
+
   /**
     * this is a very simple string to be externalized on a Status timer for the adapter.
     *
@@ -417,8 +509,5 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       commitExecutor.shutdownNow
 
     putJsonsWithMetadata(false)
-
-    if (dataStore != null)
-      dataStore.Shutdown()
   }
 }

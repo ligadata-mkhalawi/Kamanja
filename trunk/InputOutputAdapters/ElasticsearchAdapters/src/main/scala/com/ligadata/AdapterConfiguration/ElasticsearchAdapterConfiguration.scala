@@ -19,10 +19,6 @@ class ElasticsearchAdapterConfiguration extends AdapterConfiguration {
   var portNumber: String = ""
   var location: String = ""
   var properties = Map[String, Any]()
-  // optional
-  //  var serializerName: String =""
-  var rollIndexNameByCurrentDate = false
-  var rollIndexNameByDataDate = false
   var manuallyCreateIndexMapping = false
   var dateFiledNameInOutputMessage: String = ""
   var dateFiledFormat: String = ""
@@ -103,10 +99,6 @@ object ElasticsearchAdapterConfiguration extends LogTrait {
         adapterConfig.dateFiledFormat = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("rowkeyIncluded") == 0) {
         adapterConfig.rowkeyIncluded = kv._2.toString.trim.toBoolean
-      } else if (kv._1.compareToIgnoreCase("RollIndexNameByCurrentDate") == 0) {
-        adapterConfig.rollIndexNameByCurrentDate = kv._2.toString.trim.toBoolean
-      } else if (kv._1.compareToIgnoreCase("RollIndexNameByDataDate") == 0) {
-        adapterConfig.rollIndexNameByDataDate = kv._2.toString.trim.toBoolean
       } else if (kv._1.compareToIgnoreCase("ManuallyCreateIndexMapping") == 0) {
         adapterConfig.manuallyCreateIndexMapping = kv._2.toString.trim.toBoolean
       }else if (kv._1.compareToIgnoreCase("timeToWriteRecs") == 0) {
