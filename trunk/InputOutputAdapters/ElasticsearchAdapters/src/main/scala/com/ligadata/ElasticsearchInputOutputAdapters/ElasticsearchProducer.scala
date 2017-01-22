@@ -81,7 +81,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   val sendData = scala.collection.mutable.Map[String, ArrayBuffer[String]]()
   var recsToWrite = 0
   // For now hard coded to 60secs
-  val timeToWriteRecs = adapterConfig.timeToWriteRecs
+  val timeToWriteRecs = adapterConfig.timeToWriteRecsInSec
   val writeRecsBatch = adapterConfig.writeRecsBatch
   var nextWrite = System.currentTimeMillis + timeToWriteRecs
   var flagindex = false

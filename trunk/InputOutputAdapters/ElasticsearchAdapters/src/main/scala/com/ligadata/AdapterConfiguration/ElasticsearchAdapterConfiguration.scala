@@ -29,7 +29,7 @@ class ElasticsearchAdapterConfiguration extends AdapterConfiguration {
   var kerberos: KerberosConfig = null
   var instancePartitions: Set[Int] = _
   var noDataSleepTimeInMs: Int = 300
-  var timeToWriteRecs = 60000
+  var timeToWriteRecsInSec = 60000
   var writeRecsBatch = 1000
 }
 
@@ -101,8 +101,8 @@ object ElasticsearchAdapterConfiguration extends LogTrait {
         adapterConfig.rowkeyIncluded = kv._2.toString.trim.toBoolean
       } else if (kv._1.compareToIgnoreCase("ManuallyCreateIndexMapping") == 0) {
         adapterConfig.manuallyCreateIndexMapping = kv._2.toString.trim.toBoolean
-      }else if (kv._1.compareToIgnoreCase("timeToWriteRecs") == 0) {
-        adapterConfig.timeToWriteRecs = kv._2.toString.trim.toInt * 1000
+      }else if (kv._1.compareToIgnoreCase("timeToWriteRecsInSec") == 0) {
+        adapterConfig.timeToWriteRecsInSec = kv._2.toString.trim.toInt * 1000
       }else if (kv._1.compareToIgnoreCase("writeRecsBatch") == 0) {
         adapterConfig.writeRecsBatch = kv._2.toString.trim.toInt
       }
