@@ -102,7 +102,7 @@ object ElasticsearchAdapterConfiguration extends LogTrait {
       } else if (kv._1.compareToIgnoreCase("ManuallyCreateIndexMapping") == 0) {
         adapterConfig.manuallyCreateIndexMapping = kv._2.toString.trim.toBoolean
       }else if (kv._1.compareToIgnoreCase("timeToWriteRecs") == 0) {
-        adapterConfig.timeToWriteRecs = kv._2.toString.trim.toInt
+        adapterConfig.timeToWriteRecs = kv._2.toString.trim.toInt * 1000
       }else if (kv._1.compareToIgnoreCase("writeRecsBatch") == 0) {
         adapterConfig.writeRecsBatch = kv._2.toString.trim.toInt
       }
