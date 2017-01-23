@@ -1,5 +1,5 @@
 
-package com.ligadata.KamanjaBase.V1; 
+package com.ligadata.KamanjaBase; 
 
 import org.json4s.jackson.JsonMethods._;
 import org.json4s.DefaultFormats;
@@ -65,7 +65,7 @@ object KamanjaVelocityMetrics extends RDDObject[KamanjaVelocityMetrics] with Mes
         if (oldVerobj == null) return null;
         oldVerobj match {
           
-      case oldVerobj: com.ligadata.KamanjaBase.V1.KamanjaVelocityMetrics => { return  convertToVer1(oldVerobj); } 
+      case oldVerobj: com.ligadata.KamanjaBase.KamanjaVelocityMetrics => { return  convertToVer1(oldVerobj); } 
           case _ => {
             throw new Exception("Unhandled Version Found");
           }
@@ -78,7 +78,7 @@ object KamanjaVelocityMetrics extends RDDObject[KamanjaVelocityMetrics] with Mes
       return null;
     }
   
-    private def convertToVer1(oldVerobj: com.ligadata.KamanjaBase.V1.KamanjaVelocityMetrics): com.ligadata.KamanjaBase.V1.KamanjaVelocityMetrics= {
+    private def convertToVer1(oldVerobj: com.ligadata.KamanjaBase.KamanjaVelocityMetrics): com.ligadata.KamanjaBase.KamanjaVelocityMetrics= {
       return oldVerobj
     }
   
