@@ -15,15 +15,17 @@ import com.ligadata.KamanjaBase.{ContainerInterface, NodeContext, TransactionCon
 import com.ligadata.Utils.KamanjaLoaderInfo
 import com.ligadata.keyvaluestore.ElasticsearchAdapter
 import org.apache.logging.log4j.LogManager
+import org.elasticsearch.action.admin.indices.refresh.RefreshResponse
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.settings.Settings
 import org.elasticsearch.common.transport.InetSocketTransportAddress
 import org.elasticsearch.index.VersionType
 import org.json4s.jackson.Serialization
 
+import com.ligadata.Exceptions.KamanjaException
 import scala.actors.threadpool.{ExecutorService, Executors}
 import scala.collection.mutable.ArrayBuffer
-import org.json.JSONObject;
+import org.json.JSONObject
 import org.elasticsearch.shield.ShieldPlugin
 
 object ElasticsearchProducer extends OutputAdapterFactory {
@@ -92,9 +94,6 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   val partitionsMap = new ConcurrentHashMap[Int, ConcurrentHashMap[Long, MsgDataRecievedCnt]](128);
   val failedMsgsMap = new ConcurrentHashMap[Int, ConcurrentHashMap[Long, MsgDataRecievedCnt]](128);
   // We just need Array Buffer as Innser value. But the only issue is we need to make sure we handle it for multiple threads.
-
-  var dataStoreInfo = elaticsearchutil.createDataStorageInfo(adapterConfig)
-  var dataStore = elaticsearchutil.GetDataStoreHandle(dataStoreInfo).asInstanceOf[ElasticsearchAdapter]
 
   private val producer = this
 
@@ -229,6 +228,68 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     isShutdown && considerShutdown
   }
 
+  private def checkIndexExsists(indexName: String, client: TransportClient): Boolean = {
+    val fullIndexName = toFullTableName(indexName)
+    try {
+      val indices = client.admin().indices()
+      val res = indices.prepareExists(fullIndexName.toLowerCase).execute().actionGet()
+      if (res.isExists) {
+        return true
+      } else {
+        return false
+      }
+    } catch {
+      case e: Exception => {
+        throw KamanjaException("Failed to check if Index exists " + fullIndexName, e)
+      }
+    }
+  }
+
+  def createIndexForOutputAdapter(client: TransportClient, indexNames: Array[String], indexMapping: String, onlyNonExistIndices: Boolean): Unit = {
+    var exp: Throwable = null
+    try {
+      indexNames.foreach(indexName => {
+        val fullIndexName = toFullTableName(indexName)
+        var tryNo = 0
+        var haveValidIndex = false
+
+        while (tryNo < 2 && !haveValidIndex) {
+          tryNo += 1
+          val createIndex =
+            if (onlyNonExistIndices) {
+              (!(checkIndexExsists(indexName, client)))
+            } else {
+              true
+            }
+          if (createIndex) {
+            try {
+              val putMappingResponse = client.admin().indices().prepareCreate(fullIndexName)
+                .setSource(indexMapping)
+                .execute().actionGet()
+              val tmp: RefreshResponse = client.admin().indices().prepareRefresh(fullIndexName).get()
+              haveValidIndex = true
+            } catch {
+              case e: Throwable => {
+                if (exp != null && tryNo == 2)
+                  exp = KamanjaException("Failed to create Index " + fullIndexName, e)
+              }
+            }
+          } else {
+            haveValidIndex = true
+          }
+        }
+      })
+    }
+    catch {
+      case e: Exception => {
+        throw KamanjaException("Failed to create Index", e)
+      }
+    }
+
+    if (exp != null)
+      throw exp
+  }
+
   private def putJsonsWithMetadata(considerShutdown: Boolean): Unit = producer.synchronized {
     if (sendData.size == 0) return
     //   containerName: String, data_list: Array[String]
@@ -256,7 +317,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
               client = getConnection
               connectedTime = System.currentTimeMillis
             }
-            dataStore.createIndexForOutputAdapter(client, allKeys, adapterConfig.indexMapping, true)
+            createIndexForOutputAdapter(client, allKeys, adapterConfig.indexMapping, true)
           } catch {
             case e: Throwable => {
               if ((System.currentTimeMillis - connectedTime) > 10000) {
@@ -454,8 +515,5 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       commitExecutor.shutdownNow
 
     putJsonsWithMetadata(false)
-
-    if (dataStore != null)
-      dataStore.Shutdown()
   }
 }
