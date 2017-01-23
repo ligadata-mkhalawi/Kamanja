@@ -73,7 +73,7 @@ class CsvSerDeser extends SerializeDeserialize {
     var _escapeChar = "\\"
 
     // added by saleh 23/01/2017 this is a tmp fix to handel the csv quotes
-    val REGX = """\\%s(?=([^\"]*\"[^\"]*\")*[^\"]*$)"""
+    val REGX = "\\%s(?=([^\"]*\"[^\"]*\")*[^\"]*$)"
 
     val _nullFlagsFieldName = "kamanja_system_null_flags"
 
