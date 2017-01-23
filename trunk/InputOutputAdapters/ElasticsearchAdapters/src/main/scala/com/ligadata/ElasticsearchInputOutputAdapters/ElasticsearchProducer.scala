@@ -116,7 +116,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
         } catch {
           case e: Throwable => {
             if (!isShutdown)
-              logger.warn("Failed to commit.", e)
+              logger.warn("Failed to commit. ClassLoader:" + getClass().getClassLoader(), e)
           }
         }
 
