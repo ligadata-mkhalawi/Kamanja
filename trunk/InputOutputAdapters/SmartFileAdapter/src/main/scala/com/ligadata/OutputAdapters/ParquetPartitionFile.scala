@@ -87,7 +87,8 @@ class ParquetPartitionFile(fc: SmartFileProducerConfiguration, key: String, avro
     if (parquetWriter != null) {
       val isClosedProperly =
         try {
-          LOG.info("closing parquetWriter for file " + actualActiveFilePath)
+          //LOG.info("closing parquetWriter for file " + actualActiveFilePath)
+          LOG.warn("Smart File Producer " + fc.Name + ": closing parquet file  " + actualActiveFilePath)
           parquetWriter.close()
           true
         }

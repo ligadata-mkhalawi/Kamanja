@@ -44,6 +44,7 @@ import org.apache.avro.generic.GenericRecordBuilder
 import parquet.hadoop.metadata.CompressionCodecName
 import parquet.schema.MessageTypeParser
 import scala.collection.mutable.ArrayBuffer
+import scala.actors.threadpool.{ExecutorService, Executors}
 
 import parquet.hadoop._
 import parquet.hadoop.api.WriteSupport
@@ -493,11 +494,47 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     }
   }
 
+  private var rolloverExecutor: ExecutorService = Executors.newFixedThreadPool(1)
+  private val producerLock = this
+
+  private def isTimeToRollover(dt: Long): Boolean = {
+    (nextRolloverTime > 0 && dt > nextRolloverTime)
+  }
+
   var nextRolloverTime: Long = 0
   if (fc.rolloverInterval > 0) {
     LOG.info("Smart File Producer " + fc.Name + ": File rollover is configured. Will rollover files every " + fc.rolloverInterval + " minutes.")
     val dt = System.currentTimeMillis()
     nextRolloverTime = (dt - (dt % (fc.rolloverInterval * 60 * 1000))) + (fc.rolloverInterval * 60 * 1000)
+
+    rolloverExecutor.execute(new Runnable() {
+      override def run(): Unit = {
+        while (!shutDown) {
+          try {
+            val dt = System.currentTimeMillis
+            if (isTimeToRollover(dt)) {
+              producerLock.synchronized {
+                if (isTimeToRollover(dt)) {
+                  rolloverFiles()
+                  nextRolloverTime = (dt - (dt % (fc.rolloverInterval * 60 * 1000))) + (fc.rolloverInterval * 60 * 1000)
+                }
+              }
+            }
+          } catch {
+            case e: Throwable => {
+              if (!shutDown)
+                logger.warn("Failed to rollover.", e)
+            }
+          }
+
+          try {
+            Thread.sleep(1000)
+          } catch {
+            case e: Throwable => {}
+          }
+        }
+      }
+    })
   }
 
   var bufferFlusher: Thread = null
@@ -735,10 +772,12 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
 
     val dt = System.currentTimeMillis
     lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(dt))
-    this.synchronized {
-      if (nextRolloverTime > 0 && dt > nextRolloverTime) {
-        rolloverFiles()
-        nextRolloverTime += (fc.rolloverInterval * 60 * 1000)
+    if (isTimeToRollover(dt)) {
+      this.synchronized {
+        if (isTimeToRollover(dt)) {
+          rolloverFiles()
+          nextRolloverTime = (dt - (dt % (fc.rolloverInterval * 60 * 1000))) + (fc.rolloverInterval * 60 * 1000)
+        }
       }
     }
 
@@ -768,6 +807,9 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     WriteLock(_reent_lock)
     try {
       shutDown = true
+
+      if (rolloverExecutor != null)
+        rolloverExecutor.shutdownNow
 
       if (bufferFlusher != null) {
         bufferFlusher.interrupt
