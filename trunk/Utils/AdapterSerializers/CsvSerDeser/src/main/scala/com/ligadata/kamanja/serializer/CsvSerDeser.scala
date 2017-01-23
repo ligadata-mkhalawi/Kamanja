@@ -72,6 +72,9 @@ class CsvSerDeser extends SerializeDeserialize {
     var _alwaysQuoteField = false
     var _escapeChar = "\\"
 
+    // added by saleh 23/01/2017 this is a tmp fix to handel the csv quotes
+    val REGX = """\\%s(?=([^\"]*\"[^\"]*\")*[^\"]*$)"""
+
     val _nullFlagsFieldName = "kamanja_system_null_flags"
 
     /**
@@ -384,7 +387,8 @@ class CsvSerDeser extends SerializeDeserialize {
         val rawCsvContainerStr : String = new String(b)
 
         val rawCsvFields : Array[String] = if (rawCsvContainerStr != null) {
-          rawCsvContainerStr.split(_fieldDelimiter, -1)
+            // added by saleh 23/01/2017 this is a tmp fix to handel the csv quotes
+          rawCsvContainerStr.split(REGX.format(_fieldDelimiter), -1)
         } else {
             Array[String]()
         }
@@ -430,6 +434,8 @@ class CsvSerDeser extends SerializeDeserialize {
             val fld = rawCsvFields(fldIdx)
             // @TODO: need to handle failure condition for set - string is not in expected format?
             // @TODO: is there any need to strip quotes? since serializer is putting escape information while serializing, this should be done. probably more configuration information is needed
+            // added by saleh 23/01/2017 handling quotes using regx before spliting need finder a better way to do this
+
             ci.set(fldIdx, resolveValue(fld, attr))
             fldIdx += 1
         })
