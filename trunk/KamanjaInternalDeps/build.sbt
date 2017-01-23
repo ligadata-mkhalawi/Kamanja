@@ -24,7 +24,7 @@ val excludes = Set("commons-beanutils-1.7.0.jar", "google-collections-1.0.jar", 
 
 
 excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
-  cp filter { jar => (excludes(jar.data.getName) || jar.data.getName.startsWith("KamanjaInternalDeps_2.10-") || jar.data.getName.startsWith("KamanjaInternalDeps_2.11-")) }
+  cp filter { jar => (excludes(jar.data.getName) || jar.data.getName.startsWith("KamanjaInternalDeps_2.10-") || jar.data.getName.startsWith("KamanjaInternalDeps_2.11-") || jar.data.getName.startsWith("elasticsearchinputoutputadapters_2.10-") || jar.data.getName.startsWith("elasticsearchinputoutputadapters_2.11-")) }
 }
 
 unmanagedBase <<= baseDirectory { base => base / "custom_lib" }

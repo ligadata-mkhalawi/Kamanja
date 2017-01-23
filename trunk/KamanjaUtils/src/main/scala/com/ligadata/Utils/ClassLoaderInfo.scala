@@ -45,9 +45,9 @@ class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: Kama
       case e: Throwable => {
         val urls = if (parentLast == false && parent == null && systemClassLoader != null) systemClassLoader.getURLs() else Array[URL]()
         if (LOG.isDebugEnabled())
-          LOG.debug("Created KamanjaClassLoader. this:" + this + ", parentLast:" + parentLast + ", findInSystemLast:" + findInSystemLast + ", URLS:" + urls.map(u => u.getFile()).mkString(","), e)
+          LOG.debug("Created KamanjaClassLoader. this:" + this + ", systemClassLoader:" + systemClassLoader + ", currentClassClassLoader:" + currentClassClassLoader + ", parentLast:" + parentLast + ", findInSystemLast:" + findInSystemLast + ", URLS:" + urls.map(u => u.getFile()).mkString(","), e)
         else if (LOG.isWarnEnabled)
-          LOG.warn("Created KamanjaClassLoader. this:" + this + ", parentLast:" + parentLast + ", findInSystemLast:" + findInSystemLast + ", URLS:" + urls.map(u => u.getFile()).mkString(","), e)
+          LOG.warn("Created KamanjaClassLoader. this:" + this + ", systemClassLoader:" + systemClassLoader + ", currentClassClassLoader:" + currentClassClassLoader + ", parentLast:" + parentLast + ", findInSystemLast:" + findInSystemLast + ", URLS:" + urls.map(u => u.getFile()).mkString(","), e)
       }
     }
   }
