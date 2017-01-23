@@ -519,7 +519,7 @@ object KamanjaMdCfg {
   private def CreateOutputAdapterFromConfig(statusAdapterCfg: AdapterConfiguration, nodeContext: NodeContext): OutputAdapter = {
     if (statusAdapterCfg == null) return null
     var allJars: collection.immutable.Set[String] = null
-    if (statusAdapterCfg.dependencyJars != null && statusAdapterCfg.jarName != null) {
+    if (statusAdapterCfg.dependencyJars != null && statusAdapterCfg.jarName != null && statusAdapterCfg.jarName.trim.size > 0) {
       allJars = statusAdapterCfg.dependencyJars + statusAdapterCfg.jarName
     } else if (statusAdapterCfg.dependencyJars != null) {
       allJars = statusAdapterCfg.dependencyJars
@@ -534,7 +534,7 @@ object KamanjaMdCfg {
 
     val loader =
       if (isElastic) {
-        val preprendedJars = allJars.map(j => Utils.GetValidJarFile(envContext.getJarPaths(), j)).toArray
+        val preprendedJars = if (allJars != null) allJars.map(j => Utils.GetValidJarFile(envContext.getJarPaths(), j)).toArray else Array[String]()
         new KamanjaLoaderInfo(null, false, isElastic, isElastic, preprendedJars)
       } else {
         val tmploader = new KamanjaLoaderInfo
@@ -550,14 +550,6 @@ object KamanjaMdCfg {
       }
 
     loaders += loader
-
-    if (allJars != null) {
-      if (Utils.LoadJars(allJars.map(j => Utils.GetValidJarFile(envContext.getJarPaths(), j)).toArray, loader.loadedJars, loader.loader) == false) {
-        val szErrMsg = "Failed to load Jars:" + allJars.mkString(",")
-        LOG.error(szErrMsg)
-        throw new Exception(szErrMsg)
-      }
-    }
 
     // Try for errors before we do real loading & processing
     try {
