@@ -13,7 +13,6 @@ import com.ligadata.HeartBeat.MonitorComponentInfo
 import com.ligadata.InputOutputAdapterInfo._
 import com.ligadata.KamanjaBase.{ContainerInterface, NodeContext, TransactionContext}
 import com.ligadata.Utils.KamanjaLoaderInfo
-import com.ligadata.keyvaluestore.ElasticsearchAdapter
 import org.apache.logging.log4j.LogManager
 import org.elasticsearch.action.admin.indices.refresh.RefreshResponse
 import org.elasticsearch.client.transport.TransportClient
@@ -240,7 +239,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
       }
     } catch {
       case e: Exception => {
-        throw KamanjaException("Failed to check if Index exists " + fullIndexName, e)
+        throw new KamanjaException("Failed to check if Index exists " + fullIndexName, e)
       }
     }
   }
@@ -271,7 +270,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
             } catch {
               case e: Throwable => {
                 if (exp != null && tryNo == 2)
-                  exp = KamanjaException("Failed to create Index " + fullIndexName, e)
+                  exp = new KamanjaException("Failed to create Index " + fullIndexName, e)
               }
             }
           } else {
@@ -282,7 +281,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
     }
     catch {
       case e: Exception => {
-        throw KamanjaException("Failed to create Index", e)
+        throw new KamanjaException("Failed to create Index", e)
       }
     }
 
