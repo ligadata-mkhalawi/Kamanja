@@ -11,6 +11,7 @@ Configuration File Reference Pages
     config-ref/container-def
     config-ref/ClusterConfig
     config-ref/EngineConfig-properties
+    config-ref/log4j2
     config-ref/message-def
     config-ref/MetadataAPIConfig-properties
     config-ref/MigrateConfig_template
