@@ -174,7 +174,7 @@ object KamanjaMdCfg {
 
     val nonExistsJars = Utils.CheckForNonExistanceJars(allJarsToBeValidated.toSet)
     if (nonExistsJars.size > 0) {
-      LOG.error("Not found jars in EnvContext and/or Adapters Jars List : {" + nonExistsJars.mkString(", ") + "}")
+      LOG.error("Not found jars in EnvContext and/or Adapters Jars List : {" + nonExistsJars.mkString(", ") + "} in jar paths:{" + jarPaths.mkString(",") + "}")
       return false
     }
 
