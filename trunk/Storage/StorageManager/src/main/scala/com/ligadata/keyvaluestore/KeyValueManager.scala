@@ -66,63 +66,62 @@ object KeyValueManager {
     val isElastic = storeType.equalsIgnoreCase("elasticsearch")
 
     val (className, jarName, dependencyJars) = getClassNameJarNameDepJarsFromJson(parsed_json)
-    logger.debug("className:%s, jarName:%s, dependencyJars:%s".format(className, jarName, dependencyJars))
-    if (className != null && className.size > 0 && jarName != null && jarName.size > 0) {
-      var allJars: collection.immutable.Set[String] = null
-      if (dependencyJars != null && jarName != null) {
-        allJars = dependencyJars.toSet + jarName
-      } else if (dependencyJars != null) {
-        allJars = dependencyJars.toSet
-      } else if (jarName != null) {
-        allJars = collection.immutable.Set(jarName)
-      }
+    if (logger.isDebugEnabled) logger.debug("className:%s, jarName:%s, dependencyJars:%s".format(if (className != null) className else "", if (jarName != null) jarName else "", if (dependencyJars != null) dependencyJars.mkString(",") else ""))
+    var allJars: collection.immutable.Set[String] = null
+    if (dependencyJars != null && jarName != null && jarName.trim.size > 0) {
+      allJars = dependencyJars.toSet + jarName
+    } else if (dependencyJars != null) {
+      allJars = dependencyJars.toSet
+    } else if (jarName != null) {
+      allJars = collection.immutable.Set(jarName)
+    }
 
-      val allJarsToBeValidated = scala.collection.mutable.Set[String]();
+    val allJarsToBeValidated = scala.collection.mutable.Set[String]();
 
-      if (allJars != null) {
-        allJarsToBeValidated ++= allJars.map(j => GetValidJarFile(jarPaths, j))
-      }
-
+    if (allJars != null && allJars.size > 0) {
+      allJarsToBeValidated ++= allJars.map(j => GetValidJarFile(jarPaths, j))
       val nonExistsJars = CheckForNonExistanceJars(allJarsToBeValidated.toSet)
       if (nonExistsJars.size > 0) {
         logger.error("Not found jars in Storage Adapters Jars List : {" + nonExistsJars.mkString(", ") + "}")
         return null
       }
+    }
 
-      val kvManagerLoader =
-        if (isElastic) {
-          val preprendedJars = allJars.map(j => GetValidJarFile(jarPaths, j)).toArray
-          new KamanjaLoaderInfo(null, false, isElastic, isElastic, preprendedJars)
-        } else {
-          val tmpKvLoader = new KamanjaLoaderInfo
-          if (allJars != null) {
-            if (LoadJars(allJars.map(j => GetValidJarFile(jarPaths, j)).toArray, tmpKvLoader.loadedJars, tmpKvLoader.loader) == false)
-              throw new Exception("Failed to add Jars")
-          }
-          tmpKvLoader
+    val kvManagerLoader =
+      if (isElastic) {
+        val preprendedJars = if (allJars != null) allJars.map(j => GetValidJarFile(jarPaths, j)).toArray else Array[String]()
+        new KamanjaLoaderInfo(null, false, isElastic, isElastic, preprendedJars)
+      } else {
+        val tmpKvLoader = new KamanjaLoaderInfo
+        if (allJars != null) {
+          if (LoadJars(allJars.map(j => GetValidJarFile(jarPaths, j)).toArray, tmpKvLoader.loadedJars, tmpKvLoader.loader) == false)
+            throw new Exception("Failed to add Jars")
         }
+        tmpKvLoader
+      }
 
-      kvManagerLoaders += kvManagerLoader
+    kvManagerLoaders += kvManagerLoader
 
-      storeType match {
+    storeType match {
 
-        // Other KV stores
-        case "cassandra" => return CassandraAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
-        case "hbase" => return HBaseAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
-        /*
-        // Simple file base implementations
-        case "redis" => return KeyValueRedis.CreateStorageAdapter(kvManagerLoader, datastoreConfig, tableName)
-        */
-        case "hashmap" => return HashMapAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
-        case "treemap" => return TreeMapAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
-        // Other relational stores such as sqlserver, mysql
-        case "sqlserver" => return SqlServerAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
-        case "h2db" => return H2dbAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
-        // case "elasticsearch" => return ElasticsearchAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
-        // case "mysql" => return MySqlAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig)
+      // Other KV stores
+      case "cassandra" => return CassandraAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+      case "hbase" => return HBaseAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+      /*
+      // Simple file base implementations
+      case "redis" => return KeyValueRedis.CreateStorageAdapter(kvManagerLoader, datastoreConfig, tableName)
+      */
+      case "hashmap" => return HashMapAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+      case "treemap" => return TreeMapAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+      // Other relational stores such as sqlserver, mysql
+      case "sqlserver" => return SqlServerAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+      case "h2db" => return H2dbAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+      // case "elasticsearch" => return ElasticsearchAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+      // case "mysql" => return MySqlAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig)
 
-        // Default, Load it from Class
-        case _ => {
+      // Default, Load it from Class
+      case _ => {
+        if (className != null && className.size > 0 && jarName != null && jarName.size > 0) {
           try {
             Class.forName(className, true, kvManagerLoader.loader)
           } catch {
