@@ -27,7 +27,7 @@ import org.apache.logging.log4j.{Logger, LogManager}
 import com.ligadata.Exceptions.{FatalAdapterException}
 import scala.actors.threadpool.{ExecutorService}
 import com.ligadata.KamanjaVersion.KamanjaVersion
-import com.ligadata.velocitymetrics.VelocityMetrics
+import com.ligadata.Velocitymetrics._
 
 class KamanjaServer(port: Int) extends Runnable {
   private val LOG = LogManager.getLogger(getClass);
@@ -1288,6 +1288,11 @@ class VelocityMetricsOutput extends VelocityMetricsCallback{
   @throws[Exception]
   def call(metrics: Metrics): Unit ={
     println("=======================Mettrics================")
+    val velocityMetrics: com.ligadata.KamanjaBase.KamanjaVelocityMetrics = KamanjaMetadata.envCtxt.getContainerInstance("com.ligadata.KamanjaBase.KamanjaVelocityMetrics").asInstanceOf[KamanjaStatisticsEvent]
+    velocityMetrics.uuid = metrics.UUID
+    
+    KamanjaMetadata.envCtxt.postMessages(Array[ContainerInterface](statEvent))
+
   }
 }
 
