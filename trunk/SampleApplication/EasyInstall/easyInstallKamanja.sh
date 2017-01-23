@@ -213,7 +213,7 @@ cp $ivyPath/cache/org.apache.commons/commons-pool2/jars/commons-pool2-2.4.2.jar 
 
 # cp $ivyPath/cache/com.google.guava/guava/jars/guava-19.0.jar $systemlib
 cp $ivyPath/cache/org.elasticsearch.plugin/shield/jars/shield-2.3.5.jar $systemlib
-cp $ivyPath/.ivy2/cache/org.elasticsearch/elasticsearch/jars/elasticsearch-2.3.5.jar $systemlib
+cp $ivyPath/cache/org.elasticsearch/elasticsearch/jars/elasticsearch-2.3.5.jar $systemlib
 
 cp $srcPath/InputOutputAdapters/ElasticsearchAdapters/target/scala-2.10/elasticsearchinputoutputadapters_2.10-1.5.3.jar $systemlib
 cp $srcPath/Storage/Elasticsearch/target/scala-2.10/elasticsearch_2.10-1.5.3.jar $systemlib
@@ -539,7 +539,7 @@ cp $ivyPath/cache/org.apache.commons/commons-pool2/jars/commons-pool2-2.4.2.jar 
 
 # cp $ivyPath/cache/com.google.guava/guava/jars/guava-19.0.jar $systemlib
 cp $ivyPath/cache/org.elasticsearch.plugin/shield/jars/shield-2.3.5.jar $systemlib
-cp $ivyPath/.ivy2/cache/org.elasticsearch/elasticsearch/jars/elasticsearch-2.3.5.jar $systemlib
+cp $ivyPath/cache/org.elasticsearch/elasticsearch/jars/elasticsearch-2.3.5.jar $systemlib
 
 cp $srcPath/InputOutputAdapters/ElasticsearchAdapters/target/scala-2.11/elasticsearchinputoutputadapters_2.11-1.5.3.jar $systemlib
 cp $srcPath/Storage/Elasticsearch/target/scala-2.11/elasticsearch_2.11-1.5.3.jar $systemlib
