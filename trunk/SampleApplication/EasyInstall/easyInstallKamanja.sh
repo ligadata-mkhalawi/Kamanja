@@ -211,7 +211,7 @@ cp Utils/QueryGenerator/target/scala-2.10/querygenerator* $systemlib
 cp Utils/GenerateMessage/target/scala-2.10/generatemessage* $systemlib
 cp $ivyPath/cache/org.apache.commons/commons-pool2/jars/commons-pool2-2.4.2.jar $systemlib
 
-cp $ivyPath/cache/com.google.guava/guava/jars/guava-19.0.jar $systemlib
+# cp $ivyPath/cache/com.google.guava/guava/jars/guava-19.0.jar $systemlib
 cp $ivyPath/cache/org.elasticsearch.plugin/shield/jars/shield-2.3.5.jar $systemlib
 cp $ivyPath/.ivy2/cache/org.elasticsearch/elasticsearch/jars/elasticsearch-2.3.5.jar $systemlib
 
@@ -537,7 +537,7 @@ cp Utils/QueryGenerator/target/scala-2.11/querygenerator* $systemlib
 cp Utils/GenerateMessage/target/scala-2.11/generatemessage* $systemlib
 cp $ivyPath/cache/org.apache.commons/commons-pool2/jars/commons-pool2-2.4.2.jar $systemlib
 
-cp $ivyPath/cache/com.google.guava/guava/jars/guava-19.0.jar $systemlib
+# cp $ivyPath/cache/com.google.guava/guava/jars/guava-19.0.jar $systemlib
 cp $ivyPath/cache/org.elasticsearch.plugin/shield/jars/shield-2.3.5.jar $systemlib
 cp $ivyPath/.ivy2/cache/org.elasticsearch/elasticsearch/jars/elasticsearch-2.3.5.jar $systemlib
 
