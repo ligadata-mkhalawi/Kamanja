@@ -21,6 +21,7 @@ import scala.reflect.runtime.{universe => ru}
 import java.net.{URL, URLClassLoader}
 import org.apache.logging.log4j.{Logger, LogManager}
 import scala.collection.mutable.ArrayBuffer
+import java.io.{ File }
 
 /*
  * Kamanja custom ClassLoader. We can use this as Parent first (default, which is default for java also) and Parent Last.
@@ -30,12 +31,12 @@ import scala.collection.mutable.ArrayBuffer
  */
 
 class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: KamanjaClassLoader,
-                         val currentClassClassLoader: ClassLoader, val parentLast: Boolean, var findInSystemLast: Boolean = false)
-  extends URLClassLoader(if (parentLast == false && systemClassLoader != null) systemClassLoader.getURLs() else Array[URL](),
-    if (parentLast == false && parent != null) parent else currentClassClassLoader) {
+                         val currentClassClassLoader: ClassLoader, val parentLast: Boolean, var findInSystemLast: Boolean = false, val preprendedJars: Array[String] = Array[String]())
+  extends URLClassLoader(preprendedJars.map(fl => new File(fl.trim)).map(fl => fl.toURI().toURL()) ++ (if ((findInSystemLast || parentLast == false) && systemClassLoader != null) systemClassLoader.getURLs() else Array[URL]()),
+    if (parentLast == false && parent != null) parent else if (parentLast == false) currentClassClassLoader else null) {
   private val LOG = LogManager.getLogger(getClass)
 
-  if (LOG.isDebugEnabled()) {
+  if (LOG.isDebugEnabled() || findInSystemLast || parentLast) {
     // Printing invokation stack trace
     try {
       val s: String = null
@@ -43,7 +44,10 @@ class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: Kama
     } catch {
       case e: Throwable => {
         val urls = if (parentLast == false && parent == null && systemClassLoader != null) systemClassLoader.getURLs() else Array[URL]()
-        LOG.debug("Created KamanjaClassLoader. this:" + this + ", parentLast:" + parentLast + ", URLS:" + urls.map(u => u.getFile()).mkString(","), e)
+        if (LOG.isDebugEnabled())
+          LOG.debug("Created KamanjaClassLoader. this:" + this + ", parentLast:" + parentLast + ", findInSystemLast:" + findInSystemLast + ", URLS:" + urls.map(u => u.getFile()).mkString(","), e)
+        else if (LOG.isWarnEnabled)
+          LOG.warn("Created KamanjaClassLoader. this:" + this + ", parentLast:" + parentLast + ", findInSystemLast:" + findInSystemLast + ", URLS:" + urls.map(u => u.getFile()).mkString(","), e)
       }
     }
   }
@@ -58,10 +62,17 @@ class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: Kama
 
     var exp: Throwable = null
 
+    val isGoogleClass = (className.startsWith("com.google.common.") || className.startsWith("com.google.thirdparty."))
+    if (findInSystemLast || isGoogleClass) {
+      val urls = getURLs()
+      LOG.warn("Finding class:" + className + " in KamanjaClassLoader. this:" + this + ", parentLast:" + parentLast + ", URLS:" + urls.map(u => u.getFile()).mkString(","))
+    }
+
     if (parentLast) {
+      val fndInSystemAtTheEnd = findInSystemLast && (className.startsWith("com.google.common.") || className.startsWith("com.google.thirdparty."))
       var clz = findLoadedClass(className);
       if (clz == null) {
-        if (systemClassLoader != null && !findInSystemLast) {
+        if (systemClassLoader != null && !fndInSystemAtTheEnd) {
           try {
             clz = systemClassLoader.loadClass(className);
           }
@@ -70,6 +81,17 @@ class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: Kama
             }
           }
         }
+
+        if (currentClassClassLoader != null && !fndInSystemAtTheEnd) {
+          try {
+            clz = currentClassClassLoader.loadClass(className);
+          }
+          catch {
+            case e: Throwable => {
+            }
+          }
+        }
+
         if (clz == null) {
           try {
             clz = findClass(className);
@@ -97,9 +119,23 @@ class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: Kama
               }
             }
           }
+          if (fndInSystemAtTheEnd && clz != null)
+            LOG.warn("Found class " + className + " in dependency. this:" + this)
         }
 
-        if (clz == null && systemClassLoader != null && findInSystemLast) {
+        if (clz == null && currentClassClassLoader != null && fndInSystemAtTheEnd) {
+          try {
+            clz = currentClassClassLoader.loadClass(className);
+          }
+          catch {
+            case e: Throwable => {
+              if (exp == null)
+                exp = e
+            }
+          }
+        }
+
+        if (clz == null && systemClassLoader != null && fndInSystemAtTheEnd) {
           try {
             clz = systemClassLoader.loadClass(className);
           }
@@ -110,14 +146,15 @@ class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: Kama
             }
           }
         }
-
       }
 
       if (exp != null && clz == null) {
-        //        val curURLs = getURLs()
-        //        val sysURLs = systemClassLoader.getURLs()
-        //        LOG.error("Class:" + className + " not found in classloader:" + this + " and also in systemClassLoader:" + systemClassLoader
-        //          + ", curURLs:{" + curURLs.map(url => url.getFile).mkString(",") + "}, sysURLs:{" + sysURLs.map(url => url.getFile).mkString(",") + "}")
+        if (fndInSystemAtTheEnd) {
+          val curURLs = getURLs()
+          val sysURLs = systemClassLoader.getURLs()
+          LOG.error("Class:" + className + " not found in classloader:" + this + " and also in systemClassLoader:" + systemClassLoader + " and also in currentClassClassLoader:" + currentClassClassLoader
+                     + ", curURLs:{" + curURLs.map(url => url.getFile).mkString(",") + "}, sysURLs:{" + sysURLs.map(url => url.getFile).mkString(",") + "}")
+        }
         throw exp
       }
       if (resolve) {
@@ -134,8 +171,12 @@ class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: Kama
     if (LOG.isDebugEnabled()) LOG.debug("Trying to getResource:" + name)
 
     if (parentLast) {
-      if (systemClassLoader != null && url == null && !findInSystemLast) {
+      val fndInSystemAtTheEnd = findInSystemLast && (name.startsWith("com.google.common.") || name.startsWith("com.google.thirdparty."))
+      if (systemClassLoader != null && url == null && !fndInSystemAtTheEnd) {
         url = systemClassLoader.getResource(name);
+      }
+      if (currentClassClassLoader != null && url == null && !fndInSystemAtTheEnd) {
+        url = currentClassClassLoader.getResource(name);
       }
       if (url == null) {
         url = findResource(name);
@@ -146,8 +187,11 @@ class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: Kama
           url = parent.getResource(name);
         }
       }
-      if (systemClassLoader != null && url == null && findInSystemLast) {
+      if (systemClassLoader != null && url == null && fndInSystemAtTheEnd) {
         url = systemClassLoader.getResource(name);
+      }
+      if (currentClassClassLoader != null && url == null && fndInSystemAtTheEnd) {
+        url = currentClassClassLoader.getResource(name);
       }
     } else {
       url = super.getResource(name)
@@ -164,11 +208,16 @@ class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: Kama
 
     var systemUrls: java.util.Enumeration[URL] = null
     val superUrls = findResources(name)
+    var curClassLoaderUrls: java.util.Enumeration[URL] = null
     var parentUrls: java.util.Enumeration[URL] = null
     var parent1Urls: java.util.Enumeration[URL] = null
 
     if (systemClassLoader != null) {
       systemUrls = systemClassLoader.getResources(name);
+    }
+
+    if (currentClassClassLoader != null) {
+      curClassLoaderUrls = currentClassClassLoader.getResources(name);
     }
 
     if (parentLast && getParent() != null) {
@@ -182,6 +231,12 @@ class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: Kama
     if (systemUrls != null) {
       while (systemUrls.hasMoreElements()) {
         urls += systemUrls.nextElement()
+      }
+    }
+
+    if (curClassLoaderUrls != null) {
+      while (curClassLoaderUrls.hasMoreElements()) {
+        urls += curClassLoaderUrls.nextElement()
       }
     }
 
@@ -217,12 +272,12 @@ class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: Kama
 /*
  * KamanjaLoaderInfo is just wrapper for ClassLoader to maintain already loaded jars.
  */
-class KamanjaLoaderInfo(val parent: KamanjaLoaderInfo = null, val useParentloadedJars: Boolean = false, val parentLast: Boolean = false, var findInSystemLast: Boolean = false) {
+class KamanjaLoaderInfo(val parent: KamanjaLoaderInfo = null, val useParentloadedJars: Boolean = false, val parentLast: Boolean = false, var findInSystemLast: Boolean = false, val preprendedJars: Array[String] = Array[String]()) {
   // Parent class loader
   val parentKamanLoader: KamanjaClassLoader = if (parent != null) parent.loader else null
 
   // Class Loader
-  val loader = new KamanjaClassLoader(ClassLoader.getSystemClassLoader().asInstanceOf[URLClassLoader], parentKamanLoader, getClass().getClassLoader(), parentLast, findInSystemLast)
+  val loader = new KamanjaClassLoader(ClassLoader.getSystemClassLoader().asInstanceOf[URLClassLoader], parentKamanLoader, getClass().getClassLoader(), parentLast, findInSystemLast, preprendedJars)
 
   // Loaded jars
   val loadedJars: TreeSet[String] = if (useParentloadedJars && parent != null) parent.loadedJars else new TreeSet[String]
