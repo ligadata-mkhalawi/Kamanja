@@ -62,12 +62,6 @@ class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: Kama
 
     var exp: Throwable = null
 
-    val isGoogleClass = (className.startsWith("com.google.common.") || className.startsWith("com.google.thirdparty."))
-    if (findInSystemLast || isGoogleClass) {
-      val urls = getURLs()
-      LOG.warn("Finding class:" + className + " in KamanjaClassLoader. this:" + this + ", parentLast:" + parentLast + ", URLS:" + urls.map(u => u.getFile()).mkString(","))
-    }
-
     if (parentLast) {
       val fndInSystemAtTheEnd = findInSystemLast && (className.startsWith("com.google.common.") || className.startsWith("com.google.thirdparty."))
       var clz = findLoadedClass(className);
@@ -119,8 +113,6 @@ class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: Kama
               }
             }
           }
-          if (fndInSystemAtTheEnd && clz != null)
-            LOG.warn("Found class " + className + " in dependency. this:" + this)
         }
 
         if (clz == null && currentClassClassLoader != null && fndInSystemAtTheEnd) {

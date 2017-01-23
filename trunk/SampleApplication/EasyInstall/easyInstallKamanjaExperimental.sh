@@ -250,6 +250,13 @@ cp Utils/QueryGenerator/target/scala-2.10/querygenerator* $systemlib
 cp Utils/GenerateMessage/target/scala-2.10/generatemessage* $systemlib
 cp $ivyPath/cache/org.apache.commons/commons-pool2/jars/commons-pool2-2.4.2.jar $systemlib
 
+cp $ivyPath/cache/com.google.guava/guava/jars/guava-19.0.jar $systemlib
+cp $ivyPath/cache/org.elasticsearch.plugin/shield/jars/shield-2.3.5.jar $systemlib
+cp $ivyPath/.ivy2/cache/org.elasticsearch/elasticsearch/jars/elasticsearch-2.3.5.jar $systemlib
+
+cp $srcPath/InputOutputAdapters/ElasticsearchAdapters/target/scala-2.10/elasticsearchinputoutputadapters_2.10-1.5.3.jar $systemlib
+cp $srcPath/Storage/Elasticsearch/target/scala-2.10/elasticsearch_2.10-1.5.3.jar $systemlib
+
 # copy fat jars to KamanjaInstall
 cp $srcPath/Utils/NodeInfoExtract/target/scala-2.10/nodeinfoextract* $systemlib
 
@@ -580,6 +587,13 @@ cp Utils/JsonChecker/target/scala-2.11/jsonchecker* $systemlib
 cp Utils/QueryGenerator/target/scala-2.11/querygenerator* $systemlib
 cp Utils/GenerateMessage/target/scala-2.11/generatemessage* $systemlib
 cp $ivyPath/cache/org.apache.commons/commons-pool2/jars/commons-pool2-2.4.2.jar $systemlib
+
+cp $ivyPath/cache/com.google.guava/guava/jars/guava-19.0.jar $systemlib
+cp $ivyPath/cache/org.elasticsearch.plugin/shield/jars/shield-2.3.5.jar $systemlib
+cp $ivyPath/.ivy2/cache/org.elasticsearch/elasticsearch/jars/elasticsearch-2.3.5.jar $systemlib
+
+cp $srcPath/InputOutputAdapters/ElasticsearchAdapters/target/scala-2.11/elasticsearchinputoutputadapters_2.11-1.5.3.jar $systemlib
+cp $srcPath/Storage/Elasticsearch/target/scala-2.11/elasticsearch_2.11-1.5.3.jar $systemlib
 
 # copy jars used to reduce package size
 cp ExtDependencyLibs/target/scala-2.11/ExtDependencyLibs_2.11-${currentKamanjaVersion}.jar $systemlib

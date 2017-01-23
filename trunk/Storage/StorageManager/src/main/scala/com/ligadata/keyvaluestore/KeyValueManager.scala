@@ -63,9 +63,10 @@ object KeyValueManager {
 
     val storeType = parsed_json.getOrElse("StoreType", "").toString.trim.toLowerCase
 
-    val isElastic = storeType.equalsIgnoreCase("elasticsearch")
-
     val (className, jarName, dependencyJars) = getClassNameJarNameDepJarsFromJson(parsed_json)
+
+    val isElastic = storeType.equalsIgnoreCase("elasticsearch") || (className != null && (className.equals("com.ligadata.keyvaluestore.ElasticsearchAdapter$") || className.equals("com.ligadata.keyvaluestore.ElasticsearchAdapter")))
+
     if (logger.isDebugEnabled) logger.debug("className:%s, jarName:%s, dependencyJars:%s".format(if (className != null) className else "", if (jarName != null) jarName else "", if (dependencyJars != null) dependencyJars.mkString(",") else ""))
     var allJars: collection.immutable.Set[String] = null
     if (dependencyJars != null && jarName != null && jarName.trim.size > 0) {

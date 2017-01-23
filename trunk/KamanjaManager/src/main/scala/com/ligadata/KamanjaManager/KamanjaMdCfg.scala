@@ -584,8 +584,9 @@ object KamanjaMdCfg {
     }
 
     if (isElastic) {
-      // TestLoadClass(loader, "org.elasticsearch.client.transport.TransportClient")
-      // TestLoadClass(loader, "com.google.common.util.concurrent.MoreExecutors")
+      TestLoadClass(loader, "org.elasticsearch.client.transport.TransportClient")
+      TestLoadClass(loader, "org.elasticsearch.client.transport.TransportClient")
+
     }
 
     // Convert class name into a class
