@@ -16,7 +16,6 @@ import com.ligadata.Utils.KamanjaLoaderInfo
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse
 import org.elasticsearch.client.IndicesAdminClient
 import org.elasticsearch.action.admin.indices.refresh.RefreshResponse
-import com.ligadata.keyvaluestore.ElasticsearchAdapter
 import org.apache.logging.log4j.LogManager
 import org.elasticsearch.client.transport.TransportClient
 import org.elasticsearch.common.settings.Settings
