@@ -516,22 +516,6 @@ object KamanjaMdCfg {
     return true
   }
 
-  private def TestLoadClass(loader: KamanjaLoaderInfo, clsName: String): Unit = {
-    // Try for errors before we do real loading & processing
-    try {
-      Class.forName(clsName, true, loader.loader)
-    } catch {
-      case e: Exception => {
-        val szErrMsg = "Failed to check class %s".format(clsName)
-        LOG.error(szErrMsg, e)
-      }
-      case e: Throwable => {
-        val szErrMsg = "Failed to check class %s".format(clsName)
-        LOG.error(szErrMsg, e)
-      }
-    }
-  }
-
   private def hasFlagToPrependJarsBeforeSystemJars(adapterSpecificCfg: String): Boolean = {
     try {
       if (adapterSpecificCfg == null)
@@ -610,12 +594,6 @@ object KamanjaMdCfg {
         LOG.error(szErrMsg, e)
         return null
       }
-    }
-
-    if (isElastic) {
-      TestLoadClass(loader, "org.elasticsearch.client.transport.TransportClient")
-      TestLoadClass(loader, "org.elasticsearch.client.transport.TransportClient")
-
     }
 
     // Convert class name into a class
