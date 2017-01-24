@@ -516,20 +516,47 @@ object KamanjaMdCfg {
     return true
   }
 
-  private def TestLoadClass(loader: KamanjaLoaderInfo, clsName: String): Unit = {
-    // Try for errors before we do real loading & processing
+  private def hasFlagToPrependJarsBeforeSystemJars(adapterSpecificCfg: String): (Boolean, Array[String]) = {
     try {
-      Class.forName(clsName, true, loader.loader)
+      if (adapterSpecificCfg == null)
+        return (false, Array[String]())
+
+      val adapCfg = parse(adapterSpecificCfg)
+      if (adapCfg == null || adapCfg.values == null) {
+        return (false, Array[String]())
+      }
+
+      val adapCfgValues = adapCfg.values.asInstanceOf[Map[String, Any]]
+
+      var prependJarsBeforeSystemJars = adapCfgValues.getOrElse("PrependJarsBeforeSystemJars", null)
+      if (prependJarsBeforeSystemJars == null)
+        prependJarsBeforeSystemJars = adapCfgValues.getOrElse("prependJarsBeforeSystemJars", null)
+      if (prependJarsBeforeSystemJars == null)
+        prependJarsBeforeSystemJars = adapCfgValues.getOrElse("prependjarsbeforesystemjars", null)
+
+      if (prependJarsBeforeSystemJars != null) {
+        val boolVals = prependJarsBeforeSystemJars.toString.trim.equalsIgnoreCase("true")
+        if (boolVals) {
+          var pkgs = adapCfgValues.getOrElse("DelayedPackagesToResolve", null)
+          if (pkgs == null)
+            pkgs = adapCfgValues.getOrElse("delayedPackagesToResolve", null)
+          if (pkgs == null)
+            pkgs = adapCfgValues.getOrElse("delayedpackagestoresolve", null)
+          if (pkgs != null && pkgs.isInstanceOf[List[Any]]) {
+            return (boolVals, pkgs.asInstanceOf[List[Any]].map(v => v.toString).toArray)
+          } else if (pkgs != null && pkgs.isInstanceOf[Array[Any]]) {
+            return (boolVals, pkgs.asInstanceOf[Array[Any]].map(v => v.toString))
+          } else {
+            return (boolVals, Array[String]())
+          }
+        }
+      }
     } catch {
-      case e: Exception => {
-        val szErrMsg = "Failed to check class %s".format(clsName)
-        LOG.error(szErrMsg, e)
-      }
-      case e: Throwable => {
-        val szErrMsg = "Failed to check class %s".format(clsName)
-        LOG.error(szErrMsg, e)
-      }
+      case e: Exception => {}
+      case e: Throwable => {}
     }
+
+    return (false, Array[String]())
   }
 
   private def CreateOutputAdapterFromConfig(statusAdapterCfg: AdapterConfiguration, nodeContext: NodeContext): OutputAdapter = {
@@ -546,12 +573,12 @@ object KamanjaMdCfg {
     val envContext = nodeContext.getEnvCtxt()
     // val adaptersAndEnvCtxtLoader = envContext.getAdaptersAndEnvCtxtLoader
 
-    val isElastic = statusAdapterCfg.className.equals("com.ligadata.ElasticsearchInputOutputAdapters.ElasticsearchProducer$") || statusAdapterCfg.className.equals("com.ligadata.ElasticsearchInputOutputAdapters.ElasticsearchProducer")
+    val (prependJarsBeforeSystemJars, delayedPackagesToResolve) = hasFlagToPrependJarsBeforeSystemJars(statusAdapterCfg.adapterSpecificCfg)
 
     val loader =
-      if (isElastic) {
+      if (prependJarsBeforeSystemJars) {
         val preprendedJars = if (allJars != null) allJars.map(j => Utils.GetValidJarFile(envContext.getJarPaths(), j)).toArray else Array[String]()
-        new KamanjaLoaderInfo(null, false, isElastic, isElastic, preprendedJars)
+        new KamanjaLoaderInfo(null, false, prependJarsBeforeSystemJars, prependJarsBeforeSystemJars, preprendedJars, delayedPackagesToResolve)
       } else {
         val tmploader = new KamanjaLoaderInfo
 
@@ -581,12 +608,6 @@ object KamanjaMdCfg {
         LOG.error(szErrMsg, e)
         return null
       }
-    }
-
-    if (isElastic) {
-      TestLoadClass(loader, "org.elasticsearch.client.transport.TransportClient")
-      TestLoadClass(loader, "org.elasticsearch.client.transport.TransportClient")
-
     }
 
     // Convert class name into a class

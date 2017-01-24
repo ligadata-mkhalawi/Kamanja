@@ -22,18 +22,56 @@ import com.ligadata.kamanja.metadata.AdapterInfo
 import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
-import com.ligadata.StorageBase.{DataStore}
+import com.ligadata.StorageBase.DataStore
 import org.apache.logging.log4j._
 import com.ligadata.keyvaluestore._
 import com.ligadata.Utils.Utils._
 import com.ligadata.Utils.{KamanjaClassLoader, KamanjaLoaderInfo}
 import com.ligadata.StorageBase.StorageAdapterFactory
+
 import scala.collection.mutable.ArrayBuffer
 
 object KeyValueManager {
   private val loggerName = this.getClass.getName
   private val logger = LogManager.getLogger(loggerName)
   private val kvManagerLoaders = ArrayBuffer[KamanjaLoaderInfo]()
+
+  private def hasFlagToPrependJarsBeforeSystemJars(parsed_json: Map[String, Any]): (Boolean, Array[String]) = {
+    try {
+
+      if (parsed_json == null)
+        return (false, Array[String]())
+
+      var prependJarsBeforeSystemJars = parsed_json.getOrElse("PrependJarsBeforeSystemJars", null)
+      if (prependJarsBeforeSystemJars == null)
+        prependJarsBeforeSystemJars = parsed_json.getOrElse("prependJarsBeforeSystemJars", null)
+      if (prependJarsBeforeSystemJars == null)
+        prependJarsBeforeSystemJars = parsed_json.getOrElse("prependjarsbeforesystemjars", null)
+
+      if (prependJarsBeforeSystemJars != null) {
+        val boolVals = prependJarsBeforeSystemJars.toString.trim.equalsIgnoreCase("true")
+        if (boolVals) {
+          var pkgs = parsed_json.getOrElse("DelayedPackagesToResolve", null)
+          if (pkgs == null)
+            pkgs = parsed_json.getOrElse("delayedPackagesToResolve", null)
+          if (pkgs == null)
+            pkgs = parsed_json.getOrElse("delayedpackagestoresolve", null)
+          if (pkgs != null && pkgs.isInstanceOf[List[Any]]) {
+            return (boolVals, pkgs.asInstanceOf[List[Any]].map(v => v.toString).toArray)
+          } else if (pkgs != null && pkgs.isInstanceOf[Array[Any]]) {
+            return (boolVals, pkgs.asInstanceOf[Array[Any]].map(v => v.toString))
+          } else {
+            return (boolVals, Array[String]())
+          }
+        }
+      }
+    } catch {
+      case e: Exception => {}
+      case e: Throwable => {}
+    }
+
+    return return (false, Array[String]())
+  }
 
   // We will add more implementations here
   // so we can test  the system characteristics
@@ -65,7 +103,7 @@ object KeyValueManager {
 
     val (className, jarName, dependencyJars) = getClassNameJarNameDepJarsFromJson(parsed_json)
 
-    val isElastic = storeType.equalsIgnoreCase("elasticsearch") || (className != null && (className.equals("com.ligadata.keyvaluestore.ElasticsearchAdapter$") || className.equals("com.ligadata.keyvaluestore.ElasticsearchAdapter")))
+    val (prependJarsBeforeSystemJars, delayedPackagesToResolve) = hasFlagToPrependJarsBeforeSystemJars(parsed_json)
 
     if (logger.isDebugEnabled) logger.debug("className:%s, jarName:%s, dependencyJars:%s".format(if (className != null) className else "", if (jarName != null) jarName else "", if (dependencyJars != null) dependencyJars.mkString(",") else ""))
     var allJars: collection.immutable.Set[String] = null
@@ -89,9 +127,9 @@ object KeyValueManager {
     }
 
     val kvManagerLoader =
-      if (isElastic) {
+      if (prependJarsBeforeSystemJars) {
         val preprendedJars = if (allJars != null) allJars.map(j => GetValidJarFile(jarPaths, j)).toArray else Array[String]()
-        new KamanjaLoaderInfo(null, false, isElastic, isElastic, preprendedJars)
+        new KamanjaLoaderInfo(null, false, prependJarsBeforeSystemJars, prependJarsBeforeSystemJars, preprendedJars, delayedPackagesToResolve)
       } else {
         val tmpKvLoader = new KamanjaLoaderInfo
         if (allJars != null) {
@@ -117,7 +155,7 @@ object KeyValueManager {
       // Other relational stores such as sqlserver, mysql
       case "sqlserver" => return SqlServerAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
       case "h2db" => return H2dbAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
-      // case "elasticsearch" => return ElasticsearchAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo)
+      // case "elasticsearch" => { // Fallthru instead of using this return ElasticsearchAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig, nodeCtxt, adapterInfo) }
       // case "mysql" => return MySqlAdapter.CreateStorageAdapter(kvManagerLoader, datastoreConfig)
 
       // Default, Load it from Class

@@ -67,7 +67,7 @@ assemblyMergeStrategy in assembly := {
 excludeFilter in unmanagedJars := s"${name.value}_${scalaBinaryVersion.value}-${version.value}.jar"
 
 excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
-  val excludes = Set("commons-beanutils-1.7.0.jar", "google-collections-1.0.jar", "commons-collections4-4.0.jar", "log4j-1.2.17.jar", "commons-beanutils-1.8.3.jar", "log4j-1.2.16.jar", "elasticsearch-2.3.5.jar", "shield-2.3.5.jar")
+  val excludes = Set("commons-beanutils-1.7.0.jar", "google-collections-1.0.jar", "commons-collections4-4.0.jar", "log4j-1.2.17.jar", "commons-beanutils-1.8.3.jar", "log4j-1.2.16.jar", "guava-19.0.jar", "elasticsearch-2.3.5.jar", "shield-2.3.5.jar")
   cp filter { jar => excludes(jar.data.getName) }
 }
 
@@ -95,7 +95,7 @@ libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.2.9"
 libraryDependencies += "org.apache.zookeeper" % "zookeeper" % "3.4.6"
 libraryDependencies += "org.apache.curator" % "apache-curator" % "2.0.0-incubating"
 libraryDependencies += "com.google.guava" % "guava" % "16.0.1"
-libraryDependencies += "com.google.guava" % "guava" % "19.0"
+//libraryDependencies += "com.google.guava" % "guava" % "19.0"
 //libraryDependencies += "org.jpmml" % "pmml-evaluator" % "1.2.4"                               // another version exists
 //libraryDependencies += "org.jpmml" % "pmml-model" % "1.2.5"
 //libraryDependencies += "org.jpmml" % "pmml-schema" % "1.2.5"
