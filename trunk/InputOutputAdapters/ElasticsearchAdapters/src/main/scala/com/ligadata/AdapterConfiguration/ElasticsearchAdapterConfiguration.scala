@@ -33,6 +33,7 @@ class ElasticsearchAdapterConfiguration extends AdapterConfiguration {
   var kerberos: KerberosConfig = null
   var instancePartitions: Set[Int] = _
   var noDataSleepTimeInMs: Int = 300
+  var otherConfig = scala.collection.mutable.Map[String, Any]()
 }
 
 class KerberosConfig {
@@ -107,6 +108,8 @@ object ElasticsearchAdapterConfiguration extends LogTrait {
         adapterConfig.rollIndexNameByDataDate = kv._2.toString.trim.toBoolean
       } else if (kv._1.compareToIgnoreCase("ManuallyCreateIndexMapping") == 0) {
         adapterConfig.manuallyCreateIndexMapping = kv._2.toString.trim.toBoolean
+      } else {
+        adapterConfig.otherConfig(kv._1) = kv._2
       }
     })
 

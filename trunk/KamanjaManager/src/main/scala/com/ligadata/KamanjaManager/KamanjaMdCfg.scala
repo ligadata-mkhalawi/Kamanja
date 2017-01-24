@@ -532,6 +532,35 @@ object KamanjaMdCfg {
     }
   }
 
+  private def hasFlagToPrependJarsBeforeSystemJars(adapterSpecificCfg: String): Boolean = {
+    try {
+      if (adapterSpecificCfg == null)
+        return false
+
+      val adapCfg = parse(adapterSpecificCfg)
+      if (adapCfg == null || adapCfg.values == null) {
+        return false
+      }
+
+      val adapCfgValues = adapCfg.values.asInstanceOf[Map[String, Any]]
+
+      var prependJarsBeforeSystemJars = adapCfgValues.getOrElse("PrependJarsBeforeSystemJars", null)
+      if (prependJarsBeforeSystemJars == null)
+        prependJarsBeforeSystemJars = adapCfgValues.getOrElse("prependJarsBeforeSystemJars", null)
+      if (prependJarsBeforeSystemJars == null)
+        prependJarsBeforeSystemJars = adapCfgValues.getOrElse("prependjarsbeforesystemjars", null)
+
+      if (prependJarsBeforeSystemJars != null) {
+        return prependJarsBeforeSystemJars.toString.trim.equalsIgnoreCase("true")
+      }
+    } catch {
+      case e: Exception => {}
+      case e: Throwable => {}
+    }
+
+    return false
+  }
+
   private def CreateOutputAdapterFromConfig(statusAdapterCfg: AdapterConfiguration, nodeContext: NodeContext): OutputAdapter = {
     if (statusAdapterCfg == null) return null
     var allJars: collection.immutable.Set[String] = null
@@ -546,12 +575,12 @@ object KamanjaMdCfg {
     val envContext = nodeContext.getEnvCtxt()
     // val adaptersAndEnvCtxtLoader = envContext.getAdaptersAndEnvCtxtLoader
 
-    val isElastic = statusAdapterCfg.className.equals("com.ligadata.ElasticsearchInputOutputAdapters.ElasticsearchProducer$") || statusAdapterCfg.className.equals("com.ligadata.ElasticsearchInputOutputAdapters.ElasticsearchProducer")
+    val prependJarsBeforeSystemJars = hasFlagToPrependJarsBeforeSystemJars(statusAdapterCfg.adapterSpecificCfg)
 
     val loader =
-      if (isElastic) {
+      if (prependJarsBeforeSystemJars) {
         val preprendedJars = if (allJars != null) allJars.map(j => Utils.GetValidJarFile(envContext.getJarPaths(), j)).toArray else Array[String]()
-        new KamanjaLoaderInfo(null, false, isElastic, isElastic, preprendedJars)
+        new KamanjaLoaderInfo(null, false, prependJarsBeforeSystemJars, prependJarsBeforeSystemJars, preprendedJars)
       } else {
         val tmploader = new KamanjaLoaderInfo
 
