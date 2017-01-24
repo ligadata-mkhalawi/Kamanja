@@ -2,7 +2,10 @@ package com.ligadata.kamanja.serializer
 
 import scala.collection.mutable.Map
 import scala.collection.JavaConverters._
-import java.io.{DataOutputStream, ByteArrayOutputStream}
+import java.io.{ByteArrayOutputStream, DataOutputStream, StringReader}
+import scala.collection.JavaConverters._
+import org.apache.commons.csv.{CSVFormat, CSVParser, CSVRecord}
+
 import org.apache.logging.log4j.LogManager
 // import org.apache.commons.lang.StringEscapeUtils
 
@@ -71,9 +74,8 @@ class CsvSerDeser extends SerializeDeserialize {
     var _nullValue = ""
     var _alwaysQuoteField = false
     var _escapeChar = "\\"
-
-    // added by saleh 23/01/2017 this is a tmp fix to handel the csv quotes
-    val REGX = "\\%s(?=([^\"]*\"[^\"]*\")*[^\"]*$)"
+    // add by saleh 24/1/2017
+    var _csvParser  = false
 
     val _nullFlagsFieldName = "kamanja_system_null_flags"
 
@@ -303,6 +305,8 @@ class CsvSerDeser extends SerializeDeserialize {
         _lineDelimiter =  _config.getOrElse("lineDelimiter", "\n")
         _nullValue =  _config.getOrElse("nullValue", "")
         _escapeChar = _config.getOrElse("escChar", "\\")
+        //added by saleh 24/1/2017
+        _csvParser = _config.getOrElse("csvParser","false").toBoolean
         val alwaysQuoteFieldStr = _config.getOrElse("alwaysQuoteField", "F")
         _alwaysQuoteField = alwaysQuoteFieldStr.toLowerCase.startsWith("t")
 
@@ -371,6 +375,25 @@ class CsvSerDeser extends SerializeDeserialize {
         returnVal
     }
 
+    //add by saleh 24/1/2017
+    /**
+      * This method will use the Apache Parser commons-csv 1.4 this will work only if csvParser option is true
+      * csvParser is false by default
+      *
+      * @param  rawCsvContainerStr the CSV string line
+      * @return a Array[String]
+      */
+    def csvApache(rawCsvContainerStr: String) : Array[String] = {
+        val in = new StringReader(rawCsvContainerStr)
+        val records = CSVFormat.DEFAULT.parse(in)
+        val record = records.iterator()
+        if (record.hasNext) {
+            record.next().iterator().asScala.toArray
+        }else{
+            Array[String]()
+        }
+    }
+
     /**
       * Deserialize the supplied byte array into some ContainerInterface instance.  Note that the header
       * record is not handled.  The CSV stream of multiple container interface records will just stumble over
@@ -387,8 +410,12 @@ class CsvSerDeser extends SerializeDeserialize {
         val rawCsvContainerStr : String = new String(b)
 
         val rawCsvFields : Array[String] = if (rawCsvContainerStr != null) {
-            // added by saleh 23/01/2017 this is a tmp fix to handel the csv quotes
-          rawCsvContainerStr.split(REGX.format(_fieldDelimiter), -1)
+            //add by saleh 24/1/2017
+            if(_csvParser){
+              csvApache(rawCsvContainerStr)
+            }else{
+              rawCsvContainerStr.split(_fieldDelimiter, -1)
+            }
         } else {
             Array[String]()
         }
