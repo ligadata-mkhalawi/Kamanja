@@ -516,14 +516,14 @@ object KamanjaMdCfg {
     return true
   }
 
-  private def hasFlagToPrependJarsBeforeSystemJars(adapterSpecificCfg: String): Boolean = {
+  private def hasFlagToPrependJarsBeforeSystemJars(adapterSpecificCfg: String): (Boolean, Array[String]) = {
     try {
       if (adapterSpecificCfg == null)
-        return false
+        return (false, Array[String]())
 
       val adapCfg = parse(adapterSpecificCfg)
       if (adapCfg == null || adapCfg.values == null) {
-        return false
+        return (false, Array[String]())
       }
 
       val adapCfgValues = adapCfg.values.asInstanceOf[Map[String, Any]]
@@ -535,14 +535,28 @@ object KamanjaMdCfg {
         prependJarsBeforeSystemJars = adapCfgValues.getOrElse("prependjarsbeforesystemjars", null)
 
       if (prependJarsBeforeSystemJars != null) {
-        return prependJarsBeforeSystemJars.toString.trim.equalsIgnoreCase("true")
+        val boolVals = prependJarsBeforeSystemJars.toString.trim.equalsIgnoreCase("true")
+        if (boolVals) {
+          var pkgs = adapCfgValues.getOrElse("DelayedPackagesToResolve", null)
+          if (pkgs == null)
+            pkgs = adapCfgValues.getOrElse("delayedPackagesToResolve", null)
+          if (pkgs == null)
+            pkgs = adapCfgValues.getOrElse("delayedpackagestoresolve", null)
+          if (pkgs != null && pkgs.isInstanceOf[List[Any]]) {
+            return (boolVals, pkgs.asInstanceOf[List[Any]].map(v => v.toString).toArray)
+          } else if (pkgs != null && pkgs.isInstanceOf[Array[Any]]) {
+            return (boolVals, pkgs.asInstanceOf[Array[Any]].map(v => v.toString))
+          } else {
+            return (boolVals, Array[String]())
+          }
+        }
       }
     } catch {
       case e: Exception => {}
       case e: Throwable => {}
     }
 
-    return false
+    return (false, Array[String]())
   }
 
   private def CreateOutputAdapterFromConfig(statusAdapterCfg: AdapterConfiguration, nodeContext: NodeContext): OutputAdapter = {
@@ -559,12 +573,12 @@ object KamanjaMdCfg {
     val envContext = nodeContext.getEnvCtxt()
     // val adaptersAndEnvCtxtLoader = envContext.getAdaptersAndEnvCtxtLoader
 
-    val prependJarsBeforeSystemJars = hasFlagToPrependJarsBeforeSystemJars(statusAdapterCfg.adapterSpecificCfg)
+    val (prependJarsBeforeSystemJars, delayedPackagesToResolve) = hasFlagToPrependJarsBeforeSystemJars(statusAdapterCfg.adapterSpecificCfg)
 
     val loader =
       if (prependJarsBeforeSystemJars) {
         val preprendedJars = if (allJars != null) allJars.map(j => Utils.GetValidJarFile(envContext.getJarPaths(), j)).toArray else Array[String]()
-        new KamanjaLoaderInfo(null, false, prependJarsBeforeSystemJars, prependJarsBeforeSystemJars, preprendedJars)
+        new KamanjaLoaderInfo(null, false, prependJarsBeforeSystemJars, prependJarsBeforeSystemJars, preprendedJars, delayedPackagesToResolve)
       } else {
         val tmploader = new KamanjaLoaderInfo
 

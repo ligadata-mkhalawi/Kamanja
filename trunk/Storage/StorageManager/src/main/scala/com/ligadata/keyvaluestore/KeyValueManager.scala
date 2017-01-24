@@ -36,8 +36,12 @@ object KeyValueManager {
   private val logger = LogManager.getLogger(loggerName)
   private val kvManagerLoaders = ArrayBuffer[KamanjaLoaderInfo]()
 
-  private def hasFlagToPrependJarsBeforeSystemJars(parsed_json: Map[String, Any]): Boolean = {
+  private def hasFlagToPrependJarsBeforeSystemJars(parsed_json: Map[String, Any]): (Boolean, Array[String]) = {
     try {
+
+      if (parsed_json == null)
+        return (false, Array[String]())
+
       var prependJarsBeforeSystemJars = parsed_json.getOrElse("PrependJarsBeforeSystemJars", null)
       if (prependJarsBeforeSystemJars == null)
         prependJarsBeforeSystemJars = parsed_json.getOrElse("prependJarsBeforeSystemJars", null)
@@ -45,14 +49,28 @@ object KeyValueManager {
         prependJarsBeforeSystemJars = parsed_json.getOrElse("prependjarsbeforesystemjars", null)
 
       if (prependJarsBeforeSystemJars != null) {
-        return prependJarsBeforeSystemJars.toString.trim.equalsIgnoreCase("true")
+        val boolVals = prependJarsBeforeSystemJars.toString.trim.equalsIgnoreCase("true")
+        if (boolVals) {
+          var pkgs = parsed_json.getOrElse("DelayedPackagesToResolve", null)
+          if (pkgs == null)
+            pkgs = parsed_json.getOrElse("delayedPackagesToResolve", null)
+          if (pkgs == null)
+            pkgs = parsed_json.getOrElse("delayedpackagestoresolve", null)
+          if (pkgs != null && pkgs.isInstanceOf[List[Any]]) {
+            return (boolVals, pkgs.asInstanceOf[List[Any]].map(v => v.toString).toArray)
+          } else if (pkgs != null && pkgs.isInstanceOf[Array[Any]]) {
+            return (boolVals, pkgs.asInstanceOf[Array[Any]].map(v => v.toString))
+          } else {
+            return (boolVals, Array[String]())
+          }
+        }
       }
     } catch {
       case e: Exception => {}
       case e: Throwable => {}
     }
 
-    return false
+    return return (false, Array[String]())
   }
 
   // We will add more implementations here
@@ -85,7 +103,7 @@ object KeyValueManager {
 
     val (className, jarName, dependencyJars) = getClassNameJarNameDepJarsFromJson(parsed_json)
 
-    val prependJarsBeforeSystemJars = hasFlagToPrependJarsBeforeSystemJars(parsed_json)
+    val (prependJarsBeforeSystemJars, delayedPackagesToResolve) = hasFlagToPrependJarsBeforeSystemJars(parsed_json)
 
     if (logger.isDebugEnabled) logger.debug("className:%s, jarName:%s, dependencyJars:%s".format(if (className != null) className else "", if (jarName != null) jarName else "", if (dependencyJars != null) dependencyJars.mkString(",") else ""))
     var allJars: collection.immutable.Set[String] = null
@@ -111,7 +129,7 @@ object KeyValueManager {
     val kvManagerLoader =
       if (prependJarsBeforeSystemJars) {
         val preprendedJars = if (allJars != null) allJars.map(j => GetValidJarFile(jarPaths, j)).toArray else Array[String]()
-        new KamanjaLoaderInfo(null, false, prependJarsBeforeSystemJars, prependJarsBeforeSystemJars, preprendedJars)
+        new KamanjaLoaderInfo(null, false, prependJarsBeforeSystemJars, prependJarsBeforeSystemJars, preprendedJars, delayedPackagesToResolve)
       } else {
         val tmpKvLoader = new KamanjaLoaderInfo
         if (allJars != null) {
