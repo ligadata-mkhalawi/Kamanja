@@ -380,6 +380,19 @@ fi
 cp $orientdb_jdbc_all $systemlib
 
 # *******************************
+# copy guava-19.0.jar into system
+# *******************************
+# Download only once and copy
+guava_19_0_all_path="~/.ivy2/cache/com.google.guava/guava/jars1"
+guava_19_0_all="$guava_19_0_all_path/guava-19.0.jar"
+if [ ! -f "$guava_19_0_all" ]; then
+ mkdir -p $guava_19_0_all_path
+ wget -O $guava_19_0_all --no-cookies --no-check-certificate "http://central.maven.org/maven2/com/google/guava/guava/19.0/guava-19.0.jar"
+fi
+cp $guava_19_0_all $systemlib
+
+
+# *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep
 # *******************************
 
@@ -706,6 +719,18 @@ if [ ! -f "$orientdb_jdbc_all" ]; then
 	wget -O $orientdb_jdbc_all --no-cookies --no-check-certificate "http://orientdb.com/download.php?file=orientdb-jdbc-2.1.19-all.jar"
 fi
 cp $orientdb_jdbc_all $systemlib
+
+# *******************************
+# copy guava-19.0.jar into system
+# *******************************
+# Download only once and copy
+guava_19_0_all_path="~/.ivy2/cache/com.google.guava/guava/jars1"
+guava_19_0_all="$guava_19_0_all_path/guava-19.0.jar"
+if [ ! -f "$guava_19_0_all" ]; then
+ mkdir -p $guava_19_0_all_path
+ wget -O $guava_19_0_all --no-cookies --no-check-certificate "http://central.maven.org/maven2/com/google/guava/guava/19.0/guava-19.0.jar"
+fi
+cp $guava_19_0_all $systemlib
 
 # *******************************
 # copy models, messages, containers, config, scripts, types  messages data prep
