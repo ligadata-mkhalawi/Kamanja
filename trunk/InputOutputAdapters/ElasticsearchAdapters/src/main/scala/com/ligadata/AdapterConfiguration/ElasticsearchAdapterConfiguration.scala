@@ -31,6 +31,7 @@ class ElasticsearchAdapterConfiguration extends AdapterConfiguration {
   var noDataSleepTimeInMs: Int = 300
   var timeToWriteRecsInSec = 60000
   var writeRecsBatch = 1000
+  var otherConfig = scala.collection.mutable.Map[String, Any]()
 }
 
 class KerberosConfig {
@@ -105,6 +106,8 @@ object ElasticsearchAdapterConfiguration extends LogTrait {
         adapterConfig.timeToWriteRecsInSec = kv._2.toString.trim.toInt * 1000
       }else if (kv._1.compareToIgnoreCase("writeRecsBatch") == 0) {
         adapterConfig.writeRecsBatch = kv._2.toString.trim.toInt
+      } else {
+        adapterConfig.otherConfig(kv._1) = kv._2
       }
     })
 

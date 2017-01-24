@@ -47,7 +47,7 @@ lazy val KamanjaInternalDeps = project.in(file("KamanjaInternalDeps")).configs(T
   Serialize, ZooKeeperListener, ZooKeeperLeaderLatch, KamanjaUtils, TransactionService, StorageManager, PmmlCompiler, ZooKeeperClient, OutputMsgDef, SecurityAdapterBase, HeartBeat,
   JpmmlFactoryOfModelInstanceFactory, JarFactoryOfModelInstanceFactory, KamanjaVersion, InstallDriverBase, BaseFunctions, FileSimpleInputOutputAdapters, SimpleEnvContextImpl,
   GenericMsgCompiler, MethodExtractor, JsonDataGen, Controller, AuditAdapters, CustomUdfLib, UtilityService,
-  UtilsForModels, MessageCompiler, jtm, Dag, NodeInfoExtract, SmartFileAdapter, ElasticsearchAdapters, Cache, CacheImp, CsvSerDeser, JsonSerDeser, KBinarySerDeser)
+  UtilsForModels, MessageCompiler, jtm, Dag, NodeInfoExtract, SmartFileAdapter, Cache, CacheImp, CsvSerDeser, JsonSerDeser, KBinarySerDeser)
 
 ////////////////////////
 
@@ -174,7 +174,7 @@ lazy val StorageTreeMap = project.in(file("Storage/TreeMap")).configs(TestConfig
 
 lazy val StorageSqlServer = project.in(file("Storage/SqlServer")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageBase, Serialize, Exceptions, KamanjaUtils)
 
-lazy val StorageManager = project.in(file("Storage/StorageManager")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageBase, Exceptions, KamanjaBase, KamanjaUtils, StorageSqlServer, StorageCassandra, StorageHashMap, StorageTreeMap, StorageHBase, StorageH2DB, StorageElasticsearch)
+lazy val StorageManager = project.in(file("Storage/StorageManager")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", StorageBase, Exceptions, KamanjaBase, KamanjaUtils, StorageSqlServer, StorageCassandra, StorageHashMap, StorageTreeMap, StorageHBase, StorageH2DB)
 
 lazy val AuditAdapterBase = project.in(file("AuditAdapters/AuditAdapterBase")).configs(TestConfigs.all: _*).settings(TestSettings.settings: _*).settings(version <<= version in ThisBuild).dependsOn(ExtDependencyLibs % "provided", ExtDependencyLibs2 % "provided", Exceptions)
 

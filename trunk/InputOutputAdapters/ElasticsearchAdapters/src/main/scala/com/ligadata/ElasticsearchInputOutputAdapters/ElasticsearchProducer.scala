@@ -24,9 +24,10 @@ import org.elasticsearch.common.transport.InetSocketTransportAddress
 import org.elasticsearch.index.VersionType
 import org.json4s.jackson.Serialization
 
+
 import scala.actors.threadpool.{ExecutorService, Executors}
 import scala.collection.mutable.ArrayBuffer
-import org.json.JSONObject;
+import org.json.JSONObject
 import org.elasticsearch.shield.ShieldPlugin
 
 object ElasticsearchProducer extends OutputAdapterFactory {
@@ -96,9 +97,6 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   val failedMsgsMap = new ConcurrentHashMap[Int, ConcurrentHashMap[Long, MsgDataRecievedCnt]](128);
   // We just need Array Buffer as Innser value. But the only issue is we need to make sure we handle it for multiple threads.
 
-  //  var dataStoreInfo = elaticsearchutil.createDataStorageInfo(adapterConfig)
-  //  var dataStore = elaticsearchutil.GetDataStoreHandle(dataStoreInfo).asInstanceOf[ElasticsearchAdapter]
-
   private val producer = this
 
   // Start the heartbeat.
@@ -119,7 +117,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
         } catch {
           case e: Throwable => {
             if (!isShutdown)
-              logger.warn("Failed to commit.", e)
+              logger.warn("Failed to commit. ClassLoader:" + getClass().getClassLoader(), e)
           }
         }
 

@@ -1,10 +1,8 @@
 package com.ligadata.ElasticsearchInputOutputAdapters
 
 import com.ligadata.AdapterConfiguration.ElasticsearchAdapterConfiguration
-import com.ligadata.StorageBase.DataStore
 import com.ligadata.Utils.KamanjaLoaderInfo
 import com.ligadata.kamanja.metadata.MdMgr._
-import com.ligadata.keyvaluestore.ElasticsearchAdapter
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.client._
 import org.apache.hadoop.security.UserGroupInformation
@@ -72,15 +70,6 @@ class ElasticsearchUtility /*extends LogTrait*/ {
     namespace + ':' + tableName.toLowerCase.replace('.', '_').replace('-', '_').replace(' ', '_')
   }
 
-  def GetDataStoreHandle(dataStoreInfo: String): DataStore = {
-    try {
-      logger.debug("Getting DB Connection for dataStoreInfo:%s".format(dataStoreInfo))
-      return ElasticsearchAdapter.CreateStorageAdapter(kvManagerLoader, dataDataStoreInfo, null, null)
-    } catch {
-      case e: Exception => throw e
-      case e: Throwable => throw e
-    }
-  }
 
   def initilizeVariable(adapterConfig: ElasticsearchAdapterConfiguration): Unit = {
     tableName = adapterConfig.TableName
