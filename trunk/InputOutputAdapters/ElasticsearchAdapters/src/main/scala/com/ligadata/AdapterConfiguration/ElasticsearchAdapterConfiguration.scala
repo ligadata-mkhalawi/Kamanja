@@ -11,7 +11,7 @@ import org.json4s.native.JsonMethods._
 class ElasticsearchAdapterConfiguration extends AdapterConfiguration {
   var hostList: String = null
   //folder to write files
-  var scehmaName: String = ""
+  var schemaName: String = ""
   // prefix for the file names
   var TableName: String = ""
   // optional separator inserted between messages
@@ -75,8 +75,8 @@ object ElasticsearchAdapterConfiguration extends LogTrait {
         adapterConfig.location = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("portnumber") == 0) {
         adapterConfig.portNumber = kv._2.toString.trim
-      } else if (kv._1.compareToIgnoreCase("scehmaName") == 0) {
-        adapterConfig.scehmaName = kv._2.toString.trim
+      } else if (kv._1.compareToIgnoreCase("schemaName") == 0) {
+        adapterConfig.schemaName = kv._2.toString.trim
       } else if (kv._1.compareToIgnoreCase("tableName") == 0) {
         adapterConfig.TableName = kv._2.toString
         //      } else if (kv._1.compareToIgnoreCase("serializerName") == 0) {
@@ -127,7 +127,7 @@ object ElasticsearchAdapterConfiguration extends LogTrait {
         throw new KamanjaException("Keytab should be specified for Kerberos authentication for Elasticsearch Producer: " + adapterConfig.Name, null)
     }
 
-    if (adapterConfig.scehmaName == null)
+    if (adapterConfig.schemaName == null)
       throw new KamanjaException("schemaName should be specified to read/write data from Elasticsearch storage for Elasticsearch Producer: " + adapterConfig.Name, null)
 
     if (inputType.equalsIgnoreCase("input")) {

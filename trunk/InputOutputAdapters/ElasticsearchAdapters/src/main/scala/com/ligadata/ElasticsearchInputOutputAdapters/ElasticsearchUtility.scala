@@ -73,16 +73,16 @@ class ElasticsearchUtility /*extends LogTrait*/ {
 
   def initilizeVariable(adapterConfig: ElasticsearchAdapterConfiguration): Unit = {
     tableName = adapterConfig.TableName
-    namespace = adapterConfig.scehmaName
+    namespace = adapterConfig.schemaName
     fulltableName = toTableName
     tenantId = adapterConfig.tenantId
   }
 
   def createDataStorageInfo(adapterConfig: ElasticsearchAdapterConfiguration): String = {
     if (adapterConfig.kerberos != null) {
-      dataDataStoreInfo = """{"StoreType": "elasticsearch","SchemaName": "%s","Location":"%s","clusterName":"%s", "authentication": "kerberos", "regionserver_principal": %s", "master_principal": "%s", "principal": "%s", "keytab": "%s"}""".format(adapterConfig.scehmaName, adapterConfig.hostList, adapterConfig.clusterName, adapterConfig.kerberos.regionServer, adapterConfig.kerberos.masterPrincipal, adapterConfig.kerberos.principal, adapterConfig.kerberos.keytab)
+      dataDataStoreInfo = """{"StoreType": "elasticsearch","SchemaName": "%s","Location":"%s","clusterName":"%s", "authentication": "kerberos", "regionserver_principal": %s", "master_principal": "%s", "principal": "%s", "keytab": "%s"}""".format(adapterConfig.schemaName, adapterConfig.hostList, adapterConfig.clusterName, adapterConfig.kerberos.regionServer, adapterConfig.kerberos.masterPrincipal, adapterConfig.kerberos.principal, adapterConfig.kerberos.keytab)
     } else {
-      dataDataStoreInfo = """{"StoreType": "elasticsearch","SchemaName": "%s","Location":"%s","clusterName":"%s"}""".format(adapterConfig.scehmaName, adapterConfig.hostList, adapterConfig.clusterName)
+      dataDataStoreInfo = """{"StoreType": "elasticsearch","SchemaName": "%s","Location":"%s","clusterName":"%s"}""".format(adapterConfig.schemaName, adapterConfig.hostList, adapterConfig.clusterName)
     }
     dataDataStoreInfo
   }

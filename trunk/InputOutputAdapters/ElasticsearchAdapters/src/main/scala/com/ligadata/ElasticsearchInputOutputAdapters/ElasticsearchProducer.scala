@@ -398,7 +398,7 @@ class ElasticsearchProducer(val inputConfig: AdapterConfiguration, val nodeConte
   }
 
   def toFullTableName(containerName: String): String = {
-    (adapterConfig.scehmaName + "." + containerName).toLowerCase()
+    (adapterConfig.schemaName + "." + containerName).toLowerCase()
   }
 
   private def createIndexForOutputAdapter(indexName: String, indexMapping: String): Unit = {
