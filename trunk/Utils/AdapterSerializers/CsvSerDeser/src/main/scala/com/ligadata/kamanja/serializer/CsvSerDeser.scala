@@ -385,10 +385,9 @@ class CsvSerDeser extends SerializeDeserialize {
       */
     def csvApache(rawCsvContainerStr: String) : Array[String] = {
         val in = new StringReader(rawCsvContainerStr)
-        val records = CSVFormat.DEFAULT.parse(in)
-        val record = records.iterator()
-        if (record.hasNext) {
-            record.next().iterator().asScala.toArray
+        val records = CSVFormat.DEFAULT.withDelimiter(_fieldDelimiter).parse(in).iterator
+        if (records.hasNext) {
+            records.next().iterator().asScala.toArray
         }else{
             Array[String]()
         }
