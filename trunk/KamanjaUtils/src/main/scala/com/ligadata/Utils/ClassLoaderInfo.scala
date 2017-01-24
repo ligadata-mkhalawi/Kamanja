@@ -48,6 +48,8 @@ class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: Kama
         val urls = if (parentLast == false && parent == null && systemClassLoader != null) systemClassLoader.getURLs() else Array[URL]()
         if (LOG.isDebugEnabled())
           LOG.debug("Created KamanjaClassLoader. this:" + this + ", systemClassLoader:" + systemClassLoader + ", currentClassClassLoader:" + currentClassClassLoader + ", parentLast:" + parentLast + ", addSystemJars:" + addSystemJars + ", URLS:" + urls.map(u => u.getFile()).mkString(","), e)
+        // else if (LOG.isWarnEnabled)
+        //   LOG.warn("Created KamanjaClassLoader. this:" + this + ", systemClassLoader:" + systemClassLoader + ", currentClassClassLoader:" + currentClassClassLoader + ", parentLast:" + parentLast + ", addSystemJars:" + addSystemJars + ", URLS:" + urls.map(u => u.getFile()).mkString(","), e)
       }
     }
   }
@@ -65,7 +67,7 @@ class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: Kama
     if (parentLast) {
       var clz = findLoadedClass(className);
       if (clz == null) {
-        if (systemClassLoader != null) {
+        if (systemClassLoader != null && !addSystemJars) {
           try {
             clz = systemClassLoader.loadClass(className);
           }
@@ -75,7 +77,7 @@ class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: Kama
           }
         }
 
-        if (currentClassClassLoader != null) {
+        if (currentClassClassLoader != null && !addSystemJars) {
           try {
             clz = currentClassClassLoader.loadClass(className);
           }
@@ -113,15 +115,39 @@ class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: Kama
             }
           }
         }
+
+        if (clz == null && currentClassClassLoader != null && addSystemJars) {
+          try {
+            clz = currentClassClassLoader.loadClass(className);
+          }
+          catch {
+            case e: Throwable => {
+              if (exp == null)
+                exp = e
+            }
+          }
+        }
+
+        if (clz == null && systemClassLoader != null && addSystemJars) {
+          try {
+            clz = systemClassLoader.loadClass(className);
+          }
+          catch {
+            case e: Throwable => {
+              if (exp == null)
+                exp = e
+            }
+          }
+        }
       }
 
       if (exp != null && clz == null) {
-/*
-        val curURLs = getURLs()
-        val sysURLs = systemClassLoader.getURLs()
-        LOG.error("Class:" + className + " not found in classloader:" + this + " and also in systemClassLoader:" + systemClassLoader + " and also in currentClassClassLoader:" + currentClassClassLoader
-          + ", curURLs:{" + curURLs.map(url => url.getFile).mkString(",") + "}, sysURLs:{" + sysURLs.map(url => url.getFile).mkString(",") + "}")
-*/
+        if (addSystemJars) {
+          val curURLs = getURLs()
+          val sysURLs = systemClassLoader.getURLs()
+          LOG.error("Class:" + className + " not found in classloader:" + this + " and also in systemClassLoader:" + systemClassLoader + " and also in currentClassClassLoader:" + currentClassClassLoader
+                     + ", curURLs:{" + curURLs.map(url => url.getFile).mkString(",") + "}, sysURLs:{" + sysURLs.map(url => url.getFile).mkString(",") + "}")
+        }
         throw exp
       }
       if (resolve) {
@@ -138,10 +164,10 @@ class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: Kama
     if (LOG.isDebugEnabled()) LOG.debug("Trying to getResource:" + name)
 
     if (parentLast) {
-      if (systemClassLoader != null && url == null) {
+      if (systemClassLoader != null && url == null && !addSystemJars) {
         url = systemClassLoader.getResource(name);
       }
-      if (currentClassClassLoader != null && url == null) {
+      if (currentClassClassLoader != null && url == null && !addSystemJars) {
         url = currentClassClassLoader.getResource(name);
       }
       if (url == null) {
@@ -152,6 +178,12 @@ class KamanjaClassLoader(val systemClassLoader: URLClassLoader, val parent: Kama
         if (url == null && parent != null) {
           url = parent.getResource(name);
         }
+      }
+      if (systemClassLoader != null && url == null && addSystemJars) {
+        url = systemClassLoader.getResource(name);
+      }
+      if (currentClassClassLoader != null && url == null && addSystemJars) {
+        url = currentClassClassLoader.getResource(name);
       }
     } else {
       url = super.getResource(name)
