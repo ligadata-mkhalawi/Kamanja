@@ -20,9 +20,10 @@ Command Reference Pages
    command-ref/KVInit
    command-ref/SetPaths
    command-ref/SimplePmlTestTool
-   command-ref/WatchInputQueue
    command-ref/StatusKamanjaCluster
+   command-ref/StartEngine
    command-ref/WatchOutputQueue
+   command-ref/WatchInputQueue
    command-ref/WatchStatusQueue
    command-ref/zkCLI
    command-ref/zkServer

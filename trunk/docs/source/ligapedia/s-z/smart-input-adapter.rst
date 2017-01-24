@@ -34,4 +34,9 @@ This configuration specifies the file system type to use,
 how to connect to the file system, what folders to watch,
 and some other information.
 
+For more information:
+
+- :ref:`smart-input-adapter-ref` gives details about the
+  parameters and attributes that control a smart file input adapter.
+
 

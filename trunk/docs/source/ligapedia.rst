@@ -18,6 +18,7 @@ Ligapedia
    ligapedia/a-f/com-ligadata-keyvaluestore-datastore
    ligapedia/a-f/com-ligadata-keyvaluestore-transaction
    ligapedia/a-f/concepts
+   ligapedia/a-f/consolidated-log
    ligapedia/a-f/container
    ligapedia/a-f/csv
    ligapedia/a-f/dag
@@ -38,6 +39,7 @@ Ligapedia
    ligapedia/g-m/kbinary
    ligapedia/g-m/kv
    ligapedia/g-m/log4j2
+   ligapedia/g-m/log-consolidated
    ligapedia/g-m/machine-learning
    ligapedia/g-m/messages
    ligapedia/g-m/message-bindings
@@ -66,9 +68,11 @@ Ligapedia
    ligapedia/s-z/serial-deserial
    ligapedia/s-z/sql
    ligapedia/s-z/smart-input-adapter
+   ligapedia/s-z/smart-output-adapter
    ligapedia/s-z/supervised-learning
    ligapedia/s-z/tensorflow
    ligapedia/s-z/tenancy
+   ligapedia/s-z/time-partition
    ligapedia/s-z/topic
    ligapedia/s-z/types
    ligapedia/s-z/unsupervised-learning
