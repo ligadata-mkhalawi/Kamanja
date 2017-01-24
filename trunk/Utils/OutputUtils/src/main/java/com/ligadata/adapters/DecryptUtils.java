@@ -47,7 +47,6 @@ public class DecryptUtils{
      * @return password as plain text
      * @throws java.lang.Exception
      */
-
     private static String getDecryptedPassword(AdapterConfiguration config) throws Exception {
 	try{
 	    // use the enrypted password if available
@@ -87,7 +86,6 @@ public class DecryptUtils{
      * @return password as plain text
      * @throws java.lang.Exception
      */
-
     private static String getDecodedPassword(AdapterConfiguration config) throws Exception {
 	try{
 	    // use the enrypted password if available
@@ -112,10 +110,8 @@ public class DecryptUtils{
      * @param config
      *          : AdapterConfiguraton contains property hash map
      * @return password as plain text
-     * @throws java.lang.Exception
      */
-
-    public static String getPassword(AdapterConfiguration config, String PasswordPropertyName)  {
+    public static String getPassword(AdapterConfiguration config, String PasswordPropertyName) {
 	try{
 	    String pass = getDecryptedPassword(config);
 	    if( pass == null ){
