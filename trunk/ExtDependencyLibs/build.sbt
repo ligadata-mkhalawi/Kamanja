@@ -245,9 +245,6 @@ libraryDependencies += "org.infinispan" % "infinispan-core" % "7.2.5.Final"
 libraryDependencies += "org.infinispan" % "infinispan-tree" % "7.2.5.Final"
 libraryDependencies += "net.jcip" % "jcip-annotations" % "1.0"
 
-// org.apache.commons // commons-csv
-libraryDependencies += "org.apache.commons" % "commons-csv" % "1.4"
-
 
 /////////////////////// InstallerDriver
 //already available
