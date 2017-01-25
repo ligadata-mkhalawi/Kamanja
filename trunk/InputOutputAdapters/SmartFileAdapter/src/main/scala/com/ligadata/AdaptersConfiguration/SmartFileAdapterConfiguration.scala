@@ -12,16 +12,28 @@ import org.json4s.native.JsonMethods._
 import scala.collection.mutable.{ArrayBuffer, MutableList}
 
 class ArchiveConfig {
-  var archiveSleepTimeInMs: Int = 10
+  var archiveSleepTimeInMs: Int = 500
   var archiveParallelism: Int = 1
   var outputConfig: SmartFileProducerConfiguration = null
+
+  var consolidationMaxSizeMB : Double = 100
+
+  def consolidateThresholdBytes : Long = (consolidationMaxSizeMB * 1024 * 1024).toLong
+
+  //whether to create a dir for each location under archive dir.
+  //we are dealing with files not messages, so cannot use msg name
+  //instead last part of configured location src dir path will be used as dir name
+  var createDirPerLocation : Boolean = true
+
+  //var enforceDataOrder : Boolean = false
 }
 
 /**
   * Created by Yasser on 3/10/2016.
   */
 class SmartFileAdapterConfiguration extends AdapterConfiguration {
-  var _type: String = _ // FileSystem, hdfs, sftp
+  var _type: String = _ // das/nas , hdfs, sftp
+  var statusMsgTypeName = ""
 
   var connectionConfig: FileAdapterConnectionConfig = null
   var monitoringConfig: FileAdapterMonitoringConfig = null
@@ -58,14 +70,27 @@ class FileAdapterMonitoringConfig {
   var workerBufferSize: Int = 4 //buffer size in MB to read messages from files
 
 
-  var msgTags: Array[String] = Array.empty[String]  //public
+  //var msgTags: Array[String] = Array.empty[String]  //public
+  var msgTagsKV = scala.collection.immutable.Map[String, String]()  //public
   var tagDelimiter: String = "," //public
 
   var messageSeparator: Char = 10
   var orderBy: Array[String] = Array.empty[String]
 
+  var checkFileTypes = false
+
+  //when reading a file, if type is unknown and this flag is false, an exception is thrown so that file is not processed
+  var considerUnknownFileTypesAsIs = true
+
   var enableMoving: String = "on"  //on, off - public
   def isMovingEnabled: Boolean = enableMoving == null || enableMoving.length == 0 || enableMoving.equalsIgnoreCase("on")
+
+  var createInputStructureInTargetDirs = true
+
+  //0 => all depths
+  //1 => check only dir direct child files
+  //n > 1 => stop at corresponding depth
+  var dirMonitoringDepth : Int = 0
 }
 
 class Padding {
@@ -88,7 +113,8 @@ class LocationInfo {
 
   var fileComponents: FileComponents = null
   //array of keywords, each one has a meaning to the adapter, which will add corresponding data to msg before sending to engine
-  var msgTags: Array[String] = Array.empty[String]
+  //var msgTags: Array[String] = Array.empty[String]
+  var msgTagsKV = scala.collection.immutable.Map[String, String]()
   var tagDelimiter: String = "" //if empty get public one
 
   var messageSeparator: Char = 0  //0 this means separator is not set, so get it from public attributes
@@ -96,7 +122,14 @@ class LocationInfo {
 
   var enableMoving: String = ""  //on, off, empty means get it from public attribute
   def isMovingEnabled: Boolean = enableMoving == null || enableMoving.length == 0 || enableMoving.equalsIgnoreCase("on")
+
+  //only if archiveConfig != null
+  //if has value, this folder will be used for archive files. it is relative to archiveConfig.outputConfig.uri
+  //else archive path will be inferred based on source path and attributes createInputStructureInTargetDirs, createDirPerLocation
+  var archiveRelativePath : String = ""
 }
+
+case class SmartFileAdapterGeneralConfig(sourceType : String, statusMsgTypeName : String)
 
 object SmartFileAdapterConfiguration {
 
@@ -110,6 +143,36 @@ object SmartFileAdapterConfiguration {
   val validMsgTags = Set("MsgType", "FileName", "FileFullPath")
 
   def isValidMsgTag(tag: String) = tag != null && (validMsgTags contains tag)
+
+  //concerned about connection info only here
+  def outputConfigToInputConfig(outputConfig : SmartFileProducerConfiguration) : SmartFileAdapterConfiguration = {
+    val inputConfig = new SmartFileAdapterConfiguration()
+    //inputConfig.monitoringConfig.
+    inputConfig._type = if(outputConfig.uri.startsWith("hdfs://")) "HDFS" else "DAS/NAS"
+    val hosts =
+      if(outputConfig.uri.toLowerCase.startsWith("hdfs://")){
+        val part = outputConfig.uri.substring(7)
+        val idx = part.indexOf("/")
+        if(idx > 0) "hdfs://" + part.substring(0, idx)
+        else "hdfs://" + part
+      }
+      else ""
+
+    inputConfig.connectionConfig = new FileAdapterConnectionConfig
+    inputConfig.connectionConfig.hostsList = hosts.split(",")
+
+    if(outputConfig.kerberos != null){
+      inputConfig.connectionConfig.authentication = "kerberos"
+      inputConfig.connectionConfig.principal = outputConfig.kerberos.principal
+      inputConfig.connectionConfig.keytab = outputConfig.kerberos.keytab
+    }
+    else
+      inputConfig.connectionConfig.authentication = "simple"
+
+    inputConfig.connectionConfig.hadoopConfig = outputConfig.hadoopConfig
+
+    inputConfig
+  }
 
   def getAdapterConfig(inputConfig: AdapterConfiguration): SmartFileAdapterConfiguration = {
 
@@ -135,8 +198,9 @@ object SmartFileAdapterConfiguration {
 
     logger.debug("SmartFileAdapterConfiguration (getAdapterConfig)- inputConfig.adapterSpecificCfg==null is " +
       (inputConfig.adapterSpecificCfg == null))
-    val (_type, connectionConfig, monitoringConfig, archiveConfig) = parseSmartFileAdapterSpecificConfig(inputConfig.Name, inputConfig.adapterSpecificCfg)
-    adapterConfig._type = _type
+    val (generalConfig, connectionConfig, monitoringConfig, archiveConfig) = parseSmartFileAdapterSpecificConfig(inputConfig.Name, inputConfig.adapterSpecificCfg)
+    adapterConfig._type = generalConfig.sourceType
+    adapterConfig.statusMsgTypeName = generalConfig.statusMsgTypeName
     adapterConfig.connectionConfig = connectionConfig
     adapterConfig.monitoringConfig = monitoringConfig
     adapterConfig.archiveConfig = archiveConfig
@@ -144,7 +208,7 @@ object SmartFileAdapterConfiguration {
     adapterConfig
   }
 
-  def parseSmartFileAdapterSpecificConfig(adapterName: String, adapterSpecificCfgJson: String): (String, FileAdapterConnectionConfig, FileAdapterMonitoringConfig, ArchiveConfig) = {
+  def parseSmartFileAdapterSpecificConfig(adapterName: String, adapterSpecificCfgJson: String): (SmartFileAdapterGeneralConfig, FileAdapterConnectionConfig, FileAdapterMonitoringConfig, ArchiveConfig) = {
 
     val adapCfg = parse(adapterSpecificCfgJson)
 
@@ -160,6 +224,7 @@ object SmartFileAdapterConfiguration {
       throw new KamanjaException(err, null)
     }
     val _type = adapCfgValues.get("Type").get.toString
+    val statusMsgTypeName = adapCfgValues.getOrElse("StatusMsgTypeName", "").toString
 
     val connectionConfig = new FileAdapterConnectionConfig()
     val monitoringConfig = new FileAdapterMonitoringConfig()
@@ -269,14 +334,21 @@ object SmartFileAdapterConfiguration {
       else if (kv._1.compareToIgnoreCase("MessageSeparator") == 0) {
         monitoringConfig.messageSeparator = kv._2.asInstanceOf[String].trim.toInt.toChar
       }
+      else if (kv._1.compareToIgnoreCase("CheckFileTypes") == 0) {
+        monitoringConfig.checkFileTypes = kv._2.asInstanceOf[String].trim.toBoolean
+      }
+      else if (kv._1.compareToIgnoreCase("ConsiderUnknownFileTypesAsIs") == 0) {
+        monitoringConfig.considerUnknownFileTypesAsIs = kv._2.asInstanceOf[String].trim.toBoolean
+      }
       else if (kv._1.compareToIgnoreCase("OrderBy") == 0) {
         monitoringConfig.orderBy = kv._2.asInstanceOf[List[String]].toArray
       }
       else if (kv._1.compareToIgnoreCase("TagDelimiter") == 0) {
-        monitoringConfig.tagDelimiter = kv._2.asInstanceOf[String]
+        monitoringConfig.tagDelimiter =
+          org.apache.commons.lang.StringEscapeUtils.unescapeJava(kv._2.asInstanceOf[String])
       }
-      else if (kv._1.compareToIgnoreCase("MsgTags") == 0) {
-        monitoringConfig.msgTags = kv._2.asInstanceOf[List[String]].toArray
+      else if (kv._1.compareToIgnoreCase("MsgTagsKV") == 0) {
+        monitoringConfig.msgTagsKV = kv._2.asInstanceOf[scala.collection.immutable.Map[String, String]]
       }
       else if (kv._1.compareToIgnoreCase("DirCheckThreshold") == 0) {
         monitoringConfig.dirCheckThreshold = kv._2.asInstanceOf[String].trim.toInt
@@ -293,6 +365,13 @@ object SmartFileAdapterConfiguration {
       else if (kv._1.compareToIgnoreCase("EnableMoving") == 0) {
         monitoringConfig.enableMoving = kv._2.asInstanceOf[String]
       }
+      else if (kv._1.compareToIgnoreCase("CreateInputStructureInTargetDirs") == 0) {
+        monitoringConfig.createInputStructureInTargetDirs = kv._2.asInstanceOf[String].trim.toBoolean
+      }
+      else if (kv._1.compareToIgnoreCase("DirMonitoringDepth") == 0) {
+        monitoringConfig.dirMonitoringDepth = kv._2.asInstanceOf[String].trim.toInt
+      }
+
       else if (kv._1.compareToIgnoreCase("FileComponents") == 0) {
         //public FileComponents
         val componentsMap = kv._2.asInstanceOf[Map[String, Any]]
@@ -315,11 +394,12 @@ object SmartFileAdapterConfiguration {
             else if (kv._1.compareToIgnoreCase("EnableMoving") == 0) {
               locationInfo.enableMoving = kv._2.asInstanceOf[String]
             }
-            else if (kv._1.compareToIgnoreCase("MsgTags") == 0) {
-              locationInfo.msgTags = kv._2.asInstanceOf[List[String]].toArray
+            else if (kv._1.compareToIgnoreCase("MsgTagsKV") == 0) {
+              locationInfo.msgTagsKV = kv._2.asInstanceOf[scala.collection.immutable.Map[String, String]]
             }
             else if (kv._1.compareToIgnoreCase("TagDelimiter") == 0) {
-              locationInfo.tagDelimiter = kv._2.asInstanceOf[String].trim
+              locationInfo.tagDelimiter = org.apache.commons.lang.StringEscapeUtils.unescapeJava(
+                kv._2.asInstanceOf[String].trim)
             }
             else if (kv._1.compareToIgnoreCase("MessageSeparator") == 0) {
               locationInfo.messageSeparator = kv._2.asInstanceOf[String].trim.toInt.toChar
@@ -331,6 +411,9 @@ object SmartFileAdapterConfiguration {
               val componentsMap = kv._2.asInstanceOf[Map[String, Any]]
               val fileComponents = extractFileComponents(componentsMap)
               locationInfo.fileComponents = fileComponents
+            }
+            else if (kv._1.compareToIgnoreCase("ArchiveRelativePath") == 0) {
+              locationInfo.archiveRelativePath = kv._2.asInstanceOf[String]
             }
 
           })
@@ -397,8 +480,8 @@ object SmartFileAdapterConfiguration {
         if (locationInfo.fileComponents == null)
           locationInfo.fileComponents = publicFileComponents
 
-        if (locationInfo.msgTags == null || locationInfo.msgTags.length == 0)
-          locationInfo.msgTags = monitoringConfig.msgTags
+        if (locationInfo.msgTagsKV == null || locationInfo.msgTagsKV.size == 0)
+          locationInfo.msgTagsKV = monitoringConfig.msgTagsKV
 
         if (locationInfo.tagDelimiter == null || locationInfo.tagDelimiter.length == 0)
           locationInfo.tagDelimiter = monitoringConfig.tagDelimiter
@@ -445,6 +528,12 @@ object SmartFileAdapterConfiguration {
 
         archiveConfig.archiveSleepTimeInMs = if (connConf.contains("ArchiveSleepTimeInMs")) connConf.getOrElse("ArchiveSleepTimeInMs", "10").toString.trim.toInt else 10
         if (archiveConfig.archiveSleepTimeInMs < 0) archiveConfig.archiveSleepTimeInMs = 10
+
+        archiveConfig.consolidationMaxSizeMB = if (connConf.contains("ConsolidationMaxSizeMB")) connConf.getOrElse("ConsolidationMaxSizeMB", "100").toString.trim.toDouble else 100
+        if (archiveConfig.consolidationMaxSizeMB <= 0) archiveConfig.consolidationMaxSizeMB = 100
+
+        archiveConfig.createDirPerLocation = if (connConf.contains("CreateDirPerLocation")) connConf.getOrElse("CreateDirPerLocation", "true").toString.trim.toBoolean else true
+
       } catch {
         case e: Throwable => {
           logger.error("Failed to load ArchiveConfig", e)
@@ -456,7 +545,7 @@ object SmartFileAdapterConfiguration {
 
     //TODO : validation for FilesOrdering
 
-    (_type, connectionConfig, monitoringConfig, archiveConfig)
+    (SmartFileAdapterGeneralConfig(_type, statusMsgTypeName), connectionConfig, monitoringConfig, archiveConfig)
   }
 
 

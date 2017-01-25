@@ -24,10 +24,141 @@ import com.ligadata.Utils._
 class ModelFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelInstanceFactory(modelDef, nodeContext) {
   // Factory code start
   // Factory code end
-  override def createModelInstance(txnCtxt: com.ligadata.KamanjaBase.TransactionContext): ModelInstance = return new Model(this)
+  override def createModelInstance(): ModelInstance = return new Model(this)
   override def getModelName: String = "com.ligadata.jtm.test.v3.filter.Model"
   override def getVersion: String = "0.0.1"
   override def createResultObject(): ModelResultBase = new MappedModelResults()
+  override def isModelInstanceReusable(): Boolean = true;
+}
+class common_exeGenerated_test1_1(conversion: com.ligadata.runtime.Conversion,
+log: com.ligadata.runtime.Log,
+context: com.ligadata.runtime.JtmContext,
+msg1: com.ligadata.kamanja.test.V1000000.msg1, msg2: com.ligadata.kamanja.test.V1000000.msg3, msg3: com.ligadata.kamanja.test.V1000000.msg5) {
+  import log._
+  // in scala, type could be optional
+  val zipcode: Int = iplookup(msg2.in1).zipcode
+  val zipcode1: Int = iplookup(msg1.in1).zipcode
+  // type could be some class available from imports
+  val ipinfo: IpInfo = iplookup(msg2.in1)
+}
+class common_exeGenerated_test1_1_process_omsg2(conversion: com.ligadata.runtime.Conversion,
+log : com.ligadata.runtime.Log,
+context: com.ligadata.runtime.JtmContext,
+common: common_exeGenerated_test1_1,
+msg1: com.ligadata.kamanja.test.V1000000.msg1, msg2: com.ligadata.kamanja.test.V1000000.msg3, msg3: com.ligadata.kamanja.test.V1000000.msg5) {
+  import log._
+  import common._
+  val result: Array[MessageInterface]= try {
+    if (!(!(msg2.in2 != -1 && msg2.in2 < 100))) {
+      Debug("Filtered: test1@omsg2")
+      Array.empty[MessageInterface]
+    } else {
+      val tmp8: String = somefunc2(msg2.in3)
+      val result = com.ligadata.kamanja.test.V1000000.msg2.createInstance
+      result.out4 = ipinfo.zipCode
+      result.out3 = somefunc(zipcode, zipcode1)
+      result.out2 = tmp8
+      result.out1 = msg2.in1
+      if (result.hasTimePartitionInfo) result.setTimePartitionData ;
+      if(context.CurrentErrors()==0) {
+        Array(result)
+      } else {
+        Array.empty[MessageInterface]
+      }
+    }
+  } catch {
+    case e: AbortOutputException => {
+      context.AddError(e.getMessage)
+      Array.empty[MessageInterface]
+    }
+    case e: Exception => {
+      Debug("Exception: omsg2:" + e.getMessage)
+      throw e
+    }
+  }
+}
+class common_exeGenerated_test1_2(conversion: com.ligadata.runtime.Conversion,
+log: com.ligadata.runtime.Log,
+context: com.ligadata.runtime.JtmContext,
+msg2: com.ligadata.kamanja.test.V1000000.msg3, msg3: com.ligadata.kamanja.test.V1000000.msg5, msg4: com.ligadata.kamanja.test.V1000000.msg6) {
+  import log._
+  // in scala, type could be optional
+  val zipcode: Int = iplookup(msg2.in1).zipcode
+  val zipcode1: Int = iplookup(msg2.in1.zipcode
+  // type could be some class available from imports
+  val ipinfo: IpInfo = iplookup(msg2.in1)
+}
+class common_exeGenerated_test1_2_process_omsg2(conversion: com.ligadata.runtime.Conversion,
+log : com.ligadata.runtime.Log,
+context: com.ligadata.runtime.JtmContext,
+common: common_exeGenerated_test1_2,
+msg2: com.ligadata.kamanja.test.V1000000.msg3, msg3: com.ligadata.kamanja.test.V1000000.msg5, msg4: com.ligadata.kamanja.test.V1000000.msg6) {
+  import log._
+  import common._
+  val result: Array[MessageInterface]= try {
+    if (!(!(msg2.in2 != -1 && msg2.in2 < 100))) {
+      Debug("Filtered: test1@omsg2")
+      Array.empty[MessageInterface]
+    } else {
+      val tmp8: String = somefunc2(msg2.in3)
+      val result = com.ligadata.kamanja.test.V1000000.msg2.createInstance
+      result.out4 = ipinfo.zipCode
+      result.out3 = somefunc(zipcode, zipcode1)
+      result.out2 = tmp8
+      result.out1 = msg2.in1
+      if (result.hasTimePartitionInfo) result.setTimePartitionData ;
+      if(context.CurrentErrors()==0) {
+        Array(result)
+      } else {
+        Array.empty[MessageInterface]
+      }
+    }
+  } catch {
+    case e: AbortOutputException => {
+      context.AddError(e.getMessage)
+      Array.empty[MessageInterface]
+    }
+    case e: Exception => {
+      Debug("Exception: omsg2:" + e.getMessage)
+      throw e
+    }
+  }
+}
+class common_exeGenerated_test2_3(conversion: com.ligadata.runtime.Conversion,
+log: com.ligadata.runtime.Log,
+context: com.ligadata.runtime.JtmContext,
+msg2: com.ligadata.kamanja.test.V1000000.msg3) {
+  import log._
+}
+class common_exeGenerated_test2_3_process_omsg3(conversion: com.ligadata.runtime.Conversion,
+log : com.ligadata.runtime.Log,
+context: com.ligadata.runtime.JtmContext,
+common: common_exeGenerated_test2_3,
+msg2: com.ligadata.kamanja.test.V1000000.msg3) {
+  import log._
+  import common._
+  val result: Array[MessageInterface]= try {
+    val result = com.ligadata.kamanja.test.V1000000.msg4.createInstance
+    result.out4 = msg2.in1
+    result.out3 = msg2.in1
+    result.out2 = conversion.ToString(msg2.in1)
+    result.out1 = msg2.in1
+    if (result.hasTimePartitionInfo) result.setTimePartitionData ;
+    if(context.CurrentErrors()==0) {
+      Array(result)
+    } else {
+      Array.empty[MessageInterface]
+    }
+  } catch {
+    case e: AbortOutputException => {
+      context.AddError(e.getMessage)
+      Array.empty[MessageInterface]
+    }
+    case e: Exception => {
+      Debug("Exception: omsg3:" + e.getMessage)
+      throw e
+    }
+  }
 }
 class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
   val conversion = new com.ligadata.runtime.Conversion
@@ -37,6 +168,7 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
   // Model code start
   // Model code end
   override def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
+    context.Reset(); // Resetting the JtmContext before executing the model
     if (isTraceEnabled)
     Trace(s"Model::execute transid=%d triggeredset=%d outputdefault=%s".format(txnCtxt.transId, triggerdSetIndex, outputDefault.toString))
     if(isDebugEnabled)
@@ -49,40 +181,12 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
     def exeGenerated_test1_1(msg1: com.ligadata.kamanja.test.V1000000.msg1, msg2: com.ligadata.kamanja.test.V1000000.msg3, msg3: com.ligadata.kamanja.test.V1000000.msg5): Array[MessageInterface] = {
       Debug("exeGenerated_test1_1")
       context.SetSection("test1")
-      // in scala, type could be optional
-      val zipcode: Int = iplookup(msg2.in1).zipcode
-      val zipcode1: Int = iplookup(msg1.in1).zipcode
-      // type could be some class available from imports
-      val ipinfo: IpInfo = iplookup(msg2.in1)
+      val common = new common_exeGenerated_test1_1(conversion, log, context, msg1, msg2, msg3)
       def process_omsg2(): Array[MessageInterface] = {
         Debug("exeGenerated_test1_1::process_omsg2")
         context.SetScope("omsg2")
-        try {
-          if (!(!(msg2.in2 != -1 && msg2.in2 < 100))) {
-            Debug("Filtered: test1@omsg2")
-            return Array.empty[MessageInterface]
-          }
-          val tmp8: String = somefunc2(msg2.in3)
-          val result = com.ligadata.kamanja.test.V1000000.msg2.createInstance
-          result.out4 = ipinfo.zipCode
-          result.out3 = somefunc(zipcode, zipcode1)
-          result.out2 = tmp8
-          result.out1 = msg2.in1
-          if(context.CurrentErrors()==0) {
-            Array(result)
-          } else {
-            Array.empty[MessageInterface]
-          }
-        } catch {
-          case e: AbortOutputException => {
-            context.AddError(e.getMessage)
-            return Array.empty[MessageInterface]
-          }
-          case e: Exception => {
-            Debug("Exception: omsg2:" + e.getMessage)
-            throw e
-          }
-        }
+        val result = new common_exeGenerated_test1_1_process_omsg2(conversion, log, context, common, msg1, msg2, msg3)
+        result.result
       }
       try {
         process_omsg2()
@@ -96,40 +200,12 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
     def exeGenerated_test1_2(msg2: com.ligadata.kamanja.test.V1000000.msg3, msg3: com.ligadata.kamanja.test.V1000000.msg5, msg4: com.ligadata.kamanja.test.V1000000.msg6): Array[MessageInterface] = {
       Debug("exeGenerated_test1_2")
       context.SetSection("test1")
-      // in scala, type could be optional
-      val zipcode: Int = iplookup(msg2.in1).zipcode
-      val zipcode1: Int = iplookup(msg2.in1.zipcode
-      // type could be some class available from imports
-      val ipinfo: IpInfo = iplookup(msg2.in1)
+      val common = new common_exeGenerated_test1_2(conversion, log, context, msg2, msg3, msg4)
       def process_omsg2(): Array[MessageInterface] = {
         Debug("exeGenerated_test1_2::process_omsg2")
         context.SetScope("omsg2")
-        try {
-          if (!(!(msg2.in2 != -1 && msg2.in2 < 100))) {
-            Debug("Filtered: test1@omsg2")
-            return Array.empty[MessageInterface]
-          }
-          val tmp8: String = somefunc2(msg2.in3)
-          val result = com.ligadata.kamanja.test.V1000000.msg2.createInstance
-          result.out4 = ipinfo.zipCode
-          result.out3 = somefunc(zipcode, zipcode1)
-          result.out2 = tmp8
-          result.out1 = msg2.in1
-          if(context.CurrentErrors()==0) {
-            Array(result)
-          } else {
-            Array.empty[MessageInterface]
-          }
-        } catch {
-          case e: AbortOutputException => {
-            context.AddError(e.getMessage)
-            return Array.empty[MessageInterface]
-          }
-          case e: Exception => {
-            Debug("Exception: omsg2:" + e.getMessage)
-            throw e
-          }
-        }
+        val result = new common_exeGenerated_test1_2_process_omsg2(conversion, log, context, common, msg2, msg3, msg4)
+        result.result
       }
       try {
         process_omsg2()
@@ -142,30 +218,12 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
     def exeGenerated_test2_3(msg2: com.ligadata.kamanja.test.V1000000.msg3): Array[MessageInterface] = {
       Debug("exeGenerated_test2_3")
       context.SetSection("test2")
+      val common = new common_exeGenerated_test2_3(conversion, log, context, msg2)
       def process_omsg3(): Array[MessageInterface] = {
         Debug("exeGenerated_test2_3::process_omsg3")
         context.SetScope("omsg3")
-        try {
-          val result = com.ligadata.kamanja.test.V1000000.msg4.createInstance
-          result.out4 = msg2.in1
-          result.out3 = msg2.in1
-          result.out2 = conversion.ToString(msg2.in1)
-          result.out1 = msg2.in1
-          if(context.CurrentErrors()==0) {
-            Array(result)
-          } else {
-            Array.empty[MessageInterface]
-          }
-        } catch {
-          case e: AbortOutputException => {
-            context.AddError(e.getMessage)
-            return Array.empty[MessageInterface]
-          }
-          case e: Exception => {
-            Debug("Exception: omsg3:" + e.getMessage)
-            throw e
-          }
-        }
+        val result = new common_exeGenerated_test2_3_process_omsg3(conversion, log, context, common, msg2)
+        result.result
       }
       try {
         process_omsg3()

@@ -19,7 +19,7 @@ object HdfsUtility{
 
 
     //hdfsConfig.set("hadoop.job.ugi", "hadoop");//user ???
-    if(connectionConf.authentication.equalsIgnoreCase("kerberos")){
+    if(connectionConf.authentication != null && connectionConf.authentication.equalsIgnoreCase("kerberos")){
       hdfsConfig.set("hadoop.security.authentication", "Kerberos")
       UserGroupInformation.setConfiguration(hdfsConfig)
       UserGroupInformation.loginUserFromKeytab(connectionConf.principal, connectionConf.keytab)

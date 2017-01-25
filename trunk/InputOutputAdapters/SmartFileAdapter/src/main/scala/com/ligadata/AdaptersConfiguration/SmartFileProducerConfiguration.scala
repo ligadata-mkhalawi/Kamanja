@@ -47,11 +47,31 @@ class SmartFileProducerConfiguration extends AdapterConfiguration {
   var flushBufferInterval: Long = 0 // in msecs. writes the buffer every flushBufferInterval msecs
   var typeLevelConfigKey: String = null
   var typeLevelConfigFile: String = null // file name that contains type level override configuration. Will override inline type level config
-  var typeLevelConfig: collection.mutable.Map[String, TypeLevelConfiguration] = collection.mutable.Map[String, TypeLevelConfiguration]() // inline type level override configuration 
-  
+  var typeLevelConfig: collection.mutable.Map[String, TypeLevelConfiguration] = collection.mutable.Map[String, TypeLevelConfiguration]() // inline type level override configuration
+  var parquetBlockSize : Int = 0 //in bytes, when 0 use default : 134217728=(128 * 1024 * 1024) - used for parquet only
+  var parquetPageSize : Int = 0  //in bytes, when 0 use default :   1048576=(  1 * 1024 * 1024).- used for parquet only
+  val otherConfig = scala.collection.mutable.Map[String, Any]()
+
   var kerberos: KerberosConfig = null
 
   var hadoopConfig  : List[(String,String)]=null
+
+  def isParquet = (compressionString != null && compressionString.toLowerCase.startsWith("parquet"))
+  def parquetCompression =
+    if(!isParquet) ""
+    else{
+      val tokens = compressionString.split("/")
+      if(tokens.length == 1) "UNCOMPRESSED"
+      else{
+        tokens(1).toLowerCase match{
+          case "snappy" => "SNAPPY"
+          case "gzip" => "GZIP"
+          case "lzo" => "LZO"
+          case "uncompressed" => "UNCOMPRESSED"
+          case _ => throw new Exception("Unsopported parquet compression " + tokens(1))
+        }
+      }
+    }
 
 }
 
@@ -143,6 +163,14 @@ object SmartFileProducerConfiguration {
         hadoopConfig.foreach(hconf =>{
           adapterConfig.hadoopConfig ::=(hconf._1, hconf._2)
         })
+      }
+      else if (kv._1.compareToIgnoreCase("ParquetBlockSize") == 0) {
+        adapterConfig.parquetBlockSize = kv._2.toString.toInt
+      }
+      else if (kv._1.compareToIgnoreCase("ParquetPageSize") == 0) {
+        adapterConfig.parquetPageSize = kv._2.toString.toInt
+      } else {
+        adapterConfig.otherConfig(kv._1) = kv._2
       }
     })
 

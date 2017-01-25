@@ -48,11 +48,16 @@ import java.util.{TreeMap, Date}
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import com.ligadata.cache.{CacheCallback, DataCache, CacheCallbackData}
 import scala.collection.JavaConverters._
+import akka.actor._
+import com.typesafe.config.ConfigFactory
+import akka.routing.RoundRobinPool
 
 trait LogTrait {
   val loggerName = this.getClass.getName()
   val logger = LogManager.getLogger(loggerName)
 }
+
+case class PutCacheConfig(key: String, value: Array[Byte], sentTime: Long)
 
 /**
   * The SimpleEnvContextImpl supports kv stores that are based upon MapDb hash tables.
@@ -62,6 +67,101 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
   case class CacheInfo(HostList: String, CachePort: Int, CacheSizePerNode: Long, ReplicateFactor: Int, TimeToIdleSeconds: Long, EvictionPolicy: String)
 
   case class TenantEnvCtxtInfo(tenantInfo: TenantInfo, datastore: DataStore, cachedContainers: scala.collection.mutable.Map[String, MsgContainerInfo], containersNames: scala.collection.mutable.Set[String])
+
+  private val EnvContextWorkerPool_akkaConfigFormat =
+    """
+      |
+      |akka
+      |{
+      |    log-dead-letters = 0
+      |    log-dead-letters-during-shutdown = off
+      |
+      |    loglevel = "INFO"
+      |    actor
+      |    {
+      |        provider = "akka.remote.RemoteActorRefProvider"
+      |        serialize-messages = on
+      |
+      |        serializers
+      |        {
+      |            java = "akka.serialization.JavaSerializer"
+      |            proto = "akka.remote.serialization.ProtobufSerializer"
+      |        }
+      |
+      |        serialization-bindings
+      |        {
+      |            "com.ligadata.SimpleEnvContextImpl.PutCacheConfig" = java
+      |        }
+      |
+      |    }
+      |
+      |    remote
+      |    {
+      |        enabled-transports = ["akka.remote.netty.tcp"]
+      |        netty.tcp
+      |        {
+      |            hostname = "%s"
+      |            port = %d
+      |        }
+      |
+      |        log-sent-messages = on
+      |        log-received-messages = on
+      |    }
+      |}
+      |
+      |LocalSystem
+      |{
+      |    include "common"
+      |    akka
+      |    {
+      |        log-dead-letters = 0
+      |        log-dead-letters-during-shutdown = off
+      |    }
+      |}
+      |
+    """.stripMargin
+
+  class EnvContextWorkerPool(context: ActorSystem, parallelThreads: Int) {
+    val workerPool = context.actorOf(Props(new ActorWorker).withRouter(RoundRobinPool(parallelThreads)), name = "SimpleEnvContextWorkerPool")
+    var listenerConfigClusterCache: DataCache = null
+
+    def SetListenerConfigClusterCache(tmpListenerConfigClusterCache: DataCache): Unit = {
+      listenerConfigClusterCache = tmpListenerConfigClusterCache
+    }
+
+    def SendPutCacheConfig(leaderNodeIp: String, leaderNodePort: Int, key: String, value: Array[Byte]): Unit = {
+      val host = leaderNodeIp + ":" + leaderNodePort
+      val curTime = System.currentTimeMillis
+      val runner = context.actorSelection("akka.tcp://SimpleEnvContextActorSystem@" + host + "/user/SimpleEnvContextWorkerPool")
+      if (logger.isWarnEnabled) logger.warn("AKKA::::SendingKey:" + key + " at:" + curTime + ", value:" + new String(value))
+      runner ! PutCacheConfig(key, value, curTime)
+    }
+
+    class ActorWorker extends Actor {
+      def receive = {
+        case PutCacheConfig(key: String, value: Array[Byte], sentTime: Long) => {
+          try {
+            if (listenerConfigClusterCache != null)
+              listenerConfigClusterCache.put(key, value)
+            val curTime = System.currentTimeMillis
+            var timeTaken = curTime - sentTime
+            if (timeTaken < 0)
+              timeTaken = 0
+            if (/* timeTaken > 5000 && */ logger.isWarnEnabled())
+              logger.warn("AKKA::::ReceivedKey:" + key + " at:" + curTime + " which is sent at:" + sentTime + ", TimeTaken:" + timeTaken + ", value:" + new String(value))
+            else if (logger.isDebugEnabled)
+              logger.debug("AKKA::::ReceivedKey:" + key + " at:" + curTime + " which is sent at:" + sentTime + ", TimeTaken:" + timeTaken + ", value:" + new String(value))
+          }
+          catch {
+            case e: Exception => { logger.error("Process: Caught exception " + e.getMessage()) }
+          }
+        }
+        case _ => {
+          logger.error("EnvContextWorkerPool.ActorWorker::Not found any matches.\n")
+        }
+      }
+    }
+  }
 
   val CLASSNAME = "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$"
   private var hbExecutor: ExecutorService = Executors.newFixedThreadPool(1)
@@ -91,6 +191,12 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
   private var _clusterStatusInfo: ClusterStatus = _
   private val _nodeCacheMap = collection.mutable.Map[String, Any]()
   private val _nodeCache_reent_lock = new ReentrantReadWriteLock(true)
+
+  private var _simpleEnvContextActorSystem: ActorSystem = null
+  private var _cacheConfigWorkerPool: EnvContextWorkerPool = null
+  private var _leaderNodeIp: String = ""
+  private val _cacheConfigAkkaPort = 7000
+
   private var txnIdsRangeForNode: Int = 100000
   // Each time get txnIdsRange of transaction ids for each Node
   private var txnIdsRangeForPartition: Int = 10000
@@ -179,6 +285,32 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
       case e: Throwable => {
         throw e
       }
+    }
+  }
+
+  private def removeCacheListener(listenPath: String): Unit = {
+    if (listenPath == null || listenPath.size == 0 /* || listenPath.trim.size == 0 */ ) {
+      return
+    }
+
+    WriteLock(_cacheListener_reent_lock)
+    try {
+      if (_listenerCache != null) {
+        var i = 0
+        var prevListener: ReturnCacheListenerCallback = null
+        while (i < _cacheListeners.size && prevListener == null) {
+          if (_cacheListeners(i).listenPath.compareTo(listenPath) == 0) {
+            prevListener = _cacheListeners.remove(i)
+          }
+          i += 1
+        }
+      }
+    } catch {
+      case e: Throwable => {
+        throw e
+      }
+    } finally {
+      WriteUnlock(_cacheListener_reent_lock)
     }
   }
 
@@ -890,6 +1022,10 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
 
     isShutdown = true
 
+    if (_simpleEnvContextActorSystem != null)
+      _simpleEnvContextActorSystem.shutdown()
+    _simpleEnvContextActorSystem = null
+
     if (_listenerCache != null) {
       try {
         _listenerCache.shutdown()
@@ -1205,7 +1341,7 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     val contName = containerName.toLowerCase
 
     val tenantInfo: TenantEnvCtxtInfo = _tenantIdMap.getOrElse(tenatId.toLowerCase(), null)
-    if (tenantInfo == null) return None
+    if (tenantInfo == null) return
 
     if (tenantInfo.cachedContainers != null) {
       var cacheContainer = tenantInfo.cachedContainers.getOrElse(containerName, null)
@@ -1794,6 +1930,16 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     }
   }
 
+  class DummyCacheListenerCallback extends CacheCallback {
+    @throws(classOf[Exception])
+    override def call(callbackData: CacheCallbackData): Unit = {
+      // Not doing anythin
+      if (logger.isDebugEnabled && callbackData != null) {
+        logger.debug("DummyCacheListenerCallback callback called with eventtype:" + callbackData.eventType + ", key:" + callbackData.key + ", value:" + callbackData.value)
+      }
+    }
+  }
+
   class CacheListenerCallback extends CacheCallback {
     @throws(classOf[Exception])
     override def call(callbackData: CacheCallbackData): Unit = {
@@ -1826,10 +1972,37 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     }).mkString(",")
     val cacheCfg = _cacheConfigTemplate.format("EnvCtxtConfigClusterCache", hosts, conf.CacheStartPort, conf.CacheSizePerNode / 2, conf.TimeToIdleSeconds, conf.TimeToIdleSeconds, conf.EvictionPolicy.toUpperCase, "true")
 
+    val listenCallback = new DummyCacheListenerCallback()
     val aclass = Class.forName("com.ligadata.cache.MemoryDataCacheImp").newInstance
     _listenerConfigClusterCache = aclass.asInstanceOf[DataCache]
-    _listenerConfigClusterCache.init(cacheCfg, null)
+    _listenerConfigClusterCache.init(cacheCfg, listenCallback)
     _listenerConfigClusterCache.start()
+/*
+    if (_cacheConfigWorkerPool == null) {
+      var foundLocalNodeId = false
+      var NodeIp: String = ""
+
+      conf.HostList.foreach(h => {
+        if (!foundLocalNodeId && h.NodeId != null && _nodeId != null) {
+          foundLocalNodeId = h.NodeId.equalsIgnoreCase(_nodeId)
+          if (foundLocalNodeId)
+            NodeIp = h.NodeIp
+        }
+      })
+
+      if (foundLocalNodeId) {
+        val akkaConfigStr = EnvContextWorkerPool_akkaConfigFormat.format(NodeIp, _cacheConfigAkkaPort)
+        val root = ConfigFactory.load()
+        val actorconf = ConfigFactory.parseString(akkaConfigStr).withFallback(root);
+        _simpleEnvContextActorSystem = ActorSystem("SimpleEnvContextActorSystem", actorconf)
+        _cacheConfigWorkerPool = new EnvContextWorkerPool(_simpleEnvContextActorSystem, 1)
+      } else {
+        logger.error("Not found local NodeId:" + _nodeId + " in CacheConfig HostList. Not stating EnvContextWorkerPool for cache config")
+      }
+    }
+    if (_cacheConfigWorkerPool != null)
+      _cacheConfigWorkerPool.SetListenerConfigClusterCache(_listenerConfigClusterCache)
+    */
   }
 
   override def setDataToZNode(zNodePath: String, value: Array[Byte]): Unit = {
@@ -1990,6 +2163,10 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     */
   }
 
+  override def removeListenerForCacheKey(listenPath: String): Unit = {
+    removeCacheListener(listenPath)
+  }
+
   // listenPath is the Path where it has to listen and its children
   //    Ex: If we start watching /kamanja/nodification/ all the following puts/updates/removes/etc will notify callback
   //    /kamanja/nodification/node1/1 or /kamanja/nodification/node1/2 or /kamanja/nodification/node1 or /kamanja/nodification/node2 or /kamanja/nodification/node3 or /kamanja/nodification/node4
@@ -2006,6 +2183,10 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
         }
         createZkPathChildrenCacheListener(listenPath, false, sendOne)
     */
+  }
+
+  override def removeListenerForCacheChildern(listenPath: String): Unit = {
+    removeCacheListener(listenPath)
   }
 
   override def getClusterInfo(): ClusterStatus = _clusterStatusInfo
@@ -2046,6 +2227,17 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
     } finally {
       ReadUnlock(_zkLeader_reent_lock)
     }
+    
+    var foundLocalNodeId = false
+
+    _cacheConfig.HostList.foreach(h => {
+      if (!foundLocalNodeId && h.NodeId != null && cs.leaderNodeId != null) {
+        foundLocalNodeId = h.NodeId.equalsIgnoreCase(cs.leaderNodeId)
+        if (foundLocalNodeId)
+          _leaderNodeIp = h.NodeIp
+      }
+    })
+    
     logger.warn("DistributionCheck:EnvCtxtEventChangeCallback. Exiting from EnvCtxtEventChangeCallback. NodeId:%s, LeaderNodeId:%s, Participents:%s, isLeader:%s".format(cs.nodeId,
       cs.leaderNodeId, if (cs.participantsNodeIds != null) cs.participantsNodeIds.mkString(",") else "", cs.isLeader.toString))
   }
@@ -2146,6 +2338,14 @@ object SimpleEnvContextImpl extends EnvContext with LogTrait {
   override def saveConfigInClusterCache(key: String, value: Array[Byte]): Unit = {
     if (_listenerConfigClusterCache != null)
       _listenerConfigClusterCache.put(key, value)
+    // Send this info to leader if this node is not leader
+    if (_cacheConfigWorkerPool != null) {
+      val isLeader = _clusterStatusInfo.isLeader && _clusterStatusInfo.nodeId.equals(_clusterStatusInfo.leaderNodeId)
+      if (! isLeader) {
+        _cacheConfigWorkerPool.SendPutCacheConfig(_leaderNodeIp, _cacheConfigAkkaPort, key, value)
+      }
+    }
+
   }
 
   override def getConfigFromClusterCache(key: String): Array[Byte] = {

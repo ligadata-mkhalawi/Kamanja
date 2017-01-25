@@ -1,0 +1,20 @@
+{
+  "Message": {
+    "NameSpace": "com.ligadata.gen",
+    "Name": "RejectedDataMsg",
+    "Version": "00.01.00",
+    "Description": "generic msg representing rejected rows",
+    "Fixed": "true",
+    "Fields": [
+      {
+        "Name": "origMsg",
+        "Type": "String"
+      },
+	  {
+        "Name": "reasons",
+        "Type": "ArrayOfString"
+      }
+
+    ]
+  }
+}

@@ -30,10 +30,53 @@ class ModelFactory(modelDef: ModelDef, nodeContext: NodeContext) extends ModelIn
     true
   }
   // Factory code end
-  override def createModelInstance(txnCtxt: com.ligadata.KamanjaBase.TransactionContext): ModelInstance = return new Model(this)
+  override def createModelInstance(): ModelInstance = return new Model(this)
   override def getModelName: String = "com.ligadata.jtm.test.code.Model"
   override def getVersion: String = "0.0.1"
   override def createResultObject(): ModelResultBase = new MappedModelResults()
+  override def isModelInstanceReusable(): Boolean = true;
+}
+class common_exeGenerated_test1_1(conversion: com.ligadata.runtime.Conversion,
+log: com.ligadata.runtime.Log,
+context: com.ligadata.runtime.JtmContext,
+msg1: com.ligadata.kamanja.test.V1000000.arrin1) {
+  import log._
+  val elements: Array[String] = msg1.mydata
+}
+class common_exeGenerated_test1_1_process_o1(conversion: com.ligadata.runtime.Conversion,
+log : com.ligadata.runtime.Log,
+context: com.ligadata.runtime.JtmContext,
+common: common_exeGenerated_test1_1,
+msg1: com.ligadata.kamanja.test.V1000000.arrin1) {
+  import log._
+  import common._
+  val result: Array[MessageInterface]= try {
+    if (!(!(msg1.ext_type_id != "j10"))) {
+      Debug("Filtered: test1@o1")
+      Array.empty[MessageInterface]
+    } else {
+      val t1: String = "s:" + elements(1).toString()
+      val t2: String = "arryout"
+      val result = com.ligadata.kamanja.test.V1000000.arrout1.createInstance
+      result.mydata = Array(elements(0) t1, elements(2), elements(3))
+      result.out_ext_type_id = t2
+      if (result.hasTimePartitionInfo) result.setTimePartitionData ;
+      if(context.CurrentErrors()==0) {
+        Array(result)
+      } else {
+        throw new AbortOutputException(context.CurrentErrorList().toString)
+      }
+    }
+  } catch {
+    case e: AbortOutputException => {
+      context.AddError(e.getMessage)
+      Array.empty[MessageInterface]
+    }
+    case e: Exception => {
+      context.AddError(e.getMessage)
+      Array.empty[MessageInterface]
+    }
+  }
 }
 class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
   val conversion = new com.ligadata.runtime.Conversion
@@ -46,6 +89,7 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
   }
   // Model code end
   override def execute(txnCtxt: TransactionContext, execMsgsSet: Array[ContainerOrConcept], triggerdSetIndex: Int, outputDefault: Boolean): Array[ContainerOrConcept] = {
+    context.Reset(); // Resetting the JtmContext before executing the model
     if (isTraceEnabled)
     Trace(s"Model::execute transid=%d triggeredset=%d outputdefault=%s".format(txnCtxt.transId, triggerdSetIndex, outputDefault.toString))
     if(isDebugEnabled)
@@ -57,35 +101,12 @@ class Model(factory: ModelInstanceFactory) extends ModelInstance(factory) {
     def exeGenerated_test1_1(msg1: com.ligadata.kamanja.test.V1000000.arrin1): Array[MessageInterface] = {
       Debug("exeGenerated_test1_1")
       context.SetSection("test1")
-      val elements: Array[String] = msg1.mydata
+      val common = new common_exeGenerated_test1_1(conversion, log, context, msg1)
       def process_o1(): Array[MessageInterface] = {
         Debug("exeGenerated_test1_1::process_o1")
         context.SetScope("o1")
-        try {
-          if (!(!(msg1.ext_type_id != "j10"))) {
-            Debug("Filtered: test1@o1")
-            return Array.empty[MessageInterface]
-          }
-          val t1: String = "s:" + elements(1).toString()
-          val t2: String = "arryout"
-          val result = com.ligadata.kamanja.test.V1000000.arrout1.createInstance
-          result.mydata = Array(elements(0) t1, elements(2), elements(3))
-          result.out_ext_type_id = t2
-          if(context.CurrentErrors()==0) {
-            Array(result)
-          } else {
-            throw new AbortOutputException(context.CurrentErrorList().toString)
-          }
-        } catch {
-          case e: AbortOutputException => {
-            context.AddError(e.getMessage)
-            return Array.empty[MessageInterface]
-          }
-          case e: Exception => {
-            context.AddError(e.getMessage)
-            return Array.empty[MessageInterface]
-          }
-        }
+        val result = new common_exeGenerated_test1_1_process_o1(conversion, log, context, common, msg1)
+        result.result
       }
       try {
         process_o1()
