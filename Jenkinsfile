@@ -61,6 +61,6 @@ def notifyBuild(String buildStatus = "STARTED") {
         body: details,
 	replyTo: "${env.DEFAULT_REPLYTO}",
         recipientProviders: [[$class: 'DevelopersRecipientProvider']],
-        to: "${env.DEFAULT_RECIPIENTS}"
+        to: "$DEFAULT_RECIPIENTS"
     )
 }
