@@ -443,6 +443,7 @@ class KamanjaManager extends Observer {
     KamanjaLeader.Shutdown
     KamanjaMetadata.Shutdown
     ShutdownAdapters
+    KamanjaMetadata.ShutdownMetadata
     PostMessageExecutionQueue.shutdown
 
     if (KamanjaMetadata.gNodeContext != null && !KamanjaMetadata.gNodeContext.getEnvCtxt().EnableEachTransactionCommit && KamanjaConfiguration.commitOffsetsTimeInterval > 0) {

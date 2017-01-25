@@ -126,7 +126,7 @@ trait DataStoreOperations extends AdaptersSerializeDeserializers {
       if (callbackFunction != null) {
         if (v.schemaId > 0 /* && v.serializerType != null && v.serializerType.size > 0 */) {
           val typFromSchemaId = "" // schemaId
-          val (cont, deserializerName) = deserialize(v.serializedInfo, v.serializerType, v.schemaId)
+          val (cont, deserializerName) = deserialize(v.serializedInfo, v.serializerType, v.schemaId, containerName)
           callbackFunction(k, cont, v.serializerType, deserializerName, 0)
         } else {
           callbackFunction(k, v.serializedInfo, v.serializerType, null, 0)
@@ -141,7 +141,7 @@ trait DataStoreOperations extends AdaptersSerializeDeserializers {
     val getCallbackFn = (k: Key, v: Value) => {
       if (callbackFunction != null) {
         if (v.schemaId > 0 /* && v.serializerType != null && v.serializerType.size > 0 */) {
-          val (cont, deserializerName) = deserialize(v.serializedInfo, v.serializerType, v.schemaId)
+          val (cont, deserializerName) = deserialize(v.serializedInfo, v.serializerType, v.schemaId, containerName)
           callbackFunction(k, cont, v.serializerType, deserializerName, 0)
         } else {
           callbackFunction(k, v.serializedInfo, v.serializerType, null, 0)
@@ -156,7 +156,7 @@ trait DataStoreOperations extends AdaptersSerializeDeserializers {
     val getCallbackFn = (k: Key, v: Value) => {
       if (callbackFunction != null) {
         if (v.schemaId > 0 /* && v.serializerType != null && v.serializerType.size > 0 */) {
-          val (cont, deserializerName) = deserialize(v.serializedInfo, v.serializerType, v.schemaId)
+          val (cont, deserializerName) = deserialize(v.serializedInfo, v.serializerType, v.schemaId, containerName)
           callbackFunction(k, cont, v.serializerType, deserializerName, 0)
         } else {
           callbackFunction(k, v.serializedInfo, v.serializerType, null, 0)
@@ -171,7 +171,7 @@ trait DataStoreOperations extends AdaptersSerializeDeserializers {
     val getCallbackFn = (k: Key, v: Value) => {
       if (callbackFunction != null) {
         if (v.schemaId > 0 /* && v.serializerType != null && v.serializerType.size > 0 */) {
-          val (cont, deserializerName) = deserialize(v.serializedInfo, v.serializerType, v.schemaId)
+          val (cont, deserializerName) = deserialize(v.serializedInfo, v.serializerType, v.schemaId, containerName)
           callbackFunction(k, cont, v.serializerType, deserializerName, 0)
         } else {
           callbackFunction(k, v.serializedInfo, v.serializerType, null, 0)
@@ -186,7 +186,7 @@ trait DataStoreOperations extends AdaptersSerializeDeserializers {
     val getCallbackFn = (k: Key, v: Value) => {
       if (callbackFunction != null) {
         if (v.schemaId > 0 /* && v.serializerType != null && v.serializerType.size > 0 */) {
-          val (cont, deserializerName) = deserialize(v.serializedInfo, v.serializerType, v.schemaId)
+          val (cont, deserializerName) = deserialize(v.serializedInfo, v.serializerType, v.schemaId, containerName)
           callbackFunction(k, cont, v.serializerType, deserializerName, 0)
         } else {
           callbackFunction(k, v.serializedInfo, v.serializerType, null, 0)
