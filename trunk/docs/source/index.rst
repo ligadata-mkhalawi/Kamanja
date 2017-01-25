@@ -59,6 +59,12 @@ About this Product
 
    architecture
 
+API Documentation
+-----------------
+
+.. toctree::
+
+    api
 
 
 Indices and tables
