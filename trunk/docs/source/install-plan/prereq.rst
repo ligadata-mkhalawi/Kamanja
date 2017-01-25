@@ -1,34 +1,43 @@
 
 .. _prereqs-install-top:
 
-Prerequisites
-=============
+Planning your Kamanja environment
+=================================
 
-Prerequisites for installation
-------------------------------
+A Kamanja environment contains one or more
+:ref:`clusters<cluster-term>`,
+each of which contains one or more :ref:`nodes<node-term>`.
+A node is a single server or VM.
+The following installation scenarios are supported:
 
-The following software should be installed on all nodes
-before you install the Kamanja software.
-There are details later regarding how to check
-whether these prerequisites have been met.
+- :ref:`Install a single-node cluster<kamanja-install-top>`.
+  This is appropriate for development, unit-testing,
+  and demonstration purposes.
 
-- CentOS/RedHat/OS X (virtual machine for Windows)
-- ~ 400 MB for installation (3 GB if building from source)
-- sudo access if using a Mac
-- JDK 1.8+
-- Scala v2.11.7
-- Kafka 2.11_0.9
-- ZooKeeper 3.4.6+
-- Ensure ZooKeeper, Kafka, and Cassandra OR HBase (optional)
-  services are running.
+- :ref:`Install developer tools<develop-install-top>`
+  if you will be developing software on this system.
 
-Supported Operating Systems
----------------------------
+- :ref:`Replicate<replicate-install-top>` a configured node
+  to other nodes in the cluster.
+
+- :ref:`Configure a multi-node cluster<cluster-install>`
+  for systems that will be used for production.
+
+- :ref:`Upgrade<upgrade-install-top>` from an earlier version
+  of Kamanja.
+
+
+Operating system requirements
+-----------------------------
+
+Before installing the Kamanja software,
+install an appropriate operating system on each node:
 
 - Linux OS: Redhat, CentOS
 - MAC OS: 10.9 and 10.10
 
-Hardware Specifications
+Hardware Requirements for a Node
+--------------------------------
 
 The following table shows the system requirement recommendations
 for production performance.
@@ -41,7 +50,7 @@ Development systems can have a minimum required hardware capacity of 16GB RAM.
    * - Platform
      - Minimum (Dev)
      - Minimum (Production)
-     - Minimum (Optimal)
+     - Recommended
    * - Architecture
      - 32-bit, 64-bit
      - 32-bit, 64-bit

@@ -180,13 +180,6 @@ To do a fresh install of Kamanja 1.6.1, issue the following command:
 
 The Kamanja binaries are installed in */usr* by default.
 
-Basic upgrade to 1.6.1
-~~~~~~~~~~~~~~~~~~~~~~
-
-To upgrade to Release 1.6.1 from an earlier Kamanja release,
-issue the following command:
-
-  sudo rpm –Uvh <kamanja rpm>
 
 Installing in a different location
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

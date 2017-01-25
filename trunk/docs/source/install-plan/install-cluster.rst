@@ -1,8 +1,8 @@
 
 .. _cluster-install:
 
-Install a cluster
-=================
+Install a multi-node cluster
+============================
 
 Set up passwordless SSH
 -----------------------

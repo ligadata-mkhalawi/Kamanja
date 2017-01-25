@@ -58,7 +58,6 @@ public class KafkaStatusRecorder implements StatusCollectable {
 
     /**
      * Create an instance of KafkaStatsRecorder
-     * @throws Exception
      */
     public KafkaStatusRecorder() {
         props = new Properties();
@@ -66,9 +65,10 @@ public class KafkaStatusRecorder implements StatusCollectable {
 
     /**
      * Record the given message in the Kafka storage.
-     * @param message
+     * @param batchId
+     * @param retryNumber
+     * @param sourceOfStatus
      * @return
-     * @throws Exception
      */
     public boolean externalizeStatusMessage(long batchId, long retryNumber, String sourceOfStatus) {
         try {
@@ -213,7 +213,8 @@ public class KafkaStatusRecorder implements StatusCollectable {
      * Add the status message to the underlying status sturcutre. the whole thing will be externalized when
      * externalizeStatusMessage(String message, String sourceOfStatus) is called
      * @param key
-     * @param value
+     * @param successValue
+     * @param failedValue
      */
     public void addStatus(String key, String successValue, String failedValue) {
         try {
@@ -234,7 +235,9 @@ public class KafkaStatusRecorder implements StatusCollectable {
 
     /**
      * Add a message to appear under the Messages[] array in the Status message
+     * @param key
      * @param msg
+     * @param isRequired
      */
     public void addStatusMessage(String key, String msg, boolean isRequired) {
         try {
@@ -263,6 +266,7 @@ public class KafkaStatusRecorder implements StatusCollectable {
 
     /**
      * Set the completion code for this batch
+     * @param key
      * @param status
      */
     public void setCompletionCode(String key, String status) {
