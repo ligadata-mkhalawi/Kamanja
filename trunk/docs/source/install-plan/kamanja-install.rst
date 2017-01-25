@@ -6,13 +6,13 @@ Install Kamanja software
 
 The installation process can be summarized as:
 
-#. Install external software components that are required
+#. :ref:`Install external software<prereqs-install>`
+   components that are required
    for the Kamanja engine and set environment variables to identify
    the root directory where each is installed.
-#. Install the Kamanja engine
-#. Install additional external software components that are required
-   for the Flare Email Surveillance product.
-#. Install the Flare Email Surveillance product.
+#. :ref:`Install the Kamanja engine<engine-install>`.
+#. :ref:`Configure Kamanja<configure-install>`
+   for your local installation
 
 Create the kamanja user
 -----------------------
@@ -34,6 +34,8 @@ For non-production systems, you can delete the password for the kamanja user:
   sudo passwd --delete kamanja
 
 For production systems, you should always use a password for the kamanja user.
+
+.. _prereqs-install:
 
 Install Kamanja Prerequisites
 -----------------------------
@@ -153,6 +155,8 @@ For example:
   export PATH=$KAFKA_HOME/bin:$PATH
 
 
+.. _engine-install:
+
 Install Kamanja engine
 ----------------------
 
@@ -176,13 +180,6 @@ To do a fresh install of Kamanja 1.6.1, issue the following command:
 
 The Kamanja binaries are installed in */usr* by default.
 
-Basic upgrade to 1.6.1
-~~~~~~~~~~~~~~~~~~~~~~
-
-To upgrade to Release 1.6.1 from an earlier Kamanja release,
-issue the following command:
-
-  sudo rpm –Uvh <kamanja rpm>
 
 Installing in a different location
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -225,6 +222,12 @@ For example:
 
   sudo pm -Uvh kamanja_1.6.0_2.11.rpm --prefix /usr/local \
        --dbpath /tmp/rpmdb/ --nodeps
+
+
+.. _configure-install:
+
+Configure the Kamanja cluster
+-----------------------------
 
 Running multiple Kamanja releases on one system
 -----------------------------------------------

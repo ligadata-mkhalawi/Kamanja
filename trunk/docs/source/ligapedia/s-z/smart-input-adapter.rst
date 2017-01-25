@@ -1,5 +1,5 @@
 
-.. _smart-input-adapter:
+.. _smart-input-adapter-term:
 
 Smart file input adapter
 ------------------------

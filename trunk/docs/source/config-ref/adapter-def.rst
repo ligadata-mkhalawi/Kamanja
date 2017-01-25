@@ -209,16 +209,15 @@ Input and output adapters use the Core parameters
 plus the following:
 
 - **ClassName** - class that contains the logic for the adapter.
-  It should be the full package.className. In example,
-  KafkaConsumer$ is for reading from Kafka
-  and KafkaProducer$ is for writing to Kafka.
+  It should be the full package.className.
 
 - **JarName** – name of the JAR in which the aforementioned ClassName exists.
 
 - **DependencyJars** - list of JARs on which the adapters JarName jar depends.
 
 - **AdapterSPecificCfg** - configuration that is specific to this
-  Input or Output adapter.
+  Input or Output adapter.  This should include the following attributes
+  in addition to any other information required for this adapter:
 
   - **HostList** - list of server:ports of Kafka brokers to use
 
@@ -486,7 +485,8 @@ Usage
 
 To add a new adapter object to the cluster:
 
-- add a new ADAPTER object to the ClusterConfig.json configuration file
+- add a new ADAPTER object to the
+  :ref:`ClusterConfig.json<clusterconfig-config-ref>` configuration file
 - submit it to the metadata using
   the :ref:`kamanja<kamanja-command-ref>` upload cluster config command.
   For example:

@@ -141,16 +141,13 @@ in the com.ligadata.KamanjaBase.InputAdapter trait.
   After the Kamanja engine gets this array,
   it issues the StartProcessing method.
 - **StartProcessing** – starts processing the specified partitions.
+  with each array element representing a message source,
+  for example a Kafka partition or a file.
 
-<<<<<<< HEAD
   - **maxParts** – maximum partitions that the Kamanja engine wants to monitor.
   - **partitionInfo** – information about the sources of the messages,
-=======
   - ** maxParts** – maximum partitions that the Kamanja engine wants to monitor.
   - ** partitionInfo** – information about the sources of the messages,
->>>>>>> b17dbbe01a24d89797d5e4e9c25f4497a200559b
-    with each array element representing a message source,
-    for example a Kafka partition or a file.
 
     - The first element in the structure
       represents the partition identifier.
