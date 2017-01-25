@@ -98,22 +98,97 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
         }
       }
       updatExecutor.execute(statusUpdateThread)
-
-      //just run it in a separate thread
-      val extractorThread = new Runnable() {
-        override def run(): Unit = {
-          try {
-            readBytesChunksFromFile()
-          } catch {
-            case e: Throwable => {
-              logger.error("", e)
-              sendFinishFlag(SmartFileConsumer.FILE_STATUS_CORRUPT)
-              shutdownThreads
+      // this part used to check if the file one message or includes more that one messages
+      if (adapterConfig.monitoringConfig.entireFileAsOneMessage) {
+        val extractorThread = new Runnable() {
+          override def run(): Unit = {
+            try{
+              readWholeFiles()
+            } catch{
+              case e: Throwable =>{
+                logger.error("",e)
+                sendFinishFlag(SmartFileConsumer.FILE_STATUS_CORRUPT)
+                shutdownThreads
+              }
             }
           }
         }
+        extractExecutor.execute(extractorThread)
+      } else {
+        //just run it in a separate thread
+        val extractorThread = new Runnable() {
+          override def run(): Unit = {
+            try {
+              readBytesChunksFromFile()
+            } catch {
+              case e: Throwable => {
+                logger.error("", e)
+                sendFinishFlag(SmartFileConsumer.FILE_STATUS_CORRUPT)
+                shutdownThreads
+              }
+            }
+          }
+        }
+        extractExecutor.execute(extractorThread)
       }
-      extractExecutor.execute(extractorThread)
+    }
+  }
+  // added by Yousef to read PST files
+  private def readWholeFiles(): Unit = {
+    try {
+      val fileName = fileHandler.getFullPath
+      fileProcessingStartTs = System.nanoTime
+      logger.warn("Smart File Consumer - Starting reading messages from file {} , on Node {} , PartitionId {}",
+        fileName, consumerContext.nodeId, consumerContext.partitionId.toString)
+
+      try {
+        fileHandler.openForRead()
+      } catch {
+
+        case fio: java.io.FileNotFoundException => {
+          logger.error("SMART_FILE_CONSUMER Exception accessing the file for processing the file - File is missing", fio)
+          sendFinishFlag(SmartFileConsumer.FILE_STATUS_NOT_FOUND)
+          shutdownThreads
+          return
+        }
+        case fio: IOException => {
+          logger.error("SMART_FILE_CONSUMER Exception accessing the file for processing ", fio)
+          sendFinishFlag(SmartFileConsumer.FILE_STATUS_CORRUPT)
+          shutdownThreads
+          return
+        }
+        case ex: Exception => {
+          logger.error("", ex)
+          sendFinishFlag(SmartFileConsumer.FILE_STATUS_CORRUPT)
+          shutdownThreads
+          return
+        }
+        case ex: Throwable => {
+          logger.error("", ex)
+          sendFinishFlag(SmartFileConsumer.FILE_STATUS_CORRUPT)
+          shutdownThreads
+          return
+        }
+      }
+
+    } catch {
+        case e: Throwable => {
+          logger.error("", e)
+          sendFinishFlag(SmartFileConsumer.FILE_STATUS_CORRUPT)
+          shutdownThreads
+          return
+        }
+      }
+
+    try{
+
+    } catch {
+      case jhs: java.lang.OutOfMemoryError => {
+        logger.error("SMART_FILE_CONSUMER Exception : Java Heap space issue, WorkerBufferSize property might need resetting, file %s could not be processed ".format(fileHandler.getFullPath), jhs)
+        sendFinishFlag(SmartFileConsumer.FILE_STATUS_ProcessingInterrupted)
+      }
+    } finally{
+      shutdownThreads
     }
   }
 

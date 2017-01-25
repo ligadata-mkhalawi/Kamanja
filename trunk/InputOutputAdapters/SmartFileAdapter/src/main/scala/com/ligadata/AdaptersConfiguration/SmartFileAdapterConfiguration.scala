@@ -90,6 +90,8 @@ class FileAdapterMonitoringConfig {
   //1 => check only dir direct child files
   //n > 1 => stop at corresponding depth
   var dirMonitoringDepth : Int = 0
+  var entireFileAsOneMessage = false
+  var fileType = "others"
 }
 
 class Padding {

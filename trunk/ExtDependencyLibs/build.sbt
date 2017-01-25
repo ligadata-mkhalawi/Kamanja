@@ -204,6 +204,15 @@ libraryDependencies ++= {
 libraryDependencies += "com.twitter" % "parquet-hadoop" % "1.6.0"
 libraryDependencies += "com.twitter" % "parquet-avro" % "1.6.0"
 
+//PST input adapter
+libraryDependencies += "org.apache.tika" % "tika-core" % "1.14"
+
+libraryDependencies += "org.apache.tika" % "tika-parsers" % "1.14"
+
+libraryDependencies += "com.pff" % "java-libpst" % "0.9.3"
+
+libraryDependencies += "javax.mail" % "javax.mail-api" % "1.5.1"
+
 //////////////////////  InstallDriver
 //already available
 
