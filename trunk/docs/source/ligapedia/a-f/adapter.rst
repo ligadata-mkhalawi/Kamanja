@@ -24,7 +24,8 @@ For more information:
   storage adapters.
 
 - Adapters are defined in
-  the :ref:`ClusterConfig<clusterconfig-config-ref>` file.
+  the :ref:`adapter definitions<adapter-def-config-ref>` section
+  of the :ref:`ClusterConfig<clusterconfig-config-ref>` file.
 
 - For information about specifying adapter-specific initialization,
   see :ref:`audit-adapter-term`.

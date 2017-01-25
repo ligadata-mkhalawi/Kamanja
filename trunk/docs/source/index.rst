@@ -58,6 +58,7 @@ About this Product
 .. toctree::
 
    architecture
+   relnotes
 
 
 

@@ -4,23 +4,18 @@
 Prerequisites
 =============
 
-Port 7800
-
-Kamanja uses port 7800 for JGroups
-to replicate and distribute cached Ehcache data over TCP.
-Port 7800 is restricted for Kamanja/Kafka processes only.
-
 Prerequisites for installation
 ------------------------------
 
-Here are the prerequisites.
+The following software should be installed on all nodes
+before you install the Kamanja software.
 There are details later regarding how to check
 whether these prerequisites have been met.
 
 - CentOS/RedHat/OS X (virtual machine for Windows)
 - ~ 400 MB for installation (3 GB if building from source)
 - sudo access if using a Mac
-- JDK 1.7+ (preferable 1.8)
+- JDK 1.8+
 - Scala v2.11.7
 - Kafka 2.11_0.9
 - ZooKeeper 3.4.6+

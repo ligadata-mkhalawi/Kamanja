@@ -26,6 +26,7 @@ Ligapedia
    ligapedia/a-f/engine
    ligapedia/a-f/error-capture
    ligapedia/a-f/etl
+   ligapedia/a-f/failover-nodes
    ligapedia/a-f/feature-extraction
    ligapedia/a-f/feature-selection
    ligapedia/a-f/features
@@ -56,6 +57,7 @@ Ligapedia
    ligapedia/n-r/partition
    ligapedia/n-r/persist
    ligapedia/n-r/password-encrypt
+   ligapedia/n-r/pipeline
    ligapedia/n-r/pmml
    ligapedia/n-r/preprocessing
    ligapedia/n-r/properties-param

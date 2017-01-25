@@ -4,8 +4,16 @@
 ClusterConfig.json
 ==================
 
-The */config/ClusterConfig.json* file configures all objects in a cluster,
-including input and output adapters.
+The */config/ClusterConfig.json* file configures
+all objects in a :ref:`cluster<cluster-term>`,
+including :ref:`nodes<node-term>`,
+input and output :ref:`adapters<adapter-term>`.
+:ref:`tenants<tenancy-term>`,
+and :ref:`Zookeeper<zookeeper-term>`.
+To increase the compute power of the Kamanja environment,
+you can add new nodes to a cluster
+or you can add additional clusters.
+
 Because of the complexity of the file,
 some sections are documented on separate reference pages:
 
@@ -95,11 +103,12 @@ Parameters
 - **GlobalProcessThreads** -
 - **LogicalPartitions** -
 - **GlobalLogicalPartitionCachePort** -
-- **SystemCatalog** - specify cluster characteristics that are used
-  during start-up and runtime:
+- **SystemCatalog** - The System catalog is used during start-up and runtime
+  to track information such as transaction IDs and Kafka offsets.
+  The following fields must be configured.
 
-  - **StoreType** - type of database to use.  Valid values are
-    h2db, hbase, and cassandra.
+  - **StoreType** - type of database to use for the System Catalog.
+    Valid values are h2db, hbase, and cassandra.
     HBase is used for noSQL and is recommended for clustered configurations.
   - **SchemaName** - schema under which all tables concerning
     the metadata are held.
@@ -108,7 +117,7 @@ Parameters
   - **Location** - location of the database.
     For Cassandra and HBase, this should be the name of the server(s)
     where these databases exist.
-  - **portnumber**
+  - **portnumber** - port used to access the database.
   - **user** - user ID for access to this cluster
   - **password** - password used to access this cluster
 
@@ -148,7 +157,7 @@ Cache parameters
 ~~~~~~~~~~~~~~~~
 
 - **CacheStartPort** - port used by JGroups
-  to replicate and distribute Ehcached data over TCP.
+  to replicate and distribute Encached data over TCP.
 - **CacheSizePerNodeInMB** -
 - **ReplicateFactor** -
 - **TimeToIdleSeconds** -
@@ -174,7 +183,7 @@ giving the following error message:
 - **ProcessThreads** -
 - **LogicalPartitionCachePort** -
 - **NodePort** - port on which the node listens.
-- **NodeIpAddr - IP address or hostname to which this node binds.
+- **NodeIpAddr** - IP address or hostname to which this node binds.
 - **JarPaths** - directories the node searches for dependency jars.
   When a Kamanja node starts up or is notified of a change in metadata,
   any JARs that are currently missing
