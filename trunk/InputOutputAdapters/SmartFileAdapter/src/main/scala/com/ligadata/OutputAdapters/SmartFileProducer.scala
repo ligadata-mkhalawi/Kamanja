@@ -16,29 +16,30 @@
 
 package com.ligadata.OutputAdapters
 
-import org.apache.logging.log4j.{Logger, LogManager}
+import org.apache.logging.log4j.{ Logger, LogManager }
 import java.io._
 import java.text.SimpleDateFormat
 import java.util.TimeZone
-import java.util.zip.{ZipException, GZIPOutputStream}
-import java.nio.file.{Paths, Files}
+import java.util.zip.{ ZipException, GZIPOutputStream }
+import java.nio.file.{ Paths, Files }
 import java.net.URI
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import com.ligadata.KamanjaBase.{ContainerInterface, TransactionContext, NodeContext}
+import com.ligadata.KamanjaBase.{ ContainerInterface, TransactionContext, NodeContext }
 import com.ligadata.InputOutputAdapterInfo._
 import com.ligadata.AdaptersConfiguration.SmartFileProducerConfiguration
-import com.ligadata.Exceptions.{UnsupportedOperationException, FatalAdapterException}
-import com.ligadata.HeartBeat.{Monitorable, MonitorComponentInfo}
+import com.ligadata.Exceptions.{ UnsupportedOperationException, FatalAdapterException }
+import com.ligadata.HeartBeat.{ Monitorable, MonitorComponentInfo }
 import org.json4s.jackson.Serialization
 import org.apache.hadoop.hdfs.DFSOutputStream
 import org.apache.hadoop.hdfs.client.HdfsDataOutputStream.SyncFlag
-import org.apache.hadoop.fs.{FileSystem, FSDataOutputStream, Path}
+import org.apache.hadoop.fs.{ FileSystem, FSDataOutputStream, Path }
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.security.UserGroupInformation
 import org.apache.commons.compress.compressors.CompressorStreamFactory
 import org.apache.commons.compress.compressors.CompressorOutputStream
 import scala.collection.mutable.ArrayBuffer
+import com.ligadata.VelocityMetrics._
 
 object SmartFileProducer extends OutputAdapterFactory {
   val ADAPTER_DESCRIPTION = "Smart File Output Adapter"
@@ -48,26 +49,26 @@ object SmartFileProducer extends OutputAdapterFactory {
 
 case class PartitionFile(key: String, name: String, outStream: OutputStream, var records: Long, var size: Long, var buffer: ArrayBuffer[Byte], var recordsInBuffer: Long, var flushBufferSize: Long)
 case class PartitionStream(val compressStream: OutputStream, val originalStream: Any) extends OutputStream {
-  override def	close() = {
+  override def close() = {
     compressStream.close();
   }
-  
-  override def	flush() = {
+
+  override def flush() = {
     compressStream.flush();
-    if(originalStream.isInstanceOf[FSDataOutputStream] ) {
+    if (originalStream.isInstanceOf[FSDataOutputStream]) {
       val hdfsOs = originalStream.asInstanceOf[FSDataOutputStream]
       hdfsOs.getWrappedStream().asInstanceOf[DFSOutputStream].hsync(java.util.EnumSet.of(SyncFlag.UPDATE_LENGTH))
     }
   }
-  
-  override def	write(b: Array[Byte]) = {
+
+  override def write(b: Array[Byte]) = {
     compressStream.write(b)
   }
-  
-  override def	write(b: Array[Byte], off: Int, len: Int) = {
+
+  override def write(b: Array[Byte], off: Int, len: Int) = {
     compressStream.write(b, off, len)
   }
-  
+
   override def write(b: Int) = {
     compressStream.write(b)
   }
@@ -255,7 +256,7 @@ class OutputStreamWriter {
     try {
       val stream = os.asInstanceOf[PartitionStream].compressStream
       os.write(message)
-      os.flush()  // this flush will call hsync for HDFS    
+      os.flush() // this flush will call hsync for HDFS    
     } catch {
       case e: Exception => {
         if (fc.kerberos != null) {
@@ -343,7 +344,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       }).toList
       partitionFormatString = partitionVariable.replaceAllIn(formatStr, "%s")
     }
-    
+
     (partitionFormatString, partitionFormatObjects)
   }
 
@@ -375,15 +376,15 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     else
       throw FatalAdapterException("Unsupported compression type " + fc.compressionString + " for Smart File Producer: " + fc.Name, new Exception("Invalid Parameters"))
   }
-  
+
   if (fc.partitionFormat == null && fc.timePartitionFormat != null) {
     // for backward compatibility if timePartitionFormat given and not partitionFormat then use it
     fc.partitionFormat = fc.timePartitionFormat.replace("${", "${time:")
   }
 
   val (glbPartitionFormatString, glbPartitionFormatObjects) = parsePartitionFormat(fc.partitionFormat)
-  for((typeName, tlcfg) <- fc.typeLevelConfig) {
-    if(tlcfg != null) {
+  for ((typeName, tlcfg) <- fc.typeLevelConfig) {
+    if (tlcfg != null) {
       val (pfs, pfo) = parsePartitionFormat(tlcfg.partitionFormat)
       tlcfg.partitionFormatString = pfs
       tlcfg.partitionFormatObjects = pfo
@@ -480,17 +481,17 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     var fileBufferSize = fc.flushBufferSize;
     var partitionFormatString = glbPartitionFormatString
     var partitionFormatObjects = glbPartitionFormatObjects
-    if(tlcfg != null) {
+    if (tlcfg != null) {
       fileBufferSize = tlcfg.flushBufferSize
       partitionFormatString = tlcfg.partitionFormatString
       partitionFormatObjects = tlcfg.partitionFormatObjects
     }
 
     var key = record.getTypeName()
-    if(fc.useTypeFullNameForPartition) {
-      key = if(fc.replaceSeparator) typeName.replace(".", fc.separatorCharForTypeName) else typeName
+    if (fc.useTypeFullNameForPartition) {
+      key = if (fc.replaceSeparator) typeName.replace(".", fc.separatorCharForTypeName) else typeName
     }
-    
+
     val pk = record.getPartitionKey()
     var bucket: Int = 0
     if (pk != null && pk.length > 0 && fc.partitionBuckets > 1) {
@@ -502,7 +503,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile time partion data for the record - [" + dateTime + "]")
       val dtTm = new java.util.Date(dateTime)
       val values = partitionFormatObjects.map(fmt => {
-        if(fmt.isInstanceOf[SimpleDateFormat])
+        if (fmt.isInstanceOf[SimpleDateFormat])
           fmt.asInstanceOf[SimpleDateFormat].format(dtTm)
         else
           record.getOrElse(fmt.asInstanceOf[String], "").toString
@@ -674,6 +675,12 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
             isSuccess = true
             LOG.info("finished writing message")
             metrics("MessagesProcessed").asInstanceOf[AtomicLong].incrementAndGet()
+            /**VelocityMetrics****/
+            if (outputContainers != null && outputContainers.size > 0) {
+              for (i <- 0 until outContainers.size) {
+                getOAVelocityMetrics(VMFactory, nodeContext, outContainers(i), inputConfig, true)
+              }
+            }
           } catch {
             case fio: IOException => {
               LOG.warn("Smart File Producer " + fc.Name + ": Unable to write to file " + pf.name)
@@ -725,6 +732,13 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     } finally {
       WriteUnlock(_reent_lock)
     }
+  }
+
+  private def getOAVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, nodeContext: NodeContext, message: ContainerInterface, adapConfig: AdapterConfiguration, processed: Boolean) = {
+    var vm = new VelocityMetricsInfo
+    val OACompName = "OutputAdapter"
+    vm.incrementVelocityMetrics(VMFactory, OACompName, nodeContext, message, adapConfig, true)
+
   }
 
 }

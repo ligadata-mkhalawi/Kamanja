@@ -70,6 +70,7 @@ trait InputAdapter extends AdaptersSerializeDeserializers with Monitorable {
   val nodeContext: NodeContext
   // NodeContext
   val inputConfig: AdapterConfiguration // Configuration
+  var vm: VelocityMetricsInfo = new VelocityMetricsInfo
 
   def UniqueName: String = {
     // Making String from key
@@ -110,37 +111,8 @@ trait InputAdapter extends AdaptersSerializeDeserializers with Monitorable {
     }
   }
 
-  def VMFactory = {
-    var rotationTimeInSecs: Long = 36000
-    var emitTimeInSecs: Long = 600
-    try {
-      val clusterCfg = MdMgr.GetMdMgr.GetClusterCfg(nodeContext.getEnvCtxt().getClusterId())
-      val velocityStats = clusterCfg.cfgMap.getOrElse("VelocityStatsInfo", null)
-      if (velocityStats != null) {
-        val vstats = velocityStats.asInstanceOf[Map[String, Long]]
-        if (vstats.contains("RotationTimeInSecs")) {
-          val vrtime = vstats.getOrElse("RotationTimeInSecs", null)
-          if (vrtime != null) rotationTimeInSecs = vrtime.asInstanceOf[Long]
-        }
-        if (vstats.contains("EmitTimeInSecs")) {
-          val vetime = vstats.getOrElse("EmitTimeInSecs", null)
-          if (vetime != null) emitTimeInSecs = vetime.asInstanceOf[Long]
-        }
-      }
-    } catch {
-      case e: Exception => logger.error("ValocityMetrics Factory Instace" + e.getMessage)
-    }
+  def VMFactory = vm.getVMFactory(nodeContext)
 
-    VelocityMetrics.GetVelocityMetricsFactory(rotationTimeInSecs, emitTimeInSecs) //(rotationTimeInSecs, emitTimeInSecs)
-  }
-
-  // def VelocityMetricsInstance = VMFactory.GetVelocityMetricsInstance(nodeid, getAdapterName, Array("processed", "exception"))    //(x$1, x$2, x$3, x$4)
-
-  def getVelocityMetricsConfig(fullAdapterConfig: String): Array[VelocityMetricsCfg] = {
-    var vm: VelocityMetricsInfo = new VelocityMetricsInfo
-    if (fullAdapterConfig == null && fullAdapterConfig.trim().size == 0) return null
-    vm.parseVelocityMetrics(fullAdapterConfig)
-  }
 }
 
 // Output Adapter Object to create Adapter
@@ -152,6 +124,8 @@ trait OutputAdapterFactory {
 trait OutputAdapter extends AdaptersSerializeDeserializers with Monitorable {
   // NodeContext
   val nodeContext: NodeContext
+
+  var vm: VelocityMetricsInfo = new VelocityMetricsInfo
   // Configuration
   val inputConfig: AdapterConfiguration
 
@@ -179,6 +153,9 @@ trait OutputAdapter extends AdaptersSerializeDeserializers with Monitorable {
       }
     }
   }
+
+  def VMFactory = vm.getVMFactory(nodeContext)
+
 }
 
 trait ExecContext {
@@ -362,15 +339,15 @@ trait ExecContext {
       val deserializer = if (tDeserializerName != null) tDeserializerName else ""
       val failedMsg = if (msgName != null) msgName else ""
       if (tMsg != null) {
-          execute(tMsg, data, uniqueKey, uniqueVal, readTmMilliSecs)
-          incrementVelocityMetrics(tMsg, true)
+        execute(tMsg, data, uniqueKey, uniqueVal, readTmMilliSecs)
+        getIAVelocityMetrics(input.VMFactory, input.nodeContext, tMsg, input.inputConfig, true)
       } else {
         if (LOG.isDebugEnabled) {
           LOG.debug("Not able to deserialize data:%s at UK:%s, UV:%s".format((if (data != null) new String(data) else ""), uk, uv))
         }
         val ex = new Exception("Unable to deserialize messageName:%s from data:%s".format(messageName, (if (data != null) new String(data) else "")))
         SendFailedEvent(data, tDeserializerName, failedMsg, uniqueKey, uniqueVal, ex, tempMsgInterface)
-        incrementVelocityMetrics(tMsg, false)
+        getIAVelocityMetrics(input.VMFactory, input.nodeContext, tMsg, input.inputConfig, false)
       }
     } catch {
       case e: Throwable => {
@@ -380,62 +357,17 @@ trait ExecContext {
     }
   }
 
+  private def getIAVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, nodeContext: NodeContext, message: ContainerInterface, adapConfig: AdapterConfiguration, processed: Boolean) = {
+    var vm = new VelocityMetricsInfo
+    val IACompName = "InputAdapter"
+    vm.incrementVelocityMetrics(VMFactory, IACompName, nodeContext, message, adapConfig, true)
+
+  }
+
   protected def executeMessage(txnCtxt: TransactionContext): Unit
 
   protected def commitData(txnCtxt: TransactionContext): Unit
 
-  private def incrementVelocityMetrics(message: ContainerInterface, processed: Boolean) = {
-    val vm = getVelocityMetricsInstances
-    var Key: String = ""
-    for(i <- 0 until vm.size){
-      var metricsTime: Long = 0L
-      val metricsType = vm(i)._2.MetricsTime.MType
-      if(metricsType.equalsIgnoreCase("localtime")) {
-        metricsTime = System.currentTimeMillis()
-      }
-      else if(metricsType.equalsIgnoreCase("field")){
-        val field =  vm(i)._2.MetricsTime.Field
-        val frmat = vm(i)._2.MetricsTime.Format
-      }
-      val keyType = vm(i)._2.KeyType
-      var msgkeys = Array[String]()
-      if(keyType.equalsIgnoreCase("metricsbymsgtype") || keyType.equalsIgnoreCase("metricsbymsgkeys")){
-        val keys =  vm(i)._2.Keys
-        if(keys != null && keys.length > 0){
-          for(j <- 0 until keys.length){
-            msgkeys(j) = message.getOrElse(keys(j), "").toString
-          }
-        }
-
-        if(msgkeys != null && msgkeys.length > 0){
-          Key = keyType+"_"+msgkeys.mkString("_")
-        }
-      }
-      if(processed)
-        vm(i)._1.increment(metricsTime, Key, System.currentTimeMillis(), true, false )
-      else
-        vm(i)._1.increment(metricsTime, Key, System.currentTimeMillis(), false, true )
-
-    }
-
-  }
-
-
-  private def getVelocityMetricsInstances() : Array[(VelocityMetricsInstanceInterface, VelocityMetricsCfg)] ={
-    var velocityMetricsInstBuf = new scala.collection.mutable.ArrayBuffer[(VelocityMetricsInstanceInterface, VelocityMetricsCfg)]()
-    val vmetrics = input.getVelocityMetricsConfig(input.inputConfig.fullAdapterConfig)
-    val nodeId = nodeContext.getEnvCtxt().getNodeId()
-    val componentNam = "InputAdapter"
-    val counterNames = Array("exception", "processed")
-    vmetrics.foreach( vm => {
-      val intervalRoundingInMs = vm.TimeIntervalInSecs
-      var vmInstance = input.VMFactory.GetVelocityMetricsInstance(nodeId, componentNam, intervalRoundingInMs, counterNames)
-      val v = ((vmInstance, vm))
-      velocityMetricsInstBuf += v
-    })
-
-    velocityMetricsInstBuf.toArray
-  }
 }
 
 trait ExecContextFactory {

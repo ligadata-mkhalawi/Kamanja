@@ -14,6 +14,7 @@ import com.ligadata.KamanjaBase.{EnvContext, NodeContext, DataDelimiters}
 import com.ligadata.Utils.ClusterStatus
 import org.apache.logging.log4j.LogManager
 import org.json4s.jackson.Serialization
+import com.ligadata.VelocityMetrics._
 
 import scala.actors.threadpool.{Executors, ExecutorService}
 import scala.collection.mutable.{Map, MultiMap, HashMap, ArrayBuffer}
@@ -1107,6 +1108,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
         val fileMessageExtractor = new FileMessageExtractor(this, participantExecutor, adapterConfig, fileHandler, offset, smartFileContext,
           sendSmartFileMessageToEngin, fileMessagesExtractionFinished_Callback)
         fileMessageExtractor.extractMessages()
+        
+        /**Get VelocityMetrics for SmartFileName - fileToProcessName ***/
+        getSmartFileVelocityMetrics(VMFactory, "SmartFileIA", fileToProcessName, nodeContext, inputConfig)
+        
       }
     }
   }
@@ -1811,5 +1816,12 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     if(locationsMap.contains(srcDir))
       locationsMap(srcDir)
     else null
+  }
+  
+  /* Get Velocity Metrics for Output Adapter   */
+  private def getSmartFileVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, componentName: String, fileName: String, nodeContext: NodeContext, adapConfig: AdapterConfiguration) = {
+    var vm = new VelocityMetricsInfo
+    val OACompName = "OutputAdapter"
+    vm.incrementFileVelocityMetrics(VMFactory, componentName, fileName, nodeContext, adapConfig)
   }
 }

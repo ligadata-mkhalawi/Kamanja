@@ -16,16 +16,17 @@
 
 package com.ligadata.OutputAdapters
 
-import com.ligadata.KamanjaBase.{ContainerInterface, TransactionContext, NodeContext}
+import com.ligadata.KamanjaBase.{ ContainerInterface, TransactionContext, NodeContext }
 import org.apache.logging.log4j.{ Logger, LogManager }
 import java.io._
-import java.util.zip.{ZipException, GZIPOutputStream}
+import java.util.zip.{ ZipException, GZIPOutputStream }
 import java.nio.file.{ Paths, Files }
 import com.ligadata.InputOutputAdapterInfo._
 import com.ligadata.AdaptersConfiguration.FileAdapterConfiguration
-import com.ligadata.Exceptions.{FatalAdapterException}
-import com.ligadata.HeartBeat.{Monitorable, MonitorComponentInfo}
+import com.ligadata.Exceptions.{ FatalAdapterException }
+import com.ligadata.HeartBeat.{ Monitorable, MonitorComponentInfo }
 import org.json4s.jackson.Serialization
+import com.ligadata.VelocityMetrics._
 
 object FileProducer extends OutputAdapterFactory {
   val ADAPTER_DESCRIPTION = "File Producer"
@@ -45,7 +46,7 @@ class FileProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeC
   private val GZ = "gz"
   private var startTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
   private var lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
-  private var metrics: scala.collection.mutable.Map[String,Any] = scala.collection.mutable.Map[String,Any]()
+  private var metrics: scala.collection.mutable.Map[String, Any] = scala.collection.mutable.Map[String, Any]()
 
   //BUGBUG:: Not validating the values in FileAdapterConfiguration 
 
@@ -68,26 +69,26 @@ class FileProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeC
         throw new Exception("Invalid Parameters")
       }
     } catch {
-      case zio: ZipException => {throw FatalAdapterException("File Corruption (bad compression)", zio)}
+      case zio: ZipException => { throw FatalAdapterException("File Corruption (bad compression)", zio) }
       case fio: IOException => {
-        LOG.warn("File input adapter "+fc.Name + ": Unable to create a file destination " + sFileName + " due to an IOException", fio)
+        LOG.warn("File input adapter " + fc.Name + ": Unable to create a file destination " + sFileName + " due to an IOException", fio)
         if (numOfRetries > MAX_RETRIES) {
-          LOG.error("File input adapter " + fc.Name + ":Unable to create a file destination after " + MAX_RETRIES +" tries.  Aborting.")
-          throw FatalAdapterException("Unable to open connection to specified file after " + MAX_RETRIES +" retries", fio)
+          LOG.error("File input adapter " + fc.Name + ":Unable to create a file destination after " + MAX_RETRIES + " tries.  Aborting.")
+          throw FatalAdapterException("Unable to open connection to specified file after " + MAX_RETRIES + " retries", fio)
         }
         numOfRetries += 1
-        LOG.warn("File input adapter " + fc.Name + ": Retyring "+ numOfRetries + "/" + MAX_RETRIES)
+        LOG.warn("File input adapter " + fc.Name + ": Retyring " + numOfRetries + "/" + MAX_RETRIES)
         Thread.sleep(FAIL_WAIT)
       }
-      case e: Exception => {throw FatalAdapterException("Unable to open connection to specified file ", e)}
+      case e: Exception => { throw FatalAdapterException("Unable to open connection to specified file ", e) }
     }
     LOG.info("File input adapter " + fc.Name + ": Output adapter file destination is " + sFileName)
     numOfRetries = 0
   }
 
-  override  def getComponentStatusAndMetrics: MonitorComponentInfo = {
+  override def getComponentStatusAndMetrics: MonitorComponentInfo = {
     implicit val formats = org.json4s.DefaultFormats
-    return new MonitorComponentInfo(AdapterConfiguration.TYPE_OUTPUT, fc.Name, FileProducer.ADAPTER_DESCRIPTION, startTime, lastSeen,  Serialization.write(metrics).toString)
+    return new MonitorComponentInfo(AdapterConfiguration.TYPE_OUTPUT, fc.Name, FileProducer.ADAPTER_DESCRIPTION, startTime, lastSeen, Serialization.write(metrics).toString)
   }
 
   override def getComponentSimpleStats: String = {
@@ -104,8 +105,7 @@ class FileProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeC
           try {
             os.write(message ++ NEW_LINE);
             isSuccess = true
-          }
-          catch {
+          } catch {
             case zio: ZipException => {
               LOG.error("File input adapter " + fc.Name + ": File Corruption (bad compression)", zio)
               throw zio
@@ -113,11 +113,11 @@ class FileProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeC
             case fio: IOException => {
               LOG.warn("File input adapter " + fc.Name + ": Unable to write to file " + sFileName)
               if (numOfRetries >= MAX_RETRIES) {
-                LOG.error("File input adapter " + fc.Name + ": Unable to create a file destination after " + MAX_RETRIES +" tries.  Aborting.", fio)
-                throw FatalAdapterException("Unable to open connection to specified file after " + MAX_RETRIES +" retries", fio)
+                LOG.error("File input adapter " + fc.Name + ": Unable to create a file destination after " + MAX_RETRIES + " tries.  Aborting.", fio)
+                throw FatalAdapterException("Unable to open connection to specified file after " + MAX_RETRIES + " retries", fio)
               }
               numOfRetries += 1
-              LOG.warn("File input adapter " + fc.Name + ": Retyring "+ numOfRetries + "/" + MAX_RETRIES)
+              LOG.warn("File input adapter " + fc.Name + ": Retyring " + numOfRetries + "/" + MAX_RETRIES)
               Thread.sleep(FAIL_WAIT)
             }
             case e: Exception => {
@@ -132,11 +132,10 @@ class FileProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeC
     } catch {
       case e: Exception => {
         LOG.error("File input adapter " + fc.Name + ": Failed to send", e)
-        throw FatalAdapterException("Unable to send message",e)
+        throw FatalAdapterException("Unable to send message", e)
       }
     }
   }
-
 
   // Locking before we write into file
   // To send an array of messages. messages.size should be same as partKeys.size
@@ -162,8 +161,7 @@ class FileProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeC
           try {
             os.write(message ++ NEW_LINE);
             isSuccess = true
-          }
-          catch {
+          } catch {
             case zio: ZipException => {
               LOG.error("File input adapter " + fc.Name + ": File Corruption (bad compression)", zio)
               throw zio
@@ -171,11 +169,11 @@ class FileProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeC
             case fio: IOException => {
               LOG.warn("File input adapter " + fc.Name + ": Unable to write to file " + sFileName)
               if (numOfRetries >= MAX_RETRIES) {
-                LOG.error("File input adapter " + fc.Name + ": Unable to create a file destination after " + MAX_RETRIES +" tries.  Aborting.", fio)
-                throw FatalAdapterException("Unable to open connection to specified file after " + MAX_RETRIES +" retries", fio)
+                LOG.error("File input adapter " + fc.Name + ": Unable to create a file destination after " + MAX_RETRIES + " tries.  Aborting.", fio)
+                throw FatalAdapterException("Unable to open connection to specified file after " + MAX_RETRIES + " retries", fio)
               }
               numOfRetries += 1
-              LOG.warn("File input adapter " + fc.Name + ": Retyring "+ numOfRetries + "/" + MAX_RETRIES)
+              LOG.warn("File input adapter " + fc.Name + ": Retyring " + numOfRetries + "/" + MAX_RETRIES)
               Thread.sleep(FAIL_WAIT)
             }
             case e: Exception => {
@@ -187,10 +185,17 @@ class FileProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeC
       })
       // val key = Category + "/" + fc.Name + "/evtCnt"
       // cntrAdapter.addCntr(key, messages.size) // for now adding rows
+      /****VelocityMetrics****/
+      if (outContainers != null && outContainers.size > 0) {
+        for (i <- 0 until outContainers.size) {
+          getOAVelocityMetrics(VMFactory, nodeContext, outContainers(i), inputConfig, true)
+        }
+      }
+
     } catch {
       case e: Exception => {
         LOG.error("File input adapter " + fc.Name + ": Failed to send", e)
-        throw FatalAdapterException("Unable to send message",e)
+        throw FatalAdapterException("Unable to send message", e)
       }
     }
   }
@@ -198,6 +203,14 @@ class FileProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeC
   override def Shutdown(): Unit = _lock.synchronized {
     if (os != null)
       os.close
+  }
+
+  /* Get Velocity Metrics for Output Adapter   */
+  private def getOAVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, nodeContext: NodeContext, message: ContainerInterface, adapConfig: AdapterConfiguration, processed: Boolean) = {
+    var vm = new VelocityMetricsInfo
+    val OACompName = "OutputAdapter"
+    vm.incrementVelocityMetrics(VMFactory, OACompName, nodeContext, message, adapConfig, true)
+
   }
 
 }

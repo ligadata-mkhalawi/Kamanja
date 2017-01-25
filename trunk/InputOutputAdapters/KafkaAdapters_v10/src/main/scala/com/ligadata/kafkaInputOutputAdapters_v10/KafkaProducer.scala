@@ -18,13 +18,13 @@
 package com.ligadata.kafkaInputOutputAdapters_v10
 
 import java.util.{ Properties, Arrays }
-import com.ligadata.KamanjaBase.{ContainerInterface, TransactionContext, NodeContext}
+import com.ligadata.KamanjaBase.{ ContainerInterface, TransactionContext, NodeContext }
 //import kafka.common.{ QueueFullException, FailedToSendMessageException }
 import org.apache.logging.log4j.{ Logger, LogManager }
 import com.ligadata.InputOutputAdapterInfo._
 import com.ligadata.AdaptersConfiguration.{ KafkaConstants, KafkaQueueAdapterConfiguration }
-import com.ligadata.Exceptions.{KamanjaException, FatalAdapterException}
-import com.ligadata.HeartBeat.{Monitorable, MonitorComponentInfo}
+import com.ligadata.Exceptions.{ KamanjaException, FatalAdapterException }
+import com.ligadata.HeartBeat.{ Monitorable, MonitorComponentInfo }
 import org.json4s.jackson.Serialization
 import scala.collection.mutable.ArrayBuffer
 import org.apache.kafka.clients.producer.{ Callback, RecordMetadata, ProducerRecord }
@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong
 import scala.actors.threadpool.{ TimeUnit, ExecutorService, Executors }
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
+import com.ligadata.VelocityMetrics._
 
 object KafkaProducer extends OutputAdapterFactory {
   def CreateOutputAdapter(inputConfig: AdapterConfiguration, nodeContext: NodeContext): OutputAdapter = new KafkaProducer(inputConfig, nodeContext)
@@ -57,7 +57,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
 
   //BUGBUG:: Not Checking whether inputConfig is really QueueAdapterConfiguration or not.
   private[this] var qc: com.ligadata.AdaptersConfiguration.KafkaQueueAdapterConfiguration = null
-  if(!inputConfig.isInstanceOf[com.ligadata.AdaptersConfiguration.KafkaQueueAdapterConfiguration])
+  if (!inputConfig.isInstanceOf[com.ligadata.AdaptersConfiguration.KafkaQueueAdapterConfiguration])
     qc = KafkaQueueAdapterConfiguration.GetAdapterConfig(inputConfig)
   else
     qc = inputConfig.asInstanceOf[com.ligadata.AdaptersConfiguration.KafkaQueueAdapterConfiguration]
@@ -69,7 +69,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   val default_linger_ms = "100" // 100ms
   val default_retries = "1"
   val default_block_on_buffer_full = "true" // true or false
-  val default_buffer_memory = "16777216"  // 16MB
+  val default_buffer_memory = "16777216" // 16MB
   val default_client_id = qc.Name + "_" + hashCode.toString
   val default_request_timeout_ms = "30000"
   val default_timeout_ms = "30000"
@@ -86,7 +86,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   private var msgCount = new AtomicLong(0)
   val counterLock = new Object
 
-  private var metrics: collection.mutable.Map[String,Any] = collection.mutable.Map[String,Any]()
+  private var metrics: collection.mutable.Map[String, Any] = collection.mutable.Map[String, Any]()
   private var startTime: String = "n/a"
   private var lastSeen: String = "n/a"
 
@@ -155,7 +155,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       if (qc.ssl_key_password != null) props.put("ssl.key.password", qc.ssl_key_password)
       if (qc.ssl_keystore_location != null) props.put("ssl.keystore.location", qc.ssl_keystore_location)
       if (qc.ssl_keystore_password != null) props.put("ssl.keystore.password", qc.ssl_keystore_password)
-      if (qc.ssl_truststore_location != null) props.put("ssl.truststore.location",qc.ssl_truststore_location)
+      if (qc.ssl_truststore_location != null) props.put("ssl.truststore.location", qc.ssl_truststore_location)
       if (qc.ssl_truststore_password != null) props.put("ssl.truststore.password", qc.ssl_truststore_password)
       if (qc.ssl_enabled_protocols != null) props.put("ssl.enabled.protocols", qc.ssl_enabled_protocols)
       if (qc.ssl_keystore_type != null) props.put("ssl.keystore.type", qc.ssl_keystore_type)
@@ -174,7 +174,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       if (qc.ssl_key_password != null) props.put("ssl.key.password", qc.ssl_key_password)
       if (qc.ssl_keystore_location != null) props.put("ssl.keystore.location", qc.ssl_keystore_location)
       if (qc.ssl_keystore_password != null) props.put("ssl.keystore.password", qc.ssl_keystore_password)
-      if (qc.ssl_truststore_location != null) props.put("ssl.truststore.location",qc.ssl_truststore_location)
+      if (qc.ssl_truststore_location != null) props.put("ssl.truststore.location", qc.ssl_truststore_location)
       if (qc.ssl_truststore_password != null) props.put("ssl.truststore.password", qc.ssl_truststore_password)
       if (qc.ssl_enabled_protocols != null) props.put("ssl.enabled.protocols", qc.ssl_enabled_protocols)
       if (qc.ssl_keystore_type != null) props.put("ssl.keystore.type", qc.ssl_keystore_type)
@@ -208,7 +208,6 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   var reqCntr: Int = 0
   var msgInOrder = new AtomicLong
 
-
   // Create the producer object...
   LOG.info("Staring Kafka Producer with the following paramters: \n" + qc.toString)
   //workaround for Kafka bug with class loader
@@ -235,10 +234,10 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
 
   LOG.info(qc.Name + " Initializing Statistics")
   startTime = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
-  metrics (KafkaProducer.SEND_CALL_COUNT_KEY) = 0
-  metrics (KafkaProducer.SEND_MESSAGE_COUNT_KEY) = 0
-  metrics (KafkaProducer.LAST_FAILURE_TIME) = "n/a"
-  metrics (KafkaProducer.LAST_RECOVERY_TIME) = "n/a"
+  metrics(KafkaProducer.SEND_CALL_COUNT_KEY) = 0
+  metrics(KafkaProducer.SEND_MESSAGE_COUNT_KEY) = 0
+  metrics(KafkaProducer.LAST_FAILURE_TIME) = "n/a"
+  metrics(KafkaProducer.LAST_RECOVERY_TIME) = "n/a"
 
   if (enable_adapter_retries) retryExecutor.execute(new RetryFailedMessages())
 
@@ -252,11 +251,11 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
         } catch {
           case e: Exception => {
             externalizeExceptionEvent(e)
-            if (! isShutdown) LOG.warn("", e)
+            if (!isShutdown) LOG.warn("", e)
           }
           case e: Throwable => {
             externalizeExceptionEvent(e)
-            if (! isShutdown) LOG.warn("", e)
+            if (!isShutdown) LOG.warn("", e)
           }
         }
         if (isShutdown == false) {
@@ -460,27 +459,25 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
     return randomPartitionCntr.nextInt(numPartitions)
   }
 
-
   /**
-    *
-    *
-    * @return
-    */
+   *
+   *
+   * @return
+   */
   override def getComponentStatusAndMetrics: MonitorComponentInfo = {
     implicit val formats = org.json4s.DefaultFormats
-    return new MonitorComponentInfo( AdapterConfiguration.TYPE_OUTPUT, qc.Name, KafkaProducer.ADAPTER_DESCRIPTION, startTime, lastSeen,  Serialization.write(metrics).toString)
+    return new MonitorComponentInfo(AdapterConfiguration.TYPE_OUTPUT, qc.Name, KafkaProducer.ADAPTER_DESCRIPTION, startTime, lastSeen, Serialization.write(metrics).toString)
   }
 
   override def getComponentSimpleStats: String = {
     return key + "->" + msgCount.get()
   }
 
-
   /**
-    *
-    * @param tnxCtxt
-    * @param outputContainers
-    */
+   *
+   * @param tnxCtxt
+   * @param outputContainers
+   */
   override def send(tnxCtxt: TransactionContext, outputContainers: Array[ContainerInterface]): Unit = {
     if (outputContainers.size == 0) return
 
@@ -508,8 +505,14 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
     }
 
     send(serializedContainerData, partitionKeys.toArray)
-  }
 
+    /****VelocityMetrics****/
+    if (outContainers != null && outContainers.size > 0) {
+      for (i <- 0 until outContainers.size) {
+        getOAVelocityMetrics(VMFactory, nodeContext, outContainers(i), inputConfig, true)
+      }
+    }
+  }
 
   override def send(messages: Array[Array[Byte]], partitionKeys: Array[Array[Byte]]): Unit = {
     if (!isHeartBeating) runHeartBeat
@@ -576,11 +579,11 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
         externalizeExceptionEvent(fae)
         throw fae
       }
-      case e: Exception               => {
+      case e: Exception => {
         externalizeExceptionEvent(e)
         throw FatalAdapterException("Unknown exception", e)
       }
-      case e: Throwable               => {
+      case e: Throwable => {
         externalizeExceptionEvent(e)
         throw FatalAdapterException("Unknown exception", e)
       }
@@ -603,7 +606,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
           try {
             Thread.sleep(waitTm)
           } catch {
-            case e: Exception =>  {
+            case e: Exception => {
               externalizeExceptionEvent(e)
               throw e
             }
@@ -675,7 +678,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
         // cntrAdapter.addCntr(key, 1)
       })
 
-      if (! enable_adapter_retries) msgCount.addAndGet(keyMessages.size);
+      if (!enable_adapter_retries) msgCount.addAndGet(keyMessages.size);
 
       keyMessages.clear()
     } catch {
@@ -687,7 +690,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       //    externalizeExceptionEvent(qfe)
       //    if (sentMsgsCntr > 0) keyMessages.remove(0, sentMsgsCntr); addBackFailedToSendRec(lastAccessRec); throw new FatalAdapterException("Kafka queue full", qfe)
       //  }
-      case e: Exception  => {
+      case e: Exception => {
         externalizeExceptionEvent(e)
         if (sentMsgsCntr > 0) keyMessages.remove(0, sentMsgsCntr)
         addBackFailedToSendRec(lastAccessRec)
@@ -747,7 +750,6 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       producer.close
   }
 
-
   // Accumulate the metrics.. simple for now
   private def updateMetricValue(key: String, value: Any): Unit = {
     counterLock.synchronized {
@@ -756,7 +758,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
         metrics(key) = value.toString
       } else {
         // This is an aggregated Long value
-        val cur = metrics.getOrElse(key,"0").toString
+        val cur = metrics.getOrElse(key, "0").toString
         val longCur = cur.toLong
         metrics(key) = longCur + value.toString.toLong
       }
@@ -786,5 +788,12 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
         LOG.info(qc.Name + " Heartbeat is shutting down")
       }
     })
+  }
+
+  private def getOAVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, nodeContext: NodeContext, message: ContainerInterface, adapConfig: AdapterConfiguration, processed: Boolean) = {
+    var vm = new VelocityMetricsInfo
+    val OACompName = "OutputAdapter"
+    vm.incrementVelocityMetrics(VMFactory, OACompName, nodeContext, message, adapConfig, true)
+
   }
 }

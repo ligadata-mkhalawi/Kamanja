@@ -28,6 +28,7 @@ import com.ligadata.AdaptersConfiguration.{ FileAdapterConfiguration, FilePartit
 import scala.util.control.Breaks._
 import com.ligadata.KamanjaBase.{NodeContext, DataDelimiters}
 import com.ligadata.HeartBeat.{Monitorable, MonitorComponentInfo}
+import com.ligadata.VelocityMetrics._
 
 object FileConsumer extends InputAdapterFactory {
   val ADAPTER_DESCRIPTION = "File Consumer"
@@ -186,6 +187,10 @@ class FileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecC
           val key = Category + "/" + fc.Name + "/evtCnt"
           // cntrAdapter.addCntr(key, 1)
         }
+        
+        /**Get VelocityMetrics for SmartFileName - fileToProcessName ***/
+        getFileVelocityMetrics(VMFactory, "FileConsumerIA", sFileName, nodeContext, inputConfig)
+        
       }
     } catch {
       case e: Exception => {
@@ -301,6 +306,13 @@ class FileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecC
   // Not yet implemented
   override def getAllPartitionEndValues: Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)] = {
     return Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)]()
+  }
+  
+   /* Get Velocity Metrics for Output Adapter   */
+  private def getFileVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, componentName: String, fileName: String, nodeContext: NodeContext, adapConfig: AdapterConfiguration) = {
+    var vm = new VelocityMetricsInfo
+    val OACompName = "OutputAdapter"
+    vm.incrementFileVelocityMetrics(VMFactory, componentName, fileName, nodeContext, adapConfig)
   }
 }
 
