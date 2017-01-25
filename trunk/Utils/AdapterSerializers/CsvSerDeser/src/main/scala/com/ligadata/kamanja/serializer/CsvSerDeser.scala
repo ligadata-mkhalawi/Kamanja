@@ -4,7 +4,7 @@ import scala.collection.mutable.Map
 import scala.collection.JavaConverters._
 import java.io.{ByteArrayOutputStream, DataOutputStream, StringReader}
 import scala.collection.JavaConverters._
-import org.apache.commons.csv.{CSVFormat, CSVParser, CSVRecord}
+import org.apache.commons.csv.CSVFormat
 
 import org.apache.logging.log4j.LogManager
 // import org.apache.commons.lang.StringEscapeUtils
@@ -68,6 +68,8 @@ class CsvSerDeser extends SerializeDeserialize {
     var _config = Map[String,String]()
     var _emitHeaderFirst : Boolean = false
     var _fieldDelimiter  = ","
+    // add by saleh 24/1/2017
+    var _fieldDelimiterAsChar  = ','
     var _valDelimiter = "~"
     var _keyDelimiter = "@"
     var _lineDelimiter = "\n"
@@ -300,6 +302,8 @@ class CsvSerDeser extends SerializeDeserialize {
         _objResolver = objResolver
         _config = configProperties.asScala
         _fieldDelimiter = _config.getOrElse("fieldDelimiter", ",")
+        //added by saleh 24/1/2017
+        _fieldDelimiterAsChar = _fieldDelimiter.charAt(0)
         _valDelimiter = _config.getOrElse("valDelimiter", "~")
         _keyDelimiter = _config.getOrElse("keyDelimiter", "@")
         _lineDelimiter =  _config.getOrElse("lineDelimiter", "\n")
@@ -385,7 +389,7 @@ class CsvSerDeser extends SerializeDeserialize {
       */
     def csvApache(rawCsvContainerStr: String) : Array[String] = {
         val in = new StringReader(rawCsvContainerStr)
-        val records = CSVFormat.DEFAULT.withDelimiter(_fieldDelimiter).parse(in).iterator
+        val records = CSVFormat.DEFAULT.withDelimiter(_fieldDelimiterAsChar).parse(in).iterator
         if (records.hasNext) {
             records.next().iterator().asScala.toArray
         }else{
@@ -459,8 +463,6 @@ class CsvSerDeser extends SerializeDeserialize {
             }
             val fld = rawCsvFields(fldIdx)
             // @TODO: need to handle failure condition for set - string is not in expected format?
-            // @TODO: is there any need to strip quotes? since serializer is putting escape information while serializing, this should be done. probably more configuration information is needed
-            // added by saleh 23/01/2017 handling quotes using regx before spliting need finder a better way to do this
 
             ci.set(fldIdx, resolveValue(fld, attr))
             fldIdx += 1
