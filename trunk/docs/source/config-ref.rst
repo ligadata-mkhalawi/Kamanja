@@ -15,6 +15,7 @@ Configuration File Reference Pages
     config-ref/message-def
     config-ref/MetadataAPIConfig-properties
     config-ref/MigrateConfig_template
+    config-ref/modelCfg
     config-ref/tenant-def
 
 

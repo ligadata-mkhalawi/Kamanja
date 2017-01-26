@@ -34,6 +34,9 @@ that are supported:
        to use Scala v2.10.
        Different versions of the Kamanja installation package
        are provided for Scala v2.11 and v2.10
+   * - sbt
+     - 0.13.7
+     - Use the latest versions of sbt plugins
    * - Kafka
      - 2.11_0.9
      -

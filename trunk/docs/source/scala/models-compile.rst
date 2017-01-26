@@ -1,6 +1,6 @@
 
 
-.. simp_scala_models-compile:
+.. _simp_scala_models-compile:
 
 Write model compilation configuration
 -------------------------------------
@@ -12,7 +12,8 @@ Not just yet though.
 While all the messages and models have been written to execute good logic,
 Kamanja doesn’t know how to associate any of the messages
 with any of the models.
-In order to do that, create some model compilation configuration files.
+In order to do that, create some
+model compilation configuration files (:ref:`modelcfg-config-ref`).
 
 Here are the contents of DAGAdditionModelCfg.json:
 
@@ -63,7 +64,7 @@ into their own files and place them in the SimpleMathDAG directory
 created earlier.
 
 DAGMultiplicationModelCfg.json
-------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ::
 
@@ -84,7 +85,7 @@ DAGMultiplicationModelCfg.json
 
 
 DAGDivisionModelCfg.json
-------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 ::
 

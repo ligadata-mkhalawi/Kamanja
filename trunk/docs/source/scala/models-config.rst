@@ -17,11 +17,11 @@ For example:
 
   cd /opt/Kamanja-1.4.0_2.11
 
-  bash bin/kamanja upload compile config /path/to/SimpleMathDAG/DAGAdditionModelCfg.json
+  bash bin/kamanja upload compile config <path-to :ref:`modelcfg-config-ref` file>
 
-  bash bin/kamanja upload compile config /path/to/SimpleMathDAG/DAGMultiplicationModelCfg.json
+  bash bin/kamanja upload compile config  <path-to :ref:`modelcfg-config-ref` file>
 
-  bash bin/kamanja upload compile config /path/to/SimpleMathDAG/DAGDivisionModelCfg.json
+  bash bin/kamanja upload compile config  <path-to :ref:`modelcfg-config-ref` file>
 
 Now that the compilation configurations have been properly uploaded, add the models.
 

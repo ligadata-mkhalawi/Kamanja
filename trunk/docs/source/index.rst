@@ -22,7 +22,12 @@ Reference Pages
    config-ref
    command-ref
 
-API Reference Pages
+API Documentation
+-----------------
+
+.. toctree::
+
+    api
 
 Machine Learning Guides
 -----------------------
@@ -59,13 +64,6 @@ About this Product
 
    architecture
    relnotes
-
-API Documentation
------------------
-
-.. toctree::
-
-    api
 
 
 Indices and tables
