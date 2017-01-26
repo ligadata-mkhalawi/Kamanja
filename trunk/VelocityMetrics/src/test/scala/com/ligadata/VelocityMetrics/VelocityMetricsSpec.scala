@@ -37,7 +37,8 @@ class PrintVelocityMetrics extends VelocityMetricsCallback {
           val metricValues = if (keyMetrics(j).metricValues == null) Array[MetricValue]() else keyMetrics(j).metricValues
           sb.clear
           for (k <- 0 until metricValues.size) {
-            sb.append(",");
+            if (k > 0)
+              sb.append(",");
             sb.append(metricValues(k).Key())
             sb.append(":");
             sb.append(metricValues(k).Value());
