@@ -189,7 +189,8 @@ class FileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecC
         }
         
         /**Get VelocityMetrics for SmartFileName - fileToProcessName ***/
-        getFileVelocityMetrics(VMFactory, "FileConsumerIA", sFileName, nodeContext, inputConfig)
+        val nodeId = nodeContext.getEnvCtxt().getNodeId()
+        getFileVelocityMetrics(VMFactory, "FileConsumerIA", sFileName, nodeId, inputConfig)
         
       }
     } catch {
@@ -309,10 +310,10 @@ class FileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecC
   }
   
    /* Get Velocity Metrics for Output Adapter   */
-  private def getFileVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, componentName: String, fileName: String, nodeContext: NodeContext, adapConfig: AdapterConfiguration) = {
+  private def getFileVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, componentName: String, fileName: String, nodeId: String, adapConfig: AdapterConfiguration) = {
     var vm = new VelocityMetricsInfo
     val OACompName = "OutputAdapter"
-    vm.incrementFileVelocityMetrics(VMFactory, componentName, fileName, nodeContext, adapConfig)
+    vm.incrementFileVelocityMetrics(VMFactory, componentName, fileName, nodeId, adapConfig)
   }
 }
 

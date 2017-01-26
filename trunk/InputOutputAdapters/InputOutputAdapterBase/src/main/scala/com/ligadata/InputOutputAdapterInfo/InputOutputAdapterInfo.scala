@@ -340,14 +340,16 @@ trait ExecContext {
       val failedMsg = if (msgName != null) msgName else ""
       if (tMsg != null) {
         execute(tMsg, data, uniqueKey, uniqueVal, readTmMilliSecs)
-        getIAVelocityMetrics(input.VMFactory, input.nodeContext, tMsg, input.inputConfig, true)
+        val nodeId = input.nodeContext.getEnvCtxt().getNodeId()
+        getIAVelocityMetrics(input.VMFactory, nodeId, tMsg, input.inputConfig, true)
       } else {
         if (LOG.isDebugEnabled) {
           LOG.debug("Not able to deserialize data:%s at UK:%s, UV:%s".format((if (data != null) new String(data) else ""), uk, uv))
         }
         val ex = new Exception("Unable to deserialize messageName:%s from data:%s".format(messageName, (if (data != null) new String(data) else "")))
         SendFailedEvent(data, tDeserializerName, failedMsg, uniqueKey, uniqueVal, ex, tempMsgInterface)
-        getIAVelocityMetrics(input.VMFactory, input.nodeContext, tMsg, input.inputConfig, false)
+        val nodeId = input.nodeContext.getEnvCtxt().getNodeId()
+        getIAVelocityMetrics(input.VMFactory, nodeId, tMsg, input.inputConfig, false)
       }
     } catch {
       case e: Throwable => {
@@ -357,10 +359,10 @@ trait ExecContext {
     }
   }
 
-  private def getIAVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, nodeContext: NodeContext, message: ContainerInterface, adapConfig: AdapterConfiguration, processed: Boolean) = {
+  private def getIAVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, nodeId: String, message: ContainerInterface, adapConfig: AdapterConfiguration, processed: Boolean) = {
     var vm = new VelocityMetricsInfo
     val IACompName = "InputAdapter"
-    vm.incrementVelocityMetrics(VMFactory, IACompName, nodeContext, message, adapConfig, true)
+    vm.incrementVelocityMetrics(VMFactory, IACompName, nodeId, message, adapConfig, true)
 
   }
 

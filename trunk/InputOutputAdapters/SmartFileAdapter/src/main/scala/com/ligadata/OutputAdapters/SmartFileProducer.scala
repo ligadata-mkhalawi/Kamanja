@@ -677,8 +677,9 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
             metrics("MessagesProcessed").asInstanceOf[AtomicLong].incrementAndGet()
             /**VelocityMetrics****/
             if (outputContainers != null && outputContainers.size > 0) {
+              val nodeId = nodeContext.getEnvCtxt().getNodeId()
               for (i <- 0 until outContainers.size) {
-                getOAVelocityMetrics(VMFactory, nodeContext, outContainers(i), inputConfig, true)
+                getOAVelocityMetrics(VMFactory, nodeId, outContainers(i), inputConfig, true)
               }
             }
           } catch {
@@ -734,10 +735,10 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     }
   }
 
-  private def getOAVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, nodeContext: NodeContext, message: ContainerInterface, adapConfig: AdapterConfiguration, processed: Boolean) = {
+  private def getOAVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, nodeId: String, message: ContainerInterface, adapConfig: AdapterConfiguration, processed: Boolean) = {
     var vm = new VelocityMetricsInfo
     val OACompName = "OutputAdapter"
-    vm.incrementVelocityMetrics(VMFactory, OACompName, nodeContext, message, adapConfig, true)
+    vm.incrementVelocityMetrics(VMFactory, OACompName, nodeId, message, adapConfig, true)
 
   }
 
