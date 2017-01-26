@@ -26,9 +26,11 @@ object VelocityMetrics {
     var lastOccured: Long = 0L
 
     def Add(currentTime: Long, addCntrIdxs: Array[Int], addCntrValuesForIdxs: Array[Int]): Unit = {
+      var curIdx = 0
       addCntrIdxs.foreach(idx => {
         if (idx < countersNames.size)
-          counters(idx) += addCntrValuesForIdxs(idx)
+          counters(idx) += addCntrValuesForIdxs(curIdx)
+        curIdx += 1
       })
       if (firstOccured == 0) firstOccured = currentTime
       lastOccured = currentTime
@@ -349,6 +351,8 @@ object VelocityMetrics {
       var comp = metricsComponents.getOrElse(compKey, null)
       if (comp == null && addIfMissing) {
         comp = new ComponentVelocityMetrics(nodeId.trim.toLowerCase, compKey, intervalRoundingInMs: Long, countersNames: Array[String])
+        if (comp != null)
+          metricsComponents(compKey) = comp
       }
       comp
     }

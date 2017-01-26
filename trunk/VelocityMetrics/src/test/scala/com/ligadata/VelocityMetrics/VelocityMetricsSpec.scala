@@ -29,10 +29,10 @@ class PrintVelocityMetrics extends VelocityMetricsCallback {
     } else {
       val sb = new StringBuilder()
       val compMetrics = if (metrics.compMetrics == null) Array[ComponentMetrics]() else metrics.compMetrics
-      logger.info("Metrics => MetricsGeneratedTimeInMs:%d, UUID:%s, ComponentMetrics:%d".format(metrics.metricsGeneratedTimeInMs, metrics.uuid, compMetrics.size))
+      logger.error("Metrics => MetricsGeneratedTimeInMs:%d, UUID:%s, ComponentMetrics:%d".format(metrics.metricsGeneratedTimeInMs, metrics.uuid, compMetrics.size))
       for (i <- 0 until compMetrics.length) {
         val keyMetrics = if (compMetrics(i).keyMetrics == null) Array[ComponentKeyMetrics]() else compMetrics(i).keyMetrics
-        logger.info("\tComponentMetrics(%d) => ComponentKey:%s, NodeId:%s, KeyMetrics:%d".format(i, compMetrics(i).componentKey, compMetrics(i).nodeId, keyMetrics.size))
+        logger.error("\tComponentMetrics(%d) => ComponentKey:%s, NodeId:%s, KeyMetrics:%d".format(i, compMetrics(i).componentKey, compMetrics(i).nodeId, keyMetrics.size))
         for (j <- 0 until keyMetrics.length) {
           val metricValues = if (keyMetrics(j).metricValues == null) Array[MetricValue]() else keyMetrics(j).metricValues
           sb.clear
@@ -42,7 +42,7 @@ class PrintVelocityMetrics extends VelocityMetricsCallback {
             sb.append(":");
             sb.append(metricValues(k).Value());
           }
-          logger.info("\t\tComponentKeyMetrics(%d) => Key:%s, MetricsTime:%d, FirstOccured:%d, LastOccured:%d, MetricValue:{%s}".format(j, keyMetrics(j).key, keyMetrics(j).metricsTime, keyMetrics(j).firstOccured, keyMetrics(j).lastOccured, sb.toString))
+          logger.error("\t\tComponentKeyMetrics(%d) => Key:%s, MetricsTime:%d, FirstOccured:%d, LastOccured:%d, MetricValue:{%s}".format(j, keyMetrics(j).key, keyMetrics(j).metricsTime, keyMetrics(j).firstOccured, keyMetrics(j).lastOccured, sb.toString))
         }
       }
     }
@@ -62,6 +62,8 @@ class VelocityMetricsSpec extends FunSpec {
       val printVelocityMetrics = new PrintVelocityMetrics
 
       val factory = VelocityMetrics.GetVelocityMetricsFactory(30, 5)
+
+      factory.addEmitListener(printVelocityMetrics)
 
       val instance1 = factory.GetVelocityMetricsInstance(nodeId, "TestMetrics1", 5, counterNames1)
 
@@ -84,9 +86,9 @@ class VelocityMetricsSpec extends FunSpec {
       instance3.increment(System.currentTimeMillis(), "Metrics1", System.currentTimeMillis(), false, false)
       instance3.increment(System.currentTimeMillis(), "Metrics1", System.currentTimeMillis(), false, true)
 
-      // Sleeping for 30secs
-      logger.info("Sleeping for 30secs")
-      Thread.sleep(30000)
+      // Sleeping for 45secs
+      logger.info("Sleeping for 45secs")
+      Thread.sleep(45000)
 
       instance1.increment(System.currentTimeMillis(), "Metrics1", System.currentTimeMillis(), true, false)
       instance1.increment(System.currentTimeMillis(), "Metrics1", System.currentTimeMillis(), true, true)
@@ -134,9 +136,9 @@ class VelocityMetricsSpec extends FunSpec {
       instance6.Add(System.currentTimeMillis(), "Metrics2", System.currentTimeMillis(), Array[Int](0, 2), Array[Int](100, 100))
       instance6.Add(System.currentTimeMillis(), "Metrics2", System.currentTimeMillis(), Array[Int](0, 1), Array[Int](50, 50))
 
-      // Sleeping for 30secs
-      logger.info("Sleeping for 30secs")
-      Thread.sleep(30000)
+      // Sleeping for 45secs
+      logger.info("Sleeping for 45secs")
+      Thread.sleep(45000)
     }
   }
 }
