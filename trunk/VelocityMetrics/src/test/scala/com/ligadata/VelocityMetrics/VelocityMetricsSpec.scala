@@ -66,11 +66,11 @@ class VelocityMetricsSpec extends FunSpec {
 
       factory.addEmitListener(printVelocityMetrics)
 
-      val instance1 = factory.GetVelocityMetricsInstance(nodeId, "TestMetrics1", 5, counterNames1)
+      val instance1 = factory.GetVelocityMetricsInstance(nodeId, "TestMetrics1-5", 5, counterNames1)
 
-      val instance2 = factory.GetVelocityMetricsInstance(nodeId, "TestMetrics1", 10, counterNames1)
+      val instance2 = factory.GetVelocityMetricsInstance(nodeId, "TestMetrics1-10", 10, counterNames1)
 
-      val instance3 = factory.GetVelocityMetricsInstance(nodeId, "TestMetrics1", 10, counterNames1)
+      val instance3 = factory.GetVelocityMetricsInstance(nodeId, "TestMetrics1-10", 10, counterNames1)
 
       instance1.increment(System.currentTimeMillis(), "Metrics1", System.currentTimeMillis(), true, false)
       instance1.increment(System.currentTimeMillis(), "Metrics1", System.currentTimeMillis(), true, true)
@@ -106,11 +106,11 @@ class VelocityMetricsSpec extends FunSpec {
       instance3.increment(System.currentTimeMillis(), "Metrics1", System.currentTimeMillis(), false, false)
       instance3.increment(System.currentTimeMillis(), "Metrics1", System.currentTimeMillis(), false, true)
 
-      val instance4 = factory.GetVelocityMetricsInstance(nodeId, "TestMetrics2", 5, counterNames2)
+      val instance4 = factory.GetVelocityMetricsInstance(nodeId, "TestMetrics2-5", 5, counterNames2)
 
-      val instance5 = factory.GetVelocityMetricsInstance(nodeId, "TestMetrics2", 10, counterNames2)
+      val instance5 = factory.GetVelocityMetricsInstance(nodeId, "TestMetrics2-10", 10, counterNames2)
 
-      val instance6 = factory.GetVelocityMetricsInstance(nodeId, "TestMetrics2", 10, counterNames2)
+      val instance6 = factory.GetVelocityMetricsInstance(nodeId, "TestMetrics2-10", 10, counterNames2)
 
       instance4.increment(System.currentTimeMillis(), "Metrics2", System.currentTimeMillis(), true)
       instance4.increment(System.currentTimeMillis(), "Metrics2", System.currentTimeMillis(), true, true, true)
