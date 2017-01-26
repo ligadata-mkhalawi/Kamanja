@@ -87,6 +87,23 @@ class VelocityMetricsSpec extends FunSpec {
       instance3.increment(System.currentTimeMillis(), "Metrics1", System.currentTimeMillis(), false, false)
       instance3.increment(System.currentTimeMillis(), "Metrics1", System.currentTimeMillis(), false, true)
 
+      Thread.sleep(10000)
+
+      instance1.increment(System.currentTimeMillis(), "Metrics2", System.currentTimeMillis(), true, false)
+      instance1.increment(System.currentTimeMillis(), "Metrics2", System.currentTimeMillis(), true, true)
+      instance1.increment(System.currentTimeMillis(), "Metrics2", System.currentTimeMillis(), false, false)
+      instance1.increment(System.currentTimeMillis(), "Metrics2", System.currentTimeMillis(), false, true)
+
+      instance2.increment(System.currentTimeMillis(), "Metrics2", System.currentTimeMillis(), true, false)
+      instance2.increment(System.currentTimeMillis(), "Metrics2", System.currentTimeMillis(), true, true)
+      instance2.increment(System.currentTimeMillis(), "Metrics2", System.currentTimeMillis(), false, false)
+      instance2.increment(System.currentTimeMillis(), "Metrics2", System.currentTimeMillis(), false, true)
+
+      instance3.increment(System.currentTimeMillis(), "Metrics3", System.currentTimeMillis(), true, false)
+      instance3.increment(System.currentTimeMillis(), "Metrics3", System.currentTimeMillis(), true, true)
+      instance3.increment(System.currentTimeMillis(), "Metrics3", System.currentTimeMillis(), false, false)
+      instance3.increment(System.currentTimeMillis(), "Metrics3", System.currentTimeMillis(), false, true)
+
       // Sleeping for 45secs
       logger.info("Sleeping for 45secs")
       Thread.sleep(45000)
@@ -105,6 +122,23 @@ class VelocityMetricsSpec extends FunSpec {
       instance3.increment(System.currentTimeMillis(), "Metrics1", System.currentTimeMillis(), true, true)
       instance3.increment(System.currentTimeMillis(), "Metrics1", System.currentTimeMillis(), false, false)
       instance3.increment(System.currentTimeMillis(), "Metrics1", System.currentTimeMillis(), false, true)
+
+      Thread.sleep(10000)
+
+      instance1.increment(System.currentTimeMillis(), "Metrics1", System.currentTimeMillis(), true, false)
+      instance1.increment(System.currentTimeMillis(), "Metrics2", System.currentTimeMillis(), true, true)
+      instance1.increment(System.currentTimeMillis(), "Metrics3", System.currentTimeMillis(), false, false)
+      instance1.increment(System.currentTimeMillis(), "Metrics4", System.currentTimeMillis(), false, true)
+
+      instance2.increment(System.currentTimeMillis(), "Metrics1", System.currentTimeMillis(), true, false)
+      instance2.increment(System.currentTimeMillis(), "Metrics2", System.currentTimeMillis(), true, true)
+      instance2.increment(System.currentTimeMillis(), "Metrics3", System.currentTimeMillis(), false, false)
+      instance2.increment(System.currentTimeMillis(), "Metrics4", System.currentTimeMillis(), false, true)
+
+      instance3.increment(System.currentTimeMillis(), "Metrics5", System.currentTimeMillis(), true, false)
+      instance3.increment(System.currentTimeMillis(), "Metrics6", System.currentTimeMillis(), true, true)
+      instance3.increment(System.currentTimeMillis(), "Metrics7", System.currentTimeMillis(), false, false)
+      instance3.increment(System.currentTimeMillis(), "Metrics8", System.currentTimeMillis(), false, true)
 
       val instance4 = factory.GetVelocityMetricsInstance(nodeId, "TestMetrics2-5", 5, counterNames2)
 
