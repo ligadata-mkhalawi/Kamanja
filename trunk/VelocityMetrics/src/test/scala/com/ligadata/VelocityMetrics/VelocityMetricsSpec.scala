@@ -43,7 +43,7 @@ class PrintVelocityMetrics extends VelocityMetricsCallback {
             sb.append(":");
             sb.append(metricValues(k).Value());
           }
-          logger.error("\t\tComponentKeyMetrics(%d) => Key:%s, MetricsTime:%d, RoundIntervalTime:%d, FirstOccured:%d, LastOccured:%d, MetricValue:{%s}".format(j, keyMetrics(j).key, keyMetrics(j).metricsTime, keyMetrics(j).roundIntervalTime, keyMetrics(j).firstOccured, keyMetrics(j).lastOccured, sb.toString))
+          logger.error("\t\tComponentKeyMetrics(%d) => Key:%s, MetricsTime:%d, RoundIntervalTime:%d, FirstOccured:%d, LastOccured:%d, MetricValue:{%s}".format(j, keyMetrics(j).key, keyMetrics(j).metricsTime, keyMetrics(j).roundIntervalTimeInSec, keyMetrics(j).firstOccured, keyMetrics(j).lastOccured, sb.toString))
         }
       }
     }

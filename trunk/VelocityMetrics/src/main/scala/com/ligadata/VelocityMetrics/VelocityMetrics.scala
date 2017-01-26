@@ -9,14 +9,14 @@ import org.apache.log4j.Logger
 object VelocityMetrics {
   private val logger = Logger.getLogger(getClass)
 
-  private[VelocityMetrics] case class IntervalAndKey(val key: String, val metricsTime: Long, val intervalRoundingInMs: Long) {
-    override def hashCode() = (key + "," + metricsTime + "," + intervalRoundingInMs).hashCode()
+  private[VelocityMetrics] case class IntervalAndKey(val key: String, val metricsTime: Long, val intervalRoundingInSecs: Int) {
+    override def hashCode() = (key + "," + metricsTime + "," + intervalRoundingInSecs).hashCode()
 
     override def equals(other: Any): Boolean = {
       if (!other.isInstanceOf[IntervalAndKey]) return false
       val o = other.asInstanceOf[IntervalAndKey]
       if (metricsTime != o.metricsTime) return false
-      if (intervalRoundingInMs != o.intervalRoundingInMs) return false
+      if (intervalRoundingInSecs != o.intervalRoundingInSecs) return false
       (key == o.key)
     }
   }
@@ -54,9 +54,10 @@ object VelocityMetrics {
     }
   }
 
-  private[VelocityMetrics] class VelocityMetricsInstanceImpl(val intervalRoundingInMs: Long, val countersNames: Array[String]) extends VelocityMetricsInstanceInterface {
+  private[VelocityMetrics] class VelocityMetricsInstanceImpl(val intervalRoundingInSecs: Int, val countersNames: Array[String]) extends VelocityMetricsInstanceInterface {
     var firstOccured: Long = 0L
     var lastOccured: Long = 0L
+    val intervalRoundingInMs = intervalRoundingInSecs * 1000
     var intervalAndKeyVelocityCounts = scala.collection.mutable.Map[IntervalAndKey, IntervalAndKeyVelocityCounts]()
 
     private def AddMetrics(intervalAndKey: IntervalAndKey, currentTime: Long, addCntrIdxs: Array[Int], addCntrValuesForIdxs: Array[Int]): Unit = synchronized {
@@ -82,14 +83,14 @@ object VelocityMetrics {
     override def Add(metricsTime: Long, key: String, currentTime: Long, addCntrIdxs: Array[Int], addCntrValuesForIdxs: Array[Int]): Unit = {
       if (addCntrIdxs.size == 0) return
       val roundedMetricsTime = metricsTime - (metricsTime % intervalRoundingInMs)
-      val intervalAndKey = IntervalAndKey(key, roundedMetricsTime, intervalRoundingInMs)
+      val intervalAndKey = IntervalAndKey(key, roundedMetricsTime, intervalRoundingInSecs)
       AddMetrics(intervalAndKey, currentTime, addCntrIdxs, addCntrValuesForIdxs)
     }
 
     override def increment(metricsTime: Long, key: String, currentTime: Long, addCntrIdxs: Array[Int]): Unit = {
       if (addCntrIdxs.size == 0) return
       val roundedMetricsTime = metricsTime - (metricsTime % intervalRoundingInMs)
-      val intervalAndKey = IntervalAndKey(key, roundedMetricsTime, intervalRoundingInMs)
+      val intervalAndKey = IntervalAndKey(key, roundedMetricsTime, intervalRoundingInSecs)
       val addCntrValuesForIdxs = addCntrIdxs.map(v => 1)
       AddMetrics(intervalAndKey, currentTime, addCntrIdxs, addCntrValuesForIdxs)
     }
@@ -97,7 +98,7 @@ object VelocityMetrics {
     override def increment(metricsTime: Long, key: String, currentTime: Long, addCntrIdxFlags: Boolean*): Unit = {
       if (addCntrIdxFlags.size == 0) return
       val roundedMetricsTime = metricsTime - (metricsTime % intervalRoundingInMs)
-      val intervalAndKey = IntervalAndKey(key, roundedMetricsTime, intervalRoundingInMs)
+      val intervalAndKey = IntervalAndKey(key, roundedMetricsTime, intervalRoundingInSecs)
 
       val idxs = ArrayBuffer[Int]()
       var idxNumber = 0
@@ -112,7 +113,7 @@ object VelocityMetrics {
     }
 
     override def duplicate(): VelocityMetricsInstanceInterface = synchronized {
-      val m = new VelocityMetricsInstanceImpl(intervalRoundingInMs, countersNames)
+      val m = new VelocityMetricsInstanceImpl(intervalRoundingInSecs, countersNames)
       try {
         m.firstOccured = this.firstOccured
         m.lastOccured = this.lastOccured
@@ -134,7 +135,7 @@ object VelocityMetrics {
     }
 
     def duplicate(reset: Boolean): VelocityMetricsInstanceInterface = synchronized {
-      val m = new VelocityMetricsInstanceImpl(intervalRoundingInMs, countersNames)
+      val m = new VelocityMetricsInstanceImpl(intervalRoundingInSecs, countersNames)
       try {
         m.firstOccured = this.firstOccured
         m.lastOccured = this.lastOccured
@@ -181,17 +182,17 @@ object VelocityMetrics {
     }
   }
 
-  private[VelocityMetrics] class ComponentVelocityMetrics(val nodeId: String, val componentKey: String, intervalRoundingInMs: Long, countersNames: Array[String]) {
+  private[VelocityMetrics] class ComponentVelocityMetrics(val nodeId: String, val componentKey: String, intervalRoundingInSecs: Int, countersNames: Array[String]) {
     private val instanceMetrics = ArrayBuffer[VelocityMetricsInstanceImpl]()
 
     def GetVelocityMetricsInstance(): VelocityMetricsInstanceInterface = synchronized {
-      val m = new VelocityMetricsInstanceImpl(intervalRoundingInMs, countersNames)
+      val m = new VelocityMetricsInstanceImpl(intervalRoundingInSecs, countersNames)
       instanceMetrics += m
       m
     }
 
     def duplicate(): ComponentVelocityMetrics = synchronized {
-      val comp = new ComponentVelocityMetrics(nodeId, componentKey, intervalRoundingInMs, countersNames)
+      val comp = new ComponentVelocityMetrics(nodeId, componentKey, intervalRoundingInSecs, countersNames)
       comp.instanceMetrics ++= instanceMetrics.map(inst => inst.duplicate().asInstanceOf[VelocityMetricsInstanceImpl])
       comp
     }
@@ -273,7 +274,7 @@ object VelocityMetrics {
               val keyMetrics = new ComponentKeyMetrics
               keyMetrics.key = velocityCounts.intervalAndKey.key
               keyMetrics.metricsTime = velocityCounts.intervalAndKey.metricsTime
-              keyMetrics.roundIntervalTime = velocityCounts.intervalAndKey.intervalRoundingInMs
+              keyMetrics.roundIntervalTimeInSec = velocityCounts.intervalAndKey.intervalRoundingInSecs
               keyMetrics.firstOccured = velocityCounts.firstOccured
               keyMetrics.lastOccured = velocityCounts.lastOccured
               keyMetrics.metricValues = new Array[MetricValue](velocityCounts.counters.size)
@@ -349,22 +350,22 @@ object VelocityMetrics {
       retVal
     }
 
-    private def GetMetricsComponent(componentKey: String, nodeId: String, intervalRoundingInMs: Long, countersNames: Array[String], addIfMissing: Boolean): ComponentVelocityMetrics = synchronized {
+    private def GetMetricsComponent(componentKey: String, nodeId: String, intervalRoundingInSecs: Int, countersNames: Array[String], addIfMissing: Boolean): ComponentVelocityMetrics = synchronized {
       val compKey = componentKey.trim.toLowerCase
       var comp = metricsComponents.getOrElse(compKey, null)
       if (comp == null && addIfMissing) {
-        comp = new ComponentVelocityMetrics(nodeId.trim.toLowerCase, compKey, intervalRoundingInMs: Long, countersNames: Array[String])
+        comp = new ComponentVelocityMetrics(nodeId.trim.toLowerCase, compKey, intervalRoundingInSecs: Int, countersNames: Array[String])
         if (comp != null)
           metricsComponents(compKey) = comp
       }
       comp
     }
 
-    override def GetVelocityMetricsInstance(nodeId: String, componentKey: String, intervalRoundingInMs: Long, countersNames: Array[String]): VelocityMetricsInstanceInterface = {
+    override def GetVelocityMetricsInstance(nodeId: String, componentKey: String, intervalRoundingInSecs: Int, countersNames: Array[String]): VelocityMetricsInstanceInterface = {
       if (isTerminated) {
         throw new Exception("VelocityMetricsFactoryInterface is already terminated.")
       }
-      val comp = GetMetricsComponent(componentKey, nodeId, intervalRoundingInMs, countersNames, true)
+      val comp = GetMetricsComponent(componentKey, nodeId, intervalRoundingInSecs, countersNames, true)
       comp.GetVelocityMetricsInstance()
     }
 
