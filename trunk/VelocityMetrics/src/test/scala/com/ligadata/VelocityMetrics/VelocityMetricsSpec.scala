@@ -139,6 +139,8 @@ class VelocityMetricsSpec extends FunSpec {
       // Sleeping for 45secs
       logger.info("Sleeping for 45secs")
       Thread.sleep(45000)
+
+      factory.shutdown()
     }
   }
 }

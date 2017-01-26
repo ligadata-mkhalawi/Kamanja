@@ -253,7 +253,7 @@ object VelocityMetrics {
 
     private def EmitMetrics(reset: Boolean): Unit = synchronized {
       try {
-        val allComponents = GetAllMetricsComponents
+        val allComponents = GetAllMetricsComponents(reset)
         val uuid = guid
 
         val finalComponentsMetrics = ArrayBuffer[ComponentMetrics]()
@@ -342,8 +342,11 @@ object VelocityMetrics {
 
     scheduledThreadPool.scheduleWithFixedDelay(externalizeMetrics, initalDelay, emitTmInSecs * 1000, TimeUnit.MILLISECONDS)
 
-    private def GetAllMetricsComponents: Array[ComponentVelocityMetrics] = synchronized {
-      metricsComponents.values.toArray
+    private def GetAllMetricsComponents(reset: Boolean): Array[ComponentVelocityMetrics] = synchronized {
+      val retVal = metricsComponents.values.toArray
+      if (reset)
+        metricsComponents.clear
+      retVal
     }
 
     private def GetMetricsComponent(componentKey: String, nodeId: String, intervalRoundingInMs: Long, countersNames: Array[String], addIfMissing: Boolean): ComponentVelocityMetrics = synchronized {
