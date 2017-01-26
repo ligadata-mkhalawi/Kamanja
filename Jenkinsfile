@@ -59,7 +59,8 @@ def notifyBuild(String buildStatus = "STARTED") {
     emailext (
         subject: subject,
         body: details,
+	replyTo: "${env.DEFAULT_REPLYTO}",
         recipientProviders: [[$class: 'DevelopersRecipientProvider']],
-        to: "william@ligadata.com"
+        to: "${env.DEFAULT_RECIPIENTS}"
     )
 }
