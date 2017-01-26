@@ -9,13 +9,14 @@ import org.apache.log4j.Logger
 object VelocityMetrics {
   private val logger = Logger.getLogger(getClass)
 
-  private[VelocityMetrics] case class IntervalAndKey(val key: String, val metricsTime: Long) {
-    override def hashCode() = (key + "," + metricsTime).hashCode()
+  private[VelocityMetrics] case class IntervalAndKey(val key: String, val metricsTime: Long, val intervalRoundingInMs: Long) {
+    override def hashCode() = (key + "," + metricsTime + "," + intervalRoundingInMs).hashCode()
 
     override def equals(other: Any): Boolean = {
       if (!other.isInstanceOf[IntervalAndKey]) return false
       val o = other.asInstanceOf[IntervalAndKey]
       if (metricsTime != o.metricsTime) return false
+      if (intervalRoundingInMs != o.intervalRoundingInMs) return false
       (key == o.key)
     }
   }
@@ -81,14 +82,14 @@ object VelocityMetrics {
     override def Add(metricsTime: Long, key: String, currentTime: Long, addCntrIdxs: Array[Int], addCntrValuesForIdxs: Array[Int]): Unit = {
       if (addCntrIdxs.size == 0) return
       val roundedMetricsTime = metricsTime - (metricsTime % intervalRoundingInMs)
-      val intervalAndKey = IntervalAndKey(key, roundedMetricsTime)
+      val intervalAndKey = IntervalAndKey(key, roundedMetricsTime, intervalRoundingInMs)
       AddMetrics(intervalAndKey, currentTime, addCntrIdxs, addCntrValuesForIdxs)
     }
 
     override def increment(metricsTime: Long, key: String, currentTime: Long, addCntrIdxs: Array[Int]): Unit = {
       if (addCntrIdxs.size == 0) return
       val roundedMetricsTime = metricsTime - (metricsTime % intervalRoundingInMs)
-      val intervalAndKey = IntervalAndKey(key, roundedMetricsTime)
+      val intervalAndKey = IntervalAndKey(key, roundedMetricsTime, intervalRoundingInMs)
       val addCntrValuesForIdxs = addCntrIdxs.map(v => 1)
       AddMetrics(intervalAndKey, currentTime, addCntrIdxs, addCntrValuesForIdxs)
     }
@@ -96,7 +97,7 @@ object VelocityMetrics {
     override def increment(metricsTime: Long, key: String, currentTime: Long, addCntrIdxFlags: Boolean*): Unit = {
       if (addCntrIdxFlags.size == 0) return
       val roundedMetricsTime = metricsTime - (metricsTime % intervalRoundingInMs)
-      val intervalAndKey = IntervalAndKey(key, roundedMetricsTime)
+      val intervalAndKey = IntervalAndKey(key, roundedMetricsTime, intervalRoundingInMs)
 
       val idxs = ArrayBuffer[Int]()
       var idxNumber = 0
@@ -272,6 +273,7 @@ object VelocityMetrics {
               val keyMetrics = new ComponentKeyMetrics
               keyMetrics.key = velocityCounts.intervalAndKey.key
               keyMetrics.metricsTime = velocityCounts.intervalAndKey.metricsTime
+              keyMetrics.roundIntervalTime = velocityCounts.intervalAndKey.intervalRoundingInMs
               keyMetrics.firstOccured = velocityCounts.firstOccured
               keyMetrics.lastOccured = velocityCounts.lastOccured
               keyMetrics.metricValues = new Array[MetricValue](velocityCounts.counters.size)
@@ -344,8 +346,6 @@ object VelocityMetrics {
 
     private def GetAllMetricsComponents(reset: Boolean): Array[ComponentVelocityMetrics] = synchronized {
       val retVal = metricsComponents.values.toArray
-      if (reset)
-        metricsComponents.clear
       retVal
     }
 
