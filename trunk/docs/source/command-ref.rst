@@ -7,7 +7,7 @@ Command Reference Pages
    :titlesonly:
 
    command-ref/ContainerUtility
-   command-ref/createqueues
+   command-ref/CreateQueues
    command-ref/ClusterInstallerDriver
    command-ref/easyInstallKamanja
    command-ref/FileDataConsumer
@@ -19,6 +19,7 @@ Command Reference Pages
    command-ref/kamanja
    command-ref/KVInit
    command-ref/SetPaths
+   command-ref/SimpleKafkaProducer
    command-ref/SimplePmlTestTool
    command-ref/StatusKamanjaCluster
    command-ref/StartEngine

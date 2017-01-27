@@ -21,7 +21,7 @@ included in 1.6.2 for the first time in a public release:
   In Release 1.6.2, you can use encrypted passwords
   with MetadataAPIServices or SmartFileAdapter.
   You can also add this functionality to any
-  :ref:`adapters<adapters-term>` you create.
+  :ref:`adapters<adapter-term>` you create.
 - :ref:`Failover support<failover-nodes-term>` for nodes
   in a cluster running the JDBC, HDFS, or FileDataConsumer services.
 

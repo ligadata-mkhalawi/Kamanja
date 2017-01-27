@@ -9,7 +9,7 @@ Extract data from an external relational database
 into a local file using a JDBC driver.
 This tool can be used with any database that supports JDBC.
 The local file is loaded into a :ref:`container<container-term>`
-using :ref:`KVinit<kvinit-command-ref>`.
+using :ref:`KVInit<kvinit-command-ref>`.
 
 Syntax
 ------
@@ -29,7 +29,8 @@ which can be found at
 
   {
    "DriverName": "oracle.jdbc.driver.OracleDriver",
-   "URLString": "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=myserver)(PORT=7896))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=myserver)))",
+   "URLString": "jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=myserver)
+       (PORT=7896))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=myserver)))",
    "UserId": "",
    "Password": "",
    "Timeout": "86400",

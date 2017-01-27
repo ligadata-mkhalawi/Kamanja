@@ -71,8 +71,8 @@ text segments are numbered for reference:
 
 (1) Vitamin D is an important nutrient;
 (2) inadequate amounts are correlated with
-an increased risk of several diseases, including osteoporosis,
-cancer, and diabetes.
+    an increased risk of several diseases, including osteoporosis,
+    cancer, and diabetes.
 (3) Humans can synthesize Vitamin D from the sun
 (4) although too much exposure to the sun can cause other health problems.
 (5) In many cases, taking Vitamin D supplements is the best solution.

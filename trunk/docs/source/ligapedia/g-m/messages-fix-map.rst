@@ -1,14 +1,20 @@
 
-.. _messages-fix-map-term:
+.. _messages-fixed-term:
 
-Messages, fixed and mapped
---------------------------
+Messages, fixed
+---------------
 
-Message definitions can be fixed or mapped. 
 
-- Use fixed messages when all fields are available
-  in the incoming data stream and they are presented to the model;
-  they are represented as a Scala class instance at runtime.
-- A mapped message represents the messages as a Scala map
-  [String, <some data type>] at runtime).
+:ref:`Message definitions<message-def-config-ref>`
+can be fixed or :ref:`mapped<messages-mapped-term>`.
+Use fixed messages when all fields are available
+in the incoming data stream and they are presented to the model;
+they are represented as a Scala class instance at runtime.
+
+
+To use fixed messages:
+
+1. In the message definition, set Fixed:false to indicate a mapped message.
+
+
 

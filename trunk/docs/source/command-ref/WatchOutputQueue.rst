@@ -5,6 +5,10 @@
 WatchOutputQueue.sh
 ===================
 
+**WatchOutputQueue.sh** watches the default 'testout_1' topic
+on :ref:`Kafka<kafka-term>`,
+assuming zookeeper is localhost:2181 and kafka is localhost:9092.
+
 Syntax
 ------
 

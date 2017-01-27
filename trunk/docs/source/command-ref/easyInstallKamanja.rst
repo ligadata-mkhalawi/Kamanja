@@ -38,8 +38,14 @@ Error messages
   java.lang.OutOfMemoryError: GC overhead limit exceeded error
 
   Add the following line to the *sbtopts* file in
-  the */etc/sbt-launcher-packaging/*
-  or
+  the */etc/sbt-launcher-packaging/*:
+
+  ::
+
+    -mem 6144
+
+  You can instead set the $SBT_OPT environment variable.
+  
 
 
 Example

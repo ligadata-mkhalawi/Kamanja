@@ -9,7 +9,7 @@ that are executed in sequence to perform an analytical task.
 The execution sequence is controlled by a :ref:`DAG<dag-term>`
 A typical pipeline contains the following elements:
 
-- Data is :ref:`ingested<ingest-data-model>`` to the Kamanja environment
+- Data is :ref:`ingested<ingest-data-model>` to the Kamanja environment
   using either a :ref:`smart file input adapter<smart-input-adapter-term>`
   or the :ref:`kvinit-command-ref` command.
   The new information is written to a :ref:`Kafka<kafka-term>` partition.

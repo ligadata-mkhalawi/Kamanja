@@ -20,6 +20,8 @@ Reserved ports
        defined in :ref:`ClusterConfig.json<clusterconfig-config-ref>`
    * - 7800
      - JGroups use to replicate and distribute Ehcached data over TCP
+   * - 9092
+     - Kafka
    * - 9200
      - ElasticSearch
 
