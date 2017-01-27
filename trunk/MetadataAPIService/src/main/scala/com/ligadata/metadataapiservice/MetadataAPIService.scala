@@ -23,10 +23,17 @@ import com.ligadata.metadataapiservice.DetailsLevel.DetailsLevel
 import com.ligadata.metadataapiservice._
 import spray.routing._
 import spray.http._
+import org.json4s._
+import org.json4s.JsonDSL._
+import org.json4s.jackson.JsonMethods._
+import org.json4s.native.Serialization
+import org.json4s.native.Serialization._
 import MediaTypes._
 import org.apache.logging.log4j._
 import com.ligadata.MetadataAPI._
 import com.ligadata.Serialize._
+import com.ligadata.dataaccessapi.HBaseDataAccessAdapter
+import com.ligadata.dataaccessapi.DataContainerDef
 
 class MetadataAPIServiceActor extends Actor with MetadataAPIService {
 
@@ -34,6 +41,8 @@ class MetadataAPIServiceActor extends Actor with MetadataAPIService {
 
   def receive = runRoute(metadataAPIRoute)
 }
+
+class DataApiResult(var status:String, var statusCode:String, var statusDescription:String, var resultCount:Int, var result: Array[Map[String, Any]])
 
 trait MetadataAPIService extends HttpService {
 
@@ -52,7 +61,13 @@ trait MetadataAPIService extends HttpService {
   val getMetadataAPI = MetadataAPIImpl.getMetadataAPI
   // 646 - 676 Change ends
 
-  val metadataAPIRoute = {
+  val daasApi = HBaseDataAccessAdapter.api
+  implicit val formats = Serialization.formats(NoTypeHints)
+    
+  val dataContainers: Map[String, DataContainerDef] = daasApi.getDataContainerDefinitionsV1 
+  //Map("customer" -> Map("userdata" -> List("HS_Make", "HS_Model")))
+
+  val metadataAPIRoute = respondWithMediaType(MediaTypes.`application/json`) {
     optionalHeaderValueByName("userid") { userId =>
       {
         optionalHeaderValueByName("password") { password =>
@@ -98,6 +113,33 @@ trait MetadataAPIService extends HttpService {
 		                else {
 		                  requestContext => processGetObjectRequest(toknRoute(0).toLowerCase, toknRoute(1).toLowerCase, requestContext, user, password, role)
 		             	}
+                      }
+                    }
+
+                    pathPrefix("data") {
+                      pathEndOrSingleSlash {
+                        complete("Daas Api")
+                      } ~
+                      pathPrefix(dataContainers) { dcDef =>
+                        val dcFullName = dcDef.fullContainerName
+                        pathEndOrSingleSlash {
+                          parameter("UID") { uid =>
+                            val res = daasApi.get(dcFullName, dcDef.attributes, Array(uid))
+                            if(res.length > 0)
+                              complete(write(new DataApiResult("success", "0", "Sucessfully retrived result", res.length, res)))
+                            else
+                              complete(write(new DataApiResult("success", "1000", "No data found", 0, res)))
+                          }
+                        } ~
+                        pathPrefix(dcDef.attributeGroups) { agDef =>
+                          parameter("UID") { uid =>
+                            val res = daasApi.get(dcFullName, agDef.attributes, Array(uid))
+                            if(res.length > 0)
+                              complete(write(new DataApiResult("success", "0", "Sucessfully retrived result", res.length, res)))
+                            else
+                              complete(write(new DataApiResult("success", "1000", "No data found", 0, res)))
+                          }
+                        }
                       }
                     }
                   } ~
@@ -202,7 +244,7 @@ trait MetadataAPIService extends HttpService {
                                   val objectType = toknRoute(0) + toknRoute(1)
                                   entity(as[String]) { reqBody => { requestContext => processPostRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
                               }
-                             case ModelType.JYTHON => 
+                             case ModelType.JYTHON =>
                                   val objectType = toknRoute(0) + toknRoute(1)
                                   entity(as[String]) { reqBody => { requestContext => processPostRequest(objectType, reqBody, requestContext, user, password, role, modelcofniginfo, tid) } }
                               }
@@ -381,7 +423,7 @@ trait MetadataAPIService extends HttpService {
     }  else if (objtype.equalsIgnoreCase("modeljython")) {
       val addModelService: ActorRef = actorRefFactory.actorOf(Props(new AddModelService(rContext, userid, password, role, modelcompileinfo, tenantId)))
       addModelService ! AddModelService.Process(body)
-    }  
+    }
     else {
       rContext.complete((new ApiResult(ErrorCodeConstants.Failure, APIName, null, "Unknown POST route")).toString)
     }
