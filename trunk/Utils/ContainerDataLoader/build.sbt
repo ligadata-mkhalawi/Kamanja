@@ -1,6 +1,5 @@
 name := "ContainerDataLoader"
 
-//version := "1.5.3"
 //
 //scalaVersion := "2.11.7"
 
