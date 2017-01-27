@@ -85,7 +85,7 @@ class VelocityMetricsInfo {
     LOG.info("*********Start Increment********************")
     try {
       val vm = getIAVelocityMetricsInstances(VMFactory, nodeId, adapConfig, componentName)
-      var Key: String = ""
+      var Key: String = fileName
       for (i <- 0 until vm.size) {
         var metricsTime: Long = System.currentTimeMillis() //0L
         val metricsType = vm(i)._2.MetricsTime.MType
@@ -120,7 +120,7 @@ class VelocityMetricsInfo {
       // val nid = nodeContext.getEnvCtxt().getNodeId()
       //  if(nodeContext.getEnvCtxt().getNodeId() != null) nodeId = nodeContext.getEnvCtxt().getNodeId()
       val componentNam = componentName
-      val counterNames = Array("exception", "processed")
+      val counterNames = Array("processed", "exception")
       vmetrics.foreach(vm => {
 
         val intervalRoundingInMs = vm.TimeIntervalInSecs
