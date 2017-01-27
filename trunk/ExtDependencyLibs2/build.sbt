@@ -72,7 +72,7 @@ assemblyMergeStrategy in assembly := {
 excludeFilter in unmanagedJars := s"${name.value}_${scalaBinaryVersion.value}-${version.value}.jar"
 
 excludedJars in assembly <<= (fullClasspath in assembly) map { cp =>
-  val excludes = Set("commons-beanutils-1.7.0.jar", "google-collections-1.0.jar", "commons-collections4-4.0.jar", "log4j-1.2.17.jar", "commons-beanutils-1.8.3.jar", "log4j-1.2.16.jar", "log4j-over-slf4j-1.7.7.jar")
+  val excludes = Set("commons-beanutils-1.7.0.jar", "google-collections-1.0.jar", "commons-collections4-4.0.jar", "log4j-1.2.17.jar", "commons-beanutils-1.8.3.jar", "log4j-1.2.16.jar", "log4j-over-slf4j-1.7.7.jar", "elasticsearch-2.3.5.jar", "shield-2.3.5.jar")
   cp filter { jar => excludes(jar.data.getName) }
 }
 
@@ -194,3 +194,7 @@ libraryDependencies += "org.slf4j" % "slf4j-api" % "1.7.12"
 libraryDependencies += "org.slf4j" % "slf4j-log4j12" % "1.7.12"
 libraryDependencies += "org.slf4j" % "slf4j-nop" % "1.7.12"
 // libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.0"
+
+// org.apache.commons // commons-csv
+libraryDependencies += "org.apache.commons" % "commons-csv" % "1.4"
+

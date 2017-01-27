@@ -15,11 +15,11 @@
  */
 package com.ligadata.keyvaluestore
 
-import java.io.File
 import java.net.{URL, URLClassLoader}
 import java.sql.{CallableStatement, Connection, Driver, DriverManager, DriverPropertyInfo, PreparedStatement, ResultSet, Statement}
 import java.text.SimpleDateFormat
 import java.util.{Properties, TimeZone}
+
 import com.ligadata.Exceptions._
 import com.ligadata.KamanjaBase.NodeContext
 import com.ligadata.KvBase.{Key, TimeRange, Value}
@@ -29,6 +29,7 @@ import com.ligadata.kamanja.metadata.AdapterInfo
 import org.apache.commons.dbcp2.BasicDataSource
 import org.json4s._
 import org.json4s.jackson.JsonMethods._
+
 import scala.collection.mutable.TreeSet
 
 
@@ -268,7 +269,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
 
   var jdbcUrl = "jdbc:h2:tcp://" + H2dbInstance + "/./" + namespace + ";user=" + user + ";password=" + password
   connectionMode match {
-    case "embedded" => jdbcUrl = "jdbc:h2:file:"+ location + "/" + namespace + ";user=" + user + ";password=" + password
+    case "embedded" => jdbcUrl = "jdbc:h2:file:" + location + "/" + namespace + ";user=" + user + ";password=" + password
     case "ssl" => jdbcUrl = "jdbc:h2:ssl://" + H2dbInstance + "/./" + namespace + ";user=" + user + ";password=" + password
     case "tcp" => jdbcUrl = "jdbc:h2:tcp://" + H2dbInstance + "/./" + namespace + ";user=" + user + ";password=" + password
   }
@@ -350,7 +351,9 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
 
   private def getKeySize(k: Key): Int = {
     var bucketKeySize = 0
-    k.bucketKey.foreach(bk => { bucketKeySize = bucketKeySize + bk.length })
+    k.bucketKey.foreach(bk => {
+      bucketKeySize = bucketKeySize + bk.length
+    })
     8 + bucketKeySize + 8 + 4
   }
 
@@ -358,23 +361,23 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
     v.serializedInfo.length
   }
 
-  private def updateOpStats(operation: String, tableName: String, opCount: Int) : Unit = lock.synchronized{
+  private def updateOpStats(operation: String, tableName: String, opCount: Int): Unit = lock.synchronized {
     operation match {
       case "get" => {
-	if( _getOps.get(tableName) != None ){
-	  _getOps(tableName) = _getOps(tableName) + opCount
-	}
-	else{
-	  _getOps(tableName) = + opCount
-	}
+        if (_getOps.get(tableName) != None) {
+          _getOps(tableName) = _getOps(tableName) + opCount
+        }
+        else {
+          _getOps(tableName) = +opCount
+        }
       }
       case "put" => {
-	if( _putOps.get(tableName) != None ){
-	  _putOps(tableName) = _putOps(tableName) + opCount
-	}
-	else{
-	  _putOps(tableName) = opCount
-	}	  
+        if (_putOps.get(tableName) != None) {
+          _putOps(tableName) = _putOps(tableName) + opCount
+        }
+        else {
+          _putOps(tableName) = opCount
+        }
       }
       case _ => {
         throw CreateDMLException("Internal Error: Failed to Update Op-stats for " + tableName, new Exception("Invalid operation " + operation))
@@ -382,23 +385,23 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
     }
   }
 
-  private def updateObjStats(operation: String, tableName: String, objCount: Int) : Unit = lock.synchronized{
+  private def updateObjStats(operation: String, tableName: String, objCount: Int): Unit = lock.synchronized {
     operation match {
       case "get" => {
-	if( _getObjs.get(tableName) != None ){
-	  _getObjs(tableName) = _getObjs(tableName) + objCount
-	}
-	else{
-	  _getObjs(tableName) = + objCount
-	}
+        if (_getObjs.get(tableName) != None) {
+          _getObjs(tableName) = _getObjs(tableName) + objCount
+        }
+        else {
+          _getObjs(tableName) = +objCount
+        }
       }
       case "put" => {
-	if( _putObjs.get(tableName) != None ){
-	  _putObjs(tableName) = _putObjs(tableName) + objCount
-	}
-	else{
-	  _putObjs(tableName) = objCount
-	}	  
+        if (_putObjs.get(tableName) != None) {
+          _putObjs(tableName) = _putObjs(tableName) + objCount
+        }
+        else {
+          _putObjs(tableName) = objCount
+        }
       }
       case _ => {
         throw CreateDMLException("Internal Error: Failed to Update Obj-stats for " + tableName, new Exception("Invalid operation " + operation))
@@ -406,23 +409,23 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
     }
   }
 
-  private def updateByteStats(operation: String, tableName: String, byteCount: Int) : Unit = lock.synchronized{
+  private def updateByteStats(operation: String, tableName: String, byteCount: Int): Unit = lock.synchronized {
     operation match {
       case "get" => {
-	if( _getBytes.get(tableName) != None ){
-	  _getBytes(tableName) = _getBytes(tableName) + byteCount
-	}
-	else{
-	  _getBytes(tableName) = byteCount
-	}
+        if (_getBytes.get(tableName) != None) {
+          _getBytes(tableName) = _getBytes(tableName) + byteCount
+        }
+        else {
+          _getBytes(tableName) = byteCount
+        }
       }
       case "put" => {
-	if( _putBytes.get(tableName) != None ){
-	  _putBytes(tableName) = _putBytes(tableName) + byteCount
-	}
-	else{
-	  _putBytes(tableName) = byteCount
-	}
+        if (_putBytes.get(tableName) != None) {
+          _putBytes(tableName) = _putBytes(tableName) + byteCount
+        }
+        else {
+          _putBytes(tableName) = byteCount
+        }
       }
       case _ => {
         throw CreateDMLException("Internal Error: Failed to Update Byte Stats for " + tableName, new Exception("Invalid operation " + operation))
@@ -584,7 +587,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
       // statement in H2db
       sql = "merge into " + tableName + "(timePartition,bucketKey,transactionId,rowId,schemaId,serializerType,serializedInfo) key(timePartition, bucketKey, transactionId, rowId) values (?,?,?,?,?,?,?)"
       pstmt = con.prepareStatement(sql)
-      pstmt.setLong(1,0)
+      pstmt.setLong(1, key.timePartition)
       pstmt.setString(2, key.bucketKey.mkString(","))
       pstmt.setLong(3, key.transactionId)
       pstmt.setInt(4, key.rowId)
@@ -595,9 +598,9 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
       c = new java.io.ByteArrayInputStream(value.serializedInfo).read(newBuffer, 0, value.serializedInfo.length)
       pstmt.setBytes(7, newBuffer)
       pstmt.executeUpdate();
-      updateOpStats("put",tableName,1)
-      updateObjStats("put",tableName,1)
-      updateByteStats("put",tableName,getKeySize(key)+getValueSize(value))
+      updateOpStats("put", tableName, 1)
+      updateObjStats("put", tableName, 1)
+      updateByteStats("put", tableName, getKeySize(key) + getValueSize(value))
     } catch {
       case e: Exception => {
         if (con != null) {
@@ -649,7 +652,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
         con = getConnection
         // we need to commit entire batch
         con.setAutoCommit(false)
-	var byteCount = 0
+        var byteCount = 0
         data_list.foreach(f = li => {
           var containerName = li._1
           CheckTableExists(containerName)
@@ -673,13 +676,13 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
             c = new java.io.ByteArrayInputStream(value.serializedInfo).read(newBuffer, 0, value.serializedInfo.length)
             pstmt.setBytes(7, newBuffer)
             pstmt.addBatch()
-	    byteCount = byteCount + getKeySize(key)+getValueSize(value)
+            byteCount = byteCount + getKeySize(key) + getValueSize(value)
           })
           logger.debug("Executing bulk upsert...")
           var updateCount: Array[Int] = null
-//          con.synchronized {
-            updateCount = pstmt.executeBatch();
-//          }
+          //          con.synchronized {
+          updateCount = pstmt.executeBatch();
+          //          }
           updateCount.foreach(cnt => {
             totalRowsUpdated += cnt
           });
@@ -688,9 +691,9 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
             pstmt.close
             pstmt = null;
           }
-	  updateOpStats("put",tableName,1)
-	  updateObjStats("put",tableName,totalRowsUpdated)
-	  updateByteStats("put",tableName,byteCount)
+          updateOpStats("put", tableName, 1)
+          updateObjStats("put", tableName, totalRowsUpdated)
+          updateByteStats("put", tableName, byteCount)
           logger.info("Inserted/Updated " + totalRowsUpdated + " rows for " + tableName)
         })
         con.commit()
@@ -960,7 +963,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
       rs = stmt.executeQuery(query);
       var recCount = 0
       var byteCount = 0
-      updateOpStats("get",tableName,1)
+      updateOpStats("get", tableName, 1)
       while (rs.next()) {
         var timePartition = rs.getLong(1)
         var keyStr = rs.getString(2)
@@ -974,13 +977,13 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
         // yet to understand how split serializerType and serializedInfo from ba
         // so hard coding serializerType to "kryo" for now
         var value = new Value(schemaId, st, ba)
-	recCount = recCount + 1
-	byteCount = byteCount + getKeySize(key) + getValueSize(value)
+        recCount = recCount + 1
+        byteCount = byteCount + getKeySize(key) + getValueSize(value)
         if (callbackFunction != null)
           (callbackFunction) (key, value)
       }
-      updateByteStats("get",tableName,byteCount)
-      updateObjStats("get",tableName,recCount)
+      updateByteStats("get", tableName, byteCount)
+      updateObjStats("get", tableName, recCount)
     } catch {
       case e: Exception => {
         throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
@@ -1016,7 +1019,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
       rs = stmt.executeQuery(query);
       var recCount = 0
       var byteCount = 0
-      updateOpStats("get",tableName,1)
+      updateOpStats("get", tableName, 1)
       while (rs.next()) {
         var timePartition = rs.getLong(1)
         var keyStr = rs.getString(2)
@@ -1024,13 +1027,13 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
         var rId = rs.getInt(4)
         val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
         var key = new Key(timePartition, bucketKey, tId, rId)
-	recCount = recCount + 1
-	byteCount = byteCount + getKeySize(key)
+        recCount = recCount + 1
+        byteCount = byteCount + getKeySize(key)
         if (callbackFunction != null)
           (callbackFunction) (key)
       }
-      updateByteStats("get",tableName,byteCount)
-      updateObjStats("get",tableName,recCount)
+      updateByteStats("get", tableName, byteCount)
+      updateObjStats("get", tableName, recCount)
     } catch {
       case e: Exception => {
         throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
@@ -1074,7 +1077,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
         pstmt.setLong(3, key.transactionId)
         pstmt.setInt(4, key.rowId)
         var rs = pstmt.executeQuery();
-	updateOpStats("get",tableName,1)
+        updateOpStats("get", tableName, 1)
         while (rs.next()) {
           var timePartition = rs.getLong(1)
           var keyStr = rs.getString(2)
@@ -1082,14 +1085,14 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
           var rId = rs.getInt(4)
           val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
           var key = new Key(timePartition, bucketKey, tId, rId)
-	  recCount = recCount + 1
-	  byteCount = byteCount + getKeySize(key)
+          recCount = recCount + 1
+          byteCount = byteCount + getKeySize(key)
           if (callbackFunction != null)
             (callbackFunction) (key)
         }
       })
-      updateByteStats("get",tableName,byteCount)
-      updateObjStats("get",tableName,recCount)
+      updateByteStats("get", tableName, byteCount)
+      updateObjStats("get", tableName, recCount)
     } catch {
       case e: Exception => {
         throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
@@ -1123,20 +1126,20 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
         pstmt.setLong(3, key.transactionId)
         pstmt.setInt(4, key.rowId)
         var rs = pstmt.executeQuery();
-	updateOpStats("get",tableName,1)
+        updateOpStats("get", tableName, 1)
         while (rs.next()) {
           val schemaId = rs.getInt(1)
           val st = rs.getString(2)
           val ba = rs.getBytes(3)
           val value = new Value(schemaId, st, ba)
-	  recCount = recCount + 1
-	  byteCount = byteCount + getKeySize(key) + getValueSize(value)
+          recCount = recCount + 1
+          byteCount = byteCount + getKeySize(key) + getValueSize(value)
           if (callbackFunction != null)
             (callbackFunction) (key, value)
         }
       })
-      updateByteStats("get",tableName,byteCount)
-      updateObjStats("get",tableName,recCount)
+      updateByteStats("get", tableName, byteCount)
+      updateObjStats("get", tableName, recCount)
     } catch {
       case e: Exception => {
         throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
@@ -1188,7 +1191,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
         bucketKeys.foreach(bucketKey => {
           pstmt.setString(1, bucketKey.mkString(","))
           var rs = pstmt.executeQuery();
-	  updateOpStats("get",tableName,1)
+          updateOpStats("get", tableName, 1)
           while (rs.next()) {
             var timePartition = rs.getLong(1)
             var keyStr = rs.getString(2)
@@ -1200,8 +1203,8 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
             val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
             var key = new Key(timePartition, bucketKey, tId, rId)
             var value = new Value(schemaId, st, ba)
-	    recCount = recCount + 1
-	    byteCount = byteCount + getKeySize(key) + getValueSize(value)
+            recCount = recCount + 1
+            byteCount = byteCount + getKeySize(key) + getValueSize(value)
             if (callbackFunction != null)
               (callbackFunction) (key, value)
           }
@@ -1211,8 +1214,8 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
           pstmt = null
         }
       })
-      updateByteStats("get",tableName,byteCount)
-      updateObjStats("get",tableName,recCount)
+      updateByteStats("get", tableName, byteCount)
+      updateObjStats("get", tableName, recCount)
     } catch {
       case e: Exception => {
         throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
@@ -1244,7 +1247,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
         bucketKeys.foreach(bucketKey => {
           pstmt.setString(1, bucketKey.mkString(","))
           var rs = pstmt.executeQuery();
-	  updateOpStats("get",tableName,1)
+          updateOpStats("get", tableName, 1)
           while (rs.next()) {
             var timePartition = rs.getLong(1)
             var keyStr = rs.getString(2)
@@ -1252,8 +1255,8 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
             var rId = rs.getInt(4)
             val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
             var key = new Key(timePartition, bucketKey, tId, rId)
-	    recCount = recCount + 1
-	    byteCount = byteCount + getKeySize(key)
+            recCount = recCount + 1
+            byteCount = byteCount + getKeySize(key)
             if (callbackFunction != null)
               (callbackFunction) (key)
           }
@@ -1263,8 +1266,8 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
           pstmt = null
         }
       })
-      updateByteStats("get",tableName,byteCount)
-      updateObjStats("get",tableName,recCount)
+      updateByteStats("get", tableName, byteCount)
+      updateObjStats("get", tableName, recCount)
     } catch {
       case e: Exception => {
         throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
@@ -1295,7 +1298,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
       bucketKeys.foreach(bucketKey => {
         pstmt.setString(1, bucketKey.mkString(","))
         var rs = pstmt.executeQuery();
-	updateOpStats("get",tableName,1)
+        updateOpStats("get", tableName, 1)
         while (rs.next()) {
           var timePartition = rs.getLong(1)
           var keyStr = rs.getString(2)
@@ -1307,14 +1310,14 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
           val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
           var key = new Key(timePartition, bucketKey, tId, rId)
           var value = new Value(schemaId, st, ba)
-	  recCount = recCount + 1
-	  byteCount = byteCount + getKeySize(key)
+          recCount = recCount + 1
+          byteCount = byteCount + getKeySize(key)
           if (callbackFunction != null)
             (callbackFunction) (key, value)
         }
       })
-      updateByteStats("get",tableName,byteCount)
-      updateObjStats("get",tableName,recCount)
+      updateByteStats("get", tableName, byteCount)
+      updateObjStats("get", tableName, recCount)
     } catch {
       case e: Exception => {
         throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)
@@ -1345,7 +1348,7 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
       bucketKeys.foreach(bucketKey => {
         pstmt.setString(1, bucketKey.mkString(","))
         var rs = pstmt.executeQuery();
-	updateOpStats("get",tableName,1)
+        updateOpStats("get", tableName, 1)
         while (rs.next()) {
           var timePartition = rs.getLong(1)
           var keyStr = rs.getString(2)
@@ -1353,14 +1356,14 @@ class H2dbAdapter(val kvManagerLoader: KamanjaLoaderInfo, val datastoreConfig: S
           var rId = rs.getInt(4)
           val bucketKey = if (keyStr != null) keyStr.split(",").toArray else new Array[String](0)
           var key = new Key(timePartition, bucketKey, tId, rId)
-	  recCount = recCount + 1
-	  byteCount = byteCount + getKeySize(key)
+          recCount = recCount + 1
+          byteCount = byteCount + getKeySize(key)
           if (callbackFunction != null)
             (callbackFunction) (key)
         }
       })
-      updateByteStats("get",tableName,byteCount)
-      updateObjStats("get",tableName,recCount)
+      updateByteStats("get", tableName, byteCount)
+      updateObjStats("get", tableName, recCount)
     } catch {
       case e: Exception => {
         throw CreateDMLException("Failed to fetch data from the table " + tableName + ":" + "query => " + query, e)

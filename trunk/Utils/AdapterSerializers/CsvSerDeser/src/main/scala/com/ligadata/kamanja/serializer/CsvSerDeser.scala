@@ -2,7 +2,10 @@ package com.ligadata.kamanja.serializer
 
 import scala.collection.mutable.Map
 import scala.collection.JavaConverters._
-import java.io.{DataOutputStream, ByteArrayOutputStream}
+import java.io.{ByteArrayOutputStream, DataOutputStream, StringReader}
+import scala.collection.JavaConverters._
+import org.apache.commons.csv.CSVFormat
+
 import org.apache.logging.log4j.LogManager
 // import org.apache.commons.lang.StringEscapeUtils
 
@@ -65,12 +68,16 @@ class CsvSerDeser extends SerializeDeserialize {
     var _config = Map[String,String]()
     var _emitHeaderFirst : Boolean = false
     var _fieldDelimiter  = ","
+    // add by saleh 24/1/2017
+    var _fieldDelimiterAsChar  = ','
     var _valDelimiter = "~"
     var _keyDelimiter = "@"
     var _lineDelimiter = "\n"
     var _nullValue = ""
     var _alwaysQuoteField = false
     var _escapeChar = "\\"
+    // add by saleh 24/1/2017
+    var _csvParser  = false
 
     val _nullFlagsFieldName = "kamanja_system_null_flags"
 
@@ -295,11 +302,15 @@ class CsvSerDeser extends SerializeDeserialize {
         _objResolver = objResolver
         _config = configProperties.asScala
         _fieldDelimiter = _config.getOrElse("fieldDelimiter", ",")
+        //added by saleh 24/1/2017
+        _fieldDelimiterAsChar = _fieldDelimiter.charAt(0)
         _valDelimiter = _config.getOrElse("valDelimiter", "~")
         _keyDelimiter = _config.getOrElse("keyDelimiter", "@")
         _lineDelimiter =  _config.getOrElse("lineDelimiter", "\n")
         _nullValue =  _config.getOrElse("nullValue", "")
         _escapeChar = _config.getOrElse("escChar", "\\")
+        //added by saleh 24/1/2017
+        _csvParser = _config.getOrElse("csvParser","false").toBoolean
         val alwaysQuoteFieldStr = _config.getOrElse("alwaysQuoteField", "F")
         _alwaysQuoteField = alwaysQuoteFieldStr.toLowerCase.startsWith("t")
 
@@ -368,6 +379,24 @@ class CsvSerDeser extends SerializeDeserialize {
         returnVal
     }
 
+    //add by saleh 24/1/2017
+    /**
+      * This method will use the Apache Parser commons-csv 1.4 this will work only if csvParser option is true
+      * csvParser is false by default
+      *
+      * @param  rawCsvContainerStr the CSV string line
+      * @return a Array[String]
+      */
+    def csvApache(rawCsvContainerStr: String) : Array[String] = {
+        val in = new StringReader(rawCsvContainerStr)
+        val records = CSVFormat.DEFAULT.withDelimiter(_fieldDelimiterAsChar).parse(in).iterator
+        if (records.hasNext) {
+            records.next().iterator().asScala.toArray
+        }else{
+            Array[String]()
+        }
+    }
+
     /**
       * Deserialize the supplied byte array into some ContainerInterface instance.  Note that the header
       * record is not handled.  The CSV stream of multiple container interface records will just stumble over
@@ -384,7 +413,12 @@ class CsvSerDeser extends SerializeDeserialize {
         val rawCsvContainerStr : String = new String(b)
 
         val rawCsvFields : Array[String] = if (rawCsvContainerStr != null) {
-          rawCsvContainerStr.split(_fieldDelimiter, -1)
+            //add by saleh 24/1/2017
+            if(_csvParser){
+              csvApache(rawCsvContainerStr)
+            }else{
+              rawCsvContainerStr.split(_fieldDelimiter, -1)
+            }
         } else {
             Array[String]()
         }
@@ -429,7 +463,7 @@ class CsvSerDeser extends SerializeDeserialize {
             }
             val fld = rawCsvFields(fldIdx)
             // @TODO: need to handle failure condition for set - string is not in expected format?
-            // @TODO: is there any need to strip quotes? since serializer is putting escape information while serializing, this should be done. probably more configuration information is needed
+
             ci.set(fldIdx, resolveValue(fld, attr))
             fldIdx += 1
         })
