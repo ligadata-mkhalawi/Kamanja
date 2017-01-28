@@ -5,7 +5,7 @@
 StartEngine.sh
 ==============
 
-Start the Kamanja engine in the foreground
+Start the Kamanja engine in the foreground.
 
 Syntax
 ------

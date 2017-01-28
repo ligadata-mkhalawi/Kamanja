@@ -62,6 +62,7 @@ Ligapedia
    ligapedia/n-r/preprocessing
    ligapedia/n-r/properties-param
    ligapedia/n-r/python
+   ligapedia/n-r/queue
    ligapedia/n-r/r
    ligapedia/n-r/rdd
    ligapedia/n-r/reserved-words

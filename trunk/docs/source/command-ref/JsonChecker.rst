@@ -6,6 +6,8 @@
 JsonChecker.sh
 ==============
 
+Check the sanity of a JSON file.
+
 Syntax
 ------
 

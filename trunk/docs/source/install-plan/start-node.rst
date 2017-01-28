@@ -16,6 +16,6 @@ with the following steps:
   to start :ref:`Zookeeper<zookeeper-term>`.
 
 - Run :ref:`kafka-server-start.sh<kafka-server-start-command-ref>`
-  to start Kafka
+  to start :ref:`Kafka<kafka-term>`.
 
 

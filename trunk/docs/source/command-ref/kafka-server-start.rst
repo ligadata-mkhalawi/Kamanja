@@ -5,6 +5,8 @@
 kafka-server-start.sh
 =====================
 
+Initialize the :ref:`Kafka<kafka-term>` server.
+
 Syntax
 ------
 
@@ -18,7 +20,15 @@ Options and arguments
 Usage
 -----
 
-Zookeeper must be running before you start Kafka.
+Do the following before running this command to start
+the Kafka server:
+
+- Run :ref:`SetPaths.sh<setpaths-command-ref>`
+  to perform string replacement on items in the template files
+  and create new configuration files.
+
+- Run :ref:`zkServer.sh`<zkserver-command-ref>`
+  to start :ref:`Zookeeper<zookeeper-term>`.
 
 Use the following command to run Kafka in the background
 or to start another terminal from which to run the samples
@@ -44,5 +54,7 @@ Expected output:
 
 See also
 --------
+
+- :ref:`start-node-install-guide`
 
 

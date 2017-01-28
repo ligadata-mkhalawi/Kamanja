@@ -4,9 +4,8 @@
 ClusterInstallerDriver-1.6.0
 ============================
 
-Install a fresh Kamanja 1.6.0 installation
-or upgrade to Kamanja 1.6.0 from Releases
-1.2, 1.3, 1.4, 1.4.1, or 1.5.0.
+Install a fresh Kamanja installation
+or upgrade from an earlier release.
 
 
 Syntax
