@@ -18,6 +18,7 @@ Ligapedia
    ligapedia/a-f/com-ligadata-keyvaluestore-datastore
    ligapedia/a-f/com-ligadata-keyvaluestore-transaction
    ligapedia/a-f/concepts
+   ligapedia/a-f/configuration
    ligapedia/a-f/consolidated-log
    ligapedia/a-f/container
    ligapedia/a-f/csv

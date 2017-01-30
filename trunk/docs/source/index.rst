@@ -28,6 +28,7 @@ API Documentation
 .. toctree::
 
     api
+    legacy-api
 
 Machine Learning Guides
 -----------------------
