@@ -37,6 +37,7 @@ import org.apache.hadoop.hdfs.client.HdfsDataOutputStream.SyncFlag
 import org.apache.hadoop.fs.{FileSystem, FSDataOutputStream, Path}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.security.UserGroupInformation
+import org.apache.commons.lang3.time.FastDateFormat
 import org.apache.commons.compress.compressors.CompressorStreamFactory
 import org.apache.commons.compress.compressors.CompressorOutputStream
 import parquet.avro.AvroParquetWriter
@@ -418,8 +419,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       partitionFormatObjects = partitionVariable.findAllMatchIn(formatStr).map(x => try {
         val spec = x.group(1).split(":");
         if (spec.length > 1 && spec(0).equalsIgnoreCase("time")) {
-          val fmt = new SimpleDateFormat(spec(1))
-          fmt.setTimeZone(TimeZone.getTimeZone("UTC"))
+          val fmt = FastDateFormat.getInstance(spec(1), TimeZone.getTimeZone("UTC"))
           fmt
         } else if (spec.length > 1) {
           spec(1)
@@ -642,8 +642,8 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile time partion data for the record - [" + dateTime + "]")
       val dtTm = new java.util.Date(dateTime)
       val values = partitionFormatObjects.map(fmt => {
-        if (fmt.isInstanceOf[SimpleDateFormat])
-          fmt.asInstanceOf[SimpleDateFormat].format(dtTm)
+        if (fmt.isInstanceOf[FastDateFormat])
+          fmt.asInstanceOf[FastDateFormat].format(dtTm)
         else
           record.getOrElse(fmt.asInstanceOf[String], "").toString
       })
