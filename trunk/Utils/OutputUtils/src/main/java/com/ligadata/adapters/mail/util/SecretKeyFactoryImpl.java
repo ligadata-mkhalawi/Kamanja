@@ -12,84 +12,87 @@ import javax.crypto.spec.DESKeySpec;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
 
-import org.apache.commons.codec.binary.Base64;
+import sun.misc.BASE64Decoder;
+import sun.misc.BASE64Encoder;
 
 import com.ligadata.adapters.AdapterConfiguration;
 
 @SuppressWarnings("restriction")
 public class SecretKeyFactoryImpl {
-    private static SecretKeyFactoryImpl skf = null;
-    private AdapterConfiguration conf;
+	private static SecretKeyFactoryImpl skf = null;
+	private AdapterConfiguration conf;
 
-    private static final Logger LOGGER = LogManager.getLogger(SecretKeyFactoryImpl.class);
-
-    private SecretKeyFactory keyFactory;
-    private DESKeySpec keySpec;
-    private SecretKey key;
-    private Base64 base64;
-    private Cipher cipher;
-    private String encrypedPwd;
-    private byte[] encrypedPwdBytes;
-    private byte[] plainTextPwdBytes;
+	private static final Logger LOGGER = LogManager.getLogger(SecretKeyFactoryImpl.class);
 
 
-    private SecretKeyFactoryImpl(AdapterConfiguration configs) {
-        conf = configs;
-    }
+	  private SecretKeyFactory    keyFactory;
+	  private DESKeySpec          keySpec;
+	  private SecretKey           key;
+	  private BASE64Encoder       base64encoder;
+	  private BASE64Decoder       base64decoder;
+	  private Cipher              cipher;
+	  private String              encrypedPwd;
+	  private byte[]              encrypedPwdBytes;
+	  private byte[]              plainTextPwdBytes;
 
-    public static SecretKeyFactoryImpl getInstance(AdapterConfiguration configs) {
-        if (skf == null) {
-            synchronized (SecretKeyFactoryImpl.class) {
-                if (skf == null)
-                    skf = new SecretKeyFactoryImpl(configs);
-            }
-        }
-        return skf;
-    }
 
-    public void createKey() {
-        try {
+	private SecretKeyFactoryImpl(AdapterConfiguration configs){
+		conf = configs;
+	}
 
-            keySpec = new DESKeySpec(conf.getProperty(AdapterConfiguration.SKF_PROP_KEY).toString().getBytes(AdapterConfiguration.SKF_CHARSET));
-            keyFactory = SecretKeyFactory.getInstance(AdapterConfiguration.SKF_ENCRY_TYPE);
-            key = keyFactory.generateSecret(keySpec);
-            base64 = new Base64();
+	public static SecretKeyFactoryImpl getInstance(AdapterConfiguration configs){
+		if(skf == null){
+			synchronized (SecretKeyFactoryImpl.class) {
+				if(skf == null)
+					skf = new SecretKeyFactoryImpl(configs);
+			}
+		}
+		return skf;
+	}
 
-        } catch (Exception e) {
-            LOGGER.error("createKey", e);
-        }
-    }
+	public void createKey() {
+		try {
 
-    public String encoder(String pwd) {
-        try {
-            // cipher is not
-            cipher = Cipher.getInstance(AdapterConfiguration.SKF_ENCRY_TYPE);
-            // thread safe
-            cipher.init(Cipher.ENCRYPT_MODE, key);
-            encrypedPwd = extracted(pwd);
-        } catch (Exception e) {
-            LOGGER.error("encoder", e);
-        }
-        return encrypedPwd;
-    }
+			keySpec = new DESKeySpec(conf.getProperty(AdapterConfiguration.SKF_PROP_KEY).toString().getBytes(AdapterConfiguration.SKF_CHARSET));
+			keyFactory = SecretKeyFactory.getInstance(AdapterConfiguration.SKF_ENCRY_TYPE);
+			key = keyFactory.generateSecret(keySpec);
+			base64encoder = new BASE64Encoder();
+			base64decoder = new BASE64Decoder();
 
-    public String decoder(String encrypedPwd) {
-        try {
-            encrypedPwdBytes = base64.decode(encrypedPwd);
-            // encrypedPwdBytes = base64decoder.decodeBuffer(encrypedPwd);
-            // cipher is not
-            cipher = Cipher.getInstance(AdapterConfiguration.SKF_ENCRY_TYPE);
-            // thread safe
-            cipher.init(Cipher.DECRYPT_MODE, key);
-            plainTextPwdBytes = (cipher.doFinal(encrypedPwdBytes));
-        } catch (Exception e) {
-            LOGGER.error("decoder", e);
-        }
-        return new String(plainTextPwdBytes);
-    }
+		} catch (Exception e) {
+			LOGGER.error("createKey", e);
+		}
+	}
 
-    private String extracted(String pwd) throws IllegalBlockSizeException, BadPaddingException, UnsupportedEncodingException {
-        return base64.encodeAsString(cipher.doFinal(pwd.getBytes(AdapterConfiguration.SKF_CHARSET)));
-    }
+	public String encoder(String pwd) {
+	    try {
+	    	// cipher is not
+	    	cipher = Cipher.getInstance(AdapterConfiguration.SKF_ENCRY_TYPE);
+	    	// thread safe
+	    	cipher.init(Cipher.ENCRYPT_MODE, key);
+	    	encrypedPwd = extracted(pwd);
+	    } catch (Exception e) {
+	      LOGGER.error("encoder", e);
+	    }
+	    return encrypedPwd;
+	  }
+
+	public String decoder(String encrypedPwd) {
+	    try {
+	    	encrypedPwdBytes = base64decoder.decodeBuffer(encrypedPwd);
+	    	// cipher is not
+	    	cipher = Cipher.getInstance(AdapterConfiguration.SKF_ENCRY_TYPE);
+	    	// thread safe
+	    	cipher.init(Cipher.DECRYPT_MODE, key);
+	    	plainTextPwdBytes = (cipher.doFinal(encrypedPwdBytes));
+	    } catch (Exception e) {
+	      LOGGER.error("decoder", e);
+	    }
+	    return new String(plainTextPwdBytes);
+	  }
+
+	private String extracted(String pwd) throws IllegalBlockSizeException, BadPaddingException,UnsupportedEncodingException {
+		return base64encoder.encode(cipher.doFinal(pwd.getBytes(AdapterConfiguration.SKF_CHARSET)));
+	}
 
 }
