@@ -21,6 +21,8 @@ import org.stringtemplate.v4.STGroupFile;
 import com.ligadata.adapters.AdapterConfiguration;
 import com.ligadata.adapters.mail.st4.CustomErrorListener;
 import com.ligadata.adapters.mail.st4.JSONAdapter;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -60,7 +62,9 @@ public class SimpleMailBean {
 	STGroup stGroup;
 	
 	private static HashMap<String, String> map;
-	
+
+	private static final Logger log = LogManager.getLogger(SimpleMailBean.class);
+
 	public void populateData(){
 		if(templateDirectory != null && !templateDirectory.isEmpty()){
 			Path templateDir = FileSystems.getDefault().getPath(templateDirectory);
