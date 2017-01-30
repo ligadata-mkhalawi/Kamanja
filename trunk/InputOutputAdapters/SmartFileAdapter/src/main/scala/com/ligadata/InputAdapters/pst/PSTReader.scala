@@ -7,6 +7,7 @@ import scala.collection.mutable.ListBuffer
 import com.pff._
 import org.apache.tika
 import org.apache.tika.Tika
+import org.apache.commons.codec.binary.Base64
 
 /**
   * Created by Yousef on 1/24/2017.
@@ -17,15 +18,17 @@ class PSTReader {
   lazy val loggerName = this.getClass.getName
   lazy val logger = LogManager.getLogger(loggerName)
   val emailsList = ListBuffer[String]()
-  def readPSTFile(PSTfile: String, outputPath: String, smartFile: SmartFileHandler): ListBuffer[String] = {
+
+  // return list that includes all emails as json string
+  def readPSTFile(PSTfile: String/*, smartFile: SmartFileHandler*/): ListBuffer[String] = {
     val pstFile: PSTFile = new PSTFile(PSTfile)
     logger.info(pstFile.getMessageStore.getDisplayName)
-    processFolder(pstFile.getRootFolder, outputPath, smartFile)
+    processFolder(pstFile.getRootFolder, PSTfile/*, smartFile*/)
     pstFile.getFileHandle.close
     emailsList
   }
 
-  def processFolder(folder: PSTFolder, outputPath: String, smartFile: SmartFileHandler): Unit = {
+  def processFolder(folder: PSTFolder, fileName: String/*, smartFile: SmartFileHandler*/): Unit = {
     depth = depth + 1
     if(depth > 0){
       printDepth
@@ -35,7 +38,7 @@ class PSTReader {
     if (folder.hasSubfolders) {
       val childFolders: Vector[PSTFolder] = folder.getSubFolders
       for ( childFolder <- childFolders) {
-        processFolder(childFolder, outputPath, smartFile)
+        processFolder(childFolder, fileName/*, smartFile*/)
       }
     }
 
@@ -46,7 +49,7 @@ class PSTReader {
       while (email != null) {
         printDepth
         logger.info("Email: " + email.getSubject)
-        val jsonString = createObject(email, outputPath);///change to return message to engine
+        val jsonString = createObject(email, fileName);///change to return message to engine
         emailsList.append(jsonString)
         //val smartFileMessage = new SmartFileMessage(jsonString.getBytes(), 0, smartFile, 0)//change ofset
         email = folder.getNextChild.asInstanceOf[PSTMessage]
@@ -63,7 +66,7 @@ class PSTReader {
     logger.info(" | ")
   }
 
-  def createObject(email: PSTMessage, outputPath: String): String = {
+  def createObject(email: PSTMessage, fileName: String): String = {
     logger.info("Extracting header from email...");
     val tika: Tika = new Tika
     var attachmentsListTuple = List[(String, String)] ()
@@ -78,9 +81,9 @@ class PSTReader {
     if (reciever.length() > 0 && sender.length() > 0) {
       logger.info("Extracting email body..")
       val fs: FileSearch = new FileSearch
-      val content: String = fs.createMessageContent(email)
-      var attachment: ListBuffer[String] = ListBuffer[String]()
-      val message: String= fs.createMessage(outputPath + ".txt", content,  attachmentsListTuple)
+      val content: String = Base64.encodeBase64String(fs.createMessageContent(email).getBytes())
+     // var attachment: ListBuffer[String] = ListBuffer[String]()
+      val message: String= fs.createMessage(fileName,  content,  attachmentsListTuple)
       logger.info("Done from extracting email body.")
       message
     } else {

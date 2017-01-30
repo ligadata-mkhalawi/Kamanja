@@ -1,12 +1,15 @@
 package com.ligadata.InputAdapters
 
 import java.io.IOException
+
 import com.ligadata.AdaptersConfiguration.SmartFileAdapterConfiguration
+import com.ligadata.InputAdapters.pst.PSTReader
 import com.ligadata.Utils.Utils
 import org.apache.logging.log4j.LogManager
 import scala.util.control.Breaks._
-
 import scala.actors.threadpool.{ExecutorService, Executors}
+import scala.collection.mutable.ListBuffer
+
 
 /**
   *
@@ -135,13 +138,13 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
   }
   // added by Yousef to read PST files
   private def readWholeFiles(): Unit = {
+    try{
+    val PSTObj : PSTReader = new PSTReader
     try {
       val fileName = fileHandler.getFullPath
       fileProcessingStartTs = System.nanoTime
       logger.warn("Smart File Consumer - Starting reading messages from file {} , on Node {} , PartitionId {}",
-        fileName, consumerContext.nodeId, consumerContext.partitionId.toString)
-
-      try {
+        fileName, consumerContext.nodeId, consumerContext.partitionId.toString) try {
         fileHandler.openForRead()
       } catch {
 
@@ -181,7 +184,82 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
       }
 
     try{
+      logger.warn("Smart File Consumer - Starting reading messages from file {} , on Node {} , PartitionId {}",
+        fileHandler.getFullPath, consumerContext.nodeId, consumerContext.partitionId.toString)
+      val messageList: ListBuffer[String] = PSTObj.readPSTFile(fileHandler.getFullPath/*, fileHandler*/)
+      println("check start offset ==> " + startOffset)
 
+      if (startOffset > 0)
+        logger.debug("SMART FILE CONSUMER - skipping into offset {} while reading file {}", startOffset.toString, fileHandler.getFullPath)
+
+      println("Check list size (number of emails) ==> " + messageList.size)
+      try{
+        breakable{
+          for(i <- startOffset until messageList.size if !processingInterrupted) {
+            try {
+              if (Thread.currentThread().isInterrupted) {
+                logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - interrupted while reading file {}", fileHandler.getFullPath)
+                processingInterrupted = true
+                //break
+              }
+              if (parentExecutor == null) {
+                logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - (parentExecutor = null) while reading file {}", fileHandler.getFullPath)
+                processingInterrupted = true
+                //break
+              }
+              if (parentExecutor.isShutdown) {
+                logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is shutdown while reading file {}", fileHandler.getFullPath)
+                processingInterrupted = true
+                //break
+              }
+              if (parentExecutor.isTerminated) {
+                logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is terminated while reading file {}", fileHandler.getFullPath)
+                processingInterrupted = true
+                //break
+              }
+
+              if (!processingInterrupted) {
+                // todo - write your code here
+               // for (i <- startOffset until messageList.size) {
+                  currentMsgNum += 1
+                  globalOffset = i
+                println("======== message json =======")
+                println(messageList(i.toInt))
+                println("=============================")
+                  val smartFileMessage = new SmartFileMessage(messageList(i.toInt).getBytes(), i + 1, fileHandler, currentMsgNum, globalOffset)
+                  messageFoundCallback(smartFileMessage, consumerContext)
+               // }
+              }
+            } catch {
+              case ioe: IOException => {
+                logger.error("Failed to read file " + fileHandler.getFullPath, ioe) /// add the message number also
+                sendFinishFlag(SmartFileConsumer.FILE_STATUS_CORRUPT)
+                shutdownThreads
+                return
+              }
+              case e: Throwable => {
+                logger.error("Failed to read file, file corrupted " + fileHandler.getFullPath, e) // add the message number also
+                sendFinishFlag(SmartFileConsumer.FILE_STATUS_CORRUPT)
+                shutdownThreads
+                return
+              }
+            }
+          }
+        }
+      } catch {
+        case ioe: IOException => {
+          logger.error("SMART FILE CONSUMER: Exception while accessing the file for processing " + fileHandler.getFullPath, ioe)
+          sendFinishFlag(SmartFileConsumer.FILE_STATUS_CORRUPT)
+          shutdownThreads
+          return
+        }
+        case et: Throwable => {
+          logger.error("SMART FILE CONSUMER: Throwable while accessing the file for processing " + fileHandler.getFullPath, et)
+          sendFinishFlag(SmartFileConsumer.FILE_STATUS_CORRUPT)
+          shutdownThreads
+          return
+        }
+      }
     } catch {
       case jhs: java.lang.OutOfMemoryError => {
         logger.error("SMART_FILE_CONSUMER Exception : Java Heap space issue, WorkerBufferSize property might need resetting, file %s could not be processed ".format(fileHandler.getFullPath), jhs)
@@ -189,6 +267,49 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
       }
     } finally{
       shutdownThreads
+    }
+
+    // Done with this file... mark is as closed
+    try {
+      if (fileHandler != null) fileHandler.close
+
+    } catch {
+      case ioe: IOException => {
+        logger.error("SMART FILE CONSUMER: Exception while closing file " + fileHandler.getFullPath, ioe)
+      }
+      case et: Throwable => {
+        logger.error("SMART FILE CONSUMER: Throwable while closing file " + fileHandler.getFullPath, et)
+      }
+    }
+    finally {
+      val endTm = System.nanoTime
+      val elapsedTm = endTm - fileProcessingStartTs
+
+      if (processingInterrupted) {
+        logger.debug("SMART FILE CONSUMER (FileMessageExtractor) - sending interrupting flag for file {}", fileHandler.getFullPath)
+        logger.warn("SMART FILE CONSUMER - %s - finished reading file %s. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(
+          adapterConfig.Name, fileHandler.getFullPath, elapsedTm / 1000000.0, consumerContext.nodeId, consumerContext.partitionId.toString, fileProcessingStartTs, endTm))
+        sendFinishFlag(SmartFileConsumer.FILE_STATUS_ProcessingInterrupted)
+      }
+      else if (isFileCorrupted) {
+        logger.warn("SMART FILE CONSUMER - %s - finished reading file %s. The file is corrupt, could only read %s bytes. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(
+          adapterConfig.Name, fileHandler.getFullPath, totalReadLen, elapsedTm / 1000000.0, consumerContext.nodeId, consumerContext.partitionId.toString, fileProcessingStartTs, endTm))
+        sendFinishFlag(SmartFileConsumer.FILE_STATUS_CORRUPT)
+      }
+      else {
+        logger.warn("SMART FILE CONSUMER - %s - finished reading file %s. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(
+          adapterConfig.Name, fileHandler.getFullPath, elapsedTm / 1000000.0, consumerContext.nodeId, consumerContext.partitionId.toString, fileProcessingStartTs, endTm))
+        sendFinishFlag(SmartFileConsumer.FILE_STATUS_FINISHED)
+      }
+      shutdownThreads()
+    }
+    } catch {
+      case e: Throwable => {
+        logger.error("", e)
+        sendFinishFlag(SmartFileConsumer.FILE_STATUS_CORRUPT)
+        shutdownThreads
+        return
+      }
     }
   }
 

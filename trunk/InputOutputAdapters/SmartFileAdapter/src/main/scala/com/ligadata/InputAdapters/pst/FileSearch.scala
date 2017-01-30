@@ -10,6 +10,7 @@ import com.pff._
 import java.util.Properties
 import scala.collection.mutable.ListBuffer
 import java.io._
+import org.apache.commons.codec.binary.Base64
 
 /**
   * Created by Yousef on 1/24/2017.
@@ -50,9 +51,9 @@ class FileSearch {
     for (i <- 0 until attachments.size) {
       //attachmentfilename = fileName + "." + i + ".txt"
       if (i > 0)
-        attachmentsJson.append(",\"%s\":\"%s\"".format(attachments(i)._1, attachments(i)._2))
+        attachmentsJson.append(",\"%s\":\"%s\"".format(attachments(i)._1, Base64.encodeBase64String(attachments(i)._2.getBytes())))
       else
-        attachmentsJson.append("\"%s\":\"%s\"".format(attachments(i)._1, attachments(i)._2))
+        attachmentsJson.append("\"%s\":\"%s\"".format(attachments(i)._1,  Base64.encodeBase64String(attachments(i)._2.getBytes())))
     }
     attachmentsJson.append("}")
     attachmentsJson.toString
