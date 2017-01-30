@@ -7,7 +7,8 @@ third-party software components.
 The following table shows the version(s) of key components
 that are supported:
 
-.. list-table:
+
+.. list-table::
    :widths: 20 20 60
    :header-rows: 1
 
@@ -23,10 +24,10 @@ that are supported:
    * - MAC OS
      - 10.9,
        10.10
+     -
    * - JDK
      - 1.8
      - Earlier versions of Kamanja 1.6.2 worked with JDK 1.7
-       but
    * - Scala
      - v2.11.7,
        v2.10.
@@ -50,7 +51,9 @@ that are supported:
      -
      -
 
+
 For complete licensing information about software components
 included in the Kamanja package,
 see `https://github.com/LigaData/Kamanja/blob/dev/README.md` .
+
 
