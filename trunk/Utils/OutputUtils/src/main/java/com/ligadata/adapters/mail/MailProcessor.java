@@ -13,8 +13,6 @@ import com.ligadata.adapters.AdapterConfiguration;
 import com.ligadata.adapters.mail.pojo.SimpleMailBean;
 import com.ligadata.adapters.mail.util.SecretKeyFactoryImpl;
 import com.ligadata.adapters.DecryptUtils;
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
 
 @Log4j
 public class MailProcessor {
@@ -26,8 +24,6 @@ public class MailProcessor {
 	private static SecretKeyFactoryImpl skf;
 	private static String password;
 	private static Mailer mailer;
-
-	private static final Logger log = LogManager.getLogger(SimpleMailBean.class);
 
 	private MailProcessor(AdapterConfiguration configs) throws Exception {
 	    try{
