@@ -18,12 +18,16 @@ import org.json.simple.JSONObject;
 
 import com.ligadata.adapters.AdapterConfiguration;
 import com.ligadata.adapters.BufferedMessageProcessor;
+import com.ligadata.adapters.StatusCollectable;
+import com.ligadata.adapters.DecryptUtils;
 
 public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 	static Logger logger = LogManager.getLogger(AbstractJDBCSink.class);
+    static final String STATUS_KEY = new String("SqlBatch");
 
 	protected BasicDataSource dataSource;
 	protected SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS");
+	protected StatusCollectable statusWriter = null;
 
 	protected class ParameterMapping {
 		String typeName;
@@ -114,7 +118,8 @@ public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 						+ param.typeName + "]");
 
 				if (param.type == java.sql.Types.VARCHAR || param.type == java.sql.Types.LONGVARCHAR
-						|| param.type == java.sql.Types.CHAR) {
+						|| param.type == java.sql.Types.CHAR || param.type == java.sql.Types.NVARCHAR
+						|| param.type == java.sql.Types.LONGNVARCHAR) {
 					// String
 					statement.setString(paramIndex, value);
 				} else if (param.type == java.sql.Types.BIGINT || param.type == java.sql.Types.INTEGER
@@ -152,6 +157,12 @@ public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 						ts = new Timestamp(date.getTime());
 						statement.setTimestamp(paramIndex, ts);
 					}
+				} else if (param.type == java.sql.Types.BIT) {
+					// Boolean
+					if (value == null || "".equals(value))
+						statement.setNull(paramIndex, java.sql.Types.BIT);
+					else
+						statement.setBoolean(paramIndex, Boolean.parseBoolean(value));
 				} else {
 					throw new Exception("Unsupported sql data type " + param.typeName + " [" + param.type + "]");
 				}
@@ -159,12 +170,17 @@ public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 			}
 
 			// set letfover attributes to _Remaining_Attributes_ parameter
-			if (remainingParamIndex > 0) {
+			if (remainingParamIndex > 0 &&  !jo.isEmpty()) {
 				statement.setString(remainingParamIndex, jo.toJSONString());
 			}
 
 		} catch (Exception e) {
-			logger.error("Error binding parameters: " + e.getMessage() + " for Parameter index : [" + paramIndex + 
+			if (statusWriter != null) {
+				statusWriter.addStatusMessage(this.STATUS_KEY, "Error binding parameters: " + e.getMessage() + " for Parameter index : [" + paramIndex +
+					"] Key : [" + key + "] value : [" + value + "] - ignoring message : " + jsonObject.toJSONString(), false);
+				statusWriter.setCompletionCode(this.STATUS_KEY,"1");
+			}
+			logger.error("Error binding parameters: " + e.getMessage() + " for Parameter index : [" + paramIndex +
 					"] Key : [" + key + "] value : [" + value + "] - ignoring message : " + jsonObject.toJSONString(), e);
 			try {
 				statement.clearParameters();
@@ -176,20 +192,28 @@ public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 		return success;
 	}
 
+
+
 	@Override
-	public void init(AdapterConfiguration config) throws Exception {
+	public void init(AdapterConfiguration config,  StatusCollectable sw) throws Exception {
 		dataSource = new BasicDataSource();
 		dataSource.setDriverClassName(config.getProperty(AdapterConfiguration.JDBC_DRIVER));
 		dataSource.setUrl(config.getProperty(AdapterConfiguration.JDBC_URL));
 		dataSource.setUsername(config.getProperty(AdapterConfiguration.JDBC_USER));
-		dataSource.setPassword(config.getProperty(AdapterConfiguration.JDBC_PASSWORD));
+		//dataSource.setPassword(config.getProperty(AdapterConfiguration.JDBC_PASSWORD));
+		String pass = DecryptUtils.getPassword(config,AdapterConfiguration.JDBC_PASSWORD);
+		dataSource.setPassword(pass);
 		dataSource.setDefaultAutoCommit(false);
-		
+
+		dataSource.setDefaultAutoCommit(false);
+
 		dataSource.setMaxTotal(Integer.parseInt(config.getProperty(AdapterConfiguration.DBCP_MAX_TOTAL, "2")));
 		dataSource.setMaxIdle(Integer.parseInt(config.getProperty(AdapterConfiguration.DBCP_MAX_IDLE, "2")));
 		dataSource.setMaxWaitMillis(Long.parseLong(config.getProperty(AdapterConfiguration.DBCP_MAX_WAIT_MILLIS, "10000")));
 		dataSource.setTestOnBorrow(Boolean.parseBoolean(config.getProperty(AdapterConfiguration.DBCP_TEST_ON_BORROW, "true")));
 		dataSource.setValidationQuery(config.getProperty(AdapterConfiguration.DBCP_VALIDATION_QUERY, "SELECT 1"));
+
+		statusWriter = sw;
 
 		inputFormat = new SimpleDateFormat(
 				config.getProperty(AdapterConfiguration.INPUT_DATE_FORMAT, "yyyy-MM-dd'T'HH:mm:ss.SSS"));
@@ -199,7 +223,7 @@ public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 	public abstract boolean addMessage(String message);
 
 	@Override
-	public abstract void processAll() throws Exception;
+	public abstract void processAll(long batchId, long retryNumber) throws Exception;
 
 	@Override
 	public void clearAll() {
@@ -207,10 +231,12 @@ public abstract class AbstractJDBCSink implements BufferedMessageProcessor {
 
 	@Override
 	public void close() {
-		try {
-			if (dataSource != null)
-				dataSource.close();
-		} catch (SQLException e) {
-		}
+	    logger.info("Closing JDBCSink...");
+	    try {
+		if (dataSource != null)
+		    dataSource.close();
+	    } catch (SQLException e) {
+	    }
+	    logger.info("Closed JDBCSink...");
 	}
 }

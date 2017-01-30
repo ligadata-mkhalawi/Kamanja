@@ -13,6 +13,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
 import com.ligadata.adapters.AdapterConfiguration;
+import com.ligadata.adapters.StatusCollectable;
 
 public class UpsertJDBCSink extends AbstractJDBCSink {
 	static Logger logger = LogManager.getLogger(UpsertJDBCSink.class);
@@ -27,8 +28,8 @@ public class UpsertJDBCSink extends AbstractJDBCSink {
 	}
 
 	@Override
-	public void init(AdapterConfiguration config) throws Exception {
-		super.init(config);
+	public void init(AdapterConfiguration config,  StatusCollectable sw) throws Exception {
+		super.init(config, sw);
 
 		buffer = new ArrayList<JSONObject>();
 		insertParams = new ArrayList<ParameterMapping>();
@@ -83,7 +84,7 @@ public class UpsertJDBCSink extends AbstractJDBCSink {
 	}
 
 	@Override
-	public void processAll() throws Exception {
+	public void processAll(long batchId, long retryNumber) throws Exception {
 		Connection connection = dataSource.getConnection();
 		PreparedStatement updateStatement = connection.prepareStatement(updateSql);
 		PreparedStatement insertStatement = connection.prepareStatement(insertSql);

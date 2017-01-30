@@ -195,6 +195,10 @@ libraryDependencies ++= {
   )
 }
 
+// KamanjaUtils.EncryptDecryptUtils
+libraryDependencies += "commons-codec" % "commons-codec" % "1.6"
+libraryDependencies += "commons-cli" % "commons-cli" % "1.3"
+
 
 //////////////////////  InstallDriver
 //already available

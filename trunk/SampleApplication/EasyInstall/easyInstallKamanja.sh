@@ -220,6 +220,7 @@ cp Utils/PmmlTestTool/target/pmmltesttool* $systemlib
 cp Utils/JsonChecker/target/scala-2.10/jsonchecker* $systemlib
 cp Utils/QueryGenerator/target/scala-2.10/querygenerator* $systemlib
 cp Utils/GenerateMessage/target/scala-2.10/generatemessage* $systemlib
+cp Utils/EncryptUtils/target/scala-2.10/encryptutils* $systemlib
 cp $ivyPath/cache/org.apache.commons/commons-pool2/jars/commons-pool2-2.4.2.jar $systemlib
 
 # copy fat jars to KamanjaInstall
@@ -606,6 +607,7 @@ cp Utils/PmmlTestTool/target/pmmltesttool* $systemlib
 cp Utils/JsonChecker/target/scala-2.11/jsonchecker* $systemlib
 cp Utils/QueryGenerator/target/scala-2.11/querygenerator* $systemlib
 cp Utils/GenerateMessage/target/scala-2.11/generatemessage* $systemlib
+cp Utils/EncryptUtils/target/scala-2.11/encryptutils* $systemlib
 cp $ivyPath/cache/org.apache.commons/commons-pool2/jars/commons-pool2-2.4.2.jar $systemlib
 
 # copy jars used to reduce package size

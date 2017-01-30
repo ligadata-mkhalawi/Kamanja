@@ -16,6 +16,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
 import com.ligadata.adapters.AdapterConfiguration;
+import com.ligadata.adapters.StatusCollectable;
 
 public class SqlServerBulkInsertSink extends AbstractJDBCSink {
 	static Logger logger = LogManager.getLogger(SqlServerBulkInsertSink.class);
@@ -36,8 +37,8 @@ public class SqlServerBulkInsertSink extends AbstractJDBCSink {
 	}
 
 	@Override
-	public void init(AdapterConfiguration config) throws Exception {
-		super.init(config);
+	public void init(AdapterConfiguration config, StatusCollectable sw) throws Exception {
+		super.init(config, sw);
 
 		fieldSeperator = config.getProperty(AdapterConfiguration.FILE_FIELD_SEPERATOR, "\u0000");
 		recordSeperator = config.getProperty(AdapterConfiguration.FILE_RECORD_SEPERATOR, "\n");
@@ -155,7 +156,7 @@ public class SqlServerBulkInsertSink extends AbstractJDBCSink {
 	}
 	
 	@Override
-	public void processAll() throws Exception {
+	public void processAll(long batchId, long retryNumber) throws Exception {
 		
 		try {
 			if(out!= null)
