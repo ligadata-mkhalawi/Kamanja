@@ -1526,7 +1526,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
         val fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, fileToProcessName)
         //now read the file and call sendSmartFileMessageToEngin for each message, and when finished call fileMessagesExtractionFinished_Callback to update status
-        val fileMessageExtractor = new FileMessageExtractor(this, participantExecutor, adapterConfig, fileHandler, offset, smartFileContext,
+        val fileMessageExtractor = new FileMessageExtractor(this, participantExecutor, adapterConfig, Array(fileHandler), Array(offset), Array(smartFileContext),
           sendSmartFileMessageToEngin, fileMessagesExtractionFinished_Callback)
         fileMessageExtractor.extractMessages()
       }
