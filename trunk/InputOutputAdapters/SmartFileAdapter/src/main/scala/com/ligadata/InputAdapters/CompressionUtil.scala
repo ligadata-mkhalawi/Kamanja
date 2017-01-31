@@ -260,11 +260,11 @@ object CompressionUtil {
     }
     catch{
       case e : Exception => {
-        logger.error(e)
+        logger.error("SmartFileConsumer - error while getting Proper Input Stream - ", e)
         originalInStream
       }
       case e : Throwable => {
-        logger.error(e)
+        logger.error("SmartFileConsumer - error while getting Proper Input Stream - ", e)
         originalInStream
       }
     }

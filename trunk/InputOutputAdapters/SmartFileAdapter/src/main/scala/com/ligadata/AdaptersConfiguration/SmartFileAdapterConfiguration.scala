@@ -76,8 +76,11 @@ class FileAdapterMonitoringConfig {
 
   var messageSeparator: Char = 10
   var orderBy: Array[String] = Array.empty[String]
-
+  var entireFileAsOneMessage = false
+  var enableEmailAndAttachmentMode = false
+  var organizationName = ""
   var checkFileTypes = false
+  var checkFileSize = true
 
   //when reading a file, if type is unknown and this flag is false, an exception is thrown so that file is not processed
   var considerUnknownFileTypesAsIs = true
@@ -334,8 +337,17 @@ object SmartFileAdapterConfiguration {
       else if (kv._1.compareToIgnoreCase("MessageSeparator") == 0) {
         monitoringConfig.messageSeparator = kv._2.asInstanceOf[String].trim.toInt.toChar
       }
+      else if (kv._1.compareToIgnoreCase("EntireFileAsOneMessage") == 0) {
+        monitoringConfig.entireFileAsOneMessage = kv._2.asInstanceOf[String].trim.toBoolean
+      }
       else if (kv._1.compareToIgnoreCase("CheckFileTypes") == 0) {
         monitoringConfig.checkFileTypes = kv._2.asInstanceOf[String].trim.toBoolean
+      }
+      else if (kv._1.compareToIgnoreCase("CheckFileSize") == 0) {
+        monitoringConfig.checkFileSize = kv._2.asInstanceOf[String].trim.toBoolean
+      }
+      else if (kv._1.compareToIgnoreCase("EnableEmailAndAttachmentMode") == 0) {
+        monitoringConfig.enableEmailAndAttachmentMode = kv._2.asInstanceOf[String].trim.toBoolean
       }
       else if (kv._1.compareToIgnoreCase("ConsiderUnknownFileTypesAsIs") == 0) {
         monitoringConfig.considerUnknownFileTypesAsIs = kv._2.asInstanceOf[String].trim.toBoolean
@@ -346,6 +358,9 @@ object SmartFileAdapterConfiguration {
       else if (kv._1.compareToIgnoreCase("TagDelimiter") == 0) {
         monitoringConfig.tagDelimiter =
           org.apache.commons.lang.StringEscapeUtils.unescapeJava(kv._2.asInstanceOf[String])
+      }
+      else if (kv._1.compareToIgnoreCase("OrganizationName") == 0) {
+        monitoringConfig.organizationName = kv._2.asInstanceOf[String]
       }
       else if (kv._1.compareToIgnoreCase("MsgTagsKV") == 0) {
         monitoringConfig.msgTagsKV = kv._2.asInstanceOf[scala.collection.immutable.Map[String, String]]
