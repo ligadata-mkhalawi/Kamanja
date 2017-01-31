@@ -617,9 +617,7 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
     var conditionalComputes = ArrayBuffer[(String, Compute, String, String)]()
     if(conditional_compute_groups != null){
       conditional_compute_groups.foreach(group =>{
-        println(">>>>>>>>group "+ group._1)
         group._2.computes.foreach(c => {
-          println(">>>>>>>>conditionalCompute "+ c._1)
           conditionalComputes.append((c._1, c._2, group._1, group._2.condition))
         })
       })
@@ -683,7 +681,6 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
     var scopesopened = 0
 
     while (cnt1 != cnt2) {
-      println("--------cnt1="+cnt1+", cnt2="+cnt2 )
 
       cnt2 = cnt1
 
@@ -866,7 +863,6 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
 
       // filters
       val wheres1 = wheres.filter(f => {
-        println(">>>>>>filter: " + f)
         val list = Expressions.ExtractColumnNames(f)
         val rList = ResolveNames(list, aliaseMessages)
         val open = rList.filter(f => !innerMapping.contains(f._2)).filter(f => {
@@ -902,7 +898,6 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
         }
       })
 
-      println(">>>>>>>>>>checking computes")
       // computes
       val computes1 = computes.filter(c => {
 
@@ -954,7 +949,6 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
           })
         }
 
-        println(">>>>>>>>>>>>>>>>>>>>compute " + c._1 + " open.isEmpty=" + open.isEmpty)
         if (open.isEmpty) {
 
           innerTracking ++= list.map(m => innerMapping.get(m._2).get.variableName).toSet
@@ -1005,11 +999,11 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
 
 
       //*************************************************************
-      println(">>>>>>>>>>checking conditional computes")
       // conditional computes
 
       val conditionalComputes1 = conditionalComputes.filter(c => {
 
+        val computesGroupCondition = c._4
         // Check if the compute if determind
         val (open, expression, list) = if (c._2.expression.length > 0) {
 
@@ -1058,8 +1052,24 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
           })
         }
 
-        println(">>>>>>>>>>>>>>>>>>>>compute " + c._1 + " open.isEmpty=" + open.isEmpty)
-        if (open.isEmpty) {
+        //***check cols in condition
+        val condList = Expressions.ExtractColumnNames(computesGroupCondition)
+        val condrList = ResolveNames(condList, aliaseMessages)
+        val condOpen = condrList.filter(f => !innerMapping.contains(f._2)).filter(f => {
+          val (c, v) = splitNamespaceClass(f._2)
+          if(dictMessages.contains(c)) {
+            val expression = "%s.get(\"%s\")".format(dictMessages.get(c).get, v)
+            val variableName = "%s.%s".format(dictMessages.get(c).get, v)
+            innerMapping ++= Map(f._2 -> eval.Tracker(variableName, c, "Any", true, v, expression))
+            false
+          } else  {
+            true
+          }
+        })
+        AmbiguousCheck(condrList, computesGroupCondition)
+        //***
+
+        if (condOpen.isEmpty && open.isEmpty) {
 
           innerTracking ++= list.map(m => innerMapping.get(m._2).get.variableName).toSet
 
@@ -1071,16 +1081,10 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
           collect :+= c._2.Comment
           if (c._2.typename.length > 0) {
 
-            /*val callstack = Thread.currentThread().getStackTrace().drop(1).take(10).
-              map(s => s.getClassName + "." + s.getMethodName + "(" + s.getLineNumber + ")").mkString("\n")
-            println(">>> building var for conditional compute "+c._1+". Callstack is: " + callstack)*/
-
             val defaultValue = Datatypes.getTypeDefaultVal(c._2.typename.trim)
             val condition = c._4
 
             val newCondition = Expressions.FixupColumnNames(condition, innerMapping, aliaseMessages)
-            println("newCondition= "+newCondition)
-
 
             // Check if we track the type or need a type coercion
             val isVariable = Expressions.IsExpressionVariable(expression, innerMapping)
@@ -1360,7 +1364,6 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
 
         // Common computes section
         //
-        println("======calling Generate on trans level, trans name = " + t)
         val (collectOuter, methodsOuter, outerMapping, outerTracking, outerScopesOpened) = {
 
           Generate(transformation.grokMatch,
@@ -1424,7 +1427,6 @@ class Compiler(params: CompilerBuilder) extends LogTrait {
               })._1
             })
 
-            println("======calling Generate on output level, output name = " + o._1)
             Generate(transformation.grokMatch,
               outputmapping,
               if (o._2.where.nonEmpty) Array(o._2.where) else Array.empty[String],
