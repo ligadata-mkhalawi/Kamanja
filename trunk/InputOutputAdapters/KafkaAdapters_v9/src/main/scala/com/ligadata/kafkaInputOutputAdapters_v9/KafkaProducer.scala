@@ -797,7 +797,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   /* Get Velocity Metrics for Output Adapter   */
   private def getOAVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, nodeId: String, message: ContainerInterface, adapConfig: AdapterConfiguration, processed: Boolean) = {
     var vm = new VelocityMetricsInfo
-    val OACompName = "OutputAdapter"
+    val OACompName = "KafkaProducerOA"
     vm.incrementVelocityMetrics(VMFactory, OACompName, nodeId, message, adapConfig, true)
 
   }

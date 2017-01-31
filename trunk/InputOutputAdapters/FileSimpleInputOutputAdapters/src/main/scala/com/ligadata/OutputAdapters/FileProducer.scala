@@ -209,7 +209,7 @@ class FileProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeC
   /* Get Velocity Metrics for Output Adapter   */
   private def getOAVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, nodeId: String, message: ContainerInterface, adapConfig: AdapterConfiguration, processed: Boolean) = {
     var vm = new VelocityMetricsInfo
-    val OACompName = "OutputAdapter"
+    val OACompName = "FileProducerOA"
     vm.incrementVelocityMetrics(VMFactory, OACompName, nodeId, message, adapConfig, true)
 
   }

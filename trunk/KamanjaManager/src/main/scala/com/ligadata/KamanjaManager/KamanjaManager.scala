@@ -980,6 +980,9 @@ class KamanjaManager extends Observer {
     inputAdapters.foreach(ia => {
       ia.VMFactory.addEmitListener(velocityMetricsOutput)
     })
+    outputAdapters.foreach(oa => {
+      oa.VMFactory.addEmitListener(velocityMetricsOutput)
+    })
 
     val scheduledThreadPool = Executors.newScheduledThreadPool(3);
 
@@ -1091,7 +1094,13 @@ class KamanjaManager extends Observer {
         isTimerStarted = true
       }
     }
-
+  inputAdapters.foreach(ia => {
+      ia.VMFactory.shutdown()
+    })
+    outputAdapters.foreach(oa => {
+      oa.VMFactory.shutdown()
+    })
+    
     scheduledThreadPool.shutdownNow()
     sh = null
     return Shutdown(0)
@@ -1288,10 +1297,13 @@ class VelocityMetricsOutput extends VelocityMetricsCallback {
     val velocityMetricsArrBuf: ArrayBuffer[com.ligadata.KamanjaBase.KamanjaVelocityMetrics] = new ArrayBuffer[com.ligadata.KamanjaBase.KamanjaVelocityMetrics]
 
     val componentMetrics = metrics.compMetrics
+    println("VelocityMetricsOutput componentMetrics " + componentMetrics.size)
+
     if (componentMetrics != null && componentMetrics.size > 0) {
       for (i <- 0 until componentMetrics.size) {
         //get uuid, get componentKey, get nodeid
         val compKeyMetrics = componentMetrics(i).keyMetrics
+        println("VelocityMetricsOutput compKeyMetrics " + compKeyMetrics.size)
 
         if (compKeyMetrics != null && compKeyMetrics.size > 0) {
 
@@ -1300,8 +1312,11 @@ class VelocityMetricsOutput extends VelocityMetricsCallback {
             //get key, metricsTime, firstOccured, lastOccured,
 
             val metricsValues = compKeyMetrics(j).metricValues
+            println("VelocityMetricsOutput metricsValues " + metricsValues.size)
+
             if (metricsValues != null && metricsValues.size > 0) {
               for (k <- 0 until metricsValues.size) {
+
                 val velocityMetrics = KamanjaMetadata.envCtxt.getContainerInstance("com.ligadata.KamanjaBase.KamanjaVelocityMetrics").asInstanceOf[KamanjaVelocityMetrics]
 
                 val metricsKey = metricsValues(k).Key()
@@ -1313,6 +1328,9 @@ class VelocityMetricsOutput extends VelocityMetricsCallback {
                 velocityMetrics.metricstime = compKeyMetrics(j).metricsTime.toString()
                 velocityMetrics.metricskey = metricsKey
                 velocityMetrics.metricsvalue = metricsValue.toString()
+                velocityMetrics.firstoccured = compKeyMetrics(j).firstOccured.toString
+                velocityMetrics.lastoccured = compKeyMetrics(j).lastOccured.toString
+
                 velocityMetricsArrBuf += velocityMetrics
                 LOG.info("velocityMetrics.uuid = " + velocityMetrics.uuid)
                 LOG.info("velocityMetrics.componentkey = " + velocityMetrics.componentkey)
@@ -1320,7 +1338,11 @@ class VelocityMetricsOutput extends VelocityMetricsCallback {
                 LOG.info("velocityMetrics.key = " + velocityMetrics.key)
                 LOG.info("velocityMetrics.metricstime = " + velocityMetrics.metricstime)
                 LOG.info("velocityMetrics.metricskey = " + velocityMetrics.metricskey)
+                LOG.info("velocityMetrics.firstoccured = " + velocityMetrics.firstoccured)
+                LOG.info("velocityMetrics.lastoccured = " + velocityMetrics.lastoccured)
+                LOG.info("velocityMetrics.metricskey = " + velocityMetrics.metricskey)
                 LOG.info("velocityMetrics.metricsvalue = " + velocityMetrics.metricsvalue)
+
                 LOG.info("***********************************")
               }
             }

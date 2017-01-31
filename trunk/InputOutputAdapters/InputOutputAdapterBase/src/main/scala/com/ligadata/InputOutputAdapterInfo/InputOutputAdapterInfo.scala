@@ -182,6 +182,7 @@ trait ExecContext {
     excludedMsgs += "com.ligadata.kamanjabase.kamanjaexceptionevent"
     excludedMsgs += "com.ligadata.kamanjabase.kamanjaexecutionfailureevent"
     excludedMsgs += "com.ligadata.kamanjabase.kamanjamessageevent"
+    excludedMsgs += "com.ligadata.kamanjabase.kamanjavelocitymetrics"
   }
 
   LoadExcludedMessages

@@ -110,8 +110,19 @@ object MetadataLoad {
           ("system", "sourceadapter" , "system", "string", false, null),
           ("system", "deserializer" , "system", "string", false, null),
           ("system", "errordetail" , "system", "string", false, null)),
-        1000004, "", 1000004) // Assigned SchemaId as 1000005. Never change this for this message
-
+        1000004, "", 1000004), // Assigned SchemaId as 1000005. Never change this for this message
+        
+        ("com.ligadata.KamanjaBase", "KamanjaVelocityMetrics", "com.ligadata.KamanjaBase.KamanjaVelocityMetrics",
+        List(("system", "uuid", "system", "string", false, null),
+            ("system", "componentkey", "system", "string", false, null),
+            ("system", "nodeid", "system", "string", false, null),
+            ("system", "key", "system", "string", false, null),
+            ("system", "metricstime", "system", "string", false, null),
+            ("system", "firstoccured", "system", "string", false, null),
+            ("system", "lastoccured", "system", "string", false, null),
+            ("system", "metricskey", "system", "string", false, null),
+            ("system", "metricsvalue", "system", "string", false, null)),
+        1000005, "", 1000005) // Assigned SchemaId as 1000005. Never change this for this message
       // NOTE NOTE:- Next SchemaId should start from 1000007
     )
   }

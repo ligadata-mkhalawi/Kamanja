@@ -312,7 +312,6 @@ class FileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: ExecC
    /* Get Velocity Metrics for Output Adapter   */
   private def getFileVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, componentName: String, fileName: String, nodeId: String, adapConfig: AdapterConfiguration) = {
     var vm = new VelocityMetricsInfo
-    val OACompName = "OutputAdapter"
     vm.incrementFileVelocityMetrics(VMFactory, componentName, fileName, nodeId, adapConfig)
   }
 }

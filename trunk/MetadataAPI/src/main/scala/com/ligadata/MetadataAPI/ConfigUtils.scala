@@ -787,6 +787,10 @@ object ConfigUtils {
               cfgMap("Cache") = getStringFromJsonNode(cluster.getOrElse("Cache", null))
             if (cluster.contains("PYTHON_CONFIG"))
               cfgMap("PYTHON_CONFIG") = getStringFromJsonNode(cluster.get("PYTHON_CONFIG"))
+            if (cluster.contains("VelocityStatsInfo")) {
+              cfgMap("VelocityStatsInfo") = getStringFromJsonNode(cluster.get("VelocityStatsInfo"))
+              logger.debug("VelocityStatsInfo Exists***********************")
+            }
             if (cluster.contains("Config")) {
               val config = cluster.get("Config").get.asInstanceOf[Map[String, Any]] //BUGBUG:: Do we need to check the type before converting
               if (config.contains("SystemCatalog"))
@@ -795,8 +799,6 @@ object ConfigUtils {
                 cfgMap("ZooKeeperInfo") = getStringFromJsonNode(config.get("ZooKeeperInfo"))
               if (config.contains("EnvironmentContext"))
                 cfgMap("EnvironmentContext") = getStringFromJsonNode(config.get("EnvironmentContext"))
-              if (config.contains("VelocityStatsInfo"))
-                cfgMap("VelocityStatsInfo") = getStringFromJsonNode(config.get("VelocityStatsInfo"))
             }
 
             if (logger.isDebugEnabled()) {
@@ -805,11 +807,15 @@ object ConfigUtils {
 
             getMetadataAPI.GetMetadataAPIConfig.setProperty("PYTHON_CONFIG", cfgMap.getOrElse("PYTHON_CONFIG", ""))
 
-        //    getMetadataAPI.GetMetadataAPIConfig.setProperty("VelocityStatsInfo", cfgMap.getOrElse("VelocityStatsInfo", ""))
+            // getMetadataAPI.GetMetadataAPIConfig.setProperty("VelocityStatsInfo", cfgMap.getOrElse("VelocityStatsInfo", ""))
 
             if (logger.isDebugEnabled()) {
               logger.debug("The value of python config from meta config while uploading is  " + getMetadataAPI.GetMetadataAPIConfig.getProperty("PYTHON_CONFIG"))
             }
+
+            //    if (logger.isDebugEnabled()) {
+            //       logger.debug("The value of VelocityStatsInfo config from meta config while uploading is  " + getMetadataAPI.GetMetadataAPIConfig.getProperty("VelocityStatsInfo"))
+            //     }
             // save in memory
             val cic = MdMgr.GetMdMgr.MakeClusterCfg(ClusterId, cfgMap, null, null)
             val addClusterResult = MdMgr.GetMdMgr.AddClusterCfg(cic)

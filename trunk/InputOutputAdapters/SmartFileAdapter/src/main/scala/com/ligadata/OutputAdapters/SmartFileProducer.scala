@@ -391,6 +391,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     }
   }
 
+  
   var nextRolloverTime: Long = 0
   if (fc.rolloverInterval > 0) {
     LOG.info("Smart File Producer " + fc.Name + ": File rollover is configured. Will rollover files every " + fc.rolloverInterval + " minutes.")
@@ -737,8 +738,8 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
 
   private def getOAVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, nodeId: String, message: ContainerInterface, adapConfig: AdapterConfiguration, processed: Boolean) = {
     var vm = new VelocityMetricsInfo
-    val OACompName = "OutputAdapter"
-    vm.incrementVelocityMetrics(VMFactory, OACompName, nodeId, message, adapConfig, true)
+    val componentName = "SmartFileOA"
+    vm.incrementVelocityMetrics(VMFactory, componentName, nodeId, message, adapConfig, true)
 
   }
 
