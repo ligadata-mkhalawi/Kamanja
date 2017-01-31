@@ -1555,9 +1555,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
   //key: SmartFileCommunication/FileProcessing/<node>/<threadId>
   //val: file|status
-  def fileMessagesExtractionFinished_Callback(fileHandler: SmartFileHandler, context: SmartFileConsumerContext,
+  def fileMessagesExtractionFinished_Callback(fileHandlers: Array[SmartFileHandler], context: SmartFileConsumerContext,
                                               status: Int, stats: InputAdapterStatus): Unit = {
 
+    val fileHandler = fileHandlers(0)
     val actualThreadId = Thread.currentThread().getThreadGroup.getName + ">" + Thread.currentThread().getId
     logger.warn("SmartFileConsumer : context {} ready to free, partition id={}, actualThreadId={}, file={}",
       context, context.partitionId.toString, actualThreadId, fileHandler.getFullPath)
