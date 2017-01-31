@@ -31,6 +31,7 @@ case class FileStatus(status: Int, offset: Long, createDate: Long)
 case class EnqueuedFileHandler(fileHandler: SmartFileHandler, offset: Long, lastModifiedDate: Long,
                                locationInfo: LocationInfo, componentsMap: scala.collection.immutable.Map[String, String])
 
+case class EnqueuedGroupHandler(fileHandlers: Array[SmartFileHandler], offset: Long, createDates: Array[Long], partMap: scala.collection.mutable.Map[Int, Int])
 
 class SmartFileConsumerContext {
   var adapterName: String = _

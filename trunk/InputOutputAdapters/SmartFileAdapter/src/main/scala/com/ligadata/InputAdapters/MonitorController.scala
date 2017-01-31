@@ -45,10 +45,20 @@ class MonitorController {
 
   implicit def orderedEnqueuedFileHandler(f: EnqueuedFileHandler): Ordered[EnqueuedFileHandler] = new Ordered[EnqueuedFileHandler] {
     def compare(other: EnqueuedFileHandler) = {
-      val locationInfo1 = f.locationInfo //parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(f.fileHandler.getParentDir))
-      val locationInfo2 = other.locationInfo // parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(other.fileHandler.getParentDir))
+      // val locationInfo1 = f.locationInfo //parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(f.fileHandler.getParentDir))
+      // val locationInfo2 = other.locationInfo // parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(other.fileHandler.getParentDir))
       //not sure why but had to invert sign
       (MonitorUtils.compareFiles(f, other)) * -1
+    }
+  }
+
+  implicit def orderedEnqueuedGroupHandler(f: EnqueuedGroupHandler): Ordered[EnqueuedGroupHandler] = new Ordered[EnqueuedGroupHandler] {
+    def compare(other: EnqueuedGroupHandler) = {
+      // val locationInfo1 = parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(f.fileHandlers(0).getParentDir))
+      // val locationInfo2 = parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(other.fileHandlers(0).getParentDir))
+      //not sure why but had to invert sign
+      // (MonitorUtils.compareFiles(f.fileHandlers(0), other.fileHandlers(0))) * -1
+      0
     }
   }
 
@@ -59,7 +69,11 @@ class MonitorController {
   //new scala.collection.mutable.PriorityQueue[EnqueuedFileHandler]()(Ordering.by(fileComparisonField))
     new scala.collection.mutable.PriorityQueue[EnqueuedFileHandler]() //use above implicit compare function
 
+  private var groupQ: scala.collection.mutable.PriorityQueue[EnqueuedGroupHandler] =
+    new scala.collection.mutable.PriorityQueue[EnqueuedGroupHandler]() //use above implicit compare function
+
   private val fileQLock = new Object
+  private val groupQLock = new Object
 
   private var refreshRate: Int = 1000
   //Refresh rate for monitorBufferingFiles
@@ -245,6 +259,19 @@ class MonitorController {
       logger.debug("adapter {} - enqueuing file {} into tmp buffering queue", adapterConfig.Name, file.path)
       //val fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, file.path)
       bufferingQ_map(file.path) = (file, 0, initiallyExists)
+    }
+  }
+
+  def extractFileNameWithoutExtention(fullPath: String): String = {
+    val endIndex = fullPath.lastIndexOf("/")
+    var retStr = "empty"
+    if (endIndex != -1) {
+      retStr = fullPath.substring(endIndex + 1, fullPath.size)
+      return retStr.replace(".txt", "")
+    } else {
+      logger.warn("SMART FILE CONSUMER (MonitorController): extractFileNameWithoutExtention : failed to find / in fullPath file")
+      retStr = fullPath
+      return retStr.replace(".txt", "")
     }
   }
 
@@ -517,6 +544,48 @@ class MonitorController {
     }
   }
 
+
+  private def enQGroup(grp: ArrayBuffer[(SmartFileHandler, (Long, Long, Int, Boolean))], offset: Int, partMap: scala.collection.mutable.Map[Int, Int] = scala.collection.mutable.Map[Int, Int]()): Unit = {
+    groupQLock.synchronized {
+      var i = 0
+      var tmpArrayOfSmartFileHandlers: ArrayBuffer[SmartFileHandler] = ArrayBuffer()
+      var tmpArrayOfCreateDates: ArrayBuffer[Long] = ArrayBuffer()
+
+      grp.foreach(item => {
+        tmpArrayOfSmartFileHandlers += item._1
+        tmpArrayOfCreateDates += item._1.lastModified
+      })
+      //      while (i < fileHandlers.length) {
+      //        var fileHandler = fileHandlers(i)
+      //        var createDate = createDates(i)
+      //        tmpArrayBuffer += EnqueuedFileHandler(fileHandler, offset, createDate, partMap)
+      //      }
+
+      logger.info("SMART FILE CONSUMER (MonitorController):  enq group " + grp(0)._1.getFullPath + " with priority " + grp(0)._1.lastModified() + " --- curretnly " + groupQ.size + " groups on a QUEUE")
+
+      // what should the offset be here ? instead of 0L
+      val tmp: EnqueuedGroupHandler = new EnqueuedGroupHandler(tmpArrayOfSmartFileHandlers.toArray, 0L, tmpArrayOfCreateDates.toArray, scala.collection.mutable.Map[Int, Int]())
+      groupQ += tmp
+    }
+  }
+
+  private def deQGroup: EnqueuedGroupHandler = {
+    if (groupQ.isEmpty) {
+      return null
+    }
+    groupQLock.synchronized {
+      val enqueuedgroupHandler = groupQ.dequeue()
+
+      logger.info("SMART FILE CONSUMER (MonitorController):  deq group " + enqueuedgroupHandler.fileHandlers.foreach(x => {
+        print(x.getFullPath + ",")
+      }) + " with priority " + enqueuedgroupHandler.createDates.foreach(x => {
+        print(x + ",")
+      }) + " --- curretnly " + groupQ.size + " files left on a QUEUE")
+
+      return enqueuedgroupHandler
+    }
+  }
+
   private def isEnqueued(file: String): Boolean = {
     if (isShutdown) return false
     fileQLock.synchronized {
@@ -546,10 +615,28 @@ class MonitorController {
     }
   }
 
+  private def getFilesTobeProcessed: List[String] = {
+    fileQLock.synchronized {
+      return fileQ.map(f => f.fileHandler.getFullPath).toList
+    }
+  }
+
   //get file name only for now
   def getNextFileToProcess: String = {
     val f = deQFile
     if (f == null) null else f.fileHandler.getFullPath
   }
 
+  def getNextGroupToProcess: String = {
+    val g = deQGroup
+    var retvalue: String = ""
+    if (g == null) {
+      return null
+    } else {
+      g.fileHandlers.foreach(f => {
+        retvalue = retvalue + "~~" + f.getFullPath
+      })
+      return retvalue.substring(2, retvalue.length)
+    }
+  }
 }
