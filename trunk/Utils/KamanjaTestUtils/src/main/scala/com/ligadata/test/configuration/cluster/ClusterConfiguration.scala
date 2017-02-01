@@ -16,13 +16,18 @@
 
 package com.ligadata.test.configuration.cluster
 
+import java.io.{File, FileNotFoundException}
+
 import com.ligadata.test.configuration.cluster.adapters.{ClusterCacheConfig, TenantConfiguration}
 import com.ligadata.test.configuration.cluster.adapters.interfaces.{Adapter, H2DBStore, StorageAdapter}
 import com.ligadata.test.configuration.cluster.nodes.NodeConfiguration
 import com.ligadata.test.configuration.cluster.python.PythonConfiguration
 import com.ligadata.test.configuration.cluster.zookeeper.ZookeeperConfig
+import org.json4s._
+import org.json4s.native.JsonMethods._
 
 import scala.collection.mutable.HashMap
+import scala.io.Source
 
 case class Cluster(var id: String,
                    var systemCatalog: StorageAdapter,
@@ -34,11 +39,6 @@ case class Cluster(var id: String,
                    var nodes: Array[NodeConfiguration],
                    var adapters: Array[Adapter],
                    var customCfg: Option[HashMap[String, String]]) {
-
-  def toCluster(clusterConfigString: String): Cluster = {
-
-    return this
-  }
 
   override def toString: String = {
     try {
@@ -117,6 +117,28 @@ class ClusterBuilder {
   private var pythonConfig: PythonConfiguration = _
   private var clusterCacheConfig: ClusterCacheConfig = _
   private val customCfg: scala.collection.mutable.HashMap[String, String] = new HashMap[String, String]()
+
+  def fromFile(clusterConfigFile: String): Cluster = {
+    val file = new File(clusterConfigFile)
+    if (!file.exists())
+      throw new FileNotFoundException(s"Cluster Configuration file $clusterConfigFile does not exist")
+    val source = Source.fromFile(file)
+    val clusterCfgStr = source.getLines().mkString
+    source.close()
+
+    val json = parse(clusterCfgStr) \ "Clusters"
+    implicit val defaults = org.json4s.DefaultFormats
+    println("JSON:\n" + (json))
+    val expectedResultsList = json.extract[List[Map[String, Any]]]
+    expectedResultsList.foreach(map => {
+      map.keySet.foreach(key => {
+
+        println(s"Key => $key")
+        println(s"Value => ${map(key)}")
+      })
+    })
+    return null
+  }
 
   def withZkInfo(zookeeperConfig: ZookeeperConfig): ClusterBuilder = {
     this.zkInfo = zookeeperConfig

@@ -133,8 +133,8 @@ object TestExecutor {
 
       appManager.kamanjaApplications.foreach(app => {
         logger.info(s"Beginning test for Kamanja Application '${app.name}'")
-        logger.info(s"Starting Embedded Services...")
         if(clusterConfigFile == null) {
+          logger.info(s"Starting Embedded Services...")
           EmbeddedServicesManager.init(installDir, metadataConfigFile, clusterConfigFile)
           if (!EmbeddedServicesManager.startServices) {
             logger.error(s"***ERROR*** Failed to start embedded services")
@@ -144,7 +144,9 @@ object TestExecutor {
           }
         }
         else {
-          mdMan
+          //EmbeddedServicesManager.init(installDir, metadataConfigFile, clusterConfigFile)
+          KamanjaEnvironmentManager.init(installDir, metadataConfigFile, clusterConfigFile)
+          return
         }
 
         logger.info(s"Adding metadata...")

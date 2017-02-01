@@ -1,4 +1,4 @@
-package com.ligadata.kamanja.test.application.configuration.configuration
+package scala.com.ligadata.kamanja.test.application.configuration
 
 import com.ligadata.kamanja.test.application.KamanjaApplication
 import com.ligadata.kamanja.test.application.configuration.KamanjaApplicationConfiguration

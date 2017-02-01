@@ -2,10 +2,13 @@ package com.ligadata.kamanja.test.application
 
 import java.io.File
 
-import com.ligadata.kamanja.test.application.configuration.KamanjaApplicationConfiguration
 import com.ligadata.kamanja.test.application.logging.{KamanjaAppLogger, KamanjaAppLoggerException}
+import com.ligadata.kamanja.test.application.configuration._
 
 import scala.collection.mutable.ListBuffer
+
+import org.json4s._
+import org.json4s.native.JsonMethods._
 
 class KamanjaApplicationManager(baseDir: String) {
 

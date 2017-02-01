@@ -1,4 +1,4 @@
-package com.ligadata.kamanja.test.application.configuration
+package com.ligadata.kamanja.test.application
 
 /**
   * This object will copy over the dependency jars into a resource dir called kamanjaInstall/lib/system/. This will require the fat jars to be assembled prior to running tests,

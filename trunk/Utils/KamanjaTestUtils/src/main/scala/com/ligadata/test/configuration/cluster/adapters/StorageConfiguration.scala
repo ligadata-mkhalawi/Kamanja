@@ -45,9 +45,9 @@ case class StorageConfiguration(storeType: StoreType,
     }
     builder.append(s""""StoreType": "${storeType.name.toLowerCase}",""" + "\n")
     if(tenantId != "" && tenantId != null) {
-      builder.append(s""""TenantId": "$tenantId",""")
+      builder.append(s""""TenantId": "$tenantId",""" + "\n")
     }
-    builder.append(s""""SchemaName": "$schemaName",""")
+    builder.append(s""""SchemaName": "$schemaName",""" + "\n")
     builder.append(s""""Location": "$hostname"}""")
     builder.toString()
   }

@@ -1,6 +1,5 @@
-package com.ligadata.kamanja.test.application.configuration
+package com.ligadata.kamanja.test.application
 
-import com.ligadata.kamanja.test.application.EmbeddedServicesManager
 import com.ligadata.test.utils.TestUtils
 import org.scalatest._
 

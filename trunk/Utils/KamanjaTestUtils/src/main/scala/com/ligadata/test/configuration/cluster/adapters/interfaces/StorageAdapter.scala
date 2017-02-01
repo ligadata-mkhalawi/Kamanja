@@ -1,9 +1,5 @@
 package com.ligadata.test.configuration.cluster.adapters.interfaces
 
-/**
-  * Created by william on 4/11/16.
-  */
-
 trait StoreType
 {
   def name: String
@@ -24,7 +20,11 @@ object CassandraStore extends StoreType {
 
 object H2DBStore extends StoreType {
   def name: String = "h2db"
-  def connectionMode: String = "embedded"
+  var connectionMode: String = "embedded"
+}
+
+object HBaseStore extends StoreType {
+  def name: String = "hbase"
 }
 
 trait StorageAdapter extends Adapter {
@@ -34,3 +34,4 @@ trait StorageAdapter extends Adapter {
   def hostname: String
   def tenantId: String
 }
+

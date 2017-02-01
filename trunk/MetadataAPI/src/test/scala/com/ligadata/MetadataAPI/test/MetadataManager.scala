@@ -303,12 +303,30 @@ class MetadataManager extends KamanjaTestLogger {
     }
   }
 
+  def addConfig(clusterCfgFile: String): Int = {
+    try {
+      val source = Source.fromFile(new File(clusterCfgFile))
+      val cfgStr = source.getLines().mkString
+      source.close()
+      val result = parseApiResult(MetadataAPIImpl.UploadConfig(cfgStr, Some(userId), ""))
+      logger.info("[Metadata Manager]: Upload Cluster Configuration API Result =>\n" + result.toString)
+      result.statusCode
+    }
+    catch {
+      case e: Exception => {
+        logger.error(s"[Metadata Manager]: Failed to add Cluster Configuration From File $clusterCfgFile", e)
+        e.printStackTrace()
+        -1
+      }
+    }
+  }
+
   def parseApiResult(apiResult: String): ApiResult = {
     implicit val formats = org.json4s.DefaultFormats
     val json = parse(apiResult)
     val statusCode = (json \\ "Status Code").values.toString.toInt
     val functionName = (json \\ "Function Name").values.toString
-    val resultData = (json \\ "Results Data").values.toString
+    val resultData = (json \\ "Result Data").values.toString
     val description = (json \\ "Result Description").values.toString
 
     new ApiResult(statusCode, functionName, resultData, description)

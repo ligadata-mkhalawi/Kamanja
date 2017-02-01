@@ -1,4 +1,4 @@
-package com.ligadata.kamanja.test.application.configuration
+package com.ligadata.kamanja.test.application
 
 import com.ligadata.kamanja.test.application.data.DataSet
 import com.ligadata.kamanja.test.application.{EmbeddedServicesManager, MatchResult, ResultsManager}

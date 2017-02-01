@@ -100,17 +100,23 @@ object EmbeddedServicesManager {
           "EX: export PYTHON_HOME=/usr")
     }
     this.kamanjaInstallDir = kamanjaInstallDir
-    kamanjaConfigFile = TestUtils.constructTempDir("/kamanja-tmp-config").getAbsolutePath + "/kamanja.conf"
-    embeddedZookeeper = new EmbeddedZookeeper
-    kafkaCluster = new EmbeddedKafkaCluster().
-      withBroker(new KafkaBroker(1, embeddedZookeeper.getConnection))
+
     if (clusterConfigFile == null) {
       clusterConfig = generateClusterConfiguration
+      kamanjaConfigFile = TestUtils.constructTempDir("/kamanja-tmp-config").getAbsolutePath + "/kamanja.conf"
+      embeddedZookeeper = new EmbeddedZookeeper
+      kafkaCluster = new EmbeddedKafkaCluster().
+        withBroker(new KafkaBroker(1, embeddedZookeeper.getConnection))
     }
     else {
-      clusterConfig = generateClusterConfigFromFile(clusterConfigFile)
+      //clusterConfig = generateClusterConfigFromFile(clusterConfigFile)
+      clusterConfig = new ClusterBuilder().fromFile(clusterConfigFile)
     }
     kafkaConsumer = new TestKafkaConsumer(getOutputKafkaAdapterConfig)
+
+    //mdMan = new MetadataManager
+    //mdMan.setSSLPassword("")
+    //mdMan.initMetadataCfg()
   }
 
   def startServices: Boolean = {
@@ -376,26 +382,6 @@ object EmbeddedServicesManager {
       }
     }
     return true
-  }
-
-  private def generateClusterConfigFromFile(clusterConfigFile: String) : Cluster = {
-    val file = new File(clusterConfigFile)
-    if (!file.exists())
-      throw new EmbeddedServicesException(s"Cluster Configuration file $clusterConfigFile does not exist")
-    val source = Source.fromFile(file)
-    val clusterCfgStr = source.getLines().mkString
-    source.close()
-
-    val json = parse(clusterCfgStr)
-    implicit val defaults = org.json4s.DefaultFormats
-    val expectedResultsList = json.extract[List[Map[String, Any]]]
-    expectedResultsList.foreach(map => {
-      map.keySet.foreach(key => {
-        println(s"Key => $key")
-        println(s"Value => ${map(key)}")
-      })
-    })
-    return null
   }
 
   private def generateClusterConfiguration(): Cluster = {
