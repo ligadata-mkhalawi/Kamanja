@@ -26,15 +26,26 @@ The following installation scenarios are supported:
 - :ref:`Upgrade<upgrade-install-top>` from an earlier version
   of Kamanja.
 
+.. _platform-reqs:
 
-Operating system requirements
------------------------------
+Platform requirements
+---------------------
 
 Before installing the Kamanja software,
-install an appropriate operating system on each node:
+you must install either an operating system
+or a Hadoop stack.
+
+Kamanja has been tested on the following operating systems:
 
 - Linux OS: Redhat, CentOS
 - MAC OS: 10.9 and 10.10
+
+Kamanja has also been tested on the following Hadoop stacks:
+
+- Cloudera
+- HortonWorks 2.5.3
+
+.. _hardware-reqs:
 
 Hardware Requirements for a Node
 --------------------------------
@@ -56,7 +67,7 @@ Development systems can have a minimum required hardware capacity of 16GB RAM.
      - 32-bit, 64-bit
      - 64-bit
    * - Hard Drive
-     - 200 GB or as per needs of the test data      
+     - 200 GB
      - 500 GB, SSD, or non-SSD      
      - 1 Terabyte, SSD recommended
    * - Non-Windows Platforms processors
@@ -75,16 +86,5 @@ Development systems can have a minimum required hardware capacity of 16GB RAM.
      - 5 GB
      - 5 GB (not including any database indexes)
      - 100 GB (not including any database indexes)
-
-Data Formats
-------------
-
-LigaData Kamanja currently imports .json, and .csv data.
-
-Types That the Engine Supports
-------------------------------
-
-See :ref:`types-term` for information about the types
-supported by the Kamanja engine.
 
 

@@ -140,7 +140,7 @@ is configured for the cluster.
 Environment Context parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The Environment Context is the that controls the flow of messages processed,
+The Environment Context controls the flow of messages processed,
 metadata allocated, and communication between models
 in the execution environment and external components such as databases.
 

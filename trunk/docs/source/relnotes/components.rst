@@ -1,4 +1,6 @@
 
+.. _component-versions:
+
 Component versions in Kamanja 1.6.2
 ===================================
 
@@ -25,6 +27,12 @@ that are supported:
      - 10.9,
        10.10
      -
+   * - Cloudera
+     -
+     -
+   * - HortonWorks
+     -
+     -
    * - JDK
      - 1.8
      - Earlier versions of Kamanja 1.6.2 worked with JDK 1.7
@@ -48,6 +56,9 @@ that are supported:
      - 
      -
    * - Cassandra
+     -
+     -
+   * - ElasticSearch
      -
      -
 

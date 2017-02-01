@@ -1,4 +1,7 @@
 
+
+.. _models-top:
+
 ===================
 Working with Models
 ===================
