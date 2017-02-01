@@ -158,8 +158,8 @@ class VelocityMetricsInfo {
       val counterNames = Array("processed", "exception")
       vmetrics.foreach(vm => {
 
-        val intervalRoundingInMs = vm.TimeIntervalInSecs
-        var vmInstance = VMFactory.GetVelocityMetricsInstance(nodeId, componentName, intervalRoundingInMs, counterNames)
+        val intervalRoundingInSecs = vm.TimeIntervalInSecs
+        var vmInstance = VMFactory.GetVelocityMetricsInstance(nodeId, componentName, intervalRoundingInSecs, counterNames)
         if (vmInstance == null) LOG.info("VMInstance is null")
         val v = (vmInstance, vm)
         velocityMetricsInstBuf += v
@@ -169,7 +169,7 @@ class VelocityMetricsInfo {
         println("vm.MetricsTime.MType  " + vm.MetricsTime.MType)
         println("nodeId " + nodeId)
         println("componentName  " + componentName)
-        println("intervalRoundingInMs  " + intervalRoundingInMs)
+        println("intervalRoundingInMs  " + intervalRoundingInSecs)
         println("counterNames  " + counterNames.toList)
 
       })

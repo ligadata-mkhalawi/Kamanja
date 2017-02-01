@@ -76,7 +76,20 @@ object MetadataLoad {
           ("system", "isresultproduced", "system", "Boolean", false, null),
           ("system", "producedmessages", "system", "ArrayOfLong", false, null),
           ("system", "error", "system", "String", false, null)),
-        5, "", 5) // Assigned SchemaId as 1000003. Never change this for this message
+           5, "", 5),
+      ("com.ligadata.KamanjaBase", "MetricsValue", "com.ligadata.KamanjaBase.MetricsValue",
+        List(("system", "metrickey", "system", "string", false, null),
+          ("system", "metricsvalue", "system", "long", false, null)),
+           6, "", 6),
+      ("com.ligadata.KamanjaBase", "ComponentKeyMetrics", "com.ligadata.KamanjaBase.ComponentKeyMetrics",
+        List(("system", "key", "system", "string", false, null),
+          ("system", "metricstime", "system", "long", false, null),
+          ("system", "roundintervaltimeinsec", "system", "int", false, null),
+          ("system", "firstoccured", "system", "long", false, null),
+          ("system", "lastoccured", "system", "long", false, null),
+          ("system", "metricsvalue", "com.ligadata.KamanjaBase", "ArrayOfMetricsValue", false, null)),
+           7, "", 7)
+           // Assigned SchemaId as 1000003. Never change this for this message
       // NOTE NOTE:- Next SchemaId should start from 5
     )
   }
@@ -116,13 +129,8 @@ object MetadataLoad {
         List(("system", "uuid", "system", "string", false, null),
             ("system", "componentkey", "system", "string", false, null),
             ("system", "nodeid", "system", "string", false, null),
-            ("system", "key", "system", "string", false, null),
-            ("system", "metricstime", "system", "string", false, null),
-            ("system", "firstoccured", "system", "string", false, null),
-            ("system", "lastoccured", "system", "string", false, null),
-            ("system", "metricskey", "system", "string", false, null),
-            ("system", "metricsvalue", "system", "string", false, null)),
-        1000005, "", 1000005) // Assigned SchemaId as 1000005. Never change this for this message
+            ("system", "componentkeymetrics", "com.ligadata.KamanjaBase", "ArrayOfComponentKeyMetrics", false, null)),
+        1000006, "", 1000006) // Assigned SchemaId as 1000005. Never change this for this message
       // NOTE NOTE:- Next SchemaId should start from 1000007
     )
   }
