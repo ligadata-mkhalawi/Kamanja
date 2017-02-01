@@ -1313,7 +1313,7 @@ class VelocityMetricsOutput extends VelocityMetricsCallback {
               for (k <- 0 until metricsValues.size) {
                 val Metrics = KamanjaMetadata.envCtxt.getContainerInstance("com.ligadata.KamanjaBase.MetricsValue").asInstanceOf[com.ligadata.KamanjaBase.MetricsValue]
                 Metrics.metrickey = metricsValues(k).Key()
-                Metrics.metricsvalue = metricsValues(k).Value()
+                Metrics.metricskeyvalue = metricsValues(k).Value()
                 metricsArrBuf += Metrics
               }
             }
@@ -1358,7 +1358,7 @@ class VelocityMetricsOutput extends VelocityMetricsCallback {
             if (metricsValue != null && metricsValue.length > 0)
               for (k <- 0 until metricsValue.length) {
                 LOG.info("metricsValue key " + metricsValue(k).metrickey)
-                LOG.info("metricsValue metricstime " + metricsValue(k).metricsvalue)
+                LOG.info("metricsValue metricstime " + metricsValue(k).metricskeyvalue)
               }
           }
       }

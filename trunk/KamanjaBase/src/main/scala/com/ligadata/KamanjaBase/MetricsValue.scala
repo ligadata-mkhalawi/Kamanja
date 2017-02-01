@@ -52,7 +52,7 @@ object MetricsValue extends RDDObject[MetricsValue] with ContainerFactoryInterfa
     return (tmInfo != null && tmInfo.getTimePartitionType != TimePartitionInfo.TimePartitionType.NONE);
   }
 
-  override def getAvroSchema: String = """{ "type": "record",  "namespace" : "com.ligadata.kamanjabase" , "name" : "metricsvalue" , "fields":[{ "name" : "metrickey" , "type" : "string"},{ "name" : "metricsvalue" , "type" : "long"}]}""";
+  override def getAvroSchema: String = """{ "type": "record",  "namespace" : "com.ligadata.kamanjabase" , "name" : "metricsvalue" , "fields":[{ "name" : "metrickey" , "type" : "string"},{ "name" : "metricskeyvalue" , "type" : "long"}]}""";
 
   final override def convertFrom(srcObj: Any): T = convertFrom(createInstance(), srcObj);
 
@@ -105,7 +105,7 @@ class MetricsValue(factory: ContainerFactoryInterface, other: MetricsValue) exte
   private def generateAttributeTypes(): Array[AttributeTypeInfo] = {
     var attributeTypes = new Array[AttributeTypeInfo](2);
     attributeTypes(0) = new AttributeTypeInfo("metrickey", 0, AttributeTypeInfo.TypeCategory.STRING, -1, -1, 0)
-    attributeTypes(1) = new AttributeTypeInfo("metricsvalue", 1, AttributeTypeInfo.TypeCategory.LONG, -1, -1, 0)
+    attributeTypes(1) = new AttributeTypeInfo("metricskeyvalue", 1, AttributeTypeInfo.TypeCategory.LONG, -1, -1, 0)
 
     return attributeTypes
   }
@@ -135,7 +135,7 @@ class MetricsValue(factory: ContainerFactoryInterface, other: MetricsValue) exte
   }
 
   var metrickey: String = _;
-  var metricsvalue: Long = _;
+  var metricskeyvalue: Long = _;
 
   override def getAttributeTypes(): Array[AttributeTypeInfo] = {
     if (attributeTypes == null) return null;
@@ -194,7 +194,7 @@ class MetricsValue(factory: ContainerFactoryInterface, other: MetricsValue) exte
     try {
       index match {
         case 0 => return this.metrickey.asInstanceOf[AnyRef];
-        case 1 => return this.metricsvalue.asInstanceOf[AnyRef];
+        case 1 => return this.metricskeyvalue.asInstanceOf[AnyRef];
 
         case _ => throw new Exception(s"$index is a bad index for message MetricsValue");
       }
@@ -240,7 +240,7 @@ class MetricsValue(factory: ContainerFactoryInterface, other: MetricsValue) exte
     var attributeVals = new Array[AttributeValue](2);
     try {
       attributeVals(0) = new AttributeValue(this.metrickey, keyTypes("metrickey"))
-      attributeVals(1) = new AttributeValue(this.metricsvalue, keyTypes("metricsvalue"))
+      attributeVals(1) = new AttributeValue(this.metricskeyvalue, keyTypes("metricskeyvalue"))
 
     } catch {
       case e: Exception => {
@@ -280,8 +280,8 @@ class MetricsValue(factory: ContainerFactoryInterface, other: MetricsValue) exte
         }
         case 1 => {
           if (value.isInstanceOf[Long])
-            this.metricsvalue = value.asInstanceOf[Long];
-          else throw new Exception(s"Value is the not the correct type for field metricsvalue in message MetricsValue")
+            this.metricskeyvalue = value.asInstanceOf[Long];
+          else throw new Exception(s"Value is the not the correct type for field metricskeyvalue in message MetricsValue")
         }
 
         case _ => throw new Exception(s"$index is a bad index for message MetricsValue");
@@ -301,7 +301,7 @@ class MetricsValue(factory: ContainerFactoryInterface, other: MetricsValue) exte
 
   private def fromFunc(other: MetricsValue): MetricsValue = {
     this.metrickey = com.ligadata.BaseTypes.StringImpl.Clone(other.metrickey);
-    this.metricsvalue = com.ligadata.BaseTypes.LongImpl.Clone(other.metricsvalue);
+    this.metricskeyvalue = com.ligadata.BaseTypes.LongImpl.Clone(other.metricskeyvalue);
 
     this.setTimePartitionData(com.ligadata.BaseTypes.LongImpl.Clone(other.getTimePartitionData));
     return this;
@@ -311,8 +311,8 @@ class MetricsValue(factory: ContainerFactoryInterface, other: MetricsValue) exte
     this.metrickey = value
     return this
   }
-  def withmetricsvalue(value: Long): MetricsValue = {
-    this.metricsvalue = value
+  def withmetricskeyvalue(value: Long): MetricsValue = {
+    this.metricskeyvalue = value
     return this
   }
   def isCaseSensitive(): Boolean = MetricsValue.isCaseSensitive();

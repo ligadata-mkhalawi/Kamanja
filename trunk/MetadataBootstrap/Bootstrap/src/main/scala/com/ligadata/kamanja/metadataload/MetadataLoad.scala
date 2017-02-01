@@ -79,7 +79,7 @@ object MetadataLoad {
            5, "", 5),
       ("com.ligadata.KamanjaBase", "MetricsValue", "com.ligadata.KamanjaBase.MetricsValue",
         List(("system", "metrickey", "system", "string", false, null),
-          ("system", "metricsvalue", "system", "long", false, null)),
+          ("system", "metricskeyvalue", "system", "long", false, null)),
            6, "", 6),
       ("com.ligadata.KamanjaBase", "ComponentKeyMetrics", "com.ligadata.KamanjaBase.ComponentKeyMetrics",
         List(("system", "key", "system", "string", false, null),
