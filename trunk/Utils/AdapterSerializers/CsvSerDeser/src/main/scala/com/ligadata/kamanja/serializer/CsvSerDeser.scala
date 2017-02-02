@@ -315,7 +315,10 @@ class CsvSerDeser extends SerializeDeserialize {
         _csvParser = _config.get("csvParser")
         try {
              if (!_csvParser.equals(None)) _csvFormat = Some(CSVFormat.valueOf(_csvParser.get))
-           } catch {case e: Exception => {Error("Wrong csvParser type , %s doesn't exist".format(_csvParser),e)}}
+           } catch {case e: Exception => {
+             Error("Wrong csvParser type , %s doesn't exist , type kamanja support " +
+               "<Default,Excel,InformixUnload,InformixUnloadCsv,MySQL,RFC4180,TDF>".format(_csvParser),e)}
+           }
 
         val alwaysQuoteFieldStr = _config.getOrElse("alwaysQuoteField", "F")
         _alwaysQuoteField = alwaysQuoteFieldStr.toLowerCase.startsWith("t")
@@ -385,7 +388,7 @@ class CsvSerDeser extends SerializeDeserialize {
         returnVal
     }
 
-    //add by saleh 24/1/2017
+    //add by saleh 2/2/2017
     /**
       * This method will use the Apache Parser commons-csv 1.4 this will work only if csvParser option is true
       * csvParser is false by default
