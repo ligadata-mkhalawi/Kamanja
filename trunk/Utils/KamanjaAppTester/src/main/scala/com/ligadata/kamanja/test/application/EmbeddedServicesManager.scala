@@ -39,6 +39,7 @@ object EmbeddedServicesManager {
   var clusterConfigFile: String = _
   var metadataConfigFile: String = _
   var storageDir: String = _
+  var h2dbStore: H2DBStore = new H2DBStore
 
   def getInputKafkaAdapterConfig: KafkaAdapterConfig = {
     if (!isInitialized) {
@@ -78,9 +79,9 @@ object EmbeddedServicesManager {
   def init(kamanjaInstallDir: String, metadataConfigFile: String = null, clusterConfigFile: String = null): Unit = {
     isInitialized = true
 
-    if(metadataConfigFile != null && clusterConfigFile == null)
+    if (metadataConfigFile != null && clusterConfigFile == null)
       throw new EmbeddedServicesException("***ERROR*** A MetadataAPIConfig file has been provided but a Cluster Configuration file has not. Please pass in a Cluster Configuration file.")
-    else if(metadataConfigFile == null && clusterConfigFile != null)
+    else if (metadataConfigFile == null && clusterConfigFile != null)
       throw new EmbeddedServicesException("***ERROR*** A Cluster Configuration file has been provided but a MetadataAPIConfig file has not. Please pass in a MetadataAPIConfig file.")
 
     try {
@@ -100,23 +101,18 @@ object EmbeddedServicesManager {
           "EX: export PYTHON_HOME=/usr")
     }
     this.kamanjaInstallDir = kamanjaInstallDir
+    kamanjaConfigFile = TestUtils.constructTempDir("/kamanja-tmp-config").getAbsolutePath + "/kamanja.conf"
+    embeddedZookeeper = new EmbeddedZookeeper
+    kafkaCluster = new EmbeddedKafkaCluster().
+      withBroker(new KafkaBroker(1, embeddedZookeeper.getConnection))
 
-    if (clusterConfigFile == null) {
-      clusterConfig = generateClusterConfiguration
-      kamanjaConfigFile = TestUtils.constructTempDir("/kamanja-tmp-config").getAbsolutePath + "/kamanja.conf"
-      embeddedZookeeper = new EmbeddedZookeeper
-      kafkaCluster = new EmbeddedKafkaCluster().
-        withBroker(new KafkaBroker(1, embeddedZookeeper.getConnection))
-    }
-    else {
-      //clusterConfig = generateClusterConfigFromFile(clusterConfigFile)
-      clusterConfig = new ClusterBuilder().fromFile(clusterConfigFile)
-    }
+    clusterConfig = generateClusterConfiguration
+    kamanjaConfigFile = TestUtils.constructTempDir("/kamanja-tmp-config").getAbsolutePath + "/kamanja.conf"
+    embeddedZookeeper = new EmbeddedZookeeper
+    kafkaCluster = new EmbeddedKafkaCluster().
+      withBroker(new KafkaBroker(1, embeddedZookeeper.getConnection))
     kafkaConsumer = new TestKafkaConsumer(getOutputKafkaAdapterConfig)
 
-    //mdMan = new MetadataManager
-    //mdMan.setSSLPassword("")
-    //mdMan.initMetadataCfg()
   }
 
   def startServices: Boolean = {
@@ -141,7 +137,7 @@ object EmbeddedServicesManager {
 
       mdMan = new MetadataManager
       mdMan.setSSLPassword("")
-      mdMan.initMetadataCfg(new MetadataAPIProperties(H2DBStore.name, H2DBStore.connectionMode, storageDir, kamanjaInstallDir, "kamanja", classPath, zkConnStr = embeddedZookeeper.getConnection, systemJarPath = s"$kamanjaInstallDir/lib/system", appJarPath = s"$kamanjaInstallDir/lib/application"))
+      mdMan.initMetadataCfg(new MetadataAPIProperties(h2dbStore.name, h2dbStore.connectionMode, storageDir, kamanjaInstallDir, "kamanja", classPath, zkConnStr = embeddedZookeeper.getConnection, systemJarPath = s"$kamanjaInstallDir/lib/system", appJarPath = s"$kamanjaInstallDir/lib/application"))
 
       val addConfigResult = mdMan.addConfig(clusterConfig)
       if (addConfigResult != 0) {
@@ -426,9 +422,9 @@ object EmbeddedServicesManager {
 
     storageDir = TestUtils.constructTempDir("/h2db").getAbsolutePath + "/storage"
 
-    val clusterDataStore: StorageAdapter = new StorageConfiguration(H2DBStore, "kamanja", storageDir)
+    val clusterDataStore: StorageAdapter = new StorageConfiguration(h2dbStore, "kamanja", storageDir)
 
-    val tenant1DataStore: StorageAdapter = new StorageConfiguration(H2DBStore, Globals.kamanjaTestTenant, storageDir)
+    val tenant1DataStore: StorageAdapter = new StorageConfiguration(h2dbStore, Globals.kamanjaTestTenant, storageDir)
 
     val classPath: String = {
       List(
