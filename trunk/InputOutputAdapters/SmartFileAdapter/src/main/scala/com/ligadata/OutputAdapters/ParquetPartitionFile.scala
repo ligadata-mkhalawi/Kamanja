@@ -169,19 +169,10 @@ class ParquetPartitionFile(fc: SmartFileProducerConfiguration, key: String, avro
           return SendStatus.SUCCESS
         } catch {
           case fio: IOException => {
-            LOG.warn("Smart File Producer " + fc.Name + ": Unable to write to file " + actualActiveFilePath)
-            if (numOfRetries == MAX_RETRIES) {
-              LOG.warn("Smart File Producer " + fc.Name + ": Unable to write to file destination after " + MAX_RETRIES + " tries.  Trying to reopen file " + actualActiveFilePath, fio)
-              //TODO : what to do for parquet
-            } else if (numOfRetries > MAX_RETRIES) {
-              LOG.error("Smart File Producer " + fc.Name + ": Unable to write to file destination after " + MAX_RETRIES + " tries.  Aborting.", fio)
-              throw FatalAdapterException("Unable to write to specified file after " + MAX_RETRIES + " retries", fio)
-            }
-            numOfRetries += 1
-            LOG.warn("Smart File Producer " + fc.Name + ": Retyring " + numOfRetries + "/" + MAX_RETRIES)
-            Thread.sleep(FAIL_WAIT)
+            LOG.error("Smart File Producer " + fc.Name + ": Unable to write to file " + actualActiveFilePath, fio)
+            throw FatalAdapterException("Unable to write to specified file " + actualActiveFilePath, fio)
           }
-          case e: Exception => {
+          case e: Throwable => {
 
             val messageStr =
               if (record == null) "null"
@@ -196,7 +187,7 @@ class ParquetPartitionFile(fc: SmartFileProducerConfiguration, key: String, avro
       SendStatus.FAILURE
 
     } catch {
-      case e: Exception => {
+      case e: Throwable => {
         val messageStr =
           if (record == null) "null"
           else record.getAllAttributeValues.map(attr => if (attr == null || attr.getValue == null) "null" else attr.getValue.toString).mkString(",")
