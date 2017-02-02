@@ -19,16 +19,16 @@ The metadata manager performs a number of functions:
   can be instantiated and used during by the runtime system.
   These are the Kamanja objects:
 
-  - :ref`messages<messages-term>`
+  - :ref:`messages<messages-term>`
 
     - input messages  - data flowing into Kamanja engine
     - output messages - data flowing out of models
 
-  - :ref`containers<containers-term>`  - “facts” about Kamanja models
-  - :ref`models<model-term>` - executable logic (rules, TreeSets, etc)
-  - :ref`functions<functions-term>` - UDFs
-  - :ref`types<types-term>` - datatypes
-  - :ref`concepts<concepts-term>`
+  - :ref:`containers<container-term>`  - “facts” about Kamanja models
+  - :ref:`models<model-term>` - executable logic (rules, TreeSets, etc)
+  - :ref:`functions<functions-term>` - UDFs
+  - :ref:`types<types-term>` - datatypes
+  - :ref:`concepts<concepts-term>`
 
 - Allows uploading of JAR files that are used during Kamanja execution.
   For example, if a UDF is defined,

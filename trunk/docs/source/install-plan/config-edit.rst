@@ -8,9 +8,9 @@ Two main configuration files control the Kamanja environment:
 
 - :ref:`metadataapiconfig-config-ref` -- configures the
   :ref:`metadata<metadata-term>` objects
-  (:ref`messages<messages-term>`, :ref`containers<containers-term>`
-  :ref`models<model-term>`, :ref`functions<functions-term>` (UDFs),
-  :ref`types<types-term>` - datatypes, and :ref`concepts<concepts-term>`)
+  (:ref:`messages<messages-term>`, :ref:`containers<container-term>`
+  :ref:`models<model-term>`, :ref:`functions<functions-term>` (UDFs),
+  :ref:`types<types-term>`, and :ref:`concepts<concepts-term>`)
 
 - :ref:`clusterconfig-config-ref` files -- assigns a name to the cluster
   and configures all :ref:`tenants<tenancy-term>`,

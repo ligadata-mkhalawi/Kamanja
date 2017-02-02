@@ -70,7 +70,7 @@ you must remove the existing files before creating a new pair in the expected lo
 
 To use the encrypted and encoded password in output/OutputUtils,
 the encrypted passwords must include three properties:
-in the properties file; for example:
+in the properties file:
 
 - encrypted.encoded.password; for example:
 

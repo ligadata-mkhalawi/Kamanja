@@ -6,12 +6,11 @@ Message definition
 ==================
 
 The :ref:`message<messages-term>` definition structure provides
-design-time definitions of incoming data and interfaces
-that makes it easy for Kamanja to process input messages.
-Custom message definitions can be created
-to control which input messages are sent to Kamanja.
+design-time definitions of data and interfaces
+that makes it easy for Kamanja to process messages.
+passed f
 
-Each input, output, or storage message used in the cluster
+Each message used in the cluster
 has its own "Message" definition,
 identified by a unique "Name".
 
@@ -31,7 +30,6 @@ Input message file structure
       "Message": {
       	"NameSpace": "<namespace>",
       	"Name": "<name>",
-        "Type": input | output | storage
       	"Version": "<version>",
       	"Description": "<description of product",
       	"Persist": "true" | "false",
