@@ -316,7 +316,7 @@ class CsvSerDeser extends SerializeDeserialize {
         try {
              if (!_csvParser.equals(None)) _csvFormat = Some(CSVFormat.valueOf(_csvParser.get))
            } catch {case e: Exception => {
-             Error("Wrong csvParser type , %s doesn't exist , type kamanja support " +
+             Error("Wrong csvParser type , %s doesn't exist , types kamanja support " +
                "<Default,Excel,InformixUnload,InformixUnloadCsv,MySQL,RFC4180,TDF>".format(_csvParser),e)}
            }
 
@@ -398,7 +398,7 @@ class CsvSerDeser extends SerializeDeserialize {
       */
     def csvApache(rawCsvContainerStr: String) : Array[String] = {
         val in = new StringReader(rawCsvContainerStr)
-        val records = _csvFormat.withDelimiter(_fieldDelimiterAsChar).parse(in).iterator
+        val records = _csvFormat.get.withDelimiter(_fieldDelimiterAsChar).parse(in).iterator
         if (records.hasNext) {
             records.next().iterator().asScala.toArray
         }else{
