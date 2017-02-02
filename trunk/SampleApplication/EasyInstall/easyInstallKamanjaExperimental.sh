@@ -2,6 +2,17 @@
 
 set -e
 
+function prepare_kamanja_app_tester {
+  scalaVersion=$1
+  kamanjaVersion=$2
+  # *******************************
+  # create directory copy the app tester jar into $installPath/bin/
+  # *******************************
+  cp $srcPath/Utils/KamanjaAppTester/target/scala-$scalaVersion/KamanjaAppTester* $systemlib
+  rsync -av --progress $srcPath/Utils/KamanjaAppTester/src/test/resources/kamanjaInstall/test/* $installPath/Kamanja-${kamanjaVersion}_${scalaVersion}/test --exclude '.gitignore'
+  cp $srcPath/Utils/KamanjaAppTester/src/main/resources/script/$scalaVersion/RunApplicationTests_Template.sh $installPath/Kamanja-${currentKamanjaVersion}_${scalaVersion}/template/script
+}
+
 installPath=$1
 srcPath=$2
 ivyPath=$3
@@ -546,6 +557,9 @@ echo ExtDependencyLibs_2.10-$currentKamanjaVersion.jar > $installPath/Kamanja-$v
 echo KamanjaInternalDeps_2.10-$currentKamanjaVersion.jar >> $installPath/Kamanja-$ver210/config/library_list
 echo ExtDependencyLibs2_2.10-$currentKamanjaVersion.jar >> $installPath/Kamanja-$ver210/config/library_list
 
+# Copying files for kamanja app tester compiled under scala 2.10
+prepare_kamanja_app_tester 2.10 $currentKamanjaVersion
+
 ################################ Version-2.10 Finished ################################
 
 fi # if [ "$build210" == "1" ]; then #beginning of the 2.10 build
@@ -918,6 +932,10 @@ bash $installPath/Kamanja-$ver211/bin/SetPaths.sh $KafkaRootDir
 
 chmod 0700 $installPath/Kamanja-$ver211/input/SampleApplications/bin/*.sh
 chmod 0700 $installPath/Kamanja-$ver211/ClusterInstall/*.sh
+
+# Copying files for kamanja app tester compiled under scala 2.11
+prepare_kamanja_app_tester 2.11 $currentKamanjaVersion
+
 fi # if [ "$build211" == "1" ]; then #beginning of the 2.11 build
 
 # In order to simplify MetadataAPIConfig.properties, we allow for setting up a file
