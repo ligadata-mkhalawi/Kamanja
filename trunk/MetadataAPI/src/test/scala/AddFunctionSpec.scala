@@ -87,7 +87,8 @@ class AddFunctionSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter
       //mdMan.config.classPath = ConfigDefaults.metadataClasspath
       zkServer.startup
 
-      mdMan.initMetadataCfg(new MetadataAPIProperties(H2DBStore.name, H2DBStore.connectionMode, ConfigDefaults.storageDirectory, zkConnStr = zkServer.getConnection))
+      val h2dbStore = new H2DBStore
+      mdMan.initMetadataCfg(new MetadataAPIProperties(h2dbStore.name, h2dbStore.connectionMode, ConfigDefaults.storageDirectory, zkConnStr = zkServer.getConnection))
 
       logger.info("Initialize MdMgr")
       MdMgr.GetMdMgr.truncate

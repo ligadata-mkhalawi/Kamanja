@@ -5,25 +5,25 @@ trait StoreType
   def name: String
 }
 
-object DataStore extends StoreType
+class DataStore extends StoreType
 {
   def name: String = "DataStore"
 }
 
-object HashMapStore extends StoreType {
+class HashMapStore extends StoreType {
   def name: String = "hashmap"
 }
 
-object CassandraStore extends StoreType {
+class CassandraStore extends StoreType {
   def name: String = "Cassandra"
 }
 
-object H2DBStore extends StoreType {
+class H2DBStore extends StoreType {
   def name: String = "h2db"
   var connectionMode: String = "embedded"
 }
 
-object HBaseStore extends StoreType {
+class HBaseStore extends StoreType {
   def name: String = "hbase"
 }
 

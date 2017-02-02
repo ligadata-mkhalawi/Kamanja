@@ -66,14 +66,13 @@ object KamanjaEnvironmentManager {
       throw new KamanjaEnvironmentManagerException("***ERROR*** Attempted to upload cluster configuration but failed")
     }
     logger.info("Cluster configuration successfully uploaded")
-    
+
   }
 
   def getAllAdapters: List[Adapter] = {
     val adaptersAPIResult = ConfigUtils.GetAllAdapters("JSON", Some("kamanja"))
     val adaptersResultData = mdMan.parseApiResult(adaptersAPIResult).resultData
     val adaptersListMap = (parse(adaptersResultData) \\ "Adapters").extract[List[Map[String, Any]]]
-    println(adaptersListMap)
 
     var adapterList: List[Adapter] = List()
 
@@ -140,25 +139,7 @@ object KamanjaEnvironmentManager {
       val tenantId = tenantInfo.tenantId
       if(tenantId != "System") {
         val tenantDescription = tenantInfo.description
-
-        // parse json and convert into StorageAdapter config object from KamanjaTestUtils project
-        val tenantDataStoreMap = parse(tenantInfo.primaryDataStore).extract[Map[String, String]]
-        val schemaName = tenantDataStoreMap("SchemaName").toString
-        val hostname = tenantDataStoreMap("Location").toString
-        val storageType = tenantDataStoreMap("StoreType").toString
-        val connectionMode = tenantDataStoreMap.getOrElse("connectionMode", "")
-        val portnumber = tenantDataStoreMap.getOrElse("portnumber", "")
-        val user = tenantDataStoreMap.getOrElse("user", "")
-        val password = tenantDataStoreMap.getOrElse("password", "")
-
-        var storeType: StoreType = null
-        storageType match {
-          case "h2db" =>
-            storeType = H2DBStore
-            H2DBStore.connectionMode = connectionMode
-        }
-
-        val tenantPrimaryDataStoreConfig = new StorageConfiguration(storeType, schemaName, hostname)
+        val tenantPrimaryDataStoreConfig = createStorageAdapter(tenantInfo.primaryDataStore)
 
         // parse json and convert into TenantCacheConfig object from KamanjaTestUtils project
         val tenantInfoCacheConfig = tenantInfo.cacheConfig
@@ -171,5 +152,51 @@ object KamanjaEnvironmentManager {
       }
     })
     return tenantList
+  }
+
+  def getSystemCatalog: StorageAdapter = {
+    val clusterCfgs = MdMgr.GetMdMgr.ClusterCfgs.values.toArray
+    val sysCatalogJsonStr = (parse(JsonSerializer.SerializeCfgObjectListToJson("ClusterCfgs", clusterCfgs)) \\ "CfgMap" \\ "SystemCatalog").extract[String]
+    return createStorageAdapter(sysCatalogJsonStr)
+  }
+
+  def getAllNodes: List[NodeConfiguration] = {
+    val nodesApiResultStr = ConfigUtils.GetAllNodes("JSON", Some("kamanja"))
+    val nodeList: List[NodeConfiguration] = List()
+    val nodesResultData = mdMan.parseApiResult(nodesApiResultStr).resultData
+    val adaptersListMap = (parse(nodesResultData) \\ "Nodes").extract[List[Map[String, Any]]]
+
+    println(adaptersListMap)
+
+    return null
+  }
+
+  private def createStorageAdapter(storageJsonStr: String): StorageAdapter = {
+    val storageMap = parse(storageJsonStr).extract[Map[String, String]]
+    val hostname = storageMap("Location")
+    val stType = storageMap("StoreType")
+    val schemaName = storageMap("SchemaName")
+
+    //Optional for H2DB storage
+    val connectionMode = storageMap.getOrElse("connectionMode", "")
+    val portnumber = storageMap.getOrElse("portnumber", "")
+    val user = storageMap.getOrElse("user", "")
+    val password = storageMap.getOrElse("password", "")
+
+    //TODO: Extra parameters for HBase need to be searched for
+
+    var storeType: StoreType = null
+
+    stType match {
+      case "h2db" =>
+        storeType = new H2DBStore
+        storeType.asInstanceOf[H2DBStore].connectionMode = connectionMode
+      case "hbase" =>
+        storeType = new HBaseStore
+      case "cassandra" =>
+        storeType = new CassandraStore
+    }
+
+    return new StorageConfiguration(storeType, schemaName, hostname)
   }
 }

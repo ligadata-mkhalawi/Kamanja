@@ -88,7 +88,8 @@ class ContainerAPISpec extends FunSpec with LocalTestFixtures with BeforeAndAfte
 
       zkServer.startup
 
-      mdMan.initMetadataCfg(new MetadataAPIProperties(H2DBStore.name, H2DBStore.connectionMode, ConfigDefaults.storageDirectory, zkConnStr = zkServer.getConnection))
+      val h2DBStore = new H2DBStore
+      mdMan.initMetadataCfg(new MetadataAPIProperties(h2DBStore.name, h2DBStore.connectionMode, ConfigDefaults.storageDirectory, zkConnStr = zkServer.getConnection))
 
       logger.info("Initialize MdMgr")
       MdMgr.GetMdMgr.truncate

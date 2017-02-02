@@ -22,4 +22,12 @@ class KamanjaEnvironmentManagerTests extends FlatSpec with BeforeAndAfterAll {
     println(KamanjaEnvironmentManager.getAllTenants)
   }
 
+  "getSystemCatalog" should "retrieve the system catalog that has been uploaded into cluster configuration" in {
+    println(KamanjaEnvironmentManager.getSystemCatalog)
+  }
+
+  "getAllNodes" should "retrieve a list of nodes that have been uploaded into cluster configuration" in {
+    println(KamanjaEnvironmentManager.getAllNodes)
+  }
+
 }
