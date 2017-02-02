@@ -76,8 +76,9 @@ class CsvSerDeser extends SerializeDeserialize {
     var _nullValue = ""
     var _alwaysQuoteField = false
     var _escapeChar = "\\"
-    // add by saleh 24/1/2017
-    var _csvParser  = false
+    // add by saleh 2/2/2017
+    var _csvParser = None: Option[String]
+    var _csvFormat = None: Option[CSVFormat]
 
     val _nullFlagsFieldName = "kamanja_system_null_flags"
 
@@ -309,8 +310,13 @@ class CsvSerDeser extends SerializeDeserialize {
         _lineDelimiter =  _config.getOrElse("lineDelimiter", "\n")
         _nullValue =  _config.getOrElse("nullValue", "")
         _escapeChar = _config.getOrElse("escChar", "\\")
-        //added by saleh 24/1/2017
-        _csvParser = _config.getOrElse("csvParser","false").toBoolean
+
+        //added by saleh 2/2/2017
+        _csvParser = _config.get("csvParser")
+        try {
+             if (!_csvParser.equals(None)) _csvFormat = Some(CSVFormat.valueOf(_csvParser.get))
+           } catch {case e: Exception => {Error("Wrong csvParser type , %s doesn't exist".format(_csvParser),e)}}
+
         val alwaysQuoteFieldStr = _config.getOrElse("alwaysQuoteField", "F")
         _alwaysQuoteField = alwaysQuoteFieldStr.toLowerCase.startsWith("t")
 
@@ -389,7 +395,7 @@ class CsvSerDeser extends SerializeDeserialize {
       */
     def csvApache(rawCsvContainerStr: String) : Array[String] = {
         val in = new StringReader(rawCsvContainerStr)
-        val records = CSVFormat.DEFAULT.withDelimiter(_fieldDelimiterAsChar).parse(in).iterator
+        val records = _csvFormat.withDelimiter(_fieldDelimiterAsChar).parse(in).iterator
         if (records.hasNext) {
             records.next().iterator().asScala.toArray
         }else{
@@ -414,7 +420,7 @@ class CsvSerDeser extends SerializeDeserialize {
 
         val rawCsvFields : Array[String] = if (rawCsvContainerStr != null) {
             //add by saleh 24/1/2017
-            if(_csvParser){
+            if(!_csvFormat.equals(None)){
               csvApache(rawCsvContainerStr)
             }else{
               rawCsvContainerStr.split(_fieldDelimiter, -1)
@@ -593,4 +599,3 @@ class KVSerDeser extends CsvSerDeser {
         ci
     }
 }
-
