@@ -30,4 +30,19 @@ class KamanjaEnvironmentManagerTests extends FlatSpec with BeforeAndAfterAll {
     println(KamanjaEnvironmentManager.getAllNodes)
   }
 
+  "getClusterCacheConfiguration" should "retrieve the cache configuration that has been uploaded into cluster configuration" in {
+    println(KamanjaEnvironmentManager.getClusterCacheConfiguration)
+  }
+
+  "getEnvironmentContextConfiguration" should "retrieve the environment context configuration that has been uploaded into cluster configuration" in {
+    println(KamanjaEnvironmentManager.getEnvironmentContextConfiguration)
+  }
+
+  "getPythonConfiguration" should "retrieve the python configuration that has been uploaded into cluster configuration" in {
+    println(KamanjaEnvironmentManager.getPythonConfiguration)
+  }
+
+  "getClusterId" should "retrieve the cluster id that has been uploaded into cluster configuration" in {
+    println(KamanjaEnvironmentManager.getClusterId)
+  }
 }

@@ -7,14 +7,12 @@ import org.json4s.jackson.JsonMethods._
 case class PythonConfiguration(serverBasePort: Int = com.ligadata.test.utils.TestUtils.getAvailablePort,
                                serverPortLimit: Int = 40,
                                serverHost: String = "localhost",
-                               kamanjaInstallDir: String,
-                               pythonBinDir: String) {
+                               pythonPath: String,
+                               pythonBinDir: String,
+                               pythonLogConfigPath: String,
+                               pythonLogPath: String
+                              ) {
   override def toString: String = {
-
-    val pythonPath = kamanjaInstallDir + "/python"
-    val logConfigPath = pythonPath + "/bin/pythonlog4j.cfg"
-    val pythonLogPath = pythonBinDir + "/logs/pythonserver.log"
-
     //TODO: Need to convert this, along with all other cluster configuration related toString methods to a cleaner method of generating json
     /*
     val json =
@@ -37,7 +35,7 @@ case class PythonConfiguration(serverBasePort: Int = com.ligadata.test.utils.Tes
     builder.append(s"""   "SERVER_BASE_PORT": $serverBasePort,""" + "\n")
     builder.append(s"""   "SERVER_PORT_LIMIT": $serverPortLimit,""" + "\n")
     builder.append(s"""   "SERVER_HOST": "$serverHost",""" + "\n")
-    builder.append(s"""   "PYTHON_LOG_CONFIG_PATH": "$logConfigPath",""" + "\n")
+    builder.append(s"""   "PYTHON_LOG_CONFIG_PATH": "$pythonLogConfigPath",""" + "\n")
     builder.append(s"""   "PYTHON_LOG_PATH": "$pythonLogPath",""" + "\n")
     builder.append(s"""   "PYTHON_BIN_DIR": "$pythonBinDir"""" + "\n")
     builder.append(s"}")

@@ -383,7 +383,8 @@ object EmbeddedServicesManager {
   private def generateClusterConfiguration(): Cluster = {
     val zkConfig: ZookeeperConfig = new ZookeeperConfig(zookeeperConnStr = embeddedZookeeper.getConnection)
 
-    val pythonConfig: PythonConfiguration = new PythonConfiguration(kamanjaInstallDir = kamanjaInstallDir, pythonBinDir = sys.env("PYTHON_HOME") + "/bin")
+    val pythonConfig: PythonConfiguration = new PythonConfiguration(pythonPath = kamanjaInstallDir + "/python", pythonBinDir = sys.env("PYTHON_HOME") + "/bin",
+      pythonLogConfigPath = kamanjaInstallDir + "/python/bin/pythonlog4j.cfg", pythonLogPath = kamanjaInstallDir + "/python/logs/pythonserver.log")
 
     val inputAdapter: KafkaAdapterConfig = new KafkaAdapterBuilder()
       .withAdapterSpecificConfig(new KafkaAdapterSpecificConfig(kafkaCluster.getBrokerList, "testin_1"))

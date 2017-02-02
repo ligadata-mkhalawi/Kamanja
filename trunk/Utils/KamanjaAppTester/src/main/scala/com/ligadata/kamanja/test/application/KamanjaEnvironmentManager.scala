@@ -70,6 +70,9 @@ object KamanjaEnvironmentManager {
   }
 
   def getAllAdapters: List[Adapter] = {
+    if(!isInitialized) {
+      throw new KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
+    }
     val adaptersAPIResult = ConfigUtils.GetAllAdapters("JSON", Some("kamanja"))
     val adaptersResultData = mdMan.parseApiResult(adaptersAPIResult).resultData
     val adaptersListMap = (parse(adaptersResultData) \\ "Adapters").extract[List[Map[String, Any]]]
@@ -120,6 +123,9 @@ object KamanjaEnvironmentManager {
   }
 
   def getZookeeperConfiguration: ZookeeperConfig = {
+    if(!isInitialized) {
+      throw new KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
+    }
     val clusterCfgs = MdMgr.GetMdMgr.ClusterCfgs.values.toArray
     val zookeeperInfoJsonStr = (parse(JsonSerializer.SerializeCfgObjectListToJson("ClusterCfgs", clusterCfgs)) \\ "CfgMap" \\ "ZooKeeperInfo").extract[String]
     val zookeeperInfoMap = parse(zookeeperInfoJsonStr).extract[Map[String, String]]
@@ -133,6 +139,9 @@ object KamanjaEnvironmentManager {
   }
 
   def getAllTenants: List[TenantConfiguration] = {
+    if(!isInitialized) {
+      throw new KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
+    }
     var tenantList: List[TenantConfiguration] = List()
     val tenantInfoArr = MdMgr.GetMdMgr.GetAllTenantInfos
     tenantInfoArr.foreach(tenantInfo => {
@@ -155,20 +164,93 @@ object KamanjaEnvironmentManager {
   }
 
   def getSystemCatalog: StorageAdapter = {
+    if(!isInitialized) {
+      throw new KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
+    }
     val clusterCfgs = MdMgr.GetMdMgr.ClusterCfgs.values.toArray
     val sysCatalogJsonStr = (parse(JsonSerializer.SerializeCfgObjectListToJson("ClusterCfgs", clusterCfgs)) \\ "CfgMap" \\ "SystemCatalog").extract[String]
     return createStorageAdapter(sysCatalogJsonStr)
   }
 
   def getAllNodes: List[NodeConfiguration] = {
+    if(!isInitialized) {
+      throw new KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
+    }
     val nodesApiResultStr = ConfigUtils.GetAllNodes("JSON", Some("kamanja"))
-    val nodeList: List[NodeConfiguration] = List()
+    var nodeList: List[NodeConfiguration] = List()
     val nodesResultData = mdMan.parseApiResult(nodesApiResultStr).resultData
     val adaptersListMap = (parse(nodesResultData) \\ "Nodes").extract[List[Map[String, Any]]]
 
-    println(adaptersListMap)
+    adaptersListMap.foreach(node => {
+      val nodeId = node("NodeId").toString
+      val scalaHome = node("Scala_home").toString
+      val nodePort = node("NodePort").toString.toInt
+      val jarPaths: Array[String] = node("JarPaths").asInstanceOf[List[String]].toArray
+      val nodeIP = node("NodeIpAddr").toString
+      val classpath = node("Classpath").toString
+      val roles: Array[String] = node("Roles").asInstanceOf[List[String]].toArray
+      val javaHome = node("Java_home").toString
 
-    return null
+      nodeList :+= new NodeConfiguration(nodeId, nodePort, nodeIP, jarPaths.toArray, scalaHome, javaHome, classpath)
+    })
+
+    return nodeList
+  }
+
+  def getClusterCacheConfiguration: ClusterCacheConfig = {
+    if(!isInitialized) {
+      throw new KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
+    }
+    val clusterCfgs = MdMgr.GetMdMgr.ClusterCfgs.values.toArray
+    val clusterCacheJsonStr = (parse(JsonSerializer.SerializeCfgObjectListToJson("ClusterCfgs", clusterCfgs)) \\ "CfgMap" \\ "Cache").extract[String]
+    val clusterCacheMap = parse(clusterCacheJsonStr).extract[Map[String, Any]]
+    val timeToIdleSeconds = clusterCacheMap("TimeToIdleSeconds").toString.toInt
+    val cacheSizePerNodeInMB = clusterCacheMap("CacheSizePerNodeInMB").toString.toInt
+    val evictionPolicy: String = clusterCacheMap("EvictionPolicy").toString
+    val replicateFactor = clusterCacheMap("ReplicateFactor").toString.toInt
+    val cacheStartPort = clusterCacheMap("CacheStartPort").toString.toInt
+
+    return new ClusterCacheConfig(cacheStartPort, cacheSizePerNodeInMB, replicateFactor, timeToIdleSeconds, evictionPolicy)
+  }
+
+  def getEnvironmentContextConfiguration: EnvironmentContextConfig = {
+    if(!isInitialized) {
+      throw new KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
+    }
+    val clusterCfgs = MdMgr.GetMdMgr.ClusterCfgs.values.toArray
+    val envContextJsonStr = (parse(JsonSerializer.SerializeCfgObjectListToJson("ClusterCfgs", clusterCfgs)) \\ "CfgMap" \\ "EnvironmentContext").extract[String]
+    val envContextMap = parse(envContextJsonStr).extract[Map[String, Any]]
+    val classname = envContextMap("classname").toString
+    val jarname = envContextMap("jarname").toString
+    val dependencyJars = envContextMap("dependencyjars").asInstanceOf[List[String]]
+    return new EnvironmentContextConfig(classname, jarname, dependencyJars)
+  }
+
+  def getPythonConfiguration: PythonConfiguration = {
+    if(!isInitialized) {
+      throw new KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
+    }
+    val clusterCfgs = MdMgr.GetMdMgr.ClusterCfgs.values.toArray
+    val pythonCfgJsonStr = (parse(JsonSerializer.SerializeCfgObjectListToJson("ClusterCfgs", clusterCfgs)) \\ "CfgMap" \\ "PYTHON_CONFIG").extract[String]
+    val pythonCfgMap = parse(pythonCfgJsonStr).extract[Map[String,String]]
+    val pythonPath = pythonCfgMap("PYTHON_PATH")
+    val serverHost = pythonCfgMap("SERVER_HOST")
+    val pythonBinDir = pythonCfgMap("PYTHON_BIN_DIR")
+    val serverBasePort = pythonCfgMap("SERVER_BASE_PORT").toInt
+    val pythonLogConfigPath = pythonCfgMap("PYTHON_LOG_CONFIG_PATH")
+    val serverPortLimit = pythonCfgMap("SERVER_PORT_LIMIT").toInt
+    val pythonLogPath = pythonCfgMap("PYTHON_LOG_PATH")
+
+    return new PythonConfiguration(serverBasePort, serverPortLimit, serverHost, pythonPath, pythonBinDir, pythonLogConfigPath, pythonLogPath)
+  }
+
+  def getClusterId: String = {
+    if(!isInitialized) {
+      throw new KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
+    }
+    val clusters = MdMgr.GetMdMgr.Clusters.values.toArray
+    val clusterId = (parse(JsonSerializer.SerializeCfgObjectListToJson("Clusters", clusters)) \\ "ClusterId").extract[String]
+    return clusterId
   }
 
   private def createStorageAdapter(storageJsonStr: String): StorageAdapter = {
