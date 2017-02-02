@@ -2,6 +2,17 @@
 
 set -e
 
+function prepare_kamanja_app_tester {
+  scalaVersion=$1
+  kamanjaVersion=$2
+  # *******************************
+  # create directory copy the app tester jar into $installPath/bin/
+  # *******************************
+  cp $srcPath/Utils/KamanjaAppTester/target/scala-$scalaVersion/KamanjaAppTester* $systemlib
+  rsync -av --progress $srcPath/Utils/KamanjaAppTester/src/test/resources/kamanjaInstall/test/* $installPath/Kamanja-${kamanjaVersion}_${scalaVersion}/test --exclude '.gitignore'
+  cp $srcPath/Utils/KamanjaAppTester/src/main/resources/script/$scalaVersion/RunApplicationTests_Template.sh $installPath/Kamanja-${currentKamanjaVersion}_${scalaVersion}/template/script
+}
+
 installPath=$1
 srcPath=$2
 ivyPath=$3
@@ -204,7 +215,7 @@ if [ "$cleanBuild" == "yes" ]; then
    sbt clean
 fi
 
-sbt '++ 2.10.4 package' '++ 2.10.4 ExtDependencyLibs/assembly' '++ 2.10.4 ExtDependencyLibs2/assembly' '++ 2.10.4 KamanjaInternalDeps/assembly' '++ 2.10.4 ClusterInstallerDriver/assembly' '++ 2.10.4 GetComponent/assembly' '++ 2.10.4 InstallDriver/assembly'
+sbt '++ 2.10.4 package' '++ 2.10.4 ExtDependencyLibs/assembly' '++ 2.10.4 ExtDependencyLibs2/assembly' '++ 2.10.4 KamanjaInternalDeps/assembly' '++ 2.10.4 ClusterInstallerDriver/assembly' '++ 2.10.4 GetComponent/assembly' '++ 2.10.4 InstallDriver/assembly' '++ 2.10.4 KamanjaAppTester/assembly'
 #   '++ 2.10.4 NodeInfoExtract/assembly' '++ 2.10.4 MigrateManager/assembly'
 
 #sbt clean '++ 2.10.4 package' '++ 2.10.4 KamanjaManager/assembly' '++ 2.10.4 MetadataAPI/assembly' '++ 2.10.4 KVInit/assembly' '++ 2.10.4 SimpleKafkaProducer/assembly'
@@ -546,6 +557,9 @@ echo ExtDependencyLibs_2.10-$currentKamanjaVersion.jar > $installPath/Kamanja-$v
 echo KamanjaInternalDeps_2.10-$currentKamanjaVersion.jar >> $installPath/Kamanja-$ver210/config/library_list
 echo ExtDependencyLibs2_2.10-$currentKamanjaVersion.jar >> $installPath/Kamanja-$ver210/config/library_list
 
+# Copying files for kamanja app tester compiled under scala 2.10
+prepare_kamanja_app_tester 2.10 $currentKamanjaVersion
+
 ################################ Version-2.10 Finished ################################
 
 fi # if [ "$build210" == "1" ]; then #beginning of the 2.10 build
@@ -600,7 +614,7 @@ fi
 
 #Now do full build of 2.11
 
-sbt '++ 2.11.7 package' '++ 2.11.7 ExtDependencyLibs/assembly' '++ 2.11.7 ExtDependencyLibs2/assembly' '++ 2.11.7 KamanjaInternalDeps/assembly' '++ 2.11.7 ClusterInstallerDriver/assembly' '++ 2.11.7 GetComponent/assembly' '++ 2.11.7 InstallDriver/assembly'
+sbt '++ 2.11.7 package' '++ 2.11.7 ExtDependencyLibs/assembly' '++ 2.11.7 ExtDependencyLibs2/assembly' '++ 2.11.7 KamanjaInternalDeps/assembly' '++ 2.11.7 ClusterInstallerDriver/assembly' '++ 2.11.7 GetComponent/assembly' '++ 2.11.7 InstallDriver/assembly' '++ 2.11.7 KamanjaAppTester/assembly'
 #'++ 2.11.7 NodeInfoExtract/assembly' '++ 2.11.7 MigrateManager/assembly'
 
 #sbt clean '++ 2.11.7 package' '++ 2.11.7 KamanjaManager/assembly' '++ 2.11.7 MetadataAPI/assembly' '++ 2.11.7 KVInit/assembly' '++ 2.11.7 SimpleKafkaProducer/assembly'
@@ -918,6 +932,10 @@ bash $installPath/Kamanja-$ver211/bin/SetPaths.sh $KafkaRootDir
 
 chmod 0700 $installPath/Kamanja-$ver211/input/SampleApplications/bin/*.sh
 chmod 0700 $installPath/Kamanja-$ver211/ClusterInstall/*.sh
+
+# Copying files for kamanja app tester compiled under scala 2.11
+prepare_kamanja_app_tester 2.11 $currentKamanjaVersion
+
 fi # if [ "$build211" == "1" ]; then #beginning of the 2.11 build
 
 # In order to simplify MetadataAPIConfig.properties, we allow for setting up a file
