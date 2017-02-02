@@ -81,7 +81,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   val default_linger_ms = "100" // 100ms
   val default_retries = "1"
   val default_block_on_buffer_full = "true" // true or false
-  val default_buffer_memory = "16777216"  // 16MB
+  val default_buffer_memory = "16777216" // 16MB
   val default_client_id = qc.Name + "_" + hashCode.toString
   val default_request_timeout_ms = "30000"
   val default_timeout_ms = "30000"
@@ -227,10 +227,14 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   //workaround for Kafka 0.9 bug with class loader
   var tempContext = Thread.currentThread().getContextClassLoader
   Thread.currentThread().setContextClassLoader(null);
-  val producer = new org.apache.kafka.clients.producer.KafkaProducer[Array[Byte], Array[Byte]](props)
+  val oldProducer = scala.collection.mutable.Map[Long, org.apache.kafka.clients.producer.KafkaProducer[Array[Byte], Array[Byte]]]()
+  var oldProdsLastClosedTime = System.currentTimeMillis
+  var producer = new org.apache.kafka.clients.producer.KafkaProducer[Array[Byte], Array[Byte]](props)
   Thread.currentThread().setContextClassLoader(tempContext);
 
   var topicPartitionsCount = producer.partitionsFor(qc.topic).size()
+  if (topicPartitionsCount <= 0)
+    topicPartitionsCount = 1
 
   var partitionsGetTm = System.currentTimeMillis
   val refreshPartitionTime = 60 * 1000 // 60 secs
@@ -356,6 +360,61 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   }
 */
 
+  private def CloseOldProducers(minWaitTimeInMins: Int): Unit = {
+    val diffTm = (minWaitTimeInMins * 60000L)
+    val tm = System.currentTimeMillis
+    if ((tm - oldProdsLastClosedTime) < diffTm) return
+
+    this.synchronized {
+      if ((tm - oldProdsLastClosedTime) < diffTm) return
+      oldProdsLastClosedTime = tm
+    }
+
+    val oldProds = getAllOldProducer(false)
+    val closedOldProds = oldProds.filter(kv => {
+      // Close only producers which are added at least N mins ago
+      val canClose = ((tm - kv._1) > (minWaitTimeInMins * 60000L))
+      var closed = false
+      if (canClose) {
+        try {
+          if (kv._2 != null)
+            kv._2.close
+          closed = true
+        } catch {
+          case e: Exception => {}
+          case e: Throwable => {}
+        }
+      }
+      closed
+    })
+    if (closedOldProds.size > 0)
+      removeOldProducers(closedOldProds.map(kv => kv._1).toArray)
+  }
+
+  private def ReplaceProducer(): Unit = {
+    var added = false
+    try {
+      LOG.warn(qc.Name + " Replacing new producer")
+      val newProd = new org.apache.kafka.clients.producer.KafkaProducer[Array[Byte], Array[Byte]](props)
+      var oldProd = producer
+      producer = newProd
+      added = true
+      addOldProducer(oldProd)
+      try {
+        var newTopicPartitionsCount = producer.partitionsFor(qc.topic).size()
+        if (newTopicPartitionsCount <= 0)
+          newTopicPartitionsCount = 1
+        topicPartitionsCount = newTopicPartitionsCount
+      } catch {
+        case e: Exception => {}
+        case e: Throwable => {}
+      }
+    } catch {
+      case e: Exception => {}
+      case e: Throwable => {}
+    }
+  }
+
   private def addMsgsToMap(partId: Int, keyMessages: ArrayBuffer[MsgDataRecievedCnt]): Unit = {
     var msgMap = partitionsMap.get(partId)
     if (msgMap == null) {
@@ -455,22 +514,22 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   }
 
   private def getPartition(key: Array[Byte], numPartitions: Int): Int = {
-    if (numPartitions == 0) return 0
+    if (numPartitions <= 0) return 0
     if (key != null) {
       try {
-        return (scala.math.abs(Arrays.hashCode(key)) % numPartitions)
+        return scala.math.abs(scala.math.abs(Arrays.hashCode(key)) % numPartitions)
       } catch {
         case e: Exception => {
           externalizeExceptionEvent(e)
-          throw e
+          return scala.math.abs(randomPartitionCntr.nextInt(numPartitions))
         }
         case e: Throwable => {
           externalizeExceptionEvent(e)
-          throw e
+          return scala.math.abs(randomPartitionCntr.nextInt(numPartitions))
         }
       }
     }
-    return randomPartitionCntr.nextInt(numPartitions)
+    return scala.math.abs(randomPartitionCntr.nextInt(numPartitions))
   }
 
 
@@ -523,14 +582,17 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
     send(serializedContainerData, partitionKeys.toArray)
   }
 
-
   override def send(messages: Array[Array[Byte]], partitionKeys: Array[Array[Byte]]): Unit = {
     if (!isHeartBeating) runHeartBeat
 
     // Refreshing Partitions for every refreshPartitionTime.
     // BUGBUG:: This may execute multiple times from multiple threads. For now it does not hard too much.
     if ((System.currentTimeMillis - partitionsGetTm) > refreshPartitionTime) {
-      topicPartitionsCount = producer.partitionsFor(qc.topic).size()
+      // val prevPartsCount = topicPartitionsCount
+      var newTopicPartitionsCount = producer.partitionsFor(qc.topic).size()
+      if (newTopicPartitionsCount <= 0)
+        newTopicPartitionsCount = 1
+      topicPartitionsCount = newTopicPartitionsCount // Can we restored prevPartsCount if values are bad?
       partitionsGetTm = System.currentTimeMillis
     }
 
@@ -538,7 +600,16 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       var partitionsMsgMap = scala.collection.mutable.Map[Int, ArrayBuffer[MsgDataRecievedCnt]]();
 
       for (i <- 0 until messages.size) {
-        val partId = getPartition(partitionKeys(i), topicPartitionsCount)
+        val partitionId = getPartition(partitionKeys(i), topicPartitionsCount)
+        val partId =
+          if (partitionId < 0) {
+            val partKey = if (partitionKeys(i) == null) "" else new String(partitionKeys(i))
+            LOG.error("%s => Got PartitionId:%d for key:%s".format(qc.Name, partitionId, partKey))
+            0
+          }
+          else {
+            partitionId
+          }
         var ab = partitionsMsgMap.getOrElse(partId, null)
         if (ab == null) {
           ab = new ArrayBuffer[MsgDataRecievedCnt](256)
@@ -553,8 +624,10 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
 
       var osRetryCount = 0
       var osWaitTm = 100
+      val waitStartTime = System.currentTimeMillis
       while (outstandingMsgs > max_outstanding_messages) {
         LOG.warn(qc.Name + " KAFKA PRODUCER: %d outstanding messages in queue to write. Waiting for them to flush before we write new messages. Retrying after %dms. Retry count:%d".format(outstandingMsgs, osWaitTm, osRetryCount))
+        osRetryCount += 1
         try {
           Thread.sleep(osWaitTm)
         } catch {
@@ -568,6 +641,16 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
           }
         }
         outstandingMsgs = outstandingMsgCount
+        if ((osRetryCount % 100) == 0 && ((System.currentTimeMillis - waitStartTime) > 1800000)) {
+          // If it waits more than an 30mins, we will try to reconnect
+          ReplaceProducer()
+          CloseOldProducers(60)
+        }
+      }
+
+      if ((waitStartTime - oldProdsLastClosedTime) >= 1800000L) {
+        // Waited at least more than 30mins. Worth to try to close, if there are any
+        CloseOldProducers(60)
       }
 
       partitionsMsgMap.foreach(partIdAndRecs => {
@@ -611,6 +694,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       } catch {
         case e: Exception => {
           externalizeExceptionEvent(e)
+          retryCount += 1
           LOG.error(qc.Name + " KAFKA PRODUCER: Error sending to kafka, Retrying after %dms. Retry count:%d".format(waitTm, retryCount), e)
           try {
             Thread.sleep(waitTm)
@@ -628,6 +712,16 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
             waitTm = waitTm * 2
             if (waitTm > 60000)
               waitTm = 60000
+          }
+          if (retryCount >= 1000)
+            retryCount = 0
+          if ((e.isInstanceOf[FatalAdapterException] && e.getCause != null && e.getCause.isInstanceOf[java.lang.IllegalStateException] && e.getCause.getMessage.startsWith("Memory records is not writable")) ||
+            (e.isInstanceOf[java.lang.IllegalStateException] && e.getMessage.startsWith("Memory records is not writable"))) {
+            // After sleep immediately reopening connection
+            ReplaceProducer()
+          } else {
+            if ((retryCount % 10) == 0)
+              ReplaceProducer()
           }
         }
       }
@@ -687,7 +781,7 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
         // cntrAdapter.addCntr(key, 1)
       })
 
-      if (! enable_adapter_retries) msgCount.addAndGet(keyMessages.size);
+      if (!enable_adapter_retries) msgCount.addAndGet(keyMessages.size);
 
       keyMessages.clear()
     } catch {
@@ -717,8 +811,22 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
     return KafkaConstants.KAFKA_SEND_SUCCESS
   }
 
-  override def Shutdown(): Unit = {
+  def getAllOldProducer(clean: Boolean): Map[Long, org.apache.kafka.clients.producer.KafkaProducer[Array[Byte], Array[Byte]]] = synchronized {
+    val prods = oldProducer.toMap
+    if (clean)
+      oldProducer.clear()
+    prods
+  }
 
+  def addOldProducer(oldProd: org.apache.kafka.clients.producer.KafkaProducer[Array[Byte], Array[Byte]]): Unit = synchronized {
+    oldProducer(System.currentTimeMillis) = oldProd
+  }
+
+  def removeOldProducers(oldProdsKeys: Array[Long]): Unit = synchronized {
+    oldProducer --= oldProdsKeys
+  }
+
+  override def Shutdown(): Unit = {
     LOG.info(qc.Name + " Shutdown detected")
 
     // Shutdown HB
@@ -755,10 +863,26 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
       }
     }
 
-    if (producer != null)
-      producer.close
-  }
+    val oldProds = getAllOldProducer(true)
+    oldProds.foreach(prod => {
+      try {
+        if (prod != null && prod._2 != null)
+          prod._2.close
+      } catch {
+        case e: Exception => {}
+        case e: Throwable => {}
+      }
+    })
 
+    try {
+      if (producer != null)
+        producer.close
+    } catch {
+      case e: Exception => {}
+      case e: Throwable => {}
+    }
+    producer = null
+  }
 
   // Accumulate the metrics.. simple for now
   private def updateMetricValue(key: String, value: Any): Unit = {

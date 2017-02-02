@@ -67,7 +67,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   private var lastSeen: String = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
   metrics(com.ligadata.AdaptersConfiguration.KamanjaKafkaAdapterConstants.PARTITION_COUNT_KEYS) = partitonCounts
   metrics(com.ligadata.AdaptersConfiguration.KamanjaKafkaAdapterConstants.EXCEPTION_SUMMARY) = partitionExceptions
-  metrics(com.ligadata.AdaptersConfiguration.KamanjaKafkaAdapterConstants.PARTITION_DEPTH_KEYS) = partitonDepths
+  // metrics(com.ligadata.AdaptersConfiguration.KamanjaKafkaAdapterConstants.PARTITION_DEPTH_KEYS) = partitonDepths  // BUGBUG:: For now commented to get getAllPartitionEndValues
   var localReadOffsets: collection.mutable.Map[Int,Long] = collection.mutable.Map[Int,Long]()
 
   var props = new Properties()
@@ -760,7 +760,7 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
     var depths:  Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)] = null
 
     try {
-      depths = getAllPartitionEndValues
+      depths = Array[(PartitionUniqueRecordKey, PartitionUniqueRecordValue)]() // getAllPartitionEndValues // BUGBUG:: For now commented to get getAllPartitionEndValues
     } catch {
       case e: KamanjaException => {
         externalizeExceptionEvent(e)
