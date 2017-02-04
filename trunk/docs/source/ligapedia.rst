@@ -80,6 +80,7 @@ Ligapedia
    ligapedia/s-z/topic
    ligapedia/s-z/types
    ligapedia/s-z/unsupervised-learning
+   ligapedia/s-z/velocity-metrics
    ligapedia/s-z/xml
    ligapedia/s-z/zookeeper
 

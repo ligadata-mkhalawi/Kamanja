@@ -92,6 +92,12 @@ File structure
         ],
         ... {some config}
       }
+    ],
+        "VelocityStatsInfo": {
+			"RotationTimeInSecs": 120,
+			"EmitTimeInSecs": 30
+		}
+      }
     ]
   }
 
@@ -196,6 +202,25 @@ giving the following error message:
   - **ProcessingEngine** -
 
 - **Classpath** - default class path used by this node.
+
+.. _velmetr-clustconfig:
+
+Velocity Metrics parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To enable the :ref:`Velocity Metrics<velocity-metrics-term>` feature,
+you must add the **VelocityStatsInfo** attribute with
+these parameters to your *ClusterConfig.json* file:
+
+- **RotationTimeInSecs** - Resets the accumulated values
+- **EmitTimeInSecs** - Emit the accumulated metrics 
+
+See:
+
+- The :ref:`kamanjavelocitymetrics-msg-ref` page
+  for an example *ClusterConfig.json* file that implements Velocity Matrics.
+- :ref:`velocity-metrics-term` for a full list of the steps
+  required to implement the Velocity Matrics feature.
 
 Usage
 -----

@@ -19,6 +19,9 @@ These include:
   to implement event-level tracking
   for any destination specified in the
   :ref:`ClusterConfig.json<clusterconfig-config-ref>` file.
+- Implement :ref:`velocity-metrics-term` to collect statistics
+  that can be used to understand the execution performance
+  of message processing in your application.
 - Kamanja does not currently provide tools
   for analyzing the execution speed of a model or an application,
   nor for identifying I/O bottlenecks in the application execution.

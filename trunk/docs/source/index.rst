@@ -22,6 +22,8 @@ Reference Pages
    config-ref
    command-ref
 
+   message-ref
+
 API Documentation
 -----------------
 

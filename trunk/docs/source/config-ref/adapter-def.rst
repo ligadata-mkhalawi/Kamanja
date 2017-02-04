@@ -479,6 +479,70 @@ has the following attributes:
 - **Kerberos** – provides security credentials for HDFS.
   When specified, Principal and Keytab are required.
 
+.. _velmetr-adapter-ref:
+
+Implementing Velocity Metrics in an adapter
+-------------------------------------------
+
+To implement the :ref:`Velocity Metrics<velocity-metrics-term>` feature,
+you must add and populate the following attributes in each adapter
+that is used in your application:
+
+::
+
+  		"VelocityMetrics": [
+            {
+              "MetricsByFileName": {
+                "TimeIntervalInSecs": 30,
+                "MetricsTime": {
+                  "MetricsTimeType": "LocalTime"
+                }
+              }
+            },
+            {
+              "MetricsByMsgType": {
+                "ValidMsgTypes": [
+                  "com.ligadata.kamanja.samples.messages.lowbalancealertoutputmsg"
+                ],
+                "TimeIntervalInSecs": 30,
+                "MetricsTime": {
+                   "MetricsTimeType": "LocalTime"
+                }
+              }
+            },
+            {
+            "MetricsByMsgKeys": {
+                "ValidMsgTypes":[
+                  "com.ligadata.kamanja.samples.messages.lowbalancealertoutputmsg"
+                ],
+                "Keys": [
+                    "custid"
+                ],
+                "TimeIntervalInSecs":30
+              }
+            }
+          ]
+
+The meaning of these parameters is:
+
+- **MetricsByFileName** - Metrics Keys for the File Consumer
+  and SmartFileConsumer; accumulates the metrics based on the filename
+- **ValidMsgTypes** - Accumulate the metrics for these messages
+- **Key** -: Accumulate the messages for these key values in the above messages
+- **MetricsTimeType** - The metrics time type, either LocalTime or Field value,
+  if its field value provides the fields name and format type
+- **MetricsByMsgType** - The metrics are accumulated based on the message type
+- **MetricsByMsgKeys** - The metrics are accumulated
+  as per the messages and its key values	
+
+
+See:
+
+- :ref:`velocity-metrics-term` for a list of steps
+  required to implement Velocity Metrics
+- :ref:`kamanjavelocitymetrics-msg-ref` has examples
+  of files modified to support Velocity Metrics.
+	  
 
 Usage
 -----
