@@ -8,6 +8,7 @@ import com.ligadata.MetadataAPI.test._
 import com.ligadata.tools.kvinit.KVInit
 import com.ligadata.tools.test._
 import com.ligadata.kamanja.test.application.logging.KamanjaAppLogger
+import scala.util.control.Breaks._
 
 case class TestExecutorException(message: String, cause: Throwable = null) extends Exception(message, cause)
 
@@ -128,137 +129,144 @@ object TestExecutor {
       val installDir: String = options('kamanjadir).asInstanceOf[String]
       val metadataConfigFile: String = options.getOrElse('metadataconfig, null).asInstanceOf[String]
       val clusterConfigFile: String = options.getOrElse('clusterconfig, null).asInstanceOf[String]
+      val appName: String = options.getOrElse('appname, null).asInstanceOf[String]
       logger = KamanjaAppLogger.createKamanjaAppLogger(installDir)
       val appManager = new KamanjaApplicationManager(installDir + "/test")
 
       appManager.kamanjaApplications.foreach(app => {
-        logger.info(s"Beginning test for Kamanja Application '${app.name}'")
-        if(clusterConfigFile == null) {
-          logger.info(s"Starting Embedded Services...")
-          EmbeddedServicesManager.init(installDir, metadataConfigFile, clusterConfigFile)
-          if (!EmbeddedServicesManager.startServices) {
-            logger.error(s"***ERROR*** Failed to start embedded services")
-            EmbeddedServicesManager.stopServices
-            TestUtils.deleteFile(EmbeddedServicesManager.storageDir)
-            throw new Exception(s"***ERROR*** Failed to start embedded services")
-          }
-        }
-        else {
-          //EmbeddedServicesManager.init(installDir, metadataConfigFile, clusterConfigFile)
-          KamanjaEnvironmentManager.init(installDir, metadataConfigFile, clusterConfigFile)
-          return
-        }
-
-        logger.info(s"Adding metadata...")
-        if (!addApplicationMetadata(app)) {
-          logger.error(s"***ERROR*** Failed to add metadata for application '${app.name}'")
-          throw new Exception(s"***ERROR*** Failed to add metadata for application '${app.name}'")
-        }
-        logger.info(s"All metadata successfully added")
-        var testResult = true
-
-        val consumer = new TestKafkaConsumer(EmbeddedServicesManager.getOutputKafkaAdapterConfig)
-        val consumerThread = new Thread(consumer)
-
-        val errorConsumer = new TestKafkaConsumer(EmbeddedServicesManager.getErrorKafkaAdapterConfig)
-        val errorConsumerThread = new Thread(errorConsumer)
-
-        val eventConsumer = new TestKafkaConsumer(EmbeddedServicesManager.getEventKafkaAdapterConfig)
-        val eventConsumerThread = new Thread(eventConsumer)
-
-        consumerThread.start()
-        errorConsumerThread.start()
-        eventConsumerThread.start()
-
-        logger.info(s"Processing data sets...")
-        app.dataSets.foreach(set => {
-          val resultsManager = new ResultsManager(EmbeddedServicesManager.getCluster)
-
-          //TODO: For some reason, if we don't sleep, the consumer doesn't fully start until after the messages are pushed and the consumer won't pick up the messages that are already in kafka
-          Thread sleep 1000
-
-          val producer = new TestKafkaProducer
-          logger.info(s"Pushing data from file ${set.inputDataFile} in format ${set.inputDataFormat}")
-          producer.inputMessages(EmbeddedServicesManager.getInputKafkaAdapterConfig, set.inputDataFile, set.inputDataFormat, set.partitionKey.getOrElse("1"))
-
-          //Reading in the expected results from the given data set into a List[String]. This will be used to count the number of results to expect in kafka as well.
-          val expectedResults = resultsManager.parseExpectedResults(set)
-
-          logger.info("Waiting for output results...")
-          val results = Globals.waitForOutputResults(EmbeddedServicesManager.getOutputKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
-          if (results == null) {
-            testResult = false
-            logger.error(s"***ERROR*** Failed to retrieve results. Checking error queue...")
-            val errors = Globals.waitForOutputResults(EmbeddedServicesManager.getErrorKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
-            if (errors != null) {
-              errors.foreach(error => {
-                logger.info(s"Error Message: " + error)
-              })
+	breakable {
+	  if( appName != null && ! appName.equalsIgnoreCase(app.name)){
+            logger.info(s"Ignore Kamanja Application '${app.name}'")
+	    break;
+	  }
+          logger.info(s"Beginning test for Kamanja Application '${app.name}'")
+          if(clusterConfigFile == null) {
+            logger.info(s"Starting Embedded Services...")
+            EmbeddedServicesManager.init(installDir, metadataConfigFile, clusterConfigFile)
+            if (!EmbeddedServicesManager.startServices) {
+              logger.error(s"***ERROR*** Failed to start embedded services")
+              EmbeddedServicesManager.stopServices
+              TestUtils.deleteFile(EmbeddedServicesManager.storageDir)
+              throw new Exception(s"***ERROR*** Failed to start embedded services")
             }
-            else {
-              logger.warn(s"***WARN*** Failed to discover messages in error queue")
-              logger.warn(s"Checking message event queue")
-
-              val events = Globals.waitForOutputResults(EmbeddedServicesManager.getEventKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
-              if (events != null) {
-                events.foreach(event => {
-                  logger.info(s"Event Message: $event")
-                })
-              }
-              else {
-                logger.error(s"***ERROR*** No event messages found. Kamanja did not process any input messages")
-              }
-            }
-          }
-          else if (results.length > expectedResults.length) {
-            logger.error(s"***ERROR*** Found more output results than exist in expected results file ${set.expectedResultsFile}")
-            logger.error(s"Results Found: ")
-            results.foreach(result => {
-              logger.error(s"Result: $result")
-            })
-            testResult = false
           }
           else {
-            val matchResults = resultsManager.compareResults(set, results)
-            var matchFailureCount = 0
-            // If results don't match, display an error and increment the matchFailure count
-            matchResults.foreach(matchResult => {
-              if (!matchResult.matched) {
-                logger.error(s"***ERROR*** Actual result and expected result do not match")
-                logger.error(s"Expected Result: ${matchResult.expectedResult}")
-                logger.error(s"Actual Result:   ${matchResult.actualResult}")
-                logger.error(s"Message Number:  ${matchResult.messageNumber}")
-                matchFailureCount += 1
-              }
-            })
+            //EmbeddedServicesManager.init(installDir, metadataConfigFile, clusterConfigFile)
+            KamanjaEnvironmentManager.init(installDir, metadataConfigFile, clusterConfigFile)
+            return
+          }
 
-            if (matchFailureCount > 0) {
+          logger.info(s"Adding metadata...")
+          if (!addApplicationMetadata(app)) {
+            logger.error(s"***ERROR*** Failed to add metadata for application '${app.name}'")
+            throw new Exception(s"***ERROR*** Failed to add metadata for application '${app.name}'")
+          }
+          logger.info(s"All metadata successfully added")
+          var testResult = true
+
+          val consumer = new TestKafkaConsumer(EmbeddedServicesManager.getOutputKafkaAdapterConfig)
+          val consumerThread = new Thread(consumer)
+
+          val errorConsumer = new TestKafkaConsumer(EmbeddedServicesManager.getErrorKafkaAdapterConfig)
+          val errorConsumerThread = new Thread(errorConsumer)
+
+          val eventConsumer = new TestKafkaConsumer(EmbeddedServicesManager.getEventKafkaAdapterConfig)
+          val eventConsumerThread = new Thread(eventConsumer)
+
+          consumerThread.start()
+          errorConsumerThread.start()
+          eventConsumerThread.start()
+
+          logger.info(s"Processing data sets...")
+          app.dataSets.foreach(set => {
+            val resultsManager = new ResultsManager(EmbeddedServicesManager.getCluster)
+
+            //TODO: For some reason, if we don't sleep, the consumer doesn't fully start until after the messages are pushed and the consumer won't pick up the messages that are already in kafka
+            Thread sleep 1000
+
+            val producer = new TestKafkaProducer
+            logger.info(s"Pushing data from file ${set.inputDataFile} in format ${set.inputDataFormat}")
+            producer.inputMessages(EmbeddedServicesManager.getInputKafkaAdapterConfig, set.inputDataFile, set.inputDataFormat, set.partitionKey.getOrElse("1"))
+
+            //Reading in the expected results from the given data set into a List[String]. This will be used to count the number of results to expect in kafka as well.
+            val expectedResults = resultsManager.parseExpectedResults(set)
+
+            logger.info("Waiting for output results...")
+            val results = Globals.waitForOutputResults(EmbeddedServicesManager.getOutputKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
+            if (results == null) {
               testResult = false
-              logger.error(s"***ERROR*** Data Set actual results differ from expected results. Data Set failed.")
-              logger.error(s"Expected Results File:   ${set.expectedResultsFile}")
-              logger.error(s"Expected Results Format: ${set.expectedResultsFormat}")
-              logger.error(s"Input Data File:         ${set.inputDataFile}")
-              logger.error(s"Input Data Format:       ${set.inputDataFormat}")
-              logger.error(s"Partition Key:           ${set.partitionKey.getOrElse("None")}")
+              logger.error(s"***ERROR*** Failed to retrieve results. Checking error queue...")
+              val errors = Globals.waitForOutputResults(EmbeddedServicesManager.getErrorKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
+              if (errors != null) {
+		errors.foreach(error => {
+                  logger.info(s"Error Message: " + error)
+		})
+              }
+              else {
+		logger.warn(s"***WARN*** Failed to discover messages in error queue")
+		logger.warn(s"Checking message event queue")
+
+		val events = Globals.waitForOutputResults(EmbeddedServicesManager.getEventKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
+		if (events != null) {
+                  events.foreach(event => {
+                    logger.info(s"Event Message: $event")
+                  })
+		}
+		else {
+                  logger.error(s"***ERROR*** No event messages found. Kamanja did not process any input messages")
+		}
+              }
+            }
+            else if (results.length > expectedResults.length) {
+              logger.error(s"***ERROR*** Found more output results than exist in expected results file ${set.expectedResultsFile}")
+              logger.error(s"Results Found: ")
+              results.foreach(result => {
+		logger.error(s"Result: $result")
+              })
+              testResult = false
             }
             else {
-              logger.info(s"Actual results match expected results")
-            }
-          }
-        })
+              val matchResults = resultsManager.compareResults(set, results)
+              var matchFailureCount = 0
+              // If results don't match, display an error and increment the matchFailure count
+              matchResults.foreach(matchResult => {
+		if (!matchResult.matched) {
+                  logger.error(s"***ERROR*** Actual result and expected result do not match")
+                  logger.error(s"Expected Result: ${matchResult.expectedResult}")
+                  logger.error(s"Actual Result:   ${matchResult.actualResult}")
+                  logger.error(s"Message Number:  ${matchResult.messageNumber}")
+                  matchFailureCount += 1
+		}
+              })
 
-        if (!testResult)
-          logger.error(s"***ERROR*** Application '${app.name}' testing failed")
-        else
-          logger.info(s"Application '${app.name}' testing passed")
+              if (matchFailureCount > 0) {
+		testResult = false
+		logger.error(s"***ERROR*** Data Set actual results differ from expected results. Data Set failed.")
+		logger.error(s"Expected Results File:   ${set.expectedResultsFile}")
+		logger.error(s"Expected Results Format: ${set.expectedResultsFormat}")
+		logger.error(s"Input Data File:         ${set.inputDataFile}")
+		logger.error(s"Input Data Format:       ${set.inputDataFormat}")
+		logger.error(s"Partition Key:           ${set.partitionKey.getOrElse("None")}")
+              }
+              else {
+		logger.info(s"Actual results match expected results")
+              }
+	    }
+          })
 
-        consumer.shutdown
-        eventConsumer.shutdown
-        errorConsumer.shutdown
+          if (!testResult)
+            logger.error(s"***ERROR*** Application '${app.name}' testing failed")
+          else
+            logger.info(s"Application '${app.name}' testing passed")
 
-        EmbeddedServicesManager.stopServices
-        TestUtils.deleteFile(EmbeddedServicesManager.storageDir)
-        logger.close
+          consumer.shutdown
+          eventConsumer.shutdown
+          errorConsumer.shutdown
+
+          EmbeddedServicesManager.stopServices
+          TestUtils.deleteFile(EmbeddedServicesManager.storageDir)
+          logger.close
+	}
       })
     }
   }
@@ -273,6 +281,8 @@ object TestExecutor {
         optionMap(map ++ Map('metadataconfig -> value), tail)
       case "--cluster-config" :: value :: tail =>
         optionMap(map ++ Map('clusterconfig -> value), tail)
+      case "--app-name" :: value :: tail =>
+        optionMap(map ++ Map('appname -> value), tail)
       case "--help" :: tail =>
         optionMap(map ++ Map('help -> true), tail)
       case opt => {
