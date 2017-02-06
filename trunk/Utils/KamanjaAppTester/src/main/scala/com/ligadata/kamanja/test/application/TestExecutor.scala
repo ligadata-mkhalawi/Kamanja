@@ -5,6 +5,7 @@ import com.ligadata.kamanja.test.application.metadata._
 import com.ligadata.test.embedded.kafka._
 import com.ligadata.test.utils.{Globals, TestUtils}
 import com.ligadata.MetadataAPI.test._
+import com.ligadata.kamanja.test.application.configuration.EmbeddedConfiguration
 import com.ligadata.tools.kvinit.KVInit
 import com.ligadata.tools.test._
 import com.ligadata.kamanja.test.application.logging.KamanjaAppLogger
@@ -22,6 +23,7 @@ object TestExecutor {
     "--help (Optional: Displays help text)"
 
   private type OptionMap = Map[Symbol, Any]
+  private var runEmbedded: Boolean = false
 
   private def addApplicationMetadata(kamanjaApp: KamanjaApplication): Boolean = {
     var result = 1
@@ -126,25 +128,28 @@ object TestExecutor {
         return
       }
       val installDir: String = options('kamanjadir).asInstanceOf[String]
-      val metadataConfigFile: String = options.getOrElse('metadataconfig, null).asInstanceOf[String]
-      val clusterConfigFile: String = options.getOrElse('clusterconfig, null).asInstanceOf[String]
+      var metadataConfigFile: String = options.getOrElse('metadataconfig, null).asInstanceOf[String]
+      var clusterConfigFile: String = options.getOrElse('clusterconfig, null).asInstanceOf[String]
       logger = KamanjaAppLogger.createKamanjaAppLogger(installDir)
       val appManager = new KamanjaApplicationManager(installDir + "/test")
 
       appManager.kamanjaApplications.foreach(app => {
         logger.info(s"Beginning test for Kamanja Application '${app.name}'")
-        if(clusterConfigFile == null) {
+        if(clusterConfigFile == null || metadataConfigFile == null) {
           logger.info(s"Starting Embedded Services...")
-          EmbeddedServicesManager.init(installDir, metadataConfigFile, clusterConfigFile)
+          EmbeddedServicesManager.init(installDir)
+          metadataConfigFile = EmbeddedConfiguration.generateMetadataAPIConfigFile(installDir, EmbeddedServicesManager.getCluster.zookeeperConfig.zookeeperConnStr)
+          clusterConfigFile = EmbeddedConfiguration.generateClusterConfigFile(installDir, EmbeddedServicesManager.getkafkaCluster.getBrokerList, EmbeddedServicesManager.getCluster.zookeeperConfig.zookeeperConnStr)
+
+          KamanjaEnvironmentManager.init(installDir, metadataConfigFile, clusterConfigFile)
           if (!EmbeddedServicesManager.startServices) {
             logger.error(s"***ERROR*** Failed to start embedded services")
             EmbeddedServicesManager.stopServices
-            TestUtils.deleteFile(EmbeddedServicesManager.storageDir)
+            TestUtils.deleteFile(EmbeddedConfiguration.storageDir)
             throw new Exception(s"***ERROR*** Failed to start embedded services")
           }
         }
         else {
-          //EmbeddedServicesManager.init(installDir, metadataConfigFile, clusterConfigFile)
           KamanjaEnvironmentManager.init(installDir, metadataConfigFile, clusterConfigFile)
           return
         }
@@ -257,7 +262,7 @@ object TestExecutor {
         errorConsumer.shutdown
 
         EmbeddedServicesManager.stopServices
-        TestUtils.deleteFile(EmbeddedServicesManager.storageDir)
+        TestUtils.deleteFile(EmbeddedConfiguration.storageDir)
         logger.close
       })
     }

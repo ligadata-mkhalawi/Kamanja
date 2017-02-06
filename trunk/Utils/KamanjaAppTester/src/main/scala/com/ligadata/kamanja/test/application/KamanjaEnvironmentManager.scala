@@ -66,7 +66,6 @@ object KamanjaEnvironmentManager {
       throw new KamanjaEnvironmentManagerException("***ERROR*** Attempted to upload cluster configuration but failed")
     }
     logger.info("Cluster configuration successfully uploaded")
-
   }
 
   def getAllAdapters: List[Adapter] = {
@@ -251,6 +250,13 @@ object KamanjaEnvironmentManager {
     val clusters = MdMgr.GetMdMgr.Clusters.values.toArray
     val clusterId = (parse(JsonSerializer.SerializeCfgObjectListToJson("Clusters", clusters)) \\ "ClusterId").extract[String]
     return clusterId
+  }
+
+  def getMetadataManager: MetadataManager = {
+    if(!isInitialized) {
+      throw new KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
+    }
+    return mdMan
   }
 
   private def createStorageAdapter(storageJsonStr: String): StorageAdapter = {
