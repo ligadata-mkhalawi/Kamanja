@@ -27,7 +27,10 @@ import org.apache.logging.log4j.{ Logger, LogManager }
 import com.ligadata.Exceptions.{ FatalAdapterException }
 import scala.actors.threadpool.{ ExecutorService }
 import com.ligadata.KamanjaVersion.KamanjaVersion
-import com.ligadata.VelocityMetrics._
+import com.ligadata.VelocityMetrics.VelocityMetricsFactoryInterface
+import com.ligadata.VelocityMetrics.VelocityMetricsCallback
+import com.ligadata.VelocityMetrics.VelocityMetricsInstanceInterface
+import com.ligadata.VelocityMetrics.Metrics
 
 class KamanjaServer(port: Int) extends Runnable {
   private val LOG = LogManager.getLogger(getClass);
@@ -977,12 +980,15 @@ class KamanjaManager extends Observer {
       }
     }
     var velocityMetricsOutput = new VelocityMetricsOutput
-    inputAdapters.foreach(ia => {
+
+    inputAdapters(0).VMFactory.addEmitListener(velocityMetricsOutput)
+
+    /* inputAdapters.foreach(ia => {
       ia.VMFactory.addEmitListener(velocityMetricsOutput)
     })
     outputAdapters.foreach(oa => {
       oa.VMFactory.addEmitListener(velocityMetricsOutput)
-    })
+    })*/
 
     val scheduledThreadPool = Executors.newScheduledThreadPool(3);
 
@@ -1300,68 +1306,86 @@ class VelocityMetricsOutput extends VelocityMetricsCallback {
     val componentKeyMetricsBuf: ArrayBuffer[com.ligadata.KamanjaBase.ComponentKeyMetrics] = new ArrayBuffer[com.ligadata.KamanjaBase.ComponentKeyMetrics]
 
     val componentMetrics = metrics.compMetrics
-    if (componentMetrics != null && componentMetrics.size > 0) {
-      for (i <- 0 until componentMetrics.size) {
+    if (componentMetrics != null && componentMetrics.length > 0) {
+      for (i <- 0 until componentMetrics.length) {
         //get uuid, get componentKey, get nodeid
         val compKeyMetrics = componentMetrics(i).keyMetrics
 
-        if (compKeyMetrics != null && compKeyMetrics.size > 0) {
-          for (j <- 0 until compKeyMetrics.size) {
+        if (compKeyMetrics != null && compKeyMetrics.length > 0) {
+          for (j <- 0 until compKeyMetrics.length) {
             val metricsValues = compKeyMetrics(j).metricValues
 
-            if (metricsValues != null && metricsValues.size > 0) {
-              for (k <- 0 until metricsValues.size) {
-                val Metrics = KamanjaMetadata.envCtxt.getContainerInstance("com.ligadata.KamanjaBase.MetricsValue").asInstanceOf[com.ligadata.KamanjaBase.MetricsValue]
-                Metrics.metrickey = metricsValues(k).Key()
-                Metrics.metricskeyvalue = metricsValues(k).Value()
-                metricsArrBuf += Metrics
+            if (metricsValues != null && metricsValues.length > 0) {
+              for (k <- 0 until metricsValues.length) {
+                val MetricsInst = KamanjaMetadata.envCtxt.getContainerInstance("com.ligadata.KamanjaBase.MetricsValue")
+
+                if (MetricsInst == null) {
+                  LOG.warn("Not able to get com.ligadata.KamanjaBase.MetricsValue")
+                } else {
+                  val MetricsVal = MetricsInst.asInstanceOf[MetricsValue]
+
+                  MetricsVal.metrickey = metricsValues(k).Key()
+                  MetricsVal.metricskeyvalue = metricsValues(k).Value()
+                  metricsArrBuf += MetricsVal
+                }
               }
             }
-            val Component = KamanjaMetadata.envCtxt.getContainerInstance("com.ligadata.KamanjaBase.ComponentKeyMetrics").asInstanceOf[com.ligadata.KamanjaBase.ComponentKeyMetrics]
-
-            Component.key = compKeyMetrics(j).key
-            Component.metricstime = compKeyMetrics(j).metricsTime
-            Component.roundintervaltimeinsec = compKeyMetrics(j).roundIntervalTimeInSec
-            Component.firstoccured = compKeyMetrics(j).firstOccured
-            Component.lastoccured = compKeyMetrics(j).lastOccured
-            Component.metricsvalue = metricsArrBuf.toArray
-            componentKeyMetricsBuf += Component
+            val ComponentInst = KamanjaMetadata.envCtxt.getContainerInstance("com.ligadata.KamanjaBase.ComponentKeyMetrics")
+            if (ComponentInst == null) {
+              LOG.warn("Not able to get com.ligadata.KamanjaBase.ComponentKeyMetrics")
+            } else {
+              val Component = ComponentInst.asInstanceOf[ComponentKeyMetrics]
+              Component.key = compKeyMetrics(j).key
+              Component.metricstime = compKeyMetrics(j).metricsTime
+              Component.roundintervaltimeinsec = compKeyMetrics(j).roundIntervalTimeInSec
+              Component.firstoccured = compKeyMetrics(j).firstOccured
+              Component.lastoccured = compKeyMetrics(j).lastOccured
+              Component.metricsvalue = metricsArrBuf.toArray
+              componentKeyMetricsBuf += Component
+              metricsArrBuf.clear()
+            }
           }
         }
-        val VelocityMetrics = KamanjaMetadata.envCtxt.getContainerInstance("com.ligadata.KamanjaBase.KamanjaVelocityMetrics").asInstanceOf[com.ligadata.KamanjaBase.KamanjaVelocityMetrics]
-
-        VelocityMetrics.uuid = metrics.uuid
-        VelocityMetrics.componentkey = componentMetrics(i).componentKey
-        VelocityMetrics.nodeid = componentMetrics(i).nodeId
-        VelocityMetrics.componentkeymetrics = componentKeyMetricsBuf.toArray
-        velocityMetricsArrBuf += VelocityMetrics
-
+        val VelocityMetricsInst = KamanjaMetadata.envCtxt.getContainerInstance("com.ligadata.KamanjaBase.KamanjaVelocityMetrics")
+        if (VelocityMetricsInst == null) {
+          LOG.warn("Not able to get com.ligadata.KamanjaBase.VelocityMetrics")
+        } else {
+          val VelocityMetrics = VelocityMetricsInst.asInstanceOf[KamanjaVelocityMetrics]
+          VelocityMetrics.uuid = metrics.uuid
+          VelocityMetrics.componentkey = componentMetrics(i).componentKey
+          VelocityMetrics.nodeid = componentMetrics(i).nodeId
+          VelocityMetrics.componentkeymetrics = componentKeyMetricsBuf.toArray
+          velocityMetricsArrBuf += VelocityMetrics
+          componentKeyMetricsBuf.clear()
+        }
       }
     }
+    val isLogDebugEnabled = LOG.isDebugEnabled
+    if (isLogDebugEnabled) {
+      val vmArray = velocityMetricsArrBuf.toArray
+      if (vmArray != null && vmArray.length > 0)
+        for (i <- 0 until vmArray.length) {
+          LOG.info("vmArray  " + vmArray(i).uuid)
+          LOG.info("vmArray componentkey " + vmArray(i).componentkey)
+          LOG.info("vmArray  nodeId " + vmArray(i).nodeid)
+          val componentkey = vmArray(i).componentkeymetrics
+          if (componentkey != null && componentkey.length > 0)
+            for (j <- 0 until componentkey.length) {
 
-    val vmArray = velocityMetricsArrBuf.toArray
-    if (vmArray != null && vmArray.length > 0)
-      for (i <- 0 until vmArray.length) {
-        LOG.info("vmArray  " + vmArray(i).uuid)
-        LOG.info("vmArray componentkey " + vmArray(i).componentkey)
-        LOG.info("vmArray  nodeId " + vmArray(i).nodeid)
-        val componentkey = vmArray(i).componentkeymetrics
-        if (componentkey != null && componentkey.length > 0)
-          for (j <- 0 until componentkey.length) {
-
-            LOG.info("componentkey key " + componentkey(j).key)
-            LOG.info("componentkey metricstime " + componentkey(j).metricstime)
-            LOG.info("componentkey roundintervaltimeinsec " + componentkey(j).roundintervaltimeinsec)
-            LOG.info("componentkey firstoccured " + componentkey(j).firstoccured)
-            LOG.info("componentkey lastoccured " + componentkey(j).lastoccured)
-            val metricsValue = componentkey(i).metricsvalue
-            if (metricsValue != null && metricsValue.length > 0)
-              for (k <- 0 until metricsValue.length) {
-                LOG.info("metricsValue key " + metricsValue(k).metrickey)
-                LOG.info("metricsValue metricstime " + metricsValue(k).metricskeyvalue)
-              }
-          }
-      }
+              LOG.info("componentkey key " + componentkey(j).key)
+              LOG.info("componentkey metricstime " + componentkey(j).metricstime)
+              LOG.info("componentkey roundintervaltimeinsec " + componentkey(j).roundintervaltimeinsec)
+              LOG.info("componentkey firstoccured " + componentkey(j).firstoccured)
+              LOG.info("componentkey lastoccured " + componentkey(j).lastoccured)
+              val metricsValue = componentkey(i).metricsvalue
+              if (metricsValue != null && metricsValue.length > 0)
+                for (k <- 0 until metricsValue.length) {
+                  LOG.info("metricsValue key " + metricsValue(k).metrickey)
+                  LOG.info("metricsValue metricstime " + metricsValue(k).metricskeyvalue)
+                }
+            }
+        }
+    }
 
     println("=======================End Velocity Metrics================")
 

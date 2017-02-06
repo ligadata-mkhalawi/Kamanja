@@ -49,7 +49,7 @@ class VelocityMetricsInfo {
     try {
       val vm = getIAVelocityMetricsInstances(VMFactory, nodeId, adapConfig, componentName)
       var Key: String = ""
-
+      if (vm == null || vm.size == 0) return LOG.warn("Velocity Metrics does not exists")
       for (i <- 0 until vm.size) {
         val keyType = vm(i)._2.KeyType
         val validMsgType = vm(i)._2.ValidMsgTypes
@@ -105,6 +105,7 @@ class VelocityMetricsInfo {
           }
         }
       }
+
       LOG.info("**********End Increment*******************")
     } catch {
       case e: Exception => LOG.error("increment Velocity Metrics " + e.getMessage)
@@ -119,14 +120,15 @@ class VelocityMetricsInfo {
   def incrementFileVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, componentName: String, fileName: String, nodeId: String, adapConfig: AdapterConfiguration) = {
     LOG.info("*********Start Increment********************")
     try {
-      val vm = getIAVelocityMetricsInstances(VMFactory, nodeId, adapConfig, componentName)      
+      val vm = getIAVelocityMetricsInstances(VMFactory, nodeId, adapConfig, componentName)
+      if (vm == null || vm.size == 0) LOG.warn("Velocity Metrics does not exists")
       for (i <- 0 until vm.size) {
         var metricsTime: Long = System.currentTimeMillis() //0L
         val metricsType = vm(i)._2.MetricsTime.MType
         metricsTime = System.currentTimeMillis()
 
         val keyType = vm(i)._2.KeyType
-        var Key: String = keyType+"_"+fileName
+        var Key: String = keyType + "_" + fileName
         var msgkeys = Array[String]()
         if (keyType.equalsIgnoreCase(metricsbyfilename)) {
           vm(i)._1.increment(metricsTime, Key, System.currentTimeMillis(), true, false)
@@ -164,13 +166,13 @@ class VelocityMetricsInfo {
         val v = (vmInstance, vm)
         velocityMetricsInstBuf += v
 
-        println("vm.TimeIntervalInSecs  " + vm.TimeIntervalInSecs)
-        println("vm.Keys  " + vm.Keys.toList)
-        println("vm.MetricsTime.MType  " + vm.MetricsTime.MType)
-        println("nodeId " + nodeId)
-        println("componentName  " + componentName)
-        println("intervalRoundingInMs  " + intervalRoundingInSecs)
-        println("counterNames  " + counterNames.toList)
+        LOG.info("vm.TimeIntervalInSecs  " + vm.TimeIntervalInSecs)
+        LOG.info("vm.Keys  " + vm.Keys.toList)
+        LOG.info("vm.MetricsTime.MType  " + vm.MetricsTime.MType)
+        LOG.info("nodeId " + nodeId)
+        LOG.info("componentName  " + componentName)
+        LOG.info("intervalRoundingInMs  " + intervalRoundingInSecs)
+        LOG.info("counterNames  " + counterNames.toList)
 
       })
       LOG.info("*****************velocityMetricsInstBuf **********************" + velocityMetricsInstBuf.size)
@@ -188,7 +190,7 @@ class VelocityMetricsInfo {
    */
   def getVelocityMetricsConfig(fullAdapterConfig: String): Array[VelocityMetricsCfg] = {
     if (fullAdapterConfig == null && fullAdapterConfig.trim().size == 0) {
-      println("======================fullAdapterConfig is null===========")
+      LOG.info("======================fullAdapterConfig is null===========")
       return null
     }
     parseVelocityMetrics(fullAdapterConfig)
@@ -202,7 +204,7 @@ class VelocityMetricsInfo {
     var emitTimeInSecs: Int = 15
     try {
       val clusterCfg = MdMgr.GetMdMgr.GetClusterCfg(nodeContext.getEnvCtxt().getClusterId())
-      println("=============== clusterCfg  Keys" + clusterCfg.cfgMap.keySet.toList)
+      LOG.info("=============== clusterCfg  Keys" + clusterCfg.cfgMap.keySet.toList)
       val velocityStats = clusterCfg.cfgMap.getOrElse(velocityStatsInfo, null)
       if (velocityStats != null) {
         val vstatsJson = parse(velocityStats)
@@ -246,7 +248,7 @@ class VelocityMetricsInfo {
         throw new Exception("Failed to parse VelocityMetrics JSON configuration string:" + json)
 
       }
-      println("*******************Start Parser Velocity Metrics ***************")
+      LOG.info("*******************Start Parser Velocity Metrics ***************")
       parsed_json = json.values.asInstanceOf[Map[String, Any]]
 
       val velocityMetrics = parsed_json.getOrElse(velocitymetrics, null)
@@ -270,9 +272,8 @@ class VelocityMetricsInfo {
           var metricsTimeField: String = ""
           var metricsTimeFormat: String = ""
 
-          LOG.info("vm Map 1111111111  " + vm)
+          LOG.info("vm Map   " + vm)
           if (vm.contains(metricsbyfilename) || vm.contains(metricsbymsgtype) || (vm.contains(metricsbymsgkeys))) {
-            LOG.info("1111111111")
             var vmetrics: Map[String, Any] = null
             if (vm.contains(metricsbyfilename)) {
               keyType = metricsbyfilename
@@ -352,24 +353,26 @@ class VelocityMetricsInfo {
           }
         })
       }
-      velocityMetricsBuf.foreach(vm => {
-        println("vm keytype " + vm.KeyType)
-        println("vm key " + vm.Keys.size)
-        println("vm ValidMsgTypes length " + vm.ValidMsgTypes.length)
-        vm.ValidMsgTypes.foreach { msg => println("vm msg" + msg) }
-        println("vm " + vm.TimeIntervalInSecs)
-        println("vm " + vm.MetricsTime.MType)
-        println("vm " + vm.MetricsTime.Field)
-        println("vm " + vm.MetricsTime.Format)
+      if (LOG.isDebugEnabled()) {
+        velocityMetricsBuf.foreach(vm => {
+          LOG.info("vm keytype " + vm.KeyType)
+          LOG.info("vm key " + vm.Keys.size)
+          LOG.info("vm ValidMsgTypes length " + vm.ValidMsgTypes.length)
+          vm.ValidMsgTypes.foreach { msg => LOG.info("vm msg" + msg) }
+          LOG.info("vm " + vm.TimeIntervalInSecs)
+          LOG.info("vm " + vm.MetricsTime.MType)
+          LOG.info("vm " + vm.MetricsTime.Field)
+          LOG.info("vm " + vm.MetricsTime.Format)
 
-        LOG.info("vm keytype" + vm.KeyType)
-        LOG.info("vm key" + vm.Keys.size)
-        LOG.info("vm " + vm.TimeIntervalInSecs)
-        LOG.info("vm " + vm.MetricsTime.MType)
-        LOG.info("vm " + vm.MetricsTime.Field)
-        LOG.info("vm " + vm.MetricsTime.Format)
-      })
-      println(velocityMetrics)
+          LOG.info("vm keytype" + vm.KeyType)
+          LOG.info("vm key" + vm.Keys.size)
+          LOG.info("vm " + vm.TimeIntervalInSecs)
+          LOG.info("vm " + vm.MetricsTime.MType)
+          LOG.info("vm " + vm.MetricsTime.Field)
+          LOG.info("vm " + vm.MetricsTime.Format)
+        })
+      }
+      
       LOG.info("*******************End Parse Velocity Metrics ***************")
     } catch {
       case e: Exception => LOG.error("VelocityMetrics - Parse Velocity Metrics" + e.getMessage)
