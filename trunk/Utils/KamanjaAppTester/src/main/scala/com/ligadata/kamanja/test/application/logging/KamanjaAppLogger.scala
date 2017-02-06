@@ -3,9 +3,6 @@ package com.ligadata.kamanja.test.application.logging
 import java.io.{File, PrintWriter, StringWriter}
 import java.text.SimpleDateFormat
 import java.util.Calendar
-
-import com.ligadata.kamanja.test.application.EmbeddedServicesManager
-
 import scala.io._
 
 case class KamanjaAppLoggerException(message: String, cause: Throwable = null) extends Exception(message, cause)

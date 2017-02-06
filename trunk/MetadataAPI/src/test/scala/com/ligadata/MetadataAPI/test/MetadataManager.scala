@@ -211,6 +211,7 @@ class MetadataManager extends KamanjaTestLogger {
       case "jar" => result = parseApiResult(MetadataAPIImpl.UploadJar(filepath))
       case "compileconfig" => result = parseApiResult(MetadataAPIImpl.UploadModelsConfig(mdString, Some(userId), "", false))
     }
+    println(s"[Metadata Manager]: API Result =>\n${result.toString}")
     logger.info(s"[Metadata Manager]: API Result =>\n${result.toString}")
     result.statusCode
   }
@@ -339,10 +340,11 @@ class MetadataManager extends KamanjaTestLogger {
     val json = parse(apiResult)
     val statusCode = (json \\ "Status Code").values.toString.toInt
     val functionName = (json \\ "Function Name").values.toString
-    val resultData = (json \\ "Result Data").values.toString
+    val resultData = (json \\ "Result Data")
+    var resultDataStr = if(resultData == JNull) "" else resultData.values.toString
     val description = (json \\ "Result Description").values.toString
 
-    new ApiResult(statusCode, functionName, resultData, description)
+    new ApiResult(statusCode, functionName, resultDataStr, description)
   }
 
   /// Returns 0 if all results are 0, otherwise returns the non-zero code

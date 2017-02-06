@@ -1,24 +1,24 @@
 package com.ligadata.kamanja.test.application
 
+import com.ligadata.kamanja.test.application.configuration.EmbeddedConfiguration
 import com.ligadata.kamanja.test.application.data.DataSet
-import com.ligadata.kamanja.test.application.{EmbeddedServicesManager, MatchResult, ResultsManager}
+import com.ligadata.kamanja.test.application.{MatchResult, ResultsManager}
 import com.ligadata.test.utils.TestUtils
 import org.scalatest._
 
 class ResultsManagerTests extends FlatSpec with BeforeAndAfterAll {
 
   override def beforeAll: Unit = {
-    EmbeddedServicesManager.init(TestSetup.kamanjaInstallDir)
-    EmbeddedServicesManager.startServices
+    KamanjaEnvironmentManager.init(TestSetup.kamanjaInstallDir)
   }
 
   override def afterAll: Unit = {
-    EmbeddedServicesManager.stopServices
-    TestUtils.deleteFile(EmbeddedServicesManager.storageDir)
+    KamanjaEnvironmentManager.stopServices
+    TestUtils.deleteFile(EmbeddedConfiguration.storageDir)
   }
 
   "ResultsManager" should "compare an Array of actual results with expected results read from a file that are equal and in csv format and return a List of MatchResults that are all true" in {
-    val resultsManager = new ResultsManager(EmbeddedServicesManager.getCluster)
+    val resultsManager = new ResultsManager
     val testDataSet = new DataSet(TestSetup.kamanjaInstallDir + "/test/TestApp1/data/testApp1InputFile.csv", "CSV", TestSetup.kamanjaInstallDir + "/test/TestApp1/data/testApp1ExpectedResults.csv", "CSV", None)
     val actualResults: List[String] = List("1,John Clark,food,39.95",
       "2,James Brown,games,59.99",
@@ -47,7 +47,7 @@ class ResultsManagerTests extends FlatSpec with BeforeAndAfterAll {
   }
 
   it should "compare an Array of actual results with expected results read from a file that are equal in json format and return a List of MatchResults that are all true" in {
-    val resultsManager = new ResultsManager(EmbeddedServicesManager.getCluster)
+    val resultsManager = new ResultsManager
     val testDataSet = new DataSet(TestSetup.kamanjaInstallDir + "/test/TestApp1/data/testApp1InputFile.csv", "CSV", TestSetup.kamanjaInstallDir + "/test/TestApp1/data/testApp1ExpectedResults.json", "JSON", None)
     var actualResults: List[String] = List(
       """{"ID":1,"Name":"John Clark","Shopping List":["food"],"Total Cost":39.95}""",
@@ -60,7 +60,7 @@ class ResultsManagerTests extends FlatSpec with BeforeAndAfterAll {
       """{"ID":2,"Name":"James Brown","Shopping List":["games","music","food"],"Total Cost":114.74}""",
       """{"ID":3,"Name":"Clark Gable","Shopping List":["music","food","games"],"Total Cost":114.74}"""
     )
-    val expectedResults: List[String] = resultsManager.parseExpectedResults(testDataSet)
+    //val expectedResults: List[String] = resultsManager.parseExpectedResults(testDataSet)
     val matchResults: List[MatchResult] = resultsManager.compareResults(testDataSet, actualResults)
     var count = 1
     matchResults.foreach(result => {

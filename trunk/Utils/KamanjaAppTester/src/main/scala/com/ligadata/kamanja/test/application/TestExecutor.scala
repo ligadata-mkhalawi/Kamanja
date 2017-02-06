@@ -32,16 +32,16 @@ object TestExecutor {
         element match {
           case e: MessageElement => {
             logger.info(s"Adding message from file '${e.filename}'")
-            result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant))
+            result = mdMan.add(e.elementType, e.filename, Some(KamanjaEnvironmentManager.getAllTenants(0).tenantId))
           }
           case e: ContainerElement => {
             logger.info(s"Adding container from file '${e.filename}'")
-            result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant))
+            result = mdMan.add(e.elementType, e.filename, Some(KamanjaEnvironmentManager.getAllTenants(0).tenantId))
             e.kvFilename match {
               case Some(file) =>
                 logger.info(s"Key-Value filename associated with container ${e.name} found. Adding data from $file")
                 if(KVInit.run(Array("--typename", s"${e.name}",
-                  "--config", EmbeddedServicesManager.kamanjaConfigFile,
+                  "--config", KamanjaEnvironmentManager.metadataConfigFile,
                   "--datafiles", file,
                   "--ignorerecords", "1",
                   "--deserializer", "com.ligadata.kamanja.serializer.csvserdeser",
@@ -59,19 +59,19 @@ object TestExecutor {
           }
           case e: JavaModelElement => {
             logger.info(s"Adding java model from file '${e.filename}' with model configuration '${e.modelCfg}'")
-            result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant), Some(e.modelType), Some(e.modelCfg))
+            result = mdMan.add(e.elementType, e.filename, Some(KamanjaEnvironmentManager.getAllTenants(0).tenantId), Some(e.modelType), Some(e.modelCfg))
           }
           case e: ScalaModelElement => {
             logger.info(s"Adding scala model from file '${e.filename}' with model configuration '${e.modelCfg}'")
-            result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant), Some(e.modelType), Some(e.modelCfg))
+            result = mdMan.add(e.elementType, e.filename, Some(KamanjaEnvironmentManager.getAllTenants(0).tenantId), Some(e.modelType), Some(e.modelCfg))
           }
           case e: KPmmlModelElement => {
             logger.info(s"Adding KPMML model from file '${e.filename}'")
-            result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant), Some(e.modelType))
+            result = mdMan.add(e.elementType, e.filename, Some(KamanjaEnvironmentManager.getAllTenants(0).tenantId), Some(e.modelType))
           }
           case e: PmmlModelElement => {
             logger.info(s"Adding PMML model from file '${e.filename}' with message consumed '${e.msgConsumed}'")
-            result = mdMan.add(e.elementType, e.filename, Some(Globals.kamanjaTestTenant), Some(e.modelType), None, Some("0.0.1"), Some(e.msgConsumed), None, e.msgProduced)
+            result = mdMan.add(e.elementType, e.filename, Some(KamanjaEnvironmentManager.getAllTenants(0).tenantId), Some(e.modelType), None, Some("0.0.1"), Some(e.msgConsumed), None, e.msgProduced)
           }
           case e: AdapterMessageBindingElement => {
             logger.info(s"Adding adapter message bindings from file '${e.filename}'")
@@ -135,24 +135,9 @@ object TestExecutor {
 
       appManager.kamanjaApplications.foreach(app => {
         logger.info(s"Beginning test for Kamanja Application '${app.name}'")
-        if(clusterConfigFile == null || metadataConfigFile == null) {
-          logger.info(s"Starting Embedded Services...")
-          EmbeddedServicesManager.init(installDir)
-          metadataConfigFile = EmbeddedConfiguration.generateMetadataAPIConfigFile(installDir, EmbeddedServicesManager.getCluster.zookeeperConfig.zookeeperConnStr)
-          clusterConfigFile = EmbeddedConfiguration.generateClusterConfigFile(installDir, EmbeddedServicesManager.getkafkaCluster.getBrokerList, EmbeddedServicesManager.getCluster.zookeeperConfig.zookeeperConnStr)
-
-          KamanjaEnvironmentManager.init(installDir, metadataConfigFile, clusterConfigFile)
-          if (!EmbeddedServicesManager.startServices) {
-            logger.error(s"***ERROR*** Failed to start embedded services")
-            EmbeddedServicesManager.stopServices
-            TestUtils.deleteFile(EmbeddedConfiguration.storageDir)
-            throw new Exception(s"***ERROR*** Failed to start embedded services")
-          }
-        }
-        else {
-          KamanjaEnvironmentManager.init(installDir, metadataConfigFile, clusterConfigFile)
-          return
-        }
+        // Initializing Kamanja Environment Manager, which will deal with setting up metadata manager and
+        /// generating config files and start embedded services if user doesn't provide said files.
+        KamanjaEnvironmentManager.init(installDir, metadataConfigFile, clusterConfigFile)
 
         logger.info(s"Adding metadata...")
         if (!addApplicationMetadata(app)) {
@@ -162,13 +147,13 @@ object TestExecutor {
         logger.info(s"All metadata successfully added")
         var testResult = true
 
-        val consumer = new TestKafkaConsumer(EmbeddedServicesManager.getOutputKafkaAdapterConfig)
+        val consumer = new TestKafkaConsumer(KamanjaEnvironmentManager.getOutputKafkaAdapterConfig)
         val consumerThread = new Thread(consumer)
 
-        val errorConsumer = new TestKafkaConsumer(EmbeddedServicesManager.getErrorKafkaAdapterConfig)
+        val errorConsumer = new TestKafkaConsumer(KamanjaEnvironmentManager.getErrorKafkaAdapterConfig)
         val errorConsumerThread = new Thread(errorConsumer)
 
-        val eventConsumer = new TestKafkaConsumer(EmbeddedServicesManager.getEventKafkaAdapterConfig)
+        val eventConsumer = new TestKafkaConsumer(KamanjaEnvironmentManager.getEventKafkaAdapterConfig)
         val eventConsumerThread = new Thread(eventConsumer)
 
         consumerThread.start()
@@ -177,24 +162,24 @@ object TestExecutor {
 
         logger.info(s"Processing data sets...")
         app.dataSets.foreach(set => {
-          val resultsManager = new ResultsManager(EmbeddedServicesManager.getCluster)
+          val resultsManager = new ResultsManager
 
           //TODO: For some reason, if we don't sleep, the consumer doesn't fully start until after the messages are pushed and the consumer won't pick up the messages that are already in kafka
           Thread sleep 1000
 
           val producer = new TestKafkaProducer
           logger.info(s"Pushing data from file ${set.inputDataFile} in format ${set.inputDataFormat}")
-          producer.inputMessages(EmbeddedServicesManager.getInputKafkaAdapterConfig, set.inputDataFile, set.inputDataFormat, set.partitionKey.getOrElse("1"))
+          producer.inputMessages(KamanjaEnvironmentManager.getInputKafkaAdapterConfig, set.inputDataFile, set.inputDataFormat, set.partitionKey.getOrElse("1"))
 
           //Reading in the expected results from the given data set into a List[String]. This will be used to count the number of results to expect in kafka as well.
           val expectedResults = resultsManager.parseExpectedResults(set)
 
           logger.info("Waiting for output results...")
-          val results = Globals.waitForOutputResults(EmbeddedServicesManager.getOutputKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
+          val results = Globals.waitForOutputResults(KamanjaEnvironmentManager.getOutputKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
           if (results == null) {
             testResult = false
             logger.error(s"***ERROR*** Failed to retrieve results. Checking error queue...")
-            val errors = Globals.waitForOutputResults(EmbeddedServicesManager.getErrorKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
+            val errors = Globals.waitForOutputResults(KamanjaEnvironmentManager.getErrorKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
             if (errors != null) {
               errors.foreach(error => {
                 logger.info(s"Error Message: " + error)
@@ -204,7 +189,7 @@ object TestExecutor {
               logger.warn(s"***WARN*** Failed to discover messages in error queue")
               logger.warn(s"Checking message event queue")
 
-              val events = Globals.waitForOutputResults(EmbeddedServicesManager.getEventKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
+              val events = Globals.waitForOutputResults(KamanjaEnvironmentManager.getEventKafkaAdapterConfig, msgCount = expectedResults.length).getOrElse(null)
               if (events != null) {
                 events.foreach(event => {
                   logger.info(s"Event Message: $event")
@@ -261,8 +246,10 @@ object TestExecutor {
         eventConsumer.shutdown
         errorConsumer.shutdown
 
-        EmbeddedServicesManager.stopServices
-        TestUtils.deleteFile(EmbeddedConfiguration.storageDir)
+        if(KamanjaEnvironmentManager.isEmbedded) {
+          KamanjaEnvironmentManager.stopServices
+          TestUtils.deleteFile(EmbeddedConfiguration.storageDir)
+        }
         logger.close
       })
     }

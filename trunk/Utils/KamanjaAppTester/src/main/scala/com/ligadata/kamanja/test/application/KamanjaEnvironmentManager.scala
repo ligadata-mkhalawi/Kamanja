@@ -17,6 +17,7 @@ import com.ligadata.test.utils._
 import com.ligadata.MetadataAPI.test._
 import com.ligadata.Serialize.JsonSerializer
 import com.ligadata.kamanja.metadata.MdMgr
+import com.ligadata.kamanja.test.application.configuration.EmbeddedConfiguration
 import com.ligadata.kamanja.test.application.logging.{KamanjaAppLogger, KamanjaAppLoggerException}
 import com.ligadata.test.embedded.kafka._
 import org.json4s._
@@ -31,12 +32,22 @@ object KamanjaEnvironmentManager {
   private var logger: KamanjaAppLogger = _
   private var kamanjaInstallDir: String = _
   private var mdMan: MetadataManager = _
+  private var embeddedKamanjaManager: EmbeddedKamanjaManager = _
+  private var embeddedZookeeper: EmbeddedZookeeper = _
+  private var kafkaCluster: EmbeddedKafkaCluster = _
+  private var zkClient: ZookeeperClient = _
+  private var clusterConfig: Cluster = _
+  private var kafkaConsumer: TestKafkaConsumer = _
+  var kamanjaConfigFile: String = _
+  var clusterConfigFile: String = _
+  var metadataConfigFile: String = _
+  var h2dbStore: H2DBStore = new H2DBStore
+  var isEmbedded: Boolean = false
   private implicit val formats = org.json4s.DefaultFormats
 
-  def init(kamanjaInstallDir: String, metadataConfigFile: String, clusterConfigFile: String): Unit = {
+  def init(kamanjaInstallDir: String, metadataConfigFile: String = null, clusterConfigFile: String = null): Unit = {
     isInitialized = true
 
-    // Initializing Kamanja Application Test Tool Logger
     try {
       logger = KamanjaAppLogger.getKamanjaAppLogger
     }
@@ -44,28 +55,55 @@ object KamanjaEnvironmentManager {
       case e: KamanjaAppLoggerException => logger = KamanjaAppLogger.createKamanjaAppLogger(kamanjaInstallDir)
     }
 
-    try {
-      sys.env("PYTHON_HOME")
-    }
-    catch {
-      case e: NoSuchElementException =>
-        throw new EmbeddedServicesException("***ERROR*** Failed to discover environmental variable PYTHON_HOME. " +
-          "Please set it before running.\n" +
-          "EX: export PYTHON_HOME=/usr")
-    }
-
     this.kamanjaInstallDir = kamanjaInstallDir
 
-    mdMan = new MetadataManager
-    mdMan.setSSLPassword("")
-    mdMan.initMetadataCfg(metadataConfigFile)
+    if(clusterConfigFile == null || metadataConfigFile == null) {
+      isEmbedded = true
+      logger.info("Cluster Configuration file or Metadata API Configuration file not provided. Initializing embedded services.")
+      try {
+        sys.env("PYTHON_HOME")
+      }
+      catch {
+        case e: NoSuchElementException =>
+          throw new KamanjaEnvironmentManagerException("***ERROR*** Failed to discover environmental variable PYTHON_HOME. " +
+            "Please set it before running Kamanja Application Tester using embedded services.\n" +
+            "EX: export PYTHON_HOME=/usr")
+      }
 
-    val addConfigResult = mdMan.addConfig(clusterConfigFile)
-    if (addConfigResult != 0) {
-      logger.error("***ERROR*** Attempted to upload cluster configuration but failed")
-      throw new KamanjaEnvironmentManagerException("***ERROR*** Attempted to upload cluster configuration but failed")
+      embeddedZookeeper = new EmbeddedZookeeper
+      kafkaCluster = new EmbeddedKafkaCluster().
+        withBroker(new KafkaBroker(1, embeddedZookeeper.getConnection))
+
+      //clusterConfig = generateClusterConfiguration
+      kamanjaConfigFile = TestUtils.constructTempDir("/kamanja-tmp-config").getAbsolutePath + "/kamanja.conf"
+      embeddedZookeeper = new EmbeddedZookeeper
+      kafkaCluster = new EmbeddedKafkaCluster().
+        withBroker(new KafkaBroker(1, embeddedZookeeper.getConnection))
+      this.metadataConfigFile = EmbeddedConfiguration.generateMetadataAPIConfigFile(kamanjaInstallDir, embeddedZookeeper.getConnection)
+      this.clusterConfigFile = EmbeddedConfiguration.generateClusterConfigFile(kamanjaInstallDir, kafkaCluster.getBrokerList, embeddedZookeeper.getConnection)
+      this.kamanjaConfigFile = EmbeddedConfiguration.generateKamanjaConfigFile
+      logger.info(s"Starting Embedded Services...")
+      if (!KamanjaEnvironmentManager.startServices) {
+        logger.error(s"***ERROR*** Failed to start embedded services")
+        KamanjaEnvironmentManager.stopServices
+        TestUtils.deleteFile(EmbeddedConfiguration.storageDir)
+        throw new KamanjaEnvironmentManagerException(s"***ERROR*** Failed to start embedded services")
+      }
     }
-    logger.info("Cluster configuration successfully uploaded")
+    else {
+      this.metadataConfigFile = metadataConfigFile
+      this.clusterConfigFile = clusterConfigFile
+      mdMan = new MetadataManager
+      mdMan.setSSLPassword("")
+      mdMan.initMetadataCfg(this.metadataConfigFile)
+      val addConfigResult = mdMan.addConfig(new File(this.clusterConfigFile))
+      if (addConfigResult != 0) {
+        logger.error("***ERROR*** Attempted to upload cluster configuration but failed")
+        throw new KamanjaEnvironmentManagerException("***ERROR*** Attempted to upload cluster configuration but failed")
+      }
+      logger.info("Cluster configuration successfully uploaded")
+      kafkaConsumer = new TestKafkaConsumer(getOutputKafkaAdapterConfig)
+    }
   }
 
   def getAllAdapters: List[Adapter] = {
@@ -257,6 +295,260 @@ object KamanjaEnvironmentManager {
       throw new KamanjaEnvironmentManagerException("Kamanja Environment Manager has not been initialized. Please run def init first.")
     }
     return mdMan
+  }
+
+  def getInputKafkaAdapterConfig: KafkaAdapterConfig = {
+    if (!isInitialized) {
+      throw new Exception("***ERROR*** KamanjaEnvironmentManager has not been initialized. Please call def init first.")
+    }
+    return getAllAdapters.filter(_.asInstanceOf[KafkaAdapterConfig].adapterSpecificConfig.topicName.toLowerCase == "testin_1")(0).asInstanceOf[KafkaAdapterConfig]
+  }
+
+  def getOutputKafkaAdapterConfig: KafkaAdapterConfig = {
+    if (!isInitialized) {
+      throw new Exception("***ERROR*** KamanjaEnvironmentManager has not been initialized. Please call def init first.")
+    }
+    return getAllAdapters.filter(_.asInstanceOf[KafkaAdapterConfig].adapterSpecificConfig.topicName.toLowerCase == "testout_1")(0).asInstanceOf[KafkaAdapterConfig]
+  }
+
+  def getErrorKafkaAdapterConfig: KafkaAdapterConfig = {
+    if (!isInitialized) {
+      throw new Exception("***ERROR*** KamanjaEnvironmentManager has not been initialized. Please call def init first.")
+    }
+    return getAllAdapters.filter(_.asInstanceOf[KafkaAdapterConfig].adapterSpecificConfig.topicName.toLowerCase == "testfailedevents_1")(0).asInstanceOf[KafkaAdapterConfig]
+  }
+
+  def getEventKafkaAdapterConfig: KafkaAdapterConfig = {
+    if (!isInitialized) {
+      throw new Exception("***ERROR*** KamanjaEnvironmentManager has not been initialized. Please call def init first.")
+    }
+    return getAllAdapters.filter(_.asInstanceOf[KafkaAdapterConfig].adapterSpecificConfig.topicName.toLowerCase == "testmessageevents_1")(0).asInstanceOf[KafkaAdapterConfig]
+  }
+
+  //////////////////////////////////////////
+  //EMBEDDED ENVIRONMENT RELATED FUNCTIONS//
+  //////////////////////////////////////////
+
+  private def startServices: Boolean = {
+    if (!isInitialized) {
+      throw new Exception("***ERROR*** KamanjaEnvironmentManager has not been initialized. Please call def init first.")
+    }
+
+    val classPath: String = {
+      List(
+        s"ExtDependencyLibs_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
+        s"ExtDependencyLibs2_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar",
+        s"KamanjaInternalDeps_${TestUtils.scalaVersion}-${TestUtils.kamanjaVersion}.jar"
+      ).mkString(s"$kamanjaInstallDir/lib/system/", s":$kamanjaInstallDir/lib/system/", "")
+    }
+
+    try {
+      val zkStartCode = startZookeeper
+
+      // Sleeping for 1 second to give zookeeper time to fully start up so kafka doesn't spit out a bunch of errors
+      Thread sleep 1000
+      val kafkaStartCode = startKafka
+
+      mdMan = new MetadataManager
+      mdMan.setSSLPassword("")
+      mdMan.initMetadataCfg(this.metadataConfigFile)
+
+      val addConfigResult = mdMan.addConfig(new File(EmbeddedConfiguration.generateClusterConfigFile(kamanjaInstallDir, kafkaCluster.getBrokerList, embeddedZookeeper.getConnection)))
+      if (addConfigResult != 0) {
+        logger.error("***ERROR*** Attempted to upload cluster configuration but failed")
+        return false
+      }
+      logger.info("Cluster configuration successfully uploaded")
+
+      //val addSystemBindingsResult = mdMan.addBindings(this.getClass.getResource("/SystemMsgs_Adapter_Bindings.json").getPath)
+      //val addSystemBindingsResult = mdMan.addBindings(kamanjaInstallDir + "/config/SystemMsgs_Adapter_Bindings.json")
+
+      //Creating topics from the cluster config adapters
+      //val kafkaTestClient = new KafkaTestClient(embeddedZookeeper.getConnection)
+      //clusterConfig.adapters.foreach(adapter => {
+      //  kafkaTestClient.createTopic(adapter.asInstanceOf[KafkaAdapterConfig].adapterSpecificConfig.topicName, 1, 1)
+      //})
+
+      return zkStartCode && kafkaStartCode && startKamanja //&& startKafkaConsumer
+    }
+    catch {
+      case e: Exception => throw new Exception("***ERROR*** Failed to start services", e)
+    }
+  }
+
+  def stopServices: Boolean = {
+    // Sleeping between each to give each one time to properly shut down to avoid errors
+    val stopKamanjaCode = stopKamanja
+    //val stopKafkaConsumerCode = stopKafkaConsumer
+    //Thread sleep 1000
+    val stopKafkaCode = stopKafka
+    val stopZookeeperCode = stopZookeeper
+
+    mdMan.shutdown
+
+    if (stopKamanjaCode && stopKafkaCode && stopZookeeperCode /*&& stopKafkaConsumerCode*/ ) {
+      isInitialized = false
+      return true
+    }
+    return false
+  }
+
+  private def startKamanja: Boolean = {
+    embeddedKamanjaManager = new EmbeddedKamanjaManager
+
+    zkClient = new ZookeeperClient(embeddedZookeeper.getConnection)
+    try {
+      logger.info(s"Starting Kamanja with configuration file $kamanjaConfigFile...")
+      val startCode = embeddedKamanjaManager.startup(this.kamanjaConfigFile, getZookeeperConfiguration, zkClient)
+      if (startCode != 0) {
+        logger.error("***ERROR*** Failed to start Kamanja")
+        return false
+      }
+      else {
+        logger.info("Kamanja started")
+      }
+      return true
+    }
+    catch {
+      case e: Exception => {
+        logger.error("***ERROR*** Failed to start Kamanja\n" + logger.getStackTraceAsString(e))
+        return false
+      }
+    }
+  }
+
+  private def stopKamanja: Boolean = {
+    try {
+      logger.info("Stopping Kamanja...")
+      val shutdownCode = embeddedKamanjaManager.shutdown(getZookeeperConfiguration, zkClient)
+      if (shutdownCode != 0) {
+        logger.error("***ERROR*** Failed to stop Kamanja. Return code: " + shutdownCode)
+        return false
+      }
+      else {
+        logger.info("Kamanja stopped")
+        return true
+      }
+    }
+    catch {
+      case e: Exception => {
+        logger.error("***ERROR*** Failed to stop Kamanja\n" + logger.getStackTraceAsString(e))
+        return false
+      }
+    }
+  }
+
+  private def startZookeeper: Boolean = {
+    if (!isInitialized) {
+      throw new Exception("***ERROR*** KamanjaEnvironmentManager has not been initialized. Please call def init first.")
+    }
+    try {
+      logger.info("Starting Zookeeper...")
+      embeddedZookeeper.startup
+      logger.info("Zookeeper started")
+      return true
+    }
+    catch {
+      case e: Exception => {
+        logger.error("***ERROR*** Failed to start Zookeeper\n" + logger.getStackTraceAsString(e))
+        return false
+      }
+    }
+  }
+
+  private def stopZookeeper: Boolean = {
+    if (!isInitialized) {
+      throw new Exception("***ERROR*** KamanjaEnvironmentManager has not been initialized. Please call def init first.")
+    }
+    try {
+      logger.info("Stopping Zookeeper...")
+      embeddedZookeeper.shutdown
+      logger.info("Zookeeper stopped")
+      return true
+    }
+    catch {
+      case e: Exception => {
+        logger.error("***ERROR* Failed to stop Zookeeper\n" + logger.getStackTraceAsString(e))
+        return false
+      }
+    }
+  }
+
+  private def startKafka: Boolean = {
+    if (!isInitialized) {
+      throw new Exception("***ERROR*** KamanjaEnvironmentManager has not been initialized. Please call def init first.")
+    }
+    try {
+      logger.info("Starting Kafka...")
+      kafkaCluster.startCluster
+      logger.info("Kafka started")
+      return true
+    }
+    catch {
+      case e: Exception => {
+        logger.error("***ERROR*** Failed to start Kafka\n" + logger.getStackTraceAsString(e))
+        return false
+      }
+    }
+  }
+
+  private def stopKafka: Boolean = {
+    if (!isInitialized) {
+      throw new Exception("***ERROR*** KamanjaEnvironmentManager has not been initialized. Please call def init first.")
+    }
+    try {
+      logger.info("Stopping Kafka...")
+      kafkaCluster.stopCluster
+      logger.info("Kafka stopped")
+      return true
+    }
+    catch {
+      case e: Exception => {
+        logger.error("***ERROR*** Failed to stop Kafka\n" + logger.getStackTraceAsString(e))
+        return false
+      }
+    }
+  }
+
+  private def startKafkaConsumer: Boolean = {
+    if (!isInitialized) {
+      throw new Exception("***ERROR*** KamanjaEnvironmentManager has not been initialized. Please call def init first.")
+    }
+    try {
+      logger.info(s"Starting Kafka consumer against topic '${getOutputKafkaAdapterConfig.adapterSpecificConfig.topicName}'...")
+      val kafkaConsumerThread = new Thread(kafkaConsumer)
+      kafkaConsumerThread.start()
+      logger.info(s"Kafka consumer started against topic '${getOutputKafkaAdapterConfig.adapterSpecificConfig.topicName}'")
+      return true
+    }
+    catch {
+      case e: Exception => {
+        logger.error(s"***ERROR*** Failed to start kafka consumer against topic '${getOutputKafkaAdapterConfig.adapterSpecificConfig.topicName}'\n${logger.getStackTraceAsString(e)}")
+        throw new Exception(s"***ERROR*** Failed to start kafka consumer against topic '${getOutputKafkaAdapterConfig.adapterSpecificConfig.topicName}'", e)
+      }
+    }
+  }
+
+  private def stopKafkaConsumer: Boolean = {
+    if (!isInitialized) {
+      throw new Exception("***ERROR*** KamanjaEnvironmentManager has not been initialized. Please call def init first.")
+    }
+    if (kafkaConsumer != null) {
+      try {
+        logger.info("Stopping Kafka consumer...")
+        kafkaConsumer.shutdown
+
+        logger.info("Kafka consumer stopped")
+        return true
+      }
+      catch {
+        case e: Exception => {
+          logger.error("***ERROR*** Failed to stop Kafka consumer\n" + logger.getStackTraceAsString(e))
+          throw new Exception("***ERROR*** Failed to stop Kafka consumer", e)
+        }
+      }
+    }
+    return true
   }
 
   private def createStorageAdapter(storageJsonStr: String): StorageAdapter = {

@@ -1,9 +1,11 @@
 package com.ligadata.kamanja.test.application.configuration
 
-import java.io.{PrintWriter}
+import java.io.{File, PrintWriter}
 import java.util.NoSuchElementException
 
 import com.ligadata.test.utils._
+
+import scala.io.Source
 
 object EmbeddedConfiguration {
   val storageDir = TestUtils.constructTempDir("/h2db").getAbsolutePath + "/storage"
@@ -231,13 +233,14 @@ object EmbeddedConfiguration {
       |  ]
       |}
     """.stripMargin
-      val clusterConfigFile = TestUtils.constructTempDir("/cluster-tmp-config").getAbsolutePath + "/ClusterConfig.json"
-      new PrintWriter(clusterConfigFile) {
-        write(clusterCfgStr)
-        close()
-      }
-      return clusterConfigFile
+    val clusterConfigFile = TestUtils.constructTempDir("/cluster-tmp-config").getAbsolutePath + "/ClusterConfig.json"
+    new PrintWriter(clusterConfigFile) {
+      write(clusterCfgStr)
+      close()
     }
+
+    return clusterConfigFile
+  }
 
   def generateKamanjaConfigFile: String = {
     val kamanjaConfigFile = TestUtils.constructTempDir("/kamanja-tmp-config").getAbsolutePath + "/kamanja.conf"
