@@ -61,7 +61,13 @@ class ParquetPartitionFile(fc: SmartFileProducerConfiguration, key: String, avro
     if (LOG.isInfoEnabled) LOG.info(">>>>>>>>>>>>>>>>>> Avro schema : " + avroSchemaStr + ", ignoreFields:" + ignoreFlds.mkString(","))
     val parquetSchema = Utils.getParquetSchema(avroSchemaStr, ignoreFlds)
     if (LOG.isInfoEnabled) LOG.info(">>>>>>>>>>>>>>>>>> parquet schema : " + parquetSchema.toString)
-    val writeSupport = new ParquetWriteSupport(parquetSchema)
+
+    val ignoreNullFlags =
+       if (fc.otherConfig.contains("NullFlagsFieldName"))
+         fc.otherConfig.getOrElse("NullFlagsFieldName", SmartFileProducer.nullFlagsFieldDefaultName).toString.trim
+       else SmartFileProducer.nullFlagsFieldDefaultName
+
+    val writeSupport = new ParquetWriteSupport(parquetSchema, ignoreNullFlags)
 
     ignoreFields = if (ignoreFlds != null) ignoreFlds.toSet else scala.collection.immutable.Set[String]()
 
