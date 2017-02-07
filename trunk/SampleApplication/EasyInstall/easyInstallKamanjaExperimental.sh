@@ -538,6 +538,9 @@ cp -rf * $installPath/Kamanja-$ver210/config
 cd $srcPath/SampleApplication/EasyInstall/template/scala-2.10
 cp -rf * $installPath/Kamanja-$ver210/template
 
+# Copying files for kamanja app tester compiled under scala 2.10
+prepare_kamanja_app_tester 2.10 $currentKamanjaVersion
+
 cd $srcPath/SampleApplication/EasyInstall
 cp SetPaths.sh $installPath/Kamanja-$ver210/bin/
 
@@ -557,8 +560,6 @@ echo ExtDependencyLibs_2.10-$currentKamanjaVersion.jar > $installPath/Kamanja-$v
 echo KamanjaInternalDeps_2.10-$currentKamanjaVersion.jar >> $installPath/Kamanja-$ver210/config/library_list
 echo ExtDependencyLibs2_2.10-$currentKamanjaVersion.jar >> $installPath/Kamanja-$ver210/config/library_list
 
-# Copying files for kamanja app tester compiled under scala 2.10
-prepare_kamanja_app_tester 2.10 $currentKamanjaVersion
 
 ################################ Version-2.10 Finished ################################
 
@@ -925,6 +926,9 @@ cp -rf * $installPath/Kamanja-$ver211/config
 cd $srcPath/SampleApplication/EasyInstall/template/scala-2.11
 cp -rf * $installPath/Kamanja-$ver211/template
 
+# Copying files for kamanja app tester compiled under scala 2.11
+prepare_kamanja_app_tester 2.11 $currentKamanjaVersion
+
 cd $srcPath/SampleApplication/EasyInstall
 cp SetPaths.sh $installPath/Kamanja-$ver211/bin/
 
@@ -933,8 +937,6 @@ bash $installPath/Kamanja-$ver211/bin/SetPaths.sh $KafkaRootDir
 chmod 0700 $installPath/Kamanja-$ver211/input/SampleApplications/bin/*.sh
 chmod 0700 $installPath/Kamanja-$ver211/ClusterInstall/*.sh
 
-# Copying files for kamanja app tester compiled under scala 2.11
-prepare_kamanja_app_tester 2.11 $currentKamanjaVersion
 
 fi # if [ "$build211" == "1" ]; then #beginning of the 2.11 build
 

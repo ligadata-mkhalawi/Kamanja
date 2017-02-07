@@ -31,13 +31,17 @@
       }
     ],
     "DataSets": [
-      {
-        "InputDataFile": "testApp1InputFile.csv",
-        "InputDataFormat": "CSV",
-        "ExpectedResultsFile": "testApp1ExpectedResults.csv",
-        "ExpectedResultsFormat": "CSV",
-        "PartitionKey": "1"
-      }
-    ]
+    	{
+	  "Input": {
+	 	"Filename": "testApp1InputFile.csv",
+		"Format": "CSV",
+		"PartitionKey": "1"
+	   },
+	   "ExpectedResults": {
+		"Filename": "testApp1ExpectedResults.csv",
+		"Format": "CSV"
+	   }
+	}
+     ]
   }
 }

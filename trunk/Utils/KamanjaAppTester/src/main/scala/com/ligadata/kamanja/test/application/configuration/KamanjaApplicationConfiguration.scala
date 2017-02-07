@@ -147,41 +147,93 @@ class KamanjaApplicationConfiguration {
 
   private def parseDataSets(appDir: String, configStr: JValue): List[DataSet] = {
     var dataSets: List[DataSet] = List()
-    val data: List[Map[String, Any]] = (configStr \\ "DataSets").values.asInstanceOf[List[Map[String, Any]]]
-    data.foreach(set => {
-      if (!set.keySet.exists(_ == "InputDataFile")) {
-        logger.error("***ERROR*** Data Set requires 'InputDataFile' to be defined.")
-        throw new KamanjaApplicationConfigurationException("***ERROR*** Data Set requires 'InputDataFile' to be defined.")
+    val dataSetMap: List[Map[String, Any]] = (configStr \\ "DataSets").values.asInstanceOf[List[Map[String, Any]]]
+    var inputDataFile:String = null;
+    var inputDataFormat:String = null;
+    var partitionKey:String = null;
+    var resultsDataFile:String = null;
+    var resultsDataFormat:String = null;
+
+    dataSetMap.foreach(dataSet => {
+      val inputElem = dataSet.getOrElse("Input",null)
+      if ( inputElem != null ){
+	val inputFileProperties: Map[String,Any] = inputElem.asInstanceOf[scala.collection.immutable.Map[String, Any]]
+	val fn = inputFileProperties.getOrElse("Filename",null)
+	if( fn == null ){
+	  logger.error("***ERROR*** DataSet Element Type 'Input' requires 'Filename' to be defined.")
+	  throw new KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'Input' requires 'Filename' to be defined.")
+        }
+	else{
+	  inputDataFile = fn.asInstanceOf[String]
+	}
+	
+	val fmt = inputFileProperties.getOrElse("Format",null)
+	if( fmt == null ){
+	  logger.error("***ERROR*** DataSet Element Type 'Input' requires 'Format' to be defined.")
+	  throw new KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'Input' requires 'Format' to be defined.")
+        }
+	else{
+	  inputDataFormat = fmt.asInstanceOf[String]
+	}
+
+	val pkey = inputFileProperties.getOrElse("PartitionKey",null)
+	if( pkey == null ){
+	  logger.error("***ERROR*** DataSet Element Type 'Input' requires 'PartitionKey' to be defined.")
+	  throw new KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'Input' requires 'PartitionKey' to be defined.")
+        }
+	else{
+	  partitionKey = pkey.asInstanceOf[String]
+	}
       }
-      if (!set.keySet.exists(_ == "InputDataFormat")) {
-        logger.error("***ERROR*** Data Set requires 'InputDataFormat' to be defined.")
-        throw new KamanjaApplicationConfigurationException("***ERROR*** Data Set requires 'InputDataFormat' to be defined.")
+      else{
+	  logger.error("***ERROR*** DataSet Element Type 'Input' must be defined.")
+	  throw new KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'Input' must be defined.")
+      }
+
+      val resultsElem = dataSet.getOrElse("ExpectedResults",null)
+      if ( resultsElem != null ){
+	val resultsFileProperties: Map[String,Any] = resultsElem.asInstanceOf[scala.collection.immutable.Map[String, Any]]
+	val fn = resultsFileProperties.getOrElse("Filename",null)
+	if( fn == null ){
+	  logger.error("***ERROR*** DataSet Element Type 'ExpectedResults' requires 'Filename' to be defined.")
+	  throw new KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'ExpectedResults' requires 'Filename' to be defined.")
+        }
+	else{
+	  resultsDataFile = fn.asInstanceOf[String]
+	}
+	val fmt = resultsFileProperties.getOrElse("Format",null)
+	if( fmt == null ){
+	  logger.error("***ERROR*** DataSet Element Type 'ExpectedResults' requires 'Format' to be defined.")
+	  throw new KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'ExpectedResults' requires 'Format' to be defined.")
+        }
+	else{
+	  resultsDataFormat = fmt.asInstanceOf[String]
+	}
+      }
+      else{
+	  logger.error("***ERROR*** DataSet Element Type 'ExpectedResults' must be defined.")
+	  throw new KamanjaApplicationConfigurationException("***ERROR*** DataSet Element Type 'ExpectedResults' must be defined.")
+      }
+
+      if( !inputDataFormat.equalsIgnoreCase("csv") && ! inputDataFormat.equalsIgnoreCase("json") ) {
+         throw new KamanjaApplicationConfigurationException(s"Invalid InputDataFormat '${inputDataFormat}' found. Accepted formats are CSV and JSON.")
+      }
+
+      if( ! resultsDataFormat.equalsIgnoreCase("csv") && ! resultsDataFormat.equalsIgnoreCase("json") ) {
+         throw new KamanjaApplicationConfigurationException(s"Invalid Format '${resultsDataFormat}' in ExpectedResults found. Accepted formats are CSV and JSON.")
+      }
+
+      var partKey: Option[String] = None
+      if(inputDataFormat.equalsIgnoreCase("csv") && !isNumeric(partitionKey) ){
+          throw new KamanjaApplicationConfigurationException(s"***ERROR*** Input Data Format is defined as CSV but the partition key ${partitionKey} is a String. It must be an integer.")
+      }
+      else if(inputDataFormat.equalsIgnoreCase("json") && isNumeric(partitionKey) ) {
+          throw new KamanjaApplicationConfigurationException(s"***ERROR*** Input Data Format is defined as JSON but the partition key ${partitionKey} is an Integer. It must be a string in the format 'namespace.message:partitionKey'")
       }
       else {
-        if(set("InputDataFormat").toString.toLowerCase != "csv" && set("InputDataFormat").toString.toLowerCase != "json"){
-          throw new KamanjaApplicationConfigurationException(s"Invalid InputDataFormat '${set("InputDataFormat")}' found. Accepted formats are CSV and JSON.")
-        }
+        partKey = Some(partitionKey)
       }
-      if (!set.keySet.exists(_ == "ExpectedResultsFile")) {
-        logger.error("***ERROR*** Data Set requires 'ExpectedResultsFile' to be defined.")
-        throw new KamanjaApplicationConfigurationException("***ERROR*** Data Set requires 'ExpectedResultsFile' to be defined.")
-      }
-      if(!set.keySet.exists(_ == "ExpectedResultsFormat")) {
-        logger.error("***ERROR*** Data Set requires 'ExpectedResultsFormat' to be defined.")
-        throw new KamanjaApplicationConfigurationException("***ERROR*** Data Set requires 'ExpectedResultsFormat' to be defined.")
-      }
-
-      var partitionKey: Option[String] = None
-      if(set.keySet.exists(_ == "PartitionKey")) {
-        if(set("InputDataFormat").toString.toLowerCase == "csv" && !isNumeric(set("PartitionKey").toString))
-          throw new KamanjaApplicationConfigurationException(s"***ERROR*** Input Data Format is defined as CSV but the partition key ${set("PartitionKey").toString} is a String. It must be an integer.")
-        else if(set("InputDataFormat").toString.toLowerCase == "json" && isNumeric(set("PartitionKey").toString))
-          throw new KamanjaApplicationConfigurationException(s"***ERROR*** Input Data Format is defined as JSON but the partition key ${set("PartitionKey").toString} is an Integer. It must be a string in the format 'namespace.message:partitionKey'")
-        else
-          partitionKey = Some(set("PartitionKey").toString)
-      }
-
-      dataSets = dataSets :+ new DataSet(appDir + "/data/" + set("InputDataFile").toString, set("InputDataFormat").toString, appDir + "/data/" + set("ExpectedResultsFile").toString, set("ExpectedResultsFormat").toString, partitionKey)
+      dataSets = dataSets :+ new DataSet(appDir + "/data/" + inputDataFile, inputDataFormat, appDir + "/data/" + resultsDataFile, resultsDataFormat, partKey)
     })
     return dataSets
   }
