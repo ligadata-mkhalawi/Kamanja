@@ -1,0 +1,13 @@
+@import url("theme.css");
+
+table.lg-wrap-fixed-table{
+    width:100%;
+    table-layout: fixed;
+}
+table.lg-wrap-fixed-table td, table.lg-wrap-fixed-table th{
+    white-space: -o-pre-wrap;
+    word-wrap: break-word;
+    white-space: pre-wrap;
+    white-space: -moz-pre-wrap;
+    white-space: -pre-wrap;
+}
