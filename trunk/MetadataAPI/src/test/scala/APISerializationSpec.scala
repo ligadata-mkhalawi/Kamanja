@@ -36,11 +36,20 @@ import org.apache.logging.log4j._
 import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
+import org.codehaus.jackson._
 import com.ligadata.Serialize._
 import com.ligadata.kamanja.metadataload.MetadataLoad
 import com.ligadata.test.utils._
 import com.ligadata.test.embedded.zookeeper._
 import com.ligadata.test.configuration.cluster.adapters.interfaces._
+
+import scala.util.parsing.json.JSON
+import scala.util.parsing.json.{ JSONObject, JSONArray }
+import scala.collection.immutable.Map
+import scala.collection.immutable.HashMap
+import scala.collection.mutable.HashMap
+
+import com.google.gson._
 
 class APISerializationSpec extends FunSpec with LocalTestFixtures with BeforeAndAfter with BeforeAndAfterAll with GivenWhenThen with Matchers {
   var res: String = null;
@@ -146,6 +155,27 @@ class APISerializationSpec extends FunSpec with LocalTestFixtures with BeforeAnd
     }
   }
 
+  private def prettyPrintResults(apiResults: String): Unit = {
+    var results = parse(apiResults).values.asInstanceOf[Map[String, Any]]
+    var resultsMap = results.getOrElse("APIResults",null).asInstanceOf[Map[String, Any]]
+    if( resultsMap != null ){
+      var resultsData = resultsMap.getOrElse("Result Data",null)
+      if( resultsData != null ){
+	var gson = new GsonBuilder().setPrettyPrinting().create();
+	val jp = new com.google.gson.JsonParser()
+	val je = jp.parse(resultsData.asInstanceOf[String]);
+	val prettyJsonString = gson.toJson(je);
+	logger.info(prettyJsonString)
+      }
+      else{
+	logger.info("resultsData is null")
+      }
+    }
+    else{
+      logger.info("resultsMap is null")
+    }
+  }
+
   describe("Unit Tests for MetadataAPISerialization operations") {
 
     // validate property setup
@@ -239,6 +269,7 @@ class APISerializationSpec extends FunSpec with LocalTestFixtures with BeforeAnd
       assert(null != sc)
     }
 
+
     it("Add Cluster Config") {
       And("Check whether CONFIG_FILES_DIR defined as property")
       dirName = MetadataAPIImpl.GetMetadataAPIConfig.getProperty("CONFIG_FILES_DIR")
@@ -292,6 +323,7 @@ class APISerializationSpec extends FunSpec with LocalTestFixtures with BeforeAnd
         And("GetAllAdapters to fetch the adapters")
         res = MetadataAPIImpl.GetAllAdapters("JSON", None)
 	logger.info("res => " + res);
+	prettyPrintResults(res)
         res should include regex ("\"Status Code\" : 0")
 
         And("GetAllClusters to fetch the clusters")
