@@ -9,7 +9,7 @@ into the Kamanja platform.  To do this:
 
 - Ingest the data using one of the following methods:
 
-  - Create a `smart file input adapter<smart-input-adapter>`
+  - Create a `smart file input adapter<smart-input-adapter-term>`
     that pulls new messages onto the Kamanja platform for processing.
     The input adapter watches the specified folders constantly;
     whenever it finds a new file in one of these folders,

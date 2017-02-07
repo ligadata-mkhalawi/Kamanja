@@ -47,7 +47,11 @@ to interface with the Kamanja history.
   def saveOne(inst: T): Unit = rddObj.saveOne(inst)
   def saveOne(key: Array[String], inst: T): Unit = rddObj.saveOne(key, inst)
   def saveRDD(data: RDD[T]): Unit = rddObj.saveRDD(data)
-	
+
+For more information:
+
+- :ref:`java-scala-guide-history` has more information about
+  using RDD with Kamanja
 
 See:
 

@@ -55,7 +55,8 @@ for production performance.
 Development systems can have a minimum required hardware capacity of 16GB RAM.
 
 .. list-table::
-   :widths: 20 30 20 30
+   :class: lg_wrap_fixed_table
+   :widths: 20, 30, 20, 30
    :header-rows: 1
 
    * - Platform
