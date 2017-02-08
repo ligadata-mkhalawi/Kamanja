@@ -5,7 +5,7 @@ import java.io.File
 
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType
 import com.ligadata.MetadataAPI.MetadataAPI.ModelType._
-import com.ligadata.MetadataAPI.{AdapterMessageBindingUtils, ApiResult, MetadataAPIImpl}
+import com.ligadata.MetadataAPI.{AdapterMessageBindingUtils, ApiResult, ConfigUtils, MetadataAPIImpl}
 import com.ligadata.Serialize.SerializerManager
 import com.ligadata.Exceptions.AlreadyExistsException
 import com.ligadata.MetadataAPI.Utility.AdapterMessageBindingService
@@ -211,6 +211,7 @@ class MetadataManager extends KamanjaTestLogger {
       case "jar" => result = parseApiResult(MetadataAPIImpl.UploadJar(filepath))
       case "compileconfig" => result = parseApiResult(MetadataAPIImpl.UploadModelsConfig(mdString, Some(userId), "", false))
     }
+    println(s"[Metadata Manager]: API Result =>\n${result.toString}")
     logger.info(s"[Metadata Manager]: API Result =>\n${result.toString}")
     result.statusCode
   }
@@ -303,18 +304,31 @@ class MetadataManager extends KamanjaTestLogger {
     }
   }
 
-  def addConfig(clusterCfgFile: String): Int = {
+  def addConfig(clusterCfgFile: File): Int = {
     try {
-      val source = Source.fromFile(new File(clusterCfgFile))
+      val source = Source.fromFile(clusterCfgFile)
       val cfgStr = source.getLines().mkString
       source.close()
-      val result = parseApiResult(MetadataAPIImpl.UploadConfig(cfgStr, Some(userId), ""))
+      return addConfig(cfgStr)
+    }
+    catch {
+      case e: Exception => {
+        logger.error(s"[Metadata Manager]: Failed to add Cluster Configuration From File $clusterCfgFile", e)
+        e.printStackTrace()
+        -1
+      }
+    }
+  }
+
+  def addConfig(clusterCfgStr: String): Int = {
+    try {
+      val result = parseApiResult(ConfigUtils.UploadConfig(clusterCfgStr, Some(userId), ""))
       logger.info("[Metadata Manager]: Upload Cluster Configuration API Result =>\n" + result.toString)
       result.statusCode
     }
     catch {
       case e: Exception => {
-        logger.error(s"[Metadata Manager]: Failed to add Cluster Configuration From File $clusterCfgFile", e)
+        logger.error(s"[Metadata Manager]: Failed to add Cluster Configuration\n $clusterCfgStr", e)
         e.printStackTrace()
         -1
       }
@@ -326,10 +340,11 @@ class MetadataManager extends KamanjaTestLogger {
     val json = parse(apiResult)
     val statusCode = (json \\ "Status Code").values.toString.toInt
     val functionName = (json \\ "Function Name").values.toString
-    val resultData = (json \\ "Result Data").values.toString
+    val resultData = (json \\ "Result Data")
+    var resultDataStr = if(resultData == JNull) "" else resultData.values.toString
     val description = (json \\ "Result Description").values.toString
 
-    new ApiResult(statusCode, functionName, resultData, description)
+    new ApiResult(statusCode, functionName, resultDataStr, description)
   }
 
   /// Returns 0 if all results are 0, otherwise returns the non-zero code

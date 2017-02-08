@@ -1737,11 +1737,20 @@ object ConfigUtils {
           setPropertyFromConfigFile("AUDIT_IMPL_JAR", auditImplJar)
         }
 
+
         var sslCertificate = getMetadataAPI.GetMetadataAPIConfig.getProperty("SSL_CERTIFICATE")
         if (sslCertificate == null) {
           sslCertificate = rootDir + "/config/keystore.jks"
           setPropertyFromConfigFile("SSL_CERTIFICATE", sslCertificate)
         }
+
+
+        var modelExecLog = getMetadataAPI.GetMetadataAPIConfig.getProperty("MODEL_EXEC_LOG")
+        if (modelExecLog == null) {
+          modelExecLog = "false"
+          setPropertyFromConfigFile("MODEL_EXEC_LOG", modelExecLog)
+        }
+
 
         // Check if there is an encrypted, encoded ssl password. If so, check for a Private Key File in configuration and decrypt.
         var sslEncryptedEncodedPassword: String = getMetadataAPI.GetMetadataAPIConfig.getProperty("SSL_ENCRYPTED_ENCODED_PASSWD")

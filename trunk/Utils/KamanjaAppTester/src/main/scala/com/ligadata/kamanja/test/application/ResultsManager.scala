@@ -15,9 +15,9 @@ case class MatchResult(messageNumber: Int, expectedResult: String, actualResult:
 
 /*
   ResultsManager will take a DataSet and Cluster configuration and push the input data, parse the expected results data, and read in output results processed by the engine.
-  This is expecting EmbeddedServicesManager to have already started the services. Otherwise, ResultsManager will fail to connect to Kafka.
+  This is expecting KamanjaEnvironmentManager to have already initialized. Otherwise, ResultsManager will fail to connect to Kafka.
  */
-class ResultsManager(cluster: Cluster) {
+class ResultsManager {
 
   private var logger = {
     try {
@@ -89,7 +89,7 @@ class ResultsManager(cluster: Cluster) {
 
   private def expectedResultsCount(dataSet: DataSet): Int = parseExpectedResults(dataSet).length
 
-  private val inputAdapterConfig: KafkaAdapterConfig = cluster.adapters.filter(_.asInstanceOf[KafkaAdapterConfig].adapterSpecificConfig.topicName.toLowerCase == "testin_1")(0).asInstanceOf[KafkaAdapterConfig]
+  private val inputAdapterConfig: KafkaAdapterConfig = KamanjaEnvironmentManager.getInputKafkaAdapterConfig
 
   private def compareCsvResults(dataSet: DataSet, actualResults: List[String]): List[MatchResult] = {
     val expectedResults = parseExpectedResults(dataSet)
