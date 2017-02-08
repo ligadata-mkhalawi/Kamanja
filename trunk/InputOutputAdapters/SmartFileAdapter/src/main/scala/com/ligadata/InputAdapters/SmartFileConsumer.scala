@@ -1,24 +1,18 @@
 package com.ligadata.InputAdapters
 
-import java.io.IOException
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.locks.ReentrantReadWriteLock
+
+import com.ligadata.AdaptersConfiguration._
 import com.ligadata.Exceptions.KamanjaException
-
-
-import scala.actors.threadpool.TimeUnit
-import java.util.zip.ZipException
-
 import com.ligadata.HeartBeat.MonitorComponentInfo
 import com.ligadata.InputOutputAdapterInfo._
-import com.ligadata.AdaptersConfiguration._
 import com.ligadata.KamanjaBase._
-import com.ligadata.Utils.{Utils, ClusterStatus}
-import org.apache.logging.log4j.LogManager
+import com.ligadata.Utils.ClusterStatus
 import org.json4s.jackson.Serialization
 
-import scala.actors.threadpool.{Executors, ExecutorService}
-import scala.collection.mutable.{Map, MultiMap, HashMap, ArrayBuffer}
+import scala.actors.threadpool.{ExecutorService, Executors}
+import scala.collection.mutable.{ArrayBuffer, HashMap, MultiMap}
 
 case class BufferLeftoversArea(workerNumber: Int, leftovers: Array[Byte], relatedChunk: Int)
 
@@ -1177,7 +1171,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
               //since a request in cache has the format <node1>/<thread1>:<path to receive files>|<node2>/<thread1>:<path to receive files>
               val requestTokens = request.split(":")
-              val fileToProcessKeyPath = requestTokens(1) //something like SmartFileCommunication/FromLeader/<NodeId>/<thread id>
+              val fileToProcessKeyPath = requestTokens(1)
+              //something like SmartFileCommunication/FromLeader/<NodeId>/<thread id>
               val requestNodeInfoTokens = requestTokens(0).split("/")
               val requestingNodeId = requestNodeInfoTokens(0)
               val requestingThreadId = requestNodeInfoTokens(1)
@@ -1202,7 +1197,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                       ". fileToProcessKeyPath=" + fileToProcessKeyPath)
 
                     //leave offset management to engine, usually this will be other than zero when calling startProcessing
-                    val offset = 0L //getFileOffsetFromCache(fileToProcessFullPath)
+                    val offset = 0L
+                    //getFileOffsetFromCache(fileToProcessFullPath)
                     val data = fileToProcessFullPath + "|" + offset
 
                     //there are files that need to process
@@ -1425,7 +1421,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     //(1,file1,0,true)~(2,file2,0,true)~(3,file3,1000,true)
     val dataAr = eventPathData.split("~")
     val sendingNodeStartInfo = dataAr.map(dataItem => {
-      val trimmedItem = dataItem.substring(1, dataItem.length - 1) // remove parenthesis
+      val trimmedItem = dataItem.substring(1, dataItem.length - 1)
+      // remove parenthesis
       val itemTokens = trimmedItem.split(",")
       (itemTokens(0).toInt, itemTokens(1), itemTokens(2).toLong, itemTokens(3).toBoolean)
     }).toList
@@ -1606,7 +1603,8 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
     //send a new file request to leader
     if (!isShutdown) {
       //shutdown will clear all queues
-      val requestData = smartFileFromLeaderPath + "/" + context.nodeId + "/" + context.partitionId //listen to this SmartFileCommunication/FromLeader/<NodeId>/<partitionId id>
+      val requestData = smartFileFromLeaderPath + "/" + context.nodeId + "/" + context.partitionId
+      //listen to this SmartFileCommunication/FromLeader/<NodeId>/<partitionId id>
       val requestPathKey = requestFilePath + "/" + context.nodeId + "/" + context.partitionId
       LOG.info("SMART FILE CONSUMER - participant ({}) - sending a file request to leader on partition ({}) after finishing file {}",
         context.nodeId, context.partitionId.toString, fileHandler.getFullPath)
@@ -1631,6 +1629,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
           statMsg.set("bytesRead", stats.bytesRead)
           statMsg.set("nodeId", stats.nodeId)
           statMsg.set("status", stats.status)
+          statMsg.set("adapterName", adapterConfig.Name)
 
           // Post the messgae
           envContext.postMessages(Array[ContainerInterface](statMsg))
@@ -1788,9 +1787,9 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
       //base target dir already exists, but might need to build sub-dirs corresponding to input dir structure
       val targetDirExists =
-      if (!targetDirHandler.exists())
-        targetDirHandler.mkdirs()
-      else true
+        if (!targetDirHandler.exists())
+          targetDirHandler.mkdirs()
+        else true
 
       if (targetDirExists)
         fileHandler.moveTo(targetMoveDir + "/" + flBaseName)
