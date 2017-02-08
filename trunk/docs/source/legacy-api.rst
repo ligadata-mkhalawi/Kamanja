@@ -1,4 +1,6 @@
 
+.. _legacy-api-ref:
+
 ==================================
 Legacy API Reference documentation
 ==================================

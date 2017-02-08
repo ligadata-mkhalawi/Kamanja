@@ -13,6 +13,7 @@ Ligapedia
    ligapedia/a-f/avro
    ligapedia/a-f/bashrc
    ligapedia/a-f/caching
+   ligapedia/a-f/cassandra
    ligapedia/a-f/cluster
    ligapedia/a-f/cluster-analysis
    ligapedia/a-f/com-ligadata-keyvaluestore-datastore
@@ -33,6 +34,7 @@ Ligapedia
    ligapedia/a-f/features
    ligapedia/a-f/functions
    ligapedia/g-m/hbase
+   ligapedia/g-m/ingest-data
    ligapedia/g-m/jar
    ligapedia/g-m/java
    ligapedia/g-m/json

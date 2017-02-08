@@ -1,5 +1,5 @@
 
-.. install-top:
+.. _install-top:
 
 ===============================
 Planning and installing Kamanja
@@ -13,6 +13,8 @@ Planning and installing Kamanja
    install-plan/prepare
    install-plan/pkgs-prereqs
    install-plan/kamanja-user
+   install-plan/hbase-install
+   install-plan/cassandra-install
    install-plan/ssh-install
    install-plan/download
    install-plan/setpath-install

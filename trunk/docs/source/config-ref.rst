@@ -1,4 +1,6 @@
 
+.. _config-ref-top:
+
 ==================================
 Configuration File Reference Pages
 ==================================

@@ -26,6 +26,10 @@ This is a list of the steps required to install Kamanja:
      - :ref:`env-variables-install`
    * - :ref:`kamanja-user-install`
      - :ref:`kamanja-user-install`
+   * - :ref:`hbase-install` (optional)
+     - :ref:`hbase-install` (optional)
+   * - :ref:`cassandra-install` (optional)
+     - :ref:`cassandra-install` (optional)
    * - --
      - :ref:`ssh-install`
    * - :ref:`kamanja-download`

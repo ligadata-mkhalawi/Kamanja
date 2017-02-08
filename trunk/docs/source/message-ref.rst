@@ -1,4 +1,6 @@
 
+.. _message-ref-top:
+
 =======================
 Message Reference Pages
 =======================
