@@ -1637,12 +1637,12 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
       }
       catch {
         case e: Exception => {
-          logger.error("", e)
+          logger.error("Error getting instance of stauts msg %s for input adapter %s".format(adapterConfig.statusMsgTypeName, adapterConfig.Name), e)
         }
       }
     }
     else {
-      logger.error("Msg {} is not found in metadata", statMsgStr)
+      logger.debug("No status msg is defined")
     }
 
   }
