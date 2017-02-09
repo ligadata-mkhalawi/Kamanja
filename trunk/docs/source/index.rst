@@ -90,7 +90,7 @@ Reference Pages
 
    config-ref
    command-ref
-
+   adapter-ref
    message-ref
 
 API Documentation
@@ -112,7 +112,6 @@ Machine Learning Guides
    pmml
    jtm
    python
-   .. r-rattle
    adapters
 
 Administration Guides
