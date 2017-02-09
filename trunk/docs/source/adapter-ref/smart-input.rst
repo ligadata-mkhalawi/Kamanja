@@ -114,6 +114,15 @@ such as "HDFSAdapter" or "SftpAdapter_1".
 The first few parameters are the standard ones
 used for all adapters and described on the
 :ref:`adapter-def-config-ref` page.
+The Smart Input File functionality is implemented
+with the following parameters set as shown:
+
+::
+
+  "ClassName": "com.ligadata.InputAdapters.SamrtFileInputAdapter$",
+  "JarName": "smartfileinputoutputadapters_2.10-1.0.jar",
+  
+
 In addition, the **AdapterSpecificCfg** parameter
 has the following attributes
 which must be populated when configuring the adapter:

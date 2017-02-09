@@ -2,11 +2,14 @@
 New features in Kamanja 1.6.2
 =============================
 
-Kamanja 1.6.2 includes the following new features:
+Kamanja 1.6.2 includes a number of bug fixes
+plus the following new features:
 
 - Velocity metrics, which can be configured into your application
   to collect statistics about :ref:`message<messages-term>` processing.
   See :ref:`velocity-metrics-term` for more information.
+- ElasticSearch adapter
+- <Parquet updates>
 
 Kamanja 1.6.1 was a limited release that includes
 the following new features,

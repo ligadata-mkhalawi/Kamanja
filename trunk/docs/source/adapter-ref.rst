@@ -14,9 +14,9 @@ Adapter Reference Pages
 
    * - Adapter
      - Description
-   * - Smart Input File Adapter
-     -
-   * - Smart Output File Adapter
+   * - :ref:`smart-input-config-ref`
+     - ingest streaming messages automatically
+   * - :ref:`smart-output-config-ref`
      -
 
 
