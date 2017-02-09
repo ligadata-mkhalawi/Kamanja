@@ -73,7 +73,8 @@ Command Reference Pages
    :maxdepth: 1
 
    command-ref/ContainerUtility
-   command-ref/CreateQueues
+..   command-ref/CreateQueues  Aladdin it causes warning
+
    command-ref/ClusterInstallerDriver
    command-ref/easyInstallKamanja
    command-ref/FileDataConsumer

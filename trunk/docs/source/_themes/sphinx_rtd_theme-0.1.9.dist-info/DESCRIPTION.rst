@@ -23,9 +23,10 @@ if you're just trying to use it on your project outside of that site.
 
 **This repo also exists as a submodule within the readthedocs itself**, so please make your edits to
 the SASS files here, rather than the .css files on RTD.
-
-.. image:: screen_mobile.png
-    :width: 100%
+# Aladdin
+# this file does not exist and causes a warning
+# .. image:: screen_mobile.png
+#    :width: 100%
 
 Installation
 ============

@@ -35,7 +35,9 @@ extensions = [
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-# templates_path = ['_templates']
+# Aladdin
+# override the default template
+templates_path = ['_themes/sphinx_rtd_theme']
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -150,7 +152,7 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
 #
-# html_logo = None
+html_logo = '_images/kamy-logo-white.png'
 
 # The name of an image file (relative to this directory) to use as a favicon of
 # the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
