@@ -1086,7 +1086,7 @@ object ConfigUtils {
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetAllNodes", null, ErrorCodeConstants.Get_All_Nodes_Failed_Not_Available)
         apiResult.toString()
       } else {
-        val apiResult = new ApiResult(ErrorCodeConstants.Success, "GetAllNodes", JsonSerializer.SerializeCfgObjectListToJson("Nodes", nodes), ErrorCodeConstants.Get_All_Nodes_Successful)
+        val apiResult = new ApiResult(ErrorCodeConstants.Success, "GetAllNodes", MetadataAPISerialization.SerializeObjectListToJson("Nodes", nodes.asInstanceOf[Array[Any]]), ErrorCodeConstants.Get_All_Nodes_Successful)
         apiResult.toString()
       }
     } catch {
@@ -1117,7 +1117,7 @@ object ConfigUtils {
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetAllAdapters", null, ErrorCodeConstants.Get_All_Adapters_Failed_Not_Available)
         apiResult.toString()
       } else {
-        val apiResult = new ApiResult(ErrorCodeConstants.Success, "GetAllAdapters", JsonSerializer.SerializeCfgObjectListToJson("Adapters", adapters), ErrorCodeConstants.Get_All_Adapters_Successful)
+        val apiResult = new ApiResult(ErrorCodeConstants.Success, "GetAllAdapters", MetadataAPISerialization.SerializeObjectListToJson("Adapters", adapters.asInstanceOf[Array[Any]]), ErrorCodeConstants.Get_All_Adapters_Successful)
         apiResult.toString()
       }
     } catch {
@@ -1165,7 +1165,7 @@ object ConfigUtils {
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetAllClusters", null, ErrorCodeConstants.Get_All_Clusters_Failed_Not_Available)
         apiResult.toString()
       } else {
-        val apiResult = new ApiResult(ErrorCodeConstants.Success, "GetAllClusters", JsonSerializer.SerializeCfgObjectListToJson("Clusters", clusters), ErrorCodeConstants.Get_All_Clusters_Successful)
+        val apiResult = new ApiResult(ErrorCodeConstants.Success, "GetAllClusters", MetadataAPISerialization.SerializeObjectListToJson("Clusters", clusters.asInstanceOf[Array[Any]]), ErrorCodeConstants.Get_All_Clusters_Successful)
         apiResult.toString()
       }
     } catch {
@@ -1196,7 +1196,7 @@ object ConfigUtils {
         val apiResult = new ApiResult(ErrorCodeConstants.Failure, "GetAllClusterCfgs", null, ErrorCodeConstants.Get_All_Cluster_Configs_Failed_Not_Available)
         apiResult.toString()
       } else {
-        val apiResult = new ApiResult(ErrorCodeConstants.Success, "GetAllClusterCfgs", JsonSerializer.SerializeCfgObjectListToJson("ClusterCfgs", clusterCfgs), ErrorCodeConstants.Get_All_Cluster_Configs_Successful)
+        val apiResult = new ApiResult(ErrorCodeConstants.Success, "GetAllClusterCfgs", MetadataAPISerialization.SerializeObjectListToJson("ClusterCfgs", clusterCfgs.asInstanceOf[Array[Any]]), ErrorCodeConstants.Get_All_Cluster_Configs_Successful)
 
         apiResult.toString()
       }
@@ -1229,45 +1229,45 @@ object ConfigUtils {
       val clusters = MdMgr.GetMdMgr.Clusters.values.toArray
       if (clusters.length != 0) {
         cfgObjList = cfgObjList :+ clusters
-        jsonStr1 = JsonSerializer.SerializeCfgObjectListToJson("Clusters", clusters)
+        jsonStr1 = MetadataAPISerialization.SerializeObjectListToJson("Clusters", clusters.asInstanceOf[Array[Any]])
         jsonStr1 = jsonStr1.substring(1)
-        jsonStr1 = JsonSerializer.replaceLast(jsonStr1, "}", ",")
+        jsonStr1 = MetadataAPISerialization.replaceLast(jsonStr1, "}", ",")
         jsonStr = jsonStr + jsonStr1
       }
       val clusterCfgs = MdMgr.GetMdMgr.ClusterCfgs.values.toArray
       if (clusterCfgs.length != 0) {
         cfgObjList = cfgObjList :+ clusterCfgs
-        jsonStr1 = JsonSerializer.SerializeCfgObjectListToJson("ClusterCfgs", clusterCfgs)
+        jsonStr1 = MetadataAPISerialization.SerializeObjectListToJson("ClusterCfgs", clusterCfgs.asInstanceOf[Array[Any]])
         jsonStr1 = jsonStr1.substring(1)
-        jsonStr1 = JsonSerializer.replaceLast(jsonStr1, "}", ",")
+        jsonStr1 = MetadataAPISerialization.replaceLast(jsonStr1, "}", ",")
         jsonStr = jsonStr + jsonStr1
       }
       val tenants = MdMgr.GetMdMgr.GetAllTenantInfos
       if (tenants.length != 0) {
         cfgObjList = cfgObjList :+ tenants
-        jsonStr1 = JsonSerializer.SerializeCfgObjectListToJson("Tenants", tenants)
+        jsonStr1 = MetadataAPISerialization.SerializeObjectListToJson("Tenants", tenants.asInstanceOf[Array[Any]])
         jsonStr1 = jsonStr1.substring(1)
-        jsonStr1 = JsonSerializer.replaceLast(jsonStr1, "}", ",")
+        jsonStr1 = MetadataAPISerialization.replaceLast(jsonStr1, "}", ",")
         jsonStr = jsonStr + jsonStr1
       }
       val nodes = MdMgr.GetMdMgr.Nodes.values.toArray
       if (nodes.length != 0) {
         cfgObjList = cfgObjList :+ nodes
-        jsonStr1 = JsonSerializer.SerializeCfgObjectListToJson("Nodes", nodes)
+        jsonStr1 = MetadataAPISerialization.SerializeObjectListToJson("Nodes", nodes.asInstanceOf[Array[Any]])
         jsonStr1 = jsonStr1.substring(1)
-        jsonStr1 = JsonSerializer.replaceLast(jsonStr1, "}", ",")
+        jsonStr1 = MetadataAPISerialization.replaceLast(jsonStr1, "}", ",")
         jsonStr = jsonStr + jsonStr1
       }
       val adapters = MdMgr.GetMdMgr.Adapters.values.toArray
       if (adapters.length != 0) {
         cfgObjList = cfgObjList :+ adapters
-        jsonStr1 = JsonSerializer.SerializeCfgObjectListToJson("Adapters", adapters)
+        jsonStr1 = MetadataAPISerialization.SerializeObjectListToJson("Adapters", adapters.asInstanceOf[Array[Any]])
         jsonStr1 = jsonStr1.substring(1)
-        jsonStr1 = JsonSerializer.replaceLast(jsonStr1, "}", ",")
+        jsonStr1 = MetadataAPISerialization.replaceLast(jsonStr1, "}", ",")
         jsonStr = jsonStr + jsonStr1
       }
 
-      jsonStr = "{" + JsonSerializer.replaceLast(jsonStr, ",", "") + "}"
+      jsonStr = "{" + MetadataAPISerialization.replaceLast(jsonStr, ",", "") + "}"
 
       if (cfgObjList.length == 0) {
         logger.debug("No Config Objects found ")
