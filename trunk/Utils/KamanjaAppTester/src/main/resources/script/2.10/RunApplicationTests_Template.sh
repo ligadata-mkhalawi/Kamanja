@@ -29,10 +29,6 @@ do
             appName=$2
             shift
             ;;
-        -h|--help)
-            help=true
-            shift
-            ;;
         *)
             echo "ERROR: Unknown option $key."
             exit 1
@@ -46,7 +42,6 @@ do
     key="$1"
     case $key in
         -h|--help)
-            echo "You need help?"
             help=true
             shift
             ;;
@@ -59,7 +54,7 @@ shift
 done
 
 if [ "$help" = true ]; then
-    javaCommand="java -Xdebug -Xrunjdwp:transport=dt_socket,address="$ipport",server=y -Dlog4j.configurationFile=file:{InstallDirectory}/config/log4j2.xml -cp {InstallDirectory}/lib/system/ExtDependencyLibs2_${scalaVersion}-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/ExtDependencyLibs_${scalaVersion}-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/KamanjaInternalDeps_${scalaVersion}-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/KamanjaAppTester_${scalaVersion}-${currentKamanjaVersion}.jar com.ligadata.kamanja.test.application.TestExecutor --help"
+    javaCommand="java -Dlog4j.configurationFile=file:{InstallDirectory}/config/log4j2.xml -cp {InstallDirectory}/lib/system/ExtDependencyLibs2_${scalaVersion}-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/ExtDependencyLibs_${scalaVersion}-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/KamanjaInternalDeps_${scalaVersion}-${currentKamanjaVersion}.jar:{InstallDirectory}/lib/system/KamanjaAppTester_${scalaVersion}-${currentKamanjaVersion}.jar com.ligadata.kamanja.test.application.TestExecutor --help"
 elif [ -z "$metadataAPIConfig" ] || [ -z "$clusterConfig" ]; then
     echo "Either Metadata API Configuration or Cluster Configuration or both were not provided. Executing using embedded services."
     if [ "$1" != "debug" ]; then
