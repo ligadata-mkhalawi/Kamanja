@@ -78,6 +78,31 @@ object Root {
     }
   }
 
+
+  class LinkedMapToType[T:ClassTag] extends JsonDeserializer[scala.collection.mutable.LinkedHashMap[String, T]] with JsonSerializer[scala.collection.mutable.LinkedHashMap[String, T]] {
+
+    def deserialize(json: JsonElement, typeOfT1: Type, context: JsonDeserializationContext): scala.collection.mutable.LinkedHashMap[String, T] = {
+      var map = scala.collection.mutable.LinkedHashMap.empty[String, T]
+      val p = json.getAsJsonObject()
+      p.entrySet().map( e => {
+        val o = e.getValue
+        val t = classTag[T].runtimeClass
+        val v: T = context.deserialize[T](o, t)
+        map ++= Map( e.getKey -> v)
+      })
+      map
+    }
+
+    def serialize(src: scala.collection.mutable.LinkedHashMap[String, T], typeOfT: Type, context: JsonSerializationContext):  JsonObject = {
+      val json = new JsonObject
+      src.foreach( p => {
+        val jo = context.serialize(p._2).getAsJsonObject()
+        json.add(p._1, jo)
+      })
+      json
+    }
+  }
+
   /** Setup the gson object to be used
     *
     * @return a configured Gson object
@@ -89,6 +114,10 @@ object Root {
     val mapToCompute = new TypeToken[scala.collection.Map[String, Compute]](){}.getType()
     val mapToGrok = new TypeToken[scala.collection.Map[String, Grok]](){}.getType()
     val mapToArray = new TypeToken[scala.collection.Map[String, Array[String]]](){}.getType()
+
+    val linkedMapToCompute = new TypeToken[scala.collection.mutable.LinkedHashMap[String, Compute]](){}.getType()
+    val mapToConditionalComputes = new TypeToken[scala.collection.Map[String, ConditionalComputesGroup]](){}.getType()
+
     new GsonBuilder().
       registerTypeAdapter(mapToString, new MapToString).
       registerTypeAdapter(mapToTransformation, new MapToType[Transformation]).
@@ -96,6 +125,8 @@ object Root {
       registerTypeAdapter(mapToCompute, new MapToType[Compute]).
       registerTypeAdapter(mapToGrok, new MapToType[Grok]).
       registerTypeAdapter(mapToArray, new MapToType[Array[String]]).
+      registerTypeAdapter(mapToConditionalComputes, new MapToType[ConditionalComputesGroup]).
+      registerTypeAdapter(linkedMapToCompute, new LinkedMapToType[Compute]).
       create()
   }
 
