@@ -20,7 +20,8 @@ Syntax
     --outputpath /tmp/Kamanja --operation select --filter /opt/filter.json \
     --serializer “com.ligadata.kamanja.serializer.csvserdeser” \
     --serializeroptionjson \
-    ‘{“alwaysQuoteFields”:false,”fieldDelimiter”:”,”,”valueDelimiter”:”~”}’ --compressionstring “gz”
+    ‘{“alwaysQuoteFields”:false,”fieldDelimiter”:”,”,”valueDelimiter”:”~”}’ \
+    --compressionstring “gz”
 
 Options and arguments
 ---------------------
@@ -32,18 +33,42 @@ Options and arguments
   Valid values are select, truncate, and delete.
 - **filter** - JSON file that includes time ranges and/or keys
   to select/delete from the container.
-  Valid values re:
+  Valid values are:
 
     - Timeranges - beginTime and endTime.
-      At this time, it can only be specified as 0 and 0.
+      Currently, this can only be specified as 0 and 0.
     - Keys is a bucket key.
       It is the first column in the file
       that is used to push data to the container.
 
-  It is mandatory for the delete and select operations
-  and not necessary for the truncate operation.
+      This argument is mandatory for the delete and select operations
+      but is not necessary for the truncate operation.
+      See the "Usage" section below for more information.
 
-  If the filter.json file contains more than one criteria,
+- **outputpath** - path to put the data after selected.
+  It is mandatory for the select operation
+  and not necessary for the delete and truncate operations
+- **serializer** - how to see the data in the select operation.
+  Valid values are:
+
+  - com.ligadata.kamanja.serializer.csvserdeser
+  - com.ligadata.kamanja.serializer.jsonserdeser
+
+  It is mandatory for the select operation
+  and not necessary for the delete and truncate operations.
+- **serializeroptionjson** - how to delimit the value field and key field.
+  It is mandatory for the select operation
+  and not necessary for the delete and truncate operations.
+- **compressionstring** - format of file when using the select operation.
+  The only supported value is gz.
+  It is mandatory for the select operation
+  and not necessary for the delete and truncate operation.
+
+
+Usage
+-----
+
+  If the *filter.json* file contains more than one criteria,
   each criteria acts individually and gives results
   independent of the other.
   As a result, duplicate values may be seen in the output file.
@@ -71,39 +96,18 @@ Options and arguments
      "0330 - Whooping cough due to bordetella pertussis [B. pertussis]"0338,
      "0338 - Whooping cough due to other specified organism"0339, "0339 - Whooping cough
 
-- **outputpath** - path to put the data after selected.
-  It is mandatory for the select operation
-  and not necessary for the delete and truncate operations
-- **serializer** - how to see the data in the select operation.
-  Valid values are:
-
-  - com.ligadata.kamanja.serializer.csvserdeser
-  - com.ligadata.kamanja.serializer.jsonserdeser
-
-  It is mandatory for the select operation
-  and not necessary for the delete and truncate operations.
-- **serializeroptionjson** - how to delimit the value field and key field.
-  It is mandatory for the select operation
-  and not necessary for the delete and truncate operations.
-- **compressionstring** - format of file when using the select operation.
-  The only supported value is gz.
-  It is mandatory for the select operation
-  and not necessary for the delete and truncate operation.
-
-
-Usage
------
-
 Error returns
 -------------
 
-1. If a wrong output path is provided, the error message is:
+If an invalid path is specified for the **outputpath** argument,
+the error message is:
 
 ::
 
   ERROR [main] - this path does not exist: tmp/kamanja
 
-2. If a wrong operation is provided, the error message is:
+If an invalid value is specified for the **operation** argument
+the error message is:
 
 ::
 
@@ -114,69 +118,102 @@ Error returns
     --container name <full package qualified name of a Container without
     version> test.kamanja.container --operation <truncate, select, delete>
     --filter <a json file that includes timeranges and keys>
-    --outputpath <a path where you want put a selected rows *mandatory for select and not necessary for truncate and delete*>
-    --serializer <how you need to see selected data *mandatory for select and not necessary for truncate and delete*>
-    --serializeroptionsjson <*mandatory for select and not necessary for truncate and delete*>
-    --compression string <the extension of file gz or dat *mandatory for select and not necessary for truncate and delete*>Sample uses:
-     bash $KAMANJA_HOME/bin/ContainerUtility.sh --containername System.TestContainer --config $KAMANJA_HOME/config/Engine1Config.properties --operation truncate
+    --outputpath <a path where you want put a selected rows *mandatory for
+      select and not necessary for truncate and delete*>
+    --serializer <how you need to see selected data *mandatory for select
+      and not necessary for truncate and delete*>
+    --serializeroptionsjson <*mandatory for select
+      and not necessary for truncate and delete*>
+    --compression string <the extension of file gz or dat *mandatory for select
+      and not necessary for truncate and delete*>Sample uses:
+     bash $KAMANJA_HOME/bin/ContainerUtility.sh --containername System.TestContainer
+      --config $KAMANJA_HOME/config/Engine1Config.properties --operation truncate
 
-3. If a wrong filter file is provided, the error message is:
+If an incorrect or invalid filter file is provided, the error message is:
 
 ::
 
   ERROR [main] - this path does not exist: /opt/tesjson.json WARN [main]
     - Usage: $KAMANJA_HOME/bin/ContainerUtility.sh
-    --config <config file while has jarpaths, metadata store information & data store information> $KAMANJA_HOME/config/Engine1config.properties
+    --config <config file while has jarpaths, metadata store information & data store information>
+      $KAMANJA_HOME/config/Engine1config.properties
+    --container name <full package qualified name of a Container without version>
+      test.kamanja.container
+    --operation <truncate, select, delete>
+    --filter <a json file that includes timeranges and keys>
+    --outputpath <a path where you want put a selected rows *mandatory for select
+      and not necessary for truncate and delete*>
+    --serializer <how you need to see selected data *mandatory for select
+      and not necessary for truncate and delete*>
+    --serializeroptionsjson <*mandatory for select and not necessary for truncate and delete*>
+    --compression string <the extension of file gz or dat *mandatory for select
+      and not necessary for truncate and delete*>Sample uses:
+     bash $KAMANJA_HOME/bin/ContainerUtility.sh --containername System.TestContainer
+      --config $KAMANJA_HOME/config/Engine1Config.properties --operation truncate
+
+If the specified filter file has no content or keys
+and time ranges are are not specified, the error message is:
+
+::
+
+  ERROR [main] - Failed to select data from com.ligadata.kamanja.samples.containers.CoughCodes
+    container,at least one item (keys, timerange) should not be null for select operation
+
+If a container that is not in the data store is specified, the error message is:
+
+::
+
+  ERROR [main] - Not found valid type for com.ligadata.kamanja.samples.containers.coughcodes1
+    ERROR [main] - Not found tenantInfo for tenantId 
+
+If a delete or select operation is used without providing the filter file,
+the error message is:
+
+::
+
+  ERROR [main] - you should pass a filter file which includes keys and/or timeranges
+   in filter option WARN [main] - Usage: $KAMANJA_HOME/bin/ContainerUtility.sh
+    --config <config file while has jarpaths, metadata store information
+      & data store information> $KAMANJA_HOME/config/Engine1config.properties
+    --container name <full package qualified name of a Container without version>
+      test.kamanja.container
+    --operation <truncate, select, delete>
+    --filter <a json file that includes timeranges and keys>
+    --outputpath <a path where you want put a selected rows
+      *mandatory for select and not necessary for truncate and delete*>
+    --serializer <how you need to see selected data *mandatory for select
+      and not necessary for truncate and delete*>
+    --serializeroptionsjson <*mandatory for select and not necessary for truncate and delete*>
+    --compression string <the extension of file gz or dat *mandatory for select
+      and not necessary for truncate and delete*>Sample uses:
+     bash $KAMANJA_HOME/bin/ContainerUtility.sh
+       --containername System.TestContainer
+       --config $KAMANJA_HOME/config/Engine1Config.properties
+       --operation truncate
+
+If the select operation is used and the serializer option is not provided,
+the error message is:
+
+::
+
+  ERROR [main] - you should pass a serializer option for select operation WARN [main]
+    - Usage: $KAMANJA_HOME/bin/ContainerUtility.sh
+    --config <config file while has jarpaths, metadata store information & data store information>
+      $KAMANJA_HOME/config/Engine1config.properties
     --container name <full package qualified name of a Container without version> test.kamanja.container
     --operation <truncate, select, delete>
     --filter <a json file that includes timeranges and keys>
-    --outputpath <a path where you want put a selected rows *mandatory for select and not necessary for truncate and delete*>
-    --serializer <how you need to see selected data *mandatory for select and not necessary for truncate and delete*>
-    --serializeroptionsjson <*mandatory for select and not necessary for truncate and delete*>
-    --compression string <the extension of file gz or dat *mandatory for select and not necessary for truncate and delete*>Sample uses:
-     bash $KAMANJA_HOME/bin/ContainerUtility.sh --containername System.TestContainer --config $KAMANJA_HOME/config/Engine1Config.properties --operation truncate
-
-4. If a filter file is provided with no content or keys and time ranges are provided without values, the error message is:
-
-::
-
-  ERROR [main] - Failed to select data from com.ligadata.kamanja.samples.containers.CoughCodes container,at least one item (keys, timerange) should not be null for select operation
-
-5. If a container is provided that is not in the data store, the error message is:
-
-::
-
-  ERROR [main] - Not found valid type for com.ligadata.kamanja.samples.containers.coughcodes1ERROR [main] - Not found tenantInfo for tenantId 
-
-6. If a delete or select operation is used without providing the filter file, the error message is:
-
-::
-
-  ERROR [main] - you should pass a filter file which includes keys and/or timeranges in filter option WARN [main] - Usage: $KAMANJA_HOME/bin/ContainerUtility.sh
-    --config <config file while has jarpaths, metadata store information & data store information> $KAMANJA_HOME/config/Engine1config.properties
-    --container name <full package qualified name of a Container without version> test.kamanja.container
-    --operation <truncate, select, delete>
-    --filter <a json file that includes timeranges and keys>
-    --outputpath <a path where you want put a selected rows *mandatory for select and not necessary for truncate and delete*>
-    --serializer <how you need to see selected data *mandatory for select and not necessary for truncate and delete*>
-    --serializeroptionsjson <*mandatory for select and not necessary for truncate and delete*>
-    --compression string <the extension of file gz or dat *mandatory for select and not necessary for truncate and delete*>Sample uses:
-     bash $KAMANJA_HOME/bin/ContainerUtility.sh --containername System.TestContainer --config $KAMANJA_HOME/config/Engine1Config.properties --operation truncate
-
-7. If the select operation is used and the serializer option is not provided, the error message is:
-
-::
-
-  ERROR [main] - you should pass a serializer option for select operation WARN [main] - Usage: $KAMANJA_HOME/bin/ContainerUtility.sh
-    --config <config file while has jarpaths, metadata store information & data store information> $KAMANJA_HOME/config/Engine1config.properties
-    --container name <full package qualified name of a Container without version> test.kamanja.container
-    --operation <truncate, select, delete>
-    --filter <a json file that includes timeranges and keys>
-    --outputpath <a path where you want put a selected rows *mandatory for select and not necessary for truncate and delete*>
-    --serializer <how you need to see selected data *mandatory for select and not necessary for truncate and delete*>
-    --serializeroptionsjson <*mandatory for select and not necessary for truncate and delete*>
-    --compression string <the extension of file gz or dat *mandatory for select and not necessary for truncate and delete*>Sample uses:
-     bash $KAMANJA_HOME/bin/ContainerUtility.sh --containername System.TestContainer --config $KAMANJA_HOME/config/Engine1Config.properties --operation truncate
+    --outputpath <a path where you want put a selected rows *mandatory for select
+      and not necessary for truncate and delete*>
+    --serializer <how you need to see selected data *mandatory for select
+      and not necessary for truncate and delete*>
+    --serializeroptionsjson <*mandatory for select
+      and not necessary for truncate and delete*>
+    --compression string <the extension of file gz or dat *mandatory for select
+      and not necessary for truncate and delete*>Sample uses:
+      bash $KAMANJA_HOME/bin/ContainerUtility.sh
+      --containername System.TestContainer
+      --config $KAMANJA_HOME/config/Engine1Config.properties --operation truncate
 
 Examples
 --------
@@ -199,7 +236,7 @@ there is not any data in the storage for the container:
   bash $KAMANJA_HOME/bin/ContainersUtility.sh --containername \
     com.ligadata.kamanja.samples.containers.CoughCodes \
     --config /opt/Kamanja/config/Engine1Config.properties \
-    --operation truncateExpected output:
+    --operation truncate:
 
 ::
 
@@ -210,7 +247,7 @@ there is not any data in the storage for the container:
 Deleting data from a container
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following command is used to delete data from a container:
+Use a command like the following to delete data from a container:
 
 ::
 
@@ -250,7 +287,7 @@ Expected output:
 Selecting data from a container
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The below command is used to delete data from a container:
+Use a command like the following to select data from a container:
 
 ::
 

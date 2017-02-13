@@ -48,7 +48,7 @@ How to use this documentation
   that make up an application.
 
   Specialized guides are provided for implementing applications
-  using :ref:Java<java-guide-top>`,
+  using :ref:`Java<java-guide-top>`,
   :ref:`Scala<scala-models-top>`,
   :ref:`PMML<pmml-guide-top>`
   (which is also used to implement trained :ref:`R<r-term>` models),

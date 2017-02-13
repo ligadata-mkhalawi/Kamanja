@@ -8,7 +8,8 @@ Command Reference Pages
 
 
 .. list-table::
-   :widths: 20 80
+   :class: ld-wrap-fixed-table
+   :widths: 30 50
    :header-rows: 1
 
    * - Command

@@ -8,7 +8,6 @@ Message definition
 The :ref:`message<messages-term>` definition structure provides
 design-time definitions of data and interfaces
 that makes it easy for Kamanja to process messages.
-passed f
 
 Each message used in the cluster
 has its own "Message" definition,
@@ -195,16 +194,23 @@ Storage message parameters
 Usage
 -----
 
-How the engine handles input messages
-that do not match the message definition:
+The easiest way to generate a message definition
+is to use the :ref:`generatemessage-command-ref` command
+which automatically generates a message definition
+from the specified data source.
+You can edit the message definition it generates if necessary,
+usually to correct the "Type" assigned to some fields.
+
+Input messages that do not match the message definition
+are handled as follows:
 
 - If a message input is defined as fixed,
   the message fails entirely.
-  CSV must be fixed in length and order.
+  The CSV used as an input must be fixed in length and order.
 
 - If a message input is defined as mapped,
-  as long as the message type is declared correctly,
-  the correct fields are selected and unknown fields are ignored.
+  the correct fields are selected and unknown fields are ignored,
+  as long as the message type is declared correctly.
 
 Output messages
 ~~~~~~~~~~~~~~~
