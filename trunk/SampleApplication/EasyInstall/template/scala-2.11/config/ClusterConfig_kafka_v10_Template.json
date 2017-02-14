@@ -29,7 +29,7 @@
           }
         }
       ],
-	  "VelocityStatsInfo": {
+      "VelocityStatsInfo": {
         "RotationTimeInSecs": 30,
         "EmitTimeInSecs": 15
       },
@@ -39,15 +39,15 @@
         "ZooKeeperSessionTimeoutMs": "30000",
         "ZooKeeperConnectionTimeoutMs": "30000"
       },
-      "PYTHON_CONFIG" : {
-	    "PYTHON_PATH": "{InstallDirectory}/python",
-            "SERVER_BASE_PORT": 8100,
-	    "SERVER_PORT_LIMIT": 40,
-	    "SERVER_HOST": "localhost",
-	    "PYTHON_LOG_CONFIG_PATH": "{InstallDirectory}/python/bin/pythonlog4j.cfg",
-	    "PYTHON_LOG_PATH": "{InstallDirectory}/python/logs/pythonserver.log",
-	    "PYTHON_BIN_DIR" : "/usr/bin/"
-	},
+      "PYTHON_CONFIG": {
+        "PYTHON_PATH": "{InstallDirectory}/python",
+        "SERVER_BASE_PORT": 8100,
+        "SERVER_PORT_LIMIT": 40,
+        "SERVER_HOST": "localhost",
+        "PYTHON_LOG_CONFIG_PATH": "{InstallDirectory}/python/bin/pythonlog4j.cfg",
+        "PYTHON_LOG_PATH": "{InstallDirectory}/python/logs/pythonserver.log",
+        "PYTHON_BIN_DIR": "/usr/bin/"
+      },
       "EnvironmentContext": {
         "classname": "com.ligadata.SimpleEnvContextImpl.SimpleEnvContextImpl$",
         "jarname": "KamanjaInternalDeps_2.11-1.6.1.jar",
@@ -110,12 +110,12 @@
             "HostList": "localhost:9092",
             "TopicName": "helloworldinput"
           },
-		  "VelocityMetrics": [
+          "VelocityMetrics": [
             {
               "MetricsByFileName": {
                 "TimeIntervalInSecs": 5
               }
-            },   
+            },
             {
               "MetricsByFileName": {
                 "TimeIntervalInSecs": 30,
@@ -131,17 +131,17 @@
                 ],
                 "TimeIntervalInSecs": 1,
                 "MetricsTime": {
-                   "MetricsTimeType": "LocalTime"
+                  "MetricsTimeType": "LocalTime"
                 }
               }
             },
             {
-            "MetricsByMsgKeys": {
-                "ValidMsgTypes":[
+              "MetricsByMsgKeys": {
+                "ValidMsgTypes": [
                   "com.ligadata.kamanja.samples.messages.msg1"
                 ],
                 "Keys": [
-                    "id"
+                  "id"
                 ],
                 "TimeIntervalInSecs": 1
               }
@@ -181,7 +181,7 @@
             "HostList": "localhost:9092",
             "TopicName": "medicalinput"
           },
-		  "VelocityMetrics": [
+          "VelocityMetrics": [
             {
               "MetricsByMsgType": {
                 "ValidMsgTypes": [
@@ -189,11 +189,11 @@
                 ],
                 "TimeIntervalInSecs": 1,
                 "MetricsTime": {
-                   "MetricsTimeType": "LocalTime"
+                  "MetricsTimeType": "LocalTime"
                 }
               }
             }
-		  ]
+          ]
         },
         {
           "Name": "FinanceInput",
@@ -211,7 +211,7 @@
             "HostList": "localhost:9092",
             "TopicName": "financeinput"
           },
-		  "VelocityMetrics": [
+          "VelocityMetrics": [
             {
               "MetricsByMsgType": {
                 "ValidMsgTypes": [
@@ -219,7 +219,7 @@
                 ],
                 "TimeIntervalInSecs": 1,
                 "MetricsTime": {
-                   "MetricsTimeType": "LocalTime"
+                  "MetricsTimeType": "LocalTime"
                 }
               }
             }
@@ -241,7 +241,7 @@
             "HostList": "localhost:9092",
             "TopicName": "telecominput"
           },
-		  VelocityMetrics": [
+          "VelocityMetrics": [
             {
               "MetricsByMsgType": {
                 "ValidMsgTypes": [
@@ -249,11 +249,11 @@
                 ],
                 "TimeIntervalInSecs": 1,
                 "MetricsTime": {
-                   "MetricsTimeType": "LocalTime"
+                  "MetricsTimeType": "LocalTime"
                 }
               }
             }
-		  ]
+          ]
         },
         {
           "Name": "TestIn_1",
@@ -289,23 +289,23 @@
             "TopicName": "testout_1"
           }
         },
-		{
+        {
           "Name": "TestOut_HW",
           "TypeString": "Output",
           "TenantId": "tenant1",
           "ClassName": "com.ligadata.kafkaInputOutputAdapters_v10.KafkaProducer$",
-          "JarName": "kamanjakafkaadapters_0_10_2.10-1.6.1.jar",
+          "JarName": "kamanjakafkaadapters_0_10_2.11-1.6.1.jar",
           "DependencyJars": [
             "kafka-clients-0.10.0.0.jar",
-            "KamanjaInternalDeps_2.10-1.6.1.jar",
-            "ExtDependencyLibs_2.10-1.6.1.jar",
-            "ExtDependencyLibs2_2.10-1.6.1.jar"
+            "KamanjaInternalDeps_2.11-1.6.1.jar",
+            "ExtDependencyLibs_2.11-1.6.1.jar",
+            "ExtDependencyLibs2_2.11-1.6.1.jar"
           ],
           "AdapterSpecificCfg": {
             "HostList": "localhost:9092",
             "TopicName": "testout_hw"
           },
-		  "VelocityMetrics": [
+          "VelocityMetrics": [
             {
               "MetricsByMsgType": {
                 "ValidMsgTypes": [
@@ -313,11 +313,11 @@
                 ],
                 "TimeIntervalInSecs": 1,
                 "MetricsTime": {
-                   "MetricsTimeType": "LocalTime"
+                  "MetricsTimeType": "LocalTime"
                 }
               }
             }
-		  ]
+          ]
         },
         {
           "Name": "TestFailedEvents_1",
