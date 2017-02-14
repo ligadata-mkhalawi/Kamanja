@@ -111,8 +111,8 @@ trait InputAdapter extends AdaptersSerializeDeserializers with Monitorable {
     }
   }
 
-  def VMFactory = vm.getVMFactory(nodeContext)
-
+  def VMFactory = VelocityMetricsInfo.getVMFactory(nodeContext)
+  def getIAVelocityInstances = vm.getAllIAVelocityInstances(VMFactory, Category, inputConfig, nodeContext)
 }
 
 // Output Adapter Object to create Adapter
@@ -154,7 +154,7 @@ trait OutputAdapter extends AdaptersSerializeDeserializers with Monitorable {
     }
   }
 
-  def VMFactory = vm.getVMFactory(nodeContext)
+  def VMFactory = VelocityMetricsInfo.getVMFactory(nodeContext)
 
 }
 
@@ -342,7 +342,7 @@ trait ExecContext {
       if (tMsg != null) {
         execute(tMsg, data, uniqueKey, uniqueVal, readTmMilliSecs)
         val nodeId = input.nodeContext.getEnvCtxt().getNodeId()
-        getIAVelocityMetrics(input.VMFactory, nodeId, tMsg, input.inputConfig, true)
+        getIAVelocityMetrics(input, tMsg, true)
       } else {
         if (LOG.isDebugEnabled) {
           LOG.debug("Not able to deserialize data:%s at UK:%s, UV:%s".format((if (data != null) new String(data) else ""), uk, uv))
@@ -350,7 +350,7 @@ trait ExecContext {
         val ex = new Exception("Unable to deserialize messageName:%s from data:%s".format(messageName, (if (data != null) new String(data) else "")))
         SendFailedEvent(data, tDeserializerName, failedMsg, uniqueKey, uniqueVal, ex, tempMsgInterface)
         val nodeId = input.nodeContext.getEnvCtxt().getNodeId()
-        getIAVelocityMetrics(input.VMFactory, nodeId, tMsg, input.inputConfig, false)
+        getIAVelocityMetrics(input, tMsg, false)
       }
     } catch {
       case e: Throwable => {
@@ -360,11 +360,20 @@ trait ExecContext {
     }
   }
 
-  private def getIAVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, nodeId: String, message: ContainerInterface, adapConfig: AdapterConfiguration, processed: Boolean) = {
+  /*private def getIAVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, nodeId: String, message: ContainerInterface, adapConfig: AdapterConfiguration, processed: Boolean) = {
     var vm = new VelocityMetricsInfo
     val IACompName = "InputAdapter"
     vm.incrementVelocityMetrics(VMFactory, IACompName, nodeId, message, adapConfig, true)
+  }
+*/
+  private def getIAVelocityMetrics(input: InputAdapter, message: ContainerInterface, processed: Boolean) = {
 
+    val vmInstances = input.getIAVelocityInstances
+    if (vmInstances != null && vmInstances.length > 0) {
+      for (i <- 0 until vmInstances.length) {
+        input.vm.incrementIAVelocityMetrics(vmInstances(i), message, processed)
+      }
+    }
   }
 
   protected def executeMessage(txnCtxt: TransactionContext): Unit

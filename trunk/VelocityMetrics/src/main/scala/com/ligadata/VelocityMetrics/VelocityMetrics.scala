@@ -2,7 +2,7 @@ package com.ligadata.VelocityMetrics
 
 // import java.util.HashMap
 import java.util.UUID
-import java.util.concurrent.{ScheduledExecutorService, Executors, TimeUnit}
+import java.util.concurrent.{ ScheduledExecutorService, Executors, TimeUnit }
 import scala.collection.mutable.ArrayBuffer
 import org.apache.log4j.Logger
 
@@ -397,6 +397,10 @@ object VelocityMetrics {
         factory = new VelocityMetricsFactoryImpl(rotationTimeInSecs, emitTimeInSecs)
       }
     }
+    return factory
+  }
+
+  def GetExistingVelocityMetricsFactory(): VelocityMetricsFactoryInterface = {
     return factory
   }
 

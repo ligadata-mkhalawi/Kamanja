@@ -27,6 +27,7 @@ import org.apache.logging.log4j.{ Logger, LogManager }
 import com.ligadata.Exceptions.{ FatalAdapterException }
 import scala.actors.threadpool.{ ExecutorService }
 import com.ligadata.KamanjaVersion.KamanjaVersion
+import com.ligadata.InputOutputAdapterInfo.VelocityMetricsInfo
 import com.ligadata.VelocityMetrics.VelocityMetricsFactoryInterface
 import com.ligadata.VelocityMetrics.VelocityMetricsCallback
 import com.ligadata.VelocityMetrics.VelocityMetricsInstanceInterface
@@ -981,7 +982,7 @@ class KamanjaManager extends Observer {
     }
     var velocityMetricsOutput = new VelocityMetricsOutput
 
-    inputAdapters(0).VMFactory.addEmitListener(velocityMetricsOutput)
+    VelocityMetricsInfo.getVMFactory(KamanjaMetadata.gNodeContext).addEmitListener(velocityMetricsOutput)
 
     /* inputAdapters.foreach(ia => {
       ia.VMFactory.addEmitListener(velocityMetricsOutput)
