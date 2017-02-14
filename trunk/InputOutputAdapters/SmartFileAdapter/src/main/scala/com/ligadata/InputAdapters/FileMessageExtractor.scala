@@ -90,7 +90,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
               !parentExecutor.isTerminated && !parentSmartFileConsumer.isConsumerShutdown) {
               //put filename~offset~timestamp
               val data = fileHandlers(0).getFullPath + "~" + currentMsgNum + "~" + System.nanoTime + "~in-progress"
-              logger.debug("SMART FILE CONSUMER - Node {} with partition {} is updating status to value {}",
+              if (logger.isDebugEnabled) logger.debug("SMART FILE CONSUMER - Node {} with partition {} is updating status to value {}",
                 consumerContexts(0).nodeId, consumerContexts(0).partitionId.toString, data)
               if(!finished) {
                 consumerContexts(0).envContext.saveConfigInClusterCache(consumerContexts(0).statusUpdateCacheKey, data.getBytes)
@@ -145,7 +145,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
       val fileName = fileHandler.getFullPath
 
       fileProcessingStartTs = System.nanoTime
-      logger.warn("Smart File Consumer - Starting reading messages from file {} , on Node {} , PartitionId {}",
+      if (logger.isWarnEnabled) logger.warn("Smart File Consumer - Starting reading messages from file {} , on Node {} , PartitionId {}",
         fileName, consumerContext.nodeId, consumerContext.partitionId.toString)
 
       try {
@@ -184,7 +184,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
       //skip to startOffset
       //TODO : modify to use seek whenever possible
       if (startOffset > 0)
-        logger.debug("SMART FILE CONSUMER - skipping into offset {} while reading file {}", startOffset.toString, fileName)
+        if (logger.isDebugEnabled) logger.debug("SMART FILE CONSUMER - skipping into offset {} while reading file {}", startOffset.toString, fileName)
 
       var lengthToRead: Int = 0
       do {
@@ -192,11 +192,11 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
         curReadLen = fileHandler.read(byteBuffer, 0, lengthToRead)
         if (curReadLen > 0)
           totalReadLen += curReadLen
-        logger.debug("SMART FILE CONSUMER - reading {} bytes from file {} but got only {} bytes",
+        if (logger.isDebugEnabled) logger.debug("SMART FILE CONSUMER - reading {} bytes from file {} but got only {} bytes",
           lengthToRead.toString, fileHandler.getFullPath, curReadLen.toString)
       } while (totalReadLen < startOffset && curReadLen > 0)
 
-      logger.debug("SMART FILE CONSUMER - totalReadLen from file {} is {}", fileHandler.getFullPath, totalReadLen.toString)
+      if (logger.isDebugEnabled) logger.debug("SMART FILE CONSUMER - totalReadLen from file {} is {}", fileHandler.getFullPath, totalReadLen.toString)
 
       globalOffset = totalReadLen
 
@@ -209,22 +209,22 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
             try {
 
               if (Thread.currentThread().isInterrupted) {
-                logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - interrupted while reading file {}", fileHandler.getFullPath)
+                if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - interrupted while reading file {}", fileHandler.getFullPath)
                 processingInterrupted = true
                 //break
               }
               if (parentExecutor == null) {
-                logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - (parentExecutor = null) while reading file {}", fileHandler.getFullPath)
+                if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - (parentExecutor = null) while reading file {}", fileHandler.getFullPath)
                 processingInterrupted = true
                 //break
               }
               if (parentExecutor.isShutdown) {
-                logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is shutdown while reading file {}", fileHandler.getFullPath)
+                if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is shutdown while reading file {}", fileHandler.getFullPath)
                 processingInterrupted = true
                 //break
               }
               if (parentExecutor.isTerminated) {
-                logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is terminated while reading file {}", fileHandler.getFullPath)
+                if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is terminated while reading file {}", fileHandler.getFullPath)
                 processingInterrupted = true
                 //break
               }
@@ -233,7 +233,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
                 var curReadLen = fileHandler.read(byteBuffer, readlen, maxlen - readlen - 1)
                 lastReadLen = curReadLen
 
-                logger.debug("SMART FILE CONSUMER - reading {} bytes from file {}. got actually {} bytes ",
+                if (logger.isDebugEnabled) logger.debug("SMART FILE CONSUMER - reading {} bytes from file {}. got actually {} bytes ",
                   (maxlen - readlen - 1).toString, fileHandler.getFullPath, curReadLen.toString)
 
                 if (curReadLen > 0) {
@@ -256,7 +256,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
                       curReadLen = -1
                     }
                   }
-                  logger.debug("SMART FILE CONSUMER - not enough read. reading more {} bytes from file {} . got actually {} bytes",
+                  if (logger.isDebugEnabled) logger.debug("SMART FILE CONSUMER - not enough read. reading more {} bytes from file {} . got actually {} bytes",
                     (maxlen - readlen - 1).toString, fileHandler.getFullPath, curReadLen.toString)
                   if (curReadLen > 0) {
                     readlen += curReadLen
@@ -282,7 +282,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
             }
 
             if (!processingInterrupted) {
-              logger.debug("SMART FILE CONSUMER (FileMessageExtractor) - readlen1={}", readlen.toString)
+              if (logger.isDebugEnabled) logger.debug("SMART FILE CONSUMER (FileMessageExtractor) - readlen1={}", readlen.toString)
               if (readlen > 0) {
                 len += readlen
 
@@ -308,7 +308,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
           } while (lastReadLen > 0 && !processingInterrupted)
         }
 
-        logger.debug("SMART FILE CONSUMER (FileMessageExtractor) - readlen2={}", readlen.toString)
+        if (logger.isDebugEnabled) logger.debug("SMART FILE CONSUMER (FileMessageExtractor) - readlen2={}", readlen.toString)
         //now if readlen>0 means there is one last message.
         //most likely this happens if last message is not followed by the separator
         if (readlen > 0 && !processingInterrupted) {
@@ -356,18 +356,18 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
         val elapsedTm = endTm - fileProcessingStartTs
 
         if (processingInterrupted) {
-          logger.debug("SMART FILE CONSUMER (FileMessageExtractor) - sending interrupting flag for file {}", fileName)
-          logger.warn("SMART FILE CONSUMER - %s - finished reading file %s. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(
+          if (logger.isDebugEnabled) logger.debug("SMART FILE CONSUMER (FileMessageExtractor) - sending interrupting flag for file {}", fileName)
+          if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER - %s - finished reading file %s. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(
             adapterConfig.Name, fileName, elapsedTm / 1000000.0, consumerContext.nodeId, consumerContext.partitionId.toString, fileProcessingStartTs, endTm))
           sendFinishFlag(SmartFileConsumer.FILE_STATUS_ProcessingInterrupted)
         }
         else if (isFileCorrupted) {
-          logger.warn("SMART FILE CONSUMER - %s - finished reading file %s. The file is corrupt, could only read %s bytes. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(
+          if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER - %s - finished reading file %s. The file is corrupt, could only read %s bytes. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(
             adapterConfig.Name, fileName, totalReadLen, elapsedTm / 1000000.0, consumerContext.nodeId, consumerContext.partitionId.toString, fileProcessingStartTs, endTm))
           sendFinishFlag(SmartFileConsumer.FILE_STATUS_CORRUPT)
         }
         else {
-          logger.warn("SMART FILE CONSUMER - %s - finished reading file %s. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(
+          if (logger.isWarnEnabled) logger.warn("SMART FILE CONSUMER - %s - finished reading file %s. Operation took %fms on Node %s, PartitionId %s. StartTime:%d, EndTime:%d.".format(
             adapterConfig.Name, fileName, elapsedTm / 1000000.0, consumerContext.nodeId, consumerContext.partitionId.toString, fileProcessingStartTs, endTm))
           sendFinishFlag(SmartFileConsumer.FILE_STATUS_FINISHED)
         }
@@ -400,47 +400,38 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
       case et: Throwable =>
     }
 
-    logger.debug("File message Extractor - shutting down updatExecutor")
+    if (logger.isDebugEnabled) logger.debug("File message Extractor - shutting down updatExecutor")
     MonitorUtils.shutdownAndAwaitTermination(updatExecutor, "file message extracting status updator")
 
-    logger.debug("File message Extractor - shutting down extractExecutor")
+    if (logger.isDebugEnabled) logger.debug("File message Extractor - shutting down extractExecutor")
     MonitorUtils.shutdownAndAwaitTermination(extractExecutor, "file message extractor")
   }
 
   def readWholeFiles(): Unit = {
     try {
-      logger.warn("Smart File Consumer - Starting reading messages from file {} , on Node {} , PartitionId {}",
+      if (logger.isWarnEnabled) logger.warn("Smart File Consumer - Starting reading messages from file {} , on Node {} , PartitionId {}",
         fileHandlers(0).getFullPath, consumerContexts(0).nodeId, consumerContexts(0).partitionId.toString)
-      val msgBody = readWholeFile(fileHandlers(0))
-      val attachments = ArrayBuffer[String]()
 
-      for (i <- 1 until fileHandlers.size) {
-        attachments += readWholeFile(fileHandlers(i))
+      var attachmentsJson = new java.lang.StringBuilder(8 * 1024)
+      attachmentsJson.append("""{"Files": {""")
+
+      for (i <- 0 until fileHandlers.size) {
+        val flData = readWholeFile(fileHandlers(i))
+        if (i > 0)
+          attachmentsJson.append(",\"%s\":\"%s\"".format(fileHandlers(i).getFullPath, flData))
+        else
+          attachmentsJson.append("\"%s\":\"%s\"".format(fileHandlers(i).getFullPath, flData))
       }
 
-      var attachmentsJson = new java.lang.StringBuilder()
+      attachmentsJson.append("}")
 
-      if (attachments.size > 0) {
-        attachmentsJson.append(",\"attachments\": {")
-        for (i <- 0 until attachments.size) {
-          if (i > 0)
-            attachmentsJson.append(",\"%s\":\"%s\"".format(fileHandlers(i + 1).getFullPath, attachments(i)))
-          else
-            attachmentsJson.append("\"%s\":\"%s\"".format(fileHandlers(i + 1).getFullPath, attachments(i)))
-        }
-
+      if (!adapterConfig.monitoringConfig.organizationName.isEmpty) {
+        attachmentsJson.append(""","organizationName": "%s" }""".format(adapterConfig.monitoringConfig.organizationName))
+      } else {
         attachmentsJson.append("}")
       }
 
-      var jsonString = ""
-      // prepare Json here.
-      if (!adapterConfig.monitoringConfig.organizationName.isEmpty) {
-        jsonString = "{\"filename\":\"%s\",\"messageBody\": \"%s\",\"organizationName\": \"%s\" %s}".format(fileHandlers(0).getFullPath, msgBody, adapterConfig.monitoringConfig.organizationName, attachmentsJson.toString)
-      } else {
-        jsonString = "{\"filename\":\"%s\",\"messageBody\": \"%s\" %s}".format(fileHandlers(0).getFullPath, msgBody, attachmentsJson.toString)
-      }
-
-      val smartFileMessage = new SmartFileMessage(jsonString.getBytes(), 0, fileHandlers(0), 0, 0)
+      val smartFileMessage = new SmartFileMessage(attachmentsJson.toString.getBytes(), 0, fileHandlers(0), 0, 0)
       messageFoundCallback(smartFileMessage, consumerContexts(0))
       // here we are really finished
       sendFinishFlag(SmartFileConsumer.FILE_STATUS_FINISHED)
@@ -473,8 +464,12 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
     if (fileHandler != null) {
       fileHandler.close
     }
-    //encode base64
-    Base64.encodeBase64String(allData.toArray)
+    if (adapterConfig.monitoringConfig.encodeData) {
+      //encode base64
+      Base64.encodeBase64String(allData.toArray)
+    } else {
+      new String(allData.toArray)
+    }
   }
 
   private def extractMessages(fileHandler: SmartFileHandler, consumerContext: SmartFileConsumerContext, chunk: Array[Byte], len: Int): Int = {
@@ -485,22 +480,22 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
       for (i <- 0 to len - 1) {
 
         if (Thread.currentThread().isInterrupted) {
-          logger.info("SMART FILE CONSUMER (FileMessageExtractor) - interrupted while extracting messages from file {}", fileHandler.getFullPath)
+          if (logger.isInfoEnabled) logger.info("SMART FILE CONSUMER (FileMessageExtractor) - interrupted while extracting messages from file {}", fileHandler.getFullPath)
           processingInterrupted = true
           break
         }
         if (parentExecutor == null) {
-          logger.info("SMART FILE CONSUMER (FileMessageExtractor) - (parentExecutor = null) while extracting messages from file {}", fileHandler.getFullPath)
+          if (logger.isInfoEnabled) logger.info("SMART FILE CONSUMER (FileMessageExtractor) - (parentExecutor = null) while extracting messages from file {}", fileHandler.getFullPath)
           processingInterrupted = true
           break
         }
         if (parentExecutor.isShutdown) {
-          logger.info("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is shutdown while extracting messages from file {}", fileHandler.getFullPath)
+          if (logger.isInfoEnabled) logger.info("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is shutdown while extracting messages from file {}", fileHandler.getFullPath)
           processingInterrupted = true
           break
         }
         if (parentExecutor.isTerminated) {
-          logger.info("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is terminated while extracting messages from file {}", fileHandler.getFullPath)
+          if (logger.isInfoEnabled) logger.info("SMART FILE CONSUMER (FileMessageExtractor) - parentExecutor is terminated while extracting messages from file {}", fileHandler.getFullPath)
           processingInterrupted = true
           break
         }
@@ -544,16 +539,16 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
     val fileHandler = fileHandlers(0)
     val consumerContext = consumerContexts(0)
     val data = fileHandler.getFullPath + "~" + currentMsgNum + "~" + System.nanoTime + "~done"
-    logger.warn("Node {} before sending done status for file processing key={} , value={}",
+    if (logger.isWarnEnabled) logger.warn("Node {} before sending done status for file processing key={} , value={}",
       consumerContext.nodeId, consumerContext.statusUpdateCacheKey, data)
     consumerContext.envContext.saveConfigInClusterCache(consumerContext.statusUpdateCacheKey, data.getBytes)
-    logger.warn("Node {} after sending done status for file processing key={} , value={}",
+    if (logger.isWarnEnabled) logger.warn("Node {} after sending done status for file processing key={} , value={}",
       consumerContext.nodeId, consumerContext.statusUpdateCacheKey, data)
 
 
     val savedStatusData = consumerContext.envContext.getConfigFromClusterCache(consumerContext.statusUpdateCacheKey)
     val statusDataStr: String = if (savedStatusData == null) null else new String(savedStatusData)
-    logger.warn("Node {} checking saved done status for file processing key={} ,saved value={}",
+    if (logger.isWarnEnabled) logger.warn("Node {} checking saved done status for file processing key={} ,saved value={}",
       consumerContext.nodeId, consumerContext.statusUpdateCacheKey, statusDataStr)
 
 

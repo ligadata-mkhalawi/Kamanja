@@ -174,7 +174,6 @@ object MonitorUtils {
     if(parentDir1.compareTo(parentDir2) == 0)
       compareFilesSameLoc(fileHandler1, fileHandler2)
     else fileHandler1.lastModifiedDate.compareTo(fileHandler2.lastModifiedDate)
-
   }
 
   /**

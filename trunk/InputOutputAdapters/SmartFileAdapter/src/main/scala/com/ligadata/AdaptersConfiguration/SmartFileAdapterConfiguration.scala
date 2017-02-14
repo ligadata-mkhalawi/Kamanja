@@ -7,6 +7,7 @@ import com.ligadata.Utils.EncryptDecryptUtils
 import org.apache.logging.log4j.LogManager
 import org.json4s._
 import org.json4s.JsonDSL._
+import org.json4s.jackson.Serialization
 import org.json4s.native.JsonMethods._
 
 import scala.collection.mutable.{ArrayBuffer, MutableList}
@@ -81,6 +82,7 @@ class FileAdapterMonitoringConfig {
   var organizationName = ""
   var checkFileTypes = false
   var checkFileSize = true
+  var encodeData = false
 
   //when reading a file, if type is unknown and this flag is false, an exception is thrown so that file is not processed
   var considerUnknownFileTypesAsIs = true
@@ -94,6 +96,8 @@ class FileAdapterMonitoringConfig {
   //1 => check only dir direct child files
   //n > 1 => stop at corresponding depth
   var dirMonitoringDepth : Int = 0
+
+  var filesGroupsInfoJsonString: String = null
 }
 
 class Padding {
@@ -211,6 +215,20 @@ object SmartFileAdapterConfiguration {
     adapterConfig
   }
 
+  private def getStringFromJsonNode(v: Any): String = {
+    if (v == null) return ""
+
+    if (v.isInstanceOf[String]) return v.asInstanceOf[String]
+
+    implicit val jsonFormats: Formats = DefaultFormats
+    val lst = List(v)
+    val str = Serialization.write(lst)
+    if (str.size > 2) {
+      return str.substring(1, str.size - 1)
+    }
+    return ""
+  }
+
   def parseSmartFileAdapterSpecificConfig(adapterName: String, adapterSpecificCfgJson: String): (SmartFileAdapterGeneralConfig, FileAdapterConnectionConfig, FileAdapterMonitoringConfig, ArchiveConfig) = {
 
     val adapCfg = parse(adapterSpecificCfgJson)
@@ -308,6 +326,9 @@ object SmartFileAdapterConfiguration {
     if (connectionConfig.authentication == null || connectionConfig.authentication == "")
       connectionConfig.authentication = "simple" //default
 
+    val flsGroupInfo = adapCfgValues.getOrElse("FilesGroupsInfo", null)
+    monitoringConfig.filesGroupsInfoJsonString = if (flsGroupInfo == null) null else getStringFromJsonNode(flsGroupInfo)
+
     if (adapCfgValues.getOrElse("MonitoringConfig", null) == null) {
       val err = "Not found MonitoringConfig for Smart File Adapter Config:" + adapterName
       throw new KamanjaException(err, null)
@@ -362,6 +383,9 @@ object SmartFileAdapterConfiguration {
       else if (kv._1.compareToIgnoreCase("OrganizationName") == 0) {
         monitoringConfig.organizationName = kv._2.asInstanceOf[String]
       }
+      else if (kv._1.compareToIgnoreCase("EncodeData") == 0) {
+        monitoringConfig.encodeData = kv._2.toString.toBoolean
+      }
       else if (kv._1.compareToIgnoreCase("MsgTagsKV") == 0) {
         monitoringConfig.msgTagsKV = kv._2.asInstanceOf[scala.collection.immutable.Map[String, String]]
       }
@@ -386,13 +410,14 @@ object SmartFileAdapterConfiguration {
       else if (kv._1.compareToIgnoreCase("DirMonitoringDepth") == 0) {
         monitoringConfig.dirMonitoringDepth = kv._2.asInstanceOf[String].trim.toInt
       }
-
+      else if (kv._1.compareToIgnoreCase("FilesGroupsInfo") == 0) {
+        monitoringConfig.filesGroupsInfoJsonString = getStringFromJsonNode(kv._2)
+      }
       else if (kv._1.compareToIgnoreCase("FileComponents") == 0) {
         //public FileComponents
         val componentsMap = kv._2.asInstanceOf[Map[String, Any]]
         publicFileComponents = extractFileComponents(componentsMap)
       }
-
       else if (kv._1.compareToIgnoreCase("DetailedLocations") == 0) {
         val locationsInfoBuffer = ArrayBuffer[LocationInfo]()
 
@@ -468,7 +493,6 @@ object SmartFileAdapterConfiguration {
           monitoringConfig.detailedLocations = monitoringConfig.detailedLocations :+ locationInfo
         })
       }
-
     }
     else {
       //for each location, if local attributes have no values get them from public corresponding attributes
