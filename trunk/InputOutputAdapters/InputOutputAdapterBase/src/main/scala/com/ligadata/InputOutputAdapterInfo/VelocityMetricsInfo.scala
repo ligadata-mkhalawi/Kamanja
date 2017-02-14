@@ -86,7 +86,6 @@ class VelocityMetricsInfo {
       val vmetrics = getVelocityMetricsConfig(adapConfig.fullAdapterConfig)
       val compName = adapCategory + uscore + adapConfig.Name
       // val compName = getComponentTypeName(adapCategory.toLowerCase(), adapConfig.adapterSpecificCfg)
-      println("compName  " + compName)
       val nodeId = nodeContext.getEnvCtxt().getNodeId()
       if (nodeId == null) throw new Exception("Node Id is null")
       val allinstances = getVelocityMetricsInstances(VMFactory, nodeId, adapConfig, compName)
@@ -109,7 +108,6 @@ class VelocityMetricsInfo {
       val vmetrics = getVelocityMetricsConfig(adapConfig.fullAdapterConfig)
       val compName = adapCategory + uscore + adapConfig.Name
       // val compName = getComponentTypeName(adapCategory.toLowerCase(), adapConfig.adapterSpecificCfg)
-      println("compName  " + compName)
       val nodeId = nodeContext.getEnvCtxt().getNodeId()
       if (nodeId == null) throw new Exception("Node Id is null")
       val allinstances = getVelocityMetricsInstances(VMFactory, nodeId, adapConfig, compName)
@@ -155,15 +153,14 @@ class VelocityMetricsInfo {
           metricsTimeKeyFormat = new SimpleDateFormat();
         } else {
           try {
-            println("========== " + metricstimeformat)
             metricsTimeKeyFormat = new SimpleDateFormat(metricstimeformat)
-            println("good format: " + metricsTimeKeyFormat.getTimeZone);
+          //  println("good format: " + metricsTimeKeyFormat.getTimeZone);
             // good format
           } catch {
             // bad format
             case e: Exception => {
               metricsTimeKeyFormat = new SimpleDateFormat();
-              println("bad format: " + metricsTimeKeyFormat.getTimeZone);
+             // println("bad format: " + metricsTimeKeyFormat.getTimeZone);
             }
           }
         }
@@ -207,7 +204,7 @@ class VelocityMetricsInfo {
     if (adapCfgStr == null || adapCfgStr.trim().size == 0) {
       LOG.info("Adapter Specific Config does not exist")
     }
-    println("adapCfg.values " + adapCfgStr)
+    //println("adapCfg.values " + adapCfgStr)
     if (adapCfgStr != null) {
       val adapCfgJson = parse(adapCfgStr)
       if (adapCfgJson == null || adapCfgJson.values == null) {
@@ -216,12 +213,12 @@ class VelocityMetricsInfo {
 
       }
       val adapCfgVals = adapCfgJson.values.asInstanceOf[Map[String, Any]]
-      println("adapCfgVals.values " + adapCfgVals)
+      //println("adapCfgVals.values " + adapCfgVals)
 
       val adapCfgValues: scala.collection.mutable.Map[String, Any] = scala.collection.mutable.Map[String, Any]()
       adapCfgVals.foreach(kv => { adapCfgValues(kv._1.trim().toLowerCase()) = kv._2 })
 
-      println("adapCfgValues.values " + adapCfgValues)
+      //println("adapCfgValues.values " + adapCfgValues)
 
       val typ = adapCfgValues.getOrElse("type", null)
       val topicname = adapCfgValues.getOrElse("topicname", null)
