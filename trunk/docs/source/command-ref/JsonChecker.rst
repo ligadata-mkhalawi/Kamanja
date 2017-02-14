@@ -6,7 +6,7 @@
 JsonChecker.sh
 ==============
 
-Check the sanity of a JSON file.
+Check the sanity of a :ref:`JSON<json-term>` file.
 
 Syntax
 ------
@@ -36,9 +36,12 @@ Output
 
    ::
 
-     ERROR [main] - Please pass the input file after –inputfile optionWARN [main] – Usage: bash $KAMANJA_HOME/bin/JsonChecker.sh –inputfile $KAMANJA_HOME/config/ClusterConfig.json
+     ERROR [main] - Please pass the input file after –inputfile option
+     WARN [main] – Usage: bash $KAMANJA_HOME/bin/JsonChecker.sh
+        –inputfile $KAMANJA_HOME/config/ClusterConfig.json
 
-2. Suppose that the command was run without providing the file after the --inputfile option:
+2. Suppose that the command was run without populating
+   the **--inputfile** option with a file name::
 
    ::
 
@@ -48,10 +51,12 @@ Output
 
    ::
 
-     ERROR [main] - Unkown option –inputfileWARN [main] – Usage: bash $KAMANJA_HOME/bin/JsonChecker.sh –inputfile $KAMANJA_HOME/config/ClusterConfig.json
+     ERROR [main] - Unkown option –inputfile
+     WARN [main] – Usage: bash $KAMANJA_HOME/bin/JsonChecker.sh
+        –inputfile $KAMANJA_HOME/config/ClusterConfig.json
 
-3. Suppose that the command was run but the incorrect path or incorrect file
-   was provided:
+3. Suppose that the command was run specifying
+   an incorrect path or incorrect file:
 
    ::
 
@@ -61,7 +66,9 @@ Output
 
    ::
 
-     ERROR [main] – The file /opt/Kamanja/bin/ClusterConfig.json does not exist.       WARN [main] – Usage: bash $KAMANJA_HOME/bin/JsonChecker.sh –inputfile $KAMANJA_HOME/config/ClusterConfig.json
+     ERROR [main] – The file /opt/Kamanja/bin/ClusterConfig.json does not exist.
+     WARN [main] – Usage: bash $KAMANJA_HOME/bin/JsonChecker.sh
+        –inputfile $KAMANJA_HOME/config/ClusterConfig.json
 
 4. Suppose that the command was run but a file was provided without data:
 
@@ -86,8 +93,8 @@ Output
 
      WARN [main] – Json file parsed successfully
 
-6. Suppose that the command was run and there is the wrong JSON format
-   inside the file:
+6. Suppose that the command was run and the JSON format
+   inside the file is wrong::
 
    ::
 
@@ -97,7 +104,8 @@ Output
 
 ::
 
-  ERROR [main] – There is an error in the format of fileErrorMsg: “here you will see the error with stack trace”
+  ERROR [main] – There is an error in the format of fileErrorMsg:
+     “here you will see the error with stack trace”
 
 
 

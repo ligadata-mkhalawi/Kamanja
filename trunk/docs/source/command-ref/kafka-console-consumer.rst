@@ -41,7 +41,7 @@ Options and arguments
   as well as consumed messages.
   This is used for testing.
 - **formatter** - Classname to use to format Kafka messages for delay.
-  Default value id *kafka.tools.DefaultMessageFormatter*
+  Default value is *kafka.tools.DefaultMessageFormatter*
 - **from-beginning** - Start with the earliest message present in the log
   rather than the latest messsage;
   this works only if the consumer does not already have

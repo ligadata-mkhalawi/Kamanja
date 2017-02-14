@@ -21,8 +21,7 @@ Usage
 
 If the :ref:`SetPaths.sh<setpaths-command-ref>`
 does not set the $KAFKA_HOME variable,
-**WatchOutputQueue.sh** and **WatchStatusQueue.sh**
-do not run correctly.
+these commands do not run correctly.
 
 See also
 --------
