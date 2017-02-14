@@ -16,6 +16,42 @@ Syntax
 
   kamanja <config file path> <command> <command arguments>
 
+Kamanja engine operations
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+::
+
+  kamanja start [jvmoptions] [Properties | PropertiesFile]
+  kamanja start -v [jvmoptions] [Properties | PropertiesFile]
+
+Topic operations
+~~~~~~~~~~~~~~~~
+
+::
+
+  kamanja watch status queue
+  kamanja push data
+  kamanja create queues
+
+Web service
+~~~~~~~~~~~
+
+::
+
+  kamanja start [jvmoptions] webservice
+
+General operations
+~~~~~~~~~~~~~~~~~~
+
+::
+
+  kamanja --version
+  bash kamanja stop
+  kamanja watch input queue
+  kamanja watch output queue
+  kamanja watch failed events queue
+
+
 Message operations
 ~~~~~~~~~~~~~~~~~~
 
@@ -32,19 +68,22 @@ Model operations
 
 ::
 
-  kamanja add model kpmml [input] TENANTID   [Properties | PropertiesFile] 
-  kamanja add model pmml input MODELNAME namespace.name MODELVERSION nn.nn.nn MESSAGENAME namespace.name TENANTID  [Properties | PropertiesFile] 
-  kamanja add model java [input]  TENANTID  [Properties | PropertiesFile] 
-  kamanja add model scala [input] TENANTID  [Properties | PropertiesFile] 
-  kamanja add model jtm [input] TENANTID  [Properties | PropertiesFile] 
+  kamanja add model kpmml | java | scala | jtm | python [input] TENANTID \
+      [Properties | PropertiesFile] 
+
   kamanja get model [input] TENANTID(optional) 
   kamanja get all models TENANTID(optional) 
+
   kamanja remove model [input]
-  kamanja update model kpmml [input] TENANTID  [Properties | PropertiesFile] 
-  kamanja update model pmml input MODELNAME namespace.name MODELVERSION nn.nn.nn TENANTID  [Properties | PropertiesFile] 
-  kamanja update model scala [input] TENANTID  [Properties | PropertiesFile] 
-  kamanja update model java [input] TENANTID  [Properties | PropertiesFile] 
-  kamanja update model jtm [input] TENANTID  [Properties | PropertiesFile] 
+
+  kamanja update model kpmml | java | scala | jtm | python [input] TENANTID \
+      [Properties | PropertiesFile] 
+
+  kamanja add model pmml input MODELNAME namespace.name MODELVERSION nn.nn.nn \
+      MESSAGENAME namespace.name TENANTID  [Properties | PropertiesFile] 
+  kamanja update model pmml input MODELNAME namespace.name MODELVERSION nn.nn.nn \
+      TENANTID  [Properties | PropertiesFile] 
+
   kamanja deactivate model [input]
   kamanja activate model [input]
 
@@ -88,30 +127,6 @@ Cluster, metadata and adapter operations
   kamanja dump all cluster cfgs
   kamanja dump all adapters
 
-Kamanja engine operations
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-::
-
-  kamanja start [jvmoptions] [Properties | PropertiesFile]
-  kamanja start -v (for verbose) [jvmoptions] [Properties | PropertiesFile]
-
-Topic operations
-~~~~~~~~~~~~~~~~
-
-::
-
-  kamanja watch status queue
-  kamanja push data
-  kamanja create queues
-
-Web service
-~~~~~~~~~~~
-
-::
-
-  kamanja start [jvmoptions] webservice
-
 
 Adapter Message Bindings
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -128,23 +143,20 @@ Adapter Message Bindings
   kamanja get typebyschemaid SCHEMAID 
   kamanja get typebyelementid ELEMENTID 
 
-General operations
-~~~~~~~~~~~~~~~~~~
-
-::
-
-  kamanja --version
-  bash kamanja stop
-  kamanja watch input queue
-  kamanja watch output queue
-  kamanja watch failed events queue
-
 Options and arguments
 ---------------------
 
+- **jvmoptions** -- used with the **start** and **start webservice** options
+  to pass Java and Scala to the engine.
+
+- **-v** - used with the **start** option
+  to run the Kamanja engine in the foreground;
+  if you do not pass this argument,
+  the Kamanja engine runs in the background.
+
 - **MODELNAME** - specify the name of the module
-  (in the format <modulename>.<classname>)
-  that contains the execute method.
+  that contains the execute method,
+  in the format <modulename>.<classname>.
 
 - **MESSAGENAME** - name of the input message
   for the consumption of the input message.

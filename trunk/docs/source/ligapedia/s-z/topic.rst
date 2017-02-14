@@ -14,10 +14,11 @@ For more information:
 - Use the :ref:`kafka-topics-command-ref` command
   to create and delete topics.
 - Use the :ref:`kafka-console-command-ref` command
-  to view and monitor topics.
+  to read data from a topic.
 - When Kamanja is first installed,
   the :ref:`createqueues-command-ref` creates some default topics.
-  These topics can be monitored with the :ref:`watchqueue-command-ref` commands.
+  These topics can be monitored
+  with the :ref:`watchqueue-command-ref` commands.
 
 
 See also:

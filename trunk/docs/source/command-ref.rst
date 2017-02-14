@@ -46,7 +46,8 @@ Command Reference Pages
    * - :ref:`kafka-topics-command-ref`
      - Create and delete Kafka topics.
    * - :ref:`kamanja-command-ref`
-     - Manage metadata.
+     - Start/stop Kamanja engine, general operations for the cluster,
+       and manage metadata.
    * - :ref:`setpaths-command-ref`
      - Perform string replacement on items in the template files
        and create new configuration files in the config folder.
@@ -54,8 +55,6 @@ Command Reference Pages
      - 
    * - :ref:`simplepmltesttool-command-ref`
      - Test a generated PMML model.
-   * - :ref:`startengine-command-ref`
-     - Start the Kamanja engine.
    * - :ref:`statuskamanjacluster-command-ref`
      - Report health of each node in the cluster.
    * - :ref:`watchqueue-command-ref`
@@ -92,7 +91,6 @@ Command Reference Pages
    command-ref/SimpleKafkaProducer
    command-ref/SimplePmlTestTool
    command-ref/StatusKamanjaCluster
-   command-ref/StartEngine
    command-ref/WatchQueue
    command-ref/zkCLI
    command-ref/zkServer

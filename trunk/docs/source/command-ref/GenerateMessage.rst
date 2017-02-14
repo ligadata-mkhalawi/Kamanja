@@ -8,8 +8,8 @@ GenerateMessage.sh
 Generate a :ref:`message definition<message-def-config-ref>`
 from a file header or from :ref:`PMML<pmml-term>` DataDictionary.
 The script calls a tool that is written in Scala
-to extract the field names and types into the "Fields" section
-of the message definition.
+to extract the field names and data types into the "Fields" section
+of the message definition,.
 which saves you from having to type them all in manually.
 
 To run the command, you populate a configuration file
@@ -98,6 +98,11 @@ Configuration file parameters
   (either input or output message);
   default value is input.
   (optional for header and PMML).
+  In general, Kamanja uses the same structure for input and output messages,
+  but here it is necessary to differentiate between input and output
+  because different fields may be used for input and output.
+  For example, in PMML DataDictionaries, fields defined
+  as <Target></Target> are only extracted if **messageType** is "output".
 - **messageName** - name of the message definition;
   default value is testmessage.
   (optional for header and PMML).
@@ -115,6 +120,11 @@ Configuration file parameters
 
 Usage
 -----
+
+The input data should be cleaned and preprocessed
+before being passed to **GenerateMessage.sh**.
+Fields that include NA fields or other invalid data
+are detected as String type.
 
 Return values
 -------------
@@ -145,15 +155,13 @@ include the following Usage statement:
 
 The error messages returned for the syntax of the command are:
 
-- **ERROR [main] - This file does not exist.**
-
+- **ERROR [main] - This file does not exist.** --
   An incorrect name or path was specified for the input file.
 
 - **ERROR [main] - This file /opt/Kamanja/input/SampleApplications/data/test.csv
   does not include data. Check your file please.**
 
-- **ERROR [main] - This file does not exist**
-
+- **ERROR [main] - This file does not exist** --
   An incorrect name or path was specified for the configuration file.
 
 - **ERROR [main] - This file /opt/KamanjaDoubleVersionsTest/Kamanja-1.5.0_2.10/config/ConfigFile_GeneratMessagetest.properties
@@ -168,17 +176,16 @@ supplied to the configuration file:
 
 - **ERROR [main] - The value for createMessageFrom should be header or PMML**
 
-- **ERROR [main] - The value of messageType should be input or output**
+- **ERROR [main] - The value of massegeType should be input or output**
 
 - **ERROR [main] - you pass 10 in detectdatatypeFrom
   and the file size equal to 8 records,
-  please pass a number greater than 1 and less than the file size**
-
+  please pass a number greater than 1 and less than the file size** --
   This parameter should specify the number of rows to use;
   it cannot be set to a value greater than the number of rows
   in the data source.
 
-- **ERROR [main] - test key from partitionKey/PrimaryKey/TimePartitionInfo
+- **ERROR [main] - test key from partitioKey/PrimaryKey/TimePartitionInfo
   does not exist in message fields. Choose another key please**
 
 
@@ -192,7 +199,7 @@ The first example generates a message definition
 from a :ref:`CSV<csv-term>` file,
 using the headers of that file for the "Name" of each field.
 This is the *SubscriberInfo_Telecom.dat* file
-that you can find in *SampleApplication/Telecom/data* directory
+that you can find in the *$Kamanja_Home/SampleApplication/Telecom/data* directory
 of your Kamanja installation:
 
 ::
@@ -231,8 +238,9 @@ To generate the message definition, run this command:
 
     cd $KAMANJA_HOME
     ./GenerateMessage.sh
-    --inputfile /opt/Kamanja/input/SampleApplications/data/SubscriberInfo_Telecom.dat
-    --config /opt/KamanjaDoubleVersionsTest/Kamanja-1.5.0_2.10/config/ConfigFile_GeneratMessage.properties
+    --inputfile $KAMANJA_HOME/SampleApplications/Telecom/data/SubscriberInfo_Telecom.dat
+    --config /opt/KamanjaDoubleVersionsTest/Kamanja-1.5.0_2.10/
+      config/ConfigFile_GeneratMessage.properties
 
 
 Running the tool returns the following:
@@ -464,6 +472,12 @@ The */tmp/message_20160615021006.json* file includes:
       }
       }
 
+Note that the DataDictionary defines five fields
+but the message definition only defines four fields.
+This is because the fifth field ("Species")
+target
+which makes it 
+
 If you run the tool specifying this same
 *ConfigFile_GeneratMessage.properties* file
 but do not specify an input file,
@@ -532,7 +546,7 @@ and so the tool ignored the invalid characters.
 Characters that are invalid are any special character
 (such as @ or whitespace) except $ and _.
 
-Suppose the input file is **KMeansIris.pmml**,
+For this example, the input file is **KMeansIris.pmml**,
 which defines the following data:
 
 ::

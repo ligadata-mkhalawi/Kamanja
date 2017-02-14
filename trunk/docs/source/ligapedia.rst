@@ -32,6 +32,7 @@ Ligapedia
    ligapedia/a-f/feature-extraction
    ligapedia/a-f/feature-selection
    ligapedia/a-f/features
+   ligapedia/a-f/file-formats
    ligapedia/a-f/functions
    ligapedia/g-m/hbase
    ligapedia/g-m/ingest-data
@@ -57,9 +58,10 @@ Ligapedia
    ligapedia/n-r/nlp
    ligapedia/n-r/node
    ligapedia/n-r/numby
+   ligapedia/n-r/parquet
    ligapedia/n-r/partition
-   ligapedia/n-r/persist
    ligapedia/n-r/password-encrypt
+   ligapedia/n-r/persist
    ligapedia/n-r/pipeline
    ligapedia/n-r/pmml
    ligapedia/n-r/preprocessing

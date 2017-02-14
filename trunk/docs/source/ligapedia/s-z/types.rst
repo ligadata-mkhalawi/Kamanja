@@ -21,13 +21,14 @@ SortedSet, TreeSet, and Queue.
 A Kamanja :ref:`message<messages-term>` or :ref:`container<container-term>`
 can have fields with the following types:
 
-- Int
-- Long
-- Float
-- Double
-- Boolean
-- String
-- Char
+- Int or System.int
+- Long or System.long
+- Float or System.float
+- Double or System.double
+- Boolean or System.boolean
+- String or System.string
+- Char or System.char
+- ArrayOfString or System.ArrayOfString
 
 In addition, all of these types can serve as a member type
 of either array or map collections.

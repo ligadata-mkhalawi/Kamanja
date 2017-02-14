@@ -30,10 +30,9 @@ To implement consolidated logging on clusters that do not run Kerberos:
 #. Add the Kafka Appender to the log4j2.xml file;
    see the sample on the :ref:`log4j2.xml<log4j2-config-ref>` page.
 #. Include the kafka-clients.jar file
-   in the class path of the :ref:`kamanja<kamanja-command-ref>`
-   and :ref:`StartEngine.sh<startengine-command-ref>` scripts.
+   in the class path of the :ref:`kamanja<kamanja-command-ref>` script.
 #. Add the NodeID environment variable to the
-   kamanja and StartEngine scripts.
+   kamanja scripts.
 #. Run Kamanja.
 #. Check the errors that are pushed to Kafka topics.
 
@@ -47,9 +46,9 @@ To implement consolidated logging on clusters that run Kerberos:
 #. Add the Kafka Appender to the log4j2.xml file;
    see the sample on the :ref:`log4j2.xml<log4j2-config-ref>` page.
 #. Add the kafka-clients.jar file to the class path
-   of the kamanja and StartEngine scripts.
+   of the kamanja scripts.
 #. Add the NodeID environment variable
-   to the kamanja and StartEngine scripts.
+   to the kamanja scripts.
 #. Run Kamanja.
 #. Check that the errors are pushed to Kafka topics.
 
