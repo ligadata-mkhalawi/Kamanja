@@ -175,6 +175,10 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
   envContext.registerNodesChangeNotification(nodeChangeCallback)
 
+  //calling the velocity metrics instances
+  getVelocityInstances = vm.getFileVelocityInstances(VMFactory, Category, inputConfig, nodeContext)
+
+  
   private val _reent_lock = new ReentrantReadWriteLock(true)
 
   private def ReadLock(reent_lock: ReentrantReadWriteLock): Unit = {
@@ -1081,7 +1085,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
 
         /**Get VelocityMetrics for SmartFileName - fileToProcessName ***/
         val nodeId = nodeContext.getEnvCtxt().getNodeId()
-        getSmartFileVelocityMetrics(VMFactory, "SmartFileIA", fileToProcessName, nodeId, inputConfig)
+        getSmartFileVelocityMetrics(this, fileToProcessName, true)
 
       }
     }
@@ -1776,8 +1780,18 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   }
 
   /* Get Velocity Metrics for Output Adapter   */
-  private def getSmartFileVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, componentName: String, fileName: String, nodeId: String, adapConfig: AdapterConfiguration) = {
-    var vm = new VelocityMetricsInfo
-    vm.incrementFileVelocityMetrics(VMFactory, componentName, fileName, nodeId, adapConfig)
+  // private def getSmartFileVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, componentName: String, fileName: String, nodeId: String, adapConfig: AdapterConfiguration) = {
+  //   var vm = new VelocityMetricsInfo
+  //   vm.incrementFileVelocityMetrics(VMFactory, componentName, fileName, nodeId, adapConfig)
+  // }
+
+  /* Get Velocity Metrics for Output Adapter   */
+  private def getSmartFileVelocityMetrics(input: InputAdapter, fileName: String, processed: Boolean) = {
+    val vmInstances = input.getVelocityInstances
+    if (vmInstances != null && vmInstances.length > 0) {
+      for (i <- 0 until vmInstances.length) {
+        input.vm.incrementFileVMetrics(vmInstances(i), fileName, processed)
+      }
+    }
   }
 }

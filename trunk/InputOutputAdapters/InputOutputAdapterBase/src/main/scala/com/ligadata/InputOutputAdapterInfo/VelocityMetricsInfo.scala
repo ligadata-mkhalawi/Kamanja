@@ -77,15 +77,54 @@ class VelocityMetricsInfo {
   val counterNames = Array("processed", "exception")
   val uscore = "_"
 
-  def getAllIAVelocityInstances(VMFactory: VelocityMetricsFactoryInterface, adapCategory: String, adapConfig: AdapterConfiguration, nodeContext: NodeContext): Array[InstanceRuntimeInfo] = {
-    val vmetrics = getVelocityMetricsConfig(adapConfig.fullAdapterConfig)
-    val compName = getComponentTypeName(adapCategory.toLowerCase(), adapConfig.adapterSpecificCfg)
-    println("compName  " + compName)
-    val nodeId = nodeContext.getEnvCtxt().getNodeId()
-    if (nodeId == null) throw new Exception("Node Id is null")
-    getVelocityMetricsInstances(VMFactory, nodeId, adapConfig, compName)
+  /* 
+   * Get all the VM Instances and metrics info for all msgtype keys
+   */
+  def getMsgVelocityInstances(VMFactory: VelocityMetricsFactoryInterface, adapCategory: String, adapConfig: AdapterConfiguration, nodeContext: NodeContext): Array[InstanceRuntimeInfo] = {
+    val allMsgInstances = ArrayBuffer[InstanceRuntimeInfo]()
+    try {
+      val vmetrics = getVelocityMetricsConfig(adapConfig.fullAdapterConfig)
+      val compName = adapCategory + uscore + adapConfig.Name
+      // val compName = getComponentTypeName(adapCategory.toLowerCase(), adapConfig.adapterSpecificCfg)
+      println("compName  " + compName)
+      val nodeId = nodeContext.getEnvCtxt().getNodeId()
+      if (nodeId == null) throw new Exception("Node Id is null")
+      val allinstances = getVelocityMetricsInstances(VMFactory, nodeId, adapConfig, compName)
+      if (allinstances != null && allinstances.length > 0) {
+        for (i <- 0 until allinstances.length) {
+          if (allinstances(i).typId > 1 && allinstances(i).typId < 5) {
+            allMsgInstances += allinstances(i)
+          }
+        }
+      }
+    } catch {
+      case e: Exception => LOG.error(e.getMessage)
+    }
+    return allMsgInstances.toArray
   }
 
+  def getFileVelocityInstances(VMFactory: VelocityMetricsFactoryInterface, adapCategory: String, adapConfig: AdapterConfiguration, nodeContext: NodeContext): Array[InstanceRuntimeInfo] = {
+    val allMsgInstances = ArrayBuffer[InstanceRuntimeInfo]()
+    try {
+      val vmetrics = getVelocityMetricsConfig(adapConfig.fullAdapterConfig)
+      val compName = adapCategory + uscore + adapConfig.Name
+      // val compName = getComponentTypeName(adapCategory.toLowerCase(), adapConfig.adapterSpecificCfg)
+      println("compName  " + compName)
+      val nodeId = nodeContext.getEnvCtxt().getNodeId()
+      if (nodeId == null) throw new Exception("Node Id is null")
+      val allinstances = getVelocityMetricsInstances(VMFactory, nodeId, adapConfig, compName)
+      if (allinstances != null && allinstances.length > 0) {
+        for (i <- 0 until allinstances.length) {
+          if (allinstances(i).typId == 1) {
+            allMsgInstances += allinstances(i)
+          }
+        }
+      }
+    } catch {
+      case e: Exception => LOG.error(e.getMessage)
+    }
+    return allMsgInstances.toArray
+  }
   /*
    * Create the VelocityMetricsInbstances for the VelocityMetricsInfo key types
    */
@@ -169,20 +208,14 @@ class VelocityMetricsInfo {
       LOG.info("Adapter Specific Config does not exist")
     }
     println("adapCfg.values " + adapCfgStr)
-    /*  val adapCfgJson = parse(adapCfgStr)
-    if (adapCfgJson == null || adapCfgJson.values == null) {
-      LOG.warn("Failed to parse AdapterSpecific JSON configuration string:" + adapCfgStr)
-      throw new Exception("Failed to parse AdapterSpecific JSON configuration string:" + adapCfgStr)
-
-    }
-    val adapValues = adapCfgJson.values.asInstanceOf[Map[String, Any]]
-
-    val adapCfgMap: scala.collection.mutable.Map[String, Any] = scala.collection.mutable.Map[String, Any]()
-    adapValues.foreach(kv => { adapCfgMap(kv._1.trim().toLowerCase()) = kv._2 })
-
-    val adapCfg = adapCfgMap.getOrElse("adapterspecificcfg", null)*/
     if (adapCfgStr != null) {
-      val adapCfgVals = adapCfgStr.asInstanceOf[Map[String, Any]]
+      val adapCfgJson = parse(adapCfgStr)
+      if (adapCfgJson == null || adapCfgJson.values == null) {
+        LOG.warn("Failed to parse AdapterSpecific JSON configuration string:" + adapCfgStr)
+        throw new Exception("Failed to parse AdapterSpecific JSON configuration string:" + adapCfgStr)
+
+      }
+      val adapCfgVals = adapCfgJson.values.asInstanceOf[Map[String, Any]]
       println("adapCfgVals.values " + adapCfgVals)
 
       val adapCfgValues: scala.collection.mutable.Map[String, Any] = scala.collection.mutable.Map[String, Any]()
@@ -288,6 +321,32 @@ class VelocityMetricsInfo {
           } else throw new Exception("KeyStrings for the metricsbymsgfixedstring need to be provided in the velocity metrics config")
         }
 
+      }
+
+    } catch {
+      case e: Exception => LOG.error("increment Velocity Metrics " + e.getMessage)
+    }
+
+  }
+
+  /*
+   * Increment the velocity metrics - get the VelocityMetricsInstance Factory and call increment for metrics by msgType and metrics by msg keys
+   */
+
+  def incrementFileVMetrics(VMInstance: InstanceRuntimeInfo, filename: String, processed: Boolean): Unit = {
+    LOG.info("Start Increment Velocity Metrics")
+    try {
+      var metricsTime: Long = System.currentTimeMillis()
+      val typId = VMInstance.typId
+      if (typId >= 5) throw new Exception("The metrics type key is not valid")
+
+      if (typId == 1) {
+        val metricsKey = filename
+        if (processed) {
+          VMInstance.instance.increment(metricsTime, metricsKey, System.currentTimeMillis(), true, false)
+        } else {
+          VMInstance.instance.increment(metricsTime, metricsKey, System.currentTimeMillis(), false, true)
+        }
       }
 
     } catch {

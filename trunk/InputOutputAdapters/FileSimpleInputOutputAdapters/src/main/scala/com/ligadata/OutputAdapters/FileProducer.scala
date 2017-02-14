@@ -48,6 +48,8 @@ class FileProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeC
   private var lastSeen = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new java.util.Date(System.currentTimeMillis))
   private var metrics: scala.collection.mutable.Map[String, Any] = scala.collection.mutable.Map[String, Any]()
 
+  var getFileVelocityInstances = vm.getFileVelocityInstances(VMFactory, Category, inputConfig, nodeContext)
+
   //BUGBUG:: Not validating the values in FileAdapterConfiguration 
 
   //BUGBUG:: Open file to write the data
@@ -189,13 +191,15 @@ class FileProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeC
       if (outContainers != null && outContainers.size > 0) {
         val nodeId = nodeContext.getEnvCtxt().getNodeId()
         for (i <- 0 until outContainers.size) {
-          getOAVelocityMetrics(VMFactory, nodeId, outContainers(i), inputConfig, true)
+          getOAVelocityMetrics(this, outContainers(i), true)
         }
       }
+      getFileVelocityMetrics(this, fc.Name, true)
 
     } catch {
       case e: Exception => {
         LOG.error("File input adapter " + fc.Name + ": Failed to send", e)
+        getFileVelocityMetrics(this, fc.Name, false)
         throw FatalAdapterException("Unable to send message", e)
       }
     }
@@ -206,12 +210,23 @@ class FileProducer(val inputConfig: AdapterConfiguration, val nodeContext: NodeC
       os.close
   }
 
-  /* Get Velocity Metrics for Output Adapter   */
-  private def getOAVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, nodeId: String, message: ContainerInterface, adapConfig: AdapterConfiguration, processed: Boolean) = {
-    var vm = new VelocityMetricsInfo
-    val OACompName = "FileProducerOA"
-    vm.incrementVelocityMetrics(VMFactory, OACompName, nodeId, message, adapConfig, true)
+  private def getOAVelocityMetrics(output: OutputAdapter, message: ContainerInterface, processed: Boolean) = {
+    val vmInstances = output.getVelocityInstances
+    if (vmInstances != null && vmInstances.length > 0) {
+      for (i <- 0 until vmInstances.length) {
+        output.vm.incrementIAVelocityMetrics(vmInstances(i), message, processed)
+      }
+    }
+  }
 
+  /* Get Velocity Metrics for Output Adapter   */
+  private def getFileVelocityMetrics(output: OutputAdapter, fileName: String, processed: Boolean) = {
+    val vmInstances = this.getFileVelocityInstances
+    if (vmInstances != null && vmInstances.length > 0) {
+      for (i <- 0 until vmInstances.length) {
+        output.vm.incrementFileVMetrics(vmInstances(i), fileName, processed)
+      }
+    }
   }
 
 }

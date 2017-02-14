@@ -364,6 +364,11 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
   private var metrics: scala.collection.mutable.Map[String, Any] = scala.collection.mutable.Map[String, Any]()
   metrics("MessagesProcessed") = new AtomicLong(0)
 
+  //calling the velocity metrics instances
+  getVelocityInstances = vm.getMsgVelocityInstances(VMFactory, Category, inputConfig, nodeContext)
+
+  var getFileVelocityInstances = vm.getFileVelocityInstances(VMFactory, Category, inputConfig, nodeContext)
+
   if (fc.uri.startsWith("file://"))
     fc.uri = fc.uri.substring("file://".length() - 1)
 
@@ -391,7 +396,6 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     }
   }
 
-  
   var nextRolloverTime: Long = 0
   if (fc.rolloverInterval > 0) {
     LOG.info("Smart File Producer " + fc.Name + ": File rollover is configured. Will rollover files every " + fc.rolloverInterval + " minutes.")
@@ -680,9 +684,11 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
             if (outputContainers != null && outputContainers.size > 0) {
               val nodeId = nodeContext.getEnvCtxt().getNodeId()
               for (i <- 0 until outContainers.size) {
-                getOAVelocityMetrics(VMFactory, nodeId, outContainers(i), inputConfig, true)
+                getOAVelocityMetrics(this, outContainers(i), true)
               }
             }
+            getFileVelocityMetrics(this, fc.Name, true)
+
           } catch {
             case fio: IOException => {
               LOG.warn("Smart File Producer " + fc.Name + ": Unable to write to file " + pf.name)
@@ -695,6 +701,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
               }
               numOfRetries += 1
               LOG.warn("Smart File Producer " + fc.Name + ": Retyring " + numOfRetries + "/" + MAX_RETRIES)
+              getFileVelocityMetrics(this, fc.Name, false)
               Thread.sleep(FAIL_WAIT)
             }
             case e: Exception => {
@@ -736,11 +743,23 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
     }
   }
 
-  private def getOAVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, nodeId: String, message: ContainerInterface, adapConfig: AdapterConfiguration, processed: Boolean) = {
-    var vm = new VelocityMetricsInfo
-    val componentName = "SmartFileOA"
-    vm.incrementVelocityMetrics(VMFactory, componentName, nodeId, message, adapConfig, true)
+  private def getOAVelocityMetrics(output: OutputAdapter, message: ContainerInterface, processed: Boolean) = {
+    val vmInstances = output.getVelocityInstances
+    if (vmInstances != null && vmInstances.length > 0) {
+      for (i <- 0 until vmInstances.length) {
+        output.vm.incrementIAVelocityMetrics(vmInstances(i), message, processed)
+      }
+    }
+  }
 
+  /* Get Velocity Metrics for Output Adapter   */
+  private def getFileVelocityMetrics(output: OutputAdapter, fileName: String, processed: Boolean) = {
+    val vmInstances = this.getFileVelocityInstances
+    if (vmInstances != null && vmInstances.length > 0) {
+      for (i <- 0 until vmInstances.length) {
+        output.vm.incrementFileVMetrics(vmInstances(i), fileName, processed)
+      }
+    }
   }
 
 }

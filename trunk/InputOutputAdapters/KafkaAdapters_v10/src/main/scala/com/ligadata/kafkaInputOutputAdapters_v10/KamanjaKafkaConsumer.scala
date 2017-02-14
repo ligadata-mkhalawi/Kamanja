@@ -70,6 +70,10 @@ class KamanjaKafkaConsumer(val inputConfig: AdapterConfiguration, val execCtxtOb
   metrics(com.ligadata.AdaptersConfiguration.KamanjaKafkaAdapterConstants.PARTITION_DEPTH_KEYS) = partitonDepths
   var localReadOffsets: collection.mutable.Map[Int,Long] = collection.mutable.Map[Int,Long]()
 
+  //calling the velocity metrics instances
+  getVelocityInstances = vm.getMsgVelocityInstances(VMFactory, Category, inputConfig, nodeContext)
+
+  
   var props = new Properties()
 
   props.put("bootstrap.servers", qc.hosts.mkString(","))

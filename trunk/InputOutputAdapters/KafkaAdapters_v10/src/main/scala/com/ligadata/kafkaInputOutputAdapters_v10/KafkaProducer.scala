@@ -239,6 +239,9 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
   metrics(KafkaProducer.LAST_FAILURE_TIME) = "n/a"
   metrics(KafkaProducer.LAST_RECOVERY_TIME) = "n/a"
 
+  //calling the velocity metrics instances
+  getVelocityInstances = vm.getMsgVelocityInstances(VMFactory, Category, inputConfig, nodeContext)
+
   if (enable_adapter_retries) retryExecutor.execute(new RetryFailedMessages())
 
   class RetryFailedMessages extends Runnable {
@@ -508,9 +511,8 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
 
     /****VelocityMetrics****/
     if (outContainers != null && outContainers.size > 0) {
-      val nodeId = nodeContext.getEnvCtxt().getNodeId()
       for (i <- 0 until outContainers.size) {
-        getOAVelocityMetrics(VMFactory, nodeId, outContainers(i), inputConfig, true)
+        getOAVelocityMetrics(this, outContainers(i), true)
       }
     }
   }
@@ -791,10 +793,12 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
     })
   }
 
-  private def getOAVelocityMetrics(VMFactory: VelocityMetricsFactoryInterface, nodeId: String, message: ContainerInterface, adapConfig: AdapterConfiguration, processed: Boolean) = {
-    var vm = new VelocityMetricsInfo
-    val OACompName = "KafkaProducerOA"
-    vm.incrementVelocityMetrics(VMFactory, OACompName, nodeId, message, adapConfig, true)
-
+   private def getOAVelocityMetrics(output: OutputAdapter, message: ContainerInterface, processed: Boolean) = {
+    val vmInstances = output.getVelocityInstances
+    if (vmInstances != null && vmInstances.length > 0) {
+      for (i <- 0 until vmInstances.length) {
+        output.vm.incrementIAVelocityMetrics(vmInstances(i), message, processed)
+      }
+    }
   }
 }
