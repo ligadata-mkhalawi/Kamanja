@@ -1300,7 +1300,7 @@ class VelocityMetricsOutput extends VelocityMetricsCallback {
   @throws[Exception]
   def call(metrics: Metrics): Unit = {
 
-    LOG.info("=======================Start Velocity Metrics================")
+    LOG.info("Start Velocity Metrics")
     val velocityMetricsArrBuf: ArrayBuffer[com.ligadata.KamanjaBase.KamanjaVelocityMetrics] = new ArrayBuffer[com.ligadata.KamanjaBase.KamanjaVelocityMetrics]
 
     val metricsArrBuf: ArrayBuffer[com.ligadata.KamanjaBase.MetricsValue] = new ArrayBuffer[com.ligadata.KamanjaBase.MetricsValue]
@@ -1388,7 +1388,7 @@ class VelocityMetricsOutput extends VelocityMetricsCallback {
         }
     }
 
-    LOG.info("=======================End Velocity Metrics================")
+    LOG.info("End Velocity Metrics")
 
     val vmstats = velocityMetricsArrBuf.toArray.asInstanceOf[Array[ContainerInterface]]
     KamanjaMetadata.envCtxt.postMessages(vmstats)

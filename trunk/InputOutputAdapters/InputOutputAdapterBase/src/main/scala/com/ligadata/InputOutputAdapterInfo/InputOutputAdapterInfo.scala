@@ -113,6 +113,7 @@ trait InputAdapter extends AdaptersSerializeDeserializers with Monitorable {
 
   def VMFactory = VelocityMetricsInfo.getVMFactory(nodeContext)
   def getIAVelocityInstances = vm.getAllIAVelocityInstances(VMFactory, Category, inputConfig, nodeContext)
+  def allVelocityInstances = getIAVelocityInstances
 }
 
 // Output Adapter Object to create Adapter

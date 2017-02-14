@@ -169,7 +169,7 @@ class VelocityMetricsInfo {
       LOG.info("Adapter Specific Config does not exist")
     }
     println("adapCfg.values " + adapCfgStr)
-    val adapCfgJson = parse(adapCfgStr)
+    /*  val adapCfgJson = parse(adapCfgStr)
     if (adapCfgJson == null || adapCfgJson.values == null) {
       LOG.warn("Failed to parse AdapterSpecific JSON configuration string:" + adapCfgStr)
       throw new Exception("Failed to parse AdapterSpecific JSON configuration string:" + adapCfgStr)
@@ -180,10 +180,10 @@ class VelocityMetricsInfo {
     val adapCfgMap: scala.collection.mutable.Map[String, Any] = scala.collection.mutable.Map[String, Any]()
     adapValues.foreach(kv => { adapCfgMap(kv._1.trim().toLowerCase()) = kv._2 })
 
-    val adapCfg = adapCfgMap.getOrElse("adapterspecificcfg", null)
-    if (adapCfg != null) {
-      val adapCfgVals = adapCfg.asInstanceOf[Map[String, Any]]
-      println("adapCfg.values " + adapCfg)
+    val adapCfg = adapCfgMap.getOrElse("adapterspecificcfg", null)*/
+    if (adapCfgStr != null) {
+      val adapCfgVals = adapCfgStr.asInstanceOf[Map[String, Any]]
+      println("adapCfgVals.values " + adapCfgVals)
 
       val adapCfgValues: scala.collection.mutable.Map[String, Any] = scala.collection.mutable.Map[String, Any]()
       adapCfgVals.foreach(kv => { adapCfgValues(kv._1.trim().toLowerCase()) = kv._2 })
