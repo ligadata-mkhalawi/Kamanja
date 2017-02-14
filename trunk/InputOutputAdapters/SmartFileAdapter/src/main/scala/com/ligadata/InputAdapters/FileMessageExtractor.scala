@@ -413,14 +413,16 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
         fileHandlers(0).getFullPath, consumerContexts(0).nodeId, consumerContexts(0).partitionId.toString)
 
       var attachmentsJson = new java.lang.StringBuilder(8 * 1024)
-      attachmentsJson.append("""{"Files": {""")
+      attachmentsJson.append("""{"files": {""")
 
       for (i <- 0 until fileHandlers.size) {
         val flData = readWholeFile(fileHandlers(i))
         if (i > 0)
-          attachmentsJson.append(",\"%s\":\"%s\"".format(fileHandlers(i).getFullPath, flData))
+          attachmentsJson.append(",\"%s\":\"".format(fileHandlers(i).getFullPath))
         else
-          attachmentsJson.append("\"%s\":\"%s\"".format(fileHandlers(i).getFullPath, flData))
+          attachmentsJson.append("\"%s\":\"".format(fileHandlers(i).getFullPath))
+        attachmentsJson.append(flData)
+        attachmentsJson.append("\"")
       }
 
       attachmentsJson.append("}")
@@ -445,7 +447,7 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
     }
   }
 
-  def readWholeFile(fileHandler: SmartFileHandler): String = {
+  private def readWholeFile(fileHandler: SmartFileHandler): String = {
     val allData = ArrayBuffer[Byte]()
     // create tmpFlHandler from filename
     //    val fileName = fileHandler.getFullPath
