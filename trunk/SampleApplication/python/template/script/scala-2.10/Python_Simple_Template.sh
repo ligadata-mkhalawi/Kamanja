@@ -39,7 +39,7 @@ $KAMANJA_HOME/bin/kamanja $apiConfigProperties add adaptermessagebinding FROMSTR
 
 # Add the output adapter (JSON) binding
 
-$KAMANJA_HOME/bin/kamanja $apiConfigProperties add adaptermessagebinding FROMSTRING '{"AdapterName": "TestOut_1", "MessageNames": ["org.kamanja.arithmetic.arithmeticOutMsg"], "Serializer": " com.ligadata.kamanja.serializer.JsonSerDeser"}'
+$KAMANJA_HOME/bin/kamanja $apiConfigProperties add adaptermessagebinding FROMSTRING '{"AdapterName": "TestOut_1", "MessageNames": ["org.kamanja.arithmetic.arithmeticOutMsg"], "Serializer": " com.ligadata.kamanja.serializer.jsonserdeser"}'
 
 # system adapter message binding
 

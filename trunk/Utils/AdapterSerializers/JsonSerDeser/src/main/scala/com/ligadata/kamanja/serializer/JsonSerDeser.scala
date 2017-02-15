@@ -392,23 +392,30 @@ class JSONSerDes extends SerializeDeserialize {
     */
   @throws(classOf[com.ligadata.Exceptions.ObjectNotFoundException])
   def deserialize(b: Array[Byte], containerName: String): ContainerInterface = {
+    //Warning("b: %s, containerName: %s".format(new String(b),containerName))
     val rawJsonContainerStr: String = new String(b)
     try {
       var containerInstanceMap: Map[String, Any] = jsonStringAsMap(rawJsonContainerStr)
+      //Warning("containerInstanceMap: %s".format(containerInstanceMap))
       var deserContainerName = containerName
       if (_taggedAdapter) {
+	Warning("containerInstanceMap.size: %d".format(containerInstanceMap.size))
         if (containerInstanceMap.size != 1)
           throw new Exception("Expecting only one message in tagged JSON data for deserializer")
         val msgTypeAny = containerInstanceMap.head._1
+	Warning("msgTypeAny: %s".format(msgTypeAny))
         if (msgTypeAny == null)
           throw new Exception("MessageType not found in tagged JSON data for deserializer")
         deserContainerName = msgTypeAny.toString.trim
+	Warning("deserContainerName: %s".format(deserContainerName))
         if (! containerInstanceMap.head._2.isInstanceOf[Map[String, Any]])
           throw new Exception("In tagged JSON data for deserializer not getting child structure after getting message:" + deserContainerName)
         containerInstanceMap = containerInstanceMap.head._2.asInstanceOf[Map[String, Any]]
       }
 
       val container = deserializeContainerFromJsonMap(containerInstanceMap, deserContainerName, 0)
+
+      //Warning("container: %s".format(container))
 
       val txnId = toLong(containerInstanceMap.getOrElse(TransactionIDKeyName, -1))
       val tmPartVal = toLong(containerInstanceMap.getOrElse(TimePartitionIDKeyName, -1))
@@ -460,33 +467,42 @@ class JSONSerDes extends SerializeDeserialize {
       val k = pair._1
       val v = pair._2
 
+      Warning("k: %s, v: %s".format(k,v))
       val at = ci.getAttributeType(k)
       if (at == null) {
         if (!ci.isFixed)
           ci.set(k, v)
       }
       else {
-        // @@TODO: check the type compatibility between "value" field v with the target field
-        val valType = at.getTypeCategory
-        val fld = valType match {
-          case LONG => toLong(v)
-          case INT => toInt(v)
-          case BYTE => toByte(v)
-          case FLOAT => toFloat(v)
-          case BOOLEAN => toBoolean(v)
-          case DOUBLE => toDouble(v)
-          case STRING => toString(v)
-          case CHAR => toChar(v)
-          case MAP => jsonAsMap(at, v.asInstanceOf[Map[String, Any]])
-          case (CONTAINER | MESSAGE) => {
-            val containerTypeName: String = null //BUGBUG:: Fix this to make the container object properly
-            deserializeContainerFromJsonMap(v.asInstanceOf[Map[String, Any]], containerTypeName, at.getValSchemaId)
+	try{
+          // @@TODO: check the type compatibility between "value" field v with the target field
+          val valType = at.getTypeCategory
+	  //Warning("getTypeCategory: %d".format(valType.getValue));
+          val fld = valType match {
+            case LONG => toLong(v)
+            case INT => toInt(v)
+            case BYTE => toByte(v)
+            case FLOAT => toFloat(v)
+            case BOOLEAN => toBoolean(v)
+            case DOUBLE => toDouble(v)
+            case STRING => toString(v)
+            case CHAR => toChar(v)
+            case MAP => jsonAsMap(at, v.asInstanceOf[Map[String, Any]])
+            case (CONTAINER | MESSAGE) => {
+              val containerTypeName: String = null //BUGBUG:: Fix this to make the container object properly
+              deserializeContainerFromJsonMap(v.asInstanceOf[Map[String, Any]], containerTypeName, at.getValSchemaId)
+            }
+            case ARRAY => jsonAsArray(at, v.asInstanceOf[List[Any]])
+            case _ => throw new UnsupportedObjectException("Not yet handled valType:" + valType, null)
           }
-          case ARRAY => jsonAsArray(at, v.asInstanceOf[List[Any]])
-          case _ => throw new UnsupportedObjectException("Not yet handled valType:" + valType, null)
-        }
-        // Warning("Key:%s, Idx:%d, valType:%d, Value:%s. Value Class:%s".format(k, at.getIndex, valType.getValue, fld.toString, fld.getClass.getName))
-        ci.set(k, fld)
+          //Warning("Key:%s, Idx:%d, valType:%d, Value:%s. Value Class:%s".format(k, at.getIndex, valType.getValue, fld.toString, fld.getClass.getName))
+	  ci.set(k, fld)
+	} catch {
+	  case e: Throwable => {
+	    Error("Exception: %s".format(e.getMessage()))
+            throw new KamanjaException("Failed to find field value :",e)
+	  }
+	}
       }
     })
     ci
