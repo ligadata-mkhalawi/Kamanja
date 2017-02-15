@@ -146,6 +146,7 @@ class MonitorController {
 
     var groupsInfo: GroupsInfoList = null
     if (monitoringConf.filesGroupsInfoJsonString != null) {
+      if (logger.isDebugEnabled) logger.debug("filesGroupsInfoJsonString:" + monitoringConf.filesGroupsInfoJsonString)
       try {
         val grpsInfo = parse(monitoringConf.filesGroupsInfoJsonString)
         if (grpsInfo == null || grpsInfo.values == null) {
@@ -195,6 +196,7 @@ class MonitorController {
             idx += 1
           })
           groupsInfo = GroupsInfoList(onlyBaseFile, pathSeparator, finalGroups.toArray)
+          if (logger.isDebugEnabled) logger.debug("GroupsInfoList:" + groupsInfo)
         }
       } catch {
         case e: Throwable => {
@@ -365,7 +367,10 @@ class MonitorController {
           // BUGBUG:: May be it is better to check whether we have given MatchGroupNumber or not
           if (allGrps != None) {
             retVal = allGrps.map(_ group patInfo.patternMatchGroupNumber).get
+            if (logger.isTraceEnabled) logger.trace("FileName:" + flName + ", matched patterns:" + allGrps + ", found value:" + retVal + " for pattern :" + patInfo.patternString)
             foundVal = true
+          } else {
+            if (logger.isTraceEnabled) logger.trace("FileName:" + flName + ", matched patterns:" + allGrps + ", not found value for pattern :" + patInfo.patternString)
           }
         } catch {
           case ex: Throwable => {
@@ -392,6 +397,8 @@ class MonitorController {
     val curTm = System.currentTimeMillis
     val zeroLenFls = ArrayBuffer[(String, Boolean)]()
     val move0LenFls = ArrayBuffer[String]()
+
+    if (logger.isDebugEnabled) logger.debug("ValidFiles:%s".format(validFiles.keys.mkString(",")))
 
     fileGroups.foreach(grp => {
       var allFlsValidInGrp = true
@@ -448,6 +455,8 @@ class MonitorController {
     })
 
     if (!isShutdown) {
+      if (logger.isDebugEnabled) logger.debug("yetToValidateFileGroups:%s".format(
+        yetToValidateFileGroups.map(grp => grp.map(f => f.path).mkString("~")).mkString(",")))
       yetToValidateFileGroups.foreach(grp => {
         if (!isShutdown) {
           enQBufferedFiles(grp, isFirstScan)
@@ -455,7 +464,9 @@ class MonitorController {
       })
     }
     
-    if (!isShutdown) {
+    if (!isShutdown && !move0LenFls.isEmpty) {
+      if (logger.isDebugEnabled) logger.debug("move0LenFls:%s".format(
+        move0LenFls.mkString(",")))
       move0LenFls.foreach(fl => {
         if (!isShutdown) {
           try {
@@ -480,8 +491,11 @@ class MonitorController {
           new EnqueuedFileHandler(fileHandler, NOT_RECOVERY_SITUATION, fl.lastModificationTime, locationInfo, components)
         }))
       }).toArray
-      if (!isShutdown)
+      if (!isShutdown) {
+        logger.warn("enq groups:%s".format(
+          grps.map(grp => grp.fileHandlers.map(f => f.fileHandler.getFullPath).mkString("~")).mkString(",")))
         enQGroups(grps)
+      }
     }
     
     (!finalValidFileGroups.isEmpty)
@@ -544,14 +558,21 @@ class MonitorController {
     })
 
     val fileGroups =
-      if (groupsInfo != null)
+      if (groupsInfo != null) {
+        if (logger.isDebugEnabled) logger.debug("Found groupInfo")
         currentAllChilds.groupBy(fl => {
           val flName = if (groupsInfo.onlyBaseFile) getBaseFileName(fl.path, groupsInfo.pathSeparator) else fl.path
           val parent = if (fl.parent != null) fl.parent else ""
           (parent, extractFileFromPattern(groupsInfo, flName))
         }).values.toArray
-      else
+      }
+      else {
+        if (logger.isDebugEnabled) logger.debug("Not found groupInfo")
         currentAllChilds.map(fl => Array(fl))
+      }
+
+    if (logger.isDebugEnabled) logger.debug("All Files:\n\tcurrentAllNonFilteredChilds:%s\n\tfileGroups:%s".format(
+      currentAllNonFilteredChilds.map(f => f.path).mkString(","), fileGroups.map(grp => grp.map(f => f.path).mkString("~")).mkString(",")))
 
     val validFiles = scala.collection.mutable.Map[String, (MonitoredFile, LocationInfo)]()
     val enqueuedBufferedFiles = getAllEnqueuedBufferedFiles
@@ -682,17 +703,22 @@ class MonitorController {
 
   private def deQGroup: EnqueuedGroupHandler = {
     if (groupQ.isEmpty) {
+      if (logger.isDebugEnabled) logger.debug("deQGroup is not returning anything")
       return null
     }
     groupQLock.synchronized {
       if (groupQ.isEmpty) {
+        if (logger.isDebugEnabled) logger.debug("deQGroup is not returning anything")
         return null
       }
       val enqueuedgroupHandler = groupQ.dequeue()
-      if (enqueuedgroupHandler != null && logger.isTraceEnabled)
-        logger.trace("SMART FILE CONSUMER (MonitorController):  deq group:" + enqueuedgroupHandler.fileHandlers.map(x => {
+      if (enqueuedgroupHandler != null && logger.isDebugEnabled) {
+        logger.debug("SMART FILE CONSUMER (MonitorController):  deq group:" + enqueuedgroupHandler.fileHandlers.map(x => {
           x.fileHandler.getFullPath
         }))
+      } else {
+        if (logger.isDebugEnabled) logger.debug("deQGroup is not returning anything")
+      }
       return enqueuedgroupHandler
     }
   }
