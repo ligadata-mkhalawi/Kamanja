@@ -4,6 +4,15 @@
 Smart File Output Adapter
 =========================
 
+A Smart File Output Adapter (also known as a Smart File Producer)
+is an output adapter that can persist Kamanja results
+to a file.
+The following output file formats are supported:
+
+- Linux text file
+- HDFS
+- Parquet
+
 Adapter definition
 ------------------
 

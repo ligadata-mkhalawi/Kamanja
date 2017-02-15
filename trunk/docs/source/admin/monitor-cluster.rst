@@ -872,7 +872,8 @@ The syntax is:
     LogErrorsFromKamanjaCluster.sh
     --ClusterId < cluster name identifer >
     --MetadataAPIConfig < metadataAPICfgPath >
-    --KamanjaLogPath < Kamanja system log path > [--ErrLogPath < where errors are collected > ]
+    --KamanjaLogPath < Kamanja system log path >
+   [--ErrLogPath < where errors are collected > ]
 
 
 NOTES: Logs for the cluster specified by the cluster identifier parameter
@@ -898,7 +899,20 @@ The output currently looks similar to this:
 
 ::
 
-    Node 1 (Errors detected at 2015-04-17 21:16:47) : file /tmp/drdigital/logs/testlog.log    not found No ERRORs found for this period Node 2 (Errors detected at 2015-04-17    21:16:47) : 2015-04-17 21:12:44,467 - com.ligadata.MetadataAPI.MetadataAPIImpl$    - ERROR - Closing datastore failed 2015-04-17 23:22:41,484 - com.ligadata.MetadataAPI.MetadataAPIImpl$    - ERROR - metdatastore is corrupt 2015-04-17 24:02:14,493 - com.ligadata.MetadataAPI.MetadataAPIImpl$    - ERROR - transStore died 2015-04-17 24:12:34,500 - com.ligadata.MetadataAPI.MetadataAPIImpl$    - ERROR - jarStore has no beans 2015-04-17 24:22:54,508 - com.ligadata.MetadataAPI.MetadataAPIImpl$    - ERROR - configStore hammered
+    Node 1 (Errors detected at 2015-04-17 21:16:47) :
+       file /tmp/drdigital/logs/testlog.log
+       not found No ERRORs found for this period
+    Node 2 (Errors detected at 2015-04-17    21:16:47) :
+       2015-04-17 21:12:44,467 - com.ligadata.MetadataAPI.MetadataAPIImpl$    -
+       ERROR - Closing datastore failed 2015-04-17 23:22:41,484 -
+       com.ligadata.MetadataAPI.MetadataAPIImpl$    -
+       ERROR - metdatastore is corrupt 2015-04-17 24:02:14,493 -
+       com.ligadata.MetadataAPI.MetadataAPIImpl$    -
+       ERROR - transStore died 2015-04-17 24:12:34,500 -
+       com.ligadata.MetadataAPI.MetadataAPIImpl$    -
+       ERROR - jarStore has no beans 2015-04-17 24:22:54,508 -
+       com.ligadata.MetadataAPI.MetadataAPIImpl$    -
+       ERROR - configStore hammered
 
 
 In this example, there is no log found for Node 1.
