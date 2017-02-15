@@ -140,7 +140,7 @@ object MonitorUtils {
         // Wait a while for tasks to respond to being cancelled
         if (!pool.awaitTermination(waitInMs, TimeUnit.MILLISECONDS)) {
           logger.warn("Pool did not terminate " + id);
-          Thread.currentThread().interrupt()
+          //Thread.currentThread().interrupt()
         }
       }
     } catch  {

@@ -713,11 +713,17 @@ class KafkaProducer(val inputConfig: AdapterConfiguration, val nodeContext: Node
           }
           if (retryCount >= 1000)
             retryCount = 0
-          if ((retryCount % 10) == 0)
+          if ((e.isInstanceOf[FatalAdapterException] && e.getCause != null && e.getCause.isInstanceOf[java.lang.IllegalStateException] && e.getCause.getMessage.startsWith("Memory records is not writable")) ||
+            (e.isInstanceOf[java.lang.IllegalStateException] && e.getMessage.startsWith("Memory records is not writable"))) {
+            // After sleep immediately reopening connection
             ReplaceProducer()
+          } else {
+            if ((retryCount % 10) == 0)
+              ReplaceProducer()
         }
       }
     }
+  }
   }
 
   private def addBackFailedToSendRec(lastAccessRec: MsgDataRecievedCnt): Unit = {
