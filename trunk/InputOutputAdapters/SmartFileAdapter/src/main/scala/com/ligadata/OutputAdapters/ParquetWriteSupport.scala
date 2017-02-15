@@ -16,8 +16,8 @@ import parquet.schema.PrimitiveType.PrimitiveTypeName
 class ParquetWriteSupport extends WriteSupport[Array[Any]] {
   private[this] val logger = LogManager.getLogger(getClass);
 
-  val nullFlagsFieldName = "kamanja_system_null_flags"
-  val systemFields = Set(nullFlagsFieldName)
+  var nullFlagsFieldName = ""//"kamanja_system_null_flags"
+  var systemFields = Set[String]()//Set(nullFlagsFieldName)
 
   var schema: MessageType = null
   var recordConsumer: RecordConsumer = null
@@ -27,9 +27,12 @@ class ParquetWriteSupport extends WriteSupport[Array[Any]] {
 
   private val writeLock = new Object
 
-  def this(schema: MessageType) {
+  def this(schema: MessageType, nullFlagsFieldName : String) {
     this()
     this.schema = schema
+    this.nullFlagsFieldName = nullFlagsFieldName
+    systemFields += nullFlagsFieldName
+
     if (schema.getColumns == null)
       throw new Exception("columns in schema are null")
 

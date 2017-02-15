@@ -865,7 +865,7 @@ class TransactionContext(val transId: Long, val nodeCtxt: NodeContext, val msgDa
           val retVal = if (m.container.isInstanceOf[ContainerInterface]) {
             val container = m.container.asInstanceOf[ContainerInterface]
             val tmData = container.getTimePartitionData
-            tmData >= tmRange.beginTime && tmData <= tmRange.endTime && IsSameKey(partKeyAsArray, container.getPartitionKey) && f(container) // Comparing time & Key & function call
+            tmData >= tmRng.beginTime && tmData <= tmRng.endTime && IsSameKey(partKeyAsArray, container.getPartitionKey) && f(container) // Comparing time & Key & function call
           } else {
             false
           }
@@ -876,7 +876,7 @@ class TransactionContext(val transId: Long, val nodeCtxt: NodeContext, val msgDa
           val retVal = if (m.container.isInstanceOf[ContainerInterface]) {
             val container = m.container.asInstanceOf[ContainerInterface]
             val tmData = container.getTimePartitionData
-            tmData >= tmRange.beginTime && tmData <= tmRange.endTime && IsSameKey(partKeyAsArray, container.getPartitionKey) // Comparing time & Key
+            tmData >= tmRng.beginTime && tmData <= tmRng.endTime && IsSameKey(partKeyAsArray, container.getPartitionKey) // Comparing time & Key
           } else {
             false
           }

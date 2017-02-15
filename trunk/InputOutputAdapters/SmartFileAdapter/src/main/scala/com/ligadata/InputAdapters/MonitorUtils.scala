@@ -140,7 +140,7 @@ object MonitorUtils {
         // Wait a while for tasks to respond to being cancelled
         if (!pool.awaitTermination(waitInMs, TimeUnit.MILLISECONDS)) {
           logger.warn("Pool did not terminate " + id);
-          Thread.currentThread().interrupt()
+          //Thread.currentThread().interrupt()
         }
       }
     } catch  {
@@ -174,7 +174,6 @@ object MonitorUtils {
     if(parentDir1.compareTo(parentDir2) == 0)
       compareFilesSameLoc(fileHandler1, fileHandler2)
     else fileHandler1.lastModifiedDate.compareTo(fileHandler2.lastModifiedDate)
-
   }
 
   /**

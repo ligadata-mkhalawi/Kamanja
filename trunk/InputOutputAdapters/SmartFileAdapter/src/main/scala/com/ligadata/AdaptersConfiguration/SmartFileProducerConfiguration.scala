@@ -29,6 +29,7 @@ class TypeLevelConfiguration {
   var partitionFormat: String = null
   var partitionFormatString: String = null
   var partitionFormatObjects: List[Any] = null
+  var subDirName : String = null
 }
 
 class SmartFileProducerConfiguration extends AdapterConfiguration {
@@ -224,6 +225,8 @@ object SmartFileProducerConfiguration {
         val tlcfg = new TypeLevelConfiguration
         tlcfg.flushBufferSize = cfg.getOrElse("flushBufferSize", "0").toLong
         tlcfg.partitionFormat = cfg.getOrElse("PartitionFormat", null)
+        tlcfg.subDirName = cfg.getOrElse("SubDirName", null)
+
         adapterCfg.typeLevelConfig(typeStr) = tlcfg
       }
     })

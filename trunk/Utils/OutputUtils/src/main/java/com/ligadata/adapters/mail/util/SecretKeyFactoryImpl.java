@@ -21,9 +21,9 @@ import com.ligadata.adapters.AdapterConfiguration;
 public class SecretKeyFactoryImpl {
 	private static SecretKeyFactoryImpl skf = null;
 	private AdapterConfiguration conf;
-	
+
 	private static final Logger LOGGER = LogManager.getLogger(SecretKeyFactoryImpl.class);
-	
+
 
 	  private SecretKeyFactory    keyFactory;
 	  private DESKeySpec          keySpec;
@@ -35,11 +35,11 @@ public class SecretKeyFactoryImpl {
 	  private byte[]              encrypedPwdBytes;
 	  private byte[]              plainTextPwdBytes;
 
-	
+
 	private SecretKeyFactoryImpl(AdapterConfiguration configs){
 		conf = configs;
 	}
-	
+
 	public static SecretKeyFactoryImpl getInstance(AdapterConfiguration configs){
 		if(skf == null){
 			synchronized (SecretKeyFactoryImpl.class) {
@@ -49,7 +49,7 @@ public class SecretKeyFactoryImpl {
 		}
 		return skf;
 	}
-	
+
 	public void createKey() {
 		try {
 
@@ -63,7 +63,7 @@ public class SecretKeyFactoryImpl {
 			LOGGER.error("createKey", e);
 		}
 	}
-	
+
 	public String encoder(String pwd) {
 	    try {
 	    	// cipher is not
@@ -90,9 +90,9 @@ public class SecretKeyFactoryImpl {
 	    }
 	    return new String(plainTextPwdBytes);
 	  }
-	
+
 	private String extracted(String pwd) throws IllegalBlockSizeException, BadPaddingException,UnsupportedEncodingException {
 		return base64encoder.encode(cipher.doFinal(pwd.getBytes(AdapterConfiguration.SKF_CHARSET)));
 	}
-	
+
 }

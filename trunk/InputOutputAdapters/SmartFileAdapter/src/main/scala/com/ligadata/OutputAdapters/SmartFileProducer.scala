@@ -37,6 +37,7 @@ import org.apache.hadoop.hdfs.client.HdfsDataOutputStream.SyncFlag
 import org.apache.hadoop.fs.{FileSystem, FSDataOutputStream, Path}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.security.UserGroupInformation
+import org.apache.commons.lang3.time.FastDateFormat
 import org.apache.commons.compress.compressors.CompressorStreamFactory
 import org.apache.commons.compress.compressors.CompressorOutputStream
 import parquet.avro.AvroParquetWriter
@@ -52,8 +53,7 @@ import parquet.hadoop.api.WriteSupport
 object SmartFileProducer extends OutputAdapterFactory {
   val ADAPTER_DESCRIPTION = "Smart File Output Adapter"
 
-  val nullFlagsFieldName = "kamanja_system_null_flags"
-  val systemFields = Set(nullFlagsFieldName)
+  val nullFlagsFieldDefaultName = "kamanja_system_null_flags"
 
   def CreateOutputAdapter(inputConfig: AdapterConfiguration, nodeContext: NodeContext): OutputAdapter = new SmartFileProducer(inputConfig, nodeContext)
 }
@@ -418,8 +418,7 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       partitionFormatObjects = partitionVariable.findAllMatchIn(formatStr).map(x => try {
         val spec = x.group(1).split(":");
         if (spec.length > 1 && spec(0).equalsIgnoreCase("time")) {
-          val fmt = new SimpleDateFormat(spec(1))
-          fmt.setTimeZone(TimeZone.getTimeZone("UTC"))
+          val fmt = FastDateFormat.getInstance(spec(1), TimeZone.getTimeZone("UTC"))
           fmt
         } else if (spec.length > 1) {
           spec(1)
@@ -626,9 +625,19 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       partitionFormatObjects = tlcfg.partitionFormatObjects
     }
 
-    var key = record.getTypeName()
-    if (fc.useTypeFullNameForPartition) {
-      key = if (fc.replaceSeparator) typeName.replace(".", fc.separatorCharForTypeName) else typeName
+    var key = ""
+    //if we have a subdir name in type level config correspnding to this msg, use it
+    //else name of the msg will be used as subdir
+    if(tlcfg != null && tlcfg.subDirName != null && tlcfg.subDirName.trim.length > 0){
+      key = if(tlcfg.subDirName.trim.endsWith("/"))
+              tlcfg.subDirName.trim.substring(0, tlcfg.subDirName.trim.length - 1)
+            else  tlcfg.subDirName
+    }
+    else {
+      key = record.getTypeName()
+      if (fc.useTypeFullNameForPartition) {
+        key = if (fc.replaceSeparator) typeName.replace(".", fc.separatorCharForTypeName) else typeName
+      }
     }
 
     val pk = record.getPartitionKey()
@@ -642,8 +651,8 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
       LOG.info("Smart File Producer :" + fc.Name + " : In getPartionFile time partion data for the record - [" + dateTime + "]")
       val dtTm = new java.util.Date(dateTime)
       val values = partitionFormatObjects.map(fmt => {
-        if (fmt.isInstanceOf[SimpleDateFormat])
-          fmt.asInstanceOf[SimpleDateFormat].format(dtTm)
+        if (fmt.isInstanceOf[FastDateFormat])
+          fmt.asInstanceOf[FastDateFormat].format(dtTm)
         else
           record.getOrElse(fmt.asInstanceOf[String], "").toString
       })
@@ -721,8 +730,14 @@ class SmartFileProducer(val inputConfig: AdapterConfiguration, val nodeContext: 
           if (fc.otherConfig.contains("IgnoreNullFlags"))
             ignoreNullFlags = fc.otherConfig.getOrElse("IgnoreNullFlags", "true").toString.trim.toBoolean
 
-          if (ignoreNullFlags)
-            ignoreFields += SmartFileProducer.nullFlagsFieldName
+          if (ignoreNullFlags) {
+            val ignoreNullFlags =
+              if (fc.otherConfig.contains("NullFlagsFieldName"))
+                fc.otherConfig.getOrElse("NullFlagsFieldName", SmartFileProducer.nullFlagsFieldDefaultName).toString.trim
+              else SmartFileProducer.nullFlagsFieldDefaultName
+
+            ignoreFields += ignoreNullFlags
+          }
 
           if (fc.otherConfig.contains("IgnoreFields")) {
             ignoreFields ++= fc.otherConfig.getOrElse("IgnoreFields", "").toString.trim.split(",").map(fld => fld.trim).filter(fld => fld.size > 0)

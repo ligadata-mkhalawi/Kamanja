@@ -30,6 +30,32 @@ object Datatypes
     else
       false
   }
+
+  def isNumericType(typ : String) = typ.toLowerCase match{
+    case "int" => true
+    case "integer" => true
+    case "long" => true
+    case "float" => true
+    case "double" => true
+    case "byte" => true
+    case "short" => true
+    case "char" => true
+    case _ => false
+  }
+  def isStringType(typ : String) = typ.toLowerCase match{
+    case "string" => true
+    case _ => false
+  }
+  def isBooleanType(typ : String) = typ.toLowerCase match{
+    case "boolean" => true
+    case _ => false
+  }
+  def getTypeDefaultVal(typ : String): String ={
+    if(isNumericType(typ)) "0"
+    else if(isBooleanType(typ)) "false"
+    else if(isStringType(typ)) "\"\""
+    else "null"
+  }
 }
 
 class Datatypes

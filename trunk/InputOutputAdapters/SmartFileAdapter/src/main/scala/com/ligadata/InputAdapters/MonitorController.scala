@@ -5,10 +5,14 @@ import java.io.IOException
 import com.ligadata.AdaptersConfiguration.{LocationInfo, SmartFileAdapterConfiguration}
 import com.ligadata.Exceptions.KamanjaException
 import org.apache.logging.log4j.LogManager
+import org.json4s.native.JsonMethods._
 
-import scala.actors.threadpool.{Executors, ExecutorService}
+import scala.actors.threadpool.{ExecutorService, Executors}
 import scala.collection.mutable.ArrayBuffer
 
+case class PatternInfo(patternString: String, pattern: scala.util.matching.Regex, patternMatchGroupNumber: Int)
+
+case class GroupsInfoList(onlyBaseFile: Boolean, pathSeparator: String, patterns: Array[PatternInfo])
 
 case class MonitoredFile(path: String, parent: String, lastModificationTime: Long,
                          lastReportedSize: Long, isDirectory: Boolean, isFile: Boolean)
@@ -21,7 +25,7 @@ case class MonitoredFile(path: String, parent: String, lastModificationTime: Lon
 class MonitorController {
 
   def this(adapterConfig: SmartFileAdapterConfiguration, parentSmartFileConsumer: SmartFileConsumer,
-           newFileDetectedCallback: (String) => Unit) {
+           newFileDetectedCallback: () => Unit) {
     this()
 
     this.adapterConfig = adapterConfig
@@ -34,7 +38,7 @@ class MonitorController {
   val NOT_RECOVERY_SITUATION = -1
 
   private var adapterConfig: SmartFileAdapterConfiguration = null
-  private var newFileDetectedCallback: (String) => Unit = null
+  private var newFileDetectedCallback: () => Unit = null
   private var parentSmartFileConsumer: SmartFileConsumer = null
 
   private val bufferingQ_map: scala.collection.mutable.Map[String, (MonitoredFile, Int, Boolean)] = scala.collection.mutable.Map[String, (MonitoredFile, Int, Boolean)]()
@@ -45,21 +49,32 @@ class MonitorController {
 
   implicit def orderedEnqueuedFileHandler(f: EnqueuedFileHandler): Ordered[EnqueuedFileHandler] = new Ordered[EnqueuedFileHandler] {
     def compare(other: EnqueuedFileHandler) = {
-      val locationInfo1 = f.locationInfo //parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(f.fileHandler.getParentDir))
-      val locationInfo2 = other.locationInfo // parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(other.fileHandler.getParentDir))
+      // val locationInfo1 = f.locationInfo //parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(f.fileHandler.getParentDir))
+      // val locationInfo2 = other.locationInfo // parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(other.fileHandler.getParentDir))
       //not sure why but had to invert sign
       (MonitorUtils.compareFiles(f, other)) * -1
+    }
+  }
+
+  implicit def orderedEnqueuedGroupHandler(f: EnqueuedGroupHandler): Ordered[EnqueuedGroupHandler] = new Ordered[EnqueuedGroupHandler] {
+    def compare(other: EnqueuedGroupHandler) = {
+      //BUGBUG:: For now we are using first one
+      (MonitorUtils.compareFiles(f.fileHandlers(0), other.fileHandlers(0))) * -1
     }
   }
 
   private val ignoredFiles = scala.collection.mutable.LinkedHashMap[String, Long]()
   private val ignoredFilesMaxSize = 100000
 
-  private var fileQ: scala.collection.mutable.PriorityQueue[EnqueuedFileHandler] =
-  //new scala.collection.mutable.PriorityQueue[EnqueuedFileHandler]()(Ordering.by(fileComparisonField))
-    new scala.collection.mutable.PriorityQueue[EnqueuedFileHandler]() //use above implicit compare function
+  // private var fileQ: scala.collection.mutable.PriorityQueue[EnqueuedFileHandler] =
+  //   new scala.collection.mutable.PriorityQueue[EnqueuedFileHandler]()(Ordering.by(fileComparisonField))
+  //   new scala.collection.mutable.PriorityQueue[EnqueuedFileHandler]() //use above implicit compare function
 
-  private val fileQLock = new Object
+  private var groupQ: scala.collection.mutable.PriorityQueue[EnqueuedGroupHandler] =
+    new scala.collection.mutable.PriorityQueue[EnqueuedGroupHandler]() //use above implicit compare function
+
+  // private val fileQLock = new Object
+  private val groupQLock = new Object
 
   private var refreshRate: Int = 1000
   //Refresh rate for monitorBufferingFiles
@@ -106,7 +121,7 @@ class MonitorController {
 
   }
 
-  def markFileAsProcessed(filePath: String): Unit = {
+  def markFileAsProcessed(files: List[String]): Unit = {
   }
 
   def startMonitoring(): Unit = {
@@ -120,13 +135,74 @@ class MonitorController {
     val monitoringConf = adapterConfig.monitoringConfig
     val maxThreadCount = Math.min(monitoringConf.monitoringThreadsCount, monitoringConf.detailedLocations.length)
     monitorsExecutorService = Executors.newFixedThreadPool(maxThreadCount)
-    logger.info("Smart File Monitor - running {} threads to monitor {} dirs",
+    if (logger.isInfoEnabled) logger.info("Smart File Monitor - running {} threads to monitor {} dirs",
       monitoringConf.monitoringThreadsCount.toString, monitoringConf.detailedLocations.length.toString)
 
     monitoringThreadsFileHandlers = new Array[SmartFileHandler](maxThreadCount)
     for (currentThreadId <- 0 until maxThreadCount) {
-      if (! isShutdown)
+      if (!isShutdown)
         monitoringThreadsFileHandlers(currentThreadId) = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, "/")
+    }
+
+    var groupsInfo: GroupsInfoList = null
+    if (monitoringConf.filesGroupsInfoJsonString != null) {
+      if (logger.isDebugEnabled) logger.debug("filesGroupsInfoJsonString:" + monitoringConf.filesGroupsInfoJsonString)
+      try {
+        val grpsInfo = parse(monitoringConf.filesGroupsInfoJsonString)
+        if (grpsInfo == null || grpsInfo.values == null) {
+          logger.error("Failed to parse string %s for GroupsInfo".format(monitoringConf.filesGroupsInfoJsonString))
+        } else {
+          val grpsInfoMap = grpsInfo.values.asInstanceOf[Map[String, Any]]
+
+          val onlyBaseFile: Boolean = grpsInfoMap.getOrElse("ConsiderOnlyBaseFileName", "false").toString.toBoolean
+          var pathSeparator: String = grpsInfoMap.getOrElse("PathSeparator", "/").toString
+          var patternInfo = grpsInfoMap.getOrElse("PatternInfo", null)
+
+          var patLst: List[Any] = List[Any]()
+          if (patternInfo.isInstanceOf[List[Any]]) {
+            patLst = patternInfo.asInstanceOf[List[Any]]
+          } else if (grpsInfo.isInstanceOf[Map[String, Any]]) {
+            patLst = List[Any](patternInfo)
+          } else {
+            logger.error("Ignoring PatternInfo, because we did not found valid list of groups in PatternInfo %s".format(monitoringConf.filesGroupsInfoJsonString))
+          }
+
+          val finalGroups = ArrayBuffer[PatternInfo]()
+          var idx = 0
+          patLst.foreach(patInfo => {
+            try {
+              if (patInfo.isInstanceOf[Map[String, Any]]) {
+                val grpCfgValues = patInfo.asInstanceOf[Map[String, Any]]
+                val patternString: String = grpCfgValues.getOrElse("PatternString", "").toString
+                if (patternString.length == 0) {
+                  logger.error("Not found PatternString in %s for PatternInfo at index %d. So, ignoring PatternInfo".format(monitoringConf.filesGroupsInfoJsonString, idx))
+                } else {
+                  var patternMatchGroupNumber: Int = grpCfgValues.getOrElse("PatternMatchGroupNumber", "0").toString.toInt
+                  if (patternMatchGroupNumber < 0) {
+                    logger.error("Not found valid patternMatchGroupNumber (%s) in %s for PatternInfo at index %d. So, ignoring PatternInfo".format(patternMatchGroupNumber, monitoringConf.filesGroupsInfoJsonString, idx))
+                  } else {
+                    val pattern: scala.util.matching.Regex = patternString.r
+                    finalGroups += PatternInfo(patternString, pattern, patternMatchGroupNumber)
+                  }
+                }
+              } else {
+                logger.error("PatternInfo is not valid Map at index %d in %s for PatternInfo. So, ignoring PatternInfo".format(idx, monitoringConf.filesGroupsInfoJsonString))
+              }
+            } catch {
+              case e: Throwable => {
+                logger.error("PatternInfo got exception at index %d in %s for PatternInfo. So, ignoring PatternInfo".format(idx, monitoringConf.filesGroupsInfoJsonString), e)
+              }
+            }
+            idx += 1
+          })
+          groupsInfo = GroupsInfoList(onlyBaseFile, pathSeparator, finalGroups.toArray)
+          if (logger.isDebugEnabled) logger.debug("GroupsInfoList:" + groupsInfo)
+        }
+      } catch {
+        case e: Throwable => {
+          logger.error("Failed to parse string %s for GroupsInfo".format(monitoringConf.filesGroupsInfoJsonString))
+        }
+      }
     }
 
     val monitoredDirsQueue = new MonitoredDirsQueue()
@@ -137,14 +213,14 @@ class MonitorController {
           try {
 
             while (keepMontoringBufferingFiles && !isShutdown) {
-              logger.debug("waitingFilesToProcessCount={}, dirCheckThreshold={}",
-                waitingFilesToProcessCount.toString, adapterConfig.monitoringConfig.dirCheckThreshold.toString)
+              if (logger.isDebugEnabled) logger.debug("waitingGroupsToProcessCount={}, dirCheckThreshold={}",
+                waitingGroupsToProcessCount.toString, adapterConfig.monitoringConfig.dirCheckThreshold.toString)
 
               //start/stop listing folders contents based on current number of waiting files compared to a threshold
               if (adapterConfig.monitoringConfig.dirCheckThreshold > 0 &&
-                waitingFilesToProcessCount > adapterConfig.monitoringConfig.dirCheckThreshold) {
+                waitingGroupsToProcessCount > adapterConfig.monitoringConfig.dirCheckThreshold) {
 
-                logger.info("Smart File Monitor - too many files already in process queue. monitoring thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
+                if (logger.isInfoEnabled) logger.info("Smart File Monitor - too many files already in process queue. monitoring thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
                 try {
                   Thread.sleep(monitoringConf.waitingTimeMS)
                 }
@@ -160,13 +236,13 @@ class MonitorController {
                   val srcDir = location.srcDir
 
                   if (keepMontoringBufferingFiles && !isShutdown)
-                    monitorBufferingFiles(currentThreadId, srcDir, location, isFirstScan)
+                    monitorBufferingFiles(currentThreadId, srcDir, location, isFirstScan, groupsInfo)
 
                   val updateDirQueuedInfo = (dirQueuedInfo._1, dirQueuedInfo._2, false) //not first scan anymore
                   monitoredDirsQueue.reEnqueue(updateDirQueuedInfo) // so the folder gets monitored again
 
                   /*if (keepMontoringBufferingFiles && !isShutdown) {
-                    logger.debug("Smart File Monitor - finished checking dir sleeping", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
+                    if (logger.isDebugEnabled) logger.debug("Smart File Monitor - finished checking dir sleeping", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
                     try {
                       Thread.sleep(monitoringConf.waitingTimeMS)
                     }
@@ -177,7 +253,7 @@ class MonitorController {
                 }
                 else {
                   //happens if last time queue head dir was monitored was less than waiting time
-                  logger.info("Smart File Monitor - no folders to monitor for now. Thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
+                  if (logger.isInfoEnabled) logger.info("Smart File Monitor - no folders to monitor for now. Thread {} is sleeping for {} ms", currentThreadId.toString, monitoringConf.waitingTimeMS.toString)
                   try {
                     Thread.sleep(monitoringConf.waitingTimeMS)
                   }
@@ -211,7 +287,7 @@ class MonitorController {
   def stopMonitoring(): Unit = {
     isShutdown = true
 
-    logger.warn("Adapter {} - MonitorController - shutting down called", adapterConfig.Name)
+    if (logger.isWarnEnabled) logger.warn("Adapter {} - MonitorController - shutting down called", adapterConfig.Name)
 
 
     keepMontoringBufferingFiles = false
@@ -237,25 +313,202 @@ class MonitorController {
     }
     commonFileHandler = null
 
-    logger.warn("Adapter {} - MonitorController - shutting down finished", adapterConfig.Name)
+    if (logger.isWarnEnabled) logger.warn("Adapter {} - MonitorController - shutting down finished", adapterConfig.Name)
   }
 
   private def enQBufferedFile(file: MonitoredFile, initiallyExists: Boolean): Unit = {
     bufferingQLock.synchronized {
-      logger.debug("adapter {} - enqueuing file {} into tmp buffering queue", adapterConfig.Name, file.path)
+      if (logger.isDebugEnabled) logger.debug("adapter {} - enqueuing file {} into tmp buffering queue", adapterConfig.Name, file.path)
       //val fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, file.path)
       bufferingQ_map(file.path) = (file, 0, initiallyExists)
     }
+  }
+
+  private def enQBufferedFiles(files: Array[MonitoredFile], initiallyExists: Boolean): Unit = {
+    bufferingQLock.synchronized {
+      //BUGBUG:: Not considering failed count
+      files.foreach(file => {
+        bufferingQ_map(file.path) = (file, 0, initiallyExists)
+      })
+    }
+  }
+
+  private def getAllEnqueuedBufferedFiles: Map[String, (MonitoredFile, Int, Boolean)] = {
+    bufferingQLock.synchronized {
+      bufferingQ_map.toMap
+    }
+  }
+
+  private def removeFilesFromBufferingQ(removedEntries: Array[String]): Unit = {
+    bufferingQLock.synchronized {
+      bufferingQ_map --= removedEntries
+    }
+  }
+
+  private def getBaseFileName(fullPath: String, pathSeparator: String): String = {
+    val endIndex = fullPath.lastIndexOf(pathSeparator)
+    var retStr = "empty"
+    if (endIndex != -1) {
+      fullPath.substring(endIndex + 1, fullPath.size)
+    } else {
+      fullPath
+    }
+  }
+
+  private def extractFileFromPattern(grpInfoLst: GroupsInfoList, flName: String): String = {
+    var retVal = flName
+    try {
+      var lstIdx = 0
+      var foundVal = false
+      while (!foundVal && lstIdx < grpInfoLst.patterns.size) {
+        val patInfo = grpInfoLst.patterns(lstIdx)
+        try {
+          val allGrps = patInfo.pattern.findFirstMatchIn(flName)
+          // BUGBUG:: May be it is better to check whether we have given MatchGroupNumber or not
+          if (allGrps != None) {
+            retVal = allGrps.map(_ group patInfo.patternMatchGroupNumber).get
+            if (logger.isTraceEnabled) logger.trace("FileName:" + flName + ", matched patterns:" + allGrps + ", found value:" + retVal + " for pattern :" + patInfo.patternString)
+            foundVal = true
+          } else {
+            if (logger.isTraceEnabled) logger.trace("FileName:" + flName + ", matched patterns:" + allGrps + ", not found value for pattern :" + patInfo.patternString)
+          }
+        } catch {
+          case ex: Throwable => {
+            if (logger.isDebugEnabled) logger.debug("Failed to extract matched value from fileName:%s for pattern:%s of group:%d.".format(flName, patInfo.patternString, patInfo.patternMatchGroupNumber), ex)
+            // retVal = flName
+          }
+        }
+        lstIdx += 1
+      }
+    } catch {
+      case ex: Throwable => {
+        logger.error("Failed to extract matched value from fileName. Using filename:%s as base as it is".format(flName), ex)
+        retVal = flName
+      }
+    }
+    
+    retVal
+  }
+
+  private def ProcessValidGroups(enqueuedBufferedFiles: Map[String, (MonitoredFile, Int, Boolean)], validFiles: Map[String, (MonitoredFile, LocationInfo)],
+                               removedEntries: ArrayBuffer[String], isFirstScan: Boolean, fileGroups: Array[Array[MonitoredFile]]): Boolean = {
+    val yetToValidateFileGroups = ArrayBuffer[Array[MonitoredFile]]()
+    val finalValidFileGroups = ArrayBuffer[Array[MonitoredFile]]()
+    val curTm = System.currentTimeMillis
+    val zeroLenFls = ArrayBuffer[(String, Boolean)]()
+    val move0LenFls = ArrayBuffer[String]()
+
+    if (logger.isDebugEnabled) logger.debug("ValidFiles:%s".format(validFiles.keys.mkString(",")))
+
+    fileGroups.foreach(grp => {
+      var allFlsValidInGrp = true
+      val grpSz = grp.length
+      var idx = 0
+      zeroLenFls.clear
+      while (allFlsValidInGrp && idx < grpSz) {
+        try {
+          val fl = grp(idx)
+          if (logger.isDebugEnabled) logger.debug("SMART FILE CONSUMER (MonitorController):  File {} size has not changed", fl.path)
+          val validFl = validFiles.getOrElse(fl.path, null)
+          if (validFl == null && allFlsValidInGrp)
+            allFlsValidInGrp = false
+          if (allFlsValidInGrp) {
+            val thisFileNewLength = fl.lastReportedSize
+            val previousMonitoredFile = enqueuedBufferedFiles(fl.path)
+            val thisFilePreviousLength = previousMonitoredFile._1.lastReportedSize
+            val thisFileFailures = previousMonitoredFile._2
+            if (thisFilePreviousLength != thisFileNewLength)
+              allFlsValidInGrp = false
+            if (allFlsValidInGrp && thisFilePreviousLength == 0) {
+              if ((curTm - validFl._1.lastModificationTime) <= bufferTimeout)
+                allFlsValidInGrp = false
+              else
+                zeroLenFls += ((fl.path, (validFl._2 != null && validFl._2.isMovingEnabled)))
+            }
+          }
+        } catch {
+          case e: Throwable => {
+            logger.error("Got Exception while validating group", e)
+            allFlsValidInGrp = false
+          }
+        }
+        idx += 1
+      }
+      if (allFlsValidInGrp) {
+        if (zeroLenFls.length > 0) {
+          if (zeroLenFls.length == grp.length) {
+            move0LenFls ++= zeroLenFls.filter(f => f._2).map(f => f._1)
+            removedEntries ++= zeroLenFls.map(f => f._1)
+          } else {
+            move0LenFls ++= zeroLenFls.filter(f => f._2).map(f => f._1)
+            removedEntries ++= zeroLenFls.map(f => f._1)
+            val excludeFlsSet = zeroLenFls.map(f => f._1).toSet
+            finalValidFileGroups += grp.filter(fl => !excludeFlsSet(fl.path))
+          }
+        }
+        else {
+          finalValidFileGroups += grp
+        }
+      } else {
+        yetToValidateFileGroups += grp
+      }
+    })
+
+    if (!isShutdown) {
+      if (logger.isDebugEnabled) logger.debug("yetToValidateFileGroups:%s".format(
+        yetToValidateFileGroups.map(grp => grp.map(f => f.path).mkString("~")).mkString(",")))
+      yetToValidateFileGroups.foreach(grp => {
+        if (!isShutdown) {
+          enQBufferedFiles(grp, isFirstScan)
+        }
+      })
+    }
+    
+    if (!isShutdown && !move0LenFls.isEmpty) {
+      if (logger.isDebugEnabled) logger.debug("move0LenFls:%s".format(
+        move0LenFls.mkString(",")))
+      move0LenFls.foreach(fl => {
+        if (!isShutdown) {
+          try {
+            parentSmartFileConsumer.moveFile(fl)
+          }
+          catch {
+            case e: Exception => {
+              logger.error("Failed to move file:" + fl, e)
+            }
+          }
+        }
+      })
+    }
+
+    // Now we have valid groups finalValidFileGroups. We can add them to process. And also add them  in processing queue. So, we will ignore them in next search
+    if (!isShutdown && !finalValidFileGroups.isEmpty) {
+      val grps = finalValidFileGroups.map(grp => {
+        new EnqueuedGroupHandler(grp.map(fl => {
+          val fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, fl.path, false)
+          val locationInfo = parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(fileHandler.getParentDir))
+          val components = MonitorUtils.getFileComponents(fileHandler.getFullPath, locationInfo)
+          new EnqueuedFileHandler(fileHandler, NOT_RECOVERY_SITUATION, fl.lastModificationTime, locationInfo, components)
+        }))
+      }).toArray
+      if (!isShutdown) {
+        if (logger.isDebugEnabled) logger.debug("enq groups:%s".format(
+          grps.map(grp => grp.fileHandlers.map(f => f.fileHandler.getFullPath).mkString("~")).mkString(",")))
+        enQGroups(grps)
+      }
+    }
+    
+    (!finalValidFileGroups.isEmpty)
   }
 
   /**
     * Look at the files on the DEFERRED QUEUE... if we see that it stops growing, then move the file onto the READY
     * to process QUEUE.
     */
-  private def monitorBufferingFiles(currentThreadId: Int, dir: String, locationInfo: LocationInfo, isFirstScan: Boolean): Unit = {
+  private def monitorBufferingFiles(currentThreadId: Int, dir: String, locationInfo: LocationInfo, isFirstScan: Boolean, groupsInfo: GroupsInfoList): Unit = {
     // This guys will keep track of when to exgernalize a WARNING Message.  Since this loop really runs every second,
     // we want to throttle the warning messages.
-    logger.debug("SMART FILE CONSUMER (MonitorController):  monitorBufferingFiles. dir = " + dir)
+    if (logger.isDebugEnabled) logger.debug("SMART FILE CONSUMER (MonitorController):  monitorBufferingFiles. dir = " + dir)
 
     var specialWarnCounter: Int = 1
 
@@ -265,218 +518,128 @@ class MonitorController {
     // Scan all the files that we are buffering, if there is not difference in their file size.. move them onto
     // the FileQ, they are ready to process.
 
-    {
-      val newlyAdded = ArrayBuffer[String]()
-      val removedEntries = ArrayBuffer[String]()
+    val removedEntries = ArrayBuffer[String]()
 
-      val currentAllChilds =
+    val currentAllNonFilteredChilds =
+      try {
+        if (!isShutdown)
+          monitoringThreadsFileHandlers(currentThreadId).listFiles(dir, adapterConfig.monitoringConfig.dirMonitoringDepth)
+        else
+          Array[MonitoredFile]()
+      }
+      catch {
+        case ex: Throwable =>
+          logger.error("", ex)
+          Array[MonitoredFile]()
+      }
+
+    if (currentAllNonFilteredChilds.size == 0) return
+
+    val excludeFlsSet = scala.collection.mutable.Set[String]()
+
+    val allEnqueuedGrps = getAllEnqueuedGroups
+    allEnqueuedGrps.foreach(g => {
+      excludeFlsSet ++= g.fileHandlers.map(f => f.fileHandler.getFullPath)
+    })
+    /*
+    //BUGBUG:: Get all processing files and add them in exclude list
+        val allProcessingGrps = getAllEnqueuedGroups
+        allProcessingGrps.foreach(g => {
+          excludeFlsSet ++= g.fileHandlers.map(f => f.fileHandler.getFullPath)
+        })
+  */
+
+    if (isFirstScan && initialFiles != null) {
+      excludeFlsSet ++= initialFiles
+    }
+
+    val currentAllChilds = currentAllNonFilteredChilds.filter(currentMonitoredFile => {
+      (!isShutdown && keepMontoringBufferingFiles && currentMonitoredFile != null && currentMonitoredFile.isFile && (!excludeFlsSet.contains(currentMonitoredFile.path)))
+    })
+
+    val fileGroups =
+      if (groupsInfo != null) {
+        if (logger.isDebugEnabled) logger.debug("Found groupInfo")
+        currentAllChilds.groupBy(fl => {
+          val flName = if (groupsInfo.onlyBaseFile) getBaseFileName(fl.path, groupsInfo.pathSeparator) else fl.path
+          val parent = if (fl.parent != null) fl.parent else ""
+          (parent, extractFileFromPattern(groupsInfo, flName))
+        }).values.toArray
+      }
+      else {
+        if (logger.isDebugEnabled) logger.debug("Not found groupInfo")
+        currentAllChilds.map(fl => Array(fl))
+      }
+
+    if (logger.isDebugEnabled) logger.debug("All Files:\n\tcurrentAllNonFilteredChilds:%s\n\tfileGroups:%s".format(
+      currentAllNonFilteredChilds.map(f => f.path).mkString(","), fileGroups.map(grp => grp.map(f => f.path).mkString("~")).mkString(",")))
+
+    val validFiles = scala.collection.mutable.Map[String, (MonitoredFile, LocationInfo)]()
+    val enqueuedBufferedFiles = getAllEnqueuedBufferedFiles
+    val allProcessingFiles = parentSmartFileConsumer.getAllFilesInProcessingQueue
+
+    currentAllChilds.foreach(currentMonitoredFile => {
+      if (!isShutdown && keepMontoringBufferingFiles && currentMonitoredFile != null && currentMonitoredFile.isFile) {
+        val filePath = currentMonitoredFile.path
         try {
-          if(!isShutdown)
-            monitoringThreadsFileHandlers(currentThreadId).listFiles(dir, adapterConfig.monitoringConfig.dirMonitoringDepth)
-          else Array[MonitoredFile]()
-        }
-        catch{
-          case ex : Throwable =>
-            logger.error("", ex)
-            Array[MonitoredFile]()
-        }
-      //val (currentDirectFiles, currentDirectDirs) = separateFilesFromDirs(currentAllChilds)
-
-      currentAllChilds.foreach(currentMonitoredFile => {
-        if (!isShutdown && keepMontoringBufferingFiles && currentMonitoredFile != null && currentMonitoredFile.isFile) {
-          val filePath = currentMonitoredFile.path
-          try {
-            var thisFileNewLength: Long = 0
-            var thisFilePreviousLength: Long = 0
-            var thisFileFailures: Int = 0
-            val thisFileStarttime = currentMonitoredFile.lastModificationTime //todo
-
-            val currentFileParentDir = currentMonitoredFile.parent
-            val currentFileLocationInfo = parentSmartFileConsumer.getDirLocationInfo(currentFileParentDir)
-
-            if (isEnqueued(filePath)) {
-              logger.info("SMART FILE CONSUMER (MonitorController):  File already enqueued " + filePath)
-            }
-            else if (parentSmartFileConsumer.isInProcessingQueue(filePath)) {
-              logger.info("SMART FILE CONSUMER (MonitorController):  File already in processing queue " + filePath)
-            }
-            else {
-              if (!bufferingQ_map.contains(filePath)) {
+          val currentFileParentDir = currentMonitoredFile.parent
+          val currentFileLocationInfo = parentSmartFileConsumer.getDirLocationInfo(currentFileParentDir)
+/*
+          if (isEnqueued(filePath)) {
+            if (logger.isInfoEnabled) logger.info("SMART FILE CONSUMER (MonitorController):  File already enqueued " + filePath)
+          }
+          else 
+*/
+          if (allProcessingFiles.contains(filePath)) {
+            if (logger.isInfoEnabled) logger.info("SMART FILE CONSUMER (MonitorController):  File already in processing queue " + filePath)
+          }
+          else {
+            // val fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, filePath, false)
+            // val locationInfo = parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(fileHandler.getParentDir))
+            if (currentFileLocationInfo != null) {
+              if (!enqueuedBufferedFiles.contains(filePath)) {
                 val isValid = MonitorUtils.isValidFile(adapterConfig.Name,
                   monitoringThreadsFileHandlers(currentThreadId), filePath, currentFileLocationInfo, ignoredFiles,
                   false, adapterConfig.monitoringConfig.checkFileTypes)
                 fixIgnoredFiles()
 
-                if(isValid)
+                if (isValid)
                   enQBufferedFile(currentMonitoredFile, isFirstScan)
-                else{
-                  logger.debug("Adapter {} - file {} is invalid to be queued", adapterConfig.Name, filePath)
+                else {
+                  if (logger.isDebugEnabled) logger.debug("Adapter {} - file {} is invalid to be queued", adapterConfig.Name, filePath)
                 }
               }
               else {
-                try {
-
-                  logger.debug("SMART FILE CONSUMER (MonitorController):  monitorBufferingFiles - file " + currentMonitoredFile.path)
-
-                  if (isFirstScan && initialFiles != null && initialFiles.contains(filePath)) {
-                    logger.debug("SMART FILE CONSUMER (MonitorController): file {} is already in initial files", filePath)
-                    removedEntries += filePath
-                    logger.debug("SMART FILE CONSUMER (MonitorController): now initialFiles = {}", initialFiles)
-                  }
-                  else {
-                    if (!isShutdown) {
-                      thisFileNewLength = currentMonitoredFile.lastReportedSize
-                      val previousMonitoredFile = bufferingQ_map(filePath)
-                      val thisFilePreviousLength = previousMonitoredFile._1.lastReportedSize
-                      thisFileFailures = previousMonitoredFile._2
-
-                      // If file hasn't grown in the past  seconds - either a delay OR a completed transfer.
-                      if (thisFilePreviousLength == thisFileNewLength) {
-                        logger.debug("SMART FILE CONSUMER (MonitorController):  File {} size has not changed", filePath)
-
-                        if (thisFilePreviousLength > 0) {
-                          if (isEnqueued(filePath)) {
-                            logger.debug("SMART FILE CONSUMER (MonitorController):  File already enqueued " + filePath)
-                          } else {
-                            logger.info("SMART FILE CONSUMER (MonitorController):  File READY TO PROCESS " + filePath)
-                            enQFile(filePath, NOT_RECOVERY_SITUATION, currentMonitoredFile.lastModificationTime)
-                            newlyAdded.append(filePath)
-                          }
-                          // bufferingQ_map.remove(fileTuple._1)
-                          removedEntries += filePath
-                        } else {
-                          // Here becayse either the file is sitll of len 0,or its deemed to be invalid.
-                          if (thisFilePreviousLength == 0) {
-                            if (!isShutdown) {
-                              val diff = System.currentTimeMillis - thisFileStarttime //d.lastModified
-                              if (diff > bufferTimeout) {
-                                logger.warn("SMART FILE CONSUMER (MonitorController): Detected that " + filePath + " has been on the buffering queue longer then " + bufferTimeout / 1000 + " seconds - Cleaning up")
-
-                                if (!isShutdown && (currentFileLocationInfo != null && currentFileLocationInfo.isMovingEnabled)) {
-                                  try {
-                                    parentSmartFileConsumer.moveFile(filePath)
-                                  }
-                                  catch {
-                                    case e: Exception =>
-                                  }
-                                }
-                                else
-                                  logger.info("SMART FILE CONSUMER (MonitorController): File {} will not be moved since moving is disabled for folder {} - Adapter {}",
-                                    filePath, currentFileParentDir, adapterConfig.Name)
-
-                                // bufferingQ_map.remove(fileTuple._1)
-                                removedEntries += filePath
-                              }
-                            }
-                          } else {
-                            //Invalid File - due to content type
-                            if (!isShutdown && (currentFileLocationInfo != null && currentFileLocationInfo.isMovingEnabled)) {
-                              logger.error("SMART FILE CONSUMER (MonitorController): Moving out " + filePath + " with invalid file type ")
-                              try {
-                                parentSmartFileConsumer.moveFile(filePath)
-                              }
-                              catch {
-                                case e: Exception =>
-                              }
-                            }
-                            else {
-                              logger.info("SMART FILE CONSUMER (MonitorController): File {} has invalid file type but will not be moved since moving is disabled for folder {} - Adapter {}",
-                                filePath, currentFileParentDir, adapterConfig.Name)
-                            }
-                            // bufferingQ_map.remove(fileTuple._1)
-                            removedEntries += filePath
-                          }
-                        }
-                      } else {
-                        logger.debug("SMART FILE CONSUMER (MonitorController):  File {} size changed from {} to {}",
-                          filePath, thisFilePreviousLength.toString, thisFileNewLength.toString)
-
-                        bufferingQ_map(filePath) = (currentMonitoredFile, thisFileFailures, isFirstScan)
-                      }
-                    }
-                  }
-                } catch {
-                  case fnfe: java.io.FileNotFoundException => {
-                    logger.warn("SMART FILE CONSUMER (MonitorController): Detected that file " + filePath + " no longer exists")
-                    removedEntries += filePath
-                  }
-                  case ioe: IOException => {
-                    if (!isShutdown) {
-                      thisFileFailures += 1
-                      if (((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
-                        logger.warn("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + filePath + " on the buffering queue", ioe)
-                        try {
-                          removedEntries += filePath
-
-                          if (currentFileLocationInfo != null && currentFileLocationInfo.isMovingEnabled)
-                            parentSmartFileConsumer.moveFile(filePath)
-                          // bufferingQ_map.remove(fileTuple._1)
-                        } catch {
-                          case e: Throwable => {
-                            logger.error("SMART_FILE_CONSUMER: Failed to move file, retyring", e)
-                          }
-                        }
-                      } else {
-                        //bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
-                        bufferingQ_map(filePath) = (currentMonitoredFile, thisFileFailures, isFirstScan)
-                        logger.warn("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue ", ioe)
-                      }
-                    }
-                  }
-                  case e: Throwable => {
-                    if (!isShutdown) {
-                      thisFileFailures += 1
-                      if (((System.currentTimeMillis - thisFileStarttime) > maxTimeFileAllowedToLive && thisFileFailures > maxBufferErrors)) {
-                        logger.error("SMART FILE CONSUMER (MonitorController): Detected that a stuck file " + filePath + " on the buffering queue", e)
-                        try {
-                          removedEntries += filePath
-
-                          if (currentFileLocationInfo != null && currentFileLocationInfo.isMovingEnabled)
-                            parentSmartFileConsumer.moveFile(filePath)
-
-                        } catch {
-                          case ee: Throwable => {
-                            logger.error("SMART_FILE_CONSUMER (MonitorController): Failed to move file, retyring", ee)
-                          }
-                        }
-                      } else {
-                        //bufferingQ_map(fileTuple._1) = (thisFileOrigLength, thisFileStarttime, thisFileFailures, initiallyExists)
-                        bufferingQ_map(filePath) = (currentMonitoredFile, thisFileFailures, isFirstScan)
-                        logger.error("SMART_FILE_CONSUMER: IOException trying to monitor the buffering queue ", e)
-                      }
-                    }
-                  }
-                }
+                validFiles(filePath) = ((currentMonitoredFile, currentFileLocationInfo))
               }
             }
           }
-          catch {
-            case e: Throwable => {
-              logger.error("Smart File Adapter (MonitorController) - Failed to check for entry in bufferingQ_map", e)
-            }
-          }
         }
-      })
-
-      newlyAdded.foreach(filePath => {
-        if (!isShutdown) {
-          //notify leader about the new files
-          if (newFileDetectedCallback != null) {
-            logger.debug("Smart File Adapter (MonitorController) - New file is enqueued in monitor controller queue ({})", filePath)
-            newFileDetectedCallback(filePath)
+        catch {
+          case e: Throwable => {
+            logger.error("Smart File Adapter (MonitorController) - Failed to check for entry in bufferingQ_map", e)
           }
-        }
-      })
-
-      try {
-        bufferingQ_map --= removedEntries
-      } catch {
-        case e: Throwable => {
-          logger.error("Smart File Adapter (MonitorController) - Failed to remove entries from bufferingQ_map", e)
         }
       }
+    })
+
+    if (isFirstScan && initialFiles != null) {
+      validFiles --= initialFiles
     }
 
+    val addedNewGroups = ProcessValidGroups(enqueuedBufferedFiles, validFiles.toMap, removedEntries, isFirstScan, fileGroups)
+
+    if (!isShutdown && addedNewGroups && newFileDetectedCallback != null) {
+      newFileDetectedCallback()
+    }
+
+    try {
+      removeFilesFromBufferingQ(removedEntries.toArray)
+    } catch {
+      case e: Throwable => {
+        logger.error("Smart File Adapter (MonitorController) - Failed to remove entries from bufferingQ_map", e)
+      }
+    }
 
   }
 
@@ -484,18 +647,19 @@ class MonitorController {
     MonitoredFile(file.path, file.parent, newModTime, newSize, file.isDirectory, file.isFile)
   }
 
-  def fixIgnoredFiles(): Unit ={
-    if(ignoredFiles == null) return
-    if(ignoredFiles.size > ignoredFilesMaxSize){
+  def fixIgnoredFiles(): Unit = {
+    if (ignoredFiles == null) return
+    if (ignoredFiles.size > ignoredFilesMaxSize) {
       ignoredFiles.drop(ignoredFiles.size - ignoredFilesMaxSize)
     }
   }
 
+/*
   private def enQFile(file: String, offset: Int, createDate: Long): Unit = {
     if (isShutdown) return
     try {
       fileQLock.synchronized {
-        logger.info("SMART FILE CONSUMER (MonitorController):  enq file " + file + " with priority " + createDate + " --- curretnly " + fileQ.size + " files on a QUEUE")
+        if (logger.isInfoEnabled) logger.info("SMART FILE CONSUMER (MonitorController):  enq file " + file + " with priority " + createDate + " --- curretnly " + fileQ.size + " files on a QUEUE")
         if (!isShutdown) {
           val fileHandler = SmartFileHandlerFactory.createSmartFileHandler(adapterConfig, file, false)
           val locationInfo = parentSmartFileConsumer.getDirLocationInfo(MonitorUtils.simpleDirPath(fileHandler.getParentDir))
@@ -510,46 +674,72 @@ class MonitorController {
         }
       }
     }
-    catch{
-      case ex : Throwable =>
+    catch {
+      case ex: Throwable =>
         logger.error("Adapter {} - Error: ", ex)
-        throw  ex //todo : remove throwing exception, but how to keep error from showing repeatedly
+        throw ex //todo : remove throwing exception, but how to keep error from showing repeatedly
+    }
+  }
+*/
+
+  
+  private def enQGroup(grp: EnqueuedGroupHandler): Unit = {
+    if (grp == null) return
+    groupQLock.synchronized {
+      groupQ += grp
+      parentSmartFileConsumer.addFilesToProcessingQueue(grp.fileHandlers.map(f => f.fileHandler.getFullPath()))
     }
   }
 
-  private def isEnqueued(file: String): Boolean = {
-    if (isShutdown) return false
-    fileQLock.synchronized {
-      if (fileQ.isEmpty) {
-        return false
-      }
-      fileQ.exists(f => f.fileHandler.getFullPath.equals(file))
+  private def enQGroups(grps: Array[EnqueuedGroupHandler]): Unit = {
+    if (grps == null || grps.size == 0) return
+    groupQLock.synchronized {
+      groupQ ++= grps
+      grps.foreach(grp => {
+        parentSmartFileConsumer.addFilesToProcessingQueue(grp.fileHandlers.map(f => f.fileHandler.getFullPath()))
+      })
     }
   }
 
-  private def deQFile: EnqueuedFileHandler = {
-    if (isShutdown) return null
-    fileQLock.synchronized {
-      if (fileQ.isEmpty) {
+  private def deQGroup: EnqueuedGroupHandler = {
+    if (groupQ.isEmpty) {
+      if (logger.isDebugEnabled) logger.debug("deQGroup is not returning anything")
+      return null
+    }
+    groupQLock.synchronized {
+      if (groupQ.isEmpty) {
+        if (logger.isDebugEnabled) logger.debug("deQGroup is not returning anything")
         return null
       }
-      val ef = fileQ.dequeue()
-      logger.info("SMART FILE CONSUMER (MonitorController):  deq file " + ef.fileHandler.getFullPath + " with priority " + ef.lastModifiedDate + " --- curretnly " + fileQ.size + " files left on a QUEUE")
-      return ef
-
+      val enqueuedgroupHandler = groupQ.dequeue()
+      if (enqueuedgroupHandler != null && logger.isDebugEnabled) {
+        logger.debug("SMART FILE CONSUMER (MonitorController):  deq group:" + enqueuedgroupHandler.fileHandlers.map(x => {
+          x.fileHandler.getFullPath
+        }).mkString(","))
+      } else {
+        if (logger.isDebugEnabled) logger.debug("deQGroup is not returning anything")
+      }
+      return enqueuedgroupHandler
     }
   }
 
-  private def waitingFilesToProcessCount: Int = {
-    fileQLock.synchronized {
-      fileQ.length
+  private def getAllEnqueuedGroups: Array[EnqueuedGroupHandler] = {
+    if (groupQ.isEmpty) {
+      return Array[EnqueuedGroupHandler]()
+    }
+    groupQLock.synchronized {
+      groupQ.toArray
     }
   }
 
-  //get file name only for now
-  def getNextFileToProcess: String = {
-    val f = deQFile
-    if (f == null) null else f.fileHandler.getFullPath
+  private def waitingGroupsToProcessCount: Int = {
+    groupQLock.synchronized {
+      groupQ.length
+    }
   }
 
+  def getNextGroupToProcess: EnqueuedGroupHandler = {
+    deQGroup
+  }
 }
+
