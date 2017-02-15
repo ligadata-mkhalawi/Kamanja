@@ -409,8 +409,8 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
 
   def readWholeFiles(): Unit = {
     try {
-      if (logger.isWarnEnabled) logger.warn("Smart File Consumer - Starting reading messages from file {} , on Node {} , PartitionId {}",
-        fileHandlers(0).getFullPath, consumerContext.nodeId, consumerContext.partitionId.toString)
+      if (logger.isWarnEnabled) logger.warn("Smart File Consumer - Starting reading messages from files {} , on Node {} , PartitionId {}",
+        fileHandlers.map(fh => fh.getFullPath).mkString(","), consumerContext.nodeId, consumerContext.partitionId.toString)
 
       var attachmentsJson = new java.lang.StringBuilder(8 * 1024)
       attachmentsJson.append("""{"files": {""")
@@ -540,18 +540,16 @@ class FileMessageExtractor(parentSmartFileConsumer: SmartFileConsumer,
     // We are sending status for 0th element always
     val fileHandler = fileHandlers(0)
     val data = fileHandler.getFullPath + "~" + currentMsgNum + "~" + System.nanoTime + "~done"
-    if (logger.isWarnEnabled) logger.warn("Node {} before sending done status for file processing key={} , value={}",
+    if (logger.isDebugEnabled) logger.debug("Node {} before sending done status for file processing key={} , value={}",
       consumerContext.nodeId, consumerContext.statusUpdateCacheKey, data)
     consumerContext.envContext.saveConfigInClusterCache(consumerContext.statusUpdateCacheKey, data.getBytes)
     if (logger.isWarnEnabled) logger.warn("Node {} after sending done status for file processing key={} , value={}",
       consumerContext.nodeId, consumerContext.statusUpdateCacheKey, data)
 
-
     val savedStatusData = consumerContext.envContext.getConfigFromClusterCache(consumerContext.statusUpdateCacheKey)
     val statusDataStr: String = if (savedStatusData == null) null else new String(savedStatusData)
-    if (logger.isWarnEnabled) logger.warn("Node {} checking saved done status for file processing key={} ,saved value={}",
+    if (logger.isDebugEnabled) logger.debug("Node {} checking saved done status for file processing key={} ,saved value={}",
       consumerContext.nodeId, consumerContext.statusUpdateCacheKey, statusDataStr)
-
 
     finishFlagSent_Lock.synchronized {
       if (!finishFlagSent) {

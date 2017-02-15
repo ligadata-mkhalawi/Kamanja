@@ -495,7 +495,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                           val processingFiles = if (dataObj != null && dataObj.item != null && dataObj.item.Files != None) dataObj.item.Files.get else List[String]()
                           val status = dataObj.status
                           if (LOG.isWarnEnabled) {
-                            if (LOG.isWarnEnabled) LOG.warn("Smart File Consumer (Leader) - File ({}) processing finished by node {} , partition {} , status={}",
+                            LOG.warn("Smart File Consumer (Leader) - File ({}) processing finished by node {} , partition {} , status={}",
                               processingFiles, processingNodeId, processingThreadId.toString, status)
                           }
 
@@ -598,7 +598,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
                         val requestingThreadId = keyTokens(keyTokens.length - 1)
                         val fileToProcessKeyPath = eventPathData //from leader
 
-                        if (LOG.isWarnEnabled) LOG.warn("Smart File Consumer - Leader has received a request from Node {}, Thread {}", requestingNodeId, requestingThreadId)
+                        if (LOG.isDebugEnabled) LOG.debug("Smart File Consumer - Leader has received a request from Node {}, Thread {}", requestingNodeId, requestingThreadId)
 
                         //just add to request queue
                         val newRequest = requestingNodeId + "/" + requestingThreadId + ":" + fileToProcessKeyPath
@@ -1398,7 +1398,7 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
   def fileAssignmentFromLeaderFn(eventType: String, eventPath: String, eventPathData: String): Unit = {
     // val startTm = System.currentTimeMillis
     envContext.setListenerCacheKey(eventPath, "") //TODO : so that it will not be read again. find a better way
-    if (LOG.isWarnEnabled) LOG.warn("Smart File Consumer - eventType={}, eventPath={}, eventPathData={}",
+    if (LOG.isInfoEnabled) LOG.info("Smart File Consumer - eventType={}, eventPath={}, eventPathData={}",
       eventType, eventPath, eventPathData)
     //data has format <file name>|offset
 
@@ -1579,15 +1579,15 @@ class SmartFileConsumer(val inputConfig: AdapterConfiguration, val execCtxtObj: 
           // Post the messgae
           envContext.postMessages(Array[ContainerInterface](statMsg))
         }
+        else {
+          logger.error("Msg {} is not found in metadata", statMsgStr)
+        }
       }
       catch {
         case e: Exception => {
           logger.error("", e)
         }
       }
-    }
-    else {
-      logger.error("Msg {} is not found in metadata", statMsgStr)
     }
 
   }

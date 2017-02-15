@@ -492,7 +492,7 @@ class MonitorController {
         }))
       }).toArray
       if (!isShutdown) {
-        logger.warn("enq groups:%s".format(
+        if (logger.isDebugEnabled) logger.debug("enq groups:%s".format(
           grps.map(grp => grp.fileHandlers.map(f => f.fileHandler.getFullPath).mkString("~")).mkString(",")))
         enQGroups(grps)
       }
